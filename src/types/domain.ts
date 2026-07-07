@@ -126,3 +126,78 @@ export interface BlockedAssignment extends AssignmentBase {
 }
 
 export type Assignment = WorkAssignment | BlockedAssignment;
+
+/**
+ * ScheduleView — 충돌 규칙이 들여다보는 현재 시간표 상태의 읽기 전용 스냅샷.
+ * 규칙은 여기서 필요한 것만 골라 검사한다 (아무것도 수정하지 않는다).
+ */
+export interface ScheduleView {
+    timetable: Timetable;
+    spec: TimetableSpec;
+    assignments: readonly Assignment[];
+    tracks: readonly Track[];
+    agents: readonly Agent[];
+    resources: readonly Resource[];
+    absences: readonly Absence[];
+}
+
+/**
+ * Conflict — 규칙이 잡아낸 충돌 하나. 계산 결과일 뿐 저장하지 않는다(휘발성).
+ * 화면에 표시(하이라이트)할 때만 쓰인다.
+ */
+export interface Conflict {
+    ruleId: string;                   // 이 충돌을 잡아낸 규칙 (ConflictRule.id)
+    message: string;                  // 표시 메시지 ("과학실이 월 3교시에 2번 예약됨")
+    assignmentIds: string[];          // 연루된 배치들 → 화면에서 강조할 대상
+    severity: 'error' | 'warning';    // 심각도
+}
+
+/** 파라미터 값 — 사용자가 수정하는 값. */
+export type ParamValue = string | number | boolean;
+
+/** 규칙 인스턴스가 담는 파라미터 값 묶음 (key → 값). */
+export type RuleParams = Record<string, ParamValue>;
+
+/**
+ * RuleParam — 템플릿이 노출하는 '수정 가능한 파라미터' 하나의 명세.
+ * UI는 이걸 보고 입력칸(텍스트·숫자·체크박스·드롭다운)을 그린다.
+ */
+export interface RuleParam {
+    key: string;                      // 파라미터 식별자 (RuleParams의 키)
+    label: string;                    // 표시 이름 ("검사할 필드")
+    type: 'string' | 'number' | 'boolean' | 'select';
+    options?: string[];               // type === 'select'일 때 선택지
+    default: ParamValue;              // 기본값
+}
+
+/**
+ * RuleTemplate — 코드로 미리 제공하는 '제약 블록 템플릿'. 여러 개를 만들어 레지스트리에 둔다.
+ * 사용자는 이걸 골라 이름을 붙이고, 파라미터 몇 개를 수정하고, 토글해 규칙(ConflictRule)을 만든다.
+ * 판정 로직(detect)은 코드에 있고, 사용자가 만든 인스턴스는 순수 데이터라 저장할 수 있다.
+ */
+export interface RuleTemplate {
+    id: string;                       // 템플릿 식별자 ("no-overlap" 등)
+    label: string;                    // 템플릿 이름 ("같은 시간 중복 금지")
+    description: string;              // 무엇을 검사하는지 설명
+    params: RuleParam[];              // 사용자가 수정할 파라미터 명세
+    defaultMessage: string;           // 기본 충돌 메시지
+    defaultSeverity: 'error' | 'warning';
+    // 판정: 파라미터 값과 현재 상태를 보고 '충돌 그룹'들을 반환한다.
+    // 각 그룹 = 서로 충돌하는 assignmentId 목록. 엔진이 이름·메시지를 붙여 Conflict로 만든다.
+    detect(params: RuleParams, view: ScheduleView): string[][];
+}
+
+/**
+ * ConflictRule — 사용자가 템플릿을 구성한 '규칙 인스턴스'. 순수 데이터(저장 가능).
+ * 이름·토글·파라미터 값만 담고, 판정 로직은 templateId가 가리키는 RuleTemplate가 갖는다.
+ * 명세 = 이름 · 충돌조건(templateId+params) · 충돌메시지 · 토글 · 설명.
+ */
+export interface ConflictRule {
+    id: string;                       // UUID 식별자
+    templateId: string;               // 어떤 RuleTemplate 기반인지 (RuleTemplate.id)
+    name: string;                     // 사용자가 붙인 이름
+    enabled: boolean;                 // 토글
+    params: RuleParams;               // 수정한 파라미터 값
+    message?: string;                 // 커스텀 충돌 메시지 (없으면 템플릿 defaultMessage)
+    description?: string;             // 사용자 메모
+}
