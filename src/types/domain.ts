@@ -64,34 +64,38 @@ export interface Resource extends Entity<'resource'> {}
  */
 export interface Activity extends Entity<'activity'> {}
 
-/**
- * Absence — 에이전트 1명이 '특정 날짜의 특정 시간대'에 자리를 비운다는 사실.
- *
- * 근태가 필요한 이유는 단 하나: 그날 '땜방(보결)'이 필요/가능한지 판정하는 것.
- * 그래서 기록의 존재 자체가 "이 시간대에 부재"를 뜻하고, 로직은 [from, to]만 본다.
- * (부재 없는 날은 기록도 없음. 하루 종일 부재면 근무 시간 전체를 구간으로.)
- */
-export interface Absence {
-    id: string;                 // UUID 식별자
-    agentId: string;            // 대상 에이전트 (Agent.id)
-    date: string;               // 날짜 "YYYY-MM-DD"
-    from: string;               // 부재 시작 "HH:mm" (필수)
-    to: string;                 // 부재 종료 "HH:mm" (필수)
-    attr?: Record<string, any>; // 사유 등 표시용 속성
+/** TargetRef — Blackout이 가리키는 대상 하나 (어느 종류의 어떤 엔티티). */
+export interface TargetRef {
+    kind: 'agent' | 'track' | 'resource';
+    id: string;
 }
 
 /**
- * CalendarEvent — 학사일정의 '특이 날짜' 하나. 순수 데이터(저장 대상).
- * '수업일 여부'나 '날짜 → 주기 인덱스(dayIndex)' 매핑은 저장하지 않는다 —
- * 이 데이터와 Timetable/Spec을 근거로 필요할 때 계산(유도)한다.
+ * Blackout — "이 대상들은 이 기간 동안 배치/예약 불가"를 나타내는 가용성 차단.
+ * 가로지르는 단일 개념 — 교사 부재·특별실 수리·공휴일·행사 마커를 전부 흡수한다.
+ *
+ *   targets + mode 로 스코프를 정한다:
+ *     targets   mode          의미
+ *     []        only          아무도 안 막음 = 표시용 마커 (운동회 등)
+ *     []        all-except    전부 막음 (공휴일·방학)
+ *     [김쌤]    only          그 에이전트만 막음 (연가·출장)
+ *     [과학실]  only          그 자원만 막음 (수리·대관)
+ *     [6학년]   all-except    그 대상만 빼고 전부 막음
+ *
+ *   판정: isBlocked(ref) = (mode === 'all-except') !== (targets에 ref가 있음)
+ *
+ * 날짜↔주기 매핑·수업일 여부는 저장하지 않고 이 데이터로 계산(유도)한다.
  */
-export interface CalendarEvent {
-    id: string;                 // UUID 식별자
-    name: string;               // "설날", "개교기념일", "여름방학", "운동회" 등
-    startDate: string;          // 시작 "YYYY-MM-DD" (포함)
-    endDate: string;            // 종료 "YYYY-MM-DD" (포함, 하루면 startDate와 동일)
-    off: boolean;               // true=수업 없는 날(공휴일·방학·휴업일) / false=수업은 하되 일정만 표시(운동회 등)
-    attr?: Record<string, any>; // 커스텀 속성
+export interface Blackout {
+    id: string;                  // UUID 식별자
+    name: string;                // 표시 이름 ("설날", "운동회", "김쌤 연가", "과학실 수리")
+    startDate: string;           // 시작 "YYYY-MM-DD" (포함)
+    endDate: string;             // 종료 "YYYY-MM-DD" (포함, 하루면 startDate와 동일)
+    from?: string;               // 부분 차단 시작 "HH:mm" (생략 시 종일)
+    to?: string;                 // 부분 차단 종료 "HH:mm" (생략 시 종일)
+    targets: TargetRef[];        // 대상 목록 (여러 개 선택 가능)
+    mode: 'only' | 'all-except'; // targets를 '막을 목록'으로 볼지 '예외로 풀 목록'으로 볼지
+    attr?: Record<string, any>;  // 사유 등 표시용 속성
 }
 
 /**
@@ -183,7 +187,7 @@ export interface ScheduleView {
     agents: readonly Agent[];
     resources: readonly Resource[];
     activities: readonly Activity[];
-    absences: readonly Absence[];
+    blackouts: readonly Blackout[];
 }
 
 /**
