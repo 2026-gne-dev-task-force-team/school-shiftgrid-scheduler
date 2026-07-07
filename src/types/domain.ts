@@ -1,7 +1,32 @@
 /**
+ * ════════════════════════════════════════════════════════════
+ *  도메인 데이터 모델
+ * ════════════════════════════════════════════════════════════
+ * 이 시스템이 다루는 세계는 하나의 사건(event) 문장으로 압축된다:
+ *
+ *   "누가(Agent) · 어느 줄에서(Track) · 무엇을 가지고(Resource)
+ *    · 무슨 행위를(Activity) · 언제(시간 규격) 한다."
+ *
+ * WorkAssignment 한 장이 이 튜플 한 줄이고, '언제'만 시간 규격
+ * (TimetableSpec/Timetable)이 격자로 공급한다. 구조는 "격자(when) ×
+ * 튜플(나머지)"로 갈린다 — 학교든 간호 교대든 당직이든, 튜플 칸에
+ * 뭘 꽂느냐만 달라지고 뼈대는 그대로다.
+ *
+ * Track vs Resource (헷갈리기 쉬운 경계):
+ *   Track    = 전용 시간표 한 줄을 '소유'하는 주체 (반·병동·당직 라인)
+ *   Resource = 여러 Track이 공유하며 '경합'하는 것 (특별실·장비)
+ *   기준은 장소냐 아니냐가 아니라 '전용 칼럼이냐 vs 공유·경합이냐'.
+ *
+ * 규칙(ConflictRule 등)은 이 튜플들을 '검증'하는 보조 도구 층이지
+ * 세계를 구성하는 요소가 아니다. 배치 도우미·가능 인원 탐색과 함께
+ * helper 레이어에서 논다.
+ * ════════════════════════════════════════════════════════════
+ */
+
+/**
  * Entity — 배치에 참조되는 'named 엔티티'의 공통 골격.
- * Agent(사람)·Track(레인)·Resource(시설물)가 이 모양을 공유한다.
- * `kind` 태그로 셋을 구분해 서로 대입되는 실수를 막는다 (구조적 타이핑 차단).
+ * Agent(사람)·Track(레인)·Resource(시설물)·Activity(활동)가 이 모양을 공유한다.
+ * `kind` 태그로 서로 대입되는 실수를 막는다 (구조적 타이핑 차단).
  * 고정 필드는 최소로 두고, 학교/도메인별 정보는 attr로 자유롭게 확장한다.
  */
 export interface Entity<K extends string = string> {
@@ -30,6 +55,14 @@ export interface Track extends Entity<'track'> {}
  * 같은 (dayIndex, slotIndex)에서 한 자원이 두 번 쓰이면 중복 예약 — 이게 중복 방지 판정의 근거다.
  */
 export interface Resource extends Entity<'resource'> {}
+
+/**
+ * Activity — 배치의 '내용' 분류. 그 칸에서 수행되는 일의 종류이자 집계 축.
+ * 학교의 과목(수학·체육), 간호의 근무 유형(주간·야간), 당직의 종류(일직·주말) 등.
+ * 자유 문자열(label) 대신 엔티티로 두어야 반·인원·종류별 통계가 정확해진다
+ * (같은 '수학'/'야간'이 오타·표기 차이로 흩어지지 않음).
+ */
+export interface Activity extends Entity<'activity'> {}
 
 /**
  * Absence — 에이전트 1명이 '특정 날짜의 특정 시간대'에 자리를 비운다는 사실.
@@ -113,8 +146,10 @@ export interface Timetable {
 
 /**
  * Assignment — 어느 Timetable의, 어느 Track의, 주기 몇째 날, 몇 번째 슬롯을 채우는 배치.
- * `kind`로 분화해 다양한 배치 형태를 표현한다 (discriminated union).
- * 새 형태가 필요하면 kind를 가진 인터페이스를 추가해 union에 넣는다.
+ * `kind`로 분화하는 discriminated union의 베이스이자 확장점.
+ * 지금은 1:1:1(에이전트·활동·자원) WorkAssignment 하나뿐 — 팀티칭(에이전트 여럿)이나
+ * 차단(빈 칸 잠금) 같은 새 형태가 정말 필요해지면 그때 kind를 가진 인터페이스를
+ * 추가해 이 union만 갈아끼우면 된다. (한 칸에 여러 배치를 쌓는 것도 여기서 열림.)
  */
 export interface AssignmentBase {
     id: string;                 // UUID 식별자
@@ -125,21 +160,16 @@ export interface AssignmentBase {
     attr?: Record<string, any>; // 커스텀 속성
 }
 
-/** WorkAssignment — 일반 배치(수업·근무). 담당 에이전트와 (선택) 특별실 등 자원. */
+/** WorkAssignment — 일반 배치(수업·근무). 담당 에이전트·활동과 (선택) 특별실 등 자원. */
 export interface WorkAssignment extends AssignmentBase {
     kind: 'work';
     agentId?: string;           // 담당 에이전트 (Agent.id)
-    resourceId?: string;        // 특별실 등 자원
-    label?: string;             // 표시명 ("수학", "당직" 등)
+    activityId?: string;        // 활동/과목 (Activity.id) — 집계용. 분류 개념이 있으면 이걸 사용
+    resourceId?: string;        // 특별실 등 자원 (Resource.id)
+    label?: string;             // 자유 표시명. 분류가 없는 배치(자율학습 등)나 표시 override용
 }
 
-/** BlockedAssignment — 배치 차단. 쓸 수 없는 칸 (도움반 국·수 고정 시간, 예약 불가 등). */
-export interface BlockedAssignment extends AssignmentBase {
-    kind: 'blocked';
-    reason?: string;            // 차단 사유
-}
-
-export type Assignment = WorkAssignment | BlockedAssignment;
+export type Assignment = WorkAssignment;
 
 /**
  * ScheduleView — 충돌 규칙이 들여다보는 현재 시간표 상태의 읽기 전용 스냅샷.
@@ -152,6 +182,7 @@ export interface ScheduleView {
     tracks: readonly Track[];
     agents: readonly Agent[];
     resources: readonly Resource[];
+    activities: readonly Activity[];
     absences: readonly Absence[];
 }
 
