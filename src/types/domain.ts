@@ -1,24 +1,35 @@
 /**
+ * Entity — 배치에 참조되는 'named 엔티티'의 공통 골격.
+ * Agent(사람)·Track(레인)·Resource(시설물)가 이 모양을 공유한다.
+ * `kind` 태그로 셋을 구분해 서로 대입되는 실수를 막는다 (구조적 타이핑 차단).
+ * 고정 필드는 최소로 두고, 학교/도메인별 정보는 attr로 자유롭게 확장한다.
+ */
+export interface Entity<K extends string = string> {
+    kind: K;                    // 종류 태그 ('agent' | 'track' | 'resource')
+    id: string;                 // UUID 식별자
+    name: string;               // 표시 이름
+    attr: Record<string, any>;  // 커스텀 속성
+}
+
+/**
  * Agent — 시간표에 배치되는 '사람'. 교사·전담·강사·보조인력을 아우른다.
- * 학교마다 필요한 정보가 달라, 고정 필드는 최소로 두고 나머지는 attr로 확장한다.
  * (당직 근무자·간호 인력 등 어떤 배치 대상에도 그대로 쓰인다.)
  */
-export interface Agent {
-    id: string;                 // UUID 식별자
-    name: string;               // 표시 이름 (교사·강사 등)
-    attr: Record<string, any>;  // 커스텀 속성 (교사 유형, 담당 학년 등)
-}
+export interface Agent extends Entity<'agent'> {}
 
 /**
  * Track — 고유한 시간표를 갖는 '레인' 하나. 에이전트가 배치되어 일하는 대상.
  * 전체 시간표를 나란한 세로줄로 볼 때 그 한 줄에 해당한다.
  * 학교에선 한 반, 당직에선 당직 자리, 간호에선 근무 스테이션.
  */
-export interface Track {
-    id: string;                 // UUID 식별자
-    name: string;               // 표시 이름 (반·당직 자리 등)
-    attr: Record<string, any>;  // 커스텀 속성 (학년 등)
-}
+export interface Track extends Entity<'track'> {}
+
+/**
+ * Resource — 배치에 함께 묶이는 '시설물·자원'. 특별실(과학실·체육관·음악실), 장비 등.
+ * 스스로 시간표를 갖지 않는다. 언제 점유되는지는 이 자원을 참조한 Assignment들로 결정되고,
+ * 같은 (dayIndex, slotIndex)에서 한 자원이 두 번 쓰이면 중복 예약 — 이게 중복 방지 판정의 근거다.
+ */
+export interface Resource extends Entity<'resource'> {}
 
 /**
  * Absence — 에이전트 1명이 '특정 날짜의 특정 시간대'에 자리를 비운다는 사실.
@@ -71,13 +82,30 @@ export interface TimetableSpec {
 }
 
 /**
- * Assignment — 격자의 한 칸(어느 Track의, 주기 몇째 날, 몇 번째 슬롯)을 채우는 배치.
+ * Timetable — 특정 기간에 특정 규격을 입혀 실제로 굴러가는 시간표 한 장.
+ * '기본'과 '특별'을 타입으로 나누지 않는다 — 특별 시간표 = 더 좁은 기간 + 더 높은 priority.
+ * 어떤 날짜를 조회하면, 그 날짜를 품는 Timetable들 중 priority가 가장 높은 것이 이긴다.
+ * (예: 학기 전체를 덮는 '기본'(priority 0) 위에 '운동회 주간'(priority 10)이 그 주만 덮어씀.)
+ */
+export interface Timetable {
+    id: string;                 // UUID 식별자
+    name: string;               // 표시 이름 ("2학기 기본", "운동회 주간" 등)
+    specId: string;             // 적용할 규격 (TimetableSpec.id)
+    startDate: string;          // 적용 시작 "YYYY-MM-DD" (포함)
+    endDate: string;            // 적용 종료 "YYYY-MM-DD" (포함)
+    priority: number;           // 높을수록 우선. 기간이 겹치면 이 값이 큰 쪽이 그날을 차지
+    attr?: Record<string, any>; // 커스텀 속성
+}
+
+/**
+ * Assignment — 어느 Timetable의, 어느 Track의, 주기 몇째 날, 몇 번째 슬롯을 채우는 배치.
  * `kind`로 분화해 다양한 배치 형태를 표현한다 (discriminated union).
  * 새 형태가 필요하면 kind를 가진 인터페이스를 추가해 union에 넣는다.
  */
 export interface AssignmentBase {
     id: string;                 // UUID 식별자
-    trackId: string;            // 어느 Track의 시간표인지 (Track.id)
+    timetableId: string;        // 어느 Timetable에 속하는지 (Timetable.id)
+    trackId: string;            // 어느 Track의 칸인지 (Track.id)
     dayIndex: number;           // 주기 내 날짜 인덱스 (activeDays 중 하나)
     slotIndex: number;          // 칸 위치 (Slot.index)
     attr?: Record<string, any>; // 커스텀 속성
