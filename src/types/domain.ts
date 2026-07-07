@@ -48,6 +48,20 @@ export interface Absence {
 }
 
 /**
+ * CalendarEvent — 학사일정의 '특이 날짜' 하나. 순수 데이터(저장 대상).
+ * '수업일 여부'나 '날짜 → 주기 인덱스(dayIndex)' 매핑은 저장하지 않는다 —
+ * 이 데이터와 Timetable/Spec을 근거로 필요할 때 계산(유도)한다.
+ */
+export interface CalendarEvent {
+    id: string;                 // UUID 식별자
+    name: string;               // "설날", "개교기념일", "여름방학", "운동회" 등
+    startDate: string;          // 시작 "YYYY-MM-DD" (포함)
+    endDate: string;            // 종료 "YYYY-MM-DD" (포함, 하루면 startDate와 동일)
+    off: boolean;               // true=수업 없는 날(공휴일·방학·휴업일) / false=수업은 하되 일정만 표시(운동회 등)
+    attr?: Record<string, any>; // 커스텀 속성
+}
+
+/**
  * Slot — 하루를 쪼갠 한 '빈 칸'의 규격. 여기에 Assignment가 채워진다.
  * 학교의 "1교시", 근무의 "오전 근무", 그 사이 "점심·쉬는시간"까지 모두 슬롯.
  */
