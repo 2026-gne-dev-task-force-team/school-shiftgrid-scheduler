@@ -42,6 +42,8 @@ export default function GridEditor() {
     const resources = indexBy(doc.resources);
     const conflictIds = new Set(conflicts.flatMap((cf) => cf.assignmentIds));
     const days = spec.activeDays;
+    // 한 주(7일) 주기면 요일 이름, 아니면 'N일차'로 (간호 2교대 같은 비주간 주기 대비)
+    const dayName = (d: number) => (spec.cycleDays === 7 ? `${DAY_LABEL[d]}요일` : `${d + 1}일차`);
 
     // 선택 판정
     const sel = ui.selection && ui.selection.trackId === track.id ? ui.selection : null;
@@ -97,7 +99,7 @@ export default function GridEditor() {
                         <th className="w-12 py-2 text-xs text-slate-400 font-medium sticky left-0 bg-white" />
                         {days.map((d) => (
                             <th key={d} className="min-w-[110px] py-2 text-xs font-semibold text-slate-600 text-center">
-                                {DAY_LABEL[d]}요일
+                                {dayName(d)}
                             </th>
                         ))}
                     </tr>

@@ -1,5 +1,8 @@
-/** 화면 공용 조각들 — 칩, 드래그 데이터 규칙 */
+/** 화면 공용 조각들 — 칩, 드래그 데이터 규칙, 색 팔레트 */
 import type { CellField } from '../../store/store';
+
+/** 새 항목에 돌려가며 쓰는 기본 색들 */
+export const PALETTE = ['#4F7CFF', '#FF6B6B', '#2ECC71', '#9B59B6', '#F39C12', '#E91E63', '#00BCD4', '#795548', '#607D8B'];
 
 /** 드래그하는 항목의 종류 (교사·교과·시설) */
 export type DragKind = 'agent' | 'activity' | 'resource';

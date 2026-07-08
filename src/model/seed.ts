@@ -47,16 +47,16 @@ export const RESOURCES: Resource[] = [
 ];
 
 // ── 시간표 규격(TimetableSpec) ───────────────────────────────
-/** 하루를 N교시로 나눈 슬롯들을 만든다. (점심·쉬는시간 없이 교시만 — 데모 단순화) */
-export function periods(n: number, dayStart = '09:00'): Slot[] {
+/** 하루를 N교시로 나눈 슬롯들을 만든다. (점심 없이 교시만 — 데모 단순화) */
+export function periods(n: number, dayStart = '09:00', periodMin = 40, breakMin = 10): Slot[] {
     const slots: Slot[] = [];
     let [h, m] = dayStart.split(':').map(Number);
     for (let i = 0; i < n; i++) {
         const start = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        m += 40;
+        m += periodMin;
         h += Math.floor(m / 60); m %= 60;
         const end = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        m += 10; h += Math.floor(m / 60); m %= 60; // 쉬는 시간 10분
+        m += breakMin; h += Math.floor(m / 60); m %= 60;
         slots.push({ index: i, label: `${i + 1}교시`, start, end, assignable: true });
     }
     return slots;

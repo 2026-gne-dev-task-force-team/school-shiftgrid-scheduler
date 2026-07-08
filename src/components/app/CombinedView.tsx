@@ -55,7 +55,7 @@ export default function CombinedView() {
                         {rows.map((a) => (
                             <tr key={a.id} className="hover:bg-slate-50">
                                 <td className="px-3 py-1.5 border-b border-slate-100">{tracks.get(a.trackId)?.name}</td>
-                                <td className="px-3 py-1.5 border-b border-slate-100">{DAY_LABEL[a.dayIndex]}</td>
+                                <td className="px-3 py-1.5 border-b border-slate-100">{DAY_LABEL[a.dayIndex] ?? `${a.dayIndex + 1}일차`}</td>
                                 <td className="px-3 py-1.5 border-b border-slate-100">{a.slotIndex + 1}교시</td>
                                 <td className="px-3 py-1.5 border-b border-slate-100">{a.activityId ? activities.get(a.activityId)?.name : '—'}</td>
                                 <td className="px-3 py-1.5 border-b border-slate-100">{a.agentId ? agents.get(a.agentId)?.name : '—'}</td>
@@ -70,10 +70,12 @@ export default function CombinedView() {
     );
 }
 
-export function Overlay({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Overlay({ title, onClose, children, size = '3xl' }: {
+    title: string; onClose: () => void; children: ReactNode; size?: 'md' | '3xl';
+}) {
     return (
         <div className="fixed inset-0 z-50 bg-black/30 grid place-items-center p-6" onClick={onClose}>
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className={`bg-white rounded-xl shadow-2xl w-full ${size === 'md' ? 'max-w-md' : 'max-w-3xl'} max-h-[85vh] overflow-hidden flex flex-col`} onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
                     <h2 className="text-sm font-bold text-slate-800">{title}</h2>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-lg leading-none">×</button>

@@ -8,11 +8,11 @@ import {
     type ReactNode,
 } from 'react';
 import type {
-    Agent, Activity, Resource, Track, Assignment, Blackout, ConflictRule, TimetableSpec,
+    Agent, Activity, Resource, Track, Assignment, Blackout, ConflictRule, TimetableSpec, Timetable,
 } from '../types/schema';
 import {
     AGENTS, ACTIVITIES, RESOURCES, SPECS, TRACKS, TIMETABLES,
-    BLACKOUTS, buildSeedAssignments, baseTimetableOf, periods,
+    BLACKOUTS, buildSeedAssignments,
 } from '../model/seed';
 import { type Doc, runValidation } from '../logic/logic';
 
@@ -31,12 +31,12 @@ export interface CellPos { trackId: string; dayIndex: number; slotIndex: number;
 export type BlockCell = Partial<Record<CellField, string>> | null;
 
 type DocAction =
-    | { type: 'ADD_ENTITY'; family: EntityFamily; name: string; color: string }
+    | { type: 'ADD_ENTITY'; family: EntityFamily; name: string; attr: Record<string, unknown> }
     | { type: 'REMOVE_ENTITY'; family: EntityFamily; id: string }
     | { type: 'RENAME_ENTITY'; family: EntityFamily; id: string; name: string }
-    | { type: 'ADD_SPEC'; name: string; periodCount: number }
+    | { type: 'ADD_SPEC'; spec: Omit<TimetableSpec, 'id'> }
     | { type: 'REMOVE_SPEC'; id: string }
-    | { type: 'ADD_TRACK'; specId: string; name: string }
+    | { type: 'ADD_TRACK'; specId: string; name: string; attr?: Record<string, unknown> }
     | { type: 'REMOVE_TRACK'; id: string }
     | { type: 'SET_CELL'; pos: CellPos; patch: Partial<Record<CellField, string | undefined>> }
     | { type: 'CLEAR_CELLS'; cells: CellPos[] }
@@ -46,6 +46,10 @@ type DocAction =
     | { type: 'REMOVE_RULE'; id: string }
     | { type: 'ADD_BLACKOUT'; blackout: Blackout }
     | { type: 'REMOVE_BLACKOUT'; id: string };
+
+/** 학반이 속한 규격의 기본표를 찾는다 (없으면 첫 시간표로) */
+const baseTimetableFor = (doc: Doc, track: Track): string =>
+    doc.timetables.find((tt) => tt.specId === track.attr?.specId)?.id ?? doc.timetables[0]?.id ?? '';
 
 // ── 배치 한 칸을 만들거나 고치는 도우미 ───────────────────────
 function upsertCell(doc: Doc, pos: CellPos, patch: Partial<Record<CellField, string | undefined>>): Assignment[] {
@@ -63,7 +67,7 @@ function upsertCell(doc: Doc, pos: CellPos, patch: Partial<Record<CellField, str
         const track = doc.tracks.find((t) => t.id === pos.trackId);
         if (!track) return list;
         const na: Assignment = {
-            kind: 'work', id: uid('w'), timetableId: baseTimetableOf(track),
+            kind: 'work', id: uid('w'), timetableId: baseTimetableFor(doc, track),
             trackId: pos.trackId, dayIndex: pos.dayIndex, slotIndex: pos.slotIndex, ...patch,
         };
         if (!isEmpty(na)) list.push(na);
@@ -74,7 +78,7 @@ function upsertCell(doc: Doc, pos: CellPos, patch: Partial<Record<CellField, str
 function docReducer(doc: Doc, action: DocAction): Doc {
     switch (action.type) {
         case 'ADD_ENTITY': {
-            const item = { kind: KIND_OF[action.family], id: uid(action.family), name: action.name, attr: { color: action.color } };
+            const item = { kind: KIND_OF[action.family], id: uid(action.family), name: action.name, attr: action.attr };
             return { ...doc, [action.family]: [...doc[action.family], item as never] };
         }
         case 'REMOVE_ENTITY':
@@ -85,27 +89,34 @@ function docReducer(doc: Doc, action: DocAction): Doc {
                 [action.family]: doc[action.family].map((x) => (x.id === action.id ? { ...x, name: action.name } : x)),
             };
         case 'ADD_SPEC': {
-            // 규격 정의: 며칠 주기 · 일하는 날 · 하루 범위 · 칸 나누기 (데모: 월~금 + 교시 수)
-            const slots = periods(action.periodCount);
-            const spec: TimetableSpec = {
-                id: uid('spec'), name: action.name,
-                cycleDays: 7, activeDays: [0, 1, 2, 3, 4],
-                dayStart: '09:00', dayEnd: slots[slots.length - 1]?.end ?? '09:00',
-                slots,
+            // 폼이 정의한 규격을 그대로 저장하고, 그 규격을 기간에 적용한 '기본표'도 함께 만든다.
+            // (규격=빈 격자 틀, 시간표=그 틀을 기간+우선순위로 실제 적용한 것 — 둘의 구분을 눈에 보이게)
+            const id = uid('spec');
+            const base: Timetable = {
+                id: uid('tt'), name: `${action.spec.name} 기본표`, specId: id,
+                startDate: '2026-03-02', endDate: '2026-07-20', priority: 0,
             };
-            return { ...doc, specs: [...doc.specs, spec] };
+            return {
+                ...doc,
+                specs: [...doc.specs, { ...action.spec, id }],
+                timetables: [...doc.timetables, base],
+            };
         }
         case 'REMOVE_SPEC': {
             const trackIds = doc.tracks.filter((t) => t.attr?.specId === action.id).map((t) => t.id);
             return {
                 ...doc,
                 specs: doc.specs.filter((s) => s.id !== action.id),
+                timetables: doc.timetables.filter((tt) => tt.specId !== action.id),
                 tracks: doc.tracks.filter((t) => t.attr?.specId !== action.id),
                 assignments: doc.assignments.filter((a) => !trackIds.includes(a.trackId)),
             };
         }
         case 'ADD_TRACK': {
-            const track: Track = { kind: 'track', id: uid('t'), name: action.name, attr: { specId: action.specId } };
+            const track: Track = {
+                kind: 'track', id: uid('t'), name: action.name,
+                attr: { ...action.attr, specId: action.specId },
+            };
             return { ...doc, tracks: [...doc.tracks, track] };
         }
         case 'REMOVE_TRACK':
