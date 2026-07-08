@@ -48,7 +48,7 @@ export const RESOURCES: Resource[] = [
 
 // ── 시간표 규격(TimetableSpec) ───────────────────────────────
 /** 하루를 N교시로 나눈 슬롯들을 만든다. (점심·쉬는시간 없이 교시만 — 데모 단순화) */
-function periods(n: number, dayStart = '09:00'): Slot[] {
+export function periods(n: number, dayStart = '09:00'): Slot[] {
     const slots: Slot[] = [];
     let [h, m] = dayStart.split(':').map(Number);
     for (let i = 0; i < n; i++) {

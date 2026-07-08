@@ -8,11 +8,11 @@ import {
     type ReactNode,
 } from 'react';
 import type {
-    Agent, Activity, Resource, Track, Assignment, Blackout, ConflictRule,
+    Agent, Activity, Resource, Track, Assignment, Blackout, ConflictRule, TimetableSpec,
 } from '../types/schema';
 import {
     AGENTS, ACTIVITIES, RESOURCES, SPECS, TRACKS, TIMETABLES,
-    BLACKOUTS, buildSeedAssignments, baseTimetableOf,
+    BLACKOUTS, buildSeedAssignments, baseTimetableOf, periods,
 } from '../model/seed';
 import { type Doc, runValidation } from '../logic/logic';
 
@@ -34,7 +34,7 @@ type DocAction =
     | { type: 'ADD_ENTITY'; family: EntityFamily; name: string; color: string }
     | { type: 'REMOVE_ENTITY'; family: EntityFamily; id: string }
     | { type: 'RENAME_ENTITY'; family: EntityFamily; id: string; name: string }
-    | { type: 'ADD_SPEC'; name: string }
+    | { type: 'ADD_SPEC'; name: string; periodCount: number }
     | { type: 'REMOVE_SPEC'; id: string }
     | { type: 'ADD_TRACK'; specId: string; name: string }
     | { type: 'REMOVE_TRACK'; id: string }
@@ -85,8 +85,14 @@ function docReducer(doc: Doc, action: DocAction): Doc {
                 [action.family]: doc[action.family].map((x) => (x.id === action.id ? { ...x, name: action.name } : x)),
             };
         case 'ADD_SPEC': {
-            const base = SPECS[1]; // 고학년 규격을 기본 틀로 복제
-            const spec = { ...base, id: uid('spec'), name: action.name, attr: { ...base.attr } };
+            // 규격 정의: 며칠 주기 · 일하는 날 · 하루 범위 · 칸 나누기 (데모: 월~금 + 교시 수)
+            const slots = periods(action.periodCount);
+            const spec: TimetableSpec = {
+                id: uid('spec'), name: action.name,
+                cycleDays: 7, activeDays: [0, 1, 2, 3, 4],
+                dayStart: '09:00', dayEnd: slots[slots.length - 1]?.end ?? '09:00',
+                slots,
+            };
             return { ...doc, specs: [...doc.specs, spec] };
         }
         case 'REMOVE_SPEC': {
