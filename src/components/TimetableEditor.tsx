@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   ALL_RESOURCES, TEACHERS, SUBJECTS, ROOMS, DAYS, PERIODS, CLASSES,
+  buildSampleGrid,
   type Resource,
 } from '../data/sampleData';
 
@@ -31,7 +32,7 @@ const categoryBg: Record<Resource['category'], string> = {
 function Chip({ entry, onRemove }: { entry: CellEntry; onRemove: () => void }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white whitespace-nowrap max-w-full"
       style={{ backgroundColor: entry.resource.color }}
     >
       {entry.resource.name}
@@ -130,7 +131,7 @@ function Cell({
         if (r) onDrop(r);
       }}
     >
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-col items-start gap-0.5">
         {entries.map((entry, i) => (
           <Chip key={i} entry={entry} onRemove={() => onRemove(i)} />
         ))}
@@ -226,7 +227,7 @@ function RightPanel() {
 // ── 메인 에디터 ───────────────────────────────────────────────
 export default function TimetableEditor() {
   const [selectedClass, setSelectedClass] = useState(CLASSES[0]);
-  const [grid, setGrid] = useState<Grid>({});
+  const [grid, setGrid] = useState<Grid>(() => buildSampleGrid());
 
   const getEntries = (day: string, period: number): CellEntry[] =>
     grid[cellKey(selectedClass, day, period)] ?? [];
