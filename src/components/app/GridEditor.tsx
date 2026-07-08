@@ -89,6 +89,8 @@ export default function GridEditor() {
 
     return (
         <main className="flex-1 overflow-auto p-4 outline-none" tabIndex={0} onKeyDown={onKey}>
+            {/* 화면이 넓어도 표가 왼쪽에 붙지 않게 가운데 정렬 */}
+            <div className="w-fit mx-auto">
             <table className="border-collapse text-sm select-none">
                 <thead>
                     <tr>
@@ -156,6 +158,7 @@ export default function GridEditor() {
             <p className="mt-3 text-[11px] text-slate-400">
                 범위 드래그 · ⌘C 복사 · ⌘V 붙여넣기 · Del 지우기 · 더블클릭/타이핑으로 입력 · 왼쪽에서 드래그해 넣기
             </p>
+            </div>
         </main>
     );
 }
