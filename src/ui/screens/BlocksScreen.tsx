@@ -111,14 +111,14 @@ export default function BlocksScreen() {
                                 <tr key={sl.index}>
                                     <td className="text-right pr-2 text-[11px] text-muted">{sl.label}</td>
                                     {activeDays(spec).map((d) => {
-                                        if (!sl.assignable) return <td key={d} className="p-0.5"><div className="h-11 rounded bg-panel2/40 grid place-items-center text-[10px] text-muted/60">{sl.kind === 'lunch' ? '점심' : ''}</div></td>;
+                                        if (!sl.assignable) return <td key={d} className="p-0.5"><div className="h-14 md:h-11 rounded bg-panel2/40 grid place-items-center text-[10px] text-muted/60">{sl.kind === 'lunch' ? '점심' : ''}</div></td>;
                                         const state = blockStateAt(doc, target, d, sl.index);
                                         const a = kind === 'track' ? asgIx.get(cellKey(targetId, d, sl.index)) : undefined;
                                         const txt = a ? cellText(a, ix) : null;
                                         return (
                                             <td key={d} className="p-0.5 align-top">
                                                 <button onClick={() => onCell(d, sl.index)}
-                                                    className={`w-full h-11 rounded border text-left px-1.5 py-1 grid-cell transition-colors ${STATE_STYLE[state]}`}>
+                                                    className={`w-full h-14 md:h-11 rounded border text-left px-1.5 py-1 grid-cell transition-colors ${STATE_STYLE[state]}`}>
                                                     {state !== 'none' && <div className="text-[10px] font-medium">{STATE_LABEL[state]}</div>}
                                                     {txt && (
                                                         <div className="leading-tight">

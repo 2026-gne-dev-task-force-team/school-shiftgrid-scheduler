@@ -113,6 +113,20 @@ export default function EditScreen() {
                 ? <TrackGrid trackId={curId} asgIx={asgIx} ix={ix} viol={viol} held={held} verdicts={verdicts} onCell={clickTrackCell} />
                 : <TimeGrid view={view} ownerId={curId} ix={ix} viol={viol} />}
 
+            {/* 폰: 잡힌 칸의 도구를 격자 아래 고정 줄로 (호버 툴바가 안 먹는다) */}
+            {held && view === 'track' && (() => {
+                const a = doc.assignments.find((x) => x.id === held);
+                if (!a) return null;
+                return (
+                    <div className="md:hidden sticky bottom-0 z-10 flex items-center gap-2 bg-panel border border-line rounded-md p-2 shadow-lg">
+                        <span className="text-[12px] text-muted flex-1 truncate">집은 배치 — {ix.activities.get(a.activityId ?? '')?.name ?? a.label ?? '(빈 배치)'}</span>
+                        <Button variant={a.pinned ? 'primary' : 'ghost'} icon="pin" onClick={() => st.act.togglePin(a.id)}>이동금지</Button>
+                        <Button variant="danger" icon="trash" onClick={() => { st.act.clearCell({ trackId: a.trackId, dayIndex: a.dayIndex, slotIndex: a.slotIndex }); setHeld(null); }}>삭제</Button>
+                        <Button variant="soft" icon="x" onClick={() => setHeld(null)}>놓기</Button>
+                    </div>
+                );
+            })()}
+
             {preview && <MovePreviewModal preview={preview} onClose={() => setPreview(null)} onRun={doMove} />}
         </div>
     );
@@ -236,7 +250,7 @@ function CellBody({ a, ix, bad, owner }: { a: Assignment; ix: Ix; bad?: { hard: 
 // ── 이동 미리보기 모달 (결과표 · 하드면 실행 잠김) ────────────
 function MovePreviewModal({ preview, onClose, onRun }: { preview: MovePreview; onClose: () => void; onRun: () => void }) {
     return (
-        <Modal title="이동 미리보기" onClose={onClose} wide>
+        <Modal title="이동 미리보기" onClose={onClose} wide noMobileFooter>
             <div className="space-y-3 text-[13px]">
                 <div className="flex items-center gap-2">
                     {preview.hardBroken
@@ -249,27 +263,36 @@ function MovePreviewModal({ preview, onClose, onRun }: { preview: MovePreview; o
                         {preview.hardReasons.map((r, i) => <li key={i}>· {r}</li>)}
                     </ul>
                 )}
-                <table className="w-full text-[12px] border-collapse">
-                    <thead><tr className="text-muted text-left">{['규칙', '종류', '전', '후', '차이'].map((h) => <th key={h} className="border-b border-line px-2 py-1 font-medium">{h}</th>)}</tr></thead>
-                    <tbody>
-                        {preview.rows.map((r) => (
-                            <tr key={r.ruleId}>
-                                <td className="border-b border-line/50 px-2 py-1">{r.label}</td>
-                                <td className="border-b border-line/50 px-2 py-1">{r.kind === 'hard' ? <Pill tone="bad">하드</Pill> : <Pill tone="warn">소프트</Pill>}</td>
-                                <td className="border-b border-line/50 px-2 py-1">{r.before}</td>
-                                <td className="border-b border-line/50 px-2 py-1">{r.after}</td>
-                                <td className={`border-b border-line/50 px-2 py-1 ${r.delta > 0 ? 'text-bad' : r.delta < 0 ? 'text-ok' : 'text-muted'}`}>{fmtDelta(r.delta)}</td>
-                            </tr>
-                        ))}
-                        {preview.rows.length === 0 && <tr><td colSpan={5} className="px-2 py-2 text-muted">변하는 규칙이 없습니다.</td></tr>}
-                    </tbody>
-                </table>
-                <div className="flex justify-end gap-2">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-[12px] border-collapse min-w-[420px]">
+                        <thead><tr className="text-muted text-left">{['규칙', '종류', '전', '후', '차이'].map((h) => <th key={h} className="border-b border-line px-2 py-1 font-medium">{h}</th>)}</tr></thead>
+                        <tbody>
+                            {preview.rows.map((r) => (
+                                <tr key={r.ruleId}>
+                                    <td className="border-b border-line/50 px-2 py-1">{r.label}</td>
+                                    <td className="border-b border-line/50 px-2 py-1">{r.kind === 'hard' ? <Pill tone="bad">하드</Pill> : <Pill tone="warn">소프트</Pill>}</td>
+                                    <td className="border-b border-line/50 px-2 py-1">{r.before}</td>
+                                    <td className="border-b border-line/50 px-2 py-1">{r.after}</td>
+                                    <td className={`border-b border-line/50 px-2 py-1 ${r.delta > 0 ? 'text-bad' : r.delta < 0 ? 'text-ok' : 'text-muted'}`}>{fmtDelta(r.delta)}</td>
+                                </tr>
+                            ))}
+                            {preview.rows.length === 0 && <tr><td colSpan={5} className="px-2 py-2 text-muted">변하는 규칙이 없습니다.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+                {preview.hardBroken && <p className="text-[11px] text-muted text-right md:text-right">하드가 깨지는 이동은 실행할 수 없습니다.</p>}
+                <div className="hidden md:flex justify-end gap-2">
                     <Button variant="soft" onClick={onClose}>그만</Button>
                     <Button variant="primary" icon="check" onClick={onRun} disabled={preview.hardBroken}
                         title={preview.hardBroken ? '하드가 깨져 잠겨 있습니다' : ''}>이동 실행</Button>
                 </div>
-                {preview.hardBroken && <p className="text-[11px] text-muted text-right">하드가 깨지는 이동은 실행할 수 없습니다.</p>}
+                {/* 폰: 실행/취소를 아래 고정 줄로 */}
+                <div className="md:hidden sticky bottom-0 -mx-4 px-4 py-3 bg-panel border-t border-line flex gap-2"
+                    style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+                    <Button variant="soft" className="flex-1 justify-center" onClick={onClose}>그만</Button>
+                    <Button variant="primary" icon="check" className="flex-1 justify-center" onClick={onRun} disabled={preview.hardBroken}
+                        title={preview.hardBroken ? '하드가 깨져 잠겨 있습니다' : ''}>이동 실행</Button>
+                </div>
             </div>
         </Modal>
     );

@@ -25,6 +25,12 @@
 /* 시간표 격자는 12px */
 .grid-cell { font-size: 12px; }
 
+/* 폰: 체크박스가 딸린 라벨의 탭 영역을 44px 로 키운다 (데스크톱은 그대로) */
+@media (max-width: 767px) {
+  label:has(> input[type="checkbox"]) { min-height: 44px; }
+  label:has(> input[type="checkbox"]) input[type="checkbox"] { width: 18px; height: 18px; }
+}
+
 /* 인쇄 — 껍데기(상단 바·왼쪽 탭·상태줄)를 숨기고 표만 흑백으로 */
 @media print {
   body { background: #fff; color: #000; }

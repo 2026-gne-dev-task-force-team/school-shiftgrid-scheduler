@@ -9,7 +9,7 @@ export default function HomeScreen() {
     const empty = st.doc.tracks.length === 0 && st.doc.agents.length === 0;
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-4 md:p-6">
             <div className="mb-5">
                 <h1 className="text-[20px] font-semibold">시간표 짜기</h1>
                 <p className="text-[13px] text-muted mt-1">규칙을 데이터로 받는 초등 시간표 도구입니다. 아래 순서대로 진행합니다.</p>
@@ -44,7 +44,7 @@ export default function HomeScreen() {
                             <span className="text-[11px] text-muted">{i + 1}단계</span>
                         </div>
                         <div className="font-medium text-[14px]">{s.title}</div>
-                        <div className="text-[12px] text-muted mt-0.5 leading-snug">{s.desc}</div>
+                        <div className="text-[12px] text-muted mt-0.5 truncate md:whitespace-normal md:text-clip md:leading-snug">{s.desc}</div>
                     </button>
                 ))}
             </div>

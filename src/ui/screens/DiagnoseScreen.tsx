@@ -66,12 +66,16 @@ export default function DiagnoseScreen() {
 
             {rows.length > 0 && (
                 <div className="overflow-auto">
-                    <table className="text-[12px] border-collapse w-full min-w-[720px]">
+                    <table className="text-[12px] border-collapse w-full md:min-w-[720px]">
                         <thead>
                             <tr className="text-muted text-left">
-                                {['규칙', '종류', '문제', '대상', '고칠 수 있는 것', '벌점', ''].map((h) => (
-                                    <th key={h} className="border-b border-line px-2 py-1.5 font-medium">{h}</th>
-                                ))}
+                                <th className="border-b border-line px-2 py-1.5 font-medium">규칙</th>
+                                <th className="hidden md:table-cell border-b border-line px-2 py-1.5 font-medium">종류</th>
+                                <th className="border-b border-line px-2 py-1.5 font-medium">문제</th>
+                                <th className="hidden md:table-cell border-b border-line px-2 py-1.5 font-medium">대상</th>
+                                <th className="hidden md:table-cell border-b border-line px-2 py-1.5 font-medium">고칠 수 있는 것</th>
+                                <th className="border-b border-line px-2 py-1.5 font-medium">벌점</th>
+                                <th className="hidden md:table-cell border-b border-line px-2 py-1.5 font-medium"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,14 +129,21 @@ function RuleRow({ r, open, onToggle }: { r: RuleDiagnosis; open: boolean; onTog
                     {r.kind === 'hard' ? <Pill tone="bad">하드</Pill> : <Pill tone="warn">소프트 · {r.bucket ?? '-'}</Pill>}
                 </td>
                 <td className="border-b border-line/60 px-2 py-1.5">{r.count}건</td>
-                <td className="border-b border-line/60 px-2 py-1.5">{r.subjectCount}명</td>
-                <td className="border-b border-line/60 px-2 py-1.5">{r.fixableCount}</td>
+                <td className="hidden md:table-cell border-b border-line/60 px-2 py-1.5">{r.subjectCount}명</td>
+                <td className="hidden md:table-cell border-b border-line/60 px-2 py-1.5">{r.fixableCount}</td>
                 <td className="border-b border-line/60 px-2 py-1.5">{r.weight.toLocaleString()}</td>
-                <td className="border-b border-line/60 px-2 py-1.5 text-muted">{r.count > 0 && '보기'}</td>
+                <td className="hidden md:table-cell border-b border-line/60 px-2 py-1.5 text-muted">{r.count > 0 && '보기'}</td>
             </tr>
             {open && r.violations.map((v, i) => (
                 <tr key={i} className="bg-panel2/30">
-                    <td colSpan={7} className="border-b border-line/40 px-6 py-1.5">
+                    <td colSpan={3} className="md:hidden border-b border-line/40 px-4 py-1.5">
+                        <button className="text-left text-[12px] hover:text-accenth flex items-center gap-1.5" onClick={() => jump(v)}>
+                            {v.fixable ? <Mark kind="warn" /> : <Mark kind="unknown" />}
+                            <span>{v.message}</span>
+                            <span className="text-muted">→ 편집</span>
+                        </button>
+                    </td>
+                    <td colSpan={7} className="hidden md:table-cell border-b border-line/40 px-6 py-1.5">
                         <button className="text-left text-[12px] hover:text-accenth flex items-center gap-1.5" onClick={() => jump(v)}>
                             {v.fixable ? <Mark kind="warn" /> : <Mark kind="unknown" />}
                             <span>{v.message}</span>

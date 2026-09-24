@@ -60,6 +60,7 @@ export default function Shell() {
                     <StatusBar />
                 </main>
             </div>
+            {st.screen !== 'home' && <BottomTabBar />}
             <Notices />
         </div>
     );
@@ -83,25 +84,28 @@ function TopBar() {
     const st = useStore();
     const fileName = st.path ? st.path.split(/[\\/]/).pop() : '저장 안 됨';
     return (
-        <header className="no-print flex items-center gap-3 px-3 h-11 bg-panel border-b border-line shrink-0">
-            <button className="flex items-center gap-2 text-text hover:text-accenth" onClick={() => st.setScreen('home')} title="홈으로">
-                <Icon name="home" size={17} />
-                <span className="font-semibold text-[14px]">시간표 짜기</span>
-            </button>
-            <div className="w-px h-5 bg-line" />
-            <div className="min-w-0 flex items-baseline gap-2">
-                <span className="text-[13px] font-medium truncate">{st.doc.meta.name || '(학교 이름 없음)'}</span>
-                <span className="text-[12px] text-muted truncate">{st.doc.meta.term}</span>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5">
-                <span className="text-[12px] text-muted flex items-center gap-1" title={st.dirty ? '저장 안 한 변경이 있습니다' : '저장됨'}>
-                    <Icon name="file" size={13} />{fileName}
-                    {st.dirty && <span className="text-warn" title="저장 안 한 변경">●</span>}
-                </span>
-                <div className="w-px h-5 bg-line mx-1" />
-                <Button variant="soft" icon="undo" onClick={st.undo} disabled={!st.canUndo} title="되돌리기 (⌘Z)" />
-                <Button variant="soft" icon="redo" onClick={st.redo} disabled={!st.canRedo} title="다시하기 (⌘Y)" />
-                <Button variant="primary" icon="save" onClick={() => void st.saveFile()} title="저장 (⌘S)">저장</Button>
+        <header className="no-print shrink-0 bg-panel border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <div className="flex items-center gap-2 md:gap-3 px-2 md:px-3 h-11">
+                <button className="flex items-center gap-2 text-text hover:text-accenth" onClick={() => st.setScreen('home')} title="홈으로">
+                    <Icon name="home" size={17} />
+                    <span className="font-semibold text-[14px] hidden md:inline">시간표 짜기</span>
+                </button>
+                <div className="w-px h-5 bg-line hidden md:block" />
+                <div className="min-w-0 flex items-baseline gap-2">
+                    <span className="text-[13px] font-medium truncate">{st.doc.meta.name || '(학교 이름 없음)'}</span>
+                    <span className="text-[12px] text-muted truncate hidden md:inline">{st.doc.meta.term}</span>
+                </div>
+                <div className="ml-auto flex items-center gap-1 md:gap-1.5">
+                    <span className="text-[12px] text-muted items-center gap-1 hidden md:flex" title={st.dirty ? '저장 안 한 변경이 있습니다' : '저장됨'}>
+                        <Icon name="file" size={13} />{fileName}
+                        {st.dirty && <span className="text-warn" title="저장 안 한 변경">●</span>}
+                    </span>
+                    {st.dirty && <span className="text-warn md:hidden" title="저장 안 한 변경">●</span>}
+                    <div className="w-px h-5 bg-line mx-1 hidden md:block" />
+                    <Button variant="soft" icon="undo" onClick={st.undo} disabled={!st.canUndo} title="되돌리기 (⌘Z)" />
+                    <Button variant="soft" icon="redo" onClick={st.redo} disabled={!st.canRedo} title="다시하기 (⌘Y)" />
+                    <Button variant="primary" icon="save" onClick={() => void st.saveFile()} title="저장 (⌘S)"><span className="hidden md:inline">저장</span></Button>
+                </div>
             </div>
         </header>
     );
@@ -112,7 +116,7 @@ function LeftTabs() {
     const hard = st.diag.hardCount;
     const noSetup = st.doc.specs.length === 0 || st.doc.tracks.length === 0;
     return (
-        <nav className="no-print w-40 shrink-0 bg-panel border-r border-line flex flex-col py-2">
+        <nav className="no-print hidden md:flex w-40 shrink-0 bg-panel border-r border-line flex-col py-2">
             {SCREENS.map((s, i) => {
                 const active = st.screen === s.id;
                 // 🔴만 센다 — 하드 위반이 있으면 생성·진단·편집에 붙인다
@@ -141,14 +145,14 @@ function StatusBar() {
     const placed = st.demand.reduce((s, d) => s + d.placed, 0);
     const need = st.demand.reduce((s, d) => s + d.need, 0);
     return (
-        <footer className="no-print h-7 shrink-0 bg-panel border-t border-line flex items-center gap-3 px-3 text-[12px] text-muted">
-            <span className="flex items-center gap-1">
+        <footer className="no-print h-7 shrink-0 bg-panel border-t border-line flex items-center gap-2 md:gap-3 px-2 md:px-3 text-[12px] text-muted overflow-x-auto whitespace-nowrap">
+            <span className="flex items-center gap-1 shrink-0">
                 <Mark kind={hard > 0 ? 'bad' : 'ok'} />
                 하드 위반 {hard}건
             </span>
-            <span>소프트 벌점 {soft.toLocaleString()}점</span>
-            <span>배정 {placed} / 필요 {need}시간</span>
-            <span className="ml-auto flex items-center gap-1">
+            <span className="shrink-0">소프트 벌점 {soft.toLocaleString()}점</span>
+            <span className="shrink-0">배정 {placed} / 필요 {need}시간</span>
+            <span className="ml-auto flex items-center gap-1 shrink-0">
                 <Info lines={[
                     '이 줄은 지금 시간표의 상태를 요약합니다.',
                     '하드 위반이 0이라야 시간표가 성립합니다. 소프트 벌점은 낮을수록 좋습니다.',
@@ -159,11 +163,39 @@ function StatusBar() {
     );
 }
 
+// ── 하단 탭 바 (폰) — 왼쪽 세로 탭의 자리를 대신한다 ───────────
+function BottomTabBar() {
+    const st = useStore();
+    const hard = st.diag.hardCount;
+    const noSetup = st.doc.specs.length === 0 || st.doc.tracks.length === 0;
+    return (
+        <nav className="no-print md:hidden flex overflow-x-auto bg-panel border-t border-line shrink-0"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            {SCREENS.map((s) => {
+                const active = st.screen === s.id;
+                const showHard = hard > 0 && (s.id === 'diagnose' || s.id === 'edit' || s.id === 'generate');
+                const showWarn = noSetup && s.id === 'basic';
+                return (
+                    <button key={s.id} onClick={() => st.setScreen(s.id)}
+                        className={`relative flex-1 min-w-[56px] flex flex-col items-center justify-center gap-0.5 min-h-[48px] py-1 text-[10px] leading-none
+                            ${active ? 'text-accenth' : 'text-muted'}`}>
+                        <Icon name={s.icon} size={19} />
+                        <span className="truncate max-w-full px-0.5">{s.title}</span>
+                        {showHard && <Mark kind="bad" className="absolute top-0.5 right-2 text-[9px]" />}
+                        {showWarn && <Mark kind="warn" className="absolute top-0.5 right-2 text-[9px]" />}
+                    </button>
+                );
+            })}
+        </nav>
+    );
+}
+
 function Notices() {
     const st = useStore();
     if (st.notices.length === 0) return null;
     return (
-        <div className="fixed top-12 right-3 z-[200] w-80 space-y-2 no-print">
+        <div className="fixed right-2 md:right-3 left-2 md:left-auto z-[200] w-auto md:w-80 space-y-2 no-print"
+            style={{ top: 'calc(env(safe-area-inset-top) + 3rem)' }}>
             {st.notices.map((n) => (
                 <ErrorBox key={n.id} title={n.title} lines={n.lines} onClose={() => st.dismiss(n.id)} />
             ))}

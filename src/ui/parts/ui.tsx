@@ -10,7 +10,7 @@ export function Button({
     children?: ReactNode; onClick?: () => void; variant?: BtnVariant; icon?: IconName;
     disabled?: boolean; title?: string; type?: 'button' | 'submit'; className?: string;
 }) {
-    const base = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
+    const base = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
     const styles: Record<BtnVariant, string> = {
         primary: 'bg-accent hover:bg-accenth text-white',
         ghost: 'bg-panel2 hover:bg-line text-text border border-line',
@@ -54,7 +54,7 @@ export function Info({ lines }: { lines: [string, string, string] | string[] }) 
                 className="w-4 h-4 rounded-full border border-line text-muted text-[10px] leading-none grid place-items-center hover:text-text hover:border-muted"
                 title="설명 보기" aria-label="설명">ⓘ</button>
             {open && (
-                <span className="absolute z-50 left-0 top-5 w-64 p-2.5 rounded-md bg-panel2 border border-line shadow-xl text-[12px] text-text space-y-1">
+                <span className="absolute z-50 right-0 md:left-0 md:right-auto top-5 w-64 max-w-[80vw] p-2.5 rounded-md bg-panel2 border border-line shadow-xl text-[12px] text-text space-y-1">
                     {lines.map((l, i) => (
                         <span key={i} className="block leading-snug">
                             <span className="text-muted mr-1">{['무엇', '왜 보나', '고치는 곳'][i] ?? ''}·</span>{l}
@@ -90,21 +90,26 @@ export function ErrorBox({ title, lines, onClose }: { title: string; lines: stri
 }
 
 // ── 모달 ──────────────────────────────────────────────────────
-export function Modal({ title, children, onClose, wide }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ title, children, onClose, wide, noMobileFooter }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean; noMobileFooter?: boolean }) {
     useEffect(() => {
         const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', h);
         return () => window.removeEventListener('keydown', h);
     }, [onClose]);
     return (
-        <div className="fixed inset-0 z-[100] bg-black/50 grid place-items-center p-4 no-print" onMouseDown={onClose}>
-            <div className={`bg-panel border border-line rounded-lg shadow-2xl ${wide ? 'w-[720px]' : 'w-[460px]'} max-w-full max-h-[88vh] overflow-auto`}
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 no-print" onMouseDown={onClose}>
+            <div className={`bg-panel border border-line rounded-t-2xl md:rounded-lg shadow-2xl w-full ${wide ? 'md:w-[720px]' : 'md:w-[460px]'} max-w-full max-h-[94vh] md:max-h-[88vh] overflow-auto flex flex-col`}
                 onMouseDown={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-line sticky top-0 bg-panel">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-line sticky top-0 bg-panel shrink-0">
                     <h3 className="text-[14px] font-semibold">{title}</h3>
                     <button onClick={onClose} className="text-muted hover:text-text" aria-label="닫기"><Icon name="x" size={16} /></button>
                 </div>
                 <div className="p-4">{children}</div>
+                {!noMobileFooter && (
+                    <div className="md:hidden sticky bottom-0 bg-panel border-t border-line p-3 shrink-0" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+                        <button onClick={onClose} className="w-full py-2.5 rounded-md bg-panel2 border border-line text-text text-[13px] font-medium">닫기</button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -136,13 +141,13 @@ export function ConfirmButton({
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
     return (
         <input {...props}
-            className={`bg-panel2 border border-line rounded-md px-2 py-1 text-[13px] text-text placeholder:text-muted/60 outline-none focus:border-accent ${props.className ?? ''}`} />
+            className={`bg-panel2 border border-line rounded-md px-2 min-h-[44px] md:min-h-0 md:py-1 text-[15px] md:text-[13px] text-text placeholder:text-muted/60 outline-none focus:border-accent ${props.className ?? ''}`} />
     );
 }
 export function Select({ children, value, onChange, className = '' }: { children: ReactNode; value: string; onChange: (v: string) => void; className?: string }) {
     return (
         <select value={value} onChange={(e) => onChange(e.target.value)}
-            className={`bg-panel2 border border-line rounded-md px-2 py-1 text-[13px] text-text outline-none focus:border-accent ${className}`}>
+            className={`bg-panel2 border border-line rounded-md px-2 min-h-[44px] md:min-h-0 md:py-1 text-[15px] md:text-[13px] text-text outline-none focus:border-accent ${className}`}>
             {children}
         </select>
     );

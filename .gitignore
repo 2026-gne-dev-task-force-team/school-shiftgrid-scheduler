@@ -28,3 +28,4 @@ release
 
 # 화면 찍기 결과 (build/shot.cjs)
 shots/
+shots-mobile/

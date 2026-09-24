@@ -6,7 +6,7 @@ import type { MakeSpecInput } from '../../engine/api';
 import { makeSpec } from '../../engine/api';
 import type { TimetableSpec } from '../../types/schema';
 import { indexBy, assignableSlots } from '../lib';
-import { Button, Card, ConfirmButton, Field, Info, Select, TextInput, Pill, Mark } from '../parts/ui';
+import { Button, Card, ConfirmButton, Field, Info, Select, TextInput, Pill, Mark, Modal } from '../parts/ui';
 import { Icon } from '../parts/Icon';
 import DemandStatusPanel from './basic/DemandStatusPanel';
 import DemandTable from './basic/DemandTable';
@@ -20,11 +20,27 @@ const SUBS: { id: Sub; label: string }[] = [
 ];
 
 export default function BasicScreen() {
+    const st = useStore();
     const [sub, setSub] = useState<Sub>('school');
+    const [showDemand, setShowDemand] = useState(false);
+    const placed = st.demand.reduce((s, d) => s + d.placed, 0);
+    const need = st.demand.reduce((s, d) => s + d.need, 0);
     return (
         <div className="flex h-full min-h-0">
             <div className="flex-1 min-w-0 flex flex-col">
-                <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-line flex-wrap">
+                {/* 폰: 소절을 가로 스크롤 칩으로 */}
+                <div className="md:hidden flex items-center gap-1.5 px-3 pt-3 pb-2 border-b border-line overflow-x-auto">
+                    {SUBS.map((s) => (
+                        <button key={s.id} onClick={() => setSub(s.id)}
+                            className={`shrink-0 min-h-[44px] flex items-center px-3 rounded-md text-[13px] whitespace-nowrap ${sub === s.id ? 'bg-accent text-white' : 'text-muted hover:text-text hover:bg-panel2'}`}>
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+                <div className="md:hidden px-3 pb-2 border-b border-line"><ExcelBar /></div>
+
+                {/* 데스크톱: 기존 한 줄 그대로 */}
+                <div className="hidden md:flex items-center gap-1 px-4 pt-3 pb-2 border-b border-line flex-wrap">
                     {SUBS.map((s) => (
                         <button key={s.id} onClick={() => setSub(s.id)}
                             className={`px-2.5 py-1 rounded-md text-[13px] ${sub === s.id ? 'bg-accent text-white' : 'text-muted hover:text-text hover:bg-panel2'}`}>
@@ -33,7 +49,7 @@ export default function BasicScreen() {
                     ))}
                     <div className="ml-auto"><ExcelBar /></div>
                 </div>
-                <div className="flex-1 overflow-auto p-4">
+                <div className="flex-1 overflow-auto p-3 md:p-4">
                     {sub === 'school' && <SchoolSection />}
                     {sub === 'specs' && <SpecsSection />}
                     {sub === 'tracks' && <TracksSection />}
@@ -42,10 +58,22 @@ export default function BasicScreen() {
                     {sub === 'resources' && <ResourcesSection />}
                     {sub === 'demands' && <DemandTable />}
                 </div>
+                {/* 폰(+태블릿): sticky 패널 대신 버튼 → 시트 */}
+                <div className="lg:hidden shrink-0 border-t border-line p-2">
+                    <button onClick={() => setShowDemand(true)}
+                        className="w-full min-h-[44px] flex items-center justify-center gap-2 rounded-md bg-panel2 border border-line text-[13px] text-text">
+                        배정 현황 {placed}/{need}
+                    </button>
+                </div>
             </div>
             <aside className="w-72 shrink-0 border-l border-line overflow-auto p-3 hidden lg:block">
                 <DemandStatusPanel />
             </aside>
+            {showDemand && (
+                <Modal title="배정 / 필요" onClose={() => setShowDemand(false)}>
+                    <DemandStatusPanel />
+                </Modal>
+            )}
         </div>
     );
 }
