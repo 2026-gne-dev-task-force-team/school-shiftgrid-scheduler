@@ -212,6 +212,80 @@ export function mergeImport(d: Doc, r: {
     };
 }
 
+// ── 엑셀식 시트 배치 반영 (한 번 = 한 undo) ───────────────────
+//  시트가 통째로 만든 목록을 doc 에 앉히고, 사라진 것이 남긴 참조는 정리한다.
+
+/** 반 목록을 통째로 교체. 없어진 반의 배치·수요는 함께 지운다 */
+export function syncTracks(d: Doc, tracks: Track[]): Doc {
+    const keep = new Set(tracks.map((t) => t.id));
+    return {
+        ...d,
+        tracks,
+        assignments: d.assignments.filter((a) => keep.has(a.trackId)),
+        demands: d.demands.filter((dm) => keep.has(dm.trackId)),
+    };
+}
+/** 교사 목록 교체. 없어진 교사의 수요는 지우고, 배치에선 교사만 뗀다 */
+export function syncAgents(d: Doc, agents: Agent[]): Doc {
+    const keep = new Set(agents.map((a) => a.id));
+    return {
+        ...d,
+        agents,
+        demands: d.demands.filter((dm) => keep.has(dm.agentId)),
+        assignments: d.assignments.map((a) => (a.agentId && !keep.has(a.agentId) ? { ...a, agentId: undefined } : a)),
+    };
+}
+/** 과목 목록 교체. 없어진 과목의 수요는 지우고, 특별실·배치의 참조는 정리한다 */
+export function syncActivities(d: Doc, activities: Activity[]): Doc {
+    const keep = new Set(activities.map((a) => a.id));
+    return {
+        ...d,
+        activities,
+        demands: d.demands.filter((dm) => keep.has(dm.activityId)),
+        resources: d.resources.map((r) => (r.activityIds ? { ...r, activityIds: r.activityIds.filter((id) => keep.has(id)) } : r)),
+        assignments: d.assignments.map((a) => (a.activityId && !keep.has(a.activityId) ? { ...a, activityId: undefined } : a)),
+    };
+}
+/** 특별실 목록 교체. 없어진 특별실을 쓰던 수요·배치의 참조는 정리한다 */
+export function syncResources(d: Doc, resources: Resource[]): Doc {
+    const keep = new Set(resources.map((r) => r.id));
+    return {
+        ...d,
+        resources,
+        demands: d.demands.map((dm) => (dm.resourceId && !keep.has(dm.resourceId) ? { ...dm, resourceId: undefined, roomHours: undefined } : dm)),
+        assignments: d.assignments.map((a) => (a.resourceId && !keep.has(a.resourceId) ? { ...a, resourceId: undefined } : a)),
+    };
+}
+
+/** 시수표 시트 반영 — 새로 생긴 교사·과목·반을 들이고, 수요는 통째로 갈아끼운다 */
+export function applyDemandSheet(d: Doc, p: {
+    newAgents: Agent[]; newActivities: Activity[]; newTracks: Track[]; demands: Demand[];
+}): Doc {
+    const has = <T extends { id: string }>(list: T[], id: string) => list.some((x) => x.id === id);
+    return {
+        ...d,
+        agents: [...d.agents, ...p.newAgents.filter((x) => !has(d.agents, x.id))],
+        activities: [...d.activities, ...p.newActivities.filter((x) => !has(d.activities, x.id))],
+        tracks: [...d.tracks, ...p.newTracks.filter((x) => !has(d.tracks, x.id))],
+        demands: p.demands,
+    };
+}
+
+/** 학년별 반 수로 반을 한 번에 만든다 — 이미 있는 (학년,반)은 건너뛴다 */
+export function makeTracksByGrade(d: Doc, counts: Record<number, number>, specId: string): Doc {
+    const add: Track[] = [];
+    for (const [gStr, n] of Object.entries(counts)) {
+        const grade = Number(gStr);
+        for (let cls = 1; cls <= n; cls++) {
+            const exists = d.tracks.some((t) => t.grade === grade && ((t.attr?.classNum as number | undefined) === cls || t.name === `${grade}-${cls}`));
+            if (exists) continue;
+            const sibling = d.tracks.find((t) => t.grade === grade);
+            add.push({ kind: 'track', id: uid('t'), name: `${grade}-${cls}`, grade, specId: sibling?.specId ?? specId, attr: { classNum: cls } });
+        }
+    }
+    return add.length ? { ...d, tracks: [...d.tracks, ...add] } : d;
+}
+
 // ── 규칙 ──────────────────────────────────────────────────────
 export const setRules = (d: Doc, rules: ConflictRule[]): Doc => ({ ...d, rules });
 export const toggleRule = (d: Doc, id: string): Doc =>

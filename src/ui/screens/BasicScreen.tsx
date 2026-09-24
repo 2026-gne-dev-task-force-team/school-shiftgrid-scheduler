@@ -1,16 +1,30 @@
 /** 기초자료 — 학교·시간 틀·반·교사·과목·특별실·시수표. 오른쪽에 배정/필요 현황(sticky) */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../store/store';
 import { uid } from '../../store/ids';
+import { colorFor } from '../../store/doc-ops';
 import type { MakeSpecInput } from '../../engine/api';
 import { makeSpec } from '../../engine/api';
-import type { TimetableSpec } from '../../types/schema';
-import { indexBy, assignableSlots } from '../lib';
-import { Button, Card, ConfirmButton, Field, Info, Select, TextInput, Pill, Mark, Modal } from '../parts/ui';
-import { Icon } from '../parts/Icon';
+import type { Agent, Activity, Resource, Track, TimetableSpec } from '../../types/schema';
+import { assignableSlots } from '../lib';
+import { Button, Card, ConfirmButton, Field, Info, TextInput, Mark, Modal } from '../parts/ui';
+import Sheet, { type SheetColumn, type SheetRow, type SheetApi } from '../parts/Sheet';
 import DemandStatusPanel from './basic/DemandStatusPanel';
 import DemandTable from './basic/DemandTable';
 import ExcelBar from './basic/ExcelBar';
+
+// ── 시트 위 공용 툴바 ─────────────────────────────────────────
+function SheetToolbar({ title, api, hint }: { title: string; api: SheetApi | null; hint: [string, string, string] }) {
+    return (
+        <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-[13px] font-medium mr-1">{title}</div>
+            <Button icon="plus" onClick={() => api?.addRow()}>행 추가</Button>
+            <Button icon="trash" onClick={() => api?.deleteSelectedRows()}>선택 행 삭제</Button>
+            <Info lines={hint} />
+        </div>
+    );
+}
+const undoRedo = (st: ReturnType<typeof useStore>) => ({ onUndo: st.undo, onRedo: st.redo });
 
 type Sub = 'school' | 'specs' | 'tracks' | 'agents' | 'activities' | 'resources' | 'demands';
 const SUBS: { id: Sub; label: string }[] = [
@@ -173,80 +187,136 @@ function SlotTable({ spec, caption }: { spec: TimetableSpec; caption?: string })
 // ── 반 ────────────────────────────────────────────────────────
 function TracksSection() {
     const st = useStore();
-    const [name, setName] = useState('');
-    const [grade, setGrade] = useState(3);
-    const [specId, setSpecId] = useState('');
     const specs = st.doc.specs;
-    const chosenSpec = specId || specs[0]?.id || '';
+    const [api, setApi] = useState<SheetApi | null>(null);
+    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
+    const specNames = specs.map((s) => s.name);
 
-    const add = () => {
-        if (!name.trim() || !chosenSpec) return;
-        st.act.addTrack(name.trim(), chosenSpec, grade);
-        setName('');
+    const rows: SheetRow[] = st.doc.tracks
+        .slice().sort((a, b) => (a.grade ?? 0) - (b.grade ?? 0) || ((a.attr?.classNum as number) ?? 0) - ((b.attr?.classNum as number) ?? 0))
+        .map((t) => ({
+            _id: t.id,
+            grade: t.grade ?? '',
+            cls: (t.attr?.classNum as number | undefined) ?? (Number(t.name.split('-')[1]) || ''),
+            name: t.name,
+            spec: specs.find((s) => s.id === t.specId)?.name ?? '',
+        }));
+
+    const columns: SheetColumn[] = [
+        { key: 'grade', title: '학년', type: 'number', width: 70, validate: (v) => (v === '' ? '학년을 적어 주세요' : (Number(v) < 1 || Number(v) > 6 ? '1~6 사이' : undefined)) },
+        { key: 'cls', title: '반', type: 'number', width: 70, validate: (v) => (v === '' ? '반 번호를 적어 주세요' : undefined) },
+        { key: 'name', title: '이름(자동)', type: 'text', width: 110, readOnly: true, compute: (row) => `${row.grade ?? ''}-${row.cls ?? ''}` },
+        { key: 'spec', title: '규격', type: 'select', options: specNames, width: 170, validate: (v) => (!v ? '규격을 고르세요' : undefined) },
+    ];
+
+    const commit = (next: SheetRow[]) => {
+        const specByName = new Map(specs.map((s) => [s.name, s.id]));
+        const tracks: Track[] = next.map((r) => {
+            const ex = st.doc.tracks.find((t) => t.id === r._id);
+            const grade = r.grade === '' ? undefined : Number(r.grade);
+            const cls = r.cls === '' ? undefined : Number(r.cls);
+            return {
+                kind: 'track', id: r._id,
+                name: `${grade ?? ''}-${cls ?? ''}`,
+                grade, specId: specByName.get(String(r.spec)) ?? ex?.specId,
+                attr: { ...ex?.attr, classNum: cls },
+            };
+        });
+        st.act.syncTracks(tracks);
     };
 
+    const newRow = (): SheetRow => ({ _id: uid('t'), grade: '', cls: '', name: '', spec: specNames[0] ?? '' });
+
     return (
-        <div className="space-y-3 max-w-2xl">
+        <div className="space-y-3">
             {specs.length === 0 && <p className="text-[13px] text-warn"><Mark kind="warn" /> 먼저 「시간 틀」에서 규격을 만들어야 반에 규격을 줄 수 있습니다.</p>}
-            <div className="flex items-end gap-2 flex-wrap">
-                <Field label="반 이름"><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 3-1" /></Field>
-                <Field label="학년"><TextInput type="number" value={grade} onChange={(e) => setGrade(+e.target.value)} className="w-16" /></Field>
-                <Field label="규격">
-                    <Select value={chosenSpec} onChange={setSpecId}>
-                        {specs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </Select>
-                </Field>
-                <Button variant="primary" icon="plus" onClick={add} disabled={specs.length === 0}>반 추가</Button>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {st.doc.tracks.slice().sort((a, b) => (b.grade ?? 0) - (a.grade ?? 0)).map((t) => (
-                    <Card key={t.id} className="p-2.5 flex items-center gap-2">
-                        <div className="flex-1">
-                            <div className="font-medium text-[13px]">{t.name}</div>
-                            <div className="text-[11px] text-muted">{t.grade}학년 · {specs.find((s) => s.id === t.specId)?.name ?? '규격 없음'}</div>
-                        </div>
-                        <ConfirmButton onConfirm={() => st.act.removeTrack(t.id)} iconOnly />
-                    </Card>
-                ))}
-            </div>
+            <SheetToolbar title="반" api={api} hint={[
+                '한 반이 한 줄입니다. 학년·반을 넣으면 이름은 자동으로 「학년-반」이 됩니다.',
+                '엑셀에서 학년·반을 복사해 붙일 수 있고, 마지막 줄에서 Enter 로 계속 내려갑니다.',
+                '규격은 「시간 틀」에서 만든 것 중 고릅니다.',
+            ]} />
+            <BulkTracks />
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={520} {...undoRedo(st)} />
         </div>
+    );
+}
+
+// 학년별 반 수로 한 번에 만들기
+function BulkTracks() {
+    const st = useStore();
+    const [counts, setCounts] = useState<Record<number, string>>({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' });
+    const make = () => {
+        const c: Record<number, number> = {};
+        for (const g of [1, 2, 3, 4, 5, 6]) { const n = parseInt(counts[g], 10); if (Number.isFinite(n) && n > 0) c[g] = n; }
+        if (Object.keys(c).length === 0) return;
+        st.act.makeTracksByGrade(c, st.doc.specs[0]?.id ?? '');
+        setCounts({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' });
+    };
+    return (
+        <Card className="p-2.5 flex items-end gap-2 flex-wrap">
+            <div className="text-[12px] text-muted mr-1">학년별 반 수로 한 번에 만들기</div>
+            {[1, 2, 3, 4, 5, 6].map((g) => (
+                <label key={g} className="text-[11px] text-muted">{g}학년<br />
+                    <TextInput type="number" value={counts[g]} placeholder="0" onChange={(e) => setCounts({ ...counts, [g]: e.target.value })} className="w-14" />
+                </label>
+            ))}
+            <Button variant="primary" icon="plus" onClick={make}>만들기</Button>
+            <span className="text-[11px] text-muted">이미 있는 반은 건너뜁니다.</span>
+        </Card>
     );
 }
 
 // ── 교사 ──────────────────────────────────────────────────────
 function AgentsSection() {
     const st = useStore();
-    const [name, setName] = useState('');
-    const tracks = indexBy(st.doc.tracks);
+    const [api, setApi] = useState<SheetApi | null>(null);
+    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
+    const trackNames = st.doc.tracks.map((t) => t.name);
+
+    const rows: SheetRow[] = st.doc.agents.map((a) => ({
+        _id: a.id,
+        name: a.name,
+        role: a.role ?? '전담',
+        tier: a.tier ? String(a.tier) : '2',
+        coteach: !!a.coteach,
+        homeroom: st.doc.tracks.find((t) => t.id === a.homeroomTrackId)?.name ?? '',
+    }));
+
+    const columns: SheetColumn[] = [
+        { key: 'name', title: '이름', type: 'text', width: 130, validate: (v) => (!String(v).trim() ? '이름을 적어 주세요' : undefined) },
+        { key: 'role', title: '역할', type: 'select', options: ['담임', '전담', '비교과'], width: 100 },
+        { key: 'tier', title: '티어', type: 'select', options: ['1', '2', '3'], width: 80 },
+        { key: 'coteach', title: '보조인력', type: 'bool', width: 90 },
+        { key: 'homeroom', title: '담임반', type: 'select', options: trackNames, allowEmpty: true, width: 120 },
+    ];
+
+    const commit = (next: SheetRow[]) => {
+        const trackByName = new Map(st.doc.tracks.map((t) => [t.name, t.id]));
+        const agents: Agent[] = next.map((r, i) => {
+            const ex = st.doc.agents.find((a) => a.id === r._id);
+            const tierN = Number(r.tier);
+            return {
+                kind: 'agent', id: r._id, name: String(r.name ?? ''),
+                attr: ex?.attr ?? { color: colorFor(i) },
+                role: (r.role as Agent['role']) || undefined,
+                tier: tierN === 1 || tierN === 2 || tierN === 3 ? (tierN as 1 | 2 | 3) : undefined,
+                coteach: r.coteach ? true : undefined,
+                homeroomTrackId: trackByName.get(String(r.homeroom)) || undefined,
+            };
+        });
+        st.act.syncAgents(agents);
+    };
+
+    const newRow = (): SheetRow => ({ _id: uid('a'), name: '', role: '전담', tier: '2', coteach: false, homeroom: '' });
+
     return (
-        <div className="space-y-3 max-w-3xl">
-            <div className="flex items-end gap-2">
-                <Field label="교사 이름"><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="지어낸 이름만" /></Field>
-                <Button variant="primary" icon="plus" onClick={() => { if (name.trim()) { st.act.addAgent(name.trim()); setName(''); } }}>교사 추가</Button>
-                <Info lines={['담임·전담·보조인력을 모두 넣습니다.', 'tier·보조인력은 소프트 규칙(회피 등)의 가중치에만 씁니다.', '역할·담임반은 오른쪽에서 고칩니다.']} />
-            </div>
-            <div className="space-y-1.5">
-                {st.doc.agents.map((a) => (
-                    <Card key={a.id} className="p-2 flex items-center gap-2 flex-wrap">
-                        <TextInput value={a.name} onChange={(e) => st.act.updateAgent(a.id, { name: e.target.value })} className="w-28" />
-                        <Select value={a.role ?? '전담'} onChange={(v) => st.act.updateAgent(a.id, { role: v as never })}>
-                            {['담임', '전담', '비교과'].map((r) => <option key={r} value={r}>{r}</option>)}
-                        </Select>
-                        <Select value={String(a.tier ?? 2)} onChange={(v) => st.act.updateAgent(a.id, { tier: +v as never })}>
-                            <option value="1">tier 1 (보직)</option><option value="2">tier 2 (일반)</option><option value="3">tier 3 (지원)</option>
-                        </Select>
-                        <label className="text-[12px] text-muted flex items-center gap-1">
-                            <input type="checkbox" checked={!!a.coteach} onChange={(e) => st.act.updateAgent(a.id, { coteach: e.target.checked })} /> 보조인력
-                        </label>
-                        <Select value={a.homeroomTrackId ?? ''} onChange={(v) => st.act.updateAgent(a.id, { homeroomTrackId: v || undefined })}>
-                            <option value="">담임반 없음</option>
-                            {[...tracks.values()].map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        </Select>
-                        <div className="ml-auto"><ConfirmButton onConfirm={() => st.act.removeAgent(a.id)} iconOnly /></div>
-                    </Card>
-                ))}
-                {st.doc.agents.length === 0 && <p className="text-[13px] text-muted">아직 교사가 없습니다.</p>}
-            </div>
+        <div className="space-y-3">
+            <SheetToolbar title="교사" api={api} hint={[
+                '담임·전담·보조인력을 모두 한 줄씩 넣습니다.',
+                '티어·보조인력은 소프트 규칙(회피 등)의 가중치에만 씁니다.',
+                '엑셀에서 이름 목록을 복사해 「이름」 칸에 붙이면 한꺼번에 들어갑니다.',
+            ]} />
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={560} {...undoRedo(st)} />
         </div>
     );
 }
@@ -254,22 +324,33 @@ function AgentsSection() {
 // ── 과목 ──────────────────────────────────────────────────────
 function ActivitiesSection() {
     const st = useStore();
-    const [name, setName] = useState('');
+    const [api, setApi] = useState<SheetApi | null>(null);
+    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
+
+    const rows: SheetRow[] = st.doc.activities.map((a) => ({
+        _id: a.id, name: a.name, color: (a.attr?.color as string | undefined) ?? '',
+    }));
+    const columns: SheetColumn[] = [
+        { key: 'name', title: '이름', type: 'text', width: 160, validate: (v) => (!String(v).trim() ? '과목 이름을 적어 주세요' : undefined) },
+        { key: 'color', title: '색(옵션)', type: 'text', width: 120, placeholder: '#5b8def' },
+    ];
+    const commit = (next: SheetRow[]) => {
+        const activities: Activity[] = next.map((r, i) => {
+            const ex = st.doc.activities.find((a) => a.id === r._id);
+            return { kind: 'activity', id: r._id, name: String(r.name ?? ''), attr: { ...ex?.attr, color: String(r.color) || (ex?.attr?.color as string) || colorFor(i) } };
+        });
+        st.act.syncActivities(activities);
+    };
+    const newRow = (): SheetRow => ({ _id: uid('act'), name: '', color: '' });
+
     return (
-        <div className="space-y-3 max-w-xl">
-            <div className="flex items-end gap-2">
-                <Field label="과목 이름"><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 과학" /></Field>
-                <Button variant="primary" icon="plus" onClick={() => { if (name.trim()) { st.act.addActivity(name.trim()); setName(''); } }}>과목 추가</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-                {st.doc.activities.map((a) => (
-                    <span key={a.id} className="inline-flex items-center gap-1.5 bg-panel2 border border-line rounded-md pl-2 pr-1 py-1 text-[13px]">
-                        {a.name}
-                        <button className="text-muted hover:text-bad" onClick={() => st.act.removeActivity(a.id)} aria-label="삭제"><Icon name="x" size={13} /></button>
-                    </span>
-                ))}
-                {st.doc.activities.length === 0 && <p className="text-[13px] text-muted">아직 과목이 없습니다.</p>}
-            </div>
+        <div className="space-y-3">
+            <SheetToolbar title="과목" api={api} hint={[
+                '과목 이름을 한 줄씩 넣습니다. 색은 비워 두면 자동으로 정해집니다.',
+                '엑셀에서 과목 목록을 복사해 붙일 수 있습니다.',
+                '특별실·시수표에서 이 과목 이름을 씁니다.',
+            ]} />
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={320} {...undoRedo(st)} />
         </div>
     );
 }
@@ -277,39 +358,41 @@ function ActivitiesSection() {
 // ── 특별실 ────────────────────────────────────────────────────
 function ResourcesSection() {
     const st = useStore();
-    const [name, setName] = useState('');
+    const [api, setApi] = useState<SheetApi | null>(null);
+    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
+    const actNames = st.doc.activities.map((a) => a.name);
+
+    const rows: SheetRow[] = st.doc.resources.map((r) => ({
+        _id: r.id, name: r.name, cap: r.capacity ?? 1,
+        acts: (r.activityIds ?? []).map((id) => st.doc.activities.find((a) => a.id === id)?.name ?? id),
+    }));
+    const columns: SheetColumn[] = [
+        { key: 'name', title: '이름', type: 'text', width: 150, validate: (v) => (!String(v).trim() ? '특별실 이름을 적어 주세요' : undefined) },
+        { key: 'cap', title: '수용 수', type: 'number', width: 90 },
+        {
+            key: 'acts', title: '과목들 (쉼표로)', type: 'list', suggest: actNames, width: 260, placeholder: '예: 과학, 실험',
+            validate: (v) => { const bad = (Array.isArray(v) ? v : []).filter((n) => !actNames.includes(n)); return bad.length ? `과목 목록에 없음: ${bad.join(', ')}` : undefined; },
+        },
+    ];
+    const commit = (next: SheetRow[]) => {
+        const actByName = new Map(st.doc.activities.map((a) => [a.name, a.id]));
+        const resources: Resource[] = next.map((r, i) => {
+            const ex = st.doc.resources.find((x) => x.id === r._id);
+            const ids = (Array.isArray(r.acts) ? r.acts : []).map((n) => actByName.get(n)).filter((x): x is string => !!x);
+            return { kind: 'resource', id: r._id, name: String(r.name ?? ''), capacity: Number(r.cap) || 1, attr: ex?.attr ?? { color: colorFor(i) }, activityIds: ids.length ? ids : undefined };
+        });
+        st.act.syncResources(resources);
+    };
+    const newRow = (): SheetRow => ({ _id: uid('r'), name: '', cap: 1, acts: [] });
+
     return (
-        <div className="space-y-3 max-w-3xl">
-            <div className="flex items-end gap-2">
-                <Field label="특별실 이름"><TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 과학실" /></Field>
-                <Button variant="primary" icon="plus" onClick={() => { if (name.trim()) { st.act.addResource(name.trim()); setName(''); } }}>특별실 추가</Button>
-            </div>
-            <div className="space-y-1.5">
-                {st.doc.resources.map((r) => (
-                    <Card key={r.id} className="p-2 flex items-center gap-2 flex-wrap">
-                        <TextInput value={r.name} onChange={(e) => st.act.updateResource(r.id, { name: e.target.value })} className="w-32" />
-                        <label className="text-[12px] text-muted flex items-center gap-1">수용
-                            <TextInput type="number" value={r.capacity ?? 1} onChange={(e) => st.act.updateResource(r.id, { capacity: +e.target.value })} className="w-14" /> 반
-                        </label>
-                        <div className="flex flex-wrap gap-1 items-center">
-                            <span className="text-[11px] text-muted">과목:</span>
-                            {st.doc.activities.map((a) => {
-                                const on = r.activityIds?.includes(a.id);
-                                return (
-                                    <button key={a.id} onClick={() => {
-                                        const cur = r.activityIds ?? [];
-                                        st.act.updateResource(r.id, { activityIds: on ? cur.filter((x) => x !== a.id) : [...cur, a.id] });
-                                    }} className={`text-[11px] px-1.5 py-0.5 rounded ${on ? 'bg-accent/25 text-accenth' : 'bg-panel2 text-muted'}`}>{a.name}</button>
-                                );
-                            })}
-                            {st.doc.activities.length === 0 && <span className="text-[11px] text-muted/60">과목을 먼저 만드세요</span>}
-                        </div>
-                        {(!r.activityIds || r.activityIds.length === 0) && <Pill>아무 과목</Pill>}
-                        <div className="ml-auto"><ConfirmButton onConfirm={() => st.act.removeResource(r.id)} iconOnly /></div>
-                    </Card>
-                ))}
-                {st.doc.resources.length === 0 && <p className="text-[13px] text-muted">아직 특별실이 없습니다.</p>}
-            </div>
+        <div className="space-y-3">
+            <SheetToolbar title="특별실" api={api} hint={[
+                '과학실·체육관처럼 여러 반이 나눠 쓰는 시설을 넣습니다.',
+                '수용 수는 같은 시각에 몇 반까지 들어가나입니다(과학실 2개면 2).',
+                '과목들은 쉼표로 여러 개 — 타이핑하면 과목 이름이 자동완성됩니다. 비우면 아무 과목이나.',
+            ]} />
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={520} {...undoRedo(st)} />
         </div>
     );
 }

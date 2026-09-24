@@ -174,6 +174,12 @@ interface Actions {
     updateRuleParams: (id: string, params: RuleParams) => void;
     setRules: (rules: ConflictRule[]) => void;
     mergeImport: (r: { agents: Agent[]; tracks: Track[]; activities: Activity[]; demands: Demand[] }) => void;
+    syncTracks: (tracks: Track[]) => void;
+    syncAgents: (agents: Agent[]) => void;
+    syncActivities: (activities: Activity[]) => void;
+    syncResources: (resources: Resource[]) => void;
+    applyDemandSheet: (p: { newAgents: Agent[]; newActivities: Activity[]; newTracks: Track[]; demands: Demand[] }) => void;
+    makeTracksByGrade: (counts: Record<number, number>, specId: string) => void;
     saveBoard: (name: string) => void;
     restoreBoard: (id: string) => void;
     publishBoard: (id: string) => void;
@@ -295,6 +301,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         updateRuleParams: (id, params) => commit((d) => ops.updateRuleParams(d, id, params)),
         setRules: (rules) => commit((d) => ops.setRules(d, rules)),
         mergeImport: (r) => commit((d) => ops.mergeImport(d, r)),
+        syncTracks: (tracks) => commit((d) => ops.syncTracks(d, tracks)),
+        syncAgents: (agents) => commit((d) => ops.syncAgents(d, agents)),
+        syncActivities: (activities) => commit((d) => ops.syncActivities(d, activities)),
+        syncResources: (resources) => commit((d) => ops.syncResources(d, resources)),
+        applyDemandSheet: (p) => commit((d) => ops.applyDemandSheet(d, p)),
+        makeTracksByGrade: (counts, specId) => commit((d) => ops.makeTracksByGrade(d, counts, specId)),
         saveBoard: (name) => commit((d) => ops.saveBoard(d, name, { hard: diag.hardCount, soft: diag.softWeight })),
         restoreBoard: (id) => commit((d) => ops.restoreBoard(d, id), { label: '복원 직전 자동 스냅샷' }),
         publishBoard: (id) => commit((d) => ops.publishBoard(d, id)),

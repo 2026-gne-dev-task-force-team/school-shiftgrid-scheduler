@@ -1,136 +1,198 @@
-/** 시수표 — 교사|반|과목|시수|특별실|특별실시수|연강|순배. 행 추가·복제·삭제, 반 여러 개 한 번에 */
-import { useState } from 'react';
+/**
+ * 시수표 — 엑셀식 시트. 열 순서는 「엑셀 불러오기 양식」과 1:1
+ *   교사 | 과목 | 학년 | 반 | 반당시수 | 특별실 | 특별실시수 | 연강 | 순배
+ * 한 행 = 「교사·과목·학년」 묶음. 같은 조건의 Demand 들을 「반 목록」으로 접어 보여주고(fold),
+ * 저장할 땐 반대로 펼친다(unfold). 「반」칸은 1,2,3 또는 전체. 교사·과목 이름은 자동완성이고
+ * 없는 이름을 치면 그 자리에서 새로 만든다.
+ */
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../../store/store';
-import { Button, Select, TextInput, ConfirmButton, Info, Card } from '../../parts/ui';
-import { Icon } from '../../parts/Icon';
+import { uid } from '../../../store/ids';
+import type { Doc } from '../../../types/doc';
+import type { Agent, Activity, Track, Demand } from '../../../types/schema';
+import Sheet, { type SheetColumn, type SheetRow, type SheetApi } from '../../parts/Sheet';
+import { Info, Button, Mark } from '../../parts/ui';
 
-export default function DemandTable() {
-    const st = useStore();
-    const { doc } = st;
-    const agents = doc.agents; const acts = doc.activities; const tracks = doc.tracks; const rooms = doc.resources;
-
-    const ready = agents.length > 0 && acts.length > 0 && tracks.length > 0;
-
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                시수표
-                <Info lines={[
-                    '교사 한 명이 어느 반에 어느 과목을 주 몇 시간 하는지 한 줄로 적습니다.',
-                    '엑셀 교사별 시수표 한 줄이 곧 여기 여러 줄(반마다 하나)이 됩니다.',
-                    '연강·순배·특별실은 각 칸에서 켭니다.',
-                ]} />
-            </div>
-            {!ready && <p className="text-[13px] text-warn">교사·과목·반을 먼저 만들어야 시수표를 채울 수 있습니다.</p>}
-
-            <div className="overflow-auto">
-                <table className="text-[12px] border-collapse min-w-[820px]">
-                    <thead>
-                        <tr className="text-muted text-left">
-                            {['교사', '반', '과목', '시수', '특별실', '특별실시수', '연강', '순배', ''].map((h) => (
-                                <th key={h} className="border-b border-line px-2 py-1.5 font-medium">{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {doc.demands.map((d) => (
-                            <tr key={d.id} className="hover:bg-panel2/50">
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <Select value={d.agentId} onChange={(v) => st.act.updateDemand(d.id, { agentId: v })}>
-                                        {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                    </Select>
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <Select value={d.trackId} onChange={(v) => st.act.updateDemand(d.id, { trackId: v })}>
-                                        {tracks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                    </Select>
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <Select value={d.activityId} onChange={(v) => st.act.updateDemand(d.id, { activityId: v })}>
-                                        {acts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                    </Select>
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <TextInput type="number" value={d.count} onChange={(e) => st.act.updateDemand(d.id, { count: +e.target.value })} className="w-14" />
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <Select value={d.resourceId ?? ''} onChange={(v) => st.act.updateDemand(d.id, { resourceId: v || undefined })}>
-                                        <option value="">없음</option>
-                                        {rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </Select>
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <TextInput type="number" value={d.roomHours ?? ''} placeholder="전부"
-                                        onChange={(e) => st.act.updateDemand(d.id, { roomHours: e.target.value === '' ? undefined : +e.target.value })} className="w-14" disabled={!d.resourceId} />
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60">
-                                    <TextInput value={(d.block ?? []).join(',')} placeholder="예: 2,2"
-                                        onChange={(e) => st.act.updateDemand(d.id, { block: parseBlock(e.target.value) })} className="w-16"
-                                        title="연강 묶음. 비우면 없음. 예: 2 는 2시간 붙여서, 2,2 는 2+2" />
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60 text-center">
-                                    <input type="checkbox" checked={!!d.cycle} onChange={(e) => st.act.updateDemand(d.id, { cycle: e.target.checked })} title="순배(라운드로빈)" />
-                                </td>
-                                <td className="px-1 py-1 border-b border-line/60 whitespace-nowrap">
-                                    <button className="text-muted hover:text-text p-1" title="복제" onClick={() => st.act.duplicateDemand(d.id)}><Icon name="copy" size={14} /></button>
-                                    <ConfirmButton onConfirm={() => st.act.removeDemand(d.id)} iconOnly />
-                                </td>
-                            </tr>
-                        ))}
-                        {doc.demands.length === 0 && (
-                            <tr><td colSpan={9} className="px-2 py-3 text-muted">아직 시수가 없습니다. 아래에서 추가하세요.</td></tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {ready && <BulkAdd />}
-            <p className="text-[11px] text-muted">연강 칸: 비우면 없음 · <code className="text-text">2</code> 2시간 붙여서 · <code className="text-text">2,2</code> 2+2 두 묶음. 순배는 같은 교사·학년·과목의 모든 반이 1차시를 끝내야 2차시로 갑니다.</p>
-        </div>
-    );
+// ── 접기 (Demand[] → 시트 행) ─────────────────────────────────
+function classNumOf(t: Track | undefined): number {
+    if (!t) return 0;
+    const c = t.attr?.classNum as number | undefined;
+    if (typeof c === 'number') return c;
+    const n = Number(t.name.split('-')[1]);
+    return Number.isFinite(n) ? n : 0;
 }
 
-function BulkAdd() {
-    const st = useStore();
-    const agents = st.doc.agents; const acts = st.doc.activities; const tracks = st.doc.tracks;
-    const [agentId, setAgentId] = useState(agents[0]?.id ?? '');
-    const [activityId, setActivityId] = useState(acts[0]?.id ?? '');
-    const [count, setCount] = useState(1);
-    const [picked, setPicked] = useState<string[]>([]);
-    const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-    const add = () => {
-        if (!agentId || !activityId || picked.length === 0) return;
-        st.act.addDemandsBulk({ agentId, activityId, count }, picked);
-        setPicked([]);
-    };
-    return (
-        <Card className="p-3">
-            <div className="text-[13px] font-medium mb-2">반 여러 개에 한 번에 추가</div>
-            <div className="flex items-end gap-2 flex-wrap">
-                <label className="text-[12px] text-muted">교사<br />
-                    <Select value={agentId} onChange={setAgentId}>{agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></label>
-                <label className="text-[12px] text-muted">과목<br />
-                    <Select value={activityId} onChange={setActivityId}>{acts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></label>
-                <label className="text-[12px] text-muted">시수<br />
-                    <TextInput type="number" value={count} onChange={(e) => setCount(+e.target.value)} className="w-16" /></label>
-                <div className="flex-1">
-                    <div className="text-[12px] text-muted mb-1">반 고르기</div>
-                    <div className="flex flex-wrap gap-1">
-                        {tracks.slice().sort((a, b) => (b.grade ?? 0) - (a.grade ?? 0)).map((t) => (
-                            <button key={t.id} onClick={() => toggle(t.id)}
-                                className={`text-[11px] px-1.5 py-0.5 rounded ${picked.includes(t.id) ? 'bg-accent/25 text-accenth' : 'bg-panel2 text-muted'}`}>
-                                {t.name}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <Button variant="primary" icon="plus" onClick={add} disabled={picked.length === 0}>{picked.length}개 반에 추가</Button>
-            </div>
-        </Card>
-    );
+function fold(doc: Doc): SheetRow[] {
+    const nameOfAgent = (id: string) => doc.agents.find((a) => a.id === id)?.name ?? '';
+    const nameOfAct = (id: string) => doc.activities.find((a) => a.id === id)?.name ?? '';
+    const nameOfRoom = (id?: string) => (id ? doc.resources.find((r) => r.id === id)?.name ?? '' : '');
+
+    const groups = new Map<string, SheetRow>();
+    const classes = new Map<string, Set<number>>();
+    for (const dm of doc.demands) {
+        const t = doc.tracks.find((x) => x.id === dm.trackId);
+        const grade = t?.grade ?? 0;
+        const block = (dm.block ?? []).join(',');
+        const key = [dm.agentId, dm.activityId, grade, dm.count, dm.resourceId ?? '', dm.roomHours ?? '', block, dm.cycle ? '1' : ''].join('|');
+        if (!groups.has(key)) {
+            groups.set(key, {
+                _id: `g|${key}`,
+                교사: nameOfAgent(dm.agentId), 과목: nameOfAct(dm.activityId), 학년: grade, 반: '',
+                반당시수: dm.count, 특별실: nameOfRoom(dm.resourceId), 특별실시수: dm.roomHours ?? '',
+                연강: block, 순배: !!dm.cycle,
+            });
+            classes.set(key, new Set());
+        }
+        classes.get(key)!.add(classNumOf(t));
+    }
+    const out: SheetRow[] = [...groups.entries()].map(([key, row]) => {
+        const cls = [...classes.get(key)!].filter((n) => n > 0).sort((a, b) => a - b);
+        return { ...row, 반: cls.join(',') };
+    });
+    out.sort((a, b) => Number(a.학년) - Number(b.학년) || String(a.교사).localeCompare(String(b.교사)) || String(a.과목).localeCompare(String(b.과목)));
+    return out;
 }
 
+// ── 펼치기 (시트 행 → Demand[] + 새 엔티티) ───────────────────
+function parseClasses(field: string, grade: number, all: Track[]): number[] {
+    const f = field.trim();
+    if (f === '전체') return [...new Set(all.filter((t) => t.grade === grade).map(classNumOf))].filter((n) => n > 0).sort((a, b) => a - b);
+    return [...new Set(f.split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n) && n > 0))];
+}
 function parseBlock(s: string): number[] | undefined {
     const nums = s.split(',').map((x) => parseInt(x.trim(), 10)).filter((n) => Number.isFinite(n) && n > 0);
     return nums.length ? nums : undefined;
+}
+
+function unfold(doc: Doc, rows: SheetRow[]) {
+    const agentByName = new Map(doc.agents.map((a) => [a.name, a] as const));
+    const actByName = new Map(doc.activities.map((a) => [a.name, a] as const));
+    const roomByName = new Map(doc.resources.map((r) => [r.name, r.id] as const));
+    const newAgents: Agent[] = [];
+    const newActivities: Activity[] = [];
+    const newTracks: Track[] = [];
+    const allTracks = () => [...doc.tracks, ...newTracks];
+
+    const ensureAgent = (name: string): string => {
+        const ex = agentByName.get(name);
+        if (ex) return ex.id;
+        const a: Agent = { kind: 'agent', id: uid('a'), name, role: '전담' };
+        agentByName.set(name, a); newAgents.push(a); return a.id;
+    };
+    const ensureActivity = (name: string): string => {
+        const ex = actByName.get(name);
+        if (ex) return ex.id;
+        const a: Activity = { kind: 'activity', id: uid('act'), name };
+        actByName.set(name, a); newActivities.push(a); return a.id;
+    };
+    const trackOf = (grade: number, cls: number): Track | undefined => {
+        const found = allTracks().find((t) => t.grade === grade && classNumOf(t) === cls);
+        if (found) return found;
+        const sibling = allTracks().find((t) => t.grade === grade);
+        if (!sibling) return undefined;   // 규격을 알 수 없어 못 만든다
+        const t: Track = { kind: 'track', id: uid('t'), name: `${grade}-${cls}`, grade, specId: sibling.specId, attr: { classNum: cls } };
+        newTracks.push(t); return t;
+    };
+
+    const existingByKey = new Map<string, string>(doc.demands.map((dm) => [`${dm.agentId}|${dm.trackId}|${dm.activityId}`, dm.id]));
+    const demands: Demand[] = [];
+    for (const r of rows) {
+        const teacher = String(r.교사 ?? '').trim();
+        const subject = String(r.과목 ?? '').trim();
+        const grade = Number(r.학년);
+        const count = Number(r.반당시수);
+        if (!teacher || !subject || !Number.isFinite(grade) || grade < 1 || grade > 6 || !Number.isFinite(count) || count <= 0) continue;
+        const classes = parseClasses(String(r.반 ?? ''), grade, allTracks());
+        if (classes.length === 0) continue;
+        const agentId = ensureAgent(teacher);
+        const activityId = ensureActivity(subject);
+        const roomName = String(r.특별실 ?? '').trim();
+        const resourceId = roomName ? roomByName.get(roomName) : undefined;
+        const roomHours = resourceId && r.특별실시수 !== '' && r.특별실시수 != null ? Number(r.특별실시수) : undefined;
+        const block = parseBlock(String(r.연강 ?? ''));
+        const cycle = !!r.순배;
+        for (const cls of classes) {
+            const t = trackOf(grade, cls);
+            if (!t) continue;
+            const key = `${agentId}|${t.id}|${activityId}`;
+            demands.push({
+                id: existingByKey.get(key) ?? uid('dm'),
+                agentId, trackId: t.id, activityId, count,
+                resourceId, roomHours, block, cycle: cycle || undefined,
+            });
+        }
+    }
+    return { newAgents, newActivities, newTracks, demands };
+}
+
+// ══════════════════════════════════════════════════════════════
+export default function DemandTable() {
+    const st = useStore();
+    const { doc } = st;
+    const ready = doc.agents.length > 0 || doc.activities.length > 0 || doc.tracks.length > 0;
+
+    const [rows, setRows] = useState<SheetRow[]>(() => fold(doc));
+    const [api, setApi] = useState<SheetApi | null>(null);
+    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
+    const lastPushed = useRef<Demand[] | null>(null);
+
+    // 외부 변경(되돌리기·엑셀 불러오기·샘플)일 때만 다시 접는다. 우리 저장이면 그대로 둔다(입력 중 행 보존)
+    useEffect(() => {
+        if (doc.demands === lastPushed.current) return;
+        setRows(fold(doc));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [doc.demands]);
+
+    const agentNames = doc.agents.map((a) => a.name);
+    const actNames = doc.activities.map((a) => a.name);
+    const roomNames = doc.resources.map((r) => r.name);
+
+    const columns: SheetColumn[] = [
+        {
+            key: '교사', title: '교사', type: 'text', suggest: agentNames, width: 110,
+            validate: (v) => (!String(v).trim() ? '교사 이름을 적어 주세요' : undefined),
+            note: (v) => { const n = String(v).trim(); return n && !agentNames.includes(n) ? `‘${n}’ 교사를 새로 만듭니다` : undefined; },
+        },
+        {
+            key: '과목', title: '과목', type: 'text', suggest: actNames, width: 100,
+            validate: (v) => (!String(v).trim() ? '과목을 적어 주세요' : undefined),
+            note: (v) => { const n = String(v).trim(); return n && !actNames.includes(n) ? `‘${n}’ 과목을 새로 만듭니다` : undefined; },
+        },
+        { key: '학년', title: '학년', type: 'number', width: 64, validate: (v) => (v === '' ? '학년' : (Number(v) < 1 || Number(v) > 6 ? '1~6' : undefined)) },
+        {
+            key: '반', title: '반', type: 'text', width: 96, placeholder: '1,2,3 또는 전체',
+            validate: (v, row) => { const cls = parseClasses(String(v ?? ''), Number(row.학년), doc.tracks); return String(v ?? '').trim() === '' ? '반을 적어 주세요' : (cls.length === 0 ? '반을 알 수 없습니다' : undefined); },
+        },
+        { key: '반당시수', title: '반당시수', type: 'number', width: 84, validate: (v) => (v === '' || Number(v) <= 0 ? '1 이상' : undefined) },
+        { key: '특별실', title: '특별실', type: 'select', options: roomNames, allowEmpty: true, width: 110 },
+        { key: '특별실시수', title: '특별실시수', type: 'number', width: 94 },
+        { key: '연강', title: '연강', type: 'text', width: 78, placeholder: '예: 2,2' },
+        { key: '순배', title: '순배', type: 'bool', width: 60 },
+    ];
+
+    const commit = (next: SheetRow[]) => {
+        setRows(next);
+        const built = unfold(doc, next);
+        lastPushed.current = built.demands;
+        st.act.applyDemandSheet(built);
+    };
+    const newRow = (): SheetRow => ({ _id: uid('g'), 교사: '', 과목: '', 학년: '', 반: '', 반당시수: 1, 특별실: '', 특별실시수: '', 연강: '', 순배: false });
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-[13px] font-medium mr-1">시수표</div>
+                <Button icon="plus" onClick={() => api?.addRow()}>행 추가</Button>
+                <Button icon="trash" onClick={() => api?.deleteSelectedRows()}>선택 행 삭제</Button>
+                <Info lines={[
+                    '한 줄 = 한 교사가 한 과목을 한 학년에. 「반」칸에 1,2,3 또는 전체를 적으면 반마다 하나씩 펼쳐집니다.',
+                    '엑셀에서 교사별 시수표를 그대로 복사해 붙일 수 있습니다(열 순서가 같습니다).',
+                    '교사·과목 이름을 새로 치면 그 자리에서 만들어집니다(파란 테두리로 알려줍니다). 특별실은 「특별실」 탭에 있는 이름만 됩니다.',
+                ]} />
+            </div>
+            {!ready && <p className="text-[13px] text-warn"><Mark kind="warn" /> 교사·과목·반이 없어도 여기서 이름을 치면 바로 만들어집니다. 반은 「반」탭에서 먼저 만드는 편이 좋습니다.</p>}
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} onUndo={st.undo} onRedo={st.redo} minWidth={900} />
+            <p className="text-[11px] text-muted">연강 칸: 비우면 없음 · <code className="text-text">2</code> 2시간 붙여서 · <code className="text-text">2,2</code> 2+2. 순배는 같은 교사·학년·과목의 모든 반이 1차시를 끝내야 2차시로 갑니다.</p>
+        </div>
+    );
 }
