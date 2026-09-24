@@ -1,7 +1,7 @@
 {
   "name": "school-shiftgrid-scheduler",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "학교 시간표 짜기 — 초등 규칙을 데이터로 받는 시간표 배정 도구",
   "author": "2026-gne-dev-task-force-team",
   "type": "module",
@@ -56,15 +56,36 @@
       "icon": "build/icon.png",
       "identity": null,
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ]
     },
     "win": {
       "icon": "build/icon.png",
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -72,6 +93,9 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "language": "1042"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
     }
   }
 }
