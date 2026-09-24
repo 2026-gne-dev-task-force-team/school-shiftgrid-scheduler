@@ -16,15 +16,21 @@
  *
  *     [시간 격자 : 언제]  ×  [배치 한 줄 : 나머지 전부]
  *
- * 학교든 병원 교대근무든 당직이든, 이 칸에 무엇을 넣느냐만 바뀔 뿐 뼈대는
- * 그대로다. 그래서 하나의 모델로 여러 현장을 담을 수 있다.
+ * ── v2 (2026-09-24) 에서 더해진 세 가지 ───────────────────────
+ *   · 얼마나 (Demand)      "김 선생님이 3-2반 과학을 주 3시간" — 시수 목표
+ *   · 시각 (Slot.start/end) 학년마다 점심이 달라 '4교시'의 시각이 다르다.
+ *                          교사·특별실 겹침은 교시 번호가 아니라 시각으로 본다
+ *   · 묶음 (block · cycle)  연강(2시간 붙여서) · 순배(모든 반 1차시 끝나야 2차시)
+ *   그리고 칸에 붙는 잠금(pinned · temp) 과 주간 금지칸(WeeklyBlock).
  *
- * ── 파일의 짜임새 (5개 층) ────────────────────────────────────
+ * ── 파일의 짜임새 ─────────────────────────────────────────────
  *   1. 엔티티     등장인물과 사물      Agent · Track · Resource · Activity
- *   2. 가용성     언제 못 쓰는지        Blackout
+ *   2. 가용성     언제 못 쓰는지        Blackout(날짜) · WeeklyBlock(매주 같은 칸)
  *   3. 시간 격자  '언제'의 틀           Slot · TimetableSpec · Timetable
  *   4. 배치       격자를 채우는 한 줄    Assignment
- *   5. 규칙       배치를 검사하는 도구   Rule…  (보조 도구층)
+ *   5. 수요       얼마나 채워야 하나     Demand
+ *   6. 규칙       배치를 검사하는 도구   RuleTemplate · ConflictRule · Violation
+ *   7. 판         시간표 한 벌의 박제    Board
  *
  * ── 자주 나오는 약속 ──────────────────────────────────────────
  *   id     항목마다 붙는 고유 식별자
@@ -32,10 +38,6 @@
  *   attr   학교/상황마다 다른 정보를 자유롭게 덧붙이는 칸
  *   ~Date  날짜를 뜻하며 "YYYY-MM-DD" 형식 (예: 2026-05-11)
  *   시각   "HH:mm" 형식 (예: 09:40)
- *
- * ── 짝이 되는 파일 ────────────────────────────────────────────
- *   이 파일은 '저장 형태'다. 읽기·검증·필터용으로 여기서 계산해낸
- *   파생 뷰(색인·조인·격자)는 derived.ts 에 있다.
  * ══════════════════════════════════════════════════════════════
  */
 
@@ -45,88 +47,105 @@
 
 /**
  * Entity — 아래 네 가지(Agent·Track·Resource·Activity)가 공유하는 공통 뼈대.
- * 넷 다 "고유 id + 이름 + 자유 속성"이라는 같은 모양을 가진다.
- *
- * kind는 '종류 이름표'다. 이게 있어서 사람(Agent)을 장소(Track) 자리에 잘못
- * 넣는 실수를 편집기가 미리 잡아준다. 모양이 같아도 종류가 다르면 못 섞인다.
+ * kind는 '종류 이름표'다. 사람(Agent)을 장소(Track) 자리에 잘못 넣는 실수를 미리 잡는다.
  */
 export interface Entity<K extends string = string> {
     kind: K;                    // 종류 이름표 ('agent' | 'track' | 'resource' | 'activity')
     id: string;                 // 고유 식별자
     name: string;               // 화면에 보여줄 이름
-    attr?: Record<string, any>; // 자유 속성 — 학교/상황별 정보를 덧붙이는 칸
+    attr?: Record<string, any>; // 자유 속성 — 학교/상황별 정보를 덧붙이는 칸 (color 등)
 }
 
 /**
  * Agent — 배치되는 '사람'. 담임·전담·강사·보조인력을 모두 포함한다.
- * (병원 간호 인력, 당직 근무자에도 그대로 쓰인다.)
+ *   tier     우선순위 등급. 1=보직(부장) 2=일반 전담 3=지원인력(스포츠강사·원어민).
+ *            소프트 규칙(회피 등)의 가중치에만 쓰고, 하드 규칙과는 무관하다.
+ *   coteach  '혼자서는 수업을 못 하는' 보조 인력(스포츠강사·원어민). 담임이 함께 들어간다.
+ *   role     '담임' | '전담' | '비교과' — 화면 분류·보결 후보 등급에 쓴다
  */
-export interface Agent extends Entity<'agent'> {}
+export interface Agent extends Entity<'agent'> {
+    tier?: 1 | 2 | 3;
+    coteach?: boolean;
+    role?: '담임' | '전담' | '비교과';
+    homeroomTrackId?: string;   // 담임이면 맡은 반
+}
 
 /**
- * Track — 자기만의 시간표를 갖는 '한 줄(레인)'. 배치가 채워지는 대상이다.
- * 전체 시간표를 나란한 세로줄들로 볼 때 그 한 줄이 Track이다.
- * 학교의 한 반, 병원의 한 병동, 당직표의 한 자리에 해당한다.
+ * Track — 자기만의 시간표를 갖는 '한 줄(레인)'. 학교의 한 반.
+ *   specId  이 반이 쓰는 시간 규격 (학년마다 교시 수·점심 시각이 다르므로 규격이 갈린다)
+ *   grade   학년 (1~6). 순배·점심·하교 같은 학년 단위 규칙이 이 값으로 묶는다
  */
-export interface Track extends Entity<'track'> {}
+export interface Track extends Entity<'track'> {
+    specId?: string;
+    grade?: number;
+}
 
 /**
  * Resource — 여러 Track이 함께 나눠 쓰는 '시설·장비'. 과학실·체육관·음악실 등.
- * 자기 시간표는 없다. 대신 여러 배치가 같은 시간에 같은 자원을 부르면 '중복 예약'이
- * 되는데, 그걸 걸러내는 기준이 바로 이 Resource다.
- *
- *   ▷ Track과의 차이: 자기 전용 시간표를 '소유'하면 Track,
- *     여러 줄이 '나눠 쓰다 겹치면 문제'가 되면 Resource.
- *     (장소냐 아니냐가 아니라, 전용이냐 공유냐로 나뉜다.)
+ *   capacity     같은 시각에 몇 반까지 들어가나 (과학실 2개면 2). 생략하면 1
+ *   activityIds  이 시설을 쓰는 과목들 (비어 있으면 아무 과목이나)
  */
-export interface Resource extends Entity<'resource'> {}
+export interface Resource extends Entity<'resource'> {
+    capacity?: number;
+    activityIds?: string[];
+}
 
-/**
- * Activity — 그 칸에서 '하는 일'의 종류. 통계를 낼 때 묶는 기준이 된다.
- * 학교의 과목(수학·체육), 병원의 근무 유형(주간·야간), 당직의 종류(평일·주말) 등.
- *
- * 왜 그냥 글자가 아니라 별도 항목이냐면 — "수학"을 글자로만 적으면 "수학"/"수 학"처럼
- * 조금씩 다르게 적혀 통계가 흩어진다. 항목(id)으로 두면 "수학 주당 몇 시간",
- * "야간 근무 몇 번"이 정확히 집계된다.
- */
+/** Activity — 그 칸에서 '하는 일'의 종류(과목). 통계를 낼 때 묶는 기준이 된다. */
 export interface Activity extends Entity<'activity'> {}
 
 // ══════════════════════════════════════════════════════════════
 //  2. 가용성 — 언제 누가/무엇을 못 쓰는지
 // ══════════════════════════════════════════════════════════════
 
-/** TargetRef — Blackout이 가리키는 대상 하나. "어떤 종류의 어느 항목"인지 짚는다. */
+/** TargetRef — 차단이 가리키는 대상 하나. "어떤 종류의 어느 항목"인지 짚는다. */
 export interface TargetRef {
-    kind: 'agent' | 'track' | 'resource'; // 대상 종류 (활동은 막을 수 없으므로 제외)
-    id: string;                            // 그 대상의 id
+    kind: 'agent' | 'track' | 'resource';
+    id: string;
 }
 
 /**
- * Blackout — "이 대상은 이 기간 동안 쓸 수 없다"는 차단 한 건.
- * 교사의 연가·출장, 특별실 수리, 공휴일·방학, 행사 표시(운동회)까지 이 하나로 모두 담는다.
- *
- * 무엇을 막는지는 targets(대상 목록)와 mode(해석 방법)의 조합으로 정한다:
+ * Blackout — "이 대상은 이 날짜(기간) 동안 쓸 수 없다". 연가·출장·수리·공휴일·행사.
+ * 날짜가 붙는 차단이다. 매주 반복되는 것은 아래 WeeklyBlock을 쓴다.
  *
  *     targets       mode          뜻
- *     (비어 있음)   only          아무것도 안 막음 = 달력에 표시만 (예: 운동회)
- *     (비어 있음)   all-except    전부 막음 (예: 공휴일·방학)
- *     [김 선생님]   only          그 사람만 막음 (예: 연가·출장)
- *     [과학실]      only          그 자원만 막음 (예: 수리)
+ *     (비어 있음)   only          아무것도 안 막음 = 달력에 표시만 (운동회)
+ *     (비어 있음)   all-except    전부 막음 (공휴일·방학)
+ *     [김 선생님]   only          그 사람만 막음 (연가·출장)
  *     [6학년]       all-except    그 대상만 빼고 전부 막음
- *
- * 기간은 날짜로(startDate~endDate), 하루 중 일부만 막을 땐 시각으로(from~to) 정한다.
- * '수업일인지', '오늘이 시간표상 며칠째인지' 같은 건 저장하지 않고 이 정보로 그때그때 계산한다.
  */
 export interface Blackout {
-    id: string;                  // 고유 식별자
-    name: string;                // 이름 ("설날", "운동회", "김 선생님 연가", "과학실 수리")
+    id: string;
+    name: string;
     startDate: string;           // 시작 날짜 (포함)
-    endDate: string;             // 끝 날짜 (포함, 하루면 startDate와 같게)
-    from?: string;               // 하루 중 시작 시각 "HH:mm" (생략하면 '종일')
-    to?: string;                 // 하루 중 끝 시각 "HH:mm" (생략하면 '종일')
-    targets: TargetRef[];        // 대상 목록 (여러 개 지정 가능)
-    mode: 'only' | 'all-except'; // targets를 '막을 목록'으로 볼지 / '예외로 풀 목록'으로 볼지
-    attr?: Record<string, any>;  // 자유 속성 (사유 등)
+    endDate: string;             // 끝 날짜 (포함)
+    from?: string;               // 하루 중 시작 시각 "HH:mm" (생략하면 종일)
+    to?: string;
+    targets: TargetRef[];
+    mode: 'only' | 'all-except';
+    attr?: Record<string, any>;
+}
+
+/**
+ * WeeklyBlock — "매주 이 요일 이 칸은 이 대상에게 안 된다". 시간표를 짤 때 쓰는 금지칸.
+ * 컴시간의 배정금지·회피·임시금지가 이것 하나다:
+ *   soft 없음   → 배정금지 (하드). 부장회의·원어민 타교 출강일·특별실 방과후
+ *   soft: true  → 회피 선호 (소프트). 가급적 피하되 어쩔 수 없으면 넣는다
+ *   temp: true  → 임시금지. 짜는 동안만 막아 두고 나중에 한꺼번에 푼다
+ * slotIndex를 생략하면 그 요일 종일.
+ * targets가 비어 있으면 '모두'(예: 수요일 4교시 동아리 — 전 학년 고정 블록).
+ * ⚠️ slotIndex는 대상의 규격 기준 교시다. 교사처럼 규격이 없는 대상은 from/to(시각)로 적는다.
+ */
+export interface WeeklyBlock {
+    id: string;
+    name: string;
+    dayIndex: number;            // 0=월 … 4=금
+    slotIndex?: number;          // 생략하면 종일 (반·특별실처럼 규격이 있는 대상)
+    from?: string;               // 교사처럼 규격이 없는 대상은 시각으로 "HH:mm"
+    to?: string;
+    targets: TargetRef[];
+    soft?: boolean;
+    temp?: boolean;
+    attr?: Record<string, any>;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -135,166 +154,215 @@ export interface Blackout {
 
 /**
  * Slot — 하루를 잘게 나눈 '한 칸'. 여기에 배치(Assignment)가 들어간다.
- * 학교의 "1교시", 근무의 "오전", 그 사이 "점심·쉬는 시간"까지 모두 슬롯이다.
+ * ⭐ start/end 가 '시각 모델'이다. 3학년 4교시(11:30)와 5학년 5교시(11:30)는
+ *    교시 번호는 달라도 시각이 같으니 같은 교사가 둘 다 들어갈 수 없다.
+ *    점심 칸도 슬롯이다(assignable: false) — 학년마다 점심 위치가 다르면 규격이 다르다.
  */
 export interface Slot {
-    index: number;       // 하루 안에서 몇 번째 칸인지 (0부터 시작)
-    label: string;       // 이름 ("1교시", "점심", "오전 근무")
-    start: string;       // 시작 시각 "HH:mm"
-    end: string;         // 끝 시각 "HH:mm"
-    assignable: boolean; // 배치를 넣을 수 있는 칸인지 (점심·쉬는 시간이면 false)
+    index: number;       // 하루 안에서 몇 번째 칸인지 (0부터)
+    label: string;       // "1교시", "점심"
+    start: string;       // "HH:mm"
+    end: string;         // "HH:mm"
+    assignable: boolean; // 수업을 넣을 수 있는 칸인지 (점심·쉬는 시간이면 false)
+    kind?: 'lesson' | 'lunch' | 'break' | 'other'; // 점심 칸을 규칙이 찾을 때 쓴다
 }
 
 /**
- * TimetableSpec — 시간표의 '빈 격자 틀(규격)'. 아직 배치가 없는, 모양만 정의한 설계도다.
- * 네 가지를 정한다:
- *   1) 며칠마다 반복되나            → cycleDays  (한 주 단위면 7)
- *   2) 그 주기 중 어떤 날 일하나     → activeDays (월~금이면 [0,1,2,3,4])
- *   3) 하루가 언제 시작하고 끝나나   → dayStart, dayEnd
- *   4) 그 하루를 어떤 칸들로 쪼개나  → slots
+ * TimetableSpec — 시간표의 '빈 격자 틀(규격)'. 학년군마다 하나씩 둔다(1·2학년 / 3·4 / 5·6).
  */
 export interface TimetableSpec {
-    id: string;                 // 고유 식별자
-    name: string;               // 이름 ("2학기 기본 시간표" 등)
-
-    cycleDays: number;          // 1) 반복 주기 (일 단위). 한 주면 7
-    activeDays: number[];       // 2) 주기 중 일하는 날 번호 (0부터). 월~금이면 [0,1,2,3,4]
-    dayStart: string;           // 3) 하루 시작 시각 "HH:mm"
-    dayEnd: string;             // 3) 하루 끝 시각 "HH:mm"
-    slots: Slot[];              // 4) 하루를 나눈 칸들
-
-    attr?: Record<string, any>; // 자유 속성
+    id: string;
+    name: string;               // "1·2학년 규격"
+    cycleDays: number;          // 반복 주기 (한 주면 7)
+    activeDays: number[];       // 주기 중 수업하는 날 (월~금이면 [0,1,2,3,4])
+    dayStart: string;
+    dayEnd: string;
+    slots: Slot[];
+    /** 요일마다 수업 교시 수가 다르면 여기에 (예: 1학년 월·금은 4교시까지 → {0:4, 4:4}). 값은 '수업 칸 수' */
+    lessonsPerDay?: Record<number, number>;
+    attr?: Record<string, any>;
 }
 
 /**
- * Timetable — 위 규격(TimetableSpec)을 '특정 기간에 실제로 적용'한 시간표 한 장.
- * 기본표와 특별표를 따로 만들지 않는다 — 특별표는 그저 '더 짧은 기간 + 더 높은 우선순위'다.
- * 어떤 날짜를 보면, 그 날을 포함하는 시간표들 중 우선순위가 가장 높은 것이 적용된다.
- *
- *   예) 학기 전체를 덮는 '기본표'(우선순위 0) 위에 '운동회 주간'(우선순위 10)을 얹으면,
- *       그 주에는 운동회 주간표가 이긴다.
+ * Timetable — 규격을 '특정 기간에 실제로 적용'한 시간표 한 장.
+ * 특별표는 '더 짧은 기간 + 더 높은 우선순위'다. 겹치면 priority가 큰 쪽이 이긴다.
  */
 export interface Timetable {
-    id: string;                 // 고유 식별자
-    name: string;               // 이름 ("2학기 기본", "운동회 주간")
-    specId: string;             // 어떤 규격을 쓰는지 (TimetableSpec.id)
-    startDate: string;          // 적용 시작 날짜 (포함)
-    endDate: string;            // 적용 끝 날짜 (포함)
-    priority: number;           // 우선순위 — 기간이 겹치면 이 값이 큰 쪽이 그 날을 차지
-    attr?: Record<string, any>; // 자유 속성
+    id: string;
+    name: string;
+    specId: string;
+    startDate: string;
+    endDate: string;
+    priority: number;
+    attr?: Record<string, any>;
 }
 
 // ══════════════════════════════════════════════════════════════
 //  4. 배치 — 격자의 칸을 채우는 '한 줄'
 // ══════════════════════════════════════════════════════════════
 
-/**
- * Assignment — 배치 한 줄. "어느 시간표의 · 어느 Track의 · 며칠째 · 몇 번째 칸"을 채운다.
- * (맨 위에서 말한 '누가·무엇으로·무슨 일을' 사건 한 줄이 바로 이것이다.)
- *
- * AssignmentBase는 그 공통 뼈대이자 '확장 지점'이다. 지금은 일반 배치(WorkAssignment)
- * 하나뿐이지만, 팀티칭(교사 여럿)이나 칸 잠금 같은 새 형태가 정말 필요해지면 종류(kind)를
- * 가진 새 배치를 만들어 아래 Assignment 묶음에 끼우기만 하면 된다.
- * (한 칸에 여러 배치를 겹쳐 넣는 것도 이 구조로 가능하다.)
- */
 export interface AssignmentBase {
-    id: string;                 // 고유 식별자
-    timetableId: string;        // 어느 시간표에 속하는지 (Timetable.id)
-    trackId: string;            // 어느 Track(줄)의 칸인지 (Track.id)
-    dayIndex: number;           // 주기 중 며칠째인지 (activeDays 중 하나)
-    slotIndex: number;          // 그 날 몇 번째 칸인지 (Slot.index)
-    attr?: Record<string, any>; // 자유 속성
+    id: string;
+    timetableId: string;
+    trackId: string;
+    dayIndex: number;
+    slotIndex: number;
+    attr?: Record<string, any>;
 }
 
-/** WorkAssignment — 일반 배치(수업·근무). 누가·무슨 일·무엇으로를 담는다. */
+/**
+ * WorkAssignment — 일반 배치(수업). 누가·무슨 일·무엇으로를 담는다.
+ *   demandId  어느 수요(시수 목표)를 채우는 배치인지. 솔버가 만든 배치엔 항상 있다
+ *   seq       그 수요 안에서 몇 번째(차시)인지 1부터. 순배 검사가 이 순서를 본다
+ *   blockId   연강 묶음 id. 같은 값을 가진 배치들은 같은 날 연속 칸에 있어야 한다
+ *   pinned    이동금지 — 사람이 손으로 박아 둔 칸. 솔버가 옮기지 않는다
+ *   temp      임시 표시 — 짜는 동안만 잠가 두는 것
+ *   fixed     고정 수업(담임 국·수, 창체, 동아리). 전담 배치 대상이 아니고 칸만 먹는다
+ */
 export interface WorkAssignment extends AssignmentBase {
     kind: 'work';
-    agentId?: string;    // 누가 — 담당하는 사람 (Agent.id)
-    activityId?: string; // 무슨 일 — 과목/근무 종류 (Activity.id). 통계의 기준
-    resourceId?: string; // 무엇으로 — 특별실 등 (Resource.id)
-    label?: string;      // 자유 이름표. 분류가 없는 배치(자율학습 등)나 표시용
+    agentId?: string;
+    activityId?: string;
+    resourceId?: string;
+    label?: string;
+    demandId?: string;
+    seq?: number;
+    blockId?: string;
+    pinned?: boolean;
+    temp?: boolean;
+    fixed?: boolean;
 }
 
-/** Assignment — 배치의 모든 종류를 아우르는 묶음. (지금은 WorkAssignment 하나) */
 export type Assignment = WorkAssignment;
 
 // ══════════════════════════════════════════════════════════════
-//  5. 규칙 (보조 도구층) — 배치를 검사해 충돌을 짚어준다
-// ──────────────────────────────────────────────────────────────
-//  규칙은 위 세계(엔티티·배치)를 '구성'하지 않는다. 이미 짜인 배치를
-//  '검사'해 문제를 표시해줄 뿐인 도우미다. 저장되는 건 규칙 설정뿐이고,
-//  찾아낸 충돌은 그때그때 계산해 화면에 보여주고 버린다.
+//  5. 수요 — '얼마나' 채워야 하나 (시수 목표)
 // ══════════════════════════════════════════════════════════════
 
 /**
- * ScheduleView — 규칙이 검사할 때 들여다보는 '현재 상태의 사진(읽기 전용)'.
- * 규칙은 여기서 필요한 것만 꺼내 보고, 아무것도 바꾸지 않는다.
+ * Demand — "이 교사가 · 이 반에 · 이 과목을 · 주 N시간". 시간표를 짜는 입력의 본체다.
+ * 엑셀 교사별 시수표 한 줄이 곧 Demand 여러 개가 된다(반마다 하나).
+ *
+ *   count       주당 시수
+ *   resourceId  특별실을 쓰면 어느 실인지
+ *   roomHours   count 중 특별실을 쓰는 시수. 생략하면 전부, 0이면 안 씀
+ *   block       연강 묶음. [2]=4시간 중 2시간만 붙여서, [2,2]=2+2, 없으면 연강 없음
+ *   cycle       순배(라운드로빈) 대상. 같은 교사·학년·과목의 모든 반이 1차시를 끝내야 2차시로
+ *   fixed       담임 고정수업 등 '전담이 아닌' 칸 먹기용 수요 (솔버가 배치하되 검사만 다르게)
  */
-export interface ScheduleView {
-    timetable: Timetable;               // 검사 대상 시간표
-    spec: TimetableSpec;                // 그 시간표의 규격
-    assignments: readonly Assignment[]; // 채워진 배치들
-    tracks: readonly Track[];
-    agents: readonly Agent[];
-    resources: readonly Resource[];
-    activities: readonly Activity[];
-    blackouts: readonly Blackout[];     // 차단 정보 (부재·휴일 등)
+export interface Demand {
+    id: string;
+    agentId: string;
+    trackId: string;
+    activityId: string;
+    count: number;
+    resourceId?: string;
+    roomHours?: number;
+    block?: number[];
+    cycle?: boolean;
+    fixed?: boolean;
+    attr?: Record<string, any>;
 }
 
-/** Conflict — 규칙이 찾아낸 '충돌 한 건'. 저장하지 않고 화면에 표시할 때만 쓴다. */
-export interface Conflict {
-    ruleId: string;                // 어떤 규칙이 찾았는지 (ConflictRule.id)
-    message: string;               // 보여줄 메시지 ("과학실이 월 3교시에 두 번 잡혔습니다")
-    assignmentIds: string[];       // 관련된 배치들 — 화면에서 함께 강조할 대상
-    severity: 'error' | 'warning'; // 심각도 (오류 / 경고)
-}
+// ══════════════════════════════════════════════════════════════
+//  6. 규칙 — 배치를 검사해 문제를 짚어준다
+// ──────────────────────────────────────────────────────────────
+//  규칙은 세계를 '구성'하지 않는다. 짜인 배치를 '검사'해 문제를 표시할 뿐이다.
+//  저장되는 건 규칙 설정(ConflictRule)뿐이고, 찾아낸 위반(Violation)은
+//  그때그때 계산해 화면에 보여주고 버린다.
+//
+//  하드(hard)  깨지면 시간표가 '틀린' 게 아니라 '성립을 안 하는' 것. 이동 실행을 막는다
+//  소프트(soft) 숫자로 보여주고 사람이 고른다. 묶음(bucket)과 교사 tier로 가중한다
+// ══════════════════════════════════════════════════════════════
 
-/** ParamValue — 규칙 설정값 하나가 가질 수 있는 값의 종류. */
 export type ParamValue = string | number | boolean;
-
-/** RuleParams — 규칙 하나의 설정값 묶음 (설정 이름 → 값). */
 export type RuleParams = Record<string, ParamValue>;
 
-/**
- * RuleParam — 템플릿이 열어 두는 '고칠 수 있는 설정' 하나의 설명서.
- * 화면은 이걸 보고 알맞은 입력칸(글자·숫자·체크박스·드롭다운)을 그린다.
- */
 export interface RuleParam {
-    key: string;                                       // 설정 식별자 (RuleParams의 열쇠)
-    label: string;                                     // 화면에 보일 이름 ("검사할 대상")
-    type: 'string' | 'number' | 'boolean' | 'select'; // 입력 방식
-    options?: string[];                                // select일 때 고를 수 있는 값들
-    default: ParamValue;                               // 기본값
+    key: string;
+    label: string;
+    type: 'string' | 'number' | 'boolean' | 'select';
+    options?: string[];
+    default: ParamValue;
+    help?: string; // ⓘ 로 보여줄 한 줄 설명
+}
+
+/** 소프트 규칙의 무게 묶음. 컴시간·선생님 코드가 둘 다 3단이다. */
+export type RuleBucket = 'essential' | 'important' | 'preferred';
+
+/**
+ * Violation — 규칙이 찾아낸 '문제 한 건'. 저장하지 않는다.
+ *   fixable  사람이 손으로 고칠 여지가 있는가. false면 '어쩔 수 없는 것'이라
+ *            [문제점만 보기]에서 숨긴다 (컴시간의 그 규칙)
+ *   subject  누구/무엇의 문제인가 — 진단 화면이 "교사 3명"처럼 셀 때 쓴다
+ *   cells    배치가 없는 빈 칸이 문제일 때(식사 슬롯 없음 등) 가리킬 칸들
+ */
+export interface Violation {
+    ruleId: string;
+    templateId: string;
+    kind: 'hard' | 'soft';
+    message: string;
+    assignmentIds: string[];
+    cells?: { trackId?: string; agentId?: string; dayIndex: number; slotIndex: number }[];
+    subject?: TargetRef;
+    weight: number;     // 소프트 벌점 (하드는 0)
+    fixable: boolean;
 }
 
 /**
- * RuleTemplate — 코드로 미리 만들어 두는 '규칙 틀'. 여러 개를 준비해 목록으로 제공한다.
- * 사용자는 이 틀을 골라 이름을 붙이고, 설정 몇 개를 고치고, 켜고 끄면 규칙(ConflictRule)이 된다.
- * 실제 검사 방법(detect)은 코드에 있고, 사용자가 만든 규칙은 순수 정보라 저장할 수 있다.
+ * RuleTemplate — 코드로 미리 만들어 두는 '규칙 틀'. 사용자는 이 틀을 골라 설정을 고치고 켠다.
+ * 실제 검사 방법(evaluate)은 코드에 있고, 사용자가 만든 규칙(ConflictRule)은 순수 정보라 저장된다.
+ * ctx의 실제 모양은 engine/api.ts 의 EngineContext 다 (여기서는 규칙이 '무엇을 받나'만 약속한다).
  */
-export interface RuleTemplate {
-    id: string;                           // 틀 식별자 ("no-overlap" 등)
-    label: string;                        // 틀 이름 ("같은 시간 중복 금지")
-    description: string;                  // 무엇을 검사하는지 설명
-    params: RuleParam[];                  // 사용자가 고칠 수 있는 설정들
-    defaultMessage: string;               // 기본 충돌 메시지
-    defaultSeverity: 'error' | 'warning'; // 기본 심각도
-
-    // 검사 방법: 설정값과 현재 상태를 보고 '충돌 묶음들'을 돌려준다.
-    // 각 묶음 = 서로 부딪힌 배치 id들. 여기에 이름·메시지를 붙여 Conflict로 만드는 건 실행부가 한다.
-    detect(params: RuleParams, view: ScheduleView): string[][];
+export interface RuleTemplate<Ctx = unknown> {
+    id: string;                 // "no-overlap-agent"
+    label: string;              // "교사 겹침 금지"
+    description: string;        // 무엇을 검사하나 (선생님도 읽히게)
+    kind: 'hard' | 'soft';
+    bucket?: RuleBucket;        // 소프트만
+    params: RuleParam[];
+    defaultMessage: string;
+    evaluate(params: RuleParams, ctx: Ctx): Violation[];
 }
 
-/**
- * ConflictRule — 사용자가 틀(RuleTemplate)을 골라 완성한 '규칙 하나'. 순수 정보라 저장된다.
- * 담는 것: 이름 · 어떤 틀인지(+설정값) · 켜짐 여부 · (선택) 메시지 · (선택) 메모.
- */
+/** ConflictRule — 사용자가 틀을 골라 완성한 '규칙 하나'. 저장된다. */
 export interface ConflictRule {
-    id: string;           // 고유 식별자
-    templateId: string;   // 어떤 틀을 쓰는지 (RuleTemplate.id)
-    name: string;         // 사용자가 붙인 이름
-    enabled: boolean;     // 켜짐 / 꺼짐
-    params: RuleParams;   // 고친 설정값
-    message?: string;     // (선택) 직접 쓴 충돌 메시지 — 없으면 틀의 기본 메시지
-    description?: string; // (선택) 메모
+    id: string;
+    templateId: string;
+    name: string;
+    enabled: boolean;
+    params: RuleParams;
+    message?: string;
+    description?: string;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  7. 판 — 시간표 한 벌을 통째로 박제한 것
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Board — "이 시점의 배치 전부"를 이름 붙여 저장한 것. 컴시간의 [작업저장]·[작업열람].
+ * 여러 판을 놓고 비교한 뒤 하나를 공개본(published)으로 고른다.
+ * 자동 스냅샷(auto: true)은 조정할 때마다 쌓이는 작업기록이다.
+ */
+export interface Board {
+    id: string;
+    name: string;
+    createdAt: string;          // ISO 시각
+    assignments: Assignment[];
+    note?: string;
+    auto?: boolean;
+    published?: boolean;
+    score?: { hard: number; soft: number }; // 저장 당시 점수 (표시용)
+}
+
+// ══════════════════════════════════════════════════════════════
+//  8. 학교 메타 — 파일 하나가 학교 하나다
+// ══════════════════════════════════════════════════════════════
+
+export interface SchoolMeta {
+    name: string;               // "고성초등학교"
+    term: string;               // "2026학년도 2학기"
+    schemaVersion: 2;
+    updatedAt?: string;
 }
