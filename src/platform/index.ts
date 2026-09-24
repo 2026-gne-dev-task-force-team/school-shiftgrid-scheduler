@@ -1,9 +1,8 @@
 /**
  * platform — 화면이 쓰는 단 하나의 진입점.
- * Electron 에서는 preload 가 꽂아 둔 window.platform 을 쓰고, 아니면 웹 구현으로 간다.
- * ⚠️ 지금은 웹 구현만 있는 스텁이다. 껍데기 판이 electron 쪽을 채운다.
+ * Electron 에서는 preload(electron/preload.ts)가 꽂아 둔 window.platform 을 쓰고, 아니면 웹 구현(아래)으로 간다.
  */
-import type { Platform, OpenedDoc } from './types';
+import type { Platform } from './types';
 import type { Doc } from '../types/doc';
 import { migrateDoc } from '../types/doc';
 

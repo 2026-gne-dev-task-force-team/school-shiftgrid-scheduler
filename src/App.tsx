@@ -1,12 +1,10 @@
-import { StoreProvider } from './store/store'
-import Shell from './components/app/Shell'
+import { StoreProvider } from './store/store';
+import Shell from './ui/Shell';
 
-function App() {
-  return (
-    <StoreProvider>
-      <Shell />
-    </StoreProvider>
-  )
+export default function App() {
+    return (
+        <StoreProvider>
+            <Shell />
+        </StoreProvider>
+    );
 }
-
-export default App

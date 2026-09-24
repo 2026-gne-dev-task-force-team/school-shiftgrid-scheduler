@@ -2,10 +2,19 @@
   "name": "school-shiftgrid-scheduler",
   "private": true,
   "version": "0.0.0",
+  "description": "학교 시간표 짜기 — 초등 규칙을 데이터로 받는 시간표 배정 도구",
+  "author": "2026-gne-dev-task-force-team",
   "type": "module",
+  "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:app": "vite --config vite.electron.config.ts",
     "build": "tsc -b && vite build",
+    "build:app": "vite build --config vite.electron.config.ts",
+    "dist:mac": "npm run build:app && electron-builder --mac",
+    "dist:win": "npm run build:app && electron-builder --win",
+    "dist:dir": "npm run build:app && electron-builder --dir",
+    "test": "vitest run",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -30,5 +39,39 @@
     "vite-plugin-electron": "^1.1.2",
     "vite-plugin-electron-renderer": "^1.0.0",
     "vitest": "^5.0.1"
+  },
+  "build": {
+    "appId": "kr.subnautica.shiftgrid",
+    "productName": "shiftgrid",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-app/**",
+      "dist-electron/**"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "icon": "build/icon.png",
+      "identity": null,
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "language": "1042"
+    }
   }
 }

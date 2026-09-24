@@ -1,241 +1,359 @@
 /**
- * 스토어 — 앱의 '저장 세계(Doc)'와 화면 상태(UI)를 한곳에서 관리한다.
- *  - Doc(엔티티·배치·규칙…)의 모든 변경은 이력으로 쌓여 되돌리기/다시하기가 된다.
- *  - 충돌 목록은 저장하지 않고 Doc이 바뀔 때마다 다시 계산한다(실시간 검증).
+ * 스토어 — 앱의 저장 세계(Doc) + 화면 상태를 한곳에서.
+ *  · Doc 변경은 전부 이력(undo/redo, 최대 200)으로 쌓인다.
+ *  · dirty·파일 경로를 들고, 변경 2초 뒤 platform.autosave 로 조용히 보관한다.
+ *  · 큰 변경(솔버 적용·자동조정·판 복원)마다 auto 스냅샷(Board)을 쌓는다(최대 30).
+ *  · 진단·수요현황은 엔진에서 계산해 useMemo 로 잡아 둔다. 엔진이 던지면 세 줄 오류로 보여준다.
  */
 import {
-    createContext, useContext, useMemo, useReducer, useState, useCallback,
+    createContext, useContext, useMemo, useReducer, useState, useEffect, useRef, useCallback,
     type ReactNode,
 } from 'react';
+import type { Doc } from '../types/doc';
+import { emptyDoc, migrateDoc } from '../types/doc';
+import type { OpenedDoc } from '../platform';
 import type {
-    Agent, Activity, Resource, Track, Assignment, Blackout, ConflictRule, TimetableSpec, Timetable,
+    Agent, Activity, Resource, Track, Assignment, Blackout, Demand,
+    ConflictRule, TargetRef, RuleParams, SchoolMeta,
 } from '../types/schema';
 import {
-    AGENTS, ACTIVITIES, RESOURCES, SPECS, TRACKS, TIMETABLES,
-    BLACKOUTS, buildSeedAssignments,
-} from '../model/seed';
-import { type Doc, runValidation } from '../logic/logic';
+    diagnose, demandStatus, applyMove, defaultRules, makeSpec,
+    type Diagnosis, type DemandStatus, type Move, type MakeSpecInput,
+} from '../engine/api';
+import { platform } from '../platform';
+import { sampleDoc } from '../io/sample';
+import * as ops from './doc-ops';
+import type { CellPos, BlockState } from './doc-ops';
+import { uid } from './ids';
 
-let counter = 0;
-const uid = (p: string) => `${p}-${(counter++).toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+export type { CellPos } from './doc-ops';
 
-// ── 엔티티 계열 이름 (교사·교과·시설) ─────────────────────────
-export type EntityFamily = 'agents' | 'activities' | 'resources';
-const KIND_OF: Record<EntityFamily, Agent['kind'] | Activity['kind'] | Resource['kind']> = {
-    agents: 'agent', activities: 'activity', resources: 'resource',
-};
+// ── 화면 ──────────────────────────────────────────────────────
+export type ScreenId = 'home' | 'basic' | 'blocks' | 'generate' | 'diagnose' | 'edit' | 'boards' | 'export';
 
-// ── Doc(저장 세계) 변경 액션 ──────────────────────────────────
-export type CellField = 'agentId' | 'activityId' | 'resourceId';
-export interface CellPos { trackId: string; dayIndex: number; slotIndex: number; }
-export type BlockCell = Partial<Record<CellField, string>> | null;
-
-type DocAction =
-    | { type: 'ADD_ENTITY'; family: EntityFamily; name: string; attr: Record<string, unknown> }
-    | { type: 'REMOVE_ENTITY'; family: EntityFamily; id: string }
-    | { type: 'RENAME_ENTITY'; family: EntityFamily; id: string; name: string }
-    | { type: 'ADD_SPEC'; spec: Omit<TimetableSpec, 'id'> }
-    | { type: 'REMOVE_SPEC'; id: string }
-    | { type: 'ADD_TRACK'; specId: string; name: string; attr?: Record<string, unknown> }
-    | { type: 'REMOVE_TRACK'; id: string }
-    | { type: 'SET_CELL'; pos: CellPos; patch: Partial<Record<CellField, string | undefined>> }
-    | { type: 'CLEAR_CELLS'; cells: CellPos[] }
-    | { type: 'PASTE'; trackId: string; top: number; left: number; block: BlockCell[][] }
-    | { type: 'ADD_RULE'; rule: ConflictRule }
-    | { type: 'UPDATE_RULE'; id: string; patch: Partial<ConflictRule> }
-    | { type: 'REMOVE_RULE'; id: string }
-    | { type: 'ADD_BLACKOUT'; blackout: Blackout }
-    | { type: 'REMOVE_BLACKOUT'; id: string };
-
-/** 학반이 속한 규격의 기본표를 찾는다 (없으면 첫 시간표로) */
-const baseTimetableFor = (doc: Doc, track: Track): string =>
-    doc.timetables.find((tt) => tt.specId === track.attr?.specId)?.id ?? doc.timetables[0]?.id ?? '';
-
-// ── 배치 한 칸을 만들거나 고치는 도우미 ───────────────────────
-function upsertCell(doc: Doc, pos: CellPos, patch: Partial<Record<CellField, string | undefined>>): Assignment[] {
-    const list = doc.assignments.slice();
-    const idx = list.findIndex(
-        (a) => a.trackId === pos.trackId && a.dayIndex === pos.dayIndex && a.slotIndex === pos.slotIndex,
-    );
-    const isEmpty = (a: Assignment) => !a.agentId && !a.activityId && !a.resourceId && !a.label;
-
-    if (idx >= 0) {
-        const merged = { ...list[idx], ...patch };
-        if (isEmpty(merged)) list.splice(idx, 1);
-        else list[idx] = merged;
-    } else {
-        const track = doc.tracks.find((t) => t.id === pos.trackId);
-        if (!track) return list;
-        const na: Assignment = {
-            kind: 'work', id: uid('w'), timetableId: baseTimetableFor(doc, track),
-            trackId: pos.trackId, dayIndex: pos.dayIndex, slotIndex: pos.slotIndex, ...patch,
-        };
-        if (!isEmpty(na)) list.push(na);
-    }
-    return list;
+export interface EditFocus {
+    trackId?: string;
+    agentId?: string;
+    resourceId?: string;
+    view?: 'track' | 'agent' | 'resource';
+    dayIndex?: number;
+    slotIndex?: number;
+    ruleId?: string;
 }
 
-function docReducer(doc: Doc, action: DocAction): Doc {
-    switch (action.type) {
-        case 'ADD_ENTITY': {
-            const item = { kind: KIND_OF[action.family], id: uid(action.family), name: action.name, attr: action.attr };
-            return { ...doc, [action.family]: [...doc[action.family], item as never] };
+// ── 알림(세 줄 오류) ─────────────────────────────────────────
+export interface Notice {
+    id: string;
+    kind: 'error' | 'info';
+    title: string;
+    lines: string[]; // 오류면 [무엇이, 왜, 다음에]
+}
+
+// ── 이력 ──────────────────────────────────────────────────────
+const EMPTY_DIAG: Diagnosis = { hardCount: 0, softWeight: 0, rules: [], daysByRule: {} };
+
+interface Snap { label: string; score?: { hard: number; soft: number }; }
+interface HistState { past: Doc[]; present: Doc; future: Doc[]; dirty: boolean; }
+type HistAction =
+    | { t: 'commit'; recipe: (d: Doc) => Doc; snap?: Snap }
+    | { t: 'undo' } | { t: 'redo' }
+    | { t: 'reset'; doc: Doc } | { t: 'saved' };
+
+const MAX_HIST = 200;
+
+function histReducer(s: HistState, a: HistAction): HistState {
+    switch (a.t) {
+        case 'commit': {
+            let next = a.recipe(s.present);
+            if (next === s.present) return s;
+            if (a.snap) next = ops.autoSnapshot(next, a.snap.label, a.snap.score);
+            const past = [...s.past, s.present];
+            if (past.length > MAX_HIST) past.shift();
+            return { past, present: next, future: [], dirty: true };
         }
-        case 'REMOVE_ENTITY':
-            return { ...doc, [action.family]: doc[action.family].filter((x) => x.id !== action.id) };
-        case 'RENAME_ENTITY':
-            return {
-                ...doc,
-                [action.family]: doc[action.family].map((x) => (x.id === action.id ? { ...x, name: action.name } : x)),
-            };
-        case 'ADD_SPEC': {
-            // 폼이 정의한 규격을 그대로 저장하고, 그 규격을 기간에 적용한 '기본표'도 함께 만든다.
-            // (규격=빈 격자 틀, 시간표=그 틀을 기간+우선순위로 실제 적용한 것 — 둘의 구분을 눈에 보이게)
-            const id = uid('spec');
-            const base: Timetable = {
-                id: uid('tt'), name: `${action.spec.name} 기본표`, specId: id,
-                startDate: '2026-03-02', endDate: '2026-07-20', priority: 0,
-            };
-            return {
-                ...doc,
-                specs: [...doc.specs, { ...action.spec, id }],
-                timetables: [...doc.timetables, base],
-            };
+        case 'undo': {
+            if (s.past.length === 0) return s;
+            const prev = s.past[s.past.length - 1];
+            return { past: s.past.slice(0, -1), present: prev, future: [s.present, ...s.future], dirty: true };
         }
-        case 'REMOVE_SPEC': {
-            const trackIds = doc.tracks.filter((t) => t.attr?.specId === action.id).map((t) => t.id);
-            return {
-                ...doc,
-                specs: doc.specs.filter((s) => s.id !== action.id),
-                timetables: doc.timetables.filter((tt) => tt.specId !== action.id),
-                tracks: doc.tracks.filter((t) => t.attr?.specId !== action.id),
-                assignments: doc.assignments.filter((a) => !trackIds.includes(a.trackId)),
-            };
+        case 'redo': {
+            if (s.future.length === 0) return s;
+            const nx = s.future[0];
+            return { past: [...s.past, s.present], present: nx, future: s.future.slice(1), dirty: true };
         }
-        case 'ADD_TRACK': {
-            const track: Track = {
-                kind: 'track', id: uid('t'), name: action.name,
-                attr: { ...action.attr, specId: action.specId },
-            };
-            return { ...doc, tracks: [...doc.tracks, track] };
-        }
-        case 'REMOVE_TRACK':
-            return {
-                ...doc,
-                tracks: doc.tracks.filter((t) => t.id !== action.id),
-                assignments: doc.assignments.filter((a) => a.trackId !== action.id),
-            };
-        case 'SET_CELL':
-            return { ...doc, assignments: upsertCell(doc, action.pos, action.patch) };
-        case 'CLEAR_CELLS': {
-            const keys = new Set(action.cells.map((p) => `${p.trackId}:${p.dayIndex}:${p.slotIndex}`));
-            return { ...doc, assignments: doc.assignments.filter((a) => !keys.has(`${a.trackId}:${a.dayIndex}:${a.slotIndex}`)) };
-        }
-        case 'PASTE': {
-            let next = doc;
-            action.block.forEach((row, r) => {
-                row.forEach((cell, cCol) => {
-                    const pos: CellPos = { trackId: action.trackId, slotIndex: action.top + r, dayIndex: action.left + cCol };
-                    // 붙여넣기는 칸을 통째로 대체: 먼저 비우고 값이 있으면 채운다
-                    const patch = { agentId: cell?.agentId, activityId: cell?.activityId, resourceId: cell?.resourceId };
-                    next = { ...next, assignments: upsertCell(next, pos, patch) };
-                });
-            });
-            return next;
-        }
-        case 'ADD_RULE':
-            return { ...doc, rules: [...doc.rules, action.rule] };
-        case 'UPDATE_RULE':
-            return { ...doc, rules: doc.rules.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r)) };
-        case 'REMOVE_RULE':
-            return { ...doc, rules: doc.rules.filter((r) => r.id !== action.id) };
-        case 'ADD_BLACKOUT':
-            return { ...doc, blackouts: [...doc.blackouts, action.blackout] };
-        case 'REMOVE_BLACKOUT':
-            return { ...doc, blackouts: doc.blackouts.filter((b) => b.id !== action.id) };
+        case 'reset':
+            return { past: [], present: a.doc, future: [], dirty: false };
+        case 'saved':
+            return { ...s, dirty: false };
         default:
-            return doc;
+            return s;
     }
 }
 
-// ── 되돌리기/다시하기 이력 래퍼 ───────────────────────────────
-interface History { past: Doc[]; present: Doc; future: Doc[]; }
-type HistoryAction = DocAction | { type: 'UNDO' } | { type: 'REDO' };
-
-function historyReducer(state: History, action: HistoryAction): History {
-    if (action.type === 'UNDO') {
-        if (state.past.length === 0) return state;
-        const previous = state.past[state.past.length - 1];
-        return { past: state.past.slice(0, -1), present: previous, future: [state.present, ...state.future] };
-    }
-    if (action.type === 'REDO') {
-        if (state.future.length === 0) return state;
-        const next = state.future[0];
-        return { past: [...state.past, state.present], present: next, future: state.future.slice(1) };
-    }
-    const present = docReducer(state.present, action);
-    if (present === state.present) return state; // 변화 없으면 이력 안 쌓음
-    return { past: [...state.past, state.present], present, future: [] };
-}
-
-const initialDoc: Doc = {
-    agents: AGENTS, activities: ACTIVITIES, resources: RESOURCES,
-    specs: SPECS, tracks: TRACKS, timetables: TIMETABLES,
-    assignments: buildSeedAssignments(), blackouts: BLACKOUTS, rules: [],
-};
-
-// ── 화면 상태(UI) — 이력에 안 쌓이는 것들 ─────────────────────
-export type LeftTab = 'timetable' | 'agents' | 'activities' | 'resources';
-export type Overlay = 'none' | 'combined' | 'blackout';
-export interface Selection { trackId: string; r1: number; c1: number; r2: number; c2: number; }
-
-export interface UIState {
-    leftTab: LeftTab;
-    selectedTrackId: string | null;
-    collapsedSpecs: string[];
-    selection: Selection | null;
-    clipboard: BlockCell[][] | null;
-    liveValidation: boolean;
-    overlay: Overlay;
+// ── 규칙이 비어 있으면 기본 규칙으로 채운다 (엔진 stub 이면 빈 배열) ──
+function withDefaultRules(d: Doc): Doc {
+    if (d.rules.length > 0) return d;
+    try {
+        const r = defaultRules();
+        return r.length > 0 ? { ...d, rules: r } : d;
+    } catch { return d; }
 }
 
 // ── 컨텍스트 ──────────────────────────────────────────────────
 interface StoreValue {
     doc: Doc;
-    dispatch: (a: DocAction) => void;
-    undo: () => void; redo: () => void;
+    path: string | undefined;
+    dirty: boolean;
+    hasAutosave: boolean;
     canUndo: boolean; canRedo: boolean;
-    conflicts: ReturnType<typeof runValidation>;
-    ui: UIState;
-    setUI: (patch: Partial<UIState>) => void;
+    undo: () => void; redo: () => void;
+
+    diag: Diagnosis;
+    demand: DemandStatus[];
+
+    notices: Notice[];
+    notify: (n: Omit<Notice, 'id'>) => void;
+    dismiss: (id: string) => void;
+    /** 엔진 호출을 감싸 던지면 세 줄 오류로 띄우고 undefined 를 돌려준다 */
+    runEngine: <T>(what: string, fn: () => T) => T | undefined;
+    runEngineAsync: <T>(what: string, fn: () => Promise<T>) => Promise<T | undefined>;
+
+    screen: ScreenId;
+    setScreen: (s: ScreenId) => void;
+    focus: EditFocus;
+    setFocus: (f: EditFocus) => void;
+    /** 진단→편집 점프 */
+    jumpToEdit: (f: EditFocus) => void;
+
+    act: Actions;
+
+    newDoc: () => void;
+    loadSample: () => void;
+    openFile: () => Promise<void>;
+    loadOpened: (r: OpenedDoc) => void;
+    saveFile: () => Promise<void>;
+    saveFileAs: () => Promise<void>;
+    resume: () => void;
+    dismissResume: () => void;
 }
-const StoreContext = createContext<StoreValue | null>(null);
+
+interface Actions {
+    setMeta: (patch: Partial<SchoolMeta>) => void;
+    addAgent: (name: string, extra?: Partial<Agent>) => void;
+    updateAgent: (id: string, patch: Partial<Agent>) => void;
+    removeAgent: (id: string) => void;
+    addActivity: (name: string) => void;
+    updateActivity: (id: string, patch: Partial<Activity>) => void;
+    removeActivity: (id: string) => void;
+    addResource: (name: string, extra?: Partial<Resource>) => void;
+    updateResource: (id: string, patch: Partial<Resource>) => void;
+    removeResource: (id: string) => void;
+    addSpec: (input: MakeSpecInput) => void;
+    removeSpec: (id: string) => void;
+    addTrack: (name: string, specId: string, grade?: number) => void;
+    updateTrack: (id: string, patch: Partial<Track>) => void;
+    removeTrack: (id: string) => void;
+    addDemand: (dm: Omit<Demand, 'id'>) => void;
+    addDemandsBulk: (base: Omit<Demand, 'id' | 'trackId'>, trackIds: string[]) => void;
+    updateDemand: (id: string, patch: Partial<Demand>) => void;
+    removeDemand: (id: string) => void;
+    duplicateDemand: (id: string) => void;
+    cycleBlock: (target: TargetRef, dayIndex: number, slotIndex: number) => void;
+    setBlockState: (target: TargetRef, dayIndex: number, slotIndex: number, state: BlockState) => void;
+    clearTempBlocks: () => void;
+    addBlackout: (b: Omit<Blackout, 'id'>) => void;
+    removeBlackout: (id: string) => void;
+    setCell: (pos: CellPos, patch: Partial<Assignment>) => void;
+    clearCell: (pos: CellPos) => void;
+    addFixed: (pos: CellPos, activityId: string | undefined, label: string) => void;
+    togglePin: (id: string) => void;
+    toggleTemp: (id: string) => void;
+    applyMove: (move: Move) => void;
+    applyAssignments: (assignments: Assignment[], label: string, score?: { hard: number; soft: number }) => void;
+    toggleRule: (id: string) => void;
+    updateRuleParams: (id: string, params: RuleParams) => void;
+    setRules: (rules: ConflictRule[]) => void;
+    mergeImport: (r: { agents: Agent[]; tracks: Track[]; activities: Activity[]; demands: Demand[] }) => void;
+    saveBoard: (name: string) => void;
+    restoreBoard: (id: string) => void;
+    publishBoard: (id: string) => void;
+    deleteBoard: (id: string) => void;
+}
+
+const Ctx = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-    const [history, hDispatch] = useReducer(historyReducer, { past: [], present: initialDoc, future: [] });
-    const [ui, setUIState] = useState<UIState>({
-        leftTab: 'timetable', selectedTrackId: 't-3-1', collapsedSpecs: [],
-        selection: null, clipboard: null, liveValidation: true, overlay: 'none',
-    });
+    const [hist, dispatch] = useReducer(histReducer, undefined, () => ({
+        past: [], present: withDefaultRules(emptyDoc()), future: [], dirty: false,
+    }));
+    const doc = hist.present;
 
-    const doc = history.present;
-    const conflicts = useMemo(() => (ui.liveValidation ? runValidation(doc) : []), [doc, ui.liveValidation]);
-    const setUI = useCallback((patch: Partial<UIState>) => setUIState((s) => ({ ...s, ...patch })), []);
-    const dispatch = useCallback((a: DocAction) => hDispatch(a), []);
+    const [path, setPath] = useState<string | undefined>(undefined);
+    const [notices, setNotices] = useState<Notice[]>([]);
+    const [screen, setScreen] = useState<ScreenId>('home');
+    const [focus, setFocus] = useState<EditFocus>({});
+    const [autosaveDoc, setAutosaveDoc] = useState<Doc | null>(null);
+    const [resumeShown, setResumeShown] = useState(true);
+
+    // 첫 기동: 자동 보관본이 있으면 이어 할지 배너로 물어본다
+    useEffect(() => {
+        let live = true;
+        (async () => {
+            try { const d = await platform.loadAutosave(); if (live && d) setAutosaveDoc(d); } catch { /* 조용히 */ }
+        })();
+        return () => { live = false; };
+    }, []);
+
+    // 자동저장 — 변경 뒤 2초 디바운스
+    const firstRun = useRef(true);
+    useEffect(() => {
+        if (firstRun.current) { firstRun.current = false; return; }
+        if (!hist.dirty) return;
+        const id = setTimeout(() => { platform.autosave(doc).catch(() => { /* 조용히 */ }); }, 2000);
+        return () => clearTimeout(id);
+    }, [doc, hist.dirty]);
+
+    const notify = useCallback((n: Omit<Notice, 'id'>) => {
+        setNotices((list) => [...list, { ...n, id: uid('nt') }].slice(-5));
+    }, []);
+    const dismiss = useCallback((id: string) => setNotices((l) => l.filter((n) => n.id !== id)), []);
+
+    const runEngine = useCallback(<T,>(what: string, fn: () => T): T | undefined => {
+        try { return fn(); }
+        catch (e) {
+            notify({
+                kind: 'error', title: `${what} 을(를) 못 했습니다`,
+                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '엔진이 아직 스텁이라 그렇습니다. 통합되면 사라집니다.'],
+            });
+            return undefined;
+        }
+    }, [notify]);
+
+    const runEngineAsync = useCallback(async <T,>(what: string, fn: () => Promise<T>): Promise<T | undefined> => {
+        try { return await fn(); }
+        catch (e) {
+            notify({
+                kind: 'error', title: `${what} 을(를) 못 했습니다`,
+                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '엔진이 아직 스텁이라 그렇습니다. 통합되면 사라집니다.'],
+            });
+            return undefined;
+        }
+    }, [notify]);
+
+    // 진단·수요현황 — 엔진이 던져도 화면이 죽지 않게 안전하게
+    const diag = useMemo<Diagnosis>(() => {
+        try { return diagnose(doc); } catch { return EMPTY_DIAG; }
+    }, [doc]);
+    const demand = useMemo<DemandStatus[]>(() => {
+        try { return demandStatus(doc); } catch { return []; }
+    }, [doc]);
+
+    const commit = useCallback((recipe: (d: Doc) => Doc, snap?: Snap) => dispatch({ t: 'commit', recipe, snap }), []);
+
+    // ── 액션 ──────────────────────────────────────────────────
+    const act = useMemo<Actions>(() => ({
+        setMeta: (patch) => commit((d) => ops.setMeta(d, patch)),
+        addAgent: (name, extra) => commit((d) => ops.addAgent(d, name, extra)),
+        updateAgent: (id, patch) => commit((d) => ops.updateAgent(d, id, patch)),
+        removeAgent: (id) => commit((d) => ops.removeAgent(d, id)),
+        addActivity: (name) => commit((d) => ops.addActivity(d, name)),
+        updateActivity: (id, patch) => commit((d) => ops.updateActivity(d, id, patch)),
+        removeActivity: (id) => commit((d) => ops.removeActivity(d, id)),
+        addResource: (name, extra) => commit((d) => ops.addResource(d, name, extra)),
+        updateResource: (id, patch) => commit((d) => ops.updateResource(d, id, patch)),
+        removeResource: (id) => commit((d) => ops.removeResource(d, id)),
+        addSpec: (input) => {
+            const spec = runEngine('시간 규격 만들기', () => makeSpec(input));
+            if (spec) commit((d) => ops.addSpec(d, spec));
+        },
+        removeSpec: (id) => commit((d) => ops.removeSpec(d, id)),
+        addTrack: (name, specId, grade) => commit((d) => ops.addTrack(d, name, specId, grade)),
+        updateTrack: (id, patch) => commit((d) => ops.updateTrack(d, id, patch)),
+        removeTrack: (id) => commit((d) => ops.removeTrack(d, id)),
+        addDemand: (dm) => commit((d) => ops.addDemand(d, dm)),
+        addDemandsBulk: (base, trackIds) => commit((d) => ops.addDemandsBulk(d, base, trackIds)),
+        updateDemand: (id, patch) => commit((d) => ops.updateDemand(d, id, patch)),
+        removeDemand: (id) => commit((d) => ops.removeDemand(d, id)),
+        duplicateDemand: (id) => commit((d) => ops.duplicateDemand(d, id)),
+        cycleBlock: (target, dayIndex, slotIndex) => commit((d) => ops.cycleBlock(d, target, dayIndex, slotIndex)),
+        setBlockState: (target, dayIndex, slotIndex, state) => commit((d) => ops.setBlockState(d, target, dayIndex, slotIndex, state)),
+        clearTempBlocks: () => commit((d) => ops.clearTempBlocks(d)),
+        addBlackout: (b) => commit((d) => ops.addBlackout(d, b)),
+        removeBlackout: (id) => commit((d) => ops.removeBlackout(d, id)),
+        setCell: (pos, patch) => commit((d) => ops.setCell(d, pos, patch)),
+        clearCell: (pos) => commit((d) => ops.clearCell(d, pos)),
+        addFixed: (pos, activityId, label) => commit((d) => ops.addFixed(d, pos, activityId, label)),
+        togglePin: (id) => commit((d) => ops.togglePinAt(d, id)),
+        toggleTemp: (id) => commit((d) => ops.toggleTempAt(d, id)),
+        applyMove: (move) => {
+            const next = runEngine('이동 실행', () => applyMove(doc, move));
+            if (next) commit(() => next);
+        },
+        applyAssignments: (assignments, label, score) =>
+            commit((d) => ops.applyAssignments(d, assignments), { label, score }),
+        toggleRule: (id) => commit((d) => ops.toggleRule(d, id)),
+        updateRuleParams: (id, params) => commit((d) => ops.updateRuleParams(d, id, params)),
+        setRules: (rules) => commit((d) => ops.setRules(d, rules)),
+        mergeImport: (r) => commit((d) => ops.mergeImport(d, r)),
+        saveBoard: (name) => commit((d) => ops.saveBoard(d, name, { hard: diag.hardCount, soft: diag.softWeight })),
+        restoreBoard: (id) => commit((d) => ops.restoreBoard(d, id), { label: '복원 직전 자동 스냅샷' }),
+        publishBoard: (id) => commit((d) => ops.publishBoard(d, id)),
+        deleteBoard: (id) => commit((d) => ops.deleteBoard(d, id)),
+    }), [commit, runEngine, doc, diag.hardCount, diag.softWeight]);
+
+    // ── 파일 ──────────────────────────────────────────────────
+    const newDoc = useCallback(() => {
+        dispatch({ t: 'reset', doc: withDefaultRules(emptyDoc()) });
+        setPath(undefined); setScreen('basic');
+    }, []);
+    const loadSample = useCallback(() => {
+        const d = runEngine('샘플 학교 불러오기', () => sampleDoc());
+        if (d) { dispatch({ t: 'reset', doc: withDefaultRules(d) }); setPath(undefined); setScreen('basic'); }
+    }, [runEngine]);
+    const openFile = useCallback(async () => {
+        const r = await runEngineAsync('파일 열기', () => platform.openDoc());
+        if (r) { dispatch({ t: 'reset', doc: withDefaultRules(r.doc) }); setPath(r.path); setScreen('basic'); }
+    }, [runEngineAsync]);
+    /** 껍데기(Electron 메뉴)가 이미 열어 넘겨준 문서를 받는다 */
+    const loadOpened = useCallback((r: OpenedDoc) => {
+        dispatch({ t: 'reset', doc: withDefaultRules(migrateDoc(r.doc)) }); setPath(r.path); setScreen('basic');
+    }, []);
+    const saveFile = useCallback(async () => {
+        const p = await runEngineAsync('저장', () => platform.saveDoc(doc, path));
+        if (p) { setPath(p); dispatch({ t: 'saved' }); }
+    }, [doc, path, runEngineAsync]);
+    const saveFileAs = useCallback(async () => {
+        const p = await runEngineAsync('다른 이름으로 저장', () => platform.saveDocAs(doc));
+        if (p) { setPath(p); dispatch({ t: 'saved' }); }
+    }, [doc, runEngineAsync]);
+    const resume = useCallback(() => {
+        if (autosaveDoc) { dispatch({ t: 'reset', doc: withDefaultRules(autosaveDoc) }); setAutosaveDoc(null); setScreen('basic'); }
+    }, [autosaveDoc]);
+    const dismissResume = useCallback(() => { setResumeShown(false); }, []);
+
+    const jumpToEdit = useCallback((f: EditFocus) => { setFocus(f); setScreen('edit'); }, []);
 
     const value: StoreValue = {
-        doc, dispatch,
-        undo: () => hDispatch({ type: 'UNDO' }),
-        redo: () => hDispatch({ type: 'REDO' }),
-        canUndo: history.past.length > 0,
-        canRedo: history.future.length > 0,
-        conflicts, ui, setUI,
+        doc, path, dirty: hist.dirty,
+        hasAutosave: !!autosaveDoc && resumeShown,
+        canUndo: hist.past.length > 0, canRedo: hist.future.length > 0,
+        undo: () => dispatch({ t: 'undo' }), redo: () => dispatch({ t: 'redo' }),
+        diag, demand,
+        notices, notify, dismiss, runEngine, runEngineAsync,
+        screen, setScreen, focus, setFocus, jumpToEdit,
+        act,
+        newDoc, loadSample, openFile, loadOpened, saveFile, saveFileAs, resume, dismissResume,
     };
-    return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+    return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+function msgOf(e: unknown): string {
+    if (e instanceof Error) return e.message;
+    return String(e);
 }
 
 export function useStore(): StoreValue {
-    const v = useContext(StoreContext);
-    if (!v) throw new Error('useStore must be used within StoreProvider');
+    const v = useContext(Ctx);
+    if (!v) throw new Error('useStore 는 StoreProvider 안에서만');
     return v;
 }

@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: #10151c;
+    color: #e6e9ee;
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  /* 얇은 스크롤바 — 어두운 결에 맞춘다 */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #243041; border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* 시간표 격자는 12px */
+.grid-cell { font-size: 12px; }
+
+/* 인쇄 — 껍데기(상단 바·왼쪽 탭·상태줄)를 숨기고 표만 흑백으로 */
+@media print {
+  body { background: #fff; color: #000; }
+  .no-print { display: none !important; }
+  .print-area { display: block !important; }
+  .print-table { border-collapse: collapse; width: 100%; }
+  .print-table th, .print-table td {
+    border: 1px solid #000; padding: 3px 5px; font-size: 11px; color: #000;
+  }
+}
