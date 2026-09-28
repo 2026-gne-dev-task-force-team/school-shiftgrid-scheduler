@@ -12,6 +12,16 @@ import { TOUR_STEPS } from './tourSteps';
 
 const TOURED_KEY = 'shiftgrid.toured';
 
+/**
+ * 같은 data-tour 가 둘일 수 있다 — 폰용(md:hidden)과 데스크톱용이 한 화면에 같이 그려진다.
+ * 첫 번째(숨은 것)를 잡으면 rect 가 0 이라 가리개가 왼쪽 위 구석에 뜬다(실측 2026-09-28). 보이는 것을 고른다.
+ */
+function findVisible(tour: string): HTMLElement | null {
+    const els = document.querySelectorAll<HTMLElement>(`[data-tour="${tour}"]`);
+    for (const el of els) { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) return el; }
+    return null;
+}
+
 export function Tour() {
     const st = useStore();
     const help = useHelp();
@@ -42,10 +52,11 @@ export function Tour() {
             // 소절 버튼처럼 먼저 눌러야 나타나는 대상이면 한 번 누르고 다음 프레임에 찾는다
             if (step.pre && !pressed) {
                 pressed = true;
-                const pre = document.querySelector<HTMLElement>(step.pre);
+                const pre = [...document.querySelectorAll<HTMLElement>(step.pre)].find((x) => x.getBoundingClientRect().width > 0)
+                    ?? document.querySelector<HTMLElement>(step.pre);
                 if (pre) { pre.click(); raf = requestAnimationFrame(tryFind); return; }
             }
-            const el = document.querySelector<HTMLElement>(`[data-tour="${step.tour}"]`);
+            const el = findVisible(step.tour);
             if (el) {
                 el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'auto' });
                 setRect(el.getBoundingClientRect());
@@ -69,7 +80,7 @@ export function Tour() {
         if (!help.tourActive) return;
         const re = () => {
             const step = TOUR_STEPS[idx];
-            const el = step && document.querySelector<HTMLElement>(`[data-tour="${step.tour}"]`);
+            const el = step && findVisible(step.tour);
             if (el) setRect(el.getBoundingClientRect());
         };
         window.addEventListener('resize', re);

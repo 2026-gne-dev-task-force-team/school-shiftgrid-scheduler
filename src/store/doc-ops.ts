@@ -220,12 +220,16 @@ export function mergeImport(d: Doc, r: {
     agents: Agent[]; tracks: Track[]; activities: Activity[]; demands: Demand[];
 }): Doc {
     const has = <T extends { id: string }>(list: T[], id: string) => list.some((x) => x.id === id);
+    // 시수는 「교사·반·과목」이 같으면 같은 줄이다 — id 가 달라도(시트에서 만든 것 vs 엑셀에서 온 것) 겹쳐 두면
+    // 엔진이 시수를 두 배로 요구한다(검수 2026-09-28). 불러온 쪽이 이긴다.
+    const key = (x: Demand) => `${x.agentId}|${x.trackId}|${x.activityId}`;
+    const incoming = new Set(r.demands.map(key));
     return {
         ...d,
         agents: [...d.agents, ...r.agents.filter((x) => !has(d.agents, x.id))],
         tracks: [...d.tracks, ...r.tracks.filter((x) => !has(d.tracks, x.id))],
         activities: [...d.activities, ...r.activities.filter((x) => !has(d.activities, x.id))],
-        demands: [...d.demands, ...r.demands.filter((x) => !has(d.demands, x.id))],
+        demands: [...d.demands.filter((x) => !incoming.has(key(x))), ...r.demands],
     };
 }
 

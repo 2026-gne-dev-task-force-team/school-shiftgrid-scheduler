@@ -10,7 +10,12 @@ export function Term({ id, children }: { id: string; children: React.ReactNode }
     const entry = glossaryById(id);
     const help = useHelp();
     const [open, setOpen] = useState(false);
+    const [up, setUp] = useState(false);   // 화면 아래(상태줄)에서는 위로 펼친다 — 아래로 펼치면 화면 밖이다
     const ref = useRef<HTMLSpanElement>(null);
+    const show = (v: boolean) => {
+        if (v && ref.current) setUp(ref.current.getBoundingClientRect().bottom + 160 > window.innerHeight);
+        setOpen(v);
+    };
 
     useEffect(() => {
         if (!open) return;
@@ -24,13 +29,13 @@ export function Term({ id, children }: { id: string; children: React.ReactNode }
 
     return (
         <span ref={ref} className="relative inline-block">
-            <button type="button" onMouseEnter={() => setOpen(true)} onClick={() => setOpen((v) => !v)}
+            <button type="button" onMouseEnter={() => show(true)} onClick={() => show(!open)}
                 className="border-b border-dotted border-muted/70 hover:border-accent text-inherit cursor-help"
                 aria-label={`${entry.word} 뜻 보기`}>
                 {children}
             </button>
             {open && (
-                <span className="absolute z-[120] left-0 top-6 w-64 max-w-[80vw] p-2.5 rounded-md bg-panel border border-line shadow-xl text-[12px] text-text font-normal text-left leading-snug block">
+                <span className={`absolute z-[120] left-0 ${up ? 'bottom-6' : 'top-6'} w-64 max-w-[80vw] p-2.5 rounded-md bg-panel border border-line shadow-xl text-[12px] text-text font-normal text-left leading-snug block`}>
                     <span className="block font-semibold mb-1">{entry.word}</span>
                     <span className="block text-muted">{entry.short}</span>
                     <button type="button"

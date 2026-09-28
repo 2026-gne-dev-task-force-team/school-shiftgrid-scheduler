@@ -359,6 +359,8 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
             if (meta && (k === 'v' || k === 'V')) { e.preventDefault(); e.stopPropagation(); return; } // paste 이벤트가 처리
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); fillDown(sel.r2); return; }
             if (meta && (k === 'a' || k === 'A')) { e.preventDefault(); e.stopPropagation(); setAnchor({ r: 0, c: 0 }); setActive({ r: Math.max(0, rows.length - 1), c: nCols - 1 }); return; }
+            // 격자가 안 쓰는 단축키(Ctrl+S 저장 · F1 도움말 등)는 껍데기로 흘려보낸다 — 삼키면 시트에서 저장이 안 된다
+            if (meta || e.altKey || /^F\d+$/.test(k) && k !== 'F2') return;
             e.stopPropagation();
             if (k === 'ArrowDown') { e.preventDefault(); moveTo(active.r + 1, active.c, e.shiftKey); return; }
             if (k === 'ArrowUp') { e.preventDefault(); moveTo(active.r - 1, active.c, e.shiftKey); return; }
