@@ -6,27 +6,49 @@
  *
  *  ⭐ 아래 한 줄이 「지금 무엇을 할 수 있나」를 늘 보여준다(디자인 가이드 3절: 줄마다 뭔가/왜/고치는 곳).
  *  ⛔ window.prompt/confirm 안 쓴다. ⛔ 외부 라이브러리 0.
+ *
+ *  ── 열 타입 ──────────────────────────────────────────────────
+ *   text·number·bool                    한 칸 값
+ *   select                              options 중 하나(강제) · allowEmpty 로 빈 값 허용
+ *   combo                               목록 전체가 뜨고 타이핑으로 걸러지며, 목록에 없는 값도 그대로 확정(즉석 생성)
+ *   list                                쉼표로 나열하는 자유 목록(자동완성)
+ *   multiselect                         options 를 체크박스로 골라 담는 목록(string[]) · optionsOf·disabledOptions 지원
+ *
+ *  ── 정렬 ────────────────────────────────────────────────────
+ *   sortable 열은 머리글을 눌러 오름/내림합니다. 정렬은 '보이는 순서'만 바꾸고 onCommit 순서는 그대로입니다.
  */
 import {
     useState, useRef, useEffect, useMemo, useCallback,
     type ReactNode, type CSSProperties, type MouseEvent as ReactMouseEvent,
 } from 'react';
+import { MOD } from '../lib';
+import { flushSync } from 'react-dom';
 
 // ── 열·행 규격 ────────────────────────────────────────────────
 export type CellValue = string | number | boolean | string[];
 export type SheetRow = { _id: string } & Record<string, CellValue>;
 
+export type SheetColumnType = 'text' | 'number' | 'select' | 'bool' | 'list' | 'combo' | 'multiselect';
+
 export interface SheetColumn {
     key: string;
     title: string;
-    type: 'text' | 'number' | 'select' | 'bool' | 'list';
-    options?: string[];          // select·list 후보
+    type: SheetColumnType;
+    options?: string[];          // select·combo·list·multiselect 후보
+    /** 행마다 후보가 다를 때 (예: 학년별 반). multiselect·select 에서 options 를 대신한다 */
+    optionsOf?: (row: SheetRow) => string[];
+    /** 고를 수 없는 후보와 그 이유(툴팁·흐리게). 숨기지는 않는다 (multiselect) */
+    disabledOptions?: (row: SheetRow) => Record<string, string>;
     suggest?: string[];          // text·list 자동완성 후보 (options 와 달리 강제 아님)
     allowEmpty?: boolean;        // select 에서 빈 값 허용
     width?: number;              // px (없으면 120)
     readOnly?: boolean;
     align?: 'left' | 'center' | 'right';
     placeholder?: string;
+    /** 머리글 클릭으로 오름/내림 정렬(표시만 바뀐다) */
+    sortable?: boolean;
+    /** 머리글에 붙는 한 줄 도움말 (작은 ⓘ · title 툴팁) */
+    help?: string;
     /** 읽기전용 파생 값 (예: 이름 = 학년-반). 있으면 편집 불가 */
     compute?: (row: SheetRow) => CellValue;
     /** 문장을 돌려주면 그 칸을 빨간 테두리 + 툴팁. 저장은 막지 않는다 */
@@ -36,6 +58,8 @@ export interface SheetColumn {
 }
 
 export interface SheetApi { addRow: () => void; deleteSelectedRows: () => void; }
+
+export interface SheetSort { key: string; dir: 'asc' | 'desc'; }
 
 export interface SheetProps {
     columns: SheetColumn[];
@@ -51,6 +75,8 @@ export interface SheetProps {
     /** 상태줄 오른쪽에 덧붙일 것 (ⓘ 등) */
     statusExtra?: ReactNode;
     minWidth?: number;
+    /** 첫 정렬 상태 (표시만) */
+    defaultSort?: SheetSort;
 }
 
 // 테스트 훅은 개발 모드 또는 localStorage.SHEET_TEST 로만 (프로덕션 기본 꺼짐)
@@ -64,17 +90,20 @@ const TEST_ENABLED = (() => {
 let lastCopiedTsv = '';
 
 // ── 값 ↔ 글자 ─────────────────────────────────────────────────
+const isMulti = (t: SheetColumnType) => t === 'list' || t === 'multiselect';
+
 function toText(col: SheetColumn, v: CellValue | undefined): string {
     if (v == null) return '';
     if (col.type === 'bool') return v ? 'Y' : '';
-    if (col.type === 'list') return Array.isArray(v) ? v.join(', ') : String(v);
+    if (isMulti(col.type)) return Array.isArray(v) ? v.join(', ') : String(v);
     return String(v);
 }
 function parseInput(col: SheetColumn, text: string): CellValue {
     const t = text.trim();
     if (col.type === 'number') return t === '' ? '' : (Number.isFinite(Number(t)) ? Number(t) : t);
     if (col.type === 'bool') return /^(y|예|true|1|o|✓|참)$/i.test(t);
-    if (col.type === 'list') return t.split(',').map((s) => s.trim()).filter(Boolean);
+    if (isMulti(col.type)) return t.split(',').map((s) => s.trim()).filter(Boolean);
+    if (col.type === 'combo') return t;
     if (col.type === 'select') {
         if (!col.options) return t;
         const exact = col.options.find((o) => o === t);
@@ -88,8 +117,8 @@ function parseInput(col: SheetColumn, text: string): CellValue {
 function builtinValidate(col: SheetColumn, value: CellValue, row: SheetRow): string | undefined {
     if (col.type === 'select' && col.options) {
         const s = String(value ?? '');
-        if (s === '') { if (!col.allowEmpty) return `${col.title}을(를) 골라 주세요`; }
-        else if (!col.options.includes(s)) return `'${s}' 은(는) ${col.title} 목록에 없습니다`;
+        if (s === '') { if (!col.allowEmpty) return col.validate?.(value, row) ?? `${col.title}을(를) 골라 주세요`; }
+        else if (!col.options.includes(s)) return col.validate?.(value, row) ?? `'${s}' 은(는) ${col.title} 목록에 없습니다`;
     }
     return col.validate?.(value, row);
 }
@@ -97,17 +126,18 @@ function builtinValidate(col: SheetColumn, value: CellValue, row: SheetRow): str
 function cellValueOf(rows: SheetRow[], r: number, col: SheetColumn, emptyRow: SheetRow): CellValue {
     const row = r < rows.length ? rows[r] : emptyRow;
     if (col.compute) return col.compute(row);
-    return row[col.key] ?? (col.type === 'bool' ? false : col.type === 'list' ? [] : '');
+    return row[col.key] ?? (col.type === 'bool' ? false : isMulti(col.type) ? [] : '');
 }
 
 // ══════════════════════════════════════════════════════════════
-export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo, onApi, statusExtra, minWidth }: SheetProps) {
+export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo, onApi, statusExtra, minWidth, defaultSort }: SheetProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [active, setActive] = useState<{ r: number; c: number }>({ r: 0, c: 0 });
     const [anchor, setAnchor] = useState<{ r: number; c: number }>({ r: 0, c: 0 });
     const [edit, setEdit] = useState<{ r: number; c: number; text: string } | null>(null);
     const [menuRow, setMenuRow] = useState<number | null>(null);
     const [sugIdx, setSugIdx] = useState(0);
+    const [sort, setSort] = useState<SheetSort | null>(defaultSort ?? null);
     const dragRef = useRef(false);
     const fillRef = useRef(false);
     const [fillTo, setFillTo] = useState<number | null>(null);
@@ -116,6 +146,30 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
     const ghostR = rows.length;                    // 맨 아래 빈 「새 행」 자리
     const emptyRow = useMemo<SheetRow>(() => ({ _id: '__ghost__' }), []);
     const nCols = columns.length;
+
+    // ── 정렬은 표시만 (order[viewR] = dataR) ─────────────────────
+    const order = useMemo<number[]>(() => {
+        const idx = rows.map((_, i) => i);
+        if (!sort) return idx;
+        const col = columns.find((c) => c.key === sort.key);
+        if (!col) return idx;
+        const getv = (i: number) => cellValueOf(rows, i, col, emptyRow);
+        const dir = sort.dir === 'asc' ? 1 : -1;
+        idx.sort((a, b) => {
+            let r: number;
+            if (col.type === 'number') r = (Number(getv(a)) || 0) - (Number(getv(b)) || 0);
+            else r = toText(col, getv(a)).localeCompare(toText(col, getv(b)), 'ko');
+            return r !== 0 ? r * dir : a - b;   // 안정 정렬(같으면 원래 순서)
+        });
+        return idx;
+    }, [rows, sort, columns, emptyRow]);
+
+    // 보이는 행 번호 → 데이터 행 번호. ghost·그 아래는 그대로(추가 자리)
+    const dataIndex = useCallback((viewR: number) =>
+        (viewR < order.length ? order[viewR] : rows.length + (viewR - order.length)), [order, rows.length]);
+
+    const cellView = useCallback((viewR: number, col: SheetColumn) =>
+        cellValueOf(rows, dataIndex(viewR), col, emptyRow), [rows, dataIndex, emptyRow]);
 
     const sel = useMemo(() => ({
         r1: Math.min(active.r, anchor.r), r2: Math.max(active.r, anchor.r),
@@ -137,9 +191,8 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
         if (!extend) setAnchor(p);
     }, [clamp]);
 
-    // ── 값 쓰기 (한 번의 onCommit = 한 undo) ──────────────────
+    // ── 값 쓰기 (한 번의 onCommit = 한 undo) — r 은 '데이터' 행 번호 ─
     const setCells = useCallback((changes: { r: number; c: number; value: CellValue }[]) => {
-        // 필요하면 행을 늘린다 (ghost 이상으로 붙이기)
         const maxR = changes.reduce((m, ch) => Math.max(m, ch.r), -1);
         const next = rows.map((row) => ({ ...row }));
         while (next.length <= maxR) next.push(newRow());
@@ -155,25 +208,29 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
     const beginEdit = useCallback((r: number, c: number, initialText?: string) => {
         const col = columns[c];
         if (!col || col.readOnly || col.compute) return;
+        const di = dataIndex(r);
         if (col.type === 'bool') {          // 불리언은 편집창 없이 토글
-            const cur = !!cellValueOf(rows, r, col, emptyRow);
-            setCells([{ r, c, value: !cur }]);
+            const cur = !!cellValueOf(rows, di, col, emptyRow);
+            setCells([{ r: di, c, value: !cur }]);
             return;
         }
-        const text = initialText != null ? initialText : toText(col, cellValueOf(rows, r, col, emptyRow));
+        // 글자 키로 열 땐 text·number·combo·list 만 그 글자로 시작한다.
+        // select·multiselect 는 기존 값을 유지한 채 편집창을 연다(글자는 목록 이동/체크에 쓰지 않는다).
+        const useTyped = initialText != null && col.type !== 'select' && col.type !== 'multiselect';
+        const text = useTyped ? initialText : toText(col, cellValueOf(rows, di, col, emptyRow));
         setEdit({ r, c, text });
         setSugIdx(0);
-    }, [columns, rows, emptyRow, setCells]);
+    }, [columns, rows, emptyRow, setCells, dataIndex]);
 
     const commitEdit = useCallback((moveR: number, moveC: number, pickText?: string) => {
         if (!edit) return;
         const col = columns[edit.c];
         const raw = pickText != null ? pickText : edit.text;
-        setCells([{ r: edit.r, c: edit.c, value: parseInput(col, raw) }]);
+        setCells([{ r: dataIndex(edit.r), c: edit.c, value: parseInput(col, raw) }]);
         setEdit(null);
         moveTo(edit.r + moveR, edit.c + moveC);
         focusGrid();
-    }, [edit, columns, setCells, moveTo]);
+    }, [edit, columns, setCells, moveTo, dataIndex]);
 
     const cancelEdit = useCallback(() => { setEdit(null); focusGrid(); }, []);
 
@@ -184,11 +241,11 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
             for (let c = sel.c1; c <= sel.c2; c++) {
                 const col = columns[c];
                 if (!col || col.readOnly || col.compute) continue;
-                changes.push({ r, c, value: col.type === 'bool' ? false : col.type === 'list' ? [] : '' });
+                changes.push({ r: dataIndex(r), c, value: col.type === 'bool' ? false : isMulti(col.type) ? [] : '' });
             }
         }
         if (changes.length) setCells(changes);
-    }, [sel, rows.length, columns, setCells]);
+    }, [sel, rows.length, columns, setCells, dataIndex]);
 
     // ── 채우기 (Ctrl+D · 핸들) ────────────────────────────────
     const fillDown = useCallback((toR: number) => {
@@ -196,22 +253,22 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
         for (let c = sel.c1; c <= sel.c2; c++) {
             const col = columns[c];
             if (!col || col.readOnly || col.compute) continue;
-            const src = cellValueOf(rows, sel.r1, col, emptyRow);
-            for (let r = sel.r1 + 1; r <= toR; r++) changes.push({ r, c, value: src });
+            const src = cellView(sel.r1, col);
+            for (let r = sel.r1 + 1; r <= toR; r++) changes.push({ r: dataIndex(r), c, value: src });
         }
         if (changes.length) setCells(changes);
-    }, [sel, columns, rows, emptyRow, setCells]);
+    }, [sel, columns, cellView, setCells, dataIndex]);
 
     // ── 복사 / 붙이기 ─────────────────────────────────────────
     const buildTsv = useCallback(() => {
         const lines: string[] = [];
         for (let r = sel.r1; r <= sel.r2; r++) {
             const cells: string[] = [];
-            for (let c = sel.c1; c <= sel.c2; c++) cells.push(toText(columns[c], cellValueOf(rows, r, columns[c], emptyRow)));
+            for (let c = sel.c1; c <= sel.c2; c++) cells.push(toText(columns[c], cellView(r, columns[c])));
             lines.push(cells.join('\t'));
         }
         return lines.join('\n');
-    }, [sel, columns, rows, emptyRow]);
+    }, [sel, columns, cellView]);
 
     const doCopy = useCallback(() => {
         const tsv = buildTsv();
@@ -230,36 +287,39 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
                 if (c >= nCols) return;
                 const col = columns[c];
                 if (col.readOnly || col.compute) return;
-                changes.push({ r: atR + dr, c, value: parseInput(col, raw) });
+                changes.push({ r: dataIndex(atR + dr), c, value: parseInput(col, raw) });
             });
         });
         if (changes.length) setCells(changes);
-        // 선택을 붙인 범위로
+        // 선택을 붙인 범위로 (보이는 좌표 기준)
         const lastR = atR + grid.length - 1;
         const lastC = Math.min(nCols - 1, atC + Math.max(...grid.map((l) => l.length)) - 1);
         setAnchor({ r: atR, c: atC });
         setActive({ r: lastR, c: lastC });
-    }, [active, columns, nCols, setCells]);
+    }, [active, columns, nCols, setCells, dataIndex]);
 
-    // ── 행 조작 ───────────────────────────────────────────────
+    // ── 행 조작 (viewR → 데이터 위치로 옮겨 splice) ────────────
     const rowOp = useCallback((kind: 'above' | 'below' | 'dup' | 'del', r: number) => {
         setMenuRow(null);
+        const di = dataIndex(r);
         if (r >= rows.length && kind !== 'above' && kind !== 'below') return;
         const next = rows.map((row) => ({ ...row }));
-        if (kind === 'above') next.splice(r, 0, newRow());
-        else if (kind === 'below') next.splice(r + 1, 0, newRow());
-        else if (kind === 'dup') { if (r < rows.length) next.splice(r + 1, 0, { ...rows[r], _id: newRow()._id }); }
-        else if (kind === 'del') { if (r < rows.length) next.splice(r, 1); }
+        if (kind === 'above') next.splice(di, 0, newRow());
+        else if (kind === 'below') next.splice(di + 1, 0, newRow());
+        else if (kind === 'dup') { if (r < rows.length) next.splice(di + 1, 0, { ...rows[di], _id: newRow()._id }); }
+        else if (kind === 'del') { if (r < rows.length) next.splice(di, 1); }
         onCommit(next);
-    }, [rows, newRow, onCommit]);
+    }, [rows, newRow, onCommit, dataIndex]);
 
     const deleteSelectedRows = useCallback(() => {
-        const from = sel.r1, to = Math.min(sel.r2, rows.length - 1);
-        if (from > rows.length - 1) return;
-        const next = rows.filter((_, i) => i < from || i > to);
+        const fromV = sel.r1, toV = Math.min(sel.r2, rows.length - 1);
+        if (fromV > rows.length - 1) return;
+        const rm = new Set<number>();
+        for (let v = fromV; v <= toV; v++) rm.add(dataIndex(v));
+        const next = rows.filter((_, i) => !rm.has(i));
         onCommit(next);
-        moveTo(Math.min(from, next.length), active.c);
-    }, [sel, rows, onCommit, moveTo, active.c]);
+        moveTo(Math.min(fromV, next.length), active.c);
+    }, [sel, rows, onCommit, moveTo, active.c, dataIndex]);
 
     const addRow = useCallback(() => {
         const next = [...rows.map((row) => ({ ...row })), newRow()];
@@ -268,6 +328,15 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
     }, [rows, newRow, onCommit, moveTo]);
 
     useEffect(() => { onApi?.({ addRow, deleteSelectedRows }); }, [onApi, addRow, deleteSelectedRows]);
+
+    // ── 정렬 토글 (없음 → 오름 → 내림 → 없음) ──────────────────
+    const toggleSort = useCallback((col: SheetColumn) => {
+        if (!col.sortable) return;
+        setSort((prev) => {
+            if (!prev || prev.key !== col.key) return { key: col.key, dir: 'asc' };
+            return prev.dir === 'asc' ? { key: col.key, dir: 'desc' } : null;
+        });
+    }, []);
 
     // ── 문서 레벨 키·복붙 (격자에 포커스가 있을 때만) ─────────
     const selectRange = useCallback((r1: number, c1: number, r2: number, c2: number) => {
@@ -301,8 +370,10 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
             if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); clearSelection(); return; }
             if (k === 'Escape') { e.preventDefault(); setAnchor(active); return; }
             if (k === ' ') { e.preventDefault(); if (columns[active.c]?.type === 'bool') beginEdit(active.r, active.c); return; }
-            // 글자 입력 → 그 글자로 편집 시작 (기존 값 덮음)
-            if (!meta && !e.altKey && k.length === 1) { e.preventDefault(); beginEdit(active.r, active.c, k); }
+            // 한글 첫 글자(#4): IME 조합 키(Process·isComposing)와 글자 키는 preventDefault 없이
+            //  빈 값으로 편집창을 열고 동기(flushSync) 포커스만 넘긴다. 첫 글자는 편집창이 IME 조합으로 받는다.
+            if (k === 'Process' || e.isComposing) { flushSync(() => beginEdit(active.r, active.c, '')); return; }
+            if (!meta && !e.altKey && k.length === 1) { flushSync(() => beginEdit(active.r, active.c, '')); return; }
         };
         const onPasteEvt = (e: ClipboardEvent) => {
             if (!focusedRef.current || edit) return;
@@ -373,6 +444,7 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
             <div
                 ref={containerRef}
                 tabIndex={0}
+                data-tour="sheet-grid"
                 onFocus={() => { focusedRef.current = true; }}
                 onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusedRef.current = false; }}
                 className="overflow-auto outline-none border border-line rounded-md select-none"
@@ -382,36 +454,45 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
                     <thead className="sticky top-0 z-20">
                         <tr>
                             <th className="sticky left-0 z-30 bg-panel border-b border-r border-line w-10 min-w-[2.5rem]" />
-                            {columns.map((col) => (
-                                <th key={col.key}
-                                    className="bg-panel border-b border-line px-2 py-1.5 text-left font-medium text-muted whitespace-nowrap"
-                                    style={{ width: col.width ?? 120, minWidth: col.width ?? 120 }}>
-                                    {col.title}
-                                </th>
-                            ))}
+                            {columns.map((col) => {
+                                const arrow = sort && sort.key === col.key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+                                return (
+                                    <th key={col.key}
+                                        onClick={() => toggleSort(col)}
+                                        title={col.help}
+                                        className={`bg-panel border-b border-line px-2 py-1.5 text-left font-medium text-muted whitespace-nowrap ${col.sortable ? 'cursor-pointer hover:text-text' : ''}`}
+                                        style={{ width: col.width ?? 120, minWidth: col.width ?? 120 }}>
+                                        {col.title}
+                                        {col.help && <span className="ml-1 text-muted/60" title={col.help}>ⓘ</span>}
+                                        {arrow && <span className="text-accent">{arrow}</span>}
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody>
                         {Array.from({ length: totalRows }, (_, r) => {
                             const isGhost = r === ghostR;
+                            const di = dataIndex(r);
+                            const dataRow = di < rows.length ? rows[di] : emptyRow;
                             const rowSelected = inSel(r, 0) && sel.c1 === 0 && sel.c2 === nCols - 1;
                             return (
-                                <tr key={r < rows.length ? rows[r]._id : `__ghost_${r}`}
+                                <tr key={di < rows.length ? rows[di]._id : `__ghost_${r}`}
                                     className={isGhost ? 'opacity-70' : ''}>
                                     <RowHead r={r} isGhost={isGhost} selected={rowSelected}
                                         onSelectRow={() => { setAnchor({ r, c: 0 }); setActive({ r, c: nCols - 1 }); focusedRef.current = true; focusGrid(); }}
                                         menuOpen={menuRow === r} onToggleMenu={() => setMenuRow(menuRow === r ? null : r)}
                                         onOp={(kind) => rowOp(kind, r)} />
                                     {columns.map((col, c) => {
-                                        const value = cellValueOf(rows, r, col, emptyRow);
-                                        const err = isGhost ? undefined : builtinValidate(col, value, rows[r] ?? emptyRow);
-                                        const note = isGhost || err ? undefined : col.note?.(value, rows[r] ?? emptyRow);
+                                        const value = cellValueOf(rows, di, col, emptyRow);
+                                        const err = isGhost ? undefined : builtinValidate(col, value, dataRow);
+                                        const note = isGhost || err ? undefined : col.note?.(value, dataRow);
                                         const selected = inSel(r, c);
                                         const isActive = active.r === r && active.c === c;
                                         const inFill = fillRef.current && fillTo != null && c >= sel.c1 && c <= sel.c2 && r > sel.r2 && r <= fillTo;
                                         const editing = edit?.r === r && edit?.c === c;
                                         return (
-                                            <Cell key={col.key} col={col} value={value} err={err} note={note}
+                                            <Cell key={col.key} col={col} value={value} row={dataRow} err={err} note={note}
                                                 selected={selected || inFill} isActive={isActive}
                                                 bottomRight={isActive && !editing}
                                                 onFillStart={() => { fillRef.current = true; setFillTo(sel.r2); }}
@@ -475,7 +556,7 @@ function RowHead({ r, isGhost, selected, onSelectRow, menuOpen, onToggleMenu, on
 
 // ── 셀 ────────────────────────────────────────────────────────
 interface CellProps {
-    col: SheetColumn; value: CellValue; err?: string; note?: string;
+    col: SheetColumn; value: CellValue; row: SheetRow; err?: string; note?: string;
     selected: boolean; isActive: boolean; bottomRight: boolean; editing: boolean; editText: string;
     sugIdx: number; setSugIdx: (n: number) => void;
     onFillStart: () => void;
@@ -503,8 +584,11 @@ function Cell(p: CellProps) {
         return (
             <td className="border-b border-r border-line px-2 py-1 relative z-30" style={{ ...base, overflow: 'visible' }}>
                 <div className="relative w-full h-6">
-                    <CellEditor col={col} initial={p.editText} sugIdx={p.sugIdx} setSugIdx={p.setSugIdx}
-                        onChange={p.onEditChange} onCommit={p.onEditCommit} onCancel={p.onEditCancel} />
+                    {col.type === 'multiselect'
+                        ? <MultiSelectEditor col={col} row={p.row} initial={p.editText}
+                            onCommit={p.onEditCommit} onCancel={p.onEditCancel} />
+                        : <CellEditor col={col} initial={p.editText} sugIdx={p.sugIdx} setSugIdx={p.setSugIdx}
+                            onChange={p.onEditChange} onCommit={p.onEditCommit} onCancel={p.onEditCancel} />}
                 </div>
             </td>
         );
@@ -512,7 +596,7 @@ function Cell(p: CellProps) {
 
     let shown: ReactNode;
     if (col.type === 'bool') shown = value ? '✓' : '';
-    else if (col.type === 'list') shown = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+    else if (isMulti(col.type)) shown = Array.isArray(value) ? value.join(', ') : String(value ?? '');
     else shown = String(value ?? '');
 
     return (
@@ -529,7 +613,7 @@ function Cell(p: CellProps) {
     );
 }
 
-// ── 셀 편집창 (자동완성 · select) ─────────────────────────────
+// ── 셀 편집창 (자동완성 · select · combo) ─────────────────────
 function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCancel }: {
     col: SheetColumn; initial: string; sugIdx: number; setSugIdx: (n: number) => void;
     onChange: (t: string) => void; onCommit: (dr: number, dc: number, pick?: string) => void; onCancel: () => void;
@@ -555,14 +639,16 @@ function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCan
         );
     }
 
-    // text · number · list
-    const pool = col.suggest ?? (col.type === 'list' ? col.options : undefined) ?? [];
-    const frag = col.type === 'list' ? initial.split(',').pop()!.trim() : initial.trim();
-    const sug = frag && pool.length
-        ? pool.filter((o) => o.toLowerCase().includes(frag.toLowerCase())).slice(0, 8)
-        : [];
+    // text · number · list · combo
+    const isCombo = col.type === 'combo';
+    const isList = col.type === 'list';
+    const pool = isCombo ? (col.options ?? []) : (col.suggest ?? (isList ? col.options : undefined) ?? []);
+    const frag = isList ? initial.split(',').pop()!.trim() : initial.trim();
+    const filtered = frag ? pool.filter((o) => o.toLowerCase().includes(frag.toLowerCase())) : pool;
+    // combo 는 빈 칸에서도 목록 전체를 보여준다(타이핑으로 걸러진다). 그 밖엔 글자가 있어야 자동완성.
+    const sug = pool.length && (frag !== '' || isCombo) ? filtered.slice(0, isCombo ? 50 : 8) : [];
     const applyPick = (pick: string): string => {
-        if (col.type !== 'list') return pick;
+        if (!isList) return pick;
         const parts = initial.split(',');
         parts[parts.length - 1] = ` ${pick}`;
         return parts.join(',').replace(/^\s+/, '');
@@ -574,6 +660,7 @@ function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCan
                 inputMode={col.type === 'number' ? 'decimal' : undefined}
                 onChange={(e) => { onChange(e.target.value); setSugIdx(0); }}
                 onKeyDown={(e) => {
+                    if (e.nativeEvent.isComposing) return;   // #4 IME 조합 중엔 Enter·Tab 을 확정으로 읽지 않는다
                     if (e.key === 'Escape') { e.preventDefault(); onCancel(); return; }
                     if (e.key === 'ArrowDown' && sug.length) { e.preventDefault(); setSugIdx(Math.min(sug.length - 1, sugIdx + 1)); return; }
                     if (e.key === 'ArrowUp' && sug.length) { e.preventDefault(); setSugIdx(Math.max(0, sugIdx - 1)); return; }
@@ -605,6 +692,59 @@ function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCan
     );
 }
 
+// ── 다중 선택 편집창 (체크박스 목록) ──────────────────────────
+function MultiSelectEditor({ col, row, initial, onCommit, onCancel }: {
+    col: SheetColumn; row: SheetRow; initial: string;
+    onCommit: (dr: number, dc: number, pick?: string) => void; onCancel: () => void;
+}) {
+    const opts = col.optionsOf ? col.optionsOf(row) : (col.options ?? []);
+    const disabled = col.disabledOptions ? col.disabledOptions(row) : {};
+    const boxRef = useRef<HTMLDivElement>(null);
+    const [sel, setSel] = useState<Set<string>>(() => new Set(initial.split(',').map((s) => s.trim()).filter(Boolean)));
+    const [cursor, setCursor] = useState(0);
+    useEffect(() => { boxRef.current?.focus(); }, []);
+
+    const join = (s: Set<string>) => {
+        // 목록 순서대로 묶고, 목록에 없지만 이미 담겨 있던 값은 뒤에 붙인다
+        const inOrder = opts.filter((o) => s.has(o));
+        const extra = [...s].filter((o) => !opts.includes(o));
+        return [...inOrder, ...extra].join(', ');
+    };
+    const toggle = (o: string) => {
+        if (disabled[o]) return;
+        setSel((prev) => { const n = new Set(prev); if (n.has(o)) n.delete(o); else n.add(o); return n; });
+    };
+
+    return (
+        <div ref={boxRef} tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Escape') { e.preventDefault(); onCancel(); return; }
+                if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(opts.length - 1, c + 1)); return; }
+                if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(0, c - 1)); return; }
+                if (e.key === ' ') { e.preventDefault(); const o = opts[cursor]; if (o) toggle(o); return; }
+                if (e.key === 'Enter') { e.preventDefault(); onCommit(0, 0, join(sel)); return; }
+                if (e.key === 'Tab') { e.preventDefault(); onCommit(0, e.shiftKey ? -1 : 1, join(sel)); return; }
+            }}
+            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onCommit(0, 0, join(sel)); }}
+            className="absolute left-0 top-0 min-w-full w-max bg-panel2 border-2 border-accent rounded-md shadow-xl z-40 max-h-56 overflow-auto outline-none py-1">
+            {opts.length === 0 && <div className="px-2 py-1 text-[12px] text-muted">고를 항목이 없습니다.</div>}
+            {opts.map((o, i) => {
+                const dis = disabled[o];
+                const checked = sel.has(o);
+                return (
+                    <button key={o} type="button" title={dis || undefined}
+                        onMouseDown={(e) => { e.preventDefault(); setCursor(i); if (!dis) toggle(o); }}
+                        className={`flex w-full items-center gap-2 text-left px-2 py-1 text-[12px] ${i === cursor ? 'bg-accent/20' : ''} ${dis ? 'text-muted/50 cursor-not-allowed' : 'text-text hover:bg-line'}`}>
+                        <span aria-hidden="true">{checked ? '☑' : '☐'}</span>
+                        <span className="whitespace-nowrap">{o}</span>
+                        {dis && <span className="ml-auto pl-3 text-[10px] text-muted/70 whitespace-nowrap">{dis}</span>}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 // ── 상태줄 ────────────────────────────────────────────────────
 function StatusLine({ sel, rowCount, nCols, extra }: { sel: { r1: number; r2: number; c1: number; c2: number }; rowCount: number; nCols: number; extra?: ReactNode }) {
     const rows = sel.r2 - sel.r1 + 1;
@@ -614,9 +754,9 @@ function StatusLine({ sel, rowCount, nCols, extra }: { sel: { r1: number; r2: nu
         <div className="shrink-0 flex items-center gap-2 px-2 py-1 text-[11px] text-muted border-x border-b border-line rounded-b-md bg-panel/60 overflow-x-auto whitespace-nowrap">
             <span>선택 {rows}행 × {cols}열</span>
             <span className="text-muted/50">·</span>
-            <span>{all ? 'Del 값 비움 · ⌘V 붙이기' : '글자 입력=편집 · ⌘C 복사 · ⌘V 붙이기'}</span>
+            <span>{all ? `Del 값 비움 · ${MOD}+V 붙이기` : `글자 입력=편집 · ${MOD}+C 복사 · ${MOD}+V 붙이기`}</span>
             <span className="text-muted/50">·</span>
-            <span>Enter 아래(끝에서 새 행) · ⌘D 아래로 채우기 · ⋯ 행 삽입/삭제</span>
+            <span>Enter 아래(끝에서 새 행) · {MOD}+D 아래로 채우기 · ⋯ 행 삽입/삭제</span>
             <span className="text-muted/50">· 전체 {rowCount}행</span>
             {extra && <span className="ml-auto flex items-center">{extra}</span>}
         </div>

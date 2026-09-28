@@ -3,12 +3,28 @@
  * seed 로 재현 가능(자체 PRNG, Math.random 안 씀). Worker 가 있으면 Worker 에서 돈다.
  */
 import type { Doc } from '../types/doc';
-import type { Assignment, TimetableSpec } from '../types/schema';
+import type { Agent, Assignment, TimetableSpec } from '../types/schema';
+import { isHomeroomAgent } from '../types/schema';
 import type {
     EngineContext, SolveOptions, SolveProgress, SolveResult, SolveCandidate,
 } from './api';
 import { buildContext, hm } from './context';
 import { evaluateAll } from './evaluate';
+
+/**
+ * 교사 가용성 키 — 담임(HOMEROOM)은 반별로 갈라(`__homeroom__:<trackId>`) 다른 반 담임끼리 충돌로 잡지 않는다.
+ * 협력수업은 두 교사(agentId·coAgentId)를 둘 다 돌려준다. 실제 교사는 id 그대로.
+ */
+function agentKeysOf(v: { agentId?: string; coAgentId?: string; trackId: string }): string[] {
+    const out: string[] = [];
+    const add = (id?: string) => {
+        if (!id) return;
+        const k = isHomeroomAgent(id) ? `__homeroom__:${v.trackId}` : id;
+        if (!out.includes(k)) out.push(k);
+    };
+    add(v.agentId); add(v.coAgentId);
+    return out;
+}
 
 // ──────────────────────────────── PRNG (mulberry32)
 function makePRNG(seed: number) {
@@ -27,7 +43,7 @@ interface Strategy { label: string; strategy: string; mul: Record<string, number
 const STRATEGIES: Strategy[] = [
     { label: '균형형', strategy: 'balanced', mul: {} },
     { label: '부장 보호형', strategy: 'protect', mul: { avoid: 3, 'priority-early': 3 } },
-    { label: '연강·붙이기형', strategy: 'adjacent', mul: { 'subject-adjacent': 3, 'prefer-consecutive': 2 } },
+    { label: '연속 수업형', strategy: 'adjacent', mul: { 'subject-adjacent': 3, 'prefer-consecutive': 2 } },
     { label: '공강 압축형', strategy: 'compact', mul: { 'compact-day': 3, 'lunch-adjacent': 2 } },
 ];
 
@@ -36,6 +52,7 @@ interface Var {
     baseId: string;
     demandId: string;
     agentId?: string;
+    coAgentId?: string;
     trackId: string;
     activityId?: string;
     resourceId?: string;
@@ -43,6 +60,7 @@ interface Var {
     blockId?: string;
     seq: number;
     cellIds: string[];      // 칸마다 붙일 assignment id
+    agentKeys?: string[];   // 교사 가용성 키(미리 계산 · min-conflicts 뜨거운 경로용)
     domain: Cell[];
     initial?: Cell;
     reserved?: { s: number; e: number }; // 이 교사의 식사 확보용 예약 점심 시각(분)
@@ -59,12 +77,15 @@ function timetableOfTrack(doc: Doc, ctx: EngineContext): (trackId: string) => st
     };
 }
 
-function computeDomain(ctx: EngineContext, v: { trackId: string; agentId?: string; resourceId?: string; span: number; reserved?: { s: number; e: number } }, keptOccupied: Set<string>, spec: TimetableSpec | undefined): Cell[] {
+function computeDomain(ctx: EngineContext, v: { trackId: string; agentId?: string; coAgentId?: string; resourceId?: string; span: number; reserved?: { s: number; e: number } }, keptOccupied: Set<string>, spec: TimetableSpec | undefined): Cell[] {
     const out: Cell[] = [];
     if (!spec) return out;
     const days = spec.activeDays ?? [0, 1, 2, 3, 4];
     const trackRef = { kind: 'track' as const, id: v.trackId };
-    const agentRef = v.agentId ? { kind: 'agent' as const, id: v.agentId } : undefined;
+    // 담임(HOMEROOM)은 교사 금지칸이 없다 — 실제 교사만 본다(협력수업이면 둘 다)
+    const agentRefs = [v.agentId, v.coAgentId]
+        .filter((id): id is string => !!id && !isHomeroomAgent(id))
+        .map((id) => ({ kind: 'agent' as const, id }));
     const resRef = v.resourceId ? { kind: 'resource' as const, id: v.resourceId } : undefined;
     const freeCell = (day: number, idx: number): boolean => {
         if (keptOccupied.has(ck(v.trackId, day, idx))) return false;
@@ -74,7 +95,7 @@ function computeDomain(ctx: EngineContext, v: { trackId: string; agentId?: strin
         // 예약 점심 시각과 겹치면 뺀다 → 교사 식사 슬롯을 구성 단계에서 비워 둔다
         if (v.reserved && clock.startMin < v.reserved.e && v.reserved.s < clock.endMin) return false;
         if (ctx.isBlocked(trackRef, clock, v.trackId)) return false;
-        if (agentRef && ctx.isBlocked(agentRef, clock, v.trackId)) return false;
+        for (const ar of agentRefs) if (ctx.isBlocked(ar, clock, v.trackId)) return false;
         if (resRef && ctx.isBlocked(resRef, clock, v.trackId)) return false;
         return true;
     };
@@ -133,7 +154,7 @@ function computeReservations(doc: Doc, ctx: EngineContext): Map<string, { s: num
     const res = new Map<string, { s: number; e: number }>();
     const gradeClocks = gradeClockList(ctx);
     for (const ag of doc.agents) {
-        if (ag.role === '담임') continue;
+        if (isHomeroomAgent(ag.id) || ag.role === '담임 겸 전담') continue;
         const grades = new Set<number>(); let load = 0; let low: number | undefined;
         for (const d of doc.demands) {
             if (d.agentId !== ag.id) continue;
@@ -172,13 +193,14 @@ function buildVars(doc: Doc, ctx: EngineContext, opts: SolveOptions, keepPinned:
             const a0 = g[0];
             const spec = ctx.specOfTrack(a0.trackId);
             const v: Var = {
-                baseId: base, demandId: a0.demandId ?? '', agentId: a0.agentId, trackId: a0.trackId,
+                baseId: base, demandId: a0.demandId ?? '', agentId: a0.agentId, coAgentId: a0.coAgentId, trackId: a0.trackId,
                 activityId: a0.activityId, resourceId: a0.resourceId, span: g.length, blockId: a0.blockId,
                 seq: a0.seq ?? 1, cellIds: g.map((x) => x.id),
                 domain: [], initial: { day: a0.dayIndex, slots: g.map((x) => x.slotIndex) },
                 reserved: a0.agentId ? reservations.get(a0.agentId) : undefined,
             };
             v.domain = computeDomain(ctx, v, keptOccupied, spec);
+            v.agentKeys = agentKeysOf(v);
             // 현재 자리도 도메인에 포함되게
             if (!v.domain.some((c) => c.day === v.initial!.day && c.slots[0] === v.initial!.slots[0])) v.domain.push(v.initial!);
             return v;
@@ -202,13 +224,14 @@ function buildVars(doc: Doc, ctx: EngineContext, opts: SolveOptions, keepPinned:
         const makeVar = (span: number) => {
             const useRoom = d.resourceId && roomUsed < effRoom;
             const v: Var = {
-                baseId: `${d.id}#${seq}`, demandId: d.id, agentId: d.agentId, trackId: d.trackId,
+                baseId: `${d.id}#${seq}`, demandId: d.id, agentId: d.agentId, coAgentId: d.coAgentId, trackId: d.trackId,
                 activityId: d.activityId, resourceId: useRoom ? d.resourceId : undefined, span,
                 blockId: span > 1 ? `blk-${d.id}-${seq}` : undefined, seq,
                 cellIds: Array.from({ length: span }, (_, k) => `${d.id}#${seq}${span > 1 ? `-${k}` : ''}`),
                 domain: [], reserved: reservations.get(d.agentId),
             };
             v.domain = computeDomain(ctx, v, keptOccupied, spec);
+            v.agentKeys = agentKeysOf(v);
             vars.push(v);
             roomUsed += span;
             seq += span;
@@ -231,8 +254,8 @@ function buildAssignments(vars: Var[], state: (Cell | undefined)[], kept: Assign
         for (let k = 0; k < v.span; k++) {
             list.push({
                 kind: 'work', id: v.cellIds[k], timetableId: ttOf(v.trackId), trackId: v.trackId,
-                dayIndex: cell.day, slotIndex: cell.slots[k], agentId: v.agentId, activityId: v.activityId,
-                resourceId: v.resourceId, demandId: v.demandId, seq: v.seq, blockId: v.blockId,
+                dayIndex: cell.day, slotIndex: cell.slots[k], agentId: v.agentId, coAgentId: v.coAgentId,
+                activityId: v.activityId, resourceId: v.resourceId, demandId: v.demandId, seq: v.seq, blockId: v.blockId,
             });
             owners.push(vi);
         }
@@ -273,7 +296,7 @@ function ownerMapOf(list: Assignment[], owners: number[]): Map<string, number> {
 }
 
 /** doc.rules 에서 켜진 하드 규칙 templateId 집합 */
-const HARD_IDS = ['no-overlap-track', 'no-overlap-agent', 'no-overlap-resource', 'blocked-cell', 'demand-count', 'block-contiguous', 'cycle-order', 'agent-lunch-free'];
+const HARD_IDS = ['no-overlap-track', 'no-overlap-agent', 'no-overlap-resource', 'blocked-cell', 'demand-count', 'block-contiguous', 'cycle-order', 'agent-lunch-free', 'homeroom-plus-free'];
 function enabledHard(doc: Doc): Set<string> {
     const on = new Set(doc.rules.filter((r) => r.enabled).map((r) => r.templateId));
     return new Set(HARD_IDS.filter((id) => on.has(id)));
@@ -296,8 +319,15 @@ function hardScan(ctx: EngineContext, doc: Doc, list: Assignment[], ownerById: M
         for (const idxs of m.values()) if (idxs.length > 1) { total += idxs.length - 1; for (const i of idxs) bump(list[i].id); }
     }
     if (on.has('no-overlap-agent')) {
+        // 실제 교사(담임 제외)만 · 협력수업 둘째 교사도 그 교사로 센다
         const byAgent = new Map<string, number[]>();
-        for (let i = 0; i < list.length; i++) { const a = list[i]; if (!a.agentId) continue; (byAgent.get(a.agentId) ?? byAgent.set(a.agentId, []).get(a.agentId)!).push(i); }
+        for (let i = 0; i < list.length; i++) {
+            const a = list[i];
+            for (const t of [a.agentId, a.coAgentId]) {
+                if (!t || isHomeroomAgent(t)) continue;
+                (byAgent.get(t) ?? byAgent.set(t, []).get(t)!).push(i);
+            }
+        }
         for (const idxs of byAgent.values()) {
             for (let x = 0; x < idxs.length; x++) for (let y = x + 1; y < idxs.length; y++) {
                 const A = list[idxs[x]], B = list[idxs[y]], ca = clocks[idxs[x]], cb = clocks[idxs[y]];
@@ -326,7 +356,7 @@ function hardScan(ctx: EngineContext, doc: Doc, list: Assignment[], ownerById: M
         for (let i = 0; i < list.length; i++) {
             const a = list[i]; if (a.fixed) continue; const c = clocks[i]; if (!c) continue;
             const hit = ctx.isBlocked({ kind: 'track', id: a.trackId }, c, a.trackId)
-                || (!!a.agentId && ctx.isBlocked({ kind: 'agent', id: a.agentId }, c, a.trackId))
+                || ctx.agentsOf(a).some((ag) => ctx.isBlocked({ kind: 'agent', id: ag }, c, a.trackId))
                 || (!!a.resourceId && ctx.isBlocked({ kind: 'resource', id: a.resourceId }, c, a.trackId));
             if (hit) { total++; bump(a.id); }
         }
@@ -370,21 +400,60 @@ function hardScan(ctx: EngineContext, doc: Doc, list: Assignment[], ownerById: M
         }
     }
     if (on.has('agent-lunch-free')) {
-        const byAD = new Map<string, Assignment[]>();
-        for (const a of list) { if (!a.agentId) continue; const ag = ctx.agents.get(a.agentId); if (!ag || ag.role === '담임') continue; const k = `${a.agentId}|${a.dayIndex}`; (byAD.get(k) ?? byAD.set(k, []).get(k)!).push(a); }
-        for (const [, l] of byAD) {
-            const grades = new Set<number>(); for (const a of l) { const g = ctx.tracks.get(a.trackId)?.grade; if (g != null) grades.add(g); }
-            const lunches: { s: number; e: number }[] = []; for (const g of grades) lunches.push(...gradeLunchesLocal(ctx, g));
-            if (lunches.length === 0) continue;
-            const cs = l.map((a) => ctx.clockOf(a)).filter((c): c is NonNullable<typeof c> => !!c);
-            const free = lunches.some((L) => !cs.some((c) => c.startMin < L.e && L.s < c.endMin));
-            if (!free) { total++; for (const a of l) bump(a.id); }
+        // 실제 교사(담임·담임 겸 전담 제외)만 · 협력수업 둘째 교사 포함
+        const byAD = new Map<string, { ag: Agent; list: Assignment[] }>();
+        for (const a of list) {
+            for (const t of [a.agentId, a.coAgentId]) {
+                if (!t || isHomeroomAgent(t)) continue;
+                const ag = ctx.agents.get(t);
+                if (!ag || ag.role === '담임 겸 전담') continue;
+                const k = `${t}|${a.dayIndex}`;
+                let e = byAD.get(k); if (!e) { e = { ag, list: [] }; byAD.set(k, e); }
+                e.list.push(a);
+            }
+        }
+        for (const { ag, list: l } of byAD.values()) {
+            const cs = l.map((a) => ctx.clockOf(a)).filter((c): c is NonNullable<ReturnType<typeof ctx.clockOf>> => !!c);
+            let violated: boolean;
+            if (ag.lunchSpecId) {
+                const sp = ctx.specs.get(ag.lunchSpecId);
+                const lunches = sp ? sp.slots.filter((s) => s.kind === 'lunch').map((s) => ({ s: hm(s.start), e: hm(s.end) })) : [];
+                if (lunches.length === 0) continue;
+                violated = lunches.some((L) => cs.some((c) => c.startMin < L.e && L.s < c.endMin));
+            } else {
+                const grades = new Set<number>(); for (const a of l) { const g = ctx.tracks.get(a.trackId)?.grade; if (g != null) grades.add(g); }
+                const lunches: { s: number; e: number }[] = []; for (const g of grades) lunches.push(...gradeLunchesLocal(ctx, g));
+                if (lunches.length === 0) continue;
+                violated = !lunches.some((L) => !cs.some((c) => c.startMin < L.e && L.s < c.endMin));
+            }
+            if (violated) { total++; for (const a of l) bump(a.id); }
         }
     }
     if (on.has('demand-count')) {
         const cnt = new Map<string, number>(); const ids = new Map<string, string[]>();
         for (const a of list) if (a.demandId) { cnt.set(a.demandId, (cnt.get(a.demandId) ?? 0) + 1); (ids.get(a.demandId) ?? ids.set(a.demandId, []).get(a.demandId)!).push(a.id); }
         for (const d of doc.demands) { const placed = cnt.get(d.id) ?? 0; if (placed !== d.count) { total++; for (const id of ids.get(d.id) ?? []) bump(id); } }
+    }
+    if (on.has('homeroom-plus-free')) {
+        const plus = doc.agents.filter((ag) => ag.role === '담임 겸 전담' && ag.homeroomTrackIds?.length);
+        for (const ag of plus) {
+            const hts = new Set(ag.homeroomTrackIds!);
+            for (let i = 0; i < list.length; i++) {
+                const a = list[i];
+                if (a.agentId !== ag.id && a.coAgentId !== ag.id) continue;
+                if (hts.has(a.trackId)) continue;
+                const ca = clocks[i]; if (!ca) continue;
+                let covered = false;
+                for (let j = 0; j < list.length; j++) {
+                    const b = list[j];
+                    if (!hts.has(b.trackId)) continue;
+                    if (!b.agentId || isHomeroomAgent(b.agentId) || b.agentId === ag.id || b.fixed) continue;
+                    const cb = clocks[j];
+                    if (cb && ctx.overlaps(ca, cb)) { covered = true; break; }
+                }
+                if (!covered) { total++; bump(a.id); }
+            }
+        }
     }
     return { total, perVar };
 }
@@ -436,9 +505,12 @@ function solveCandidate(doc: Doc, ctx: EngineContext, vars: Var[], kept: Assignm
     };
     const trackFree = (trackId: string, cell: Cell) => cell.slots.every((s) => !occ.has(ck(trackId, cell.day, s)));
     const agentFree = (v: Var, cell: Cell): boolean => {
-        if (!v.agentId) return true;
-        const busy = agentBusy.get(v.agentId); if (!busy) return true;
-        for (const s of cell.slots) { const t = slotTime(v.trackId, cell.day, s); if (t && busy.some((b) => b.d === t.d && b.s < t.e && t.s < b.e)) return false; }
+        const keys = v.agentKeys ?? agentKeysOf(v);
+        if (keys.length === 0) return true;
+        for (const key of keys) {
+            const busy = agentBusy.get(key); if (!busy) continue;
+            for (const s of cell.slots) { const t = slotTime(v.trackId, cell.day, s); if (t && busy.some((b) => b.d === t.d && b.s < t.e && t.s < b.e)) return false; }
+        }
         return true;
     };
     const resFree = (v: Var, cell: Cell): boolean => {
@@ -448,11 +520,12 @@ function solveCandidate(doc: Doc, ctx: EngineContext, vars: Var[], kept: Assignm
         for (const s of cell.slots) { const t = slotTime(v.trackId, cell.day, s); if (!t) continue; let sim = 0; for (const b of busy) if (b.d === t.d && b.s < t.e && t.s < b.e) sim++; if (sim >= cap) return false; }
         return true;
     };
-    const register = (v: { agentId?: string; trackId: string; resourceId?: string; activityId?: string }, cell: Cell) => {
+    const register = (v: { agentId?: string; coAgentId?: string; trackId: string; resourceId?: string; activityId?: string; agentKeys?: string[] }, cell: Cell) => {
+        const keys = v.agentKeys ?? agentKeysOf(v);
         for (const s of cell.slots) {
             occ.add(ck(v.trackId, cell.day, s));
             const t = slotTime(v.trackId, cell.day, s); if (!t) continue;
-            if (v.agentId) (agentBusy.get(v.agentId) ?? agentBusy.set(v.agentId, []).get(v.agentId)!).push(t);
+            for (const key of keys) (agentBusy.get(key) ?? agentBusy.set(key, []).get(key)!).push(t);
             if (v.resourceId && v.activityId) (resBusy.get(v.activityId) ?? resBusy.set(v.activityId, []).get(v.activityId)!).push(t);
         }
     };
@@ -476,14 +549,15 @@ function solveCandidate(doc: Doc, ctx: EngineContext, vars: Var[], kept: Assignm
     const cellCnt = new Map<string, number>();
     const agentIv = new Map<string, { s: number; e: number; track: string; slot: number }[]>();
     const resIv = new Map<string, { s: number; e: number }[]>();
-    type Placeable = { agentId?: string; trackId: string; resourceId?: string; activityId?: string };
+    type Placeable = { agentId?: string; coAgentId?: string; trackId: string; resourceId?: string; activityId?: string; agentKeys?: string[] };
     const place = (v: Placeable, cell: Cell, delta: number) => {
+        const keys = v.agentKeys ?? agentKeysOf(v);
         for (const s of cell.slots) {
             const key = ck(v.trackId, cell.day, s);
             cellCnt.set(key, (cellCnt.get(key) ?? 0) + delta);
             const t = slotTime(v.trackId, cell.day, s); if (!t) continue;
-            if (v.agentId) {
-                const k = `${v.agentId}|${cell.day}`; const arr = agentIv.get(k) ?? agentIv.set(k, []).get(k)!;
+            for (const ak of keys) {
+                const k = `${ak}|${cell.day}`; const arr = agentIv.get(k) ?? agentIv.set(k, []).get(k)!;
                 if (delta > 0) arr.push({ s: t.s, e: t.e, track: v.trackId, slot: s });
                 else { const i = arr.findIndex((x) => x.s === t.s && x.e === t.e && x.track === v.trackId && x.slot === s); if (i >= 0) arr.splice(i, 1); }
             }
@@ -499,10 +573,11 @@ function solveCandidate(doc: Doc, ctx: EngineContext, vars: Var[], kept: Assignm
     //  그건 교사 겹침(물리적 불가능)보다 덜 나쁘므로 여기서 겹침을 최소화한다.)
     const localCost = (v: Var, cell: Cell): number => { // v 는 구조에서 빠져 있다고 가정
         let c = 0;
+        const keys = v.agentKeys ?? agentKeysOf(v);
         for (const s of cell.slots) {
             c += cellCnt.get(ck(v.trackId, cell.day, s)) ?? 0;
             const t = slotTime(v.trackId, cell.day, s); if (!t) continue;
-            if (v.agentId) for (const iv of agentIv.get(`${v.agentId}|${cell.day}`) ?? []) if (iv.s < t.e && t.s < iv.e) { if (iv.track === v.trackId && iv.slot === s) continue; c++; }
+            for (const ak of keys) for (const iv of agentIv.get(`${ak}|${cell.day}`) ?? []) if (iv.s < t.e && t.s < iv.e) { if (iv.track === v.trackId && iv.slot === s) continue; c++; }
             if (v.resourceId && v.activityId) { const cap = capOf(v.activityId); let sim = 0; for (const iv of resIv.get(`${v.activityId}|${cell.day}`) ?? []) if (iv.s < t.e && t.s < iv.e) sim++; if (sim >= cap) c += sim - cap + 1; }
         }
         return c;

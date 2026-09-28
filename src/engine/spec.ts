@@ -9,7 +9,7 @@ import { fmt } from './context';
 export function makeSpec(input: MakeSpecInput): TimetableSpec {
     const {
         id, name, periods, lunchAfter,
-        dayStart = '09:00', lessonMin = 40, breakMin = 10, lunchMin = 50, lessonsPerDay,
+        dayStart = '09:00', lessonMin = 40, breakMin = 10, lunchMin = 50, lessonsPerDay, grades,
     } = input;
 
     const [h, m] = dayStart.split(':').map(Number);
@@ -39,5 +39,6 @@ export function makeSpec(input: MakeSpecInput): TimetableSpec {
         dayEnd: fmt(t),
         slots,
         ...(lessonsPerDay ? { lessonsPerDay } : {}),
+        ...(grades ? { grades } : {}),
     };
 }

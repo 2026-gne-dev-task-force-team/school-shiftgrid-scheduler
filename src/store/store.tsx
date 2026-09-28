@@ -23,7 +23,7 @@ import {
 import { platform } from '../platform';
 import { sampleDoc } from '../io/sample';
 import * as ops from './doc-ops';
-import type { CellPos, BlockState } from './doc-ops';
+import type { CellPos, BlockState, SlotPos } from './doc-ops';
 import { uid } from './ids';
 
 export type { CellPos } from './doc-ops';
@@ -39,6 +39,8 @@ export interface EditFocus {
     dayIndex?: number;
     slotIndex?: number;
     ruleId?: string;
+    /** 같은 반 겹침 위반에서 건너올 때 강조할 배치들 (선생님 의견 #14) */
+    assignmentIds?: string[];
 }
 
 // ── 알림(세 줄 오류) ─────────────────────────────────────────
@@ -105,6 +107,8 @@ interface StoreValue {
     path: string | undefined;
     dirty: boolean;
     hasAutosave: boolean;
+    /** 웹: 마지막 자동 저장 시각 "HH:MM" (없으면 아직) — 상단 상태 표시용 (선생님 의견 #8) */
+    autosaveAt: string | undefined;
     canUndo: boolean; canRedo: boolean;
     undo: () => void; redo: () => void;
 
@@ -158,8 +162,8 @@ interface Actions {
     updateDemand: (id: string, patch: Partial<Demand>) => void;
     removeDemand: (id: string) => void;
     duplicateDemand: (id: string) => void;
-    cycleBlock: (target: TargetRef, dayIndex: number, slotIndex: number) => void;
-    setBlockState: (target: TargetRef, dayIndex: number, slotIndex: number, state: BlockState) => void;
+    cycleBlock: (target: TargetRef, pos: SlotPos) => void;
+    setBlockState: (target: TargetRef, pos: SlotPos, state: BlockState) => void;
     clearTempBlocks: () => void;
     addBlackout: (b: Omit<Blackout, 'id'>) => void;
     removeBlackout: (id: string) => void;
@@ -200,6 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const [focus, setFocus] = useState<EditFocus>({});
     const [autosaveDoc, setAutosaveDoc] = useState<Doc | null>(null);
     const [resumeShown, setResumeShown] = useState(true);
+    const [autosaveAt, setAutosaveAt] = useState<string | undefined>(undefined);
 
     // 첫 기동: 자동 보관본이 있으면 이어 할지 배너로 물어본다
     useEffect(() => {
@@ -210,18 +215,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return () => { live = false; };
     }, []);
 
-    // 자동저장 — 변경 뒤 2초 디바운스
+    const notify = useCallback((n: Omit<Notice, 'id'>) => {
+        setNotices((list) => [...list, { ...n, id: uid('nt') }].slice(-5));
+    }, []);
+
+    // 자동저장 — 변경 뒤 2초 디바운스. 웹에서는 성공하면 조용한 토스트로 알린다(선생님 의견 #8)
     const firstRun = useRef(true);
     useEffect(() => {
         if (firstRun.current) { firstRun.current = false; return; }
         if (!hist.dirty) return;
-        const id = setTimeout(() => { platform.autosave(doc).catch(() => { /* 조용히 */ }); }, 2000);
+        const id = setTimeout(() => {
+            platform.autosave(doc)
+                .then(() => {
+                    if (platform.kind === 'web') {
+                        setAutosaveAt(hhmm());
+                        notify({
+                            kind: 'info', title: `자동 저장됨 ${hhmm()}`,
+                            lines: ['이 브라우저에만 저장됩니다. 작업 파일로 내려받아 두세요.'],
+                        });
+                    }
+                })
+                .catch(() => { /* 조용히 */ });
+        }, 2000);
         return () => clearTimeout(id);
-    }, [doc, hist.dirty]);
-
-    const notify = useCallback((n: Omit<Notice, 'id'>) => {
-        setNotices((list) => [...list, { ...n, id: uid('nt') }].slice(-5));
-    }, []);
+    }, [doc, hist.dirty, notify]);
     const dismiss = useCallback((id: string) => setNotices((l) => l.filter((n) => n.id !== id)), []);
 
     const runEngine = useCallback(<T,>(what: string, fn: () => T): T | undefined => {
@@ -229,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         catch (e) {
             notify({
                 kind: 'error', title: `${what} 을(를) 못 했습니다`,
-                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '엔진이 아직 스텁이라 그렇습니다. 통합되면 사라집니다.'],
+                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '다시 시도해 보세요. 계속되면 작업 파일을 내려받아 담당자에게 보내 주세요.'],
             });
             return undefined;
         }
@@ -240,7 +257,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         catch (e) {
             notify({
                 kind: 'error', title: `${what} 을(를) 못 했습니다`,
-                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '엔진이 아직 스텁이라 그렇습니다. 통합되면 사라집니다.'],
+                lines: [`${what} 을(를) 하려다 멈췄습니다.`, msgOf(e), '다시 시도해 보세요. 계속되면 작업 파일을 내려받아 담당자에게 보내 주세요.'],
             });
             return undefined;
         }
@@ -269,7 +286,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         updateResource: (id, patch) => commit((d) => ops.updateResource(d, id, patch)),
         removeResource: (id) => commit((d) => ops.removeResource(d, id)),
         addSpec: (input) => {
-            const spec = runEngine('시간 규격 만들기', () => makeSpec(input));
+            const spec = runEngine('시간 틀 만들기', () => makeSpec(input));
             if (spec) commit((d) => ops.addSpec(d, spec));
         },
         removeSpec: (id) => commit((d) => ops.removeSpec(d, id)),
@@ -281,8 +298,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         updateDemand: (id, patch) => commit((d) => ops.updateDemand(d, id, patch)),
         removeDemand: (id) => commit((d) => ops.removeDemand(d, id)),
         duplicateDemand: (id) => commit((d) => ops.duplicateDemand(d, id)),
-        cycleBlock: (target, dayIndex, slotIndex) => commit((d) => ops.cycleBlock(d, target, dayIndex, slotIndex)),
-        setBlockState: (target, dayIndex, slotIndex, state) => commit((d) => ops.setBlockState(d, target, dayIndex, slotIndex, state)),
+        cycleBlock: (target, pos) => commit((d) => ops.cycleBlock(d, target, pos)),
+        setBlockState: (target, pos, state) => commit((d) => ops.setBlockState(d, target, pos, state)),
         clearTempBlocks: () => commit((d) => ops.clearTempBlocks(d)),
         addBlackout: (b) => commit((d) => ops.addBlackout(d, b)),
         removeBlackout: (id) => commit((d) => ops.removeBlackout(d, id)),
@@ -308,7 +325,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         applyDemandSheet: (p) => commit((d) => ops.applyDemandSheet(d, p)),
         makeTracksByGrade: (counts, specId) => commit((d) => ops.makeTracksByGrade(d, counts, specId)),
         saveBoard: (name) => commit((d) => ops.saveBoard(d, name, { hard: diag.hardCount, soft: diag.softWeight })),
-        restoreBoard: (id) => commit((d) => ops.restoreBoard(d, id), { label: '복원 직전 자동 스냅샷' }),
+        restoreBoard: (id) => commit((d) => ops.restoreBoard(d, id), { label: '되돌리기 직전 자동 보관' }),
         publishBoard: (id) => commit((d) => ops.publishBoard(d, id)),
         deleteBoard: (id) => commit((d) => ops.deleteBoard(d, id)),
     }), [commit, runEngine, doc, diag.hardCount, diag.softWeight]);
@@ -346,7 +363,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const jumpToEdit = useCallback((f: EditFocus) => { setFocus(f); setScreen('edit'); }, []);
 
     const value: StoreValue = {
-        doc, path, dirty: hist.dirty,
+        doc, path, dirty: hist.dirty, autosaveAt,
         hasAutosave: !!autosaveDoc && resumeShown,
         canUndo: hist.past.length > 0, canRedo: hist.future.length > 0,
         undo: () => dispatch({ t: 'undo' }), redo: () => dispatch({ t: 'redo' }),
@@ -362,6 +379,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 function msgOf(e: unknown): string {
     if (e instanceof Error) return e.message;
     return String(e);
+}
+
+/** "HH:MM" (24시) — 자동 저장 토스트·상태 표시용 */
+export function hhmm(d = new Date()): string {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 export function useStore(): StoreValue {

@@ -1,10 +1,19 @@
-/** 껍데기 — 상단 바 + 왼쪽 7단계 세로 탭 + 본문 + 상태줄. Esc=홈, ⌘Z/Y, ⌘S */
-import { useEffect, type ReactNode } from 'react';
+/** 껍데기 — 상단 바 + 왼쪽 7단계 세로 탭 + 본문 + 상태줄. Esc=홈, ⌘Z/Y, ⌘S, F1=도움말 */
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useStore } from '../store/store';
 import { SCREENS } from './screens';
+import { MOD } from './lib';
 import { Icon } from './parts/Icon';
 import { Button, Mark, Info } from './parts/ui';
 import { ErrorBox } from './parts/ui';
+import { platform } from '../platform';
+import { L } from './help/terms';
+import { Term } from './help/Term';
+import { useHelp } from './help/HelpContext';
+import { getTheme, toggleTheme, type Theme } from './help/theme';
+import { Welcome, hasWelcomed } from './help/Welcome';
+import { Tour, hasToured } from './help/Tour';
+import { HelpDrawer } from './help/HelpDrawer';
 
 import HomeScreen from './screens/HomeScreen';
 import BasicScreen from './screens/BasicScreen';
@@ -22,9 +31,11 @@ function isEditable(el: EventTarget | null): boolean {
 
 export default function Shell() {
     const st = useStore();
+    const help = useHelp();
 
     useEffect(() => {
         const h = (e: KeyboardEvent) => {
+            if (e.key === 'F1') { e.preventDefault(); help.openDrawer('screen'); return; }
             const meta = e.metaKey || e.ctrlKey;
             if (meta && (e.key === 's' || e.key === 'S')) { e.preventDefault(); void st.saveFile(); return; }
             if (isEditable(e.target)) return;
@@ -34,7 +45,20 @@ export default function Shell() {
         };
         window.addEventListener('keydown', h);
         return () => window.removeEventListener('keydown', h);
-    }, [st]);
+    }, [st, help]);
+
+    // 처음 켰을 때(자료·자동 보관본·안내 이력이 모두 없을 때) 환영 화면을 연다
+    const decided = useRef(false);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            if (decided.current) return;
+            decided.current = true;
+            const empty = st.doc.tracks.length === 0 && st.doc.agents.length === 0;
+            if (empty && !st.hasAutosave && !hasWelcomed() && !hasToured()) help.openWelcome();
+        }, 250);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Electron 파일 메뉴(새로·열기·저장·다른 이름으로)를 스토어에 잇는다. 웹에서는 다리가 없어 그냥 지나간다
     useEffect(() => {
@@ -62,6 +86,9 @@ export default function Shell() {
             </div>
             {st.screen !== 'home' && <BottomTabBar />}
             <Notices />
+            {help.welcomeOpen && <Welcome />}
+            <Tour />
+            <HelpDrawer />
         </div>
     );
 }
@@ -82,13 +109,18 @@ function renderScreen(id: string): ReactNode {
 
 function TopBar() {
     const st = useStore();
+    const help = useHelp();
+    const [theme, setThemeState] = useState<Theme>(getTheme());
+    const isWeb = platform.kind === 'web';
     const fileName = st.path ? st.path.split(/[\\/]/).pop() : '저장 안 됨';
+    const flip = () => setThemeState(toggleTheme());
+
     return (
         <header className="no-print shrink-0 bg-panel border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <div className="flex items-center gap-2 md:gap-3 px-2 md:px-3 h-11">
                 <button className="flex items-center gap-2 text-text hover:text-accenth" onClick={() => st.setScreen('home')} title="홈으로">
                     <Icon name="home" size={17} />
-                    <span className="font-semibold text-[14px] hidden md:inline">시간표 짜기</span>
+                    <span className="font-semibold text-[14px] hidden md:inline">{L.app}</span>
                 </button>
                 <div className="w-px h-5 bg-line hidden md:block" />
                 <div className="min-w-0 flex items-baseline gap-2">
@@ -96,31 +128,60 @@ function TopBar() {
                     <span className="text-[12px] text-muted truncate hidden md:inline">{st.doc.meta.term}</span>
                 </div>
                 <div className="ml-auto flex items-center gap-1 md:gap-1.5">
-                    <span className="text-[12px] text-muted items-center gap-1 hidden md:flex" title={st.dirty ? '저장 안 한 변경이 있습니다' : '저장됨'}>
-                        <Icon name="file" size={13} />{fileName}
-                        {st.dirty && <span className="text-warn" title="저장 안 한 변경">●</span>}
-                    </span>
+                    {isWeb ? (
+                        <span className="text-[12px] text-muted items-center gap-1 hidden md:flex"
+                            title="웹에서는 이 브라우저에만 자동 저장됩니다. 작업 파일로 내려받아 두세요.">
+                            {st.dirty
+                                ? <span className="text-warn">내려받은 뒤 변경 있음</span>
+                                : <span>{st.autosaveAt ? `${L.autosavedWeb} ${st.autosaveAt}` : '자동 저장 대기'}</span>}
+                        </span>
+                    ) : (
+                        <span className="text-[12px] text-muted items-center gap-1 hidden md:flex" title={st.dirty ? '저장 안 한 변경이 있습니다' : '저장됨'}>
+                            <Icon name="file" size={13} />{fileName}
+                            {st.dirty && <span className="text-warn" title="저장 안 한 변경">●</span>}
+                        </span>
+                    )}
                     {st.dirty && <span className="text-warn md:hidden" title="저장 안 한 변경">●</span>}
                     <div className="w-px h-5 bg-line mx-1 hidden md:block" />
-                    <Button variant="soft" icon="undo" onClick={st.undo} disabled={!st.canUndo} title="되돌리기 (⌘Z)" />
-                    <Button variant="soft" icon="redo" onClick={st.redo} disabled={!st.canRedo} title="다시하기 (⌘Y)" />
-                    <Button variant="primary" icon="save" onClick={() => void st.saveFile()} title="저장 (⌘S)"><span className="hidden md:inline">저장</span></Button>
+                    <Button variant="soft" icon="undo" onClick={st.undo} disabled={!st.canUndo} title={`되돌리기 (${MOD}+Z)`} />
+                    <Button variant="soft" icon="redo" onClick={st.redo} disabled={!st.canRedo} title={`다시하기 (${MOD}+Y)`} />
+                    <button data-tour="topbar-save" onClick={() => void st.saveFile()}
+                        title={isWeb ? L.saveWeb : `${L.save} (${MOD}+S)`}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-[13px] font-medium bg-accent hover:bg-accenth text-white">
+                        <Icon name={isWeb ? 'download' : 'save'} size={15} />
+                        <span className="hidden md:inline">{isWeb ? L.saveWeb : L.save}</span>
+                    </button>
+                    <button onClick={flip} title={theme === 'light' ? L.theme.dark : L.theme.light}
+                        className="w-9 h-9 grid place-items-center rounded-md text-muted hover:text-text hover:bg-line">
+                        <Icon name={theme === 'light' ? 'moon' : 'sun'} size={16} />
+                    </button>
+                    <button data-tour="topbar-help" onClick={() => help.openDrawer('screen')} title={`${L.help} (F1)`}
+                        className="w-9 h-9 grid place-items-center rounded-md text-muted hover:text-text hover:bg-line">
+                        <Icon name="help" size={17} />
+                    </button>
                 </div>
             </div>
         </header>
     );
 }
 
+/** 자동 배정 전(전담 수업이 하나도 안 놓임)에는 「시수 부족」이 필수 위반으로 잡혀도 아직 문제가 아니다 — 배지·상태줄이 그걸 빨갛게 보이면 안 된다 */
+function useBeforeAssign(): boolean {
+    const st = useStore();
+    return st.demand.reduce((s, d) => s + d.placed, 0) === 0;
+}
+
 function LeftTabs() {
     const st = useStore();
     const hard = st.diag.hardCount;
+    const before = useBeforeAssign();
     const noSetup = st.doc.specs.length === 0 || st.doc.tracks.length === 0;
     return (
-        <nav className="no-print hidden md:flex w-40 shrink-0 bg-panel border-r border-line flex-col py-2">
+        <nav data-tour="left-tabs" className="no-print hidden md:flex w-40 shrink-0 bg-panel border-r border-line flex-col py-2">
             {SCREENS.map((s, i) => {
                 const active = st.screen === s.id;
-                // 🔴만 센다 — 하드 위반이 있으면 생성·진단·편집에 붙인다
-                const showHard = hard > 0 && (s.id === 'diagnose' || s.id === 'edit' || s.id === 'generate');
+                // 🔴만 센다 — 필수 위반이 있으면 자동 배정·점검·직접 조정에 붙인다 (배정 전에는 붙이지 않는다)
+                const showHard = !before && hard > 0 && (s.id === 'diagnose' || s.id === 'edit' || s.id === 'generate');
                 const showWarn = noSetup && s.id === 'basic';
                 return (
                     <button key={s.id} onClick={() => st.setScreen(s.id)}
@@ -144,19 +205,29 @@ function StatusBar() {
     const soft = st.diag.softWeight;
     const placed = st.demand.reduce((s, d) => s + d.placed, 0);
     const need = st.demand.reduce((s, d) => s + d.need, 0);
+    const before = placed === 0;
     return (
-        <footer className="no-print h-7 shrink-0 bg-panel border-t border-line flex items-center gap-2 md:gap-3 px-2 md:px-3 text-[12px] text-muted overflow-x-auto whitespace-nowrap">
-            <span className="flex items-center gap-1 shrink-0">
-                <Mark kind={hard > 0 ? 'bad' : 'ok'} />
-                하드 위반 {hard}건
-            </span>
-            <span className="shrink-0">소프트 벌점 {soft.toLocaleString()}점</span>
-            <span className="shrink-0">배정 {placed} / 필요 {need}시간</span>
+        <footer data-tour="status-bar" className="no-print h-7 shrink-0 bg-panel border-t border-line flex items-center gap-2 md:gap-3 px-2 md:px-3 text-[12px] text-muted overflow-x-auto whitespace-nowrap">
+            {before ? (
+                <span className="flex items-center gap-1 shrink-0">
+                    <Mark kind="unknown" />
+                    아직 배정 전 — 「자동 배정」을 실행하면 규칙 점검 결과가 여기에 표시됩니다
+                </span>
+            ) : (
+                <>
+                    <span className="flex items-center gap-1 shrink-0">
+                        <Mark kind={hard > 0 ? 'bad' : 'ok'} />
+                        <Term id="hard">{L.hardViolations}</Term> {hard}건
+                    </span>
+                    <span className="shrink-0"><Term id="soft">{L.softScore}</Term> {soft.toLocaleString()} ({L.softScoreHint})</span>
+                </>
+            )}
+            <span className="shrink-0">{L.lesson} 배정 {placed} / 필요 {need}시간</span>
             <span className="ml-auto flex items-center gap-1 shrink-0">
                 <Info lines={[
                     '이 줄은 지금 시간표의 상태를 요약합니다.',
-                    '하드 위반이 0이라야 시간표가 성립합니다. 소프트 벌점은 낮을수록 좋습니다.',
-                    '숫자를 바꾸려면 왼쪽 진단·편집에서 고칩니다.',
+                    '필수 위반이 0이라야 시간표가 성립합니다. 권장 점수는 낮을수록 좋습니다.',
+                    '숫자를 바꾸려면 왼쪽 점검·직접 조정에서 고칩니다.',
                 ]} />
             </span>
         </footer>
@@ -167,13 +238,14 @@ function StatusBar() {
 function BottomTabBar() {
     const st = useStore();
     const hard = st.diag.hardCount;
+    const before = useBeforeAssign();
     const noSetup = st.doc.specs.length === 0 || st.doc.tracks.length === 0;
     return (
         <nav className="no-print md:hidden flex overflow-x-auto bg-panel border-t border-line shrink-0"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
             {SCREENS.map((s) => {
                 const active = st.screen === s.id;
-                const showHard = hard > 0 && (s.id === 'diagnose' || s.id === 'edit' || s.id === 'generate');
+                const showHard = !before && hard > 0 && (s.id === 'diagnose' || s.id === 'edit' || s.id === 'generate');
                 const showWarn = noSetup && s.id === 'basic';
                 return (
                     <button key={s.id} onClick={() => st.setScreen(s.id)}
@@ -197,8 +269,25 @@ function Notices() {
         <div className="fixed right-2 md:right-3 left-2 md:left-auto z-[200] w-auto md:w-80 space-y-2 no-print"
             style={{ top: 'calc(env(safe-area-inset-top) + 3rem)' }}>
             {st.notices.map((n) => (
-                <ErrorBox key={n.id} title={n.title} lines={n.lines} onClose={() => st.dismiss(n.id)} />
+                n.kind === 'info'
+                    ? <InfoToast key={n.id} id={n.id} title={n.title} onClose={() => st.dismiss(n.id)} />
+                    : <ErrorBox key={n.id} title={n.title} lines={n.lines} onClose={() => st.dismiss(n.id)} />
             ))}
+        </div>
+    );
+}
+
+/** 조용한 정보 토스트 — 3초 뒤 저절로 닫힌다 (선생님 의견 #8) */
+function InfoToast({ id, title, onClose }: { id: string; title: string; onClose: () => void }) {
+    useEffect(() => {
+        const t = setTimeout(onClose, 3000);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]);
+    return (
+        <div className="rounded-md border border-ok/40 bg-ok/10 px-3 py-2 text-[12.5px] text-text flex items-center gap-2 shadow-lg">
+            <Mark kind="ok" className="text-[12px]" />
+            <span>{title}</span>
         </div>
     );
 }

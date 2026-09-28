@@ -79,7 +79,8 @@ export function diagnose(doc: Doc): Diagnosis {
         rules.push({
             ruleId,
             templateId: rule?.templateId ?? '',
-            label: rule?.name ?? template?.label ?? ruleId,
+            // 저장된 옛 name 이 낡은 낱말일 수 있어 템플릿 label 을 앞세운다(선생님 의견 · 화면 낱말 통일)
+            label: template?.label ?? rule?.name ?? ruleId,
             kind: list[0].kind,
             bucket: template?.bucket,
             count: list.length,

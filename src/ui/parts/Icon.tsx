@@ -4,7 +4,8 @@ import type { CSSProperties } from 'react';
 export type IconName =
     | 'home' | 'table' | 'ban' | 'sparkles' | 'search' | 'edit' | 'layers' | 'printer'
     | 'undo' | 'redo' | 'save' | 'folder' | 'file' | 'plus' | 'trash' | 'check' | 'x'
-    | 'info' | 'left' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot';
+    | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
+    | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -34,6 +35,12 @@ const P: Record<IconName, string> = {
     upload: 'M12 21V9M7 14l5-5 5 5M4 3h16',
     play: 'M7 4l12 8-12 8z',
     dot: 'M12 10a2 2 0 100 4 2 2 0 000-4z',
+    right: 'M9 5l7 7-7 7',
+    arrowRight: 'M4 12h15M13 6l6 6-6 6',
+    sun: 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6L4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4M12 8a4 4 0 100 8 4 4 0 000-8z',
+    moon: 'M20 14.5A8 8 0 019.5 4 7 7 0 1020 14.5z',
+    book: 'M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM19 3v18',
+    help: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9a2.5 2.5 0 013.9-2c1.6 1 1 3-1 3.5v1M12 17h.01',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {

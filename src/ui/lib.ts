@@ -4,8 +4,12 @@
  */
 import type { Doc } from '../types/doc';
 import type { Agent, Activity, Resource, Track, Assignment, Slot, TimetableSpec } from '../types/schema';
+import { HOMEROOM_LABEL, isHomeroomAgent } from '../types/schema';
 
 export const DAY_LABEL = ['월', '화', '수', '목', '금', '토', '일'];
+
+/** 단축키 안내에 쓰는 보조키 이름 — 맥은 ⌘, 그 밖(윈도우 학교 PC)은 Ctrl */
+export const MOD: string = (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)) ? '⌘' : 'Ctrl';
 export function dayName(spec: TimetableSpec | undefined, d: number): string {
     if (spec && spec.cycleDays !== 7) return `${d + 1}일차`;
     return `${DAY_LABEL[d] ?? d + 1}`;
@@ -39,6 +43,18 @@ export function lessonCountForDay(spec: TimetableSpec, dayIndex: number): number
     if (typeof per === 'number') return per;
     return assignableSlots(spec).length;
 }
+/**
+ * 이 슬롯이 그 규격에서 '몇 번째 수업 칸인지'(0부터). 점심 같은 비수업 칸이 사이에 껴도 정확하다.
+ * ⚠️ slot.index 는 점심을 포함한 순번이라 요일별 교시 수와 바로 비교하면 안 된다 → 이 순번을 쓴다.
+ */
+export function lessonOrdinal(spec: TimetableSpec, slotIndex: number): number {
+    let n = 0;
+    for (const s of spec.slots) {
+        if (s.index === slotIndex) return n;
+        if (s.assignable) n += 1;
+    }
+    return n;
+}
 
 export function activeDays(spec: TimetableSpec): number[] {
     return spec.activeDays?.length ? spec.activeDays : [0, 1, 2, 3, 4];
@@ -46,11 +62,23 @@ export function activeDays(spec: TimetableSpec): number[] {
 
 export const cellKey = (trackId: string, dayIndex: number, slotIndex: number) => `${trackId}:${dayIndex}:${slotIndex}`;
 
-/** 배치들을 (trackId:day:slot) → 배치로 색인 */
-export function indexAssignments(assignments: Assignment[]): Map<string, Assignment> {
-    const m = new Map<string, Assignment>();
-    for (const a of assignments) m.set(cellKey(a.trackId, a.dayIndex, a.slotIndex), a);
+/**
+ * 배치들을 (trackId:day:slot) → 배치 목록으로 색인.
+ * ⭐ 한 칸에 둘 이상이 올 수 있다(협력수업이 아니라, 같은 반 겹침 위반·직접 조정 중간 상태 — 선생님 의견 #14).
+ * 그래서 값이 배열이다. 대개는 한 개다.
+ */
+export function indexAssignments(assignments: Assignment[]): Map<string, Assignment[]> {
+    const m = new Map<string, Assignment[]>();
+    for (const a of assignments) {
+        const k = cellKey(a.trackId, a.dayIndex, a.slotIndex);
+        const list = m.get(k);
+        if (list) list.push(a); else m.set(k, [a]);
+    }
     return m;
+}
+/** 그 칸의 배치들 (없으면 빈 배열) */
+export function cellAt(ix: Map<string, Assignment[]>, trackId: string, dayIndex: number, slotIndex: number): Assignment[] {
+    return ix.get(cellKey(trackId, dayIndex, slotIndex)) ?? [];
 }
 
 /** 한 배치가 시작하는 시각 (그 반 규격의 슬롯 start) — 교사별 뷰가 시각으로 정렬할 때 */
@@ -67,15 +95,30 @@ export function allLessonStarts(doc: Doc): string[] {
     return [...set].sort();
 }
 
+/**
+ * 한 배치가 가리키는 교사 이름 — 담임 칸이면 그 반의 「담임 이름」(없으면 「담임」)으로 바꿔 보여준다(v3).
+ * 함께 수업(coAgentId)이 있으면 「·」로 둘째 교사를 붙인다.
+ */
+export function agentLabelOf(a: Assignment, ix: { agents: Map<string, Agent>; tracks: Map<string, Track> }): string | undefined {
+    let main: string | undefined;
+    if (isHomeroomAgent(a.agentId)) {
+        main = ix.tracks.get(a.trackId)?.homeroomName ?? HOMEROOM_LABEL;
+    } else if (a.agentId) {
+        main = ix.agents.get(a.agentId)?.name;
+    }
+    const co = a.coAgentId ? ix.agents.get(a.coAgentId)?.name : undefined;
+    return [main, co].filter(Boolean).join(' · ') || undefined;
+}
+
 /** 한 배치 칸의 두 줄 표시 (과목 / 교사·특별실) */
 export interface CellText { top: string; bottom: string; }
 export function cellText(a: Assignment, ix: {
     agents: Map<string, Agent>; activities: Map<string, Activity>; resources: Map<string, Resource>; tracks: Map<string, Track>;
 }): CellText {
     const act = a.activityId ? ix.activities.get(a.activityId)?.name : undefined;
-    const agent = a.agentId ? ix.agents.get(a.agentId)?.name : undefined;
+    const agent = agentLabelOf(a, ix);
     const res = a.resourceId ? ix.resources.get(a.resourceId)?.name : undefined;
-    const top = act ?? a.label ?? '(빈 배치)';
+    const top = act ?? a.label ?? '(빈 칸)';
     const bottom = [agent, res].filter(Boolean).join(' · ');
     return { top, bottom };
 }

@@ -81,7 +81,8 @@ export function previewMove(doc: Doc, move: Move): MovePreview {
 
     const kindOf = new Map(doc.rules.map((r) => {
         const t = RULES.find((x) => x.id === r.templateId);
-        return [r.id, { label: r.name ?? t?.label ?? r.id, kind: (t?.kind ?? 'soft') as 'hard' | 'soft' }];
+        // 화면에 새 낱말이 나오게 템플릿 label 을 앞세운다(저장된 옛 name 이 낡은 말일 수 있다)
+        return [r.id, { label: t?.label ?? r.name ?? r.id, kind: (t?.kind ?? 'soft') as 'hard' | 'soft' }];
     }));
     const cb = countByRule(before), ca = countByRule(after);
     // 결과표는 켜진 규칙 전부를 한 줄씩 (컴시간의 결과표처럼 0 도 보여준다)
@@ -119,28 +120,40 @@ export function candidateCells(doc: Doc, assignmentId: string): CellVerdicts {
     const ctx = buildContext(doc);
     const A = ctx.assignments.get(assignmentId);
     const cells: Record<string, CellVerdict> = {};
-    const reasons: Record<string, string[]> = {}; // 엔진 판이 채운다 (계약 v3 · 선생님 의견 #19)
+    const reasons: Record<string, string[]> = {}; // 칸마다 「왜 그 색인가」 (계약 v3 · 선생님 의견 #19)
     if (!A) return { assignmentId, cells, reasons };
     const track = A.trackId;
     const groupIds = new Set(
         A.blockId ? doc.assignments.filter((a) => a.blockId === A.blockId).map((a) => a.id) : [A.id]);
     const spec = ctx.specOfTrack(track);
     const days = spec?.activeDays ?? [0, 1, 2, 3, 4];
+    const uniq = (xs: string[]) => [...new Set(xs)];
     for (const day of days) {
         for (const slot of ctx.lessonSlots(track, day)) {
             const key = `${day}:${slot.index}`;
             if (day === A.dayIndex && slot.index === A.slotIndex) { cells[key] = 'self'; continue; }
             const clock = { dayIndex: day, startMin: hm(slot.start), endMin: hm(slot.end) };
-            if (ctx.isBlocked(trackRef(track), clock, track)) { cells[key] = 'blocked'; continue; }
+            if (ctx.isBlocked(trackRef(track), clock, track)) { cells[key] = 'blocked'; reasons[key] = ['배정 불가 칸']; continue; }
             const occupants = ctx.byCell(track, day, slot.index).filter((o) => !groupIds.has(o.id));
-            if (occupants.some((o) => o.fixed || o.pinned)) { cells[key] = 'blocked'; continue; }
+            const blocker = occupants.find((o) => o.fixed || o.pinned);
+            if (blocker) { cells[key] = 'blocked'; reasons[key] = [blocker.fixed ? '고정 수업' : '잠긴 수업']; continue; }
             const pv = previewMove(doc, {
                 assignmentId, to: { trackId: track, dayIndex: day, slotIndex: slot.index }, swap: occupants.length > 0,
             });
+            let verdict: CellVerdict;
             if (occupants.length > 0) {
-                cells[key] = pv.hardBroken ? 'occupied' : pv.softAfter > pv.softBefore ? 'soft' : 'ok';
+                verdict = pv.hardBroken ? 'occupied' : pv.softAfter > pv.softBefore ? 'soft' : 'ok';
             } else {
-                cells[key] = pv.hardBroken ? 'hard' : pv.softAfter > pv.softBefore ? 'soft' : 'ok';
+                verdict = pv.hardBroken ? 'hard' : pv.softAfter > pv.softBefore ? 'soft' : 'ok';
+            }
+            cells[key] = verdict;
+            if (verdict === 'hard' || verdict === 'occupied') {
+                let labels = uniq(pv.rows.filter((r) => r.kind === 'hard' && r.after > r.before).map((r) => r.label));
+                if (labels.length === 0 && pv.hardReasons.length) labels = uniq(pv.hardReasons);
+                if (labels.length) reasons[key] = labels;
+            } else if (verdict === 'soft') {
+                const labels = uniq(pv.rows.filter((r) => r.kind === 'soft' && r.delta > 0).map((r) => r.label));
+                if (labels.length) reasons[key] = labels;
             }
         }
     }

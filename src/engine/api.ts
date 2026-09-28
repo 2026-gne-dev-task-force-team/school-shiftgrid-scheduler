@@ -46,8 +46,10 @@ export interface EngineContext {
     clockOf(a: Assignment): ClockRange | undefined;
     /** 반·요일·교시 → 그 칸의 배치들 */
     byCell(trackId: string, dayIndex: number, slotIndex: number): Assignment[];
-    /** 교사 → 그 요일의 배치들 (시각순) */
+    /** 교사 → 그 요일의 배치들 (시각순). 협력수업으로 함께 든 배치도 그 교사의 배치로 보인다 */
     byAgentDay(agentId: string, dayIndex: number): Assignment[];
+    /** 한 배치에 든 실제 교사들 (agentId·coAgentId 중 있는 것, 담임(HOMEROOM)은 뺀다). 협력수업이면 둘 */
+    agentsOf(a: Assignment): string[];
     /** 시설 → 그 요일의 배치들 */
     byResourceDay(resourceId: string, dayIndex: number): Assignment[];
     /** 수요 → 그 수요를 채우는 배치들 (seq 순) */
@@ -160,7 +162,7 @@ export interface SolveOptions {
 export interface SolveProgress { candidate: number; of: number; hard: number; soft: number; elapsedMs: number; }
 
 export interface SolveCandidate {
-    label: string;                       // "균형형" · "부장 보호형" · "연강 집중형" · "종합 1위"
+    label: string;                       // "균형형" · "부장 보호형" · "연속 수업형" · "공강 압축형"
     strategy: string;
     hard: number;
     soft: number;

@@ -5,10 +5,12 @@ import { Icon, type IconName } from './Icon';
 // ── 버튼 (동사로 쓴다) ────────────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'danger' | 'soft';
 export function Button({
-    children, onClick, variant = 'ghost', icon, disabled, title, type = 'button', className = '',
+    children, onClick, variant = 'ghost', icon, disabled, title, type = 'button', className = '', 'data-tour': dataTour,
 }: {
     children?: ReactNode; onClick?: () => void; variant?: BtnVariant; icon?: IconName;
     disabled?: boolean; title?: string; type?: 'button' | 'submit'; className?: string;
+    /** 코치마크가 찾는 표식 — 명시로 받아 <button> 에 실어야 한다(안 받으면 조용히 버려진다) */
+    'data-tour'?: string;
 }) {
     const base = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
     const styles: Record<BtnVariant, string> = {
@@ -18,7 +20,7 @@ export function Button({
         soft: 'bg-transparent hover:bg-line text-muted',
     };
     return (
-        <button type={type} onClick={onClick} disabled={disabled} title={title}
+        <button type={type} onClick={onClick} disabled={disabled} title={title} data-tour={dataTour}
             className={`${base} ${styles[variant]} ${className}`}>
             {icon && <Icon name={icon} size={15} />}
             {children}
@@ -165,6 +167,25 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
     return <div className={`bg-panel border border-line rounded-lg ${className}`}>{children}</div>;
 }
+// ── 빈 화면 안내 (전제가 빠졌을 때: 아이콘 + 두 문장 + 이동 버튼) ──
+export function EmptyGuide({ icon = 'info', lines, actionLabel, onAction, actionIcon }: {
+    icon?: IconName; lines: string[]; actionLabel?: string; onAction?: () => void; actionIcon?: IconName;
+}) {
+    return (
+        <div className="max-w-md mx-auto my-8 text-center px-4">
+            <div className="w-14 h-14 mx-auto rounded-full bg-panel2 border border-line grid place-items-center text-muted mb-3">
+                <Icon name={icon} size={26} />
+            </div>
+            <div className="text-[13.5px] text-muted space-y-1 mb-4 leading-relaxed">
+                {lines.map((l, i) => <p key={i}>{l}</p>)}
+            </div>
+            {actionLabel && onAction && (
+                <Button variant="primary" icon={actionIcon} onClick={onAction}>{actionLabel}</Button>
+            )}
+        </div>
+    );
+}
+
 export function Pill({ children, tone = 'muted' }: { children: ReactNode; tone?: 'muted' | 'ok' | 'bad' | 'warn' | 'accent' }) {
     const cls: Record<string, string> = {
         muted: 'bg-line text-muted', ok: 'bg-ok/15 text-ok', bad: 'bg-bad/15 text-bad',

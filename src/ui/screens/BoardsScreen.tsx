@@ -1,9 +1,10 @@
-/** 판 — 저장·목록·불러오기·공개본·비교. 자동 스냅샷도 여기서 복원 */
+/** 시안 — 저장·목록·되돌리기·확정본·비교. 자동 보관 시안도 여기서 되돌린다 */
 import { useMemo, useState } from 'react';
 import { useStore } from '../../store/store';
 import type { Board, Assignment } from '../../types/schema';
 import { cellKey } from '../lib';
-import { Button, Card, TextInput, ConfirmButton, Mark, Pill, Info } from '../parts/ui';
+import { Button, Card, TextInput, ConfirmButton, Mark, Pill, Info, EmptyGuide } from '../parts/ui';
+import { L } from '../help/terms';
 
 export default function BoardsScreen() {
     const st = useStore();
@@ -21,32 +22,37 @@ export default function BoardsScreen() {
     };
 
     const boards = doc.boards.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    const save = () => { st.act.saveBoard(name.trim() || `판 ${new Date().toLocaleString('ko-KR')}`); setName(''); };
+    const save = () => { st.act.saveBoard(name.trim() || `${L.board} ${new Date().toLocaleString('ko-KR')}`); setName(''); };
 
     const pickCmp = (id: string) => {
         setCmp(([a, b]) => a === id ? ['', b] : b === id ? [a, ''] : !a ? [id, b] : !b ? [a, id] : [b, id]);
     };
     const both = cmp[0] && cmp[1] ? [doc.boards.find((x) => x.id === cmp[0]), doc.boards.find((x) => x.id === cmp[1])] as [Board?, Board?] : null;
 
+    if (doc.assignments.length === 0 && boards.length === 0) {
+        return <EmptyGuide icon="sparkles" lines={['아직 저장할 시간표가 없습니다.', '먼저 자동 배정으로 시간표를 만드세요.']}
+            actionLabel="자동 배정으로 가기" actionIcon="sparkles" onAction={() => st.setScreen('generate')} />;
+    }
+
     return (
         <div className="p-4 space-y-4 max-w-4xl">
             <div className="flex items-end gap-2">
-                <label className="text-[12px] text-muted">판 이름<br />
+                <label className="text-[12px] text-muted">{L.board} 이름<br />
                     <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 1차 시안" className="w-56" /></label>
-                <Button variant="primary" icon="save" onClick={save}>판 저장</Button>
+                <Button data-tour="boards-save" variant="primary" icon="save" onClick={save}>{L.saveBoard}</Button>
                 <Info lines={[
-                    '지금 배치 전부를 이름 붙여 박제합니다 (컴시간의 작업저장).',
-                    '여러 판을 놓고 비교한 뒤 하나를 공개본으로 고릅니다. 자동 스냅샷은 큰 변경마다 저절로 쌓입니다.',
-                    '되돌리려면 판을 불러오거나 스냅샷을 복원합니다.',
+                    '지금 배치 전부를 이름 붙여 보관합니다.',
+                    '여러 시안을 놓고 비교한 뒤 하나를 확정본으로 고릅니다. 자동 보관 시안은 큰 변경마다 저절로 쌓입니다.',
+                    '되돌리려면 시안을 되돌리거나 자동 보관 시안을 되돌립니다.',
                 ]} />
             </div>
 
-            {boards.length === 0 && <p className="text-[13px] text-muted">아직 저장한 판이 없습니다.</p>}
+            {boards.length === 0 && <p className="text-[13px] text-muted">아직 저장한 시안이 없습니다.</p>}
 
             {boards.length > 0 && (
                 <div className="overflow-auto">
                     <table className="text-[12px] border-collapse w-full">
-                        <thead><tr className="text-muted text-left">{['', '이름', '시각', '하드', '소프트', '미배정', '자동', '공개본', ''].map((h) => <th key={h} className="border-b border-line px-2 py-1.5 font-medium">{h}</th>)}</tr></thead>
+                        <thead><tr className="text-muted text-left">{['', '이름', '시각', L.hardShort, L.softShort, L.unplaced, '자동 보관', L.published, ''].map((h) => <th key={h} className="border-b border-line px-2 py-1.5 font-medium">{h}</th>)}</tr></thead>
                         <tbody>
                             {boards.map((b) => (
                                 <tr key={b.id} className="hover:bg-panel2/50">
@@ -58,12 +64,12 @@ export default function BoardsScreen() {
                                     <td className="border-b border-line/50 px-2 py-1.5">{b.score ? <span className={b.score.hard > 0 ? 'text-bad' : 'text-ok'}>{b.score.hard}</span> : '-'}</td>
                                     <td className="border-b border-line/50 px-2 py-1.5">{b.score ? b.score.soft.toLocaleString() : '-'}</td>
                                     <td className="border-b border-line/50 px-2 py-1.5">{unplacedOf(b)}</td>
-                                    <td className="border-b border-line/50 px-2 py-1.5">{b.auto ? <Pill>자동</Pill> : ''}</td>
+                                    <td className="border-b border-line/50 px-2 py-1.5">{b.auto ? <Pill>{L.autoBoard}</Pill> : ''}</td>
                                     <td className="border-b border-line/50 px-2 py-1.5">{b.published && <Mark kind="ok" />}</td>
                                     <td className="border-b border-line/50 px-2 py-1.5 whitespace-nowrap">
-                                        <ConfirmButton variant="ghost" icon="undo" label="불러오기" question="지금 배치를 이 판으로 되돌릴까요?" onConfirm={() => st.act.restoreBoard(b.id)} />
-                                        <Button variant="soft" onClick={() => st.act.publishBoard(b.id)}>공개본으로</Button>
-                                        {!b.published && <ConfirmButton iconOnly onConfirm={() => st.act.deleteBoard(b.id)} question="이 판을 지울까요?" />}
+                                        <ConfirmButton variant="ghost" icon="undo" label={L.restoreBoard} question="지금 배치를 이 시안으로 되돌릴까요?" onConfirm={() => st.act.restoreBoard(b.id)} />
+                                        <Button variant="soft" onClick={() => st.act.publishBoard(b.id)}>{L.publish}</Button>
+                                        {!b.published && <ConfirmButton iconOnly onConfirm={() => st.act.deleteBoard(b.id)} question="이 시안을 지울까요?" />}
                                     </td>
                                 </tr>
                             ))}
@@ -94,14 +100,14 @@ function ScoreCol({ title, s }: { title: string; s?: { hard: number; soft: numbe
     return (
         <div className="bg-panel2 rounded-md p-2">
             <div className="text-muted truncate mb-1">{title}</div>
-            <div>하드 <span className={(s?.hard ?? 0) > 0 ? 'text-bad' : 'text-ok'}>{s?.hard ?? '-'}</span></div>
-            <div>소프트 {s ? s.soft.toLocaleString() : '-'}</div>
+            <div>{L.hardShort} <span className={(s?.hard ?? 0) > 0 ? 'text-bad' : 'text-ok'}>{s?.hard ?? '-'}</span></div>
+            <div>{L.softShort} {s ? s.soft.toLocaleString() : '-'}</div>
         </div>
     );
 }
 
 function cellDiff(a: Assignment[], b: Assignment[]): number {
-    const sig = (x: Assignment) => `${x.activityId ?? ''}|${x.agentId ?? ''}|${x.resourceId ?? ''}|${x.label ?? ''}`;
+    const sig = (x: Assignment) => `${x.activityId ?? ''}|${x.agentId ?? ''}|${x.coAgentId ?? ''}|${x.resourceId ?? ''}|${x.label ?? ''}`;
     const ma = new Map<string, string>(); const mb = new Map<string, string>();
     for (const x of a) ma.set(cellKey(x.trackId, x.dayIndex, x.slotIndex), sig(x));
     for (const x of b) mb.set(cellKey(x.trackId, x.dayIndex, x.slotIndex), sig(x));

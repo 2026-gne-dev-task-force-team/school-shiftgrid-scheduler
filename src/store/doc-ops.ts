@@ -108,39 +108,56 @@ export function duplicateDemand(d: Doc, id: string): Doc {
     return { ...d, demands: [...d.demands, { ...src, id: uid('dm') }] };
 }
 
-// ── 주간 금지칸 (배정금지·회피·임시금지) ──────────────────────
+// ── 주간 금지칸 (배정 불가·되도록 피함·임시 불가) ──────────────
 export type BlockState = 'none' | 'ban' | 'avoid' | 'temp';
 
-export function blockStateAt(d: Doc, target: TargetRef, dayIndex: number, slotIndex: number): BlockState {
-    const wb = findBlock(d, target, dayIndex, slotIndex);
+/**
+ * 칸을 가리키는 위치. v3 규약(선생님 의견 #12):
+ *   · 반(track)      slotIndex(그 반 시간 틀의 교시)로 찍는다
+ *   · 교사·특별실     from/to(시각)로 찍는다 — 학년마다 교시의 시각이 달라 시각이 기준이다
+ */
+export interface SlotPos { dayIndex: number; slotIndex?: number; from?: string; to?: string; }
+
+/** 대상이 반이면 교시로, 교사·특별실이면 시각으로 같은 칸인지 본다 */
+function sameSlot(target: TargetRef, wb: WeeklyBlock, pos: SlotPos): boolean {
+    if (wb.dayIndex !== pos.dayIndex) return false;
+    if (target.kind === 'track') return wb.slotIndex === pos.slotIndex;
+    return wb.from === pos.from;
+}
+
+export function blockStateAt(d: Doc, target: TargetRef, pos: SlotPos): BlockState {
+    const wb = findBlock(d, target, pos);
     if (!wb) return 'none';
     if (wb.temp) return 'temp';
     if (wb.soft) return 'avoid';
     return 'ban';
 }
-function findBlock(d: Doc, target: TargetRef, dayIndex: number, slotIndex: number): WeeklyBlock | undefined {
+function findBlock(d: Doc, target: TargetRef, pos: SlotPos): WeeklyBlock | undefined {
     return d.weeklyBlocks.find((wb) =>
-        wb.dayIndex === dayIndex && wb.slotIndex === slotIndex &&
-        wb.targets.length === 1 && wb.targets[0].id === target.id && wb.targets[0].kind === target.kind);
+        wb.targets.length === 1 && wb.targets[0].id === target.id && wb.targets[0].kind === target.kind &&
+        sameSlot(target, wb, pos));
 }
-const BLOCK_NAME: Record<Exclude<BlockState, 'none'>, string> = { ban: '배정금지', avoid: '회피', temp: '임시금지' };
+const BLOCK_NAME: Record<Exclude<BlockState, 'none'>, string> = { ban: '배정 불가', avoid: '되도록 피함', temp: '임시 불가' };
 
-export function setBlockState(d: Doc, target: TargetRef, dayIndex: number, slotIndex: number, state: BlockState): Doc {
-    const existing = findBlock(d, target, dayIndex, slotIndex);
+export function setBlockState(d: Doc, target: TargetRef, pos: SlotPos, state: BlockState): Doc {
+    const existing = findBlock(d, target, pos);
     const rest = existing ? d.weeklyBlocks.filter((wb) => wb.id !== existing.id) : d.weeklyBlocks;
     if (state === 'none') return { ...d, weeklyBlocks: rest };
+    const loc = target.kind === 'track'
+        ? { slotIndex: pos.slotIndex }
+        : { from: pos.from, to: pos.to };
     const wb: WeeklyBlock = {
-        id: uid('wb'), name: BLOCK_NAME[state], dayIndex, slotIndex,
+        id: uid('wb'), name: BLOCK_NAME[state], dayIndex: pos.dayIndex, ...loc,
         targets: [target], soft: state === 'avoid', temp: state === 'temp',
     };
     return { ...d, weeklyBlocks: [...rest, wb] };
 }
-/** 없음 → 배정금지 → 회피 → 임시금지 → 없음 */
-export function cycleBlock(d: Doc, target: TargetRef, dayIndex: number, slotIndex: number): Doc {
+/** 없음 → 배정 불가 → 되도록 피함 → 임시 불가 → 없음 */
+export function cycleBlock(d: Doc, target: TargetRef, pos: SlotPos): Doc {
     const order: BlockState[] = ['none', 'ban', 'avoid', 'temp'];
-    const cur = blockStateAt(d, target, dayIndex, slotIndex);
+    const cur = blockStateAt(d, target, pos);
     const next = order[(order.indexOf(cur) + 1) % order.length];
-    return setBlockState(d, target, dayIndex, slotIndex, next);
+    return setBlockState(d, target, pos, next);
 }
 export const clearTempBlocks = (d: Doc): Doc =>
     ({ ...d, weeklyBlocks: d.weeklyBlocks.filter((wb) => !wb.temp) });

@@ -16,16 +16,17 @@ import type {
     Agent, Activity, Resource, Track, TimetableSpec, Timetable, Demand,
     WeeklyBlock, WorkAssignment, SchoolMeta,
 } from '../types/schema';
+import { HOMEROOM_AGENT_ID } from '../types/schema';
 
 // ──────────────────────────────────────────────── 1. 학교 메타
 
-const meta: SchoolMeta = { name: '샘플초등학교', term: '2026학년도 2학기', schemaVersion: 2 };
+const meta: SchoolMeta = { name: '샘플초등학교', term: '2026학년도 2학기', schemaVersion: 3 };
 
 // ──────────────────────────────────────────────── 2. 시간 규격 (학년군 3개)
 
 const SPEC_1_2: TimetableSpec = {
     id: 's-1-2',
-    name: '1·2학년 규격',
+    name: '1·2학년 시간 틀',
     cycleDays: 7,
     activeDays: [0, 1, 2, 3, 4],
     dayStart: '09:00',
@@ -40,11 +41,12 @@ const SPEC_1_2: TimetableSpec = {
     ],
     // 1·2학년은 월·금요일에 5교시가 없다(4교시까지만) — 값은 그 요일의 '수업 칸 수'
     lessonsPerDay: { 0: 4, 4: 4 },
+    grades: [1, 2],
 };
 
 const SPEC_3_4: TimetableSpec = {
     id: 's-3-4',
-    name: '3·4학년 규격',
+    name: '3·4학년 시간 틀',
     cycleDays: 7,
     activeDays: [0, 1, 2, 3, 4],
     dayStart: '09:00',
@@ -58,11 +60,12 @@ const SPEC_3_4: TimetableSpec = {
         { index: 5, label: '5교시', start: '13:10', end: '13:50', assignable: true, kind: 'lesson' },
         { index: 6, label: '6교시', start: '14:00', end: '14:40', assignable: true, kind: 'lesson' },
     ],
+    grades: [3, 4],
 };
 
 const SPEC_5_6: TimetableSpec = {
     id: 's-5-6',
-    name: '5·6학년 규격',
+    name: '5·6학년 시간 틀',
     cycleDays: 7,
     activeDays: [0, 1, 2, 3, 4],
     dayStart: '09:00',
@@ -76,6 +79,7 @@ const SPEC_5_6: TimetableSpec = {
         { index: 5, label: '점심', start: '13:00', end: '13:50', assignable: false, kind: 'lunch' },
         { index: 6, label: '6교시', start: '14:00', end: '14:40', assignable: true, kind: 'lesson' },
     ],
+    grades: [5, 6],
 };
 
 const specs: TimetableSpec[] = [SPEC_1_2, SPEC_3_4, SPEC_5_6];
@@ -88,20 +92,7 @@ const specIdOfGrade = (grade: number): string =>
 const PERIOD4_INDEX = 3;
 
 // ──────────────────────────────────────────────── 3. 반 (학년당 3반 × 6학년 = 18반)
-
-const tracks: Track[] = [];
-for (let grade = 1; grade <= 6; grade++) {
-    for (let cls = 1; cls <= 3; cls++) {
-        tracks.push({
-            kind: 'track', id: `t-${grade}-${cls}`, name: `${grade}-${cls}`,
-            specId: specIdOfGrade(grade), grade, attr: { classNum: cls },
-        });
-    }
-}
-const trackId = (grade: number, cls: number) => `t-${grade}-${cls}`;
-const tracksOfGrade = (grade: number) => tracks.filter((t) => t.grade === grade);
-
-// ──────────────────────────────────────────────── 4. 사람 (담임 18 + 전담 9 + 강사 1 = 28)
+//     ⭐ v3 — 담임은 사람이 아니라 반의 속성이다. 담임 이름은 반의 homeroomName 에 적는다.
 //     ⛔ 실명 아님 — 순우리말 한 낱말
 
 const HOMEROOM_NAMES = [
@@ -113,21 +104,26 @@ const HOMEROOM_NAMES = [
     '가온', '다래', '보람',   // 6학년
 ];
 
-const agents: Agent[] = [];
+const tracks: Track[] = [];
 {
     let i = 0;
     for (let grade = 1; grade <= 6; grade++) {
         for (let cls = 1; cls <= 3; cls++) {
-            agents.push({
-                kind: 'agent', id: `a-hr-${grade}-${cls}`, name: HOMEROOM_NAMES[i++],
-                role: '담임', homeroomTrackId: trackId(grade, cls),
+            tracks.push({
+                kind: 'track', id: `t-${grade}-${cls}`, name: `${grade}-${cls}`,
+                specId: specIdOfGrade(grade), grade, homeroomName: HOMEROOM_NAMES[i++], attr: { classNum: cls },
             });
         }
     }
 }
+const tracksOfGrade = (grade: number) => tracks.filter((t) => t.grade === grade);
+
+// ──────────────────────────────────────────────── 4. 사람 (전담 9 + 강사 1 + 원어민 1 = 11)
+//     ⛔ 실명 아님 — 순우리말 한 낱말
+//     ⭐ v3 — 담임은 명부에 넣지 않는다(반의 속성). 특별실이 필요한 담임 수업만 시수표에서 「담임」으로 고른다.
 // ⚠️ 밀도 주의 (2026-09-24 실측): 한 전담이 12반×3시간=36시수를 맡으면 주간 수업 칸(약 30)을 넘어
 //    어떤 솔버도 하드 0을 못 만든다. 그래서 영어·과학·체육은 실제 학교처럼 학년군별로 두 명이다.
-agents.push(
+const agents: Agent[] = [
     { kind: 'agent', id: 'a-eng', name: '이든', role: '전담', tier: 1 },    // 영어 부장 (3·4학년)
     { kind: 'agent', id: 'a-eng2', name: '가람', role: '전담', tier: 2 },   // 영어 (5·6학년)
     { kind: 'agent', id: 'a-sci', name: '한별', role: '전담', tier: 2 },    // 과학 (3·4학년)
@@ -137,8 +133,9 @@ agents.push(
     { kind: 'agent', id: 'a-music', name: '슬기', role: '전담', tier: 2 },  // 음악
     { kind: 'agent', id: 'a-art', name: '푸름', role: '전담', tier: 2 },    // 미술
     { kind: 'agent', id: 'a-tech', name: '샛별', role: '전담', tier: 2 },   // 실과
-    { kind: 'agent', id: 'a-sports', name: '마루', role: '비교과', tier: 3, coteach: true }, // 스포츠강사
-);
+    { kind: 'agent', id: 'a-sports', name: '마루', role: '비교과', tier: 3 }, // 스포츠강사 (1·2학년 체육 협력)
+    { kind: 'agent', id: 'a-native', name: '노을', role: '비교과', tier: 3 }, // 원어민 (3학년 영어 협력수업)
+];
 
 // ──────────────────────────────────────────────── 5. 과목 (6 + 담임 고정용 창체)
 
@@ -184,7 +181,11 @@ const nextDemandId = () => `d-${++dseq}`;
 for (let grade = 3; grade <= 6; grade++) {
     const hi = grade >= 5;   // 5·6학년은 두 번째 전담이 맡는다
     for (const t of tracksOfGrade(grade)) {
-        demands.push({ id: nextDemandId(), agentId: hi ? 'a-eng2' : 'a-eng', trackId: t.id, activityId: 'act-eng', count: 3 });
+        demands.push({
+            id: nextDemandId(), agentId: hi ? 'a-eng2' : 'a-eng', trackId: t.id, activityId: 'act-eng', count: 3,
+            // 3학년 영어는 원어민이 함께 드는 협력수업(두 교사 한 칸)
+            ...(grade === 3 ? { coAgentId: 'a-native' } : {}),
+        });
         demands.push({
             id: nextDemandId(), agentId: hi ? 'a-sci2' : 'a-sci', trackId: t.id, activityId: 'act-sci', count: 3,
             resourceId: 'r-science', roomHours: 2, cycle: true,
@@ -217,6 +218,13 @@ for (let grade = 1; grade <= 2; grade++) {
         });
     }
 }
+// 담임 모델 시연 — 3학년 각 반의 담임 체육(체육관) 주 1시간. agentId 는 HOMEROOM 상수(그 반의 담임).
+for (const t of tracksOfGrade(3)) {
+    demands.push({
+        id: nextDemandId(), agentId: HOMEROOM_AGENT_ID, trackId: t.id, activityId: 'act-pe', count: 1,
+        resourceId: 'r-gym',
+    });
+}
 
 // ──────────────────────────────────────────────── 9. 주간 금지칸 (WeeklyBlock)
 
@@ -239,7 +247,7 @@ const assignments: WorkAssignment[] = tracks.map((t) => ({
     dayIndex: 2,
     slotIndex: PERIOD4_INDEX,
     activityId: 'act-changje',
-    agentId: `a-hr-${t.grade}-${t.attr!.classNum}`,
+    agentId: HOMEROOM_AGENT_ID,   // v3 — 창체는 담임 수업(반의 속성)
     label: '창체',
     fixed: true,
 }));
@@ -257,11 +265,13 @@ export function sampleDoc(): Doc {
 }
 
 /**
- * 총 시수 합 (2026-09-24 계산, 껍데기 판):
+ * 총 시수 합 (2026-09-28 v3 계산):
  *   3·4학년 6반 × 13시간(영3+과3+체3+음2+미2)           = 78
  *   5·6학년 6반 × 15시간(위 13 + 실과2)                 = 90
- *   1·2학년 6반 × 2시간(체육, 스포츠강사 coteach)        = 12
+ *   1·2학년 6반 × 2시간(체육, 스포츠강사)                = 12
+ *   3학년 3반 × 1시간(담임 체육 · HOMEROOM)              = 3
  *   ────────────────────────────────────────────────
- *   합계 180시간 (Demand 72건) — 창체 고정 배치 18건은 별도(Demand 아님)
- *   교사별 최대 18시수(영·과·체 각 2명) · 체육 공간 2(체육관+운동장) — 2026-09-24 밀도 수정
+ *   합계 183시간 (Demand 75건) — 창체 고정 배치 18건은 별도(Demand 아님)
+ *   ⭐ v3 시연: 3학년 영어는 원어민 협력수업(coAgentId) · 3학년 체육 한 시간은 담임(HOMEROOM) · 담임은 명부에 없다
+ *   교사별 최대 18시수(영·과·체 각 2명) · 체육 공간 2(체육관+운동장)
  */

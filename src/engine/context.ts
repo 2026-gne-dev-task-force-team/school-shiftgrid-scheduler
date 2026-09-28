@@ -7,6 +7,7 @@ import type {
     Agent, Track, Resource, Activity, Assignment, Demand, TimetableSpec, Slot,
     TargetRef, RuleBucket, WeeklyBlock,
 } from '../types/schema';
+import { isHomeroomAgent } from '../types/schema';
 import type { ClockRange, EngineContext } from './api';
 
 /** "HH:mm" → 분 */
@@ -70,6 +71,7 @@ export function buildContext(doc: Doc): EngineContext {
     for (const a of doc.assignments) {
         push(byCellMap, cellKey(a.trackId, a.dayIndex, a.slotIndex), a);
         if (a.agentId) push(byAgentDayMap, `${a.agentId}|${a.dayIndex}`, a);
+        if (a.coAgentId && a.coAgentId !== a.agentId) push(byAgentDayMap, `${a.coAgentId}|${a.dayIndex}`, a);
         if (a.resourceId) push(byResourceDayMap, `${a.resourceId}|${a.dayIndex}`, a);
         if (a.demandId) push(byDemandMap, a.demandId, a);
     }
@@ -120,11 +122,19 @@ export function buildContext(doc: Doc): EngineContext {
     const bucketWeight = (bucket: RuleBucket | undefined): number =>
         bucket === 'essential' ? 100 : bucket === 'important' ? 20 : bucket === 'preferred' ? 3 : 1;
 
+    const agentsOf = (a: Assignment): string[] => {
+        const out: string[] = [];
+        if (a.agentId && !isHomeroomAgent(a.agentId)) out.push(a.agentId);
+        if (a.coAgentId && !isHomeroomAgent(a.coAgentId) && a.coAgentId !== a.agentId) out.push(a.coAgentId);
+        return out;
+    };
+
     return {
         doc, agents, tracks, resources, activities, specs, demands, assignments,
         specOfTrack, lessonSlots, clockOf,
         byCell: (trackId, day, slot) => byCellMap.get(cellKey(trackId, day, slot)) ?? [],
         byAgentDay: (agentId, day) => byAgentDayMap.get(`${agentId}|${day}`) ?? [],
+        agentsOf,
         byResourceDay: (resourceId, day) => byResourceDayMap.get(`${resourceId}|${day}`) ?? [],
         byDemand: (demandId) => byDemandMap.get(demandId) ?? [],
         overlaps, isBlocked, tierWeight, bucketWeight,

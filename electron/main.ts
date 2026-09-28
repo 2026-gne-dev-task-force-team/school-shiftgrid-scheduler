@@ -287,7 +287,7 @@ function createWindow(): void {
         width: 1400,
         height: 900,
         title: '시간표 짜기',
-        backgroundColor: '#10151c',
+        backgroundColor: '#f4f6f9',
         show: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),

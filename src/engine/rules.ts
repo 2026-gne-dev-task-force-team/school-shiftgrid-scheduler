@@ -1,11 +1,12 @@
 /**
- * 규칙 틀(EngineRule) 전부 — 하드 8 · 소프트 14.
+ * 규칙 틀(EngineRule) 전부 — 하드 9 · 소프트 14.
  * 각 규칙은 ctx(EngineContext) 하나만 보고 위반 목록을 돌려준다.
  * 소프트 벌점 weight = 건수(magnitude) × bucketWeight × tierWeight(해당 교사).
  */
 import type {
     Assignment, ConflictRule, RuleParams, RuleBucket, TargetRef, Violation, WeeklyBlock,
 } from '../types/schema';
+import { isHomeroomAgent } from '../types/schema';
 import type { ClockRange, EngineContext, EngineRule } from './api';
 import { hm } from './context';
 
@@ -73,31 +74,35 @@ function runsOf(ctx: EngineContext, list: Assignment[]): Assignment[][] {
     return runs;
 }
 
+/** 이 배치에 이 교사가 들었나 — 담당(agentId)이거나 협력수업 둘째 교사(coAgentId)면 true */
+const involvesAgent = (a: Assignment, agentId: string) => a.agentId === agentId || a.coAgentId === agentId;
+
 function agentDays(ctx: EngineContext, agentId: string): Map<number, Assignment[]> {
     const m = new Map<number, Assignment[]>();
     for (const a of ctx.doc.assignments) {
-        if (a.agentId !== agentId) continue;
+        if (!involvesAgent(a, agentId)) continue;
         (m.get(a.dayIndex) ?? m.set(a.dayIndex, []).get(a.dayIndex)!).push(a);
     }
     return m;
 }
 
-/** 교사 축 소프트용 — 고정 배치(fixed)는 빼고 요일별로 묶는다. 담임은 호출부에서 거른다 */
+/** 교사 축 소프트용 — 고정 배치(fixed)는 빼고 요일별로 묶는다. 담임·담임 겸 전담은 호출부에서 거른다 */
 function agentSoftDays(ctx: EngineContext, agentId: string): Map<number, Assignment[]> {
     const m = new Map<number, Assignment[]>();
     for (const a of ctx.doc.assignments) {
-        if (a.agentId !== agentId || a.fixed) continue;
+        if (!involvesAgent(a, agentId) || a.fixed) continue;
         (m.get(a.dayIndex) ?? m.set(a.dayIndex, []).get(a.dayIndex)!).push(a);
     }
     return m;
 }
 
-/** 교사 축 소프트용 — 담임이 아니고 고정이 아닌 그 교사의 배치 전부 */
+/** 교사 축 소프트용 — 고정이 아닌 그 교사의 배치 전부(협력수업 둘째 교사 포함) */
 const agentSoftAll = (ctx: EngineContext, agentId: string): Assignment[] =>
-    ctx.doc.assignments.filter((a) => a.agentId === agentId && !a.fixed);
+    ctx.doc.assignments.filter((a) => involvesAgent(a, agentId) && !a.fixed);
 
-/** 교사 축 소프트 규칙의 대상 교사인가 — 담임은 뺀다(하루 종일 제 반이라 압축·균형이 무의미) */
-const isSoftAgent = (ctx: EngineContext, agentId: string) => ctx.agents.get(agentId)?.role !== '담임';
+/** 교사 축 소프트 규칙의 대상 교사인가 — 담임(HOMEROOM)·담임 겸 전담은 뺀다(하루 종일 제 반이라 압축·균형이 무의미) */
+const isSoftAgent = (ctx: EngineContext, agentId: string) =>
+    !isHomeroomAgent(agentId) && ctx.agents.get(agentId)?.role !== '담임 겸 전담';
 
 function mkViol(v: Omit<Violation, 'ruleId'> & { templateId: string }): Violation {
     return { ...v, ruleId: v.templateId };
@@ -108,9 +113,9 @@ function mkViol(v: Omit<Violation, 'ruleId'> & { templateId: string }): Violatio
 // ══════════════════════════════════════════════════════════════
 
 const noOverlapTrack: EngineRule = {
-    id: 'no-overlap-track', label: '반 겹침 금지', kind: 'hard', params: [],
-    description: '같은 반의 같은 칸(요일·교시)에 배치가 둘 이상이면 성립하지 않는다.',
-    defaultMessage: '{반} {요일}요일에 한 칸이 겹칩니다',
+    id: 'no-overlap-track', label: '같은 반 겹침', kind: 'hard', params: [],
+    description: '같은 반의 한 칸에 수업이 둘 이상 들어가 있습니다.',
+    defaultMessage: '{반} {요일}요일에 한 칸에 수업이 겹칩니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const buckets = new Map<string, Assignment[]>();
@@ -132,9 +137,9 @@ const noOverlapTrack: EngineRule = {
 };
 
 const noOverlapAgent: EngineRule = {
-    id: 'no-overlap-agent', label: '교사 겹침 금지', kind: 'hard', params: [],
-    description: '같은 교사가 시각이 겹치는 배치를 둘 이상 가지면 안 된다(교시 번호가 아니라 실제 시각). 협력수업(coteach)으로 같은 반·같은 칸에 함께 드는 것은 예외다.',
-    defaultMessage: '{교사} 선생님이 {요일}요일 같은 시각에 겹칩니다',
+    id: 'no-overlap-agent', label: '교사 겹침', kind: 'hard', params: [],
+    description: '같은 교사가 겹치는 시각에 두 반에 들어가 있습니다(교시 번호가 아니라 실제 시각으로 봅니다). 함께 수업으로 같은 반 같은 칸에 함께 드는 것은 예외입니다. 담임은 반이 정하므로 이 규칙에서 뺍니다.',
+    defaultMessage: '{교사} 교사가 {요일}요일 같은 시각에 두 반에 들어가 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const ag of ctx.doc.agents) {
@@ -162,9 +167,9 @@ const noOverlapAgent: EngineRule = {
 };
 
 const noOverlapResource: EngineRule = {
-    id: 'no-overlap-resource', label: '특별실 겹침 금지', kind: 'hard', params: [],
-    description: '같은 시각에 특별실을 정원(capacity)보다 많이 쓰면 안 된다. 한 과목에 방이 여럿이면 그 과목이 쓰는 방들의 정원을 합쳐 판정한다.',
-    defaultMessage: '특별실이 {요일}요일 같은 시각에 정원을 넘깁니다',
+    id: 'no-overlap-resource', label: '특별실 정원 초과', kind: 'hard', params: [],
+    description: '같은 시각에 특별실을 정원보다 많이 쓰고 있습니다. 한 과목에 특별실이 여럿이면 그 과목이 쓰는 특별실 정원을 합쳐서 봅니다.',
+    defaultMessage: '{요일}요일 같은 시각에 특별실 정원을 넘겼습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         // 특별실을 쓰는 배치를 과목별로 묶는다
@@ -210,9 +215,9 @@ const noOverlapResource: EngineRule = {
 };
 
 const blockedCell: EngineRule = {
-    id: 'blocked-cell', label: '금지칸 침범 금지', kind: 'hard', params: [],
-    description: '배치가 하드 금지칸(WeeklyBlock)에 걸리면 안 된다. 교사·반·시설 각각을 본다.',
-    defaultMessage: '{반} {요일}요일 배치가 금지칸에 걸렸습니다',
+    id: 'blocked-cell', label: '배정 불가 칸 사용', kind: 'hard', params: [],
+    description: '수업이 배정 불가 칸에 들어가 있습니다. 교사·반·특별실을 각각 봅니다. 함께 수업이면 두 교사 모두 봅니다.',
+    defaultMessage: '{반} {요일}요일 수업이 배정 불가 칸에 들어가 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const a of ctx.doc.assignments) {
@@ -221,7 +226,8 @@ const blockedCell: EngineRule = {
             if (!c) continue;
             let hit = false;
             if (ctx.isBlocked(trackRef(a.trackId), c, a.trackId)) hit = true;
-            if (!hit && a.agentId && ctx.isBlocked(agentRef(a.agentId), c, a.trackId)) hit = true;
+            if (!hit && a.agentId && !isHomeroomAgent(a.agentId) && ctx.isBlocked(agentRef(a.agentId), c, a.trackId)) hit = true;
+            if (!hit && a.coAgentId && !isHomeroomAgent(a.coAgentId) && ctx.isBlocked(agentRef(a.coAgentId), c, a.trackId)) hit = true;
             if (!hit && a.resourceId && ctx.isBlocked(resourceRef(a.resourceId), c, a.trackId)) hit = true;
             if (hit) {
                 out.push(mkViol({
@@ -236,17 +242,20 @@ const blockedCell: EngineRule = {
 };
 
 const demandCount: EngineRule = {
-    id: 'demand-count', label: '시수 정확 충족', kind: 'hard', params: [],
-    description: '수요마다 배치 수가 목표 시수와 정확히 같아야 한다(부족·초과 모두 위반).',
-    defaultMessage: '{교사} 선생님 시수가 목표와 다릅니다',
+    id: 'demand-count', label: '시수 부족·초과', kind: 'hard', params: [],
+    description: '수요마다 배치한 수업 수가 정한 주당 시수와 같아야 합니다(부족·초과 모두 어긋납니다).',
+    defaultMessage: '{교사} 시수가 정한 값과 다릅니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const d of ctx.doc.demands) {
             const placed = ctx.byDemand(d.id);
             if (placed.length !== d.count) {
+                const who = isHomeroomAgent(d.agentId)
+                    ? `${ctx.tracks.get(d.trackId)?.homeroomName ?? ctx.tracks.get(d.trackId)?.name ?? '담임'} 담임`
+                    : `${ctx.agents.get(d.agentId)?.name ?? d.agentId} 교사`;
                 out.push(mkViol({
                     templateId: 'demand-count', kind: 'hard',
-                    message: `${ctx.agents.get(d.agentId)?.name ?? d.agentId} 선생님 시수 ${placed.length}/${d.count}`,
+                    message: `${who} 시수 ${placed.length}/${d.count}`,
                     assignmentIds: placed.map((a) => a.id),
                     weight: 0, fixable: true, subject: agentRef(d.agentId),
                 }));
@@ -257,9 +266,9 @@ const demandCount: EngineRule = {
 };
 
 const blockContiguous: EngineRule = {
-    id: 'block-contiguous', label: '연강 묶음', kind: 'hard', params: [],
-    description: '같은 연강(blockId) 배치는 같은 반·같은 날·연속 교시여야 하고 사이에 점심이 없어야 한다.',
-    defaultMessage: '연강이 붙어 있지 않습니다',
+    id: 'block-contiguous', label: '연속 수업 묶음', kind: 'hard', params: [],
+    description: '연속 수업으로 묶인 수업은 같은 반·같은 날·이어지는 교시에 있어야 하고 사이에 점심이 없어야 합니다.',
+    defaultMessage: '연속 수업이 이어져 있지 않습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const byBlock = new Map<string, Assignment[]>();
@@ -320,9 +329,9 @@ function sessionsOf(ctx: EngineContext, list: Assignment[]): { time: number; ids
 }
 
 const cycleOrder: EngineRule = {
-    id: 'cycle-order', label: '순배(라운드로빈)', kind: 'hard', params: [],
-    description: '순배 수요는 같은 교사·학년·과목의 모든 반이 k-1번째 세션을 시작한 뒤에야 어떤 반도 k번째 세션을 시작할 수 있다(차시 번호가 아니라 시각 순번으로 판정).',
-    defaultMessage: '{반} 순배 순서가 어긋났습니다',
+    id: 'cycle-order', label: '차시 순서 맞춤', kind: 'hard', params: [],
+    description: '차시 순서를 맞추는 수요는 같은 교사·학년·과목의 모든 반이 앞 차시를 시작한 뒤에야 다음 차시를 시작할 수 있습니다(차시 번호가 아니라 실제 시각 순서로 봅니다).',
+    defaultMessage: '{반} 차시 순서가 어긋났습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         // (agentId, grade, activityId) 로 묶는다
@@ -363,35 +372,91 @@ const cycleOrder: EngineRule = {
 };
 
 const agentLunchFree: EngineRule = {
-    id: 'agent-lunch-free', label: '교사 식사 슬롯 확보', kind: 'hard',
-    params: [{ key: 'window', label: '점심 허용 오차(분)', type: 'number', default: 0, help: '점심 슬롯 기준 ±분까지 봐 준다' }],
-    description: '전담 교사(담임 아님)는 자기가 그날 가르치는 학년들의 점심 시각 중 적어도 하나에는 수업이 없어야 한다.',
-    defaultMessage: '{교사} 선생님이 {요일}요일 점심에 쉴 칸이 없습니다',
+    id: 'agent-lunch-free', label: '교사 점심 시간 확보', kind: 'hard',
+    params: [{ key: 'window', label: '점심 허용 오차(분)', type: 'number', default: 0, help: '점심 시각 기준 ±분까지 봐 줍니다' }],
+    description: '전담 교사는 그날 가르치는 학년들의 점심 시각 중 적어도 하나에는 수업이 없어야 합니다. 점심 기준을 정한 교사는 그 시간 틀의 점심 시각이 비어 있어야 합니다. 담임은 반이 정하므로 뺍니다.',
+    defaultMessage: '{교사} 교사가 {요일}요일 점심에 쉴 칸이 없습니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         const window = num(p, 'window', 0);
         for (const ag of ctx.doc.agents) {
-            if (ag.role === '담임') continue;
+            if (isHomeroomAgent(ag.id) || ag.role === '담임 겸 전담') continue;
             const byDay = agentDays(ctx, ag.id);
             for (const [day, list] of byDay) {
-                const grades = new Set<number>();
-                for (const a of list) {
-                    const g = ctx.tracks.get(a.trackId)?.grade;
-                    if (g != null) grades.add(g);
-                }
-                const lunches: ClockRange[] = [];
-                for (const g of grades) lunches.push(...gradeLunches(ctx, g, day));
-                if (lunches.length === 0) continue;
                 const clocks = list.map((a) => ctx.clockOf(a)).filter((c): c is ClockRange => !!c);
-                const free = lunches.some((L) => {
-                    const lo = L.startMin - window, hi = L.endMin + window;
-                    return !clocks.some((c) => c.startMin < hi && lo < c.endMin);
-                });
-                if (!free) {
+                let violated: boolean;
+                if (ag.lunchSpecId) {
+                    // 점심 기준 틀의 점심 시각이 비어 있어야 한다(모두)
+                    const sp = ctx.specs.get(ag.lunchSpecId);
+                    const lunches = sp
+                        ? sp.slots.filter((s) => s.kind === 'lunch')
+                            .map((s) => ({ dayIndex: day, startMin: hm(s.start), endMin: hm(s.end) }))
+                        : [];
+                    if (lunches.length === 0) continue;
+                    violated = lunches.some((L) => {
+                        const lo = L.startMin - window, hi = L.endMin + window;
+                        return clocks.some((c) => c.startMin < hi && lo < c.endMin);
+                    });
+                } else {
+                    // 그날 가르치는 학년들의 점심 중 하나만 비어도 통과
+                    const grades = new Set<number>();
+                    for (const a of list) {
+                        const g = ctx.tracks.get(a.trackId)?.grade;
+                        if (g != null) grades.add(g);
+                    }
+                    const lunches: ClockRange[] = [];
+                    for (const g of grades) lunches.push(...gradeLunches(ctx, g, day));
+                    if (lunches.length === 0) continue;
+                    const free = lunches.some((L) => {
+                        const lo = L.startMin - window, hi = L.endMin + window;
+                        return !clocks.some((c) => c.startMin < hi && lo < c.endMin);
+                    });
+                    violated = !free;
+                }
+                if (violated) {
                     out.push(mkViol({
                         templateId: 'agent-lunch-free', kind: 'hard',
                         message: this.defaultMessage, assignmentIds: list.map((a) => a.id),
                         weight: 0, fixable: true, subject: agentRef(ag.id),
+                    }));
+                }
+            }
+        }
+        return out;
+    },
+};
+
+// ── 담임 겸 전담 자리 비움 (필수)
+const homeroomPlusFree: EngineRule = {
+    id: 'homeroom-plus-free', label: '담임 겸 전담 자리 비움', kind: 'hard', params: [],
+    description: '담임 겸 전담 교사가 다른 반 수업을 하는 시각에는, 자기 담임반이 그 시각에 다른 교사의 수업을 받고 있어야 합니다(담임반이 담임 수업 중이면 그 교사가 자리를 비울 수 없습니다).',
+    defaultMessage: '{교사} 교사 담임반이 비어 있지 않습니다',
+    evaluate(_p, ctx) {
+        const out: Violation[] = [];
+        for (const ag of ctx.doc.agents) {
+            if (ag.role !== '담임 겸 전담' || !ag.homeroomTrackIds?.length) continue;
+            const hts = new Set(ag.homeroomTrackIds);
+            for (const a of ctx.doc.assignments) {
+                if (!involvesAgent(a, ag.id)) continue;
+                if (hts.has(a.trackId)) continue;       // 자기 담임반 수업은 문제없음
+                const ca = ctx.clockOf(a);
+                if (!ca) continue;
+                // 담임반 중 하나에 같은 시각 다른 교사의(고정 아님) 수업이 있어야 한다
+                const covered = ctx.doc.assignments.some((b) => {
+                    if (!hts.has(b.trackId)) return false;
+                    if (!b.agentId || isHomeroomAgent(b.agentId) || b.agentId === ag.id || b.fixed) return false;
+                    const cb = ctx.clockOf(b);
+                    return !!cb && ctx.overlaps(ca, cb);
+                });
+                if (!covered) {
+                    const day = DAYS[a.dayIndex] ?? String(a.dayIndex);
+                    const period = ctx.specOfTrack(a.trackId)?.slots.find((s) => s.index === a.slotIndex)?.label ?? `${a.slotIndex}교시`;
+                    const otherTrack = ctx.tracks.get(a.trackId)?.name ?? a.trackId;
+                    const homeNames = [...hts].map((id) => ctx.tracks.get(id)?.name ?? id).join('·');
+                    out.push(mkViol({
+                        templateId: 'homeroom-plus-free', kind: 'hard',
+                        message: `${ag.name} 교사: ${day} ${period}에 ${otherTrack}반 수업이 있지만 담임반 ${homeNames}은 그 시각에 담임 수업입니다`,
+                        assignmentIds: [a.id], weight: 0, fixable: true, subject: agentRef(ag.id),
                     }));
                 }
             }
@@ -428,9 +493,9 @@ function weeklyBlockRange(ctx: EngineContext, wb: WeeklyBlock, trackId: string):
 }
 
 const avoid: EngineRule = {
-    id: 'avoid', label: '회피 선호', kind: 'soft', bucket: 'preferred', params: [],
-    description: '소프트 금지칸(회피)에 걸린 배치. 상위 교사일수록 벌점이 가파르다(1급 ×100, 2급 ×10, 3급 ×1).',
-    defaultMessage: '{교사} 선생님이 회피 시간에 배치됐습니다',
+    id: 'avoid', label: '되도록 피함 칸 사용', kind: 'soft', bucket: 'preferred', params: [],
+    description: '되도록 피함 칸에 수업이 들어가 있습니다. 우선순위가 높은 교사일수록 점수가 더 크게 붙습니다.',
+    defaultMessage: '{교사} 교사가 되도록 피함 시간에 배치됐습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const softBlocks = ctx.doc.weeklyBlocks.filter((w) => w.soft);
@@ -466,10 +531,10 @@ const avoid: EngineRule = {
 };
 
 const consecutiveLimit: EngineRule = {
-    id: 'consecutive-limit', label: '연속수업 제한', kind: 'soft', bucket: 'important',
+    id: 'consecutive-limit', label: '연속 수업 상한', kind: 'soft', bucket: 'important',
     params: [{ key: 'limit', label: '연속 상한', type: 'number', default: 6 }],
-    description: '교사 하루 연속 수업이 상한(기본 6) 이상이면 벌점.',
-    defaultMessage: '{교사} 선생님이 {요일}요일 너무 오래 연속 수업합니다',
+    description: '교사가 하루에 쉬지 않고 이어서 하는 수업이 상한(기본 6)에 이르면 점수가 붙습니다.',
+    defaultMessage: '{교사} 교사가 {요일}요일에 너무 오래 이어서 수업합니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         const limit = num(p, 'limit', 6);
@@ -489,9 +554,9 @@ const consecutiveLimit: EngineRule = {
 };
 
 const preferConsecutive: EngineRule = {
-    id: 'prefer-consecutive', label: '연속수업 선호(토막 줄이기)', kind: 'soft', bucket: 'important', params: [],
-    description: '교사 하루 수업이 여러 토막으로 갈릴수록 벌점(토막 수 − 1).',
-    defaultMessage: '{교사} 선생님 {요일}요일 수업이 토막나 있습니다',
+    id: 'prefer-consecutive', label: '수업 토막 줄이기', kind: 'soft', bucket: 'important', params: [],
+    description: '교사의 하루 수업이 여러 토막으로 갈릴수록 점수가 붙습니다.',
+    defaultMessage: '{교사} 교사 {요일}요일 수업이 토막나 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const ag of ctx.doc.agents) {
@@ -510,9 +575,9 @@ const preferConsecutive: EngineRule = {
 };
 
 const compactDay: EngineRule = {
-    id: 'compact-day', label: '일과 압축(공강 줄이기)', kind: 'soft', bucket: 'important', params: [],
-    description: '교사 하루 첫 수업과 마지막 수업 사이의 빈 칸 수. 그 교사가 그날 가르치는 학년의 점심 시각은 갭에서 뺀다.',
-    defaultMessage: '{교사} 선생님 {요일}요일에 공강이 있습니다',
+    id: 'compact-day', label: '공강 줄이기', kind: 'soft', bucket: 'important', params: [],
+    description: '교사의 하루 첫 수업과 마지막 수업 사이의 빈 칸 수입니다. 그날 가르치는 학년의 점심 시각은 빈 칸에서 뺍니다.',
+    defaultMessage: '{교사} 교사 {요일}요일에 공강이 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const ag of ctx.doc.agents) {
@@ -544,8 +609,8 @@ const compactDay: EngineRule = {
 const subjectsPerDayAgent: EngineRule = {
     id: 'subjects-per-day-agent', label: '교사 하루 과목 수', kind: 'soft', bucket: 'important',
     params: [{ key: 'max', label: '하루 과목 상한', type: 'number', default: 3 }],
-    description: '교사가 하루에 맡는 (학년·과목) 가짓수가 상한(기본 3)을 넘으면 벌점.',
-    defaultMessage: '{교사} 선생님이 {요일}요일에 과목을 너무 많이 맡습니다',
+    description: '교사가 하루에 맡는 (학년·과목) 가짓수가 상한(기본 3)을 넘으면 점수가 붙습니다.',
+    defaultMessage: '{교사} 교사가 {요일}요일에 과목을 너무 많이 맡습니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         const max = num(p, 'max', 3);
@@ -568,7 +633,7 @@ const subjectsPerDayAgent: EngineRule = {
 const subjectsPerDayTrack: EngineRule = {
     id: 'subjects-per-day-track', label: '반 하루 전담 과목 수', kind: 'soft', bucket: 'important',
     params: [{ key: 'max', label: '하루 전담 과목 상한', type: 'number', default: 3 }],
-    description: '한 반이 하루에 받는 전담 과목 수가 상한(기본 3)을 넘으면 벌점(고정수업 제외).',
+    description: '한 반이 하루에 받는 전담 과목 수가 상한(기본 3)을 넘으면 점수가 붙습니다(고정 수업 제외).',
     defaultMessage: '{반}이 {요일}요일에 전담 과목이 너무 많습니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
@@ -595,8 +660,8 @@ const subjectsPerDayTrack: EngineRule = {
 
 const amPmBalance: EngineRule = {
     id: 'am-pm-balance', label: '오전·오후 균형', kind: 'soft', bucket: 'preferred', params: [],
-    description: '교사 하루 오전/오후 배치 수 차이(오후 = 점심 뒤).',
-    defaultMessage: '{교사} 선생님 {요일}요일 오전·오후가 치우쳤습니다',
+    description: '교사의 하루 오전·오후 수업 수 차이입니다(오후 = 점심 뒤).',
+    defaultMessage: '{교사} 교사 {요일}요일 오전·오후가 치우쳤습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const ag of ctx.doc.agents) {
@@ -623,7 +688,7 @@ const amPmBalance: EngineRule = {
 
 const samePeriodAcrossDays: EngineRule = {
     id: 'same-period-across-days', label: '요일별 동일 교시', kind: 'soft', bucket: 'preferred', params: [],
-    description: '같은 반·같은 과목이 여러 요일에 있을 때 교시가 다른 수(같은 교시로 몰수록 좋다).',
+    description: '같은 반·같은 과목이 여러 요일에 있을 때 교시가 다른 수입니다(같은 교시로 모을수록 좋습니다).',
     defaultMessage: '{반} {과목} 교시가 요일마다 다릅니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
@@ -650,7 +715,7 @@ const samePeriodAcrossDays: EngineRule = {
 
 const subjectAdjacent: EngineRule = {
     id: 'subject-adjacent', label: '같은 과목 붙이기', kind: 'soft', bucket: 'important', params: [],
-    description: '같은 반·같은 과목이 같은 날 둘 이상인데 연속이 아니거나 점심을 사이에 두면 벌점.',
+    description: '같은 반·같은 과목이 같은 날 둘 이상인데 이어지지 않거나 점심을 사이에 두면 점수가 붙습니다.',
     defaultMessage: '{반} {과목}이 같은 날 떨어져 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
@@ -682,8 +747,8 @@ const subjectAdjacent: EngineRule = {
 const dayCluster: EngineRule = {
     id: 'day-cluster', label: '교사 요일 몰기/분산', kind: 'soft', bucket: 'preferred',
     params: [{ key: 'mode', label: '방식', type: 'select', options: ['몰기', '분산'], default: '몰기' }],
-    description: '몰기=교사가 쓰는 요일 수를 줄인다. 분산=요일별 배치 수를 고르게 한다.',
-    defaultMessage: '{교사} 선생님 요일 배치가 목표와 다릅니다',
+    description: '몰기는 교사가 쓰는 요일 수를 줄이고, 분산은 요일별 수업 수를 고르게 합니다.',
+    defaultMessage: '{교사} 교사 요일 배치가 목표와 다릅니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         const mode = str(p, 'mode', '몰기');
@@ -713,8 +778,8 @@ const dayCluster: EngineRule = {
 const onePlacePerDay: EngineRule = {
     id: 'one-place-per-day', label: '하루 한 장소', kind: 'soft', bucket: 'essential',
     params: [{ key: 'enabled', label: '적용', type: 'boolean', default: false }],
-    description: '교사 하루에 일반 교실 수업과 특별실 수업이 섞이면 벌점(옵션).',
-    defaultMessage: '{교사} 선생님이 {요일}요일 교실과 특별실을 오갑니다',
+    description: '교사가 하루에 일반 교실 수업과 특별실 수업을 섞으면 점수가 붙습니다(선택).',
+    defaultMessage: '{교사} 교사가 {요일}요일 교실과 특별실을 오갑니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         if (!bool(p, 'enabled', false)) return out;
@@ -734,9 +799,9 @@ const onePlacePerDay: EngineRule = {
 };
 
 const lunchAdjacent: EngineRule = {
-    id: 'lunch-adjacent', label: '점심 전후 연속', kind: 'soft', bucket: 'preferred', params: [],
-    description: '교사가 점심 바로 앞 칸과 바로 뒤 칸에 모두 수업하면 벌점.',
-    defaultMessage: '{교사} 선생님이 {요일}요일 점심 앞뒤로 붙어 수업합니다',
+    id: 'lunch-adjacent', label: '점심 앞뒤 연속 수업', kind: 'soft', bucket: 'preferred', params: [],
+    description: '교사가 점심 바로 앞 칸과 바로 뒤 칸에 모두 수업하면 점수가 붙습니다.',
+    defaultMessage: '{교사} 교사가 {요일}요일 점심 앞뒤로 이어서 수업합니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const ag of ctx.doc.agents) {
@@ -768,8 +833,8 @@ const lunchAdjacent: EngineRule = {
 const dayLoadBalance: EngineRule = {
     id: 'day-load-balance', label: '요일 시수 균형', kind: 'soft', bucket: 'preferred',
     params: [{ key: 'tolerance', label: '허용 편차', type: 'number', default: 2 }],
-    description: '교사 요일별 배치 수가 평균 ± 허용치(기본 2) 밖이면 벌점.',
-    defaultMessage: '{교사} 선생님 요일별 시수가 들쭉날쭉합니다',
+    description: '교사의 요일별 수업 수가 평균 ± 허용치(기본 2)를 벗어나면 점수가 붙습니다.',
+    defaultMessage: '{교사} 교사 요일별 시수가 들쭉날쭉합니다',
     evaluate(p, ctx) {
         const out: Violation[] = [];
         const tol = num(p, 'tolerance', 2);
@@ -792,16 +857,18 @@ const dayLoadBalance: EngineRule = {
 };
 
 const priorityEarly: EngineRule = {
-    id: 'priority-early', label: '상위 교사 이른 시각 우선', kind: 'soft', bucket: 'preferred', params: [],
-    description: '공유 특별실에서 우선순위가 낮은(tier 큰) 교사가 우선순위 높은(tier 작은) 교사보다 이른 시각을 차지하면 벌점.',
-    defaultMessage: '특별실 이른 시각을 하위 교사가 차지했습니다',
+    id: 'priority-early', label: '우선순위 높은 교사 이른 시각 우선', kind: 'soft', bucket: 'preferred', params: [],
+    description: '공유 특별실에서 우선순위가 낮은 교사가 우선순위가 높은 교사보다 이른 시각을 차지하면 점수가 붙습니다.',
+    defaultMessage: '특별실 이른 시각을 우선순위가 낮은 교사가 차지했습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         for (const r of ctx.doc.resources) {
             const list = ctx.doc.assignments.filter((a) => a.resourceId === r.id && a.agentId && !a.fixed && isSoftAgent(ctx, a.agentId));
             const items = list.map((a) => {
                 const c = ctx.clockOf(a);
-                return { a, tierNum: ctx.agents.get(a.agentId!)?.tier ?? 3, t: c ? c.dayIndex * 100000 + c.startMin : 0 };
+                // 담임은 이 비교에서 빠지지만(isSoftAgent=false), 혹 들어오면 우선순위 없음 → 2로 본다
+                const tierNum = isHomeroomAgent(a.agentId) ? 2 : (ctx.agents.get(a.agentId!)?.tier ?? 3);
+                return { a, tierNum, t: c ? c.dayIndex * 100000 + c.startMin : 0 };
             }).sort((x, y) => x.t - y.t);
             let inv = 0;
             const ids: string[] = [];
@@ -826,9 +893,9 @@ const priorityEarly: EngineRule = {
 // ══════════════════════════════════════════════════════════════
 
 export const RULES: EngineRule[] = [
-    // 하드 8
+    // 하드 9
     noOverlapTrack, noOverlapAgent, noOverlapResource, blockedCell,
-    demandCount, blockContiguous, cycleOrder, agentLunchFree,
+    demandCount, blockContiguous, cycleOrder, agentLunchFree, homeroomPlusFree,
     // 소프트 14
     avoid, consecutiveLimit, preferConsecutive, compactDay,
     subjectsPerDayAgent, subjectsPerDayTrack, amPmBalance, samePeriodAcrossDays,
