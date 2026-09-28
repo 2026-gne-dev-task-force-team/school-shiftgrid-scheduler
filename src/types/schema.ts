@@ -57,27 +57,49 @@ export interface Entity<K extends string = string> {
 }
 
 /**
- * Agent — 배치되는 '사람'. 담임·전담·강사·보조인력을 모두 포함한다.
- *   tier     우선순위 등급. 1=보직(부장) 2=일반 전담 3=지원인력(스포츠강사·원어민).
- *            소프트 규칙(회피 등)의 가중치에만 쓰고, 하드 규칙과는 무관하다.
- *   coteach  '혼자서는 수업을 못 하는' 보조 인력(스포츠강사·원어민). 담임이 함께 들어간다.
- *   role     '담임' | '전담' | '비교과' — 화면 분류·보결 후보 등급에 쓴다
+ * ⭐ v3 (2026-09-28) — 담임은 사람(Agent)이 아니라 반(Track)의 속성이다.
+ *   반이 정해지면 담임은 정해지므로 이름은 중복 정보다. 반의 빈 칸 = 담임 수업.
+ *   담임이 특별실을 써야 하는 수업(체육관·컴퓨터실)만 시수표에 줄을 만들고,
+ *   그 줄의 agentId 는 아래 상수다. 엔진은 이 값을 보면 「그 반의 담임」으로 읽는다.
+ *   → 반 겹침·특별실 겹침·시수·금지칸(필수 규칙)만 적용하고, 교사 겹침·식사·교사 축 권장 규칙은 건너뛴다.
+ */
+export const HOMEROOM_AGENT_ID = '__homeroom__';
+export const HOMEROOM_LABEL = '담임';
+export const isHomeroomAgent = (agentId: string | undefined): boolean => agentId === HOMEROOM_AGENT_ID;
+
+/**
+ * Agent — 시수를 받는 '사람'. 전담·비교과·강사·지원인력, 그리고 「담임 겸 전담」.
+ *   ⛔ 순수 담임은 여기 넣지 않는다(v3). 시수표에서 「담임」(HOMEROOM_AGENT_ID)을 고른다.
+ *   tier             우선순위. 1=부장·보직 2=일반 3=강사·지원인력(스포츠강사·원어민).
+ *                    권장 규칙(되도록 피함 등)의 가중치에만 쓰고, 필수 규칙과는 무관하다.
+ *   role             '전담' | '비교과' | '담임 겸 전담'. ('담임'은 v2 유물 — migrateDoc 이 변환한다)
+ *   homeroomTrackIds 「담임 겸 전담」이 맡은 반(들). 필수 규칙 「담임 겸 전담 자리 비움」이 본다:
+ *                    자기 반에 다른 교사의 수업이 들어와 있는 시각에만 타 반 수업을 할 수 있다.
+ *   lunchSpecId      이 교사가 점심을 맞춰야 하는 시간 틀(급식지도 등). 비우면 「그날 가르치는 학년 점심 중 하나」.
+ *   coteach          (v2 유물) 엔진이 읽지 않는다. 협력수업은 Demand.coAgentId 로 적는다.
+ *   homeroomTrackId  (v2 유물) migrateDoc 이 homeroomTrackIds 로 옮긴다.
  */
 export interface Agent extends Entity<'agent'> {
     tier?: 1 | 2 | 3;
+    role?: '담임' | '전담' | '비교과' | '담임 겸 전담';
+    homeroomTrackIds?: string[];
+    lunchSpecId?: string;
+    /** @deprecated v2 — Demand.coAgentId 를 쓴다 */
     coteach?: boolean;
-    role?: '담임' | '전담' | '비교과';
-    homeroomTrackId?: string;   // 담임이면 맡은 반
+    /** @deprecated v2 — homeroomTrackIds 를 쓴다 */
+    homeroomTrackId?: string;
 }
 
 /**
  * Track — 자기만의 시간표를 갖는 '한 줄(레인)'. 학교의 한 반.
- *   specId  이 반이 쓰는 시간 규격 (학년마다 교시 수·점심 시각이 다르므로 규격이 갈린다)
- *   grade   학년 (1~6). 순배·점심·하교 같은 학년 단위 규칙이 이 값으로 묶는다
+ *   specId        이 반이 쓰는 시간 틀 (학년마다 교시 수·점심 시각이 다르므로 틀이 갈린다)
+ *   grade         학년 (1~6). 차시 순서·점심·하교 같은 학년 단위 규칙이 이 값으로 묶는다
+ *   homeroomName  담임 이름 (선택 · 표시용). 인쇄물과 화면에 붙인다. 사람 정보는 반에 붙는다(v3)
  */
 export interface Track extends Entity<'track'> {
     specId?: string;
     grade?: number;
+    homeroomName?: string;
 }
 
 /**
@@ -133,7 +155,9 @@ export interface Blackout {
  *   temp: true  → 임시금지. 짜는 동안만 막아 두고 나중에 한꺼번에 푼다
  * slotIndex를 생략하면 그 요일 종일.
  * targets가 비어 있으면 '모두'(예: 수요일 4교시 동아리 — 전 학년 고정 블록).
- * ⚠️ slotIndex는 대상의 규격 기준 교시다. 교사처럼 규격이 없는 대상은 from/to(시각)로 적는다.
+ * 🔴 v3 규약: slotIndex 는 **반(track) 대상에만** 쓴다(그 반 시간 틀의 교시). **교사·특별실 대상은 반드시 from/to(시각)** 로 적는다 —
+ *    교시 번호는 학년마다 시각이 달라 같은 금지칸이 학년마다 다른 시각을 막는 사고가 있었다(선생님 의견 #12).
+ *    v2 파일의 교사·특별실 slotIndex 블록은 migrateDoc 이 표시 틀(칸이 가장 많은 틀) 기준 시각으로 바꾼다.
  */
 export interface WeeklyBlock {
     id: string;
@@ -168,11 +192,13 @@ export interface Slot {
 }
 
 /**
- * TimetableSpec — 시간표의 '빈 격자 틀(규격)'. 학년군마다 하나씩 둔다(1·2학년 / 3·4 / 5·6).
+ * TimetableSpec — 시간표의 '빈 격자 틀'(화면 낱말: 시간 틀). 학년군마다 하나씩 둔다(1·2학년 / 3·4 / 5·6).
+ *   grades  이 틀을 쓰는 학년들 (예: [5,6]). 반을 만들 때 학년으로 틀을 자동으로 고른다(선생님 의견 #16).
+ *           비어 있으면 「어느 학년에나」.
  */
 export interface TimetableSpec {
     id: string;
-    name: string;               // "1·2학년 규격"
+    name: string;               // "1·2학년 시간 틀"
     cycleDays: number;          // 반복 주기 (한 주면 7)
     activeDays: number[];       // 주기 중 수업하는 날 (월~금이면 [0,1,2,3,4])
     dayStart: string;
@@ -180,6 +206,7 @@ export interface TimetableSpec {
     slots: Slot[];
     /** 요일마다 수업 교시 수가 다르면 여기에 (예: 1학년 월·금은 4교시까지 → {0:4, 4:4}). 값은 '수업 칸 수' */
     lessonsPerDay?: Record<number, number>;
+    grades?: number[];
     attr?: Record<string, any>;
 }
 
@@ -215,13 +242,15 @@ export interface AssignmentBase {
  *   demandId  어느 수요(시수 목표)를 채우는 배치인지. 솔버가 만든 배치엔 항상 있다
  *   seq       그 수요 안에서 몇 번째(차시)인지 1부터. 순배 검사가 이 순서를 본다
  *   blockId   연강 묶음 id. 같은 값을 가진 배치들은 같은 날 연속 칸에 있어야 한다
- *   pinned    이동금지 — 사람이 손으로 박아 둔 칸. 솔버가 옮기지 않는다
+ *   coAgentId 협력수업으로 함께 들어가는 둘째 교사(원어민·스포츠강사 등). Demand.coAgentId 가 그대로 복사된다(v3)
+ *   pinned    잠금(화면 낱말) — 사람이 손으로 정한 칸. 자동 배정이 옮기지 않는다
  *   temp      임시 표시 — 짜는 동안만 잠가 두는 것
- *   fixed     고정 수업(담임 국·수, 창체, 동아리). 전담 배치 대상이 아니고 칸만 먹는다
+ *   fixed     고정 수업(창체, 동아리, 도움반 국·수). 전담 배치 대상이 아니고 칸만 먹는다
  */
 export interface WorkAssignment extends AssignmentBase {
     kind: 'work';
     agentId?: string;
+    coAgentId?: string;
     activityId?: string;
     resourceId?: string;
     label?: string;
@@ -246,13 +275,16 @@ export type Assignment = WorkAssignment;
  *   count       주당 시수
  *   resourceId  특별실을 쓰면 어느 실인지
  *   roomHours   count 중 특별실을 쓰는 시수. 생략하면 전부, 0이면 안 씀
- *   block       연강 묶음. [2]=4시간 중 2시간만 붙여서, [2,2]=2+2, 없으면 연강 없음
- *   cycle       순배(라운드로빈) 대상. 같은 교사·학년·과목의 모든 반이 1차시를 끝내야 2차시로
- *   fixed       담임 고정수업 등 '전담이 아닌' 칸 먹기용 수요 (솔버가 배치하되 검사만 다르게)
+ *   agentId     교사. HOMEROOM_AGENT_ID('__homeroom__') 면 「그 반의 담임」(v3 — 특별실이 필요한 담임 수업만 줄을 만든다)
+ *   coAgentId   협력수업(두 교사 한 칸)의 둘째 교사. 두 교사가 동시에 비는 칸에만 배치되고, 겹침·금지칸은 각각 검사한다(v3)
+ *   block       연속 수업 묶음. [2]=4시간 중 2시간만 붙여서, [2,2]=2+2, 없으면 없음
+ *   cycle       차시 순서 맞춤(순배). 같은 교사·학년·과목의 모든 반이 1차시를 끝내야 2차시로
+ *   fixed       고정수업 등 '전담이 아닌' 칸 먹기용 수요 (솔버가 배치하되 검사만 다르게)
  */
 export interface Demand {
     id: string;
     agentId: string;
+    coAgentId?: string;
     trackId: string;
     activityId: string;
     count: number;
@@ -363,6 +395,7 @@ export interface Board {
 export interface SchoolMeta {
     name: string;               // "고성초등학교"
     term: string;               // "2026학년도 2학기"
-    schemaVersion: 2;
+    /** 2 = v0.1 (담임이 사람) · 3 = v0.2 (담임이 반의 속성 · 교사/특별실 금지칸은 시각 · 협력수업) — migrateDoc 이 올린다 */
+    schemaVersion: 2 | 3;
     updatedAt?: string;
 }

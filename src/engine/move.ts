@@ -119,7 +119,8 @@ export function candidateCells(doc: Doc, assignmentId: string): CellVerdicts {
     const ctx = buildContext(doc);
     const A = ctx.assignments.get(assignmentId);
     const cells: Record<string, CellVerdict> = {};
-    if (!A) return { assignmentId, cells };
+    const reasons: Record<string, string[]> = {}; // 엔진 판이 채운다 (계약 v3 · 선생님 의견 #19)
+    if (!A) return { assignmentId, cells, reasons };
     const track = A.trackId;
     const groupIds = new Set(
         A.blockId ? doc.assignments.filter((a) => a.blockId === A.blockId).map((a) => a.id) : [A.id]);
@@ -143,5 +144,5 @@ export function candidateCells(doc: Doc, assignmentId: string): CellVerdicts {
             }
         }
     }
-    return { assignmentId, cells };
+    return { assignmentId, cells, reasons };
 }

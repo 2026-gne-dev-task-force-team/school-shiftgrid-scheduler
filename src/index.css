@@ -2,23 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * 테마 — 값은 "r g b" (tailwind.config.js 가 rgb(var(--c-x) / a) 로 감싼다).
+ * 기본은 밝은 화면(학교 PC의 다른 창들과 같은 결). html[data-theme="dark"] 가 어두운 화면.
+ * 뜻색 셋(ok 초록 · bad 빨강 · warn 노랑)은 두 테마에서 뜻이 같고 명도만 다르다.
+ * SVG 등 클래스를 못 쓰는 자리는 var(--c-…) 를 직접 읽는다: fill: rgb(var(--c-accent)).
+ */
+:root, html[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: 244 246 249;       /* #f4f6f9 */
+  --c-panel: 255 255 255;    /* #ffffff */
+  --c-panel2: 238 241 245;   /* #eef1f5 */
+  --c-line: 213 219 227;     /* #d5dbe3 */
+  --c-text: 28 36 48;        /* #1c2430 */
+  --c-muted: 95 107 122;     /* #5f6b7a */
+  --c-accent: 43 108 176;    /* #2b6cb0 */
+  --c-accenth: 29 90 154;    /* #1d5a9a — 밝은 바탕에선 호버가 더 짙어진다 */
+  --c-ok: 31 138 76;         /* #1f8a4c */
+  --c-bad: 197 48 48;        /* #c53030 */
+  --c-warn: 183 121 31;      /* #b7791f */
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: 16 21 28;          /* #10151c */
+  --c-panel: 22 29 39;       /* #161d27 */
+  --c-panel2: 27 36 48;      /* #1b2430 */
+  --c-line: 36 48 65;        /* #243041 */
+  --c-text: 230 233 238;     /* #e6e9ee */
+  --c-muted: 139 149 165;    /* #8b95a5 */
+  --c-accent: 43 108 176;    /* #2b6cb0 */
+  --c-accenth: 59 130 196;   /* #3b82c4 */
+  --c-ok: 47 158 91;         /* #2f9e5b */
+  --c-bad: 214 69 69;        /* #d64545 */
+  --c-warn: 217 164 65;      /* #d9a441 */
+}
+
 @layer base {
   html, body, #root {
     height: 100%;
   }
   body {
     margin: 0;
-    background: #10151c;
-    color: #e6e9ee;
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-text));
     font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
   }
   * { box-sizing: border-box; }
   button { font-family: inherit; }
-  /* 얇은 스크롤바 — 어두운 결에 맞춘다 */
+  /* 얇은 스크롤바 — 테마를 따른다 */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: #243041; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
 }
 

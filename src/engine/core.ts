@@ -14,3 +14,4 @@ export { RULES, defaultRules } from './rules';
 export { evaluateAll, diagnose, demandStatus } from './evaluate';
 export { previewMove, applyMove, candidateCells } from './move';
 export { solve, autoAdjust } from './solver';
+export { checkCapacity } from './capacity';

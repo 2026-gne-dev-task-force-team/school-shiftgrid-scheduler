@@ -113,7 +113,32 @@ export interface MovePreview {
 
 /** 어떤 배치를 잡았을 때, 갈 수 있는 칸마다 색을 매긴 것 */
 export type CellVerdict = 'ok' | 'soft' | 'hard' | 'occupied' | 'blocked' | 'self';
-export interface CellVerdicts { assignmentId: string; cells: Record<string, CellVerdict>; } // key = `${dayIndex}:${slotIndex}` (같은 반 안에서)
+export interface CellVerdicts {
+    assignmentId: string;
+    cells: Record<string, CellVerdict>;          // key = `${dayIndex}:${slotIndex}` (같은 반 안에서)
+    /**
+     * v3 — 칸마다 「왜 그 색인가」. hard/soft/blocked 칸에 걸린 규칙 이름(label)들. ok 칸은 비어 있다.
+     * 화면이 툴팁(「연속 수업 묶음 · 특별실 겹침」)과 「갈 곳 없음」 배너(가장 많이 걸린 규칙)를 그릴 때 쓴다(선생님 의견 #19).
+     */
+    reasons: Record<string, string[]>;
+}
+
+// ──────────────────────────────────────────────── 사전 점검 (「못 푸는 시수표」를 풀기 전에 알려준다)
+
+/**
+ * CapacityIssue — 자동 배정을 돌리기 전에 「이 시수표는 구조적으로 못 푼다」를 알려주는 한 건.
+ *   교사 한 명의 주당 시수 합이 그 교사가 들어갈 수 있는 수업 칸 수(금지칸 제외)를 넘으면 어떤 방법으로도 필수 위반 0 이 안 된다.
+ *   특별실도 같다: 그 실을 쓰는 시수 합 > 실의 (수업 칸 수 × 수용 수).
+ *   v0.1 실측: 전담 한 명 12반×3시간=36 > 주간 칸 ≈30 → 필수 위반 27 이 바닥이었다.
+ */
+export interface CapacityIssue {
+    kind: 'agent' | 'resource' | 'track';
+    id: string;
+    name: string;
+    need: number;        // 주당 시수 합
+    capacity: number;    // 들어갈 수 있는 칸 수
+    message: string;     // 사람이 읽는 한 문장 (「○○ 교사: 주 36시간이 필요하지만 수업 칸은 30개입니다. 담당 반을 나누거나 시수를 줄이세요」)
+}
 
 // ──────────────────────────────────────────────── 솔버 (자동 배정)
 
@@ -171,18 +196,26 @@ export interface DemandStatus {
 //  solve(doc, opts?, onProgress?)        자동 배정. 수 초 걸리니 Worker 에서 돌리고 진행을 알린다.
 //                                        돌려주는 assignments 는 Doc 에 그대로 넣으면 되는 완성본(fixed·pinned 포함)
 //  autoAdjust(doc, opts?, onProgress?)   solve 를 adjustOnly 로 (컴시간 [자동 조정하여라])
+//  checkCapacity(doc)                    (v3) 풀기 전에 「구조적으로 못 푸는 시수표」를 잡는다. 비어 있으면 통과
 //  RULES                                 엔진이 아는 규칙 틀 전부 (규칙 목록·설정 폼이 이걸 그린다)
-//  defaultRules()                        새 학교에 기본으로 켜 줄 규칙 묶음 (하드 전부 + 소프트 기본값)
-//  makeSpec({...})                       학년별 교시 수·점심 위치로 규격 만들기 (lunchAfter = 몇 교시 뒤 점심)
+//  defaultRules()                        새 학교에 기본으로 켜 줄 규칙 묶음 (필수 전부 + 권장 기본값)
+//  makeSpec({...})                       학년별 교시 수·점심 위치로 시간 틀 만들기 (lunchAfter = 몇 교시 뒤 점심)
+//
+//  ⭐ v3 담임 규약: agentId === HOMEROOM_AGENT_ID 인 수요·배치는 「그 반의 담임」이다. 엔진은 이 배치에
+//     필수 규칙(반 겹침·특별실 겹침·시수·금지칸)만 적용하고 교사 겹침·식사·교사 축 권장 규칙은 건너뛴다.
+//     solve 가 만든 담임 배치의 agentId 도 이 상수 그대로다(화면이 반의 homeroomName 으로 바꿔 보여준다).
 
 export type { Doc } from '../types/doc';
+export { HOMEROOM_AGENT_ID, HOMEROOM_LABEL, isHomeroomAgent } from '../types/schema';
 export {
     buildContext, evaluateAll, diagnose, candidateCells, previewMove, applyMove,
-    demandStatus, solve, autoAdjust, RULES, defaultRules, makeSpec,
+    demandStatus, solve, autoAdjust, checkCapacity, RULES, defaultRules, makeSpec,
 } from './core';
 
 export interface MakeSpecInput {
     id: string; name: string; periods: number; lunchAfter: number;
     dayStart?: string; lessonMin?: number; breakMin?: number; lunchMin?: number;
     lessonsPerDay?: Record<number, number>;
+    /** 이 틀을 쓰는 학년들 (v3 · 선생님 의견 #16) */
+    grades?: number[];
 }
