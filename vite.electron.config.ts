@@ -1,4 +1,7 @@
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
+// 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
+const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 import react from '@vitejs/plugin-react'
 import electron from 'vite-plugin-electron/simple'
 
@@ -13,6 +16,7 @@ import electron from 'vite-plugin-electron/simple'
 // Electron 이 ESM 으로 읽으려 들고, sandbox 프리로드의 ESM 지원은 버전마다 갈려서 사고가 난다 — CJS면 그
 // 걱정이 아예 없다. 타입 체크는 tsconfig.electron.json(`npx tsc -p tsconfig.electron.json --noEmit`)이 한다.
 export default defineConfig({
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
   base: './',
   plugins: [
     react(),

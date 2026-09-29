@@ -14,6 +14,7 @@ import { getTheme, toggleTheme, type Theme } from './help/theme';
 import { Welcome, hasWelcomed } from './help/Welcome';
 import { Tour, hasToured } from './help/Tour';
 import { HelpDrawer } from './help/HelpDrawer';
+import { FeedbackButton } from './feedback/Feedback';
 
 import HomeScreen from './screens/HomeScreen';
 import BasicScreen from './screens/BasicScreen';
@@ -89,6 +90,7 @@ export default function Shell() {
             {help.welcomeOpen && <Welcome />}
             <Tour />
             <HelpDrawer />
+            <FeedbackButton />
         </div>
     );
 }

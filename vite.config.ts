@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
+// 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
+const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // 웹(GitHub Pages) 빌드 설정. Electron 은 vite.electron.config.ts 가 따로 맡는다.
 export default defineConfig({
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
   // GitHub Pages는 .../<repo>/ 하위 경로로 서빙되므로 상대 경로로 자산을 참조.
   // 레포 이름에 종속되지 않아 안전 (단일 페이지 앱 기준).
   base: './',

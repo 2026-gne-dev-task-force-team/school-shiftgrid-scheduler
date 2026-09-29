@@ -1,0 +1,41 @@
+name: Deploy feedback worker
+
+# feedback-worker/ 가 바뀌어 main 에 푸시되면 Cloudflare Worker 를 다시 배포한다.
+# ⭐ 사람 손이 없어도 돈다 — 저장소 설정(Settings → Secrets and variables → Actions)에 아래 셋만 있으면 된다:
+#   CLOUDFLARE_API_TOKEN   Cloudflare 계정 API 토큰 (템플릿 「Edit Cloudflare Workers」)
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare 대시보드 오른쪽의 계정 ID
+#   FEEDBACK_GITHUB_TOKEN  GitHub fine-grained PAT — 이슈 저장소에 Issues: write · Contents: write
+# 절차 전문은 docs/의견 창구 인수인계.md
+on:
+  push:
+    branches: [main]
+    paths: ['feedback-worker/**', '.github/workflows/feedback-worker.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # 비밀값이 없으면 조용히 건너뛴다(Pages 배포는 이 워크플로와 무관하게 돈다)
+    if: ${{ vars.FEEDBACK_WORKER_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: feedback-worker
+          command: deploy
+      - name: Put GitHub token into the worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: feedback-worker
+          secrets: |
+            GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.FEEDBACK_GITHUB_TOKEN }}

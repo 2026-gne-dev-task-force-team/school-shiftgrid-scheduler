@@ -35,6 +35,8 @@ export const TOUR_STEPS: TourStep[] = [
         body: ['지금 시간표를 이름 붙여 보관합니다.', '여러 시안을 비교해 하나를 확정본으로 정합니다.'] },
     { tour: 'export-print', screen: 'export', title: '인쇄·내보내기',
         body: ['완성된 시간표를 반별·교사별로 인쇄합니다.', '엑셀이나 작업 파일로도 내보낼 수 있습니다.'] },
+    { tour: 'feedback-button', title: '의견 보내기',
+        body: ['불편한 점이나 바라는 점이 있으면 여기서 바로 보냅니다.', '어느 화면에서 눌렀는지와 캡처가 함께 갑니다.'] },
     { tour: 'topbar-help', title: '도움말은 여기',
         body: ['막히면 언제든 여기를 누르세요.', '이 화면 설명·용어·사용 설명서가 모두 들어 있습니다.'] },
 ];
