@@ -28,6 +28,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # 의견 창구 공개 토큰(워크플로 실행 권한만). 비어 있으면 앱은 파일 내려받기 길로 돈다 → docs/의견 창구 인수인계.md
+          VITE_FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_DISPATCH_TOKEN }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true # Pages가 꺼져 있으면 워크플로가 자동 활성화

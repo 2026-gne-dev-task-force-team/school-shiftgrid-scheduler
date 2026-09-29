@@ -2,7 +2,7 @@
  * 의견 창구 — 오른쪽 아래 「의견 보내기」 단추 + 보내기 창.
  *  · 어느 화면에서 눌렀는지(7단계 + 기초자료 소절)가 자동으로 붙는다.
  *  · 캡처: 화면 캡처(브라우저 화면 공유 API) · 파일 첨부 · Ctrl+V 붙여넣기. 최대 4장.
- *  · 보내기: 중계(FEEDBACK_URL)로 → GitHub 이슈. 중계가 없거나 실패하면 제보문+캡처를 HTML 파일 하나로 내려준다(서버 0 경로).
+ *  · 보내기: 접수 저장소의 워크플로를 켠다(공개 토큰 · 본문 1회 + 캡처 장당 1회) → GitHub 이슈. 토큰이 없거나 실패하면 제보문+캡처를 HTML 파일 하나로 내려준다(서버 0 경로).
  *  ⛔ 학교 자료(작업 파일)는 보내지 않는다. 개수만 붙는다.
  */
 import { useRef, useState, type ClipboardEvent } from 'react';
@@ -11,8 +11,8 @@ import { SCREENS } from '../screens';
 import { Icon } from '../parts/Icon';
 import { Button, Modal, Field, TextInput, Select, Mark } from '../parts/ui';
 import { platform } from '../../platform';
-import { FEEDBACK_URL, ISSUES_URL } from './config';
-import { captureScreen, canCaptureScreen, fileToDataUrl, type Shot } from './capture';
+import { FEEDBACK_REPO, FEEDBACK_WORKFLOW, FEEDBACK_TOKEN, ISSUES_URL } from './config';
+import { captureScreen, canCaptureScreen, fileToDataUrl, shrinkForDispatch, type Shot } from './capture';
 import { getTheme } from '../help/theme';
 
 type Kind = 'feature' | 'bug' | 'question';
@@ -101,13 +101,9 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
         setErr(''); setBusy('send');
         const payload = { kind, title: title.trim(), body: body.trim(), where, meta: meta(), images: shots };
         try {
-            if (!FEEDBACK_URL) throw new Error('중계 주소가 설정되지 않았습니다');
-            const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 25000);
-            const r = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal });
-            clearTimeout(t);
-            const j = await r.json().catch(() => ({}));
-            if (!r.ok || !j.ok) throw new Error(j.error || `응답 ${r.status}`);
-            setDone({ url: j.url });
+            if (!FEEDBACK_TOKEN) throw new Error('온라인 접수가 아직 켜지지 않았습니다');
+            await dispatchAll(payload);
+            setDone({ url: `https://github.com/${FEEDBACK_REPO}/issues` });
         } catch (e) {
             // 서버 0 경로 — 제보문+캡처를 파일 하나로 내려준다
             const name = downloadReport(payload);
@@ -124,7 +120,7 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
                         <Mark kind={done.url ? 'ok' : 'warn'} />
                         <div>
                             {done.url
-                                ? <><div className="font-medium">접수되었습니다. 감사합니다.</div><div className="text-muted mt-1">담당자가 확인한 뒤 반영 여부를 앱 갱신으로 알려 드립니다.</div></>
+                                ? <><div className="font-medium">접수되었습니다. 감사합니다.</div><div className="text-muted mt-1">1분 안에 담당자 목록에 올라갑니다. 확인한 뒤 반영 여부를 앱 갱신으로 알려 드립니다.</div></>
                                 : <><div className="font-medium">제보문을 파일로 내려받았습니다.</div><div className="text-muted mt-1">{err}</div><div className="text-muted mt-1">파일: <code className="text-text">{done.file}</code></div></>}
                         </div>
                     </div>
@@ -191,6 +187,32 @@ function FeedbackModal({ onClose }: { onClose: () => void }) {
             </div>
         </Modal>
     );
+}
+
+// ── 온라인 경로: 접수 저장소의 워크플로를 켠다 (본문 1회 + 캡처 장당 1회 · 입력 상한 64KB) ──
+async function dispatch(inputs: Record<string, string>): Promise<void> {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 20000);
+    try {
+        const r = await fetch(`https://api.github.com/repos/${FEEDBACK_REPO}/actions/workflows/${FEEDBACK_WORKFLOW}/dispatches`, {
+            method: 'POST', signal: ctrl.signal,
+            headers: { 'Authorization': `Bearer ${FEEDBACK_TOKEN}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+            body: JSON.stringify({ ref: 'main', inputs }),
+        });
+        if (r.status !== 204) {
+            const j = await r.json().catch(() => ({} as { message?: string }));
+            throw new Error(j.message || `응답 ${r.status}`);
+        }
+    } finally { clearTimeout(t); }
+}
+async function dispatchAll(p: { kind: Kind; title: string; body: string; where: string; meta: Record<string, string>; images: Shot[] }): Promise<void> {
+    const fid = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    // 캡처를 먼저 줄여 본다 — 안 줄어드는 장은 온라인 길에서 뺀다(파일 길에는 원본이 남는다)
+    const small: { name: string; dataUrl: string }[] = [];
+    for (const s of p.images) { const d = await shrinkForDispatch(s.dataUrl); if (d) small.push({ name: s.name, dataUrl: d }); }
+    await dispatch({ fid, part: '0', total: String(small.length), kind: p.kind, title: p.title, body: p.body, where: p.where, meta: JSON.stringify(p.meta) });
+    for (let i = 0; i < small.length; i++) {
+        await dispatch({ fid, part: String(i + 1), total: String(small.length), image: `${small[i].name.slice(0, 60).replace(/\|/g, ' ')}|${small[i].dataUrl}` });
+    }
 }
 
 // ── 서버 0 경로: 제보문 + 캡처를 HTML 한 장으로 ──────────────

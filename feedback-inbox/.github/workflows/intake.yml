@@ -1,0 +1,123 @@
+# 의견 접수 — 앱의 「의견 보내기」가 이 워크플로를 켠다. 이 파일은 **비공개 접수 저장소**(school-shiftgrid-feedback)에 둔다.
+#
+#  앱(브라우저) ──workflow_dispatch(공개 토큰: Actions 쓰기만)──▶ 이 워크플로 ──저장소 자체 권한──▶ 이슈 + 캡처 커밋
+#
+#  · 한 제보는 여러 번 켜진다: part 0 = 본문(이슈 생성), part 1..n = 캡처 한 장씩(같은 fid 로 묶임).
+#    workflow_dispatch 입력은 다 합쳐 64KB 가 상한이라 캡처를 따로 보낸다.
+#  · 외부 서비스 0. 이 저장소의 GITHUB_TOKEN 만 쓴다(issues·contents 쓰기).
+#  · ⛔ 입력을 로그에 찍지 않는다 — 공개 토큰(Actions 쓰기)으로 실행 로그를 읽을 수 있다.
+name: 의견 접수
+
+on:
+  workflow_dispatch:
+    inputs:
+      fid:   { description: '제보 묶음 id', required: true }
+      part:  { description: '0=본문 · 1..=캡처', required: true, default: '0' }
+      total: { description: '캡처 장수', required: false, default: '0' }
+      kind:  { description: 'feature | bug | question', required: false, default: 'feature' }
+      title: { description: '제목', required: false, default: '' }
+      body:  { description: '내용', required: false, default: '' }
+      where: { description: '어느 화면', required: false, default: '' }
+      meta:  { description: '환경(JSON)', required: false, default: '{}' }
+      image: { description: '캡처 — "이름|data:image/...;base64,..."', required: false, default: '' }
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          FID: ${{ inputs.fid }}
+          PART: ${{ inputs.part }}
+          TOTAL: ${{ inputs.total }}
+          KIND: ${{ inputs.kind }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          WHERE: ${{ inputs.where }}
+          META: ${{ inputs.meta }}
+          IMAGE: ${{ inputs.image }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const fid = String(process.env.FID || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+            if (!fid) core.setFailed('fid 없음');
+            const part = parseInt(process.env.PART || '0', 10) || 0;
+            const total = parseInt(process.env.TOTAL || '0', 10) || 0;
+            const LABELS = { bug: '오류 제보', feature: '개선 요청', question: '질문' };
+            const kind = LABELS[process.env.KIND] ? process.env.KIND : 'feature';
+            const tag = `[fb:${fid}]`;
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+            async function ensureLabel(name, color) {
+              try { await github.rest.issues.createLabel({ owner, repo, name, color }); } catch (e) { /* 이미 있음 */ }
+            }
+            async function findIssue() {
+              // 검색 색인은 늦다 — 목록 API 로 최근 것부터 훑는다
+              const list = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: '앱에서 보냄', per_page: 50, sort: 'created', direction: 'desc' });
+              return list.data.find((i) => i.title.includes(tag));
+            }
+            async function putImage(name, dataUrl, idx) {
+              const m = /^data:(image\/(png|jpeg|webp));base64,(.+)$/.exec(dataUrl || '');
+              if (!m) return null;
+              const ext = m[2] === 'jpeg' ? 'jpg' : m[2];
+              const path = `feedback/${fid}-${idx}.${ext}`;
+              const branch = 'attachments';
+              // 브랜치가 없으면 기본 브랜치에서 갈라 만든다
+              try { await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` }); }
+              catch (e) {
+                const r = await github.rest.repos.get({ owner, repo });
+                const base = await github.rest.git.getRef({ owner, repo, ref: `heads/${r.data.default_branch}` });
+                try { await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: base.data.object.sha }); } catch (e2) { /* 동시에 만들어졌다 */ }
+              }
+              for (let t = 0; t < 4; t++) {
+                try {
+                  await github.rest.repos.createOrUpdateFileContents({ owner, repo, path, branch, message: `의견 캡처 ${fid}-${idx}`, content: m[3] });
+                  return { name: name || `캡처 ${idx}`, url: `https://github.com/${owner}/${repo}/blob/${branch}/${path}?raw=true` };
+                } catch (e) { if (t === 3) throw e; await sleep(1500 * (t + 1)); }   // 같은 브랜치에 동시 커밋이면 409 — 잠깐 뒤 다시
+              }
+              return null;
+            }
+
+            if (part === 0) {
+              await ensureLabel('앱에서 보냄', '0e8a16');
+              for (const [k, v] of Object.entries(LABELS)) await ensureLabel(v, k === 'bug' ? 'd73a4a' : k === 'feature' ? '1d76db' : 'fbca04');
+              let meta = {};
+              try { meta = JSON.parse(process.env.META || '{}'); } catch (e) { meta = {}; }
+              const title = `${String(process.env.TITLE || '').trim().slice(0, 100) || `${LABELS[kind]} (제목 없음)`} ${tag}`;
+              const body = [
+                `**종류**: ${LABELS[kind]}`,
+                process.env.WHERE ? `**화면**: ${String(process.env.WHERE).slice(0, 200)}` : '',
+                '',
+                String(process.env.BODY || '').trim().slice(0, 20000) || '(내용 없음)',
+                '',
+                total > 0 ? `_캡처 ${total}장이 뒤따라 댓글로 붙습니다._` : '',
+                '',
+                '---',
+                '<details><summary>환경</summary>',
+                '',
+                '```',
+                ...Object.entries(meta).slice(0, 20).map(([k, v]) => `${k}: ${String(v).slice(0, 300)}`),
+                '```',
+                '</details>',
+              ].join('\n');
+              const issue = await github.rest.issues.create({ owner, repo, title, body, labels: ['앱에서 보냄', LABELS[kind]] });
+              core.info(`이슈 #${issue.data.number} 생성`);
+            } else {
+              // 본문 실행이 먼저 이슈를 만들 때까지 기다린다 (최대 2분)
+              let issue = null;
+              for (let i = 0; i < 24 && !issue; i++) { issue = await findIssue(); if (!issue) await sleep(5000); }
+              if (!issue) { core.setFailed(`이슈 ${tag} 를 못 찾았습니다`); return; }
+              const raw = String(process.env.IMAGE || '');
+              const bar = raw.indexOf('|');
+              const name = bar >= 0 ? raw.slice(0, bar) : '';
+              const dataUrl = bar >= 0 ? raw.slice(bar + 1) : raw;
+              const img = await putImage(name, dataUrl, part);
+              if (!img) { core.setFailed('캡처 형식이 아닙니다'); return; }
+              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: `**${img.name}** (${part}/${total})\n\n![${img.name}](${img.url})` });
+              core.info(`이슈 #${issue.number} 에 캡처 ${part}/${total} 붙임`);
+            }

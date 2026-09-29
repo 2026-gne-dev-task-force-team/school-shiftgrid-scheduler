@@ -53,4 +53,24 @@ function shrink(src: HTMLCanvasElement, name: string): Shot {
     return { name, dataUrl };
 }
 
+/**
+ * workflow_dispatch 입력 상한(모두 합쳐 64KB) 안에 들어가게 한 장을 줄인다 — JPEG · 가로 1024 이하 · 품질을 내려가며 맞춘다.
+ * 못 맞추면 null (그 장은 온라인 길에서 빠지고, 파일 길에는 원본이 남는다).
+ */
+export async function shrinkForDispatch(dataUrl: string, limitChars = 56000): Promise<string | null> {
+    const img = new Image();
+    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('이미지를 읽지 못했습니다')); img.src = dataUrl; });
+    for (const w of [1024, 800, 640, 480]) {
+        const s = Math.min(1, w / img.naturalWidth);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+        for (const q of [0.7, 0.55, 0.4]) {
+            const out = c.toDataURL('image/jpeg', q);
+            if (out.length <= limitChars) return out;
+        }
+    }
+    return null;
+}
+
 const stamp = () => new Date().toLocaleString('ko-KR', { hour12: false }).replace(/[^\d]+/g, '-').replace(/-$/, '');
