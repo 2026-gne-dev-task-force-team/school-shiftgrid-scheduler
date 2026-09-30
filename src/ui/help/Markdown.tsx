@@ -54,7 +54,7 @@ export function Markdown({ md }: { md: string }) {
                 if (kind === 'figure' && (FIGURE_IDS as string[]).includes(id)) {
                     blocks.push(<Figure key={key++} id={id as FigureId} className="my-3 rounded-md border border-line bg-panel2 p-2" />);
                 } else if (kind === 'demo' && (DEMO_IDS as string[]).includes(id)) {
-                    blocks.push(<Demo key={key++} id={id as DemoId} autoplay={false} className="my-3" />);
+                    blocks.push(<Demo key={key++} id={id as DemoId} autoplay className="my-3" />);
                 }
                 // 목록에 없는 id 는 무시
             }

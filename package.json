@@ -1,7 +1,7 @@
 {
   "name": "school-shiftgrid-scheduler",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "학교 시간표 짜기 — 초등 규칙을 데이터로 받는 시간표 배정 도구",
   "author": "2026-gne-dev-task-force-team",
   "type": "module",

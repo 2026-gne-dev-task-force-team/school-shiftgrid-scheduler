@@ -50,6 +50,37 @@ async function dismissOnboarding(win) {
     }
 }
 
+/** 환영 모달([data-welcome])의 rect 를 재서 뷰포트 안인지 PASS/FAIL.
+ *  narrowOnly 면 좌우는 보지 않고 top/bottom 만 본다(좁은 창은 max-h-[94vh] overflow-auto 라 세로만 문제). */
+async function checkWelcome(win, name, narrowOnly) {
+    const rect = await runJs(win, `(() => {
+        const el = document.querySelector('[data-welcome]');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: window.innerWidth, h: window.innerHeight };
+    })()`);
+    if (!rect) {
+        fails++; console.log('FAIL', name, '(환영 모달 없음)');
+    } else {
+        const ok = narrowOnly
+            ? (rect.top >= 0 && rect.bottom <= rect.h)
+            : (rect.right <= rect.w && rect.left >= 0 && rect.bottom <= rect.h && rect.top >= 0);
+        if (!ok) fails++;
+        console.log(ok ? 'PASS' : 'FAIL', name, JSON.stringify(rect));
+    }
+    await shot(win, name);
+}
+
+/** 환영 걸음 안내를 0장 → 시수표 장(3) → 직접 조정 장(7)으로 넘기며 자리 검사 */
+async function walkWelcome(win, narrowOnly, suffix) {
+    await checkWelcome(win, 'help-0a-welcome-1' + suffix, narrowOnly);   // 0장 (세 걸음)
+    await click(win, '다음'); await sleep(250);
+    await click(win, '다음'); await sleep(250);
+    await checkWelcome(win, 'help-0b-welcome-3' + suffix, narrowOnly);   // 3번째 장 (시수표)
+    for (let i = 0; i < 4; i++) { await click(win, '다음'); await sleep(220); }
+    await checkWelcome(win, 'help-0c-welcome-7' + suffix, narrowOnly);   // 7번째 장 (직접 조정)
+}
+
 /** [role="dialog"] 팝오버의 rect 를 재서 뷰포트 안에 들어오는지 PASS/FAIL */
 async function checkPopover(win, name) {
     const rect = await runJs(win, `(() => {
@@ -81,7 +112,24 @@ app.whenReady().then(async () => {
         webPreferences: { preload: path.join(__dirname, '..', 'dist-electron', 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
     });
     await win.loadFile(path.join(__dirname, '..', 'dist-app', 'index.html'));
+    await sleep(500);
+    // 이전 실행이 userData 에 남긴 welcomed·toured 를 지우고 새로고침 → 환영이 처음처럼 뜬다
+    await runJs(win, `localStorage.removeItem('shiftgrid.welcomed'); localStorage.removeItem('shiftgrid.toured'); localStorage.removeItem('shiftgrid.autosave.v2'); true`);
+    await win.webContents.reload();
+    await sleep(900);
+
+    // ── 0) 환영 걸음 안내 — 처음 켰을 때 저절로 뜬다. 모달 자리 검사(1400×900 · 900×700 둘 다) ──
+    await walkWelcome(win, false, '');
+    // 좁은 창에서 다시 — welcomed 를 지운 채 새로고침하면 환영이 0장부터 다시 뜬다
+    win.setSize(900, 700);
     await sleep(400);
+    await runJs(win, `localStorage.removeItem('shiftgrid.welcomed'); localStorage.removeItem('shiftgrid.toured'); true`);
+    await win.webContents.reload();
+    await sleep(900);
+    await walkWelcome(win, true, '-narrow');
+    win.setSize(1400, 900);
+    await sleep(400);
+
     // 환영·코치마크는 건너뛰고 앱으로. (help-8 에서 다시 처음 안내를 돌린다)
     await runJs(win, `localStorage.setItem('shiftgrid.welcomed','1'); localStorage.setItem('shiftgrid.toured','1'); localStorage.removeItem('shiftgrid.autosave.v2'); true`);
     await win.webContents.reload();
@@ -143,15 +191,19 @@ app.whenReady().then(async () => {
     await sleep(500);
     await shot(win, 'help-7-drawer-manual');
 
-    // ── 8) 처음 안내 다시 보기 → 샘플 둘러보기 → 코치마크 3단계 ──
+    // ── 8) 처음 안내 다시 보기 → 마지막 장까지 넘겨 둘러보기 → 코치마크 3단계 ──
     console.log('처음 안내 다시', await click(win, '처음 안내 다시 보기'));
     await sleep(500);
-    await click(win, '다음'); await sleep(300);   // 환영 1 → 2
-    await click(win, '다음'); await sleep(300);   // 환영 2 → 3
+    // 환영 마지막 장(시작하기)까지 「다음」을 눌러 간다(장 수가 늘었다)
+    for (let i = 0; i < 12; i++) { const r = await click(win, '다음'); if (r !== 'ok') break; await sleep(180); }
     console.log('둘러보기', await click(win, '샘플 학교로 둘러보기'));
     await sleep(900);
     await click(win, '다음'); await sleep(700);   // 코치마크 1 → 2
     await click(win, '다음'); await sleep(700);   // 코치마크 2 → 3
+    // 코치마크 카드에 「이전」 버튼이 있는지(idx>0)
+    const hasPrev = await runJs(win, `[...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === '이전')`);
+    if (!hasPrev) fails++;
+    console.log(hasPrev ? 'PASS' : 'FAIL', 'help-8-tour-prev', '(코치마크 이전 버튼)');
     await shot(win, 'help-8-tour-3');
 
     console.log(fails === 0 ? '\n모든 자리 검사 PASS' : `\n${fails}건 FAIL`);

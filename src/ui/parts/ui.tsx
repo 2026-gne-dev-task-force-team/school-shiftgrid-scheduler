@@ -60,7 +60,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 /** help(RichHelp) 가 있으면 그리는 네 칸 카드 — 제목·그림·무엇·왜·사용 예·고치는 곳·움직임·용어 */
 function InfoRichCard({ help }: { help: RichHelp }) {
     const h = useHelp();
-    const [showDemo, setShowDemo] = useState(false);
+    const [showDemo, setShowDemo] = useState(true);
     const ex = help.example == null ? [] : Array.isArray(help.example) ? help.example : [help.example];
     return (
         <div className="p-3 text-left">

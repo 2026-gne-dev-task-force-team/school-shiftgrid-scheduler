@@ -29,13 +29,13 @@ export function Tour() {
     const help = useHelp();
     const [idx, setIdx] = useState(0);
     const [rect, setRect] = useState<DOMRect | null>(null);
-    const [demoOpen, setDemoOpen] = useState(false);
+    const [demoOpen, setDemoOpen] = useState(true);
     const [cardH, setCardH] = useState(190);
     const cardRef = useRef<HTMLDivElement>(null);
     const attempts = useRef(0);
 
-    // 단계가 바뀌면 데모 접기
-    useEffect(() => { setDemoOpen(false); }, [idx]);
+    // 단계가 바뀌면 데모를 다시 펼친다(기본 펼침)
+    useEffect(() => { setDemoOpen(true); }, [idx]);
     // 카드 실제 높이를 재서 위/아래 판정에 쓴다(그림·데모로 높이가 커진다)
     useLayoutEffect(() => {
         if (cardRef.current) setCardH(cardRef.current.offsetHeight);
@@ -50,6 +50,12 @@ export function Tour() {
         if (idx + 1 >= TOUR_STEPS.length) finish();
         else { attempts.current = 0; setRect(null); setIdx(idx + 1); }
     }, [idx, finish]);
+
+    // 이전 단계로 — 화면 이동은 idx 를 보는 effect 가 알아서 처리한다
+    const prev = useCallback(() => {
+        if (idx <= 0) return;
+        attempts.current = 0; setRect(null); setIdx(idx - 1);
+    }, [idx]);
 
     // 현재 단계의 대상을 찾는다. 화면을 옮겨야 하면 옮기고, 몇 프레임 재시도한 뒤 없으면 건너뛴다.
     useEffect(() => {
@@ -144,7 +150,7 @@ export function Tour() {
                     <div className="mb-3">
                         <button type="button" onClick={() => setDemoOpen((v) => !v)}
                             className="text-[12px] text-accenth hover:underline">
-                            {demoOpen ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법'}
+                            {demoOpen ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법 보기'}
                         </button>
                         {demoOpen && <div className="mt-1.5"><Demo id={step.demo} autoplay /></div>}
                     </div>
@@ -152,6 +158,9 @@ export function Tour() {
                 <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted">{idx + 1} / {TOUR_STEPS.length}</span>
                     <button onClick={finish} className="ml-auto text-[12px] text-muted hover:text-text px-2 py-1.5">건너뛰기</button>
+                    {idx > 0 && (
+                        <button onClick={prev} className="text-[12px] text-muted hover:text-text px-2 py-1.5">이전</button>
+                    )}
                     <button onClick={next} className="text-[12px] font-medium bg-accent hover:bg-accenth text-white rounded-md px-3 py-1.5">
                         {idx + 1 >= TOUR_STEPS.length ? '마치기' : '다음'}
                     </button>

@@ -104,7 +104,7 @@ export function HelpDrawer() {
 
 function ScreenTab({ screen }: { screen: ScreenId }) {
     const h = HELP[screen];
-    const [demoOpen, setDemoOpen] = useState(false);
+    const [demoOpen, setDemoOpen] = useState(true);
     return (
         <div className="space-y-4">
             {/* 무엇 */}
@@ -186,7 +186,7 @@ function GlossaryTab({ screen, search, setSearch, focusId }: {
 }
 
 function GlossaryCard({ g, focus }: { g: GlossaryEntry; focus: boolean }) {
-    const [demoOpen, setDemoOpen] = useState(false);
+    const [demoOpen, setDemoOpen] = useState(true);
     const ex = g.example == null ? undefined : Array.isArray(g.example) ? g.example.join(', ') : g.example;
     return (
         <div id={`glo-${g.id}`}
@@ -213,36 +213,38 @@ function GlossaryCard({ g, focus }: { g: GlossaryEntry; focus: boolean }) {
     );
 }
 
-/** 「사용법」 탭 — DEMOS 순으로 카드(아코디언 · 한 번에 하나만 펼친다). 현재 화면 것을 위로 · 첫 것을 펼쳐 둔다 */
+/** 「사용법」 탭 — DEMOS 순으로 카드 전부 펼친 채(토글 없음). 현재 화면 것을 위로.
+ *  12개가 동시에 마운트되지만 Demo 가 IntersectionObserver 로 화면 밖은 멈추니 무겁지 않다.
+ *  openDrawer('demos', demoId) 로 열면 그 카드(id=demo-<id>)로 스크롤한다. */
 function DemosTab({ screen, openId }: { screen: ScreenId; openId?: string }) {
     const ordered = useMemo(() => {
         const rel = (d: DemoMeta) => (d.screen === screen ? 0 : 1);
         return DEMOS.slice().sort((a, b) => rel(a) - rel(b));
     }, [screen]);
-    const initial = openId && DEMOS.some((d) => d.id === openId) ? openId : ordered[0]?.id;
-    const [openId2, setOpenId2] = useState<string | undefined>(initial);
-    // openDrawer('demos', demoId) 로 특정 데모를 펼쳐 열 때
-    useEffect(() => { if (openId) setOpenId2(openId); }, [openId]);
+    // 특정 데모를 지목해 열었으면 그 카드로 스크롤
+    useEffect(() => {
+        if (openId && DEMOS.some((d) => d.id === openId)) {
+            const t = setTimeout(() => {
+                document.getElementById(`demo-${openId}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }, 80);
+            return () => clearTimeout(t);
+        }
+    }, [openId]);
 
     return (
         <div className="space-y-2.5">
-            {ordered.map((d) => {
-                const isOpen = d.id === openId2;
-                return (
-                    <div key={d.id} className="rounded-md border border-line">
-                        <button type="button" onClick={() => setOpenId2(isOpen ? undefined : d.id)}
-                            className="w-full text-left px-3 py-2.5 flex items-start gap-2">
-                            <span className="text-accenth text-[12px] mt-0.5 shrink-0">{isOpen ? '▼' : '▶'}</span>
-                            <span className="flex-1 min-w-0">
-                                <span className="block text-[13px] font-medium">{d.title}</span>
-                                <span className="block text-[12px] text-muted leading-snug">{d.desc}</span>
-                            </span>
-                            {d.screen && <span className="text-[11px] text-muted shrink-0">{SCREEN_TITLE[d.screen as ScreenId] ?? ''}</span>}
-                        </button>
-                        {isOpen && <div className="px-3 pb-3"><Demo id={d.id} autoplay /></div>}
+            {ordered.map((d) => (
+                <div key={d.id} id={`demo-${d.id}`} className="rounded-md border border-line scroll-mt-2">
+                    <div className="px-3 pt-2.5 flex items-start gap-2">
+                        <span className="flex-1 min-w-0">
+                            <span className="block text-[13px] font-medium">{d.title}</span>
+                            <span className="block text-[12px] text-muted leading-snug">{d.desc}</span>
+                        </span>
+                        {d.screen && <span className="text-[11px] text-muted shrink-0">{SCREEN_TITLE[d.screen as ScreenId] ?? ''}</span>}
                     </div>
-                );
-            })}
+                    <div className="px-3 pt-2 pb-3"><Demo id={d.id} autoplay /></div>
+                </div>
+            ))}
         </div>
     );
 }
