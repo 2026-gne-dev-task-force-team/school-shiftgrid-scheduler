@@ -10,6 +10,7 @@ import {
 import { Button, Select, Mark, Info, Modal, Pill } from '../parts/ui';
 import { Icon } from '../parts/Icon';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 
 type View = 'track' | 'agent' | 'resource';
 
@@ -132,11 +133,7 @@ export default function EditScreen() {
                 <Select value={curId} onChange={(v) => setSelId(v)}>
                     {list.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </Select>
-                <Info lines={[
-                    '칸을 한 번 누르면 수업을 선택합니다. 갈 수 있는 칸이 색으로 표시됩니다.',
-                    '두 번째 칸을 누르면 옮기기 전 규칙별 전·후 결과표가 뜹니다. 필수 규칙이 깨지면 이동이 잠깁니다.',
-                    'Esc 로 선택을 해제합니다. 교사별·특별실별에서도 옮길 수 있습니다.',
-                ]} />
+                <Info help={RICH.edit} />
                 {held && <Pill tone="accent">수업 하나 선택됨 · Esc 로 해제</Pill>}
             </div>
 

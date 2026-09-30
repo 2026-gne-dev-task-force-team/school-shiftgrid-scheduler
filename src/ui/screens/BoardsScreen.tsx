@@ -5,6 +5,7 @@ import type { Board, Assignment } from '../../types/schema';
 import { cellKey } from '../lib';
 import { Button, Card, TextInput, ConfirmButton, Mark, Pill, Info, EmptyGuide } from '../parts/ui';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 
 export default function BoardsScreen() {
     const st = useStore();
@@ -40,11 +41,7 @@ export default function BoardsScreen() {
                 <label className="text-[12px] text-muted">{L.board} 이름<br />
                     <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 1차 시안" className="w-56" /></label>
                 <Button data-tour="boards-save" variant="primary" icon="save" onClick={save}>{L.saveBoard}</Button>
-                <Info lines={[
-                    '지금 배치 전부를 이름 붙여 보관합니다.',
-                    '여러 시안을 놓고 비교한 뒤 하나를 확정본으로 고릅니다. 자동 보관 시안은 큰 변경마다 저절로 쌓입니다.',
-                    '되돌리려면 시안을 되돌리거나 자동 보관 시안을 되돌립니다.',
-                ]} />
+                <Info help={RICH.boards} />
             </div>
 
             {boards.length === 0 && <p className="text-[13px] text-muted">아직 저장한 시안이 없습니다.</p>}

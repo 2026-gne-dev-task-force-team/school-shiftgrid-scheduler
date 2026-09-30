@@ -12,6 +12,7 @@ import type { Doc } from '../../../types/doc';
 import type { Agent, Activity, Track, Demand } from '../../../types/schema';
 import { HOMEROOM_AGENT_ID, HOMEROOM_LABEL } from '../../../types/schema';
 import { L } from '../../help/terms';
+import { RICH } from '../../help/richContent';
 import Sheet, { type SheetColumn, type SheetRow, type SheetApi, type CellValue } from '../../parts/Sheet';
 import { Info, Button, Mark } from '../../parts/ui';
 
@@ -227,11 +228,7 @@ export default function DemandTable() {
                 <div className="text-[13px] font-medium mr-1">{L.demandTable}</div>
                 <Button icon="plus" onClick={() => api?.addRow()}>행 추가</Button>
                 <Button icon="trash" onClick={() => api?.deleteSelectedRows()}>선택 행 삭제</Button>
-                <Info lines={[
-                    '한 줄 = 한 교사가 한 과목을 한 학년에. 「반」칸에서 여러 반을 고르면 반마다 하나씩 펼쳐집니다.',
-                    '엑셀에서 교사별 시수표를 그대로 복사해 붙일 수 있습니다(열 순서가 같습니다).',
-                    '교사 칸에는 「담임」과 교사 탭의 이름만 넣을 수 있습니다. 특별실이 필요한 담임 수업만 적습니다.',
-                ]} />
+                <Info help={RICH.demandTable} />
             </div>
             {!ready && <p className="text-[13px] text-warn"><Mark kind="warn" /> 먼저 「반」과 「교사」 탭을 채워 주세요. 과목 이름은 여기서 쳐도 바로 만들어집니다.</p>}
             <div data-tour="demand-sheet">

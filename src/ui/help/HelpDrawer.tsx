@@ -7,8 +7,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type ScreenId } from '../../store/store';
 import { useHelp, type HelpTab } from './HelpContext';
 import { HELP } from './content';
-import { GLOSSARY } from './terms';
+import { GLOSSARY, type GlossaryEntry } from './terms';
+import { DEMOS, type DemoMeta } from './richContent';
 import { Markdown, tocOf } from './Markdown';
+import { Figure } from './figures/Figure';
+import { Demo } from './demos/Demo';
 import { Icon } from '../parts/Icon';
 import { getTheme, toggleTheme, type Theme } from './theme';
 import manual from '../../../docs/사용설명서.md?raw';
@@ -54,7 +57,7 @@ export function HelpDrawer() {
         <div className="fixed inset-0 z-[220] no-print" onMouseDown={help.closeDrawer}>
             <div className="absolute inset-0 bg-black/30" />
             <div ref={panelRef}
-                className="absolute right-0 top-0 bottom-0 w-full md:w-[420px] bg-panel border-l border-line shadow-2xl flex flex-col
+                className="absolute right-0 top-0 bottom-0 w-full md:w-[460px] bg-panel border-l border-line shadow-2xl flex flex-col
                            max-md:top-auto max-md:h-[85vh] max-md:rounded-t-2xl"
                 onMouseDown={(e) => e.stopPropagation()}>
                 {/* 머리 */}
@@ -64,11 +67,11 @@ export function HelpDrawer() {
                     <button onClick={help.closeDrawer} className="ml-auto text-muted hover:text-text" aria-label="닫기"><Icon name="x" size={18} /></button>
                 </div>
 
-                {/* 탭 */}
-                <div className="flex border-b border-line shrink-0 text-[13px]">
-                    {([['screen', '이 화면'], ['glossary', '용어'], ['manual', '사용 설명서']] as [HelpTab, string][]).map(([id, label]) => (
+                {/* 탭 — 폰에서 넷이 들어가게 12px */}
+                <div className="flex border-b border-line shrink-0 text-[12px] md:text-[13px]">
+                    {([['screen', '이 화면'], ['glossary', '용어'], ['demos', '사용법'], ['manual', '사용 설명서']] as [HelpTab, string][]).map(([id, label]) => (
                         <button key={id} onClick={() => setTab(id)}
-                            className={`flex-1 py-2.5 border-b-2 ${tab === id ? 'border-accent text-text font-medium' : 'border-transparent text-muted hover:text-text'}`}>
+                            className={`flex-1 py-2.5 border-b-2 whitespace-nowrap ${tab === id ? 'border-accent text-text font-medium' : 'border-transparent text-muted hover:text-text'}`}>
                             {label}
                         </button>
                     ))}
@@ -78,6 +81,7 @@ export function HelpDrawer() {
                 <div className="flex-1 min-h-0 overflow-auto p-4">
                     {tab === 'screen' && <ScreenTab screen={st.screen} />}
                     {tab === 'glossary' && <GlossaryTab screen={st.screen} search={search} setSearch={setSearch} focusId={help.focusTermId} />}
+                    {tab === 'demos' && <DemosTab screen={st.screen} openId={help.focusTermId} />}
                     {tab === 'manual' && <ManualTab />}
                 </div>
 
@@ -100,18 +104,50 @@ export function HelpDrawer() {
 
 function ScreenTab({ screen }: { screen: ScreenId }) {
     const h = HELP[screen];
+    const [demoOpen, setDemoOpen] = useState(false);
     return (
         <div className="space-y-4">
+            {/* 무엇 */}
             <div>
                 <div className="text-[14px] font-semibold mb-1">{SCREEN_TITLE[screen]}</div>
                 <p className="text-[13px] text-muted leading-relaxed">{h.what}</p>
             </div>
+            {/* 개념 */}
+            {h.concept && (
+                <div>
+                    <div className="text-[13px] font-medium mb-1.5">개념</div>
+                    <p className="text-[13px] text-muted leading-relaxed">{h.concept}</p>
+                </div>
+            )}
+            {/* 그림 */}
+            {h.figure && <Figure id={h.figure} className="rounded-md border border-line bg-panel2 p-2" />}
+            {/* 순서 */}
             <div>
                 <div className="text-[13px] font-medium mb-1.5">순서</div>
                 <ol className="list-decimal ml-5 space-y-1 text-[13px] text-muted">
                     {h.steps.map((s, i) => <li key={i} className="leading-relaxed">{s}</li>)}
                 </ol>
             </div>
+            {/* 사용 예 */}
+            {h.example && h.example.length > 0 && (
+                <div>
+                    <div className="text-[13px] font-medium mb-1.5">사용 예</div>
+                    <ul className="list-disc ml-5 space-y-1 text-[13px] text-muted">
+                        {h.example.map((s, i) => <li key={i} className="leading-relaxed">{s}</li>)}
+                    </ul>
+                </div>
+            )}
+            {/* 움직이는 사용법 */}
+            {h.demo && (
+                <div>
+                    <button type="button" onClick={() => setDemoOpen((v) => !v)}
+                        className="text-[13px] font-medium text-accenth hover:underline">
+                        {demoOpen ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법'}
+                    </button>
+                    {demoOpen && <div className="mt-2"><Demo id={h.demo} autoplay /></div>}
+                </div>
+            )}
+            {/* 자주 하는 실수 */}
             <div>
                 <div className="text-[13px] font-medium mb-1.5">자주 하는 실수</div>
                 <ul className="list-disc ml-5 space-y-1 text-[13px] text-muted">
@@ -143,15 +179,70 @@ function GlossaryTab({ screen, search, setSearch, focusId }: {
                 className="w-full mb-3 bg-panel2 border border-line rounded-md px-2.5 py-2 text-[13px] outline-none focus:border-accent" />
             {list.length === 0 && <p className="text-[13px] text-muted">찾는 용어가 없습니다.</p>}
             <div className="space-y-3">
-                {list.map((g) => (
-                    <div key={g.id} id={`glo-${g.id}`}
-                        className={`rounded-md p-2.5 border ${g.id === focusId ? 'border-accent bg-accent/5' : 'border-line'}`}>
-                        <div className="text-[13px] font-semibold mb-0.5">{g.word}</div>
-                        <p className="text-[12.5px] text-muted leading-relaxed">{g.short}</p>
-                        {g.long && <p className="text-[12.5px] text-muted leading-relaxed mt-1">{g.long}</p>}
-                    </div>
-                ))}
+                {list.map((g) => <GlossaryCard key={g.id} g={g} focus={g.id === focusId} />)}
             </div>
+        </div>
+    );
+}
+
+function GlossaryCard({ g, focus }: { g: GlossaryEntry; focus: boolean }) {
+    const [demoOpen, setDemoOpen] = useState(false);
+    const ex = g.example == null ? undefined : Array.isArray(g.example) ? g.example.join(', ') : g.example;
+    return (
+        <div id={`glo-${g.id}`}
+            className={`rounded-md p-2.5 border ${focus ? 'border-accent bg-accent/5' : 'border-line'}`}>
+            <div className="text-[13px] font-semibold mb-0.5">{g.word}</div>
+            <p className="text-[12.5px] text-muted leading-relaxed">{g.short}</p>
+            {g.long && <p className="text-[12.5px] text-muted leading-relaxed mt-1">{g.long}</p>}
+            {ex && (
+                <div className="mt-1.5 text-[12.5px] leading-relaxed">
+                    <span className="text-muted mr-1">예</span><span className="text-text">{ex}</span>
+                </div>
+            )}
+            {g.figure && <Figure id={g.figure} className="mt-2 rounded-md border border-line bg-panel2 p-1.5" />}
+            {g.demo && (
+                <div className="mt-2">
+                    <button type="button" onClick={() => setDemoOpen((v) => !v)}
+                        className="text-[12.5px] text-accenth hover:underline">
+                        {demoOpen ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법'}
+                    </button>
+                    {demoOpen && <div className="mt-1.5"><Demo id={g.demo} autoplay /></div>}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** 「사용법」 탭 — DEMOS 순으로 카드(아코디언 · 한 번에 하나만 펼친다). 현재 화면 것을 위로 · 첫 것을 펼쳐 둔다 */
+function DemosTab({ screen, openId }: { screen: ScreenId; openId?: string }) {
+    const ordered = useMemo(() => {
+        const rel = (d: DemoMeta) => (d.screen === screen ? 0 : 1);
+        return DEMOS.slice().sort((a, b) => rel(a) - rel(b));
+    }, [screen]);
+    const initial = openId && DEMOS.some((d) => d.id === openId) ? openId : ordered[0]?.id;
+    const [openId2, setOpenId2] = useState<string | undefined>(initial);
+    // openDrawer('demos', demoId) 로 특정 데모를 펼쳐 열 때
+    useEffect(() => { if (openId) setOpenId2(openId); }, [openId]);
+
+    return (
+        <div className="space-y-2.5">
+            {ordered.map((d) => {
+                const isOpen = d.id === openId2;
+                return (
+                    <div key={d.id} className="rounded-md border border-line">
+                        <button type="button" onClick={() => setOpenId2(isOpen ? undefined : d.id)}
+                            className="w-full text-left px-3 py-2.5 flex items-start gap-2">
+                            <span className="text-accenth text-[12px] mt-0.5 shrink-0">{isOpen ? '▼' : '▶'}</span>
+                            <span className="flex-1 min-w-0">
+                                <span className="block text-[13px] font-medium">{d.title}</span>
+                                <span className="block text-[12px] text-muted leading-snug">{d.desc}</span>
+                            </span>
+                            {d.screen && <span className="text-[11px] text-muted shrink-0">{SCREEN_TITLE[d.screen as ScreenId] ?? ''}</span>}
+                        </button>
+                        {isOpen && <div className="px-3 pb-3"><Demo id={d.id} autoplay /></div>}
+                    </div>
+                );
+            })}
         </div>
     );
 }

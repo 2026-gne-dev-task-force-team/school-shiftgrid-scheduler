@@ -4,6 +4,9 @@
  *   제목마다 id 를 붙여 목차(TOC)에서 점프한다.
  */
 import { type ReactNode } from 'react';
+import { Figure } from './figures/Figure';
+import { Demo } from './demos/Demo';
+import { FIGURE_IDS, DEMO_IDS, type FigureId, type DemoId } from './rich';
 
 function slug(s: string): string {
     return 'sec-' + s.trim().replace(/\s+/g, '-').replace(/[^\w가-힣-]/g, '');
@@ -42,6 +45,21 @@ export function Markdown({ md }: { md: string }) {
 
         // 빈 줄
         if (line.trim() === '') { i += 1; continue; }
+
+        // HTML 주석 줄 — <!-- figure:ID --> · <!-- demo:ID --> 는 그림/움직임으로. 그 밖은 건너뛴다(화면에 안 새게)
+        if (line.trim().startsWith('<!--')) {
+            const m = /^<!--\s*(figure|demo):([\w-]+)\s*-->$/.exec(line.trim());
+            if (m) {
+                const [, kind, id] = m;
+                if (kind === 'figure' && (FIGURE_IDS as string[]).includes(id)) {
+                    blocks.push(<Figure key={key++} id={id as FigureId} className="my-3 rounded-md border border-line bg-panel2 p-2" />);
+                } else if (kind === 'demo' && (DEMO_IDS as string[]).includes(id)) {
+                    blocks.push(<Demo key={key++} id={id as DemoId} autoplay={false} className="my-3" />);
+                }
+                // 목록에 없는 id 는 무시
+            }
+            i += 1; continue;
+        }
 
         // 제목
         const h = /^(#{1,3})\s+(.*)$/.exec(line);

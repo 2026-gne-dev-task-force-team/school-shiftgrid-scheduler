@@ -7,6 +7,7 @@ import type { ConflictRule, ParamValue } from '../../types/schema';
 import { Button, Card, Pill, Mark, Info, Modal, Select, TextInput, EmptyGuide } from '../parts/ui';
 import { Icon } from '../parts/Icon';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 import { Term } from '../help/Term';
 
 const ruleName = (rule: ConflictRule) => RULES.find((t) => t.id === rule.templateId)?.label ?? rule.name;
@@ -49,11 +50,7 @@ export default function DiagnoseScreen() {
                     <span className="font-semibold"><Term id="hard">{L.hardViolations}</Term> {diag.hardCount}</span>
                     <span className="text-muted">·</span>
                     <span><Term id="soft">{L.softScore}</Term> {diag.softWeight.toLocaleString()}</span>
-                    <Info lines={[
-                        '규칙마다 지금 시간표가 어긴 문제 수를 셉니다.',
-                        '필수 위반은 성립을 막으니 0이어야 하고, 권장 점수는 낮을수록 좋습니다. 어쩔 수 없는 것은 숨길 수 있습니다.',
-                        '행을 누르면 위반 목록이 열리고, 직접 조정 화면으로 건너가 해당 칸이 강조됩니다.',
-                    ]} />
+                    <Info help={RICH.diagnose} />
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                     <label className="text-[12px] text-muted flex items-center gap-1">

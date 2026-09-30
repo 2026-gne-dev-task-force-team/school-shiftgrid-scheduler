@@ -8,6 +8,7 @@ import { Button, Mark, Info } from './parts/ui';
 import { ErrorBox } from './parts/ui';
 import { platform } from '../platform';
 import { L } from './help/terms';
+import { RICH } from './help/richContent';
 import { Term } from './help/Term';
 import { useHelp } from './help/HelpContext';
 import { getTheme, toggleTheme, type Theme } from './help/theme';
@@ -226,11 +227,7 @@ function StatusBar() {
             )}
             <span className="shrink-0">{L.lesson} 배정 {placed} / 필요 {need}시간</span>
             <span className="ml-auto flex items-center gap-1 shrink-0">
-                <Info lines={[
-                    '이 줄은 지금 시간표의 상태를 요약합니다.',
-                    '필수 위반이 0이라야 시간표가 성립합니다. 권장 점수는 낮을수록 좋습니다.',
-                    '숫자를 바꾸려면 왼쪽 점검·직접 조정에서 고칩니다.',
-                ]} />
+                <Info help={RICH.statusBar} />
             </span>
         </footer>
     );

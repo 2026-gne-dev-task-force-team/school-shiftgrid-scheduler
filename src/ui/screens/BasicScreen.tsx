@@ -8,6 +8,8 @@ import { makeSpec } from '../../engine/api';
 import type { Agent, Activity, Resource, Track, TimetableSpec } from '../../types/schema';
 import { assignableSlots, lessonCountForDay, activeDays, DAY_LABEL } from '../lib';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
+import type { InfoKey } from '../help/rich';
 import { Button, Card, ConfirmButton, Field, Info, TextInput, Mark, Modal } from '../parts/ui';
 import Sheet, { type SheetColumn, type SheetRow, type SheetApi } from '../parts/Sheet';
 import DemandStatusPanel from './basic/DemandStatusPanel';
@@ -15,13 +17,13 @@ import DemandTable from './basic/DemandTable';
 import ExcelBar from './basic/ExcelBar';
 
 // ── 시트 위 공용 툴바 ─────────────────────────────────────────
-function SheetToolbar({ title, api, hint }: { title: string; api: SheetApi | null; hint: [string, string, string] }) {
+function SheetToolbar({ title, api, helpKey }: { title: string; api: SheetApi | null; helpKey: InfoKey }) {
     return (
         <div className="flex items-center gap-2 flex-wrap">
             <div className="text-[13px] font-medium mr-1">{title}</div>
             <Button icon="plus" onClick={() => api?.addRow()}>행 추가</Button>
             <Button icon="trash" onClick={() => api?.deleteSelectedRows()}>선택 행 삭제</Button>
-            <Info lines={hint} />
+            <Info help={RICH[helpKey]} />
         </div>
     );
 }
@@ -149,11 +151,7 @@ function SpecsSection() {
             <Card className="p-3 max-w-2xl">
                 <div className="flex items-center gap-1.5 mb-2 text-[13px] font-medium">
                     학년군 시간 틀 만들기
-                    <Info lines={[
-                        '학년마다 교시 수·점심 위치가 달라 시간 틀을 따로 둡니다 (1·2학년 / 3·4 / 5·6).',
-                        '교사·특별실 겹침은 교시 번호가 아니라 시각으로 봐야 해서 시간 틀이 시각을 만듭니다.',
-                        '값을 바꾼 뒤 「미리보기」로 교시 표를 확인하고 「추가」합니다.',
-                    ]} />
+                    <Info help={RICH.specForm} />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <Field label="시간 틀 이름"><TextInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="1·2학년 시간 틀" className="w-full" /></Field>
@@ -169,11 +167,7 @@ function SpecsSection() {
                 <div className="mt-3">
                     <div className="flex items-center gap-1.5 text-[12px] text-muted mb-1">
                         {L.grades}
-                        <Info lines={[
-                            '이 시간 틀을 쓰는 학년을 고릅니다.',
-                            '반을 만들 때 학년에 맞는 시간 틀이 자동으로 연결됩니다.',
-                            '비워 두면 어느 학년에나 쓸 수 있습니다.',
-                        ]} />
+                        <Info help={RICH.specGrades} />
                     </div>
                     <div className="flex gap-1.5 flex-wrap">
                         {[1, 2, 3, 4, 5, 6].map((g) => (
@@ -189,11 +183,7 @@ function SpecsSection() {
                 <div className="mt-3">
                     <div className="flex items-center gap-1.5 text-[12px] text-muted mb-1">
                         요일별 교시 수
-                        <Info lines={[
-                            '요일마다 수업 교시 수가 다르면 여기에 적습니다(1학년 월·금은 4교시까지 등).',
-                            '비워 두면 위 「교시 수」 값을 씁니다.',
-                            '「교시 수」와 같으면 적지 않아도 됩니다.',
-                        ]} />
+                        <Info help={RICH.specPerDay} />
                     </div>
                     <div className="flex gap-2 flex-wrap">
                         {[0, 1, 2, 3, 4].map((d) => (
@@ -334,11 +324,7 @@ function TracksSection() {
     return (
         <div className="space-y-3">
             {specs.length === 0 && <p className="text-[13px] text-warn"><Mark kind="warn" /> 먼저 「시간 틀」에서 시간 틀을 만들어야 반에 연결할 수 있습니다.</p>}
-            <SheetToolbar title={L.track} api={api} hint={[
-                '한 반이 한 줄입니다. 학년·반을 넣으면 이름은 자동으로 「학년-반」이 됩니다.',
-                '엑셀에서 학년·반을 복사해 붙일 수 있고, 마지막 줄에서 Enter 로 계속 내려갑니다.',
-                '시간 틀을 비워 두면 저장할 때 학년에 맞는 틀이 자동으로 연결됩니다. 「담임 이름」은 인쇄물에 붙습니다.',
-            ]} />
+            <SheetToolbar title={L.track} api={api} helpKey="sheetTracks" />
             <BulkTracks specForGrade={specForGrade} />
             <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={600} {...undoRedo(st)} />
         </div>
@@ -450,11 +436,7 @@ function AgentsSection() {
 
     return (
         <div className="space-y-3">
-            <SheetToolbar title={L.agent} api={api} hint={[
-                '담임은 여기 넣지 않습니다. 시수표의 교사 칸에서 「담임」을 고르세요.',
-                '전담·강사의 담당 반은 시수표에서 정합니다.',
-                '「담임 겸 전담」만 「담임반」을 지정합니다. 우선순위는 권장 규칙의 가중치에만 씁니다.',
-            ]} />
+            <SheetToolbar title={L.agent} api={api} helpKey="sheetAgents" />
             <p className="text-[12px] text-muted rounded-md bg-panel2 border border-line px-2.5 py-1.5">
                 담임은 여기 넣지 않습니다. 시수표의 교사 칸에서 「담임」을 고르세요. 전담·강사의 담당 반은 시수표에서 정합니다.
             </p>
@@ -487,11 +469,7 @@ function ActivitiesSection() {
 
     return (
         <div className="space-y-3">
-            <SheetToolbar title={L.activity} api={api} hint={[
-                '과목 이름을 한 줄씩 넣습니다. 색은 비워 두면 자동으로 정해집니다.',
-                '엑셀에서 과목 목록을 복사해 붙일 수 있습니다.',
-                '특별실·시수표에서 이 과목 이름을 씁니다.',
-            ]} />
+            <SheetToolbar title={L.activity} api={api} helpKey="sheetActivities" />
             <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={320} {...undoRedo(st)} />
         </div>
     );
@@ -529,11 +507,7 @@ function ResourcesSection() {
 
     return (
         <div className="space-y-3">
-            <SheetToolbar title={L.resource} api={api} hint={[
-                '과학실·체육관처럼 여러 반이 나눠 쓰는 시설을 넣습니다.',
-                '수용 수는 같은 시각에 몇 반까지 들어가나입니다(과학실 2개면 2).',
-                '「과목」칸을 열면 과목을 체크로 고를 수 있습니다. 비우면 아무 과목이나.',
-            ]} />
+            <SheetToolbar title={L.resource} api={api} helpKey="sheetResources" />
             <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={520} {...undoRedo(st)} />
         </div>
     );

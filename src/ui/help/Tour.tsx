@@ -5,10 +5,12 @@
  *  · 끝내 못 찾으면 그 단계를 건너뛴다(죽지 않는다).
  * 저장: localStorage['shiftgrid.toured'].
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../../store/store';
 import { useHelp } from './HelpContext';
 import { TOUR_STEPS } from './tourSteps';
+import { Figure } from './figures/Figure';
+import { Demo } from './demos/Demo';
 
 const TOURED_KEY = 'shiftgrid.toured';
 
@@ -27,7 +29,17 @@ export function Tour() {
     const help = useHelp();
     const [idx, setIdx] = useState(0);
     const [rect, setRect] = useState<DOMRect | null>(null);
+    const [demoOpen, setDemoOpen] = useState(false);
+    const [cardH, setCardH] = useState(190);
+    const cardRef = useRef<HTMLDivElement>(null);
     const attempts = useRef(0);
+
+    // 단계가 바뀌면 데모 접기
+    useEffect(() => { setDemoOpen(false); }, [idx]);
+    // 카드 실제 높이를 재서 위/아래 판정에 쓴다(그림·데모로 높이가 커진다)
+    useLayoutEffect(() => {
+        if (cardRef.current) setCardH(cardRef.current.offsetHeight);
+    }, [idx, rect, demoOpen]);
 
     const finish = useCallback(() => {
         try { localStorage.setItem(TOURED_KEY, '1'); } catch { /* 저장 실패는 무시 */ }
@@ -95,12 +107,12 @@ export function Tour() {
     const pad = 6;
     const r = rect ? { top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 } : null;
 
-    // 카드 자리 — 대상 아래에 놓되 화면 밖으로 나가면 위로
+    // 카드 자리 — 대상 아래에 놓되 화면 밖으로 나가면 위로(높이는 실측 cardH 로)
     const vh = window.innerHeight, vw = window.innerWidth;
-    const cardW = Math.min(320, vw - 24);
+    const cardW = Math.min(360, vw - 24);
     let cardTop = r ? r.top + r.height + 10 : vh / 2 - 80;
     let cardLeft = r ? Math.min(Math.max(8, r.left), vw - cardW - 8) : (vw - cardW) / 2;
-    if (r && cardTop + 190 > vh) cardTop = Math.max(8, r.top - 190);
+    if (r && cardTop + cardH > vh - 8) cardTop = Math.max(8, r.top - cardH - 10);
     if (!r) { cardTop = vh / 2 - 90; cardLeft = (vw - cardW) / 2; }
 
     return (
@@ -119,11 +131,24 @@ export function Tour() {
             )}
 
             {/* 안내 카드 */}
-            <div className="absolute bg-panel border border-line rounded-lg shadow-2xl p-3.5" style={{ top: cardTop, left: cardLeft, width: cardW }}>
+            <div ref={cardRef} className="absolute bg-panel border border-line rounded-lg shadow-2xl p-3.5" style={{ top: cardTop, left: cardLeft, width: cardW }}>
                 <div className="text-[14px] font-semibold mb-1">{step.title}</div>
-                <div className="text-[12.5px] text-muted space-y-1 mb-3">
+                {step.figure && <Figure id={step.figure} className="my-2 rounded-md border border-line bg-panel2 p-1.5" />}
+                <div className="text-[12.5px] text-muted space-y-1 mb-2">
                     {step.body.map((b, i) => <p key={i} className="leading-snug">{b}</p>)}
                 </div>
+                {step.example && (
+                    <p className="text-[12px] mb-2 leading-snug"><span className="text-muted mr-1">예</span><span className="text-text">{step.example}</span></p>
+                )}
+                {step.demo && (
+                    <div className="mb-3">
+                        <button type="button" onClick={() => setDemoOpen((v) => !v)}
+                            className="text-[12px] text-accenth hover:underline">
+                            {demoOpen ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법'}
+                        </button>
+                        {demoOpen && <div className="mt-1.5"><Demo id={step.demo} autoplay /></div>}
+                    </div>
+                )}
                 <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted">{idx + 1} / {TOUR_STEPS.length}</span>
                     <button onClick={finish} className="ml-auto text-[12px] text-muted hover:text-text px-2 py-1.5">건너뛰기</button>

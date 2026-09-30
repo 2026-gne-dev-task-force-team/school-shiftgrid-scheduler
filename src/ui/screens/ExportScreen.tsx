@@ -8,6 +8,7 @@ import { HOMEROOM_AGENT_ID } from '../../types/schema';
 import { indexBy, assignableSlots, activeDays, dayName, allLessonStarts, slotStartOf, indexAssignments, cellAt, agentLabelOf } from '../lib';
 import { Button, Info, EmptyGuide } from '../parts/ui';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 
 type View = 'track' | 'agent' | 'resource';
 
@@ -46,11 +47,7 @@ export default function ExportScreen() {
                 <Button data-tour="export-print" icon="printer" onClick={() => void platform.print()}>{L.print}</Button>
                 <Button icon="download" onClick={() => void exportExcel()}>{L.exportExcel}</Button>
                 <Button icon="save" onClick={() => void exportJson()}>작업 파일로 저장</Button>
-                <Info lines={[
-                    '완성된 시간표를 반별·교사별·특별실별로 인쇄하거나 파일로 내보냅니다.',
-                    '흑백으로 인쇄해도 읽히도록 색 없이 글자와 표로만 나타냅니다.',
-                    '엑셀·작업 파일은 다른 프로그램에서 다시 여는 용도입니다.',
-                ]} />
+                <Info help={RICH.export} />
             </div>
 
             <div className="print-area space-y-6">

@@ -3,6 +3,7 @@ import { useStore } from '../../../store/store';
 import { indexBy } from '../../lib';
 import { HOMEROOM_AGENT_ID, HOMEROOM_LABEL } from '../../../types/schema';
 import { Info, Pill } from '../../parts/ui';
+import { RICH } from '../../help/richContent';
 
 export default function DemandStatusPanel() {
     const st = useStore();
@@ -26,11 +27,7 @@ export default function DemandStatusPanel() {
             <div className="flex items-center gap-1.5 text-[13px] font-medium mb-2">
                 배정 / 필요
                 {rows.length > 0 && nothingPlaced && <Pill tone="accent">아직 배정 전</Pill>}
-                <Info lines={[
-                    '「남음」은 시간표에 아직 놓이지 않은 시간입니다.',
-                    '자동 배정 전에는 모두 남음이 정상입니다.',
-                    '「초과」는 필요보다 많이 놓인 것입니다.',
-                ]} />
+                <Info help={RICH.demandStatus} />
             </div>
             {rows.length === 0 && (
                 <p className="text-[12px] text-muted">시수표가 채워지면 여기에 반별 배정/필요가 뜹니다.</p>

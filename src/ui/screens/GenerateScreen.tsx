@@ -6,6 +6,7 @@ import type { Assignment, TimetableSpec } from '../../types/schema';
 import { activeDays, assignableSlots } from '../lib';
 import { Button, Card, Field, TextInput, Pill, Info, Mark, EmptyGuide } from '../parts/ui';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 import { Term } from '../help/Term';
 
 export default function GenerateScreen() {
@@ -66,11 +67,7 @@ export default function GenerateScreen() {
             <Card className="p-3">
                 <div className="flex items-center gap-1.5 text-[13px] font-medium mb-2">
                     {L.screen.generate}
-                    <Info lines={[
-                        '후보 여러 장을 만들어 그중 하나를 사람이 고릅니다.',
-                        '필수 위반이 0인 후보가 성립하는 시간표입니다. 권장 점수는 낮을수록 좋습니다.',
-                        '자동 개선(지금 배치를 유지하며 위반만 줄이기)은 「점검」 화면에 있습니다.',
-                    ]} />
+                    <Info help={RICH.generate} />
                 </div>
                 <div className="flex items-end gap-3 flex-wrap">
                     <Field label={L.candidateCount}><TextInput type="number" value={candidates} onChange={(e) => setCandidates(+e.target.value)} className="w-16" /></Field>

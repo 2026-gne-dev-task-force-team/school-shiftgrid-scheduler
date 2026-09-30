@@ -1,48 +1,48 @@
 /**
  * 낱말 밑줄 — <Term id="hard">필수 위반</Term> 처럼 감싸면 점선 밑줄이 붙고,
- * 누르면 그 용어의 한 문장 설명이 뜨고 「자세히」로 도움말 서랍의 「용어」 탭이 열린다.
+ * 누르거나 마우스를 올리면 그 용어 카드(낱말·한 문장·예·그림·자세히)가 뷰포트 인식 팝오버로 뜬다.
+ * 호버로 열리고, 열린 뒤엔 마우스가 나가도 안 닫힌다. 바깥 클릭·Esc 로 닫힌다(Popover 가 맡는다).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { glossaryById } from './terms';
 import { useHelp } from './HelpContext';
+import { Popover } from './Popover';
+import { Figure } from './figures/Figure';
 
 export function Term({ id, children }: { id: string; children: React.ReactNode }) {
     const entry = glossaryById(id);
     const help = useHelp();
     const [open, setOpen] = useState(false);
-    const [up, setUp] = useState(false);   // 화면 아래(상태줄)에서는 위로 펼친다 — 아래로 펼치면 화면 밖이다
-    const ref = useRef<HTMLSpanElement>(null);
-    const show = (v: boolean) => {
-        if (v && ref.current) setUp(ref.current.getBoundingClientRect().bottom + 160 > window.innerHeight);
-        setOpen(v);
-    };
+    const btnRef = useRef<HTMLButtonElement>(null);
 
-    useEffect(() => {
-        if (!open) return;
-        const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-        window.addEventListener('mousedown', h);
-        return () => window.removeEventListener('mousedown', h);
-    }, [open]);
-
-    // 사전에 없는 id 면 밑줄만 없이 글자 그대로
+    // 사전에 없는 id 면 밑줄 없이 글자 그대로
     if (!entry) return <span>{children}</span>;
 
+    const ex = entry.example == null ? undefined
+        : Array.isArray(entry.example) ? entry.example.join(', ') : entry.example;
+
     return (
-        <span ref={ref} className="relative inline-block">
-            <button type="button" onMouseEnter={() => show(true)} onClick={() => show(!open)}
+        <span className="relative inline-block">
+            <button ref={btnRef} type="button" onMouseEnter={() => setOpen(true)} onClick={() => setOpen((v) => !v)}
                 className="border-b border-dotted border-muted/70 hover:border-accent text-inherit cursor-help"
                 aria-label={`${entry.word} 뜻 보기`}>
                 {children}
             </button>
-            {open && (
-                <span className={`absolute z-[120] left-0 ${up ? 'bottom-6' : 'top-6'} w-64 max-w-[80vw] p-2.5 rounded-md bg-panel border border-line shadow-xl text-[12px] text-text font-normal text-left leading-snug block`}>
-                    <span className="block font-semibold mb-1">{entry.word}</span>
-                    <span className="block text-muted">{entry.short}</span>
+            <Popover anchorRef={btnRef} open={open} onClose={() => setOpen(false)} width={300}>
+                <div className="p-2.5 text-left">
+                    <div className="text-[13px] font-semibold mb-1">{entry.word}</div>
+                    <div className="text-[12px] text-muted leading-snug">{entry.short}</div>
+                    {ex && (
+                        <div className="mt-1.5 text-[12px] leading-snug">
+                            <span className="text-muted mr-1">예</span><span className="text-text">{ex}</span>
+                        </div>
+                    )}
+                    {entry.figure && <Figure id={entry.figure} className="mt-2 rounded-md border border-line bg-panel2 p-1.5" />}
                     <button type="button"
                         onClick={() => { setOpen(false); help.openDrawer('glossary', id); }}
-                        className="mt-1.5 text-accenth hover:underline">자세히 보기 →</button>
-                </span>
-            )}
+                        className="mt-1.5 block text-accenth hover:underline text-[12px]">자세히 보기 →</button>
+                </div>
+            </Popover>
         </span>
     );
 }

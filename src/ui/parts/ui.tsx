@@ -1,6 +1,12 @@
 /** 화면 공용 조각 — 버튼·표식·ⓘ·모달·인라인 확인·오류 상자·입력 */
 import { useState, useRef, useEffect, type ReactNode, type InputHTMLAttributes } from 'react';
 import { Icon, type IconName } from './Icon';
+import { Popover } from '../help/Popover';
+import { Figure } from '../help/figures/Figure';
+import { Demo } from '../help/demos/Demo';
+import { useHelp } from '../help/HelpContext';
+import { glossaryById } from '../help/terms';
+import type { RichHelp } from '../help/rich';
 
 // ── 버튼 (동사로 쓴다) ────────────────────────────────────────
 type BtnVariant = 'primary' | 'ghost' | 'danger' | 'soft';
@@ -40,31 +46,89 @@ export function Mark({ kind, className = '' }: { kind: MarkKind; className?: str
     return <span className={`${MARK[kind].cls} ${className}`} aria-hidden="true">{MARK[kind].ch}</span>;
 }
 
-// ── ⓘ 세 문장 (뭔가 / 왜 보나 / 고치는 곳) ────────────────────
-export function Info({ lines }: { lines: [string, string, string] | string[] }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLSpanElement>(null);
-    useEffect(() => {
-        if (!open) return;
-        const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-        window.addEventListener('mousedown', h);
-        return () => window.removeEventListener('mousedown', h);
-    }, [open]);
+// ── ⓘ 도움말 (네 칸 카드 · 뷰포트 인식 팝오버) ────────────────
+/** 「무엇」 라벨 + 값 한 줄 */
+function InfoRow({ label, value }: { label: string; value: string }) {
     return (
-        <span ref={ref} className="relative inline-flex">
-            <button type="button" onClick={() => setOpen((v) => !v)}
-                className="w-4 h-4 rounded-full border border-line text-muted text-[10px] leading-none grid place-items-center hover:text-text hover:border-muted"
-                title="설명 보기" aria-label="설명">ⓘ</button>
-            {open && (
-                <span className="absolute z-50 right-0 md:left-0 md:right-auto top-5 w-64 max-w-[80vw] p-2.5 rounded-md bg-panel2 border border-line shadow-xl text-[12px] text-text space-y-1">
-                    {lines.map((l, i) => (
-                        <span key={i} className="block leading-snug">
-                            <span className="text-muted mr-1">{['무엇', '왜 보나', '고치는 곳'][i] ?? ''}·</span>{l}
-                        </span>
-                    ))}
-                </span>
+        <div className="mt-1.5">
+            <span className="text-[11px] text-muted mr-1">{label}</span>
+            <span className="text-[12.5px] text-text leading-snug">{value}</span>
+        </div>
+    );
+}
+
+/** help(RichHelp) 가 있으면 그리는 네 칸 카드 — 제목·그림·무엇·왜·사용 예·고치는 곳·움직임·용어 */
+function InfoRichCard({ help }: { help: RichHelp }) {
+    const h = useHelp();
+    const [showDemo, setShowDemo] = useState(false);
+    const ex = help.example == null ? [] : Array.isArray(help.example) ? help.example : [help.example];
+    return (
+        <div className="p-3 text-left">
+            {help.title && <div className="text-[13px] font-semibold text-text mb-1">{help.title}</div>}
+            {help.figure && <Figure id={help.figure} className="my-2 rounded-md border border-line bg-panel2 p-1.5" />}
+            <InfoRow label="무엇" value={help.what} />
+            {help.why && <InfoRow label="왜" value={help.why} />}
+            {ex.length > 0 && (
+                <div className="mt-1.5">
+                    <div className="text-[11px] text-muted mb-0.5">사용 예</div>
+                    <div className="rounded-md bg-panel2 border border-line px-2 py-1.5 space-y-0.5">
+                        {ex.map((e, i) => (
+                            <div key={i} className="text-[12px] text-text leading-snug">{ex.length > 1 ? `- ${e}` : e}</div>
+                        ))}
+                    </div>
+                </div>
             )}
-        </span>
+            {help.fix && <InfoRow label="고치는 곳" value={help.fix} />}
+            {help.demo && (
+                <div className="mt-2">
+                    <button type="button" onClick={() => setShowDemo((v) => !v)}
+                        className="text-[12px] text-accenth hover:underline">
+                        {showDemo ? '▼ 움직이는 사용법 접기' : '▶ 움직이는 사용법 보기'}
+                    </button>
+                    {showDemo && <Demo id={help.demo} autoplay className="mt-1.5" />}
+                </div>
+            )}
+            <div className="mt-2.5 pt-2 border-t border-line flex items-center gap-1.5 flex-wrap">
+                {help.terms?.map((t) => (
+                    <button key={t} type="button" onClick={() => h.openDrawer('glossary', t)}
+                        className="text-[11px] rounded-full bg-panel2 border border-line px-2 py-0.5 text-muted hover:text-text">
+                        {glossaryById(t)?.word ?? t}
+                    </button>
+                ))}
+                <button type="button" onClick={() => h.openDrawer('screen')}
+                    className="ml-auto text-[11.5px] text-accenth hover:underline">도움말 서랍 →</button>
+            </div>
+        </div>
+    );
+}
+
+/** 옛 세 줄(호환) — lines 만 왔을 때 */
+function InfoLinesCard({ lines }: { lines: string[] }) {
+    const labels = ['무엇', '왜 보나', '고치는 곳'];
+    return (
+        <div className="p-2.5 text-left space-y-1">
+            {lines.map((l, i) => (
+                <div key={i} className="text-[12px] text-text leading-snug">
+                    <span className="text-muted mr-1">{labels[i] ?? ''}·</span>{l}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export function Info({ lines, help, size = 16 }: { lines?: string[]; help?: RichHelp; size?: number }) {
+    const [open, setOpen] = useState(false);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    return (
+        <>
+            <button ref={btnRef} type="button" onClick={() => setOpen((v) => !v)}
+                aria-expanded={open} aria-label="설명" title="설명 보기"
+                style={{ width: size, height: size }}
+                className="shrink-0 rounded-full border border-line text-muted text-[10px] leading-none grid place-items-center hover:text-text hover:border-muted">ⓘ</button>
+            <Popover anchorRef={btnRef} open={open} onClose={() => setOpen(false)} width={340}>
+                {help ? <InfoRichCard help={help} /> : lines ? <InfoLinesCard lines={lines} /> : null}
+            </Popover>
+        </>
     );
 }
 

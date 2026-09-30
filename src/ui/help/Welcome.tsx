@@ -10,6 +10,7 @@ import { useStore } from '../../store/store';
 import { useHelp } from './HelpContext';
 import { SCREENS } from '../screens';
 import { Icon } from '../parts/Icon';
+import { Demo } from './demos/Demo';
 
 const WELCOMED_KEY = 'shiftgrid.welcomed';
 export function hasWelcomed(): boolean {
@@ -62,47 +63,12 @@ function PageIntro() {
         <div>
             <h2 className="text-[19px] font-semibold mb-1">시간표 짜기</h2>
             <p className="text-[13px] text-muted mb-4">초등학교 전담 시간표를 자동으로 배정하고 직접 조정하는 프로그램입니다.</p>
-            <FlowSvg />
+            <Demo id="demand-to-grid" autoplay className="rounded-md border border-line bg-panel2 p-2" />
             <div className="text-[13.5px] text-text space-y-1.5 mt-4 leading-relaxed">
                 <p>교사·과목·반·주당 시수를 「시수표」에 적으면, 규칙을 지키는 시간표를 자동으로 만들어 줍니다.</p>
                 <p>마음에 들지 않는 칸은 손으로 옮겨 다듬고, 완성되면 인쇄하거나 파일로 내보냅니다.</p>
             </div>
         </div>
-    );
-}
-
-/** 시수표 → 자동 배정 → 시간표 그림 (인라인 SVG · 색은 테마 변수) */
-function FlowSvg() {
-    return (
-        <svg viewBox="0 0 460 120" className="w-full h-auto" role="img" aria-label="시수표에서 자동 배정을 거쳐 시간표가 됩니다">
-            <g fill="none" stroke="rgb(var(--c-line))" strokeWidth="1.5">
-                <rect x="12" y="24" width="110" height="72" rx="8" fill="rgb(var(--c-panel2))" />
-                <rect x="188" y="24" width="84" height="72" rx="8" fill="rgb(var(--c-panel2))" />
-                <rect x="338" y="24" width="110" height="72" rx="8" fill="rgb(var(--c-panel2))" />
-            </g>
-            {/* 시수표 */}
-            <g stroke="rgb(var(--c-muted))" strokeWidth="1.2">
-                <line x1="24" y1="44" x2="110" y2="44" /><line x1="24" y1="60" x2="110" y2="60" /><line x1="24" y1="76" x2="110" y2="76" />
-            </g>
-            {/* 자동 배정 (별) */}
-            <path d="M230 44l4 11 11 4-11 4-4 11-4-11-11-4 11-4z" fill="rgb(var(--c-accent))" stroke="none" />
-            {/* 시간표 격자 */}
-            <g>
-                {[0, 1, 2, 3].map((c) => [0, 1, 2].map((r2) => (
-                    <rect key={`${c}-${r2}`} x={350 + c * 24} y={36 + r2 * 18} width="20" height="14" rx="2"
-                        fill={(c + r2) % 2 === 0 ? 'rgb(var(--c-accent))' : 'rgb(var(--c-line))'} />
-                )))}
-            </g>
-            {/* 화살표 */}
-            <g stroke="rgb(var(--c-muted))" strokeWidth="1.8" fill="none">
-                <path d="M132 60h44M320 60h8" markerEnd="" />
-                <path d="M168 54l8 6-8 6" /><path d="M300 54l8 6-8 6" />
-                <path d="M132 60h44M272 60h36" />
-            </g>
-            <text x="67" y="112" textAnchor="middle" fill="rgb(var(--c-muted))" fontSize="11">시수표</text>
-            <text x="230" y="112" textAnchor="middle" fill="rgb(var(--c-muted))" fontSize="11">자동 배정</text>
-            <text x="393" y="112" textAnchor="middle" fill="rgb(var(--c-muted))" fontSize="11">시간표</text>
-        </svg>
     );
 }
 

@@ -4,7 +4,7 @@
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-export type HelpTab = 'screen' | 'glossary' | 'manual';
+export type HelpTab = 'screen' | 'glossary' | 'demos' | 'manual';
 
 interface HelpValue {
     drawerOpen: boolean;

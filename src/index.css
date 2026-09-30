@@ -76,3 +76,48 @@ html[data-theme="dark"] {
     border: 1px solid #000; padding: 3px 5px; font-size: 11px; color: #000;
   }
 }
+
+/* ── 움직이는 사용법(demo) ── */
+/* 장면이 바뀌면 요소의 fill·opacity·transform 이 저절로 이어진다(요소 key 를 장면 사이에 유지해야 걸린다). */
+.demo-root { width: 100%; }
+.demo-root svg .demo-el {
+  transition: transform .45s ease, opacity .45s ease, fill .45s ease,
+    fill-opacity .45s ease, stroke .45s ease;
+}
+.demo-cursor { transition: transform .45s ease; }
+
+/* 자막 — 최소 2줄을 확보해 장면이 바뀌어도 아래가 흔들리지 않는다 */
+.demo-caption {
+  min-height: 2.6em; margin-top: 4px; font-size: 12px; line-height: 1.3;
+  color: rgb(var(--c-muted)); text-align: center;
+}
+
+/* 조작 줄 — 높이 28px */
+.demo-controls { display: flex; align-items: center; gap: 6px; height: 28px; margin-top: 2px; }
+.demo-btn {
+  width: 24px; height: 22px; padding: 0; border: 1px solid rgb(var(--c-line));
+  background: rgb(var(--c-panel2)); color: rgb(var(--c-text));
+  border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer;
+}
+.demo-btn:hover { background: rgb(var(--c-panel)); }
+.demo-btn:disabled { opacity: .4; cursor: default; }
+.demo-dots { display: flex; align-items: center; gap: 4px; }
+.demo-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--c-line)); }
+.demo-dots span.on { background: rgb(var(--c-accent)); }
+.demo-count { margin-left: auto; font-size: 11px; color: rgb(var(--c-muted)); font-variant-numeric: tabular-nums; }
+
+/* 누름 잔물결 — 누름 장면에서 한 번 */
+.demo-ripple { transform-origin: 0 0; animation: demo-ripple .55s ease-out 1; }
+@keyframes demo-ripple {
+  from { transform: scale(.3); opacity: .45; }
+  to { transform: scale(3.6); opacity: 0; }
+}
+/* 강조 깜박임 — 문제 칸을 2회 */
+.demo-blink { animation: demo-blink 1s ease-in-out 2; }
+@keyframes demo-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* reduced-motion: 전환·애니메이션을 끈다(자동 재생도 스크립트에서 멈춘다) */
+@media (prefers-reduced-motion: reduce) {
+  .demo-root svg .demo-el, .demo-cursor { transition: none; }
+  .demo-ripple, .demo-blink { animation: none; }
+}

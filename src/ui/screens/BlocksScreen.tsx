@@ -9,6 +9,7 @@ import { blockStateAt, type BlockState } from '../../store/doc-ops';
 import { indexBy, indexAssignments, cellAt, dayName, activeDays, cellText, lessonCountForDay, lessonOrdinal, allLessonStarts } from '../lib';
 import { Button, Select, Mark, Info, TextInput, Pill } from '../parts/ui';
 import { L } from '../help/terms';
+import { RICH } from '../help/richContent';
 
 type Mode = 'block' | 'fixed' | 'pin';
 
@@ -104,11 +105,7 @@ export default function BlocksScreen() {
                         );
                     })}
                 </div>
-                <Info lines={[
-                    '대상의 격자 칸을 눌러 상태를 바꿉니다.',
-                    '금지칸은 없음 → 배정 불가 → 되도록 피함 → 임시 불가 순으로 돌고, 고정 수업은 창체·동아리를 반의 칸에 넣으며, 잠금은 자동 배정이 그 칸을 못 옮기게 합니다.',
-                    '임시 불가는 아래 「임시 불가 모두 해제」로 한꺼번에 풉니다.',
-                ]} />
+                <Info help={RICH.blocks} />
                 <div className="ml-auto flex items-center gap-2">
                     <Pill tone="accent">{L.blockStates.temp} {tempCount}칸</Pill>
                     <Button variant="ghost" onClick={st.act.clearTempBlocks} disabled={tempCount === 0}>{L.clearTemp}</Button>
