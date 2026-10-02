@@ -327,8 +327,6 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
         moveTo(next.length - 1, 0);
     }, [rows, newRow, onCommit, moveTo]);
 
-    useEffect(() => { onApi?.({ addRow, deleteSelectedRows }); }, [onApi, addRow, deleteSelectedRows]);
-
     // ── 정렬 토글 (없음 → 오름 → 내림 → 없음) ──────────────────
     const toggleSort = useCallback((col: SheetColumn) => {
         if (!col.sortable) return;
@@ -345,6 +343,14 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
     const apiRef = useRef({ doCopy, doPaste, buildTsv, beginEdit, commitEdit, moveTo, selectRange, clearSelection, deleteSelectedRows, addRow, rows, columns });
     apiRef.current = { doCopy, doPaste, buildTsv, beginEdit, commitEdit, moveTo, selectRange, clearSelection, deleteSelectedRows, addRow, rows, columns };
     const apiRefActive = useRef(active); apiRefActive.current = active;
+
+    // 바깥 툴바(행 추가·선택 행 삭제)에 손잡이를 한 번만 건네준다 — 항상 최신 함수를 부르도록 apiRef 로 위임한다.
+    // 🔴 v0.3.2 핫픽스: 전에는 [onApi, addRow, deleteSelectedRows] 를 의존성으로 두고 매번 새 객체를 넘겼다. 부모가 rows·onCommit·newRow 를
+    //   렌더마다 새로 만드니 addRow 가 매번 바뀌고 → onApi → 부모 setApi → 부모 재렌더 → 다시 여기… 무한 렌더 루프였다(배포본은 경고 없이 돈다).
+    //   기초자료 시트 화면에 가만히 둬도 코어 하나가 100% 로 돌고 힙 할당이 15배(4.5→73 MB)로 뛰던 원인(2026-10-02 실측).
+    useEffect(() => {
+        onApi?.({ addRow: () => apiRef.current.addRow(), deleteSelectedRows: () => apiRef.current.deleteSelectedRows() });
+    }, [onApi]);
     const editRef = useRef(edit); editRef.current = edit;
 
     useEffect(() => {
