@@ -329,9 +329,9 @@ function sessionsOf(ctx: EngineContext, list: Assignment[]): { time: number; ids
 }
 
 const cycleOrder: EngineRule = {
-    id: 'cycle-order', label: '차시 순서 맞춤', kind: 'hard', params: [],
-    description: '차시 순서를 맞추는 수요는 같은 교사·학년·과목의 모든 반이 앞 차시를 시작한 뒤에야 다음 차시를 시작할 수 있습니다(차시 번호가 아니라 실제 시각 순서로 봅니다).',
-    defaultMessage: '{반} 차시 순서가 어긋났습니다',
+    id: 'cycle-order', label: '진도 맞춤', kind: 'hard', params: [],
+    description: '진도 맞춤(순배)을 켠 수업은 같은 교사·학년·과목의 모든 반이 앞 차시를 시작한 뒤에야 다음 차시를 시작할 수 있습니다(차시 번호가 아니라 실제 시각 순서로 봅니다).',
+    defaultMessage: '{반} 진도 맞춤 순서가 어긋났습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         // (agentId, grade, activityId) 로 묶는다

@@ -96,7 +96,7 @@ describe('block-contiguous', () => {
     it('점심을 사이에 둔 4·5교시 → 1건', () => expect(count(evaluateAll(mk(SLOT.g3_p4, SLOT.g3_p5)), 'block-contiguous')).toBe(1));
 });
 
-// ──────────────────────────────── 순배 (시간순 순번)
+// ──────────────────────────────── 순배 (진도 맞춤 · 시간순 순번)
 describe('cycle-order', () => {
     const base = () => {
         const d = makeSmallDoc();

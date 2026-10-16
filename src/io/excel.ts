@@ -4,7 +4,7 @@
  *
  *  ⭐ v0.2: 담임은 사람이 아니라 반의 속성이다(HOMEROOM). 시수표 교사 칸의 「담임」은 HOMEROOM_AGENT_ID 로 읽는다.
  *     「함께 수업」(협력수업)·반 시트의 「담임 이름」·교사 시트를 함께 나른다. 왕복(내려받기→불러오기)이 같은 시수표가 된다.
- *     옛 머리글(반당시수·특별실시수·연강·순배·보조인력)도 읽어 준다(옛 양식 호환).
+ *     옛 머리글(반당시수·특별실시수·연강·순배·차시 순서 맞춤·보조인력)도 읽어 준다(옛 양식 호환).
  */
 import * as XLSX from 'xlsx';
 import type { Doc } from '../types/doc';
@@ -26,7 +26,7 @@ const SHEET_RESOURCES = '특별실';
 const SHEET_AGENTS = '교사';
 const SHEET_GUIDE = '안내';
 
-const DEMAND_HEADER = ['교사', '함께 수업', '과목', '학년', '반', '주당 시수', '특별실', '특별실 사용 시수', '연속 수업', '차시 순서 맞춤'];
+const DEMAND_HEADER = ['교사', '함께 수업', '과목', '학년', '반', '주당 시수', '특별실', '특별실 사용 시수', '연속 수업', '진도 맞춤'];
 
 // ──────────────────────────────────────────────── 공통 헬퍼
 
@@ -283,8 +283,8 @@ export function parseDemandsWorkbook(bytes: Uint8Array, doc: Doc): ImportResult 
         const blockField = pick(row, '연속 수업', '연속수업', '연강');
         const block = blockField ? blockField.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0) : undefined;
 
-        // 차시 순서 맞춤
-        const cycle = /^y$/i.test(pick(row, '차시 순서 맞춤', '차시순서맞춤', '순배'));
+        // 진도 맞춤
+        const cycle = /^y$/i.test(pick(row, '진도 맞춤', '진도맞춤', '차시 순서 맞춤', '차시순서맞춤', '순배'));
 
         for (const track of targetTracks) {
             demands.push({
@@ -349,7 +349,7 @@ export function blankWorkbook(doc: Doc): Uint8Array {
         ['특별실: 쓰는 특별실 이름. 안 쓰면 비워둡니다(특별실 시트에 있는 이름만 인식합니다).'],
         ['특별실 사용 시수: 주당 시수 중 특별실을 쓰는 시수. 비우면 전부로 봅니다.'],
         ["연속 수업: '2' 또는 '2,2'처럼 붙는 시수 묶음. 없으면 비웁니다."],
-        ["차시 순서 맞춤: 반마다 차례로 1차시씩 끝내고 2차시로 넘어가야 하면 'Y'"],
+        ["진도 맞춤: 반마다 차례로 1차시씩 끝내고 2차시로 넘어가야 하면 'Y' (순배)"],
         [''],
         ['교사 시트에는 전담·비교과·담임 겸 전담만 적습니다. 담임은 반 시트의 「담임 이름」에 적습니다.'],
         ['시수가 있으면 이 파일에 그대로 채워져 내려옵니다. 그대로 불러오면 같은 시수표가 됩니다.'],

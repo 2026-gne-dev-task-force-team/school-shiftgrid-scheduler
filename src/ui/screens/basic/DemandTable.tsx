@@ -1,6 +1,6 @@
 /**
  * 시수표 — 엑셀식 시트. 열 순서는 「엑셀 양식」·excel.ts 와 1:1
- *   교사 | 함께 수업 | 과목 | 학년 | 반 | 주당 시수 | 특별실 | 특별실 사용 시수 | 연속 수업 | 차시 순서 맞춤
+ *   교사 | 함께 수업 | 과목 | 학년 | 반 | 주당 시수 | 특별실 | 특별실 사용 시수 | 연속 수업 | 진도 맞춤
  * 한 행 = 「교사·함께 수업·과목·학년·조건」 묶음. 같은 조건의 여러 반을 「반」칸(다중 선택)으로 접어 보여주고(fold),
  * 저장할 땐 반대로 펼친다(unfold). 교사 칸에는 「담임」과 교사 탭의 이름만 넣을 수 있고(즉석 생성 없음),
  * 과목 이름은 없는 것을 치면 그 자리에서 새로 만든다.
@@ -38,6 +38,14 @@ function classNumsOfCell(v: CellValue | undefined, grade: number, all: Track[]):
         : String(v ?? '').split(',').map((s) => s.trim());
     if (parts.includes('전체')) return classNumsOfGrade(all, grade).map(Number);
     return [...new Set(parts.map((s) => parseInt(s, 10)).filter((n) => Number.isFinite(n) && n > 0))];
+}
+
+/** 셀 값에 '전체' 가 들어 있나 (옛 값·붙여넣기·엑셀 호환) */
+function cellHasAll(v: CellValue | undefined): boolean {
+    const parts = Array.isArray(v)
+        ? v.map((s) => String(s).trim())
+        : String(v ?? '').split(',').map((s) => s.trim());
+    return parts.includes('전체');
 }
 
 function parseBlock(s: string): number[] | undefined {
@@ -161,6 +169,23 @@ export default function DemandTable() {
     const gradeOptions = [...new Set(doc.tracks.map((t) => t.grade).filter((g): g is number => typeof g === 'number'))]
         .sort((a, b) => a - b).map(String);
 
+    // 같은 학년·같은 과목의 다른 줄이 이미 가져간 반 (반 번호 → 그 반을 가진 교사)
+    const takenClasses = (row: SheetRow): Map<string, string> => {
+        const grade = Number(row.학년);
+        const taken = new Map<string, string>();
+        for (const other of rows) {
+            if (other._id === row._id) continue;
+            if (Number(other.학년) !== grade) continue;
+            if (String(other.과목 ?? '').trim() !== String(row.과목 ?? '').trim()) continue;
+            const teacher = String(other.교사 ?? '').trim() || '다른';
+            for (const c of classNumsOfCell(other.반, grade, doc.tracks)) {
+                const key = String(c);
+                if (!taken.has(key)) taken.set(key, teacher);
+            }
+        }
+        return taken;
+    };
+
     const columns: SheetColumn[] = [
         {
             key: '교사', title: L.agent, type: 'select', options: [HOMEROOM_LABEL, ...agentNames], width: 110,
@@ -183,24 +208,21 @@ export default function DemandTable() {
         },
         {
             key: '반', title: L.track, type: 'multiselect', width: 130, placeholder: '반을 고르세요',
-            optionsOf: (row) => ['전체', ...classNumsOfGrade(doc.tracks, Number(row.학년))],
+            optionsOf: (row) => classNumsOfGrade(doc.tracks, Number(row.학년)),
             disabledOptions: (row) => {
-                const grade = Number(row.학년);
-                const taken = new Map<string, string>();   // 반 번호 → 그 반을 이미 가진 교사
-                for (const other of rows) {
-                    if (other._id === row._id) continue;
-                    if (Number(other.학년) !== grade) continue;
-                    if (String(other.과목 ?? '').trim() !== String(row.과목 ?? '').trim()) continue;
-                    const teacher = String(other.교사 ?? '').trim() || '다른';
-                    for (const c of classNumsOfCell(other.반, grade, doc.tracks)) {
-                        const key = String(c);
-                        if (!taken.has(key)) taken.set(key, teacher);
-                    }
-                }
                 const out: Record<string, string> = {};
-                for (const [cls, teacher] of taken) out[cls] = `${teacher} 교사 줄에 있습니다`;
-                if (taken.size > 0) out['전체'] = '일부 반이 다른 줄에 있습니다';
+                for (const [cls, teacher] of takenClasses(row)) out[cls] = `${teacher} 교사 줄에 있습니다`;
                 return out;
+            },
+            selectAll: (row) => (takenClasses(row).size > 0 ? '나머지 전체' : '전체'),
+            format: (v, row) => {
+                const cls = Array.isArray(v) ? v.map(String) : classNumsOfCell(v, Number(row.학년), doc.tracks).map(String);
+                const all = classNumsOfGrade(doc.tracks, Number(row.학년));
+                return all.length > 0 && cls.length === all.length && all.every((c) => cls.includes(c)) ? '전체' : cls.join(', ');
+            },
+            tooltip: (v, row) => {
+                const cls = Array.isArray(v) ? v.map(String) : classNumsOfCell(v, Number(row.학년), doc.tracks).map(String);
+                return cls.length > 0 ? `${cls.length}개 반: ${cls.map((c) => c + '반').join(', ')}` : undefined;
             },
             validate: (v, row) => (classNumsOfCell(v, Number(row.학년), doc.tracks).length === 0 ? '반을 골라 주세요' : undefined),
         },
@@ -208,15 +230,20 @@ export default function DemandTable() {
         { key: '특별실', title: L.resource, type: 'select', options: roomNames, allowEmpty: true, width: 110 },
         { key: '특별실사용시수', title: L.roomHours, type: 'number', width: 118, help: '주당 시수 중 특별실을 쓰는 시수입니다. 비우면 전부로 봅니다.' },
         { key: '연속수업', title: L.block, type: 'text', width: 100, placeholder: '예: 2,2', help: '2 = 2시간 연속, 2,2 = 2시간씩 두 번' },
-        { key: '차시순서맞춤', title: L.cycle, type: 'bool', width: 104, help: '같은 교사·학년·과목의 모든 반이 1차시를 마친 뒤에 2차시를 시작하게 맞춥니다.' },
+        { key: '차시순서맞춤', title: L.cycle, type: 'bool', width: 104, help: '(순배) 같은 교사·학년·과목의 모든 반이 1차시를 마친 뒤에 2차시를 시작하게 맞춥니다.' },
     ];
     // 학년·교사·과목은 머리글로 정렬할 수 있게
     columns[0].sortable = true;   // 교사
     columns[2].sortable = true;   // 과목
 
     const commit = (next: SheetRow[]) => {
-        setRows(next);
-        const built = unfold(doc, next);
+        // 저장값에 '전체' 를 남기지 않는다 — 옛 값·붙여넣기·엑셀로 들어온 '전체'는 개별 반 번호로 푼다
+        const normalized = next.map((r) =>
+            cellHasAll(r.반)
+                ? { ...r, 반: classNumsOfCell(r.반, Number(r.학년), doc.tracks).map(String) }
+                : r);
+        setRows(normalized);
+        const built = unfold(doc, normalized);
         lastPushed.current = built.demands;
         st.act.applyDemandSheet(built);
     };
@@ -235,7 +262,7 @@ export default function DemandTable() {
                 <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb}
                     onUndo={st.undo} onRedo={st.redo} minWidth={1040} defaultSort={{ key: '학년', dir: 'asc' }} />
             </div>
-            <p className="text-[11px] text-muted">저장할 때 학년·교사·과목 순으로 정리되며, 조건이 같은 줄은 한 줄로 합쳐집니다. 「함께 수업」은 원어민·스포츠강사처럼 한 칸에 함께 들어가는 둘째 교사입니다.</p>
+            <p className="text-[11px] text-muted">저장할 때 학년·교사·과목 순으로 정리되며, 조건이 같은 줄은 한 줄로 합쳐집니다. 「함께 수업」은 원어민·스포츠강사처럼 한 칸에 함께 들어가는 둘째 교사입니다. 「반」 칸의 「전체」는 그 학년의 반을 모두 고른 것입니다. 다른 줄이 이미 가져간 반이 있으면 「나머지 전체」로 보입니다.</p>
         </div>
     );
 }

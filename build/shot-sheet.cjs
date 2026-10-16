@@ -103,6 +103,100 @@ app.whenReady().then(async () => {
     await sleep(250);
     await shot(win, '8-invalid-select');
 
+    // ⑥ 「반」 다중 선택 마스터 체크박스 + bool 셀 체크박스 (2-7·2-8)
+    //    앞 장면들이 0행을 헤집어 놨으니 샘플을 다시 올려 깨끗한 시수표로 되돌린다
+    const checks = [];   // { name, pass }
+    // 앱을 다시 로드해 빈 상태로 되돌린 뒤 샘플을 올린다(일렉트론엔 자동보관이 없어 빈 홈이 뜨고,
+    //  자료가 있으면 샘플 버튼이 확인창을 띄우는 ConfirmButton 이라 한 번 클릭으론 안 올라간다)
+    await win.loadFile(indexFile);
+    await sleep(700);
+    console.log('샘플 재적재', await click(win, '샘플 학교'));
+    await sleep(600);
+    console.log('시수표 재진입', await click(win, '시수표'));
+    await sleep(500);
+
+    // --- 「반」 열(인덱스 4) 마스터 체크박스 ---
+    await js(win, `window.__sheet.edit(0, 4);`);
+    await sleep(300);
+    await shot(win, '12-multiselect-master');
+    // 편집창(활성 요소) 안에 마스터[role=checkbox]가 있나 — 없으면 아직 selectAll 이 안 붙은 것(다른 에이전트 대기)
+    const hasMaster = await js(win, `(() => {
+        const box = document.activeElement;
+        return !!(box && box.querySelector && box.querySelector('[role=checkbox]'));
+    })()`);
+    const readMaster = () => js(win, `(() => {
+        const box = document.activeElement;
+        const m = box && box.querySelector && box.querySelector('[role=checkbox]');
+        return m ? m.getAttribute('aria-checked') : 'none';
+    })()`);
+
+    if (!hasMaster) {
+        console.log('반 열에 selectAll 마스터 없음 → 장면 12~14 건너뜀(다른 에이전트가 반 열에 selectAll 을 붙이면 산다)');
+        await js(win, `window.__sheet.key('Escape');`);
+        await sleep(150);
+    } else {
+        // 먼저 알려진 기준(none)으로 비운다 — Space 가 실제로 토글하는지 봐야 하므로(이미 all 이면 무변화와 구별 못 함).
+        //  true→false(1회) · mixed→true→false(2회) 라 최대 2회 눌러 none 을 만든다.
+        let m = await readMaster();
+        for (let i = 0; i < 2 && m !== 'false'; i++) { await js(win, `window.__sheet.key(' ');`); await sleep(200); m = await readMaster(); }
+        const baseline = m;                               // 토글이 멀쩡하면 'false'
+        // 이제 Space → 전부 체크(all) 가 돼야 한다
+        await js(win, `window.__sheet.key(' ');`);
+        await sleep(200);
+        m = await readMaster();
+        console.log('마스터:', baseline, '→ Space →', m);
+        await shot(win, '13-master-toggled');
+        checks.push({ name: '마스터 Space → 전체 체크(all)', pass: baseline === 'false' && m === 'true' });
+
+        // 첫 개별 항목 하나 해제 → 부분(mixed). (지금 all 상태)
+        await js(win, `window.__sheet.key('ArrowDown');`);
+        await sleep(100);
+        await js(win, `window.__sheet.key(' ');`);
+        await sleep(200);
+        const mp = await readMaster();
+        console.log('마스터(일부 해제 후):', mp);
+        await shot(win, '14-master-partial');
+        checks.push({ name: '개별 하나 해제 → 부분 상태(mixed)', pass: mp === 'mixed' });
+
+        await js(win, `window.__sheet.key('Escape');`);
+        await sleep(150);
+    }
+
+    // --- bool 열(인덱스 9 「차시 순서 맞춤」) 체크박스 ---
+    await js(win, `window.__sheet.click(0, 9);`);
+    await sleep(150);
+    const boolBefore = await js(win, `(() => {
+        const el = document.querySelector('td [role=checkbox]');
+        return el ? el.getAttribute('aria-checked') : 'none';
+    })()`);
+    await js(win, `(() => { const el = document.querySelector('td [role=checkbox]'); if (el) el.click(); })()`);
+    await sleep(200);
+    const boolAfter = await js(win, `(() => {
+        const el = document.querySelector('td [role=checkbox]');
+        return el ? el.getAttribute('aria-checked') : 'none';
+    })()`);
+    console.log('bool 체크박스:', boolBefore, '→', boolAfter);
+    // 「진도 맞춤」 열은 오른쪽 끝이라 격자를 끝까지 밀어야 체크박스 글리프가 찍힌다
+    await js(win, `(() => { const g = document.querySelector('[data-tour=sheet-grid]'); if (g) g.scrollLeft = 99999; })()`);
+    await sleep(250);
+    await shot(win, '15-bool-checkbox');
+    checks.push({ name: 'bool 셀 한 번 클릭 → 토글', pass: boolBefore !== 'none' && boolAfter !== 'none' && boolAfter !== boolBefore });
+
+    // 한 번 더 클릭 → 원상복귀(두 번 토글 = 제자리)
+    await js(win, `(() => { const el = document.querySelector('td [role=checkbox]'); if (el) el.click(); })()`);
+    await sleep(200);
+    const boolBack = await js(win, `(() => {
+        const el = document.querySelector('td [role=checkbox]');
+        return el ? el.getAttribute('aria-checked') : 'none';
+    })()`);
+    console.log('bool 두 번째 클릭:', boolAfter, '→', boolBack);
+    checks.push({ name: 'bool 두 번 클릭 → 원상복귀', pass: boolBack === boolBefore });
+
+    const pass = checks.filter((c) => c.pass).length, fail = checks.length - pass;
+    for (const c of checks) console.log(`${c.pass ? 'PASS' : 'FAIL'} · ${c.name}`);
+    console.log(`요약: PASS ${pass} · FAIL ${fail}`);
+    if (fail > 0) process.exitCode = 1;
+
     // 교사 시트도 한 장 (엔티티 시트가 격자로 바뀐 것 확인)
     console.log('교사', await click(win, '교사'));
     await sleep(400);

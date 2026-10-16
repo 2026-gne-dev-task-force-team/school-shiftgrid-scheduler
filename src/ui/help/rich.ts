@@ -25,7 +25,7 @@ export type FigureId =
     | 'status-bar'      // 상태줄 읽는 법 — 🔴 필수 위반 3건 · 권장 점수 · 배정 12/30
     | 'co-teach'        // 함께 수업 — 한 칸에 두 이름
     | 'block-lessons'   // 연속 수업 「2」 — 같은 날 붙은 두 칸
-    | 'cycle-order'     // 차시 순서 맞춤 — 1반·2반·3반 1차시 다 끝난 뒤 2차시
+    | 'cycle-order'     // 진도 맞춤 — 1반·2반·3반 1차시 다 끝난 뒤 2차시
     | 'capacity'        // 수용 수 — 과학실 2 → 같은 시각 두 반까지
     | 'pin'             // 잠금 — 📌 붙은 칸은 자동 배정이 안 옮긴다
     | 'work-file'       // 작업 파일(.shiftgrid.json) 하나에 자료·시간표·시안 전부

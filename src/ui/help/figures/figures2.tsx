@@ -140,7 +140,7 @@ export const blockLessons: FigRender = (cn) => (
     </Svg>
 );
 
-/** 차시 순서 맞춤 — 모든 반 1차시 뒤 2차시 */
+/** 진도 맞춤 — 모든 반 1차시 뒤 2차시 */
 export const cycleOrder: FigRender = (cn) => {
     const g1 = [10, 52, 94];
     const g2 = [140, 182, 224];
@@ -157,7 +157,7 @@ export const cycleOrder: FigRender = (cn) => {
         </g>
     );
     return (
-        <Svg h={125} className={cn} label="차시 순서 맞춤 — 모든 반이 1차시를 마친 뒤 2차시를 시작합니다">
+        <Svg h={125} className={cn} label="진도 맞춤 — 모든 반이 1차시를 마친 뒤 2차시를 시작합니다">
             <T x={64} y={28} fs={10} color={C.text} weight={600}>1차시</T>
             <T x={194} y={28} fs={10} color={C.text} weight={600}>2차시</T>
             {g1.map((x, i) => cell(x, nums1[i], klass[i], `a${i}`))}

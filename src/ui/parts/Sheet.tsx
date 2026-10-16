@@ -39,6 +39,17 @@ export interface SheetColumn {
     optionsOf?: (row: SheetRow) => string[];
     /** 고를 수 없는 후보와 그 이유(툴팁·흐리게). 숨기지는 않는다 (multiselect) */
     disabledOptions?: (row: SheetRow) => Record<string, string>;
+    /**
+     * multiselect: 목록 맨 위에 「전체」 마스터 체크박스를 둔다 (2-7).
+     *  true 면 라벨 「전체」 · 문자열이면 그 라벨 · 함수면 행마다 라벨(예: 다른 줄이 가져간 반이 있으면 「나머지 전체」).
+     *  마스터는 고를 수 있는(disabled 가 아닌) 후보만 다룬다 — 켜면 전부 체크, 끄면 전부 해제,
+     *  일부만 체크돼 있으면 부분 상태(▣)로 보인다. 저장값은 언제나 개별 항목 목록이다(「전체」라는 값은 저장하지 않는다).
+     */
+    selectAll?: boolean | string | ((row: SheetRow) => string);
+    /** 보일 때만 바꾸는 표시 글자 — 저장값은 그대로다. 예: 반이 그 학년 전부면 「전체」로 접어 보인다 */
+    format?: (value: CellValue, row: SheetRow) => string;
+    /** 칸에 마우스를 올리면 보이는 설명(오류·알림 툴팁이 없을 때만). 예: 접힌 「전체」 뒤의 반 목록 */
+    tooltip?: (value: CellValue, row: SheetRow) => string | undefined;
     suggest?: string[];          // text·list 자동완성 후보 (options 와 달리 강제 아님)
     allowEmpty?: boolean;        // select 에서 빈 값 허용
     width?: number;              // px (없으면 120)
@@ -430,6 +441,10 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
                 apiRef.current.moveTo(rr, cc);
                 apiRef.current.beginEdit(rr, cc, s);
             },
+            // 편집창을 연다(글자 없이) — multiselect 편집창을 띄울 때 쓴다
+            edit: (r: number, c: number) => { focusedRef.current = true; focusGrid(); apiRef.current.moveTo(r, c); apiRef.current.beginEdit(r, c); },
+            // 지금 포커스된 요소(편집창 등)에 키를 보낸다 — React 합성 이벤트가 네이티브 dispatch 를 받는다
+            key: (k: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true })),
             setText: (s: string) => setEdit((ed) => (ed ? { ...ed, text: s } : ed)),
             commit: () => apiRef.current.commitEdit(1, 0),
             enter: () => apiRef.current.moveTo(apiRefActive.current.r + 1, apiRefActive.current.c),
@@ -503,6 +518,7 @@ export default function Sheet({ columns, rows, onCommit, newRow, onUndo, onRedo,
                                             <Cell key={col.key} col={col} value={value} row={dataRow} err={err} note={note}
                                                 selected={selected || inFill} isActive={isActive}
                                                 bottomRight={isActive && !editing}
+                                                onToggle={() => beginEdit(r, c)}
                                                 onFillStart={() => { fillRef.current = true; setFillTo(sel.r2); }}
                                                 editing={editing} editText={edit?.text ?? ''}
                                                 sugIdx={sugIdx} setSugIdx={setSugIdx}
@@ -568,6 +584,7 @@ interface CellProps {
     selected: boolean; isActive: boolean; bottomRight: boolean; editing: boolean; editText: string;
     sugIdx: number; setSugIdx: (n: number) => void;
     onFillStart: () => void;
+    onToggle?: () => void;
     onMouseDown: (e: ReactMouseEvent) => void;
     onMouseEnter: () => void;
     onDoubleClick: () => void;
@@ -602,14 +619,25 @@ function Cell(p: CellProps) {
         );
     }
 
+    const roTog = !!(col.readOnly || col.compute);
     let shown: ReactNode;
-    if (col.type === 'bool') shown = value ? '✓' : '';
+    if (col.type === 'bool') {
+        // 체크박스를 늘 그린다(2-8): 켜짐 ☑ / 꺼짐 ☐(흐리게). span 한 번 클릭 = 토글.
+        shown = (
+            <span role="checkbox" aria-checked={!!value} tabIndex={-1}
+                onClick={roTog ? undefined : (e) => { e.stopPropagation(); p.onToggle?.(); }}
+                className={`inline-block text-[15px] leading-none select-none ${roTog ? 'cursor-default' : 'cursor-pointer'} ${value ? '' : 'text-muted/60'}`}>
+                {value ? '☑' : '☐'}
+            </span>
+        );
+    } else if (col.format) shown = col.format(value, p.row);
     else if (isMulti(col.type)) shown = Array.isArray(value) ? value.join(', ') : String(value ?? '');
     else shown = String(value ?? '');
 
     return (
-        <td className={cls} style={base} title={err ?? note ?? undefined}
-            onMouseDown={p.onMouseDown} onMouseEnter={p.onMouseEnter} onDoubleClick={p.onDoubleClick}>
+        <td className={cls} style={base} title={err ?? note ?? col.tooltip?.(value, p.row)}
+            onMouseDown={p.onMouseDown} onMouseEnter={p.onMouseEnter}
+            onDoubleClick={col.type === 'bool' ? undefined : p.onDoubleClick}>
             {shown === '' ? <span className="text-muted/40">{col.placeholder ?? ''}</span> : shown}
             {p.bottomRight && !col.readOnly && !col.compute && (
                 <span
@@ -708,12 +736,33 @@ function MultiSelectEditor({ col, row, initial, onCommit, onCancel }: {
     const opts = col.optionsOf ? col.optionsOf(row) : (col.options ?? []);
     const disabled = col.disabledOptions ? col.disabledOptions(row) : {};
     const boxRef = useRef<HTMLDivElement>(null);
-    const [sel, setSel] = useState<Set<string>>(() => new Set(initial.split(',').map((s) => s.trim()).filter(Boolean)));
+
+    // 마스터 「전체」 라벨 — selectAll 이 있을 때만 (true=전체 / 문자열 그대로 / 함수면 행마다)
+    const masterLabel: string | null =
+        col.selectAll == null ? null
+            : typeof col.selectAll === 'function' ? col.selectAll(row)
+                : typeof col.selectAll === 'string' ? col.selectAll
+                    : '전체';
+    const hasMaster = masterLabel != null;
+    const offset = hasMaster ? 1 : 0;                       // cursor 0 = 마스터(있을 때)
+
+    // 마스터가 다루는 대상: 고를 수 있는(disabled 아닌) 후보만
+    const selectable = opts.filter((o) => !disabled[o]);
+
+    const [sel, setSel] = useState<Set<string>>(() => {
+        const init = new Set(initial.split(',').map((s) => s.trim()).filter(Boolean));
+        // 옛 값으로 '전체' 가 들어오면(붙여넣기·옛 파일) selectable 전부로 풀고 '전체' 는 뺀다
+        if (hasMaster && init.has('전체')) {
+            init.delete('전체');
+            for (const o of selectable) init.add(o);
+        }
+        return init;
+    });
     const [cursor, setCursor] = useState(0);
     useEffect(() => { boxRef.current?.focus(); }, []);
 
     const join = (s: Set<string>) => {
-        // 목록 순서대로 묶고, 목록에 없지만 이미 담겨 있던 값은 뒤에 붙인다
+        // 목록 순서대로 묶고, 목록에 없지만 이미 담겨 있던 값은 뒤에 붙인다. 「전체」는 저장값에 넣지 않는다.
         const inOrder = opts.filter((o) => s.has(o));
         const extra = [...s].filter((o) => !opts.includes(o));
         return [...inOrder, ...extra].join(', ');
@@ -722,27 +771,64 @@ function MultiSelectEditor({ col, row, initial, onCommit, onCancel }: {
         if (disabled[o]) return;
         setSel((prev) => { const n = new Set(prev); if (n.has(o)) n.delete(o); else n.add(o); return n; });
     };
+    const toggleMaster = () => {
+        if (selectable.length === 0) return;
+        setSel((prev) => {
+            const all = selectable.every((o) => prev.has(o));
+            const n = new Set(prev);
+            if (all) for (const o of selectable) n.delete(o);   // 전부 해제
+            else for (const o of selectable) n.add(o);          // 전부 체크
+            return n;
+        });
+    };
+
+    // 마스터 파생 상태: 전부 ☑ / 일부 ▣(mixed) / 없음 ☐
+    const allOn = selectable.length > 0 && selectable.every((o) => sel.has(o));
+    const someOn = selectable.some((o) => sel.has(o));
+    const masterAria: 'true' | 'mixed' | 'false' = allOn ? 'true' : someOn ? 'mixed' : 'false';
+    const masterGlyph = allOn ? '☑' : someOn ? '▣' : '☐';
 
     return (
         <div ref={boxRef} tabIndex={0}
             onKeyDown={(e) => {
+                // 편집창은 모달처럼 — 키를 앱(Shell 의 Escape=홈 이동 등)으로 흘리지 않는다.
+                // 포커스가 <input> 이 아니라 <div> 라 Shell 이 editable 로 안 보고 Escape 를 가로채 버린다.
+                e.stopPropagation();
                 if (e.key === 'Escape') { e.preventDefault(); onCancel(); return; }
-                if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(opts.length - 1, c + 1)); return; }
+                if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(opts.length - 1 + offset, c + 1)); return; }
                 if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(0, c - 1)); return; }
-                if (e.key === ' ') { e.preventDefault(); const o = opts[cursor]; if (o) toggle(o); return; }
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    if (hasMaster && cursor === 0) toggleMaster();
+                    else { const o = opts[cursor - offset]; if (o) toggle(o); }
+                    return;
+                }
                 if (e.key === 'Enter') { e.preventDefault(); onCommit(0, 0, join(sel)); return; }
                 if (e.key === 'Tab') { e.preventDefault(); onCommit(0, e.shiftKey ? -1 : 1, join(sel)); return; }
             }}
             onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) onCommit(0, 0, join(sel)); }}
             className="absolute left-0 top-0 min-w-full w-max bg-panel2 border-2 border-accent rounded-md shadow-xl z-40 max-h-56 overflow-auto outline-none py-1">
-            {opts.length === 0 && <div className="px-2 py-1 text-[12px] text-muted">고를 항목이 없습니다.</div>}
+            {hasMaster && (
+                <>
+                    <button type="button" role="checkbox" aria-checked={masterAria}
+                        title={selectable.length === 0 ? '고를 수 있는 항목이 없습니다' : undefined}
+                        onMouseDown={(e) => { e.preventDefault(); setCursor(0); toggleMaster(); }}
+                        className={`flex w-full items-center gap-2 text-left px-2 py-1 text-[12px] font-medium ${cursor === 0 ? 'bg-accent/20' : ''} ${selectable.length === 0 ? 'text-muted/50 cursor-not-allowed' : 'text-text hover:bg-line'}`}>
+                        <span aria-hidden="true">{masterGlyph}</span>
+                        <span className="whitespace-nowrap">{masterLabel}</span>
+                    </button>
+                    <div className="border-b border-line" />
+                </>
+            )}
+            {opts.length === 0 && !hasMaster && <div className="px-2 py-1 text-[12px] text-muted">고를 항목이 없습니다.</div>}
             {opts.map((o, i) => {
+                const idx = i + offset;
                 const dis = disabled[o];
                 const checked = sel.has(o);
                 return (
                     <button key={o} type="button" title={dis || undefined}
-                        onMouseDown={(e) => { e.preventDefault(); setCursor(i); if (!dis) toggle(o); }}
-                        className={`flex w-full items-center gap-2 text-left px-2 py-1 text-[12px] ${i === cursor ? 'bg-accent/20' : ''} ${dis ? 'text-muted/50 cursor-not-allowed' : 'text-text hover:bg-line'}`}>
+                        onMouseDown={(e) => { e.preventDefault(); setCursor(idx); if (!dis) toggle(o); }}
+                        className={`flex w-full items-center gap-2 text-left px-2 py-1 text-[12px] ${idx === cursor ? 'bg-accent/20' : ''} ${dis ? 'text-muted/50 cursor-not-allowed' : 'text-text hover:bg-line'}`}>
                         <span aria-hidden="true">{checked ? '☑' : '☐'}</span>
                         <span className="whitespace-nowrap">{o}</span>
                         {dis && <span className="ml-auto pl-3 text-[10px] text-muted/70 whitespace-nowrap">{dis}</span>}
