@@ -55,8 +55,14 @@ jobs:
       - name: 비공개 부품 레포 읽기 권한
         env:
           GNE_SHEET_TOKEN: ${{ secrets.GNE_SHEET_TOKEN }}
-        if: ${{ env.GNE_SHEET_TOKEN != '' }}
         run: |
+          # 🔴 값은 안 찍는다. 「있나 없나」만 길이로 센다 — 빈 토큰과 틀린 토큰은
+          #    둘 다 Repository not found 로 똑같이 보여서, 이 줄이 없으면 안 갈린다.
+          echo "토큰 길이: ${#GNE_SHEET_TOKEN}"
+          if [ -z "$GNE_SHEET_TOKEN" ]; then
+            echo "토큰이 비어 있다 — 인증을 안 꽂고 넘어간다"
+            exit 0
+          fi
           AUTH="https://x-access-token:${GNE_SHEET_TOKEN}@github.com/"
           # 🔴 세 가지 주소 모양을 전부 덮는다. package-lock.json 의 resolved 가
           #    git+ssh://git@github.com/… 로 박히는데(npm 이 그렇게 적는다) CI 엔 SSH 키가 없다.
@@ -68,6 +74,10 @@ jobs:
           git config --global --add url."$AUTH".insteadOf "git@github.com:"
           echo "꽂힌 규칙 $(git config --global --get-all url."$AUTH".insteadOf | wc -l) 개 (3 이어야 한다)"
           git config --global --get-all url."$AUTH".insteadOf | sed 's/^/  · /'
+          # 🔴 npm 에 맡기지 말고 여기서 먼저 인증을 재 본다. npm 의 에러는 「빈 토큰」과
+          #    「권한 없음」을 똑같이 Repository not found 로 보여줘서 원인이 안 갈린다.
+          echo "── 부품 레포에 실제로 닿나 ──"
+          git ls-remote "https://github.com/2026-gne-dev-task-force-team/gne-sheet.git" HEAD
 
       - run: npm ci
         working-directory: v2
