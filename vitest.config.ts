@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
     test: {
         // 엔진 + 순수 스토어 연산(doc-ops) + 엑셀 입출력(io). 화면(React)은 안 돈다 — DOM 이 없다
-        include: ['src/engine/**/*.test.ts', 'src/store/**/*.test.ts', 'src/types/**/*.test.ts', 'src/io/**/*.test.ts'],
+        include: ['src/engine/**/*.test.ts', 'src/store/**/*.test.ts', 'src/types/**/*.test.ts', 'src/io/**/*.test.ts', 'src/v2/**/*.test.ts'],
         environment: 'node',
     },
 });

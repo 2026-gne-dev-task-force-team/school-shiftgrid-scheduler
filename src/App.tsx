@@ -1,13 +1,15 @@
-import { StoreProvider } from './store/store';
-import { HelpProvider } from './ui/help/HelpContext';
-import Shell from './ui/Shell';
+/**
+ * 앱 진입점 — v2 작업대(껍데기와 표). 켜면 빈 작업대가 뜬다.
+ * ⚠️ v1 화면(src/ui/screens/**)·엔진·스키마는 그대로 둔다 — 나중 모듈이 조각을 가져다 쓴다.
+ *    v1 Shell 로 가는 길만 여기서 끊었다(파일은 지우지 않았다).
+ */
+import { V2StoreProvider } from './v2/store';
+import { Workbench } from './v2/ui/Workbench';
 
 export default function App() {
     return (
-        <StoreProvider>
-            <HelpProvider>
-                <Shell />
-            </HelpProvider>
-        </StoreProvider>
+        <V2StoreProvider>
+            <Workbench />
+        </V2StoreProvider>
     );
 }
