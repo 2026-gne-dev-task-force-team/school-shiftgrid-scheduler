@@ -11,7 +11,11 @@ describe('표 — 만들기·이름·지우기·되살리기', () => {
         const { project, sheet } = ops.createSheet(p0);
         expect(project.sheets).toHaveLength(1);
         expect(ops.getSheet(project, sheet.id)?.id).toBe(sheet.id);
-        expect(sheet.spec.slots.length).toBe(6); // 월~금 × 6교시 기본
+        // 월~금 × 6교시 + 점심 기본 — 점심은 4교시 뒤, 수업 못 넣는 칸 (쥔님: "점심시간 굶어 죽나?")
+        expect(sheet.spec.slots.length).toBe(7);
+        expect(sheet.spec.slots.filter((s) => s.assignable)).toHaveLength(6);
+        expect(sheet.spec.slots[4]).toMatchObject({ kind: 'lunch', assignable: false, label: '점심', start: '12:10', end: '13:00' });
+        expect(sheet.spec.slots[5]).toMatchObject({ label: '5교시', start: '13:10' }); // 점심 끝 + 쉬는 시간
         expect(sheet.spec.activeDays).toEqual([0, 1, 2, 3, 4]);
     });
 

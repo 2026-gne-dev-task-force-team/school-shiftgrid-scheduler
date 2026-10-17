@@ -103,9 +103,28 @@ export function defaultSlotRule(spec?: TimetableSpec): SlotRule {
         lessonMinutes: DEFAULT_LESSON,
         breakMinutes: DEFAULT_BREAK,
         periods: lessons || DEFAULT_PERIODS,
-        lunchAfter: null,
-        lunchMinutes: 50,
+        // 표에 점심이 이미 있으면 그 자리(앞에 놓인 수업 교시 수), 표가 없으면 기본 4교시 뒤.
+        // 표는 있는데 점심이 없으면 그 표를 존중해 없음 — 규칙 생성 패널에서 켤 수 있다.
+        lunchAfter: spec ? lunchAfterOf(spec) : DEFAULT_LUNCH_AFTER,
+        lunchMinutes: spec ? (lunchMinutesOf(spec) ?? DEFAULT_LUNCH) : DEFAULT_LUNCH,
     };
+}
+
+/** 표에 점심 칸이 있으면 「그 앞에 놓인 수업 교시 수」, 없으면 null */
+function lunchAfterOf(spec: TimetableSpec): number | null {
+    let lessons = 0;
+    for (const s of spec.slots) {
+        if (s.kind === 'lunch') return lessons;
+        if (s.assignable) lessons += 1;
+    }
+    return null;
+}
+
+function lunchMinutesOf(spec: TimetableSpec): number | null {
+    const l = spec.slots.find((s) => s.kind === 'lunch');
+    if (!l) return null;
+    const len = toMins(l.end) - toMins(l.start);
+    return len > 0 ? len : null;
 }
 
 export function buildSlotsByRule(r: SlotRule): Slot[] {
@@ -137,9 +156,18 @@ export function buildSlotsByRule(r: SlotRule): Slot[] {
     return slots;
 }
 
-/** 새 표용 기본 시간 틀 (월~금 × N교시) */
+const DEFAULT_LUNCH_AFTER = 4; // 4교시 뒤 점심
+const DEFAULT_LUNCH = 50;      // 점심 50분
+
+/**
+ * 새 표용 기본 시간 틀 (월~금 × N교시 + 점심).
+ * 🔴 점심이 기본으로 들어 있다 — 쥔님 2026-10-17: *"점심시간 굶어 죽나?"* (점심 없는 6교시가 기본이던 것을 고쳤다).
+ */
 export function defaultSpec(periods = DEFAULT_PERIODS): TimetableSpec {
-    const slots = defaultSlots(periods);
+    const slots = buildSlotsByRule({
+        start: '09:00', lessonMinutes: DEFAULT_LESSON, breakMinutes: DEFAULT_BREAK,
+        periods, lunchAfter: DEFAULT_LUNCH_AFTER, lunchMinutes: DEFAULT_LUNCH,
+    });
     return {
         id: uid('spec'),
         name: '기본 시간 틀',
