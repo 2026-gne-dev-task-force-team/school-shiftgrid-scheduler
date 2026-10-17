@@ -1,9 +1,12 @@
 name: Deploy to GitHub Pages
 
-# main 브랜치에 푸시될 때마다 빌드 후 Pages에 배포한다.
+# 한 사이트에 두 판을 나란히 올린다.
+#   루트   = v1 브랜치 (김은지 선생님이 쓰시는 판 · 동결 · 주소가 바뀌면 안 된다)
+#   /v2/   = main 브랜치 (대개편 중)
+# 어느 브랜치에 푸시하든 둘 다 다시 빌드해서 통째로 올린다 — 한쪽만 올리면 다른 쪽이 사라진다.
 on:
   push:
-    branches: [main]
+    branches: [main, v1]
   workflow_dispatch: # 수동 실행 허용
 
 # Pages 배포에 필요한 권한
@@ -21,22 +24,57 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # ── v1 (루트) ───────────────────────────────────────────────
       - uses: actions/checkout@v4
+        with:
+          ref: v1
+          path: v1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: v1/package-lock.json
       - run: npm ci
+        working-directory: v1
       - run: npm run build
+        working-directory: v1
         env:
           # 의견 창구 공개 토큰(워크플로 실행 권한만). 비어 있으면 앱은 파일 내려받기 길로 돈다 → docs/의견 창구 인수인계.md
           VITE_FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_DISPATCH_TOKEN }}
+
+      # ── v2 (/v2/) ──────────────────────────────────────────────
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: v2
+      - run: npm ci
+        working-directory: v2
+      - run: npm run build
+        working-directory: v2
+        env:
+          VITE_FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_DISPATCH_TOKEN }}
+
+      # ── 합치기 ─────────────────────────────────────────────────
+      # v1 빌드를 루트에 깔고, 그 위에 v2 빌드를 /v2/ 로 넣는다.
+      - name: 두 판을 한 폴더로
+        run: |
+          set -eu
+          mkdir -p site
+          cp -R v1/dist/. site/
+          mkdir -p site/v2
+          cp -R v2/dist/. site/v2/
+          # 올라가는 게 맞는지 눈으로 확인할 수 있게 남긴다
+          echo "── 루트(v1) ──"; ls site | head -20
+          echo "── /v2/ ──";     ls site/v2 | head -20
+          test -f site/index.html
+          test -f site/v2/index.html
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true # Pages가 꺼져 있으면 워크플로가 자동 활성화
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
