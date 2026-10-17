@@ -41,6 +41,9 @@ export default defineConfig({
         // xlsx 청크가 500 KB 를 넘는다 — 기본 상한(2 MB)은 넉넉하지만 명시해 둔다
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // 🔴 v2 는 같은 Pages 사이트의 /v2/ 에 따로 올라간다. 이 서비스워커의 scope 가 사이트 전체라
+        // 막지 않으면 /v2/ 로 가도 여기(v1)의 index.html 이 대신 떠서 v2 를 영영 못 연다.
+        navigateFallbackDenylist: [/\/v2\//],
       },
     }),
   ],
