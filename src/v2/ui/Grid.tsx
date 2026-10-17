@@ -13,9 +13,12 @@ interface GridProps {
     onCommit: (colKey: string, rowKey: string, text: string) => void;
     /** 열 머리 왼쪽 위 모서리에 쓸 라벨 */
     corner?: string;
+    /** 줄 간격(행 높이·px) — 모듈 1.1 ④. 표마다 저장된 값이 온다 */
+    rowHeight?: number;
 }
 
-export function Grid({ cols, rows, getText, onCommit, corner = '' }: GridProps) {
+export function Grid({ cols, rows, getText, onCommit, corner = '', rowHeight = 38 }: GridProps) {
+    const cellH = { height: `${rowHeight}px` };
     const [focus, setFocus] = useState<{ c: number; r: number } | null>(null);
     const [editing, setEditing] = useState<{ c: number; r: number } | null>(null);
     const [draft, setDraft] = useState('');
@@ -91,15 +94,16 @@ export function Grid({ cols, rows, getText, onCommit, corner = '' }: GridProps) 
                 <tbody>
                     {rows.map((row, ri) => (
                         <tr key={row.key}>
-                            <th className={`sticky left-0 z-10 border border-line px-2 py-1 font-medium text-right ${row.assignable ? 'bg-panel2 text-text' : 'bg-panel2/60 text-muted'}`}>
-                                {row.label}
+                            <th className={`sticky left-0 z-10 border border-line px-2 py-1 font-medium text-right ${row.assignable ? 'bg-panel2 text-text' : 'bg-panel2/60 text-muted'}`} style={cellH}>
+                                <div className="leading-tight">{row.label}</div>
+                                {row.sub && <div className="text-[9.5px] text-muted font-normal tabular-nums leading-tight">{row.sub}</div>}
                             </th>
                             {cols.map((col, ci) => {
                                 const isEditing = editing?.c === ci && editing?.r === ri;
                                 const isFocus = focus?.c === ci && focus?.r === ri;
                                 const text = getText(col.key, row.key);
                                 if (!row.assignable) {
-                                    return <td key={col.key} className="border border-line bg-panel2/40 text-muted/60 text-center px-2 py-1">·</td>;
+                                    return <td key={col.key} className="border border-line bg-panel2/40 text-muted/60 text-center px-2 py-1" style={cellH}>·</td>;
                                 }
                                 return (
                                     <td key={col.key} className="border border-line p-0 align-top">
@@ -110,14 +114,16 @@ export function Grid({ cols, rows, getText, onCommit, corner = '' }: GridProps) 
                                                 onChange={(e) => setDraft(e.target.value)}
                                                 onKeyDown={onInputKeyDown}
                                                 onBlur={commitDraft}
-                                                className="w-full min-w-[72px] h-[38px] px-2 bg-panel text-text outline outline-2 outline-accent text-[12px]"
+                                                style={cellH}
+                                                className="w-full min-w-[72px] px-2 bg-panel text-text outline outline-2 outline-accent text-[12px]"
                                             />
                                         ) : (
                                             <button
                                                 type="button"
                                                 onClick={() => setFocus({ c: ci, r: ri })}
                                                 onDoubleClick={() => startEdit(ci, ri)}
-                                                className={`w-full min-w-[72px] h-[38px] px-2 text-left align-top whitespace-pre-wrap break-words leading-tight
+                                                style={cellH}
+                                                className={`w-full min-w-[72px] px-2 text-left align-top whitespace-pre-wrap break-words leading-tight overflow-hidden
                                                     ${isFocus ? 'outline outline-2 -outline-offset-2 outline-accent bg-accent/5' : 'hover:bg-panel2/50'}`}
                                             >
                                                 {text}

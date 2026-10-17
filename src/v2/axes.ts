@@ -12,6 +12,12 @@ export interface AxisHead {
     label: string;
     /** 행에서만 의미 — 수업을 넣을 수 있는 칸인지(점심·쉬는 시간이면 false). 열은 항상 true */
     assignable: boolean;
+    /**
+     * 작은 보조 라벨 — 모듈 1.1 ④: 행 머리에 「1교시」 밑에 「09:00~09:40」을 넣는다.
+     * 🔴 격자(Grid)는 이게 시각인지 모른다 — 그냥 작은 글씨로 라벨 밑에 그릴 뿐이다
+     *    (요일·교시를 격자에 안 박는 설계 그대로). 없으면 안 그린다.
+     */
+    sub?: string;
 }
 
 export interface SheetAxes {
@@ -36,6 +42,7 @@ export function sheetAxes(sheet: Sheet): SheetAxes {
         key: String(s.index),
         label: s.label,
         assignable: s.assignable,
+        sub: s.start && s.end ? `${s.start}~${s.end}` : undefined,
     }));
     return { cols, rows };
 }

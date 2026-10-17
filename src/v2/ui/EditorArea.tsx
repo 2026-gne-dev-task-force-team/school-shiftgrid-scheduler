@@ -6,7 +6,7 @@ import { useCallback, useRef } from 'react';
 import { useV2 } from '../store';
 import type { PaneNode } from '../ops';
 import { sheetAxes } from '../axes';
-import { cellTextOf } from '../model';
+import { cellTextOf, rowHeightOf, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT } from '../model';
 import { Grid } from './Grid';
 import { Icon } from '../../ui/parts/Icon';
 
@@ -102,6 +102,9 @@ function WindowPane({ winId }: { winId: string }) {
                 </div>
             </div>
 
+            {/* 표 위 작은 툴바 — 줄 간격을 열어둔 채로 바로 조절(모듈 1.1 ④) */}
+            {sheet && <GridToolbar sheetId={sheet.id} />}
+
             {/* 본문 */}
             <div className="flex-1 min-h-0 overflow-auto p-3 bg-bg">
                 {sheet ? (
@@ -112,6 +115,24 @@ function WindowPane({ winId }: { winId: string }) {
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+/** 표 위 툴바 — 줄 간격(행 높이) 슬라이더. 표마다 저장된다 */
+function GridToolbar({ sheetId }: { sheetId: string }) {
+    const st = useV2();
+    const sheet = st.getSheet(sheetId);
+    if (!sheet) return null;
+    const h = rowHeightOf(sheet);
+    return (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-1 bg-panel border-b border-line text-[11.5px] text-muted">
+            <span className="shrink-0">줄 간격</span>
+            <input
+                type="range" min={MIN_ROW_HEIGHT} max={MAX_ROW_HEIGHT} step={1} value={h}
+                onChange={(e) => st.setRowHeight(sheetId, Number(e.target.value))}
+                className="w-40 accent-accent" title="격자 줄 간격(행 높이)" />
+            <span className="shrink-0 tabular-nums w-10">{h}px</span>
         </div>
     );
 }
@@ -127,6 +148,7 @@ function GridFor({ sheetId }: { sheetId: string }) {
             cols={cols}
             rows={rows}
             corner="교시"
+            rowHeight={rowHeightOf(sheet)}
             getText={(c, r) => cellTextOf(sheet.cells[`${c}:${r}`])}
             onCommit={(c, r, text) => st.setCell(sheetId, c, r, text)}
         />

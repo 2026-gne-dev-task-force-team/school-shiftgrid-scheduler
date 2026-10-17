@@ -6,8 +6,8 @@
  */
 import type { CellValue, OwnerRef, Project, Sheet } from './model';
 import { V2_SCHEMA_VERSION, cellKey } from './model';
-import { defaultSpec, defaultSlots } from './defaults';
-import type { TimetableSpec } from '../types/schema';
+import { defaultSpec, extendSlots, buildSlotsByRule, toMins, fromMins, type SlotRule } from './defaults';
+import type { Slot, TimetableSpec } from '../types/schema';
 import { uid } from '../store/ids';
 
 // ══════════════════════════════════════════════════════════════
@@ -94,15 +94,14 @@ export function updateSheetSpec(p: Project, sheetId: string, spec: TimetableSpec
 
 /**
  * 교시 수 바꾸기 — 속성 패널에서 「교시 몇 개」를 바꾼다.
- * 🔴 교시를 줄이면 그 밖으로 나간 칸 글자는 지운다(격자에 없는 칸은 안 보이니까). 늘리면 빈 칸만 는다.
- *    기존 슬롯의 시각·라벨은 지키고, 는 만큼만 기본 슬롯을 덧댄다.
+ * 🔴 ⭐ 모듈 1.1 ① 고침: 늘리면 09:00 부터 다시 세지 않고 「앞 교시 끝 + 쉬는 시간」으로 이어 붙인다
+ *    (extendSlots). 그래서 점심을 넣었거나 시각을 손본 표에서 교시를 늘려도 새 교시가 앞에 이어진다.
+ * 🔴 교시를 줄이면 그 밖으로 나간 칸 글자는 지운다(격자에 없는 칸은 안 보이니까). 손봄 표시도 범위 밖은 지운다.
  */
 export function setPeriods(p: Project, sheetId: string, periods: number): Project {
     const n = Math.max(0, Math.min(20, Math.floor(periods)));
     return mapSheet(p, sheetId, (s) => {
-        const old = s.spec.slots;
-        const base = defaultSlots(n);
-        const slots = base.map((b, i) => old[i] ? { ...old[i], index: i } : b);
+        const slots = extendSlots(s.spec.slots, n);
         const spec: TimetableSpec = {
             ...s.spec,
             slots,
@@ -110,7 +109,34 @@ export function setPeriods(p: Project, sheetId: string, periods: number): Projec
             dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
         };
         const cells = pruneCells(s.cells, s.spec.activeDays, slots.map((x) => x.index));
-        return { ...s, spec, cells };
+        const manualSlots = (s.manualSlots ?? []).filter((i) => i < slots.length);
+        return { ...s, spec, cells, manualSlots };
+    });
+}
+
+/** 교시 수를 한 칸 올리고/내린다 — [−] N교시 [+] 스테퍼(모듈 1.1 ③) */
+export function stepPeriods(p: Project, sheetId: string, delta: number): Project {
+    const s = getSheet(p, sheetId);
+    if (!s) return p;
+    return setPeriods(p, sheetId, s.spec.slots.length + delta);
+}
+
+/**
+ * ⭐ 규칙 생성 적용(모듈 1.1 ②) — 받은 규칙으로 교시 목록을 한 번에 다시 만든다.
+ * 🔴 손으로 고친 값을 덮는다 — 화면이 「손본 교시 N개가 덮입니다」를 보여주고 확인을 받은 뒤 부른다.
+ *    적용하면 손봄 표시를 비우고, 격자 밖으로 나간 칸 글자는 지운다.
+ */
+export function applySlotRule(p: Project, sheetId: string, rule: SlotRule): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const slots = buildSlotsByRule(rule);
+        const spec: TimetableSpec = {
+            ...s.spec,
+            slots,
+            dayStart: slots[0]?.start ?? s.spec.dayStart,
+            dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
+        };
+        const cells = pruneCells(s.cells, s.spec.activeDays, slots.map((x) => x.index));
+        return { ...s, spec, cells, manualSlots: [] };
     });
 }
 
@@ -127,12 +153,59 @@ export function setDays(p: Project, sheetId: string, days: number): Project {
     });
 }
 
-/** 한 슬롯(교시)의 속성(라벨·시각·수업/점심/쉼) 편집 */
-export function updateSlot(p: Project, sheetId: string, slotIndex: number, patch: Partial<TimetableSpec['slots'][number]>): Project {
+/**
+ * 한 슬롯(교시)의 속성(라벨·시각·수업/점심/쉼) 편집 — 수동 보정.
+ * 🔴 모듈 1.1 ②: 손으로 고친 교시이므로 「손봄」 표시를 붙인다(markManual).
+ *    시각을 바꾸면서 뒤 교시를 따라 밀고 싶으면 editSlotTime 을 쓴다(이 함수는 한 교시만 고친다).
+ */
+export function updateSlot(p: Project, sheetId: string, slotIndex: number, patch: Partial<Slot>): Project {
     return mapSheet(p, sheetId, (s) => ({
-        ...s,
+        ...markManual(s, slotIndex),
         spec: { ...s.spec, slots: s.spec.slots.map((sl) => (sl.index === slotIndex ? { ...sl, ...patch } : sl)) },
     }));
+}
+
+/**
+ * ⭐ 시각 편집 + 뒤 교시 밀기(모듈 1.1 ②) — 한 교시의 시작/끝을 바꾸고,
+ *    pushFollowing 이면 끝 시각이 움직인 만큼(delta) 뒤 교시를 전부 같이 민다.
+ *    delta 는 「끝 시각의 변화」로 잰다 — 교시를 10분 늘리면(끝 +10) 뒤가 모두 +10 되어 간격이 유지된다.
+ *    끝을 안 바꾸고 시작만 당기면(그 교시만 짧아짐) 뒤는 안 민다.
+ * 🔴 손으로 고친 교시이므로 「손봄」 표시를 붙인다.
+ */
+export function editSlotTime(
+    p: Project,
+    sheetId: string,
+    slotIndex: number,
+    patch: { start?: string; end?: string },
+    pushFollowing: boolean,
+): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const target = s.spec.slots.find((sl) => sl.index === slotIndex);
+        if (!target) return s;
+        const oldEnd = toMins(target.end);
+        const newEnd = patch.end != null ? toMins(patch.end) : oldEnd;
+        const delta = pushFollowing ? newEnd - oldEnd : 0;
+
+        const slots = s.spec.slots.map((sl) => {
+            if (sl.index === slotIndex) return { ...sl, ...patch };
+            if (delta !== 0 && sl.index > slotIndex) {
+                return { ...sl, start: fromMins(toMins(sl.start) + delta), end: fromMins(toMins(sl.end) + delta) };
+            }
+            return sl;
+        });
+        const spec: TimetableSpec = {
+            ...s.spec,
+            slots,
+            dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
+            dayStart: slots[0]?.start ?? s.spec.dayStart,
+        };
+        return { ...markManual(s, slotIndex), spec };
+    });
+}
+
+/** 격자 줄 간격(px) — 표마다 저장된다(모듈 1.1 ④). 범위 밖 값은 model.rowHeightOf 가 가둔다 */
+export function setRowHeight(p: Project, sheetId: string, px: number): Project {
+    return mapSheet(p, sheetId, (s) => ({ ...s, rowHeight: Math.round(px) }));
 }
 
 /** 표의 주인 칸을 세팅(모듈 1 화면은 안 쓰지만, 나중 모듈이 쓸 경계를 뚫어 둔다) */
@@ -146,6 +219,13 @@ export function setProjectMeta(p: Project, patch: { name?: string; term?: string
 }
 
 // ── 보조 ──
+/** 그 교시를 「손봄」으로 표시 — 규칙 생성[적용]이 덮을 것을 세는 근거가 된다 */
+function markManual(s: Sheet, slotIndex: number): Sheet {
+    const set = new Set(s.manualSlots ?? []);
+    set.add(slotIndex);
+    return { ...s, manualSlots: [...set].sort((a, b) => a - b) };
+}
+
 function mapSheet(p: Project, id: string, fn: (s: Sheet) => Sheet): Project {
     let hit = false;
     const sheets = p.sheets.map((s) => (s.id === id ? (hit = true, fn(s)) : s));

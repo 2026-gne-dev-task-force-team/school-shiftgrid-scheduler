@@ -12,6 +12,7 @@ import type { OwnerRef, Project, Sheet } from './model';
 import type { Slot, TimetableSpec } from '../types/schema';
 import * as ops from './ops';
 import type { Layout } from './ops';
+import type { SlotRule } from './defaults';
 import type { MigrationReport } from './migrate';
 import { verifyProjectIntegrity } from './migrate';
 import * as persist from './persist';
@@ -82,8 +83,12 @@ interface V2Store {
     // 표 편집
     setCell: (sheetId: string, colKey: string, rowKey: string, text: string) => void;
     setPeriods: (sheetId: string, periods: number) => void;
+    stepPeriods: (sheetId: string, delta: number) => void;
     setDays: (sheetId: string, days: number) => void;
     updateSlot: (sheetId: string, slotIndex: number, patch: Partial<Slot>) => void;
+    editSlotTime: (sheetId: string, slotIndex: number, patch: { start?: string; end?: string }, pushFollowing: boolean) => void;
+    applySlotRule: (sheetId: string, rule: SlotRule) => void;
+    setRowHeight: (sheetId: string, px: number) => void;
     updateSheetSpec: (sheetId: string, spec: TimetableSpec) => void;
     setSheetOwner: (sheetId: string, owner: OwnerRef | undefined) => void;
 
@@ -171,8 +176,12 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
     const setCell = useCallback((sheetId: string, colKey: string, rowKey: string, text: string) =>
         commit(ops.setSheetCell(project, sheetId, colKey, rowKey, text)), [project, commit]);
     const setPeriods = useCallback((sheetId: string, periods: number) => commit(ops.setPeriods(project, sheetId, periods)), [project, commit]);
+    const stepPeriods = useCallback((sheetId: string, delta: number) => commit(ops.stepPeriods(project, sheetId, delta)), [project, commit]);
     const setDays = useCallback((sheetId: string, days: number) => commit(ops.setDays(project, sheetId, days)), [project, commit]);
     const updateSlot = useCallback((sheetId: string, slotIndex: number, patch: Partial<Slot>) => commit(ops.updateSlot(project, sheetId, slotIndex, patch)), [project, commit]);
+    const editSlotTime = useCallback((sheetId: string, slotIndex: number, patch: { start?: string; end?: string }, pushFollowing: boolean) => commit(ops.editSlotTime(project, sheetId, slotIndex, patch, pushFollowing)), [project, commit]);
+    const applySlotRule = useCallback((sheetId: string, rule: SlotRule) => commit(ops.applySlotRule(project, sheetId, rule)), [project, commit]);
+    const setRowHeight = useCallback((sheetId: string, px: number) => commit(ops.setRowHeight(project, sheetId, px)), [project, commit]);
     const updateSheetSpec = useCallback((sheetId: string, spec: TimetableSpec) => commit(ops.updateSheetSpec(project, sheetId, spec)), [project, commit]);
     const setSheetOwner = useCallback((sheetId: string, owner: OwnerRef | undefined) => commit(ops.setSheetOwner(project, sheetId, owner)), [project, commit]);
 
@@ -251,7 +260,7 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
         notices, report, hasAutosave: !!autosaved && resumeShown,
         newSheet, renameSheet, removeSheet, restoreSheet, purgeTrash,
         openSheet, closeTab, activateTab, focusWindow, split, closePane, setRatio,
-        setCell, setPeriods, setDays, updateSlot, updateSheetSpec, setSheetOwner,
+        setCell, setPeriods, stepPeriods, setDays, updateSlot, editSlotTime, applySlotRule, setRowHeight, updateSheetSpec, setSheetOwner,
         select, setProjectMeta,
         undo, redo, newProject, openFile, saveFile, resume, dismissResume, dismissReport, dismissNotice,
         getSheet,
@@ -260,7 +269,7 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
         notices, report, autosaved, resumeShown,
         newSheet, renameSheet, removeSheet, restoreSheet, purgeTrash,
         openSheet, closeTab, activateTab, focusWindow, split, closePane, setRatio,
-        setCell, setPeriods, setDays, updateSlot, updateSheetSpec, setSheetOwner,
+        setCell, setPeriods, stepPeriods, setDays, updateSlot, editSlotTime, applySlotRule, setRowHeight, updateSheetSpec, setSheetOwner,
         select, setProjectMeta,
         undo, redo, newProject, openFile, saveFile, resume, dismissResume, dismissReport, dismissNotice,
         getSheet,

@@ -45,6 +45,9 @@ export interface OwnerRef {
  *          공유 관계(여러 표가 한 틀을)는 나중 「틀 공유」 모듈이 되살린다.
  *   cells  칸 내용. 키는 cellKey(colKey, rowKey) — 빈 칸은 담지 않는다.
  *   owner  주인(비어 있음). 화면은 이 칸을 안 본다.
+ *   rowHeight  격자 줄 간격(px). 🔴 선택값 — 없으면 DEFAULT_ROW_HEIGHT. v1·옛 v2 파일은 기본값으로 뜬다.
+ *   manualSlots 손으로 고친 교시 index 들(「손봄」 표시용). 🔴 선택값 — 규칙 생성[적용]이 덮을 것을 세고,
+ *               적용하면 비운다. 없으면 「손본 교시 없음」.
  */
 export interface Sheet {
     id: string;
@@ -53,6 +56,20 @@ export interface Sheet {
     cells: Record<string, CellValue>;
     owner?: OwnerRef;
     attr?: Record<string, unknown>;
+    rowHeight?: number;
+    manualSlots?: number[];
+}
+
+/** 격자 줄 간격 기본값(px) · 조절 범위 — 쥔님 「시간표 전체 모양을 맞추는 것」 */
+export const DEFAULT_ROW_HEIGHT = 38;
+export const MIN_ROW_HEIGHT = 24;
+export const MAX_ROW_HEIGHT = 96;
+
+/** 표의 줄 간격 — 없으면 기본값으로 안전하게 읽는다(v1·옛 v2 파일 호환) */
+export function rowHeightOf(sheet: Pick<Sheet, 'rowHeight'>): number {
+    const h = sheet.rowHeight;
+    if (typeof h !== 'number' || !Number.isFinite(h)) return DEFAULT_ROW_HEIGHT;
+    return Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, Math.round(h)));
 }
 
 /**
