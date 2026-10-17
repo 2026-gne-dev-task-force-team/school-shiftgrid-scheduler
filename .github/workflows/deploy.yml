@@ -47,6 +47,11 @@ jobs:
         with:
           ref: main
           path: v2
+          # 🔴 이게 없으면 checkout 이 v2/.git/config 에 자기 인증 헤더(기본 GITHUB_TOKEN)를
+          #    심어 두고, npm ci 가 부르는 git 이 그 헤더를 물고 나간다. 그 토큰은 자기 레포
+          #    밖을 못 읽어서 부품 레포가 Repository not found 로 떨어진다
+          #    (2026-10-17 실측: 내 전용 토큰은 "Never used" 인데 에러는 not found 였다).
+          persist-credentials: false
 
       # v2 는 표 부품을 비공개 레포(gne-sheet)에서 git 의존성으로 받는다.
       # 기본 GITHUB_TOKEN 은 자기 레포 밖을 못 읽어서, 읽기 전용 토큰을 git 에 꽂아 준다.
@@ -76,8 +81,12 @@ jobs:
           git config --global --get-all url."$AUTH".insteadOf | sed 's/^/  · /'
           # 🔴 npm 에 맡기지 말고 여기서 먼저 인증을 재 본다. npm 의 에러는 「빈 토큰」과
           #    「권한 없음」을 똑같이 Repository not found 로 보여줘서 원인이 안 갈린다.
-          echo "── 부품 레포에 실제로 닿나 ──"
+          echo "── v2 작업트리에 남의 인증 헤더가 있나 (있으면 그게 우리 토큰을 밀어낸다) ──"
+          git -C v2 config --local --name-only --list | grep -i extraheader || echo "  없다 (정상)"
+          echo "── 부품 레포에 실제로 닿나 (https) ──"
           git ls-remote "https://github.com/2026-gne-dev-task-force-team/gne-sheet.git" HEAD
+          echo "── npm 이 쓰는 꼴(ssh)로도 닿나 ──"
+          git ls-remote "ssh://git@github.com/2026-gne-dev-task-force-team/gne-sheet.git" HEAD
 
       - run: npm ci
         working-directory: v2
