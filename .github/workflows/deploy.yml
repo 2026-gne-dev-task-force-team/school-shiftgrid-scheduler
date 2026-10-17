@@ -61,10 +61,13 @@ jobs:
           # 🔴 세 가지 주소 모양을 전부 덮는다. package-lock.json 의 resolved 가
           #    git+ssh://git@github.com/… 로 박히는데(npm 이 그렇게 적는다) CI 엔 SSH 키가 없다.
           #    https 만 덮으면 그 ssh 주소에서 죽는다 — 2026-10-17 실측으로 걸렸다.
-          git config --global url."$AUTH".insteadOf "https://github.com/"
-          git config --global url."$AUTH".insteadOf "ssh://git@github.com/"
-          git config --global url."$AUTH".insteadOf "git@github.com:"
-          echo "부품 레포 인증을 git 에 꽂았다 (https · ssh · scp 꼴)"
+          # 🔴 --add 가 핵심이다. insteadOf 는 여러 값을 갖는 키라서, --add 없이 세 번 부르면
+          #    앞의 것을 덮어쓰고 마지막 하나만 남는다(2026-10-17 실측 — ssh 가 안 덮여 죽었다).
+          git config --global --add url."$AUTH".insteadOf "https://github.com/"
+          git config --global --add url."$AUTH".insteadOf "ssh://git@github.com/"
+          git config --global --add url."$AUTH".insteadOf "git@github.com:"
+          echo "꽂힌 규칙 $(git config --global --get-all url."$AUTH".insteadOf | wc -l) 개 (3 이어야 한다)"
+          git config --global --get-all url."$AUTH".insteadOf | sed 's/^/  · /'
 
       - run: npm ci
         working-directory: v2
