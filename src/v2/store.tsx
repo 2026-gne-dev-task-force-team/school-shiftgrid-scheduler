@@ -9,10 +9,8 @@ import {
     type ReactNode,
 } from 'react';
 import type { OwnerRef, Project, Sheet } from './model';
-import type { Slot, TimetableSpec } from '../types/schema';
 import * as ops from './ops';
 import type { Layout } from './ops';
-import type { SlotRule } from './defaults';
 import type { MigrationReport } from './migrate';
 import { verifyProjectIntegrity } from './migrate';
 import * as persist from './persist';
@@ -80,16 +78,31 @@ interface V2Store {
     closePane: (winId: string) => void;
     setRatio: (splitId: string, ratio: number) => void;
 
-    // 표 편집
+    // 칸
     setCell: (sheetId: string, colKey: string, rowKey: string, text: string) => void;
-    setPeriods: (sheetId: string, periods: number) => void;
-    stepPeriods: (sheetId: string, delta: number) => void;
-    setDays: (sheetId: string, days: number) => void;
-    updateSlot: (sheetId: string, slotIndex: number, patch: Partial<Slot>) => void;
-    editSlotTime: (sheetId: string, slotIndex: number, patch: { start?: string; end?: string }, pushFollowing: boolean) => void;
-    applySlotRule: (sheetId: string, rule: SlotRule) => void;
-    setRowHeight: (sheetId: string, px: number) => void;
-    updateSheetSpec: (sheetId: string, spec: TimetableSpec) => void;
+    setCells: (sheetId: string, changes: { colKey: string; rowKey: string; text: string }[]) => void;
+
+    // 줄
+    insertRowAbove: (sheetId: string, rowKey: string) => void;
+    insertRowBelow: (sheetId: string, rowKey: string) => void;
+    removeRow: (sheetId: string, rowKey: string) => void;
+    toggleRowAssignable: (sheetId: string, rowKey: string) => void;
+    setRowLabel: (sheetId: string, rowKey: string, label: string) => void;
+    resizeRow: (sheetId: string, rowKey: string, deltaMinutes: number) => void;
+    setRowTime: (sheetId: string, rowKey: string, patch: { minutes?: number; gapAfter?: number }) => void;
+
+    // 열
+    insertColLeft: (sheetId: string, colKey: string) => void;
+    insertColRight: (sheetId: string, colKey: string) => void;
+    removeCol: (sheetId: string, colKey: string) => void;
+    setColLabel: (sheetId: string, colKey: string, label: string) => void;
+
+    // 컴포넌트
+    addComponent: (sheetId: string, componentId: string) => void;
+    removeComponent: (sheetId: string, instanceId: string) => void;
+    updateComponentProps: (sheetId: string, instanceId: string, patch: Record<string, unknown>) => void;
+    applyComponent: (sheetId: string, instanceId: string) => void;
+
     setSheetOwner: (sheetId: string, owner: OwnerRef | undefined) => void;
 
     // 속성·선택
@@ -172,17 +185,33 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
     const closePane = useCallback((winId: string) => setLayout((l) => ops.closePane(l, winId)), []);
     const setRatio = useCallback((splitId: string, ratio: number) => setLayout((l) => ops.setRatio(l, splitId, ratio)), []);
 
-    // ── 표 편집 ──
+    // ── 칸 ──
     const setCell = useCallback((sheetId: string, colKey: string, rowKey: string, text: string) =>
         commit(ops.setSheetCell(project, sheetId, colKey, rowKey, text)), [project, commit]);
-    const setPeriods = useCallback((sheetId: string, periods: number) => commit(ops.setPeriods(project, sheetId, periods)), [project, commit]);
-    const stepPeriods = useCallback((sheetId: string, delta: number) => commit(ops.stepPeriods(project, sheetId, delta)), [project, commit]);
-    const setDays = useCallback((sheetId: string, days: number) => commit(ops.setDays(project, sheetId, days)), [project, commit]);
-    const updateSlot = useCallback((sheetId: string, slotIndex: number, patch: Partial<Slot>) => commit(ops.updateSlot(project, sheetId, slotIndex, patch)), [project, commit]);
-    const editSlotTime = useCallback((sheetId: string, slotIndex: number, patch: { start?: string; end?: string }, pushFollowing: boolean) => commit(ops.editSlotTime(project, sheetId, slotIndex, patch, pushFollowing)), [project, commit]);
-    const applySlotRule = useCallback((sheetId: string, rule: SlotRule) => commit(ops.applySlotRule(project, sheetId, rule)), [project, commit]);
-    const setRowHeight = useCallback((sheetId: string, px: number) => commit(ops.setRowHeight(project, sheetId, px)), [project, commit]);
-    const updateSheetSpec = useCallback((sheetId: string, spec: TimetableSpec) => commit(ops.updateSheetSpec(project, sheetId, spec)), [project, commit]);
+    const setCells = useCallback((sheetId: string, changes: { colKey: string; rowKey: string; text: string }[]) =>
+        commit(ops.setSheetCells(project, sheetId, changes)), [project, commit]);
+
+    // ── 줄 ──
+    const insertRowAbove = useCallback((sheetId: string, rowKey: string) => commit(ops.insertRowAbove(project, sheetId, rowKey)), [project, commit]);
+    const insertRowBelow = useCallback((sheetId: string, rowKey: string) => commit(ops.insertRowBelow(project, sheetId, rowKey)), [project, commit]);
+    const removeRow = useCallback((sheetId: string, rowKey: string) => commit(ops.removeRow(project, sheetId, rowKey)), [project, commit]);
+    const toggleRowAssignable = useCallback((sheetId: string, rowKey: string) => commit(ops.toggleRowAssignable(project, sheetId, rowKey)), [project, commit]);
+    const setRowLabel = useCallback((sheetId: string, rowKey: string, label: string) => commit(ops.setRowLabel(project, sheetId, rowKey, label)), [project, commit]);
+    const resizeRow = useCallback((sheetId: string, rowKey: string, deltaMinutes: number) => commit(ops.resizeRow(project, sheetId, rowKey, deltaMinutes)), [project, commit]);
+    const setRowTime = useCallback((sheetId: string, rowKey: string, patch: { minutes?: number; gapAfter?: number }) => commit(ops.setRowTime(project, sheetId, rowKey, patch)), [project, commit]);
+
+    // ── 열 ──
+    const insertColLeft = useCallback((sheetId: string, colKey: string) => commit(ops.insertColLeft(project, sheetId, colKey)), [project, commit]);
+    const insertColRight = useCallback((sheetId: string, colKey: string) => commit(ops.insertColRight(project, sheetId, colKey)), [project, commit]);
+    const removeCol = useCallback((sheetId: string, colKey: string) => commit(ops.removeCol(project, sheetId, colKey)), [project, commit]);
+    const setColLabel = useCallback((sheetId: string, colKey: string, label: string) => commit(ops.setColLabel(project, sheetId, colKey, label)), [project, commit]);
+
+    // ── 컴포넌트 ──
+    const addComponent = useCallback((sheetId: string, componentId: string) => commit(ops.addComponent(project, sheetId, componentId)), [project, commit]);
+    const removeComponent = useCallback((sheetId: string, instanceId: string) => commit(ops.removeComponent(project, sheetId, instanceId)), [project, commit]);
+    const updateComponentProps = useCallback((sheetId: string, instanceId: string, patch: Record<string, unknown>) => commit(ops.updateComponentProps(project, sheetId, instanceId, patch)), [project, commit]);
+    const applyComponent = useCallback((sheetId: string, instanceId: string) => commit(ops.applyComponent(project, sheetId, instanceId)), [project, commit]);
+
     const setSheetOwner = useCallback((sheetId: string, owner: OwnerRef | undefined) => commit(ops.setSheetOwner(project, sheetId, owner)), [project, commit]);
 
     // ── 속성·선택 ──
@@ -260,7 +289,11 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
         notices, report, hasAutosave: !!autosaved && resumeShown,
         newSheet, renameSheet, removeSheet, restoreSheet, purgeTrash,
         openSheet, closeTab, activateTab, focusWindow, split, closePane, setRatio,
-        setCell, setPeriods, stepPeriods, setDays, updateSlot, editSlotTime, applySlotRule, setRowHeight, updateSheetSpec, setSheetOwner,
+        setCell, setCells,
+        insertRowAbove, insertRowBelow, removeRow, toggleRowAssignable, setRowLabel, resizeRow, setRowTime,
+        insertColLeft, insertColRight, removeCol, setColLabel,
+        addComponent, removeComponent, updateComponentProps, applyComponent,
+        setSheetOwner,
         select, setProjectMeta,
         undo, redo, newProject, openFile, saveFile, resume, dismissResume, dismissReport, dismissNotice,
         getSheet,
@@ -269,7 +302,11 @@ export function V2StoreProvider({ children }: { children: ReactNode }) {
         notices, report, autosaved, resumeShown,
         newSheet, renameSheet, removeSheet, restoreSheet, purgeTrash,
         openSheet, closeTab, activateTab, focusWindow, split, closePane, setRatio,
-        setCell, setPeriods, stepPeriods, setDays, updateSlot, editSlotTime, applySlotRule, setRowHeight, updateSheetSpec, setSheetOwner,
+        setCell, setCells,
+        insertRowAbove, insertRowBelow, removeRow, toggleRowAssignable, setRowLabel, resizeRow, setRowTime,
+        insertColLeft, insertColRight, removeCol, setColLabel,
+        addComponent, removeComponent, updateComponentProps, applyComponent,
+        setSheetOwner,
         select, setProjectMeta,
         undo, redo, newProject, openFile, saveFile, resume, dismissResume, dismissReport, dismissNotice,
         getSheet,

@@ -10,7 +10,7 @@
 import type { Project } from './model';
 import { V2_SCHEMA_VERSION } from './model';
 import type { MigrationReport } from './migrate';
-import { migrateV1ToV2 } from './migrate';
+import { migrateV1ToV2, migrateV4ToV5 } from './migrate';
 import { platform } from '../platform';
 
 const AUTOSAVE_KEY = 'shiftgrid.v2.autosave';
@@ -24,19 +24,21 @@ export interface OpenedProject {
 }
 
 /**
- * 파일 글자 → 프로젝트. v2(schemaVersion 4) 면 그대로, 아니면 v1 로 보고 변환한다.
+ * 파일 글자 → 프로젝트. v2(schemaVersion 5) 면 그대로, 옛 v2(4) 면 조용히 올리고, 그 밖은 v1 로 보고 변환한다.
  * ⚠️ 순수 함수 — 테스트가 이걸 직접 검산한다.
  */
 export function parseProjectFile(text: string): { project: Project; report: MigrationReport | null } {
     const raw = JSON.parse(text) as unknown;
-    if (raw && typeof raw === 'object' && (raw as { schemaVersion?: unknown }).schemaVersion === V2_SCHEMA_VERSION) {
-        return { project: normalizeV2(raw as Record<string, unknown>), report: null };
+    if (raw && typeof raw === 'object') {
+        const sv = (raw as { schemaVersion?: unknown }).schemaVersion;
+        if (sv === V2_SCHEMA_VERSION) return { project: normalizeV5(raw as Record<string, unknown>), report: null };
+        if (sv === 4) return { project: migrateV4ToV5(raw as Record<string, unknown>), report: null };
     }
     return migrateV1ToV2(raw);
 }
 
-/** v2 파일을 안전하게 받아들인다 — 없는 배열은 빈 배열로(모양만 맞춘다. legacy 는 보존) */
-function normalizeV2(raw: Record<string, unknown>): Project {
+/** v2(지금 판) 파일을 안전하게 받아들인다 — 없는 배열은 빈 배열로(모양만 맞춘다. legacy 는 보존) */
+function normalizeV5(raw: Record<string, unknown>): Project {
     return {
         schemaVersion: V2_SCHEMA_VERSION,
         name: typeof raw.name === 'string' ? raw.name : '',

@@ -1,11 +1,11 @@
 /**
  * ══════════════════════════════════════════════════════════════
- *  v1 파일 열기 (마이그레이션) — 여기가 제일 조심할 데
+ *  옛 파일 열기 — v1(Doc) 과 옛 v2(schemaVersion 4) 를 지금 모델(rows/cols, v5)로
  * ══════════════════════════════════════════════════════════════
  *
- * 🔴 설계 [[시간표 짜기 v2 설계]] 「v1 파일이 v2 의 무엇이 되나」:
+ * 🔴 설계 「v1 파일이 v2 의 무엇이 되나」:
  *   반(Track) 하나        → 표(Sheet) 하나 (이름 = 반 이름)
- *   그 반의 TimetableSpec → 그 표의 시간 틀로 **복사** (공유 관계는 나중 모듈이 되살린다)
+ *   그 반의 TimetableSpec → legacySpec.specToRowsCols 로 rows/cols 로 편다(줄·열 key 는 옛 index 그대로)
  *   SchoolMeta            → 프로젝트 속성 (학교 이름·학기)
  *   배치·수요·규칙·금지칸·시안·사람·과목·특별실 그 외 전부
  *                         → 🔴 **손대지 않고 통째로 보관** (화면엔 안 보여도 파일에 그대로 산다)
@@ -20,7 +20,7 @@
 import type { TimetableSpec } from '../types/schema';
 import type { LegacyDoc, Project, Sheet } from './model';
 import { V2_SCHEMA_VERSION } from './model';
-import { defaultSpec } from './defaults';
+import { specToRowsCols } from './legacySpec';
 import { uid } from '../store/ids';
 
 /** 변환 리포트 — 무엇을 표로 폈고, 무엇을 「통째 보관」했고, 개수가 맞는지 */
@@ -44,12 +44,6 @@ export interface MigrationResult {
     report: MigrationReport;
 }
 
-/** 이 종류들은 「표」로 펴지 않고 통째로 보관한다(모르는 배열 키도 자동으로 여기 들어온다) */
-const CARRIED_KEYS_HINT = [
-    'agents', 'activities', 'resources', 'specs', 'timetables',
-    'demands', 'assignments', 'blackouts', 'weeklyBlocks', 'rules', 'boards',
-] as const;
-
 const LABEL: Record<string, string> = {
     agents: '사람', activities: '과목', resources: '특별실', specs: '시간 틀',
     timetables: '시간표', demands: '수요', assignments: '배치', blackouts: '날짜 차단',
@@ -62,7 +56,7 @@ export function carriedLabel(key: string): string {
 }
 
 /**
- * v1 원시 객체(JSON.parse 결과)를 v2 프로젝트로 편다.
+ * v1 원시 객체(JSON.parse 결과)를 v2 프로젝트(v5)로 편다.
  * 🔴 raw 를 통째로 legacy 에 깊은 복제해 보관한다 — 어떤 모양이 와도 한 항목도 잃지 않는다.
  */
 export function migrateV1ToV2(raw: unknown): MigrationResult {
@@ -73,7 +67,7 @@ export function migrateV1ToV2(raw: unknown): MigrationResult {
     const name = typeof meta.name === 'string' && meta.name ? meta.name : '불러온 학교';
     const term = typeof meta.term === 'string' ? meta.term : '';
 
-    // ── 2. 반(Track) → 표(Sheet). 그 반이 쓰던 시간 틀을 「복사」해 표에 싣는다 ──
+    // ── 2. 반(Track) → 표(Sheet). 그 반이 쓰던 시간 틀을 rows/cols 로 편다 ──
     const tracks = asArray(src.tracks);
     const specs = asArray(src.specs);
     const specById = new Map<string, Record<string, unknown>>();
@@ -89,12 +83,14 @@ export function migrateV1ToV2(raw: unknown): MigrationResult {
         const trackName = typeof tr.name === 'string' && tr.name ? tr.name : '표';
         const specId = typeof tr.specId === 'string' ? tr.specId : undefined;
         const rawSpec = specId ? specById.get(specId) : undefined;
-        const spec = rawSpec ? copySpec(rawSpec) : defaultSpec();
+        const spec = rawSpec ? (deepClone(rawSpec) as unknown as TimetableSpec) : undefined;
+        const { startTime, rows, cols } = specToRowsCols(spec);
         return {
             id: uid('sheet'),
             name: trackName,
-            spec,
-            cells: {}, // 🔴 배치(assignments)는 통째 보관일 뿐 모듈 1 은 칸으로 펴지 않는다(화면엔 안 보임)
+            startTime, rows, cols,
+            cells: {}, // 🔴 배치(assignments)는 통째 보관일 뿐 이 모듈은 칸으로 펴지 않는다(화면엔 안 보임)
+            components: [],
             // 🔴 owner 는 비운다 — 화면이 이 칸을 안 본다. 주인 붙이기는 다음 모듈
         };
     });
@@ -112,8 +108,6 @@ export function migrateV1ToV2(raw: unknown): MigrationResult {
         carried[key] = n;
         carriedTotal += n;
     }
-    // 한 번도 안 나온 알려진 종류도 0 으로 보여준다(화면이 「없음」을 말할 수 있게)
-    for (const key of CARRIED_KEYS_HINT) if (!(key in carried)) carried[key] = 0;
 
     const sourceTotal = countSourceItems(src);
     const heldTotal = sheets.length + carriedTotal;
@@ -132,6 +126,39 @@ export function migrateV1ToV2(raw: unknown): MigrationResult {
         name, term, sheets, trash: [], legacy,
     };
     return { project, report };
+}
+
+/**
+ * 옛 v2(schemaVersion 4, TimetableSpec 기반) 프로젝트를 지금 모델(v5, rows/cols)로 편다.
+ * 🔴 조용한 업그레이드다 — v1 과 달리 정보 손실 집계(report)가 필요 없다(rowHeight·manualSlots 같은
+ *    「꾸밈·손봄 표시」만 버리고, 칸 글자·legacy·휴지통은 전부 그대로 옮겨진다).
+ */
+export function migrateV4ToV5(raw: Record<string, unknown>): Project {
+    const sheetsRaw = Array.isArray(raw.sheets) ? (raw.sheets as Record<string, unknown>[]) : [];
+    const trashRaw = Array.isArray(raw.trash) ? (raw.trash as Record<string, unknown>[]) : [];
+    return {
+        schemaVersion: V2_SCHEMA_VERSION,
+        name: typeof raw.name === 'string' ? raw.name : '',
+        term: typeof raw.term === 'string' ? raw.term : '',
+        sheets: sheetsRaw.map(sheetV4ToV5),
+        trash: trashRaw.map(sheetV4ToV5),
+        legacy: (raw.legacy && typeof raw.legacy === 'object') ? (raw.legacy as Project['legacy']) : null,
+        updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
+    };
+}
+
+function sheetV4ToV5(raw: Record<string, unknown>): Sheet {
+    const spec = (raw.spec && typeof raw.spec === 'object') ? (raw.spec as unknown as TimetableSpec) : undefined;
+    const { startTime, rows, cols } = specToRowsCols(spec);
+    const cells = (raw.cells && typeof raw.cells === 'object') ? (raw.cells as Sheet['cells']) : {};
+    return {
+        id: typeof raw.id === 'string' ? raw.id : uid('sheet'),
+        name: typeof raw.name === 'string' ? raw.name : '표',
+        startTime, rows, cols, cells,
+        components: [],
+        owner: raw.owner as Sheet['owner'] | undefined,
+        attr: raw.attr as Sheet['attr'] | undefined,
+    };
 }
 
 /**
@@ -175,17 +202,6 @@ function arrayKeysOf(src: Record<string, unknown>): string[] {
 
 function asArray(v: unknown): unknown[] {
     return Array.isArray(v) ? v : [];
-}
-
-/** v1 TimetableSpec 을 값으로 복사 — 모양은 그대로, id 만 새로 받아 표가 독립 소유하게 한다 */
-function copySpec(rawSpec: Record<string, unknown>): TimetableSpec {
-    const clone = deepClone(rawSpec) as unknown as TimetableSpec;
-    clone.id = uid('spec');
-    if (!Array.isArray(clone.slots)) clone.slots = [];
-    if (!Array.isArray(clone.activeDays)) clone.activeDays = [0, 1, 2, 3, 4];
-    if (typeof clone.cycleDays !== 'number') clone.cycleDays = 7;
-    if (typeof clone.name !== 'string') clone.name = '시간 틀';
-    return clone;
 }
 
 function deepClone<T>(v: T): T {

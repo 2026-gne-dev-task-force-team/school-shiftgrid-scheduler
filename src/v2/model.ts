@@ -1,26 +1,25 @@
 /**
  * ══════════════════════════════════════════════════════════════
- *  v2 저장 모델 — 「작업대」의 세계 (schemaVersion: 4)
+ *  v2 저장 모델 — 「표가 먼저, 뜻은 컴포넌트로」 (schemaVersion: 5)
  * ══════════════════════════════════════════════════════════════
  *
- * v1 은 「반·교사·과목을 먼저 등록해야 다음으로 가는」 마법사였다. v2 는 엑셀이다:
- * 켜면 빈 작업대, 표를 만들고 바로 칸을 만진다. 똑똑한 기능은 나중에 붙이는 모듈이다.
+ * 모듈 1·1.1 은 「속성 패널이 규칙으로 표를 만드는」 길이었다 — 쥔님 판정으로 뒤집혔다:
+ * *"도메인 변수에서 기인해서 표가 만들어지는게 아니라, 표는 수동으로 엑셀처럼 자유롭게 만들 수 있고,
+ *   도구 블록 같은 걸 넣어서 자동화하는 걸로"* · *"유니티의 컴포넌트처럼 끼우면 (…) 속성을 매만지고
+ *   적용을 하면 적용이 되는 거지"*
  *
  * ── 뼈대 ──────────────────────────────────────────────────────
  *   Project  파일 한 장 = 프로젝트(학교·학기) 하나. 그 밑에 표(Sheet)들이 산다.
- *   Sheet    「주인 없는 이름 있는 주간 격자」 하나. 1-1반 표든 전담 표든 다 똑같은 표다.
- *   Cell     격자의 한 칸. 지금은 글자뿐이지만 「값 하나」를 담는 구조다(나중에 참조로 갈아끼운다).
+ *   Sheet    「주인 없는 이름 있는 자유 격자」 하나 — 줄(Row)·열(Col)·칸(cells)을 직접 들고 있다.
+ *   Row      줄 하나. 시각은 안 갖는다 — 시작 시각 + 누적(분+틈)으로 파생한다(rows.ts).
+ *   Col      열 하나. 「한 열 = 무조건 하루」 — 주기(요일·N일차)는 열 개수와 머리 글자일 뿐이다.
+ *   Component 표에 꽂는 「도구」 — 꽂고 속성을 만지고 「적용」을 눌러야만 표(rows/cols)가 바뀐다.
+ *             표를 쓰지 소유하지 않는다 — 빼도 이미 바뀐 표는 그대로 남는다.
  *
- * 🔴 모듈 1 의 금기 (설계 [[시간표 짜기 v2 설계]] 「나중에 갈아끼울 데」):
- *   · 칸은 「글자 한 줄」이 아니라 「값 하나」 — CellValue 는 태그 붙은 합집합이다.
- *   · 표의 주인(ownerRef) 은 늘 비어 있고 화면은 이 칸을 안 본다 (다음 모듈이 쓴다).
- *   · 격자의 행·열이 무엇인지는 표(틀)에서 받는다 — 요일·교시를 코드에 박지 않는다.
- *   · 시간 틀은 v1 TimetableSpec 모양 그대로, 표가 「값으로」 통째로 보유한다.
+ * 🔴 「교시」 낱말은 이 파일을 포함해 코드·화면 어디에도 안 쓴다 — 「줄」·「열」이다.
  */
-import type { TimetableSpec } from '../types/schema';
-
-/** v2 파일의 스키마 판 번호 (v1 은 2·3) */
-export const V2_SCHEMA_VERSION = 4 as const;
+/** v2 파일의 스키마 판 번호 — 모듈 2 에서 4 → 5 (rows/cols 모델로 뼈대가 바뀌었다) */
+export const V2_SCHEMA_VERSION = 5 as const;
 
 /**
  * CellValue — 칸이 담는 「값 하나」.
@@ -31,7 +30,7 @@ export type CellValue =
     | { kind: 'text'; text: string };
 
 /**
- * OwnerRef — 표의 「주인」. 모듈 1 에선 늘 비어 있고 화면이 이 칸을 안 본다.
+ * OwnerRef — 표의 「주인」. 지금은 늘 비어 있고 화면이 이 칸을 안 본다.
  *   나중에 반·교사·특별실을 가리키게 된다(그래야 자동 배정 모듈이 붙는다).
  */
 export interface OwnerRef {
@@ -39,37 +38,62 @@ export interface OwnerRef {
     id: string;
 }
 
+/** 한 줄의 길이를 재는 최소 단위(분) — 행 경계 끌기의 스냅 단위이자 최소 길이 */
+export const ROW_SNAP_MINUTES = 5;
+export const MIN_ROW_MINUTES = 5;
+
 /**
- * Sheet — 표 하나 = 「주인 없는 이름 있는 주간 격자」.
- *   spec   시간 틀을 「값으로」 통째로 보유 (v1 TimetableSpec 모양 그대로).
- *          공유 관계(여러 표가 한 틀을)는 나중 「틀 공유」 모듈이 되살린다.
- *   cells  칸 내용. 키는 cellKey(colKey, rowKey) — 빈 칸은 담지 않는다.
- *   owner  주인(비어 있음). 화면은 이 칸을 안 본다.
- *   rowHeight  격자 줄 간격(px). 🔴 선택값 — 없으면 DEFAULT_ROW_HEIGHT. v1·옛 v2 파일은 기본값으로 뜬다.
- *   manualSlots 손으로 고친 교시 index 들(「손봄」 표시용). 🔴 선택값 — 규칙 생성[적용]이 덮을 것을 세고,
- *               적용하면 비운다. 없으면 「손본 교시 없음」.
+ * Row — 표의 한 줄.
+ *   key        격자가 아는 전부. 칸은 (colKey, rowKey) 로만 찾는다 — 요일·교시를 코드에 안 박는다.
+ *   label      비어 있으면 자동 번호(수업 있는 줄만 센다). 글자를 쓰면 그 글자로 덮는다("점심" 등).
+ *   minutes    이 줄의 길이(분) — 행 높이가 여기 비례한다. 행 경계를 끌면 이 값이 바뀐다.
+ *   gapAfter   이 줄 다음에 오는 빈 틈(분) — 쉬는 시간. 행이 아니라 행 사이의 얇은 틈으로 그린다.
+ *   assignable 수업을 넣을 수 있는 칸인지(점심·쉬는 시간으로 끈 줄이면 false).
+ */
+export interface Row {
+    key: string;
+    label?: string;
+    minutes: number;
+    gapAfter: number;
+    assignable: boolean;
+}
+
+/** Col — 표의 한 열. 「한 열 = 무조건 하루」 — 요일·N일차는 라벨일 뿐이다 */
+export interface Col {
+    key: string;
+    label: string;
+}
+
+/**
+ * ComponentInstance — 표에 꽂힌 컴포넌트 하나(스탬프).
+ *   componentId  어느 종류인지(레지스트리 키 — 예: 'school-periods')
+ *   instanceId   이 인스턴스의 고유 id(같은 종류를 여러 번 꽂을 수 있다)
+ *   props        마지막으로 만진 속성값 — 「적용」을 눌러야만 표에 반영된다. 다시 열어도 이 값이 보인다.
+ */
+export interface ComponentInstance {
+    componentId: string;
+    instanceId: string;
+    props: Record<string, unknown>;
+}
+
+/**
+ * Sheet — 표 하나.
+ *   startTime   표 전체의 시작 시각("HH:mm") — 시간축의 유일한 기준점. 나머지는 전부 파생이다.
+ *   rows/cols   자유 격자 — 줄·열을 몇 개든, 어떤 길이로든 가질 수 있다.
+ *   cells       칸 내용. 키는 cellKey(colKey, rowKey) — 빈 칸은 담지 않는다.
+ *   components  꽂힌 컴포넌트들의 속성값 — 적용 전까지는 표에 영향이 없다.
+ *   owner       주인(비어 있음). 화면은 이 칸을 안 본다.
  */
 export interface Sheet {
     id: string;
     name: string;
-    spec: TimetableSpec;
+    startTime: string;
+    rows: Row[];
+    cols: Col[];
     cells: Record<string, CellValue>;
+    components: ComponentInstance[];
     owner?: OwnerRef;
     attr?: Record<string, unknown>;
-    rowHeight?: number;
-    manualSlots?: number[];
-}
-
-/** 격자 줄 간격 기본값(px) · 조절 범위 — 쥔님 「시간표 전체 모양을 맞추는 것」 */
-export const DEFAULT_ROW_HEIGHT = 38;
-export const MIN_ROW_HEIGHT = 24;
-export const MAX_ROW_HEIGHT = 96;
-
-/** 표의 줄 간격 — 없으면 기본값으로 안전하게 읽는다(v1·옛 v2 파일 호환) */
-export function rowHeightOf(sheet: Pick<Sheet, 'rowHeight'>): number {
-    const h = sheet.rowHeight;
-    if (typeof h !== 'number' || !Number.isFinite(h)) return DEFAULT_ROW_HEIGHT;
-    return Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, Math.round(h)));
 }
 
 /**

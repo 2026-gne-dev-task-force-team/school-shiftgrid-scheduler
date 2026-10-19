@@ -41,8 +41,17 @@ html[data-theme="dark"] {
   html, body, #root {
     height: 100%;
   }
+  /* 🔴 폰 브라우저의 100% 는 주소창을 뺀 높이가 아니다 — 그래서 아래쪽이 주소창 뒤로 잘린다.
+     dvh(동적 뷰포트 높이)는 주소창이 접히고 펴지는 것까지 따라온다. 모르는 브라우저는 위 100% 로 돈다. */
+  #root {
+    height: 100dvh;
+  }
   body {
     margin: 0;
+    /* 가로로는 절대 안 늘어난다 — 폰에서 표가 삐져나오면 화면 전체가 좌우로 흔들린다
+       (표 자체의 가로 스크롤은 편집 영역 안에서 따로 돈다) */
+    overflow: hidden;
+    overscroll-behavior: none;
     background: rgb(var(--c-bg));
     color: rgb(var(--c-text));
     font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -59,6 +68,18 @@ html[data-theme="dark"] {
 
 /* 시간표 격자는 12px */
 .grid-cell { font-size: 12px; }
+
+/* 🔴 마우스가 없는 기기에선 hover 로 숨긴 단추가 영영 안 나타난다 — 폰에서 「이름 바꾸기·지우기가 없는」 것처럼 보인다.
+   손가락 기기에서는 늘 보이게 한다. (화면 폭이 아니라 입력 수단으로 가른다 — 창을 좁힌 PC 는 마우스가 있다) */
+@media (hover: none) {
+  .hover-only { display: flex !important; }
+}
+
+/* 🔴 iOS 사파리는 16px 미만인 입력칸에 포커스가 가면 화면을 확대한다 — 그리고 스스로 안 되돌린다.
+   한 번 당겨지면 표가 화면 밖으로 밀려 「깨진 것」처럼 보인다. 손가락 기기에서만 16px 로 올린다. */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea { font-size: 16px; }
+}
 
 /* 폰: 체크박스가 딸린 라벨의 탭 영역을 44px 로 키운다 (데스크톱은 그대로) */
 @media (max-width: 767px) {

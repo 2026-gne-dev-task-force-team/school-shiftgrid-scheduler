@@ -11,12 +11,13 @@ describe('표 — 만들기·이름·지우기·되살리기', () => {
         const { project, sheet } = ops.createSheet(p0);
         expect(project.sheets).toHaveLength(1);
         expect(ops.getSheet(project, sheet.id)?.id).toBe(sheet.id);
-        // 월~금 × 6교시 + 점심 기본 — 점심은 4교시 뒤, 수업 못 넣는 칸 (쥔님: "점심시간 굶어 죽나?")
-        expect(sheet.spec.slots.length).toBe(7);
-        expect(sheet.spec.slots.filter((s) => s.assignable)).toHaveLength(6);
-        expect(sheet.spec.slots[4]).toMatchObject({ kind: 'lunch', assignable: false, label: '점심', start: '12:10', end: '13:00' });
-        expect(sheet.spec.slots[5]).toMatchObject({ label: '5교시', start: '13:10' }); // 점심 끝 + 쉬는 시간
-        expect(sheet.spec.activeDays).toEqual([0, 1, 2, 3, 4]);
+        // 5열(월~금) × 6줄(40분·쉼 10분) — 점심은 안 들어 있다(설계 확정: "정의 없이 시작")
+        expect(sheet.rows).toHaveLength(6);
+        expect(sheet.rows.every((r) => r.assignable)).toBe(true);
+        expect(sheet.rows[0]).toMatchObject({ minutes: 40, gapAfter: 10 });
+        expect(sheet.rows[5].gapAfter).toBe(0); // 마지막 줄 뒤엔 틈이 없다
+        expect(sheet.cols).toHaveLength(5);
+        expect(sheet.startTime).toBe('09:00');
     });
 
     it('이름을 바꾼다', () => {
@@ -47,18 +48,33 @@ describe('표 — 만들기·이름·지우기·되살리기', () => {
 describe('칸 — 글자 쓰기', () => {
     it('칸에 글자를 쓰고 지운다', () => {
         const { project, sheet } = ops.createSheet(ops.newProject());
-        const p2 = ops.setSheetCell(project, sheet.id, '0', '0', '수학');
-        expect(cellTextOf(ops.getSheet(p2, sheet.id)!.cells['0:0'])).toBe('수학');
-        const p3 = ops.setSheetCell(p2, sheet.id, '0', '0', '');
-        expect(ops.getSheet(p3, sheet.id)!.cells['0:0']).toBeUndefined(); // 빈 글자면 칸을 지운다
+        const colKey = sheet.cols[0].key, rowKey = sheet.rows[0].key;
+        const p2 = ops.setSheetCell(project, sheet.id, colKey, rowKey, '수학');
+        expect(cellTextOf(ops.getSheet(p2, sheet.id)!.cells[`${colKey}:${rowKey}`])).toBe('수학');
+        const p3 = ops.setSheetCell(p2, sheet.id, colKey, rowKey, '');
+        expect(ops.getSheet(p3, sheet.id)!.cells[`${colKey}:${rowKey}`]).toBeUndefined(); // 빈 글자면 칸을 지운다
     });
 
-    it('교시를 줄이면 격자 밖 칸 글자는 버린다', () => {
+    it('줄을 빼면 그 줄 칸 글자는 버린다', () => {
         const { project, sheet } = ops.createSheet(ops.newProject());
-        const p2 = ops.setSheetCell(project, sheet.id, '0', '5', '여섯째칸'); // 6교시(index 5)
-        const p3 = ops.setPeriods(p2, sheet.id, 4); // 4교시로 줄임
-        expect(ops.getSheet(p3, sheet.id)!.spec.slots).toHaveLength(4);
-        expect(ops.getSheet(p3, sheet.id)!.cells['0:5']).toBeUndefined();
+        const colKey = sheet.cols[0].key, lastRowKey = sheet.rows[sheet.rows.length - 1].key;
+        const p2 = ops.setSheetCell(project, sheet.id, colKey, lastRowKey, '마지막줄');
+        const p3 = ops.removeRow(p2, sheet.id, lastRowKey);
+        expect(ops.getSheet(p3, sheet.id)!.rows).toHaveLength(5);
+        expect(ops.getSheet(p3, sheet.id)!.cells[`${colKey}:${lastRowKey}`]).toBeUndefined();
+    });
+
+    it('여러 칸을 한 번에 커밋한다(복붙·채우기용 setSheetCells)', () => {
+        const { project, sheet } = ops.createSheet(ops.newProject());
+        const [c0, c1] = sheet.cols.map((c) => c.key);
+        const r0 = sheet.rows[0].key;
+        const p2 = ops.setSheetCells(project, sheet.id, [
+            { colKey: c0, rowKey: r0, text: '국어' },
+            { colKey: c1, rowKey: r0, text: '수학' },
+        ]);
+        const s = ops.getSheet(p2, sheet.id)!;
+        expect(cellTextOf(s.cells[`${c0}:${r0}`])).toBe('국어');
+        expect(cellTextOf(s.cells[`${c1}:${r0}`])).toBe('수학');
     });
 });
 

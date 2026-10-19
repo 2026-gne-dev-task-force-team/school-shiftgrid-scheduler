@@ -1,13 +1,13 @@
 /**
- * v1 → v2 변환 시험 — 🔴 들고 있는 항목이 하나도 안 사라지는지(개수 대조)가 핵심이다.
+ * v1 → v5 / 옛 v2(4) → v5 변환 시험 — 🔴 들고 있는 항목이 하나도 안 사라지는지(개수 대조)가 핵심이다.
  * 설계 [[시간표 짜기 v2 설계]] 「모르는 게 나와도 버리지 마라 · 개수 안 맞으면 저장 막기」.
  */
 import { describe, it, expect } from 'vitest';
 import { sampleDoc } from '../io/sample';
-import { migrateV1ToV2, countSourceItems, verifyProjectIntegrity } from './migrate';
+import { migrateV1ToV2, migrateV4ToV5, countSourceItems, verifyProjectIntegrity } from './migrate';
 import type { Project } from './model';
 
-describe('v1 → v2 변환', () => {
+describe('v1 → v5 변환', () => {
     it('반 수만큼 표가 생긴다', () => {
         const v1 = sampleDoc();
         const { project } = migrateV1ToV2(v1);
@@ -55,15 +55,15 @@ describe('v1 → v2 변환', () => {
         expect((project.legacy as Record<string, unknown>)['시안후보']).toHaveLength(3);
     });
 
-    it('반의 시간 틀은 「복사」된다 — 표마다 제 id 를 갖는다', () => {
+    it('반의 시간 틀은 rows/cols 로 펴진다 — 줄·열 수가 원본 슬롯·요일 수와 같다', () => {
         const v1 = sampleDoc();
         const { project } = migrateV1ToV2(v1);
-        const ids = project.sheets.map((s) => s.spec.id);
-        expect(new Set(ids).size).toBe(ids.length); // 전부 다른 id (공유 아님)
-        // 슬롯 모양은 원본 틀과 같다
         const firstTrack = v1.tracks[0];
         const srcSpec = v1.specs.find((s) => s.id === firstTrack.specId)!;
-        expect(project.sheets[0].spec.slots).toHaveLength(srcSpec.slots.length);
+        expect(project.sheets[0].rows).toHaveLength(srcSpec.slots.length);
+        expect(project.sheets[0].cols).toHaveLength(srcSpec.activeDays.length);
+        // 줄 key 는 옛 slot.index 를 그대로 쓴다 — 칸(cells) 이 안 깨지는 이유
+        expect(project.sheets[0].rows.map((r) => r.key)).toEqual(srcSpec.slots.map((s) => String(s.index)));
     });
 
     it('빈 입력도 안 터진다', () => {
@@ -75,13 +75,41 @@ describe('v1 → v2 변환', () => {
     });
 });
 
+describe('옛 v2(schemaVersion 4) → v5', () => {
+    it('TimetableSpec 기반 표가 rows/cols 로 올라가고 칸 글자는 그대로다', () => {
+        const old = {
+            schemaVersion: 4, name: '고성초', term: '2학기',
+            sheets: [{
+                id: 's1', name: '1-1반',
+                spec: {
+                    id: 'spec1', name: '틀', cycleDays: 7, activeDays: [0, 1],
+                    dayStart: '09:00', dayEnd: '09:40',
+                    slots: [{ index: 0, label: '1교시', start: '09:00', end: '09:40', assignable: true, kind: 'lesson' }],
+                },
+                cells: { '0:0': { kind: 'text', text: '수학' } },
+                rowHeight: 60, // 옛 꾸밈값 — 버려진다
+            }],
+            trash: [],
+            legacy: null,
+        };
+        const project = migrateV4ToV5(old);
+        expect(project.schemaVersion).toBe(5);
+        expect(project.sheets[0].rows).toHaveLength(1);
+        expect(project.sheets[0].cols).toHaveLength(2);
+        expect(project.sheets[0].cells['0:0']).toEqual({ kind: 'text', text: '수학' });
+        expect(project.sheets[0].components).toEqual([]);
+    });
+});
+
 describe('저장 막기 — 무결성 검산', () => {
     it('legacy 반 수보다 표가 적으면(=하나라도 유실) ok=false 가 되어 저장을 막는다', () => {
         // 반 3개짜리 원본을 흉내 낸 legacy 지만 표는 2개만 들고 있는 깨진 상태
         const broken: Project = {
-            schemaVersion: 4, name: '', term: '',
-            sheets: [{ id: 's1', name: 'a', spec: { id: 'x', name: '', cycleDays: 7, activeDays: [0], dayStart: '09:00', dayEnd: '09:40', slots: [] }, cells: {} },
-                     { id: 's2', name: 'b', spec: { id: 'y', name: '', cycleDays: 7, activeDays: [0], dayStart: '09:00', dayEnd: '09:40', slots: [] }, cells: {} }],
+            schemaVersion: 5, name: '', term: '',
+            sheets: [
+                { id: 's1', name: 'a', startTime: '09:00', rows: [], cols: [], cells: {}, components: [] },
+                { id: 's2', name: 'b', startTime: '09:00', rows: [], cols: [], cells: {}, components: [] },
+            ],
             trash: [],
             legacy: { tracks: [{ id: 't1' }, { id: 't2' }, { id: 't3' }] },
         };
@@ -91,7 +119,7 @@ describe('저장 막기 — 무결성 검산', () => {
     });
 
     it('legacy 가 없으면(새 파일) 검산할 것이 없다', () => {
-        const fresh: Project = { schemaVersion: 4, name: '', term: '', sheets: [], trash: [], legacy: null };
+        const fresh: Project = { schemaVersion: 5, name: '', term: '', sheets: [], trash: [], legacy: null };
         expect(verifyProjectIntegrity(fresh)).toBeNull();
     });
 });

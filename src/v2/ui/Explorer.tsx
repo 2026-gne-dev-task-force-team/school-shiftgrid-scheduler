@@ -6,11 +6,28 @@ import { useState } from 'react';
 import { useV2 } from '../store';
 import { Icon } from '../../ui/parts/Icon';
 
-export function Explorer() {
+interface ExplorerProps {
+    /** 좁은 화면(서랍)인가 — 줄을 손가락에 맞게 키우고, 표를 고르면 서랍을 닫는다 */
+    narrow?: boolean;
+    /** 표를 열었을 때 부를 것(서랍 닫기). 넓은 화면에선 안 넘긴다 */
+    onPick?: () => void;
+}
+
+export function Explorer({ narrow = false, onPick }: ExplorerProps = {}) {
     const st = useV2();
     const [renaming, setRenaming] = useState<string | null>(null);
     const [draft, setDraft] = useState('');
     const [trashOpen, setTrashOpen] = useState(false);
+
+    /**
+     * 표 열기. 🔴 마우스는 종전대로 더블클릭, 손가락은 한 번 누르면 열린다 —
+     * 폰에서 더블탭은 확대 제스처와 싸워서 표가 아예 안 열렸다.
+     */
+    const openByTouch = (id: string) => {
+        st.select({ kind: 'sheet', id });
+        st.openSheet(id);
+        onPick?.();
+    };
 
     const projectSelected = st.selection.kind === 'project';
 
@@ -44,8 +61,9 @@ export function Explorer() {
                     const isRenaming = renaming === s.id;
                     return (
                         <div key={s.id}
-                            className={`group flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 border-l-2 cursor-pointer
+                            className={`group flex items-center gap-1.5 pl-3 pr-1.5 border-l-2 cursor-pointer ${narrow ? 'py-2.5' : 'py-1.5'}
                                 ${selected ? 'border-accent bg-panel2 text-text' : 'border-transparent text-muted hover:text-text hover:bg-panel2/50'}`}
+                            onPointerUp={(e) => { if (e.pointerType !== 'mouse' && !isRenaming) openByTouch(s.id); }}
                             onClick={() => st.select({ kind: 'sheet', id: s.id })}
                             onDoubleClick={() => { if (!isRenaming) st.openSheet(s.id); }}>
                             <Icon name="table" size={14} />
@@ -63,12 +81,15 @@ export function Explorer() {
                                 <span className="flex-1 truncate">{s.name}</span>
                             )}
                             {!isRenaming && (
-                                <span className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-                                    <button className="w-6 h-6 grid place-items-center rounded hover:bg-line text-muted" title="이름 바꾸기"
+                                <span className="hover-only hidden group-hover:flex items-center gap-0.5 shrink-0">
+                                    {/* ⚠️ onPointerUp 도 막는다 — 안 막으면 줄의 「눌러서 열기」가 같이 터져 서랍이 닫힌다 */}
+                                    <button className={`${narrow ? 'w-8 h-8' : 'w-6 h-6'} grid place-items-center rounded hover:bg-line text-muted`} title="이름 바꾸기"
+                                        onPointerUp={(e) => e.stopPropagation()}
                                         onClick={(e) => { e.stopPropagation(); beginRename(s.id, s.name); }}>
                                         <Icon name="edit" size={13} />
                                     </button>
-                                    <button className="w-6 h-6 grid place-items-center rounded hover:bg-line text-muted hover:text-bad" title="휴지통으로 지우기"
+                                    <button className={`${narrow ? 'w-8 h-8' : 'w-6 h-6'} grid place-items-center rounded hover:bg-line text-muted hover:text-bad`} title="휴지통으로 지우기"
+                                        onPointerUp={(e) => e.stopPropagation()}
                                         onClick={(e) => { e.stopPropagation(); st.removeSheet(s.id); }}>
                                         <Icon name="trash" size={13} />
                                     </button>
@@ -106,8 +127,8 @@ export function Explorer() {
 
             {/* 새 표 */}
             <div className="shrink-0 p-2 border-t border-line">
-                <button onClick={st.newSheet}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[13px] font-medium bg-accent hover:bg-accenth text-white">
+                <button onClick={() => { st.newSheet(); onPick?.(); }}
+                    className={`w-full inline-flex items-center justify-center gap-1.5 px-3 rounded-md text-[13px] font-medium bg-accent hover:bg-accenth text-white ${narrow ? 'py-3' : 'py-2'}`}>
                     <Icon name="plus" size={15} /> 새 표
                 </button>
             </div>

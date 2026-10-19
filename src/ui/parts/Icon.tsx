@@ -5,7 +5,8 @@ export type IconName =
     | 'home' | 'table' | 'ban' | 'sparkles' | 'search' | 'edit' | 'layers' | 'printer'
     | 'undo' | 'redo' | 'save' | 'folder' | 'file' | 'plus' | 'trash' | 'check' | 'x'
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
-    | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight';
+    | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
+    | 'menu' | 'dots' | 'panelLeft' | 'panelRight';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -41,6 +42,11 @@ const P: Record<IconName, string> = {
     moon: 'M20 14.5A8 8 0 019.5 4 7 7 0 1020 14.5z',
     book: 'M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM19 3v18',
     help: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9a2.5 2.5 0 013.9-2c1.6 1 1 3-1 3.5v1M12 17h.01',
+    menu: 'M4 7h16M4 12h16M4 17h16',
+    dots: 'M12 5.5h.01M12 12h.01M12 18.5h.01',
+    // 패널 접기/펴기 — 네모 안에 세로 칸막이. 왼쪽/오른쪽 패널을 각각 가리킨다
+    panelLeft: 'M4 5h16v14H4zM9 5v14',
+    panelRight: 'M4 5h16v14H4zM15 5v14',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {

@@ -4,11 +4,17 @@
  *    같은 표를 두 창에 열면 한쪽 수정이 다른 쪽에 바로 보이는 이유가 이것이다(설계 「여기서 죽는다」).
  * ⚠️ React 를 안 쓴다 — node 환경 테스트가 이 파일을 통째로 검산한다.
  */
-import type { CellValue, OwnerRef, Project, Sheet } from './model';
+import type { CellValue, Col, OwnerRef, Project, Row, Sheet } from './model';
 import { V2_SCHEMA_VERSION, cellKey } from './model';
-import { defaultSpec, extendSlots, buildSlotsByRule, toMins, fromMins, type SlotRule } from './defaults';
-import type { Slot, TimetableSpec } from '../types/schema';
+import { defaultCols, defaultRows, DEFAULT_START_TIME } from './defaults';
+import { pruneCells } from './cells';
+import { COMPONENT_REGISTRY } from './components/registry';
 import { uid } from '../store/ids';
+
+const ROW_SNAP = 5;
+const MIN_ROW_MINUTES = 5;
+const DEFAULT_NEW_ROW_MINUTES = 40;
+const DEFAULT_NEW_COL_LABEL = '새 열';
 
 // ══════════════════════════════════════════════════════════════
 //  Project — 표 만들기·이름·지우기·되살리기·칸
@@ -19,13 +25,16 @@ export function newProject(name = '', term = ''): Project {
     return { schemaVersion: V2_SCHEMA_VERSION, name, term, sheets: [], trash: [], legacy: null };
 }
 
-/** 표 하나 만들기 — 월~금 × 6교시 기본 격자. 돌려주는 id 로 바로 열 수 있다 */
+/** 표 하나 만들기 — 5열(월~금) × 6줄(40분·쉼 10분·09:00) 기본 격자. 점심은 없다(컴포넌트가 넣는다) */
 export function createSheet(p: Project, name?: string): { project: Project; sheet: Sheet } {
     const sheet: Sheet = {
         id: uid('sheet'),
         name: name && name.trim() ? name.trim() : nextSheetName(p),
-        spec: defaultSpec(),
+        startTime: DEFAULT_START_TIME,
+        rows: defaultRows(),
+        cols: defaultCols(),
         cells: {},
+        components: [],
     };
     return { project: { ...p, sheets: [...p.sheets, sheet] }, sheet };
 }
@@ -78,137 +87,25 @@ export function purgeTrash(p: Project, id: string): Project {
  * 🔴 글자는 글자일 뿐이다 — 「김영희」를 교사로 승격시키지 않는다(설계 「이건 진짜 하지 마」).
  */
 export function setSheetCell(p: Project, sheetId: string, colKey: string, rowKey: string, text: string): Project {
+    return setSheetCells(p, sheetId, [{ colKey, rowKey, text }]);
+}
+
+/** 칸 여러 개를 한 번에(복붙·채우기) — 한 번 = undo 한 단위 */
+export function setSheetCells(
+    p: Project, sheetId: string, changes: { colKey: string; rowKey: string; text: string }[],
+): Project {
     return mapSheet(p, sheetId, (s) => {
-        const key = cellKey(colKey, rowKey);
         const cells = { ...s.cells };
-        if (text === '') delete cells[key];
-        else cells[key] = { kind: 'text', text } satisfies CellValue;
+        for (const ch of changes) {
+            const key = cellKey(ch.colKey, ch.rowKey);
+            if (ch.text === '') delete cells[key];
+            else cells[key] = { kind: 'text', text: ch.text } satisfies CellValue;
+        }
         return { ...s, cells };
     });
 }
 
-/** 표의 시간 틀 통째 교체(속성 패널의 세밀 편집용) */
-export function updateSheetSpec(p: Project, sheetId: string, spec: TimetableSpec): Project {
-    return mapSheet(p, sheetId, (s) => ({ ...s, spec }));
-}
-
-/**
- * 교시 수 바꾸기 — 속성 패널에서 「교시 몇 개」를 바꾼다.
- * 🔴 ⭐ 모듈 1.1 ① 고침: 늘리면 09:00 부터 다시 세지 않고 「앞 교시 끝 + 쉬는 시간」으로 이어 붙인다
- *    (extendSlots). 그래서 점심을 넣었거나 시각을 손본 표에서 교시를 늘려도 새 교시가 앞에 이어진다.
- * 🔴 교시를 줄이면 그 밖으로 나간 칸 글자는 지운다(격자에 없는 칸은 안 보이니까). 손봄 표시도 범위 밖은 지운다.
- */
-export function setPeriods(p: Project, sheetId: string, periods: number): Project {
-    const n = Math.max(0, Math.min(20, Math.floor(periods)));
-    return mapSheet(p, sheetId, (s) => {
-        const slots = extendSlots(s.spec.slots, n);
-        const spec: TimetableSpec = {
-            ...s.spec,
-            slots,
-            dayStart: slots[0]?.start ?? s.spec.dayStart,
-            dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
-        };
-        const cells = pruneCells(s.cells, s.spec.activeDays, slots.map((x) => x.index));
-        const manualSlots = (s.manualSlots ?? []).filter((i) => i < slots.length);
-        return { ...s, spec, cells, manualSlots };
-    });
-}
-
-/** 교시 수를 한 칸 올리고/내린다 — [−] N교시 [+] 스테퍼(모듈 1.1 ③) */
-export function stepPeriods(p: Project, sheetId: string, delta: number): Project {
-    const s = getSheet(p, sheetId);
-    if (!s) return p;
-    return setPeriods(p, sheetId, s.spec.slots.length + delta);
-}
-
-/**
- * ⭐ 규칙 생성 적용(모듈 1.1 ②) — 받은 규칙으로 교시 목록을 한 번에 다시 만든다.
- * 🔴 손으로 고친 값을 덮는다 — 화면이 「손본 교시 N개가 덮입니다」를 보여주고 확인을 받은 뒤 부른다.
- *    적용하면 손봄 표시를 비우고, 격자 밖으로 나간 칸 글자는 지운다.
- */
-export function applySlotRule(p: Project, sheetId: string, rule: SlotRule): Project {
-    return mapSheet(p, sheetId, (s) => {
-        const slots = buildSlotsByRule(rule);
-        const spec: TimetableSpec = {
-            ...s.spec,
-            slots,
-            dayStart: slots[0]?.start ?? s.spec.dayStart,
-            dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
-        };
-        const cells = pruneCells(s.cells, s.spec.activeDays, slots.map((x) => x.index));
-        return { ...s, spec, cells, manualSlots: [] };
-    });
-}
-
-/**
- * 수업 요일 수 바꾸기 — 「요일 몇 개」(앞에서부터 월·화·수…). 줄이면 밖으로 나간 칸 글자는 지운다.
- */
-export function setDays(p: Project, sheetId: string, days: number): Project {
-    const n = Math.max(0, Math.min(7, Math.floor(days)));
-    return mapSheet(p, sheetId, (s) => {
-        const activeDays = Array.from({ length: n }, (_, i) => i);
-        const spec: TimetableSpec = { ...s.spec, activeDays };
-        const cells = pruneCells(s.cells, activeDays, s.spec.slots.map((x) => x.index));
-        return { ...s, spec, cells };
-    });
-}
-
-/**
- * 한 슬롯(교시)의 속성(라벨·시각·수업/점심/쉼) 편집 — 수동 보정.
- * 🔴 모듈 1.1 ②: 손으로 고친 교시이므로 「손봄」 표시를 붙인다(markManual).
- *    시각을 바꾸면서 뒤 교시를 따라 밀고 싶으면 editSlotTime 을 쓴다(이 함수는 한 교시만 고친다).
- */
-export function updateSlot(p: Project, sheetId: string, slotIndex: number, patch: Partial<Slot>): Project {
-    return mapSheet(p, sheetId, (s) => ({
-        ...markManual(s, slotIndex),
-        spec: { ...s.spec, slots: s.spec.slots.map((sl) => (sl.index === slotIndex ? { ...sl, ...patch } : sl)) },
-    }));
-}
-
-/**
- * ⭐ 시각 편집 + 뒤 교시 밀기(모듈 1.1 ②) — 한 교시의 시작/끝을 바꾸고,
- *    pushFollowing 이면 끝 시각이 움직인 만큼(delta) 뒤 교시를 전부 같이 민다.
- *    delta 는 「끝 시각의 변화」로 잰다 — 교시를 10분 늘리면(끝 +10) 뒤가 모두 +10 되어 간격이 유지된다.
- *    끝을 안 바꾸고 시작만 당기면(그 교시만 짧아짐) 뒤는 안 민다.
- * 🔴 손으로 고친 교시이므로 「손봄」 표시를 붙인다.
- */
-export function editSlotTime(
-    p: Project,
-    sheetId: string,
-    slotIndex: number,
-    patch: { start?: string; end?: string },
-    pushFollowing: boolean,
-): Project {
-    return mapSheet(p, sheetId, (s) => {
-        const target = s.spec.slots.find((sl) => sl.index === slotIndex);
-        if (!target) return s;
-        const oldEnd = toMins(target.end);
-        const newEnd = patch.end != null ? toMins(patch.end) : oldEnd;
-        const delta = pushFollowing ? newEnd - oldEnd : 0;
-
-        const slots = s.spec.slots.map((sl) => {
-            if (sl.index === slotIndex) return { ...sl, ...patch };
-            if (delta !== 0 && sl.index > slotIndex) {
-                return { ...sl, start: fromMins(toMins(sl.start) + delta), end: fromMins(toMins(sl.end) + delta) };
-            }
-            return sl;
-        });
-        const spec: TimetableSpec = {
-            ...s.spec,
-            slots,
-            dayEnd: slots[slots.length - 1]?.end ?? s.spec.dayEnd,
-            dayStart: slots[0]?.start ?? s.spec.dayStart,
-        };
-        return { ...markManual(s, slotIndex), spec };
-    });
-}
-
-/** 격자 줄 간격(px) — 표마다 저장된다(모듈 1.1 ④). 범위 밖 값은 model.rowHeightOf 가 가둔다 */
-export function setRowHeight(p: Project, sheetId: string, px: number): Project {
-    return mapSheet(p, sheetId, (s) => ({ ...s, rowHeight: Math.round(px) }));
-}
-
-/** 표의 주인 칸을 세팅(모듈 1 화면은 안 쓰지만, 나중 모듈이 쓸 경계를 뚫어 둔다) */
+/** 표의 주인 칸을 세팅(화면은 안 쓰지만, 나중 모듈이 쓸 경계를 뚫어 둔다) */
 export function setSheetOwner(p: Project, sheetId: string, owner: OwnerRef | undefined): Project {
     return mapSheet(p, sheetId, (s) => ({ ...s, owner }));
 }
@@ -218,30 +115,176 @@ export function setProjectMeta(p: Project, patch: { name?: string; term?: string
     return { ...p, ...patch };
 }
 
-// ── 보조 ──
-/** 그 교시를 「손봄」으로 표시 — 규칙 생성[적용]이 덮을 것을 세는 근거가 된다 */
-function markManual(s: Sheet, slotIndex: number): Sheet {
-    const set = new Set(s.manualSlots ?? []);
-    set.add(slotIndex);
-    return { ...s, manualSlots: [...set].sort((a, b) => a - b) };
+// ══════════════════════════════════════════════════════════════
+//  줄(Row) — 넣기·빼기·토글·라벨·시간. 표의 시간축 전부
+// ══════════════════════════════════════════════════════════════
+
+function snapMinutes(n: number): number {
+    const snapped = Math.round(n / ROW_SNAP) * ROW_SNAP;
+    return Math.max(MIN_ROW_MINUTES, snapped);
 }
 
+/**
+ * 새 줄은 옆 줄을 닮는다 — 길이·뒤 쉬는 시간을 기준 줄에서 베낀다(엑셀이 줄을 넣으면 위 줄 서식을 물려주듯).
+ * 🔴 `gapAfter: 0` 으로 박으면 새 줄 뒤에만 쉬는 시간이 없어져 시각이 한 줄만 붙는다(10-19 화면 실측에서 걸렸다).
+ */
+function rowLike(base: Row | undefined): Row {
+    return {
+        key: uid('row'),
+        minutes: base?.minutes ?? DEFAULT_NEW_ROW_MINUTES,
+        gapAfter: base?.gapAfter ?? 0,
+        assignable: true,
+    };
+}
+
+export function insertRowAbove(p: Project, sheetId: string, rowKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const i = s.rows.findIndex((r) => r.key === rowKey);
+        if (i < 0) return s;
+        const row = rowLike(s.rows[i]);
+        return { ...s, rows: [...s.rows.slice(0, i), row, ...s.rows.slice(i)] };
+    });
+}
+
+export function insertRowBelow(p: Project, sheetId: string, rowKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const i = s.rows.findIndex((r) => r.key === rowKey);
+        if (i < 0) return s;
+        // 아래에 넣으면 기준 줄의 쉬는 시간은 새 줄이 물려받고, 기준 줄은 새 줄과의 틈으로 같은 값을 둔다
+        const row = rowLike(s.rows[i]);
+        return { ...s, rows: [...s.rows.slice(0, i + 1), row, ...s.rows.slice(i + 1)] };
+    });
+}
+
+/** 줄 빼기 — 표는 최소 한 줄은 있어야 격자가 선다(마지막 한 줄은 못 뺀다) */
+export function removeRow(p: Project, sheetId: string, rowKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        if (s.rows.length <= 1) return s;
+        const rows = s.rows.filter((r) => r.key !== rowKey);
+        const cells = pruneCells(s.cells, s.cols.map((c) => c.key), rows.map((r) => r.key));
+        return { ...s, rows, cells };
+    });
+}
+
+/** 「수업 없는 줄」 토글 — 끄면(=수업 못 넣게 되면) 그 줄의 칸 글자는 지운다(편집 못 하는 칸은 글자를 못 가진다) */
+export function toggleRowAssignable(p: Project, sheetId: string, rowKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const rows = s.rows.map((r) => (r.key === rowKey ? { ...r, assignable: !r.assignable } : r));
+        const target = rows.find((r) => r.key === rowKey);
+        if (!target || target.assignable) return { ...s, rows };
+        const cells = { ...s.cells };
+        for (const col of s.cols) delete cells[cellKey(col.key, rowKey)];
+        return { ...s, rows, cells };
+    });
+}
+
+/** 줄 라벨(이름) — 빈 글자면 자동 번호로 되돌아간다(수업 줄일 때) */
+export function setRowLabel(p: Project, sheetId: string, rowKey: string, label: string): Project {
+    return mapSheet(p, sheetId, (s) => ({
+        ...s,
+        rows: s.rows.map((r) => (r.key === rowKey ? { ...r, label: label.trim() === '' ? undefined : label } : r)),
+    }));
+}
+
+/** 행 경계 끌기 — 그 줄 minutes 를 5분 스냅으로 바꾼다. 뒤 줄 시각은 파생값이라 저절로 밀린다 */
+export function resizeRow(p: Project, sheetId: string, rowKey: string, deltaMinutes: number): Project {
+    return mapSheet(p, sheetId, (s) => ({
+        ...s,
+        rows: s.rows.map((r) => (r.key === rowKey ? { ...r, minutes: snapMinutes(r.minutes + deltaMinutes) } : r)),
+    }));
+}
+
+/** 「시간 고치기」 메뉴 — 분·뒤 쉬는 시간을 직접 입력 */
+export function setRowTime(p: Project, sheetId: string, rowKey: string, patch: { minutes?: number; gapAfter?: number }): Project {
+    return mapSheet(p, sheetId, (s) => ({
+        ...s,
+        rows: s.rows.map((r) => {
+            if (r.key !== rowKey) return r;
+            const minutes = patch.minutes != null ? Math.max(MIN_ROW_MINUTES, Math.round(patch.minutes)) : r.minutes;
+            const gapAfter = patch.gapAfter != null ? Math.max(0, Math.round(patch.gapAfter)) : r.gapAfter;
+            return { ...r, minutes, gapAfter };
+        }),
+    }));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  열(Col) — 넣기·빼기·라벨. 「한 열 = 무조건 하루」
+// ══════════════════════════════════════════════════════════════
+
+export function insertColLeft(p: Project, sheetId: string, colKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const i = s.cols.findIndex((c) => c.key === colKey);
+        if (i < 0) return s;
+        const col: Col = { key: uid('col'), label: DEFAULT_NEW_COL_LABEL };
+        return { ...s, cols: [...s.cols.slice(0, i), col, ...s.cols.slice(i)] };
+    });
+}
+
+export function insertColRight(p: Project, sheetId: string, colKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const i = s.cols.findIndex((c) => c.key === colKey);
+        if (i < 0) return s;
+        const col: Col = { key: uid('col'), label: DEFAULT_NEW_COL_LABEL };
+        return { ...s, cols: [...s.cols.slice(0, i + 1), col, ...s.cols.slice(i + 1)] };
+    });
+}
+
+/** 열 빼기 — 표는 최소 한 열은 있어야 격자가 선다 */
+export function removeCol(p: Project, sheetId: string, colKey: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        if (s.cols.length <= 1) return s;
+        const cols = s.cols.filter((c) => c.key !== colKey);
+        const cells = pruneCells(s.cells, cols.map((c) => c.key), s.rows.map((r) => r.key));
+        return { ...s, cols, cells };
+    });
+}
+
+export function setColLabel(p: Project, sheetId: string, colKey: string, label: string): Project {
+    return mapSheet(p, sheetId, (s) => ({ ...s, cols: s.cols.map((c) => (c.key === colKey ? { ...c, label } : c)) }));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  컴포넌트 — 꽂기·속성·적용·빼기
+// ══════════════════════════════════════════════════════════════
+
+/** 컴포넌트 꽂기 — 레지스트리의 기본 속성값으로 인스턴스 하나를 더한다(적용 전엔 표에 영향 없음) */
+export function addComponent(p: Project, sheetId: string, componentId: string): Project {
+    const entry = COMPONENT_REGISTRY[componentId];
+    if (!entry) return p;
+    return mapSheet(p, sheetId, (s) => ({
+        ...s,
+        components: [...s.components, { componentId, instanceId: uid('cmp'), props: { ...entry.def.defaultProps } }],
+    }));
+}
+
+/** 컴포넌트 빼기 — 인스턴스만 지운다. 이미 적용돼 반영된 표 모양은 그대로 남는다(쓰지 소유하지 않는다) */
+export function removeComponent(p: Project, sheetId: string, instanceId: string): Project {
+    return mapSheet(p, sheetId, (s) => ({ ...s, components: s.components.filter((c) => c.instanceId !== instanceId) }));
+}
+
+/** 속성 만지기 — 적용을 누르기 전까지는 표에 영향이 없다. 다시 열어도 이 값이 보인다 */
+export function updateComponentProps(p: Project, sheetId: string, instanceId: string, patch: Record<string, unknown>): Project {
+    return mapSheet(p, sheetId, (s) => ({
+        ...s,
+        components: s.components.map((c) => (c.instanceId === instanceId ? { ...c, props: { ...c.props, ...patch } } : c)),
+    }));
+}
+
+/** 「적용」 — 그 컴포넌트의 apply(sheet, props) 를 불러 표(rows/cols/cells)를 바꾼다. 적용 한 번 = undo 한 단위 */
+export function applyComponent(p: Project, sheetId: string, instanceId: string): Project {
+    return mapSheet(p, sheetId, (s) => {
+        const inst = s.components.find((c) => c.instanceId === instanceId);
+        const def = inst && COMPONENT_REGISTRY[inst.componentId]?.def;
+        if (!inst || !def) return s;
+        return def.apply(s, inst.props);
+    });
+}
+
+// ── 보조 ──
 function mapSheet(p: Project, id: string, fn: (s: Sheet) => Sheet): Project {
     let hit = false;
     const sheets = p.sheets.map((s) => (s.id === id ? (hit = true, fn(s)) : s));
     return hit ? { ...p, sheets } : p;
-}
-
-/** 격자 밖(요일·교시 범위 밖)으로 나간 칸 글자를 버린다 */
-function pruneCells(cells: Record<string, CellValue>, activeDays: number[], slotIndexes: number[]): Record<string, CellValue> {
-    const okCol = new Set(activeDays.map(String));
-    const okRow = new Set(slotIndexes.map(String));
-    const out: Record<string, CellValue> = {};
-    for (const [k, v] of Object.entries(cells)) {
-        const [c, r] = k.split(':');
-        if (okCol.has(c) && okRow.has(r)) out[k] = v;
-    }
-    return out;
 }
 
 // ══════════════════════════════════════════════════════════════
