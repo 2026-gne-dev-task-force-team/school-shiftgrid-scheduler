@@ -32,18 +32,16 @@ export function SidePanel({ side, title, open, width, narrow, onWidth, onToggle,
         return (
             <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
                 <button
-                    className="absolute inset-0 bg-black/40"
+                    className="absolute inset-0 bg-black/40 drawer-scrim"
                     onClick={() => onToggle(false)}
-                    aria-label={`${title} 닫기`}
+                    aria-label="닫기"
                 />
+                {/* 🔴 서랍 머리에 이름을 박지 않는다 (쥔님 2026-10-31 22:12: *"모바일 상단에 좌우 서랍의 이름을 박지말게"*).
+                    안에 든 패널이 자기 머리를 이미 그린다 — 두 번 그리면 같은 제목이 두 줄이 된다. */}
                 <div
-                    className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line`}
+                    className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r drawer-in-left' : 'border-l drawer-in-right'} border-line`}
                     style={{ width: 'min(86vw, 330px)' }}
                 >
-                    <div className="shrink-0 flex items-center gap-2 px-pad h-header border-b border-line">
-                        <span className="text-[13px] font-semibold text-text">{title}</span>
-                        <IconButton icon="x" label="닫기" onClick={() => onToggle(false)} className="ml-auto" />
-                    </div>
                     <div className="flex-1 min-h-0 overflow-auto">{children}</div>
                 </div>
             </div>

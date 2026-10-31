@@ -114,6 +114,22 @@
   .hover-only { display: flex !important; }
 }
 
+/*
+ * 좁은 화면 서랍 — 밀려 들어온다 (쥔님 2026-10-31: *"폰에 사이드 바 애니메이션이 없노"*).
+ * ⚠️ 나갈 때는 애니메이션이 없다 — React 가 바로 언마운트하기 때문이고, 그걸 맞추려면
+ *    상태를 하나 더 쥐어야 한다. 들어오는 쪽이 체감의 대부분이라 먼저 이것만 넣었다.
+ * ⭐ 「움직임 줄이기」를 켠 기기에서는 안 움직인다(멀미·전정기관 문제는 설정이 아니라 접근성이다).
+ */
+@keyframes drawer-in-left  { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes drawer-in-right { from { transform: translateX(100%);  } to { transform: none; } }
+@keyframes drawer-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+.drawer-in-left  { animation: drawer-in-left  .18s cubic-bezier(.2,.8,.3,1); }
+.drawer-in-right { animation: drawer-in-right .18s cubic-bezier(.2,.8,.3,1); }
+.drawer-scrim    { animation: drawer-scrim-in .18s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-in-left, .drawer-in-right, .drawer-scrim { animation: none; }
+}
+
 /* 패널 폭/높이 손잡이 — 평소엔 안 보이고 올리면 파란 1px 띠, 끄는 동안 짙은 파랑 */
 .resize-handle .resize-bar { background: transparent; transition: background-color .12s ease; }
 .resize-handle:hover .resize-bar { background: rgb(var(--c-accent) / .5); }

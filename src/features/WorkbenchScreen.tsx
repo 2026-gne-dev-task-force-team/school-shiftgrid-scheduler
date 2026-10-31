@@ -59,13 +59,7 @@ export function WorkbenchScreen() {
         <div className="flex h-full w-full overflow-hidden">
             {/* 왼쪽 아이콘 레일 — 넓은 화면에서만. 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
             {!narrow && (
-                <Rail
-                    leftOpen={panels.state.leftOpen}
-                    rightOpen={panels.state.rightOpen}
-                    onToggleLeft={() => panels.toggle('left', !panels.state.leftOpen)}
-                    onToggleRight={() => panels.toggle('right', !panels.state.rightOpen)}
-                    onOpenSettings={openSettings}
-                />
+                <Rail onAdd={addTab} onOpenSettings={openSettings} />
             )}
 
             {/* 왼쪽 사이드바 — 위·아래 두 칸 */}

@@ -35,3 +35,6 @@ shots-help/
 dist-app
 dist-electron
 release
+
+# 진행판 — 쥔님이 보시는 자리. 커밋 대상 아님
+docs/지금 하는 일.md
