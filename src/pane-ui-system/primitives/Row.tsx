@@ -22,6 +22,7 @@ export function Row({
     variant = 'list',
     title,
     className = '',
+    rowId,
 }: {
     icon?: IconName;
     label: ReactNode;
@@ -29,6 +30,8 @@ export function Row({
     onClick?: (e: MouseEvent) => void;
     /** 끝단 단추(닫기 × 등) */
     end?: ReactNode;
+    /** data-row-id — 우클릭 위임이 어느 줄인지 더듬을 때 쓴다(값은 뜻 없는 식별자다) */
+    rowId?: string;
     /** 끝단을 호버로만 띄울지 (손가락 기기에선 늘 보인다) */
     revealOnHover?: boolean;
     /**
@@ -49,6 +52,7 @@ export function Row({
                     ? (isTab ? 'bg-bg text-text' : 'bg-text/[0.06] text-text')
                     : 'text-muted hover:text-text hover:bg-text/[0.04]'} ${className}`}
             onClick={onClick}
+            data-row-id={rowId}
             role="button"
             tabIndex={0}
             title={title}

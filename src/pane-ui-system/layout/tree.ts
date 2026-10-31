@@ -211,7 +211,7 @@ function findTabsContaining(node: Node | null, leafId: string): TabsNode | null 
     return null;
 }
 
-function firstTabs(node: Node | null): TabsNode | null {
+export function firstTabs(node: Node | null): TabsNode | null {
     if (!node) return null;
     if (node.kind === 'leaf') return null;
     if (node.kind === 'tabs') return node;

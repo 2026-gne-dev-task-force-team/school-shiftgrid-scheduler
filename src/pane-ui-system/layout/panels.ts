@@ -1,11 +1,14 @@
 /**
- * 레이아웃 상태 — 옆 패널의 폭·접힘 + 왼쪽 사이드바의 세로 분할 비율.
+ * 레이아웃 상태 — 옆 패널의 폭·접힘·고정(📌).
  * 순수 계산 + 기기별 보관만 한다(도메인을 모른다).
  *
- * 🔴 기기별 localStorage 에 둔다(프로젝트 파일에 안 넣는다). 화면 크기는 기기의 성질이지
+ * 🔴 기기별 localStorage 에 둔다(프로젝트 파일에 안 넣는다). 화면 크기·고정 여부는 기기의 성질이지
  *    자료의 성질이 아니다 — 폰에서 접어 둔 것이 사무실 PC 로 따라가면 안 된다.
  *
- * (출처: 옛 v2 `src/v2/panels.ts` — leftSplit 한 칸을 더하고 저장 키를 새로 뒀다.)
+ * 📌 옛 leftSplit(사이드바 세로 분할 비율)은 뺐다 — 이제 사이드바도 패널 트리가 쥔다(W3).
+ *    저장값에 leftSplit 이 남아 있어도 normalizePanels 가 조용히 버린다(그 칸을 안 읽는다).
+ *
+ * (출처: 옛 v2 `src/v2/panels.ts` — leftSplit 을 빼고 pinned 를 더했다.)
  */
 import { storageKey } from '../storage';
 
@@ -20,18 +23,14 @@ export const RAIL = 28;
 /** 이 폭 아래는 「좁은 화면」 — 두 패널이 자리를 비집고 들어오면 가운데가 죽는다 */
 export const NARROW_PX = 860;
 
-/** 왼쪽 사이드바 위·아래 두 칸의 높이 비율(위 칸이 차지하는 몫, 0~1) */
-export const DEFAULT_SPLIT = 0.5;
-export const MIN_SPLIT = 0.15;
-export const MAX_SPLIT = 0.85;
-
 export interface PanelState {
     leftW: number;
     rightW: number;
     leftOpen: boolean;
     rightOpen: boolean;
-    /** 왼쪽 사이드바 위 칸의 높이 몫(0~1). 아래 칸은 나머지 */
-    leftSplit: number;
+    /** 고정(📌) — 풀리면 덮는 서랍처럼 뜨고 바깥을 누르면 자동으로 접힌다. 기본 true(붙박이) */
+    leftPinned: boolean;
+    rightPinned: boolean;
 }
 
 /** 🔴 앱 이름은 여기 안 박는다 — 접두사는 앱이 setStoragePrefix 로 알려 준다(storage.ts) */
@@ -48,7 +47,8 @@ export function defaultPanels(): PanelState {
         rightW: DEFAULT_RIGHT,
         leftOpen: true,
         rightOpen: true,
-        leftSplit: DEFAULT_SPLIT,
+        leftPinned: true,
+        rightPinned: true,
     };
 }
 
@@ -57,12 +57,7 @@ export function clampWidth(n: number): number {
     return Math.round(Math.max(MIN_PANEL, Math.min(MAX_PANEL, n)));
 }
 
-export function clampSplit(n: number): number {
-    if (!Number.isFinite(n)) return DEFAULT_SPLIT;
-    return Math.max(MIN_SPLIT, Math.min(MAX_SPLIT, n));
-}
-
-/** 저장된 값을 안전하게 받아들인다 — 모양이 틀린 칸만 기본값으로 떨어뜨린다 */
+/** 저장된 값을 안전하게 받아들인다 — 모양이 틀린 칸만 기본값으로 떨어뜨린다(모르는 칸은 버린다) */
 export function normalizePanels(raw: unknown): PanelState {
     const d = defaultPanels();
     if (!raw || typeof raw !== 'object') return d;
@@ -72,7 +67,8 @@ export function normalizePanels(raw: unknown): PanelState {
         rightW: typeof o.rightW === 'number' ? clampWidth(o.rightW) : d.rightW,
         leftOpen: typeof o.leftOpen === 'boolean' ? o.leftOpen : d.leftOpen,
         rightOpen: typeof o.rightOpen === 'boolean' ? o.rightOpen : d.rightOpen,
-        leftSplit: typeof o.leftSplit === 'number' ? clampSplit(o.leftSplit) : d.leftSplit,
+        leftPinned: typeof o.leftPinned === 'boolean' ? o.leftPinned : d.leftPinned,
+        rightPinned: typeof o.rightPinned === 'boolean' ? o.rightPinned : d.rightPinned,
     };
 }
 
@@ -98,15 +94,6 @@ export function savePanels(s: PanelState): void {
  */
 export function widthFromDrag(side: 'left' | 'right', startW: number, dx: number): number {
     return clampWidth(side === 'left' ? startW + dx : startW - dx);
-}
-
-/**
- * 끄는 동안의 새 세로 분할 — 경계를 아래로 끌면 위 칸이 커진다.
- * dy 는 끈 거리(px), containerH 는 두 칸이 나눠 가질 전체 높이(px).
- */
-export function splitFromDrag(startSplit: number, dy: number, containerH: number): number {
-    if (!Number.isFinite(containerH) || containerH <= 0) return clampSplit(startSplit);
-    return clampSplit(startSplit + dy / containerH);
 }
 
 /** 좁은 화면에서는 서랍이 한 번에 하나만 열린다 — 하나를 열면 다른 쪽은 닫는다 */

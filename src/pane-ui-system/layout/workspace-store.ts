@@ -60,6 +60,14 @@ export function normalizeRaw(raw: unknown): Workspace {
     return normalize({ left, center, right, floating });
 }
 
+/** 저장된 배치가 있나 — 「첫 실행(저장값 없음)에만 기본 배치를 깐다」를 가르는 데 쓴다 */
+export function hasWorkspace(): boolean {
+    try {
+        if (typeof localStorage === 'undefined') return false;
+        return localStorage.getItem(workspaceKey()) != null;
+    } catch { return false; }
+}
+
 export function loadWorkspace(): Workspace {
     try {
         if (typeof localStorage === 'undefined') return emptyWorkspace();

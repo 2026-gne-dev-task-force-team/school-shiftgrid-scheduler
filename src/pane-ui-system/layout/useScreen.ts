@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    NARROW_PX, clampSplit, loadPanels, openOne, savePanels, type PanelState,
+    NARROW_PX, loadPanels, openOne, savePanels, type PanelState,
 } from './panels';
 
 /** 폭이 NARROW_PX 아래면 「좁은 화면」 — 붙박이 패널 대신 덮는 서랍으로 간다 */
@@ -31,7 +31,8 @@ export interface Panels {
     state: PanelState;
     setWidth: (side: 'left' | 'right', w: number) => void;
     toggle: (side: 'left' | 'right', open: boolean) => void;
-    setSplit: (v: number) => void;
+    /** 고정(📌) 토글 — 풀면 덮는 서랍, 걸면 붙박이 */
+    setPinned: (side: 'left' | 'right', pinned: boolean) => void;
 }
 
 /**
@@ -76,9 +77,9 @@ export function usePanels(narrow: boolean): Panels {
             : side === 'left' ? { ...s, leftOpen: open } : { ...s, rightOpen: open }));
     }, [narrow]);
 
-    const setSplit = useCallback((v: number) => {
-        setState((s) => ({ ...s, leftSplit: clampSplit(v) }));
+    const setPinned = useCallback((side: 'left' | 'right', pinned: boolean) => {
+        setState((s) => (side === 'left' ? { ...s, leftPinned: pinned } : { ...s, rightPinned: pinned }));
     }, []);
 
-    return { state, setWidth, toggle, setSplit };
+    return { state, setWidth, toggle, setPinned };
 }

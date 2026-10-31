@@ -21,12 +21,11 @@ export { Icon, type IconName } from './primitives/Icon';
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다
 export { SidePanel } from './shell/SidePanel';
-export { LeftSidebar } from './shell/LeftSidebar';
-export { RightPanel } from './shell/RightPanel';
 export { Rail } from './shell/Rail';
 export { Tabs, type TabItem } from './shell/Tabs';
 export { EditorArea } from './shell/EditorArea';
-export { WorkspaceView, type WorkspaceHandlers } from './shell/WorkspaceView';
+export { EmptyArea } from './shell/EmptyArea';
+export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome } from './shell/WorkspaceView';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
@@ -37,9 +36,9 @@ export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
     leaf, tabs, split, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
-    findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
+    findLeaf, findLeafByView, firstTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
-export { loadWorkspace, saveWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
+export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
 // 뷰 등록소 — leaf 는 viewId 만 들고, 앱이 무엇을 그릴지 등록한다
 export { registerView, getView, listViews, clearViews, type ViewDef, type ViewProps } from './view-registry';

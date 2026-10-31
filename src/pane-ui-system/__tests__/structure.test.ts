@@ -100,7 +100,8 @@ describe('④ pane-ui-system 은 바깥(features)을 import 하지 않는다', (
 
 describe('⑤ pane-ui-system 에 도메인 낱말 0건', () => {
     // 이 창틀은 시간표를 모른다. ⚠️ 「바텀 시트」 같은 UI 용어와 겹치지 않게 낱말을 고른다
-    const DOMAIN = ['시간표', '교시', '교사', '학교', '학년', '반 ', '과목', '특별실', '보결', '근태', 'shiftgrid'];
+    // ⭐ 「속성」도 이번부터 도메인이다 — 창틀이 사이드바에 든 뷰 이름(속성 등)을 알면 안 된다(그건 앱이 등록소로 준다)
+    const DOMAIN = ['시간표', '교시', '교사', '학교', '학년', '반 ', '과목', '특별실', '보결', '근태', '속성', 'shiftgrid'];
     const files = walk(join(ROOT, 'pane-ui-system'));
 
     for (const f of files) {
