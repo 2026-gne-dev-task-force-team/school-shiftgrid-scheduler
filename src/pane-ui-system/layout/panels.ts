@@ -11,6 +11,7 @@
  * (출처: 옛 v2 `src/v2/panels.ts` — leftSplit 을 빼고 pinned 를 더했다.)
  */
 import { storageKey } from '../storage';
+import { clampWidthTo } from './clamp';
 
 export const MIN_PANEL = 150;
 export const MAX_PANEL = 520;
@@ -91,9 +92,13 @@ export function savePanels(s: PanelState): void {
 /**
  * 끄는 동안의 새 폭 — 손잡이를 잡고 움직인 거리로 센다.
  * 왼쪽 패널은 오른쪽으로 끌면 넓어지고, 오른쪽 패널은 그 반대다.
+ * 🔴 min/max 는 앱이 「설정 기본값 ⊔ 그 안 뷰 힌트」로 계산해 넘긴다(W4) — 생략하면 창틀 기본(150·520).
  */
-export function widthFromDrag(side: 'left' | 'right', startW: number, dx: number): number {
-    return clampWidth(side === 'left' ? startW + dx : startW - dx);
+export function widthFromDrag(
+    side: 'left' | 'right', startW: number, dx: number,
+    min: number = MIN_PANEL, max: number = MAX_PANEL,
+): number {
+    return clampWidthTo(side === 'left' ? startW + dx : startW - dx, min, max);
 }
 
 /** 좁은 화면에서는 서랍이 한 번에 하나만 열린다 — 하나를 열면 다른 쪽은 닫는다 */

@@ -19,13 +19,16 @@ interface Props {
     /** 고정(📌) — 걸리면 붙박이, 풀리면 덮는 서랍(자동 접힘) */
     pinned: boolean;
     width: number;
+    /** 🔴 끌어 줄일 수 있는 최소/최대 폭(px) — 앱이 「설정 기본값 ⊔ 그 안 뷰 힌트」로 계산해 준다(W4) */
+    minWidth: number;
+    maxWidth: number;
     narrow: boolean;
     onWidth: (w: number) => void;
     onToggle: (open: boolean) => void;
     children: ReactNode;
 }
 
-export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle, children }: Props) {
+export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narrow, onWidth, onToggle, children }: Props) {
     const isLeft = side === 'left';
     // 좁은 화면이거나 고정이 풀리면 「덮는 서랍」이다 — 자리를 안 먹고 위로 뜬다
     const drawer = narrow || !pinned;
@@ -92,14 +95,14 @@ export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle
             aria-hidden={!open}
         >
             <div className="flex-1 min-h-0 overflow-auto flex flex-col" style={{ width }}>{children}</div>
-            {open && <ResizeHandle side={side} width={width} onWidth={onWidth} onCollapse={() => onToggle(false)} />}
+            {open && <ResizeHandle side={side} width={width} minWidth={minWidth} maxWidth={maxWidth} onWidth={onWidth} onCollapse={() => onToggle(false)} />}
         </aside>
     );
 }
 
 function ResizeHandle({
-    side, width, onWidth, onCollapse,
-}: { side: 'left' | 'right'; width: number; onWidth: (w: number) => void; onCollapse: () => void }) {
+    side, width, minWidth, maxWidth, onWidth, onCollapse,
+}: { side: 'left' | 'right'; width: number; minWidth: number; maxWidth: number; onWidth: (w: number) => void; onCollapse: () => void }) {
     const isLeft = side === 'left';
     const [dragging, setDragging] = useState(false);
     const start = useRef<{ x: number; w: number } | null>(null);
@@ -115,8 +118,9 @@ function ResizeHandle({
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         const s = start.current;
         if (!s) return;
-        onWidth(widthFromDrag(side, s.w, e.clientX - s.x));
-    }, [onWidth, side]);
+        // 🔴 min/max 는 앱이 뷰 힌트까지 반영해 준다 — 이 아래로는 안 줄어든다(쥔님: "무한정 줄이지 말고")
+        onWidth(widthFromDrag(side, s.w, e.clientX - s.x, minWidth, maxWidth));
+    }, [onWidth, side, minWidth, maxWidth]);
 
     const end = useCallback(() => { start.current = null; setDragging(false); }, []);
 
@@ -142,8 +146,8 @@ function ResizeHandle({
             onDoubleClick={onCollapse}
             onKeyDown={(e) => {
                 // 키보드로도 조절한다 — 손잡이에 Tab 으로 닿은 사람이 막히지 않게
-                if (e.key === 'ArrowLeft') { e.preventDefault(); onWidth(widthFromDrag(side, width, -16)); }
-                else if (e.key === 'ArrowRight') { e.preventDefault(); onWidth(widthFromDrag(side, width, 16)); }
+                if (e.key === 'ArrowLeft') { e.preventDefault(); onWidth(widthFromDrag(side, width, -16, minWidth, maxWidth)); }
+                else if (e.key === 'ArrowRight') { e.preventDefault(); onWidth(widthFromDrag(side, width, 16, minWidth, maxWidth)); }
                 else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCollapse(); }
             }}
             title="끌어서 폭 조절 · 두 번 눌러 접기"

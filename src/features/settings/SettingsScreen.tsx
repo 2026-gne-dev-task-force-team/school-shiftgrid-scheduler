@@ -1,39 +1,63 @@
 /**
- * 설정 화면 — 2단 메뉴 껍데기. 왼쪽 메뉴 목록 · 오른쪽 고른 메뉴의 내용.
- * 좁은 화면이면 "메뉴 → 내용" 한 단계씩(내용에 뒤로 가기).
+ * 설정 화면 — 2단 메뉴 껍데기. 왼쪽 메뉴(섹션별로 묶임) · 오른쪽 고른 메뉴의 내용.
  *
- * 🔴 메뉴는 레지스트리다(registry.ts) — 이 파일은 "어느 메뉴를 고르나" 만 쥔다.
- *    내용 자체는 각 Pane 파일에 산다. ⛔ 여기에 설정 항목을 직접 쓰지 않는다.
+ * 세 가지 몸짓(쥔님 2026-11-01 — 옵시디언 설정 참고):
+ *   ① 넓게: 좌 메뉴(섹션 머리 + 항목) · 우 내용
+ *   ② 좁아지면(뷰 폭 < collapseBelow, collapsed=true): 왼쪽 메뉴가 "아이콘만" 으로 접힌다
+ *   ③ 더 좁으면(좁은 화면): "메뉴 → 내용" 한 단계씩
+ *
+ * 🔴 메뉴는 레지스트리다(registry.ts) — 이 파일은 "어느 항목을 고르나" 만 쥔다. 내용은 각 Pane 에 산다.
  * 🔴 features/ 라 색은 토큰 클래스로만.
  */
 import { useState } from 'react';
-import { Row } from '../../pane-ui-system';
-import { Icon } from '../../pane-ui-system';
-import { IconButton } from '../../pane-ui-system';
-import { useNarrow } from '../../pane-ui-system';
+import { Row, Icon, IconButton, SectionHeader, useNarrow } from '../../pane-ui-system';
 import type { ThemeControls } from '../../pane-ui-system';
-import { SETTINGS_MENUS } from './registry';
+import { SETTINGS_SECTIONS, SETTINGS_ITEMS } from './registry';
 
-export function SettingsScreen({ theme }: { theme: ThemeControls }) {
+export function SettingsScreen({ theme, collapsed = false }: { theme: ThemeControls; collapsed?: boolean }) {
     const narrow = useNarrow();
-    const [selected, setSelected] = useState<string>(SETTINGS_MENUS[0]?.id ?? '');
+    const [selected, setSelected] = useState<string>(SETTINGS_ITEMS[0]?.id ?? '');
     // 좁은 화면에서만 뜻이 있다 — 메뉴 목록을 보는 중인가, 내용을 보는 중인가
     const [showContent, setShowContent] = useState(false);
 
-    const menu = SETTINGS_MENUS.find((m) => m.id === selected) ?? SETTINGS_MENUS[0];
-    const Pane = menu?.Pane;
+    const item = SETTINGS_ITEMS.find((m) => m.id === selected) ?? SETTINGS_ITEMS[0];
+    const Pane = item?.Pane;
 
+    // 섹션별로 묶은 전체 메뉴(넓은 화면·한 단계 목록 공용)
     const MenuList = (
-        <nav className="flex flex-col gap-0.5 p-pad">
-            {SETTINGS_MENUS.map((m) => (
-                <Row
+        <nav className="flex flex-col py-1">
+            {SETTINGS_SECTIONS.map((sec) => (
+                <div key={sec.id}>
+                    <SectionHeader title={sec.title} />
+                    <div className="flex flex-col gap-0.5 p-pad">
+                        {sec.items.map((m) => (
+                            <Row
+                                key={m.id}
+                                icon={m.icon}
+                                label={m.title}
+                                active={!narrow && m.id === selected}
+                                onClick={() => { setSelected(m.id); if (narrow) setShowContent(true); }}
+                                title={m.title}
+                                end={narrow ? <Icon name="right" size={14} className="text-muted" /> : undefined}
+                            />
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </nav>
+    );
+
+    // 접힌 메뉴 — 아이콘만. 섹션 머리는 뺀다(폭이 없다), 툴팁으로 이름을 남긴다
+    const IconMenu = (
+        <nav className="flex flex-col items-center gap-0.5 py-2">
+            {SETTINGS_ITEMS.map((m) => (
+                <IconButton
                     key={m.id}
                     icon={m.icon}
                     label={m.title}
-                    active={!narrow && m.id === selected}
-                    onClick={() => { setSelected(m.id); if (narrow) setShowContent(true); }}
-                    title={m.title}
-                    end={narrow ? <Icon name="right" size={14} className="text-muted" /> : undefined}
+                    size={16}
+                    active={m.id === selected}
+                    onClick={() => setSelected(m.id)}
                 />
             ))}
         </nav>
@@ -45,7 +69,7 @@ export function SettingsScreen({ theme }: { theme: ThemeControls }) {
         </div>
     );
 
-    // ── 좁은 화면: 한 단계씩 ──
+    // ── ③ 좁은 화면: 한 단계씩 ──
     if (narrow) {
         if (!showContent) {
             return (
@@ -61,22 +85,24 @@ export function SettingsScreen({ theme }: { theme: ThemeControls }) {
             <div className="flex-1 min-h-0 flex flex-col bg-bg">
                 <div className="h-header px-pad flex items-center gap-1 border-b border-line select-none shrink-0">
                     <IconButton icon="left" label="메뉴로" size={15} onClick={() => setShowContent(false)} />
-                    <span className="text-[13px] font-semibold text-text">{menu?.title}</span>
+                    <span className="text-[13px] font-semibold text-text">{item?.title}</span>
                 </div>
                 {Content}
             </div>
         );
     }
 
-    // ── 넓은 화면: 좌 메뉴 · 우 내용 ──
-    // 🔴 세로선(w-44 border-r)은 self-stretch 로 영역 끝까지 — 내용이 짧아도 선이 중간에 끊기지 않게(항목 2·12)
+    // ── ①② 넓은 화면: 좌 메뉴 · 우 내용. collapsed 면 왼쪽을 아이콘만으로 접는다 ──
+    // 🔴 세로선(border-r)은 self-stretch 로 영역 끝까지 — 내용이 짧아도 선이 중간에 끊기지 않게
     return (
         <div className="flex-1 min-h-0 flex items-stretch bg-bg overflow-hidden">
-            <div className="shrink-0 self-stretch w-44 border-r border-line overflow-auto">
-                <div className="h-header px-pad flex items-center border-b border-line select-none">
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
-                </div>
-                {MenuList}
+            <div className={`shrink-0 self-stretch border-r border-line overflow-auto ${collapsed ? 'w-rail' : 'w-44'}`}>
+                {!collapsed && (
+                    <div className="h-header px-pad flex items-center border-b border-line select-none">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                    </div>
+                )}
+                {collapsed ? IconMenu : MenuList}
             </div>
             {Content}
         </div>

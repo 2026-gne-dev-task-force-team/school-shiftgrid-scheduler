@@ -33,18 +33,35 @@ export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
 export type { PanelState } from './layout/panels';
 
+// 폭 가두기 + 뷰 레이아웃 힌트 — 순수 계산(상수는 설정에서 온다)
+export {
+    effectiveMin, clampWidthTo, isCollapsed, mergeLayout, clampSplitPair,
+    type ViewLayout, type Squeeze,
+} from './layout/clamp';
+
+// 창틀 설정 — 사이드바·탭·좁은 화면 기준폭 + 뷰별 덮어쓰기. 기기별 보관 + 외부 스토어
+export {
+    usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings,
+    effectiveViewLayout, getViewOverride,
+    defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
+    type PaneSettings, type ViewOverrides,
+} from './layout/pane-settings';
+
 // 패널 트리 모델 — 「무엇이 어디 있나」. React 0줄 · 순수 연산
 export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, areaOfLeaf,
+    closeOthers, closeToRight, areaOfLeaf, renameLeaf,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
 // 뷰 등록소 — leaf 는 viewId 만 들고, 앱이 무엇을 그릴지 등록한다
-export { registerView, getView, listViews, clearViews, type ViewDef, type ViewProps } from './view-registry';
+export {
+    registerView, getView, listViews, listRibbonViews, clearViews,
+    type ViewDef, type ViewProps, type ViewMenu, type ViewMenuHost,
+} from './view-registry';
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정
 export { useTheme, type ThemeControls } from './theme/useTheme';

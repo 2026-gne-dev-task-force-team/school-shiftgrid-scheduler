@@ -15,6 +15,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf } from '../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../layout/tree';
 import { getView } from '../view-registry';
+import { effectiveViewLayout } from '../layout/pane-settings';
+import { effectiveMin, clampSplitPair } from '../layout/clamp';
 import { IconButton } from '../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
 import { Tabs, type TabItem } from './Tabs';
@@ -46,6 +48,8 @@ export interface WorkspaceHandlers {
     onCloseOthers: (leafId: string) => void;
     onCloseRight: (leafId: string) => void;
     onMove: (leafId: string, to: 'left' | 'center' | 'right') => void;
+    /** 내용 메뉴 「이름 바꾸기」가 쓴다 — leaf 제목만 바꾼다(틀 모양은 안 바뀐다) */
+    onRename: (leafId: string, title: string) => void;
 }
 
 /** 좁은 화면 가운데 탭 줄에 붙는 서랍·설정 손잡이 */
@@ -85,7 +89,7 @@ interface Edges {
 
 /** 우클릭 메뉴를 여는 통로 — NodeView 가 Tabs 에서 받아 끌어올린다 */
 interface Ctx {
-    onTab: (leafId: string, tabsId: string, x: number, y: number) => void;
+    onTab: (leaf: Leaf, tabsId: string, x: number, y: number) => void;
     onBar: (tabsId: string, x: number, y: number) => void;
 }
 
@@ -117,24 +121,33 @@ export function WorkspaceView({
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const close = useCallback(() => setMenu(null), []);
 
-    const openTab = useCallback((leafId: string, tabsId: string, x: number, y: number) => {
-        setMenu({
-            x, y, items: [
-                { label: '닫기', icon: 'x', onClick: () => handlers.onClose(leafId) },
-                { label: '다른 탭 모두 닫기', onClick: () => handlers.onCloseOthers(leafId) },
-                { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
-                { sep: true },
-                // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
-                { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
-                { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
-                { sep: true },
-                { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
-                { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
-                { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
-                { sep: true },
-                { label: '떼어 내기', icon: 'copy', disabled: true },   // W9 — 자리만 둔다
-            ],
-        });
+    const openTab = useCallback((lf: Leaf, tabsId: string, x: number, y: number) => {
+        const leafId = lf.id;
+        // 🔴 틀 메뉴 — 닫기·가르기·이동(창틀의 조작). ⛔ 여기까진 도메인 모름
+        const frame: MenuEntry[] = [
+            { label: '닫기', icon: 'x', onClick: () => handlers.onClose(leafId) },
+            { label: '다른 탭 모두 닫기', onClick: () => handlers.onCloseOthers(leafId) },
+            { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
+            { sep: true },
+            // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
+            { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
+            { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
+            { sep: true },
+            { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
+            { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
+            { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
+            { sep: true },
+            { label: '떼어 내기', icon: 'copy', disabled: true },   // W9 — 자리만 둔다
+        ];
+        // 🔴 내용 메뉴 — 그 뷰가 menu() 로 준 항목. 구분선 뒤에 붙는다(틀과 구분된다, 쥔님 지시)
+        //    ⛔ 창틀은 항목의 뜻을 모른다 — host(rename·close)만 내주고 뷰가 라벨을 붙인다
+        const def = getView(lf.viewId);
+        const content = def?.menu?.(lf, {
+            rename: (title) => handlers.onRename(leafId, title),
+            close: () => handlers.onClose(leafId),
+        }) ?? [];
+        const items = content.length ? [...frame, { sep: true } as MenuEntry, ...content] : frame;
+        setMenu({ x, y, items });
     }, [handlers, area]);
 
     // 🔴 「틀 메뉴」 — 탭 줄 빈 자리 우클릭. 틀의 조작(새 탭)만 둔다. ⛔ 가르기는 여기 없다(그건 탭의 것 → openTab)
@@ -177,7 +190,7 @@ export function WorkspaceView({
                         ? <IconButton icon="panelRight" label="오른쪽 사이드바" onClick={narrowBar.onOpenRight} className="mr-pad shrink-0" />
                         : undefined}
                     actions={narrowActions}
-                    onContextTab={rootTabsId ? (id, x, y) => openTab(id, rootTabsId, x, y) : undefined}
+                    onContextTab={rootTabsId ? (id, x, y) => { const lf = leaves.find((l) => l.id === id); if (lf) openTab(lf, rootTabsId, x, y); } : undefined}
                     onContextBar={rootTabsId ? (x, y) => openBar(rootTabsId, x, y) : undefined}
                 />
                 <EditorArea leaf={activeLeaf} />
@@ -272,7 +285,7 @@ function NodeView({
                     leading={leading}
                     trailing={trailing}
                     actions={actions}
-                    onContextTab={(id, x, y) => ctx.onTab(id, node.id, x, y)}
+                    onContextTab={(id, x, y) => { const lf = node.children.find((c) => c.id === id); if (lf) ctx.onTab(lf, node.id, x, y); }}
                     onContextBar={(x, y) => ctx.onBar(node.id, x, y)}
                 />
                 <EditorArea leaf={activeLeaf} />
@@ -280,6 +293,16 @@ function NodeView({
         );
     }
     return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />;
+}
+
+/** 한 노드의 「유효 최소폭」(px) — 활성 뷰의 minWidth(설정 덮어쓰기 포함). split 은 1차로 0(비율 하한만) */
+function nodeMinWidth(node: Node): number {
+    if (node.kind === 'leaf') return effectiveMin(0, effectiveViewLayout(node.viewId).minWidth);
+    if (node.kind === 'tabs') {
+        const active = node.children.find((c) => c.id === node.activeId) ?? node.children[0];
+        return active ? effectiveMin(0, effectiveViewLayout(active.viewId).minWidth) : 0;
+    }
+    return 0;
 }
 
 function SplitView({
@@ -295,6 +318,8 @@ function SplitView({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const isRow = node.dir === 'row';
+    // 🔴 px 최소폭은 좌우(row) 가르기에서만 뜻이 있다 — 위아래(col)는 높이 문제라 1차에선 비율 하한만
+    const mins = isRow ? node.children.map(nodeMinWidth) : node.children.map(() => 0);
     return (
         <div ref={ref} className={`flex-1 min-w-0 min-h-0 flex ${isRow ? 'flex-row' : 'flex-col'}`}>
             {node.children.map((child, i) => (
@@ -310,6 +335,8 @@ function SplitView({
                             dir={node.dir}
                             index={i}
                             sizes={node.sizes}
+                            minA={mins[i] ?? 0}
+                            minB={mins[i + 1] ?? 0}
                             containerRef={ref}
                             onResize={(s) => handlers.onResize(node.id, s)}
                         />
@@ -321,11 +348,14 @@ function SplitView({
 }
 
 function SplitHandle({
-    dir, index, sizes, containerRef, onResize,
+    dir, index, sizes, minA, minB, containerRef, onResize,
 }: {
     dir: 'row' | 'col';
     index: number;
     sizes: number[];
+    /** 두 이웃 칸(index·index+1)의 활성 뷰 최소 px — 이 아래로는 안 줄어든다 */
+    minA: number;
+    minB: number;
     containerRef: React.RefObject<HTMLDivElement | null>;
     onResize: (sizes: number[]) => void;
 }) {
@@ -349,13 +379,13 @@ function SplitHandle({
         if (total <= 0) return;
         const d = ((isRow ? e.clientX : e.clientY) - s.pos) / total;
         const pair = s.sizes[index] + s.sizes[index + 1];
-        let a = s.sizes[index] + d;
-        a = Math.max(MIN_FRACTION, Math.min(pair - MIN_FRACTION, a));
+        // 🔴 px 최소폭을 비율로 환산해 두 칸 다 살린다(쥔님: 내용 뷰가 안 없어지게)
+        const a = clampSplitPair(pair, s.sizes[index] + d, total, minA, minB, MIN_FRACTION);
         const next = [...s.sizes];
         next[index] = a;
         next[index + 1] = pair - a;
         onResize(next);
-    }, [isRow, index, containerRef, onResize]);
+    }, [isRow, index, containerRef, onResize, minA, minB]);
 
     const end = useCallback(() => { start.current = null; setDragging(false); }, []);
 
@@ -388,8 +418,7 @@ function SplitHandle({
                 if (!dir2) return;
                 e.preventDefault();
                 const pair = sizes[index] + sizes[index + 1];
-                let a = sizes[index] + dir2 * step;
-                a = Math.max(MIN_FRACTION, Math.min(pair - MIN_FRACTION, a));
+                const a = clampSplitPair(pair, sizes[index] + dir2 * step, total, minA, minB, MIN_FRACTION);
                 const next = [...sizes];
                 next[index] = a;
                 next[index + 1] = pair - a;

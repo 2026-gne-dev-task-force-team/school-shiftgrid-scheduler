@@ -285,6 +285,16 @@ export function closeLeaf(ws: Workspace, id: string): Workspace {
     });
 }
 
+/** leaf 제목 바꾸기 — 내용 메뉴(이름 바꾸기)가 쓴다. 트리 모양은 안 바뀐다(순수) */
+export function renameLeaf(ws: Workspace, id: string, title: string): Workspace {
+    const t = title.trim();
+    if (!t) return ws;
+    const ren = (l: Leaf): Leaf => (l.id === id ? { ...l, title: t } : l);
+    const base = applyAreas(ws, (node) =>
+        mapTree(node, (n) => (n.kind === 'tabs' ? { ...n, children: n.children.map(ren) } : n)));
+    return { ...base, floating: base.floating.map(ren) };
+}
+
 /** leaf 가 어느 자리에 사나 — 우클릭 메뉴가 「지금 자리」 항목을 비활성할 때 쓴다 */
 export function areaOfLeaf(ws: Workspace, id: string): AreaKey | null {
     for (const area of ['center', 'left', 'right'] as const) {

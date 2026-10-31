@@ -1,36 +1,41 @@
 /**
- * 왼쪽 아이콘 레일(최소판) — 사이드바 "바깥 왼쪽" 세로 띠. 폭은 치수 토큰(--s-rail).
+ * 왼쪽 아이콘 레일(리본) — 사이드바 "바깥 왼쪽" 세로 띠. 폭은 치수 토큰(--s-rail).
  *
- * 🔴 ⛔ 여기는 「앱 리본」이다 — 앱 기능(명령)·패널 아이콘이 사는 자리다(쥔님: *"메뉴는 아까 앱리본이였고"*).
- *    ⛔ 사이드바 접기/펴기 아이콘을 여기 두지 말 것 (쥔님 판정 2026-10-31 22:12:
- *    *"저 사이드바 펼치고 접는 아이콘 저기 있으면 안되지 · 옵시디언 좀 참고해라"*).
- *    사이드바를 접고 펴는 길은 이미 둘이다 — 폭 손잡이 두 번 누르기 · 접힌 레일의 단추.
- * ⛔ 드래그 재배치·패널 등록은 하지 않는다(요구명세 W8 몫).
+ * 🔴 ⛔ 여기는 「앱 리본」이다 — 앱 기능(명령)·동작 아이콘이 사는 자리다(쥔님: *"엑셀 상단 리본처럼"*).
+ *    ⛔ 사이드바 접기/펴기 아이콘을 여기 두지 말 것 (쥔님 판정 2026-10-31 22:12).
+ *    사이드바를 접고 펴는 길은 이미 둘이다 — 폭 손잡이 두 번 누르기 · 가운데 탭 줄 끝의 ◧/◨.
+ *
+ * ⭐ 2026-11-01(W4): 아이콘을 하드코딩하지 않는다 — 뷰 등록소(listRibbonViews)를 읽어 order 순으로 줄 세운다.
+ *    ⛔ 창틀은 그 아이콘이 무슨 뷰인지(도메인) 모른다 — 누르면 onOpenView(id) 로 앱에 넘긴다.
+ *    「새 표 ＋」도 이제 sheet 뷰의 리본 등록일 뿐이다.
+ * ⛔ 드래그 재배치는 하지 않는다(요구명세 W8 몫).
  * ⚠️ 좁은 화면에서는 이 레일을 안 그린다(WorkbenchScreen 이 narrow 로 가른다) — 하단 바는 W10 몫.
- *    설정은 좁은 화면에서도 열 수 있게 탭 줄에 ⚙ 를 하나 붙여 둔다(Tabs.tsx).
  * 🔴 색은 토큰으로만.
  */
 import type { CSSProperties } from 'react';
 import { IconButton } from '../primitives/IconButton';
+import { listRibbonViews } from '../view-registry';
 
 export function Rail({
-    onAdd, onOpenSettings,
+    onOpenView, onOpenSettings,
 }: {
-    onAdd: () => void;
+    /** 리본 아이콘을 눌렀을 때 — 그 뷰를 defaultArea 에 연다(앱이 정한다) */
+    onOpenView: (viewId: string) => void;
     onOpenSettings: () => void;
 }) {
-    // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다.
-    //    옵시디언 리본을 눈금 삼았다: 띠 48 · 버튼 28(좌우 10px 여백) · 아이콘 18 · 버튼 사이 4 · 위아래 8.
-    //    ⛔ IconButton 에 폭 클래스를 덮어쓰지 않는다 — 같은 특이도라 어느 쪽이 이길지 CSS 순서에 달린다
+    const views = listRibbonViews();
+    // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다(옵시디언 눈금).
     return (
         <nav
             className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1"
             style={{ '--s-btn': 'var(--s-railbtn)' } as CSSProperties}
         >
-            {/* 위: 앱 기능(명령) 아이콘 — 지금은 「새 표」 하나뿐이다 */}
-            <IconButton icon="plus" label="새 표" size={18} onClick={onAdd} />
+            {/* 위: 등록된 리본 뷰들 — 아이콘·순서는 등록소가 준다 */}
+            {views.map((v) => (
+                <IconButton key={v.id} icon={v.icon ?? 'dot'} label={v.title} size={18} onClick={() => onOpenView(v.id)} />
+            ))}
 
-            {/* 가운데는 비워 둔다 — 나중에 패널·명령 아이콘이 쌓일 자리(W8) */}
+            {/* 가운데는 비워 둔다 — 나중에 명령 아이콘이 더 쌓일 자리(W8) */}
             <div className="flex-1" />
 
             {/* 맨 아래 고정: 설정 */}
