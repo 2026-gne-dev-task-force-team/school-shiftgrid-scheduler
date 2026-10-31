@@ -1,65 +1,52 @@
-# 시간표 짜기 (school-shiftgrid-scheduler)
+# school-shiftgrid-scheduler — v2 (새로 짓는 중)
 
-초등학교 시간표를 짜는 Electron 앱. 설계·왜 만드는지·화면 흐름은 볼트의 「시간표 짜기 요구명세」가 원본이다(이 레포에는 없음).
+> 학교 교육행정 업무 **네 가지를 앱 하나**로 담는다 — 시간표 편성 · 보결 · 특별실 예약 · 보조인력 근태.
+> 바닥은 표가 아니라 **시간 축(캘린더)** 이다. 네 업무는 같은 캘린더를 다른 축으로 보는 것일 뿐이다.
 
-- 사용법: [docs/사용설명서.md](docs/사용설명서.md) — 앱 안 「도움말(F1) → 사용 설명서」와 같은 파일이다
-- 화면 낱말의 기준: `src/ui/help/terms.ts` (필수/권장 규칙 · 시간 틀 · 시안 · 담임 …). 새 문구는 이 사전의 말로 쓴다
-- v0.3 (2026-09-30): 도움말 전면 확장 — ⓘ 툴팁이 화면 밖으로 잘리던 것을 뷰포트 인식 팝오버(`src/ui/help/Popover.tsx`)로 · 모든 설명이 「개념·그림·사용 예·고치는 곳」 네 칸(`richContent.ts`) · 정지 그림 20종(`figures/`) · 움직이는 사용법 12종(`demos/` · ⏯·장면 넘기기 · `prefers-reduced-motion` 존중) · 도움말 서랍 「사용법」 탭 · 설명서의 `<!-- figure:ID -->`·`<!-- demo:ID -->` 한 줄 표식은 앱 안에서 그림으로 그려진다(GitHub 에선 보이지 않는다) · 검산은 `npm run build:app && npx electron build/shot-help.cjs`(팝오버 자리 검사 + 화면 8장)
-- v0.2 (2026-09-28): 밝은 테마 기본(전환 가능) · 처음 안내(환영·코치마크·홈 다음 할 일·도움말 서랍·낱말 밑줄) · **담임은 반의 속성**(교사 명부에 넣지 않는다 · 시수표에서 「담임」) · 협력수업(함께 수업) · 교사/특별실 금지칸은 시각으로 저장 · 시수표 열 드롭다운 · 시수표 엑셀 왕복 · 사전 점검(못 푸는 시수표) · 파일 형식 v3(옛 파일은 열 때 자동 변환)
+| 브랜치 | 무엇 | 어디 뜨나 |
+|---|---|---|
+| `v1` | 🧊 **동결.** 선생님이 실제로 쓰시는 판(v0.3.3) | 사이트 **루트** |
+| `main` | 🧊 「표가 먼저」 재설계판(v2.0.0-m2.0) — 참고용으로 떠 있다 | `/v2/` |
+| **`v2`** | 🆕 **지금 짓는 자리** (2026-10-31 갈아엎음) | 아직 안 올린다 |
 
-## 준비
+- 🔴 ⛔ **`v1` 브랜치는 건드리지 않는다** — 선생님이 쓰시는 실물이고, 그 주소가 바뀌면 안 된다.
+- ⭐ 배포 방아쇠는 **`main`·`v1` 두 브랜치뿐**이다(`.github/workflows/`). `v2` 를 밀어도 배포는 돌지 않는다 — 새 판이 설 때 배선을 옮긴다.
 
-```bash
-npm install
+---
+
+## 폴더
+
+```
+src/                새로 짓는 자리
+ ├ core/            모델·순수 로직 (화면을 모른다)
+ ├ ui/              보이는 부품
+ └ features/        업무 묶음 — 시간표 · 보결 · 특별실 · 근태
+
+_참고/              📚 옛 코드. 눈으로 읽는 용도 — 빌드·검사에서 전부 제외
+ ├ 옛-v1/           엔진·솔버·엑셀 왕복·화면 전체 (13,177줄)
+ ├ 옛-v2/           「표가 먼저」 판 (3,534줄)
+ └ README.md        ⭐ 어디서 무엇을 끌어다 쓸지 적혀 있다
+
+public/             정적 파일 · PWA 아이콘
+.github/workflows/  GitHub Pages 배포
 ```
 
-## 웹으로 실행 (브라우저)
+🔴 **`_참고/` 는 복사해 오는 곳이 아니라 보고 다시 짜는 곳이다.** 이사하면서 상대 경로가 끊긴 데가 있어 그대로는 안 돈다 — 일부러 그렇게 뒀다.
+
+## 돌리는 법
 
 ```bash
-npm run dev        # http://localhost:5173
-npm run build       # dist/ 에 정적 빌드 (GitHub Pages 등)
-npm run preview     # build 결과 미리보기
+npm ci
+npm run dev      # http://localhost:5173/
+npm run build    # tsc -b && vite build
+npm test         # vitest run
+npm run lint     # oxlint
 ```
 
-## 데스크톱 앱으로 실행 (Electron)
+- React · TypeScript · Vite · Tailwind CSS · vitest · **oxlint** (⛔ prettier 안 쓴다 — 설정 파일이 없다)
+- **PWA** — 폰 홈 화면에 붙이면 오프라인에서도 뜬다. 서버가 없다(전부 브라우저 안에서 돈다)
+- ⛔ **Electron 은 2026-10-31 에 걷어냈다.** 웹·PWA 하나로 간다
 
-```bash
-npm run dev:app     # 개발 모드 — vite dev 서버 + Electron 창을 같이 띄운다
-```
+## 설계·판정은 볼트가 원본이다
 
-## 설치 파일 만들기
-
-```bash
-npm run build:app        # 렌더러(dist-app/) + main·preload(dist-electron/) 빌드만
-npm run dist:mac         # macOS: dmg + zip (release/)
-npm run dist:win         # Windows: nsis 설치본 + portable (release/)
-npm run dist:dir         # 압축 안 한 실행 폴더만 (빠른 확인용)
-```
-
-⚠️ **서명 없음.** macOS는 첫 실행 시 "확인되지 않은 개발자" 경고가, Windows는 SmartScreen 경고가 뜬다.
-Gatekeeper가 막으면 `우클릭 → 열기`로, SmartScreen은 `추가 정보 → 실행`으로 넘긴다. 관내 배포 시 같이 안내할 것.
-
-맥에서 Windows 빌드를 크로스로 만들 때, 아이콘을 exe에 심는 과정(rcedit)이 실패하면 `wine`이 없어서다.
-그럴 땐 Windows 컴퓨터에서 같은 명령(`npm run dist:win`)을 직접 돌린다.
-
-## 검사
-
-```bash
-npm run lint       # oxlint
-npm run test       # vitest
-npx tsc -b --noEmit                          # 웹(src) 타입 체크
-npx tsc -p tsconfig.electron.json --noEmit   # electron/ 타입 체크 (별도 tsconfig)
-```
-
-## 파일 형식
-
-문서는 `.shiftgrid.json` 한 파일에 학교 하나를 통째로 담는다. 덮어쓰기 저장은 경로가 있을 때만 되고,
-없으면 항상 「다른 이름으로 저장」 창이 뜬다 — 마지막 한 타는 사람이 친다.
-
-## 구조 (누가 무엇을 고치나)
-
-- `electron/` · `src/platform/` · `src/io/` · `vite.electron.config.ts` · `package.json`(scripts·build) — 껍데기(이 판)
-- `src/types/` · `src/engine/` — 엔진
-- `src/ui/` · `src/store/` · `src/App.tsx` — 화면
-
-각 판은 자기 폴더만 고친다. `src/platform/types.ts`(Platform 계약)·`src/engine/api.ts`(엔진 계약)가 경계다.
+`프로젝트 리포트/시간표 짜기/` — **「시간표 짜기 v2 설계」** 가 원본이다. **코드를 쓰기 전에 읽는다.**
