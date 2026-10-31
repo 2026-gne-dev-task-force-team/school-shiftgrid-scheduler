@@ -177,6 +177,33 @@
 @media (prefers-reduced-motion: reduce) { .pane-wtrans { transition: none; } }
 
 /*
+ * 좁은 화면 서랍 스와이프(③) — 손가락을 놓은 뒤 남은 거리를 미끄러져 확정하거나 되돌아간다.
+ * ⭐ 끄는 동안엔 class 를 안 붙여 즉각 따라오고(SidePanel), 확정·단추 여닫기 때만 붙여 미끄러진다.
+ * ⛔ 움직임 줄이기면 즉시(접근성).
+ */
+.pane-strans { transition: transform .18s cubic-bezier(.2,.8,.3,1), opacity .18s ease; }
+@media (prefers-reduced-motion: reduce) { .pane-strans { transition: none; } }
+
+/*
+ * 바텀 시트 — 아래에서 올라오고, 나갈 땐 내려간다(탭 전환이 쓰고 나중에 피크도 같은 껍데기).
+ */
+@keyframes sheet-in  { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+.sheet-in  { animation: sheet-in  .2s cubic-bezier(.2,.8,.3,1); }
+.sheet-out { animation: sheet-out .2s cubic-bezier(.4,0,1,1) forwards; }
+@media (prefers-reduced-motion: reduce) { .sheet-in, .sheet-out { animation: none; } }
+
+/*
+ * 🔴 창틀 크롬(하단 바·바텀 시트·탭 카드)은 끌리지도 선택되지도, iOS 콜아웃도 안 뜬다(항목 ④, 쥔님 "드래그 되면 곤란한 애들").
+ * ⛔ 뷰 본문엔 안 건다 — 이 class 를 단 컨테이너(크롬)에만. 안의 글자도 선택 안 되는 게 맞다(크롬이라서).
+ */
+.ui-chrome-nodrag, .ui-chrome-nodrag * {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/*
  * 패널 폭/높이 손잡이 — 🔴 평소에도 1px 선이 보인다(스플리터가 투명이라 자식 사이 경계가 사라지던 것, 항목 2).
  * 올리면 파랑으로 밝아지고, 끄는 동안 짙은 파랑. (쥔님 2026-10-31 "스플릿 자식 사이 경계선 없고")
  */

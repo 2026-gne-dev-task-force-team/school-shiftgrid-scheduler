@@ -10,8 +10,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, registerView, getView,
+    BottomBar, TabSwitcher, type BarItem,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
-    leaf, uid, findLeaf, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
+    leaf, uid, findLeaf, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf,
 } from '../pane-ui-system';
@@ -59,6 +60,8 @@ export function WorkbenchScreen() {
     const [ws, setWs] = useState<Workspace>(() => (hasWorkspace() ? loadWorkspace() : firstRunWorkspace()));
     // 좁은 화면에서 지금 보는 leaf(넓은 화면에선 각 묶음의 activeId 를 쓴다)
     const [focus, setFocus] = useState<string>('');
+    // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
+    const [tabSwitcher, setTabSwitcher] = useState(false);
     const seq = useRef(0);
 
     useEffect(() => { saveWorkspace(ws); }, [ws]);
@@ -139,6 +142,12 @@ export function WorkbenchScreen() {
         );
     };
 
+    // 좁은 화면 하단 바·탭 전환이 쓰는 값 — 가운데의 펴진 leaf 목록 + 앱이 바에 꽂는 항목(설정)
+    const centerLeaves = flatten(ws.center);
+    const barItems: BarItem[] = [
+        { id: 'settings', icon: 'gear', label: '설정', onClick: openSettings },
+    ];
+
     return (
         <div className="flex h-full w-full overflow-hidden">
             {/* 왼쪽 아이콘 레일 — 넓은 화면에서만. 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
@@ -171,11 +180,6 @@ export function WorkbenchScreen() {
                         onExpandLeft: panels.state.leftOpen ? undefined : () => panels.toggle('left', true),
                         onExpandRight: panels.state.rightOpen ? undefined : () => panels.toggle('right', true),
                     }}
-                    narrowBar={{
-                        onOpenLeft: () => panels.toggle('left', true),
-                        onOpenRight: () => panels.toggle('right', true),
-                        onOpenSettings: openSettings,
-                    }}
                 />
             </main>
 
@@ -191,6 +195,28 @@ export function WorkbenchScreen() {
             >
                 {renderSide('right')}
             </SidePanel>
+
+            {/* 🔴 좁은 화면 전용: 하단 플로팅 바 + 탭 전환 시트(W10). 넓은 화면은 한 픽셀도 안 바뀐다 */}
+            {narrow && (
+                <>
+                    <BottomBar
+                        items={barItems}
+                        tabCount={centerLeaves.length}
+                        onOpenLeft={() => panels.toggle('left', true)}
+                        onOpenRight={() => panels.toggle('right', true)}
+                        onOpenTabs={() => setTabSwitcher(true)}
+                    />
+                    <TabSwitcher
+                        open={tabSwitcher}
+                        onClose={() => setTabSwitcher(false)}
+                        tabs={centerLeaves.map((l) => ({ id: l.id, title: l.title, icon: getView(l.viewId)?.icon }))}
+                        activeId={centerLeaves.some((l) => l.id === focus) ? focus : (centerLeaves[0]?.id ?? null)}
+                        onSelect={handlers.onActivate}
+                        onCloseTab={handlers.onClose}
+                        onNew={addTab}
+                    />
+                </>
+            )}
         </div>
     );
 }
