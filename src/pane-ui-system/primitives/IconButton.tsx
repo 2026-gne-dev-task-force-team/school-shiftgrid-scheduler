@@ -13,6 +13,7 @@ export function IconButton({
     active = false,
     className = '',
     title,
+    rowId,
 }: {
     icon: IconName;
     /** 스크린리더용 이름 (title 이 없으면 툴팁으로도 쓴다) */
@@ -22,12 +23,15 @@ export function IconButton({
     active?: boolean;
     className?: string;
     title?: string;
+    /** data-row-id — 드래그/우클릭 위임이 어느 항목인지 더듬을 때(리본 아이콘). 값은 뜻 없는 식별자다 */
+    rowId?: string;
 }) {
     return (
         <button
             type="button"
             aria-label={label}
             title={title ?? label}
+            data-row-id={rowId}
             onClick={onClick}
             className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
                 hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent

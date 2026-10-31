@@ -1,5 +1,5 @@
 /**
- * 탭 하나를 잡아 끄는 상태 머신 — 🔴 ⭐ 「무엇이 드래그인가」와 「무엇이 우클릭인가」를 한 훅에 합친다.
+ * 항목 하나를 잡아 끄는 상태 머신 — 🔴 ⭐ 「무엇이 드래그인가」와 「무엇이 우클릭인가」를 한 훅에 합친다.
  *   둘이 따로 살면 같은 pointerdown 을 두 판정이 서로 가로챈다(쥔님 지시의 핵심) — 그래서 여기 한 곳이다.
  *
  * 상태: idle → pending(눌림) → (armed, 손가락만) → dragging → drop|cancel
@@ -8,11 +8,19 @@
  *     무장 뒤 움직이면 드래그, 안 움직이고 떼면 메뉴.
  *   - Esc 로 취소 · 끄는 동안 body.is-dragging(본문 선택·스크롤 차단은 index.css)
  *
+ * ⭐ axis(2026-11-01 W8) — 이 훅은 가로 탭 줄과 세로 아이콘 띠(리본) 둘 다에 얹힌다.
+ *    판정 문턱(8px·10px)은 등방(어느 방향이든 같다)이라 축과 무관하고, axis 는 「어느 방향 리스트냐」를
+ *    drag 상태에 실어 쓰는 쪽에 알려 준다(쓰는 쪽이 드롭 미리보기를 가로선/세로선 중 맞게 그린다).
+ *    ⛔ 새 드래그 훅을 또 짜지 말 것 — 세로 리스트도 이 한 훅을 쓴다.
+ *
  * ⛔ setPointerCapture 는 「드래그가 실제로 시작될 때」만 건다 — 그 전엔 평소 스크롤·클릭이 살아 있어야 한다.
  * ⛔ 트리도 DOM 존도 모른다 — 포인터를 뗀 자리(x,y)만 onDrop 에 넘기고, 어느 존인지 번역은 쓰는 쪽이 한다.
- * ⛔ 이 판정을 다른 데로 복사하지 말 것(useContextTrigger 와 같은 규칙) — 탭 줄은 이 훅 하나만 얹는다.
+ * ⛔ 이 판정을 다른 데로 복사하지 말 것(useContextTrigger 와 같은 규칙) — 각 리스트는 이 훅 하나만 얹는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+/** 세로/가로 리스트 방향 — 드롭 미리보기 선 방향을 쓰는 쪽이 고를 때 쓴다 */
+export type DragAxis = 'x' | 'y';
 
 /** 끄는 동안의 고스트·존 그리기에 필요한 최소 정보 */
 export interface DragLeafState {
@@ -21,13 +29,17 @@ export interface DragLeafState {
     /** 포인터 현재 위치(뷰포트 좌표) */
     x: number;
     y: number;
-    /** 고스트 카드 폭 — 잡은 탭의 폭(px) */
+    /** 고스트 카드 폭 — 잡은 항목의 폭(px) */
     width: number;
+    /** 이 리스트가 가로(x)냐 세로(y)냐 — 드롭 미리보기 방향용 */
+    axis: DragAxis;
 }
 
 export interface UseDragLeafOpts {
     /** 좁은 화면 등에서 드래그·길게누르기를 통째로 끈다(쥔님: 모바일은 스플릿 안 함) */
     enabled: boolean;
+    /** 가로 탭 줄이면 'x'(기본) · 세로 아이콘 띠면 'y'. 판정 문턱은 등방이라 이건 미리보기 방향용 */
+    axis?: DragAxis;
     /** 우클릭(마우스) · 길게 눌러 안 움직이고 뗌(손가락) → 그 탭/줄의 메뉴. el 로 어느 탭인지 더듬는다 */
     onContext: (x: number, y: number, el: HTMLElement) => void;
     /** 드롭 — 포인터를 뗀 자리. 어느 존(탭 사이/가장자리/빈 면)인지 번역은 쓰는 쪽이 한다 */
@@ -61,7 +73,7 @@ function freshState(): Internal {
 }
 
 export function useDragLeaf(opts: UseDragLeafOpts) {
-    const { enabled, onContext, onDrop } = opts;
+    const { enabled, onContext, onDrop, axis = 'x' } = opts;
     const [drag, setDrag] = useState<DragLeafState | null>(null);
     const st = useRef<Internal>(freshState());
 
@@ -87,8 +99,8 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
         try { s.captureEl.setPointerCapture(s.pointerId); } catch { /* 무시 */ }
         s.phase = 'dragging';
         document.body.classList.add('is-dragging');
-        setDrag({ leafId: s.leafId, title: s.title, x, y, width: s.width });
-    }, [reset, clearTimer]);
+        setDrag({ leafId: s.leafId, title: s.title, x, y, width: s.width, axis });
+    }, [reset, clearTimer, axis]);
 
     const onContextMenu = useCallback((e: React.MouseEvent) => {
         if (!enabled) return;
@@ -101,11 +113,13 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
     const onPointerDown = useCallback((e: React.PointerEvent) => {
         if (!enabled) return;
         const tgt = e.target as HTMLElement;
-        // 🔴 「드래그되면 곤란한 것」 — × 닫기 등 진짜 단추 위에서 시작하면 드래그 안 한다(그 클릭을 살린다)
-        if (tgt.closest('button')) return;
+        const tabEl = tgt.closest('[data-row-id]') as HTMLElement | null;
+        // 🔴 「드래그되면 곤란한 것」 — × 닫기 등 "항목 안의 다른 단추" 위에서 시작하면 드래그 안 한다(그 클릭을 살린다).
+        //    ⭐ 단 항목 자신이 단추인 경우(리본 아이콘)는 끌 수 있어야 한다 — 그래서 "항목과 다른 단추" 일 때만 포기한다.
+        const btn = tgt.closest('button');
+        if (btn && btn !== tabEl) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;   // 왼쪽 버튼만(오른쪽은 contextmenu)
 
-        const tabEl = tgt.closest('[data-row-id]') as HTMLElement | null;
         clearTimer();
         const s = st.current;
         s.phase = 'pending';

@@ -55,7 +55,9 @@ export {
     usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings,
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
-    type PaneSettings, type ViewOverrides,
+    defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
+    setRibbonOrder, toggleRibbonHidden, resetRibbon, getRibbon,
+    type PaneSettings, type ViewOverrides, type Ribbon,
 } from './layout/pane-settings';
 
 // 패널 트리 모델 — 「무엇이 어디 있나」. React 0줄 · 순수 연산

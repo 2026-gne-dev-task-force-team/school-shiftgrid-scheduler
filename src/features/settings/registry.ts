@@ -17,6 +17,7 @@ import type { IconName } from '../../pane-ui-system';
 import type { ThemeControls } from '../../pane-ui-system';
 import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
+import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
 import { ViewSettingsPane } from './panes/ViewSettingsPane';
 
 /** 각 설정 Pane 이 받는 것 — 지금은 테마 제어뿐(창틀·뷰 Pane 은 자체 스토어를 쓴다). 늘어나면 여기에 담는다 */
@@ -43,6 +44,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     ] },
     { id: 'frame', title: '창틀', items: [
         { id: 'pane', title: '패널', icon: 'panelLeft', Pane: PaneSettingsPane },
+        { id: 'ribbon', title: '리본', icon: 'menu', Pane: RibbonSettingsPane },
     ] },
     { id: 'views', title: '뷰', items: [
         { id: 'views', title: '등록된 뷰', icon: 'layers', Pane: ViewSettingsPane },
