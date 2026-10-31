@@ -259,6 +259,14 @@ body.is-dragging {
   cursor: grabbing;
   touch-action: none;
 }
+/*
+ * 🔴 ④ 탭을 끄는 동안엔 비고정 서랍의 막 전체(drawer-layer)가 포인터를 통과시킨다 —
+ *    안 그러면 elementFromPoint 가 전면을 덮은 막(투명 scrim + 그 컨테이너)을 집어 드롭 지점을 못 찾아
+ *    「사이드바↔가운데 이동이 안 되는」 것처럼 보인다(실측). DropZones 오버레이와 같은 결(아래 진짜 DOM 을 뚫는다).
+ *    ⭐ 단 서랍 본체(drawer-panel)는 다시 살린다 — 그 사이드바 위로 떨구는 길은 열어 둔다.
+ */
+body.is-dragging .drawer-layer { pointer-events: none; }
+body.is-dragging .drawer-panel { pointer-events: auto; }
 
 /*
  * 패널 폭/높이 손잡이 — 🔴 평소에도 1px 선이 보인다(스플리터가 투명이라 자식 사이 경계가 사라지던 것, 항목 2).

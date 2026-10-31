@@ -180,7 +180,10 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
         // 막은 좁은 화면만 눈에 보인다(어둡게) — 나갈 땐 같이 흐려진다. 넓은 화면은 투명이라 애니메이션이 없어도 된다
         const scrimAnim = narrow ? (closing ? 'drawer-scrim-out' : 'drawer-scrim') : '';
         return (
-            <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
+            // 🔴 ④ drawer-layer — 탭을 끄는 동안엔 이 막 전체가 포인터를 통과시킨다(body.is-dragging, index.css). 안 그러면
+            //    비고정 서랍이 열린 채 탭을 끌 때 elementFromPoint 가 막을 집어 「사이드바↔가운데 이동이 안 되는」 것처럼 보인다(실측).
+            //    단 서랍 본체(drawer-panel)는 다시 살려 둔다 — 그 사이드바 위로 떨구는 길은 열어 둔다.
+            <div className="drawer-layer fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
                 {/* 바깥 막 — 좁은 화면은 어둡게, 넓은 화면 고정 풀림은 투명(모달처럼 어둡히지 않는다). 누르면 접힌다 */}
                 <button
                     className={`absolute inset-0 ${narrow ? 'bg-black/40' : 'bg-transparent'} ${scrimAnim}`}
@@ -188,7 +191,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
                     aria-label="사이드바 접기"
                 />
                 <div
-                    className={`relative h-full bg-side flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-edge ${panelAnim}`}
+                    className={`drawer-panel relative h-full bg-side flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-edge ${panelAnim}`}
                     style={{ width: w }}
                 >
                     <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>
