@@ -83,6 +83,25 @@
   }
 }
 
+/*
+ * 🔴 드래그되면 곤란한 UI — 아이콘·단추·탭·줄·메뉴·스플리터는 끌리지도 선택되지도 않는다(항목 9, 쥔님 2026-10-31).
+ * ⛔ body 통째로 막지 않는다 — 입력칸(input/textarea)·뷰 본문 글자는 선택돼야 한다(아래에서 되살린다).
+ * SVG·이미지는 브라우저가 「이미지 끌기」로 떼 가므로 -webkit-user-drag 로 막고, 파이어폭스는 draggable 속성으로.
+ */
+@layer base {
+  button, svg, img,
+  [role="button"], [role="menuitem"], [role="separator"], [role="tab"] {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  svg, img { pointer-events: none; }   /* 아이콘은 제 부모(단추)가 클릭을 받는다 — 아이콘이 드래그 핸들이 되지 않게 */
+  /* 입력칸·본문 글자는 예외 — 선택이 돼야 한다(⛔ 위 규칙에 안 걸리게 되살린다) */
+  input, textarea, [contenteditable="true"], .select-text, .view-body {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
+
 @layer base {
   html, body, #root { height: 100%; }
   /* 폰 브라우저의 100% 는 주소창을 뺀 높이가 아니다 — dvh 는 주소창이 접히는 것까지 따라온다 */

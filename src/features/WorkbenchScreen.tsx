@@ -11,7 +11,7 @@ import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, registerView, getView,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
-    leaf, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
+    leaf, uid, findLeaf, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf,
 } from '../pane-ui-system';
@@ -84,10 +84,15 @@ export function WorkbenchScreen() {
     const handlers: WorkspaceHandlers = useMemo(() => ({
         onActivate: (id) => { setWs((w) => activateLeaf(w, id)); setFocus(id); },
         onClose: (id) => setWs((w) => closeLeaf(w, id)),
-        onSplit: (tabsId, dir) => {
-            const lf = makeSheet();
-            setWs((w) => splitAt(w, tabsId, dir, lf));
-            setFocus(lf.id);
+        // 🔴 가르기 = 원본 탭(sourceLeafId)을 복제해 옆에 — 새 「표 N」 아님(W8, 옵시디언식)
+        onSplit: (tabsId, dir, sourceLeafId) => {
+            const dupId = uid('leaf');
+            setWs((w) => {
+                const src = findLeaf(w, sourceLeafId);
+                if (!src) return w;
+                return splitAt(w, tabsId, dir, leaf(src.viewId, src.title, { id: dupId }));
+            });
+            setFocus(dupId);
         },
         onResize: (splitId, sizes) => setWs((w) => resize(w, splitId, sizes)),
         onAddToTabs: (tabsId) => {

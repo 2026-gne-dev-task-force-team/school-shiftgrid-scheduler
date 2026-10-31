@@ -23,8 +23,9 @@ export function EditorArea({ leaf }: { leaf: Leaf | null }) {
         );
     }
     const Body = def.Component;
+    // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
     return (
-        <div className="flex-1 min-h-0 overflow-hidden bg-bg">
+        <div className="flex-1 min-h-0 overflow-hidden bg-bg select-text">
             <Body leaf={leaf} />
         </div>
     );

@@ -36,7 +36,7 @@ export type { PanelState } from './layout/panels';
 // 패널 트리 모델 — 「무엇이 어디 있나」. React 0줄 · 순수 연산
 export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
-    leaf, tabs, split, emptyWorkspace, emptyTabs, normalize,
+    leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,

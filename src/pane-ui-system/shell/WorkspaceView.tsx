@@ -33,7 +33,11 @@ export interface TabButtons {
 export interface WorkspaceHandlers {
     onActivate: (leafId: string) => void;
     onClose: (leafId: string) => void;
-    onSplit: (tabsId: string, dir: 'row' | 'col') => void;
+    /**
+     * 가르기 — 🔴 내용(탭)의 조작이다. sourceLeafId 탭을 **복제**해 옆에 새 묶음으로 둔다(새 「표 N」 아님).
+     *   옵시디언·VS Code 가 그렇게 한다. 상시 ⬓ 단추는 활성 탭, 우클릭 메뉴는 그 탭을 넘긴다.
+     */
+    onSplit: (tabsId: string, dir: 'row' | 'col', sourceLeafId: string) => void;
     onResize: (splitId: string, sizes: number[]) => void;
     onAddToTabs: (tabsId: string) => void;
     /** 좁은 화면 탭 줄의 + — 가운데에 새 탭 */
@@ -120,8 +124,9 @@ export function WorkspaceView({
                 { label: '다른 탭 모두 닫기', onClick: () => handlers.onCloseOthers(leafId) },
                 { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
                 { sep: true },
-                { label: '좌우로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row') },
-                { label: '위아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col') },
+                // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
+                { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
+                { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
                 { sep: true },
                 { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
                 { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
@@ -132,12 +137,11 @@ export function WorkspaceView({
         });
     }, [handlers, area]);
 
+    // 🔴 「틀 메뉴」 — 탭 줄 빈 자리 우클릭. 틀의 조작(새 탭)만 둔다. ⛔ 가르기는 여기 없다(그건 탭의 것 → openTab)
     const openBar = useCallback((tabsId: string, x: number, y: number) => {
         setMenu({
             x, y, items: [
                 { label: '새 탭', icon: 'plus', onClick: () => handlers.onAddToTabs(tabsId) },
-                { label: '좌우로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row') },
-                { label: '위아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col') },
             ],
         });
     }, [handlers]);
@@ -234,13 +238,16 @@ function NodeView({
         );
         const leading = chrome?.side === 'left' ? collapseBtn : (expandLeftBtn || undefined);
         const trailing = chrome?.side === 'right' ? collapseBtn : (expandRightBtn || undefined);
+        // 🔴 ⬓ 가르기 단추 = 내용(탭) 조작 — 활성 탭이 있을 때만 그린다(빈 묶음엔 안 그린다, W8 버그).
+        //    누르면 활성 탭을 복제해 옆에. + 새 탭 = 틀 조작이라 늘 보인다.
+        const splitSource = activeLeaf?.id;
         const actions = (
             <>
-                {tabButtons.splitRow && (
-                    <IconButton icon="split" label="좌우로 가르기" onClick={() => handlers.onSplit(node.id, 'row')} />
+                {tabButtons.splitRow && splitSource && (
+                    <IconButton icon="split" label="오른쪽으로 가르기" onClick={() => handlers.onSplit(node.id, 'row', splitSource)} />
                 )}
-                {tabButtons.splitCol && (
-                    <IconButton icon="splitH" label="위아래로 가르기" onClick={() => handlers.onSplit(node.id, 'col')} />
+                {tabButtons.splitCol && splitSource && (
+                    <IconButton icon="splitH" label="아래로 가르기" onClick={() => handlers.onSplit(node.id, 'col', splitSource)} />
                 )}
                 {tabButtons.add && (
                     <IconButton icon="plus" label="새 탭" onClick={() => handlers.onAddToTabs(node.id)} />
