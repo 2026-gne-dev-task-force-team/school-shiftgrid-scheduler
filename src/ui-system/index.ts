@@ -26,10 +26,23 @@ export { RightPanel } from './shell/RightPanel';
 export { Rail } from './shell/Rail';
 export { Tabs, type TabItem } from './shell/Tabs';
 export { EditorArea } from './shell/EditorArea';
+export { WorkspaceView, type WorkspaceHandlers } from './shell/WorkspaceView';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
 export type { PanelState } from './layout/panels';
+
+// 패널 트리 모델 — 「무엇이 어디 있나」. React 0줄 · 순수 연산
+export {
+    type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
+    leaf, tabs, split, emptyWorkspace, emptyTabs, normalize,
+    openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
+    findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
+} from './layout/tree';
+export { loadWorkspace, saveWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
+
+// 뷰 등록소 — leaf 는 viewId 만 들고, 앱이 무엇을 그릴지 등록한다
+export { registerView, getView, listViews, clearViews, type ViewDef, type ViewProps } from './view-registry';
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정
 export { useTheme, type ThemeControls } from './theme/useTheme';

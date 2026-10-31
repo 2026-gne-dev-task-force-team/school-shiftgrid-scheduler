@@ -1,21 +1,25 @@
 /**
- * 가운데 탭 — 열기(+)·닫기(×)·전환이 실제로 돈다. 스플릿·드래그 재배치는 없다(이번 판 범위 밖).
- * 각 탭은 Row 조각이다 — 닫기 ×는 revealOnHover 로, 손가락 기기에선 늘 보인다(함정 방지는 Row 안에).
+ * 탭 줄 — 한 tabs 노드의 탭들을 그린다. 열기(+)·닫기(×)·전환이 실제로 돈다.
+ * 가르기(⬓) 단추로 이 묶음을 좌우로 쪼갠다(드래그 재배치는 W6·W7 몫 — 여기선 안 한다).
+ * 각 탭은 Row 조각이다 — 닫기 ×는 revealOnHover 로, 손가락 기기에선 늘 보인다(Row 안에).
  * 좁은 화면에선 왼쪽/오른쪽 서랍을 여는 단추를 탭 줄 양 끝에 둔다.
+ *
+ * 🔴 아이콘은 트리 leaf 가 정하는 게 아니라 뷰 등록소가 준다 — 여기선 받은 icon 을 그대로 그린다.
  */
 import type { MouseEvent } from 'react';
 import { Row } from '../primitives/Row';
 import { IconButton } from '../primitives/IconButton';
+import type { IconName } from '../primitives/Icon';
 
 export interface TabItem {
     id: string;
     title: string;
-    /** 🔴 이 탭이 "무엇을 담는가" — 표(기본)인지 설정 화면인지. 아이콘·본문이 이걸로 갈린다 */
-    kind: 'sheet' | 'settings';
+    /** 탭 앞 아이콘 — 뷰 등록소가 준다. 없으면 기본 네모 */
+    icon?: IconName;
 }
 
 export function Tabs({
-    tabs, activeId, onSelect, onClose, onAdd,
+    tabs, activeId, onSelect, onClose, onAdd, onSplit,
     narrow = false, onOpenLeft, onOpenRight, onOpenSettings,
 }: {
     tabs: TabItem[];
@@ -23,6 +27,8 @@ export function Tabs({
     onSelect: (id: string) => void;
     onClose: (id: string) => void;
     onAdd: () => void;
+    /** 좌우로 가르기 — 안 주면 가르기 단추를 안 그린다(좁은 화면 등) */
+    onSplit?: () => void;
     narrow?: boolean;
     onOpenLeft?: () => void;
     onOpenRight?: () => void;
@@ -39,7 +45,7 @@ export function Tabs({
                 {tabs.map((t) => (
                     <Row
                         key={t.id}
-                        icon={t.kind === 'settings' ? 'gear' : 'table'}
+                        icon={t.icon ?? 'table'}
                         label={t.title}
                         active={t.id === activeId}
                         onClick={() => onSelect(t.id)}
@@ -59,7 +65,10 @@ export function Tabs({
                 ))}
             </div>
 
-            <IconButton icon="plus" label="새 표" onClick={onAdd} />
+            {onSplit && tabs.length > 0 && (
+                <IconButton icon="split" label="좌우로 가르기" onClick={onSplit} />
+            )}
+            <IconButton icon="plus" label="새 탭" onClick={onAdd} />
             {narrow && onOpenSettings && (
                 <IconButton icon="gear" label="설정 열기" onClick={onOpenSettings} />
             )}

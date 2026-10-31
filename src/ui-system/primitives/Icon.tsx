@@ -6,7 +6,7 @@ export type IconName =
     | 'undo' | 'redo' | 'save' | 'folder' | 'file' | 'plus' | 'trash' | 'check' | 'x'
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
-    | 'menu' | 'dots' | 'panelLeft' | 'panelRight';
+    | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -47,6 +47,8 @@ const P: Record<IconName, string> = {
     // 패널 접기/펴기 — 네모 안에 세로 칸막이. 왼쪽/오른쪽 패널을 각각 가리킨다
     panelLeft: 'M4 5h16v14H4zM9 5v14',
     panelRight: 'M4 5h16v14H4zM15 5v14',
+    // 좌우로 가르기 — 네모를 가운데 세로선으로 둘로
+    split: 'M4 5h16v14H4zM12 5v14',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
