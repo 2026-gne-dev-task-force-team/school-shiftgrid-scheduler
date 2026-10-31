@@ -6,8 +6,7 @@
  * ⭐ 2026-11-01(W12): 풀 편집·내 테마·JSON 은 ThemeEditor 소절로 뺀다(이 파일은 고르기만).
  */
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from '../../../pane-ui-system';
-import type { SettingsPaneProps } from '../registry';
+import { Icon, useTheme, type IconName } from '../../../pane-ui-system';
 import { THEMES, type DensityId } from '../../../pane-ui-system';
 import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
@@ -68,7 +67,9 @@ const DENSITIES: { id: DensityId; name: string }[] = [
     { id: 'cozy', name: '편안' },
 ];
 
-export function AppearancePane({ theme }: SettingsPaneProps) {
+export function AppearancePane() {
+    // 🔴 테마는 이 Pane 이 유일한 소비자다 — 여기서 쥔다(두 곳에서 useTheme 하면 상태가 둘로 갈린다).
+    const theme = useTheme();
     const { settings, setSettings, reset } = theme;
 
     return (

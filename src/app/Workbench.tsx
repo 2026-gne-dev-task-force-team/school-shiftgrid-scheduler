@@ -14,14 +14,18 @@ import {
     BottomBar, TabSwitcher, RibbonSheet, PeekPanel, storageKey, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
-    type WorkspaceHandlers, type Workspace, type AreaKey,
+    type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf,
     peekPush, peekPop, peekClear, peekPromote,
     type MovePos,
 } from '../pane-ui-system';
-import { setWorkspaceBridge, type WorkspaceOpenOptions } from '../pane-ui-system/plugin';
+import {
+    setWorkspaceBridge, type WorkspaceOpenOptions,
+    useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace,
+    type WorkspaceEvent,
+} from '../pane-ui-system/plugin';
 import { appHost } from './host';
 import { migrateViewIds } from './migrate';
 
@@ -47,8 +51,6 @@ export function Workbench() {
     const [tabSwitcher, setTabSwitcher] = useState(false);
     // 좁은 화면 리본 시트(하단 바 ▤ 로 연다, ⑤)
     const [ribbonSheet, setRibbonSheet] = useState(false);
-    // 상태바 데모 — 배치가 저장된 시각(ws 가 바뀔 때마다 갱신)
-    const [savedAt, setSavedAt] = useState<Date>(() => new Date());
     const seq = useRef(0);
 
     // 🔴 피크 기둥 폭 — 기기별 보관(피크 더미 자체는 저장 안 한다, W9). 기본은 오른쪽 독 기본값(280)
@@ -65,7 +67,27 @@ export function Workbench() {
         try { localStorage.setItem(peekWKey(), String(w)); } catch { /* 조용히 */ }
     }, [peekWKey]);
 
-    useEffect(() => { saveWorkspace(ws); setSavedAt(new Date()); }, [ws]);
+    useEffect(() => { saveWorkspace(ws); }, [ws]);
+
+    // 🔴 작업대 이벤트 — 트리 변화를 재서 플러그인에 쏜다(open/close/activate). 모든 경로를 잡는다
+    //    (리본·+·드래그·피크 무엇으로 열든). 데모 상태바 「열린 탭 N」이 이걸로 센다.
+    const prevLeaves = useRef<Map<string, Leaf>>(new Map());
+    useEffect(() => {
+        const cur = new Map<string, Leaf>();
+        for (const n of [ws.left, ws.center, ws.right]) if (n) for (const l of flatten(n)) cur.set(l.id, l);
+        for (const l of ws.floating) cur.set(l.id, l);
+        for (const [id, l] of cur) if (!prevLeaves.current.has(id)) fireWorkspace('open', { id, viewId: l.viewId, params: l.params });
+        for (const [id, l] of prevLeaves.current) if (!cur.has(id)) fireWorkspace('close', { id, viewId: l.viewId, params: l.params });
+        prevLeaves.current = cur;
+    }, [ws]);
+    // 활성 바뀜 — focus 로. 같은 뷰로 다시 와도 한 번만
+    const prevFocus = useRef<string>('');
+    useEffect(() => {
+        if (!focus || focus === prevFocus.current) return;
+        prevFocus.current = focus;
+        const l = findLeaf(ws, focus);
+        if (l) fireWorkspace('activate' as WorkspaceEvent, { id: l.id, viewId: l.viewId, params: l.params });
+    }, [focus, ws]);
 
     // 🔴 작업대 다리 — 플러그인의 host.workspace.open/close 가 이리로 들어온다(host 는 React 밖에 산다).
     //    P0 에선 아무도 안 부른다(리본은 Workbench 핸들러로 간다) — 자리를 깔아 둔다(P4 스케줄러 피크가 첫 손님).
@@ -98,13 +120,20 @@ export function Workbench() {
         return () => setWorkspaceBridge(null);
     }, []);
 
-    const makeSheet = useCallback(() => {
+    // 🔴 「+ 새 탭」이 여는 것 — 플러그인이 newTab 한 칸으로 등록한다(지금은 데모 '새 표'). 없으면 null.
+    useContribVersion();                 // 새 탭 기여가 바뀌면(데모 끄기) 다시 그린다
+    const newTab = getNewTab();
+    const makeSheet = useCallback((): Leaf | null => {
+        const nt = getNewTab();
+        if (!nt) return null;
         seq.current += 1;
-        return leaf('demo.sheet', `표 ${seq.current}`);
+        const base = appHost.views.get(nt.viewId)?.title ?? '탭';
+        return leaf(nt.viewId, `${base} ${seq.current}`);
     }, []);
 
     const addTab = useCallback(() => {
         const lf = makeSheet();
+        if (!lf) return;
         setWs((w) => openLeaf(w, lf, 'center'));
         setFocus(lf.id);
     }, [makeSheet]);
@@ -132,12 +161,15 @@ export function Workbench() {
         onResize: (splitId, sizes) => setWs((w) => resize(w, splitId, sizes)),
         onAddToTabs: (tabsId) => {
             const lf = makeSheet();
+            if (!lf) return;
             setWs((w) => addLeafToTabs(w, tabsId, lf));
             setFocus(lf.id);
         },
         onAddGlobal: addTab,
-        // 🔴 + 가 여는 것의 이름 — 「표」는 앱(여기)만 안다. 창틀 단추·메뉴가 이 글자를 쓴다(쥔님 2026-11-01 ②)
-        addLabel: '새 표',
+        // 🔴 + 가 여는 것의 이름 — 플러그인이 newTab 으로 준다(데모 '새 표'). 없으면 뜻 없는 '새 탭'
+        addLabel: newTab?.label ?? '새 탭',
+        // 🔴 「모든 탭 메뉴」 기여 — 플러그인이 host.menu 로 꽂은 항목을 이 leaf 로 푼다
+        tabMenu: (lf: Leaf) => listTabMenu({ id: lf.id, viewId: lf.viewId, title: lf.title, params: lf.params }),
         onCloseOthers: (id) => setWs((w) => closeOthers(w, id)),
         onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
         onMove: (id, to) => { setWs((w) => moveLeaf(w, id, to, 'after')); setFocus(id); },
@@ -148,7 +180,7 @@ export function Workbench() {
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
         // 🔴 떼어 내기(W9) — 이 탭을 피크 더미로. moveLeaf …'floating' 한 번으로(트리 연산 새로 안 짬)
         onDetach: (id) => setWs((w) => moveLeaf(w, id, 'floating', 'after')),
-    }), [makeSheet, addTab]);
+    }), [makeSheet, addTab, newTab]);
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)
     const openView = useCallback((viewId: string) => {
@@ -224,12 +256,12 @@ export function Workbench() {
 
     // 🔴 상태바 — 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김(statusBarNarrow 로 켠다, 쥔님).
     const showStatus = narrow ? pane.settings.statusBarNarrow : pane.settings.showStatusBar;
-    // 🔴 상태바 항목도 앱이 꽂는다(데모 둘) — 왼쪽 「열린 탭 N」·오른쪽 「배치 저장됨 hh:mm」
-    const savedTime = savedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-    const statusItems: StatusItem[] = [
-        { id: 'tab-count', side: 'left', text: `열린 탭 ${flatten(ws.center).length}` },
-        { id: 'saved', side: 'right', text: `배치 저장됨 ${savedTime}` },
-    ];
+    // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(데모의 「열린 탭 N」·「저장됨」). 스토어에서 읽어 그린다.
+    //    render() 를 여기서 불러 노드로 넘긴다 — 작업대 이벤트로 스토어가 다시 그려지면 이 render 가 새 값을 준다.
+    const statusEntries = useStatusItems();
+    const statusItems: StatusItem[] = statusEntries.map((e) => ({
+        id: `${e.owner}:${e.id}`, side: e.side, node: e.render(),
+    }));
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">

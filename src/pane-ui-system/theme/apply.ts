@@ -45,6 +45,17 @@ export function effectiveColors(s: ThemeSettings): Palette {
     return resolvedColors(s, resolveMode(s.mode)).colors;
 }
 
+/**
+ * 테마가 적용될 때마다 알림 — 플러그인 host.theme.on 이 이걸 구독한다(밝기가 바뀌면 깨운다).
+ * 🔴 설정 화면이 테마를 바꾸거나 시스템 밝기가 바뀌면 applyTheme 가 다시 돌고, 여기서 리스너를 부른다.
+ */
+type ThemeAppliedListener = (mode: ResolvedMode) => void;
+const themeListeners = new Set<ThemeAppliedListener>();
+export function onThemeApplied(fn: ThemeAppliedListener): () => void {
+    themeListeners.add(fn);
+    return () => { themeListeners.delete(fn); };
+}
+
 export function applyTheme(s: ThemeSettings): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
@@ -57,6 +68,7 @@ export function applyTheme(s: ThemeSettings): void {
     // 브라우저 기본 UI(스크롤바·폼)도 실제 테마 밝기를 따르게 — 단일 테마(nord 등)는 그 테마의 밝기다
     root.style.colorScheme = scheme;
     root.dataset.theme = scheme;
+    for (const l of themeListeners) l(resolved);
 }
 
 /**

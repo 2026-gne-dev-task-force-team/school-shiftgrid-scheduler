@@ -9,20 +9,24 @@
  */
 import { BottomSheet } from '../primitives/BottomSheet';
 import { Icon } from '../primitives/Icon';
-import { listRibbonViews } from '../view-registry';
-import { usePaneSettings, resolveRibbon } from '../layout/pane-settings';
+import { usePaneSettings } from '../layout/pane-settings';
+import { resolveRibbonEntries, useContribVersion, type RibbonEntry } from '../plugin';
 
 export function RibbonSheet({
     open, onClose, onOpenView,
 }: {
     open: boolean;
     onClose: () => void;
-    /** 항목을 누르면 그 뷰를 연다(고른 뒤 시트는 닫는다) — 무엇을 어디에 여는지는 앱이 정한다 */
+    /** 뷰 항목을 누르면 그 뷰를 연다(동작 항목은 run 을 직접 부른다). 고른 뒤 시트는 닫힌다 */
     onOpenView: (viewId: string) => void;
 }) {
     const { ribbon } = usePaneSettings();
-    const { visible } = resolveRibbon(listRibbonViews(), ribbon);
-    const pick = (id: string) => { onOpenView(id); onClose(); };
+    useContribVersion();
+    const { visible } = resolveRibbonEntries(ribbon);
+    const pick = (v: RibbonEntry) => {
+        if (v.kind === 'action') v.run?.(); else onOpenView(v.id);
+        onClose();
+    };
     return (
         <BottomSheet open={open} onClose={onClose} label="리본">
             <div className="flex flex-col p-pad gap-0.5">
@@ -30,7 +34,8 @@ export function RibbonSheet({
                     <button
                         key={v.id}
                         type="button"
-                        onClick={() => pick(v.id)}
+                        onClick={() => pick(v)}
+                        data-ribbon-kind={v.kind}
                         aria-label={v.title}
                         className="flex items-center gap-3 h-row px-pad rounded text-text select-none transition-colors
                             hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"

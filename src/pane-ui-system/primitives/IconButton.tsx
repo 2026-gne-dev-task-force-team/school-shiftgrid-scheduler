@@ -14,6 +14,7 @@ export function IconButton({
     className = '',
     title,
     rowId,
+    data,
 }: {
     icon: IconName;
     /** 스크린리더용 이름 (title 이 없으면 툴팁으로도 쓴다) */
@@ -25,6 +26,8 @@ export function IconButton({
     title?: string;
     /** data-row-id — 드래그/우클릭 위임이 어느 항목인지 더듬을 때(리본 아이콘). 값은 뜻 없는 식별자다 */
     rowId?: string;
+    /** 임의 data-* 표식 — 리본이 「뷰냐 동작이냐」를 DOM 에 심을 때(뜻은 창틀이 모른다). 키는 'data-...' 통째로 */
+    data?: Record<string, string | number | undefined>;
 }) {
     return (
         <button
@@ -32,6 +35,7 @@ export function IconButton({
             aria-label={label}
             title={title ?? label}
             data-row-id={rowId}
+            {...data}
             onClick={onClick}
             className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
                 hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent

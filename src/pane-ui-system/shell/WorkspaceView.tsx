@@ -67,6 +67,11 @@ export interface WorkspaceHandlers {
     onReorderTab?: (leafId: string, delta: -1 | 1) => void;
     /** 「떼어 내기」(W9) — 이 탭을 피크 더미로 옮긴다(moveLeaf …'floating'). 안 주면 메뉴 항목이 비활성 */
     onDetach?: (leafId: string) => void;
+    /**
+     * 🔴 「모든 탭 메뉴」 기여 — 플러그인이 host.menu 로 꽂은 항목. 틀·내용 메뉴 뒤에 붙는다.
+     *   ⛔ 창틀은 항목의 뜻을 모른다 — 앱이 이 leaf 로 factory 를 불러 MenuEntry 를 받아 넘긴다.
+     */
+    tabMenu?: (leaf: Leaf) => MenuEntry[];
 }
 
 /** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) */
@@ -155,7 +160,11 @@ export function WorkspaceView({
             rename: (title) => handlers.onRename(leafId, title),
             close: () => handlers.onClose(leafId),
         }) ?? [];
-        const items = content.length ? [...frame, { sep: true } as MenuEntry, ...content] : frame;
+        // 🔴 플러그인이 꽂은 「모든 탭 메뉴」 항목 — 틀·내용 뒤에 붙는다
+        const extra = handlers.tabMenu?.(lf) ?? [];
+        const items: MenuEntry[] = [...frame];
+        if (content.length) items.push({ sep: true }, ...content);
+        if (extra.length) items.push({ sep: true }, ...extra);
         setMenu({ x, y, items });
     }, [handlers, area]);
 

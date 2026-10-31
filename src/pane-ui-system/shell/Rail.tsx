@@ -18,10 +18,10 @@ import { createPortal } from 'react-dom';
 import { IconButton } from '../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
 import { useDragLeaf } from '../primitives/useDragLeaf';
-import { listRibbonViews } from '../view-registry';
 import {
-    usePaneSettings, resolveRibbon, reorderIds, setRibbonOrder, toggleRibbonHidden, resetRibbon,
+    usePaneSettings, reorderIds, setRibbonOrder, toggleRibbonHidden, resetRibbon,
 } from '../layout/pane-settings';
+import { resolveRibbonEntries, useContribVersion } from '../plugin';
 
 /** 드래그 중 포인터 자리에서 「어느 아이콘 앞/뒤에 꽂나」 — DOM 을 더듬어 번역(순수 아님, drop-resolve 와 같은 결) */
 function ribbonDropAt(nav: HTMLElement | null, y: number, dragId: string):
@@ -53,7 +53,9 @@ export function Rail({
     onOpenSettings: () => void;
 }) {
     const { ribbon } = usePaneSettings();
-    const { visible, hidden, ordered } = resolveRibbon(listRibbonViews(), ribbon);
+    useContribVersion();   // 🔴 리본 동작·뷰가 바뀌면(플러그인 켜고 끄기) 다시 그린다
+    // 🔴 뷰 설탕(「그 뷰 열기」) + 동작(명령을 가리킴)을 합쳐 order·hidden 에 태운다
+    const { visible, hidden, ordered } = resolveRibbonEntries(ribbon);
     const navRef = useRef<HTMLElement>(null);
     // 🔴 드래그로 끝난 pointerup 뒤에 따라붙는 click 하나를 먹는다 — 안 그러면 재배치 끝에 그 뷰가 또 열린다.
     //    다음 눌림(pointerdown)에서 다시 false 로 — 이후의 진짜 클릭은 살아 있다.
@@ -110,7 +112,12 @@ export function Rail({
                     icon={v.icon ?? 'dot'}
                     label={v.title}
                     size={18}
-                    onClick={() => { if (draggedRef.current) { draggedRef.current = false; return; } onOpenView(v.id); }}
+                    data={{ 'data-ribbon-kind': v.kind }}
+                    onClick={() => {
+                        if (draggedRef.current) { draggedRef.current = false; return; }
+                        // 🔴 동작은 명령을 부른다(run) · 뷰는 바깥이 연다(onOpenView). 창틀은 그 뜻을 모른다
+                        if (v.kind === 'action') v.run?.(); else onOpenView(v.id);
+                    }}
                 />
             ))}
 
