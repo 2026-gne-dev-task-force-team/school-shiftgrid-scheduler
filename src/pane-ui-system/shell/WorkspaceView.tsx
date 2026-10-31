@@ -60,6 +60,8 @@ export interface WorkspaceHandlers {
     onDropLeaf: (leafId: string, target: string, pos: MovePos) => void;
     /** 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸 옮기기(W6 ④). 안 주면 키보드 재배치는 없다 */
     onReorderTab?: (leafId: string, delta: -1 | 1) => void;
+    /** 「떼어 내기」(W9) — 이 탭을 피크 더미로 옮긴다(moveLeaf …'floating'). 안 주면 메뉴 항목이 비활성 */
+    onDetach?: (leafId: string) => void;
 }
 
 /** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) */
@@ -136,7 +138,8 @@ export function WorkspaceView({
             { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
             { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
             { sep: true },
-            { label: '떼어 내기', icon: 'copy', disabled: true },   // W9 — 자리만 둔다
+            // 🔴 W9 — 이 탭을 피크(임시로 뜨는 페이지)로 보낸다. onDetach 를 안 주면 비활성(자리만)
+            { label: '떼어 내기', icon: 'copy', disabled: !handlers.onDetach, onClick: () => handlers.onDetach?.(leafId) },
         ];
         // 🔴 내용 메뉴 — 그 뷰가 menu() 로 준 항목. 구분선 뒤에 붙는다(틀과 구분된다, 쥔님 지시)
         //    ⛔ 창틀은 항목의 뜻을 모른다 — host(rename·close)만 내주고 뷰가 라벨을 붙인다

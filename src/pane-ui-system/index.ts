@@ -31,6 +31,7 @@ export { EditorArea } from './shell/EditorArea';
 export { EmptyArea } from './shell/EmptyArea';
 export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
 export { DropZones } from './shell/DropZones';
+export { PeekPanel, type PeekPanelProps } from './shell/PeekPanel';
 export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
 export { BottomBar, type BarItem } from './shell/BottomBar';
 export { TabSwitcher } from './shell/TabSwitcher';
@@ -39,8 +40,8 @@ export { TabSwitcher } from './shell/TabSwitcher';
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
 export type { PanelState } from './layout/panels';
 export {
-    SWIPE_EDGE, SWIPE_DEADZONE, SWIPE_SNAP,
-    classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, type SwipeAxis,
+    SWIPE_EDGE, SWIPE_DEADZONE, SWIPE_SNAP, SHEET_SNAPS, SHEET_CLOSE_BELOW,
+    classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, sheetSnap, type SwipeAxis,
 } from './layout/mobile';
 export { paneZone, tabDropSide, EDGE_BAND, type PaneZone, type Rect } from './layout/drag';
 
@@ -64,6 +65,7 @@ export {
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, renameLeaf,
+    peekPush, peekPop, peekClear, peekPromote,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';

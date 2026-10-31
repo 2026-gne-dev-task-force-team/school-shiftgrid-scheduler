@@ -11,11 +11,12 @@ import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, registerView, getView,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
-    BottomBar, TabSwitcher, type BarItem,
+    BottomBar, TabSwitcher, PeekPanel, storageKey, type BarItem,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf,
+    peekPop, peekClear, peekPromote,
     type MovePos,
 } from '../pane-ui-system';
 import { SettingsScreen } from './settings/SettingsScreen';
@@ -90,6 +91,20 @@ export function WorkbenchScreen() {
     const [tabSwitcher, setTabSwitcher] = useState(false);
     const seq = useRef(0);
 
+    // 🔴 피크 기둥 폭 — 기기별 보관(피크 더미 자체는 저장 안 한다, W9). 기본은 오른쪽 독 기본값(280)
+    const peekWKey = useCallback(() => storageKey('peek-width'), []);
+    const [peekW, setPeekW] = useState<number>(() => {
+        try {
+            const s = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey('peek-width')) : null;
+            const n = s ? Number(s) : NaN;
+            return Number.isFinite(n) ? n : 280;
+        } catch { return 280; }
+    });
+    const setPeekWidth = useCallback((w: number) => {
+        setPeekW(w);
+        try { localStorage.setItem(peekWKey(), String(w)); } catch { /* 조용히 */ }
+    }, [peekWKey]);
+
     useEffect(() => { saveWorkspace(ws); }, [ws]);
 
     const makeSheet = useCallback(() => {
@@ -138,6 +153,8 @@ export function WorkbenchScreen() {
         onDropLeaf: (id, target, pos: MovePos) => { setWs((w) => moveLeaf(w, id, target, pos)); setFocus(id); },
         // 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸(W6 ④)
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
+        // 🔴 떼어 내기(W9) — 이 탭을 피크 더미로. moveLeaf …'floating' 한 번으로(트리 연산 새로 안 짬)
+        onDetach: (id) => setWs((w) => moveLeaf(w, id, 'floating', 'after')),
     }), [makeSheet, addTab]);
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)
@@ -242,6 +259,23 @@ export function WorkbenchScreen() {
                     }}
                 />
             </main>
+
+            {/* 🔴 피크(W9) — 가운데와 오른쪽 독 사이에 서는 임시 기둥(데스크톱, 가운데를 민다) / 바텀 시트(모바일, 덮는다).
+                더미(ws.floating)는 저장 안 한다. 데스크톱에선 여기 flex 형제로 서서 가운데(flex-1)를 밀어낸다. */}
+            <PeekPanel
+                stack={ws.floating}
+                narrow={narrow}
+                width={peekW}
+                onWidth={setPeekWidth}
+                onPop={() => setWs((w) => peekPop(w))}
+                onClear={() => setWs((w) => peekClear(w))}
+                onPromote={() => {
+                    const top = ws.floating[ws.floating.length - 1];
+                    setWs((w) => peekPromote(w, 'center'));
+                    if (top) setFocus(top.id);
+                }}
+                onDropLeaf={handlers.onDropLeaf}
+            />
 
             {/* 오른쪽 사이드바 — 같은 패널 트리(W3) */}
             <SidePanel
