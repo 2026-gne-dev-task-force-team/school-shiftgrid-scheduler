@@ -97,10 +97,18 @@ export function WorkbenchScreen() {
         onAddGlobal: addTab,
     }), [makeSheet, addTab]);
 
-    // 사이드바 한쪽을 그린다 — 트리가 있으면 WorkspaceView, 없으면 빈 면
+    // 사이드바 한쪽을 그린다 — 트리가 있으면 WorkspaceView, 없으면 빈 면.
+    // 접기·📌 꼭지(rootChrome)는 넓은 화면에서만 — 좁은 화면 서랍은 막(scrim)으로 닫는다.
     const renderSide = (area: Exclude<AreaKey, 'center' | 'floating'>) => {
         const node = ws[area];
-        if (!node) return <EmptyArea />;
+        const pinned = area === 'left' ? panels.state.leftPinned : panels.state.rightPinned;
+        const chrome = narrow ? undefined : {
+            side: area,
+            onCollapse: () => panels.toggle(area, false),
+            pinned,
+            onTogglePin: () => panels.setPinned(area, !pinned),
+        };
+        if (!node) return <EmptyArea chrome={chrome} />;
         return (
             <WorkspaceView
                 node={node}
@@ -109,6 +117,7 @@ export function WorkbenchScreen() {
                 handlers={handlers}
                 area={area}
                 tabButtons={narrow ? {} : { splitCol: true }}
+                rootChrome={chrome}
             />
         );
     };
@@ -123,8 +132,8 @@ export function WorkbenchScreen() {
             {/* 왼쪽 사이드바 — 가운데와 같은 패널 트리(W3) */}
             <SidePanel
                 side="left"
-                title="사이드바"
                 open={panels.state.leftOpen}
+                pinned={panels.state.leftPinned}
                 width={panels.state.leftW}
                 narrow={narrow}
                 onWidth={(w) => panels.setWidth('left', w)}
@@ -152,8 +161,8 @@ export function WorkbenchScreen() {
             {/* 오른쪽 사이드바 — 같은 패널 트리(W3) */}
             <SidePanel
                 side="right"
-                title="사이드바"
                 open={panels.state.rightOpen}
+                pinned={panels.state.rightPinned}
                 width={panels.state.rightW}
                 narrow={narrow}
                 onWidth={(w) => panels.setWidth('right', w)}

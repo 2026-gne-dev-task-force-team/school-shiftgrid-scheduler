@@ -1,11 +1,13 @@
 /**
- * 옆 패널 껍데기 — 넓은 화면에선 「붙박이 + 끌어서 폭 조절 + 접기」, 좁은 화면에선 「덮는 서랍」.
- * 도메인을 모른다 — 안쪽 내용은 children 으로 받는다. 색은 토큰, 나머지는 레이아웃 치수만.
+ * 옆 패널 껍데기 — 세 가지 몸짓.
+ *   ① 붙박이(고정 📌 · 넓은 화면): 자리를 차지하고 끌어서 폭 조절 + 접기.
+ *   ② 덮는 서랍(고정 풀림 · 넓은 화면): 자리를 안 먹고 위로 떠서 덮는다. 바깥을 누르거나 Esc 로 자동 접힘.
+ *   ③ 좁은 화면: 늘 ②처럼 덮는 서랍(어두운 막 포함).
+ * 접힌 상태(넓은 화면)는 가는 레일 하나 — 펴기 단추만 있다. 도메인을 모른다(제목·이름을 안 그린다).
  *
  * 🔴 손잡이는 pointer 이벤트로 받는다(mouse 가 아니라) — 그래야 폰·태블릿 손가락에서도 끌린다.
- *    마우스 전용으로 짜면 터치에서 아무 일도 안 일어나고, 그게 「모바일에서 깨진다」의 한 얼굴이다.
- *
- * (출처: 옛 v2 `src/v2/ui/SidePanel.tsx` — 노션 룩으로 다시 입히고 호버-숨김을 CSS 로 걷었다.)
+ * 🔴 접기/펴기·📌 단추 자체는 여기 없다 — 안에 든 탭 줄(WorkspaceView rootChrome)·빈 면(EmptyArea)이 그린다.
+ *    (옵시디언처럼 「사이드바 탭 줄 바깥 끝」에 산다 — 쥔님 지시 2026-10-31)
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton } from '../primitives/IconButton';
@@ -13,9 +15,9 @@ import { RAIL, widthFromDrag } from '../layout/panels';
 
 interface Props {
     side: 'left' | 'right';
-    /** 패널 제목 — 좁은 화면 서랍의 머리와 접힌 레일의 세로 글씨에 쓴다 */
-    title: string;
     open: boolean;
+    /** 고정(📌) — 걸리면 붙박이, 풀리면 덮는 서랍(자동 접힘) */
+    pinned: boolean;
     width: number;
     narrow: boolean;
     onWidth: (w: number) => void;
@@ -23,69 +25,82 @@ interface Props {
     children: ReactNode;
 }
 
-export function SidePanel({ side, title, open, width, narrow, onWidth, onToggle, children }: Props) {
+export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle, children }: Props) {
     const isLeft = side === 'left';
+    // 좁은 화면이거나 고정이 풀리면 「덮는 서랍」이다 — 자리를 안 먹고 위로 뜬다
+    const drawer = narrow || !pinned;
 
-    // ── 좁은 화면: 덮는 서랍 ──
-    if (narrow) {
-        if (!open) return null;
+    // 덮는 서랍이 열려 있으면 Esc 로 접는다(바깥 클릭은 막이 받는다)
+    useEffect(() => {
+        if (!(drawer && open)) return;
+        const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onToggle(false); };
+        window.addEventListener('keydown', h);
+        return () => window.removeEventListener('keydown', h);
+    }, [drawer, open, onToggle]);
+
+    // ── 덮는 서랍(좁은 화면 또는 고정 풀림) ──
+    if (drawer) {
+        if (!open) {
+            // 좁은 화면 닫힘은 가운데 탭 줄 단추로 연다(레일 없음) · 넓은 화면 고정 풀림 닫힘은 레일을 보인다
+            if (narrow) return null;
+            return <CollapsedRail isLeft={isLeft} onExpand={() => onToggle(true)} />;
+        }
+        const w = narrow ? 'min(86vw, 330px)' : width;
         return (
             <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
+                {/* 바깥 막 — 좁은 화면은 어둡게, 넓은 화면 고정 풀림은 투명(모달처럼 어둡히지 않는다). 누르면 접힌다 */}
                 <button
-                    className="absolute inset-0 bg-black/40 drawer-scrim"
+                    className={`absolute inset-0 ${narrow ? 'bg-black/40 drawer-scrim' : 'bg-transparent'}`}
                     onClick={() => onToggle(false)}
-                    aria-label="닫기"
+                    aria-label="사이드바 접기"
                 />
-                {/* 🔴 서랍 머리에 이름을 박지 않는다 (쥔님 2026-10-31 22:12: *"모바일 상단에 좌우 서랍의 이름을 박지말게"*).
-                    안에 든 패널이 자기 머리를 이미 그린다 — 두 번 그리면 같은 제목이 두 줄이 된다. */}
                 <div
                     className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r drawer-in-left' : 'border-l drawer-in-right'} border-line`}
-                    style={{ width: 'min(86vw, 330px)' }}
+                    style={{ width: w }}
                 >
-                    <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+                    <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>
                 </div>
             </div>
         );
     }
 
-    // ── 넓은 화면: 접힌 레일 ──
+    // ── 넓은 화면 · 고정: 접힌 레일 ──
     if (!open) {
-        return (
-            <aside
-                className={`shrink-0 bg-panel ${isLeft ? 'border-r' : 'border-l'} border-line flex flex-col items-center py-2`}
-                style={{ width: RAIL }}
-            >
-                <IconButton
-                    icon={isLeft ? 'right' : 'left'}
-                    label={`${title} 펴기`}
-                    size={14}
-                    onClick={() => onToggle(true)}
-                />
-                <span
-                    className="mt-2 text-[11px] text-muted whitespace-nowrap select-none"
-                    style={{ writingMode: 'vertical-rl' }}
-                >
-                    {title}
-                </span>
-            </aside>
-        );
+        return <CollapsedRail isLeft={isLeft} onExpand={() => onToggle(true)} />;
     }
 
-    // ── 넓은 화면: 펼친 패널 + 손잡이 ──
+    // ── 넓은 화면 · 고정 · 펼침: 붙박이 + 폭 손잡이 ──
     return (
         <aside
             className={`relative shrink-0 bg-panel ${isLeft ? 'border-r' : 'border-l'} border-line flex flex-col`}
             style={{ width }}
         >
-            <div className="flex-1 min-h-0 overflow-auto">{children}</div>
-            <ResizeHandle side={side} width={width} onWidth={onWidth} onCollapse={() => onToggle(false)} title={title} />
+            <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>
+            <ResizeHandle side={side} width={width} onWidth={onWidth} onCollapse={() => onToggle(false)} />
+        </aside>
+    );
+}
+
+/** 접힌 레일 — 펴기 단추 하나. ⛔ 이름(제목)을 그리지 않는다(도메인을 모른다) */
+function CollapsedRail({ isLeft, onExpand }: { isLeft: boolean; onExpand: () => void }) {
+    return (
+        <aside
+            className={`shrink-0 bg-panel ${isLeft ? 'border-r' : 'border-l'} border-line flex flex-col items-center py-2`}
+            style={{ width: RAIL }}
+        >
+            <IconButton
+                icon={isLeft ? 'right' : 'left'}
+                label={`${isLeft ? '왼쪽' : '오른쪽'} 사이드바 펴기`}
+                size={14}
+                onClick={onExpand}
+            />
         </aside>
     );
 }
 
 function ResizeHandle({
-    side, width, onWidth, onCollapse, title,
-}: { side: 'left' | 'right'; width: number; onWidth: (w: number) => void; onCollapse: () => void; title: string }) {
+    side, width, onWidth, onCollapse,
+}: { side: 'left' | 'right'; width: number; onWidth: (w: number) => void; onCollapse: () => void }) {
     const isLeft = side === 'left';
     const [dragging, setDragging] = useState(false);
     const start = useRef<{ x: number; w: number } | null>(null);
@@ -119,7 +134,7 @@ function ResizeHandle({
         <div
             role="separator"
             aria-orientation="vertical"
-            aria-label={`${title} 폭 조절`}
+            aria-label="사이드바 폭 조절"
             tabIndex={0}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
