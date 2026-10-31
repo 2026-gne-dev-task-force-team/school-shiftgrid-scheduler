@@ -3,15 +3,15 @@
  *   ① 붙박이(고정 📌 · 넓은 화면): 자리를 차지하고 끌어서 폭 조절 + 접기.
  *   ② 덮는 서랍(고정 풀림 · 넓은 화면): 자리를 안 먹고 위로 떠서 덮는다. 바깥을 누르거나 Esc 로 자동 접힘.
  *   ③ 좁은 화면: 늘 ②처럼 덮는 서랍(어두운 막 포함).
- * 접힌 상태(넓은 화면)는 가는 레일 하나 — 펴기 단추만 있다. 도메인을 모른다(제목·이름을 안 그린다).
+ * 접힌 상태는 폭 0 — 레일을 남기지 않는다(W6, 쥔님 2026-10-31 "접었는데 세로 긴 선 남으면 의미 없어").
+ *   붙박이는 폭을 0↔W 로 애니메이션(W7) · 다시 펴는 ◧/◨ 는 가운데 탭 줄 양 끝에 산다(WorkspaceView centerEdges).
  *
  * 🔴 손잡이는 pointer 이벤트로 받는다(mouse 가 아니라) — 그래야 폰·태블릿 손가락에서도 끌린다.
  * 🔴 접기/펴기·📌 단추 자체는 여기 없다 — 안에 든 탭 줄(WorkspaceView rootChrome)·빈 면(EmptyArea)이 그린다.
  *    (옵시디언처럼 「사이드바 탭 줄 바깥 끝」에 산다 — 쥔님 지시 2026-10-31)
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { IconButton } from '../primitives/IconButton';
-import { RAIL, widthFromDrag } from '../layout/panels';
+import { widthFromDrag } from '../layout/panels';
 
 interface Props {
     side: 'left' | 'right';
@@ -54,11 +54,8 @@ export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle
 
     // ── 덮는 서랍(좁은 화면 또는 고정 풀림) ──
     if (drawer) {
-        if (!rendered) {
-            // 좁은 화면 닫힘은 가운데 탭 줄 단추로 연다(레일 없음) · 넓은 화면 고정 풀림 닫힘은 레일을 보인다
-            if (narrow) return null;
-            return <CollapsedRail isLeft={isLeft} onExpand={() => onToggle(true)} />;
-        }
+        // 🔴 접힌 사이드바는 폭 0 으로 완전히 사라진다 — 레일(28px) 없음(W6). 다시 펴는 길은 가운데 탭 줄 양 끝의 ◧/◨
+        if (!rendered) return null;
         const w = narrow ? 'min(86vw, 330px)' : width;
         const panelAnim = closing
             ? (isLeft ? 'drawer-out-left' : 'drawer-out-right')
@@ -83,36 +80,19 @@ export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle
         );
     }
 
-    // ── 넓은 화면 · 고정: 접힌 레일 ──
-    if (!open) {
-        return <CollapsedRail isLeft={isLeft} onExpand={() => onToggle(true)} />;
-    }
-
-    // ── 넓은 화면 · 고정 · 펼침: 붙박이 + 폭 손잡이 ──
+    // ── 넓은 화면 · 고정(붙박이) ──
+    // 🔴 접어도 레일을 남기지 않는다 — 폭을 0 까지 줄인다(W6). 항상 마운트해 두고 폭만 0↔W 로
+    //    애니메이션한다(W7, .pane-wtrans · 움직임 줄이기면 즉시). 다시 펴는 ◧ 는 가운데 탭 줄 끝에 있다.
+    // ⭐ 안쪽 내용은 접히는 동안 고정 폭(width)을 지키며 overflow-hidden 으로 미끄러져 나간다(글자가 안 찌그러진다).
     return (
         <aside
-            className={`relative shrink-0 bg-panel ${isLeft ? 'border-r' : 'border-l'} border-line flex flex-col`}
-            style={{ width }}
+            className={`relative shrink-0 bg-panel flex flex-col overflow-hidden pane-wtrans
+                ${open ? (isLeft ? 'border-r border-line' : 'border-l border-line') : ''}`}
+            style={{ width: open ? width : 0 }}
+            aria-hidden={!open}
         >
-            <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>
-            <ResizeHandle side={side} width={width} onWidth={onWidth} onCollapse={() => onToggle(false)} />
-        </aside>
-    );
-}
-
-/** 접힌 레일 — 펴기 단추 하나. ⛔ 이름(제목)을 그리지 않는다(도메인을 모른다) */
-function CollapsedRail({ isLeft, onExpand }: { isLeft: boolean; onExpand: () => void }) {
-    return (
-        <aside
-            className={`shrink-0 bg-panel ${isLeft ? 'border-r' : 'border-l'} border-line flex flex-col items-center py-2`}
-            style={{ width: RAIL }}
-        >
-            <IconButton
-                icon={isLeft ? 'right' : 'left'}
-                label={`${isLeft ? '왼쪽' : '오른쪽'} 사이드바 펴기`}
-                size={14}
-                onClick={onExpand}
-            />
+            <div className="flex-1 min-h-0 overflow-auto flex flex-col" style={{ width }}>{children}</div>
+            {open && <ResizeHandle side={side} width={width} onWidth={onWidth} onCollapse={() => onToggle(false)} />}
         </aside>
     );
 }

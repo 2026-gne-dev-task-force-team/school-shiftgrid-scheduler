@@ -27,7 +27,7 @@ export { Rail } from './shell/Rail';
 export { Tabs, type TabItem } from './shell/Tabs';
 export { EditorArea } from './shell/EditorArea';
 export { EmptyArea } from './shell/EmptyArea';
-export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome } from './shell/WorkspaceView';
+export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
@@ -39,7 +39,7 @@ export {
     leaf, tabs, split, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf,
-    findLeaf, findLeafByView, firstTabs, flatten, sizesFor, MIN_FRACTION,
+    findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 

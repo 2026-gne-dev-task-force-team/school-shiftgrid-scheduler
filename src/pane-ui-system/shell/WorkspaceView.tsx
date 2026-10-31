@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf } from '../layout/tree';
-import { flatten, firstTabs, MIN_FRACTION } from '../layout/tree';
+import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../layout/tree';
 import { getView } from '../view-registry';
 import { IconButton } from '../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
@@ -59,6 +59,26 @@ export interface RootChrome {
     onTogglePin: () => void;
 }
 
+/**
+ * 가운데 영역의 양 끝 슬롯 — 🔴 사이드바가 접혀 있을 때 「펴는 손잡이」가 여기로 온다(W6, 쥔님 2026-10-31).
+ *   접힌 레일(28px)을 없앴으므로, 사이드바를 다시 펴는 길은 가운데 탭 줄 양 끝의 ◧/◨ 뿐이다.
+ *   ⛔ 가운데 위에 얇은 줄을 따로 두지 않는다 — 첫/끝 탭 줄의 leading/trailing 에 끼운다(루트가 split 이어도).
+ */
+export interface CenterEdges {
+    /** 왼쪽 사이드바 펴기 — 왼쪽 사이드바가 접혀 있을 때만 넘어온다(없으면 안 그린다) */
+    onExpandLeft?: () => void;
+    /** 오른쪽 사이드바 펴기 */
+    onExpandRight?: () => void;
+}
+
+/** 가운데 끝 슬롯을 어느 탭 줄에 붙일지 + 콜백 — NodeView 가 받아 첫/끝 탭 줄에만 그린다 */
+interface Edges {
+    firstId: string | null;
+    lastId: string | null;
+    onExpandLeft?: () => void;
+    onExpandRight?: () => void;
+}
+
 /** 우클릭 메뉴를 여는 통로 — NodeView 가 Tabs 에서 받아 끌어올린다 */
 interface Ctx {
     onTab: (leafId: string, tabsId: string, x: number, y: number) => void;
@@ -74,6 +94,7 @@ export function WorkspaceView({
     area = 'center',
     tabButtons = { add: true, splitRow: true },
     rootChrome,
+    centerEdges,
 }: {
     node: Node;
     narrow: boolean;
@@ -86,6 +107,8 @@ export function WorkspaceView({
     tabButtons?: TabButtons;
     /** 사이드바일 때만 — 루트 탭 줄 바깥 끝에 접기·📌 를 끼운다 */
     rootChrome?: RootChrome;
+    /** 가운데일 때만 — 접힌 사이드바를 펴는 ◧/◨ 를 첫·끝 탭 줄 바깥 끝에 끼운다(W6) */
+    centerEdges?: CenterEdges;
 }) {
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const close = useCallback(() => setMenu(null), []);
@@ -159,22 +182,30 @@ export function WorkspaceView({
         );
     }
     const rootId = firstTabs(node)?.id ?? null;
+    // 가운데 끝 슬롯 — 첫 탭 줄엔 ◧(왼쪽 펴기), 끝 탭 줄엔 ◨(오른쪽 펴기). 루트가 split 이어도 양 끝을 집는다
+    const edges: Edges | undefined = centerEdges && {
+        firstId: rootId,
+        lastId: lastTabs(node)?.id ?? null,
+        onExpandLeft: centerEdges.onExpandLeft,
+        onExpandRight: centerEdges.onExpandRight,
+    };
     return (
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />
+            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />
             {menuEl}
         </div>
     );
 }
 
 function NodeView({
-    node, handlers, tabButtons, rootChrome, rootId, ctx,
+    node, handlers, tabButtons, rootChrome, rootId, edges, ctx,
 }: {
     node: Node;
     handlers: WorkspaceHandlers;
     tabButtons: TabButtons;
     rootChrome?: RootChrome;
     rootId: string | null;
+    edges?: Edges;
     ctx: Ctx;
 }) {
     if (node.kind === 'leaf') {
@@ -188,12 +219,21 @@ function NodeView({
         const chrome = isRoot ? rootChrome! : undefined;
         const collapseBtn = chrome && (
             <IconButton
-                icon={chrome.side === 'left' ? 'left' : 'right'}
+                icon={chrome.side === 'left' ? 'panelLeft' : 'panelRight'}
                 label="사이드바 접기"
                 onClick={chrome.onCollapse}
                 className={chrome.side === 'left' ? 'mx-pad shrink-0' : 'mr-pad shrink-0'}
             />
         );
+        // 🔴 가운데: 접힌 사이드바 펴는 ◧/◨ — 첫 탭 줄 왼끝 / 끝 탭 줄 오른끝에만(W6)
+        const expandLeftBtn = edges?.onExpandLeft && node.id === edges.firstId && (
+            <IconButton icon="panelLeft" label="왼쪽 사이드바 펴기" onClick={edges.onExpandLeft} className="mx-pad shrink-0" />
+        );
+        const expandRightBtn = edges?.onExpandRight && node.id === edges.lastId && (
+            <IconButton icon="panelRight" label="오른쪽 사이드바 펴기" onClick={edges.onExpandRight} className="mr-pad shrink-0" />
+        );
+        const leading = chrome?.side === 'left' ? collapseBtn : (expandLeftBtn || undefined);
+        const trailing = chrome?.side === 'right' ? collapseBtn : (expandRightBtn || undefined);
         const actions = (
             <>
                 {tabButtons.splitRow && (
@@ -222,8 +262,8 @@ function NodeView({
                     activeId={node.activeId || null}
                     onSelect={handlers.onActivate}
                     onClose={handlers.onClose}
-                    leading={chrome?.side === 'left' ? collapseBtn : undefined}
-                    trailing={chrome?.side === 'right' ? collapseBtn : undefined}
+                    leading={leading}
+                    trailing={trailing}
                     actions={actions}
                     onContextTab={(id, x, y) => ctx.onTab(id, node.id, x, y)}
                     onContextBar={(x, y) => ctx.onBar(node.id, x, y)}
@@ -232,17 +272,18 @@ function NodeView({
             </div>
         );
     }
-    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />;
+    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />;
 }
 
 function SplitView({
-    node, handlers, tabButtons, rootChrome, rootId, ctx,
+    node, handlers, tabButtons, rootChrome, rootId, edges, ctx,
 }: {
     node: Extract<Node, { kind: 'split' }>;
     handlers: WorkspaceHandlers;
     tabButtons: TabButtons;
     rootChrome?: RootChrome;
     rootId: string | null;
+    edges?: Edges;
     ctx: Ctx;
 }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -255,7 +296,7 @@ function SplitView({
                         className="flex min-w-0 min-h-0 overflow-hidden"
                         style={{ flexBasis: `${(node.sizes[i] ?? 0) * 100}%`, flexGrow: 0, flexShrink: 1 }}
                     >
-                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />
+                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />
                     </div>
                     {i < node.children.length - 1 && (
                         <SplitHandle

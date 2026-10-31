@@ -222,6 +222,18 @@ export function firstTabs(node: Node | null): TabsNode | null {
     return null;
 }
 
+/** 맨 끝(오른쪽/아래) 탭 줄 — 가운데 영역의 「오른쪽 끝 슬롯」을 어느 탭 줄에 붙일지 고른다(W6) */
+export function lastTabs(node: Node | null): TabsNode | null {
+    if (!node) return null;
+    if (node.kind === 'leaf') return null;
+    if (node.kind === 'tabs') return node;
+    for (let i = node.children.length - 1; i >= 0; i--) {
+        const r = lastTabs(node.children[i]);
+        if (r) return r;
+    }
+    return null;
+}
+
 // ─────────────────────────── 조회 ───────────────────────────
 
 /** leaf 하나를 네 자리 어디서든 찾는다 */

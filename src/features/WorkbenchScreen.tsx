@@ -154,7 +154,7 @@ export function WorkbenchScreen() {
                 {renderSide('left')}
             </SidePanel>
 
-            {/* 가운데 — 패널 트리 */}
+            {/* 가운데 — 패널 트리. 🔴 넓은 화면에서 접힌 사이드바는 폭 0 이라, 다시 펴는 ◧/◨ 가 가운데 양 끝에 온다(W6) */}
             <main className="flex-1 min-w-0 flex flex-col">
                 <WorkspaceView
                     node={ws.center}
@@ -162,6 +162,10 @@ export function WorkbenchScreen() {
                     activeLeafId={focus}
                     handlers={handlers}
                     area="center"
+                    centerEdges={narrow ? undefined : {
+                        onExpandLeft: panels.state.leftOpen ? undefined : () => panels.toggle('left', true),
+                        onExpandRight: panels.state.rightOpen ? undefined : () => panels.toggle('right', true),
+                    }}
                     narrowBar={{
                         onOpenLeft: () => panels.toggle('left', true),
                         onOpenRight: () => panels.toggle('right', true),
