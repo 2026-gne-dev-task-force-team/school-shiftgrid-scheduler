@@ -88,6 +88,12 @@ export function PaneSettingsPane() {
                 <Field title="상단 바 보이기" hint="전체 폭 상단 타이틀바(앱 이름·액션)">
                     <Toggle on={settings.showTitleBar} onToggle={(v) => set({ showTitleBar: v })} />
                 </Field>
+                <Field title="상태바 보이기" hint="전체 폭 하단 상태바(정보 줄)">
+                    <Toggle on={settings.showStatusBar} onToggle={(v) => set({ showStatusBar: v })} />
+                </Field>
+                <Field title="좁은 화면 상태바" hint="폰에서는 기본 숨김 — 켜면 하단 바 위에 뜬다">
+                    <Toggle on={settings.statusBarNarrow} onToggle={(v) => set({ statusBarNarrow: v })} />
+                </Field>
             </div>
 
             <div className="pt-2 border-t border-line">

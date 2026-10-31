@@ -13,6 +13,7 @@ import {
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, type BarItem,
     TitleBar, type TitleAction,
+    StatusBar, type StatusItem,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
@@ -89,9 +90,11 @@ export function WorkbenchScreen() {
     const [focus, setFocus] = useState<string>('');
     // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
     const [tabSwitcher, setTabSwitcher] = useState(false);
+    // 상태바 데모 — 배치가 저장된 시각(ws 가 바뀔 때마다 갱신)
+    const [savedAt, setSavedAt] = useState<Date>(() => new Date());
     const seq = useRef(0);
 
-    useEffect(() => { saveWorkspace(ws); }, [ws]);
+    useEffect(() => { saveWorkspace(ws); setSavedAt(new Date()); }, [ws]);
 
     const makeSheet = useCallback(() => {
         seq.current += 1;
@@ -214,6 +217,15 @@ export function WorkbenchScreen() {
     ];
     const showTitleBar = pane.settings.showTitleBar;
 
+    // 🔴 상태바 — 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김(statusBarNarrow 로 켠다, 쥔님).
+    const showStatus = narrow ? pane.settings.statusBarNarrow : pane.settings.showStatusBar;
+    // 🔴 상태바 항목도 앱이 꽂는다(데모 둘) — 왼쪽 「열린 탭 N」·오른쪽 「배치 저장됨 hh:mm」
+    const savedTime = savedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const statusItems: StatusItem[] = [
+        { id: 'tab-count', side: 'left', text: `열린 탭 ${flatten(ws.center).length}` },
+        { id: 'saved', side: 'right', text: `배치 저장됨 ${savedTime}` },
+    ];
+
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
             {/* 🔴 상단 타이틀바 — 전체 폭 한 줄(리본·사이드바·가운데 위). 앱 이름·액션은 앱이 넘긴다 */}
@@ -280,6 +292,7 @@ export function WorkbenchScreen() {
                         onOpenLeft={() => panels.toggle('left', true)}
                         onOpenRight={() => panels.toggle('right', true)}
                         onOpenTabs={() => setTabSwitcher(true)}
+                        aboveStatusBar={showStatus}
                     />
                     <TabSwitcher
                         open={tabSwitcher}
@@ -293,6 +306,9 @@ export function WorkbenchScreen() {
                 </>
             )}
             </div>
+
+            {/* 🔴 하단 상태바 — 전체 폭 한 줄. 좁은 화면은 기본 숨김(showStatus 가 가른다) */}
+            {showStatus && <StatusBar items={statusItems} />}
         </div>
     );
 }

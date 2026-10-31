@@ -65,7 +65,7 @@ function BarButton({ icon, label, onClick, badge }: Omit<BarItem, 'id' | 'pinned
 }
 
 export function BottomBar({
-    items, tabCount, onOpenLeft, onOpenRight, onOpenTabs,
+    items, tabCount, onOpenLeft, onOpenRight, onOpenTabs, aboveStatusBar = false,
 }: {
     /** 앱이 꽂는 그 외 항목 — ⛔ 창틀은 무엇인지 모른다 */
     items: BarItem[];
@@ -74,6 +74,8 @@ export function BottomBar({
     onOpenLeft: () => void;
     onOpenRight: () => void;
     onOpenTabs: () => void;
+    /** 🔴 좁은 화면 상태바가 켜져 있으면 그 높이(--s-statusbar)만큼 더 띄운다 — 바가 상태바를 덮지 않게(판 A) */
+    aboveStatusBar?: boolean;
 }) {
     const keyboard = useKeyboardOpen();
     if (keyboard) return null;   // 키보드 위에 안 띄운다
@@ -87,7 +89,7 @@ export function BottomBar({
             className="ui-chrome-nodrag fixed left-1/2 -translate-x-1/2 z-[120]
                 flex items-center gap-1 max-w-[calc(100vw-1.5rem)]
                 bg-panel border border-line rounded-full shadow-lg px-1.5 py-1"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom) + 14px)' }}
+            style={{ bottom: `calc(env(safe-area-inset-bottom) + 14px${aboveStatusBar ? ' + var(--s-statusbar)' : ''})` }}
         >
             {/* ◧ 왼쪽 서랍 — 왼쪽 고정 */}
             <BarButton icon="panelLeft" label="왼쪽 사이드바" onClick={onOpenLeft} />
