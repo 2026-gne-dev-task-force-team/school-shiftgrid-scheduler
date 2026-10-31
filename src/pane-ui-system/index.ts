@@ -58,7 +58,9 @@ export {
     usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings,
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
-    type PaneSettings, type ViewOverrides,
+    defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
+    setRibbonOrder, toggleRibbonHidden, resetRibbon, getRibbon,
+    type PaneSettings, type ViewOverrides, type Ribbon,
 } from './layout/pane-settings';
 
 // 패널 트리 모델 — 「무엇이 어디 있나」. React 0줄 · 순수 연산
@@ -80,12 +82,18 @@ export {
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정
 export { useTheme, type ThemeControls } from './theme/useTheme';
-export { applyTheme, resolveMode, themeSwatchStyle, type ResolvedMode } from './theme/apply';
+export { applyTheme, resolveMode, effectiveColors, themeSwatchStyle, type ResolvedMode } from './theme/apply';
 export {
     loadThemeSettings, saveThemeSettings, normalizeThemeSettings, defaultThemeSettings,
     type ThemeSettings, type ThemeMode,
 } from './theme/settings';
 export {
     COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, findTheme,
-    type ColorToken, type DensityId, type ThemePreset,
+    type ColorToken, type DensityId, type ThemePreset, type Palette,
 } from './theme/tokens';
+export { hexToRgb, rgbToHex, isTriplet } from './theme/color';
+export {
+    useUserThemes, addUserTheme, removeUserTheme, renameUserTheme,
+    exportThemeJSON, importThemeJSON, normalizeUserThemes,
+    type UserTheme, type ImportResult,
+} from './theme/user-themes';

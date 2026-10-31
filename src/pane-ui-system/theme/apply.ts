@@ -40,6 +40,11 @@ function resolvedColors(s: ThemeSettings, resolved: ResolvedMode): { colors: Pal
     return { colors: out, scheme: preset.base };
 }
 
+/** 지금 설정으로 실제 쓰이는 색 한 벌 — 고른 테마(+모드 짝) 팔레트 위에 custom 을 덮은 결과. 편집 화면이 현재값으로 읽는다 */
+export function effectiveColors(s: ThemeSettings): Palette {
+    return resolvedColors(s, resolveMode(s.mode)).colors;
+}
+
 export function applyTheme(s: ThemeSettings): void {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;

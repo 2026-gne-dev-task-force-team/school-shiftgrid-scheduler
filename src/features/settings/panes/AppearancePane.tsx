@@ -3,7 +3,7 @@
  *
  * 🔴 features/ 라 하드코딩 색 검사가 돈다 — 토큰 클래스(bg-panel2·border-accent …)로만 짠다.
  *    테마 견본 네모의 실제 색만 theme 의 themeSwatchStyle() 헬퍼로 받는다(검사 밖에 있다).
- * ⛔ 테마 JSON 가져오기/내보내기는 이번에 안 만든다 — 단추도 두지 않는다(아래 자리 표시만).
+ * ⭐ 2026-11-01(W12): 풀 편집·내 테마·JSON 은 ThemeEditor 소절로 뺀다(이 파일은 고르기만).
  */
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '../../../pane-ui-system';
@@ -11,6 +11,7 @@ import type { SettingsPaneProps } from '../registry';
 import { THEMES, type DensityId } from '../../../pane-ui-system';
 import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
+import { ThemeEditor } from './ThemeEditor';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (
@@ -138,7 +139,7 @@ export function AppearancePane({ theme }: SettingsPaneProps) {
                 </button>
             </div>
 
-            {/* ⬜ 나중 자리: 테마 JSON 가져오기 / 내보내기 — ⛔ 이번엔 단추도 만들지 않는다 */}
+            <ThemeEditor theme={theme} />
         </div>
     );
 }
