@@ -29,7 +29,7 @@ export const COLOR_DEFS: Record<ColorToken, ColorDef> = {
     bg: { light: '255 255 255', dark: '25 25 25', desc: '가운데 캔버스' },
     panel: { light: '247 247 245', dark: '32 32 32', desc: '사이드바·패널 바탕' },
     panel2: { light: '241 241 239', dark: '37 37 37', desc: '머리줄·살짝 깊은 면' },
-    line: { light: '233 233 231', dark: '47 47 47', desc: '1px 선' },
+    line: { light: '223 223 220', dark: '60 60 60', desc: '1px 선' },
     text: { light: '55 53 47', dark: '235 235 235', desc: '본문 글자' },
     muted: { light: '145 145 142', dark: '155 155 155', desc: '회색 글자·아이콘' },
     accent: { light: '35 131 226', dark: '45 140 240', desc: '강조색(선택·포커스)' },

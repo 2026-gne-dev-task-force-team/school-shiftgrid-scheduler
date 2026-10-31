@@ -40,7 +40,7 @@ export function SettingsScreen({ theme }: { theme: ThemeControls }) {
     );
 
     const Content = (
-        <div className="flex-1 min-w-0 overflow-auto p-4">
+        <div className="flex-1 min-w-0 overflow-auto px-6 py-5">
             {Pane && <Pane theme={theme} />}
         </div>
     );
@@ -69,9 +69,10 @@ export function SettingsScreen({ theme }: { theme: ThemeControls }) {
     }
 
     // ── 넓은 화면: 좌 메뉴 · 우 내용 ──
+    // 🔴 세로선(w-44 border-r)은 self-stretch 로 영역 끝까지 — 내용이 짧아도 선이 중간에 끊기지 않게(항목 2·12)
     return (
-        <div className="flex-1 min-h-0 flex bg-bg overflow-hidden">
-            <div className="shrink-0 w-44 border-r border-line overflow-auto">
+        <div className="flex-1 min-h-0 flex items-stretch bg-bg overflow-hidden">
+            <div className="shrink-0 self-stretch w-44 border-r border-line overflow-auto">
                 <div className="h-header px-pad flex items-center border-b border-line select-none">
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
                 </div>

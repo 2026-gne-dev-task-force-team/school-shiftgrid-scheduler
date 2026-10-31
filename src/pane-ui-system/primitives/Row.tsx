@@ -20,6 +20,7 @@ export function Row({
     end,
     revealOnHover = false,
     variant = 'list',
+    sep = false,
     title,
     className = '',
     rowId,
@@ -35,27 +36,35 @@ export function Row({
     /** 끝단을 호버로만 띄울지 (손가락 기기에선 늘 보인다) */
     revealOnHover?: boolean;
     /**
-     * 🔴 'tab' 은 「탭 한 칸」이다 — 활성 탭이 **에디터와 같은 바탕**으로 떠 보이고,
-     *    탭 줄은 한 단 어두워 그 대비로 경계가 읽힌다(옵시디언·VS Code 가 쓰는 방식).
-     *    ⛔ 활성 표시를 옅은 회색으로만 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
+     * 🔴 'tab' 은 「탭 한 칸」이다 — 옵시디언·VS Code 식으로 그린다(쥔님 지시 2026-10-31):
+     *    활성 탭은 **위 모서리만 둥글고**(rounded-t) **에디터와 같은 바탕**(bg-bg)으로 뜨며,
+     *    아래 1px 선을 제 자리에서 **덮어**(−mb-px) 탭이 몸통과 이어져 보인다.
+     *    비활성 탭은 바탕 없이 글자만 · 호버 때만 살짝 밝아진다.
+     *    ⛔ 활성 표시를 옅은 회색으로만 두지 말 것 — 탭이 서로 붙어 보인다.
      */
     variant?: 'list' | 'tab';
+    /** 탭 전용 — 오른쪽 세로 구분선. 🔴 비활성끼리만 그린다(활성 옆에는 안 그린다 — Tabs 가 판정) */
+    sep?: boolean;
     title?: string;
     className?: string;
 }) {
     const isTab = variant === 'tab';
+    // 활성 탭: 위 모서리만 둥글게 + 좌우·위 1px 선, 아래 선은 −mb-px 로 몸통에 먹인다(옵시디언 이음새)
+    const tabCls = isTab
+        ? (active
+            ? 'relative z-10 h-full px-3 rounded-t-md bg-bg text-text border border-line border-b-0 -mb-px'
+            : `h-full px-3 text-muted hover:text-text hover:bg-text/[0.05] ${sep ? 'border-r border-line' : ''}`)
+        : (active ? 'h-row px-pad rounded bg-text/[0.06] text-text'
+            : 'h-row px-pad rounded text-muted hover:text-text hover:bg-text/[0.04]');
     return (
         <div
-            className={`group flex items-center gap-2 h-row px-pad cursor-pointer select-none transition-colors
-                ${isTab ? 'rounded-none border-r border-line' : 'rounded'}
-                ${active
-                    ? (isTab ? 'bg-bg text-text' : 'bg-text/[0.06] text-text')
-                    : 'text-muted hover:text-text hover:bg-text/[0.04]'} ${className}`}
+            className={`group flex items-center gap-2 cursor-pointer select-none transition-colors ${tabCls} ${className}`}
             onClick={onClick}
             data-row-id={rowId}
             role="button"
             tabIndex={0}
             title={title}
+            draggable={false}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();

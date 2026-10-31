@@ -51,38 +51,48 @@ export function Tabs({
     return (
         // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
         //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
-        <div className="shrink-0 flex items-center h-topbar border-b border-line bg-panel2">
-            {leading}
+        // 🔴 items-stretch — 탭이 줄 높이를 꽉 채워야 활성 탭이 몸통까지 이어진다(아래 선을 덮는다).
+        //    고정 묶음(leading/actions/trailing)은 제 폭을 지키며(shrink-0) 세로 가운데로 — ⛔ 넘쳐도 안 줄어든다(항목 11).
+        <div className="shrink-0 flex items-stretch h-topbar border-b border-line bg-panel2">
+            {leading && <div className="flex items-center shrink-0 border-r border-line">{leading}</div>}
 
             {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
-            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto border-l border-line" {...trigger}>
-                {tabs.map((t) => (
-                    <Row
-                        key={t.id}
-                        rowId={t.id}
-                        icon={t.icon ?? 'table'}
-                        label={t.title}
-                        active={t.id === activeId}
-                        onClick={() => onSelect(t.id)}
-                        title={t.title}
-                        className="max-w-[160px] shrink-0"
-                        variant="tab"
-                        revealOnHover
-                        end={
-                            <IconButton
-                                icon="x"
-                                label={`${t.title} 닫기`}
-                                size={13}
-                                className="w-5 h-5"
-                                onClick={(e: MouseEvent) => { e.stopPropagation(); onClose(t.id); }}
-                            />
-                        }
-                    />
-                ))}
+            {/* 🔴 가운데 탭 영역만 넘치면 가로 스크롤 — 스크롤바는 얇게·호버 때만(tab-scroll, index.css) */}
+            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll" {...trigger}>
+                {tabs.map((t, i) => {
+                    const isActive = t.id === activeId;
+                    const next = tabs[i + 1];
+                    // 세로 구분선은 「둘 다 비활성」일 때만 — 활성 탭 옆에는 안 그린다(옵시디언)
+                    const sep = !isActive && next != null && next.id !== activeId;
+                    return (
+                        <Row
+                            key={t.id}
+                            rowId={t.id}
+                            icon={t.icon ?? 'table'}
+                            label={t.title}
+                            active={isActive}
+                            sep={sep}
+                            onClick={() => onSelect(t.id)}
+                            title={t.title}
+                            className="min-w-[96px] max-w-[200px] shrink-0"
+                            variant="tab"
+                            revealOnHover
+                            end={
+                                <IconButton
+                                    icon="x"
+                                    label={`${t.title} 닫기`}
+                                    size={13}
+                                    className="w-5 h-5"
+                                    onClick={(e: MouseEvent) => { e.stopPropagation(); onClose(t.id); }}
+                                />
+                            }
+                        />
+                    );
+                })}
             </div>
 
-            {actions && <div className="flex items-center gap-1 px-pad shrink-0">{actions}</div>}
-            {trailing}
+            {actions && <div className="flex items-center gap-1 px-pad shrink-0 border-l border-line">{actions}</div>}
+            {trailing && <div className="flex items-center shrink-0 border-l border-line">{trailing}</div>}
         </div>
     );
 }
