@@ -48,12 +48,12 @@ export { registerView, getView, listViews, clearViews, type ViewDef, type ViewPr
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정
 export { useTheme, type ThemeControls } from './theme/useTheme';
-export { applyTheme, resolveMode, accentSwatchStyle, type ResolvedMode } from './theme/apply';
+export { applyTheme, resolveMode, themeSwatchStyle, type ResolvedMode } from './theme/apply';
 export {
     loadThemeSettings, saveThemeSettings, normalizeThemeSettings, defaultThemeSettings,
     type ThemeSettings, type ThemeMode,
 } from './theme/settings';
 export {
-    COLOR_TOKENS, SIZE_TOKENS, ACCENTS, DENSITIES, findAccent,
-    type ColorToken, type DensityId,
+    COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, findTheme,
+    type ColorToken, type DensityId, type ThemePreset,
 } from './theme/tokens';

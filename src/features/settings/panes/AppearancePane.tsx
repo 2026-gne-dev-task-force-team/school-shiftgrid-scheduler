@@ -1,15 +1,15 @@
 /**
- * 「모양」 설정 Pane — 테마 레이어를 눈으로 고르는 자리. 고르는 즉시 화면이 바뀐다.
+ * 「모양」 설정 Pane — 테마를 눈으로 고르는 자리. 고르는 즉시 화면이 바뀐다.
  *
  * 🔴 features/ 라 하드코딩 색 검사가 돈다 — 토큰 클래스(bg-panel2·border-accent …)로만 짠다.
- *    강조색 동그라미의 실제 색만 theme 의 accentSwatchStyle() 헬퍼로 받는다(검사 밖에 있다).
+ *    테마 견본 네모의 실제 색만 theme 의 themeSwatchStyle() 헬퍼로 받는다(검사 밖에 있다).
  * ⛔ 테마 JSON 가져오기/내보내기는 이번에 안 만든다 — 단추도 두지 않는다(아래 자리 표시만).
  */
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '../../../pane-ui-system';
 import type { SettingsPaneProps } from '../registry';
-import { ACCENTS, type DensityId } from '../../../pane-ui-system';
-import { resolveMode, accentSwatchStyle } from '../../../pane-ui-system';
+import { THEMES, type DensityId } from '../../../pane-ui-system';
+import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
@@ -44,6 +44,18 @@ function Choice({
     );
 }
 
+/** 테마 견본 네모 — bg·panel·accent 세 띠로 팔레트의 결을 보여 준다(실제 색은 헬퍼가 준다) */
+function Swatch({ themeId }: { themeId: string }) {
+    const s = themeSwatchStyle(themeId);
+    return (
+        <span className="flex h-9 w-14 shrink-0 overflow-hidden rounded border" style={{ borderColor: s.border }}>
+            <span className="flex-1" style={s.bg} />
+            <span className="flex-1" style={s.panel} />
+            <span className="w-3" style={s.accent} />
+        </span>
+    );
+}
+
 const MODES: { id: ThemeMode; name: string; icon?: IconName }[] = [
     { id: 'light', name: '밝게', icon: 'sun' },
     { id: 'dark', name: '어둡게', icon: 'moon' },
@@ -57,11 +69,35 @@ const DENSITIES: { id: DensityId; name: string }[] = [
 
 export function AppearancePane({ theme }: SettingsPaneProps) {
     const { settings, setSettings, reset } = theme;
-    const resolved = resolveMode(settings.mode);
 
     return (
-        <div className="flex flex-col gap-6 max-w-[520px]">
-            <Field title="테마" hint="시스템은 기기의 밝기 설정을 따라갑니다.">
+        <div className="flex flex-col gap-6 max-w-[560px]">
+            <Field title="테마" hint="색 한 벌을 고릅니다. 밝기 짝이 있는 테마는 아래 「밝기」를 따라갑니다.">
+                <div className="flex flex-wrap gap-2">
+                    {THEMES.map((t) => {
+                        const active = settings.theme === t.id;
+                        return (
+                            <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => setSettings({ theme: t.id })}
+                                aria-pressed={active}
+                                title={t.name}
+                                className={`flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-md border text-[13px] transition-colors
+                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                                    ${active
+                                        ? 'border-accent text-text bg-text/[0.06]'
+                                        : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
+                            >
+                                <Swatch themeId={t.id} />
+                                {t.name}
+                            </button>
+                        );
+                    })}
+                </div>
+            </Field>
+
+            <Field title="밝기" hint="시스템은 기기의 밝기 설정을 따라갑니다. 밝기 짝이 없는 테마에는 영향이 없습니다.">
                 <div className="flex flex-wrap gap-2">
                     {MODES.map((m) => (
                         <Choice
@@ -87,31 +123,6 @@ export function AppearancePane({ theme }: SettingsPaneProps) {
                             {d.name}
                         </Choice>
                     ))}
-                </div>
-            </Field>
-
-            <Field title="강조색" hint="선택·포커스에 쓰이는 포인트 색입니다.">
-                <div className="flex flex-wrap gap-2">
-                    {ACCENTS.map((a) => {
-                        const active = settings.accent === a.id;
-                        return (
-                            <button
-                                key={a.id}
-                                type="button"
-                                onClick={() => setSettings({ accent: a.id })}
-                                aria-pressed={active}
-                                title={a.name}
-                                className={`grid place-items-center w-7 h-7 rounded-full border-2 transition-colors
-                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
-                                    ${active ? 'border-text' : 'border-line hover:border-muted'}`}
-                            >
-                                <span
-                                    className="block w-4 h-4 rounded-full"
-                                    style={accentSwatchStyle(a.id, resolved)}
-                                />
-                            </button>
-                        );
-                    })}
                 </div>
             </Field>
 
