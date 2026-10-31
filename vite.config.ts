@@ -5,7 +5,7 @@ const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.met
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// 웹(GitHub Pages) 빌드 설정. Electron 은 vite.electron.config.ts 가 따로 맡는다.
+// 웹(GitHub Pages) 빌드 설정. 일렉트론 판은 2026-10-31 걷어냈다 — 이제 이 설정 하나뿐이다.
 export default defineConfig({
   define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
   // GitHub Pages는 .../<repo>/ 하위 경로로 서빙되므로 상대 경로로 자산을 참조.

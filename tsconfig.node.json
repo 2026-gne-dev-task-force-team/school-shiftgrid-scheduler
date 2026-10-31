@@ -1,3 +1,4 @@
+// vite.config.ts(설정 파일 자체) 타입 체크 전용. 일렉트론 판이 쓰던 tsconfig.electron.json 은 제거됐다.
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",

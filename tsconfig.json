@@ -1,3 +1,4 @@
+// 루트 tsconfig — 실제 설정은 안 갖고 app(src)·node(vite.config.ts) 두 프로젝트로만 가른다.
 {
   "files": [],
   "references": [

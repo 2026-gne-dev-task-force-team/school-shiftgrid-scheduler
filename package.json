@@ -5,15 +5,9 @@
   "description": "학교 시간표 짜기 — 초등 규칙을 데이터로 받는 시간표 배정 도구",
   "author": "2026-gne-dev-task-force-team",
   "type": "module",
-  "main": "dist-electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "dev:app": "vite --config vite.electron.config.ts",
     "build": "tsc -b && vite build",
-    "build:app": "vite build --config vite.electron.config.ts",
-    "dist:mac": "npm run build:app && electron-builder --mac",
-    "dist:win": "npm run build:app && electron-builder --win",
-    "dist:dir": "npm run build:app && electron-builder --dir",
     "test": "vitest run",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -30,74 +24,12 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
-    "electron": "^44.4.5",
-    "electron-builder": "^26.15.3",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.16",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
-    "vite-plugin-electron": "^1.1.2",
-    "vite-plugin-electron-renderer": "^1.0.0",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^5.0.1"
-  },
-  "build": {
-    "appId": "kr.subnautica.shiftgrid",
-    "productName": "shiftgrid",
-    "directories": {
-      "output": "release",
-      "buildResources": "build"
-    },
-    "files": [
-      "dist-app/**",
-      "dist-electron/**"
-    ],
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
-    "mac": {
-      "icon": "build/icon.png",
-      "identity": null,
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "arm64",
-            "x64"
-          ]
-        }
-      ]
-    },
-    "win": {
-      "icon": "build/icon.png",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": false,
-      "language": "1042"
-    },
-    "portable": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
-    }
   }
 }
