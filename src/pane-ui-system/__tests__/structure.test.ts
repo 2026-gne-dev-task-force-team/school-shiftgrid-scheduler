@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, resolve, basename } from 'node:path';
+import { join, resolve, basename, dirname, relative, sep } from 'node:path';
 
 const ROOT = resolve(process.cwd(), 'src');
 
@@ -130,6 +130,36 @@ describe('⑥ plugins 는 pane-ui-system 속(shell·layout·primitives)을 직�
     for (const f of files) {
         it(`창틀 속 직접 import 없음: ${f.slice(ROOT.length + 1)}`, () => {
             expect(DEEP.test(read(f)), `${basename(f)} 가 창틀 속을 직접 집었다 — pane-ui-system/plugin 배럴로`).toBe(false);
+        });
+    }
+});
+
+/*
+ * ⑨ 플러그인끼리 직접 의존 금지 — 한 plugins/<a>/ 가 다른 plugins/<b>/ 를 import 하면 빨강.
+ *   「다른 플러그인 API 는 자리만」(요구명세 4번) — 플러그인은 host 하나로만 바깥과 말한다.
+ */
+describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
+    const PLUGROOT = join(ROOT, 'plugins');
+    const files = walk(PLUGROOT);
+
+    it('스캔할 플러그인 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        const self = relative(PLUGROOT, f).split(sep)[0];
+        it(`다른 플러그인 import 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            const src = read(f);
+            const specs = [...src.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
+            const offenders: string[] = [];
+            for (const s of specs) {
+                if (!s.startsWith('.')) continue;                 // 상대 경로만 형제 플러그인에 닿는다
+                const rel = relative(PLUGROOT, resolve(dirname(f), s));
+                if (rel.startsWith('..')) continue;               // plugins 바깥
+                const other = rel.split(sep)[0];
+                if (other && other !== self) offenders.push(s);   // 다른 플러그인 폴더로 들어갔다
+            }
+            expect(offenders, `${basename(f)} 가 다른 플러그인을 직접 import 한다: ${offenders.join(', ')}`).toEqual([]);
         });
     }
 });

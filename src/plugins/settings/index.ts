@@ -15,6 +15,7 @@ import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
 import { ViewSettingsPane } from './panes/ViewSettingsPane';
+import { PluginsPane } from './panes/PluginsPane';
 
 function activate(host: PluginHost): void {
     // ── 설정 섹션·항목 — 유형별로(쥔님: 모양/창틀/뷰) ──
@@ -33,6 +34,10 @@ function activate(host: PluginHost): void {
         section: 'views', id: 'views', title: '등록된 뷰', icon: 'layers',
         Pane: () => createElement(ViewSettingsPane, { host }),
     });
+
+    // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김). 설정 기여점으로 수명주기를 조종한다
+    host.settings.addSection('plugins', '플러그인', 'play');
+    host.settings.addItem({ section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'play', Pane: PluginsPane });
 
     // ── 설정 화면 뷰 — 한 번에 하나(singleton) ──
     host.views.register({
