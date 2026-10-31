@@ -149,6 +149,8 @@ export function WorkbenchScreen() {
             setFocus(lf.id);
         },
         onAddGlobal: addTab,
+        // 🔴 + 가 여는 것의 이름 — 「표」는 앱(여기)만 안다. 창틀 단추·메뉴가 이 글자를 쓴다(쥔님 2026-11-01 ②)
+        addLabel: '새 표',
         onCloseOthers: (id) => setWs((w) => closeOthers(w, id)),
         onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
         onMove: (id, to) => { setWs((w) => moveLeaf(w, id, to, 'after')); setFocus(id); },
@@ -228,10 +230,9 @@ export function WorkbenchScreen() {
     ];
 
     // 🔴 타이틀바 오른쪽 액션 슬롯 — 앱이 꽂는다(배열). ⛔ 설정 ⚙ 는 여기 안 둔다(리본 아래에 그대로).
-    //    데모로 「새 표」 하나를 꽂아 슬롯이 사는 것을 보인다 — 더 쌓고 싶으면 이 배열에 줄을 더한다.
-    const titleActions: TitleAction[] = [
-        { id: 'new-sheet', icon: 'plus', label: '새 표', onClick: addTab },
-    ];
+    //    ⛔ 데모 「+ 새 표」는 뺐다(쥔님 2026-11-01 ② *"필요없는 아이 버튼"* — 표는 리본·탭 줄 + 로 연다).
+    //    슬롯 자체는 살아 있다 — 쌓을 액션이 생기면 이 배열에 줄을 더한다. 지금은 비운다.
+    const titleActions: TitleAction[] = [];
     const showTitleBar = pane.settings.showTitleBar;
 
     // 🔴 상태바 — 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김(statusBarNarrow 로 켠다, 쥔님).

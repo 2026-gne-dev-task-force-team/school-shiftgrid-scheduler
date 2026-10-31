@@ -47,6 +47,11 @@ export interface WorkspaceHandlers {
     onAddToTabs: (tabsId: string) => void;
     /** 좁은 화면 탭 줄의 + — 가운데에 새 탭 */
     onAddGlobal: () => void;
+    /**
+     * 🔴 + 가 무엇을 여는지의 이름 — 앱이 준다(⛔ 창틀은 「표」를 모른다, 쥔님 2026-11-01).
+     *   안 주면 뜻 없는 「새 탭」. 앱이 '새 표' 를 넘기면 단추·메뉴 글자가 그걸 쓴다.
+     */
+    addLabel?: string;
     // ── W5 우클릭 메뉴가 부르는 것들 (전부 순수 연산 래퍼) ──
     onCloseOthers: (leafId: string) => void;
     onCloseRight: (leafId: string) => void;
@@ -158,7 +163,7 @@ export function WorkspaceView({
     const openBar = useCallback((tabsId: string, x: number, y: number) => {
         setMenu({
             x, y, items: [
-                { label: '새 탭', icon: 'plus', onClick: () => handlers.onAddToTabs(tabsId) },
+                { label: handlers.addLabel ?? '새 탭', icon: 'plus', onClick: () => handlers.onAddToTabs(tabsId) },
             ],
         });
     }, [handlers]);
@@ -280,7 +285,7 @@ function NodeView({
                     <IconButton icon="splitH" label="아래로 가르기" onClick={() => handlers.onSplit(node.id, 'col', splitSource)} />
                 )}
                 {tabButtons.add && (
-                    <IconButton icon="plus" label="새 탭" onClick={() => handlers.onAddToTabs(node.id)} />
+                    <IconButton icon="plus" label={handlers.addLabel ?? '새 탭'} onClick={() => handlers.onAddToTabs(node.id)} />
                 )}
                 {chrome && (
                     <IconButton
