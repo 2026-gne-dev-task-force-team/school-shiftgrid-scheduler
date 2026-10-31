@@ -31,10 +31,10 @@ function walk(dir: string): string[] {
 
 const read = (p: string) => readFileSync(p, 'utf-8');
 
-describe('① features·shell 에 하드코딩 색 0건', () => {
+describe('① app·shell 에 하드코딩 색 0건', () => {
     // #rrggbb · rgb( · bg-gray- · text-gray- · border-gray-
     const BANNED = /#[0-9a-fA-F]{3,8}\b|rgb\(|\b(?:bg|text|border)-gray-/;
-    const files = [...walk(join(ROOT, 'features')), ...walk(join(ROOT, 'pane-ui-system', 'shell'))];
+    const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system', 'shell'))];
 
     it('스캔할 파일이 실제로 있다(빈 글롭이 거짓 통과를 주지 않게)', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -79,14 +79,14 @@ describe('③ 호버-숨김(group-hover)은 Row 조각 한 곳에만', () => {
 });
 
 /*
- * ④⑤ pane-ui-system 은 통째로 떼어 갈 수 있어야 한다 (쥔님 2026-10-31:
+ * ⑤⑦ pane-ui-system 은 통째로 떼어 갈 수 있어야 한다 (쥔님 2026-10-31:
  *    *"이 UI 엔진은 UI 폴더에 그대로 박지 말고 따로 폴더로 관리해줘"*).
  *    그 말이 참이려면 두 가지가 동시에 성립해야 한다:
- *      ④ 안에서 바깥(features·app)을 부르지 않는다 — 부르면 떼어 갈 때 끊긴다
- *      ⑤ 도메인 낱말이 안 들어온다 — 들어오면 이 창틀이 「시간표 전용」이 된다
+ *      ⑦ 안에서 바깥(app·plugins)을 부르지 않는다 — 부르면 떼어 갈 때 끊긴다
+ *      ⑤ 도메인 낱말이 안 들어온다 — 들어오면 이 창틀이 도메인 전용이 된다
  */
-describe('④ pane-ui-system 은 바깥(features)을 import 하지 않는다', () => {
-    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/features|\/features\/|\.\.\/App)[^'"]*['"]/;
+describe('⑦ pane-ui-system 은 바깥(app·plugins)을 import 하지 않는다', () => {
+    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App)[^'"]*['"]/;
     const files = walk(join(ROOT, 'pane-ui-system'));
 
     it('스캔할 파일이 있다', () => { expect(files.length).toBeGreaterThan(0); });

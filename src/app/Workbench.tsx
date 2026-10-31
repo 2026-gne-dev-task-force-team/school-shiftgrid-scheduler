@@ -3,90 +3,44 @@
  * 🔴 조립만 한다 — 색·px 를 쓰지 않는다(그건 조각·셸의 몫).
  *
  * ⭐ 가운데·왼쪽·오른쪽이 전부 같은 패널 트리 모델(Workspace)이 쥔다 — 탭·스플릿·비율이 한 자료구조에(W3).
- *    창틀은 viewId 가 무엇인지 모른다. 여기(앱)서 registerView 로 무엇을 그릴지 꽂아 준다.
- *    사이드바의 「개요·속성」 같은 이름도 전부 뷰 등록소가 주고, 창틀은 끝내 모른다.
+ *    창틀은 viewId 가 무엇인지 모른다. 무엇을 그릴지는 플러그인이 host.views.register 로 꽂고,
+ *    앱은 appHost 로만 읽는다(registerView 직접 호출 0). 뷰 id 엔 플러그인 접두사가 붙어 있다(demo.sheet 등).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
-    useTheme, WorkspaceView, EmptyArea, registerView, getView,
+    useTheme, WorkspaceView, EmptyArea,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, RibbonSheet, PeekPanel, storageKey, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
-    type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
+    type WorkspaceHandlers, type Workspace, type AreaKey,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf,
-    peekPop, peekClear, peekPromote,
+    peekPush, peekPop, peekClear, peekPromote,
     type MovePos,
 } from '../pane-ui-system';
-import { SettingsScreen } from './settings/SettingsScreen';
-
-// ── 뷰 등록 — 창틀 바깥(앱)에서 무엇을 그릴지 꽂는다 ──
-function SheetView({ leaf: lf }: ViewProps) {
-    return (
-        <div className="h-full grid place-items-center px-6 text-center">
-            <p className="text-2xl font-light text-muted/50 select-none truncate max-w-full">{lf.title}</p>
-        </div>
-    );
-}
-function SettingsView({ collapsed }: ViewProps) {
-    const theme = useTheme();
-    // ⭐ collapsed 는 창틀이 재서 준다(폭 < collapseBelow) — 설정 왼쪽 메뉴를 아이콘만으로 접는다
-    return <SettingsScreen theme={theme} collapsed={collapsed} />;
-}
-// ⭐ 데모용 빈 뷰 — 이름·아이콘은 등록소가 준다(창틀은 모른다). 사이드바가 트리로 뭘 담는지 보여 줄 뿐이다.
-function EmptyView({ leaf: lf }: ViewProps) {
-    return (
-        <div className="h-full grid place-items-center px-6 text-center">
-            <p className="text-[13px] text-muted/50 select-none truncate max-w-full">{lf.title} · (빈 뷰)</p>
-        </div>
-    );
-}
-// ⭐ 뷰마다 「레이아웃 힌트」가 다르다 — "무슨 콘텐츠냐에 따라"(쥔님). 등록값은 기본, 설정이 덮는다.
-//    표: 좁아지면 스크롤(내용이 안 없어진다) · 설정: 좁아지면 접힌다(옵시디언 설정) · 데모 둘: 찌그러짐.
-registerView({
-    id: 'sheet', title: '표', icon: 'table', defaultArea: 'center', Component: SheetView,
-    layout: { minWidth: 240, squeeze: 'scroll' },
-    ribbon: { order: 0 },
-    // 🔴 내용 메뉴 — 틀 메뉴(닫기·가르기)와 구분선으로 갈린다. 데모: 제목만 바꾼다
-    menu: (lf, host) => [
-        {
-            label: '이름 바꾸기', icon: 'edit',
-            onClick: () => { const n = window.prompt('새 이름', lf.title); if (n && n.trim()) host.rename(n.trim()); },
-        },
-    ],
-});
-registerView({
-    id: 'settings', title: '설정', icon: 'gear', defaultArea: 'center', Component: SettingsView,
-    singleton: true,
-    layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
-});
-registerView({
-    id: 'outline', title: '개요', icon: 'layers', defaultArea: 'left', Component: EmptyView,
-    layout: { minWidth: 180, squeeze: 'shrink' }, ribbon: { order: 1 },
-});
-registerView({
-    id: 'props', title: '속성', icon: 'info', defaultArea: 'right', Component: EmptyView,
-    layout: { minWidth: 200, squeeze: 'shrink' }, ribbon: { order: 2 },
-});
+import { setWorkspaceBridge, type WorkspaceOpenOptions } from '../pane-ui-system/plugin';
+import { appHost } from './host';
+import { migrateViewIds } from './migrate';
 
 /** 첫 실행(저장값 없음)에만 까는 기본 배치 — 사이드바에 데모 뷰 둘을 기본으로 */
 function firstRunWorkspace(): Workspace {
     let ws = loadWorkspace();                                   // 빈 배치
-    ws = openLeaf(ws, leaf('outline', '개요', { id: 'outline' }), 'left');
-    ws = openLeaf(ws, leaf('props', '속성', { id: 'props' }), 'right');
+    ws = openLeaf(ws, leaf('demo.outline', '개요', { id: 'outline' }), 'left');
+    ws = openLeaf(ws, leaf('demo.props', '속성', { id: 'props' }), 'right');
     return ws;
 }
 
-export function WorkbenchScreen() {
+export function Workbench() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
     useTheme();    // 마운트 때 저장된 테마를 적용한다(반환값은 설정 화면이 따로 쥔다)
 
-    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다. 저장값이 없으면 기본 배치를 깐다
-    const [ws, setWs] = useState<Workspace>(() => (hasWorkspace() ? loadWorkspace() : firstRunWorkspace()));
+    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다(옛 맨 id 는 migrateViewIds 로 demo.* 로 옮긴다).
+    //             저장값이 없으면 기본 배치를 깐다.
+    const [ws, setWs] = useState<Workspace>(() => (hasWorkspace() ? migrateViewIds(loadWorkspace()) : firstRunWorkspace()));
     // 좁은 화면에서 지금 보는 leaf(넓은 화면에선 각 묶음의 activeId 를 쓴다)
     const [focus, setFocus] = useState<string>('');
     // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
@@ -113,9 +67,40 @@ export function WorkbenchScreen() {
 
     useEffect(() => { saveWorkspace(ws); setSavedAt(new Date()); }, [ws]);
 
+    // 🔴 작업대 다리 — 플러그인의 host.workspace.open/close 가 이리로 들어온다(host 는 React 밖에 산다).
+    //    P0 에선 아무도 안 부른다(리본은 Workbench 핸들러로 간다) — 자리를 깔아 둔다(P4 스케줄러 피크가 첫 손님).
+    useEffect(() => {
+        setWorkspaceBridge({
+            open: (viewId: string, o?: WorkspaceOpenOptions): string | null => {
+                const def = appHost.views.get(viewId);
+                if (!def) return null;
+                const title = o?.title ?? def.title;
+                if (o?.where === 'peek') {
+                    const lf = leaf(viewId, title, { params: o?.params });
+                    setWs((w) => peekPush(w, lf));
+                    setFocus(lf.id);
+                    return lf.id;
+                }
+                const area: AreaKey = (o?.where as AreaKey | undefined) ?? def.defaultArea ?? 'center';
+                const lf = leaf(viewId, title, { id: def.singleton ? viewId : undefined, params: o?.params });
+                setWs((w) => {
+                    if (o?.reuse) {
+                        const ex = findLeafByView(w, viewId);
+                        if (ex) return activateLeaf(w, ex.id);
+                    }
+                    return openLeaf(w, lf, area);
+                });
+                setFocus(lf.id);
+                return lf.id;
+            },
+            close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
+        });
+        return () => setWorkspaceBridge(null);
+    }, []);
+
     const makeSheet = useCallback(() => {
         seq.current += 1;
-        return leaf('sheet', `표 ${seq.current}`);
+        return leaf('demo.sheet', `표 ${seq.current}`);
     }, []);
 
     const addTab = useCallback(() => {
@@ -124,11 +109,11 @@ export function WorkbenchScreen() {
         setFocus(lf.id);
     }, [makeSheet]);
 
-    // 설정 — id 를 고정해 두면 openLeaf 가 중복 없이 재사용한다
+    // 설정 — id 를 고정해 두면 openLeaf 가 중복 없이 재사용한다(singleton)
     const openSettings = useCallback(() => {
-        const lf = leaf('settings', '설정', { id: 'settings' });
+        const lf = leaf('demo.settings', '설정', { id: 'demo.settings' });
         setWs((w) => openLeaf(w, lf, 'center'));
-        setFocus('settings');
+        setFocus('demo.settings');
     }, []);
 
     const handlers: WorkspaceHandlers = useMemo(() => ({
@@ -167,9 +152,9 @@ export function WorkbenchScreen() {
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)
     const openView = useCallback((viewId: string) => {
-        const def = getView(viewId);
+        const def = appHost.views.get(viewId);
         if (!def) return;
-        if (viewId === 'sheet') { addTab(); return; }
+        if (viewId === 'demo.sheet') { addTab(); return; }
         setWs((w) => {
             const existing = findLeafByView(w, viewId);
             if (existing) { setFocus(existing.id); return activateLeaf(w, existing.id); }
@@ -194,7 +179,7 @@ export function WorkbenchScreen() {
 
     // 빈 사이드바 우클릭 → 뷰 고르기. 고른 뷰를 그 자리에 연다
     const openViewHere = useCallback((area: Exclude<AreaKey, 'center' | 'floating'>, viewId: string) => {
-        const title = getView(viewId)?.title ?? viewId;
+        const title = appHost.views.get(viewId)?.title ?? viewId;
         const lf = leaf(viewId, title);
         setWs((w) => openLeaf(w, lf, area));
         setFocus(lf.id);
@@ -335,7 +320,7 @@ export function WorkbenchScreen() {
                     <TabSwitcher
                         open={tabSwitcher}
                         onClose={() => setTabSwitcher(false)}
-                        tabs={centerLeaves.map((l) => ({ id: l.id, title: l.title, icon: getView(l.viewId)?.icon }))}
+                        tabs={centerLeaves.map((l) => ({ id: l.id, title: l.title, icon: appHost.views.get(l.viewId)?.icon }))}
                         activeId={centerLeaves.some((l) => l.id === focus) ? focus : (centerLeaves[0]?.id ?? null)}
                         onSelect={handlers.onActivate}
                         onCloseTab={handlers.onClose}

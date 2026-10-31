@@ -10,11 +10,12 @@
  * 🔴 features/ 라 색은 토큰 클래스로만.
  */
 import { useState } from 'react';
-import { Row, Icon, IconButton, SectionHeader, useNarrow } from '../../pane-ui-system';
-import type { ThemeControls } from '../../pane-ui-system';
+import { Row, Icon, IconButton, SectionHeader, useNarrow, useTheme } from '../../pane-ui-system';
 import { SETTINGS_SECTIONS, SETTINGS_ITEMS } from './registry';
 
-export function SettingsScreen({ theme, collapsed = false }: { theme: ThemeControls; collapsed?: boolean }) {
+export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
+    // 테마 제어는 여기서 쥔다 — 설정 뷰를 꽂는 플러그인은 테마를 몰라도 된다(얇은 래퍼만)
+    const theme = useTheme();
     const narrow = useNarrow();
     const [selected, setSelected] = useState<string>(SETTINGS_ITEMS[0]?.id ?? '');
     // 좁은 화면에서만 뜻이 있다 — 메뉴 목록을 보는 중인가, 내용을 보는 중인가
