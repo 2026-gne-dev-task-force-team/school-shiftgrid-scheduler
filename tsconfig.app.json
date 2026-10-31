@@ -1,5 +1,4 @@
-// 웹(src) 타입 체크. _참고/(옛 v1·v2, 참고용 박제)는 src 밖이라 include 에 원래 안 걸리지만
-// 혹시 몰라 exclude 에도 명시해 둔다.
+// 웹(src) 타입 체크.
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
@@ -24,6 +23,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  "exclude": ["_참고"]
+  "include": ["src"]
 }
