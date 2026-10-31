@@ -30,6 +30,20 @@ export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle
     // 좁은 화면이거나 고정이 풀리면 「덮는 서랍」이다 — 자리를 안 먹고 위로 뜬다
     const drawer = narrow || !pinned;
 
+    // 나갈 때도 밀려 나가게 — 언마운트를 애니메이션 끝까지 미룬다. closing = 렌더는 됐는데 open 이 꺼진 사이
+    const [rendered, setRendered] = useState(open);
+    const closing = rendered && !open;
+    useEffect(() => {
+        if (open) { setRendered(true); return; }
+        if (!rendered) return;
+        // 움직임 줄이기면 애니메이션이 없다 — 끝을 기다리면 영영 안 사라진다. 바로 접는다
+        const reduce = typeof window !== 'undefined'
+            && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduce) { setRendered(false); return; }
+        const t = window.setTimeout(() => setRendered(false), 200);   // .18s 애니메이션 + 여유
+        return () => clearTimeout(t);
+    }, [open, rendered]);
+
     // 덮는 서랍이 열려 있으면 Esc 로 접는다(바깥 클릭은 막이 받는다)
     useEffect(() => {
         if (!(drawer && open)) return;
@@ -40,22 +54,27 @@ export function SidePanel({ side, open, pinned, width, narrow, onWidth, onToggle
 
     // ── 덮는 서랍(좁은 화면 또는 고정 풀림) ──
     if (drawer) {
-        if (!open) {
+        if (!rendered) {
             // 좁은 화면 닫힘은 가운데 탭 줄 단추로 연다(레일 없음) · 넓은 화면 고정 풀림 닫힘은 레일을 보인다
             if (narrow) return null;
             return <CollapsedRail isLeft={isLeft} onExpand={() => onToggle(true)} />;
         }
         const w = narrow ? 'min(86vw, 330px)' : width;
+        const panelAnim = closing
+            ? (isLeft ? 'drawer-out-left' : 'drawer-out-right')
+            : (isLeft ? 'drawer-in-left' : 'drawer-in-right');
+        // 막은 좁은 화면만 눈에 보인다(어둡게) — 나갈 땐 같이 흐려진다. 넓은 화면은 투명이라 애니메이션이 없어도 된다
+        const scrimAnim = narrow ? (closing ? 'drawer-scrim-out' : 'drawer-scrim') : '';
         return (
             <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
                 {/* 바깥 막 — 좁은 화면은 어둡게, 넓은 화면 고정 풀림은 투명(모달처럼 어둡히지 않는다). 누르면 접힌다 */}
                 <button
-                    className={`absolute inset-0 ${narrow ? 'bg-black/40 drawer-scrim' : 'bg-transparent'}`}
+                    className={`absolute inset-0 ${narrow ? 'bg-black/40' : 'bg-transparent'} ${scrimAnim}`}
                     onClick={() => onToggle(false)}
                     aria-label="사이드바 접기"
                 />
                 <div
-                    className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r drawer-in-left' : 'border-l drawer-in-right'} border-line`}
+                    className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line ${panelAnim}`}
                     style={{ width: w }}
                 >
                     <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>

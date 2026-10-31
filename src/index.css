@@ -117,19 +117,25 @@
 }
 
 /*
- * 좁은 화면 서랍 — 밀려 들어온다 (쥔님 2026-10-31: *"폰에 사이드 바 애니메이션이 없노"*).
- * ⚠️ 나갈 때는 애니메이션이 없다 — React 가 바로 언마운트하기 때문이고, 그걸 맞추려면
- *    상태를 하나 더 쥐어야 한다. 들어오는 쪽이 체감의 대부분이라 먼저 이것만 넣었다.
+ * 서랍(좁은 화면 · 넓은 화면 고정 풀림) — 들어올 때도 나갈 때도 밀린다 (쥔님 2026-10-31: *"폰에 사이드 바 애니메이션이 없노"*).
+ * ⭐ 나갈 때는 SidePanel 이 언마운트를 애니메이션 끝까지 미룬다(상태 하나) — ⛔ 라이브러리 없이.
  * ⭐ 「움직임 줄이기」를 켠 기기에서는 안 움직인다(멀미·전정기관 문제는 설정이 아니라 접근성이다).
+ *    그때는 SidePanel 이 애니메이션 끝을 안 기다리고 바로 접는다(reduced-motion 분기).
  */
 @keyframes drawer-in-left  { from { transform: translateX(-100%); } to { transform: none; } }
 @keyframes drawer-in-right { from { transform: translateX(100%);  } to { transform: none; } }
-@keyframes drawer-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawer-out-left  { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes drawer-out-right { from { transform: none; } to { transform: translateX(100%);  } }
+@keyframes drawer-scrim-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawer-scrim-out { from { opacity: 1; } to { opacity: 0; } }
 .drawer-in-left  { animation: drawer-in-left  .18s cubic-bezier(.2,.8,.3,1); }
 .drawer-in-right { animation: drawer-in-right .18s cubic-bezier(.2,.8,.3,1); }
-.drawer-scrim    { animation: drawer-scrim-in .18s ease; }
+.drawer-out-left  { animation: drawer-out-left  .18s cubic-bezier(.4,0,1,1) forwards; }
+.drawer-out-right { animation: drawer-out-right .18s cubic-bezier(.4,0,1,1) forwards; }
+.drawer-scrim     { animation: drawer-scrim-in  .18s ease; }
+.drawer-scrim-out { animation: drawer-scrim-out .18s ease forwards; }
 @media (prefers-reduced-motion: reduce) {
-  .drawer-in-left, .drawer-in-right, .drawer-scrim { animation: none; }
+  .drawer-in-left, .drawer-in-right, .drawer-out-left, .drawer-out-right, .drawer-scrim, .drawer-scrim-out { animation: none; }
 }
 
 /* 패널 폭/높이 손잡이 — 평소엔 안 보이고 올리면 파란 1px 띠, 끄는 동안 짙은 파랑 */
