@@ -10,11 +10,11 @@ import {
     setRibbonOrder, toggleRibbonHidden, resetRibbon,
     Icon,
 } from '../../../pane-ui-system';
-import { appHost } from '../../host';
+import type { SettingsPaneProps } from '../registry';
 
-export function RibbonSettingsPane() {
+export function RibbonSettingsPane({ host }: SettingsPaneProps) {
     const { ribbon } = usePaneSettings();
-    const { ordered } = resolveRibbon(appHost.views.listRibbon(), ribbon);
+    const { ordered } = resolveRibbon(host.views.listRibbon(), ribbon);
     const ids = ordered.map((v) => v.id);
     const hiddenSet = new Set(ribbon.hidden);
 

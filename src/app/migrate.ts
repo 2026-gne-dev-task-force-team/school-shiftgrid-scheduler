@@ -8,10 +8,12 @@
  */
 import type { Workspace, Node, Leaf } from '../pane-ui-system';
 
-/** 맨 id → 데모 플러그인 id. 새 플러그인이 옛 id 를 물려받으면 여기 한 줄. */
+/** 맨 id → 플러그인 id. 새 플러그인이 옛 id 를 물려받으면 여기 한 줄.
+ *  📌 설정은 코어 settings 플러그인으로 이사했다(demo.settings 저장분도 settings.main 으로 옮긴다). */
 const LEGACY_VIEW_IDS: Record<string, string> = {
     sheet: 'demo.sheet',
-    settings: 'demo.settings',
+    settings: 'settings.main',
+    'demo.settings': 'settings.main',
     outline: 'demo.outline',
     props: 'demo.props',
 };

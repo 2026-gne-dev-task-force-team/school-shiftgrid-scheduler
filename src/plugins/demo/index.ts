@@ -10,7 +10,6 @@ import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { SheetView } from './views/SheetView';
 import { EmptyView } from './views/EmptyView';
-import { SettingsView } from './views/SettingsView';
 
 function activate(host: PluginHost): void {
     // 표 — 좁아지면 스크롤 · 리본 0번 · 내용 메뉴로 이름 바꾸기
@@ -24,11 +23,6 @@ function activate(host: PluginHost): void {
                 onClick: () => { const n = window.prompt('새 이름', lf.title); if (n && n.trim()) h.rename(n.trim()); },
             },
         ],
-    });
-    // 설정 — 한 번에 하나(singleton) · 좁아지면 접힘
-    host.views.register({
-        id: 'settings', title: '설정', icon: 'gear', defaultArea: 'center', Component: SettingsView,
-        singleton: true, layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
     });
     // 개요 — 왼쪽 기본 · 리본 1번
     host.views.register({

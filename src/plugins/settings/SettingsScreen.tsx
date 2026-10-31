@@ -11,9 +11,10 @@
  */
 import { useState } from 'react';
 import { Row, Icon, IconButton, SectionHeader, useNarrow, useTheme } from '../../pane-ui-system';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 import { SETTINGS_SECTIONS, SETTINGS_ITEMS } from './registry';
 
-export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
+export function SettingsScreen({ host, collapsed = false }: { host: PluginHost; collapsed?: boolean }) {
     // 테마 제어는 여기서 쥔다 — 설정 뷰를 꽂는 플러그인은 테마를 몰라도 된다(얇은 래퍼만)
     const theme = useTheme();
     const narrow = useNarrow();
@@ -66,7 +67,7 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
 
     const Content = (
         <div className="flex-1 min-w-0 overflow-auto px-6 py-5">
-            {Pane && <Pane theme={theme} />}
+            {Pane && <Pane theme={theme} host={host} />}
         </div>
     );
 

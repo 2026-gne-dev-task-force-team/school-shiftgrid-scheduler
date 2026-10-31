@@ -8,8 +8,12 @@
  *    저장된 탭은 「demo 꺼짐」 글자(EditorArea 자리표시)로 남는다 — 되돌리면 그 자리에서 돌아온다.
  */
 import type { PluginModule } from '../pane-ui-system/plugin';
+import { settingsPlugin } from '../plugins/settings';
 import { demoPlugin } from '../plugins/demo';
 
+// 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다.
+//    ⛔ 설정 화면은 코어다 — 끌 수 없다(「설정을 꺼서 설정을 못 켜는」 일이 없다).
 export const PLUGINS: PluginModule[] = [
+    settingsPlugin,
     demoPlugin,
 ];

@@ -10,7 +10,7 @@ import {
     usePaneSettings, setViewOverride, getViewOverride,
     type Squeeze, type ViewLayout,
 } from '../../../pane-ui-system';
-import { appHost } from '../../host';
+import type { SettingsPaneProps } from '../registry';
 
 const SQUEEZES: { id: Squeeze; name: string }[] = [
     { id: 'shrink', name: '찌그러뜨림' },
@@ -50,9 +50,9 @@ function NumCell({ label, value, placeholder, onChange }: {
     );
 }
 
-export function ViewSettingsPane() {
+export function ViewSettingsPane({ host }: SettingsPaneProps) {
     usePaneSettings();   // 덮어쓰기가 바뀌면 다시 그린다
-    const views = appHost.views.list();
+    const views = host.views.list();
 
     return (
         <div className="flex flex-col gap-3 max-w-[640px]">

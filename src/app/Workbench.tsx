@@ -109,11 +109,11 @@ export function Workbench() {
         setFocus(lf.id);
     }, [makeSheet]);
 
-    // 설정 — id 를 고정해 두면 openLeaf 가 중복 없이 재사용한다(singleton)
+    // 설정 — 코어 settings 플러그인의 뷰. id 를 고정해 두면 openLeaf 가 중복 없이 재사용한다(singleton)
     const openSettings = useCallback(() => {
-        const lf = leaf('demo.settings', '설정', { id: 'demo.settings' });
+        const lf = leaf('settings.main', '설정', { id: 'settings.main' });
         setWs((w) => openLeaf(w, lf, 'center'));
-        setFocus('demo.settings');
+        setFocus('settings.main');
     }, []);
 
     const handlers: WorkspaceHandlers = useMemo(() => ({

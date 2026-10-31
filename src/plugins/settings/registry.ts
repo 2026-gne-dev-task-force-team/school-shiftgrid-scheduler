@@ -15,14 +15,16 @@
 import type { ComponentType } from 'react';
 import type { IconName } from '../../pane-ui-system';
 import type { ThemeControls } from '../../pane-ui-system';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
 import { ViewSettingsPane } from './panes/ViewSettingsPane';
 
-/** 각 설정 Pane 이 받는 것 — 지금은 테마 제어뿐(창틀·뷰 Pane 은 자체 스토어를 쓴다). 늘어나면 여기에 담는다 */
+/** 각 설정 Pane 이 받는 것 — 테마 제어 + 이 플러그인의 host(뷰 목록·리본 조회 창구). */
 export interface SettingsPaneProps {
     theme: ThemeControls;
+    host: PluginHost;
 }
 
 export interface SettingsItem {
