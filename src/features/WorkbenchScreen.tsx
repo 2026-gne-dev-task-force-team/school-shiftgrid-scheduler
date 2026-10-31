@@ -15,7 +15,8 @@ import {
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, moveLeaf, renameLeaf,
+    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf,
+    type MovePos,
 } from '../pane-ui-system';
 import { SettingsScreen } from './settings/SettingsScreen';
 
@@ -133,6 +134,10 @@ export function WorkbenchScreen() {
         onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
         onMove: (id, to) => { setWs((w) => moveLeaf(w, id, to, 'after')); setFocus(id); },
         onRename: (id, title) => setWs((w) => renameLeaf(w, id, title)),
+        // 🔴 드래그 드롭(W6·W7) — 존 판정은 창틀이 끝냈고, 여긴 moveLeaf 한 번으로 모델만 바꾼다
+        onDropLeaf: (id, target, pos: MovePos) => { setWs((w) => moveLeaf(w, id, target, pos)); setFocus(id); },
+        // 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸(W6 ④)
+        onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
     }), [makeSheet, addTab]);
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)

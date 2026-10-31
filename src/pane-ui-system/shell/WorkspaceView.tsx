@@ -12,15 +12,18 @@
  * 🔴 W5 우클릭 메뉴는 전부 이미 있는 순수 연산(close·split·move)을 부른다 — 트리 연산을 새로 짜지 않는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Node, Leaf } from '../layout/tree';
+import type { Node, Leaf, MovePos } from '../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../layout/tree';
 import { getView } from '../view-registry';
 import { effectiveViewLayout } from '../layout/pane-settings';
 import { effectiveMin, clampSplitPair } from '../layout/clamp';
 import { IconButton } from '../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
+import { useDragLeaf, type DragBind } from '../primitives/useDragLeaf';
 import { Tabs, type TabItem } from './Tabs';
 import { EditorArea } from './EditorArea';
+import { DropZones } from './DropZones';
+import { resolveDropAt } from './drop-resolve';
 
 /** 탭 줄에 그릴 단추 — 자리마다 다르다 */
 export interface TabButtons {
@@ -50,6 +53,13 @@ export interface WorkspaceHandlers {
     onMove: (leafId: string, to: 'left' | 'center' | 'right') => void;
     /** 내용 메뉴 「이름 바꾸기」가 쓴다 — leaf 제목만 바꾼다(틀 모양은 안 바뀐다) */
     onRename: (leafId: string, title: string) => void;
+    /**
+     * 🔴 드래그 드롭(W6·W7) — target 은 기준 leaf id 또는 자리 이름('left'|'center'|'right'), pos 는 6방.
+     *   전부 moveLeaf 한 번으로 번역된 값이다(존 판정은 resolveDropAt 이 이미 끝냈다).
+     */
+    onDropLeaf: (leafId: string, target: string, pos: MovePos) => void;
+    /** 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸 옮기기(W6 ④). 안 주면 키보드 재배치는 없다 */
+    onReorderTab?: (leafId: string, delta: -1 | 1) => void;
 }
 
 /** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) */
@@ -78,12 +88,6 @@ interface Edges {
     lastId: string | null;
     onExpandLeft?: () => void;
     onExpandRight?: () => void;
-}
-
-/** 우클릭 메뉴를 여는 통로 — NodeView 가 Tabs 에서 받아 끌어올린다 */
-interface Ctx {
-    onTab: (leaf: Leaf, tabsId: string, x: number, y: number) => void;
-    onBar: (tabsId: string, x: number, y: number) => void;
 }
 
 function toItems(leaves: Leaf[]): TabItem[] {
@@ -151,7 +155,25 @@ export function WorkspaceView({
         });
     }, [handlers]);
 
-    const ctx: Ctx = { onTab: openTab, onBar: openBar };
+    // 🔴 드래그 + 우클릭/길게누르기 한 벌(W6). el 로 어느 탭/줄인지 더듬어 틀·내용 메뉴를 연다.
+    const onContext = useCallback((x: number, y: number, el: HTMLElement) => {
+        const tabsId = el.closest('[data-tabbar]')?.getAttribute('data-tabbar') ?? null;
+        const leafId = el.closest('[data-row-id]')?.getAttribute('data-row-id') ?? null;
+        if (leafId && tabsId) {
+            const lf = flatten(node).find((l) => l.id === leafId);
+            if (lf) { openTab(lf, tabsId, x, y); return; }
+        }
+        if (tabsId) openBar(tabsId, x, y);
+    }, [node, openTab, openBar]);
+
+    // 🔴 드롭 — 포인터를 뗀 자리를 resolveDropAt 이 moveLeaf 인자로 번역한다. 트리 연산은 새로 안 짠다.
+    const onDrop = useCallback((leafId: string, x: number, y: number) => {
+        const res = resolveDropAt(x, y, leafId);
+        if (res) handlers.onDropLeaf(leafId, res.move.target, res.move.pos);
+    }, [handlers]);
+
+    const { bind, drag } = useDragLeaf({ enabled: !narrow, onContext, onDrop });
+
     const menuEl = menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={close} />;
 
     if (narrow) {
@@ -189,15 +211,17 @@ export function WorkspaceView({
         onExpandRight: centerEdges.onExpandRight,
     };
     return (
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />
+        // 🔴 data-area — 드롭이 빈 칸으로 떨어질 때 「어느 자리인가」를 더듬는 기준(resolveDropAt)
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col" data-area={area}>
+            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={bind} />
             {menuEl}
+            {drag && <DropZones drag={drag} />}
         </div>
     );
 }
 
 function NodeView({
-    node, handlers, tabButtons, rootChrome, rootId, edges, ctx,
+    node, handlers, tabButtons, rootChrome, rootId, edges, interaction,
 }: {
     node: Node;
     handlers: WorkspaceHandlers;
@@ -205,7 +229,8 @@ function NodeView({
     rootChrome?: RootChrome;
     rootId: string | null;
     edges?: Edges;
-    ctx: Ctx;
+    /** 탭 드래그·우클릭 한 벌 — 모든 탭 줄에 같은 핸들러를 얹는다(위임, data-row-id 로 가른다) */
+    interaction?: DragBind;
 }) {
     if (node.kind === 'leaf') {
         // 불변식상 맨몸 leaf 는 안 오지만, 방어적으로 그린다
@@ -258,8 +283,15 @@ function NodeView({
             </>
         );
         return (
-            <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+            // 🔴 data-pane/leaves/active — 드롭 존 판정이 이 묶음의 탭 목록·활성 탭을 더듬는 자리(resolveDropAt)
+            <div
+                className="flex-1 min-w-0 min-h-0 flex flex-col"
+                data-pane={node.id}
+                data-pane-leaves={node.children.map((c) => c.id).join(',')}
+                data-pane-active={node.activeId}
+            >
                 <Tabs
+                    tabsId={node.id}
                     tabs={toItems(node.children)}
                     activeId={node.activeId || null}
                     onSelect={handlers.onActivate}
@@ -267,14 +299,17 @@ function NodeView({
                     leading={leading}
                     trailing={trailing}
                     actions={actions}
-                    onContextTab={(id, x, y) => { const lf = node.children.find((c) => c.id === id); if (lf) ctx.onTab(lf, node.id, x, y); }}
-                    onContextBar={(x, y) => ctx.onBar(node.id, x, y)}
+                    interaction={interaction}
+                    onKeyMove={handlers.onReorderTab}
                 />
-                <EditorArea leaf={activeLeaf} />
+                {/* 🔴 data-pane-body — 가장자리 4방·가운데 존은 이 몸통 사각형으로 판정한다(탭 줄 말고 몸통) */}
+                <div className="flex-1 min-h-0 flex flex-col" data-pane-body>
+                    <EditorArea leaf={activeLeaf} />
+                </div>
             </div>
         );
     }
-    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />;
+    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} />;
 }
 
 /** 한 노드의 「유효 최소폭」(px) — 활성 뷰의 minWidth(설정 덮어쓰기 포함). split 은 1차로 0(비율 하한만) */
@@ -288,7 +323,7 @@ function nodeMinWidth(node: Node): number {
 }
 
 function SplitView({
-    node, handlers, tabButtons, rootChrome, rootId, edges, ctx,
+    node, handlers, tabButtons, rootChrome, rootId, edges, interaction,
 }: {
     node: Extract<Node, { kind: 'split' }>;
     handlers: WorkspaceHandlers;
@@ -296,7 +331,7 @@ function SplitView({
     rootChrome?: RootChrome;
     rootId: string | null;
     edges?: Edges;
-    ctx: Ctx;
+    interaction?: DragBind;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const isRow = node.dir === 'row';
@@ -310,7 +345,7 @@ function SplitView({
                         className="flex min-w-0 min-h-0 overflow-hidden"
                         style={{ flexBasis: `${(node.sizes[i] ?? 0) * 100}%`, flexGrow: 0, flexShrink: 1 }}
                     >
-                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} ctx={ctx} />
+                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} />
                     </div>
                     {i < node.children.length - 1 && (
                         <SplitHandle

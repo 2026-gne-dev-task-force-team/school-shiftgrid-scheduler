@@ -204,6 +204,20 @@
 }
 
 /*
+ * 🔴 탭 드래그 중(W6·W7) — body 에 .is-dragging 이 붙는다(useDragLeaf). 끄는 동안만:
+ *   본문 글자 선택·터치 스크롤을 막고 커서를 쥔 손으로. ⛔ touch-action:none 은 「드래그 시작 후」에만 걸어야
+ *   평소 스크롤이 죽지 않는다 — 그래서 class 로 켠다(평소엔 탭 줄이 touch-pan-x 로 스크롤을 양보한다).
+ */
+body.is-dragging, body.is-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+body.is-dragging {
+  cursor: grabbing;
+  touch-action: none;
+}
+
+/*
  * 패널 폭/높이 손잡이 — 🔴 평소에도 1px 선이 보인다(스플리터가 투명이라 자식 사이 경계가 사라지던 것, 항목 2).
  * 올리면 파랑으로 밝아지고, 끄는 동안 짙은 파랑. (쥔님 2026-10-31 "스플릿 자식 사이 경계선 없고")
  */

@@ -30,6 +30,8 @@ export { Tabs, type TabItem } from './shell/Tabs';
 export { EditorArea } from './shell/EditorArea';
 export { EmptyArea } from './shell/EmptyArea';
 export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
+export { DropZones } from './shell/DropZones';
+export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
 export { BottomBar, type BarItem } from './shell/BottomBar';
 export { TabSwitcher } from './shell/TabSwitcher';
 

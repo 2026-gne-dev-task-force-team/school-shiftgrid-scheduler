@@ -10,7 +10,7 @@
 import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import { Row } from '../primitives/Row';
 import { IconButton } from '../primitives/IconButton';
-import { useContextTrigger } from '../primitives/useContextTrigger';
+import type { DragBind } from '../primitives/useDragLeaf';
 import type { IconName } from '../primitives/Icon';
 
 export interface TabItem {
@@ -21,10 +21,12 @@ export interface TabItem {
 }
 
 export function Tabs({
-    tabs, activeId, onSelect, onClose,
+    tabsId, tabs, activeId, onSelect, onClose,
     leading, trailing, actions,
-    onContextTab, onContextBar,
+    interaction, onKeyMove,
 }: {
+    /** 이 탭 줄(tabs 노드)의 id — data-tabbar 로 심어, 드래그·우클릭 위임이 어느 묶음인지 더듬는다 */
+    tabsId: string;
     tabs: TabItem[];
     activeId: string | null;
     onSelect: (id: string) => void;
@@ -35,20 +37,14 @@ export function Tabs({
     trailing?: ReactNode;
     /** 탭 묶음 바로 뒤 액션 묶음 — +새 탭·가르기·📌·설정 */
     actions?: ReactNode;
-    /** 탭 하나를 우클릭/길게 눌렀을 때 (id, 화면좌표) — W5 */
-    onContextTab?: (id: string, x: number, y: number) => void;
-    /** 탭 줄 빈 자리를 우클릭/길게 눌렀을 때 (화면좌표) — W5 */
-    onContextBar?: (x: number, y: number) => void;
+    /**
+     * 🔴 드래그 + 우클릭/길게누르기 한 벌 — useDragLeaf 가 준 핸들러를 스크롤 줄에 그대로 얹는다(W6).
+     *   둘이 따로 살면 같은 pointerdown 을 서로 가로챈다. 어느 탭인지는 data-row-id 를 훅이 더듬는다.
+     */
+    interaction?: DragBind;
+    /** 키보드 Alt+←/→ 로 그 탭을 한 칸 옮기기 — 접근성 대안(W6 ④) */
+    onKeyMove?: (leafId: string, delta: -1 | 1) => void;
 }) {
-    // 🔴 우클릭·길게 누르기 판정은 useContextTrigger 한 곳에만 산다. 어느 탭인지는 data-row-id 를 더듬어 가른다.
-    const trigger = useContextTrigger((x, y, e) => {
-        if (!onContextTab && !onContextBar) return;
-        const el = (e.target as HTMLElement | null)?.closest?.('[data-row-id]');
-        const id = el?.getAttribute('data-row-id');
-        if (id && onContextTab) onContextTab(id, x, y);
-        else if (onContextBar) onContextBar(x, y);
-    });
-
     // 🔴 넘쳐서 스크롤되는 탭 줄에서 활성 탭을 늘 보이게 끌어온다(항목 11 — 새 탭/전환이 화면 밖으로 가지 않게)
     const scrollRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -68,7 +64,21 @@ export function Tabs({
 
             {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
             {/* 🔴 가운데 탭 영역만 넘치면 가로 스크롤 — 스크롤바는 얇게·호버 때만(tab-scroll, index.css) */}
-            <div ref={scrollRef} className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll" {...trigger}>
+            {/* 🔴 touch-pan-x: 손가락 가로 스크롤은 브라우저에 양보하고(무장 전), 세로 제스처만 드래그 판정에 쓴다 */}
+            <div
+                ref={scrollRef}
+                data-tabbar={tabsId}
+                className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll select-none touch-pan-x"
+                {...interaction}
+                onKeyDown={(e) => {
+                    if (!onKeyMove || !e.altKey) return;
+                    const delta = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+                    if (!delta) return;
+                    const el = (e.target as HTMLElement).closest('[data-row-id]');
+                    const id = el?.getAttribute('data-row-id');
+                    if (id) { e.preventDefault(); onKeyMove(id, delta as -1 | 1); }
+                }}
+            >
                 {tabs.map((t, i) => {
                     const isActive = t.id === activeId;
                     const next = tabs[i + 1];
