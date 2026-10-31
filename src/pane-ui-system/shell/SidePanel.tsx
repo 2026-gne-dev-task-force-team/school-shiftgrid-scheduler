@@ -154,7 +154,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
                         aria-label="사이드바 접기"
                     />
                     <div
-                        className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line ${smooth ? 'pane-strans' : ''}`}
+                        className={`relative h-full bg-side flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-edge ${smooth ? 'pane-strans' : ''}`}
                         style={panelStyle}
                         // 열려 있을 때만 바깥으로 끌어 닫기 — 세로 스크롤은 그대로(touch-action: pan-y)
                         onPointerDown={open ? onSwipeDown(false) : undefined}
@@ -188,7 +188,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
                     aria-label="사이드바 접기"
                 />
                 <div
-                    className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line ${panelAnim}`}
+                    className={`relative h-full bg-side flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-edge ${panelAnim}`}
                     style={{ width: w }}
                 >
                     <div className="flex-1 min-h-0 overflow-auto flex flex-col">{children}</div>
@@ -203,8 +203,8 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
     // ⭐ 안쪽 내용은 접히는 동안 고정 폭(width)을 지키며 overflow-hidden 으로 미끄러져 나간다(글자가 안 찌그러진다).
     return (
         <aside
-            className={`relative shrink-0 bg-panel flex flex-col overflow-hidden pane-wtrans
-                ${open ? (isLeft ? 'border-r border-line' : 'border-l border-line') : ''}`}
+            className={`relative shrink-0 bg-side flex flex-col overflow-hidden pane-wtrans
+                ${open ? (isLeft ? 'border-r border-edge' : 'border-l border-edge') : ''}`}
             style={{ width: open ? width : 0 }}
             aria-hidden={!open}
         >

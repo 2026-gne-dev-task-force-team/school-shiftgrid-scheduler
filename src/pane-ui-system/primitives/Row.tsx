@@ -41,16 +41,30 @@ export function Row({
      *    아래 1px 선을 제 자리에서 **덮어**(−mb-px) 탭이 몸통과 이어져 보인다.
      *    비활성 탭은 바탕 없이 글자만 · 호버 때만 살짝 밝아진다.
      *    ⛔ 활성 표시를 옅은 회색으로만 두지 말 것 — 탭이 서로 붙어 보인다.
+     *
+     * 🔴 'sidetab' 은 「사이드바 탭 한 칸」이다 — 가운데 탭과 달라야 한다(판 A, 쥔님 2026-11-01:
+     *    *"사이드 패널은 사이드 패널답게 뭔가 조금 다르게"*). 카드처럼 떠오르지 않고 **납작하다**:
+     *    활성은 바탕 없이 글자색만 진하게(text-text) + 아래 2px 강조선(border-b-accent),
+     *    비활성은 글자만(투명 밑선으로 자리만 지켜 높이가 안 흔들린다). 그래서 「사이드인지 분할인지」가 갈린다.
      */
-    variant?: 'list' | 'tab';
+    variant?: 'list' | 'tab' | 'sidetab';
     /** 탭 전용 — 오른쪽 세로 구분선. 🔴 비활성끼리만 그린다(활성 옆에는 안 그린다 — Tabs 가 판정) */
     sep?: boolean;
     title?: string;
     className?: string;
 }) {
     const isTab = variant === 'tab';
+    const isSideTab = variant === 'sidetab';
+    // 🔴 사이드탭: 납작하다 — 활성은 글자만 진하게 + 아래 2px 강조선(border-b-accent), 비활성은 투명 밑선으로
+    //    자리만 지킨다(활성↔비활성 전환에 높이가 안 흔들린다). 세로 구분선은 비활성끼리만.
+    //    ⛔ border 색은 side-별로 준다 — border-transparent/border-line 을 통째로 겹치면 밑선 색이 서로 덮인다.
+    const sideTabCls = active
+        ? 'h-full px-2 text-text border-b-2 border-b-accent'
+        : `h-full px-2 text-muted hover:text-text border-b-2 border-b-transparent ${sep ? 'border-r border-r-line' : ''}`;
     // 활성 탭: 위 모서리만 둥글게 + 좌우·위 1px 선, 아래 선은 −mb-px 로 몸통에 먹인다(옵시디언 이음새)
-    const tabCls = isTab
+    const tabCls = isSideTab
+        ? sideTabCls
+        : isTab
         ? (active
             ? 'relative z-10 h-full px-3 rounded-t-md bg-bg text-text border border-line border-b-0 -mb-px'
             : `h-full px-3 text-muted hover:text-text hover:bg-text/[0.05] ${sep ? 'border-r border-line' : ''}`)

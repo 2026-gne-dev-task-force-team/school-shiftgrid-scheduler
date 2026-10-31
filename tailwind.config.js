@@ -24,6 +24,10 @@ export default {
         ok: v('ok'),
         bad: v('bad'),
         warn: v('warn'),
+        // 사이드바 전용(판 A) — 에디터보다 한 단 어두운 바탕·탭 줄·경계선
+        side: v('side'),
+        side2: v('side2'),
+        edge: v('edge'),
       },
       fontFamily: {
         sys: ['system-ui', '"Apple SD Gothic Neo"', '"Malgun Gothic"', 'sans-serif'],
@@ -36,6 +40,8 @@ export default {
         row: 'var(--s-row)',
         btn: 'var(--s-btn)',
         railbtn: 'var(--s-railbtn)',
+        titlebar: 'var(--s-titlebar)',
+        statusbar: 'var(--s-statusbar)',
       },
       width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
       spacing: { pad: 'var(--s-pad)' },

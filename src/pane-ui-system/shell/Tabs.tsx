@@ -24,6 +24,7 @@ export function Tabs({
     tabsId, tabs, activeId, onSelect, onClose,
     leading, trailing, actions,
     interaction, onKeyMove,
+    sidebar = false,
 }: {
     /** 이 탭 줄(tabs 노드)의 id — data-tabbar 로 심어, 드래그·우클릭 위임이 어느 묶음인지 더듬는다 */
     tabsId: string;
@@ -44,6 +45,12 @@ export function Tabs({
     interaction?: DragBind;
     /** 키보드 Alt+←/→ 로 그 탭을 한 칸 옮기기 — 접근성 대안(W6 ④) */
     onKeyMove?: (leafId: string, delta: -1 | 1) => void;
+    /**
+     * 🔴 사이드바 탭 줄인가(판 A, 2026-11-01) — 켜지면 「사이드바답게」 다르게 그린다:
+     *   탭 줄 바탕 bg-side2 · 탭은 sidetab(납작·강조 밑선) · 좁은 사이드바에 맞게 칸을 더 좁힌다.
+     *   ⛔ 창틀은 「사이드바」가 무슨 뜻인지는 모른다 — 셸(WorkspaceView)이 area 로 판정해 넘긴다.
+     */
+    sidebar?: boolean;
 }) {
     // 🔴 넘쳐서 스크롤되는 탭 줄에서 활성 탭을 늘 보이게 끌어온다(항목 11 — 새 탭/전환이 화면 밖으로 가지 않게)
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -59,7 +66,8 @@ export function Tabs({
         //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
         // 🔴 items-stretch — 탭이 줄 높이를 꽉 채워야 활성 탭이 몸통까지 이어진다(아래 선을 덮는다).
         //    고정 묶음(leading/actions/trailing)은 제 폭을 지키며(shrink-0) 세로 가운데로 — ⛔ 넘쳐도 안 줄어든다(항목 11).
-        <div className="shrink-0 flex items-stretch h-topbar border-b border-line bg-panel2">
+        // 🔴 사이드바 탭 줄은 bg-side2(한 단 더 어둡다) — 가운데(bg-panel2)와 바탕부터 다르다(판 A).
+        <div className={`shrink-0 flex items-stretch h-topbar border-b border-line ${sidebar ? 'bg-side2' : 'bg-panel2'}`}>
             {leading && <div className="flex items-center shrink-0 border-r border-line">{leading}</div>}
 
             {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
@@ -94,8 +102,9 @@ export function Tabs({
                             sep={sep}
                             onClick={() => onSelect(t.id)}
                             title={t.title}
-                            className="min-w-[96px] max-w-[200px] shrink-0"
-                            variant="tab"
+                            // 사이드바 탭은 더 좁다(아이콘 + 짧은 글자) · 가운데 탭은 넉넉한 고정 폭
+                            className={sidebar ? 'min-w-0 max-w-[160px] shrink' : 'min-w-[96px] max-w-[200px] shrink-0'}
+                            variant={sidebar ? 'sidetab' : 'tab'}
                             revealOnHover
                             end={
                                 <IconButton

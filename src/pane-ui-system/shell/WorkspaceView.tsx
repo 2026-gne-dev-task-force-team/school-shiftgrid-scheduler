@@ -116,6 +116,8 @@ export function WorkspaceView({
 }) {
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const close = useCallback(() => setMenu(null), []);
+    // 🔴 사이드바인가(판 A) — 가운데가 아니면 사이드바답게 그린다(탭 줄·몸통 바탕을 한 단 어둡게).
+    const sidebar = area !== 'center';
 
     const openTab = useCallback((lf: Leaf, tabsId: string, x: number, y: number) => {
         const leafId = lf.id;
@@ -189,7 +191,7 @@ export function WorkspaceView({
         const rootTabsId = firstTabs(node)?.id ?? null;
         return (
             <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-                <div className="shrink-0 flex items-center gap-1 h-topbar border-b border-line bg-panel2 px-pad">
+                <div className={`shrink-0 flex items-center gap-1 h-topbar border-b border-line px-pad ${sidebar ? 'bg-side2' : 'bg-panel2'}`}>
                     <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{activeLeaf?.title ?? ''}</span>
                     {activeLeaf && rootTabsId && (
                         <IconButton
@@ -200,7 +202,7 @@ export function WorkspaceView({
                         />
                     )}
                 </div>
-                <EditorArea leaf={activeLeaf} />
+                <EditorArea leaf={activeLeaf} sidebar={sidebar} />
                 {menuEl}
             </div>
         );
@@ -216,7 +218,7 @@ export function WorkspaceView({
     return (
         // 🔴 data-area — 드롭이 빈 칸으로 떨어질 때 「어느 자리인가」를 더듬는 기준(resolveDropAt)
         <div className="flex-1 min-w-0 min-h-0 flex flex-col" data-area={area}>
-            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={bind} />
+            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={bind} sidebar={sidebar} />
             {menuEl}
             {drag && <DropZones drag={drag} />}
         </div>
@@ -224,7 +226,7 @@ export function WorkspaceView({
 }
 
 function NodeView({
-    node, handlers, tabButtons, rootChrome, rootId, edges, interaction,
+    node, handlers, tabButtons, rootChrome, rootId, edges, interaction, sidebar = false,
 }: {
     node: Node;
     handlers: WorkspaceHandlers;
@@ -234,10 +236,12 @@ function NodeView({
     edges?: Edges;
     /** 탭 드래그·우클릭 한 벌 — 모든 탭 줄에 같은 핸들러를 얹는다(위임, data-row-id 로 가른다) */
     interaction?: DragBind;
+    /** 사이드바 자리인가(판 A) — 탭 줄·몸통 바탕을 한 단 어둡게 */
+    sidebar?: boolean;
 }) {
     if (node.kind === 'leaf') {
         // 불변식상 맨몸 leaf 는 안 오지만, 방어적으로 그린다
-        return <EditorArea leaf={node} />;
+        return <EditorArea leaf={node} sidebar={sidebar} />;
     }
     if (node.kind === 'tabs') {
         const activeLeaf = node.children.find((c) => c.id === node.activeId) ?? null;
@@ -304,15 +308,16 @@ function NodeView({
                     actions={actions}
                     interaction={interaction}
                     onKeyMove={handlers.onReorderTab}
+                    sidebar={sidebar}
                 />
                 {/* 🔴 data-pane-body — 가장자리 4방·가운데 존은 이 몸통 사각형으로 판정한다(탭 줄 말고 몸통) */}
                 <div className="flex-1 min-h-0 flex flex-col" data-pane-body>
-                    <EditorArea leaf={activeLeaf} />
+                    <EditorArea leaf={activeLeaf} sidebar={sidebar} />
                 </div>
             </div>
         );
     }
-    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} />;
+    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} sidebar={sidebar} />;
 }
 
 /** 한 노드의 「유효 최소폭」(px) — 활성 뷰의 minWidth(설정 덮어쓰기 포함). split 은 1차로 0(비율 하한만) */
@@ -326,7 +331,7 @@ function nodeMinWidth(node: Node): number {
 }
 
 function SplitView({
-    node, handlers, tabButtons, rootChrome, rootId, edges, interaction,
+    node, handlers, tabButtons, rootChrome, rootId, edges, interaction, sidebar = false,
 }: {
     node: Extract<Node, { kind: 'split' }>;
     handlers: WorkspaceHandlers;
@@ -335,6 +340,7 @@ function SplitView({
     rootId: string | null;
     edges?: Edges;
     interaction?: DragBind;
+    sidebar?: boolean;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const isRow = node.dir === 'row';
@@ -348,7 +354,7 @@ function SplitView({
                         className="flex min-w-0 min-h-0 overflow-hidden"
                         style={{ flexBasis: `${(node.sizes[i] ?? 0) * 100}%`, flexGrow: 0, flexShrink: 1 }}
                     >
-                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} />
+                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} sidebar={sidebar} />
                     </div>
                     {i < node.children.length - 1 && (
                         <SplitHandle

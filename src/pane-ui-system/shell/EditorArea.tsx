@@ -36,13 +36,16 @@ function useElementSize() {
     return [ref, size] as const;
 }
 
-export function EditorArea({ leaf }: { leaf: Leaf | null }) {
+export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sidebar?: boolean }) {
     const [ref, size] = useElementSize();
     usePaneSettings();   // 뷰 덮어쓰기가 바뀌면 접힘 기준이 바뀐다 → 다시 그린다
 
+    // 🔴 사이드바 몸통은 bg-side(에디터 bg 보다 한 단 어둡다) — 가운데(bg-bg)와 갈려야 「사이드답게」 보인다(판 A).
+    const surface = sidebar ? 'bg-side' : 'bg-bg';
+
     if (!leaf) {
         return (
-            <div className="flex-1 min-h-0 grid place-items-center bg-bg overflow-hidden px-8 py-6 text-center">
+            <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
                 <p className="max-w-[18rem] text-[13px] text-muted/80 select-none leading-relaxed text-balance">열린 탭이 없습니다. 위 + 로 새 탭을 엽니다.</p>
             </div>
         );
@@ -50,7 +53,7 @@ export function EditorArea({ leaf }: { leaf: Leaf | null }) {
     const def = getView(leaf.viewId);
     if (!def) {
         return (
-            <div className="flex-1 min-h-0 grid place-items-center bg-bg overflow-hidden px-6 text-center">
+            <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-6 text-center`}>
                 <p className="text-2xl font-light text-muted/50 select-none truncate max-w-full">{leaf.title}</p>
             </div>
         );
@@ -62,7 +65,7 @@ export function EditorArea({ leaf }: { leaf: Leaf | null }) {
     const overflow = layout.squeeze === 'scroll' ? 'overflow-auto' : 'overflow-hidden';
     // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
     return (
-        <div ref={ref} className={`flex-1 min-h-0 ${overflow} bg-bg select-text`}>
+        <div ref={ref} className={`flex-1 min-h-0 ${overflow} ${surface} select-text`}>
             <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} />
         </div>
     );

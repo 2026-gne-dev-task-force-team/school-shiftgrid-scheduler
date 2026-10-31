@@ -14,6 +14,10 @@
   --c-panel: 247 247 245;    /* #f7f7f5 — 사이드바·패널 바탕 */
   --c-panel2: 241 241 239;   /* #f1f1ef — 머리줄·살짝 깊은 면 */
   --c-line: 223 223 220;     /* #dfdfdc — 1px 선 (이것 하나뿐) · 2026-10-31 살짝 진하게(경계선 놓침 방지) */
+  /* 🔴 사이드바 전용(판 A, 2026-11-01) — 에디터보다 한 단 짙은 회색. tokens.ts 의 notion-light 와 거울 */
+  --c-side: 236 236 233;     /* #ececE9 — 사이드바 바탕(panel 보다 한 단 어둡다) */
+  --c-side2: 229 229 226;    /* #e5e5e2 — 사이드바 탭 줄 */
+  --c-edge: 206 206 202;     /* #cecec9 — 사이드바↔가운데 경계선(line 보다 한 단 진하다) */
   --c-text: 55 53 47;        /* #37352f — 노션의 near-black */
   --c-muted: 145 145 142;    /* #91918e — 회색 글자·아이콘 */
   --c-accent: 35 131 226;    /* #2383e2 — 파랑 하나(선택·포커스) */
@@ -47,6 +51,9 @@
   --s-pad:    max(var(--f-pad,    0px), calc(8px  * var(--density)));   /* 패널 안쪽 가로 여백 (6→8, 쥔님 2026-10-31 "여백 더") */
   --s-rail:   max(var(--f-rail,   0px), calc(48px * var(--density)));   /* 리본 폭 — 옵시디언 44 보다 조금 넓다 */
   --s-railbtn: max(var(--f-railbtn, 0px), calc(28px * var(--density)));  /* 리본 아이콘 버튼 — 리본 폭보다 20px 작아 좌우 10px 여백 */
+  /* 🔴 틀 두 줄(판 A, 2026-11-01) — 전체 폭 상단 타이틀바·하단 상태바. 치수 토큰과 같은 층(코드는 h-titlebar 이름만) */
+  --s-titlebar:  max(var(--f-titlebar,  0px), calc(32px * var(--density)));  /* 상단 타이틀바(앱 이름 + 액션) */
+  --s-statusbar: max(var(--f-statusbar, 0px), calc(22px * var(--density))); /* 하단 상태바(정보 줄) */
 }
 
 /*
@@ -63,6 +70,8 @@
     --f-pad: 8px;
     --f-rail: 56px;
     --f-railbtn: 40px;
+    --f-titlebar: 44px;
+    --f-statusbar: 28px;
   }
 }
 
@@ -73,6 +82,11 @@
     --c-panel: 32 32 32;     /* #202020 */
     --c-panel2: 37 37 37;    /* #252525 */
     --c-line: 60 60 60;      /* #3c3c3c — 2026-10-31 살짝 밝게(경계선 놓침 방지) */
+    /* 🔴 사이드바 전용(판 A, 2026-11-01) — 에디터보다 한 단 더 어둡다. tokens.ts 의 notion-dark 와 거울.
+       ⚠️ edge 는 다크에선 「더 밝은 선」이 더 진한 경계다(어두운 바탕에 선이 보이려면 밝아야 한다) */
+    --c-side: 20 20 20;      /* #141414 — 사이드바 바탕(bg 보다 어둡다) */
+    --c-side2: 28 28 28;     /* #1c1c1c — 사이드바 탭 줄 */
+    --c-edge: 78 78 78;      /* #4e4e4e — 경계선(line 보다 한 단 뚜렷하다) */
     --c-text: 235 235 235;   /* #ebebeb */
     --c-muted: 155 155 155;  /* #9b9b9b */
     --c-accent: 45 140 240;  /* #2d8cf0 */
