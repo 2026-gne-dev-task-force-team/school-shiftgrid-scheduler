@@ -29,3 +29,9 @@ shots-mobile/
 shots-sheet/
 shots-feedback/
 shots-help/
+
+# 옛 일렉트론 산출물 — 빌드 스크립트는 걷어냈지만 디스크에 633MB 가 남아 있다.
+# git 이 이걸 삼키지 않게 막아 둔다 (쥔님이 지우시면 이 줄도 지운다)
+dist-app
+dist-electron
+release
