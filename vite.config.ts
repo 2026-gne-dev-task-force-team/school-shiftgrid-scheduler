@@ -4,6 +4,12 @@ import { readFileSync } from 'node:fs'
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import basicSsl from '@vitejs/plugin-basic-ssl'
+
+// 🔴 PWA 설치는 HTTPS 에서만 된다 — 폰에서 홈 화면에 붙여 보려면 dev 서버도 HTTPS 여야 한다.
+//    ⛔ 평소 실행(npm run dev · 5173)은 안 바꾼다 — 쥔님 기본은 HTTP 다. VITE_HTTPS=1 일 때만 켠다.
+//    쓰는 법: npm run dev:https → https://<호스트>:5201/ 에서 자가서명 인증서 경고를 넘기면 설치 가능.
+const https = process.env.VITE_HTTPS === '1'
 
 // 웹(GitHub Pages) 빌드 설정. 일렉트론 판은 2026-10-31 걷어냈다 — 이제 이 설정 하나뿐이다.
 export default defineConfig({
@@ -11,13 +17,19 @@ export default defineConfig({
   // GitHub Pages는 .../<repo>/ 하위 경로로 서빙되므로 상대 경로로 자산을 참조.
   // 레포 이름에 종속되지 않아 안전 (단일 페이지 앱 기준).
   base: './',
+  // VITE_HTTPS=1 일 때만 HTTPS — basicSsl 플러그인이 자가서명 인증서를 server.https 에 채운다
+  server: https ? { https: {} } : undefined,
   plugins: [
     react(),
+    // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
+    ...(https ? [basicSsl()] : []),
     // PWA — 폰 홈 화면에 붙이고 오프라인에서도 뜨게. 규칙 엔진·솔버가 전부 브라우저 안에서 돌아
     // 서버가 필요 없으니 한 번 받으면 그대로 산다. 새 배포가 올라오면 다음 실행에 조용히 갈아탄다.
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
+      // 🔴 dev 에서도 manifest·서비스워커가 돌게 한다 — 안 그러면 dev 서버에서 「설치」가 안 뜬다(폰 확인용)
+      devOptions: { enabled: true },
       includeAssets: ['favicon.svg', 'icons.svg', 'icons/*.png'],
       manifest: {
         name: '시간표 짜기',
@@ -28,8 +40,9 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'any',
-        background_color: '#f4f6f9',
-        theme_color: '#f4f6f9',
+        // 🔴 현재 테마(라이트)에 맞춘다 — 다크는 index.html 의 media theme-color 가 맡는다(판 A)
+        background_color: '#ffffff',
+        theme_color: '#ffffff',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

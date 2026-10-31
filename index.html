@@ -6,10 +6,11 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icons/icon-180.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- 기본은 밝은 화면. theme.ts 가 저장된 테마에 맞춰 이 값을 갱신한다 -->
-    <meta name="theme-color" content="#f4f6f9" />
-    <!-- iOS 홈 화면 앱: 주소창 없이 전체 화면, 상단 상태바는 밝은 바탕에 맞춘 기본값 -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- 테마 바탕에 맞춘 상단 바 색 — 시스템 밝기를 media 로 가른다(라이트=흰색, 다크=#191919) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191919" media="(prefers-color-scheme: dark)" />
+    <!-- 홈 화면 앱(standalone): 표준 키. ⛔ apple-mobile-web-app-capable 은 deprecated 라 뺐다(콘솔 경고 0) -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="시간표" />
     <meta name="description" content="규칙을 데이터로 받는 초등 시간표 도구" />

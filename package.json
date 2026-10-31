@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:https": "VITE_HTTPS=1 vite --host --port 5201",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "oxlint",
@@ -22,6 +23,7 @@
     "@types/node": "^24.13.6",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
     "oxlint": "^1.71.0",
