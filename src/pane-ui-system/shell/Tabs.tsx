@@ -7,7 +7,7 @@
  *    그 조립은 WorkspaceView(셸)가 하고, 여기선 자리만 잡는다.
  * 🔴 아이콘은 트리 leaf 가 정하는 게 아니라 뷰 등록소가 준다 — 여기선 받은 icon 을 그대로 그린다.
  */
-import type { MouseEvent, ReactNode } from 'react';
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import { Row } from '../primitives/Row';
 import { IconButton } from '../primitives/IconButton';
 import { useContextTrigger } from '../primitives/useContextTrigger';
@@ -48,6 +48,16 @@ export function Tabs({
         if (id && onContextTab) onContextTab(id, x, y);
         else if (onContextBar) onContextBar(x, y);
     });
+
+    // 🔴 넘쳐서 스크롤되는 탭 줄에서 활성 탭을 늘 보이게 끌어온다(항목 11 — 새 탭/전환이 화면 밖으로 가지 않게)
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const c = scrollRef.current;
+        if (!c || !activeId) return;
+        const sel = (window.CSS && CSS.escape) ? CSS.escape(activeId) : activeId.replace(/"/g, '\\"');
+        const el = c.querySelector<HTMLElement>(`[data-row-id="${sel}"]`);
+        el?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }, [activeId, tabs.length]);
     return (
         // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
         //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
@@ -58,7 +68,7 @@ export function Tabs({
 
             {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
             {/* 🔴 가운데 탭 영역만 넘치면 가로 스크롤 — 스크롤바는 얇게·호버 때만(tab-scroll, index.css) */}
-            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll" {...trigger}>
+            <div ref={scrollRef} className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll" {...trigger}>
                 {tabs.map((t, i) => {
                     const isActive = t.id === activeId;
                     const next = tabs[i + 1];
