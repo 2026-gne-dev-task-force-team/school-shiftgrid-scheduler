@@ -18,6 +18,8 @@ export { IconButton } from './primitives/IconButton';
 export { Row } from './primitives/Row';
 export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
+export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
+export { useContextTrigger } from './primitives/useContextTrigger';
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다
 export { SidePanel } from './shell/SidePanel';
@@ -36,6 +38,7 @@ export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
     leaf, tabs, split, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
+    closeOthers, closeToRight, areaOfLeaf,
     findLeaf, findLeafByView, firstTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';

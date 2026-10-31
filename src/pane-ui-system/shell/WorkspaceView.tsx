@@ -9,12 +9,14 @@
  *
  * ⭐ 탭 줄 단추는 자리(area)마다 다르다 — 가운데는 「+새 탭·좌우 가르기」, 사이드바는 「위아래 가르기」.
  *    어느 단추를 그릴지는 tabButtons 로 받는다. ⛔ 창틀은 그 자리가 무엇인지(도메인)는 모른다.
+ * 🔴 W5 우클릭 메뉴는 전부 이미 있는 순수 연산(close·split·move)을 부른다 — 트리 연산을 새로 짜지 않는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf } from '../layout/tree';
 import { flatten, firstTabs, MIN_FRACTION } from '../layout/tree';
 import { getView } from '../view-registry';
 import { IconButton } from '../primitives/IconButton';
+import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
 import { Tabs, type TabItem } from './Tabs';
 import { EditorArea } from './EditorArea';
 
@@ -36,6 +38,10 @@ export interface WorkspaceHandlers {
     onAddToTabs: (tabsId: string) => void;
     /** 좁은 화면 탭 줄의 + — 가운데에 새 탭 */
     onAddGlobal: () => void;
+    // ── W5 우클릭 메뉴가 부르는 것들 (전부 순수 연산 래퍼) ──
+    onCloseOthers: (leafId: string) => void;
+    onCloseRight: (leafId: string) => void;
+    onMove: (leafId: string, to: 'left' | 'center' | 'right') => void;
 }
 
 /** 좁은 화면 가운데 탭 줄에 붙는 서랍·설정 손잡이 */
@@ -45,12 +51,18 @@ interface NarrowBar {
     onOpenSettings?: () => void;
 }
 
-/** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) — ② 에서 채운다 */
+/** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) */
 export interface RootChrome {
     side: 'left' | 'right';
     onCollapse: () => void;
     pinned: boolean;
     onTogglePin: () => void;
+}
+
+/** 우클릭 메뉴를 여는 통로 — NodeView 가 Tabs 에서 받아 끌어올린다 */
+interface Ctx {
+    onTab: (leafId: string, tabsId: string, x: number, y: number) => void;
+    onBar: (tabsId: string, x: number, y: number) => void;
 }
 
 function toItems(leaves: Leaf[]): TabItem[] {
@@ -69,18 +81,53 @@ export function WorkspaceView({
     activeLeafId?: string | null;
     handlers: WorkspaceHandlers;
     narrowBar?: NarrowBar;
-    /** 이 뷰가 그리는 자리 — 우클릭 메뉴가 「지금 자리」를 비활성할 때 쓴다(③) */
+    /** 이 뷰가 그리는 자리 — 우클릭 메뉴가 「지금 자리」를 비활성할 때 쓴다 */
     area?: 'left' | 'center' | 'right';
     tabButtons?: TabButtons;
     /** 사이드바일 때만 — 루트 탭 줄 바깥 끝에 접기·📌 를 끼운다 */
     rootChrome?: RootChrome;
 }) {
-    void area;
+    const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const close = useCallback(() => setMenu(null), []);
+
+    const openTab = useCallback((leafId: string, tabsId: string, x: number, y: number) => {
+        setMenu({
+            x, y, items: [
+                { label: '닫기', icon: 'x', onClick: () => handlers.onClose(leafId) },
+                { label: '다른 탭 모두 닫기', onClick: () => handlers.onCloseOthers(leafId) },
+                { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
+                { sep: true },
+                { label: '좌우로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row') },
+                { label: '위아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col') },
+                { sep: true },
+                { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
+                { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
+                { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
+                { sep: true },
+                { label: '떼어 내기', icon: 'copy', disabled: true },   // W9 — 자리만 둔다
+            ],
+        });
+    }, [handlers, area]);
+
+    const openBar = useCallback((tabsId: string, x: number, y: number) => {
+        setMenu({
+            x, y, items: [
+                { label: '새 탭', icon: 'plus', onClick: () => handlers.onAddToTabs(tabsId) },
+                { label: '좌우로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row') },
+                { label: '위아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col') },
+            ],
+        });
+    }, [handlers]);
+
+    const ctx: Ctx = { onTab: openTab, onBar: openBar };
+    const menuEl = menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={close} />;
+
     if (narrow) {
         // 전부 펴서 탭 하나로 — split 은 안 그린다
         const leaves = flatten(node);
         const active = leaves.some((l) => l.id === activeLeafId) ? activeLeafId! : (leaves[0]?.id ?? null);
         const activeLeaf = leaves.find((l) => l.id === active) ?? null;
+        const rootTabsId = firstTabs(node)?.id ?? null;
         const narrowActions = (
             <>
                 {tabButtons.add && <IconButton icon="plus" label="새 탭" onClick={handlers.onAddGlobal} />}
@@ -103,23 +150,32 @@ export function WorkspaceView({
                         ? <IconButton icon="panelRight" label="오른쪽 사이드바" onClick={narrowBar.onOpenRight} className="mr-pad shrink-0" />
                         : undefined}
                     actions={narrowActions}
+                    onContextTab={rootTabsId ? (id, x, y) => openTab(id, rootTabsId, x, y) : undefined}
+                    onContextBar={rootTabsId ? (x, y) => openBar(rootTabsId, x, y) : undefined}
                 />
                 <EditorArea leaf={activeLeaf} />
+                {menuEl}
             </div>
         );
     }
     const rootId = firstTabs(node)?.id ?? null;
-    return <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} />;
+    return (
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+            <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />
+            {menuEl}
+        </div>
+    );
 }
 
 function NodeView({
-    node, handlers, tabButtons, rootChrome, rootId,
+    node, handlers, tabButtons, rootChrome, rootId, ctx,
 }: {
     node: Node;
     handlers: WorkspaceHandlers;
     tabButtons: TabButtons;
     rootChrome?: RootChrome;
     rootId: string | null;
+    ctx: Ctx;
 }) {
     if (node.kind === 'leaf') {
         // 불변식상 맨몸 leaf 는 안 오지만, 방어적으로 그린다
@@ -169,22 +225,25 @@ function NodeView({
                     leading={chrome?.side === 'left' ? collapseBtn : undefined}
                     trailing={chrome?.side === 'right' ? collapseBtn : undefined}
                     actions={actions}
+                    onContextTab={(id, x, y) => ctx.onTab(id, node.id, x, y)}
+                    onContextBar={(x, y) => ctx.onBar(node.id, x, y)}
                 />
                 <EditorArea leaf={activeLeaf} />
             </div>
         );
     }
-    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} />;
+    return <SplitView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />;
 }
 
 function SplitView({
-    node, handlers, tabButtons, rootChrome, rootId,
+    node, handlers, tabButtons, rootChrome, rootId, ctx,
 }: {
     node: Extract<Node, { kind: 'split' }>;
     handlers: WorkspaceHandlers;
     tabButtons: TabButtons;
     rootChrome?: RootChrome;
     rootId: string | null;
+    ctx: Ctx;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const isRow = node.dir === 'row';
@@ -196,7 +255,7 @@ function SplitView({
                         className="flex min-w-0 min-h-0 overflow-hidden"
                         style={{ flexBasis: `${(node.sizes[i] ?? 0) * 100}%`, flexGrow: 0, flexShrink: 1 }}
                     >
-                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} />
+                        <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} ctx={ctx} />
                     </div>
                     {i < node.children.length - 1 && (
                         <SplitHandle

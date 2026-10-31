@@ -10,6 +10,7 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { Row } from '../primitives/Row';
 import { IconButton } from '../primitives/IconButton';
+import { useContextTrigger } from '../primitives/useContextTrigger';
 import type { IconName } from '../primitives/Icon';
 
 export interface TabItem {
@@ -22,6 +23,7 @@ export interface TabItem {
 export function Tabs({
     tabs, activeId, onSelect, onClose,
     leading, trailing, actions,
+    onContextTab, onContextBar,
 }: {
     tabs: TabItem[];
     activeId: string | null;
@@ -33,7 +35,19 @@ export function Tabs({
     trailing?: ReactNode;
     /** 탭 묶음 바로 뒤 액션 묶음 — +새 탭·가르기·📌·설정 */
     actions?: ReactNode;
+    /** 탭 하나를 우클릭/길게 눌렀을 때 (id, 화면좌표) — W5 */
+    onContextTab?: (id: string, x: number, y: number) => void;
+    /** 탭 줄 빈 자리를 우클릭/길게 눌렀을 때 (화면좌표) — W5 */
+    onContextBar?: (x: number, y: number) => void;
 }) {
+    // 🔴 우클릭·길게 누르기 판정은 useContextTrigger 한 곳에만 산다. 어느 탭인지는 data-row-id 를 더듬어 가른다.
+    const trigger = useContextTrigger((x, y, e) => {
+        if (!onContextTab && !onContextBar) return;
+        const el = (e.target as HTMLElement | null)?.closest?.('[data-row-id]');
+        const id = el?.getAttribute('data-row-id');
+        if (id && onContextTab) onContextTab(id, x, y);
+        else if (onContextBar) onContextBar(x, y);
+    });
     return (
         // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
         //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
@@ -41,7 +55,7 @@ export function Tabs({
             {leading}
 
             {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
-            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto border-l border-line">
+            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto border-l border-line" {...trigger}>
                 {tabs.map((t) => (
                     <Row
                         key={t.id}

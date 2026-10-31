@@ -9,10 +9,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
-    useTheme, WorkspaceView, EmptyArea, registerView,
+    useTheme, WorkspaceView, EmptyArea, registerView, getView,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
     leaf, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
+    closeOthers, closeToRight, moveLeaf,
 } from '../pane-ui-system';
 import { SettingsScreen } from './settings/SettingsScreen';
 
@@ -95,7 +96,18 @@ export function WorkbenchScreen() {
             setFocus(lf.id);
         },
         onAddGlobal: addTab,
+        onCloseOthers: (id) => setWs((w) => closeOthers(w, id)),
+        onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
+        onMove: (id, to) => { setWs((w) => moveLeaf(w, id, to, 'after')); setFocus(id); },
     }), [makeSheet, addTab]);
+
+    // 빈 사이드바 우클릭 → 뷰 고르기. 고른 뷰를 그 자리에 연다
+    const openViewHere = useCallback((area: Exclude<AreaKey, 'center' | 'floating'>, viewId: string) => {
+        const title = getView(viewId)?.title ?? viewId;
+        const lf = leaf(viewId, title);
+        setWs((w) => openLeaf(w, lf, area));
+        setFocus(lf.id);
+    }, []);
 
     // 사이드바 한쪽을 그린다 — 트리가 있으면 WorkspaceView, 없으면 빈 면.
     // 접기·📌 꼭지(rootChrome)는 넓은 화면에서만 — 좁은 화면 서랍은 막(scrim)으로 닫는다.
@@ -108,7 +120,7 @@ export function WorkbenchScreen() {
             pinned,
             onTogglePin: () => panels.setPinned(area, !pinned),
         };
-        if (!node) return <EmptyArea chrome={chrome} />;
+        if (!node) return <EmptyArea chrome={chrome} onPick={(viewId) => openViewHere(area, viewId)} />;
         return (
             <WorkspaceView
                 node={node}

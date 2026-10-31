@@ -273,6 +273,37 @@ export function closeLeaf(ws: Workspace, id: string): Workspace {
     });
 }
 
+/** leaf 가 어느 자리에 사나 — 우클릭 메뉴가 「지금 자리」 항목을 비활성할 때 쓴다 */
+export function areaOfLeaf(ws: Workspace, id: string): AreaKey | null {
+    for (const area of ['center', 'left', 'right'] as const) {
+        if (findTabsContaining(ws[area], id)) return area;
+    }
+    if (ws.floating.some((l) => l.id === id)) return 'floating';
+    return null;
+}
+
+/** 이 leaf 가 든 tabs 에서 「나만 빼고」 전부 닫기 — 다른 자리는 안 건드린다 */
+export function closeOthers(ws: Workspace, id: string): Workspace {
+    const t = findTabsContaining(ws.center, id)
+        ?? findTabsContaining(ws.left, id)
+        ?? findTabsContaining(ws.right, id);
+    if (!t) return ws;
+    const victims = t.children.filter((c) => c.id !== id).map((c) => c.id);
+    return victims.reduce((w, v) => closeLeaf(w, v), ws);
+}
+
+/** 이 leaf 보다 「오른쪽(뒤)」 탭을 전부 닫기 — 같은 tabs 안에서만 */
+export function closeToRight(ws: Workspace, id: string): Workspace {
+    const t = findTabsContaining(ws.center, id)
+        ?? findTabsContaining(ws.left, id)
+        ?? findTabsContaining(ws.right, id);
+    if (!t) return ws;
+    const i = t.children.findIndex((c) => c.id === id);
+    if (i < 0) return ws;
+    const victims = t.children.slice(i + 1).map((c) => c.id);
+    return victims.reduce((w, v) => closeLeaf(w, v), ws);
+}
+
 /** leaf 열기 — 이미 같은 id 가 있으면 그걸 활성화. floating 이면 더미 끝에, 아니면 그 자리 첫 tabs 에 */
 export function openLeaf(ws: Workspace, lf: Leaf, where: AreaKey = 'center'): Workspace {
     if (findLeaf(ws, lf.id)) return activateLeaf(ws, lf.id);

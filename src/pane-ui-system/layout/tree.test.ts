@@ -12,6 +12,7 @@ import {
     type Workspace, type Node,
     leaf, tabs, split, emptyWorkspace, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
+    closeOthers, closeToRight, areaOfLeaf,
     findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
 } from './tree';
 
@@ -170,6 +171,55 @@ describe('openLeaf / addLeafToTabs', () => {
         const ws = addLeafToTabs(base, tabsId, L('d'));
         expect(flatten(ws.center).map((l) => l.id)).toEqual(['a', 'b', 'c', 'd']);
         expect(violations(ws)).toEqual([]);
+    });
+});
+
+describe('closeOthers / closeToRight (W5 우클릭 메뉴용 순수 연산)', () => {
+    it('다른 탭 모두 닫기 — 나만 남는다', () => {
+        const ws = closeOthers(wsThree(), 'b');
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['b']);
+        if (ws.center.kind === 'tabs') expect(ws.center.activeId).toBe('b');
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('오른쪽 탭 닫기 — 뒤에 것만 닫는다(앞은 남는다)', () => {
+        const ws = closeToRight(wsThree(), 'b');   // a,b,c → a,b
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['a', 'b']);
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('맨 오른쪽 탭에서 오른쪽 닫기 — 아무것도 안 닫힌다', () => {
+        const base = wsThree();
+        const ws = closeToRight(base, 'c');
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('다른 자리는 안 건드린다 — center 에서 닫아도 right 는 그대로', () => {
+        let ws = openLeaf(wsThree(), L('r'), 'right');
+        ws = closeOthers(ws, 'a');
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['a']);
+        expect(flatten(ws.right).map((l) => l.id)).toEqual(['r']);
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('split 안의 한 묶음에서 닫아도 그 묶음만 준다', () => {
+        // center = split(row,[tabs(a,b), tabs(c)])  — 왼쪽 묶음에서 b 를 남기고 닫기
+        const base = normalize({ ...emptyWorkspace(), center: tabs([L('a'), L('b')], 'a') });
+        const ws0 = splitAt(base, (base.center as { id: string }).id, 'row', L('c'));
+        const ws = closeOthers(ws0, 'b');
+        expect(flatten(ws.center).map((l) => l.id).sort()).toEqual(['b', 'c']);
+        expect(violations(ws)).toEqual([]);
+    });
+});
+
+describe('areaOfLeaf', () => {
+    it('어느 자리에 사는지 돌려준다', () => {
+        let ws = openLeaf(wsThree(), L('r'), 'right');
+        ws = openLeaf(ws, L('f'), 'floating');
+        expect(areaOfLeaf(ws, 'a')).toBe('center');
+        expect(areaOfLeaf(ws, 'r')).toBe('right');
+        expect(areaOfLeaf(ws, 'f')).toBe('floating');
+        expect(areaOfLeaf(ws, '없다')).toBeNull();
     });
 });
 

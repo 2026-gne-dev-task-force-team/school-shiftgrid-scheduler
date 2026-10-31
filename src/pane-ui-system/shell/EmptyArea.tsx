@@ -2,22 +2,35 @@
  * 빈 자리 — 사이드바에 트리가 없을 때(left/right 가 null) 그리는 빈 면.
  * ⛔ 더미 패널을 미리 채우지 않는다 — 빈 면 + 한 줄 안내만. 내용은 끌어오거나 메뉴로 보낸다.
  *
- * 🔴 창틀은 자리가 무엇인지(도메인) 모른다 — 안내 글귀는 뜻 없는 「여기」 뿐이다.
+ * 🔴 창틀은 자리가 무엇인지(도메인) 모른다 — 안내 글귀는 뜻 없는 「여기」 뿐이다. 뷰 이름은 등록소가 준다.
  * ⭐ 비어도 접기·📌 는 있어야 한다(쥔님이 빈 사이드바를 접을 길이 없으면 갇힌다) — 머리줄에 둔다.
+ * ⭐ 빈 면 우클릭(손가락은 길게) → 뷰 등록소 목록에서 「여기에 열기」.
  */
+import { useCallback, useState } from 'react';
 import { IconButton } from '../primitives/IconButton';
+import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
+import { useContextTrigger } from '../primitives/useContextTrigger';
+import { listViews } from '../view-registry';
 import type { RootChrome } from './WorkspaceView';
 
 export function EmptyArea({
     chrome,
-    onContextMenu,
+    onPick,
 }: {
     /** 접기·📌 꼭지 — 넓은 화면 사이드바에서만 온다(좁은 화면·가운데는 없음) */
     chrome?: RootChrome;
-    /** 빈 면 우클릭(손가락은 길게) — 뷰 고르기 메뉴 (③) */
-    onContextMenu?: (x: number, y: number) => void;
+    /** 뷰 고르기에서 하나를 골랐을 때 — 그 뷰를 이 자리에 연다 */
+    onPick?: (viewId: string) => void;
 }) {
     const isLeft = chrome?.side === 'left';
+    const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+    const trigger = useContextTrigger((x, y) => { if (onPick) setMenu({ x, y }); });
+
+    const items: MenuEntry[] = [
+        { label: '여기에 열기', disabled: true },
+        ...listViews().map((v) => ({ label: v.title, icon: v.icon, onClick: () => onPick?.(v.id) })),
+    ];
+
     const collapseBtn = chrome && (
         <IconButton
             icon={isLeft ? 'left' : 'right'}
@@ -26,6 +39,8 @@ export function EmptyArea({
             className="shrink-0"
         />
     );
+    const close = useCallback(() => setMenu(null), []);
+
     return (
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
             {chrome && (
@@ -41,16 +56,12 @@ export function EmptyArea({
                     {!isLeft && collapseBtn}
                 </div>
             )}
-            <div
-                className="flex-1 min-h-0 grid place-items-center bg-bg px-6 text-center"
-                onContextMenu={onContextMenu
-                    ? (e) => { e.preventDefault(); onContextMenu(e.clientX, e.clientY); }
-                    : undefined}
-            >
+            <div className="flex-1 min-h-0 grid place-items-center bg-bg px-6 text-center" {...trigger}>
                 <p className="text-[13px] text-muted/80 select-none leading-relaxed">
                     비어 있습니다.<br />여기로 끌어오거나 메뉴로 보내세요.
                 </p>
             </div>
+            {menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={close} />}
         </div>
     );
 }
