@@ -7,11 +7,11 @@
  * 🔴 features/ 라 색은 토큰 클래스로만.
  */
 import { useState } from 'react';
-import { Row } from '../../ui/primitives/Row';
-import { Icon } from '../../ui/primitives/Icon';
-import { IconButton } from '../../ui/primitives/IconButton';
-import { useNarrow } from '../../core/layout/useScreen';
-import type { ThemeControls } from '../../theme/useTheme';
+import { Row } from '../../workbench';
+import { Icon } from '../../workbench';
+import { IconButton } from '../../workbench';
+import { useNarrow } from '../../workbench';
+import type { ThemeControls } from '../../workbench';
 import { SETTINGS_MENUS } from './registry';
 
 export function SettingsScreen({ theme }: { theme: ThemeControls }) {

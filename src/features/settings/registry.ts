@@ -10,8 +10,8 @@
  *   2) 아래 SETTINGS_MENUS 에 { id, title, icon, Pane } 한 줄을 넣는다
  */
 import type { ComponentType } from 'react';
-import type { IconName } from '../../ui/primitives/Icon';
-import type { ThemeControls } from '../../theme/useTheme';
+import type { IconName } from '../../workbench';
+import type { ThemeControls } from '../../workbench';
 import { AppearancePane } from './panes/AppearancePane';
 
 /** 각 설정 Pane 이 받는 것 — 지금은 테마 제어뿐. 늘어나면 여기에 담는다 */

@@ -2,7 +2,7 @@
  * 테마 설정 모델 + 기기별 보관.
  *
  * 🔴 기기별 localStorage 에 둔다 — ⛔ 프로젝트 파일에 안 넣는다. 테마는 화면(기기)의 성질이지
- *    자료의 성질이 아니다. 폰에서 고른 어두운 테마가 학교 PC 로 따라가면 안 된다(패널 폭과 같은 이유).
+ *    자료의 성질이 아니다. 폰에서 고른 어두운 테마가 사무실 PC 로 따라가면 안 된다(패널 폭과 같은 이유).
  *
  * 받아들이기는 panels.ts 의 normalizePanels 와 같은 성질이다 — 모양이 틀린 "그 칸만" 기본값으로
  * 떨어뜨린다(통째로 버리지 않는다).
@@ -11,6 +11,7 @@ import {
     DEFAULT_ACCENT_ID, DEFAULT_DENSITY, ACCENTS, COLOR_TOKENS,
     type ColorToken, type DensityId,
 } from './tokens';
+import { storageKey } from '../storage';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -23,7 +24,12 @@ export interface ThemeSettings {
     custom?: Partial<Record<ColorToken, string>>;
 }
 
-export const THEME_KEY = 'shiftgrid.v2.theme';
+/**
+ * 🔴 ⛔ 상수로 굳히지 않는다 — 모듈을 import 하는 순간 값이 박혀서
+ *    앱이 setStoragePrefix 를 부르기 전에 'workbench.*' 로 고정된다(실제로 그렇게 짰다가 잡았다).
+ *    쓸 때마다 부른다. 이게 「먼저 읽히는 것」과 「나중에 설정되는 것」이 부딪히는 전형이다.
+ */
+export const themeKey = () => storageKey('theme');
 
 const MODES: ThemeMode[] = ['system', 'light', 'dark'];
 const DENSITIES: DensityId[] = ['compact', 'cozy'];
@@ -65,7 +71,7 @@ export function normalizeThemeSettings(raw: unknown): ThemeSettings {
 export function loadThemeSettings(): ThemeSettings {
     try {
         if (typeof localStorage === 'undefined') return defaultThemeSettings();
-        const s = localStorage.getItem(THEME_KEY);
+        const s = localStorage.getItem(themeKey());
         if (!s) return defaultThemeSettings();
         return normalizeThemeSettings(JSON.parse(s));
     } catch { return defaultThemeSettings(); }
@@ -74,6 +80,6 @@ export function loadThemeSettings(): ThemeSettings {
 export function saveThemeSettings(s: ThemeSettings): void {
     try {
         if (typeof localStorage === 'undefined') return;
-        localStorage.setItem(THEME_KEY, JSON.stringify(s));
+        localStorage.setItem(themeKey(), JSON.stringify(s));
     } catch { /* 조용히 */ }
 }

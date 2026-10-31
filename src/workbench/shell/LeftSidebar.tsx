@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { SectionHeader } from '../primitives/SectionHeader';
-import { splitFromDrag } from '../../core/layout/panels';
+import { splitFromDrag } from '../layout/panels';
 
 interface Section {
     title: string;

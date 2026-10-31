@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton } from '../primitives/IconButton';
-import { RAIL, widthFromDrag } from '../../core/layout/panels';
+import { RAIL, widthFromDrag } from '../layout/panels';
 
 interface Props {
     side: 'left' | 'right';

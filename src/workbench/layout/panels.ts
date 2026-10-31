@@ -3,10 +3,11 @@
  * 순수 계산 + 기기별 보관만 한다(도메인을 모른다).
  *
  * 🔴 기기별 localStorage 에 둔다(프로젝트 파일에 안 넣는다). 화면 크기는 기기의 성질이지
- *    자료의 성질이 아니다 — 폰에서 접어 둔 것이 학교 PC 로 따라가면 안 된다.
+ *    자료의 성질이 아니다 — 폰에서 접어 둔 것이 사무실 PC 로 따라가면 안 된다.
  *
  * (출처: 옛 v2 `src/v2/panels.ts` — leftSplit 한 칸을 더하고 저장 키를 새로 뒀다.)
  */
+import { storageKey } from '../storage';
 
 export const MIN_PANEL = 150;
 export const MAX_PANEL = 520;
@@ -33,8 +34,13 @@ export interface PanelState {
     leftSplit: number;
 }
 
-/** 🔴 저장 키는 새로 — 옛 v2(shiftgrid.v2.panels)와 모양이 달라서 섞이면 안 된다 */
-export const LAYOUT_KEY = 'shiftgrid.v2.layout';
+/** 🔴 앱 이름은 여기 안 박는다 — 접두사는 앱이 setStoragePrefix 로 알려 준다(storage.ts) */
+/**
+ * 🔴 ⛔ 상수로 굳히지 않는다 — 모듈을 import 하는 순간 값이 박혀서
+ *    앱이 setStoragePrefix 를 부르기 전에 'workbench.*' 로 고정된다(실제로 그렇게 짰다가 잡았다).
+ *    쓸 때마다 부른다. 이게 「먼저 읽히는 것」과 「나중에 설정되는 것」이 부딪히는 전형이다.
+ */
+export const layoutKey = () => storageKey('layout');
 
 export function defaultPanels(): PanelState {
     return {
@@ -73,7 +79,7 @@ export function normalizePanels(raw: unknown): PanelState {
 export function loadPanels(): PanelState {
     try {
         if (typeof localStorage === 'undefined') return defaultPanels();
-        const s = localStorage.getItem(LAYOUT_KEY);
+        const s = localStorage.getItem(layoutKey());
         if (!s) return defaultPanels();
         return normalizePanels(JSON.parse(s));
     } catch { return defaultPanels(); }
@@ -82,7 +88,7 @@ export function loadPanels(): PanelState {
 export function savePanels(s: PanelState): void {
     try {
         if (typeof localStorage === 'undefined') return;
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(s));
+        localStorage.setItem(layoutKey(), JSON.stringify(s));
     } catch { /* 조용히 */ }
 }
 

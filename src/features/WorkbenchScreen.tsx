@@ -3,15 +3,10 @@
  * 🔴 조립만 한다 — 색·px 를 쓰지 않는다(그건 조각·셸의 몫). 도메인·엔진·파일은 아직 없다.
  */
 import { useCallback, useRef, useState } from 'react';
-import { useNarrow, usePanels } from '../core/layout/useScreen';
-import { SidePanel } from '../ui/shell/SidePanel';
-import { LeftSidebar } from '../ui/shell/LeftSidebar';
-import { RightPanel } from '../ui/shell/RightPanel';
-import { Rail } from '../ui/shell/Rail';
-import { Tabs, type TabItem } from '../ui/shell/Tabs';
-import { EditorArea } from '../ui/shell/EditorArea';
-import { IconButton } from '../ui/primitives/IconButton';
-import { useTheme } from '../theme/useTheme';
+import {
+    useNarrow, usePanels, SidePanel, LeftSidebar, RightPanel, Rail,
+    Tabs, type TabItem, EditorArea, IconButton, useTheme,
+} from '../workbench';
 import { SettingsScreen } from './settings/SettingsScreen';
 
 export function WorkbenchScreen() {
