@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import {
     type Workspace, type Node,
     leaf, tabs, split, emptyWorkspace, normalize,
-    openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
+    openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf,
     findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
 } from './tree';
@@ -327,6 +327,41 @@ describe('moveLeaf — 순서 바꾸기', () => {
     it('자기 자신에 붙이면 그대로', () => {
         const base = wsThree();
         expect(moveLeaf(base, 'a', 'a', 'after')).toBe(base);
+    });
+});
+
+describe('moveTabWithin — 키보드 Alt+←/→ 한 칸 옮기기', () => {
+    it('오른쪽(+1): a → [b,a,c]', () => {
+        const ws = moveTabWithin(wsThree(), 'a', 1);
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['b', 'a', 'c']);
+        expect(violations(ws)).toEqual([]);
+    });
+    it('왼쪽(-1): c → [a,c,b]', () => {
+        const ws = moveTabWithin(wsThree(), 'c', -1);
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['a', 'c', 'b']);
+        expect(violations(ws)).toEqual([]);
+    });
+    it('가운데 b 를 왼쪽 → [b,a,c]', () => {
+        const ws = moveTabWithin(wsThree(), 'b', -1);
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['b', 'a', 'c']);
+    });
+    it('왼쪽 끝에서 더 왼쪽 → 그대로(이웃 없음)', () => {
+        const base = wsThree();
+        expect(moveTabWithin(base, 'a', -1)).toBe(base);
+    });
+    it('오른쪽 끝에서 더 오른쪽 → 그대로', () => {
+        const base = wsThree();
+        expect(moveTabWithin(base, 'c', 1)).toBe(base);
+    });
+    it('없는 leaf → 그대로', () => {
+        const base = wsThree();
+        expect(moveTabWithin(base, 'zzz', 1)).toBe(base);
+    });
+    it('사이드바 탭도 같은 줄 안에서 옮긴다', () => {
+        let ws = normalize({ ...emptyWorkspace(), left: tabs([L('p'), L('q'), L('r')], 'p') });
+        ws = moveTabWithin(ws, 'p', 1);
+        expect(flatten(ws.left).map((l) => l.id)).toEqual(['q', 'p', 'r']);
+        expect(violations(ws)).toEqual([]);
     });
 });
 

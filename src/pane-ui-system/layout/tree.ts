@@ -458,3 +458,20 @@ export function moveLeaf(ws: Workspace, leafId: string, target: string, pos: Mov
         replaceNodeById(node, targetTabs.id, (tn) =>
             BEFORE_SIDE.has(pos) ? split(dir, [newTabs, tn]) : split(dir, [tn, newTabs])));
 }
+
+/**
+ * 같은 탭 줄 안에서 한 칸 옮기기 — 키보드 Alt+←/→(W6, 접근성 대안)가 쓴다.
+ *   delta -1 = 왼쪽(앞), +1 = 오른쪽(뒤). 이웃이 없으면(양 끝) 그대로 둔다.
+ * 🔴 트리 연산을 새로 짜지 않는다 — 이웃 탭을 찾아 moveLeaf before/after 한 번으로 번역한다.
+ */
+export function moveTabWithin(ws: Workspace, leafId: string, delta: -1 | 1): Workspace {
+    const t = findTabsContaining(ws.center, leafId)
+        ?? findTabsContaining(ws.left, leafId)
+        ?? findTabsContaining(ws.right, leafId);
+    if (!t) return ws;
+    const i = t.children.findIndex((c) => c.id === leafId);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= t.children.length) return ws;   // 이웃 없음 — 양 끝
+    const neighbor = t.children[j];
+    return moveLeaf(ws, leafId, neighbor.id, delta < 0 ? 'before' : 'after');
+}

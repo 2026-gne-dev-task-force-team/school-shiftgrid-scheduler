@@ -21,6 +21,7 @@ export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { useContextTrigger } from './primitives/useContextTrigger';
+export { useDragLeaf, type DragLeafState, type DragBind } from './primitives/useDragLeaf';
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다
 export { SidePanel } from './shell/SidePanel';
@@ -39,6 +40,7 @@ export {
     SWIPE_EDGE, SWIPE_DEADZONE, SWIPE_SNAP,
     classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, type SwipeAxis,
 } from './layout/mobile';
+export { paneZone, tabDropSide, EDGE_BAND, type PaneZone, type Rect } from './layout/drag';
 
 // 폭 가두기 + 뷰 레이아웃 힌트 — 순수 계산(상수는 설정에서 온다)
 export {
@@ -58,7 +60,7 @@ export {
 export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
-    openLeaf, closeLeaf, activateLeaf, moveLeaf, splitAt, resize, addLeafToTabs,
+    openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, renameLeaf,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
