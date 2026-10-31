@@ -40,7 +40,9 @@ export function LeftSidebar({
             <VSplitHandle rootRef={rootRef} split={split} onSplit={onSplit} />
 
             {/* 아래 칸 */}
-            <section className="flex flex-col min-h-0" style={{ flex: '1 1 0%' }}>
+            {/* 🔴 위 칸과 갈리는 선 — 헤더 위에 선이 없으면 앞 칸 몸통과 붙어 보인다(쥔님 지적 22:23).
+                스플리터는 평소 투명이라 경계 노릇을 못 한다 — 선은 따로 긋는다 */}
+            <section className="flex flex-col min-h-0 border-t border-line" style={{ flex: '1 1 0%' }}>
                 <SectionHeader title={bottom.title} end={bottom.actions} />
                 <div className="flex-1 min-h-0 overflow-auto" />
             </section>
