@@ -45,7 +45,8 @@
   --s-row:    max(var(--f-row,    0px), calc(28px * var(--density)));   /* 목록 한 줄(탭 한 칸 포함) */
   --s-btn:    max(var(--f-btn,    0px), calc(24px * var(--density)));   /* 아이콘 단추 */
   --s-pad:    max(var(--f-pad,    0px), calc(6px  * var(--density)));   /* 패널 안쪽 가로 여백 */
-  --s-rail:   max(var(--f-rail,   0px), calc(48px * var(--density)));   /* 왼쪽 아이콘 레일 폭 — 아이콘이 벽에 붙으면 답답하다 */
+  --s-rail:   max(var(--f-rail,   0px), calc(48px * var(--density)));   /* 리본 폭 — 옵시디언 44 보다 조금 넓다 */
+  --s-railbtn: max(var(--f-railbtn, 0px), calc(28px * var(--density)));  /* 리본 아이콘 버튼 — 리본 폭보다 20px 작아 좌우 10px 여백 */
 }
 
 /*
@@ -60,7 +61,8 @@
     --f-row: 36px;
     --f-btn: 32px;
     --f-pad: 8px;
-    --f-rail: 52px;
+    --f-rail: 56px;
+    --f-railbtn: 40px;
   }
 }
 

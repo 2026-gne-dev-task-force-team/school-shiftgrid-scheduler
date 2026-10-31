@@ -10,6 +10,7 @@
  *    설정은 좁은 화면에서도 열 수 있게 탭 줄에 ⚙ 를 하나 붙여 둔다(Tabs.tsx).
  * 🔴 색은 토큰으로만.
  */
+import type { CSSProperties } from 'react';
 import { IconButton } from '../primitives/IconButton';
 
 export function Rail({
@@ -18,16 +19,22 @@ export function Rail({
     onAdd: () => void;
     onOpenSettings: () => void;
 }) {
+    // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다.
+    //    옵시디언 리본을 눈금 삼았다: 띠 48 · 버튼 28(좌우 10px 여백) · 아이콘 18 · 버튼 사이 4 · 위아래 8.
+    //    ⛔ IconButton 에 폭 클래스를 덮어쓰지 않는다 — 같은 특이도라 어느 쪽이 이길지 CSS 순서에 달린다
     return (
-        <nav className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2.5 gap-2">
+        <nav
+            className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1"
+            style={{ '--s-btn': 'var(--s-railbtn)' } as CSSProperties}
+        >
             {/* 위: 앱 기능(명령) 아이콘 — 지금은 「새 표」 하나뿐이다 */}
-            <IconButton icon="plus" label="새 표" onClick={onAdd} />
+            <IconButton icon="plus" label="새 표" size={18} onClick={onAdd} />
 
             {/* 가운데는 비워 둔다 — 나중에 패널·명령 아이콘이 쌓일 자리(W8) */}
             <div className="flex-1" />
 
             {/* 맨 아래 고정: 설정 */}
-            <IconButton icon="gear" label="설정 열기" onClick={onOpenSettings} />
+            <IconButton icon="gear" label="설정 열기" size={18} onClick={onOpenSettings} />
         </nav>
     );
 }

@@ -41,7 +41,7 @@ export const COLOR_DEFS: Record<ColorToken, ColorDef> = {
 
 // ── 치수 토큰 ─────────────────────────────────────────────────────────────
 // 🔴 이름만 index.css 와 맞으면 된다. 실제 px·밀도·손가락 바닥은 index.css 가 쥔다(그 주석 참조).
-export const SIZE_TOKENS = ['topbar', 'header', 'row', 'btn', 'pad', 'rail'] as const;
+export const SIZE_TOKENS = ['topbar', 'header', 'row', 'btn', 'pad', 'rail', 'railbtn'] as const;
 export type SizeToken = (typeof SIZE_TOKENS)[number];
 
 // ── 강조색 프리셋 ──────────────────────────────────────────────────────────
