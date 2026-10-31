@@ -52,13 +52,6 @@ export interface WorkspaceHandlers {
     onRename: (leafId: string, title: string) => void;
 }
 
-/** 좁은 화면 가운데 탭 줄에 붙는 서랍·설정 손잡이 */
-interface NarrowBar {
-    onOpenLeft?: () => void;
-    onOpenRight?: () => void;
-    onOpenSettings?: () => void;
-}
-
 /** 루트 탭 줄의 바깥 끝에 끼우는 사이드바 꼭지(접기·📌) */
 export interface RootChrome {
     side: 'left' | 'right';
@@ -98,7 +91,7 @@ function toItems(leaves: Leaf[]): TabItem[] {
 }
 
 export function WorkspaceView({
-    node, narrow, activeLeafId, handlers, narrowBar,
+    node, narrow, activeLeafId, handlers,
     area = 'center',
     tabButtons = { add: true, splitRow: true },
     rootChrome,
@@ -109,7 +102,6 @@ export function WorkspaceView({
     /** 좁은 화면에서 어느 leaf 를 볼지(넓은 화면에선 각 tabs 의 activeId 를 쓴다) */
     activeLeafId?: string | null;
     handlers: WorkspaceHandlers;
-    narrowBar?: NarrowBar;
     /** 이 뷰가 그리는 자리 — 우클릭 메뉴가 「지금 자리」를 비활성할 때 쓴다 */
     area?: 'left' | 'center' | 'right';
     tabButtons?: TabButtons;
@@ -163,36 +155,26 @@ export function WorkspaceView({
     const menuEl = menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={close} />;
 
     if (narrow) {
-        // 전부 펴서 탭 하나로 — split 은 안 그린다
+        // 🔴 좁은 화면: 탭 줄을 없앤다(탭 전환은 하단 바 ▦ → TabSwitcher 가 맡는다). split 도 안 그린다 —
+        //    flatten() 으로 편 leaf 중 하나만 본다. 서랍 여닫기도 여기 없다(하단 바가 쥔다).
+        //    대신 얇은 머리줄 하나: 현재 탭 제목 + ⋯. ⛔ 서랍 이름·탭 줄을 박지 않는다(쥔님 2026-10-31).
         const leaves = flatten(node);
         const active = leaves.some((l) => l.id === activeLeafId) ? activeLeafId! : (leaves[0]?.id ?? null);
         const activeLeaf = leaves.find((l) => l.id === active) ?? null;
         const rootTabsId = firstTabs(node)?.id ?? null;
-        const narrowActions = (
-            <>
-                {tabButtons.add && <IconButton icon="plus" label="새 탭" onClick={handlers.onAddGlobal} />}
-                {narrowBar?.onOpenSettings && (
-                    <IconButton icon="gear" label="설정 열기" onClick={narrowBar.onOpenSettings} />
-                )}
-            </>
-        );
         return (
             <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-                <Tabs
-                    tabs={toItems(leaves)}
-                    activeId={active}
-                    onSelect={handlers.onActivate}
-                    onClose={handlers.onClose}
-                    leading={narrowBar?.onOpenLeft
-                        ? <IconButton icon="panelLeft" label="왼쪽 사이드바" onClick={narrowBar.onOpenLeft} className="mx-pad shrink-0" />
-                        : undefined}
-                    trailing={narrowBar?.onOpenRight
-                        ? <IconButton icon="panelRight" label="오른쪽 사이드바" onClick={narrowBar.onOpenRight} className="mr-pad shrink-0" />
-                        : undefined}
-                    actions={narrowActions}
-                    onContextTab={rootTabsId ? (id, x, y) => { const lf = leaves.find((l) => l.id === id); if (lf) openTab(lf, rootTabsId, x, y); } : undefined}
-                    onContextBar={rootTabsId ? (x, y) => openBar(rootTabsId, x, y) : undefined}
-                />
+                <div className="shrink-0 flex items-center gap-1 h-topbar border-b border-line bg-panel2 px-pad">
+                    <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{activeLeaf?.title ?? ''}</span>
+                    {activeLeaf && rootTabsId && (
+                        <IconButton
+                            icon="dots"
+                            label="이 탭 메뉴"
+                            onClick={(e) => openTab(activeLeaf, rootTabsId, e.clientX, e.clientY)}
+                            className="shrink-0"
+                        />
+                    )}
+                </div>
                 <EditorArea leaf={activeLeaf} />
                 {menuEl}
             </div>

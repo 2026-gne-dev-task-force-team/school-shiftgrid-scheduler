@@ -10,8 +10,9 @@
  * 🔴 접기/펴기·📌 단추 자체는 여기 없다 — 안에 든 탭 줄(WorkspaceView rootChrome)·빈 면(EmptyArea)이 그린다.
  *    (옵시디언처럼 「사이드바 탭 줄 바깥 끝」에 산다 — 쥔님 지시 2026-10-31)
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { widthFromDrag } from '../layout/panels';
+import { SWIPE_EDGE, classifySwipe, swipeProgress, settleOpen, type SwipeAxis } from '../layout/mobile';
 
 interface Props {
     side: 'left' | 'right';
@@ -55,7 +56,120 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
         return () => window.removeEventListener('keydown', h);
     }, [drawer, open, onToggle]);
 
-    // ── 덮는 서랍(좁은 화면 또는 고정 풀림) ──
+    // ── 좁은 화면 서랍의 스와이프 (③) ──
+    // 🔴 가장자리에서 안쪽으로 끌면 손가락을 따라 열리고, 열린 서랍을 바깥으로 끌면 닫힌다.
+    //    세로 스크롤과 안 싸우게 10px 데드존으로 축을 잠근 뒤에만 가로를 가져간다(layout/mobile).
+    //    놓는 순간 절반(settleOpen)을 넘었으면 확정, 아니면 되돌아간다 — 그 사이(settling) 짧게 미끄러진다.
+    const [entered, setEntered] = useState(open);   // 좁은 화면 전용: 0↔1 미끄러짐의 목표 위치
+    const [drag, setDrag] = useState<{ progress: number; settling: boolean } | null>(null);
+    const gesture = useRef<{ opening: boolean; startX: number; startY: number; width: number; axis: SwipeAxis; id: number } | null>(null);
+    const settleTimer = useRef<number | null>(null);
+
+    // 열림이 바뀌면 한 프레임 뒤 entered 를 맞춰 미끄러지게(마운트 직후면 0→1 로 들어온다). 좁은 화면에서만.
+    useEffect(() => {
+        if (!narrow) return;
+        if (open) {
+            const r = requestAnimationFrame(() => setEntered(true));
+            return () => cancelAnimationFrame(r);
+        }
+        setEntered(false);
+    }, [open, narrow]);
+    useEffect(() => () => { if (settleTimer.current != null) clearTimeout(settleTimer.current); }, []);
+
+    const estWidth = useCallback(() => {
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 360;
+        return Math.min(vw * 0.86, 330);
+    }, []);
+
+    // opening=true → 가장자리 띠(여는 스와이프) · opening=false → 열린 패널(닫는 스와이프)
+    const onSwipeDown = useCallback((opening: boolean) => (e: React.PointerEvent) => {
+        if (!narrow || e.pointerType === 'mouse') return;   // 스와이프는 손가락만(마우스는 단추로)
+        gesture.current = { opening, startX: e.clientX, startY: e.clientY, width: estWidth(), axis: 'none', id: e.pointerId };
+    }, [narrow, estWidth]);
+
+    const onSwipeMove = useCallback((e: React.PointerEvent) => {
+        const g = gesture.current;
+        if (!g || e.pointerId !== g.id) return;
+        const dx = e.clientX - g.startX;
+        const dy = e.clientY - g.startY;
+        if (g.axis === 'none') {
+            const a = classifySwipe(dx, dy);
+            if (a === 'none') return;
+            if (a === 'vertical') { gesture.current = null; return; }   // 세로 스크롤 — 양보한다
+            g.axis = 'horizontal';
+            try { (e.currentTarget as HTMLElement).setPointerCapture(g.id); } catch { /* 무시 */ }
+        }
+        e.preventDefault();
+        setDrag({ progress: swipeProgress(side, g.opening, dx, g.width), settling: false });
+    }, [side]);
+
+    const onSwipeUp = useCallback((e: React.PointerEvent) => {
+        const g = gesture.current;
+        if (!g || e.pointerId !== g.id) return;
+        gesture.current = null;
+        if (g.axis !== 'horizontal') { setDrag(null); return; }
+        const dx = e.clientX - g.startX;
+        const willOpen = settleOpen(swipeProgress(side, g.opening, dx, g.width));
+        const changed = willOpen !== open;
+        setDrag({ progress: willOpen ? 1 : 0, settling: true });   // 남은 거리를 미끄러져 확정
+        settleTimer.current = window.setTimeout(() => {
+            setEntered(willOpen);
+            if (changed) onToggle(willOpen);
+            setDrag(null);
+        }, 180);
+    }, [side, open, onToggle]);
+
+    // ── 좁은 화면 서랍(③ 스와이프 + 미끄러짐) ──
+    if (drawer && narrow) {
+        const dragging = drag != null;
+        const visible = rendered || dragging;
+        // 닫혀 있는 동안 가장자리 20px 띠로 여는 스와이프를 받는다(드래그 중에도 떠 있어 포인터 캡처가 안 끊긴다)
+        const band = !open && (
+            <div
+                aria-hidden="true"
+                className={`fixed top-0 bottom-0 z-[130] ${isLeft ? 'left-0' : 'right-0'}`}
+                style={{ width: SWIPE_EDGE, touchAction: 'pan-y' }}
+                onPointerDown={onSwipeDown(true)}
+                onPointerMove={onSwipeMove}
+                onPointerUp={onSwipeUp}
+                onPointerCancel={onSwipeUp}
+            />
+        );
+        if (!visible) return band || null;
+
+        const progress = dragging ? drag.progress : (entered ? 1 : 0);
+        const off = isLeft ? (progress - 1) * 100 : (1 - progress) * 100;
+        // 손가락을 따라가는 동안엔 전환을 끈다(즉각) · 확정 중(settling)·단추 여닫기엔 켠다(미끄러짐)
+        const smooth = !dragging || drag.settling;
+        const panelStyle: CSSProperties = { width: 'min(86vw, 330px)', transform: `translateX(${off}%)` };
+        const scrimStyle: CSSProperties = { opacity: progress };
+        return (
+            <>
+                {band}
+                <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
+                    <button
+                        className={`absolute inset-0 bg-black/40 ${smooth ? 'pane-strans' : ''}`}
+                        style={scrimStyle}
+                        onClick={() => onToggle(false)}
+                        aria-label="사이드바 접기"
+                    />
+                    <div
+                        className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line ${smooth ? 'pane-strans' : ''}`}
+                        style={panelStyle}
+                        // 열려 있을 때만 바깥으로 끌어 닫기 — 세로 스크롤은 그대로(touch-action: pan-y)
+                        onPointerDown={open ? onSwipeDown(false) : undefined}
+                        onPointerMove={open ? onSwipeMove : undefined}
+                        onPointerUp={open ? onSwipeUp : undefined}
+                        onPointerCancel={open ? onSwipeUp : undefined}
+                    >
+                        <div className="flex-1 min-h-0 overflow-auto flex flex-col" style={{ touchAction: 'pan-y' }}>{children}</div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // ── 덮는 서랍(넓은 화면 고정 풀림) ──
     if (drawer) {
         // 🔴 접힌 사이드바는 폭 0 으로 완전히 사라진다 — 레일(28px) 없음(W6). 다시 펴는 길은 가운데 탭 줄 양 끝의 ◧/◨
         if (!rendered) return null;

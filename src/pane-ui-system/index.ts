@@ -15,6 +15,7 @@ export { setStoragePrefix, storageKey } from './storage';
 
 export { Surface } from './primitives/Surface';
 export { IconButton } from './primitives/IconButton';
+export { BottomSheet } from './primitives/BottomSheet';
 export { Row } from './primitives/Row';
 export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
@@ -28,10 +29,16 @@ export { Tabs, type TabItem } from './shell/Tabs';
 export { EditorArea } from './shell/EditorArea';
 export { EmptyArea } from './shell/EmptyArea';
 export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
+export { BottomBar, type BarItem } from './shell/BottomBar';
+export { TabSwitcher } from './shell/TabSwitcher';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
 export type { PanelState } from './layout/panels';
+export {
+    SWIPE_EDGE, SWIPE_DEADZONE, SWIPE_SNAP,
+    classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, type SwipeAxis,
+} from './layout/mobile';
 
 // 폭 가두기 + 뷰 레이아웃 힌트 — 순수 계산(상수는 설정에서 온다)
 export {
