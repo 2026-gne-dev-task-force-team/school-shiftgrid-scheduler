@@ -29,7 +29,7 @@ export function IconButton({
             aria-label={label}
             title={title ?? label}
             onClick={onClick}
-            className={`grid place-items-center w-7 h-7 rounded shrink-0 transition-colors
+            className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
                 hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
                 ${active ? 'text-text bg-text/[0.06]' : 'text-muted hover:text-text'} ${className}`}
         >

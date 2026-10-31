@@ -35,7 +35,7 @@ export function Row({
 }) {
     return (
         <div
-            className={`group flex items-center gap-2 h-8 px-2 rounded cursor-pointer select-none transition-colors
+            className={`group flex items-center gap-2 h-row px-pad rounded cursor-pointer select-none transition-colors
                 ${active ? 'bg-text/[0.06] text-text' : 'text-muted hover:text-text hover:bg-text/[0.04]'} ${className}`}
             onClick={onClick}
             role="button"

@@ -18,7 +18,7 @@ export function SectionHeader({
     end?: ReactNode;
 }) {
     return (
-        <div className="group flex items-center gap-1 h-7 px-2 shrink-0 select-none">
+        <div className="group flex items-center gap-1 h-header px-pad shrink-0 select-none">
             <button
                 type="button"
                 onClick={onToggle}

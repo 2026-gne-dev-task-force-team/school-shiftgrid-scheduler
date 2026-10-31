@@ -1,11 +1,10 @@
 /**
- * 왼쪽 사이드바 — 위·아래 두 칸. 각 칸은 머리(SectionHeader) + 빈 몸통(Surface).
+ * 왼쪽 사이드바 — 위·아래 두 칸. 각 칸은 머리(SectionHeader) + 빈 몸통.
  * 두 칸 다 펴져 있으면 경계를 끌어 높이 비율(leftSplit)을 바꾼다. 하나가 접히면 다른 칸이 남는 자리를 전부 먹는다.
  * 🔴 기능 0 — 몸통은 내용 없는 빈칸이다. 색·px 는 안쪽 조각(Surface 등)이 쥔다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SectionHeader } from '../primitives/SectionHeader';
-import { Surface } from '../primitives/Surface';
 import { IconButton } from '../primitives/IconButton';
 import { splitFromDrag } from '../../core/layout/panels';
 
@@ -40,11 +39,9 @@ export function LeftSidebar({
                     onToggle={top.onToggle}
                     end={<IconButton icon="plus" label={`${top.title}에 추가`} size={14} onClick={() => { /* 껍데기 — 기능 없음 */ }} />}
                 />
-                {!top.collapsed && (
-                    <div className="flex-1 min-h-0 overflow-auto p-2">
-                        <Surface tone="bg" className="h-full w-full" />
-                    </div>
-                )}
+                {/* 🔴 빈 몸통은 정말 비워 둔다 — 여백도 테두리 상자도 두지 않는다.
+                    내용 없는 자리에 상자를 그리면 그게 「베젤」로 보인다(2026-10-31 쥔님 지적). */}
+                {!top.collapsed && <div className="flex-1 min-h-0 overflow-auto" />}
             </section>
 
             {/* 세로 분할 손잡이 — 두 칸 다 펴졌을 때만 */}
@@ -62,11 +59,7 @@ export function LeftSidebar({
                     onToggle={bottom.onToggle}
                     end={<IconButton icon="plus" label={`${bottom.title}에 추가`} size={14} onClick={() => { /* 껍데기 — 기능 없음 */ }} />}
                 />
-                {!bottom.collapsed && (
-                    <div className="flex-1 min-h-0 overflow-auto p-2">
-                        <Surface tone="bg" className="h-full w-full" />
-                    </div>
-                )}
+                {!bottom.collapsed && <div className="flex-1 min-h-0 overflow-auto" />}
             </section>
         </div>
     );

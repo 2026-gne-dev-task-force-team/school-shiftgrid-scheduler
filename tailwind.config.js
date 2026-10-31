@@ -28,6 +28,16 @@ export default {
       fontFamily: {
         sys: ['system-ui', '"Apple SD Gothic Neo"', '"Malgun Gothic"', 'sans-serif'],
       },
+      // 치수도 색과 같은 층이다 — 화면 코드는 h-header 처럼 이름만 쓰고 몇 px 인지 모른다.
+      // 손가락 기기에서 값이 커지는 것도 index.css 변수가 혼자 한다.
+      height: {
+        topbar: 'var(--s-topbar)',
+        header: 'var(--s-header)',
+        row: 'var(--s-row)',
+        btn: 'var(--s-btn)',
+      },
+      width: { btn: 'var(--s-btn)' },
+      spacing: { pad: 'var(--s-pad)' },
     },
   },
   plugins: [],

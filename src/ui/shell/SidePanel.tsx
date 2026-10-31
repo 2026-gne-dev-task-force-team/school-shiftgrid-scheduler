@@ -40,7 +40,7 @@ export function SidePanel({ side, title, open, width, narrow, onWidth, onToggle,
                     className={`relative h-full bg-panel flex flex-col shadow-lg ${isLeft ? 'border-r' : 'border-l'} border-line`}
                     style={{ width: 'min(86vw, 330px)' }}
                 >
-                    <div className="shrink-0 flex items-center gap-2 px-3 h-11 border-b border-line">
+                    <div className="shrink-0 flex items-center gap-2 px-pad h-header border-b border-line">
                         <span className="text-[13px] font-semibold text-text">{title}</span>
                         <IconButton icon="x" label="닫기" onClick={() => onToggle(false)} className="ml-auto" />
                     </div>

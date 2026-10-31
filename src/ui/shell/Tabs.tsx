@@ -26,7 +26,7 @@ export function Tabs({
     onOpenRight?: () => void;
 }) {
     return (
-        <div className="shrink-0 flex items-center gap-1 h-10 px-1.5 border-b border-line bg-bg">
+        <div className="shrink-0 flex items-center gap-1 h-topbar px-pad border-b border-line bg-bg">
             {narrow && onOpenLeft && (
                 <IconButton icon="panelLeft" label="왼쪽 서랍 열기" onClick={onOpenLeft} />
             )}
