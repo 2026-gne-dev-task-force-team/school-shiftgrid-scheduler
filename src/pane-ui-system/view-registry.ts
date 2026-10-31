@@ -62,6 +62,11 @@ export function registerView(def: ViewDef): void {
     registry.set(def.id, def);
 }
 
+/** 등록을 되돌린다 — 호스트의 Disposable 이 부른다(P2 비활성에서 뷰가 자리표시로 바뀌는 자리). */
+export function unregisterView(id: string): void {
+    registry.delete(id);
+}
+
 export function getView(id: string): ViewDef | undefined {
     return registry.get(id);
 }
