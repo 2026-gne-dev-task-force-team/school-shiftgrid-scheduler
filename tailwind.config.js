@@ -36,7 +36,7 @@ export default {
         row: 'var(--s-row)',
         btn: 'var(--s-btn)',
       },
-      width: { btn: 'var(--s-btn)' },
+      width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)' },
       spacing: { pad: 'var(--s-pad)' },
     },
   },

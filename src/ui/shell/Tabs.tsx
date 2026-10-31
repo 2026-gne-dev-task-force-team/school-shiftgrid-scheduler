@@ -10,11 +10,13 @@ import { IconButton } from '../primitives/IconButton';
 export interface TabItem {
     id: string;
     title: string;
+    /** 🔴 이 탭이 "무엇을 담는가" — 표(기본)인지 설정 화면인지. 아이콘·본문이 이걸로 갈린다 */
+    kind: 'sheet' | 'settings';
 }
 
 export function Tabs({
     tabs, activeId, onSelect, onClose, onAdd,
-    narrow = false, onOpenLeft, onOpenRight,
+    narrow = false, onOpenLeft, onOpenRight, onOpenSettings,
 }: {
     tabs: TabItem[];
     activeId: string | null;
@@ -24,6 +26,8 @@ export function Tabs({
     narrow?: boolean;
     onOpenLeft?: () => void;
     onOpenRight?: () => void;
+    /** 좁은 화면엔 레일이 없다 — 설정 손잡이를 탭 줄에 붙인다 */
+    onOpenSettings?: () => void;
 }) {
     return (
         <div className="shrink-0 flex items-center gap-1 h-topbar px-pad border-b border-line bg-bg">
@@ -35,7 +39,7 @@ export function Tabs({
                 {tabs.map((t) => (
                     <Row
                         key={t.id}
-                        icon="table"
+                        icon={t.kind === 'settings' ? 'gear' : 'table'}
                         label={t.title}
                         active={t.id === activeId}
                         onClick={() => onSelect(t.id)}
@@ -56,6 +60,9 @@ export function Tabs({
             </div>
 
             <IconButton icon="plus" label="새 표" onClick={onAdd} />
+            {narrow && onOpenSettings && (
+                <IconButton icon="gear" label="설정 열기" onClick={onOpenSettings} />
+            )}
             {narrow && onOpenRight && (
                 <IconButton icon="panelRight" label="오른쪽 서랍 열기" onClick={onOpenRight} />
             )}

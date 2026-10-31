@@ -7,13 +7,17 @@ import { useNarrow, usePanels } from '../core/layout/useScreen';
 import { SidePanel } from '../ui/shell/SidePanel';
 import { LeftSidebar } from '../ui/shell/LeftSidebar';
 import { RightPanel } from '../ui/shell/RightPanel';
+import { Rail } from '../ui/shell/Rail';
 import { Tabs, type TabItem } from '../ui/shell/Tabs';
 import { EditorArea } from '../ui/shell/EditorArea';
 import { IconButton } from '../ui/primitives/IconButton';
+import { useTheme } from '../theme/useTheme';
+import { SettingsScreen } from './settings/SettingsScreen';
 
 export function WorkbenchScreen() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
+    const theme = useTheme();
 
     // 탭 — 열기·닫기·전환만 실제로 돈다
     const [tabs, setTabs] = useState<TabItem[]>([]);
@@ -23,10 +27,20 @@ export function WorkbenchScreen() {
     const addTab = useCallback(() => {
         seq.current += 1;
         const id = `t${seq.current}`;
-        const tab: TabItem = { id, title: `표 ${seq.current}` };
+        const tab: TabItem = { id, title: `표 ${seq.current}`, kind: 'sheet' };
         setTabs((ts) => [...ts, tab]);
         setActiveId(id);
     }, []);
+
+    // 설정 — 이미 열려 있으면 그 탭으로 전환만(중복으로 안 열린다)
+    const openSettings = useCallback(() => {
+        const existing = tabs.find((t) => t.kind === 'settings');
+        if (existing) { setActiveId(existing.id); return; }
+        seq.current += 1;
+        const id = `s${seq.current}`;
+        setTabs((ts) => [...ts, { id, title: '설정', kind: 'settings' }]);
+        setActiveId(id);
+    }, [tabs]);
 
     const closeTab = useCallback((id: string) => {
         const idx = tabs.findIndex((t) => t.id === id);
@@ -43,6 +57,17 @@ export function WorkbenchScreen() {
 
     return (
         <div className="flex h-full w-full overflow-hidden">
+            {/* 왼쪽 아이콘 레일 — 넓은 화면에서만. 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
+            {!narrow && (
+                <Rail
+                    leftOpen={panels.state.leftOpen}
+                    rightOpen={panels.state.rightOpen}
+                    onToggleLeft={() => panels.toggle('left', !panels.state.leftOpen)}
+                    onToggleRight={() => panels.toggle('right', !panels.state.rightOpen)}
+                    onOpenSettings={openSettings}
+                />
+            )}
+
             {/* 왼쪽 사이드바 — 위·아래 두 칸 */}
             <SidePanel
                 side="left"
@@ -73,8 +98,11 @@ export function WorkbenchScreen() {
                     narrow={narrow}
                     onOpenLeft={() => panels.toggle('left', true)}
                     onOpenRight={() => panels.toggle('right', true)}
+                    onOpenSettings={openSettings}
                 />
-                <EditorArea tab={activeTab} />
+                {activeTab?.kind === 'settings'
+                    ? <SettingsScreen theme={theme} />
+                    : <EditorArea tab={activeTab} />}
             </main>
 
             {/* 오른쪽 패널 — 빈 몸통 */}

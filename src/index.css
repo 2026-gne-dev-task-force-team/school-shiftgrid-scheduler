@@ -25,27 +25,42 @@
   /*
    * 치수 — 색과 같은 층이다. 작업대 UI 는 머리줄이 낮고 여백이 얇아야 「도구」로 느껴진다.
    * ⛔ 셸·화면 코드가 px 를 직접 쓰지 않는다 — h-header · px-pad 같은 이름만 쓴다.
-   * 밀도(편안/빽빽)를 나중에 고르게 하려면 이 다섯 값만 갈아끼우면 된다.
+   *
+   * 🔴 값의 원본은 src/theme/tokens.ts 다(이름·기본값·바닥). 여기 값은 두 몫만 한다:
+   *    ① 첫 화면 깜빡임 방지(JS 가 돌기 전의 기본 그림) ② 손가락 바닥을 max() 로 지키는 장치.
+   *    토큰 "이름" 이 tokens.ts 와 어긋나면 theme/__tests__ 의 대조 검사가 빨간불을 낸다.
+   *
+   * 🔴 밀도(빽빽/편안)는 --s-* 를 "직접 인라인으로 꽂지 않는다". 인라인은 아래 coarse media 를
+   *    이겨서 손가락 기기의 큰 치수(바닥)를 깨 버린다 — 손가락인데 24px 단추로 돌아간다.
+   *    그래서 applyTheme 은 배율 --density 하나만 인라인으로 꽂고, 여기서 곱한다:
+   *      --s-* = max(바닥, 기본 × 밀도)
+   *    ⭐ 어느 쪽이 이기나: coarse(손가락) 바닥이 이긴다. 빽빽(0.85)을 골라도 손가락이면 바닥 아래로
+   *       안 내려간다. 마우스 기기는 바닥이 0 이라 밀도가 그대로 먹는다.
    */
+  --density: 1;       /* applyTheme 이 인라인으로 덮는다(빽빽 0.85 / 편안 1) */
+
   /* 🔴 탭 줄과 패널 머리줄은 같은 높이다 — 다르면 좌·중·우가 단차로 어긋나 보인다(쥔님 지적 21:55) */
-  --s-topbar: 32px;   /* 탭 줄 */
-  --s-header: 32px;   /* 사이드바·패널 머리줄 — ⛔ topbar 와 어긋나게 두지 말 것 */
-  --s-row: 28px;      /* 목록 한 줄(탭 한 칸 포함) */
-  --s-btn: 24px;      /* 아이콘 단추 */
-  --s-pad: 6px;       /* 패널 안쪽 가로 여백 */
+  --s-topbar: max(var(--f-topbar, 0px), calc(32px * var(--density)));   /* 탭 줄 */
+  --s-header: max(var(--f-header, 0px), calc(32px * var(--density)));   /* 사이드바·패널 머리줄 — ⛔ topbar 와 어긋나게 두지 말 것 */
+  --s-row:    max(var(--f-row,    0px), calc(28px * var(--density)));   /* 목록 한 줄(탭 한 칸 포함) */
+  --s-btn:    max(var(--f-btn,    0px), calc(24px * var(--density)));   /* 아이콘 단추 */
+  --s-pad:    max(var(--f-pad,    0px), calc(6px  * var(--density)));   /* 패널 안쪽 가로 여백 */
+  --s-rail:   max(var(--f-rail,   0px), calc(44px * var(--density)));   /* 왼쪽 아이콘 레일 폭 */
 }
 
 /*
  * 손가락 기기는 같은 치수가 너무 작다(손가락으로 24px 단추를 못 맞춘다).
  * 🔴 색과 마찬가지로 값만 바꾼다 — 컴포넌트는 한 줄도 안 바뀐다. 이게 치수를 토큰으로 둔 값어치다.
+ * ⭐ 여기선 --s-* 를 직접 덮지 않고 "바닥(--f-*)" 만 올린다 — 위 max() 가 밀도보다 이 바닥을 세운다.
  */
 @media (hover: none) and (pointer: coarse) {
   :root {
-    --s-topbar: 40px;
-    --s-header: 40px;
-    --s-row: 36px;
-    --s-btn: 32px;
-    --s-pad: 8px;
+    --f-topbar: 40px;
+    --f-header: 40px;
+    --f-row: 36px;
+    --f-btn: 32px;
+    --f-pad: 8px;
+    --f-rail: 52px;
   }
 }
 

@@ -1,0 +1,79 @@
+/**
+ * 테마 설정 모델 + 기기별 보관.
+ *
+ * 🔴 기기별 localStorage 에 둔다 — ⛔ 프로젝트 파일에 안 넣는다. 테마는 화면(기기)의 성질이지
+ *    자료의 성질이 아니다. 폰에서 고른 어두운 테마가 학교 PC 로 따라가면 안 된다(패널 폭과 같은 이유).
+ *
+ * 받아들이기는 panels.ts 의 normalizePanels 와 같은 성질이다 — 모양이 틀린 "그 칸만" 기본값으로
+ * 떨어뜨린다(통째로 버리지 않는다).
+ */
+import {
+    DEFAULT_ACCENT_ID, DEFAULT_DENSITY, ACCENTS, COLOR_TOKENS,
+    type ColorToken, type DensityId,
+} from './tokens';
+
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export interface ThemeSettings {
+    mode: ThemeMode;
+    density: DensityId;
+    /** 강조색 프리셋 id (tokens.ts 의 ACCENTS) */
+    accent: string;
+    /** 🔴 나중 자리 — 사용자가 토큰을 직접 덮는 자유 테마. 모양 틀린 칸은 버린다 */
+    custom?: Partial<Record<ColorToken, string>>;
+}
+
+export const THEME_KEY = 'shiftgrid.v2.theme';
+
+const MODES: ThemeMode[] = ['system', 'light', 'dark'];
+const DENSITIES: DensityId[] = ['compact', 'cozy'];
+
+export function defaultThemeSettings(): ThemeSettings {
+    return { mode: 'system', density: DEFAULT_DENSITY, accent: DEFAULT_ACCENT_ID };
+}
+
+/** "r g b" 세 수인가 — custom 토큰 값 받아들이기용 */
+function isTriplet(v: unknown): v is string {
+    return typeof v === 'string' && /^\s*\d{1,3}\s+\d{1,3}\s+\d{1,3}\s*$/.test(v);
+}
+
+/** custom 에서 아는 토큰 + 성한 값만 추린다(모르는 키·틀린 값은 버린다) */
+function normalizeCustom(raw: unknown): Partial<Record<ColorToken, string>> | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const o = raw as Record<string, unknown>;
+    const out: Partial<Record<ColorToken, string>> = {};
+    let any = false;
+    for (const t of COLOR_TOKENS) {
+        if (isTriplet(o[t])) { out[t] = o[t] as string; any = true; }
+    }
+    return any ? out : undefined;
+}
+
+export function normalizeThemeSettings(raw: unknown): ThemeSettings {
+    const d = defaultThemeSettings();
+    if (!raw || typeof raw !== 'object') return d;
+    const o = raw as Record<string, unknown>;
+    return {
+        mode: MODES.includes(o.mode as ThemeMode) ? (o.mode as ThemeMode) : d.mode,
+        density: DENSITIES.includes(o.density as DensityId) ? (o.density as DensityId) : d.density,
+        // 아는 프리셋 id 만 받는다 — 없으면 기본 강조색
+        accent: ACCENTS.some((a) => a.id === o.accent) ? (o.accent as string) : d.accent,
+        custom: normalizeCustom(o.custom),
+    };
+}
+
+export function loadThemeSettings(): ThemeSettings {
+    try {
+        if (typeof localStorage === 'undefined') return defaultThemeSettings();
+        const s = localStorage.getItem(THEME_KEY);
+        if (!s) return defaultThemeSettings();
+        return normalizeThemeSettings(JSON.parse(s));
+    } catch { return defaultThemeSettings(); }
+}
+
+export function saveThemeSettings(s: ThemeSettings): void {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        localStorage.setItem(THEME_KEY, JSON.stringify(s));
+    } catch { /* 조용히 */ }
+}
