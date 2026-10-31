@@ -12,6 +12,7 @@ import {
     useTheme, WorkspaceView, EmptyArea, registerView, getView,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, type BarItem,
+    TitleBar, type TitleAction,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
@@ -206,8 +207,20 @@ export function WorkbenchScreen() {
         { id: 'settings', icon: 'gear', label: '설정', onClick: openSettings },
     ];
 
+    // 🔴 타이틀바 오른쪽 액션 슬롯 — 앱이 꽂는다(배열). ⛔ 설정 ⚙ 는 여기 안 둔다(리본 아래에 그대로).
+    //    데모로 「새 표」 하나를 꽂아 슬롯이 사는 것을 보인다 — 더 쌓고 싶으면 이 배열에 줄을 더한다.
+    const titleActions: TitleAction[] = [
+        { id: 'new-sheet', icon: 'plus', label: '새 표', onClick: addTab },
+    ];
+    const showTitleBar = pane.settings.showTitleBar;
+
     return (
-        <div className="flex h-full w-full overflow-hidden">
+        <div className="flex flex-col h-full w-full overflow-hidden">
+            {/* 🔴 상단 타이틀바 — 전체 폭 한 줄(리본·사이드바·가운데 위). 앱 이름·액션은 앱이 넘긴다 */}
+            {showTitleBar && <TitleBar title="시간표 짜기" actions={titleActions} />}
+
+            {/* 틀 가운데 줄 — 리본·사이드바·가운데·사이드바가 가로로 */}
+            <div className="flex flex-1 min-h-0 w-full overflow-hidden">
             {/* 왼쪽 아이콘 레일 — 넓은 화면에서만. 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
             {!narrow && (
                 <Rail onOpenView={openView} onOpenSettings={openSettings} />
@@ -279,6 +292,7 @@ export function WorkbenchScreen() {
                     />
                 </>
             )}
+            </div>
         </div>
     );
 }

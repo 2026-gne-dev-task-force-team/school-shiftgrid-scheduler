@@ -27,6 +27,14 @@ export interface PaneSettings {
     tabMaxWidth: number;
     /** 이 폭 아래는 좁은 화면(붙박이 대신 서랍) */
     narrowWidth: number;
+    /** 🔴 틀 두 줄 보이기(판 A) — 상단 타이틀바 · 하단 상태바. 기기별 저장(화면의 성질) */
+    showTitleBar: boolean;
+    showStatusBar: boolean;
+    /**
+     * 🔴 좁은 화면 상태바(판 A) — ⛔ 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김이다(쥔님).
+     *    기본 false, 켜면 좁은 화면에도 뜬다(그때 하단 플로팅 바와 안 겹치게 바 마진을 올린다).
+     */
+    statusBarNarrow: boolean;
 }
 
 /** 뷰별 레이아웃 덮어쓰기 — 키는 viewId(뜻은 모름), 값은 ViewLayout 의 일부 */
@@ -40,6 +48,9 @@ const DEFAULTS: PaneSettings = {
     tabMinWidth: 96,
     tabMaxWidth: 200,
     narrowWidth: 860,
+    showTitleBar: true,
+    showStatusBar: true,
+    statusBarNarrow: false,
 };
 
 export function defaultPaneSettings(): PaneSettings {
@@ -67,6 +78,9 @@ export function normalizePaneSettings(raw: unknown): PaneSettings {
         tabMinWidth: num(o.tabMinWidth, d.tabMinWidth),
         tabMaxWidth: num(o.tabMaxWidth, d.tabMaxWidth),
         narrowWidth: num(o.narrowWidth, d.narrowWidth),
+        showTitleBar: typeof o.showTitleBar === 'boolean' ? o.showTitleBar : d.showTitleBar,
+        showStatusBar: typeof o.showStatusBar === 'boolean' ? o.showStatusBar : d.showStatusBar,
+        statusBarNarrow: typeof o.statusBarNarrow === 'boolean' ? o.statusBarNarrow : d.statusBarNarrow,
     };
 }
 

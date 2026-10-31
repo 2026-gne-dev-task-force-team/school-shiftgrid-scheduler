@@ -83,6 +83,13 @@ export function PaneSettingsPane() {
                 </Field>
             </div>
 
+            {/* 🔴 틀 두 줄(판 A) — 상단 타이틀바·하단 상태바 보이기. 기기별 저장 */}
+            <div className="flex flex-col gap-4 pt-4 border-t border-line">
+                <Field title="상단 바 보이기" hint="전체 폭 상단 타이틀바(앱 이름·액션)">
+                    <Toggle on={settings.showTitleBar} onToggle={(v) => set({ showTitleBar: v })} />
+                </Field>
+            </div>
+
             <div className="pt-2 border-t border-line">
                 <button
                     type="button"

@@ -34,6 +34,7 @@ export { DropZones } from './shell/DropZones';
 export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
 export { BottomBar, type BarItem } from './shell/BottomBar';
 export { TabSwitcher } from './shell/TabSwitcher';
+export { TitleBar, type TitleAction } from './shell/TitleBar';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';
