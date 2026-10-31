@@ -75,6 +75,13 @@ export function resolveDropAt(px: number, py: number, dragId: string): DropResol
         return { move: { target: area, pos: 'after' }, preview: { kind: 'area', box: toBox(empty.getBoundingClientRect()) } };
     }
 
+    // ③-b 피크 기둥(W9) — 떨구면 피크 더미로(임시). 'floating' 표식만 보고 판정한다(존 세분 없음 —
+    //    피크는 늘 「맨 끝 한 장」만 보이니 before/after 를 가를 자리가 없다, 쥔님 설계).
+    const peek = hit.closest('[data-area="floating"]') as HTMLElement | null;
+    if (peek) {
+        return { move: { target: 'floating', pos: 'after' }, preview: { kind: 'area', box: toBox(peek.getBoundingClientRect()) } };
+    }
+
     // ④ 칸 몸통 — 바깥 25% 띠면 그 방향으로 가르기, 안쪽이면 가운데(탭으로)
     const body = hit.closest('[data-pane-body]') as HTMLElement | null;
     if (body) {

@@ -13,6 +13,7 @@ import {
     leaf, tabs, split, emptyWorkspace, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf,
+    peekPush, peekPop, peekClear, peekPromote,
     findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
 } from './tree';
 
@@ -502,5 +503,65 @@ describe('상수', () => {
     it('MIN_FRACTION 은 0~1 사이', () => {
         expect(MIN_FRACTION).toBeGreaterThan(0);
         expect(MIN_FRACTION).toBeLessThan(1);
+    });
+});
+
+describe('피크 더미(W9) — push/pop/clear/promote 는 순수하고 불변식을 지킨다', () => {
+    it('push — 맨 끝(보이는 자리)에 쌓인다 · 불변식 성함', () => {
+        let ws = emptyWorkspace();
+        ws = peekPush(ws, L('p1'));
+        ws = peekPush(ws, L('p2'));
+        expect(ws.floating.map((l) => l.id)).toEqual(['p1', 'p2']);   // 맨 끝 p2 가 보인다
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('push — 이미 있는 장은 두 장 안 만들고 맨 끝으로 끌어올린다', () => {
+        let ws = emptyWorkspace();
+        ws = peekPush(ws, L('p1'));
+        ws = peekPush(ws, L('p2'));
+        ws = peekPush(ws, L('p1'));   // 다시 p1
+        expect(ws.floating.map((l) => l.id)).toEqual(['p2', 'p1']);   // 한 장뿐 · 맨 끝으로
+    });
+
+    it('pop — 맨 위 한 장만 되돌린다 · 빈 더미면 그대로', () => {
+        let ws = peekPush(peekPush(emptyWorkspace(), L('p1')), L('p2'));
+        ws = peekPop(ws);
+        expect(ws.floating.map((l) => l.id)).toEqual(['p1']);
+        ws = peekPop(ws);
+        expect(ws.floating).toEqual([]);
+        expect(peekPop(ws).floating).toEqual([]);   // 빈 더미 — 아무 일 없음
+    });
+
+    it('clear — 전부 닫는다', () => {
+        let ws = peekPush(peekPush(emptyWorkspace(), L('p1')), L('p2'));
+        ws = peekClear(ws);
+        expect(ws.floating).toEqual([]);
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('promote — 맨 위 한 장을 가운데로 보낸다(피크에서 빠지고 가운데 탭이 된다)', () => {
+        let ws = wsThree();                     // center: a,b,c
+        ws = peekPush(ws, L('p1'));
+        ws = peekPromote(ws, 'center');
+        expect(ws.floating).toEqual([]);                 // 피크에서 빠졌다
+        expect(findTabsOfId(ws, 'p1')).not.toBeNull();   // 가운데 어느 탭 줄에 산다
+        expect(areaOfLeaf(ws, 'p1')).toBe('center');
+        expect(violations(ws)).toEqual([]);
+    });
+
+    it('promote — 오른쪽 독으로도 간다 · 빈 더미면 그대로', () => {
+        let ws = peekPush(wsThree(), L('p1'));
+        ws = peekPromote(ws, 'right');
+        expect(areaOfLeaf(ws, 'p1')).toBe('right');
+        const same = peekPromote(ws, 'center');   // 이제 더미가 비었다
+        expect(same.floating).toEqual([]);
+        expect(violations(same)).toEqual([]);
+    });
+
+    it('저장돼선 안 되는 값이라도 더미가 불변식을 깨지 않는다(center 와 id 겹치면 center 우선)', () => {
+        // a 가 center 에 있는데 같은 id 를 피크에 올리면 normalize 가 피크 쪽을 떨군다(전역 유일)
+        const ws = peekPush(wsThree(), L('a'));
+        expect(ws.floating).toEqual([]);           // 겹친 피크 장은 떨어졌다
+        expect(violations(ws)).toEqual([]);
     });
 });

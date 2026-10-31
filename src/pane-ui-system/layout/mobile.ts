@@ -68,6 +68,24 @@ function clamp01(n: number): number {
     return n < 0 ? 0 : n > 1 ? 1 : n;
 }
 
+// ─────────────────────────── 바텀 시트 두 단 (W9 모바일 피크) ───────────────────────────
+
+/** 바텀 시트가 멈추는 두 높이(화면 대비 0..1) — 절반·거의 전체. 쥔님: "반쯤 올라오고 끌어 올리면 전체" */
+export const SHEET_SNAPS: readonly [number, number] = [0.5, 0.95];
+/** 이 아래로 끌어 내리면 닫힘(0..1) */
+export const SHEET_CLOSE_BELOW = 0.25;
+
+/**
+ * 끌어 놓은 높이(0..1, 화면 대비)를 멈출 자리로 — 닫힘(null)·반(0.5)·거의 전체(0.95) 셋 중 하나.
+ * 🔴 두 단 사이 경계는 중점이다 — 이 한 줄이 「50%/95% 판정」이다(버그 심기 검산 지점).
+ *    closeBelow 아래면 먼저 닫힘으로 떨어진다(끌어 내려 닫기).
+ */
+export function sheetSnap(heightRatio: number, closeBelow = SHEET_CLOSE_BELOW): number | null {
+    if (!Number.isFinite(heightRatio) || heightRatio < closeBelow) return null;   // 닫힘
+    const mid = (SHEET_SNAPS[0] + SHEET_SNAPS[1]) / 2;   // 0.725
+    return heightRatio < mid ? SHEET_SNAPS[0] : SHEET_SNAPS[1];
+}
+
 // ─────────────────────────── 하단 바 항목 가르기 ───────────────────────────
 
 /**

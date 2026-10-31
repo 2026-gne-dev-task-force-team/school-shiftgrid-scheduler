@@ -8,8 +8,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-    SWIPE_EDGE, SWIPE_DEADZONE,
-    classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems,
+    SWIPE_EDGE, SWIPE_DEADZONE, SHEET_SNAPS, SHEET_CLOSE_BELOW,
+    classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, sheetSnap,
 } from './mobile';
 
 describe('① 방향 잠금(세로 스크롤과 안 싸우게)', () => {
@@ -92,5 +92,31 @@ describe('⑤ 바 항목 가르기(고정/스크롤)', () => {
         const { scroll, pinned } = splitBarItems(plain);
         expect(scroll).toHaveLength(2);
         expect(pinned).toHaveLength(0);
+    });
+});
+
+describe('⑥ 바텀 시트 두 단 snap(W9 모바일 피크) — 반/거의 전체/닫힘', () => {
+    const [HALF, FULL] = SHEET_SNAPS;   // 0.5 · 0.95
+
+    it('닫힘 문턱(0.25) 아래로 끌어 내리면 닫힘(null)', () => {
+        expect(sheetSnap(0)).toBeNull();
+        expect(sheetSnap(SHEET_CLOSE_BELOW - 0.01)).toBeNull();
+    });
+
+    it('문턱 위이고 중점(0.725) 아래면 반(0.5) 으로 멈춘다 — 🔴 50% 경계', () => {
+        expect(sheetSnap(SHEET_CLOSE_BELOW)).toBe(HALF);   // 닫힘 바로 위는 반으로 올라온다
+        expect(sheetSnap(0.4)).toBe(HALF);
+        expect(sheetSnap(0.5)).toBe(HALF);
+        expect(sheetSnap(0.72)).toBe(HALF);                // 중점 바로 아래
+    });
+
+    it('중점(0.725) 이상이면 거의 전체(0.95) 로 올라간다', () => {
+        expect(sheetSnap(0.73)).toBe(FULL);                // 중점 바로 위
+        expect(sheetSnap(0.9)).toBe(FULL);
+        expect(sheetSnap(1)).toBe(FULL);
+    });
+
+    it('NaN 은 닫힘으로 — 못 재면 안전하게', () => {
+        expect(sheetSnap(Number.NaN)).toBeNull();
     });
 });

@@ -208,6 +208,16 @@
 @media (prefers-reduced-motion: reduce) { .sheet-in, .sheet-out { animation: none; } }
 
 /*
+ * 피크(W9) — 데스크톱 기둥은 가운데를 「밀며」 들어온다(폭 0↔W 전환, 서랍 pane-wtrans 와 같은 결). 내용은 고정
+ *   폭을 지키며 미끄러진다(글자 안 찌그러짐). 들어올 때 살짝 떠오른다(peek-in). 모바일 시트는 두 단 snap 을
+ *   확정할 때만 높이를 미끄러뜨린다(pane-htrans) — 손가락 따라가는 중엔 끈다(즉각).
+ */
+@keyframes peek-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.peek-in { animation: peek-in .18s cubic-bezier(.2,.8,.3,1); }
+.pane-htrans { transition: height .2s cubic-bezier(.2,.8,.3,1); }
+@media (prefers-reduced-motion: reduce) { .peek-in { animation: none; } .pane-htrans { transition: none; } }
+
+/*
  * 🔴 창틀 크롬(하단 바·바텀 시트·탭 카드)은 끌리지도 선택되지도, iOS 콜아웃도 안 뜬다(항목 ④, 쥔님 "드래그 되면 곤란한 애들").
  * ⛔ 뷰 본문엔 안 건다 — 이 class 를 단 컨테이너(크롬)에만. 안의 글자도 선택 안 되는 게 맞다(크롬이라서).
  */
