@@ -15,10 +15,10 @@ import { NARROW_PX } from '../layout/panels';
 import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
-import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
+import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, DocEvent, DocHandle } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
-    track, addRibbonAction, getWorkspaceBridge,
+    track, addRibbonAction, getWorkspaceBridge, getDocBridge,
     addCommand, getCommand,
     addSettingsSection, addSettingsItem,
     addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
@@ -140,6 +140,31 @@ export function makeHost(pluginId: string): PluginHost {
             if (storage.get<boolean>('__first-run', false)) return;
             storage.set('__first-run', true);
             try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
+        },
+
+        // 🔴 문서 창구 — 자기 칸(plugins.<id>)만. 다리가 안 꽂혀 있으면(테스트·초기화 전) 조용히 undefined/무동작.
+        //    on 구독은 주인별로 track 한다 — 끌 때(P2) 함께 회수된다.
+        doc: makeDoc(pluginId),
+    };
+}
+
+/** host.doc — 문서 다리(DocBridge)로 넘긴다. 다리가 null 이면 안전하게 빈 동작. */
+function makeDoc(pluginId: string): DocHandle {
+    return {
+        get<T>(): T | undefined {
+            const b = getDocBridge();
+            return b ? (b.get(pluginId) as T | undefined) : undefined;
+        },
+        set<T>(value: T): void {
+            getDocBridge()?.set(pluginId, value);
+        },
+        on(ev: DocEvent, cb: () => void) {
+            const b = getDocBridge();
+            if (!b) return { dispose() { /* 다리 없음 */ } };
+            return track(pluginId, b.on(pluginId, ev, cb));
+        },
+        meta() {
+            return getDocBridge()?.meta();
         },
     };
 }

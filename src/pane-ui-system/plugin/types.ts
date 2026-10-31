@@ -97,6 +97,23 @@ export interface TabMenuContext {
 export type WorkspaceEvent = 'open' | 'close' | 'activate';
 export interface WorkspaceLeafInfo { id: string; viewId: string; params?: unknown }
 
+/** 문서 이벤트 — 문서 내용이 바뀌거나(change) 새 문서·파일이 열리거나(open) 닫힐 때(close) */
+export type DocEvent = 'change' | 'open' | 'close';
+/** 플러그인이 읽기만 하는 문서 메타(이름 등) — plugins.* 안은 안 보인다 */
+export interface DocMeta { name: string; createdAt: string; updatedAt: string }
+
+/**
+ * host.doc — 플러그인이 문서를 만지는 창구(P3). 🔴 ⛔ 자기 칸(plugins.<id>)만 읽고 쓴다.
+ *   ⛔ 다른 플러그인 칸·legacy·파일 열기/저장 단추는 안 준다(그건 호스트 것이다).
+ *   get/set 은 제 칸 · on 으로 바뀜을 듣고 · meta 는 읽기만.
+ */
+export interface DocHandle {
+    get<T>(): T | undefined;
+    set<T>(value: T): void;
+    on(ev: DocEvent, cb: () => void): Disposable;
+    meta(): DocMeta | undefined;
+}
+
 /**
  * 플러그인이 받는 객체 하나 — 창틀의 트리·DOM·localStorage 에 손대는 길은 없다.
  * 🔴 등록 함수는 전부 Disposable 을 돌려준다 — 안 챙겨도 호스트가 주인별로 모아 끌 때 한꺼번에 회수한다.
@@ -143,5 +160,6 @@ export interface PluginHost {
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
 
-    doc?: unknown;                                                                    // TODO(P3)
+    /** 문서(프로젝트 파일) 창구 — 자기 칸만(P3). 호스트(app/document.ts)가 다리를 꽂아야 실동작한다. */
+    doc: DocHandle;
 }

@@ -17,6 +17,7 @@ import type { MenuEntry } from '../primitives/ContextMenu';
 import type {
     Disposable, RibbonAction, WorkspaceOpenOptions, CommandDef,
     StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo,
+    DocEvent, DocMeta,
 } from './types';
 
 // ── ① 주인별 Disposable ──
@@ -190,6 +191,20 @@ export interface WorkspaceBridge {
 let bridge: WorkspaceBridge | null = null;
 export function setWorkspaceBridge(b: WorkspaceBridge | null): void { bridge = b; }
 export function getWorkspaceBridge(): WorkspaceBridge | null { return bridge; }
+
+// ── ⑥ 문서 다리 ──
+// 🔴 host.doc 은 React 밖에 산다. 문서 실물·열기·저장은 호스트(app/document.ts)가 쥐고,
+//    여기 다리로 넘긴다 — 창틀(pane-ui-system)은 문서가 무엇인지 모른다(도메인 0, 검사 ⑤·⑦).
+//    메서드는 전부 pluginId 를 받는다 — 호스트가 그 플러그인의 칸(plugins.<id>)으로만 좁힌다.
+export interface DocBridge {
+    get(pluginId: string): unknown;
+    set(pluginId: string, value: unknown): void;
+    on(pluginId: string, ev: DocEvent, cb: () => void): Disposable;
+    meta(): DocMeta | undefined;
+}
+let docBridge: DocBridge | null = null;
+export function setDocBridge(b: DocBridge | null): void { docBridge = b; }
+export function getDocBridge(): DocBridge | null { return docBridge; }
 
 // ── ⑤ 작업대 이벤트 ──
 const wsListeners: { owner: string; ev: WorkspaceEvent; fn: (leaf: WorkspaceLeafInfo) => void }[] = [];

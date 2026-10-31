@@ -12,6 +12,7 @@ export type {
     PluginManifest, PluginModule, PluginHost, Disposable,
     RibbonAction, RibbonAddInput, CommandDef, SettingsContribution, StatusContribution,
     TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, WorkspaceOpenOptions,
+    DocEvent, DocMeta, DocHandle,
 } from './types';
 export { HOST_VERSION } from './types';
 
@@ -22,10 +23,10 @@ export {
 } from './registry';
 export { ViewPlaceholder } from './Placeholder';
 export {
-    setWorkspaceBridge, disposeOwner, listRibbonActions,
+    setWorkspaceBridge, setDocBridge, getDocBridge, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems,
     listSettings, listCommands, getCommand, listTabMenu, getNewTab, fireWorkspace,
     type SettingsSectionEntry, type SettingsItemEntry, type NewTabContribution,
-    type WorkspaceBridge,
+    type WorkspaceBridge, type DocBridge,
 } from './store';
 export { resolveRibbonEntries, ribbonBase, type RibbonEntry } from './ribbon';
