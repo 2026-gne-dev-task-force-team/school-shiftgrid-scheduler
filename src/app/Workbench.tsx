@@ -28,6 +28,7 @@ import {
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
 import { migrateViewIds } from './migrate';
+import { useDoc } from './document';
 
 /** 첫 실행(저장값 없음)에만 까는 기본 배치 — 사이드바에 데모 뷰 둘을 기본으로 */
 function firstRunWorkspace(): Workspace {
@@ -259,9 +260,16 @@ export function Workbench() {
     // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(데모의 「열린 탭 N」·「저장됨」). 스토어에서 읽어 그린다.
     //    render() 를 여기서 불러 노드로 넘긴다 — 작업대 이벤트로 스토어가 다시 그려지면 이 render 가 새 값을 준다.
     const statusEntries = useStatusItems();
-    const statusItems: StatusItem[] = statusEntries.map((e) => ({
-        id: `${e.owner}:${e.id}`, side: e.side, node: e.render(),
-    }));
+    // 🔴 ⭐ 문서 이름 + 더티 표시(●) — 창틀은 문서를 모른다(app 이 넣는다). 더티면 ● 가 붙는다.
+    const docState = useDoc();
+    const docStatus: StatusItem = {
+        id: 'app:doc', side: 'left',
+        node: `${docState.doc.meta.name}${docState.dirty ? ' ●' : ''}`,
+    };
+    const statusItems: StatusItem[] = [
+        docStatus,
+        ...statusEntries.map((e) => ({ id: `${e.owner}:${e.id}`, side: e.side, node: e.render() })),
+    ];
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
