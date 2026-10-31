@@ -60,7 +60,9 @@ const DEFAULTS: PaneSettings = {
     tabMinWidth: 96,
     tabMaxWidth: 200,
     narrowWidth: 860,
-    showTitleBar: true,
+    // 🔴 상단 타이틀바는 기본 꺼짐(쥔님 2026-11-01 ⑥ *"상단에 … 바는 없애도록 하자"*). ⛔ 코드는 안 지운다 —
+    //    설정 「창틀 > 상단 바 보이기」에서 켤 수 있다. 모바일 얇은 제목줄은 이 값과 무관하게 그대로.
+    showTitleBar: false,
     showStatusBar: true,
     statusBarNarrow: false,
 };
