@@ -21,7 +21,7 @@ import {
     track, addRibbonAction, getWorkspaceBridge,
     addCommand, getCommand,
     addSettingsSection, addSettingsItem,
-    addStatusItem, addTabMenuItem, setNewTab, onWorkspace,
+    addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
 } from './store';
 
 export function makeHost(pluginId: string): PluginHost {
@@ -53,7 +53,8 @@ export function makeHost(pluginId: string): PluginHost {
                 const full = scoped(def.id);
                 const { newTab, ...rest } = def;
                 registerView({ ...rest, id: full });
-                const d = track(pluginId, { dispose() { unregisterView(full); } });
+                touchContrib();   // 뷰가 늘면 리본·뷰 목록이 바뀐다 — 다시 그리게
+                const d = track(pluginId, { dispose() { unregisterView(full); touchContrib(); } });
                 // 「+ 새 탭」이 여는 것 — 한 칸(뒤가 이긴다). dispose 는 따로 track 한다
                 if (newTab) track(pluginId, setNewTab(pluginId, full, newTab.label));
                 return d;

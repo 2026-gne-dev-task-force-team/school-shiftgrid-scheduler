@@ -47,6 +47,8 @@ let contribVersion = 0;
 function emitContrib(): void { contribVersion += 1; for (const l of contribListeners) l(); }
 function subscribeContrib(l: () => void): () => void { contribListeners.add(l); return () => { contribListeners.delete(l); }; }
 function contribSnapshot(): number { return contribVersion; }
+/** 바깥(호스트)에서 기여 버전을 올린다 — 뷰 등록/해제는 리본·뷰 목록을 바꾸니 다시 그리게 한다. */
+export function touchContrib(): void { emitContrib(); }
 /** React 구독 — 기여물(리본·명령·설정·새 탭)이 바뀌면 다시 그린다. */
 export function useContribVersion(): number {
     return useSyncExternalStore(subscribeContrib, contribSnapshot, contribSnapshot);

@@ -13,6 +13,8 @@ import type { Leaf } from '../layout/tree';
 import { getView } from '../view-registry';
 import { effectiveViewLayout, usePaneSettings } from '../layout/pane-settings';
 import { isCollapsed } from '../layout/clamp';
+import { ViewPlaceholder } from '../plugin/Placeholder';
+import { usePluginRegistry } from '../plugin/registry';
 
 /** 제 요소의 폭·높이(px) — ResizeObserver 로 바뀔 때만 깨운다 */
 function useElementSize() {
@@ -38,7 +40,8 @@ function useElementSize() {
 
 export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sidebar?: boolean }) {
     const [ref, size] = useElementSize();
-    usePaneSettings();   // 뷰 덮어쓰기가 바뀌면 접힘 기준이 바뀐다 → 다시 그린다
+    usePaneSettings();       // 뷰 덮어쓰기가 바뀌면 접힘 기준이 바뀐다 → 다시 그린다
+    usePluginRegistry();     // 🔴 플러그인을 끄고 켜면 이 뷰가 등록소에서 빠지거나 돌아온다 → 다시 그린다(자리표시 전환)
 
     // 🔴 사이드바 몸통은 bg-side(에디터 bg 보다 한 단 어둡다) — 가운데(bg-bg)와 갈려야 「사이드답게」 보인다(판 A).
     const surface = sidebar ? 'bg-side' : 'bg-bg';
@@ -52,11 +55,8 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     }
     const def = getView(leaf.viewId);
     if (!def) {
-        return (
-            <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-6 text-center`}>
-                <p className="text-2xl font-light text-muted/50 select-none truncate max-w-full">{leaf.title}</p>
-            </div>
-        );
+        // 🔴 등록 안 된 viewId — 꺼진 플러그인이면 「켜기」 자리표시, 정말 모르면 제목만 옅게(ViewPlaceholder 가 가른다)
+        return <ViewPlaceholder leaf={leaf} surface={surface} />;
     }
     const Body = def.Component;
     const layout = effectiveViewLayout(leaf.viewId);

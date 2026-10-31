@@ -16,7 +16,11 @@ export type {
 export { HOST_VERSION } from './types';
 
 export { makeHost } from './host';
-export { activateAll } from './registry';
+export {
+    activateAll, enablePlugin, disablePlugin, listPlugins, ownerOfView, usePluginRegistry,
+    type PluginStatus,
+} from './registry';
+export { ViewPlaceholder } from './Placeholder';
 export {
     setWorkspaceBridge, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems,
