@@ -82,6 +82,8 @@ export function loadWorkspace(): Workspace {
 export function saveWorkspace(ws: Workspace): void {
     try {
         if (typeof localStorage === 'undefined') return;
-        localStorage.setItem(workspaceKey(), JSON.stringify(ws));
+        // 🔴 피크(floating)는 「임시」다 — 저장하지 않는다(쥔님 2026-11-01: 다시 켜면 피크는 비어 있어야 한다, W9).
+        //    floating 만 빈 배열로 덮어 넣는다(독·탭·비율은 그대로 보관).
+        localStorage.setItem(workspaceKey(), JSON.stringify({ ...ws, floating: [] }));
     } catch { /* 조용히 */ }
 }
