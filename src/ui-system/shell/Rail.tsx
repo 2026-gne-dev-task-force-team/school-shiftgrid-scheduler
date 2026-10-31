@@ -19,7 +19,7 @@ export function Rail({
     onOpenSettings: () => void;
 }) {
     return (
-        <nav className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1">
+        <nav className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2.5 gap-2">
             {/* 위: 앱 기능(명령) 아이콘 — 지금은 「새 표」 하나뿐이다 */}
             <IconButton icon="plus" label="새 표" onClick={onAdd} />
 

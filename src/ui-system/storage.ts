@@ -5,9 +5,9 @@
  *    (구조 검사 ⑤가 실제로 막는다 — 처음 켜자마자 앱 이름이 박힌 키 두 건을 잡았다).
  *    그래서 앱이 시작할 때 접두사를 한 번 알려 준다:  setStoragePrefix('<앱 이름>.v2')
  *
- * ⚠️ 안 알려 주면 'workbench' 로 산다 — 고장은 아니고, 한 도메인에 앱이 둘이면 그때 섞인다.
+ * ⚠️ 안 알려 주면 'ui-system' 으로 산다 — 고장은 아니고, 한 도메인에 앱이 둘이면 그때 섞인다.
  */
-let prefix = 'workbench';
+let prefix = 'ui-system';
 
 export function setStoragePrefix(p: string): void {
     if (p) prefix = p;

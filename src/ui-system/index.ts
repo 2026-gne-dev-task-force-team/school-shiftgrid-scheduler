@@ -1,13 +1,13 @@
 /**
- * workbench — 창틀 엔진. 패널·탭·사이드바·리본·테마가 사는 한 자리.
+ * ui-system — UI 시스템(창틀 엔진). 패널·탭·사이드바·리본·테마가 사는 한 자리.
  *
  * 🔴 ⛔ 도메인 개념을 한 글자도 들이지 않는다.
  *    이 폴더는 다른 프로젝트에 통째로 떼어 갈 물건이다 — 쥔님 2026-10-31:
  *    *"이 UI 엔진은 평소에 잘 쓸 수 있을 것 같으니까 UI 폴더에 그대로 박지 말고 따로 폴더로 관리해줘."*
  *    (구조 검사가 실제로 막는다 — __tests__/structure.test.ts)
  *
- * ⭐ 바깥(features/)에서는 이 문 하나로만 들어온다: import { SidePanel, useTheme } from '../workbench'
- *    ⛔ `workbench/shell/SidePanel` 처럼 속을 직접 집어 쓰지 않는다 — 안을 바꿀 때 바깥이 깨진다.
+ * ⭐ 바깥(features/)에서는 이 문 하나로만 들어온다: import { SidePanel, useTheme } from '../ui-system'
+ *    ⛔ `ui-system/shell/SidePanel` 처럼 속을 직접 집어 쓰지 않는다 — 안을 바꿀 때 바깥이 깨진다.
  */
 
 // 조각 — 뜻 없는 UI 부품. 색·치수를 쥐는 유일한 층이다

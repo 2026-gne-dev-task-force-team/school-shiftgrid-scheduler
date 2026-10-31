@@ -6,7 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, LeftSidebar, RightPanel, Rail,
     Tabs, type TabItem, EditorArea, IconButton, useTheme,
-} from '../workbench';
+} from '../ui-system';
 import { SettingsScreen } from './settings/SettingsScreen';
 
 export function WorkbenchScreen() {

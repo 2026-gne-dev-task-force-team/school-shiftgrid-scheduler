@@ -6,11 +6,11 @@
  * ⛔ 테마 JSON 가져오기/내보내기는 이번에 안 만든다 — 단추도 두지 않는다(아래 자리 표시만).
  */
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from '../../../workbench';
+import { Icon, type IconName } from '../../../ui-system';
 import type { SettingsPaneProps } from '../registry';
-import { ACCENTS, type DensityId } from '../../../workbench';
-import { resolveMode, accentSwatchStyle } from '../../../workbench';
-import type { ThemeMode } from '../../../workbench';
+import { ACCENTS, type DensityId } from '../../../ui-system';
+import { resolveMode, accentSwatchStyle } from '../../../ui-system';
+import type { ThemeMode } from '../../../ui-system';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (
