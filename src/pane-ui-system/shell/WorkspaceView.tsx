@@ -354,16 +354,26 @@ function SplitView({
     const isRow = node.dir === 'row';
     // 🔴 px 최소폭은 좌우(row) 가르기에서만 뜻이 있다 — 위아래(col)는 높이 문제라 1차에선 비율 하한만
     const mins = isRow ? node.children.map(nodeMinWidth) : node.children.map(() => 0);
+    // 🔴 ③ 스플리터로 끄는 동안엔 칸 비율 transition 을 끈다(끌림이 둔해지지 않게, 쥔님 2026-11-01)
+    const [dragging, setDragging] = useState(false);
+    // 🔴 ③ 생길 때 「새 칸이 밀고 들어온다」 — 마지막 칸을 0 에서 키우고 그 몫은 앞 칸이 가득 머금었다 내준다.
+    //    SplitView 는 split 이 생길 때 새로 마운트되니(트리 구조가 바뀜) 이 첫 그림이 곧 애니메이션 출발점이다.
+    //    ⛔ 움직임 줄이기면 즉시(접근성). setTimeout 으로 한 틱 뒤 제 비율로(숨은 탭에서도 타이머는 돈다).
+    const reduce = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const [entered, setEntered] = useState(reduce);
+    useEffect(() => {
+        if (entered) return;
+        const t = window.setTimeout(() => setEntered(true), 20);
+        return () => window.clearTimeout(t);
+    }, [entered]);
+    const disp = entered ? node.sizes : growFromLast(node.sizes);
     return (
         <div ref={ref} className={`flex-1 min-w-0 min-h-0 flex ${isRow ? 'flex-row' : 'flex-col'}`}>
             {node.children.map((child, i) => (
                 <div key={child.id} style={{ display: 'contents' }}>
-                    <div
-                        className="flex min-w-0 min-h-0 overflow-hidden"
-                        style={{ flexBasis: `${(node.sizes[i] ?? 0) * 100}%`, flexGrow: 0, flexShrink: 1 }}
-                    >
+                    <SplitChild basis={disp[i] ?? 0} dragging={dragging}>
                         <NodeView node={child} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={interaction} sidebar={sidebar} />
-                    </div>
+                    </SplitChild>
                     {i < node.children.length - 1 && (
                         <SplitHandle
                             dir={node.dir}
@@ -373,6 +383,7 @@ function SplitView({
                             minB={mins[i + 1] ?? 0}
                             containerRef={ref}
                             onResize={(s) => handlers.onResize(node.id, s)}
+                            onDragging={setDragging}
                         />
                     )}
                 </div>
@@ -381,8 +392,33 @@ function SplitView({
     );
 }
 
+/** 「생길 때」 출발 비율 — 마지막 칸을 0 으로, 그 몫을 바로 앞 칸이 머금는다(새 칸이 밀고 들어오는 그림). */
+function growFromLast(sizes: number[]): number[] {
+    if (sizes.length < 2) return sizes;
+    const out = [...sizes];
+    const last = out.length - 1;
+    out[last - 1] += out[last];
+    out[last] = 0;
+    return out;
+}
+
+/**
+ * 스플릿 한 칸 — flex-basis 를 비율로 쥔다(③, 쥔님 2026-11-01).
+ *   비율이 바뀌면 미끄러진다(.pane-btrans · 생길 때 출발 비율에서 제 비율로) — ⛔ 단 스플리터로 끄는 동안엔 꺼서 즉시 따라간다.
+ */
+function SplitChild({ basis, dragging, children }: { basis: number; dragging: boolean; children: React.ReactNode }) {
+    return (
+        <div
+            className={`flex min-w-0 min-h-0 overflow-hidden ${dragging ? '' : 'pane-btrans'}`}
+            style={{ flexBasis: `${basis * 100}%`, flexGrow: 0, flexShrink: 1 }}
+        >
+            {children}
+        </div>
+    );
+}
+
 function SplitHandle({
-    dir, index, sizes, minA, minB, containerRef, onResize,
+    dir, index, sizes, minA, minB, containerRef, onResize, onDragging,
 }: {
     dir: 'row' | 'col';
     index: number;
@@ -392,6 +428,8 @@ function SplitHandle({
     minB: number;
     containerRef: React.RefObject<HTMLDivElement | null>;
     onResize: (sizes: number[]) => void;
+    /** 🔴 끄는 동안을 바깥(SplitView)에 알린다 — 그동안 칸 비율 transition 을 끈다(③) */
+    onDragging?: (d: boolean) => void;
 }) {
     const isRow = dir === 'row';
     const [dragging, setDragging] = useState(false);
@@ -402,7 +440,8 @@ function SplitHandle({
         try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* 무시 */ }
         start.current = { pos: isRow ? e.clientX : e.clientY, sizes: [...sizes] };
         setDragging(true);
-    }, [isRow, sizes]);
+        onDragging?.(true);
+    }, [isRow, sizes, onDragging]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         const s = start.current;
@@ -421,7 +460,7 @@ function SplitHandle({
         onResize(next);
     }, [isRow, index, containerRef, onResize, minA, minB]);
 
-    const end = useCallback(() => { start.current = null; setDragging(false); }, []);
+    const end = useCallback(() => { start.current = null; setDragging(false); onDragging?.(false); }, [onDragging]);
 
     // 끄는 동안 커서 바꾸고 글자 선택 막기
     useEffect(() => {

@@ -64,9 +64,13 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     // squeeze='scroll' 인 뷰(표)는 좁아지면 스크롤 · 그 외는 넘침을 숨긴다
     const overflow = layout.squeeze === 'scroll' ? 'overflow-auto' : 'overflow-hidden';
     // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
+    // 🔴 ③ 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉, 쥔님 2026-11-01). ⚠️ 입력칸에서 깜빡이면 뺀다.
+    //    키가 바뀌면 그 뷰가 다시 마운트되며 .view-fade 가 한 번 돈다(움직임 줄이기면 즉시).
     return (
         <div ref={ref} className={`flex-1 min-h-0 ${overflow} ${surface} select-text`}>
-            <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} />
+            <div key={leaf.id} className="view-fade h-full min-h-0">
+                <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} />
+            </div>
         </div>
     );
 }

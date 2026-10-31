@@ -218,6 +218,25 @@
 @media (prefers-reduced-motion: reduce) { .peek-in { animation: none; } .pane-htrans { transition: none; } }
 
 /*
+ * 🔴 전환 애니메이션(쥔님 2026-11-01 ③: *"애니메이션 없이 바뀌니까 뭐가 어떤지 보이질 않아"*) — 라이브러리 없이 CSS 로.
+ * ⛔ 전부 .16~.22s · 움직임 줄이기면 즉시(접근성). 「넣었다」가 아니라 「돈다」 — DropZones·서랍과 같은 결.
+ */
+/* 탭 열기 — 새 탭이 살짝 떠오르며 또렷해진다(마운트 때 한 번. 기존 탭은 리마운트가 아니라 안 튄다) */
+@keyframes tab-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.tab-in { animation: tab-in .18s cubic-bezier(.2,.8,.3,1); }
+/* 탭 닫기 — 언마운트를 미루고 폭이 줄며 사라진다(Tabs 가 나가는 탭을 이 래퍼로 감싼다 · 폭은 JS 가 잰 값에서 0 으로) */
+.tab-collapse { overflow: hidden; transition: max-width .16s cubic-bezier(.4,0,1,1), opacity .16s ease; }
+/* 스플릿 칸 비율 — 생길 때 0→비율로 자라고, 닫힐 때 줄어든다. ⛔ 스플리터로 끄는 동안엔 꺼진다(SplitView 가 class 를 뗀다) */
+.pane-btrans { transition: flex-basis .18s cubic-bezier(.2,.8,.3,1); }
+/* 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉) */
+@keyframes view-fade { from { opacity: 0; } to { opacity: 1; } }
+.view-fade { animation: view-fade .12s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-in, .view-fade { animation: none; }
+  .tab-collapse, .pane-btrans { transition: none; }
+}
+
+/*
  * 🔴 창틀 크롬(하단 바·바텀 시트·탭 카드)은 끌리지도 선택되지도, iOS 콜아웃도 안 뜬다(항목 ④, 쥔님 "드래그 되면 곤란한 애들").
  * ⛔ 뷰 본문엔 안 건다 — 이 class 를 단 컨테이너(크롬)에만. 안의 글자도 선택 안 되는 게 맞다(크롬이라서).
  */

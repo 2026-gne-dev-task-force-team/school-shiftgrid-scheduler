@@ -7,7 +7,7 @@
  *    그 조립은 WorkspaceView(셸)가 하고, 여기선 자리만 잡는다.
  * 🔴 아이콘은 트리 leaf 가 정하는 게 아니라 뷰 등록소가 준다 — 여기선 받은 icon 을 그대로 그린다.
  */
-import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Row } from '../primitives/Row';
 import { IconButton } from '../primitives/IconButton';
 import type { DragBind } from '../primitives/useDragLeaf';
@@ -18,6 +18,35 @@ export interface TabItem {
     title: string;
     /** 탭 앞 아이콘 — 뷰 등록소가 준다. 없으면 기본 네모 */
     icon?: IconName;
+}
+
+/** 나가는 탭(③) — 모델에선 이미 빠졌지만 폭이 줄며 사라질 때까지 DOM 에 남겨 둔다 */
+type ViewTab = TabItem & { exiting?: boolean };
+
+const prefersReduced = () =>
+    typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * 🔴 닫히는 탭을 감싸 폭을 0 으로 줄인다(③, 쥔님 2026-11-01). 마운트 때 제 폭을 재서 그 값에서 0 으로 미끄러진다.
+ *    ⛔ rAF 가 아니라 setTimeout 으로 0 을 건다 — 숨은 탭에서도 타이머는 돈다(rAF 는 멈춘다).
+ *    첫 그림은 제 폭(잰 값=자연 폭)이라 튐이 없다. overflow 숨김은 .tab-collapse 가(index.css).
+ */
+function CollapsingTab({ children }: { children: ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [style, setStyle] = useState<CSSProperties>({});
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const w = el.scrollWidth;
+        setStyle({ maxWidth: w, opacity: 1 });
+        const t = window.setTimeout(() => setStyle({ maxWidth: 0, opacity: 0 }), 20);
+        return () => window.clearTimeout(t);
+    }, []);
+    return (
+        <div ref={ref} className="tab-collapse flex items-stretch shrink-0" style={style} aria-hidden="true">
+            {children}
+        </div>
+    );
 }
 
 export function Tabs({
@@ -61,6 +90,39 @@ export function Tabs({
         const el = c.querySelector<HTMLElement>(`[data-row-id="${sel}"]`);
         el?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
     }, [activeId, tabs.length]);
+
+    // 🔴 ③ 나가는 탭 애니메이션 — props.tabs 가 진실이지만, 빠진 탭을 잠깐 남겨 폭이 줄며 사라지게 한다(쥔님 2026-11-01).
+    //    ⭐ 재조정은 "지금 그려진 view"(cur)를 기준으로 한다 — ⛔ props 로만 새로 지으면, 중간에 끼는 다른 렌더
+    //       (배치 저장 시각 갱신 등)가 진행 중인 나가는 탭을 지워 버린다(실측으로 잡은 버그). 움직임 줄이기면 즉시.
+    const [view, setView] = useState<ViewTab[]>(tabs);
+    const exitTimers = useRef<Map<string, number>>(new Map());
+    const scheduleExit = useRef((id: string) => {
+        if (exitTimers.current.has(id)) return;
+        const to = window.setTimeout(() => {
+            exitTimers.current.delete(id);
+            setView((v) => v.filter((x) => x.id !== id));
+        }, 200);                                              // .16s 전환 + 여유
+        exitTimers.current.set(id, to);
+    }).current;
+    useEffect(() => {
+        const curIds = new Set(tabs.map((t) => t.id));
+        // 다시 나타난 탭은 나가기를 취소(되살아난다)
+        for (const id of [...exitTimers.current.keys()]) {
+            if (curIds.has(id)) { window.clearTimeout(exitTimers.current.get(id)!); exitTimers.current.delete(id); }
+        }
+        if (prefersReduced()) { setView(tabs.map((t) => ({ ...t }))); return; }
+        setView((cur) => {
+            const result: ViewTab[] = tabs.map((t) => ({ ...t }));   // 살아 있는 탭 — props 순서대로
+            cur.forEach((v, i) => {
+                if (curIds.has(v.id)) return;                        // 아직 살아 있음 — 위에서 넣었다
+                scheduleExit(v.id);                                  // 지금 막 빠졌거나 이미 나가는 중 — 자리를 지킨다
+                if (!result.some((r) => r.id === v.id)) result.splice(Math.min(i, result.length), 0, { ...v, exiting: true });
+            });
+            return result;
+        });
+    }, [tabs, scheduleExit]);
+    useEffect(() => { const timers = exitTimers.current; return () => { for (const t of timers.values()) window.clearTimeout(t); }; }, []);
+
     return (
         // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
         //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
@@ -87,11 +149,21 @@ export function Tabs({
                     if (id) { e.preventDefault(); onKeyMove(id, delta as -1 | 1); }
                 }}
             >
-                {tabs.map((t, i) => {
+                {view.map((t, i) => {
+                    const baseCls = sidebar ? 'min-w-0 max-w-[160px] shrink' : 'min-w-[96px] max-w-[200px] shrink-0';
+                    const variant = sidebar ? 'sidetab' as const : 'tab' as const;
+                    // 🔴 나가는 탭 — 폭이 줄며 사라진다. 상호작용·식별자는 뗀다(드롭이 사라지는 탭을 겨냥하지 않게)
+                    if (t.exiting) {
+                        return (
+                            <CollapsingTab key={t.id}>
+                                <Row icon={t.icon ?? 'table'} label={t.title} active={false} variant={variant} className={baseCls} title={t.title} />
+                            </CollapsingTab>
+                        );
+                    }
                     const isActive = t.id === activeId;
-                    const next = tabs[i + 1];
-                    // 세로 구분선은 「둘 다 비활성」일 때만 — 활성 탭 옆에는 안 그린다(옵시디언)
-                    const sep = !isActive && next != null && next.id !== activeId;
+                    // 세로 구분선은 「둘 다 비활성」일 때만 — 다음 "살아 있는" 탭을 기준으로(나가는 탭은 건너뛴다)
+                    const nextLive = view.slice(i + 1).find((v) => !v.exiting);
+                    const sep = !isActive && nextLive != null && nextLive.id !== activeId;
                     return (
                         <Row
                             key={t.id}
@@ -102,9 +174,9 @@ export function Tabs({
                             sep={sep}
                             onClick={() => onSelect(t.id)}
                             title={t.title}
-                            // 사이드바 탭은 더 좁다(아이콘 + 짧은 글자) · 가운데 탭은 넉넉한 고정 폭
-                            className={sidebar ? 'min-w-0 max-w-[160px] shrink' : 'min-w-[96px] max-w-[200px] shrink-0'}
-                            variant={sidebar ? 'sidetab' : 'tab'}
+                            // 사이드바 탭은 더 좁다(아이콘 + 짧은 글자) · 가운데 탭은 넉넉한 고정 폭 · tab-in: 열릴 때 떠오른다(③)
+                            className={`${baseCls} tab-in`}
+                            variant={variant}
                             revealOnHover
                             end={
                                 <IconButton
