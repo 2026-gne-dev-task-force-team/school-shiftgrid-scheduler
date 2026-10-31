@@ -36,12 +36,16 @@ export function Tabs({
     onOpenSettings?: () => void;
 }) {
     return (
-        <div className="shrink-0 flex items-center gap-1 h-topbar px-pad border-b border-line bg-bg">
-            {narrow && onOpenLeft && (
-                <IconButton icon="panelLeft" label="왼쪽 서랍 열기" onClick={onOpenLeft} />
+        // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
+        //    ⛔ 탭 줄을 에디터와 같은 색으로 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
+        <div className="shrink-0 flex items-center h-topbar border-b border-line bg-panel2">
+            {/* ⭐ 사이드바 토글은 옵시디언처럼 탭 줄 양 끝에 산다 — 넓은 화면에서도 */}
+            {onOpenLeft && (
+                <IconButton icon="panelLeft" label="왼쪽 사이드바" onClick={onOpenLeft} className="mx-pad shrink-0" />
             )}
 
-            <div className="flex-1 min-w-0 flex items-stretch gap-1 overflow-x-auto py-1">
+            {/* ⛔ 탭 사이 간격을 두지 않는다 — 구분은 간격이 아니라 1px 선이 한다(Row variant='tab') */}
+            <div className="flex-1 min-w-0 flex items-stretch overflow-x-auto border-l border-line">
                 {tabs.map((t) => (
                     <Row
                         key={t.id}
@@ -51,6 +55,7 @@ export function Tabs({
                         onClick={() => onSelect(t.id)}
                         title={t.title}
                         className="max-w-[160px] shrink-0"
+                        variant="tab"
                         revealOnHover
                         end={
                             <IconButton
@@ -65,15 +70,17 @@ export function Tabs({
                 ))}
             </div>
 
-            {onSplit && tabs.length > 0 && (
-                <IconButton icon="split" label="좌우로 가르기" onClick={onSplit} />
-            )}
-            <IconButton icon="plus" label="새 탭" onClick={onAdd} />
-            {narrow && onOpenSettings && (
-                <IconButton icon="gear" label="설정 열기" onClick={onOpenSettings} />
-            )}
-            {narrow && onOpenRight && (
-                <IconButton icon="panelRight" label="오른쪽 서랍 열기" onClick={onOpenRight} />
+            <div className="flex items-center gap-1 px-pad shrink-0">
+                {onSplit && tabs.length > 0 && (
+                    <IconButton icon="split" label="좌우로 가르기" onClick={onSplit} />
+                )}
+                <IconButton icon="plus" label="새 탭" onClick={onAdd} />
+                {narrow && onOpenSettings && (
+                    <IconButton icon="gear" label="설정 열기" onClick={onOpenSettings} />
+                )}
+            </div>
+            {onOpenRight && (
+                <IconButton icon="panelRight" label="오른쪽 사이드바" onClick={onOpenRight} className="mr-pad shrink-0" />
             )}
         </div>
     );

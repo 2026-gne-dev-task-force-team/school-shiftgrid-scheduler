@@ -13,7 +13,7 @@ import {
     type WorkspaceHandlers, type Workspace, type ViewProps,
     leaf, loadWorkspace, saveWorkspace,
     openLeaf, closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-} from '../ui-system';
+} from '../pane-ui-system';
 import { SettingsScreen } from './settings/SettingsScreen';
 
 // ── 뷰 등록 — 창틀 바깥(앱)에서 무엇을 그릴지 꽂는다 ──

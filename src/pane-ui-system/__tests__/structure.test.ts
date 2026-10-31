@@ -34,7 +34,7 @@ const read = (p: string) => readFileSync(p, 'utf-8');
 describe('① features·shell 에 하드코딩 색 0건', () => {
     // #rrggbb · rgb( · bg-gray- · text-gray- · border-gray-
     const BANNED = /#[0-9a-fA-F]{3,8}\b|rgb\(|\b(?:bg|text|border)-gray-/;
-    const files = [...walk(join(ROOT, 'features')), ...walk(join(ROOT, 'ui-system', 'shell'))];
+    const files = [...walk(join(ROOT, 'features')), ...walk(join(ROOT, 'pane-ui-system', 'shell'))];
 
     it('스캔할 파일이 실제로 있다(빈 글롭이 거짓 통과를 주지 않게)', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ describe('① features·shell 에 하드코딩 색 0건', () => {
 
 describe('② primitives 는 features·shell 을 import 하지 않는다 (아래로만 의존)', () => {
     const IMPORT_UP = /from\s+['"][^'"]*(?:\/features\/|\/shell\/|\.\.\/shell|\.\.\/features)[^'"]*['"]/;
-    const files = walk(join(ROOT, 'ui-system', 'primitives'));
+    const files = walk(join(ROOT, 'pane-ui-system', 'primitives'));
 
     it('스캔할 조각 파일이 실제로 있다', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -74,20 +74,20 @@ describe('③ 호버-숨김(group-hover)은 Row 조각 한 곳에만', () => {
     });
 
     it('Row.tsx 에는 실제로 group-hover 가 있다(패턴이 중앙에 산다는 증거)', () => {
-        expect(read(join(ROOT, 'ui-system', 'primitives', 'Row.tsx')).includes(NEEDLE)).toBe(true);
+        expect(read(join(ROOT, 'pane-ui-system', 'primitives', 'Row.tsx')).includes(NEEDLE)).toBe(true);
     });
 });
 
 /*
- * ④⑤ ui-system 은 통째로 떼어 갈 수 있어야 한다 (쥔님 2026-10-31:
+ * ④⑤ pane-ui-system 은 통째로 떼어 갈 수 있어야 한다 (쥔님 2026-10-31:
  *    *"이 UI 엔진은 UI 폴더에 그대로 박지 말고 따로 폴더로 관리해줘"*).
  *    그 말이 참이려면 두 가지가 동시에 성립해야 한다:
  *      ④ 안에서 바깥(features·app)을 부르지 않는다 — 부르면 떼어 갈 때 끊긴다
  *      ⑤ 도메인 낱말이 안 들어온다 — 들어오면 이 창틀이 「시간표 전용」이 된다
  */
-describe('④ ui-system 은 바깥(features)을 import 하지 않는다', () => {
+describe('④ pane-ui-system 은 바깥(features)을 import 하지 않는다', () => {
     const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/features|\/features\/|\.\.\/App)[^'"]*['"]/;
-    const files = walk(join(ROOT, 'ui-system'));
+    const files = walk(join(ROOT, 'pane-ui-system'));
 
     it('스캔할 파일이 있다', () => { expect(files.length).toBeGreaterThan(0); });
 
@@ -98,10 +98,10 @@ describe('④ ui-system 은 바깥(features)을 import 하지 않는다', () => 
     }
 });
 
-describe('⑤ ui-system 에 도메인 낱말 0건', () => {
+describe('⑤ pane-ui-system 에 도메인 낱말 0건', () => {
     // 이 창틀은 시간표를 모른다. ⚠️ 「바텀 시트」 같은 UI 용어와 겹치지 않게 낱말을 고른다
     const DOMAIN = ['시간표', '교시', '교사', '학교', '학년', '반 ', '과목', '특별실', '보결', '근태', 'shiftgrid'];
-    const files = walk(join(ROOT, 'ui-system'));
+    const files = walk(join(ROOT, 'pane-ui-system'));
 
     for (const f of files) {
         it(`도메인 낱말 없음: ${basename(f)}`, () => {

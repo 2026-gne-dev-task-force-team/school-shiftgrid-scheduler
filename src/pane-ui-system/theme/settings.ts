@@ -26,7 +26,7 @@ export interface ThemeSettings {
 
 /**
  * 🔴 ⛔ 상수로 굳히지 않는다 — 모듈을 import 하는 순간 값이 박혀서
- *    앱이 setStoragePrefix 를 부르기 전에 'ui-system.*' 로 고정된다(실제로 그렇게 짰다가 잡았다).
+ *    앱이 setStoragePrefix 를 부르기 전에 'pane-ui-system.*' 로 고정된다(실제로 그렇게 짰다가 잡았다).
  *    쓸 때마다 부른다. 이게 「먼저 읽히는 것」과 「나중에 설정되는 것」이 부딪히는 전형이다.
  */
 export const themeKey = () => storageKey('theme');

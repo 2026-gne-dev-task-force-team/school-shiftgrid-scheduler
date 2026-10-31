@@ -19,6 +19,7 @@ export function Row({
     onClick,
     end,
     revealOnHover = false,
+    variant = 'list',
     title,
     className = '',
 }: {
@@ -30,13 +31,23 @@ export function Row({
     end?: ReactNode;
     /** 끝단을 호버로만 띄울지 (손가락 기기에선 늘 보인다) */
     revealOnHover?: boolean;
+    /**
+     * 🔴 'tab' 은 「탭 한 칸」이다 — 활성 탭이 **에디터와 같은 바탕**으로 떠 보이고,
+     *    탭 줄은 한 단 어두워 그 대비로 경계가 읽힌다(옵시디언·VS Code 가 쓰는 방식).
+     *    ⛔ 활성 표시를 옅은 회색으로만 두지 말 것 — 탭이 서로 붙어 보인다(쥔님 지적 2026-10-31).
+     */
+    variant?: 'list' | 'tab';
     title?: string;
     className?: string;
 }) {
+    const isTab = variant === 'tab';
     return (
         <div
-            className={`group flex items-center gap-2 h-row px-pad rounded cursor-pointer select-none transition-colors
-                ${active ? 'bg-text/[0.06] text-text' : 'text-muted hover:text-text hover:bg-text/[0.04]'} ${className}`}
+            className={`group flex items-center gap-2 h-row px-pad cursor-pointer select-none transition-colors
+                ${isTab ? 'rounded-none border-r border-line' : 'rounded'}
+                ${active
+                    ? (isTab ? 'bg-bg text-text' : 'bg-text/[0.06] text-text')
+                    : 'text-muted hover:text-text hover:bg-text/[0.04]'} ${className}`}
             onClick={onClick}
             role="button"
             tabIndex={0}

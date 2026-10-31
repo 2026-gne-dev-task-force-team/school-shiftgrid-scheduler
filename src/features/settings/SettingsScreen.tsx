@@ -7,11 +7,11 @@
  * 🔴 features/ 라 색은 토큰 클래스로만.
  */
 import { useState } from 'react';
-import { Row } from '../../ui-system';
-import { Icon } from '../../ui-system';
-import { IconButton } from '../../ui-system';
-import { useNarrow } from '../../ui-system';
-import type { ThemeControls } from '../../ui-system';
+import { Row } from '../../pane-ui-system';
+import { Icon } from '../../pane-ui-system';
+import { IconButton } from '../../pane-ui-system';
+import { useNarrow } from '../../pane-ui-system';
+import type { ThemeControls } from '../../pane-ui-system';
 import { SETTINGS_MENUS } from './registry';
 
 export function SettingsScreen({ theme }: { theme: ThemeControls }) {

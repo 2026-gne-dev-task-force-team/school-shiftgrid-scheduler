@@ -66,10 +66,13 @@ export function WorkspaceView({
             </div>
         );
     }
-    return <NodeView node={node} handlers={handlers} />;
+    // ⭐ 사이드바 토글은 "루트" 탭 줄에만 붙인다 — 중첩된 탭 줄마다 붙으면 같은 단추가 여럿이 된다.
+    //    ⚠️ 루트가 split 이면 붙을 데가 없다 — 그때는 스플리터 두 번 누르기·접힌 레일 단추로 연다.
+    //    상단 액션 바가 생기면 이 단추는 거기로 옮긴다.
+    return <NodeView node={node} handlers={handlers} bar={narrowBar} />;
 }
 
-function NodeView({ node, handlers }: { node: Node; handlers: WorkspaceHandlers }) {
+function NodeView({ node, handlers, bar }: { node: Node; handlers: WorkspaceHandlers; bar?: NarrowBar }) {
     if (node.kind === 'leaf') {
         // 불변식상 맨몸 leaf 는 안 오지만, 방어적으로 그린다
         return <EditorArea leaf={node} />;
@@ -85,6 +88,8 @@ function NodeView({ node, handlers }: { node: Node; handlers: WorkspaceHandlers 
                     onClose={handlers.onClose}
                     onAdd={() => handlers.onAddToTabs(node.id)}
                     onSplit={() => handlers.onSplit(node.id, 'row')}
+                    onOpenLeft={bar?.onOpenLeft}
+                    onOpenRight={bar?.onOpenRight}
                 />
                 <EditorArea leaf={activeLeaf} />
             </div>
