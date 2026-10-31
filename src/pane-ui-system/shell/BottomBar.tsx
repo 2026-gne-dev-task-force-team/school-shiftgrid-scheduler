@@ -65,7 +65,7 @@ function BarButton({ icon, label, onClick, badge }: Omit<BarItem, 'id' | 'pinned
 }
 
 export function BottomBar({
-    items, tabCount, onOpenLeft, onOpenRight, onOpenTabs, aboveStatusBar = false,
+    items, tabCount, onOpenLeft, onOpenRight, onOpenTabs, onOpenRibbon, aboveStatusBar = false,
 }: {
     /** 앱이 꽂는 그 외 항목 — ⛔ 창틀은 무엇인지 모른다 */
     items: BarItem[];
@@ -74,6 +74,8 @@ export function BottomBar({
     onOpenLeft: () => void;
     onOpenRight: () => void;
     onOpenTabs: () => void;
+    /** 🔴 ▤ 리본 — 누르면 리본 시트(RibbonSheet)를 연다(쥔님 2026-11-01 ⑤). 안 주면 ▤ 를 안 그린다 */
+    onOpenRibbon?: () => void;
     /** 🔴 좁은 화면 상태바가 켜져 있으면 그 높이(--s-statusbar)만큼 더 띄운다 — 바가 상태바를 덮지 않게(판 A) */
     aboveStatusBar?: boolean;
 }) {
@@ -93,6 +95,9 @@ export function BottomBar({
         >
             {/* ◧ 왼쪽 서랍 — 왼쪽 고정 */}
             <BarButton icon="panelLeft" label="왼쪽 사이드바" onClick={onOpenLeft} />
+
+            {/* ▤ 리본 — 왼쪽 고정(◧ 바로 옆). 누르면 리본 시트가 올라온다(⑤). 데스크톱은 세로 리본(Rail)이 그 몫 */}
+            {onOpenRibbon && <BarButton icon="menu" label="리본" onClick={onOpenRibbon} />}
 
             {/* 가운데: 앱 항목만 가로 스크롤(넘칠 때) */}
             {scroll.length > 0 && (

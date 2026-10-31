@@ -11,7 +11,7 @@ import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, registerView, getView,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
-    BottomBar, TabSwitcher, PeekPanel, storageKey, type BarItem,
+    BottomBar, TabSwitcher, RibbonSheet, PeekPanel, storageKey, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
     type WorkspaceHandlers, type Workspace, type ViewProps, type AreaKey,
@@ -91,6 +91,8 @@ export function WorkbenchScreen() {
     const [focus, setFocus] = useState<string>('');
     // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
     const [tabSwitcher, setTabSwitcher] = useState(false);
+    // 좁은 화면 리본 시트(하단 바 ▤ 로 연다, ⑤)
+    const [ribbonSheet, setRibbonSheet] = useState(false);
     // 상태바 데모 — 배치가 저장된 시각(ws 가 바뀔 때마다 갱신)
     const [savedAt, setSavedAt] = useState<Date>(() => new Date());
     const seq = useRef(0);
@@ -327,6 +329,7 @@ export function WorkbenchScreen() {
                         onOpenLeft={() => panels.toggle('left', true)}
                         onOpenRight={() => panels.toggle('right', true)}
                         onOpenTabs={() => setTabSwitcher(true)}
+                        onOpenRibbon={() => setRibbonSheet(true)}
                         aboveStatusBar={showStatus}
                     />
                     <TabSwitcher
@@ -337,6 +340,12 @@ export function WorkbenchScreen() {
                         onSelect={handlers.onActivate}
                         onCloseTab={handlers.onClose}
                         onNew={addTab}
+                    />
+                    {/* 🔴 ⑤ 리본 시트 — 하단 바 ▤ 로 연다. 리본 뷰를 열면 openView 가 defaultArea 에 꽂는다(표는 새 표) */}
+                    <RibbonSheet
+                        open={ribbonSheet}
+                        onClose={() => setRibbonSheet(false)}
+                        onOpenView={openView}
                     />
                 </>
             )}

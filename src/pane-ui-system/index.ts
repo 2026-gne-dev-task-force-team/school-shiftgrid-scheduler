@@ -35,6 +35,7 @@ export { PeekPanel, type PeekPanelProps } from './shell/PeekPanel';
 export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
 export { BottomBar, type BarItem } from './shell/BottomBar';
 export { TabSwitcher } from './shell/TabSwitcher';
+export { RibbonSheet } from './shell/RibbonSheet';
 export { TitleBar, type TitleAction } from './shell/TitleBar';
 export { StatusBar, type StatusItem } from './shell/StatusBar';
 
