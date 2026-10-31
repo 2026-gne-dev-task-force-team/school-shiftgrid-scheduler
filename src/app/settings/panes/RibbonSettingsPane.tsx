@@ -1,19 +1,20 @@
 /**
  * 「창틀 > 리본」 설정 Pane — 왼쪽 아이콘 띠의 켜기/끄기 + 순서(위/아래). 드래그를 못 쓰는 사람용 대안(W8).
  *   ⭐ 리본에서 끌어 바꾸는 것과 같은 저장소(pane-settings.ribbon)를 만진다 — 어느 쪽으로 바꿔도 즉시 맞춰진다.
- *   🔴 ⛔ 창틀 코드가 뷰 id 의 뜻을 알 필요가 없다 — 등록소 목록(listRibbonViews)을 돌며 그린다.
+ *   🔴 ⛔ 창틀 코드가 뷰 id 의 뜻을 알 필요가 없다 — host.views.listRibbon() 목록을 돌며 그린다.
  *
- * 🔴 features/ 라 하드코딩 색 검사 — 토큰 클래스로만.
+ * 🔴 app/ 이라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import {
-    listRibbonViews, usePaneSettings, resolveRibbon, nudgeId,
+    usePaneSettings, resolveRibbon, nudgeId,
     setRibbonOrder, toggleRibbonHidden, resetRibbon,
     Icon,
 } from '../../../pane-ui-system';
+import { appHost } from '../../host';
 
 export function RibbonSettingsPane() {
     const { ribbon } = usePaneSettings();
-    const { ordered } = resolveRibbon(listRibbonViews(), ribbon);
+    const { ordered } = resolveRibbon(appHost.views.listRibbon(), ribbon);
     const ids = ordered.map((v) => v.id);
     const hiddenSet = new Set(ribbon.hidden);
 

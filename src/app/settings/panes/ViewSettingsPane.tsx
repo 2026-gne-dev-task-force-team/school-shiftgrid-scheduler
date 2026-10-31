@@ -1,15 +1,16 @@
 /**
  * 「뷰」 설정 Pane — 등록된 뷰마다 레이아웃 힌트(minWidth·squeeze·collapseBelow)를 여기서 덮어쓴다.
  *   ⭐ 등록값은 "기본값일 뿐" — 비워 두면 등록값을 따른다(쥔님: "등록값은 기본, 설정이 덮는다").
- *   🔴 ⛔ 창틀 코드가 뷰 id 를 알 필요가 없다 — 등록소 목록(listViews)을 돌며 그린다.
+ *   🔴 ⛔ 창틀 코드가 뷰 id 를 알 필요가 없다 — host.views.list() 목록을 돌며 그린다.
  *
- * 🔴 features/ 라 하드코딩 색 검사 — 토큰 클래스로만.
+ * 🔴 app/ 이라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import type { ReactNode } from 'react';
 import {
-    listViews, usePaneSettings, setViewOverride, getViewOverride,
+    usePaneSettings, setViewOverride, getViewOverride,
     type Squeeze, type ViewLayout,
 } from '../../../pane-ui-system';
+import { appHost } from '../../host';
 
 const SQUEEZES: { id: Squeeze; name: string }[] = [
     { id: 'shrink', name: '찌그러뜨림' },
@@ -51,7 +52,7 @@ function NumCell({ label, value, placeholder, onChange }: {
 
 export function ViewSettingsPane() {
     usePaneSettings();   // 덮어쓰기가 바뀌면 다시 그린다
-    const views = listViews();
+    const views = appHost.views.list();
 
     return (
         <div className="flex flex-col gap-3 max-w-[640px]">

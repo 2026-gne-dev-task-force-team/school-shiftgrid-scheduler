@@ -112,3 +112,46 @@ describe('⑤ pane-ui-system 에 도메인 낱말 0건', () => {
         });
     }
 });
+
+/*
+ * ⑥⑧ 플러그인 경계 — 플러그인(src/plugins/**)은 창틀의 「문」(pane-ui-system/plugin 배럴) 하나로만 들어온다.
+ *      ⑥ 창틀 속(shell·layout·primitives)을 직접 import 하면 안을 바꿀 때 플러그인이 깨진다
+ *      ⑧ 폴더가 곧 플러그인이다 — manifest.ts 의 id 가 폴더명과 달라지면 저장 키·viewId 접두사가 어긋난다
+ */
+describe('⑥ plugins 는 pane-ui-system 속(shell·layout·primitives)을 직접 import 하지 않는다', () => {
+    // pane-ui-system/plugin 배럴은 허용 · shell·layout·primitives 속 경로는 금지
+    const DEEP = /from\s+['"][^'"]*pane-ui-system\/(?:shell|layout|primitives)\/[^'"]*['"]/;
+    const files = walk(join(ROOT, 'plugins'));
+
+    it('스캔할 플러그인 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        it(`창틀 속 직접 import 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            expect(DEEP.test(read(f)), `${basename(f)} 가 창틀 속을 직접 집었다 — pane-ui-system/plugin 배럴로`).toBe(false);
+        });
+    }
+});
+
+describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', () => {
+    let dirs: string[] = [];
+    try {
+        dirs = readdirSync(join(ROOT, 'plugins'), { withFileTypes: true })
+            .filter((e) => e.isDirectory() && e.name !== '__tests__')
+            .map((e) => e.name);
+    } catch { dirs = []; }
+
+    it('플러그인 폴더가 하나 이상 있다', () => {
+        expect(dirs.length).toBeGreaterThan(0);
+    });
+
+    for (const dir of dirs) {
+        it(`${dir}/manifest.ts 의 id === '${dir}'`, () => {
+            const src = read(join(ROOT, 'plugins', dir, 'manifest.ts'));
+            const m = src.match(/id:\s*['"]([^'"]+)['"]/);
+            expect(m, `${dir}/manifest.ts 에 id 선언이 없다`).not.toBeNull();
+            expect(m![1]).toBe(dir);
+        });
+    }
+});

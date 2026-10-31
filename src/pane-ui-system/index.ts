@@ -75,9 +75,11 @@ export {
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
-// 뷰 등록소 — leaf 는 viewId 만 들고, 앱이 무엇을 그릴지 등록한다
+// 뷰 등록소 — 🔴 ⛔ 등록·조회 함수는 이 문으로 내보내지 않는다(registerView·getView·listViews·…).
+//    바깥(앱·플러그인)은 host 로만 등록·조회한다 — 「주인 없는 등록」이 생길 구멍을 막는다.
+//    (창틀 안쪽 셸·배치는 '../view-registry' 를 직접 쓴다 — 같은 폴더라 문을 거칠 필요가 없다.)
+//    타입은 내보낸다 — 호스트가 돌려주는 값을 바깥이 타이핑해야 한다.
 export {
-    registerView, getView, listViews, listRibbonViews, clearViews,
     type ViewDef, type ViewProps, type ViewMenu, type ViewMenuHost,
 } from './view-registry';
 
