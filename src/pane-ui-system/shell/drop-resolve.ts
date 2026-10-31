@@ -91,7 +91,9 @@ export function resolveDropAt(px: number, py: number, dragId: string): DropResol
             if (!area) return null;
             return { move: { target: area, pos: 'after' }, preview: { kind: 'center', box: toBox(r) } };
         }
-        if (zone === 'center') {
+        // ⛔ 사이드바 칸은 가르지 않는다 — 어디에 떨궈도 탭으로 합친다(쥔님 2026-11-01 01:51)
+        const bodyArea = body.closest('[data-area]')?.getAttribute('data-area');
+        if (zone === 'center' || bodyArea === 'left' || bodyArea === 'right') {
             return { move: { target: others[others.length - 1], pos: 'after' }, preview: { kind: 'center', box: toBox(r) } };
         }
         // 가장자리 — 그 묶음 어느 탭(활성 우선, 나 자신은 피한다)을 기준으로 split

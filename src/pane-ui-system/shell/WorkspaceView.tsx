@@ -7,7 +7,7 @@
  *    ⛔ 모델은 그대로 둔다(그림만 다르다). 넓은 화면으로 돌아가면 가른 배치가 살아 있다.
  * 🔴 색·px 는 토큰 클래스로만(구조 검사 ①). 손잡이는 pointer 이벤트(터치 됨).
  *
- * ⭐ 탭 줄 단추는 자리(area)마다 다르다 — 가운데는 「+새 탭·좌우 가르기」, 사이드바는 「위아래 가르기」.
+ * ⭐ 탭 줄 단추는 자리(area)마다 다르다 — 가운데는 「+새 탭·좌우 가르기」, 사이드바는 없다(⛔ 사이드바는 안 가른다 — 쥔님 01:51).
  *    어느 단추를 그릴지는 tabButtons 로 받는다. ⛔ 창틀은 그 자리가 무엇인지(도메인)는 모른다.
  * 🔴 W5 우클릭 메뉴는 전부 이미 있는 순수 연산(close·split·move)을 부른다 — 트리 연산을 새로 짜지 않는다.
  */
@@ -126,9 +126,12 @@ export function WorkspaceView({
             { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
             { sep: true },
             // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
-            { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
-            { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
-            { sep: true },
+            // ⛔ 사이드바에선 안 준다 — 쥔님 2026-11-01 01:51: *"사이드 패널에는 굳이 분할이 필요 없잖아"*
+            ...(area === 'center' ? [
+                { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
+                { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
+                { sep: true },
+            ] as MenuEntry[] : []),
             { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
             { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
             { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },

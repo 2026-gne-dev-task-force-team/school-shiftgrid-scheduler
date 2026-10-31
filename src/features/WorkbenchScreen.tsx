@@ -194,7 +194,7 @@ export function WorkbenchScreen() {
                 activeLeafId={focus}
                 handlers={handlers}
                 area={area}
-                tabButtons={narrow ? {} : { splitCol: true }}
+                tabButtons={{}}   // ⛔ 사이드바는 안 가른다(쥔님 01:51) — 탭 줄에 단추 없음
                 rootChrome={chrome}
             />
         );
