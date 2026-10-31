@@ -10,10 +10,13 @@
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
 import { demoPlugin } from '../plugins/demo';
+import { schedulerPlugin } from '../plugins/scheduler';
 
-// 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다.
-//    ⛔ 설정 화면은 코어다 — 끌 수 없다(「설정을 꺼서 설정을 못 켜는」 일이 없다).
+// 🔴 코어(settings·scheduler)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다.
+//    ⛔ 설정 화면·스케줄러는 코어다 — 끌 수 없다.
+//    ⚠️ 데모 플러그인의 「표」 뷰는 그대로 둔다(쥔님 판정 전) — newTab(「+ 새 탭」)은 한 칸이라 뒤가 이긴다.
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
+    schedulerPlugin,
     demoPlugin,
 ];
