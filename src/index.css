@@ -27,8 +27,9 @@
    * ⛔ 셸·화면 코드가 px 를 직접 쓰지 않는다 — h-header · px-pad 같은 이름만 쓴다.
    * 밀도(편안/빽빽)를 나중에 고르게 하려면 이 다섯 값만 갈아끼우면 된다.
    */
-  --s-topbar: 34px;   /* 탭 줄 */
-  --s-header: 30px;   /* 사이드바·패널 머리줄 */
+  /* 🔴 탭 줄과 패널 머리줄은 같은 높이다 — 다르면 좌·중·우가 단차로 어긋나 보인다(쥔님 지적 21:55) */
+  --s-topbar: 32px;   /* 탭 줄 */
+  --s-header: 32px;   /* 사이드바·패널 머리줄 — ⛔ topbar 와 어긋나게 두지 말 것 */
   --s-row: 28px;      /* 목록 한 줄(탭 한 칸 포함) */
   --s-btn: 24px;      /* 아이콘 단추 */
   --s-pad: 6px;       /* 패널 안쪽 가로 여백 */
@@ -40,8 +41,8 @@
  */
 @media (hover: none) and (pointer: coarse) {
   :root {
-    --s-topbar: 42px;
-    --s-header: 36px;
+    --s-topbar: 40px;
+    --s-header: 40px;
     --s-row: 36px;
     --s-btn: 32px;
     --s-pad: 8px;

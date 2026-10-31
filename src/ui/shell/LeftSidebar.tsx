@@ -1,17 +1,16 @@
 /**
  * 왼쪽 사이드바 — 위·아래 두 칸. 각 칸은 머리(SectionHeader) + 빈 몸통.
- * 두 칸 다 펴져 있으면 경계를 끌어 높이 비율(leftSplit)을 바꾼다. 하나가 접히면 다른 칸이 남는 자리를 전부 먹는다.
+ * 경계를 끌어 높이 비율(leftSplit)을 바꾼다. ⛔ 칸 접기는 없다 — 쥔님 판정(SectionHeader 주석 참조).
  * 🔴 기능 0 — 몸통은 내용 없는 빈칸이다. 색·px 는 안쪽 조각(Surface 등)이 쥔다.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { SectionHeader } from '../primitives/SectionHeader';
-import { IconButton } from '../primitives/IconButton';
 import { splitFromDrag } from '../../core/layout/panels';
 
 interface Section {
     title: string;
-    collapsed: boolean;
-    onToggle: () => void;
+    /** 끝단 액션 자리 — 패널마다 다르다. 안 주면 아무것도 안 뜬다 */
+    actions?: ReactNode;
 }
 
 export function LeftSidebar({
@@ -23,43 +22,27 @@ export function LeftSidebar({
     onSplit: (v: number) => void;
 }) {
     const rootRef = useRef<HTMLDivElement>(null);
-    const bothOpen = !top.collapsed && !bottom.collapsed;
 
     return (
         <div ref={rootRef} className="flex flex-col h-full min-h-0">
             {/* 위 칸 */}
             <section
                 className="flex flex-col min-h-0"
-                style={bothOpen ? { flexBasis: `${split * 100}%`, flexGrow: 0, flexShrink: 1 }
-                    : top.collapsed ? { flex: '0 0 auto' } : { flex: '1 1 0%' }}
+                style={{ flexBasis: `${split * 100}%`, flexGrow: 0, flexShrink: 1 }}
             >
-                <SectionHeader
-                    title={top.title}
-                    collapsed={top.collapsed}
-                    onToggle={top.onToggle}
-                    end={<IconButton icon="plus" label={`${top.title}에 추가`} size={14} onClick={() => { /* 껍데기 — 기능 없음 */ }} />}
-                />
+                <SectionHeader title={top.title} end={top.actions} />
                 {/* 🔴 빈 몸통은 정말 비워 둔다 — 여백도 테두리 상자도 두지 않는다.
                     내용 없는 자리에 상자를 그리면 그게 「베젤」로 보인다(2026-10-31 쥔님 지적). */}
-                {!top.collapsed && <div className="flex-1 min-h-0 overflow-auto" />}
+                <div className="flex-1 min-h-0 overflow-auto" />
             </section>
 
-            {/* 세로 분할 손잡이 — 두 칸 다 펴졌을 때만 */}
-            {bothOpen && <VSplitHandle rootRef={rootRef} split={split} onSplit={onSplit} />}
+            {/* 세로 분할 손잡이 */}
+            <VSplitHandle rootRef={rootRef} split={split} onSplit={onSplit} />
 
             {/* 아래 칸 */}
-            <section
-                className="flex flex-col min-h-0"
-                style={bothOpen ? { flex: '1 1 0%' }
-                    : bottom.collapsed ? { flex: '0 0 auto' } : { flex: '1 1 0%' }}
-            >
-                <SectionHeader
-                    title={bottom.title}
-                    collapsed={bottom.collapsed}
-                    onToggle={bottom.onToggle}
-                    end={<IconButton icon="plus" label={`${bottom.title}에 추가`} size={14} onClick={() => { /* 껍데기 — 기능 없음 */ }} />}
-                />
-                {!bottom.collapsed && <div className="flex-1 min-h-0 overflow-auto" />}
+            <section className="flex flex-col min-h-0" style={{ flex: '1 1 0%' }}>
+                <SectionHeader title={bottom.title} end={bottom.actions} />
+                <div className="flex-1 min-h-0 overflow-auto" />
             </section>
         </div>
     );

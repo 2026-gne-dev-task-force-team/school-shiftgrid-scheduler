@@ -9,14 +9,11 @@ import { LeftSidebar } from '../ui/shell/LeftSidebar';
 import { RightPanel } from '../ui/shell/RightPanel';
 import { Tabs, type TabItem } from '../ui/shell/Tabs';
 import { EditorArea } from '../ui/shell/EditorArea';
+import { IconButton } from '../ui/primitives/IconButton';
 
 export function WorkbenchScreen() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
-
-    // 왼쪽 두 칸의 접힘
-    const [topCollapsed, setTopCollapsed] = useState(false);
-    const [bottomCollapsed, setBottomCollapsed] = useState(false);
 
     // 탭 — 열기·닫기·전환만 실제로 돈다
     const [tabs, setTabs] = useState<TabItem[]>([]);
@@ -59,8 +56,9 @@ export function WorkbenchScreen() {
                 <LeftSidebar
                     split={panels.state.leftSplit}
                     onSplit={panels.setSplit}
-                    top={{ title: '칸 1', collapsed: topCollapsed, onToggle: () => setTopCollapsed((v) => !v) }}
-                    bottom={{ title: '칸 2', collapsed: bottomCollapsed, onToggle: () => setBottomCollapsed((v) => !v) }}
+                    // ⭐ 끝단은 슬롯이다 — 패널마다 다른 액션이 들어올 자리(지금은 + 하나뿐)
+                    top={{ title: '칸 1', actions: <IconButton icon="plus" label="칸 1에 추가" size={14} onClick={() => { /* 껍데기 */ }} /> }}
+                    bottom={{ title: '칸 2', actions: <IconButton icon="plus" label="칸 2에 추가" size={14} onClick={() => { /* 껍데기 */ }} /> }}
                 />
             </SidePanel>
 
