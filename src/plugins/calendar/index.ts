@@ -31,7 +31,7 @@ function activate(host: PluginHost): void {
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 280, squeeze: 'scroll' },
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab) — 17:06 넷을 더 받으며 MonthView 직접 → 컨테이너로
-        Component: () => createElement(CalendarTab, { openMini: () => host.workspace.open(MINI_ID, { where: 'right' }) }),
+        Component: () => createElement(CalendarTab),
     });
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──

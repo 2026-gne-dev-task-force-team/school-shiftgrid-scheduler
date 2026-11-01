@@ -11,7 +11,6 @@
  *      각 뷰는 제 날짜 useState 를 버리고 value 를 쓰고, 스크롤·단추로 옮기면 onChange 로 올린다(한쪽만 흐른다 — 루프 방지).
  */
 import { useEffect, useState } from 'react';
-import { IconButton } from '../../../pane-ui-system';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
@@ -36,7 +35,7 @@ const ALL_MODES: { id: Mode; label: string; opt?: 'dense' | 'gantt' }[] = [
 ];
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
-export function CalendarTab({ openMini }: { openMini?: () => void }) {
+export function CalendarTab() {
     const [mode, setMode] = useState<Mode>('month');
     // 🔴 「보고 있는 날짜」의 단일 진실 — 초기값은 오늘. 각 뷰에 value 로 내리고 onChange 로 받는다(뷰를 바꿔도 유지된다).
     const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -50,7 +49,7 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
         if ((mode === 'dense' && !opts.dense) || (mode === 'gantt' && !opts.gantt)) setMode('month');
     }, [mode, opts.dense, opts.gantt]);
 
-    // 전환 단추 + 작은 달력(오른쪽 패널) 여는 단추 — 17:27 쥔님 *"미니 캘린더 뷰 패널은 어디갔냐"* (명령 팔레트에만 있어 안 보였다)
+    // 전환 단추. (작은 달력 여는 단추는 23:27 쥔님 *"요 버튼은 이제 없어져도 될듯"* — 리본에 있고 기본 오른쪽이라 걷었다)
     const switcher = (
         <>
         <div role="tablist" aria-label="보기 전환" className="flex items-center ml-1 rounded border border-line overflow-hidden">
@@ -68,7 +67,6 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
                 </button>
             ))}
         </div>
-        {openMini && <IconButton icon="panelRight" label="작은 달력 — 오른쪽 패널에 열기" onClick={openMini} />}
         </>
     );
 
