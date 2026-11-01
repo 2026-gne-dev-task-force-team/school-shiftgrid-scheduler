@@ -6,7 +6,9 @@ import { describe, it, expect } from 'vitest';
 import {
     type Tree, type Node,
     emptyTree, normalize, createNode, rename, move, remove, duplicate, toggleCollapse, setData, collapseAll,
+    restore, purge, purgeAll, countUnder,
     parentOf, flatten, filterIds,
+    emptyHistory, record, undo, redo,
 } from './tree';
 
 /** 검사용 나무를 손으로 짓는다 — id 를 직접 줘서 결과가 예측 가능하게(랜덤 uid 안 씀). */
@@ -157,6 +159,95 @@ describe('remove → 휴지통', () => {
     it('휴지통 자체는 못 지운다', () => {
         const t = make({});
         expect(remove(t, 'trash')).toBe(t);
+    });
+    it('trashedFrom 에 원래 부모를 적는다', () => {
+        const base = make({ p: { children: ['a'] }, a: {} });
+        const r = remove(base, 'a');
+        expect(r.nodes.a.trashedFrom).toBe('p');
+    });
+});
+
+describe('restore (복원)', () => {
+    it('원래 부모가 살아 있으면 거기 끝에 · trashedFrom 은 지워진다', () => {
+        let t = make({ p: { children: ['x', 'a'] }, x: {}, a: {} });
+        t = remove(t, 'a');
+        expect(t.nodes.trash.children).toEqual(['a']);
+        const back = restore(t, 'a');
+        expect(back.nodes.p.children).toEqual(['x', 'a']);   // 끝에
+        expect(back.nodes.a.trashedFrom).toBeUndefined();    // normalize 가 지웠다
+        expect(back.nodes.trash.children).toEqual([]);
+    });
+    it('원래 부모가 사라졌으면 루트로', () => {
+        let t = make({ p: { children: ['b'] }, b: {} });
+        t = remove(t, 'b');     // b → 휴지통(trashedFrom=p)
+        t = purge(t, 'p');      // 부모 영구 삭제
+        const r = restore(t, 'b');
+        expect(r.nodes.root.children).toContain('b');
+        expect(r.nodes.b.trashedFrom).toBeUndefined();
+    });
+});
+
+describe('purge / purgeAll (영구 삭제)', () => {
+    it('가지째 사라진다(자손까지)', () => {
+        let t = make({ a: { children: ['b'] }, b: { children: ['c'] }, c: {} });
+        t = remove(t, 'a');
+        const p = purge(t, 'a');
+        expect(p.nodes.a).toBeUndefined();
+        expect(p.nodes.b).toBeUndefined();
+        expect(p.nodes.c).toBeUndefined();
+        expect(p.nodes.trash.children).toEqual([]);
+    });
+    it('뿌리·휴지통은 영구삭제 안 한다', () => {
+        const t = make({});
+        expect(purge(t, 'root')).toBe(t);
+        expect(purge(t, 'trash')).toBe(t);
+    });
+    it('purgeAll 이 휴지통을 비운다', () => {
+        let t = make({ a: {}, b: {} });
+        t = remove(t, 'a'); t = remove(t, 'b');
+        expect(t.nodes.trash.children).toHaveLength(2);
+        const e = purgeAll(t);
+        expect(e.nodes.trash.children).toEqual([]);
+        expect(e.nodes.a).toBeUndefined();
+        expect(e.nodes.b).toBeUndefined();
+    });
+});
+
+describe('countUnder', () => {
+    it('자손 수(자신 제외)', () => {
+        const t = make({ a: { children: ['b'] }, b: {}, c: {} });
+        expect(countUnder(t, 'root')).toBe(3);   // a,b,c
+        expect(countUnder(t, 'a')).toBe(1);      // b
+    });
+});
+
+describe('되돌리기 더미(순수)', () => {
+    const t0 = emptyTree();
+    const t1: Tree = { ...t0, rev: 1 };
+    const t2: Tree = { ...t0, rev: 2 };
+
+    it('record → undo → redo', () => {
+        let h = emptyHistory();
+        h = record(h, t0);
+        h = record(h, t1);
+        const u = undo(h, t2)!;
+        expect(u.tree).toBe(t1);
+        const u2 = undo(u.history, u.tree)!;
+        expect(u2.tree).toBe(t0);
+        expect(undo(u2.history, u2.tree)).toBeNull();   // 과거가 비면 null
+        const r = redo(u2.history, u2.tree)!;
+        expect(r.tree).toBe(t1);
+    });
+    it('record 는 미래를 비운다(새 분기)', () => {
+        let h = { past: [t0], future: [t1] };
+        h = record(h, t2);
+        expect(h.future).toEqual([]);
+    });
+    it('limit 넘으면 오래된 걸 버린다', () => {
+        let h = emptyHistory();
+        for (let i = 0; i < 5; i++) h = record(h, { ...t0, rev: i }, 3);
+        expect(h.past).toHaveLength(3);
+        expect(h.past[0].rev).toBe(2);   // rev 0·1 은 버려졌다
     });
 });
 

@@ -19,6 +19,8 @@ export interface Node {
     children: string[];         // 저장된 자식 id, 순서 있음
     collapsed?: boolean;        // 접힘 — 나무에 산다(기기별 아님)
     data?: unknown;             // 🔴 그 타입의 플러그인만 읽고 쓰는 불투명 칸. 모델·탐색기는 안 본다
+    /** 휴지통에 있는 동안만: 지우기 전 원래 부모 id(복원 자리). 🔴 normalize 가 휴지통 밖으로 나오면 지운다. */
+    trashedFrom?: string;
 }
 
 export interface Tree {
@@ -72,7 +74,7 @@ export function normalize(tree: Tree): Tree {
     const result: Record<string, Node> = {};
     const claimed = new Set<string>([rootId, trashId]);   // 이미 부모가 생겼거나 뿌리인 것
 
-    const visit = (id: string): void => {
+    const visit = (id: string, inTrash: boolean): void => {
         const n = ensured[id];
         if (!n) return;
         const kids: string[] = [];
@@ -84,12 +86,15 @@ export function normalize(tree: Tree): Tree {
             claimed.add(cid);
             kids.push(cid);
         }
-        result[id] = { ...n, children: kids };
-        for (const cid of kids) visit(cid);
+        const node: Node = { ...n, children: kids };
+        // 🔴 trashedFrom 은 휴지통 안에서만 산다 — 밖으로 나오면(복원·루트 가지) 지운다(두 곳에서 낡지 않게).
+        if (!inTrash && node.trashedFrom !== undefined) delete node.trashedFrom;
+        result[id] = node;
+        for (const cid of kids) visit(cid, inTrash);
     };
 
-    visit(rootId);
-    visit(trashId);
+    visit(rootId, false);
+    visit(trashId, true);
 
     return { ...tree, root: rootId, trash: trashId, nodes: result };
 }
@@ -207,11 +212,72 @@ export function duplicate(tree: Tree, id: string, gen: () => string = uid): Tree
     return normalize({ ...tree, nodes: { ...tree.nodes, ...added, [parentId]: { ...parent, children: kids } } });
 }
 
-/** 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). */
+/** 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). 원래 부모를 trashedFrom 에 적어 둔다. */
 export function remove(tree: Tree, id: string): Tree {
     if (id === tree.root || id === tree.trash) return tree;
+    const n = tree.nodes[id];
+    if (!n) return tree;
+    const from = parentOf(tree, id);
+    const marked: Tree = from
+        ? { ...tree, nodes: { ...tree.nodes, [id]: { ...n, trashedFrom: from } } }
+        : tree;
+    return move(marked, id, marked.trash);
+}
+
+/**
+ * 복원 — 휴지통에서 꺼낸다. 원래 부모(trashedFrom)가 살아 있고 휴지통 밖이면 거기 끝에, 아니면 루트 끝에.
+ *   🔴 trashedFrom 은 normalize 가 「휴지통 밖으로 나온 순간」 지운다 — 여기서 따로 안 지워도 된다.
+ */
+export function restore(tree: Tree, id: string): Tree {
+    const n = tree.nodes[id];
+    if (!n || id === tree.root || id === tree.trash) return tree;
+    const from = n.trashedFrom;
+    const destOk = from != null && !!tree.nodes[from]
+        && from !== tree.trash && !isDescendant(tree, from, tree.trash);
+    return move(tree, id, destOk ? from! : tree.root);
+}
+
+/** 그 노드 밑(자신 포함) 자손 id 모두 — purge·셈에 쓴다. */
+function subtreeIds(tree: Tree, id: string): string[] {
+    const out: string[] = [];
+    const walk = (x: string): void => {
+        const n = tree.nodes[x];
+        if (!n) return;
+        out.push(x);
+        for (const c of n.children) walk(c);
+    };
+    walk(id);
+    return out;
+}
+
+/**
+ * 🔴 영구 삭제 — 가지째 Map 에서 지운다. ⛔ 되돌릴 수 없다(설계: 비우기 단추만 진짜 삭제).
+ * ⛔ 이 함수(와 purgeAll)는 공개 API(N4 api.ts)로 내보내지 않는다 — 다른 플러그인이 사람 자료를 영구히 지울 길을 안 둔다.
+ */
+export function purge(tree: Tree, id: string): Tree {
+    if (id === tree.root || id === tree.trash) return tree;
     if (!tree.nodes[id]) return tree;
-    return move(tree, id, tree.trash);
+    const kill = new Set(subtreeIds(tree, id));
+    const nodes: Record<string, Node> = {};
+    for (const [nid, n] of Object.entries(tree.nodes)) {
+        if (kill.has(nid)) continue;
+        nodes[nid] = n.children.some((c) => kill.has(c))
+            ? { ...n, children: n.children.filter((c) => !kill.has(c)) }
+            : n;
+    }
+    return normalize({ ...tree, nodes });
+}
+
+/** 🔴 휴지통 비우기 — 휴지통의 모든 가지를 영구 삭제. ⛔ 공개 API 아님(purge 와 같은 규칙). */
+export function purgeAll(tree: Tree): Tree {
+    let t = tree;
+    for (const cid of [...(tree.nodes[tree.trash]?.children ?? [])]) t = purge(t, cid);
+    return t;
+}
+
+/** id 밑 자손 수(자신 제외) — 상태바 「노드 N · 휴지통 M」. */
+export function countUnder(tree: Tree, id: string): number {
+    return Math.max(0, subtreeIds(tree, id).length - 1);
 }
 
 /** 접기/펴기 토글 — 접힘은 나무에 산다(기기별 아님). */
@@ -304,4 +370,36 @@ export function filterIds(tree: Tree, rootId: string, pred: (n: Node) => boolean
     };
     walk(rootId);
     return keep;
+}
+
+// ─────────────────────────── 되돌리기 더미(순수) ───────────────────────────
+
+/**
+ * 되돌리기/다시하기 더미 — 설계 「갈아끼울 데」: 지금은 나무 스냅샷 스택, 나중엔 변경 원장.
+ *   🔴 순수 함수라 store 밖에서 통째로 검산된다(tree.test.ts). store 는 이 넷만 쓰고 스냅샷은 apply 가 찍는다.
+ *   ⛔ 구조 연산만 record 한다 — toggleCollapse 는 안 쌓고(접힘은 되돌릴 값 아님), purge 는 스택을 비운다(못 되돌림).
+ */
+export interface History { past: Tree[]; future: Tree[] }
+
+export function emptyHistory(): History {
+    return { past: [], future: [] };
+}
+
+/** 바꾸기 직전 상태(prev)를 과거에 쌓고 미래를 비운다(최대 limit). */
+export function record(h: History, prev: Tree, limit = 100): History {
+    return { past: [...h.past, prev].slice(-limit), future: [] };
+}
+
+/** 되돌리기 — 과거의 맨 뒤를 꺼내고 지금(current)을 미래에. 과거가 비면 null. */
+export function undo(h: History, current: Tree): { tree: Tree; history: History } | null {
+    if (h.past.length === 0) return null;
+    const tree = h.past[h.past.length - 1];
+    return { tree, history: { past: h.past.slice(0, -1), future: [current, ...h.future] } };
+}
+
+/** 다시하기 — 미래의 맨 앞을 꺼내고 지금(current)을 과거에. 미래가 비면 null. */
+export function redo(h: History, current: Tree): { tree: Tree; history: History } | null {
+    if (h.future.length === 0) return null;
+    const tree = h.future[0];
+    return { tree, history: { past: [...h.past, current], future: h.future.slice(1) } };
 }

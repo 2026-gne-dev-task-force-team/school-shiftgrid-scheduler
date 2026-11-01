@@ -74,15 +74,21 @@ function resolveDrop(container: HTMLElement | null, x: number, y: number, dragId
 }
 
 export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: string }) {
-    const { tree, selectedId, renamingId } = useExplorer();
+    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm } = useExplorer();
     const effRoot = rootId ?? tree.root;
     const rootMissing = rootId != null && !tree.nodes[rootId];
 
     const [query, setQuery] = useState('');
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [narrow, setNarrow] = useState<boolean>(() => host.screen.narrow());
+    const [trashOpen, setTrashOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const draggedRef = useRef(false);
+
+    // 휴지통 줄(루트 밖) — 맨 아래 접이식 구역. 🔴 listRef(본 나무) 밖이라 드래그 떨굴 자리에 안 걸린다.
+    const trashRows = flatten(tree, tree.trash, isContainerType);
+    const run = (id: string) => host.commands.run(id);
 
     useEffect(() => {
         setNarrow(host.screen.narrow());
@@ -129,6 +135,7 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
 
     const clickRow = (n: Node): void => {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
+        rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
         select(n.id);
         if (isContainerType(n.type)) toggle(n.id);
     };
@@ -141,7 +148,13 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
     const onKeyDown = (e: React.KeyboardEvent): void => {
         if (renamingId) return;
         const tgt = e.target as HTMLElement;
-        if (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA') return;   // 검색칸 등은 제 키를 쥔다
+        if (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA') return;   // 검색칸·이름칸은 브라우저 undo 에 양보
+        // 🔴 Ctrl/⌘+Z 되돌리기 · Ctrl/⌘+Shift+Z 다시하기 — 뷰에 포커스 있을 때만(전역 가로채기 금지)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+            e.preventDefault();
+            run(e.shiftKey ? 'project-explorer.redo' : 'project-explorer.undo');
+            return;
+        }
         const sel = selectedId;
         const selNode = sel ? tree.nodes[sel] : null;
         const idx = rows.findIndex((r) => r.id === sel);
@@ -175,6 +188,13 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
     const buildMenu = (): MenuEntry[] => {
         const selNode = selectedId ? tree.nodes[selectedId] : null;
         const inTrash = !!selectedId && isDescendant(tree, selectedId, tree.trash);
+        // 휴지통 안 노드는 복원·영구삭제만(영구삭제는 인라인 확인으로 — ask-purge 가 줄을 바꾼다)
+        if (selNode && inTrash) {
+            return [
+                { label: '복원', icon: 'undo', commandId: 'project-explorer.restore' },
+                { label: '영구 삭제', icon: 'trash', danger: true, commandId: 'project-explorer.ask-purge' },
+            ];
+        }
         // 「새로 만들기 ▸」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용
         const baseType = selNode ? selNode.type : (tree.nodes[effRoot]?.type ?? 'folder');
         const items: MenuEntry[] = [];
@@ -211,6 +231,7 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
 
     return (
         <div
+            ref={rootRef}
             className="h-full flex flex-col bg-side outline-none"
             style={drag && preview && !preview.ok ? { cursor: 'not-allowed' } : undefined}
             tabIndex={0}
@@ -309,6 +330,81 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                         </div>
                     );
                 })}
+            </div>
+
+            {/* 🗑 휴지통 — 맨 아래 접이식. 안의 줄은 회색. 영구삭제·비우기는 인라인 확인(⛔ window.confirm 안 씀) */}
+            <div className="shrink-0 border-t border-line">
+                <div className="flex items-center gap-1 h-row px-pad select-none">
+                    <button
+                        type="button"
+                        onClick={() => setTrashOpen((v) => !v)}
+                        className="flex items-center gap-1 flex-1 min-w-0 text-[12px] text-muted hover:text-text transition-colors"
+                    >
+                        <Icon name="right" size={11} className={`shrink-0 transition-transform ${trashOpen ? 'rotate-90' : ''}`} />
+                        <Icon name="trash" size={13} className="shrink-0" />
+                        <span className="truncate">휴지통 ({trashRows.length})</span>
+                    </button>
+                    {trashRows.length > 0 && (
+                        purgeAllConfirm ? (
+                            <span className="flex items-center gap-1 text-[11px]">
+                                <span className="text-muted">비울까요?</span>
+                                <button type="button" onClick={() => run('project-explorer.purge-all')} className="px-1 rounded text-bad hover:bg-bad/10">비우기</button>
+                                <button type="button" onClick={() => run('project-explorer.cancel-purge')} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
+                            </span>
+                        ) : (
+                            <IconButton icon="trash" label="휴지통 비우기" size={13} onClick={() => run('project-explorer.ask-purge-all')} />
+                        )
+                    )}
+                </div>
+
+                {trashOpen && (
+                    <div className="max-h-[40%] overflow-auto pb-1">
+                        {trashRows.length === 0 && (
+                            <p className="px-pad py-1 text-[12px] text-muted select-none">휴지통이 비어 있습니다.</p>
+                        )}
+                        {trashRows.map((row) => {
+                            const isSel = selectedId === row.id;
+                            const confirming = purgeConfirmId === row.id;
+                            return (
+                                <div
+                                    key={row.id}
+                                    data-row-id={row.id}
+                                    role="treeitem"
+                                    aria-selected={isSel}
+                                    title={row.node.name}
+                                    onClick={() => { rootRef.current?.focus(); select(row.id); if (isContainerType(row.node.type)) toggle(row.id); }}
+                                    className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
+                                        isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
+                                    }`}
+                                    style={{ paddingLeft: row.depth * INDENT + BASE_PAD + 14 }}
+                                >
+                                    {row.hasChildren ? (
+                                        <span
+                                            role="button"
+                                            aria-label={row.node.collapsed ? '펴기' : '접기'}
+                                            onClick={(e) => { e.stopPropagation(); select(row.id); toggle(row.id); }}
+                                            className="shrink-0 grid place-items-center w-4 h-4 text-muted"
+                                        >
+                                            <Icon name="right" size={12} className={`transition-transform ${row.node.collapsed ? '' : 'rotate-90'}`} />
+                                        </span>
+                                    ) : (
+                                        <span className="shrink-0 w-4" />
+                                    )}
+                                    <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />
+                                    {confirming ? (
+                                        <span className="flex items-center gap-1 flex-1 min-w-0 text-[11px]">
+                                            <span className="text-muted truncate">정말 지울까요?</span>
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); run('project-explorer.purge'); }} className="px-1 rounded text-bad hover:bg-bad/10">지우기</button>
+                                            <button type="button" onClick={(e) => { e.stopPropagation(); run('project-explorer.cancel-purge'); }} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
+                                        </span>
+                                    ) : (
+                                        <span className="flex-1 min-w-0 truncate text-[13px] leading-none text-muted">{row.node.name}</span>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* 드래그 떨굴 선 — before/after 는 가로선, 금지면 빨강(토큰 색만). into 는 줄 자체에 ring 으로 그린다 */}

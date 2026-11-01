@@ -11,9 +11,12 @@ import type { PluginModule, PluginHost, ViewProps } from '../../pane-ui-system/p
 import { manifest } from './manifest';
 import { registerType } from './model/types';
 import { ExplorerView } from './views/ExplorerView';
+import { ExplorerStatus } from './views/ExplorerStatus';
 import {
     initStore, getState, newFolder, renameSelected, removeSelected,
     duplicateNode, collapseAllNodes, nudgeSelected,
+    restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
+    undoAction, redoAction,
 } from './store';
 
 const TREE_VIEW_ID = 'project-explorer.tree';   // host 가 'project-explorer.' 를 붙인다(id: 'tree')
@@ -66,8 +69,21 @@ function activate(host: PluginHost): void {
         },
     });
 
+    // ── 휴지통(N3) — 복원·영구삭제(인라인 확인)·비우기 · 되돌리기/다시하기 ──
+    host.commands.add({ id: 'project-explorer.restore', title: '복원', icon: 'undo', run: () => restoreSelected() });
+    host.commands.add({ id: 'project-explorer.ask-purge', title: '영구 삭제', icon: 'trash', run: () => askPurge() });
+    host.commands.add({ id: 'project-explorer.ask-purge-all', title: '휴지통 비우기', icon: 'trash', run: () => askPurgeAll() });
+    host.commands.add({ id: 'project-explorer.purge', title: '영구 삭제 확정', icon: 'trash', run: () => purgeConfirmed() });
+    host.commands.add({ id: 'project-explorer.purge-all', title: '휴지통 비우기 확정', icon: 'trash', run: () => purgeAllConfirmed() });
+    host.commands.add({ id: 'project-explorer.cancel-purge', title: '삭제 취소', icon: 'x', run: () => cancelPurgeConfirm() });
+    host.commands.add({ id: 'project-explorer.undo', title: '되돌리기', icon: 'undo', run: () => undoAction() });
+    host.commands.add({ id: 'project-explorer.redo', title: '다시 하기', icon: 'redo', run: () => redoAction() });
+
     // ── 리본 아이콘 하나 — 누르면 탐색기 패널을 연다(reuse 로 한 장만) ──
     host.ribbon.add({ commandId: 'project-explorer.open-panel', icon: 'folder', order: 2 });
+
+    // ── 상태바 — 「노드 N · 휴지통 M」(M=0 이면 「노드 N」만). 스토어를 스스로 구독해 바뀔 때 다시 그린다 ──
+    host.statusBar.add({ id: 'count', side: 'left', render: () => createElement(ExplorerStatus) });
 
     // ── 첫 실행 때 왼쪽에 패널 한 번 열기(⛔ activate 에서가 아니라 여기서) ──
     host.onFirstRun(() => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); });
