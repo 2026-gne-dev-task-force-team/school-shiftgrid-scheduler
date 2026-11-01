@@ -49,7 +49,7 @@ export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle
     return (
         <div className="h-full overflow-auto p-5 flex flex-col gap-5 select-text bg-bg">
             <header className="flex flex-col gap-1">
-                <h2 className="text-base font-semibold text-text">팬 UI 엔진 테스트</h2>
+                <h2 className="text-base font-semibold text-text">Pane UI Test</h2>
                 <p className="text-[12px] text-muted">여기 단추로 여러 창 타입을 열어 창틀을 시험합니다. ⛔ 생성 단추는 이 탭 안에만 있습니다.</p>
             </header>
 

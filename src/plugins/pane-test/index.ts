@@ -36,7 +36,7 @@ function activate(host: PluginHost): void {
     // ── 뷰: 시험 탭(싱글턴·가운데·안 가름) ──
     //    🔴 p.peek 을 넘긴다 — 피크는 이 탭 안에서 뜬다(전역 창 아님).
     host.views.register({
-        id: 'console', title: '팬 UI 엔진 테스트', icon: 'sparkles', defaultArea: 'center',
+        id: 'console', title: 'Pane UI Test', icon: 'flask', defaultArea: 'center',
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 240, squeeze: 'scroll' },
         Component: (p: ViewProps) => createElement(TestConsole, { host, peek: p.peek }),
@@ -53,10 +53,10 @@ function activate(host: PluginHost): void {
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 시험 탭을 연다(싱글턴이라 두 장 안 열린다) ──
     host.commands.add({
-        id: 'pane-test.open', title: '팬 UI 엔진 테스트 열기', icon: 'sparkles',
+        id: 'pane-test.open', title: 'Pane UI Test 열기', icon: 'flask',
         run: () => { host.workspace.open(CONSOLE_ID, { where: 'center' }); },
     });
-    host.ribbon.add({ commandId: 'pane-test.open', icon: 'sparkles', order: 0 });
+    host.ribbon.add({ commandId: 'pane-test.open', icon: 'flask', order: 0 });
 
     // ── 🔴 시험 뷰 열기도 전부 명령으로 — 콘솔 단추·팔레트가 같은 id 로 부른다(「모든 동작은 명령」) ──
     for (const s of SAMPLES) {
@@ -67,8 +67,8 @@ function activate(host: PluginHost): void {
     }
 
     // ── 설정 섹션 — 하네스 설명 + 피크 넓음/좁음 가름 폭(설정으로 뺀 값) ──
-    host.settings.addSection('pane-test', '팬 UI 엔진 테스트', 'sparkles');
-    host.settings.addItem({ section: 'pane-test', id: 'pane-test', title: '하네스', icon: 'sparkles', Pane: () => createElement(PaneTestSettings, { host }) });
+    host.settings.addSection('pane-test', 'Pane UI Test', 'flask');
+    host.settings.addItem({ section: 'pane-test', id: 'pane-test', title: '하네스', icon: 'flask', Pane: () => createElement(PaneTestSettings, { host }) });
 
     // ── 상태바 + 이벤트 구독 — 열린 시험 뷰(샘플) 수를 센다 ──
     const openSamples = new Set<string>();

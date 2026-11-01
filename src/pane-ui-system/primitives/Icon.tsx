@@ -7,7 +7,7 @@ export type IconName =
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
-    | 'calendar';
+    | 'calendar' | 'flask';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -55,6 +55,8 @@ const P: Record<IconName, string> = {
     split: 'M4 5h16v14H4zM12 5v14',
     // 위아래로 가르기 — 네모를 가운데 가로선으로 둘로
     splitH: 'M4 5h16v14H4zM4 12h16',
+    // 시험 플라스크(Pane UI Test) — 목·몸통·액체선. 단순 선 하나, 18px 에서도 「실험」으로 읽힌다(쥔님 2026-11-01: "창이랑 실험하는 아이콘")
+    flask: 'M9 3h6M10 3v6l-4.3 8.7A1.5 1.5 0 007 20h10a1.5 1.5 0 001.3-2.3L14 9V3M8.5 14h7',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
