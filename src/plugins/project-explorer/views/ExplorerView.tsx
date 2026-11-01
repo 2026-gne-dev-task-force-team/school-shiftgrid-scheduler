@@ -22,6 +22,13 @@ import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } fro
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
 const BASE_PAD = 6;
+/** 🗑 휴지통 구역 높이(px) — 끌어서 조절, 기기별로 host.storage 에 남긴다(쥔님 2026-11-01 22:51 *"휴지통 크기 핸들 조절 안되네"*). */
+const TRASH_MIN_H = 72;
+const TRASH_MAX_H = 520;
+const TRASH_DEFAULT_H = 180;
+const TRASH_H_KEY = 'trash-h';
+const clampTrashH = (h: number): number =>
+    Math.min(TRASH_MAX_H, Math.max(TRASH_MIN_H, Number.isFinite(h) ? h : TRASH_DEFAULT_H));
 /** 이미 고른 줄을 또 누른 뒤 이름바꾸기까지 기다리는 시간(ms) — 두 번 누르기(열기)면 그 전에 취소된다(맥 Finder 꼴). */
 const RENAME_CLICK_DELAY = 450;
 
@@ -100,6 +107,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
     const [narrow, setNarrow] = useState<boolean>(() => host.screen.narrow());
     const [trashOpen, setTrashOpen] = useState(false);
+    // 🔴 휴지통 높이 — 기기별 저장값에서 읽어 와 끌어서 조절한다(TrashResizeHandle). 끝에 host.storage 로 남긴다.
+    const [trashH, setTrashH] = useState<number>(() =>
+        clampTrashH(host.storage.get<number>(TRASH_H_KEY, TRASH_DEFAULT_H)));
     const [hoverId, setHoverId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
@@ -443,7 +453,15 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             </div>
 
             {/* 🗑 휴지통 — 맨 아래 접이식. 안의 줄은 회색. 영구삭제·비우기는 인라인 확인(⛔ window.confirm 안 씀) */}
-            <div className="shrink-0 border-t border-line">
+            {/* 🔴 relative — 펼쳤을 때 본 나무↔휴지통 사이 세로 드래그 핸들(TrashResizeHandle)이 위 경계에 절대배치로 앉는다 */}
+            <div className="shrink-0 border-t border-line relative">
+                {trashOpen && (
+                    <TrashResizeHandle
+                        height={trashH}
+                        onResize={(h) => setTrashH(clampTrashH(h))}
+                        onCommit={(h) => host.storage.set(TRASH_H_KEY, clampTrashH(h))}
+                    />
+                )}
                 <div className="flex items-center gap-1 h-row px-pad select-none">
                     <button
                         type="button"
@@ -468,7 +486,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 </div>
 
                 {trashOpen && (
-                    <div className="max-h-[40%] overflow-auto pb-1">
+                    // 🔴 높이는 끌어 정한 trashH(px) — max-h-[40%] 고정이 아니다. overflow-auto + 바닥 여백(pb-2)으로
+                    //    스크롤을 끝까지 내리면 마지막 줄이 완전히 보인다(쥔님 22:51 *"휴지통 아래 뭔가 가리고 … 마지막 줄 반쯤 잘린다"*).
+                    <div className="overflow-auto pb-2" style={{ height: trashH }}>
                         {trashRows.length === 0 && (
                             <p className="px-pad py-1 text-[12px] text-muted select-none">휴지통이 비어 있습니다.</p>
                         )}
@@ -538,6 +558,71 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     onCommand={(id) => host.commands.run(id)}
                 />
             )}
+        </div>
+    );
+}
+
+/**
+ * 🔴 본 나무 ↔ 휴지통 사이 세로 드래그 핸들 — 창틀의 분할 손잡이와 **같은 부품**(.resize-handle / .resize-bar CSS, index.css)을
+ *   가로 띠로 쓴다. ⛔ 새 위젯을 만들지 않았고, shell/ 를 직접 import 하지도 않는다(플러그인 경계 — 구조 검사 ⑥).
+ *   위로 끌면 휴지통이 커진다(경계가 올라간다) = startH + (startY − 지금 Y). onCommit 으로 host.storage 에 남긴다.
+ */
+function TrashResizeHandle({ height, onResize, onCommit }: {
+    height: number;
+    onResize: (h: number) => void;
+    onCommit: (h: number) => void;
+}) {
+    const [dragging, setDragging] = useState(false);
+    const start = useRef<{ y: number; h: number } | null>(null);
+    const latest = useRef(height);
+    latest.current = height;
+
+    const onPointerDown = useCallback((e: React.PointerEvent) => {
+        e.preventDefault();
+        try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* 무시 */ }
+        start.current = { y: e.clientY, h: latest.current };
+        setDragging(true);
+    }, []);
+    const onPointerMove = useCallback((e: React.PointerEvent) => {
+        const s = start.current;
+        if (!s) return;
+        onResize(s.h + (s.y - e.clientY));   // 위로(음의 Y 이동) 끌면 커진다
+    }, [onResize]);
+    const end = useCallback(() => {
+        if (!start.current) return;
+        start.current = null;
+        setDragging(false);
+        onCommit(latest.current);
+    }, [onCommit]);
+
+    // 끄는 동안 커서·글자 선택 — 창틀 손잡이와 같은 결(SplitHandle)
+    useEffect(() => {
+        if (!dragging) return;
+        const prev = document.body.style.cursor;
+        document.body.style.cursor = 'row-resize';
+        document.body.classList.add('select-none');
+        return () => { document.body.style.cursor = prev; document.body.classList.remove('select-none'); };
+    }, [dragging]);
+
+    return (
+        <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="휴지통 높이 조절"
+            tabIndex={0}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={end}
+            onPointerCancel={end}
+            onKeyDown={(e) => {
+                if (e.key === 'ArrowUp') { e.preventDefault(); onResize(latest.current + 16); onCommit(latest.current + 16); }
+                else if (e.key === 'ArrowDown') { e.preventDefault(); onResize(latest.current - 16); onCommit(latest.current - 16); }
+            }}
+            title="끌어서 휴지통 높이 조절"
+            // 잡는 자리는 위아래로 넉넉히(h-3, -top-1.5), 보이는 띠는 가운데 1px — 창틀 손잡이와 같은 치수
+            className="resize-handle absolute left-0 right-0 -top-1.5 h-3 cursor-row-resize z-20 touch-none"
+        >
+            <div className={`resize-bar absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px ${dragging ? 'is-dragging' : ''}`} />
         </div>
     );
 }
