@@ -114,12 +114,17 @@ export interface PluginStatus {
     core: boolean;
     enabled: boolean;
     failed: boolean;
+    /** 매니페스트 설명 — 설정 「설치된 플러그인」 상세가 보여 준다(쥔님 13:42) */
+    description?: string;
+    minHostVersion: string;
 }
 export function listPlugins(): PluginStatus[] {
     return installed.map((m) => ({
         id: m.manifest.id,
         name: m.manifest.name,
         version: m.manifest.version,
+        description: m.manifest.description,
+        minHostVersion: m.manifest.minHostVersion,
         core: !!m.manifest.core,
         enabled: !disabledIds.has(m.manifest.id),
         failed: failedIds.has(m.manifest.id),

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf, MovePos } from '../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../layout/tree';
-import { getView } from '../view-registry';
+import { getView, canPlace, canPeek, canSplit } from '../view-registry';
 import { effectiveViewLayout } from '../layout/pane-settings';
 import { effectiveMin, clampSplitPair } from '../layout/clamp';
 import { IconButton } from '../primitives/IconButton';
@@ -141,18 +141,19 @@ export function WorkspaceView({
             { sep: true },
             // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
             // ⛔ 사이드바에선 안 준다 — 쥔님 2026-11-01 01:51: *"사이드 패널에는 굳이 분할이 필요 없잖아"*
+            // 🔴 뷰별 허용 자리(placement) — 등록소가 안 된다고 하면 항목을 잠근다(쥔님 13:43: 설정은 사이드바·미리 보기 무리)
             ...(area === 'center' ? [
-                { label: '오른쪽으로 가르기', icon: 'split', onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
-                { label: '아래로 가르기', icon: 'splitH', onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
+                { label: '오른쪽으로 가르기', icon: 'split', disabled: !canSplit(lf.viewId), onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
+                { label: '아래로 가르기', icon: 'splitH', disabled: !canSplit(lf.viewId), onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
                 { sep: true },
             ] as MenuEntry[] : []),
-            { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left', onClick: () => handlers.onMove(leafId, 'left') },
-            { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right', onClick: () => handlers.onMove(leafId, 'right') },
-            { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
+            { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left' || !canPlace(lf.viewId, 'left'), onClick: () => handlers.onMove(leafId, 'left') },
+            { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right' || !canPlace(lf.viewId, 'right'), onClick: () => handlers.onMove(leafId, 'right') },
+            { label: '가운데로', disabled: area === 'center' || !canPlace(lf.viewId, 'center'), onClick: () => handlers.onMove(leafId, 'center') },
             { sep: true },
             // 🔴 W9 — 이 탭을 피크(임시로 뜨는 페이지)로 보낸다. onDetach 를 안 주면 비활성(자리만)
             //    이름은 「미리 보기」 — 쥔님 13:31 *"미리 보기 하면 언제든지 사라질 수 있다는 느낌이 들고"*(VS Code 미리 보기 탭과 같은 결)
-            { label: '미리 보기', icon: 'copy', disabled: !handlers.onDetach, onClick: () => handlers.onDetach?.(leafId) },
+            { label: '미리 보기', icon: 'copy', disabled: !handlers.onDetach || !canPeek(lf.viewId), onClick: () => handlers.onDetach?.(leafId) },
         ];
         // 🔴 내용 메뉴 — 그 뷰가 menu() 로 준 항목. 구분선 뒤에 붙는다(틀과 구분된다, 쥔님 지시)
         //    ⛔ 창틀은 항목의 뜻을 모른다 — host(rename·close)만 내주고 뷰가 라벨을 붙인다
@@ -285,7 +286,8 @@ function NodeView({
         const trailing = chrome?.side === 'right' ? collapseBtn : (expandRightBtn || undefined);
         // 🔴 ⬓ 가르기 단추 = 내용(탭) 조작 — 활성 탭이 있을 때만 그린다(빈 묶음엔 안 그린다, W8 버그).
         //    누르면 활성 탭을 복제해 옆에. + 새 탭 = 틀 조작이라 늘 보인다.
-        const splitSource = activeLeaf?.id;
+        // 가르기를 허용 안 하는 뷰(설정 등)면 단추도 안 그린다(placement.split)
+        const splitSource = activeLeaf && canSplit(activeLeaf.viewId) ? activeLeaf.id : undefined;
         const actions = (
             <>
                 {tabButtons.splitRow && splitSource && (

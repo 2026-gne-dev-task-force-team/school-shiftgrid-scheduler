@@ -17,7 +17,7 @@ import {
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf,
+    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, areaOfLeaf,
     peekPush, peekPop, peekClear, peekPromote,
     type MovePos,
 } from '../pane-ui-system';
@@ -27,6 +27,7 @@ import {
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
+import { canPlace, canPeek, canSplit } from '../pane-ui-system/view-registry';   // 허용 자리 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
 import { migrateViewIds } from './migrate';
@@ -160,7 +161,7 @@ export function Workbench() {
             const dupId = uid('leaf');
             setWs((w) => {
                 const src = findLeaf(w, sourceLeafId);
-                if (!src) return w;
+                if (!src || !canSplit(src.viewId)) return w;   // 🔴 placement.split=false 면 안 가른다
                 return splitAt(w, tabsId, dir, leaf(src.viewId, src.title, { id: dupId }));
             });
             setFocus(dupId);
@@ -179,14 +180,29 @@ export function Workbench() {
         tabMenu: (lf: Leaf) => listTabMenu({ id: lf.id, viewId: lf.viewId, title: lf.title, params: lf.params }),
         onCloseOthers: (id) => setWs((w) => closeOthers(w, id)),
         onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
-        onMove: (id, to) => { setWs((w) => moveLeaf(w, id, to, 'after')); setFocus(id); },
+        // 🔴 이동은 전부 placement 를 묻는다 — 메뉴가 잠궜어도 드래그·키보드가 뚫지 못하게 모델 앞에서 한 번 더
+        onMove: (id, to) => { setWs((w) => { const l = findLeaf(w, id); return l && canPlace(l.viewId, to) ? moveLeaf(w, id, to, 'after') : w; }); setFocus(id); },
         onRename: (id, title) => setWs((w) => renameLeaf(w, id, title)),
         // 🔴 드래그 드롭(W6·W7) — 존 판정은 창틀이 끝냈고, 여긴 moveLeaf 한 번으로 모델만 바꾼다
-        onDropLeaf: (id, target, pos: MovePos) => { setWs((w) => moveLeaf(w, id, target, pos)); setFocus(id); },
+        onDropLeaf: (id, target, pos: MovePos) => {
+            setWs((w) => {
+                const l = findLeaf(w, id);
+                if (!l) return w;
+                // target 이 자리 이름이면 그 자리로, leaf id 면 그 leaf 가 있는 자리로 묻는다
+                const area = (target === 'left' || target === 'center' || target === 'right') ? target
+                    : target === 'floating' ? 'floating' : areaOfLeaf(w, target);
+                if (area === 'floating') { if (!canPeek(l.viewId)) return w; }
+                else if (area && !canPlace(l.viewId, area)) return w;
+                // 가장자리 드롭(새 split)은 가르기 허용도 본다
+                if ((pos === 'left' || pos === 'right' || pos === 'up' || pos === 'down') && !canSplit(l.viewId)) return w;
+                return moveLeaf(w, id, target, pos);
+            });
+            setFocus(id);
+        },
         // 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸(W6 ④)
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
         // 🔴 떼어 내기(W9) — 이 탭을 피크 더미로. moveLeaf …'floating' 한 번으로(트리 연산 새로 안 짬)
-        onDetach: (id) => setWs((w) => moveLeaf(w, id, 'floating', 'after')),
+        onDetach: (id) => setWs((w) => { const l = findLeaf(w, id); return l && canPeek(l.viewId) ? moveLeaf(w, id, 'floating', 'after') : w; }),
     }), [makeSheet, addTab, newTab]);
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)

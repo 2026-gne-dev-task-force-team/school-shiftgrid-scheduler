@@ -54,9 +54,32 @@ export interface ViewDef {
     ribbon?: { order?: number } | false;
     /** 한 번에 하나만(설정처럼) — id 고정 재사용 */
     singleton?: boolean;
+    /**
+     * 🔴 허용 자리 — 어디에 놓일 수 있나. 생략이면 전부 허용.
+     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로 할 수 있는지 사이드바로 할 수 있는지 피크로 찍을 수 있는지
+     *    분할할 수 있는지 제한을 걸어야 — 설정이 사이드바로 들어가기엔 무리"*
+     *    메뉴·드래그·단축키가 전부 이 셋(canPlace·canPeek·canSplit)으로 묻는다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
+     */
+    placement?: {
+        areas?: ('left' | 'center' | 'right')[];
+        peek?: boolean;
+        split?: boolean;
+    };
 }
 
 const registry = new Map<string, ViewDef>();
+
+/** 이 뷰가 그 자리에 갈 수 있나(등록 안 된 뷰는 전부 허용 — 꺼진 플러그인 자리표시를 옮길 수 있어야 한다) */
+export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boolean {
+    const p = registry.get(viewId)?.placement;
+    return !p?.areas || p.areas.includes(area);
+}
+export function canPeek(viewId: string): boolean {
+    return registry.get(viewId)?.placement?.peek !== false;
+}
+export function canSplit(viewId: string): boolean {
+    return registry.get(viewId)?.placement?.split !== false;
+}
 
 export function registerView(def: ViewDef): void {
     registry.set(def.id, def);
