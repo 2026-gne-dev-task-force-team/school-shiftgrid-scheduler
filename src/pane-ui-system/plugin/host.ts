@@ -24,6 +24,7 @@ import {
     addSettingsSection, addSettingsItem,
     addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
 } from './store';
+import { reportStorageError, classifyStorageError } from './storage-errors';
 
 export function makeHost(pluginId: string): PluginHost {
     const scoped = (id: string) => (id.startsWith(`${pluginId}.`) ? id : `${pluginId}.${id}`);
@@ -38,10 +39,14 @@ export function makeHost(pluginId: string): PluginHost {
             } catch { return fallback; }
         },
         set(key: string, v: unknown) {
+            if (typeof localStorage === 'undefined') return;
             try {
-                if (typeof localStorage === 'undefined') return;
                 localStorage.setItem(skey(key), JSON.stringify(v));
-            } catch { /* 조용히 */ }
+            } catch (e) {
+                // 🔴 삼키던 것을 보고로 바꾼다 — 넘치면(QuotaExceededError) 'quota', 그 밖은 'unknown'.
+                //    여전히 throw 하지 않는다(부르는 쪽이 전부 동기라 터지면 UI 가 죽는다) — 보고만 한다.
+                reportStorageError({ scope: 'local', key: skey(key), reason: classifyStorageError(e), at: Date.now() });
+            }
         },
     };
 

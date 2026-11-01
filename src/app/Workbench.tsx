@@ -13,7 +13,7 @@ import {
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
-    StatusBar, type StatusItem,
+    StatusBar, type StatusItem, StorageErrorStatus,
     installContextMenuGuard,
     FRAME_COMMAND,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
@@ -25,6 +25,7 @@ import {
 import {
     setWorkspaceBridge, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
+    useStorageErrors,
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
@@ -321,6 +322,12 @@ export function Workbench() {
     //    render() 를 여기서 불러 노드로 넘긴다 — 작업대 이벤트로 스토어가 다시 그려지면 이 render 가 새 값을 준다.
     const statusEntries = useStatusItems();
     const statusItems: StatusItem[] = statusEntries.map((e) => ({ id: `${e.owner}:${e.id}`, side: e.side, node: e.render() }));
+    // 🔴 ⭐ 창틀이 스스로 꽂는 칸 — 저장 실패 알림(평시엔 StorageErrorStatus 가 null 이라 안 보인다).
+    //    실패가 있으면 상태바를 「숨김 설정」이어도 켠다 — 안 그러면 조용한 저장 유실로 되돌아간다(이 교체의 요지).
+    const storageErrors = useStorageErrors();
+    const frameStatus: StatusItem[] = storageErrors.length > 0
+        ? [{ id: 'frame:storage-error', side: 'right', node: <StorageErrorStatus /> }]
+        : [];
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
@@ -418,8 +425,9 @@ export function Workbench() {
             )}
             </div>
 
-            {/* 🔴 하단 상태바 — 전체 폭 한 줄. 좁은 화면은 기본 숨김(showStatus 가 가른다) */}
-            {showStatus && <StatusBar items={statusItems} />}
+            {/* 🔴 하단 상태바 — 전체 폭 한 줄. 좁은 화면은 기본 숨김(showStatus 가 가른다).
+                ⭐ 저장 실패가 있으면 숨김 설정이어도 켠다 — 실패를 가리면 조용한 유실이 된다 */}
+            {(showStatus || storageErrors.length > 0) && <StatusBar items={[...frameStatus, ...statusItems]} />}
 
             {/* 🔴 명령 팔레트 — Ctrl/⌘+P. 스스로 portal 로 뜬다(위치 무관) */}
             <CommandPalette open={palette} onClose={() => setPalette(false)} />

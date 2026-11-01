@@ -29,3 +29,7 @@ export {
     type WorkspaceBridge,
 } from './store';
 export { resolveRibbonEntries, ribbonBase, type RibbonEntry } from './ribbon';
+export {
+    reportStorageError, clearStorageErrors, useStorageErrors, listStorageErrors, classifyStorageError,
+    type StorageError, type StorageErrorReason,
+} from './storage-errors';
