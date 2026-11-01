@@ -16,7 +16,6 @@ import { createScheduleStore } from './store';
 import { WeekView } from './views/WeekView';
 import { CardView } from './views/CardView';
 import { CardCountStatus } from './components/CardCountStatus';
-import { SchedulerSettingsPane } from './settings/SchedulerSettingsPane';
 
 function activate(host: PluginHost): void {
     const store = createScheduleStore(host);
@@ -51,12 +50,9 @@ function activate(host: PluginHost): void {
     });
     host.ribbon.add({ commandId: 'scheduler.new', icon: 'table', order: 0 });
 
-    // ── 설정「스케줄러」 — 눈금 기본값 ──
-    host.settings.addSection('scheduler', '스케줄러', 'table');
-    host.settings.addItem({
-        section: 'scheduler', id: 'grid', title: '눈금·시작 시각', icon: 'table',
-        Pane: () => createElement(SchedulerSettingsPane, { host, store }),
-    });
+    // ⛔ 설정 화면에 「스케줄러」 섹션을 박지 않는다 — 쥔님 2026-11-01 13:39: *"영구적·전략적인 기능이 아니다 보니
+    //    설정 화면에 박을 수는 없어요"*. 눈금·시작 시각은 스케줄 뷰 안(툴바/머리줄)에서 만지는 것이 다음 손이다.
+    //    (SchedulerSettingsPane 은 파일로 남겨 둔다 — 뷰 안으로 옮길 때 그대로 쓴다)
 
     // ── 상태바「카드 N」 — 컴포넌트라 스토어를 스스로 구독해 다시 그린다 ──
     host.statusBar.add({ id: 'card-count', side: 'left', render: () => createElement(CardCountStatus, { store }) });

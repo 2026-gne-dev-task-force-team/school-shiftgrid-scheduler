@@ -119,11 +119,12 @@ export function addSettingsItem(
 }
 
 /** 그릴 설정 — 항목이 있는 섹션만(빈 섹션은 안 그린다), 섹션·항목 모두 등록 순. */
-export function listSettings(): { id: string; title: string; icon?: IconName; items: SettingsItemEntry[] }[] {
+export function listSettings(): { id: string; title: string; icon?: IconName; owner: string; items: SettingsItemEntry[] }[] {
     const sections = [...settingsSections.values()].sort((a, b) => a.seq - b.seq);
     const items = [...settingsItems].sort((a, b) => a.seq - b.seq);
+    // owner 를 같이 준다 — 설정 화면이 「앱 설정」과 「플러그인이 띄운 설정」을 갈라 그린다(쥔님 2026-11-01 13:39)
     return sections
-        .map((s) => ({ id: s.id, title: s.title, icon: s.icon, items: items.filter((it) => it.section === s.id) }))
+        .map((s) => ({ id: s.id, title: s.title, icon: s.icon, owner: s.owner, items: items.filter((it) => it.section === s.id) }))
         .filter((s) => s.items.length > 0);
 }
 

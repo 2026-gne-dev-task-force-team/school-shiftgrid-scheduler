@@ -42,6 +42,7 @@ export default {
         railbtn: 'var(--s-railbtn)',
         titlebar: 'var(--s-titlebar)',
         statusbar: 'var(--s-statusbar)',
+        rail: 'var(--s-rail)',          // 리본을 상단에 눕혔을 때의 줄 높이(= 세로일 때의 폭)
       },
       width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
       spacing: { pad: 'var(--s-pad)' },

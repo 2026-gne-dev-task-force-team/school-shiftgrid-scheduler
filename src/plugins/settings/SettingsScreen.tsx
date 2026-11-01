@@ -13,6 +13,7 @@
 import { useMemo, useState } from 'react';
 import { Row, Icon, IconButton, SectionHeader, useNarrow } from '../../pane-ui-system';
 import { listSettings, useContribVersion } from '../../pane-ui-system/plugin';
+import { manifest } from './manifest';
 
 export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     const narrow = useNarrow();
@@ -28,27 +29,42 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     const item = items.find((m) => m.id === selectedId) ?? items[0];
     const Pane = item?.Pane;
 
+    // 🔴 앱 설정(이 플러그인이 등록한 것)과 「플러그인이 띄운 설정」을 갈라 그린다 — 쥔님 2026-11-01 13:39:
+    //    *"플러그인이 띄운 설정이랑 기존 설정이랑 구분이 안 가"*. 가름선은 owner(= 등록한 플러그인 id).
+    const appSections = sections.filter((s) => s.owner === manifest.id);
+    const pluginSections = sections.filter((s) => s.owner !== manifest.id);
+    const renderSection = (sec: (typeof sections)[number]) => (
+        <div key={sec.id}>
+            <SectionHeader title={sec.title} />
+            <div className="flex flex-col gap-0.5 p-pad">
+                {sec.items.map((m) => (
+                    <Row
+                        key={m.id}
+                        icon={m.icon}
+                        label={m.title}
+                        active={!narrow && m.id === item?.id}
+                        onClick={() => { setSelectedId(m.id); if (narrow) setShowContent(true); }}
+                        title={m.title}
+                        end={narrow ? <Icon name="right" size={14} className="text-muted" /> : undefined}
+                    />
+                ))}
+            </div>
+        </div>
+    );
     // 섹션별로 묶은 전체 메뉴(넓은 화면·한 단계 목록 공용)
     const MenuList = (
         <nav className="flex flex-col py-1">
-            {sections.map((sec) => (
-                <div key={sec.id}>
-                    <SectionHeader title={sec.title} />
-                    <div className="flex flex-col gap-0.5 p-pad">
-                        {sec.items.map((m) => (
-                            <Row
-                                key={m.id}
-                                icon={m.icon}
-                                label={m.title}
-                                active={!narrow && m.id === item?.id}
-                                onClick={() => { setSelectedId(m.id); if (narrow) setShowContent(true); }}
-                                title={m.title}
-                                end={narrow ? <Icon name="right" size={14} className="text-muted" /> : undefined}
-                            />
-                        ))}
+            {appSections.map(renderSection)}
+            {pluginSections.length > 0 && (
+                // 플러그인 묶음 — 굵은 선 + 「플러그인」 머리 + 살짝 어두운 바탕으로 앱 설정과 갈린다
+                <div className="mt-2 pt-1 border-t-2 border-line bg-side/60">
+                    <div className="flex items-center gap-1.5 px-pad h-header select-none">
+                        <Icon name="play" size={13} className="text-muted" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">플러그인</span>
                     </div>
+                    {pluginSections.map(renderSection)}
                 </div>
-            ))}
+            )}
         </nav>
     );
 

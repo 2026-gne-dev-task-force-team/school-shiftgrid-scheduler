@@ -6,12 +6,11 @@
  *   ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다(열면 켤 때마다 탭이 는다).
  * 🔴 ⛔ 창틀은 이 폴더를 모른다. 바깥으로 나가는 값은 PluginModule 하나뿐이다.
  */
-import { createElement } from 'react';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { SheetView } from './views/SheetView';
 import { EmptyView } from './views/EmptyView';
-import { AboutView, ManifestCard } from './views/AboutView';
+import { AboutView } from './views/AboutView';
 
 const hhmm = (d: Date) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -62,12 +61,8 @@ function activate(host: PluginHost): void {
     // 저장 증명 — 마지막으로 활성화한 뷰를 기기별 저장에 남긴다(자기 네임스페이스)
     host.workspace.on('activate', (l) => { host.storage.set('last-view', l.viewId); });
 
-    // ── 설정 「데모」 섹션 + 정보 판(설정 기여점 증명) ──
-    host.settings.addSection('demo', '데모', 'sparkles');
-    host.settings.addItem({
-        section: 'demo', id: 'about', title: '이 플러그인 정보', icon: 'info',
-        Pane: () => createElement(ManifestCard, { manifest }),
-    });
+    // ⛔ 설정 「데모 › 이 플러그인 정보」 판은 뺐다 — 쥔님 2026-11-01 13:40 *"다 똑같은 건데 왜 3개씩이나"*
+    //    (설정 「이 프로그램」·「설치된 플러그인」과 겹쳤다). 플러그인 정보는 「설치된 플러그인」 목록이 보여 준다.
 
     // ── 탭 메뉴: 「이 탭 정보」 → 피크로 매니페스트(host.menu + 피크 증명) ──
     host.menu.addTabMenuItem((ctx) => [

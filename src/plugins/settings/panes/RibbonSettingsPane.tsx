@@ -6,15 +6,18 @@
  * 🔴 app/ 이라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import {
-    usePaneSettings, resolveRibbon, nudgeId,
+    usePaneSettings, nudgeId,
     setRibbonOrder, toggleRibbonHidden, resetRibbon,
     Icon,
 } from '../../../pane-ui-system';
+import { resolveRibbonEntries, useContribVersion } from '../../../pane-ui-system/plugin';
 import type { SettingsPaneProps } from '../registry';
 
-export function RibbonSettingsPane({ host }: SettingsPaneProps) {
+export function RibbonSettingsPane(_: SettingsPaneProps) {
     const { ribbon } = usePaneSettings();
-    const { ordered } = resolveRibbon(host.views.listRibbon(), ribbon);
+    useContribVersion();
+    // 🔴 뷰 설탕 + 동작(명령) 둘 다 — Rail 과 같은 목록(쥔님 13:40: *"리본엔 떠 있는데 리본 설정에선 안 뜨네"* — 동작이 빠져 있었다)
+    const { ordered } = resolveRibbonEntries(ribbon);
     const ids = ordered.map((v) => v.id);
     const hiddenSet = new Set(ribbon.hidden);
 

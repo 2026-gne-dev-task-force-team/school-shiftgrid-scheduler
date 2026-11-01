@@ -281,10 +281,15 @@ export function Workbench() {
             {/* 🔴 상단 타이틀바 — 전체 폭 한 줄(리본·사이드바·가운데 위). 앱 이름·액션은 앱이 넘긴다 */}
             {showTitleBar && <TitleBar title="시간표 짜기" actions={titleActions} />}
 
+            {/* 🔴 리본을 상단에(엑셀식) — 설정 「창틀 › 리본을 상단에」. 같은 Rail 을 가로로 눕힌다(쥔님 13:39) */}
+            {!narrow && pane.settings.ribbonPosition === 'top' && (
+                <Rail orientation="horizontal" onOpenView={openView} onOpenSettings={openSettings} />
+            )}
+
             {/* 틀 가운데 줄 — 리본·사이드바·가운데·사이드바가 가로로 */}
             <div className="flex flex-1 min-h-0 w-full overflow-hidden">
-            {/* 왼쪽 아이콘 레일 — 넓은 화면에서만. 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
-            {!narrow && (
+            {/* 왼쪽 아이콘 레일 — 넓은 화면에서만(리본이 상단이면 여기엔 없다). 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
+            {!narrow && pane.settings.ribbonPosition !== 'top' && (
                 <Rail onOpenView={openView} onOpenSettings={openSettings} />
             )}
 

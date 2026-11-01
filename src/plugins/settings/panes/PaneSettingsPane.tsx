@@ -101,6 +101,9 @@ export function PaneSettingsPane() {
                 <Field title="미리 보기가 화면을 덮는다" hint="끄면 가운데를 밀고 들어온다 · 켜면 가운데 위에 떠서 덮는다(좁은 화면에 유리)">
                     <Toggle on={settings.peekMode === 'overlay'} onToggle={(v) => set({ peekMode: v ? 'overlay' : 'push' })} />
                 </Field>
+                <Field title="리본을 상단에" hint="끄면 왼쪽 세로 띠(옵시디언식) · 켜면 상단 가로 줄(엑셀식)">
+                    <Toggle on={settings.ribbonPosition === 'top'} onToggle={(v) => set({ ribbonPosition: v ? 'top' : 'left' })} />
+                </Field>
             </div>
 
             <div className="pt-2 border-t border-line">

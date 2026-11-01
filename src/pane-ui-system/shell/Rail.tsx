@@ -24,34 +24,45 @@ import {
 import { resolveRibbonEntries, useContribVersion } from '../plugin';
 
 /** 드래그 중 포인터 자리에서 「어느 아이콘 앞/뒤에 꽂나」 — DOM 을 더듬어 번역(순수 아님, drop-resolve 와 같은 결) */
-function ribbonDropAt(nav: HTMLElement | null, y: number, dragId: string):
-    { targetId: string; pos: 'before' | 'after'; lineTop: number; left: number; width: number } | null {
+function ribbonDropAt(nav: HTMLElement | null, p: number, dragId: string, horizontal = false):
+    { targetId: string; pos: 'before' | 'after'; line: number; cross: number; size: number } | null {
     if (!nav) return null;
     const rows = Array.from(nav.querySelectorAll<HTMLElement>('[data-row-id]'));
     if (rows.length === 0) return null;
+    // 세로 리본은 y 로 위/아래, 가로 리본은 x 로 앞/뒤 — 축만 다르고 판정은 같다
+    const start = (r: DOMRect) => (horizontal ? r.left : r.top);
+    const len = (r: DOMRect) => (horizontal ? r.width : r.height);
+    const crossStart = (r: DOMRect) => (horizontal ? r.top : r.left);
+    const crossLen = (r: DOMRect) => (horizontal ? r.height : r.width);
     for (const el of rows) {
         const r = el.getBoundingClientRect();
-        if (y < r.top + r.height / 2) {
+        if (p < start(r) + len(r) / 2) {
             const id = el.getAttribute('data-row-id')!;
-            return { targetId: id, pos: 'before', lineTop: r.top, left: r.left, width: r.width };
+            return { targetId: id, pos: 'before', line: start(r), cross: crossStart(r), size: crossLen(r) };
         }
     }
-    // 전부보다 아래 → 맨 끝 뒤
+    // 전부보다 뒤 → 맨 끝 뒤
     const last = rows[rows.length - 1];
     const r = last.getBoundingClientRect();
     const id = last.getAttribute('data-row-id')!;
     // 드래그 중인 자신이 맨 끝이면 미리보기를 안 그린다(제자리)
     if (id === dragId && rows.length === 1) return null;
-    return { targetId: id, pos: 'after', lineTop: r.bottom, left: r.left, width: r.width };
+    return { targetId: id, pos: 'after', line: start(r) + len(r), cross: crossStart(r), size: crossLen(r) };
 }
 
 export function Rail({
-    onOpenView, onOpenSettings,
+    onOpenView, onOpenSettings, orientation = 'vertical',
 }: {
     /** 리본 아이콘을 눌렀을 때 — 그 뷰를 defaultArea 에 연다(앱이 정한다) */
     onOpenView: (viewId: string) => void;
     onOpenSettings: () => void;
+    /**
+     * 🔴 'vertical'(기본) 은 왼쪽 세로 띠(옵시디언) · 'horizontal' 은 상단 가로 줄(엑셀 리본).
+     *    쥔님 2026-11-01 13:39: *"엑셀 쓰는 사람들은 아이콘이 상단에 있는 게 익숙할 수도 — 옵션으로"*. 같은 목록·같은 드래그.
+     */
+    orientation?: 'vertical' | 'horizontal';
 }) {
+    const horizontal = orientation === 'horizontal';
     const { ribbon } = usePaneSettings();
     useContribVersion();   // 🔴 리본 동작·뷰가 바뀌면(플러그인 켜고 끄기) 다시 그린다
     // 🔴 뷰 설탕(「그 뷰 열기」) + 동작(명령을 가리킴)을 합쳐 order·hidden 에 태운다
@@ -63,13 +74,13 @@ export function Rail({
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
 
     // 🔴 드롭 = 포인터를 뗀 세로 자리를 target+앞뒤로 번역 → 그 한 수를 새 순서 배열로 만들어 저장
-    const onDrop = useCallback((dragId: string, _x: number, y: number) => {
+    const onDrop = useCallback((dragId: string, x: number, y: number) => {
         draggedRef.current = true;
-        const hit = ribbonDropAt(navRef.current, y, dragId);
+        const hit = ribbonDropAt(navRef.current, horizontal ? x : y, dragId, horizontal);
         if (!hit || hit.targetId === dragId) return;
         const allIds = ordered.map((v) => v.id);
         setRibbonOrder(reorderIds(allIds, dragId, hit.targetId, hit.pos));
-    }, [ordered]);
+    }, [ordered, horizontal]);
 
     // 🔴 우클릭/길게누르기 → 그 아이콘 메뉴. el 로 어느 아이콘인지 더듬는다
     const onContext = useCallback((x: number, y: number, el: HTMLElement) => {
@@ -95,11 +106,13 @@ export function Rail({
     const { bind, drag } = useDragLeaf({ enabled: true, axis: 'y', onContext, onDrop });
 
     // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다(옵시디언 눈금).
-    const preview = drag ? ribbonDropAt(navRef.current, drag.y, drag.leafId) : null;
+    const preview = drag ? ribbonDropAt(navRef.current, horizontal ? drag.x : drag.y, drag.leafId, horizontal) : null;
     return (
         <nav
             ref={navRef}
-            className="shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1"
+            className={horizontal
+                ? 'shrink-0 w-full h-rail bg-panel border-b border-line flex flex-row items-center px-2 gap-1'
+                : 'shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1'}
             style={{ '--s-btn': 'var(--s-railbtn)' } as CSSProperties}
             onPointerDownCapture={() => { draggedRef.current = false; }}
             {...bind}
@@ -135,7 +148,9 @@ export function Rail({
                     {preview && (
                         <div
                             className="absolute bg-accent rounded-full"
-                            style={{ left: preview.left + 2, top: preview.lineTop - 1.5, width: preview.width - 4, height: 3 }}
+                            style={horizontal
+                                ? { left: preview.line - 1.5, top: preview.cross + 2, width: 3, height: preview.size - 4 }
+                                : { left: preview.cross + 2, top: preview.line - 1.5, width: preview.size - 4, height: 3 }}
                         />
                     )}
                     <div
