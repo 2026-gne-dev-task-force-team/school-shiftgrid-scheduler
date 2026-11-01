@@ -10,9 +10,10 @@ import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
 
 type Mode = 'month' | 'year' | 'week' | '3day' | 'day';
+// 순서는 큰 단위부터 — 쥔님 17:18 *"년월 이런 식이어야 하지 않겠니?"* (「연」이 아니라 「년」, 년 → 월 → 주 → 3일 → 하루)
 const MODES: { id: Mode; label: string }[] = [
+    { id: 'year', label: '년' },
     { id: 'month', label: '월' },
-    { id: 'year', label: '연' },
     { id: 'week', label: '주' },
     { id: '3day', label: '3일' },
     { id: 'day', label: '하루' },
