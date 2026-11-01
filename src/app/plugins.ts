@@ -10,14 +10,14 @@
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
 import { projectExplorerPlugin } from '../plugins/project-explorer';
-import { paneTestPlugin } from '../plugins/pane-test';
 import { calendarPlugin } from '../plugins/calendar';
 
 // 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정 화면은 코어다 — 끌 수 없다.
-//    pane-test(팬 UI 엔진 테스트)는 코어 아님 — 설정에서 끌 수 있다(그 자체가 수명주기 시연).
+// 📌 2026-11-01 21:47 쥔님: *"Pane UI Test는 이제 등록해지하자, 코드에서는 안지우는데, 이제 쓸일이 없어서"* →
+//    `paneTestPlugin` 을 이 목록에서 뺐다(앱이 더는 등록하지 않는다). ⛔ 코드·폴더(plugins/pane-test/)는 그대로 둔다 —
+//    되살리려면 import 를 다시 걸고 아래 배열에 한 줄 더하면 된다. (N4 첫 소비자 증명이라 런타임에서만 사라진다 · 구조 검사 ⑧ 은 폴더를 본다)
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
     projectExplorerPlugin,   // 탐색기 — 코어(core:true), 끌 수 없다. 노드 하이라키 + 탐색기 패널(N1)
-    paneTestPlugin,
     calendarPlugin,   // 달력(월 보기) — 코어 아님, 설정에서 끌 수 있다
 ];

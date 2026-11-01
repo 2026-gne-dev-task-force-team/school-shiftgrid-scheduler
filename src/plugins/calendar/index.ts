@@ -54,6 +54,11 @@ function activate(host: PluginHost): void {
         run: () => { host.workspace.open(MINI_ID, { where: 'left' }); },
     });
     host.ribbon.add({ commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 });
+
+    // ── 첫 실행 기본 배치: 오른쪽 패널에 작은 달력 한 번(쥔님 2026-11-01 21:47 *"오른쪽 패널에 기본적으로 작은 달력 띄워주자"*) ──
+    //    🔴 ⛔ activate 에서가 아니라 onFirstRun 에서(탐색기가 왼쪽을 여는 것과 같은 꼴). 기기별 플래그라 한 번만 — 이미 쓰던 기기는
+    //       저장된 워크스페이스가 있어 안 바뀐다(그게 맞는 동작 · ⛔ 저장된 배치를 덮지 않는다). calendar.mini 는 'right' 를 받는다(placement.areas).
+    host.onFirstRun(() => { host.workspace.open(MINI_ID, { where: 'right' }); });
 }
 
 export const calendarPlugin: PluginModule = { manifest, activate };
