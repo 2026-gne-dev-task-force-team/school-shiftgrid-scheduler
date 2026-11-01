@@ -48,11 +48,12 @@ function activate(host: PluginHost): void {
         layout: { minWidth: 200, squeeze: 'scroll' },
         Component: () => createElement(MiniCalendarView),
     });
-    // 여는 길은 명령(팔레트)뿐 — 리본에 같은 달력 아이콘을 둘 세우면 헷갈린다. 왼쪽 패널에 연다.
+    // 리본에도 선다(쥔님 2026-11-01 18:58 *"미니 캘린더 띄우기 앱 리본 따로 있어야 할 것 같은데"*) — 점 찍힌 달력(calendarMini)으로 월 보기와 가른다. 왼쪽 패널에 연다.
     host.commands.add({
-        id: 'calendar.openMini', title: '미니 캘린더 열기(왼쪽 패널)', icon: 'calendar',
+        id: 'calendar.openMini', title: '미니 캘린더 열기(왼쪽 패널)', icon: 'calendarMini',
         run: () => { host.workspace.open(MINI_ID, { where: 'left' }); },
     });
+    host.ribbon.add({ commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 });
 }
 
 export const calendarPlugin: PluginModule = { manifest, activate };
