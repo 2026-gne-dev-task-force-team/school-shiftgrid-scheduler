@@ -3,7 +3,7 @@
  *   열 길이·연속성 · 달 넘김 · 범위 시작(주는 일요일로 당김) · 범위 글자 네 꼴 · 시 눈금 · 하루 중 분.
  */
 import { describe, it, expect } from 'vitest';
-import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, daysBetween } from './time-grid';
+import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, daysBetween, quarterOfMonth, quarterLabel } from './time-grid';
 
 describe('dayColumns — days 개 열', () => {
     it('length === days', () => {
@@ -95,6 +95,29 @@ describe('hourLabel · minutesOfDay', () => {
         expect(minutesOfDay(new Date(2026, 10, 4, 0, 0))).toBe(0);
         expect(minutesOfDay(new Date(2026, 10, 4, 9, 30))).toBe(570);
         expect(minutesOfDay(new Date(2026, 10, 4, 23, 59))).toBe(1439);
+    });
+});
+
+describe('quarterOfMonth — 월 경계 8건(1·3·4·6·7·9·10·12월)', () => {
+    it('1·3월 → 1분기', () => {
+        expect(quarterOfMonth(1)).toBe(1);
+        expect(quarterOfMonth(3)).toBe(1);
+    });
+    it('4·6월 → 2분기', () => {
+        expect(quarterOfMonth(4)).toBe(2);
+        expect(quarterOfMonth(6)).toBe(2);
+    });
+    it('7·9월 → 3분기', () => {
+        expect(quarterOfMonth(7)).toBe(3);
+        expect(quarterOfMonth(9)).toBe(3);
+    });
+    it('10·12월 → 4분기', () => {
+        expect(quarterOfMonth(10)).toBe(4);
+        expect(quarterOfMonth(12)).toBe(4);
+    });
+    it('quarterLabel — 년 분기 꼴', () => {
+        expect(quarterLabel(2026, 11)).toBe('2026년 4분기');
+        expect(quarterLabel(2027, 1)).toBe('2027년 1분기');
     });
 });
 

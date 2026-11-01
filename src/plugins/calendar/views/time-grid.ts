@@ -80,6 +80,16 @@ export function rangeLabel(cols: DayColumn[]): string {
     return `${head} – ${b.d}일`;                                      // 같은 달
 }
 
+/** 분기(1~4) — 1~3월 1분기 · 4~6월 2분기 · 7~9월 3분기 · 10~12월 4분기. month 는 1~12. */
+export function quarterOfMonth(month: number): number {
+    return Math.floor((month - 1) / 3) + 1;
+}
+
+/** 분기 표시 한 줄 — '2026년 4분기'. 「분기 뷰」(days=14) 머리줄에 이름값(명목)으로 단다(쥔님 2026-11-01 22:17). */
+export function quarterLabel(year: number, month: number): string {
+    return `${year}년 ${quarterOfMonth(month)}분기`;
+}
+
 /** 시 눈금 글자 — '09:00' 꼴(24시간, 0 채움) */
 export function hourLabel(h: number): string {
     return `${pad2(h)}:00`;

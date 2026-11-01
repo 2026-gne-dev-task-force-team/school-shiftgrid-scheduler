@@ -20,13 +20,19 @@ import { useOptions } from '../store';
 
 type Mode = 'year' | 'month' | 'week' | '3day' | 'day' | 'dense' | 'gantt';
 
-// 순서는 큰 단위부터 — 쥔님 17:18 *"년월 이런 식이어야 하지 않겠니?"* (「연」이 아니라 「년」, 년 → 월 → 주 → 3일 → 하루)
-const BASE_MODES: { id: Mode; label: string }[] = [
+// 순서 — 큰 단위부터 작은 단위로. 쥔님 2026-11-01 22:17: *"년 분기 월 주 3일 하루 일정 간트 이렇게 하지"*
+//   「분기」(dense)·「간트」(gantt)는 설정 토글(기본 꺼짐)이라 꺼져 있으면 이 순서에서 걸러 빠진다(끝에 push 안 함).
+//   🔴 ⛔ 「일정」(일정 목록 표·리스트)은 이번에 만들지 않는다 — 일정 자료가 아직 없다(쥔님 *"일정은 일정 목록들
+//      그대로 보는거 표나 리스트로"* 는 자료가 생긴 뒤). 자리만 년·간트 사이에 둔다(아래 ALL_MODES 주석).
+const ALL_MODES: { id: Mode; label: string; opt?: 'dense' | 'gantt' }[] = [
     { id: 'year', label: '년' },
+    { id: 'dense', label: '분기', opt: 'dense' },
     { id: 'month', label: '월' },
     { id: 'week', label: '주' },
     { id: '3day', label: '3일' },
     { id: 'day', label: '하루' },
+    // ⛔ (미구현 자리) '일정' — 하루와 간트 사이. 일정 자료가 생기면 표·리스트 뷰로.
+    { id: 'gantt', label: '간트', opt: 'gantt' },
 ];
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
@@ -36,9 +42,8 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
     const [anchor, setAnchor] = useState<Date>(() => new Date());
     const opts = useOptions();
 
-    const modes = [...BASE_MODES];
-    if (opts.dense) modes.push({ id: 'dense', label: '분기' });
-    if (opts.gantt) modes.push({ id: 'gantt', label: '간트' });
+    // 순서 배열 하나(ALL_MODES)로 고정하고, 토글이 켜진 것만 거른다 — 끝에 push 하면 순서가 틀어졌다(쥔님 22:17).
+    const modes = ALL_MODES.filter((m) => !m.opt || opts[m.opt]);
 
     // 보고 있던 옵션 보기를 설정에서 끄면 월로 돌아간다
     useEffect(() => {

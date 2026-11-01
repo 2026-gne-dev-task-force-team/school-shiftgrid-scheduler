@@ -14,7 +14,7 @@
 import { memo, useEffect, useState, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { IconButton, isoOf, startOfWeek } from '../../../pane-ui-system';
-import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay } from './time-grid';
+import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 
 const WEEK_START = 0;                 // 주 시작 요일 일요일 고정(월 보기와 같다 — 설정으로 뺄 자리)
@@ -24,6 +24,7 @@ const HOUR_H = 48;                    // 한 시간 = 48px(상수)
 const GUTTER = 56;                    // 왼쪽 시간 눈금 열 폭(px)
 const HDR_H = 52;                     // 열 머리 높이(px) — 요일 + 날짜 두 줄
 const START_HOUR = 7;                 // 처음 열 때 맨 위에 오는 시각 — 오전 7시
+const DENSE_DAYS = 14;                // 「분기 뷰」 폭(2주). 이 폭일 때만 머리줄에 분기 표시 한 줄(쥔님 2026-11-01 22:17)
 const HOUR_LINES = Array.from({ length: HOURS + 1 }, (_, h) => h);   // 0~24
 
 /** 「이 날이 보이게」 할 때 맨 왼쪽에 둘 날 — 7의 배수(주·분기)면 그 주 일요일, 아니면 그날 */
@@ -104,7 +105,13 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
         <div className="h-full flex flex-col bg-bg select-text">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
-                <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
+                <div className="min-w-0">
+                    <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
+                    {/* 「분기 뷰」(days=14)만 — 보고 있는 맨 왼쪽 날 기준 분기 한 줄(명목). 다른 폭엔 안 뜬다. */}
+                    {days === DENSE_DAYS && cols.length > 0 && (
+                        <div className="text-[11px] text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>
+                    )}
+                </div>
                 <div className="flex items-center gap-1 shrink-0">
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button
