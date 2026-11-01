@@ -9,5 +9,5 @@ export const manifest: PluginManifest = {
     name: 'Pane UI Test',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '창틀(pane-ui-system)을 눈으로 시험하는 하네스 — 패널·탭·스크롤·피크를 한 탭 안에서 연다',
+    description: '창틀(pane-ui-system)을 눈으로 시험하는 하네스 — 패널·탭·스크롤·미리보기를 한 탭 안에서 연다',
 };

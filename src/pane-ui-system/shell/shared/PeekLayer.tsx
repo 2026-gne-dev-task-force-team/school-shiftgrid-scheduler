@@ -100,7 +100,7 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
                 {/* 🔴 크기 조절 손잡이 — 안쪽 가장자리. 평소 1px 선, 올리면 파랑, 끄는 동안 짙은 파랑(resize-handle 토큰) */}
                 <div
                     role="separator"
-                    aria-label="피크 크기 조절"
+                    aria-label="미리보기 크기 조절"
                     aria-orientation={wide ? 'vertical' : 'horizontal'}
                     onPointerDown={onResizeDown}
                     className={`resize-handle absolute z-10 touch-none ${wide
@@ -113,8 +113,8 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
                 </div>
 
                 <div className="shrink-0 flex items-center justify-between h-header px-pad border-b border-line select-none">
-                    <span className="text-[12px] font-semibold text-muted">미리보기(피크){wide ? ' · 오른쪽' : ' · 아래'}</span>
-                    <IconButton icon="x" label="피크 닫기 (Esc)" onClick={onClose} />
+                    <span className="text-[12px] font-semibold text-muted">미리보기{wide ? ' · 오른쪽' : ' · 아래'}</span>
+                    <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
                 <div className="flex-1 min-h-0 overflow-auto p-4 select-text">{children}</div>
             </div>

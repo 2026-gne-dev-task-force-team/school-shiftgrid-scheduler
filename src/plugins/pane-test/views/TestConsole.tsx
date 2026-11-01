@@ -11,8 +11,8 @@ import { PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT, openCmdId } from '../store';
 function PeekContent() {
     return (
         <div className="flex flex-col gap-2">
-            <h3 className="text-lg font-bold text-accent">피크 미리보기</h3>
-            <p className="text-[13px] text-muted">이 피크는 전역 창이 아니라 <span className="text-text font-semibold">이 탭 안</span>에서 뜹니다. 넓으면 오른쪽, 좁으면 아래.</p>
+            <h3 className="text-lg font-bold text-accent">미리보기</h3>
+            <p className="text-[13px] text-muted">이 미리보기는 전역 창이 아니라 <span className="text-text font-semibold">이 탭 안</span>에서 뜹니다. 넓으면 오른쪽, 좁으면 아래.</p>
             {Array.from({ length: 30 }).map((_, i) => (
                 <div key={i} className="shrink-0 py-1.5 px-2 rounded bg-accent/10 text-[13px] text-text">피크 줄 {i + 1} — 피크 안 스크롤 시험</div>
             ))}
