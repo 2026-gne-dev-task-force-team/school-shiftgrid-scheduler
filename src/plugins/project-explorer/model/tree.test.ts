@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     type Tree, type Node,
-    emptyTree, normalize, createNode, rename, move, remove, duplicate, toggleCollapse, setData, collapseAll,
+    emptyTree, normalize, createNode, rename, move, remove, toggleCollapse, setData,
     restore, purge, purgeAll, countUnder,
     parentOf, flatten, filterIds,
     emptyHistory, record, undo, redo,
@@ -113,21 +113,24 @@ describe('move', () => {
     });
 });
 
-describe('duplicate', () => {
-    it('깊은 복제 — 새 id, 원본 바로 뒤 형제, 자식째', () => {
-        const t = make({ p: { children: ['a'] }, a: { name: '원본', children: ['b'] }, b: { name: '자식' } });
-        let i = 0;
-        const r = duplicate(t, 'a', () => `dup${i++}`);
-        expect(r.nodes.p.children).toEqual(['a', 'dup0']);   // 원본(a) 바로 뒤
-        expect(r.nodes.dup0.name).toBe('원본');
-        expect(r.nodes.dup0.children).toEqual(['dup1']);
-        expect(r.nodes.dup1.name).toBe('자식');
-        expect(r.nodes.a.children).toEqual(['b']);           // 원본은 그대로
+// 🔴 item 7 회귀 — 깊은 노드를 「바깥(루트)」으로 꺼내는 길. resolveDrop 은 DOM 이라 못 재니,
+//    그 연산이 기대는 move() 의 결과(루트 끝 append · 루트 형제 되기)를 순수 함수로 못 박는다.
+describe('폴더 밖으로 꺼내기 (move → 루트)', () => {
+    it('빈 바닥 → 루트 맨 끝: 깊은 노드를 루트에 index 생략으로 꽂으면 루트 자식 끝에 붙는다', () => {
+        const t = make({ p: { children: ['a'] }, a: { children: ['b'] }, b: {}, other: {} });
+        // root.children = ['p','other'] (b 는 a 밑 · a 는 p 밑)
+        const r = move(t, 'b', 'root');
+        expect(r.nodes.root.children).toEqual(['p', 'other', 'b']);   // 맨 끝
+        expect(r.nodes.a.children).toEqual([]);                        // 깊은 부모에서 빠졌다
+        expect(parentOf(r, 'b')).toBe('root');
     });
-    it('뿌리·휴지통은 복제 안 한다', () => {
-        const t = make({});
-        expect(duplicate(t, 'root')).toBe(t);
-        expect(duplicate(t, 'trash')).toBe(t);
+    it('깊은 폴더 → 루트 형제: 중첩 폴더를 루트로 옮기면 부모가 루트가 된다', () => {
+        const t = make({ p: { children: ['a'] }, a: { children: ['b'] }, b: { children: ['c'] }, c: {} });
+        const r = move(t, 'a', 'root');
+        expect(parentOf(r, 'a')).toBe('root');       // 루트 형제
+        expect(r.nodes.p.children).toEqual([]);      // 옛 부모에서 빠졌다
+        expect(r.nodes.a.children).toEqual(['b']);   // 가지는 통째로 따라온다
+        expect(parentOf(r, 'b')).toBe('a');
     });
 });
 
@@ -263,17 +266,6 @@ describe('toggleCollapse / setData', () => {
     });
 });
 
-describe('collapseAll', () => {
-    it('자식 있는 노드만 접는다(루트·휴지통·잎은 그대로)', () => {
-        const t = make({ a: { children: ['b'] }, b: {}, lone: {} });
-        const r = collapseAll(t);
-        expect(r.nodes.a.collapsed).toBe(true);
-        expect(r.nodes.b.collapsed).toBeFalsy();     // 잎
-        expect(r.nodes.lone.collapsed).toBeFalsy();  // 잎
-        expect(r.nodes.root.collapsed).toBeFalsy();
-    });
-});
-
 describe('normalize — 세 함정', () => {
     it('고아를 떨군다(어디서도 안 닿는 노드)', () => {
         const t = normalize({
@@ -339,7 +331,7 @@ describe('normalize — 세 함정', () => {
 describe('flatten', () => {
     const isContainer = (type: string) => type === 'folder';
 
-    it('rootId 의 자손만, 깊이와 함께', () => {
+    it('주어진 뿌리의 자손만, 깊이와 함께', () => {
         const t = make({ a: { children: ['b'] }, b: { children: ['c'] }, c: { type: 'leaf' } });
         const rows = flatten(t, 'root', isContainer);
         expect(rows.map((r) => [r.id, r.depth])).toEqual([['a', 0], ['b', 1], ['c', 2]]);
@@ -367,11 +359,10 @@ describe('flatten', () => {
 });
 
 describe('유도(가상) id(`/`) 는 저장 연산이 거부한다 (N4)', () => {
-    // 유도 자식의 id 는 `<부모id>/<key>` — Tree.nodes 에 없고, move·duplicate·remove 가 손대지 않는다.
-    it('move·duplicate·remove 는 `/` 든 id 에 나무를 그대로 돌려준다', () => {
+    // 유도 자식의 id 는 `<부모id>/<key>` — Tree.nodes 에 없고, move·remove 가 손대지 않는다.
+    it('move·remove 는 `/` 든 id 에 나무를 그대로 돌려준다', () => {
         const t = make({ a: { children: [] } });
         expect(move(t, 'a/d1', 'a')).toBe(t);        // 가상 id 를 옮기려 해도 변화 없음(객체 동일)
-        expect(duplicate(t, 'a/d1')).toBe(t);
         expect(remove(t, 'a/d1')).toBe(t);
         // 실노드 'a' 를 가상 부모(a/d1) 밑으로 — 부모가 실물이 아니라 거부(a 는 그대로 루트 밑)
         const moved = move(t, 'a', 'a/d1');

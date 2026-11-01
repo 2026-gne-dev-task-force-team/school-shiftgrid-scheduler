@@ -9,12 +9,11 @@ import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
-    createNode, rename, move, remove, duplicate, restore, purge, purgeAll, toggleCollapse, collapseAll, parentOf,
+    createNode, rename, move, remove, restore, purge, purgeAll, toggleCollapse, parentOf,
     isDescendant, setData as setDataTree,
 } from './model/tree';
 import { isContainerType, getType, acceptsChild, openType } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
-import { type BranchFile, exportBranch, importBranch, validateBranchFile, importTargetParent } from './model/transfer';
 import { load, save } from './persist';
 
 interface ExplorerState {
@@ -29,12 +28,10 @@ interface ExplorerState {
     purgeConfirmId: string | null;
     /** 「휴지통 비우기」 인라인 확인 중. */
     purgeAllConfirm: boolean;
-    /** 들여오기가 실패했을 때 패널에 보일 한 줄(모양 틀림 등). 성공·새 연산이면 지운다. */
-    importError: string | null;
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, importError: null };
+    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false };
 }
 
 let state: ExplorerState = freshState(emptyTree());
@@ -181,22 +178,6 @@ export function removeSelected(): void {
 /** 접기/펴기 토글 — 화살표·오른쪽/왼쪽 화살표 키가 쓴다. ⛔ 더미에 안 쌓는다(접힘은 되돌릴 값 아님). */
 export function toggle(id: string): void {
     apply((t) => toggleCollapse(t, id), { history: 'skip' });
-}
-
-/** 모두 접기(패널 머리 단추·폰 서랍). ⛔ 더미에 안 쌓는다. */
-export function collapseAllNodes(): void {
-    apply((t) => collapseAll(t), { history: 'skip' });
-}
-
-/** 복제 — 고른(또는 준) 노드를 깊은 복제해 바로 뒤에. 복제본 뿌리를 골라 준다. */
-export function duplicateNode(id?: string): void {
-    const target = id ?? state.selectedId;
-    if (!target || target === state.tree.root || target === state.tree.trash) return;
-    if (!state.tree.nodes[target]) return;
-    let firstId: string | null = null;
-    const gen = (): string => { const x = uid(); if (firstId === null) firstId = x; return x; };
-    apply((t) => duplicate(t, target, gen));
-    if (firstId) select(firstId);
 }
 
 /** 옮기기 — N2 드래그·메뉴가 쓸 자리. 🔴 accepts 를 move 에 주입한다(마지막 관문). */
@@ -359,55 +340,4 @@ export function redoAction(): void {
     if (hostRef) save(hostRef, bumped);
     emit();
     fireChange(prev, bumped);
-}
-
-// ─────────────────────────── 가지 내보내기 / 들여오기(N5) ───────────────────────────
-
-/** 고른(또는 준) 노드의 가지를 파일 모양으로 — 없거나 루트·휴지통이면 null. data 포함·유도 자식 제외. */
-export function exportBranchById(id?: string): BranchFile | null {
-    const target = id ?? state.selectedId;
-    if (!target) return null;
-    return exportBranch(state.tree, target);
-}
-
-/**
- * JSON 텍스트를 들여온다 — 🔴 덮지 않고 고른 노드(컨테이너면 그 안, 아니면 루트) 아래 새 가지로.
- *   id 전부 재발급 + children 재매핑. 모양이 틀리면 안 바꾸고 패널 한 줄(importError)에 사유를 적는다.
- */
-export function importBranchText(text: string): { ok: boolean; error?: string; rootId?: string } {
-    let raw: unknown;
-    try { raw = JSON.parse(text); } catch {
-        const error = '파일을 읽을 수 없습니다(JSON 아님).';
-        state = { ...state, importError: error };
-        emit();
-        return { ok: false, error };
-    }
-    const file = validateBranchFile(raw);
-    if (!file) {
-        const error = '프로젝트 탐색기 가지 파일이 아닙니다.';
-        state = { ...state, importError: error };
-        emit();
-        return { ok: false, error };
-    }
-    const parent = importTargetParent(state.tree, state.selectedId, isContainerType);
-    let rootId: string | undefined;
-    apply(
-        (t) => {
-            const r = importBranch(t, parent, file);
-            if (!r) return t;
-            rootId = r.newRootId;
-            return r.tree;
-        },
-        { patch: { importError: null } },
-    );
-    // 🔴 rootId 는 apply 가 fn 을 돌린 뒤에야 잡히니(patch 로는 못 넣는다) 여기서 새 가지를 고른다.
-    if (rootId) { state = { ...state, selectedId: rootId }; emit(); }
-    return { ok: true, rootId };
-}
-
-/** 들여오기 오류 한 줄 닫기. */
-export function clearImportError(): void {
-    if (state.importError == null) return;
-    state = { ...state, importError: null };
-    emit();
 }
