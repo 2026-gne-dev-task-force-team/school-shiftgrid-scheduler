@@ -9,7 +9,7 @@
 import { createElement } from 'react';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { MonthView } from './views/MonthView';
+import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
@@ -23,7 +23,8 @@ function activate(host: PluginHost): void {
         id: 'month', title: '캘린더', icon: 'calendar', defaultArea: 'center',
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 280, squeeze: 'scroll' },
-        Component: () => createElement(MonthView),
+        // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab) — 17:06 넷을 더 받으며 MonthView 직접 → 컨테이너로
+        Component: () => createElement(CalendarTab),
     });
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──

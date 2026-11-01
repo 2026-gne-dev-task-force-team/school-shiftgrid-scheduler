@@ -6,11 +6,16 @@
  *
  *   📌 처음엔 달 하나를 통째로 넘기는 꼴(휠 한 번 = 한 달)이었다 → 쥔님 17:01 *"스크롤 부드럽게 임마 딱딱 끊어지는게 아니라"*
  *      → 주(週) 줄이 끝없이 이어지는 스크롤로 바꿨다. 머리줄의 달 이름은 **화면 위쪽 1/3 지점에 걸린 주**의 달을 따라간다.
+ *   📌 17:14 쥔님 *"단차 어긋남있고, 스크롤링 좀 버벅이는거 같다. 바깥 달은 좀 어둡게"* → 셋 다 여기서 고쳤다:
+ *      ① 단차 — 요일 머리가 스크롤러 **밖**에 있어 세로 스크롤바 폭만큼 본문 7칸과 어긋났다 → 요일 머리를 스크롤러 **안**에 sticky 로 넣어 같은 폭을 쓴다
+ *      ② 버벅임 — 208주×7칸을 전부 DOM 에 깔고 있었다 → **보이는 줄 ±6 만 그린다**(위아래는 빈 칸 높이로 채운다)
+ *      ③ 바깥 달 — 머리줄이 가리키는 달이 아닌 칸은 바탕을 한 단 어둡게(panel2) + 숫자 muted
  *
  *   얼개: 기준 주(ANCHOR = 오늘이 든 주의 첫날)에서 앞뒤로 offset 주를 깐다. 처음엔 ±2년, 끝에 가까워지면 반년씩 더 깐다
- *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「보이는 높이 ÷ 6」 — 한 화면에 늘 6주가 들어온다.
+ *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「(보이는 높이 − 요일 머리) ÷ 6」 — 한 화면에 늘 6주.
  */
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
     Icon, IconButton, Surface,
@@ -23,6 +28,8 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const ROWS_VISIBLE = 6;   // 한 화면에 6주
 const INIT_WEEKS = 104;   // 처음 까는 범위 — 앞뒤 2년
 const CHUNK_WEEKS = 26;   // 끝에 닿으면 반년씩 더
+const OVERSCAN = 6;       // 보이는 줄 위아래로 이만큼 더 그린다
+const WD_HEADER_H = 24;   // 요일 머리 높이(px) — 스크롤러 안 sticky
 
 /** 기준 주 — 이 뷰가 로드된 날이 든 주의 첫날. 모든 줄은 여기서 몇 주 떨어졌나(offset)로 센다 */
 const ANCHOR = startOfWeek(new Date(), WEEK_START);
@@ -32,19 +39,20 @@ function monthStartOffset(y: number, m: number): number {
     return weeksBetween(ANCHOR, startOfWeek(new Date(y, m - 1, 1), WEEK_START));
 }
 
-/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 + 위쪽 굵은 선으로 달 경계 · 오늘은 accent 동그라미 */
-function DayBox({ c, isToday }: { c: DayCell; isToday: boolean }) {
+/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게 */
+function DayBox({ c, isToday, inHead }: { c: DayCell; isToday: boolean; inHead: boolean }) {
     const first = c.d === 1;
+    const label = first ? `${c.m}월 ${c.d}일` : c.d;
     return (
-        <div className={`min-h-0 overflow-hidden border-r border-b border-line p-1 ${first ? 'border-t-2 border-t-text/25' : ''}`}>
+        <div className={`min-h-0 overflow-hidden border-r border-b border-line p-1 ${inHead ? 'bg-bg' : 'bg-panel2'}`}>
             <div className="flex">
                 {isToday ? (
                     <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-[11px] font-semibold">
-                        {first ? `${c.m}월 ${c.d}일` : c.d}
+                        {label}
                     </span>
                 ) : (
-                    <span className={`px-1 text-[11px] leading-5 ${first ? 'font-semibold text-text' : 'text-text'}`}>
-                        {first ? `${c.m}월 ${c.d}일` : c.d}
+                    <span className={`px-1 text-[11px] leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
+                        {label}
                     </span>
                 )}
             </div>
@@ -52,17 +60,21 @@ function DayBox({ c, isToday }: { c: DayCell; isToday: boolean }) {
     );
 }
 
-/** 한 주 줄 — memo: 스크롤마다 머리줄만 다시 그리고 줄들은 그대로 둔다 */
-const WeekRow = memo(function WeekRow({ offset, height, todayIso }: { offset: number; height: number; todayIso: string }) {
+/** 한 주 줄 — memo: 스크롤마다 머리줄만 다시 그리고 줄들은 그대로 둔다(머리줄의 달이 바뀔 때만 다시 칠한다) */
+const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM }: {
+    offset: number; height: number; todayIso: string; headY: number; headM: number;
+}) {
     const cells = weekRow(addDays(ANCHOR, offset * 7));
     return (
         <div className="grid grid-cols-7" style={{ height }}>
-            {cells.map((c) => <DayBox key={c.iso} c={c} isToday={c.iso === todayIso} />)}
+            {cells.map((c) => (
+                <DayBox key={c.iso} c={c} isToday={c.iso === todayIso} inHead={c.y === headY && c.m === headM} />
+            ))}
         </div>
     );
 });
 
-export function MonthView() {
+export function MonthView({ trailing }: { trailing?: ReactNode }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -71,7 +83,10 @@ export function MonthView() {
     const rangeRef = useRef(range);
     rangeRef.current = range;
 
-    // 줄 높이 — 보이는 높이 ÷ 6. ResizeObserver 로 따라간다
+    // 실제로 DOM 에 그리는 줄 — range 안의 상대 인덱스 [start, end)
+    const [vis, setVis] = useState({ start: 0, end: 0 });
+
+    // 줄 높이 — (보이는 높이 − 요일 머리) ÷ 6. ResizeObserver 로 따라간다
     const [rowH, setRowH] = useState(80);
     const rowHRef = useRef(rowH);
     const scrollerRef = useRef<HTMLDivElement>(null);
@@ -85,12 +100,36 @@ export function MonthView() {
     const didInit = useRef(false);
     const raf = useRef(0);
 
+    /** scrollTop 에서 머리줄 달·그릴 줄 범위·범위 늘리기를 한 번에 계산한다 */
+    const syncFromScroll = () => {
+        const el = scrollerRef.current;
+        if (!el) return;
+        const h = rowHRef.current;
+        const r = rangeRef.current;
+        const total = r.to - r.from;
+        const viewH = el.clientHeight - WD_HEADER_H;
+        // 그릴 줄
+        const first = Math.floor(el.scrollTop / h);
+        const last = Math.ceil((el.scrollTop + viewH) / h);
+        const start = Math.max(0, first - OVERSCAN);
+        const end = Math.min(total, last + OVERSCAN);
+        setVis((p) => (p.start === start && p.end === end ? p : { start, end }));
+        // 머리줄 달
+        const idx = Math.floor((el.scrollTop + viewH * 0.35) / h) + r.from;
+        const mid = addDays(ANCHOR, idx * 7 + 3);
+        const y = mid.getFullYear(), m = mid.getMonth() + 1;
+        setHead((p) => (p.y === y && p.m === m ? p : { y, m }));
+        // 끝에 가까우면 더 깐다
+        if (first < CHUNK_WEEKS / 2) setRange((p) => ({ ...p, from: p.from - CHUNK_WEEKS }));
+        else if (last > total - CHUNK_WEEKS / 2) setRange((p) => ({ ...p, to: p.to + CHUNK_WEEKS }));
+    };
+
     // 높이 측정
     useLayoutEffect(() => {
         const el = scrollerRef.current;
         if (!el) return;
         const measure = () => {
-            const h = Math.max(56, Math.floor(el.clientHeight / ROWS_VISIBLE));
+            const h = Math.max(56, Math.floor((el.clientHeight - WD_HEADER_H) / ROWS_VISIBLE));
             if (h === rowHRef.current) return;
             keepTopIdx.current = el.scrollTop / rowHRef.current;
             rowHRef.current = h;
@@ -109,12 +148,11 @@ export function MonthView() {
         if (!didInit.current) {
             didInit.current = true;
             el.scrollTop = (monthStartOffset(head.y, head.m) - rangeRef.current.from) * rowH;
-            return;
-        }
-        if (keepTopIdx.current !== null) {
+        } else if (keepTopIdx.current !== null) {
             el.scrollTop = keepTopIdx.current * rowH;
             keepTopIdx.current = null;
         }
+        syncFromScroll();
     }, [rowH]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 앞으로 늘어났으면 그만큼 scrollTop 을 밀어 화면이 안 튄다 · 늘린 김에 가야 할 데가 있으면 간다
@@ -129,27 +167,12 @@ export function MonthView() {
             pendingScrollTo.current = null;
             el.scrollTo({ top: (off - range.from) * rowHRef.current, behavior: 'smooth' });
         }
-    }, [range.from, range.to]);
+        syncFromScroll();
+    }, [range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const onScroll = () => {
         if (raf.current) return;
-        raf.current = requestAnimationFrame(() => {
-            raf.current = 0;
-            const el = scrollerRef.current;
-            if (!el) return;
-            const h = rowHRef.current;
-            const r = rangeRef.current;
-            // 머리줄 달
-            const idx = Math.floor((el.scrollTop + el.clientHeight * 0.35) / h) + r.from;
-            const mid = addDays(ANCHOR, idx * 7 + 3);
-            const y = mid.getFullYear(), m = mid.getMonth() + 1;
-            setHead((p) => (p.y === y && p.m === m ? p : { y, m }));
-            // 끝에 가까우면 더 깐다
-            const topRow = el.scrollTop / h;
-            const bottomRow = (el.scrollTop + el.clientHeight) / h;
-            if (topRow < CHUNK_WEEKS / 2) setRange((p) => ({ ...p, from: p.from - CHUNK_WEEKS }));
-            else if (bottomRow > r.to - r.from - CHUNK_WEEKS / 2) setRange((p) => ({ ...p, to: p.to + CHUNK_WEEKS }));
-        });
+        raf.current = requestAnimationFrame(() => { raf.current = 0; syncFromScroll(); });
     };
     useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
 
@@ -192,11 +215,13 @@ export function MonthView() {
     }, [jumpOpen]);
 
     const labels = Array.from({ length: 7 }, (_, i) => WEEKDAYS[(WEEK_START + i) % 7]);
-    const offsets = Array.from({ length: range.to - range.from }, (_, i) => range.from + i);
+    const total = range.to - range.from;
+    const rows: number[] = [];
+    for (let i = vis.start; i < vis.end; i++) rows.push(range.from + i);
 
     return (
         <div className="relative h-full flex flex-col bg-bg select-text">
-            {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) */}
+            {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0">
                 <div ref={jumpRef} className="relative">
                     <button
@@ -210,7 +235,7 @@ export function MonthView() {
                         <Icon name="right" size={14} className={`text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
                     </button>
                     {jumpOpen && (
-                        <Surface bordered rounded className="absolute left-0 top-full mt-1 z-10 p-2 w-[232px] shadow-lg">
+                        <Surface bordered rounded className="absolute left-0 top-full mt-1 z-20 p-2 w-[232px] shadow-lg">
                             {/* 년도 줄 */}
                             <div className="flex items-center justify-between mb-1">
                                 <IconButton icon="left" label="이전 해" onClick={() => setJumpYear((y) => y - 1)} />
@@ -251,28 +276,32 @@ export function MonthView() {
                         오늘
                     </button>
                     <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
+                    {trailing}
                 </div>
             </header>
 
-            {/* 요일 머리 7칸 — 고정 */}
-            <div className="grid grid-cols-7 shrink-0 border-t border-l border-line">
-                {labels.map((w) => (
-                    <div
-                        key={w}
-                        className="border-r border-b border-line py-1 text-center text-[11px] font-medium text-muted select-none"
-                    >
-                        {w}
-                    </div>
-                ))}
-            </div>
-
-            {/* 본문 — 주 줄이 끝없이 이어지는 세로 스크롤. 한 화면에 6주 */}
+            {/* 본문 — 주 줄이 끝없이 이어지는 세로 스크롤. 요일 머리는 이 안에 sticky(스크롤바 폭을 같이 먹어 단차가 없다) */}
             <div
                 ref={scrollerRef}
                 onScroll={onScroll}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
             >
-                {offsets.map((o) => <WeekRow key={o} offset={o} height={rowH} todayIso={todayIso} />)}
+                <div
+                    className="sticky top-0 z-10 grid grid-cols-7 bg-bg border-t border-line"
+                    style={{ height: WD_HEADER_H }}
+                >
+                    {labels.map((w) => (
+                        <div key={w} className="border-r border-b border-line text-center text-[11px] leading-[22px] font-medium text-muted select-none">
+                            {w}
+                        </div>
+                    ))}
+                </div>
+                {/* 위쪽 빈 높이 → 보이는 줄들 → 아래쪽 빈 높이 */}
+                <div style={{ height: vis.start * rowH }} />
+                {rows.map((o) => (
+                    <WeekRow key={o} offset={o} height={rowH} todayIso={todayIso} headY={head.y} headM={head.m} />
+                ))}
+                <div style={{ height: Math.max(0, total - vis.end) * rowH }} />
             </div>
         </div>
     );
