@@ -28,3 +28,21 @@ export function useOpenViewCount(): number {
         () => count,
     );
 }
+
+// ── 노드 수(N4) — 프로젝트 탐색기 nodes.subscribe 로 세서 상태바가 비춘다 ──
+let nodeCount = 0;
+const nodeListeners = new Set<() => void>();
+
+export function setNodeCount(n: number): void {
+    if (n === nodeCount) return;
+    nodeCount = n;
+    for (const l of nodeListeners) l();
+}
+
+export function useNodeCount(): number {
+    return useSyncExternalStore(
+        (l) => { nodeListeners.add(l); return () => { nodeListeners.delete(l); }; },
+        () => nodeCount,
+        () => nodeCount,
+    );
+}

@@ -365,3 +365,16 @@ describe('flatten', () => {
         expect(flatten(r, 'root', isContainer).map((x) => x.id)).toEqual([]);
     });
 });
+
+describe('유도(가상) id(`/`) 는 저장 연산이 거부한다 (N4)', () => {
+    // 유도 자식의 id 는 `<부모id>/<key>` — Tree.nodes 에 없고, move·duplicate·remove 가 손대지 않는다.
+    it('move·duplicate·remove 는 `/` 든 id 에 나무를 그대로 돌려준다', () => {
+        const t = make({ a: { children: [] } });
+        expect(move(t, 'a/d1', 'a')).toBe(t);        // 가상 id 를 옮기려 해도 변화 없음(객체 동일)
+        expect(duplicate(t, 'a/d1')).toBe(t);
+        expect(remove(t, 'a/d1')).toBe(t);
+        // 실노드 'a' 를 가상 부모(a/d1) 밑으로 — 부모가 실물이 아니라 거부(a 는 그대로 루트 밑)
+        const moved = move(t, 'a', 'a/d1');
+        expect(parentOf(moved, 'a')).toBe('root');
+    });
+});

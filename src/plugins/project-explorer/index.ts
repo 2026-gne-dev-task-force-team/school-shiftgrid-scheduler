@@ -7,14 +7,15 @@
  * ⭐ 모든 동작은 명령(new-folder·rename·remove·collapse-all·open-panel) — 리본·메뉴·키보드·팔레트가 같은 id 로 부른다.
  */
 import { createElement } from 'react';
-import type { PluginModule, PluginHost, ViewProps } from '../../pane-ui-system/plugin';
+import type { PluginModule, PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { registerType } from './model/types';
+import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
 import {
     initStore, getState, newFolder, renameSelected, removeSelected,
-    duplicateNode, collapseAllNodes, nudgeSelected,
+    duplicateNode, collapseAllNodes, nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
     undoAction, redoAction,
 } from './store';
@@ -57,6 +58,8 @@ function activate(host: PluginHost): void {
     host.commands.add({ id: 'project-explorer.duplicate', title: '복제', icon: 'copy', run: () => duplicateNode() });
     host.commands.add({ id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash', run: () => removeSelected() });
     host.commands.add({ id: 'project-explorer.collapse-all', title: '모두 접기', icon: 'left', run: () => collapseAllNodes() });
+    // 열기 — 고른 노드의 타입 open 을 실행(실노드·유도 가상 줄 공통). 컨테이너 접기/펴기는 뷰가 맡는다.
+    host.commands.add({ id: 'project-explorer.open', title: '열기', icon: 'arrowRight', run: () => { const id = getState().selectedId; if (id) openById(id); } });
     host.commands.add({ id: 'project-explorer.move-up', title: '위로', icon: 'left', run: () => nudgeSelected(-1) });
     host.commands.add({ id: 'project-explorer.move-down', title: '아래로', icon: 'left', run: () => nudgeSelected(1) });
     // 「이 폴더를 탐색기로」 — 같은 뷰를 rootId 파라미터로 가운데 탭에(VS Code 「Open Folder as Workspace」).
@@ -89,5 +92,14 @@ function activate(host: PluginHost): void {
     host.onFirstRun(() => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); });
 }
 
-export const projectExplorerPlugin: PluginModule = { manifest, activate };
+/**
+ * 🔴 N4 공개 api — 「호출자별 팩토리」(__perCaller). host.plugins.get<NodesApi>('project-explorer') 가
+ *   호출자 id 와 track 을 넣어 부른다. 그래서 register 접두사·setData 주인·disposable 회수가 호출자 기준으로 선다.
+ */
+const nodesApiFactory = Object.assign(
+    (callerId: string | undefined, track?: (d: Disposable) => Disposable) => makeNodesApi(callerId, track),
+    { __perCaller: true as const },
+);
+
+export const projectExplorerPlugin: PluginModule = { manifest, activate, api: nodesApiFactory };
 export default projectExplorerPlugin;

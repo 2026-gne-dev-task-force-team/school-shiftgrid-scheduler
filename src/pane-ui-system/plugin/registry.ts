@@ -10,7 +10,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
-import type { PluginModule } from './types';
+import type { PluginModule, Disposable, PerCallerApi } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { disposeOwner } from './store';
@@ -129,6 +129,28 @@ export function listPlugins(): PluginStatus[] {
         enabled: !disabledIds.has(m.manifest.id),
         failed: failedIds.has(m.manifest.id),
     }));
+}
+
+/**
+ * 🔴 N4 — 활성(켜진) 플러그인의 공개 api(PluginModule.api). 꺼졌거나·실패거나·없으면 undefined.
+ *   host.plugins.get 이 이 한 길로 온다. registry 가 모듈 목록(installed)을 쥐고 있어 여기서 찾는다.
+ *   ⭐ api 가 「호출자별 팩토리」(__perCaller)면 caller·track 을 넘겨 불러 바인딩한 것을 돌려준다 —
+ *      그래서 상대 플러그인이 setData 주인 검사·disposable 회수를 호출자 기준으로 할 수 있다.
+ */
+export function getPluginApi<T = unknown>(
+    id: string,
+    caller?: string,
+    track?: (d: Disposable) => Disposable,
+): T | undefined {
+    const m = installed.find((x) => x.manifest.id === id);
+    if (!m) return undefined;
+    if (failedIds.has(id)) return undefined;                 // 활성 실패 — 없는 것과 같다
+    if (!m.manifest.core && disabledIds.has(id)) return undefined;   // 꺼진 것(코어는 못 끈다)
+    const api = m.api;
+    if (typeof api === 'function' && (api as Partial<PerCallerApi>).__perCaller) {
+        return (api as PerCallerApi<T>)(caller, track);
+    }
+    return api as T | undefined;
 }
 
 /** 이 viewId 의 주인 플러그인 — 자리표시가 「누가 꺼졌나」를 알아내는 창구(viewId 접두사로). */

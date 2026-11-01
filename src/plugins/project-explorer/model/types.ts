@@ -12,14 +12,20 @@ import type { IconName } from '../../../pane-ui-system/plugin';
 import type { MenuEntry, Disposable } from '../../../pane-ui-system/plugin';
 import type { Node } from './tree';
 
-/** 유도 트리(derive)가 돌려주는 가짜 자식 — N1 자리만(🔴 Tree.nodes 에 안 들어간다). */
+/**
+ * 유도 트리(derive)가 돌려주는 가짜 자식 — 🔴 Tree.nodes 에 안 들어간다(저장 안 됨).
+ *   id 는 뷰가 `<부모id>/<key>` 꼴로 짓는다 — `/` 가 「가상」 표식이라 move·duplicate·remove 가 거부한다.
+ */
 export interface VirtualNode {
-    key: string;
-    type: string;
-    name: string;
+    key: string;                 // 부모 안에서 안정한 키(= id 꼬리)
+    name: string;                // 탐색기에 보이는 이름
+    icon?: IconName;             // 없으면 뷰가 기본 아이콘
+    type?: string;               // 등록된 타입이면 열기·메뉴가 그 타입에서 온다
+    openable?: boolean;          // 두 번 누르기·Enter 로 열리나(type.open 을 탄다)
+    children?: VirtualNode[];    // 중첩 유도(1차는 항상 펼쳐 그린다)
 }
 
-/** 우클릭 「새로 만들기 ▸」 한 칸 규격 — N1 자리만(자동 메뉴 조립은 N2). */
+/** 우클릭 「새로 만들기 ▸」 한 칸 규격 — 부모가 받고(accepts) 이 타입이 under 를 허용할 때 후보가 된다. */
 export interface CreateSpec {
     label: string;
     under?: string[];
@@ -34,9 +40,11 @@ export interface NodeTypeDef {
     icon: IconName | ((node: Node) => IconName);
     /** 폴더 역할 — 자식을 받나(true), 어떤 타입만 받나({ accepts }). */
     container?: boolean | { accepts: string[] };
-    /** ── 아래는 N1 자리만(규격 선언), 실제 소비는 N4 ── */
+    /** 파일 역할 — 두 번 누르기·Enter 로 열리나. */
     openable?: boolean;
+    /** 열면 뭐가 되나(보통 host.workspace.open 한 줄). */
     open?: (nodeId: string) => void;
+    /** 🔑 유도 트리 — 자식을 저장소가 아니라 이 함수가 만든다(저장 안 됨 · 이름 못 바꿈 · 못 끔). */
     derive?: (node: Node) => VirtualNode[];
     create?: CreateSpec;
     menu?: (nodeId: string) => MenuEntry[];
@@ -108,9 +116,26 @@ export function createCandidates(parentType: string): NodeTypeDef[] {
 
 /** 그 타입이 꽂은 줄 메뉴 항목(menu?(nodeId)) — 없으면 빈 배열. 뷰가 구분선 뒤에 붙인다. */
 export function typeMenu(node: Node, nodeId: string): MenuEntry[] {
-    const fn = registry.get(node.type)?.menu;
+    return typeMenuByType(node.type, nodeId);
+}
+
+/** 타입 이름으로 줄 메뉴 항목 — 유도(가상) 줄은 Node 가 없으니 type 문자열로 묻는다. */
+export function typeMenuByType(type: string, nodeId: string): MenuEntry[] {
+    const fn = registry.get(type)?.menu;
     if (!fn) return [];
     try { return fn(nodeId); } catch { return []; }
+}
+
+/** 그 타입이 열 수 있나 + open 핸들러가 있나 — 유도 줄 열기 판정. */
+export function canOpenType(type: string): boolean {
+    const def = registry.get(type);
+    return !!def?.openable && typeof def.open === 'function';
+}
+
+/** 그 타입의 open 을 실행(없으면 아무 일 없음) — 유도 줄·실노드 공통 열기 경로. */
+export function openType(type: string, nodeId: string): void {
+    const def = registry.get(type);
+    if (def?.openable && def.open) def.open(nodeId);
 }
 
 /** can.rename/move/delete — 기본 전부 true(타입이 명시로 끌 때만 false). */

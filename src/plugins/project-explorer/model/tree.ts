@@ -165,6 +165,7 @@ export function move(
     canAccept?: (parentType: string, childType: string) => boolean,
 ): Tree {
     if (id === tree.root || id === tree.trash) return tree;   // 뿌리는 안 움직인다
+    if (id.includes('/')) return tree;                        // 🔴 유도(가상) id 는 저장 안 됨 — 못 옮긴다
     const node = tree.nodes[id];
     const parent = tree.nodes[parentId];
     if (!node || !parent) return tree;
@@ -191,6 +192,7 @@ export function move(
  */
 export function duplicate(tree: Tree, id: string, gen: () => string = uid): Tree {
     if (id === tree.root || id === tree.trash) return tree;
+    if (id.includes('/')) return tree;                        // 🔴 유도(가상) id — 복제할 실물이 없다
     const src = tree.nodes[id];
     if (!src) return tree;
     const parentId = parentOf(tree, id);
@@ -215,6 +217,7 @@ export function duplicate(tree: Tree, id: string, gen: () => string = uid): Tree
 /** 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). 원래 부모를 trashedFrom 에 적어 둔다. */
 export function remove(tree: Tree, id: string): Tree {
     if (id === tree.root || id === tree.trash) return tree;
+    if (id.includes('/')) return tree;                        // 🔴 유도(가상) id — 지울 실물이 없다
     const n = tree.nodes[id];
     if (!n) return tree;
     const from = parentOf(tree, id);

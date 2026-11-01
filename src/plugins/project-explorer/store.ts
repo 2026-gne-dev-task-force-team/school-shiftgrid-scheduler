@@ -10,9 +10,10 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, duplicate, restore, purge, purgeAll, toggleCollapse, collapseAll, parentOf,
-    isDescendant,
+    isDescendant, setData as setDataTree,
 } from './model/tree';
-import { isContainerType, getType, acceptsChild } from './model/types';
+import { isContainerType, getType, acceptsChild, openType } from './model/types';
+import { getDerived, invalidateDerived } from './model/derive';
 import { load, save } from './persist';
 
 interface ExplorerState {
@@ -37,8 +38,33 @@ let state: ExplorerState = freshState(emptyTree());
 let hostRef: PluginHost | null = null;
 const listeners = new Set<() => void>();
 
+/** 🔴 N4 — 나무가 바뀔 때 「무엇이 바뀌었나(changedIds)」를 받는 구독(NodesApi.subscribe 가 이 위에 선다). */
+const changeListeners = new Set<(ids: string[]) => void>();
+
 function emit(): void {
     for (const l of listeners) l();
+}
+
+/** prev→next 에서 바뀐(추가·제거·교체된) 노드 id — 불변 연산이라 객체 동일성으로 싸게 가린다. */
+function diffIds(prev: Tree, next: Tree): string[] {
+    const ids = new Set<string>();
+    for (const id of Object.keys(prev.nodes)) if (prev.nodes[id] !== next.nodes[id]) ids.add(id);
+    for (const id of Object.keys(next.nodes)) if (prev.nodes[id] !== next.nodes[id]) ids.add(id);
+    return [...ids];
+}
+
+/** 바뀐 id 들의 유도 캐시를 버리고 구독에 알린다 — apply·undo·redo 가 공통으로 쓴다. */
+function fireChange(prev: Tree, next: Tree): void {
+    const ids = diffIds(prev, next);
+    if (ids.length === 0) return;
+    for (const id of ids) invalidateDerived(id);     // 바뀐 노드의 유도 자식은 다시 계산
+    for (const fn of changeListeners) { try { fn(ids); } catch { /* 하나가 던져도 나머지 */ } }
+}
+
+/** NodesApi.subscribe — 나무가 바뀔 때 changedIds 를 받는다. 돌려주는 함수로 해지. */
+export function subscribeChanges(fn: (ids: string[]) => void): () => void {
+    changeListeners.add(fn);
+    return () => { changeListeners.delete(fn); };
 }
 
 /** 활성(index.ts)이 한 번 부른다 — 저장된 나무를 읽어 들인다. */
@@ -63,6 +89,7 @@ function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; h
     state = { ...state, tree: bumped, history, ...opts?.patch };
     if (hostRef) save(hostRef, bumped);
     emit();
+    fireChange(prev, next);   // 🔴 유도 캐시 무효화 + NodesApi.subscribe 알림
 }
 
 // ─────────────────────────── 구독 ───────────────────────────
@@ -249,18 +276,84 @@ export function purgeAllConfirmed(): void {
 export function undoAction(): void {
     const r = undoHist(state.history, state.tree);
     if (!r) return;
+    const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
     if (hostRef) save(hostRef, bumped);
     emit();
+    fireChange(prev, bumped);
+}
+
+// ─────────────────────────── 공개 API 창구(N4 · api.ts 가 부른다) ───────────────────────────
+// 🔴 이 아래는 다른 플러그인이 NodesApi 로 부르는 길이다. UI 상태(고르기·이름바꾸기)를 안 건드린다 —
+//    createUnder/removeSelected 같은 UI 함수와 달리 「고른 노드」에 기대지 않고 id 를 직접 받는다.
+
+/** 노드 하나 만들기 — 새 id 를 돌려준다. 부모가 없으면 빈 문자열(안 만든다). */
+export function apiCreate(
+    parentId: string,
+    opts: { type: string; name: string; data?: unknown; index?: number },
+): string {
+    if (!state.tree.nodes[parentId]) return '';
+    const id = uid();
+    apply((t) => createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }));
+    return id;
+}
+
+export function apiRename(id: string, name: string): void {
+    if (!state.tree.nodes[id]) return;
+    apply((t) => rename(t, id, name));
+}
+
+export function apiMove(id: string, parentId: string, index?: number): void {
+    apply((t) => move(t, id, parentId, index, acceptsChild));
+}
+
+/** 휴지통으로(영구삭제 아님) — API 엔 purge 가 없다(사람만 비운다). */
+export function apiRemove(id: string): void {
+    if (!state.tree.nodes[id]) return;
+    apply((t) => remove(t, id));
+}
+
+/** 불투명 data 쓰기 — 🔴 주인(타입 접두사) 검사는 api.ts 가 하고, 여기선 모델만 바꾼다. */
+export function apiSetData(id: string, data: unknown): void {
+    if (!state.tree.nodes[id]) return;
+    apply((t) => setDataTree(t, id, data));
+}
+
+/** 유도 자식 다시 계산 — 그 노드 캐시만 버리고 다시 그리게 한다(나무는 안 바뀐다). */
+export function apiInvalidate(id: string): void {
+    invalidateDerived(id);
+    emit();
+}
+
+/**
+ * 그 노드를 「연다」 — 실노드는 등록 타입의 open, 유도(가상 `<부모>/<key>`)는 부모를 derive 해 그 key 의 타입으로.
+ *   🔴 한 단계 중첩까지(부모가 실노드일 때). 컨테이너(폴더 역할)는 여기서 안 연다 — 그건 뷰의 접기/펴기다.
+ */
+export function openById(id: string): void {
+    const t = state.tree;
+    const real = t.nodes[id];
+    if (real) { openType(real.type, id); return; }
+    const slash = id.lastIndexOf('/');
+    if (slash < 0) return;
+    const parentId = id.slice(0, slash);
+    const pnode = t.nodes[parentId];
+    if (!pnode) return;
+    const pdef = getType(pnode.type);
+    if (!pdef?.derive) return;
+    const der = getDerived(pnode, pdef);
+    const v = der.children.find((c) => c.key === id.slice(slash + 1));
+    if (v?.openable && v.type) openType(v.type, id);
 }
 
 /** 다시하기 — 더미 미래의 맨 앞 상태로. */
 export function redoAction(): void {
     const r = redoHist(state.history, state.tree);
     if (!r) return;
+    const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
     if (hostRef) save(hostRef, bumped);
     emit();
+    fireChange(prev, bumped);
 }

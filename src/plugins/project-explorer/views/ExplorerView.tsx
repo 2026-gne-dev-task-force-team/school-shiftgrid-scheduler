@@ -11,9 +11,12 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
+import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
-import { flatten, filterIds, parentOf, isDescendant, type Node, type Tree } from '../model/tree';
-import { isContainerType, iconOf, isKnownType, getType, createCandidates, typeMenu, canDo, acceptsChild } from '../model/types';
+import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/tree';
+import { isContainerType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
+import { clearDerived } from '../model/derive';
+import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
@@ -96,16 +99,21 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
         return () => d.dispose();
     }, [host]);
 
+    // 🔴 플러그인이 켜지고/꺼질 때 다시 그린다(모르는 타입 회색·유도 자식 등장/소멸). 유도 캐시도 버린다.
+    const reg = usePluginRegistry();
+    useEffect(() => { clearDerived(); }, [reg]);
+
     const closeMenu = useCallback(() => setMenu(null), []);
 
-    // ── 줄 목록 — 검색 중이면 맞는 줄 + 그 조상만, 접힘 무시하고 편다 ──
+    // ── 줄 목록 — 검색 중이면 실노드만(맞는 줄 + 조상, 접힘 무시) · 평소엔 유도 자식까지 섞은 빌더 ──
     const q = query.trim().toLowerCase();
-    const rows = q
+    const rows: ExplorerRow[] = q
         ? flatten(tree, effRoot, isContainerType, {
             expandAll: true,
             keep: (() => { const k = filterIds(tree, effRoot, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
-        })
-        : flatten(tree, effRoot, isContainerType);
+        }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
+        : buildMainRows(tree, effRoot);
+    const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
 
     // ── 드래그 + 우클릭 한 훅 — 좁은 화면에선 끈다(그땐 메뉴의 위로/아래로) ──
     const onDrop = useCallback((dragId: string, x: number, y: number) => {
@@ -124,24 +132,18 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
     const { bind, drag } = useDragLeaf({ enabled: !narrow, axis: 'y', onContext, onDrop });
     const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, tree) : null;
 
-    // ── 노드 하나를 「연다」 — 폴더는 접기/펴기, openable 타입은 등록된 open ──
-    const openNode = (id: string): void => {
-        const n = tree.nodes[id];
-        if (!n) return;
-        if (isContainerType(n.type)) { toggle(id); return; }
-        const def = getType(n.type);
-        if (def?.openable && def.open) def.open(id);
-    };
-
-    const clickRow = (n: Node): void => {
+    // ── 줄 하나 누르기 — 고르기(+ 실노드 컨테이너는 접기/펴기). 유도 줄은 고르기만. ──
+    const clickRow = (row: ExplorerRow): void => {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
-        select(n.id);
-        if (isContainerType(n.type)) toggle(n.id);
+        select(row.id);
+        if (row.kind === 'node' && isContainerType(row.node.type)) toggle(row.id);
     };
-    const dblRow = (n: Node): void => {
-        if (isContainerType(n.type)) return;
-        openNode(n.id);
+    // 두 번 누르기 — 컨테이너는 아무 일 없음(접기는 한 번 누르기), openable 이면 열기 명령을 탄다(실노드·유도 공통).
+    const dblRow = (row: ExplorerRow): void => {
+        if (row.kind === 'node' && isContainerType(row.node.type)) return;
+        select(row.id);
+        run('project-explorer.open');
     };
 
     // ── 키보드 — ↑↓ 고르기 · →← 펴기/접기 또는 자식/부모 · Enter 열기 · F2 이름 · Delete 휴지통 ──
@@ -178,7 +180,13 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                     if (p && p !== effRoot) select(p);
                 }
                 break;
-            case 'Enter': e.preventDefault(); if (sel) openNode(sel); break;
+            case 'Enter':
+                e.preventDefault();
+                if (sel) {
+                    if (selNode && isContainerType(selNode.type)) toggle(sel);   // 컨테이너는 펴기/접기
+                    else run('project-explorer.open');                          // openable·유도는 열기
+                }
+                break;
             case 'F2': e.preventDefault(); if (sel) host.commands.run('project-explorer.rename'); break;
             case 'Delete': case 'Backspace': e.preventDefault(); if (sel) host.commands.run('project-explorer.remove'); break;
         }
@@ -194,6 +202,17 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                 { label: '복원', icon: 'undo', commandId: 'project-explorer.restore' },
                 { label: '영구 삭제', icon: 'trash', danger: true, commandId: 'project-explorer.ask-purge' },
             ];
+        }
+        // 🔴 유도(가상) 줄 — 이름바꾸기·복제·삭제·드래그 전부 빠진다(저장 안 되는 줄). 열기·타입 menu 만.
+        if (selRow && selRow.kind === 'virtual') {
+            const vitems: MenuEntry[] = [];
+            if (selRow.openable && selRow.vtype && canOpenType(selRow.vtype)) {
+                vitems.push({ label: '열기', icon: 'arrowRight', commandId: 'project-explorer.open' });
+            }
+            const vextra = selRow.vtype ? typeMenuByType(selRow.vtype, selRow.id) : [];
+            if (vextra.length) { if (vitems.length) vitems.push({ sep: true }); for (const it of vextra) vitems.push(it); }
+            if (vitems.length === 0) vitems.push({ label: selRow.failed ? '유도 실패' : '유도 항목', disabled: true });
+            return vitems;
         }
         // 「새로 만들기 ▸」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용
         const baseType = selNode ? selNode.type : (tree.nodes[effRoot]?.type ?? 'folder');
@@ -268,10 +287,42 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                     </p>
                 )}
                 {rows.map((row) => {
-                    const known = isKnownType(row.node.type);
                     const isSel = selectedId === row.id;
-                    const isRenaming = renamingId === row.id;
                     const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
+
+                    // 🔴 유도(가상) 줄 — 회색 글자, 이름바꾸기·드래그 없음(data-row-id 는 둬 드롭에서 자동 거부된다).
+                    if (row.kind === 'virtual') {
+                        return (
+                            <div
+                                key={row.id}
+                                data-row-id={row.id}
+                                role="treeitem"
+                                aria-selected={isSel}
+                                title={row.name}
+                                onClick={() => clickRow(row)}
+                                onDoubleClick={() => dblRow(row)}
+                                className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
+                                    isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
+                                }`}
+                                style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
+                            >
+                                {row.hasChildren ? (
+                                    <span className="shrink-0 grid place-items-center w-4 h-4 text-muted">
+                                        <Icon name="right" size={12} className="rotate-90" />
+                                    </span>
+                                ) : (
+                                    <span className="shrink-0 w-4" />
+                                )}
+                                <Icon name={row.icon ?? 'dot'} size={15} className="shrink-0 text-muted" />
+                                <span className="flex-1 min-w-0 truncate text-[13px] leading-none text-muted italic">
+                                    {row.name}
+                                </span>
+                            </div>
+                        );
+                    }
+
+                    const known = isKnownType(row.node.type);
+                    const isRenaming = renamingId === row.id;
                     return (
                         <div
                             key={row.id}
@@ -280,8 +331,8 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                             aria-selected={isSel}
                             aria-expanded={row.hasChildren ? !row.node.collapsed : undefined}
                             title={row.node.name}
-                            onClick={() => clickRow(row.node)}
-                            onDoubleClick={() => dblRow(row.node)}
+                            onClick={() => clickRow(row)}
+                            onDoubleClick={() => dblRow(row)}
                             className={`group flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
                                 isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
                             } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : ''}`}
