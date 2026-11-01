@@ -3,7 +3,7 @@
  *   열 길이·연속성 · 달 넘김 · 범위 시작(주는 일요일로 당김) · 범위 글자 네 꼴 · 시 눈금 · 하루 중 분.
  */
 import { describe, it, expect } from 'vitest';
-import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay } from './time-grid';
+import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, daysBetween } from './time-grid';
 
 describe('dayColumns — days 개 열', () => {
     it('length === days', () => {
@@ -95,5 +95,15 @@ describe('hourLabel · minutesOfDay', () => {
         expect(minutesOfDay(new Date(2026, 10, 4, 0, 0))).toBe(0);
         expect(minutesOfDay(new Date(2026, 10, 4, 9, 30))).toBe(570);
         expect(minutesOfDay(new Date(2026, 10, 4, 23, 59))).toBe(1439);
+    });
+});
+
+describe('daysBetween — 자정 기준 일수', () => {
+    it('앞뒤 부호 · 달 넘김 · 시각 무시', () => {
+        expect(daysBetween(new Date(2026, 10, 1), new Date(2026, 10, 8))).toBe(7);
+        expect(daysBetween(new Date(2026, 10, 8), new Date(2026, 10, 1))).toBe(-7);
+        expect(daysBetween(new Date(2026, 10, 29), new Date(2026, 11, 2))).toBe(3);
+        expect(daysBetween(new Date(2026, 10, 1, 23, 59), new Date(2026, 10, 2, 0, 1))).toBe(1);
+        expect(daysBetween(new Date(2026, 10, 1), new Date(2026, 10, 1, 18))).toBe(0);
     });
 });

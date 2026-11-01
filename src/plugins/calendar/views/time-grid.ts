@@ -89,3 +89,10 @@ export function hourLabel(h: number): string {
 export function minutesOfDay(d: Date): number {
     return d.getHours() * 60 + d.getMinutes();
 }
+
+/** 두 날 사이 일수(b − a), 자정 기준. 좌우로 이어지는 날 스크롤이 「오늘에서 몇 날 떨어졌나」를 세는 데 쓴다 */
+export function daysBetween(a: Date, b: Date): number {
+    const a0 = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+    const b0 = new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime();
+    return Math.round((b0 - a0) / 86_400_000);
+}
