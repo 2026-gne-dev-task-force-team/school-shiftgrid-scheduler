@@ -35,6 +35,11 @@ export interface PaneSettings {
      *    기본 false, 켜면 좁은 화면에도 뜬다(그때 하단 플로팅 바와 안 겹치게 바 마진을 올린다).
      */
     statusBarNarrow: boolean;
+    /**
+     * 🔴 미리 보기(피크) 방식 — 'push' 는 가운데를 밀고 들어온다 · 'overlay' 는 가운데 위에 떠서 덮는다.
+     *    쥔님 2026-11-01 13:34: *"화면이 부족해서 밀어내서 보는 게 안 될 수도 — 설정할 수 있게. 밀어내지 말고 살짝 뜨는 형식"*
+     */
+    peekMode: 'push' | 'overlay';
 }
 
 /** 뷰별 레이아웃 덮어쓰기 — 키는 viewId(뜻은 모름), 값은 ViewLayout 의 일부 */
@@ -65,6 +70,7 @@ const DEFAULTS: PaneSettings = {
     showTitleBar: false,
     showStatusBar: true,
     statusBarNarrow: false,
+    peekMode: 'push',
 };
 
 export function defaultPaneSettings(): PaneSettings {
@@ -100,6 +106,7 @@ export function normalizePaneSettings(raw: unknown): PaneSettings {
         showTitleBar: typeof o.showTitleBar === 'boolean' ? o.showTitleBar : d.showTitleBar,
         showStatusBar: typeof o.showStatusBar === 'boolean' ? o.showStatusBar : d.showStatusBar,
         statusBarNarrow: typeof o.statusBarNarrow === 'boolean' ? o.statusBarNarrow : d.statusBarNarrow,
+        peekMode: o.peekMode === 'overlay' || o.peekMode === 'push' ? o.peekMode : d.peekMode,
     };
 }
 

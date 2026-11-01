@@ -56,14 +56,16 @@ export function Workbench() {
     const [ribbonSheet, setRibbonSheet] = useState(false);
     const seq = useRef(0);
 
-    // 🔴 피크 기둥 폭 — 기기별 보관(피크 더미 자체는 저장 안 한다, W9). 기본은 오른쪽 독 기본값(280)
+    // 🔴 미리 보기(피크) 폭 — 기기별 보관(더미 자체는 저장 안 한다, W9).
+    //    기본 480 — 쥔님 13:34 *"속성 패널이랑 다를 바 없는데, 카드나 문서급의 개념이니까 기본적으로 조금 넓어야"*(280→480)
+    const PEEK_DEFAULT = 480;
     const peekWKey = useCallback(() => storageKey('peek-width'), []);
     const [peekW, setPeekW] = useState<number>(() => {
         try {
             const s = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey('peek-width')) : null;
             const n = s ? Number(s) : NaN;
-            return Number.isFinite(n) ? n : 280;
-        } catch { return 280; }
+            return Number.isFinite(n) ? n : PEEK_DEFAULT;
+        } catch { return PEEK_DEFAULT; }
     });
     const setPeekWidth = useCallback((w: number) => {
         setPeekW(w);
@@ -322,6 +324,8 @@ export function Workbench() {
                 stack={ws.floating}
                 narrow={narrow}
                 width={peekW}
+                maxWidth={900}
+                mode={pane.settings.peekMode}
                 onWidth={setPeekWidth}
                 onPop={() => setWs((w) => peekPop(w))}
                 onClear={() => setWs((w) => peekClear(w))}

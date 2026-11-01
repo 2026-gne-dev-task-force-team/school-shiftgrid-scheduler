@@ -37,6 +37,11 @@ export interface PeekPanelProps {
     onPromote: () => void;
     /** 머리줄을 끌어 가운데로 승격(드래그) — 존 판정은 resolveDropAt, 모델은 moveLeaf */
     onDropLeaf?: (leafId: string, target: string, pos: MovePos) => void;
+    /**
+     * 데스크톱 방식 — 'push'(기본) 는 가운데를 밀고 들어온다 · 'overlay' 는 가운데 **위에 떠서 덮는다**(폭 0 자리 + 절대 배치).
+     * 쥔님 2026-11-01 13:34: *"화면이 부족해서 밀어내서 보는 게 안 될 수도 — 밀어내지 말고 살짝 뜨는 형식"*
+     */
+    mode?: 'push' | 'overlay';
 }
 
 export function PeekPanel(props: PeekPanelProps) {
@@ -82,8 +87,9 @@ function PeekHeader({
 // ─────────────────────────── 데스크톱 기둥 ───────────────────────────
 
 function DesktopPeek({
-    stack, width, minWidth = 150, maxWidth = 520, onWidth, onPop, onClear, onPromote, onDropLeaf,
+    stack, width, minWidth = 150, maxWidth = 900, onWidth, onPop, onClear, onPromote, onDropLeaf, mode = 'push',
 }: PeekPanelProps) {
+    const overlay = mode === 'overlay';
     const open = stack.length > 0;
     // 나갈 때도 밀려 나가게 — 언마운트를 폭 전환 끝까지 미룬다(SidePanel 붙박이와 같은 결)
     const [rendered, setRendered] = useState(open);
@@ -118,31 +124,40 @@ function DesktopPeek({
         // 🔴 data-area="floating" — 가운데 탭을 이 기둥에 떨구면 피크로(drop-resolve 가 'floating' 으로 번역)
         // 🔴 바깥 틀은 가운데를 「밀고」(폭 전환), 안쪽 카드는 「벽에서 튀어나온다」(peek-in/out) — 둘이 다른 물건이다.
         //    틀 바탕은 에디터와 같은 bg-bg 라 카드가 그 위에 떠 보인다 · 카드는 오른쪽 벽에 붙고 왼쪽 모서리만 둥글다.
+        // 🔴 overlay 면 틀은 폭 0(자리를 안 먹는다) + 카드를 절대 배치로 왼쪽(가운데 위)에 띄운다 — 가운데는 그대로.
         <aside
-            className="relative shrink-0 bg-bg flex flex-col overflow-hidden pane-wtrans"
-            style={{ width: shown ? width : 0 }}
+            className={overlay
+                ? 'relative shrink-0 w-0 overflow-visible z-40'
+                : 'relative shrink-0 bg-bg flex flex-col overflow-hidden pane-wtrans'}
+            style={overlay ? undefined : { width: shown ? width : 0 }}
             data-area="floating"
-            aria-label="피크"
+            aria-label="미리 보기"
         >
             {top && (
+                // overlay: 자리(폭 0)의 오른쪽 끝에서 왼쪽으로 W 만큼 떠 있는 틀 — 손잡이는 이 틀의 왼쪽 모서리에 산다
                 <div
-                    className={`flex flex-col h-full my-2 ml-2 rounded-l-xl bg-panel peek-card overflow-hidden ${shown ? 'peek-in' : 'peek-out'}`}
-                    style={{ width: Math.max(0, width - 8) }}
+                    className={overlay ? 'absolute top-2 bottom-2 right-0' : 'relative h-full py-2 pl-2'}
+                    style={{ width: overlay ? width : undefined }}
                 >
-                    <PeekHeader
-                        top={top}
-                        depth={stack.length}
-                        onPop={onPop}
-                        onClear={onClear}
-                        onPromote={onPromote}
-                        rowId={top.id}
-                        dragBind={bind}
-                        dragHandlers
-                    />
-                    <EditorArea leaf={top} />
+                    <div
+                        className={`flex flex-col h-full rounded-l-xl bg-panel peek-card overflow-hidden ${shown ? 'peek-in' : 'peek-out'}`}
+                        style={{ width: Math.max(0, width - 8), marginLeft: overlay ? 8 : 0 }}
+                    >
+                        <PeekHeader
+                            top={top}
+                            depth={stack.length}
+                            onPop={onPop}
+                            onClear={onClear}
+                            onPromote={onPromote}
+                            rowId={top.id}
+                            dragBind={bind}
+                            dragHandlers
+                        />
+                        <EditorArea leaf={top} />
+                    </div>
+                    <PeekResizeHandle width={width} minWidth={minWidth} maxWidth={maxWidth} onWidth={onWidth} />
                 </div>
             )}
-            <PeekResizeHandle width={width} minWidth={minWidth} maxWidth={maxWidth} onWidth={onWidth} />
             {drag && <DropZones drag={drag} />}
         </aside>
     );
