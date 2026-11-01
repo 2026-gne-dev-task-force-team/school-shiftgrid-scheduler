@@ -7,14 +7,15 @@
  *         뷰 전부(이름·어디 놓이나·설명) · 꽂은 설정 섹션 · 켜기/끄기 토글 · 「설정 가기」 단추.
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
-import type { ReactNode } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { useState, type ReactNode } from 'react';
+import { Icon, setViewOverride, getViewOverride } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, HOST_VERSION,
 } from '../../../pane-ui-system/plugin';
 import { Toggle } from '../../../pane-ui-system';
 import { useSettingsChrome } from '../chrome-context';
+import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
 
 const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center: '가운데', right: '오른쪽 사이드바' };
 
@@ -35,6 +36,10 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
     const views = host.views.list().filter((v) => v.id === p.id || v.id.startsWith(`${p.id}.`));
     const sections = listSettings().filter((s) => s.owner === p.id);
     const firstItemId = sections[0]?.items[0]?.id;
+    // 뷰 줄을 누르면 그 뷰의 설정 카드가 펼쳐진다(쥔님 19:06 — 뷰 설정은 그 플러그인 상세 안에). 처음엔 전부 접힘
+    const [openViews, setOpenViews] = useState<Set<string>>(() => new Set());
+    const toggleView = (id: string) => setOpenViews((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const anyOverride = views.some((v) => Object.keys(getViewOverride(v.id) ?? {}).length > 0);
 
     return (
         <div className="flex flex-col gap-4">
@@ -90,26 +95,55 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                     )}
             </Section>
 
-            {/* 뷰 — 이름 + 어디 놓이나 + 설명 */}
+            {/* 뷰 — 이름 + 어디 놓이나 + 설명 · 줄을 누르면 그 뷰의 설정(최소 폭·좁아질 때·접힘 폭 + 자리 제한) */}
             <Section title="뷰" count={views.length}>
                 {views.length === 0
                     ? <p className="text-[12px] text-muted">등록한 뷰가 없습니다.</p>
                     : (
-                        <div className="flex flex-col rounded border border-line overflow-hidden">
-                            {views.map((v) => (
-                                <div key={v.id} className="flex items-start gap-2 px-2.5 py-1.5 border-b border-line last:border-b-0">
-                                    {v.icon && <Icon name={v.icon} size={14} className="mt-0.5 shrink-0 text-muted" />}
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[13px] text-text truncate">{v.title}</span>
-                                            <span className="text-[11px] text-muted">{AREA_LABEL[v.defaultArea ?? 'center'] ?? '가운데'}{v.placement?.singleton ? ' · 한 장만' : ''}</span>
+                        <>
+                            <div className="flex items-start justify-between gap-3">
+                                <ViewSettingsNote />
+                                {anyOverride && (
+                                    <button
+                                        type="button"
+                                        onClick={() => views.forEach((v) => setViewOverride(v.id, null))}
+                                        className="shrink-0 whitespace-nowrap h-btn px-2 rounded border border-line text-[12px] text-muted
+                                            hover:text-text hover:bg-text/[0.04] transition-colors
+                                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                    >
+                                        전부 되돌리기
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex flex-col rounded border border-line overflow-hidden">
+                                {views.map((v) => {
+                                    const open = openViews.has(v.id);
+                                    return (
+                                        <div key={v.id} className="border-b border-line last:border-b-0">
+                                            <button
+                                                type="button"
+                                                aria-expanded={open}
+                                                onClick={() => toggleView(v.id)}
+                                                className="w-full text-left flex items-start gap-2 px-2.5 py-1.5 hover:bg-text/[0.04] transition-colors
+                                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                            >
+                                                <Icon name="right" size={12} className={`mt-1 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+                                                {v.icon && <Icon name={v.icon} size={14} className="mt-0.5 shrink-0 text-muted" />}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[13px] text-text truncate">{v.title}</span>
+                                                        <span className="text-[11px] text-muted">{AREA_LABEL[v.defaultArea ?? 'center'] ?? '가운데'}{v.placement?.singleton ? ' · 한 장만' : ''}</span>
+                                                    </div>
+                                                    {v.description && <p className="text-[11px] text-muted leading-snug">{v.description}</p>}
+                                                    <span className="text-[10px] text-muted/70 font-mono">{v.id}</span>
+                                                </div>
+                                            </button>
+                                            {open && <ViewSettingsCard view={v} />}
                                         </div>
-                                        {v.description && <p className="text-[11px] text-muted leading-snug">{v.description}</p>}
-                                        <span className="text-[10px] text-muted/70 font-mono">{v.id}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
                     )}
             </Section>
 

@@ -87,14 +87,14 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
 
     return (
         <div ref={layerRef} className="absolute inset-0 z-30 pointer-events-none">
-            {/* ⛔ 바깥 클릭으로 안 닫는다(쥔님) — 옅은 가림막은 두되 클릭을 삼키기만 한다(아래 뷰와 안 섞이게) */}
-            <div className="absolute inset-0 bg-text/10 pointer-events-auto peek-scrim" aria-hidden="true" />
+            {/* ⛔ 가림막(딤) 없음 · 바깥 클릭을 삼키지도 닫지도 않는다 — 쥔님 2026-11-01 19:08 *"알림창이나 동작 막는 창이 아니라
+                목록에서 세부 내용을 보는 창 · 탐색의 흐름은 끊기면 안 돼"*. 뒤의 목록은 그대로 눌리고, 미리보기는 ✕/Esc 로만 닫는다 */}
             <div
                 className={wide
                     ? 'absolute top-0 right-0 bottom-0 bg-panel border-l border-line rounded-l-xl shadow-xl flex flex-col pointer-events-auto peek-from-right overflow-hidden'
                     : 'absolute left-0 right-0 bottom-0 bg-panel border-t border-line rounded-t-xl shadow-xl flex flex-col pointer-events-auto peek-from-bottom overflow-hidden'}
                 style={panelStyle}
-                role="dialog"
+                role="complementary"
                 aria-label="미리보기"
             >
                 {/* 🔴 크기 조절 손잡이 — 안쪽 가장자리. 평소 1px 선, 올리면 파랑, 끄는 동안 짙은 파랑(resize-handle 토큰) */}
@@ -113,7 +113,7 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
                 </div>
 
                 <div className="shrink-0 flex items-center justify-between h-header px-pad border-b border-line select-none">
-                    <span className="text-[12px] font-semibold text-muted">미리보기{wide ? ' · 오른쪽' : ' · 아래'}</span>
+                    <span className="text-[12px] font-semibold text-muted">미리보기</span>
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
                 <div className="flex-1 min-h-0 overflow-auto p-4 select-text">{children}</div>

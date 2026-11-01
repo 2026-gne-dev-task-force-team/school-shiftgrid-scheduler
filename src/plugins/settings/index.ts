@@ -14,7 +14,6 @@ import { SettingsScreen } from './SettingsScreen';
 import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
-import { ViewSettingsPane } from './panes/ViewSettingsPane';
 import { PluginsPane } from './panes/PluginsPane';
 import { AboutPane } from './panes/AboutPane';
 
@@ -30,11 +29,7 @@ function activate(host: PluginHost): void {
         Pane: () => createElement(RibbonSettingsPane, { host }),
     });
 
-    host.settings.addSection('views', '뷰', 'layers');
-    host.settings.addItem({
-        section: 'views', id: 'views', title: '등록된 뷰', icon: 'layers',
-        Pane: () => createElement(ViewSettingsPane, { host }),
-    });
+    // 📌 「뷰 › 등록된 뷰」 판은 2026-11-01 19:06 폐기 — 뷰 설정은 그 플러그인 상세(PluginDetail) 안으로 들어갔다(쥔님).
 
     // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄을 누르면 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
     host.settings.addSection('plugins', '플러그인', 'play');
