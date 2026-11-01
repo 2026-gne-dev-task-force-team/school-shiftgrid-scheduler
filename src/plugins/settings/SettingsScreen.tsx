@@ -78,7 +78,7 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     if (narrow) {
         if (!showContent) {
             return (
-                <div className="flex-1 min-h-0 overflow-auto bg-bg">
+                <div className="h-full min-h-0 overflow-auto bg-bg">
                     <div className="h-header px-pad flex items-center border-b border-line select-none">
                         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
                     </div>
@@ -87,7 +87,7 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
             );
         }
         return (
-            <div className="flex-1 min-h-0 flex flex-col bg-bg">
+            <div className="h-full min-h-0 flex flex-col bg-bg">
                 <div className="h-header px-pad flex items-center gap-1 border-b border-line select-none shrink-0">
                     <IconButton icon="left" label="메뉴로" size={15} onClick={() => setShowContent(false)} />
                     <span className="text-[13px] font-semibold text-text">{item?.title}</span>
@@ -99,8 +99,10 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
 
     // ── ①② 넓은 화면: 좌 메뉴 · 우 내용. collapsed 면 왼쪽을 아이콘만으로 접는다 ──
     // 🔴 세로선(border-r)은 self-stretch 로 영역 끝까지 — 내용이 짧아도 선이 중간에 끊기지 않게
+    // 🔴 뿌리는 h-full 이다 — EditorArea 가 뷰를 「블록 h-full」 안에 그리므로 flex-1 은 아무 뜻이 없고
+    //    높이가 내용만큼 자라 overflow-auto 가 영영 안 걸렸다(쥔님 13:14 「설정 안이 스크롤이 안 돼」)
     return (
-        <div className="flex-1 min-h-0 flex items-stretch bg-bg overflow-hidden">
+        <div className="h-full min-h-0 flex items-stretch bg-bg overflow-hidden">
             <div className={`shrink-0 self-stretch border-r border-line overflow-auto ${collapsed ? 'w-rail' : 'w-44'}`}>
                 {!collapsed && (
                     <div className="h-header px-pad flex items-center border-b border-line select-none">

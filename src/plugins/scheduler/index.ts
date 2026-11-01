@@ -31,11 +31,11 @@ function activate(host: PluginHost): void {
     };
     host.workspace.on('close', (l) => { if (l.id === cardPeekLeafId) cardPeekLeafId = null; });
 
-    // ── 뷰 — 주간 캘린더(center · 「+ 새 탭」) · 카드 상세(피크) ──
+    // ── 뷰 — 주간 캘린더(center) · 카드 상세(피크) ──
+    // ⛔ newTab 을 안 잡는다 — 「+」는 빈 탭(app.blank)이다(쥔님 13:15). 스케줄은 리본 「새 스케줄」로 연다
     host.views.register({
         id: 'week', title: '스케줄', icon: 'table', defaultArea: 'center',
         layout: { minWidth: 480, squeeze: 'scroll' },
-        newTab: { label: '새 스케줄' },
         Component: (p) => createElement(WeekView, { ...p, store, onCardClick: openCard }),
     });
     host.views.register({

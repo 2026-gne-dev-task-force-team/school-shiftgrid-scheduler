@@ -27,6 +27,8 @@ import {
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
+import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
+const BLANK_VIEW_ID = 'app.blank';
 import { migrateViewIds } from './migrate';
 import { useDoc } from './document';
 
@@ -121,12 +123,13 @@ export function Workbench() {
         return () => setWorkspaceBridge(null);
     }, []);
 
-    // 🔴 「+ 새 탭」이 여는 것 — 플러그인이 newTab 한 칸으로 등록한다(지금은 데모 '새 표'). 없으면 null.
-    useContribVersion();                 // 새 탭 기여가 바뀌면(데모 끄기) 다시 그린다
+    // 🔴 「+」가 여는 것 — 기본은 **빈 탭**(app.blank · 쥔님 13:15 *"그냥 빈 새 탭이 떠야 되는데"*).
+    //    플러그인이 newTab 한 칸을 잡으면 그게 우선(지금은 아무도 안 잡는다).
+    useContribVersion();                 // 새 탭 기여가 바뀌면 다시 그린다
     const newTab = getNewTab();
     const makeSheet = useCallback((): Leaf | null => {
         const nt = getNewTab();
-        if (!nt) return null;
+        if (!nt) return leaf(BLANK_VIEW_ID, '새 탭');
         seq.current += 1;
         const base = appHost.views.get(nt.viewId)?.title ?? '탭';
         return leaf(nt.viewId, `${base} ${seq.current}`);

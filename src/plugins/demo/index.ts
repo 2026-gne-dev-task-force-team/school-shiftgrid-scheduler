@@ -17,11 +17,11 @@ const hhmm = (d: Date) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minut
 
 function activate(host: PluginHost): void {
     // ── 뷰 ──
-    // 표 — 좁아지면 스크롤 · 「+ 새 탭」이 여는 것(newTab 한 칸) · 내용 메뉴로 이름 바꾸기. ⛔ 리본 설탕 없음(새 표는 동작이다)
+    // 표 — 좁아지면 스크롤 · 내용 메뉴로 이름 바꾸기. ⛔ 리본 설탕 없음(새 표는 동작이다)
+    // ⛔ newTab 을 안 잡는다 — 쥔님 2026-11-01 13:15 *"+ 는 그냥 빈 새 탭이 떠야 되는데"*(빈 탭은 앱의 app.blank)
     host.views.register({
         id: 'sheet', title: '표', icon: 'table', defaultArea: 'center', Component: SheetView,
         layout: { minWidth: 240, squeeze: 'scroll' },
-        newTab: { label: '새 표' },
         menu: (lf, h) => [
             {
                 label: '이름 바꾸기', icon: 'edit',
