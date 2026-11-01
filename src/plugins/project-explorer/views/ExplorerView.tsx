@@ -34,7 +34,7 @@ interface DropResolved {
 }
 
 /** 포인터 자리(x,y)를 떨굴 자리로 — 줄 높이 25/50/25 띠. DOM 을 더듬으니 순수 아님(drop-resolve 와 같은 결). */
-function resolveDrop(container: HTMLElement | null, x: number, y: number, dragId: string, tree: Tree): DropResolved | null {
+function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragId: string, tree: Tree): DropResolved | null {
     if (!container) return null;
     const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-row-id]'));
     if (rows.length === 0) return null;
