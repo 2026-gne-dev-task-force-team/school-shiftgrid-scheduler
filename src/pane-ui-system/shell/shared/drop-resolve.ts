@@ -58,7 +58,10 @@ export function resolveDropAt(px: number, py: number, dragId: string, dragViewId
     if (!hit) return null;
 
     // ① 탭 하나 위 — 왼/오 절반으로 before/after
-    const row = hit.closest('[data-row-id]') as HTMLElement | null;
+    //    🔴 탭 줄(data-tabbar) 안의 data-row-id 만 탭으로 본다 — 플러그인 패널 줄(프로젝트 탐색기 등)도
+    //    data-row-id 를 쓰므로(공용 useDragLeaf 요구), 그걸 안 가르면 탭을 패널 줄 위로 끌 때 그 줄이
+    //    드롭 가능으로 반응한다(실측: 미니 캘린더 탭이 탐색기 폴더에 들어갈 듯 반짝 · 실제론 안 들어감).
+    const row = hit.closest('[data-tabbar] [data-row-id]') as HTMLElement | null;
     if (row) {
         const leafId = row.getAttribute('data-row-id')!;
         if (leafId === dragId) return null;   // 자기 자신 — 아무 일 없음

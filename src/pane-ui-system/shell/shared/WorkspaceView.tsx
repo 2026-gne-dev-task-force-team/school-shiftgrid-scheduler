@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf, MovePos } from '../../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../../layout/tree';
-import { getView, canPlace, canSplit } from '../../view-registry';
+import { getView, canPlace } from '../../view-registry';
 import { FRAME_COMMAND } from '../../frame-commands';
 import { runCommand } from '../../plugin';
 import { effectiveViewLayout } from '../../layout/pane-settings';
