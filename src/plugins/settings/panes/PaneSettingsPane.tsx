@@ -9,7 +9,7 @@
 import type { ReactNode } from 'react';
 import { usePaneSettings, setPaneSettings, resetPaneSettings } from '../../../pane-ui-system';
 import type { PaneSettings } from '../../../pane-ui-system';
-import { Toggle } from './Toggle';
+import { Toggle } from '../../../pane-ui-system';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (

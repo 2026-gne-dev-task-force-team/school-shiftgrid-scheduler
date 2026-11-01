@@ -12,7 +12,7 @@ import {
     type PluginHost, listPlugins, enablePlugin, disablePlugin, usePluginRegistry, useContribVersion,
     type PluginStatus,
 } from '../../../pane-ui-system/plugin';
-import { Toggle } from './Toggle';
+import { Toggle } from '../../../pane-ui-system';
 import { PluginDetail } from './PluginDetail';
 import { useSettingsChrome } from '../chrome-context';
 
