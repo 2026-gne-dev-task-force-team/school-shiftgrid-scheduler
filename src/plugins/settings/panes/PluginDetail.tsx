@@ -13,7 +13,7 @@ import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, HOST_VERSION,
 } from '../../../pane-ui-system/plugin';
-import { Toggle } from './Toggle';
+import { Toggle } from '../../../pane-ui-system';
 import { useSettingsChrome } from '../chrome-context';
 
 const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center: '가운데', right: '오른쪽 사이드바' };
