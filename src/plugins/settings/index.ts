@@ -44,12 +44,12 @@ function activate(host: PluginHost): void {
     host.settings.addSection('about', '정보', 'info');
     host.settings.addItem({ section: 'about', id: 'about', title: '이 프로그램', icon: 'info', Pane: AboutPane });
 
-    // ── 설정 화면 뷰 — 한 번에 하나(singleton) ──
+    // ── 설정 화면 뷰 — 딱 한 장(singleton) · 가운데 탭에만 · 안 가른다 ──
+    //    🔴 설정은 가운데 탭에만 산다 — 사이드바·가르기 금지(쥔님 13:43: "설정이 사이드바로 들어가기엔 무리").
+    //    singleton 은 placement 의 한 축이다 — 이미 떠 있으면 새로 안 열고 그리로 간다.
     host.views.register({
         id: 'main', title: '설정', icon: 'gear', defaultArea: 'center',
-        singleton: true,
-        // 🔴 설정은 가운데 탭에만 산다 — 사이드바·가르기 금지(쥔님 13:43: "설정이 사이드바로 들어가기엔 무리")
-        placement: { areas: ['center'], split: false },
+        placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
         Component: (p: ViewProps) => createElement(SettingsScreen, { collapsed: p.collapsed }),
     });

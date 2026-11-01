@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { ComponentType } from 'react';
 import {
     registerView, getView, listViews, listRibbonViews, clearViews,
+    canPlace, canSplit, isSingleton,
     type ViewProps,
 } from './view-registry';
 
@@ -47,5 +48,44 @@ describe('③ 리본 정렬', () => {
         registerView({ id: 'first', title: '1', Component: Dummy, ribbon: {} });
         registerView({ id: 'second', title: '2', Component: Dummy, ribbon: {} });
         expect(listRibbonViews().map((v) => v.id)).toEqual(['first', 'second']);
+    });
+});
+
+describe('④ 자리 제한 — placement 세 축(areas·split·singleton)', () => {
+    it('areas 를 안 주면 어디든 놓을 수 있다 · 주면 그것만', () => {
+        registerView({ id: 'any', title: 'A', Component: Dummy });
+        expect(canPlace('any', 'left')).toBe(true);
+        expect(canPlace('any', 'center')).toBe(true);
+        registerView({ id: 'mid', title: 'M', Component: Dummy, placement: { areas: ['center'] } });
+        expect(canPlace('mid', 'center')).toBe(true);
+        expect(canPlace('mid', 'left')).toBe(false);
+        expect(canPlace('mid', 'right')).toBe(false);
+    });
+
+    it('등록 안 된 뷰는 전부 허용(꺼진 플러그인 자리표시를 옮길 수 있어야)', () => {
+        expect(canPlace('없음', 'left')).toBe(true);
+        expect(canSplit('없음')).toBe(true);
+        expect(isSingleton('없음')).toBe(false);
+    });
+
+    it('split=false 면 못 가른다 · 생략/true 면 가른다', () => {
+        registerView({ id: 'nosplit', title: 'N', Component: Dummy, placement: { split: false } });
+        registerView({ id: 'yessplit', title: 'Y', Component: Dummy, placement: { split: true } });
+        registerView({ id: 'plain', title: 'P', Component: Dummy });
+        expect(canSplit('nosplit')).toBe(false);
+        expect(canSplit('yessplit')).toBe(true);
+        expect(canSplit('plain')).toBe(true);
+    });
+
+    it('singleton 은 isSingleton=true · 🔴 복제가 곧 둘이라 canSplit 이 자동으로 막는다', () => {
+        registerView({ id: 'one', title: 'O', Component: Dummy, placement: { singleton: true } });
+        expect(isSingleton('one')).toBe(true);
+        expect(canSplit('one')).toBe(false);   // split 을 명시 안 해도 싱글턴이면 못 가른다
+    });
+
+    it('singleton + split:true 를 같이 줘도 가르기는 막힌다(싱글턴이 이긴다)', () => {
+        registerView({ id: 'onesplit', title: 'OS', Component: Dummy, placement: { singleton: true, split: true } });
+        expect(isSingleton('onesplit')).toBe(true);
+        expect(canSplit('onesplit')).toBe(false);
     });
 });

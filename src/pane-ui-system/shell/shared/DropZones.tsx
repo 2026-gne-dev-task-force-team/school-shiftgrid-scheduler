@@ -41,8 +41,9 @@ function PreviewShape({ preview }: { preview: DropPreview }) {
     );
 }
 
-export function DropZones({ drag }: { drag: DragLeafState }) {
-    const res = resolveDropAt(drag.x, drag.y, drag.leafId);
+export function DropZones({ drag, dragViewId }: { drag: DragLeafState; dragViewId?: string }) {
+    // 🔴 dragViewId 를 넘겨 placement 를 같이 본다 — 허용 안 되는 자리면 미리보기(res)가 null 이라 파란 면이 안 뜬다.
+    const res = resolveDropAt(drag.x, drag.y, drag.leafId, dragViewId);
     const ghostW = Math.max(96, Math.min(220, drag.width || 140));
     return createPortal(
         // 🔴 오버레이는 뷰포트를 덮되 pointer-events:none — elementFromPoint 가 뚫고 아래 진짜 DOM 을 집는다

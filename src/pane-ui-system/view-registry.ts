@@ -8,7 +8,7 @@
  *    - layout : 뷰별 레이아웃 힌트("무슨 콘텐츠냐에 따라" 최소폭·찌그러짐이 다르다 — 쥔님)
  *    - menu   : 내용 메뉴 — 틀 메뉴(＋·가르기·닫기)와 구분된다(쥔님: "틀이 가지는 메뉴랑 내용이 가지는 메뉴는 구분")
  *    - ribbon : 리본(엑셀 상단 리본처럼 앱 실행·동작 아이콘)에 올릴지
- *    - singleton : 한 번에 하나만 열리나(설정처럼) — id 고정 재사용
+ *    - placement : 🔴 자리 제한 — areas(어느 틀) · split(가를 수 있나) · singleton(딱 한 장만). 아래 설명.
  *
  * ⚠️ 모듈 전역 Map 이다(순수하지 않다) — 등록은 본래 부수효과다. tree.ts 와 달리 여기선 괜찮다.
  */
@@ -52,17 +52,21 @@ export interface ViewDef {
     menu?: ViewMenu;
     /** 리본에 올릴지. { order } 면 그 순서로 선다 · false·생략이면 리본에 없다 */
     ribbon?: { order?: number } | false;
-    /** 한 번에 하나만(설정처럼) — id 고정 재사용 */
-    singleton?: boolean;
     /**
-     * 🔴 허용 자리 — 어디에 놓일 수 있나. 생략이면 전부 허용.
-     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로 할 수 있는지 사이드바로 할 수 있는지
-     *    분할할 수 있는지 제한을 걸어야 — 설정이 사이드바로 들어가기엔 무리"*
-     *    메뉴·드래그·단축키가 전부 이 둘(canPlace·canSplit)로 묻는다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
+     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. 생략이면 전부 허용. 세 축:
+     *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. 생략이면 전부.
+     *    - split     : 이 뷰를 가를 수 있나(복제해 옆에). 생략/true 가르기 허용 · false 금지.
+     *    - singleton : 🔴 딱 한 장만 뜨나. 이미 떠 있으면 새로 안 열고 그리로 간다(id 고정 재사용).
+     *                  ⛔ 싱글턴은 복제가 곧 「둘」이라 가를 수 없다 — canSplit 이 자동으로 막는다.
+     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로/사이드바로/분할할 수 있는지 제한을 걸어야"* ·
+     *      *"스플릿할 수 있는가 · 딱 한 창만 띄울 수 있는가 그거 두 개 다 하자"*(두 축).
+     *    🔴 메뉴·드래그·키보드·workspace.open 이 전부 이 셋(canPlace·canSplit·isSingleton)으로 묻는다 —
+     *       한 곳만 막으면 다른 길로 뚫린다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
      */
     placement?: {
         areas?: ('left' | 'center' | 'right')[];
         split?: boolean;
+        singleton?: boolean;
     };
 }
 
@@ -73,8 +77,14 @@ export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boo
     const p = registry.get(viewId)?.placement;
     return !p?.areas || p.areas.includes(area);
 }
+/** 이 뷰를 가를 수 있나 — split=false 면 금지. 🔴 싱글턴도 못 가른다(복제하면 「딱 한 장」이 깨진다). */
 export function canSplit(viewId: string): boolean {
-    return registry.get(viewId)?.placement?.split !== false;
+    const p = registry.get(viewId)?.placement;
+    return p?.split !== false && p?.singleton !== true;
+}
+/** 이 뷰가 싱글턴인가 — 열기(workspace.open·리본)가 「이미 있으면 그리로」로 가는 판정. */
+export function isSingleton(viewId: string): boolean {
+    return registry.get(viewId)?.placement?.singleton === true;
 }
 
 export function registerView(def: ViewDef): void {

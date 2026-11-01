@@ -26,7 +26,7 @@ import {
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
-import { canPlace, canSplit } from '../pane-ui-system/view-registry';   // 허용 자리 — 호스트 앱이 모델 앞에서 묻는다
+import { canPlace, canSplit, isSingleton } from '../pane-ui-system/view-registry';   // 자리 제한 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
 
@@ -38,6 +38,10 @@ export function Workbench() {
     // 패널 트리 — 기기별로 보관된 배치를 읽어 온다. 🔴 첫 실행(저장값 없음)이면 빈 창틀이다 —
     //             ⛔ 아무 뷰도 자동으로 열지 않는다(쥔님 2026-11-01 *"그냥 다 비워줘"*). loadWorkspace 가 빈 배치를 준다.
     const [ws, setWs] = useState<Workspace>(() => loadWorkspace());
+    // 🔴 늘 최신 배치를 가리키는 ref — React 밖(플러그인 다리)·콜백에서 「지금 무엇이 떠 있나」를 결정적으로 읽는다.
+    //    렌더 중에 갱신해 두면 setWs 의 비동기 타이밍과 무관하게 openView 가 포커스 id 를 바로 정할 수 있다.
+    const wsRef = useRef(ws);
+    wsRef.current = ws;
     // 좁은 화면에서 지금 보는 leaf(넓은 화면에선 각 묶음의 activeId 를 쓴다)
     const [focus, setFocus] = useState<string>('');
     // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
@@ -69,30 +73,39 @@ export function Workbench() {
         if (l) fireWorkspace('activate' as WorkspaceEvent, { id: l.id, viewId: l.viewId, params: l.params });
     }, [focus, ws]);
 
+    // 🔴 ⭐ 뷰 열기 — 리본·플러그인(workspace.open)·설정·빈 사이드바 고르기가 **전부 이 한 함수**를 거친다.
+    //    쥔님 2026-11-01: *"스플릿할 수 있는가 · 딱 한 창만 띄울 수 있는가 그거 두 개 다 하자"* →
+    //    자리 제한(canPlace)·싱글턴(isSingleton)을 여기 한 곳에서 묻는다(한 길만 막으면 다른 길로 뚫린다).
+    //    - singleton : 강제 재사용 — 이미 떠 있으면 새로 안 열고 그리로(그 뷰는 딱 한 장).
+    //    - reuse(옵션): 비싱글턴에 대한 호출자 힌트 — 있으면 재사용, 없으면 새 장.
+    //    wsRef 로 최신 배치를 읽어 포커스 id 를 결정적으로 돌려준다.
+    const openView = useCallback((viewId: string, o?: WorkspaceOpenOptions): string | null => {
+        const def = appHost.views.get(viewId);
+        if (!def) return null;
+        const single = isSingleton(viewId);
+        const wantReuse = single || !!o?.reuse;
+        if (wantReuse) {
+            const ex = findLeafByView(wsRef.current, viewId);
+            if (ex) { setWs((w) => activateLeaf(w, ex.id)); setFocus(ex.id); return ex.id; }
+        }
+        // 새로 — 요청 자리가 placement.areas 에 막혀 있으면 허용된 첫 자리(없으면 가운데)로 떨군다
+        let area: 'left' | 'center' | 'right' = o?.where ?? def.defaultArea ?? 'center';
+        if (!canPlace(viewId, area)) area = def.placement?.areas?.[0] ?? 'center';
+        const lf = leaf(viewId, o?.title ?? def.title, { id: single ? viewId : undefined, params: o?.params });
+        setWs((w) => openLeaf(w, lf, area));
+        setFocus(lf.id);
+        return lf.id;
+    }, []);
+
     // 🔴 작업대 다리 — 플러그인의 host.workspace.open/close 가 이리로 들어온다(host 는 React 밖에 산다).
-    //    스케줄러 카드 상세가 이 다리로 가운데 탭을 연다(singleton).
+    //    open 은 위 openView 그대로 — 뷰가 제 안에서 탭을 띄우든 리본이 열든 같은 판정을 거친다.
     useEffect(() => {
         setWorkspaceBridge({
-            open: (viewId: string, o?: WorkspaceOpenOptions): string | null => {
-                const def = appHost.views.get(viewId);
-                if (!def) return null;
-                const title = o?.title ?? def.title;
-                const area: AreaKey = (o?.where as AreaKey | undefined) ?? def.defaultArea ?? 'center';
-                const lf = leaf(viewId, title, { id: def.singleton ? viewId : undefined, params: o?.params });
-                setWs((w) => {
-                    if (o?.reuse) {
-                        const ex = findLeafByView(w, viewId);
-                        if (ex) return activateLeaf(w, ex.id);
-                    }
-                    return openLeaf(w, lf, area);
-                });
-                setFocus(lf.id);
-                return lf.id;
-            },
+            open: (viewId: string, o?: WorkspaceOpenOptions) => openView(viewId, o),
             close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
         });
         return () => setWorkspaceBridge(null);
-    }, []);
+    }, [openView]);
 
     // 🔴 「+」가 여는 것 — 기본은 **빈 탭**(app.blank · 쥔님 13:15 *"그냥 빈 새 탭이 떠야 되는데"*).
     //    플러그인이 newTab 한 칸을 잡으면 그게 우선(지금은 아무도 안 잡는다).
@@ -113,12 +126,8 @@ export function Workbench() {
         setFocus(lf.id);
     }, [makeSheet]);
 
-    // 설정 — 코어 settings 플러그인의 뷰. id 를 고정해 두면 openLeaf 가 중복 없이 재사용한다(singleton)
-    const openSettings = useCallback(() => {
-        const lf = leaf('settings.main', '설정', { id: 'settings.main' });
-        setWs((w) => openLeaf(w, lf, 'center'));
-        setFocus('settings.main');
-    }, []);
+    // 설정 — 코어 settings 플러그인의 뷰(싱글턴). openView 가 이미 떠 있으면 그리로 보낸다.
+    const openSettings = useCallback(() => { openView('settings.main'); }, [openView]);
 
     const handlers: WorkspaceHandlers = useMemo(() => ({
         onActivate: (id) => { setWs((w) => activateLeaf(w, id)); setFocus(id); },
@@ -169,20 +178,6 @@ export function Workbench() {
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
     }), [makeSheet, addTab, newTab]);
 
-    // 리본 아이콘 → 그 뷰 열기. 있으면 그 탭으로(singleton 은 id 고정), 없으면 defaultArea 에 새로
-    const openView = useCallback((viewId: string) => {
-        const def = appHost.views.get(viewId);
-        if (!def) return;
-        setWs((w) => {
-            const existing = findLeafByView(w, viewId);
-            if (existing) { setFocus(existing.id); return activateLeaf(w, existing.id); }
-            const area: AreaKey = def.defaultArea ?? 'center';
-            const lf = leaf(viewId, def.title, def.singleton ? { id: viewId } : undefined);
-            setFocus(lf.id);
-            return openLeaf(w, lf, area);
-        });
-    }, []);
-
     // 🔴 사이드바 최소/최대 폭 — 설정 기본값에 그 안 뷰의 minWidth 를 얹는다(무한정 못 줄인다, W4)
     const pane = usePaneSettings();
     const sideMin = (area: 'left' | 'right'): number => {
@@ -195,13 +190,10 @@ export function Workbench() {
     const rightMin = sideMin('right');
     const sideMax = pane.settings.sidebarMaxWidth;
 
-    // 빈 사이드바 우클릭 → 뷰 고르기. 고른 뷰를 그 자리에 연다
+    // 빈 사이드바 우클릭 → 뷰 고르기. openView 로 그 자리에(placement·singleton 판정도 같이 거친다)
     const openViewHere = useCallback((area: Exclude<AreaKey, 'center' | 'floating'>, viewId: string) => {
-        const title = appHost.views.get(viewId)?.title ?? viewId;
-        const lf = leaf(viewId, title);
-        setWs((w) => openLeaf(w, lf, area));
-        setFocus(lf.id);
-    }, []);
+        openView(viewId, { where: area });
+    }, [openView]);
 
     // 사이드바 한쪽을 그린다 — 트리가 있으면 WorkspaceView, 없으면 빈 면.
     // 접기·📌 꼭지(rootChrome)는 넓은 화면에서만 — 좁은 화면 서랍은 막(scrim)으로 닫는다.

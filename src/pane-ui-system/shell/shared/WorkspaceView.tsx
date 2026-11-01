@@ -185,10 +185,12 @@ export function WorkspaceView({
     }, [node, openTab, openBar]);
 
     // 🔴 드롭 — 포인터를 뗀 자리를 resolveDropAt 이 moveLeaf 인자로 번역한다. 트리 연산은 새로 안 짠다.
+    //    🔴 끄는 leaf 의 viewId 를 같이 넘긴다 — placement 를 미리보기와 같은 눈으로 본다(허용 안 되면 null).
     const onDrop = useCallback((leafId: string, x: number, y: number) => {
-        const res = resolveDropAt(x, y, leafId);
+        const viewId = flatten(node).find((l) => l.id === leafId)?.viewId;
+        const res = resolveDropAt(x, y, leafId, viewId);
         if (res) handlers.onDropLeaf(leafId, res.move.target, res.move.pos);
-    }, [handlers]);
+    }, [handlers, node]);
 
     const { bind, drag } = useDragLeaf({ enabled: !narrow, onContext, onDrop });
 
@@ -233,7 +235,7 @@ export function WorkspaceView({
         <div className="flex-1 min-w-0 min-h-0 flex flex-col" data-area={area}>
             <NodeView node={node} handlers={handlers} tabButtons={tabButtons} rootChrome={rootChrome} rootId={rootId} edges={edges} interaction={bind} sidebar={sidebar} />
             {menuEl}
-            {drag && <DropZones drag={drag} />}
+            {drag && <DropZones drag={drag} dragViewId={flatten(node).find((l) => l.id === drag.leafId)?.viewId} />}
         </div>
     );
 }
