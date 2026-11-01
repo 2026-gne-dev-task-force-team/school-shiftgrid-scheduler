@@ -72,11 +72,12 @@ export interface ViewDef {
     /** 🔴 내용 메뉴 — 탭 우클릭 메뉴의 구분선 아래쪽에 붙는다 */
     menu?: ViewMenu;
     /**
-     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. 생략이면 전부 허용. 세 축:
-     *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. 생략이면 전부.
-     *    - split     : 이 뷰를 가를 수 있나(복제해 옆에). 생략/true 가르기 허용 · false 금지.
-     *    - singleton : 🔴 딱 한 장만 뜨나. 이미 떠 있으면 새로 안 열고 그리로 간다(id 고정 재사용).
-     *                  ⛔ 싱글턴은 복제가 곧 「둘」이라 가를 수 없다 — canSplit 이 자동으로 막는다.
+     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. 🔴 ⭐ **기본값은 보수적이다**(쥔님 2026-11-01 19:34 *"아예 막는 것보단
+     *    기본값으로 — 새로 생성하는 뷰들도 기본값은 비활성화"* · *"패널 뷰는 탭 뷰로 못 간다니까"*). 플러그인이 명시해야 넓어진다:
+     *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. **생략이면 defaultArea 하나뿐**(사이드 패널 뷰가 가운데로 못 간다).
+     *    - split     : 이 뷰를 **끌어다 가른 칸에 넣을 수 있나**(드롭 띠). **생략이면 false**. ⚠️ 탭 줄의 「가르기」 단추는 뷰 복제가
+     *                  아니라 빈 탭을 여는 틀 조작이라 이 값과 무관하다(복제는 19:34 폐기).
+     *    - singleton : 🔴 딱 한 장만 뜨나. 이미 떠 있으면 새로 안 열고 그리로 간다(id 고정 재사용). 생략이면 false.
      *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로/사이드바로/분할할 수 있는지 제한을 걸어야"* ·
      *      *"스플릿할 수 있는가 · 딱 한 창만 띄울 수 있는가 그거 두 개 다 하자"*(두 축).
      *    🔴 메뉴·드래그·키보드·workspace.open 이 전부 이 셋(canPlace·canSplit·isSingleton)으로 묻는다 —
@@ -91,15 +92,18 @@ export interface ViewDef {
 
 const registry = new Map<string, ViewDef>();
 
-/** 이 뷰가 그 자리에 갈 수 있나(등록 안 된 뷰는 전부 허용 — 꺼진 플러그인 자리표시를 옮길 수 있어야 한다) */
+/** 이 뷰가 그 자리에 갈 수 있나 — areas 생략이면 **defaultArea 하나만**(기본 보수적). 등록 안 된 뷰는 전부 허용(꺼진 플러그인 자리표시를 옮길 수 있어야 한다) */
 export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boolean {
-    const p = registry.get(viewId)?.placement;
-    return !p?.areas || p.areas.includes(area);
+    const def = registry.get(viewId);
+    if (!def) return true;
+    const areas = def.placement?.areas ?? [def.defaultArea ?? 'center'];
+    return areas.includes(area);
 }
-/** 이 뷰를 가를 수 있나 — split=false 면 금지. 🔴 싱글턴도 못 가른다(복제하면 「딱 한 장」이 깨진다). */
+/** 이 뷰를 끌어다 가른 칸(드롭 띠)에 넣을 수 있나 — split 을 **명시로 true** 한 뷰만. 등록 안 된 뷰(자리표시)는 허용 */
 export function canSplit(viewId: string): boolean {
-    const p = registry.get(viewId)?.placement;
-    return p?.split !== false && p?.singleton !== true;
+    const def = registry.get(viewId);
+    if (!def) return true;
+    return def.placement?.split === true;
 }
 /** 이 뷰가 싱글턴인가 — 열기(workspace.open·리본)가 「이미 있으면 그리로」로 가는 판정. */
 export function isSingleton(viewId: string): boolean {

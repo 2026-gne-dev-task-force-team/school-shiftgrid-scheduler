@@ -37,10 +37,14 @@ describe('② 재정의(덮어쓰기)', () => {
 });
 
 describe('④ 자리 제한 — placement 세 축(areas·split·singleton)', () => {
-    it('areas 를 안 주면 어디든 놓을 수 있다 · 주면 그것만', () => {
-        registerView({ id: 'any', title: 'A', Component: Dummy });
-        expect(canPlace('any', 'left')).toBe(true);
+    // 🔴 2026-11-01 19:34 쥔님 *"아예 막는 것보단 기본값으로 — 새로 생성하는 뷰들도 기본값은 비활성화"* → 기본이 보수적이 됐다
+    it('areas 를 안 주면 defaultArea 하나뿐(기본 보수적) · 주면 그것만', () => {
+        registerView({ id: 'any', title: 'A', Component: Dummy });   // defaultArea 생략 = center
         expect(canPlace('any', 'center')).toBe(true);
+        expect(canPlace('any', 'left')).toBe(false);
+        registerView({ id: 'side', title: 'S', Component: Dummy, defaultArea: 'left' });
+        expect(canPlace('side', 'left')).toBe(true);
+        expect(canPlace('side', 'center')).toBe(false);   // 패널 뷰는 탭 뷰로 못 간다
         registerView({ id: 'mid', title: 'M', Component: Dummy, placement: { areas: ['center'] } });
         expect(canPlace('mid', 'center')).toBe(true);
         expect(canPlace('mid', 'left')).toBe(false);
@@ -53,24 +57,21 @@ describe('④ 자리 제한 — placement 세 축(areas·split·singleton)', () 
         expect(isSingleton('없음')).toBe(false);
     });
 
-    it('split=false 면 못 가른다 · 생략/true 면 가른다', () => {
+    it('split 은 명시 true 만 가른 칸에 들어간다 · 생략/false 면 못 들어간다(기본 비활성)', () => {
         registerView({ id: 'nosplit', title: 'N', Component: Dummy, placement: { split: false } });
         registerView({ id: 'yessplit', title: 'Y', Component: Dummy, placement: { split: true } });
         registerView({ id: 'plain', title: 'P', Component: Dummy });
         expect(canSplit('nosplit')).toBe(false);
         expect(canSplit('yessplit')).toBe(true);
-        expect(canSplit('plain')).toBe(true);
+        expect(canSplit('plain')).toBe(false);
     });
 
-    it('singleton 은 isSingleton=true · 🔴 복제가 곧 둘이라 canSplit 이 자동으로 막는다', () => {
+    it('singleton 은 isSingleton=true · split 은 따로 간다(복제 개념이 없어져 싱글턴이 가르기를 막지 않는다)', () => {
         registerView({ id: 'one', title: 'O', Component: Dummy, placement: { singleton: true } });
         expect(isSingleton('one')).toBe(true);
-        expect(canSplit('one')).toBe(false);   // split 을 명시 안 해도 싱글턴이면 못 가른다
-    });
-
-    it('singleton + split:true 를 같이 줘도 가르기는 막힌다(싱글턴이 이긴다)', () => {
+        expect(canSplit('one')).toBe(false);   // 기본값(생략) 이라 false — 싱글턴 때문이 아니다
         registerView({ id: 'onesplit', title: 'OS', Component: Dummy, placement: { singleton: true, split: true } });
         expect(isSingleton('onesplit')).toBe(true);
-        expect(canSplit('onesplit')).toBe(false);
+        expect(canSplit('onesplit')).toBe(true);
     });
 });

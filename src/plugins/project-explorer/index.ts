@@ -37,12 +37,11 @@ function activate(host: PluginHost): void {
     //    create 로 「새로 만들기 ▸ 폴더」 후보가 된다(표를 돈다 — 타입 이름 비교 없음).
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
 
-    // ── 뷰: 탐색기 패널(왼쪽 기본 · 세 자리 다 가능 · 가를 수 있음) ──
-    //    ⚠️ 싱글턴을 뗐다(N2) — 「이 폴더를 탐색기로」가 rootId 가 다른 탭을 여러 장 열 수 있어야 한다.
-    //    루트 패널은 open-panel 이 reuse: true 로 한 장만 쓴다. params.rootId 로 어느 가지를 뿌리로 볼지 가른다.
+    // ── 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만) ──
+    //    🔴 쥔님 2026-11-01 19:34 *"탐색기가 가운데로 또 갈 수 있네 — 패널 뷰는 탭 뷰로 못 간다니까"* → areas 에서 center 를 뺐다 · split 도 뺐다(기본 false)
     host.views.register({
         id: 'tree', title: '프로젝트 탐색기', icon: 'folder', defaultArea: 'left',
-        placement: { areas: ['left', 'center', 'right'], split: true },
+        placement: { areas: ['left', 'right'] },
         layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
         Component: (p: ViewProps) => createElement(ExplorerView, { host, rootId: p.leaf.params?.rootId as string | undefined }),
     });

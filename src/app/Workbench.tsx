@@ -173,14 +173,13 @@ export function Workbench() {
         onActivate: (id) => { setWs((w) => activateLeaf(w, id)); setFocus(id); },
         onClose: (id) => setWs((w) => closeLeaf(w, id)),
         // 🔴 가르기 = 원본 탭(sourceLeafId)을 복제해 옆에 — 새 「표 N」 아님(W8, 옵시디언식)
-        onSplit: (tabsId, dir, sourceLeafId) => {
-            const dupId = uid('leaf');
-            setWs((w) => {
-                const src = findLeaf(w, sourceLeafId);
-                if (!src || !canSplit(src.viewId)) return w;   // 🔴 placement.split=false 면 안 가른다
-                return splitAt(w, tabsId, dir, leaf(src.viewId, src.title, { id: dupId }));
-            });
-            setFocus(dupId);
+        // 🔴 ⭐ 가르기는 **틀 조작**이다 — 활성 탭을 복제하지 않고 새 쪽에 **빈 탭**을 연다(쥔님 2026-11-01 19:34
+        //    *"복제는 아직 만들기엔 복잡한 게 많을 거 같은데 없애주고"* · 세로 나누기가 모든 뷰에서 막혀 있던 뿌리 =
+        //    「가르기 = 복제」라 singleton·split:false 뷰는 전부 못 갈랐다). 뷰의 placement 는 안 본다 — 빈 탭은 어디든 간다.
+        onSplit: (tabsId, dir, _sourceLeafId) => {
+            const newId = uid('leaf');
+            setWs((w) => splitAt(w, tabsId, dir, leaf(BLANK_VIEW_ID, '새 탭', { id: newId })));
+            setFocus(newId);
         },
         onResize: (splitId, sizes) => setWs((w) => resize(w, splitId, sizes)),
         onAddToTabs: (tabsId) => {
