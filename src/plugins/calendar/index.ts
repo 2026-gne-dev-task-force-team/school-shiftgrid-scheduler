@@ -31,7 +31,7 @@ function activate(host: PluginHost): void {
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 280, squeeze: 'scroll' },
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab) — 17:06 넷을 더 받으며 MonthView 직접 → 컨테이너로
-        Component: () => createElement(CalendarTab, { openMini: () => host.workspace.open(MINI_ID, { where: 'left' }) }),
+        Component: () => createElement(CalendarTab, { openMini: () => host.workspace.open(MINI_ID, { where: 'right' }) }),
     });
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──
@@ -41,17 +41,18 @@ function activate(host: PluginHost): void {
     });
     host.ribbon.add({ commandId: 'calendar.open', icon: 'calendar', order: 1 });
 
-    // ── 뷰: 작은 달력(사이드 패널용 · 싱글턴 · 안 가름) — 가운데엔 못 놓는다(쥔님 *"패널용으로"*) ──
+    // ── 뷰: 작은 달력(사이드 패널용 · 싱글턴) — 가운데엔 못 놓는다(쥔님 *"패널용으로"*) · 기본은 오른쪽(쥔님 22:51 *"작은 달력은 기본적으로 오른쪽 패널"*) ──
+    //    🔴 split 을 명시하지 않는다(생략=가름 허용, 22:51 뒤집음) — 왼쪽 패널에서 탐색기 아래에 세로로 끼울 수 있어야 한다.
     host.views.register({
-        id: 'mini', title: '작은 달력', icon: 'calendarMini', defaultArea: 'left',
-        placement: { areas: ['left', 'right'], split: false, singleton: true },
+        id: 'mini', title: '작은 달력', icon: 'calendarMini', defaultArea: 'right',
+        placement: { areas: ['left', 'right'], singleton: true },
         layout: { minWidth: 200, squeeze: 'scroll' },
         Component: () => createElement(MiniCalendarView),
     });
-    // 리본에도 선다(쥔님 2026-11-01 18:58 *"미니 캘린더 띄우기 앱 리본 따로 있어야 할 것 같은데"*) — 점 찍힌 달력(calendarMini)으로 월 보기와 가른다. 왼쪽 패널에 연다.
+    // 리본에도 선다(쥔님 2026-11-01 18:58 *"미니 캘린더 띄우기 앱 리본 따로 있어야 할 것 같은데"*) — 점 찍힌 달력(calendarMini)으로 월 보기와 가른다. 오른쪽 패널에 연다(22:51).
     host.commands.add({
-        id: 'calendar.openMini', title: '작은 달력 열기(왼쪽 패널)', icon: 'calendarMini',
-        run: () => { host.workspace.open(MINI_ID, { where: 'left' }); },
+        id: 'calendar.openMini', title: '작은 달력 열기(오른쪽 패널)', icon: 'calendarMini',
+        run: () => { host.workspace.open(MINI_ID, { where: 'right' }); },
     });
     host.ribbon.add({ commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 });
 

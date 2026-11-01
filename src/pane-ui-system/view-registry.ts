@@ -72,11 +72,13 @@ export interface ViewDef {
     /** 🔴 내용 메뉴 — 탭 우클릭 메뉴의 구분선 아래쪽에 붙는다 */
     menu?: ViewMenu;
     /**
-     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. 🔴 ⭐ **기본값은 보수적이다**(쥔님 2026-11-01 19:34 *"아예 막는 것보단
-     *    기본값으로 — 새로 생성하는 뷰들도 기본값은 비활성화"* · *"패널 뷰는 탭 뷰로 못 간다니까"*). 플러그인이 명시해야 넓어진다:
+     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. areas 는 보수적(쥔님 2026-11-01 19:34 *"아예 막는 것보단 기본값으로
+     *    — 새로 생성하는 뷰들도 기본값은 비활성화"* · *"패널 뷰는 탭 뷰로 못 간다니까"*)이고, split 은 거꾸로 관대하다:
      *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. **생략이면 defaultArea 하나뿐**(사이드 패널 뷰가 가운데로 못 간다).
-     *    - split     : 이 뷰를 **끌어다 가른 칸에 넣을 수 있나**(드롭 띠). **생략이면 false**. ⚠️ 탭 줄의 「가르기」 단추는 뷰 복제가
-     *                  아니라 빈 탭을 여는 틀 조작이라 이 값과 무관하다(복제는 19:34 폐기).
+     *    - split     : 이 뷰를 **끌어다 가른 칸에 넣을 수 있나**(드롭 띠). **생략이면 true(가름 허용)** — 못 가르는 쪽이
+     *                  **split: false 를 명시**한다(가운데 싱글턴 등). 🔴 ⭐ 2026-11-01 22:51 뒤집음(쥔님 *"여전히 사이드
+     *                  패널쪽 애들은 스플릿이 안된다"*): 생략=false 였더니 사이드 패널 뷰가 전부 못 갈랐다. ⚠️ 탭 줄의 「가르기」
+     *                  단추는 뷰 복제가 아니라 빈 탭을 여는 틀 조작이라 이 값과 무관하다(복제는 19:34 폐기).
      *    - singleton : 🔴 딱 한 장만 뜨나. 이미 떠 있으면 새로 안 열고 그리로 간다(id 고정 재사용). 생략이면 false.
      *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로/사이드바로/분할할 수 있는지 제한을 걸어야"* ·
      *      *"스플릿할 수 있는가 · 딱 한 창만 띄울 수 있는가 그거 두 개 다 하자"*(두 축).
@@ -99,15 +101,25 @@ export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boo
     const areas = def.placement?.areas ?? [def.defaultArea ?? 'center'];
     return areas.includes(area);
 }
-/** 이 뷰를 끌어다 가른 칸(드롭 띠)에 넣을 수 있나 — split 을 **명시로 true** 한 뷰만. 등록 안 된 뷰(자리표시)는 허용 */
+/** 이 뷰를 끌어다 가른 칸(드롭 띠)에 넣을 수 있나 — split: false 를 **명시한** 뷰만 못 들어간다(생략은 허용). 등록 안 된 뷰(자리표시)는 허용 */
 export function canSplit(viewId: string): boolean {
     const def = registry.get(viewId);
     if (!def) return true;
-    return def.placement?.split === true;
+    return def.placement?.split !== false;
 }
 /** 이 뷰가 싱글턴인가 — 열기(workspace.open·리본)가 「이미 있으면 그리로」로 가는 판정. */
 export function isSingleton(viewId: string): boolean {
     return registry.get(viewId)?.placement?.singleton === true;
+}
+
+/**
+ * 🔴 탭·헤더에 그릴 제목 — 사용자가 직접 바꾼(renamed) leaf 는 저장값, 아니면 **뷰 등록소의 현재 title**.
+ *   저장된 워크스페이스에 옛 뷰 이름(「프로젝트 탐색기」)이 박혀 있어도 코드가 바꾼 현재 이름(「탐색기」)이 이긴다
+ *   (쥔님 2026-11-01 22:51 스샷 — 탭 제목이 옛 이름으로 남던 버그). 등록 안 된 뷰면 저장값 그대로.
+ */
+export function leafTitle(leaf: Leaf): string {
+    if (leaf.renamed) return leaf.title;
+    return registry.get(leaf.viewId)?.title ?? leaf.title;
 }
 
 export function registerView(def: ViewDef): void {

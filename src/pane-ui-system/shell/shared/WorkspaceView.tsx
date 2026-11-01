@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf, MovePos } from '../../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../../layout/tree';
-import { getView, canPlace } from '../../view-registry';
+import { getView, canPlace, leafTitle } from '../../view-registry';
 import { FRAME_COMMAND } from '../../frame-commands';
 import { runCommand } from '../../plugin';
 import { effectiveViewLayout } from '../../layout/pane-settings';
@@ -103,7 +103,8 @@ interface Edges {
 }
 
 function toItems(leaves: Leaf[]): TabItem[] {
-    return leaves.map((l) => ({ id: l.id, title: l.title, icon: getView(l.viewId)?.icon }));
+    // 🔴 제목은 leafTitle 로 — 사용자가 안 바꿨으면 뷰 등록소의 현재 이름(옛 저장값이 안 남는다)
+    return leaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: getView(l.viewId)?.icon }));
 }
 
 export function WorkspaceView({
@@ -212,7 +213,7 @@ export function WorkspaceView({
         return (
             <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                 <div className={`shrink-0 flex items-center gap-1 h-topbar border-b border-line px-pad ${sidebar ? 'bg-side2' : 'bg-panel2'}`}>
-                    <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{activeLeaf?.title ?? ''}</span>
+                    <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{activeLeaf ? leafTitle(activeLeaf) : ''}</span>
                     {activeLeaf && rootTabsId && (
                         <IconButton
                             icon="dots"

@@ -50,7 +50,7 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
         if ((mode === 'dense' && !opts.dense) || (mode === 'gantt' && !opts.gantt)) setMode('month');
     }, [mode, opts.dense, opts.gantt]);
 
-    // 전환 단추 + 작은 달력(왼쪽 패널) 여는 단추 — 17:27 쥔님 *"미니 캘린더 뷰 패널은 어디갔냐"* (명령 팔레트에만 있어 안 보였다)
+    // 전환 단추 + 작은 달력(오른쪽 패널) 여는 단추 — 17:27 쥔님 *"미니 캘린더 뷰 패널은 어디갔냐"* (명령 팔레트에만 있어 안 보였다)
     const switcher = (
         <>
         <div role="tablist" aria-label="보기 전환" className="flex items-center ml-1 rounded border border-line overflow-hidden">
@@ -68,7 +68,7 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
                 </button>
             ))}
         </div>
-        {openMini && <IconButton icon="panelLeft" label="작은 달력 — 왼쪽 패널에 열기" onClick={openMini} />}
+        {openMini && <IconButton icon="panelRight" label="작은 달력 — 오른쪽 패널에 열기" onClick={openMini} />}
         </>
     );
 

@@ -311,6 +311,22 @@ describe('splitAt', () => {
         const ws = splitAt(base, firstTabsId(base), 'row', L('a'));
         expect(ws).toBe(base);
     });
+
+    // 🔴 ⭐ 사이드 패널(left)도 가를 수 있다 — 쥔님 2026-11-01 22:51 *"여전히 사이드 패널쪽 애들은 스플릿이 안된다"*.
+    //    모델(splitAt)은 자리를 안 가린다(applyAreas 가 네 자리 다 훑는다) — 막던 건 drop-resolve 의 사이드 예외였다.
+    //    왼쪽 패널의 탐색기(p) 아래에 작은 달력(mini)을 세로로 끼우는 흐름을 못 박는다.
+    it('left 패널의 tabs 를 아래로 가르면 left 가 split-col 이 된다', () => {
+        const base = normalize({ ...emptyWorkspace(), left: tabs([L('p')], 'p') });
+        const leftTabsId = (base.left as { id: string }).id;
+        const ws = splitAt(base, leftTabsId, 'col', L('mini'));
+        expect(ws.left?.kind).toBe('split');
+        if (ws.left?.kind === 'split') {
+            expect(ws.left.dir).toBe('col');
+            expect(ws.left.children.length).toBe(2);
+        }
+        expect(flatten(ws.left).map((l) => l.id)).toEqual(['p', 'mini']);
+        expect(violations(ws)).toEqual([]);
+    });
 });
 
 describe('resize', () => {

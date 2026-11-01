@@ -9,5 +9,5 @@ export const manifest: PluginManifest = {
     name: '달력',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '구글 캘린더 같은 월 보기 — 월 그리드 하나(일정·추가 없음)',
+    description: '구글 캘린더 같은 달력 — 년·월·주·3일·하루 눈금(일정·추가 없음)',
 };

@@ -8,11 +8,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { ComponentType } from 'react';
 import {
     registerView, getView, listViews, clearViews,
-    canPlace, canSplit, isSingleton,
+    canPlace, canSplit, isSingleton, leafTitle,
     type ViewProps,
 } from './view-registry';
+import type { Leaf } from './layout/tree';
 
 const Dummy = (() => null) as ComponentType<ViewProps>;
+const L = (viewId: string, title: string, renamed?: boolean): Leaf =>
+    ({ kind: 'leaf', id: 'x', viewId, title, renamed });
 
 beforeEach(() => clearViews());
 
@@ -33,6 +36,21 @@ describe('② 재정의(덮어쓰기)', () => {
         registerView({ id: 'a', title: '나중', Component: Dummy });
         expect(listViews().length).toBe(1);
         expect(getView('a')?.title).toBe('나중');
+    });
+});
+
+describe('leafTitle — 안 바꿨으면 레지스트리 현재 title, 바꿨으면 저장값(2026-11-01 22:51)', () => {
+    it('renamed 아니면 뷰 등록소의 현재 title 이 이긴다(옛 저장 이름을 덮는다)', () => {
+        registerView({ id: 'tree', title: '탐색기', Component: Dummy });
+        // 저장된 leaf 엔 옛 이름 「프로젝트 탐색기」가 박혀 있어도 →
+        expect(leafTitle(L('tree', '프로젝트 탐색기'))).toBe('탐색기');
+    });
+    it('사용자가 직접 바꾼(renamed) title 은 유지된다', () => {
+        registerView({ id: 'tree', title: '탐색기', Component: Dummy });
+        expect(leafTitle(L('tree', '내 파일', true))).toBe('내 파일');
+    });
+    it('등록 안 된 뷰면 저장값 그대로', () => {
+        expect(leafTitle(L('없음', '무명'))).toBe('무명');
     });
 });
 
@@ -57,21 +75,22 @@ describe('④ 자리 제한 — placement 세 축(areas·split·singleton)', () 
         expect(isSingleton('없음')).toBe(false);
     });
 
-    it('split 은 명시 true 만 가른 칸에 들어간다 · 생략/false 면 못 들어간다(기본 비활성)', () => {
+    // 🔴 2026-11-01 22:51 뒤집음(쥔님 *"여전히 사이드 패널쪽 애들은 스플릿이 안된다"*): 생략=true(가름 허용), 못 가르는 쪽만 split:false 명시
+    it('split 은 명시 false 만 못 들어간다 · 생략/true 면 들어간다(기본 가름 허용)', () => {
         registerView({ id: 'nosplit', title: 'N', Component: Dummy, placement: { split: false } });
         registerView({ id: 'yessplit', title: 'Y', Component: Dummy, placement: { split: true } });
         registerView({ id: 'plain', title: 'P', Component: Dummy });
         expect(canSplit('nosplit')).toBe(false);
         expect(canSplit('yessplit')).toBe(true);
-        expect(canSplit('plain')).toBe(false);
+        expect(canSplit('plain')).toBe(true);   // 생략 = 가름 허용(사이드 패널 뷰가 갈라지게)
     });
 
     it('singleton 은 isSingleton=true · split 은 따로 간다(복제 개념이 없어져 싱글턴이 가르기를 막지 않는다)', () => {
         registerView({ id: 'one', title: 'O', Component: Dummy, placement: { singleton: true } });
         expect(isSingleton('one')).toBe(true);
-        expect(canSplit('one')).toBe(false);   // 기본값(생략) 이라 false — 싱글턴 때문이 아니다
-        registerView({ id: 'onesplit', title: 'OS', Component: Dummy, placement: { singleton: true, split: true } });
-        expect(isSingleton('onesplit')).toBe(true);
-        expect(canSplit('onesplit')).toBe(true);
+        expect(canSplit('one')).toBe(true);    // split 생략 = 허용 — 싱글턴은 가르기와 무관하다
+        registerView({ id: 'onenosplit', title: 'ON', Component: Dummy, placement: { singleton: true, split: false } });
+        expect(isSingleton('onenosplit')).toBe(true);
+        expect(canSplit('onenosplit')).toBe(false);   // 가운데 싱글턴(달력 월 보기 등)은 split: false 를 명시
     });
 });

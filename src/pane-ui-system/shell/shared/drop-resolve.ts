@@ -116,8 +116,11 @@ export function resolveDropAt(px: number, py: number, dragId: string, dragViewId
             if (!bodyArea || !allowed(bodyArea, 'after')) return null;
             return { move: { target: bodyArea, pos: 'after' }, preview: { kind: 'center', box: toBox(r) } };
         }
-        // ⛔ 사이드바 칸은 가르지 않는다 — 어디에 떨궈도 탭으로 합친다(쥔님 2026-11-01 01:51)
-        if (zone === 'center' || bodyArea === 'left' || bodyArea === 'right') {
+        // 가운데 안쪽(center 존)이면 탭으로 합친다. 🔴 ⭐ 2026-11-01 22:51 뒤집음: 사이드바 칸도 이제 가른다 —
+        //    01:51 엔 「사이드 패널엔 분할 불필요」로 left·right 를 여기서 탭 합치기로 가뒀는데, 그게 canSplit 을
+        //    true 로 돌려도 사이드 패널이 안 갈라지던 **진짜 두 번째 범인**이었다(쥔님 *"여전히 사이드 패널쪽 애들은
+        //    스플릿이 안된다 … 몇번이나 얘기했는데"*). 이제 사이드바 가장자리 25% 띠도 split 로 간다(아래 ④ 가장자리 분기).
+        if (zone === 'center') {
             if (!allowed(bodyArea, 'after')) return null;
             return { move: { target: others[others.length - 1], pos: 'after' }, preview: { kind: 'center', box: toBox(r) } };
         }

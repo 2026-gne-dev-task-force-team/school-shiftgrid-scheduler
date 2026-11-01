@@ -29,7 +29,7 @@ import {
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
-import { canPlace, canSplit, isSingleton } from '../pane-ui-system/view-registry';   // 자리 제한 — 호스트 앱이 모델 앞에서 묻는다
+import { canPlace, canSplit, isSingleton, leafTitle } from '../pane-ui-system/view-registry';   // 자리 제한·제목 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
 
@@ -412,7 +412,7 @@ export function Workbench() {
                     <TabSwitcher
                         open={tabSwitcher}
                         onClose={() => setTabSwitcher(false)}
-                        tabs={centerLeaves.map((l) => ({ id: l.id, title: l.title, icon: appHost.views.get(l.viewId)?.icon }))}
+                        tabs={centerLeaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: appHost.views.get(l.viewId)?.icon }))}
                         activeId={centerLeaves.some((l) => l.id === focus) ? focus : (centerLeaves[0]?.id ?? null)}
                         onSelect={handlers.onActivate}
                         onCloseTab={handlers.onClose}

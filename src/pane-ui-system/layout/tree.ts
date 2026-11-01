@@ -17,6 +17,12 @@ export interface Leaf {
     id: string;
     viewId: string;
     title: string;
+    /**
+     * 🔴 사용자가 **직접** 이름을 바꿨나(renameLeaf). 안 바꿨으면(false/생략) 탭·헤더는 뷰 등록소의 현재 title 을 그린다
+     *    — 코드가 뷰 이름을 바꿔도(「프로젝트 탐색기」→「탐색기」) 저장돼 있던 옛 이름이 남지 않게(쥔님 2026-11-01 22:51 스샷).
+     *    ⛔ 옛 워크스페이스엔 이 값이 없다 → 생략 = 미변경으로 읽혀 레지스트리 title 이 이긴다(호환).
+     */
+    renamed?: boolean;
     params?: Record<string, unknown>;
 }
 
@@ -289,7 +295,8 @@ export function closeLeaf(ws: Workspace, id: string): Workspace {
 export function renameLeaf(ws: Workspace, id: string, title: string): Workspace {
     const t = title.trim();
     if (!t) return ws;
-    const ren = (l: Leaf): Leaf => (l.id === id ? { ...l, title: t } : l);
+    // 🔴 renamed: true 를 찍는다 — 이 leaf 는 이제 레지스트리 title 이 아니라 이 값을 쓴다(leafTitle 이 가른다).
+    const ren = (l: Leaf): Leaf => (l.id === id ? { ...l, title: t, renamed: true } : l);
     const base = applyAreas(ws, (node) =>
         mapTree(node, (n) => (n.kind === 'tabs' ? { ...n, children: n.children.map(ren) } : n)));
     return { ...base, floating: base.floating.map(ren) };

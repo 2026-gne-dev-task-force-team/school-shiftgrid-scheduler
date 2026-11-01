@@ -25,7 +25,9 @@ function coerceLeaf(raw: unknown): Leaf | null {
     if (typeof raw.id !== 'string' || typeof raw.viewId !== 'string') return null;
     const title = typeof raw.title === 'string' ? raw.title : raw.id;
     const params = isObj(raw.params) ? (raw.params as Record<string, unknown>) : undefined;
-    return { kind: 'leaf', id: raw.id, viewId: raw.viewId, title, params };
+    // 🔴 사용자가 직접 바꾼 제목만 되살린다 — 옛 저장값엔 이 칸이 없어(생략) 레지스트리 title 이 이긴다(leafTitle, 호환).
+    const renamed = raw.renamed === true ? true : undefined;
+    return { kind: 'leaf', id: raw.id, viewId: raw.viewId, title, renamed, params };
 }
 
 /** 저장된 날것 노드를 성한 Node 로 — 모르는 모양은 버린다(normalize 가 뒤처리) */
