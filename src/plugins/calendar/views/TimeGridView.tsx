@@ -73,31 +73,32 @@ export function TimeGridView({ days, trailing }: { days: 1 | 3 | 7; trailing?: R
                 </div>
             </header>
 
-            {/* 열 머리(고정) — 맨 왼쪽은 시간 눈금 폭만큼 빈 칸 · 각 열은 요일 + 날짜(오늘은 accent 동그라미) */}
-            <div
-                className="grid shrink-0 border-t border-b border-line overflow-hidden"
-                style={{ gridTemplateColumns: colTemplate }}
-            >
-                <div aria-hidden="true" />
-                {cols.map((c) => (
-                    <div key={c.iso} className="flex flex-col items-center gap-0.5 py-1 border-l border-line select-none">
-                        <span className="text-[11px] text-muted">{WEEKDAYS[c.weekday]}</span>
-                        {c.isToday ? (
-                            <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums">
-                                {c.d}
-                            </span>
-                        ) : (
-                            <span className="leading-6 text-[13px] text-text tabular-nums">{c.d}</span>
-                        )}
-                    </div>
-                ))}
-            </div>
-
-            {/* 본문 — 세로 스크롤. 0시~24시, 한 시간 48px. ⛔ 가로 스크롤 없음(좁으면 열이 MIN_COL 에서 멈춘다) */}
+            {/* 본문 — 세로 스크롤. 0시~24시, 한 시간 48px. ⛔ 가로 스크롤 없음(좁으면 열이 MIN_COL 에서 멈춘다)
+                📌 17:18 쥔님 *"주가 좀 틀어졌구나 — 3일도"*: 열 머리가 이 스크롤러 **밖**에 있어 세로 스크롤바 폭만큼 본문 열과 어긋났다
+                → 열 머리를 스크롤러 **안**에 sticky 로 넣어 같은 폭을 쓴다(월 보기와 같은 처방) */}
             <div
                 ref={scrollerRef}
                 className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain"
             >
+                {/* 열 머리(sticky) — 맨 왼쪽은 시간 눈금 폭만큼 빈 칸 · 각 열은 요일 + 날짜(오늘은 accent 동그라미) */}
+                <div
+                    className="sticky top-0 z-20 grid bg-bg border-t border-b border-line"
+                    style={{ gridTemplateColumns: colTemplate }}
+                >
+                    <div aria-hidden="true" />
+                    {cols.map((c) => (
+                        <div key={c.iso} className="flex flex-col items-center gap-0.5 py-1 border-l border-line select-none">
+                            <span className="text-[11px] text-muted">{WEEKDAYS[c.weekday]}</span>
+                            {c.isToday ? (
+                                <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums">
+                                    {c.d}
+                                </span>
+                            ) : (
+                                <span className="leading-6 text-[13px] text-text tabular-nums">{c.d}</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
                 <div className="relative" style={{ height: HOURS * HOUR_H }}>
                     {/* 시간마다 가로선 — 눈금 열을 지나 전체 폭. 30분 점선 없음(단순하게) */}
                     {hourLines.map((h) => (
