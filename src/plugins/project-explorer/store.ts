@@ -15,7 +15,7 @@ import {
 import { isContainerType, getType, acceptsChild, openType } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
 import { type BranchFile, exportBranch, importBranch, validateBranchFile, importTargetParent } from './model/transfer';
-import { load, save } from './persist';
+import { loadTree, saveTree } from './persist';
 
 interface ExplorerState {
     tree: Tree;
@@ -31,10 +31,16 @@ interface ExplorerState {
     purgeAllConfirm: boolean;
     /** 들여오기가 실패했을 때 패널에 보일 한 줄(모양 틀림 등). 성공·새 연산이면 지운다. */
     importError: string | null;
+    /**
+     * 🔴 비동기 로드가 끝나기 전인가 — 저장소(IndexedDB)가 비동기라 생긴 칸.
+     *   true 인 동안 뷰는 「불러오는 중…」 한 줄만 그리고, apply(조작)도 전부 막힌다 —
+     *   빈 나무 위에 쌓인 뒤 저장돼 옛 나무를 덮는 사고를 막는 자리다.
+     */
+    loading: boolean;
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, importError: null };
+    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, importError: null, loading: false };
 }
 
 let state: ExplorerState = freshState(emptyTree());
@@ -71,10 +77,18 @@ export function subscribeChanges(fn: (ids: string[]) => void): () => void {
 }
 
 /** 활성(index.ts)이 한 번 부른다 — 저장된 나무를 읽어 들인다. */
-export function initStore(host: PluginHost): void {
+export function initStore(host: PluginHost): Promise<void> {
     hostRef = host;
-    state = freshState(load(host));
+    // 🔴 먼저 빈 나무 + loading:true 로 세운다 — 조작·저장이 막힌 상태. 로드가 끝나면 교체한다.
+    state = { ...freshState(emptyTree()), loading: true };
     emit();
+    return loadTree(host).then((tree) => {
+        const prev = state.tree;
+        state = { ...freshState(tree), loading: false };
+        emit();
+        // 🔴 로딩 완료 → 다른 플러그인의 NodesApi.subscribe 를 깨운다(그때 다시 읽는다 · 빈 나무→실나무 diff).
+        fireChange(prev, tree);
+    });
 }
 
 /**
@@ -82,6 +96,7 @@ export function initStore(host: PluginHost): void {
  *   history: 'push' 구조 연산(기본, 더미에 쌓음) · 'skip' 접힘 등(안 쌓음) · 'clear' purge(못 되돌림 — 더미도 비움).
  */
 function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; history?: 'push' | 'skip' | 'clear' }): void {
+    if (state.loading) return;   // 🔴 로딩 중엔 조작 자체를 막는다 — 빈 나무를 저장해 옛 나무를 덮지 않게
     const prev = state.tree;
     const next = fn(prev);
     const bumped: Tree = { ...next, rev: next.rev + 1 };
@@ -90,7 +105,7 @@ function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; h
         : mode === 'clear' ? emptyHistory()
             : state.history;
     state = { ...state, tree: bumped, history, ...opts?.patch };
-    if (hostRef) save(hostRef, bumped);
+    if (hostRef) saveTree(hostRef, bumped);
     emit();
     fireChange(prev, next);   // 🔴 유도 캐시 무효화 + NodesApi.subscribe 알림
 }
@@ -282,7 +297,7 @@ export function undoAction(): void {
     const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
-    if (hostRef) save(hostRef, bumped);
+    if (hostRef) saveTree(hostRef, bumped);
     emit();
     fireChange(prev, bumped);
 }
@@ -296,6 +311,7 @@ export function apiCreate(
     parentId: string,
     opts: { type: string; name: string; data?: unknown; index?: number },
 ): string {
+    if (state.loading) return '';   // 🔴 로딩 중엔 안 만든다(apply 가 막히니 가짜 id 를 돌려주지 않게)
     if (!state.tree.nodes[parentId]) return '';
     const id = uid();
     apply((t) => createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }));
@@ -356,7 +372,7 @@ export function redoAction(): void {
     const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
-    if (hostRef) save(hostRef, bumped);
+    if (hostRef) saveTree(hostRef, bumped);
     emit();
     fireChange(prev, bumped);
 }

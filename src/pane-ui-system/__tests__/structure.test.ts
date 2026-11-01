@@ -298,3 +298,24 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
         });
     }
 });
+
+/*
+ * ⑭ 플러그인은 kv 를 직접 안 부른다 — host.store 로만(⑥ 창틀 속 금지·⑩ 명령 창구와 같은 결).
+ *   kvGet/kvSet/kvDel 을 직접 부르면 네임스페이스(plugin.<id>.<key>)를 안 거친 키가 생긴다 —
+ *   host.store 가 그걸 가두는 자리다. 저장은 전부 host.store·host.storage 창구로.
+ */
+describe('⑭ plugins 는 kvGet/kvSet/kvDel 을 직접 부르지 않는다 (host.store 로만)', () => {
+    const BANNED = /\bkv(?:Get|Set|Del)\s*\(/;
+    const files = walk(join(ROOT, 'plugins'));
+
+    it('스캔할 플러그인 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        it(`kv 직접 호출 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => BANNED.test(ln));
+            expect(hit, `kv 를 ${hit + 1}번째 줄에서 직접 부른다 — host.store 로 거친다`).toBe(-1);
+        });
+    }
+});

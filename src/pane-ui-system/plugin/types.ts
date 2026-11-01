@@ -167,6 +167,19 @@ export interface PluginHost {
         get<T>(key: string, fallback: T): T;
         set(key: string, v: unknown): void;
     };
+    /**
+     * 플러그인별 큰 저장(비동기 · IndexedDB) — 나무처럼 5MB localStorage 천장을 넘기는 자료용.
+     *   🔴 ⛔ kvGet/kvSet 을 직접 부르지 않는다(네임스페이스 없는 키가 생기는 구멍) — 여기로만 들어온다.
+     *      키는 host.storage 와 같은 꼴 `plugin.${id}.${key}` 로 가둔다(storageKey 접두사는 kv DB 이름에 이미 들어갔다).
+     *   available() 이 false 면(사파리 프라이빗·정책) 쓰는 쪽이 localStorage(host.storage)로 버틴다.
+     */
+    store: {
+        get<T>(key: string, fallback: T): Promise<T>;
+        set(key: string, v: unknown): Promise<void>;
+        del(key: string): Promise<void>;
+        available(): Promise<boolean>;
+        estimate(): Promise<{ usage: number; quota: number } | null>;
+    };
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
 

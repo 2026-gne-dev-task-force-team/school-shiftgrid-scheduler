@@ -11,7 +11,8 @@ import { initStore } from './store';
 import { getType, isKnownType, iconOf, clearTypes } from './model/types';
 import { getDerived, invalidateDerived, clearDerived } from './model/derive';
 
-/** 메모리 저장만 가진 가짜 호스트 — 스토어가 load/save 에 쓰는 것만 채운다. */
+/** 메모리 저장만 가진 가짜 호스트 — 스토어가 load/save 에 쓰는 것만 채운다.
+ *   ⭐ store.available()=false 로 둔다 — 이 묶음은 kv 를 안 보고 host.storage(동기)로만 로드한다(빈 나무). */
 function fakeHost(): PluginHost {
     const mem = new Map<string, unknown>();
     return {
@@ -19,13 +20,20 @@ function fakeHost(): PluginHost {
             get: <T,>(k: string, f: T) => (mem.has(k) ? (mem.get(k) as T) : f),
             set: (k: string, v: unknown) => { mem.set(k, v); },
         },
+        store: {
+            get: async <T,>(_k: string, f: T) => f,
+            set: async () => {},
+            del: async () => {},
+            available: async () => false,
+            estimate: async () => null,
+        },
     } as unknown as PluginHost;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
     clearTypes();
     clearDerived();
-    initStore(fakeHost());
+    await initStore(fakeHost());   // 🔴 로드가 끝나야(loading:false) 조작이 먹는다 — 비동기가 됐다
 });
 
 describe('① types.register — 접두사 강제', () => {

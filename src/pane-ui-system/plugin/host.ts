@@ -11,6 +11,7 @@ import {
     registerView, unregisterView, getView, listViews,
 } from '../view-registry';
 import { storageKey } from '../storage';
+import { kvGet, kvSet, kvDel, kvAvailable, kvEstimate } from '../kv';
 import { NARROW_PX } from '../layout/panels';
 import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
@@ -48,6 +49,20 @@ export function makeHost(pluginId: string): PluginHost {
                 reportStorageError({ scope: 'local', key: skey(key), reason: classifyStorageError(e), at: Date.now() });
             }
         },
+    };
+
+    // 🔴 큰 저장(비동기 kv) — 키를 host.storage 와 같은 꼴로 가둔다. storageKey 접두사는 kv DB 이름에 이미
+    //    들어갔으니 여기선 안 붙인다(skey 와 달리 storageKey 로 감싸지 않는다 — 그러면 두 번 붙는다).
+    const kkey = (key: string) => `plugin.${pluginId}.${key}`;
+    const store = {
+        async get<T>(key: string, fallback: T): Promise<T> {
+            const v = await kvGet<T>(kkey(key));
+            return v == null ? fallback : v;
+        },
+        set(key: string, v: unknown): Promise<void> { return kvSet(kkey(key), v); },
+        del(key: string): Promise<void> { return kvDel(kkey(key)); },
+        available(): Promise<boolean> { return kvAvailable(); },
+        estimate(): Promise<{ usage: number; quota: number } | null> { return kvEstimate(); },
     };
 
     return {
@@ -140,6 +155,7 @@ export function makeHost(pluginId: string): PluginHost {
         },
 
         storage,
+        store,
 
         onFirstRun(fn: () => void) {
             // 저장값 없이 그 플러그인이 처음 켜질 때 한 번 — 기기별 플래그로 가린다.

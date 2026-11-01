@@ -77,7 +77,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
 }
 
 export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: string }) {
-    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, importError } = useExplorer();
+    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, importError, loading } = useExplorer();
     const effRoot = rootId ?? tree.root;
     const rootMissing = rootId != null && !tree.nodes[rootId];
 
@@ -239,6 +239,17 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
         if (items.length === 0) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
         return items;
     };
+
+    // 🔴 비동기 로드가 끝나기 전 — 줄·명령·키보드를 안 그린다(이 early return 이 조작을 막는 한쪽. 다른 쪽은
+    //    store.apply 의 loading 가드). 빈 나무 위에 쌓인 뒤 저장돼 옛 나무를 덮는 사고를 막는 자리다.
+    if (loading) {
+        return (
+            <div className="h-full flex flex-col bg-side">
+                <SectionHeader title="프로젝트 탐색기" />
+                <p className="px-pad py-3 text-[12px] text-muted select-none">불러오는 중…</p>
+            </div>
+        );
+    }
 
     if (rootMissing) {
         return (

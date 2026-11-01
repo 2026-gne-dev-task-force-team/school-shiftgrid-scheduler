@@ -30,8 +30,9 @@ function selectedName(): string {
 }
 
 function activate(host: PluginHost): void {
-    // ── 저장된 나무 읽어 들이기(기기별 host.storage) ──
-    initStore(host);
+    // ── 저장된 나무 읽어 들이기(host.store = IndexedDB, 비동기) — 끝날 때까지 뷰는 「불러오는 중…」 ──
+    //    🔴 await 하지 않는다(activate 는 등록만 하고 바로 돌아간다) — 로드 완료는 스토어가 알아서 깨운다.
+    void initStore(host);
 
     // ── 내장 타입: 「폴더」 하나(컨테이너) — ⛔ 유일한 내장 타입. 나머지는 각 플러그인 몫 ──
     //    create 로 「새로 만들기 ▸ 폴더」 후보가 된다(표를 돈다 — 타입 이름 비교 없음).
