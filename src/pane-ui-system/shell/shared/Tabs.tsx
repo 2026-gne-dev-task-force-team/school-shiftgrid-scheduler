@@ -10,7 +10,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { Row } from '../../primitives/Row';
 import { IconButton } from '../../primitives/IconButton';
-import type { DragBind } from '../../primitives/useDragLeaf';
+import type { DragBind } from '../../interactive/useDragLeaf';
 import type { IconName } from '../../primitives/Icon';
 
 export interface TabItem {

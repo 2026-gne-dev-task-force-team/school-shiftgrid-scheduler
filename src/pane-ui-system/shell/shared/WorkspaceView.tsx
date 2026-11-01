@@ -21,7 +21,7 @@ import { effectiveViewLayout } from '../../layout/pane-settings';
 import { effectiveMin, clampSplitPair } from '../../layout/clamp';
 import { IconButton } from '../../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
-import { useDragLeaf, type DragBind } from '../../primitives/useDragLeaf';
+import { useDragLeaf, type DragBind } from '../../interactive/useDragLeaf';
 import { Tabs, type TabItem } from './Tabs';
 import { EditorArea } from './EditorArea';
 import { DropZones } from './DropZones';

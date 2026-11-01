@@ -5,50 +5,21 @@
  *    ⛔ 사이드바 접기/펴기 아이콘을 여기 두지 말 것 (쥔님 판정 2026-10-31 22:12).
  *    사이드바를 접고 펴는 길은 이미 둘이다 — 폭 손잡이 두 번 누르기 · 가운데 탭 줄 끝의 ◧/◨.
  *
- * ⭐ 2026-11-01(W4): 아이콘을 하드코딩하지 않는다 — 뷰 등록소(listRibbonViews)를 읽어 order 순으로 줄 세운다.
- *    ⛔ 창틀은 그 아이콘이 무슨 뷰인지(도메인) 모른다 — 누르면 onOpenView(id) 로 앱에 넘긴다.
- *    「새 표 ＋」도 이제 sheet 뷰의 리본 등록일 뿐이다.
- * ⭐ 2026-11-01(W8): 아이콘을 세로로 끌어 순서를 바꾸고, 우클릭으로 끄고(숨기고) 다시 켠다.
- *    저장 배치(order·hidden)는 기기별(pane-settings.ribbon) — resolveRibbon 이 등록 목록에 얹어 준다.
- *    ⛔ 드래그 판정은 useDragLeaf 한 곳만 쓴다(세로 리스트용 axis='y') — 새 드래그 훅을 짜지 않는다.
+ * ⭐ 2026-11-01: 리본에는 **host.ribbon.add 로 명시해 꽂은 것만** 선다(동작). ⛔ 그냥 등록만 한 뷰는 안 뜬다
+ *    (쥔님 2026-11-01: *"리본에 요청 안 한 아이콘이 서 있다"* — 뷰 자동 줄 세우기를 뺐다). 「설정」만 맨 아래 고정.
+ * ⭐ 2026-11-01(W8·항목 I): 아이콘을 끌어 순서를 바꾸고(useReorder 공용 훅), 우클릭으로 끄고 다시 켠다.
+ *    ⛔ 드래그·재배열 판정은 interactive/ 한 곳만 쓴다 — 여기선 미리보기 선·고스트·메뉴만 그린다.
  * 🔴 색은 토큰으로만.
  */
-import { useCallback, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from '../../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
-import { useDragLeaf } from '../../primitives/useDragLeaf';
+import { useReorder } from '../../interactive/useReorder';
 import {
-    usePaneSettings, reorderIds, setRibbonOrder, toggleRibbonHidden, resetRibbon,
+    usePaneSettings, setRibbonOrder, toggleRibbonHidden, resetRibbon,
 } from '../../layout/pane-settings';
 import { resolveRibbonEntries, useContribVersion } from '../../plugin';
-
-/** 드래그 중 포인터 자리에서 「어느 아이콘 앞/뒤에 꽂나」 — DOM 을 더듬어 번역(순수 아님, drop-resolve 와 같은 결) */
-function ribbonDropAt(nav: HTMLElement | null, p: number, dragId: string, horizontal = false):
-    { targetId: string; pos: 'before' | 'after'; line: number; cross: number; size: number } | null {
-    if (!nav) return null;
-    const rows = Array.from(nav.querySelectorAll<HTMLElement>('[data-row-id]'));
-    if (rows.length === 0) return null;
-    // 세로 리본은 y 로 위/아래, 가로 리본은 x 로 앞/뒤 — 축만 다르고 판정은 같다
-    const start = (r: DOMRect) => (horizontal ? r.left : r.top);
-    const len = (r: DOMRect) => (horizontal ? r.width : r.height);
-    const crossStart = (r: DOMRect) => (horizontal ? r.top : r.left);
-    const crossLen = (r: DOMRect) => (horizontal ? r.height : r.width);
-    for (const el of rows) {
-        const r = el.getBoundingClientRect();
-        if (p < start(r) + len(r) / 2) {
-            const id = el.getAttribute('data-row-id')!;
-            return { targetId: id, pos: 'before', line: start(r), cross: crossStart(r), size: crossLen(r) };
-        }
-    }
-    // 전부보다 뒤 → 맨 끝 뒤
-    const last = rows[rows.length - 1];
-    const r = last.getBoundingClientRect();
-    const id = last.getAttribute('data-row-id')!;
-    // 드래그 중인 자신이 맨 끝이면 미리보기를 안 그린다(제자리)
-    if (id === dragId && rows.length === 1) return null;
-    return { targetId: id, pos: 'after', line: start(r) + len(r), cross: crossStart(r), size: crossLen(r) };
-}
 
 export function Rail({
     onOpenView, onOpenSettings, orientation = 'vertical',
@@ -64,25 +35,12 @@ export function Rail({
 }) {
     const horizontal = orientation === 'horizontal';
     const { ribbon } = usePaneSettings();
-    useContribVersion();   // 🔴 리본 동작·뷰가 바뀌면(플러그인 켜고 끄기) 다시 그린다
-    // 🔴 뷰 설탕(「그 뷰 열기」) + 동작(명령을 가리킴)을 합쳐 order·hidden 에 태운다
+    useContribVersion();   // 🔴 리본 동작이 바뀌면(플러그인 켜고 끄기) 다시 그린다
+    // 🔴 host.ribbon.add 로 꽂은 동작만 — order·hidden(기기별 배치)에 태운다
     const { visible, hidden, ordered } = resolveRibbonEntries(ribbon);
-    const navRef = useRef<HTMLElement>(null);
-    // 🔴 드래그로 끝난 pointerup 뒤에 따라붙는 click 하나를 먹는다 — 안 그러면 재배치 끝에 그 뷰가 또 열린다.
-    //    다음 눌림(pointerdown)에서 다시 false 로 — 이후의 진짜 클릭은 살아 있다.
-    const draggedRef = useRef(false);
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
 
-    // 🔴 드롭 = 포인터를 뗀 세로 자리를 target+앞뒤로 번역 → 그 한 수를 새 순서 배열로 만들어 저장
-    const onDrop = useCallback((dragId: string, x: number, y: number) => {
-        draggedRef.current = true;
-        const hit = ribbonDropAt(navRef.current, horizontal ? x : y, dragId, horizontal);
-        if (!hit || hit.targetId === dragId) return;
-        const allIds = ordered.map((v) => v.id);
-        setRibbonOrder(reorderIds(allIds, dragId, hit.targetId, hit.pos));
-    }, [ordered, horizontal]);
-
-    // 🔴 우클릭/길게누르기 → 그 아이콘 메뉴. el 로 어느 아이콘인지 더듬는다
+    // 🔴 우클릭/길게누르기 → 그 아이콘 메뉴(숨기기·숨긴 것 되살리기·기본 순서). el 로 어느 아이콘인지 더듬는다
     const onContext = useCallback((x: number, y: number, el: HTMLElement) => {
         const id = el.closest('[data-row-id]')?.getAttribute('data-row-id') ?? null;
         const items: MenuEntry[] = [];
@@ -103,21 +61,27 @@ export function Rail({
         setMenu({ x, y, items });
     }, [hidden]);
 
-    const { bind, drag } = useDragLeaf({ enabled: true, axis: 'y', onContext, onDrop });
+    // 🔴 순서 바꾸기는 공용 훅 하나 — 리본·설정·탭이 같은 interactive/useReorder 를 쓴다(쥔님 ⑨)
+    const { containerRef, bind, drag, indicator, draggedRef, onKeyDown } = useReorder({
+        ids: ordered.map((v) => v.id),
+        axis: horizontal ? 'x' : 'y',
+        onReorder: setRibbonOrder,
+        onContext,
+    });
 
     // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다(옵시디언 눈금).
-    const preview = drag ? ribbonDropAt(navRef.current, horizontal ? drag.x : drag.y, drag.leafId, horizontal) : null;
     return (
         <nav
-            ref={navRef}
+            ref={containerRef}
             className={horizontal
                 ? 'shrink-0 w-full h-rail bg-panel border-b border-line flex flex-row items-center px-2 gap-1'
                 : 'shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1'}
             style={{ '--s-btn': 'var(--s-railbtn)' } as CSSProperties}
             onPointerDownCapture={() => { draggedRef.current = false; }}
+            onKeyDown={onKeyDown}
             {...bind}
         >
-            {/* 위: 등록된 리본 뷰들(숨긴 것 제외) — 아이콘·순서는 등록소+기기 배치가 준다. 끌어 재배치 가능 */}
+            {/* 위: 리본 동작(숨긴 것 제외) — 아이콘·순서는 등록+기기 배치가 준다. 끌어 재배치 가능 */}
             {visible.map((v) => (
                 <IconButton
                     key={v.id}
@@ -142,15 +106,15 @@ export function Rail({
 
             {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
 
-            {/* 드래그 오버레이 — 가로 드롭 선 + 포인터 따라다니는 고스트. pointer-events:none 로 아래 DOM 을 뚫는다 */}
+            {/* 드래그 오버레이 — 드롭 선 + 포인터 따라다니는 고스트. pointer-events:none 로 아래 DOM 을 뚫는다 */}
             {drag && createPortal(
                 <div className="ui-chrome-nodrag fixed inset-0 z-[60] pointer-events-none">
-                    {preview && (
+                    {indicator && (
                         <div
                             className="absolute bg-accent rounded-full"
                             style={horizontal
-                                ? { left: preview.line - 1.5, top: preview.cross + 2, width: 3, height: preview.size - 4 }
-                                : { left: preview.cross + 2, top: preview.line - 1.5, width: preview.size - 4, height: 3 }}
+                                ? { left: indicator.line - 1.5, top: indicator.cross + 2, width: 3, height: indicator.size - 4 }
+                                : { left: indicator.cross + 2, top: indicator.line - 1.5, width: indicator.size - 4, height: 3 }}
                         />
                     )}
                     <div

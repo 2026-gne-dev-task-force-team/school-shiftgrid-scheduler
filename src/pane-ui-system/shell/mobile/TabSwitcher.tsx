@@ -8,7 +8,7 @@
 import { BottomSheet } from '../../primitives/BottomSheet';
 import { Icon } from '../../primitives/Icon';
 import { IconButton } from '../../primitives/IconButton';
-import { useContextTrigger } from '../../primitives/useContextTrigger';
+import { useContextTrigger } from '../../interactive/useContextTrigger';
 import type { TabItem } from '../shared/Tabs';
 
 export function TabSwitcher({

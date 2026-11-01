@@ -218,6 +218,29 @@ describe('⑪ shell/desktop ↔ shell/mobile 서로 import 0', () => {
     }
 });
 
+/*
+ * ⑫ 상호작용 분리 — 🔴 layout/ 은 포인터 이벤트 핸들러를 직접 들지 않는다(드래그·제스처는 interactive/ 를 거친다).
+ *   쥔님 2026-11-01: *"UI 상호작용하는 거 하드코딩으로 각 레이아웃에 박지 말고 상호작용 코드 잘 분리해놔"* ·
+ *     *"레이아웃에 드래그가 들어가는 게 맞는지 모르겠어"* → 드래그 기하(옛 layout/drag)도 interactive/ 로 옮겼다.
+ *   layout 은 순수 기하·보관만 — 포인터 핸들러(onPointer*·setPointerCapture·'pointer…' 리스너)가 들어오면 빨간불.
+ */
+describe('⑫ layout/ 은 포인터 이벤트 핸들러를 직접 들지 않는다 (드래그는 interactive/ 를 거친다)', () => {
+    // onPointerDown/Move/Up/Cancel/Leave · setPointerCapture · addEventListener('pointer…')
+    const POINTER = /onPointer(?:Down|Move|Up|Cancel|Leave)|setPointerCapture|['"]pointer(?:down|move|up|cancel)['"]/;
+    const files = walk(join(ROOT, 'pane-ui-system', 'layout'));
+
+    it('스캔할 layout 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        it(`포인터 핸들러 없음: ${basename(f)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => POINTER.test(ln));
+            expect(hit, `layout/${basename(f)} ${hit + 1}번째 줄에 포인터 핸들러가 있다 — interactive/ 로 옮긴다`).toBe(-1);
+        });
+    }
+});
+
 describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', () => {
     let dirs: string[] = [];
     try {

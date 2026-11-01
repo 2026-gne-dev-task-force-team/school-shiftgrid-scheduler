@@ -22,9 +22,16 @@ export { Row } from './primitives/Row';
 export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
-export { useContextTrigger } from './primitives/useContextTrigger';
-export { useDragLeaf, type DragLeafState, type DragBind } from './primitives/useDragLeaf';
 export { DatePicker } from './primitives/DatePicker';
+
+// 상호작용 — 🔴 드래그·길게누르기·포인터 제스처·전역 가드·재배열 훅이 사는 자리(쥔님: *"인터렉티브 폴더 따로"*).
+//   ⛔ layout/ · primitives/ 는 포인터 핸들러를 직접 안 든다 — 전부 여길 거친다(구조 검사가 지킨다).
+export {
+    useContextTrigger, useDragLeaf, useReorder,
+    paneZone, tabDropSide, EDGE_BAND,
+    type DragLeafState, type DragBind, type DragAxis, type ReorderOpts,
+    type PaneZone, type Rect,
+} from './interactive';
 export { monthGrid, shiftMonth, monthLabel, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell } from './primitives/date-grid';
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다.
@@ -54,7 +61,6 @@ export {
     SWIPE_EDGE, SWIPE_DEADZONE, SWIPE_SNAP, SHEET_SNAPS, SHEET_CLOSE_BELOW,
     classifySwipe, edgeStart, swipeProgress, settleOpen, splitBarItems, sheetSnap, type SwipeAxis,
 } from './layout/mobile';
-export { paneZone, tabDropSide, EDGE_BAND, type PaneZone, type Rect } from './layout/drag';
 
 // 폭 가두기 + 뷰 레이아웃 힌트 — 순수 계산(상수는 설정에서 온다)
 export {

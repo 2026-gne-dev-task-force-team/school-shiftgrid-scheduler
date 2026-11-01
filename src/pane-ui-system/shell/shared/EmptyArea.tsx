@@ -9,7 +9,7 @@
 import { useCallback, useState } from 'react';
 import { IconButton } from '../../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
-import { useContextTrigger } from '../../primitives/useContextTrigger';
+import { useContextTrigger } from '../../interactive/useContextTrigger';
 import { listViews } from '../../view-registry';
 import type { RootChrome } from './WorkspaceView';
 

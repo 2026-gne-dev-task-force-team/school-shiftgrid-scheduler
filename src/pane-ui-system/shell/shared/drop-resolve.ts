@@ -6,7 +6,7 @@
  * ⛔ 자기 자신 위에 떨구면 null(아무 일 없음) — moveLeaf 의 target===leafId 방어와 겹으로 막는다.
  * 🔴 DOM 을 읽지만 React 는 모른다(컴포넌트 아님) — fast-refresh 가 DropZones 조각과 안 싸우게 따로 둔다.
  */
-import { paneZone, tabDropSide } from '../../layout/drag';
+import { paneZone, tabDropSide } from '../../interactive/drag-geometry';
 import type { MovePos } from '../../layout/tree';
 import { canPlace, canSplit } from '../../view-registry';
 
