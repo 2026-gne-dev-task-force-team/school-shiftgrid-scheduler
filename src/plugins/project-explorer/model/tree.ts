@@ -308,12 +308,13 @@ export interface FlatRow {
  *   - expandAll: 접힘을 무시하고 전부 펼친다(검색 중엔 접힌 가지도 뒤져야 한다)
  *   - keep: 이 줄을 보일까 — 주면 keep(id) 가 참인 줄만 낸다. 안 맞는 조상은 keep 에 담겨 있으니 길이 이어진다.
  *     🔴 keep 밖 노드 밑으로는 안 내려간다(그 밑엔 맞는 게 없다 — filterIds 가 조상까지 담아 주니 성립).
+ *   - isRecord: 레코드성 타입이면 🔴 그 줄도 그 아래도 통째로 건너뛴다(탐색기에 「어떤 경우에도」 안 보인다).
  */
 export function flatten(
     tree: Tree,
     fromId: string,
     isContainer?: (type: string) => boolean,
-    opts?: { expandAll?: boolean; keep?: (id: string) => boolean },
+    opts?: { expandAll?: boolean; keep?: (id: string) => boolean; isRecord?: (type: string) => boolean },
 ): FlatRow[] {
     const out: FlatRow[] = [];
     const walk = (id: string, depth: number): void => {
@@ -322,6 +323,7 @@ export function flatten(
         for (const cid of n.children) {
             const c = tree.nodes[cid];
             if (!c) continue;
+            if (opts?.isRecord?.(c.type)) continue;   // 🔴 레코드성 — 줄도 그 아래도 건너뛴다
             const inKeep = !opts?.keep || opts.keep(cid);
             const container = isContainer ? isContainer(c.type) : c.children.length > 0;
             const hasChildren = container && c.children.length > 0;

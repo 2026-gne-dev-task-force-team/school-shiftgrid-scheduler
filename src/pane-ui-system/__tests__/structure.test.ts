@@ -305,6 +305,27 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
  *   host.store 가 그걸 가두는 자리다. 저장은 전부 host.store·host.storage 창구로.
  */
 /*
+ * ⑯ 탐색기 뷰(plugins/<id>/views/**)는 레코드성 판정을 콜백(isRecordType)으로만 받는다 —
+ *   뷰 안에 'record' 낱말 비교(def.record · 'record' 리터럴 등)가 들어오면 탐색기가 타입 표의 속내를 알게 된다
+ *   (설계 「여기서 죽는다」: 탐색기가 calendar.event 를 알게 되는 유혹과 같은 결). isRecordType(대문자 R)은 통과.
+ */
+describe('⑯ plugins/**/views 에 소문자 record 비교 0 (레코드 판정은 isRecordType 콜백으로만)', () => {
+    const NEEDLE = /\brecord\b/;   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
+    const files = walk(join(ROOT, 'plugins')).filter((f) => f.includes(`${sep}views${sep}`));
+
+    it('스캔할 뷰 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        it(`record 낱말 비교 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => NEEDLE.test(ln));
+            expect(hit, `뷰가 ${hit + 1}번째 줄에서 record 를 직접 본다 — isRecordType 콜백으로 받는다`).toBe(-1);
+        });
+    }
+});
+
+/*
  * ⑮ kv.ts 의 쓰기 트랜잭션 안에는 await 가 없다 — IndexedDB 트랜잭션은 마이크로태스크가 비면 자동 커밋되니,
  *   트랜잭션 도중 await 하면 큐가 비어 트랜잭션이 죽는다(저장소 레이어 요구명세 S1 「트랜잭션 안 await 금지」).
  *   검사: kvSet·nodesWrite 함수 몸(export async function … 다음 export 전)에 `await` 토큰이 0.

@@ -50,6 +50,12 @@ export interface NodeTypeDef {
     menu?: (nodeId: string) => MenuEntry[];
     /** 기본 전부 true. */
     can?: { rename?: boolean; move?: boolean; delete?: boolean };
+    /**
+     * 🔑 레코드성 — 이 타입의 노드는 탐색기에 「어떤 경우에도」 안 보인다(본 나무·검색·휴지통 어디서도).
+     *   저장·삭제·휴지통·복원·되돌리기는 일반 노드와 완전히 같다(캐스케이딩이 공짜) — 보여주는 건 그 타입의 플러그인 몫.
+     *   예: 달력의 'calendar.event'(일정). 🔴 탐색기는 이 칸을 콜백(isRecordType)으로만 묻는다 — 타입 낱말은 모른다.
+     */
+    record?: boolean;
 }
 
 const registry = new Map<string, NodeTypeDef>();
@@ -71,6 +77,11 @@ export function getType(type: string): NodeTypeDef | undefined {
 /** 컨테이너(폴더 역할)인가 — 모르는 타입은 컨테이너 아님(파일처럼 그린다). */
 export function isContainerType(type: string): boolean {
     return !!registry.get(type)?.container;
+}
+
+/** 레코드성 타입인가 — 탐색기가 「어떤 경우에도 안 보일 노드」를 가릴 때 flatten·buildMainRows 에 콜백으로 준다. */
+export function isRecordType(type: string): boolean {
+    return registry.get(type)?.record === true;
 }
 
 /** 이 노드에 그릴 아이콘 — 등록 안 된 타입은 'file'(회색 글자로 그리는 건 뷰 몫). */

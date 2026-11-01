@@ -356,6 +356,46 @@ describe('flatten', () => {
         const r = remove(base, 'a');
         expect(flatten(r, 'root', isContainer).map((x) => x.id)).toEqual([]);
     });
+
+    it('레코드성(isRecord) 자식은 그 줄도 그 아래도 건너뛴다', () => {
+        // f(폴더) ▸ ev(레코드) ▸ attach(레코드 밑 노드) · g(폴더)
+        const t = make({ f: { children: ['ev'] }, ev: { type: 'cal.event', children: ['attach'] }, attach: { type: 'leaf' }, g: {} });
+        const isRecord = (type: string) => type === 'cal.event';
+        const rows = flatten(t, 'root', isContainer, { isRecord });
+        expect(rows.map((r) => r.id)).toEqual(['f', 'g']);   // ev 도, 그 밑 attach 도 안 나온다
+    });
+
+    it('isRecord 없으면 옛 동작 그대로(레코드도 보인다)', () => {
+        const t = make({ f: { children: ['ev'] }, ev: { type: 'cal.event' } });
+        expect(flatten(t, 'root', isContainer).map((r) => r.id)).toEqual(['f', 'ev']);
+    });
+});
+
+describe('레코드성 노드는 저장·삭제·휴지통·복원·비우기가 일반 노드와 같다 (캐스케이딩 공짜)', () => {
+    // f(폴더) ▸ ev(레코드) — 탐색기엔 ev 가 안 보여도 tree.nodes 에선 일반 노드다.
+    const base = () => make({ f: { children: ['ev'] }, ev: { type: 'cal.event', name: '회의' } });
+
+    it('부모 묶음 remove → 휴지통 안 레코드도 같이 간다(tree.nodes 로 확인)', () => {
+        const r = remove(base(), 'f');
+        expect(r.nodes['ev']).toBeTruthy();                      // 아직 있다
+        expect(parentOf(r, 'ev')).toBe('f');                     // f 밑에 그대로(가지째 이동)
+        expect(parentOf(r, 'f')).toBe('trash');                  // f 는 휴지통으로
+    });
+
+    it('restore → 레코드도 같이 돌아온다', () => {
+        let r = remove(base(), 'f');
+        r = restore(r, 'f');
+        expect(parentOf(r, 'f')).toBe('root');
+        expect(r.nodes['ev']).toBeTruthy();
+        expect(parentOf(r, 'ev')).toBe('f');
+    });
+
+    it('purge → 레코드도 같이 영구 삭제된다', () => {
+        let r = remove(base(), 'f');
+        r = purge(r, 'f');
+        expect(r.nodes['f']).toBeUndefined();
+        expect(r.nodes['ev']).toBeUndefined();                   // 🔴 가지째 사라졌다
+    });
 });
 
 describe('유도(가상) id(`/`) 는 저장 연산이 거부한다 (N4)', () => {

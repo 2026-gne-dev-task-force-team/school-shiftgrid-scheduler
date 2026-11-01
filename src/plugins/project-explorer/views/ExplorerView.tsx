@@ -14,7 +14,7 @@ import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/tree';
-import { isContainerType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
+import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
@@ -122,7 +122,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     useEffect(() => () => clearRenameTimer(), [clearRenameTimer]);
 
     // 휴지통 줄(루트 밖) — 맨 아래 접이식 구역. 🔴 listRef(본 나무) 밖이라 드래그 떨굴 자리에 안 걸린다.
-    const trashRows = flatten(tree, tree.trash, isContainerType);
+    const trashRows = flatten(tree, tree.trash, isContainerType, { isRecord: isRecordType });
     const run = (id: string) => host.commands.run(id);
 
     useEffect(() => {
@@ -144,9 +144,10 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const rows: ExplorerRow[] = q
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
+            isRecord: isRecordType,
             keep: (() => { const k = filterIds(tree, tree.root, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
-        : buildMainRows(tree, tree.root);
+        : buildMainRows(tree, tree.root, isRecordType);
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
 
     // ── 드래그 + 우클릭 한 훅 — 좁은 화면에선 끈다(그땐 메뉴의 위로/아래로) ──
