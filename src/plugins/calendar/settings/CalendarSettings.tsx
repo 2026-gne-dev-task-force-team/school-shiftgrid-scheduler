@@ -1,5 +1,5 @@
 /**
- * 「캘린더」 설정 판 — 기본 꺼져 있는 보기 둘을 켠다(쥔님 2026-11-01 17:23).
+ * 「달력」 설정 판 — 기본 꺼져 있는 보기 둘을 켠다(쥔님 2026-11-01 17:23).
  *   스위치는 창틀 기본 부품 Toggle(배럴) — 📌 처음엔 여기 따로 그렸다가 손잡이가 알약 밖으로 나갔다(17:39 쥔님
  *   *"이게 머꼬 혹시 토글 뷰 기본 컴포넌트가 아니고 따로 만드나"*). 설정 플러그인에만 있던 Toggle 을 primitives 로 올려 같이 쓴다.
  */
@@ -23,7 +23,7 @@ export function CalendarSettings() {
     return (
         <div className="flex flex-col gap-3 max-w-[560px] text-[13px] text-text">
             <p className="text-muted">
-                캘린더 탭의 전환 단추에 보기를 더합니다. 기본은 둘 다 꺼져 있습니다.
+                달력 탭의 전환 단추에 보기를 더합니다. 기본은 둘 다 꺼져 있습니다.
             </p>
             <div className="flex flex-col">
                 <OptionRow

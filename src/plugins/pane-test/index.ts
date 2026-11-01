@@ -80,13 +80,13 @@ function activate(host: PluginHost): void {
     host.workspace.on('close', (l) => { if (openSamples.delete(l.id)) setOpenViewCount(openSamples.size); });
     host.statusBar.add({ id: 'open-count', side: 'left', render: () => createElement(OpenCountStatus) });
 
-    // ── 🔴 N4: 프로젝트 탐색기에 노드 타입을 꽂는 첫 소비자(🙋 6) ──
+    // ── 🔴 N4: 탐색기에 노드 타입을 꽂는 첫 소비자(🙋 6) ──
     //    코어라 늘 살아 있지만, 못 받으면(없음) 조용히 건너뛴다 — 그게 결합을 host 하나로 가둔 결과다.
     wireNodes(host);
 }
 
 /**
- * 프로젝트 탐색기 노드 시스템을 쓰는 첫 소비자(N4) — 지금은 「노드 N」 셈 하나만 증명한다.
+ * 탐색기 노드 시스템을 쓰는 첫 소비자(N4) — 지금은 「노드 N」 셈 하나만 증명한다.
  *   🔴 샘플·유도 폴더 데모 타입은 걷어냈다(쥔님 2026-11-01 19:34: *"아직 요청 안 했으니 없애줘"*) —
  *      첫 실행 탐색기에 「새 샘플 / 새 유도 폴더」가 뜨고 유도(안내) 가짜 자식이 보이던 것.
  *   🔴 등록은 nodes 가 돌려준 Disposable 로 빠진다(host 가 호출자 소유로 회수) — subscribe 도 같은 길.

@@ -29,7 +29,7 @@ export function useOpenViewCount(): number {
     );
 }
 
-// ── 노드 수(N4) — 프로젝트 탐색기 nodes.subscribe 로 세서 상태바가 비춘다 ──
+// ── 노드 수(N4) — 탐색기 nodes.subscribe 로 세서 상태바가 비춘다 ──
 let nodeCount = 0;
 const nodeListeners = new Set<() => void>();
 

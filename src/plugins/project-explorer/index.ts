@@ -1,5 +1,5 @@
 /**
- * 「프로젝트 탐색기」 플러그인 — 노드 하이라키 한 벌 + 파일 탐색기 패널(설계 「노드 시스템 요구명세」 N1).
+ * 「탐색기」 플러그인 — 노드 하이라키 한 벌 + 파일 탐색기 패널(설계 「노드 시스템 요구명세」 N1).
  *   쥔님 2026-11-01: *"노드 타입이나 그런 거는 여기서 규격만 정해주고 … 탐색기처럼 보여주면 돼"*.
  *
  * 🔴 ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다(onFirstRun 에서만 왼쪽 패널을 한 번 연다).
@@ -34,7 +34,7 @@ function activate(host: PluginHost): void {
     // ── 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만) ──
     //    🔴 쥔님 2026-11-01 19:34 *"탐색기가 가운데로 또 갈 수 있네 — 패널 뷰는 탭 뷰로 못 간다니까"* → areas 에서 center 를 뺐다 · split 도 뺐다(기본 false)
     host.views.register({
-        id: 'tree', title: '프로젝트 탐색기', icon: 'folder', defaultArea: 'left',
+        id: 'tree', title: '탐색기', icon: 'folder', defaultArea: 'left',
         placement: { areas: ['left', 'right'] },
         layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
         Component: () => createElement(ExplorerView, { host }),
@@ -43,7 +43,7 @@ function activate(host: PluginHost): void {
     // ── 명령 — 전부 등록. 대상 노드는 스토어의 「고른 노드」에서 읽는다(🙋 5) ──
     //    🔴 reuse: true — 싱글턴을 뗐으니 리본을 또 눌러도 루트 패널은 한 장만(⚠️ reuse 는 params 를 안 본다 → 보고).
     host.commands.add({
-        id: 'project-explorer.open-panel', title: '프로젝트 탐색기', icon: 'folder',
+        id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder',
         run: () => { host.workspace.open(TREE_VIEW_ID, { where: 'left', reuse: true }); },
     });
     // 🔴 「새 폴더」 = 「새로 만들기 ▸ 폴더」. 헤더 단추·우클릭 메뉴가 같은 id(new-<type> 규칙, folder 는 곧 new-folder)를 부른다.

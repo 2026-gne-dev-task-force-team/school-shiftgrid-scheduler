@@ -1,5 +1,5 @@
 /**
- * 캘린더 탭 — 구글 캘린더처럼 **탭 하나 안에서 년·월·주·3일·하루를 단추로 전환**한다(쥔님 2026-11-01 17:06
+ * 달력 탭 — 구글 캘린더처럼 **탭 하나 안에서 년·월·주·3일·하루를 단추로 전환**한다(쥔님 2026-11-01 17:06
  *   *"연간 뷰 필요하네 … 주간뷰 3일뷰 하루 스케줄 뷰도 필요하네"* — 탭 다섯이 아니라 한 탭의 다섯 모습).
  *   각 뷰는 머리줄 오른쪽 끝 `trailing` 자리에 이 전환 단추를 그대로 그린다.
  *   17:23 — 설정에서 켜면 「분기」「간트」 단추가 더 붙는다(기본 꺼짐 · store.ts).
@@ -45,7 +45,7 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
         if ((mode === 'dense' && !opts.dense) || (mode === 'gantt' && !opts.gantt)) setMode('month');
     }, [mode, opts.dense, opts.gantt]);
 
-    // 전환 단추 + 미니 캘린더(왼쪽 패널) 여는 단추 — 17:27 쥔님 *"미니 캘린더 뷰 패널은 어디갔냐"* (명령 팔레트에만 있어 안 보였다)
+    // 전환 단추 + 작은 달력(왼쪽 패널) 여는 단추 — 17:27 쥔님 *"미니 캘린더 뷰 패널은 어디갔냐"* (명령 팔레트에만 있어 안 보였다)
     const switcher = (
         <>
         <div role="tablist" aria-label="보기 전환" className="flex items-center ml-1 rounded border border-line overflow-hidden">
@@ -63,7 +63,7 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
                 </button>
             ))}
         </div>
-        {openMini && <IconButton icon="panelLeft" label="미니 캘린더 — 왼쪽 패널에 열기" onClick={openMini} />}
+        {openMini && <IconButton icon="panelLeft" label="작은 달력 — 왼쪽 패널에 열기" onClick={openMini} />}
         </>
     );
 

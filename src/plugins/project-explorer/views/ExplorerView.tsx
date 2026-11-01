@@ -1,5 +1,5 @@
 /**
- * 「프로젝트 탐색기」 패널 — VS Code 파일 탐색기 그림(쥔님 2026-11-01 17:28: *"VS 코드로 가자"*).
+ * 「탐색기」 패널 — VS Code 파일 탐색기 그림(쥔님 2026-11-01 17:28: *"VS 코드로 가자"*).
  *
  * 🔴 ⛔ 탐색기는 타입을 모른다 — 아이콘·컨테이너 여부·열기·「새로 만들기」 목록은 전부 등록 표(model/types.ts)에 묻는다.
  *    이 파일에 `type ===` 비교를 두지 않는다(설계 「여기서 죽는다」 — 탐색기가 타입을 알게 되는 유혹).
@@ -282,7 +282,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     if (loading) {
         return (
             <div className="h-full flex flex-col bg-side">
-                <SectionHeader title="프로젝트 탐색기" />
+                <SectionHeader title="탐색기" />
                 <p className="px-pad py-3 text-[12px] text-muted select-none">불러오는 중…</p>
             </div>
         );
@@ -300,7 +300,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             {...bind}
         >
             <SectionHeader
-                title="프로젝트 탐색기"
+                title="탐색기"
                 end={(
                     <IconButton icon="plus" label="새 폴더" onClick={() => host.commands.run('project-explorer.new-folder')} />
                 )}
