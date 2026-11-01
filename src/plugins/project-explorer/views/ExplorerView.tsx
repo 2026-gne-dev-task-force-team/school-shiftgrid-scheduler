@@ -129,22 +129,14 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
     // ── 줄 목록 — 검색 중이면 실노드만(맞는 줄 + 조상, 접힘 무시) · 평소엔 유도 자식까지 섞은 빌더 ──
     const q = query.trim().toLowerCase();
-    const childRows: ExplorerRow[] = q
+    // 🔴 루트 줄은 걷었다(쥔님 2026-11-01 22:17 정정: *"그 루트는 제일 바깥 공간 아무데나 누르면 루트 선택되게"*).
+    //    루트는 줄로 그리지 않고, 「바깥 빈 공간 클릭 = 선택 해제(미선택=루트)」로 고른다(VS Code 식 · 아래 onListClick).
+    const rows: ExplorerRow[] = q
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
             keep: (() => { const k = filterIds(tree, tree.root, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
         : buildMainRows(tree, tree.root);
-    // 🔴 루트를 맨 위 줄로(쥔님 2026-11-01 21:47: *"탐색기 루트가 선택이 안되서"*) — VS Code 워크스페이스 폴더처럼.
-    //    고를 수 있고 접기/펴기도 되지만 이름바꾸기·삭제·이동은 안 된다(id 비교로 막는다 — folder 타입엔 can 이 없다).
-    //    자식은 한 단 더 들여써(depth+1) 루트 밑으로 보이게. 루트가 접혀 있으면 자식을 숨긴다(검색 중엔 늘 편다).
-    const rootNode = tree.nodes[tree.root];
-    const showChildren = q ? true : !rootNode.collapsed;
-    const rootRow: ExplorerRow = { kind: 'node', id: tree.root, depth: 0, node: rootNode, hasChildren: rootNode.children.length > 0 };
-    const rows: ExplorerRow[] = [
-        rootRow,
-        ...(showChildren ? childRows.map((r): ExplorerRow => ({ ...r, depth: r.depth + 1 })) : []),
-    ];
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
 
     // ── 드래그 + 우클릭 한 훅 — 좁은 화면에선 끈다(그땐 메뉴의 위로/아래로) ──
@@ -171,7 +163,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
         const wasSelected = selectedId === row.id && row.kind === 'node';
-        if (wasSelected && row.id !== tree.root && canDo(row.node.type, 'rename')) {
+        if (wasSelected && canDo(row.node.type, 'rename')) {
             clearRenameTimer();
             renameTimer.current = window.setTimeout(() => { host.commands.run('project-explorer.rename'); }, RENAME_CLICK_DELAY);
             return;
@@ -185,6 +177,17 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (row.kind === 'node' && isContainerType(row.node.type)) return;
         select(row.id);
         run('project-explorer.open');
+    };
+
+    // ── 바깥 빈 공간 누르기(마지막 줄 아래 바닥·빈 목록·패널 여백) = 고른 것 해제 → 「미선택=루트」 ──
+    //    🔴 쥔님 2026-11-01 22:17: *"제일 바깥 공간 아무데나 누르면 루트 선택되게"*(VS Code 식).
+    //    드롭의 「마지막 줄 아래 = 루트 끝」(resolveDrop)과 같은 영역이다 — 줄 위가 아닌 클릭만 여기로 온다.
+    //    이름바꾸는 중이면 input 의 onBlur 가 먼저 그 이름을 확정하고(같은 결), 그 뒤 선택이 풀린다.
+    const onListClick = (e: React.MouseEvent): void => {
+        if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
+        if ((e.target as HTMLElement).closest('[data-row-id]')) return;    // 줄 위 클릭은 그 줄(clickRow)이 처리
+        rootRef.current?.focus();
+        select(null);
     };
 
     // ── 키보드 — ↑↓ 고르기 · →← 펴기/접기 또는 자식/부모 · Enter 열기 · F2 이름 · Delete 휴지통 ──
@@ -218,7 +221,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     toggle(sel!);
                 } else if (sel) {
                     const p = parentOf(tree, sel);
-                    if (p) select(p);   // 루트도 이제 보이는 줄이라 고를 수 있다
+                    if (p && p !== tree.root) select(p);   // 루트는 줄이 아니다 — 부모로만(루트 해제는 Esc·빈 공간)
                 }
                 break;
             case 'Enter':
@@ -230,6 +233,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 break;
             case 'F2': e.preventDefault(); if (sel) host.commands.run('project-explorer.rename'); break;
             case 'Delete': case 'Backspace': e.preventDefault(); if (sel) host.commands.run('project-explorer.remove'); break;
+            case 'Escape': if (sel) { e.preventDefault(); select(null); } break;   // 선택 해제 = 루트(쥔님 22:17)
         }
     };
 
@@ -263,10 +267,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             items.push({ label: `새 ${def.label}`, icon: 'plus', commandId: `project-explorer.new-${def.type}` });
         }
         if (selNode && !inTrash) {
-            const isRoot = selectedId === tree.root;   // 🔴 루트는 이름바꾸기·삭제·이동 금지(id 비교)
-            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: isRoot || !canDo(selNode.type, 'rename') });
-            items.push({ label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: isRoot || !canDo(selNode.type, 'delete') });
-            if (narrow && !isRoot) {
+            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !canDo(selNode.type, 'rename') });
+            items.push({ label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
+            if (narrow) {
                 items.push({ label: '위로', icon: 'left', commandId: 'project-explorer.move-up' });
                 items.push({ label: '아래로', icon: 'left', commandId: 'project-explorer.move-down' });
             }
@@ -318,8 +321,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
             </div>
 
-            <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative">
-                {childRows.length === 0 && (
+            <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
+                {rows.length === 0 && (
                     <p className="px-pad py-2 text-[12px] text-muted select-none">
                         {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
                     </p>
