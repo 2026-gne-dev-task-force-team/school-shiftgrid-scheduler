@@ -98,19 +98,27 @@
 }
 
 /*
- * 🔴 드래그되면 곤란한 UI — 아이콘·단추·탭·줄·메뉴·스플리터는 끌리지도 선택되지도 않는다(항목 9, 쥔님 2026-10-31).
- * ⛔ body 통째로 막지 않는다 — 입력칸(input/textarea)·뷰 본문 글자는 선택돼야 한다(아래에서 되살린다).
- * SVG·이미지는 브라우저가 「이미지 끌기」로 떼 가므로 -webkit-user-drag 로 막고, 파이어폭스는 draggable 속성으로.
+ * 🔴 ⭐ 전역 기본값을 뒤집는다 — UI 는 「선택도 끌림도 안 됨」이 기본이다(항목 A, 쥔님 2026-11-01 두 번 지시:
+ *    *"UI 기본적으로 마우스 셀렉트 안 되게 해 줘"* · *"UI 텍스트 셀렉트나 우클릭 그것 좀 전역적으로 통제해 줘"*).
+ *    ⛔ 자리마다 user-select:none 을 흩뿌리지 않는다 — html 한 곳에서 끄고, 예외만 되살린다.
+ *    (브라우저 기본 우클릭 메뉴는 JS 로 막는다 — interactive/guards.ts, 같은 예외 셀렉터를 쓴다.)
+ *  예외(옵트인)로만 선택을 되살린다:
+ *    ① 입력칸: input · textarea · [contenteditable]
+ *    ② 「문서·글 내용」임을 뷰가 밝힌 자리: .select-text · .view-body (구조 검사가 예외 목록을 지킨다)
+ *  user-select 는 상속되므로 .select-text 컨테이너 하나면 그 안 글자까지 선택된다.
+ *  SVG·이미지는 브라우저가 「이미지 끌기」로 떼 가므로 -webkit-user-drag 로 막고, 파이어폭스는 draggable 속성으로.
  */
 @layer base {
-  button, svg, img,
-  [role="button"], [role="menuitem"], [role="separator"], [role="tab"] {
-    -webkit-user-drag: none;
+  html {
     user-select: none;
+    -webkit-user-select: none;
   }
-  svg, img { pointer-events: none; }   /* 아이콘은 제 부모(단추)가 클릭을 받는다 — 아이콘이 드래그 핸들이 되지 않게 */
-  /* 입력칸·본문 글자는 예외 — 선택이 돼야 한다(⛔ 위 규칙에 안 걸리게 되살린다) */
-  input, textarea, [contenteditable="true"], .select-text, .view-body {
+  svg, img {
+    -webkit-user-drag: none;
+    pointer-events: none;   /* 아이콘은 제 부모(단추)가 클릭을 받는다 — 아이콘이 드래그 핸들이 되지 않게 */
+  }
+  /* 예외 — 입력칸·본문 글자는 선택이 돼야 한다(위 전역 차단을 되살린다) */
+  input, textarea, [contenteditable="true"], [contenteditable=""], .select-text, .view-body {
     user-select: text;
     -webkit-user-select: text;
   }

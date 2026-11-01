@@ -28,6 +28,7 @@ export { DatePicker } from './primitives/DatePicker';
 //   ⛔ layout/ · primitives/ 는 포인터 핸들러를 직접 안 든다 — 전부 여길 거친다(구조 검사가 지킨다).
 export {
     useContextTrigger, useDragLeaf, useReorder,
+    SELECTABLE_SELECTOR, installContextMenuGuard,
     paneZone, tabDropSide, EDGE_BAND,
     type DragLeafState, type DragBind, type DragAxis, type ReorderOpts,
     type PaneZone, type Rect,

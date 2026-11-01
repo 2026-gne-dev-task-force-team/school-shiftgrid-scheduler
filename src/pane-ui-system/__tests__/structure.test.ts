@@ -241,6 +241,32 @@ describe('⑫ layout/ 은 포인터 이벤트 핸들러를 직접 들지 않는�
     }
 });
 
+/*
+ * ⑬ 선택 허용(.select-text)은 예외 목록에서만 — 아무 컴포넌트나 전역 선택 차단(항목 A)을 못 뚫는다.
+ *   쥔님 2026-11-01: *"UI 기본적으로 마우스 셀렉트 안 되게 해 줘"* → 기본은 선택 불가(index.css html user-select:none).
+ *   「문서·글 내용」임을 뷰가 밝힌 자리만 .select-text 로 되살린다 — ⛔ 그 자리는 아래 ALLOW 에 등록돼야 한다.
+ *   group-hover(③)와 같은 장치: 이 클래스가 허용 목록 밖에 나오면 빨간불.
+ */
+describe('⑬ .select-text 는 예외 목록(ALLOW)에서만 쓴다', () => {
+    const NEEDLE = 'select' + '-text';   // 이 파일 자신이 금지 문자열을 품지 않게 조각으로
+    // 예외 목록 = 옵트인 자리: 셸 본문 칸·피크 본문 · 그 셀렉터를 정의하는 가드 · 플러그인 뷰 본문(글 내용)
+    const ALLOW = new Set([
+        'EditorArea.tsx', 'PeekLayer.tsx', 'guards.ts',
+        'MonthView.tsx', 'YearView.tsx', 'TimeGridView.tsx', 'SampleView.tsx', 'TestConsole.tsx',
+    ]);
+    const files = walk(ROOT);
+
+    it('.select-text 가 실제로 어딘가 쓰인다(빈 글롭 거짓 통과 방지)', () => {
+        expect(files.some((f) => read(f).includes(NEEDLE))).toBe(true);
+    });
+
+    it('예외 목록 밖에는 .select-text 가 없다', () => {
+        const offenders = files.filter((f) => read(f).includes(NEEDLE) && !ALLOW.has(basename(f)));
+        expect(offenders.map((f) => f.slice(ROOT.length + 1)),
+            '전역 선택 차단을 뚫으려면 예외 목록(ALLOW)에 등록해야 한다').toEqual([]);
+    });
+});
+
 describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', () => {
     let dirs: string[] = [];
     try {

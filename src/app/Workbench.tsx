@@ -14,6 +14,7 @@ import {
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
+    installContextMenuGuard,
     FRAME_COMMAND,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
@@ -226,6 +227,10 @@ export function Workbench() {
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);
+
+    // 🔴 ⭐ 전역 우클릭 통제(항목 A, 쥔님 두 번 지시) — 입력칸·본문(옵트인 클래스) 밖에서는 브라우저
+    //    기본 컨텍스트 메뉴를 막는다(가드가 쥔 예외 셀렉터 기준). 글자 선택 차단은 index.css(html user-select:none).
+    useEffect(() => installContextMenuGuard(), []);
 
     // 🔴 명령 팔레트 열기 — Ctrl/⌘+P. ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 preventDefault 로 가로챈다(보고 항목).
     useEffect(() => {
