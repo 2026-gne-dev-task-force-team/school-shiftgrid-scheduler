@@ -34,11 +34,12 @@ const SAMPLES: { id: string; title: string; tone: number; scroll?: boolean }[] =
 
 function activate(host: PluginHost): void {
     // ── 뷰: 시험 탭(싱글턴·가운데·안 가름) ──
+    //    🔴 p.peek 을 넘긴다 — 피크는 이 탭 안에서 뜬다(전역 창 아님).
     host.views.register({
         id: 'console', title: '팬 UI 엔진 테스트', icon: 'sparkles', defaultArea: 'center',
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 240, squeeze: 'scroll' },
-        Component: () => createElement(TestConsole, { host }),
+        Component: (p: ViewProps) => createElement(TestConsole, { host, peek: p.peek }),
     });
 
     // ── 뷰: 시험용 샘플들(패널 A~D · 탭 가~라 · 스크롤) — 자유 배치, 여러 장 열려 레이아웃 시험 ──
@@ -57,9 +58,9 @@ function activate(host: PluginHost): void {
     });
     host.ribbon.add({ commandId: 'pane-test.open', icon: 'sparkles', order: 0 });
 
-    // ── 설정 섹션 — 하네스 설명(단계 4 에서 피크 가름 폭이 여기 붙는다) ──
+    // ── 설정 섹션 — 하네스 설명 + 피크 넓음/좁음 가름 폭(설정으로 뺀 값) ──
     host.settings.addSection('pane-test', '팬 UI 엔진 테스트', 'sparkles');
-    host.settings.addItem({ section: 'pane-test', id: 'pane-test', title: '하네스', icon: 'sparkles', Pane: PaneTestSettings });
+    host.settings.addItem({ section: 'pane-test', id: 'pane-test', title: '하네스', icon: 'sparkles', Pane: () => createElement(PaneTestSettings, { host }) });
 
     // ── 상태바 + 이벤트 구독 — 열린 시험 뷰(샘플) 수를 센다 ──
     const openSamples = new Set<string>();

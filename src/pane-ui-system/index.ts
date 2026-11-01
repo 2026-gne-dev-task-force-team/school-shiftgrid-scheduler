@@ -82,7 +82,7 @@ export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey 
 //    (창틀 안쪽 셸·배치는 '../view-registry' 를 직접 쓴다 — 같은 폴더라 문을 거칠 필요가 없다.)
 //    타입은 내보낸다 — 호스트가 돌려주는 값을 바깥이 타이핑해야 한다.
 export {
-    type ViewDef, type ViewProps, type ViewMenu, type ViewMenuHost,
+    type ViewDef, type ViewProps, type ViewMenu, type ViewMenuHost, type PeekHandle,
 } from './view-registry';
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정

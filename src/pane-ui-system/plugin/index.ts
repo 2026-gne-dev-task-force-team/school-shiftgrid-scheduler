@@ -4,7 +4,7 @@
  *
  * 여기로 내보내는 것: 매니페스트·호스트 타입 + 뷰·메뉴 타입 + 활성·다리 + 기여 스토어 조회(창틀 셸·앱이 읽는다).
  */
-export type { ViewDef, ViewProps, ViewMenu, ViewMenuHost } from '../view-registry';
+export type { ViewDef, ViewProps, ViewMenu, ViewMenuHost, PeekHandle } from '../view-registry';
 export type { IconName } from '../primitives/Icon';
 export type { MenuEntry } from '../primitives/ContextMenu';
 

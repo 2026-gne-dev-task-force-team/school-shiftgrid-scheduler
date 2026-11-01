@@ -12,13 +12,28 @@
  *
  * ⚠️ 모듈 전역 Map 이다(순수하지 않다) — 등록은 본래 부수효과다. tree.ts 와 달리 여기선 괜찮다.
  */
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { Leaf } from './layout/tree';
 import type { ViewLayout } from './layout/clamp';
 import type { IconName } from './primitives/Icon';
 import type { MenuEntry } from './primitives/ContextMenu';
 
-/** 뷰 몸통이 받는 것 — 자기 leaf + 지금 제 칸의 크기·접힘 상태 */
+/**
+ * 🔴 피크(미리보기) 손잡이 — 뷰가 **제 탭(leaf) 안에서** 겹쳐 띄우는 창구(쥔님 2026-11-01).
+ *   *"피크는 전역 창에 나오는 게 아니고 그 탭 안에서 나오는 거야"* — 전역 workspace.open 이 아니라 이 손잡이다.
+ *   넓으면(칸 폭 ≥ wideMin) 그 탭 안 오른쪽에서, 좁으면 아래에서 — 가름은 **그 탭 칸의 폭**이다(창 폭 아님).
+ *   ⛔ 탭 줄·패널 머리줄과 높이를 맞추지 않는다 — 탭 내용 위에 겹친다(EditorArea 가 그린다).
+ */
+export interface PeekHandle {
+    /** 이 탭 안에 피크를 띄운다 — content 는 뷰가 그린다. wideMin: 이 폭 이상이면 오른쪽, 아래면 바닥(기본 420). */
+    show(content: ReactNode, opts?: { wideMin?: number }): void;
+    /** 피크를 닫는다 */
+    hide(): void;
+    /** 지금 피크가 떠 있나 */
+    readonly visible: boolean;
+}
+
+/** 뷰 몸통이 받는 것 — 자기 leaf + 지금 제 칸의 크기·접힘 상태 + 제 탭 안 피크 손잡이 */
 export interface ViewProps {
     leaf: Leaf;
     /** 지금 이 뷰가 차지한 칸의 폭·높이(px) — 창틀이 재서 준다 */
@@ -26,6 +41,8 @@ export interface ViewProps {
     height: number;
     /** squeeze='collapse' 이고 폭이 collapseBelow 아래면 true — 뷰가 접힌 그림을 그린다 */
     collapsed: boolean;
+    /** 🔴 제 탭 안에서 피크를 띄우는 손잡이 — EditorArea 가 이 leaf 범위로 준다 */
+    peek: PeekHandle;
 }
 
 /** 내용 메뉴가 쓸 수 있는 틀 기능 — 창틀이 내주는 공통 조작(도메인 모름). 뷰가 골라 라벨만 붙인다 */

@@ -3,7 +3,21 @@
  *   패널 A·B·C·D(틀에 하나씩) · 탭 가·나·다·라(가운데 탭) · 스크롤 시험. 피크는 단계 4 에서 이 자리에 붙는다.
  *   🔴 색은 토큰 클래스로만(구조 검사 ①).
  */
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import type { PluginHost, PeekHandle } from '../../../pane-ui-system/plugin';
+import { PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT } from '../store';
+
+/** 피크 안에 띄울 시험 내용 — 색 글자 + 넘치는 목록(피크 안 스크롤도 시험). 색은 토큰 클래스로만. */
+function PeekContent() {
+    return (
+        <div className="flex flex-col gap-2">
+            <h3 className="text-lg font-bold text-accent">피크 미리보기</h3>
+            <p className="text-[13px] text-muted">이 피크는 전역 창이 아니라 <span className="text-text font-semibold">이 탭 안</span>에서 뜹니다. 넓으면 오른쪽, 좁으면 아래.</p>
+            {Array.from({ length: 30 }).map((_, i) => (
+                <div key={i} className="shrink-0 py-1.5 px-2 rounded bg-accent/10 text-[13px] text-text">피크 줄 {i + 1} — 피크 안 스크롤 시험</div>
+            ))}
+        </div>
+    );
+}
 
 function Btn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
     return (
@@ -26,9 +40,11 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
     );
 }
 
-export function TestConsole({ host }: { host: PluginHost }) {
+export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle }) {
     const open = (id: string, where?: 'left' | 'center' | 'right') =>
         host.workspace.open(`pane-test.${id}`, where ? { where } : undefined);
+    // 🔴 피크는 이 탭 안에서 뜬다 — 넓음/좁음 가름 폭은 설정값(host.storage)에서 읽어 넘긴다.
+    const openPeek = () => peek.show(<PeekContent />, { wideMin: host.storage.get(PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT) });
 
     return (
         <div className="h-full overflow-auto p-5 flex flex-col gap-5 select-text bg-bg">
@@ -53,6 +69,10 @@ export function TestConsole({ host }: { host: PluginHost }) {
 
             <Group title="스크롤">
                 <Btn onClick={() => open('scroll', 'center')}>스크롤 시험 뷰</Btn>
+            </Group>
+
+            <Group title="피크 — 이 탭 안에서(넓으면 오른쪽 · 좁으면 아래)">
+                <Btn onClick={openPeek}>피크 열기</Btn>
             </Group>
         </div>
     );

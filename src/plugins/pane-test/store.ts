@@ -5,6 +5,10 @@
  */
 import { useSyncExternalStore } from 'react';
 
+/** 피크 넓음/좁음 가름 폭 — 이 칸 폭이 이 값 이상이면 오른쪽, 아래면 바닥(쥔님: 기준값은 설정으로 뺀다). host.storage 키. */
+export const PEEK_WIDE_MIN_KEY = 'peekWideMin';
+export const PEEK_WIDE_MIN_DEFAULT = 420;
+
 let count = 0;
 const listeners = new Set<() => void>();
 

@@ -232,6 +232,16 @@
   .tab-collapse, .pane-btrans { transition: none; }
 }
 
+/* 피크(미리보기) — 그 탭 안에서 뜬다. 넓으면 오른쪽에서 떠서, 좁으면 아래에서 올라온다(EditorArea 가 wide 로 가른다) */
+@keyframes peek-from-right  { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes peek-from-bottom { from { transform: translateY(100%); } to { transform: none; } }
+.peek-from-right  { animation: peek-from-right  .18s cubic-bezier(.2,.8,.3,1); }
+.peek-from-bottom { animation: peek-from-bottom .2s cubic-bezier(.2,.8,.3,1); }
+.peek-scrim { animation: view-fade .18s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .peek-from-right, .peek-from-bottom, .peek-scrim { animation: none; }
+}
+
 /*
  * 🔴 창틀 크롬(하단 바·바텀 시트·탭 카드)은 끌리지도 선택되지도, iOS 콜아웃도 안 뜬다(항목 ④, 쥔님 "드래그 되면 곤란한 애들").
  * ⛔ 뷰 본문엔 안 건다 — 이 class 를 단 컨테이너(크롬)에만. 안의 글자도 선택 안 되는 게 맞다(크롬이라서).

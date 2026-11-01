@@ -8,13 +8,16 @@
  *    - squeeze='scroll' → 넘치면 스크롤 · 그 외 → 넘침 숨김(찌그러짐/접힘은 뷰가 collapsed 로 처리)
  *    유효 레이아웃 = 등록값 + 설정 덮어쓰기(effectiveViewLayout) — 설정이 바뀌면 usePaneSettings 로 다시 그린다.
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Leaf } from '../../layout/tree';
-import { getView } from '../../view-registry';
+import { getView, type PeekHandle } from '../../view-registry';
 import { effectiveViewLayout, usePaneSettings } from '../../layout/pane-settings';
 import { isCollapsed } from '../../layout/clamp';
 import { ViewPlaceholder } from '../../plugin/Placeholder';
 import { usePluginRegistry } from '../../plugin/registry';
+import { PeekLayer } from './PeekLayer';
+
+const PEEK_WIDE_MIN_DEFAULT = 420;   // 뷰가 wideMin 을 안 주면 이 폭 이상을 「넓다」로 본다
 
 /**
  * 제 요소의 폭·높이(px) — ResizeObserver 로 바뀔 때만 깨운다.
@@ -53,6 +56,17 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     usePaneSettings();       // 뷰 덮어쓰기가 바뀌면 접힘 기준이 바뀐다 → 다시 그린다
     usePluginRegistry();     // 🔴 플러그인을 끄고 켜면 이 뷰가 등록소에서 빠지거나 돌아온다 → 다시 그린다(자리표시 전환)
 
+    // 🔴 피크(미리보기) — 이 칸(leaf)에 겹쳐 뜨는 상태. 뷰가 ViewProps.peek 으로 띄운다.
+    //    ⭐ 이 칸의 leaf 가 바뀌면(탭 전환) 피크는 닫는다 — 옛 leaf 의 피크가 새 leaf 에 새지 않게.
+    const [peek, setPeek] = useState<{ node: ReactNode; wideMin: number } | null>(null);
+    const showPeek = useCallback((node: ReactNode, opts?: { wideMin?: number }) => {
+        setPeek({ node, wideMin: opts?.wideMin ?? PEEK_WIDE_MIN_DEFAULT });
+    }, []);
+    const hidePeek = useCallback(() => setPeek(null), []);
+    const leafId = leaf?.id ?? null;
+    useEffect(() => { setPeek(null); }, [leafId]);
+    const peekHandle: PeekHandle = { show: showPeek, hide: hidePeek, visible: peek != null };
+
     // 🔴 사이드바 몸통은 bg-side(에디터 bg 보다 한 단 어둡다) — 가운데(bg-bg)와 갈려야 「사이드답게」 보인다(판 A).
     const surface = sidebar ? 'bg-side' : 'bg-bg';
 
@@ -76,11 +90,18 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
     // 🔴 ③ 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉, 쥔님 2026-11-01). ⚠️ 입력칸에서 깜빡이면 뺀다.
     //    키가 바뀌면 그 뷰가 다시 마운트되며 .view-fade 가 한 번 돈다(움직임 줄이기면 즉시).
+    // 🔴 겉은 relative(피크를 이 칸에 가둔다) · 안쪽 몸통 층이 스크롤을 쥔다 · 피크는 그 위에 겹친다.
+    //    피크는 absolute inset-0 라 탭 줄 아래 「내용 위」에만 뜬다(탭 줄·머리줄과 높이를 안 맞춘다).
+    //    넓음/좁음은 **이 칸 폭**(size.width) 으로 가른다 — 창 폭이 아니다(쥔님).
+    const peekWide = size.width >= (peek?.wideMin ?? PEEK_WIDE_MIN_DEFAULT);
     return (
-        <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`flex-1 min-h-0 ${overflow} ${surface} select-text`}>
-            <div key={leaf.id} className="view-fade h-full min-h-0">
-                <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} />
+        <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`relative flex-1 min-h-0 ${surface}`}>
+            <div className={`absolute inset-0 ${overflow} select-text`}>
+                <div key={leaf.id} className="view-fade h-full min-h-0">
+                    <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} peek={peekHandle} />
+                </div>
             </div>
+            {peek && <PeekLayer wide={peekWide} onClose={hidePeek}>{peek.node}</PeekLayer>}
         </div>
     );
 }
