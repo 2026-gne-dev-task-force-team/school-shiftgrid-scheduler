@@ -15,14 +15,12 @@ import type { NodesApi } from '../project-explorer/api';
 import { manifest } from './manifest';
 import { TestConsole } from './views/TestConsole';
 import { SampleView } from './views/SampleView';
-import { NodeSampleView } from './views/NodeSampleView';
 import { PaneTestSettings } from './settings/PaneTestSettings';
 import { OpenCountStatus } from './components/OpenCountStatus';
 import { NodeCountStatus } from './components/NodeCountStatus';
 import { setOpenViewCount, setNodeCount, openCmdId } from './store';
 
 const CONSOLE_ID = 'pane-test.console';
-const NODE_SAMPLE_ID = 'pane-test.node-sample';
 
 /** 시험 뷰 목록 — 각자 다른 색(tone)·이름·기본 자리. 전부 자유 배치(끌어 가르기·사이드바로 옮겨 시험). */
 const SAMPLES: { id: string; title: string; tone: number; where: 'left' | 'right' | 'center'; scroll?: boolean }[] = [
@@ -77,7 +75,7 @@ function activate(host: PluginHost): void {
 
     // ── 상태바 + 이벤트 구독 — 열린 시험 뷰(샘플) 수를 센다 ──
     const openSamples = new Set<string>();
-    const isSample = (viewId?: string) => !!viewId && viewId.startsWith('pane-test.') && viewId !== CONSOLE_ID && viewId !== NODE_SAMPLE_ID;
+    const isSample = (viewId?: string) => !!viewId && viewId.startsWith('pane-test.') && viewId !== CONSOLE_ID;
     host.workspace.on('open', (l) => { if (isSample(l.viewId)) { openSamples.add(l.id); setOpenViewCount(openSamples.size); } });
     host.workspace.on('close', (l) => { if (openSamples.delete(l.id)) setOpenViewCount(openSamples.size); });
     host.statusBar.add({ id: 'open-count', side: 'left', render: () => createElement(OpenCountStatus) });
@@ -88,43 +86,16 @@ function activate(host: PluginHost): void {
 }
 
 /**
- * 프로젝트 탐색기 노드 시스템에 타입 둘을 꽂는다 — 파일 타입 하나 + 유도 타입 하나.
- *   🔴 모든 등록은 nodes 가 돌려준 Disposable 로 빠진다 — pane-test 를 끄면 host 가 호출자 소유로 모아 둔
- *      이 등록들을 회수한다(노드는 남아 「모르는 타입(회색)」이 된다).
+ * 프로젝트 탐색기 노드 시스템을 쓰는 첫 소비자(N4) — 지금은 「노드 N」 셈 하나만 증명한다.
+ *   🔴 샘플·유도 폴더 데모 타입은 걷어냈다(쥔님 2026-11-01 19:34: *"아직 요청 안 했으니 없애줘"*) —
+ *      첫 실행 탐색기에 「새 샘플 / 새 유도 폴더」가 뜨고 유도(안내) 가짜 자식이 보이던 것.
+ *   🔴 등록은 nodes 가 돌려준 Disposable 로 빠진다(host 가 호출자 소유로 회수) — subscribe 도 같은 길.
  */
 function wireNodes(host: PluginHost): void {
     const nodes = host.plugins.get<NodesApi>('project-explorer');
     if (!nodes) return;   // 탐색기가 없거나 꺼졌다 — 노드 기능은 그냥 없다
 
-    // 노드 샘플 뷰 — `pane-test.sample` 을 열면 뜬다(params.nodeId 한 줄로 잇는다).
-    host.views.register({
-        id: 'node-sample', title: '샘플 노드', icon: 'file', defaultArea: 'center',
-        layout: { minWidth: 160 },
-        Component: (p: ViewProps) => createElement(NodeSampleView, { p }),
-    });
-
-    // ① 파일 타입 — openable. 열면 위 샘플 뷰를 그 노드 id 로 연다.
-    nodes.types.register({
-        type: 'pane-test.sample',
-        label: '샘플', icon: 'file',
-        openable: true,
-        open: (nodeId) => {
-            const n = nodes.get(nodeId);
-            host.workspace.open(NODE_SAMPLE_ID, { where: 'center', params: { nodeId }, title: n?.name ?? '샘플 노드' });
-        },
-        create: { label: '샘플', under: ['folder'] },
-    });
-
-    // ② 유도 타입 — container + derive. 펴면 「가짜 자식 3개」(노드 이름을 따라 ${name}-1..3). 저장 안 됨.
-    nodes.types.register({
-        type: 'pane-test.derived-folder',
-        label: '유도 폴더', icon: 'folder',
-        container: true,
-        derive: (node) => [1, 2, 3].map((i) => ({ key: `d${i}`, name: `${node.name}-${i}`, icon: 'dot' })),
-        create: { label: '유도 폴더', under: ['folder'] },
-    });
-
-    // ③ 「노드 N」 — subscribe 로 센다(상태바가 비춘다). 처음 한 번 + 바뀔 때마다.
+    // 「노드 N」 — subscribe 로 센다(상태바가 비춘다). 처음 한 번 + 바뀔 때마다.
     const recount = () => setNodeCount(nodes.find(() => true).length);
     recount();
     nodes.subscribe(recount);
