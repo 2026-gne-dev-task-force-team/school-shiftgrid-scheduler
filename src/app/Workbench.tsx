@@ -344,6 +344,9 @@ export function Workbench() {
                     activeLeafId={focus}
                     handlers={handlers}
                     area="center"
+                    // 🔴 세로 가르기(아래로) 단추도 탭 줄에 — 쥔님 2026-11-01 *"패널 세로 나누기 안되노"*.
+                    //    우클릭 메뉴·아래 25% 띠 드롭은 되는데 탭 줄엔 「오른쪽으로 가르기」만 있어 세로로 가를 길이 눈에 없었다.
+                    tabButtons={{ add: true, splitRow: true, splitCol: true }}
                     centerEdges={narrow ? undefined : {
                         onExpandLeft: panels.state.leftOpen ? undefined : () => panels.toggle('left', true),
                         onExpandRight: panels.state.rightOpen ? undefined : () => panels.toggle('right', true),

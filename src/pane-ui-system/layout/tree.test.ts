@@ -281,6 +281,20 @@ describe('splitAt', () => {
         expect(violations(ws)).toEqual([]);
     });
 
+    // 🔴 세로 가르기 회귀 — 쥔님 2026-11-01 *"패널 세로 나누기 안되노"*. 탭 줄 「아래로 가르기」 단추가
+    //    부르는 모델 조작이 top/bottom(dir 'col') split 을 내는지 못 박는다(단추 자체는 Workbench 가 켠다).
+    it('tabs 를 아래로 가르면 split-col(세로) 이 된다', () => {
+        const base = wsThreeSingle('a');
+        const ws = splitAt(base, firstTabsId(base), 'col', L('b'));
+        expect(ws.center.kind).toBe('split');
+        if (ws.center.kind === 'split') {
+            expect(ws.center.dir).toBe('col');
+            expect(ws.center.children.length).toBe(2);
+        }
+        expect(flatten(ws.center).map((l) => l.id)).toEqual(['a', 'b']);
+        expect(violations(ws)).toEqual([]);
+    });
+
     it('같은 방향으로 또 가르면 n진으로 펴진다 (③)', () => {
         const base = wsThreeSingle('a');
         let ws = splitAt(base, firstTabsId(base), 'row', L('b'));
