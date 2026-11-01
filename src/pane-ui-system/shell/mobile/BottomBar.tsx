@@ -10,8 +10,8 @@
  * 🔴 키보드가 올라오면 바를 숨긴다(visualViewport) — 키보드 위에 뜨면 화면 절반이 바가 된다.
  */
 import { useEffect, useState } from 'react';
-import { Icon, type IconName } from '../primitives/Icon';
-import { splitBarItems } from '../layout/mobile';
+import { Icon, type IconName } from '../../primitives/Icon';
+import { splitBarItems } from '../../layout/mobile';
 
 /** 앱이 바에 꽂는 항목 하나 — 아이콘·동작만. pinned 면 오른쪽에 고정(스크롤 안 함) */
 export interface BarItem {

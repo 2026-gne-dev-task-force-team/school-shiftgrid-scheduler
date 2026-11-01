@@ -6,7 +6,7 @@
  *    (elementFromPoint 가 이들을 뚫고 아래 진짜 DOM 을 집어야 존 판정이 선다).
  */
 import { createPortal } from 'react-dom';
-import type { DragLeafState } from '../primitives/useDragLeaf';
+import type { DragLeafState } from '../../primitives/useDragLeaf';
 import { resolveDropAt, type DropBox, type DropPreview } from './drop-resolve';
 
 /** 가장자리 존의 「반쪽 면」 사각형 */

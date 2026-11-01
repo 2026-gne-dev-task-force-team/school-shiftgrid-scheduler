@@ -7,10 +7,10 @@
  * ⭐ 빈 면 우클릭(손가락은 길게) → 뷰 등록소 목록에서 「여기에 열기」.
  */
 import { useCallback, useState } from 'react';
-import { IconButton } from '../primitives/IconButton';
-import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
-import { useContextTrigger } from '../primitives/useContextTrigger';
-import { listViews } from '../view-registry';
+import { IconButton } from '../../primitives/IconButton';
+import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
+import { useContextTrigger } from '../../primitives/useContextTrigger';
+import { listViews } from '../../view-registry';
 import type { RootChrome } from './WorkspaceView';
 
 export function EmptyArea({

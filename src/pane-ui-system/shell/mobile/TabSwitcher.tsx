@@ -5,11 +5,11 @@
  * 🔴 split 은 그리지 않는다 — 앱이 flatten() 한 leaf 목록을 TabItem 으로 넘겨 준다(모바일은 스플릿 그림 없음).
  *    창틀은 무엇이 든 탭인지 모른다(아이콘·제목은 뷰 등록소가 준 값이 TabItem 에 실려 온다).
  */
-import { BottomSheet } from '../primitives/BottomSheet';
-import { Icon } from '../primitives/Icon';
-import { IconButton } from '../primitives/IconButton';
-import { useContextTrigger } from '../primitives/useContextTrigger';
-import type { TabItem } from './Tabs';
+import { BottomSheet } from '../../primitives/BottomSheet';
+import { Icon } from '../../primitives/Icon';
+import { IconButton } from '../../primitives/IconButton';
+import { useContextTrigger } from '../../primitives/useContextTrigger';
+import type { TabItem } from '../shared/Tabs';
 
 export function TabSwitcher({
     open, onClose, tabs, activeId, onSelect, onCloseTab, onNew,

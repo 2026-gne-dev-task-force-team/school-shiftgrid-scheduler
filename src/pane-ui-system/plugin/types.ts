@@ -7,8 +7,8 @@
  * ⭐ 매니페스트는 신분증이지 기능 목록이 아니다 — contributes 칸을 두지 않는다(실적은 레지스트리가 안다).
  * ⭐ 「코어」는 권한이 아니다 — 받는 호스트 API 는 여느 플러그인과 같다. 다른 점은 「끌 수 없다 · 먼저 산다」 둘뿐.
  *
- * 📌 범위: P1 에서 commands·settings·statusBar·menu·workspace.on·screen·theme·onFirstRun·newTab 를 채웠다.
- *    doc 만 P3 자리로 남는다(선택 멤버).
+ * 📌 범위: commands·settings·statusBar·menu·workspace.on·screen·theme·onFirstRun·newTab.
+ *    (문서 창구 doc 은 2026-11-01 걷어냈다 — 쓰는 플러그인이 없다.)
  */
 import type { ComponentType, ReactNode } from 'react';
 import type { ViewDef } from '../view-registry';
@@ -98,23 +98,6 @@ export type WorkspaceEvent = 'open' | 'close' | 'activate';
 /** area — 어느 자리에 있나(left·center·right·floating). 플러그인이 「가운데 탭만」 셀 수 있게(쥔님 13:42: 열린 탭 수가 사이드바까지 셌다) */
 export interface WorkspaceLeafInfo { id: string; viewId: string; params?: unknown; area?: 'left' | 'center' | 'right' | 'floating' }
 
-/** 문서 이벤트 — 문서 내용이 바뀌거나(change) 새 문서·파일이 열리거나(open) 닫힐 때(close) */
-export type DocEvent = 'change' | 'open' | 'close';
-/** 플러그인이 읽기만 하는 문서 메타(이름 등) — plugins.* 안은 안 보인다 */
-export interface DocMeta { name: string; createdAt: string; updatedAt: string }
-
-/**
- * host.doc — 플러그인이 문서를 만지는 창구(P3). 🔴 ⛔ 자기 칸(plugins.<id>)만 읽고 쓴다.
- *   ⛔ 다른 플러그인 칸·legacy·파일 열기/저장 단추는 안 준다(그건 호스트 것이다).
- *   get/set 은 제 칸 · on 으로 바뀜을 듣고 · meta 는 읽기만.
- */
-export interface DocHandle {
-    get<T>(): T | undefined;
-    set<T>(value: T): void;
-    on(ev: DocEvent, cb: () => void): Disposable;
-    meta(): DocMeta | undefined;
-}
-
 /**
  * 플러그인이 받는 객체 하나 — 창틀의 트리·DOM·localStorage 에 손대는 길은 없다.
  * 🔴 등록 함수는 전부 Disposable 을 돌려준다 — 안 챙겨도 호스트가 주인별로 모아 끌 때 한꺼번에 회수한다.
@@ -160,7 +143,4 @@ export interface PluginHost {
     };
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
-
-    /** 문서(프로젝트 파일) 창구 — 자기 칸만(P3). 호스트(app/document.ts)가 다리를 꽂아야 실동작한다. */
-    doc: DocHandle;
 }

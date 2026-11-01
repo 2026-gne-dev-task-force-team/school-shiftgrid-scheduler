@@ -12,14 +12,14 @@
  * 🔴 W5 우클릭 메뉴는 전부 이미 있는 순수 연산(close·split·move)을 부른다 — 트리 연산을 새로 짜지 않는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Node, Leaf, MovePos } from '../layout/tree';
-import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../layout/tree';
-import { getView, canPlace, canSplit } from '../view-registry';
-import { effectiveViewLayout } from '../layout/pane-settings';
-import { effectiveMin, clampSplitPair } from '../layout/clamp';
-import { IconButton } from '../primitives/IconButton';
-import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
-import { useDragLeaf, type DragBind } from '../primitives/useDragLeaf';
+import type { Node, Leaf, MovePos } from '../../layout/tree';
+import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../../layout/tree';
+import { getView, canPlace, canSplit } from '../../view-registry';
+import { effectiveViewLayout } from '../../layout/pane-settings';
+import { effectiveMin, clampSplitPair } from '../../layout/clamp';
+import { IconButton } from '../../primitives/IconButton';
+import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
+import { useDragLeaf, type DragBind } from '../../primitives/useDragLeaf';
 import { Tabs, type TabItem } from './Tabs';
 import { EditorArea } from './EditorArea';
 import { DropZones } from './DropZones';

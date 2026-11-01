@@ -11,8 +11,8 @@
  *    (옵시디언처럼 「사이드바 탭 줄 바깥 끝」에 산다 — 쥔님 지시 2026-10-31)
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { widthFromDrag } from '../layout/panels';
-import { SWIPE_EDGE, classifySwipe, swipeProgress, settleOpen, type SwipeAxis } from '../layout/mobile';
+import { widthFromDrag } from '../../layout/panels';
+import { SWIPE_EDGE, classifySwipe, swipeProgress, settleOpen, type SwipeAxis } from '../../layout/mobile';
 
 interface Props {
     side: 'left' | 'right';

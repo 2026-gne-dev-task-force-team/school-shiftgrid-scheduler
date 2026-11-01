@@ -23,20 +23,24 @@ export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { useContextTrigger } from './primitives/useContextTrigger';
 export { useDragLeaf, type DragLeafState, type DragBind } from './primitives/useDragLeaf';
 
-// 셸 — 자리 짜기. 내용은 모르고 자리만 안다
-export { SidePanel } from './shell/SidePanel';
-export { Rail } from './shell/Rail';
-export { Tabs, type TabItem } from './shell/Tabs';
-export { EditorArea } from './shell/EditorArea';
-export { EmptyArea } from './shell/EmptyArea';
-export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
-export { DropZones } from './shell/DropZones';
-export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
-export { BottomBar, type BarItem } from './shell/BottomBar';
-export { TabSwitcher } from './shell/TabSwitcher';
-export { RibbonSheet } from './shell/RibbonSheet';
-export { TitleBar, type TitleAction } from './shell/TitleBar';
-export { StatusBar, type StatusItem } from './shell/StatusBar';
+// 셸 — 자리 짜기. 내용은 모르고 자리만 안다.
+//   ⭐ 2026-11-01: 화면 전용 조각을 폴더로 갈랐다(쥔님). shared/ 공통 · desktop/ 넓은 화면 전용 · mobile/ 좁은 화면 전용.
+//      구조 검사가 desktop ↔ mobile 서로 import 0 을 지킨다.
+export { SidePanel } from './shell/shared/SidePanel';
+export { Tabs, type TabItem } from './shell/shared/Tabs';
+export { EditorArea } from './shell/shared/EditorArea';
+export { EmptyArea } from './shell/shared/EmptyArea';
+export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/shared/WorkspaceView';
+export { DropZones } from './shell/shared/DropZones';
+export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/shared/drop-resolve';
+export { TitleBar, type TitleAction } from './shell/shared/TitleBar';
+export { StatusBar, type StatusItem } from './shell/shared/StatusBar';
+// 넓은 화면 전용(desktop)
+export { Rail } from './shell/desktop/Rail';
+// 좁은 화면 전용(mobile)
+export { BottomBar, type BarItem } from './shell/mobile/BottomBar';
+export { TabSwitcher } from './shell/mobile/TabSwitcher';
+export { RibbonSheet } from './shell/mobile/RibbonSheet';
 
 // 배치 — 폭·접힘·좁은 화면. 순수 계산 + 기기별 보관
 export { useNarrow, usePanels, type Panels } from './layout/useScreen';

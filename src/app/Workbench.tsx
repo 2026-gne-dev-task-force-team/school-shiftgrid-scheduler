@@ -15,7 +15,7 @@ import {
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf,
-    leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
+    leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, areaOfLeaf,
     type MovePos,
@@ -29,24 +29,15 @@ import { appHost } from './host';
 import { canPlace, canSplit } from '../pane-ui-system/view-registry';   // 허용 자리 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
-import { migrateViewIds } from './migrate';
-import { useDoc } from './document';
-
-/** 첫 실행(저장값 없음)에만 까는 기본 배치 — 가운데에 스케줄 뷰 하나를 기본으로 */
-function firstRunWorkspace(): Workspace {
-    let ws = loadWorkspace();                                   // 빈 배치
-    ws = openLeaf(ws, leaf('scheduler.week', '스케줄', { id: 'scheduler.week' }), 'center');
-    return ws;
-}
 
 export function Workbench() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
     useTheme();    // 마운트 때 저장된 테마를 적용한다(반환값은 설정 화면이 따로 쥔다)
 
-    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다(옛 설정 id 는 migrateViewIds 로 settings.main 으로 옮긴다).
-    //             저장값이 없으면 기본 배치를 깐다.
-    const [ws, setWs] = useState<Workspace>(() => (hasWorkspace() ? migrateViewIds(loadWorkspace()) : firstRunWorkspace()));
+    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다. 🔴 첫 실행(저장값 없음)이면 빈 창틀이다 —
+    //             ⛔ 아무 뷰도 자동으로 열지 않는다(쥔님 2026-11-01 *"그냥 다 비워줘"*). loadWorkspace 가 빈 배치를 준다.
+    const [ws, setWs] = useState<Workspace>(() => loadWorkspace());
     // 좁은 화면에서 지금 보는 leaf(넓은 화면에선 각 묶음의 activeId 를 쓴다)
     const [focus, setFocus] = useState<string>('');
     // 좁은 화면 탭 전환 시트(하단 바 ▦ 로 연다)
@@ -253,16 +244,7 @@ export function Workbench() {
     // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(스케줄러의 「카드 N」). 스토어에서 읽어 그린다.
     //    render() 를 여기서 불러 노드로 넘긴다 — 작업대 이벤트로 스토어가 다시 그려지면 이 render 가 새 값을 준다.
     const statusEntries = useStatusItems();
-    // 🔴 ⭐ 문서 이름 + 더티 표시(●) — 창틀은 문서를 모른다(app 이 넣는다). 더티면 ● 가 붙는다.
-    const docState = useDoc();
-    const docStatus: StatusItem = {
-        id: 'app:doc', side: 'left',
-        node: `${docState.doc.meta.name}${docState.dirty ? ' ●' : ''}`,
-    };
-    const statusItems: StatusItem[] = [
-        docStatus,
-        ...statusEntries.map((e) => ({ id: `${e.owner}:${e.id}`, side: e.side, node: e.render() })),
-    ];
+    const statusItems: StatusItem[] = statusEntries.map((e) => ({ id: `${e.owner}:${e.id}`, side: e.side, node: e.render() }));
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">

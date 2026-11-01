@@ -8,10 +8,10 @@
  * 🔴 아이콘은 트리 leaf 가 정하는 게 아니라 뷰 등록소가 준다 — 여기선 받은 icon 을 그대로 그린다.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import { Row } from '../primitives/Row';
-import { IconButton } from '../primitives/IconButton';
-import type { DragBind } from '../primitives/useDragLeaf';
-import type { IconName } from '../primitives/Icon';
+import { Row } from '../../primitives/Row';
+import { IconButton } from '../../primitives/IconButton';
+import type { DragBind } from '../../primitives/useDragLeaf';
+import type { IconName } from '../../primitives/Icon';
 
 export interface TabItem {
     id: string;

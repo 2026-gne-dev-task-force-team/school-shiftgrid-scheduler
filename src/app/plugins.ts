@@ -9,11 +9,9 @@
  */
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
-import { schedulerPlugin } from '../plugins/scheduler';
 
-// 🔴 코어(settings·scheduler)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다.
-//    ⛔ 설정 화면·스케줄러는 코어다 — 끌 수 없다.
+// 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다.
+//    ⛔ 설정 화면은 코어다 — 끌 수 없다.
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
-    schedulerPlugin,
 ];

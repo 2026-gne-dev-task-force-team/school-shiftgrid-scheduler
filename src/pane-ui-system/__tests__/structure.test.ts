@@ -164,6 +164,36 @@ describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
     }
 });
 
+/*
+ * ⑪ 화면 전용 조각은 서로 섞이지 않는다 — shell/desktop(넓은 화면) ↔ shell/mobile(좁은 화면) 서로 import 0.
+ *   쥔님 2026-11-01: *"공통, 모바일, 데스크톱 컴포넌트는 폴더 따로 두는 게 좋을 듯"*.
+ *   한쪽 전용 조각이 다른 쪽을 끌어오면 「전용」이 거짓이 된다 — 공통으로 쓸 것은 shell/shared 에 둔다.
+ *   (⑩ 은 「모든 동작은 명령」 검사 자리 — 명령 팔레트 단계에서 더한다.)
+ */
+describe('⑪ shell/desktop ↔ shell/mobile 서로 import 0', () => {
+    const SHELL = join(ROOT, 'pane-ui-system', 'shell');
+    const deskFiles = walk(join(SHELL, 'desktop'));
+    const mobFiles = walk(join(SHELL, 'mobile'));
+    const TO_MOBILE = /from\s+['"][^'"]*(?:\/mobile\/|\.\.\/mobile\/)[^'"]*['"]/;
+    const TO_DESKTOP = /from\s+['"][^'"]*(?:\/desktop\/|\.\.\/desktop\/)[^'"]*['"]/;
+
+    it('desktop·mobile 폴더에 스캔할 파일이 실제로 있다', () => {
+        expect(deskFiles.length).toBeGreaterThan(0);
+        expect(mobFiles.length).toBeGreaterThan(0);
+    });
+
+    for (const f of deskFiles) {
+        it(`desktop 이 mobile 을 안 집는다: ${basename(f)}`, () => {
+            expect(TO_MOBILE.test(read(f)), `${basename(f)} 가 mobile 전용 조각을 집었다 — 공통이면 shell/shared 로`).toBe(false);
+        });
+    }
+    for (const f of mobFiles) {
+        it(`mobile 이 desktop 을 안 집는다: ${basename(f)}`, () => {
+            expect(TO_DESKTOP.test(read(f)), `${basename(f)} 가 desktop 전용 조각을 집었다 — 공통이면 shell/shared 로`).toBe(false);
+        });
+    }
+});
+
 describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', () => {
     let dirs: string[] = [];
     try {

@@ -29,7 +29,7 @@ export function AboutPane() {
                     </div>
                 ))}
             </div>
-            <p className="text-[12px] text-muted">설정·배치·테마는 이 기기에만 저장됩니다. 문서는 파일로 따로 저장합니다.</p>
+            <p className="text-[12px] text-muted">설정·배치·테마는 이 기기에만 저장됩니다.</p>
         </div>
     );
 }

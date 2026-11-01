@@ -15,13 +15,13 @@
  */
 import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { IconButton } from '../primitives/IconButton';
-import { ContextMenu, type MenuEntry } from '../primitives/ContextMenu';
-import { useDragLeaf } from '../primitives/useDragLeaf';
+import { IconButton } from '../../primitives/IconButton';
+import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
+import { useDragLeaf } from '../../primitives/useDragLeaf';
 import {
     usePaneSettings, reorderIds, setRibbonOrder, toggleRibbonHidden, resetRibbon,
-} from '../layout/pane-settings';
-import { resolveRibbonEntries, useContribVersion } from '../plugin';
+} from '../../layout/pane-settings';
+import { resolveRibbonEntries, useContribVersion } from '../../plugin';
 
 /** 드래그 중 포인터 자리에서 「어느 아이콘 앞/뒤에 꽂나」 — DOM 을 더듬어 번역(순수 아님, drop-resolve 와 같은 결) */
 function ribbonDropAt(nav: HTMLElement | null, p: number, dragId: string, horizontal = false):

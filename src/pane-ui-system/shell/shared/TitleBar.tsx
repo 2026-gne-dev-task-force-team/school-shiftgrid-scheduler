@@ -9,8 +9,8 @@
  * 🔴 색은 토큰으로만(구조 검사 ①). 보임/숨김은 WorkbenchScreen 이 설정으로 가른다 — 여긴 늘 그린다.
  */
 import type { CSSProperties, ReactNode } from 'react';
-import { IconButton } from '../primitives/IconButton';
-import type { IconName } from '../primitives/Icon';
+import { IconButton } from '../../primitives/IconButton';
+import type { IconName } from '../../primitives/Icon';
 
 /** 타이틀바 오른쪽에 앱이 꽂는 액션 하나 — 아이콘 단추. ⛔ 창틀은 뜻을 모른다 */
 export interface TitleAction {

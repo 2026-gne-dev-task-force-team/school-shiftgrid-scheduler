@@ -9,12 +9,12 @@
  *    유효 레이아웃 = 등록값 + 설정 덮어쓰기(effectiveViewLayout) — 설정이 바뀌면 usePaneSettings 로 다시 그린다.
  */
 import { useCallback, useRef, useState } from 'react';
-import type { Leaf } from '../layout/tree';
-import { getView } from '../view-registry';
-import { effectiveViewLayout, usePaneSettings } from '../layout/pane-settings';
-import { isCollapsed } from '../layout/clamp';
-import { ViewPlaceholder } from '../plugin/Placeholder';
-import { usePluginRegistry } from '../plugin/registry';
+import type { Leaf } from '../../layout/tree';
+import { getView } from '../../view-registry';
+import { effectiveViewLayout, usePaneSettings } from '../../layout/pane-settings';
+import { isCollapsed } from '../../layout/clamp';
+import { ViewPlaceholder } from '../../plugin/Placeholder';
+import { usePluginRegistry } from '../../plugin/registry';
 
 /**
  * 제 요소의 폭·높이(px) — ResizeObserver 로 바뀔 때만 깨운다.

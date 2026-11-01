@@ -7,10 +7,10 @@
  * 🔴 숨긴 리본 항목은 안 뜬다(판 C 의 hidden 존중) — resolveRibbon 이 visible 만 내준다. 데스크톱 리본(Rail)과 같은 저장소다.
  * ⛔ 색·치수는 토큰으로만.
  */
-import { BottomSheet } from '../primitives/BottomSheet';
-import { Icon } from '../primitives/Icon';
-import { usePaneSettings } from '../layout/pane-settings';
-import { resolveRibbonEntries, useContribVersion, type RibbonEntry } from '../plugin';
+import { BottomSheet } from '../../primitives/BottomSheet';
+import { Icon } from '../../primitives/Icon';
+import { usePaneSettings } from '../../layout/pane-settings';
+import { resolveRibbonEntries, useContribVersion, type RibbonEntry } from '../../plugin';
 
 export function RibbonSheet({
     open, onClose, onOpenView,
