@@ -1,23 +1,10 @@
 /**
  * 「캘린더」 설정 판 — 기본 꺼져 있는 보기 둘을 켠다(쥔님 2026-11-01 17:23).
- *   스위치는 이 플러그인 안에서 그린다 — 설정 플러그인의 Toggle 은 플러그인끼리 import 금지(구조 검사 ⑨)라 못 끌어온다.
+ *   스위치는 창틀 기본 부품 Toggle(배럴) — 📌 처음엔 여기 따로 그렸다가 손잡이가 알약 밖으로 나갔다(17:39 쥔님
+ *   *"이게 머꼬 혹시 토글 뷰 기본 컴포넌트가 아니고 따로 만드나"*). 설정 플러그인에만 있던 Toggle 을 primitives 로 올려 같이 쓴다.
  */
+import { Toggle } from '../../../pane-ui-system';
 import { setOption, useOptions, type CalendarOptions } from '../store';
-
-function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-    return (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={checked}
-            aria-label={label}
-            onClick={() => onChange(!checked)}
-            className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-line'}`}
-        >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-bg shadow transition-transform ${checked ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-        </button>
-    );
-}
 
 function OptionRow({ k, title, desc }: { k: keyof CalendarOptions; title: string; desc: string }) {
     const opts = useOptions();
@@ -27,7 +14,7 @@ function OptionRow({ k, title, desc }: { k: keyof CalendarOptions; title: string
                 <span className="font-semibold text-text">{title}</span>
                 <span className="text-muted">{desc}</span>
             </div>
-            <Switch checked={opts[k]} onChange={(v) => setOption(k, v)} label={title} />
+            <Toggle on={opts[k]} onToggle={(v) => setOption(k, v)} label={title} />
         </div>
     );
 }

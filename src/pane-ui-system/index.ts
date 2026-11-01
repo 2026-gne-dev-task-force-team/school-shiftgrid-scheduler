@@ -23,6 +23,7 @@ export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { DatePicker } from './primitives/DatePicker';
+export { Toggle } from './primitives/Toggle';
 
 // 상호작용 — 🔴 드래그·길게누르기·포인터 제스처·전역 가드·재배열 훅이 사는 자리(쥔님: *"인터렉티브 폴더 따로"*).
 //   ⛔ layout/ · primitives/ 는 포인터 핸들러를 직접 안 든다 — 전부 여길 거친다(구조 검사가 지킨다).

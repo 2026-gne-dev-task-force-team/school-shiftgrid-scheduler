@@ -10,7 +10,7 @@ import { Icon } from '../../../pane-ui-system';
 import {
     listPlugins, enablePlugin, disablePlugin, usePluginRegistry, listSettings, useContribVersion, HOST_VERSION,
 } from '../../../pane-ui-system/plugin';
-import { Toggle } from './Toggle';
+import { Toggle } from '../../../pane-ui-system';
 
 export function PluginsPane() {
     usePluginRegistry();   // 켜고 끄면 다시 그린다
