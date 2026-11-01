@@ -13,11 +13,12 @@ import { registerType } from './model/types';
 import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
+import { saveJson, pickJsonFile } from './views/file-io';
 import {
     initStore, getState, newFolder, renameSelected, removeSelected,
     duplicateNode, collapseAllNodes, nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
-    undoAction, redoAction,
+    undoAction, redoAction, exportBranchById, importBranchText,
 } from './store';
 
 const TREE_VIEW_ID = 'project-explorer.tree';   // host 가 'project-explorer.' 를 붙인다(id: 'tree')
@@ -81,6 +82,23 @@ function activate(host: PluginHost): void {
     host.commands.add({ id: 'project-explorer.cancel-purge', title: '삭제 취소', icon: 'x', run: () => cancelPurgeConfirm() });
     host.commands.add({ id: 'project-explorer.undo', title: '되돌리기', icon: 'undo', run: () => undoAction() });
     host.commands.add({ id: 'project-explorer.redo', title: '다시 하기', icon: 'redo', run: () => redoAction() });
+
+    // ── 가지 내보내기/들여오기(N5) — 파일 I/O 는 비동기라 run 안에서 삼킨다 ──
+    //    내보내기: 고른 노드의 가지 통째(data 포함·유도 자식 제외) → showSaveFilePicker ↝ 다운로드 폴백.
+    host.commands.add({
+        id: 'project-explorer.export-branch', title: '내보내기(JSON)', icon: 'download',
+        run: () => {
+            const file = exportBranchById();
+            if (!file) return;
+            const name = `${getState().tree.nodes[file.root]?.name ?? 'branch'}.json`;
+            void saveJson(name, JSON.stringify(file, null, 2));
+        },
+    });
+    //    들여오기: 🔴 덮지 않고 새 가지로(id 재발급). 파일 고르기 → 텍스트 → 스토어가 검증·병합.
+    host.commands.add({
+        id: 'project-explorer.import-branch', title: '들여오기(JSON)', icon: 'upload',
+        run: () => { void (async () => { const text = await pickJsonFile(); if (text != null) importBranchText(text); })(); },
+    });
 
     // ── 리본 아이콘 하나 — 누르면 탐색기 패널을 연다(reuse 로 한 장만) ──
     host.ribbon.add({ commandId: 'project-explorer.open-panel', icon: 'folder', order: 2 });

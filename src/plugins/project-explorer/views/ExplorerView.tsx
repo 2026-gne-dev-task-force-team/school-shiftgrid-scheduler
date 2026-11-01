@@ -17,7 +17,7 @@ import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/
 import { isContainerType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
-import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
+import { useExplorer, select, toggle, cancelRename, commitRename, moveNode, clearImportError } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
@@ -77,7 +77,7 @@ function resolveDrop(container: HTMLElement | null, x: number, y: number, dragId
 }
 
 export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: string }) {
-    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm } = useExplorer();
+    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, importError } = useExplorer();
     const effRoot = rootId ?? tree.root;
     const rootMissing = rootId != null && !tree.nodes[rootId];
 
@@ -225,6 +225,7 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
             items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !canDo(selNode.type, 'rename') });
             items.push({ label: '복제', icon: 'copy', commandId: 'project-explorer.duplicate' });
             items.push({ label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
+            items.push({ label: '내보내기(JSON)', icon: 'download', commandId: 'project-explorer.export-branch' });
             if (isContainerType(selNode.type)) {
                 items.push({ label: '이 폴더를 탐색기로', icon: 'panelRight', commandId: 'project-explorer.open-as-root' });
             }
@@ -263,10 +264,20 @@ export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: stri
                 end={(
                     <>
                         <IconButton icon="plus" label="새 폴더" onClick={() => host.commands.run('project-explorer.new-folder')} />
+                        <IconButton icon="upload" label="들여오기(JSON)" onClick={() => host.commands.run('project-explorer.import-branch')} />
                         <IconButton icon="left" label="모두 접기" onClick={() => host.commands.run('project-explorer.collapse-all')} />
                     </>
                 )}
             />
+
+            {/* 들여오기 실패 한 줄 — 모양 틀린 파일 등. 눌러 닫는다(⛔ alert 안 씀) */}
+            {importError && (
+                <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0 text-[12px] text-bad">
+                    <Icon name="warn" size={13} className="shrink-0" />
+                    <span className="flex-1 min-w-0 truncate">{importError}</span>
+                    <IconButton icon="x" label="닫기" size={13} onClick={() => clearImportError()} />
+                </div>
+            )}
 
             {/* 검색 — 맞는 줄과 그 조상만(접힘 무시) · 비우면 원래대로 */}
             <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0">
