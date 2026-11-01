@@ -6,7 +6,7 @@ import type { PluginManifest } from '../../pane-ui-system/plugin';
 
 export const manifest: PluginManifest = {
     id: 'pane-test',
-    name: '팬 UI 엔진 테스트',
+    name: 'Pane UI Test',
     version: '0.1.0',
     minHostVersion: '0.1.0',
     description: '창틀(pane-ui-system)을 눈으로 시험하는 하네스 — 패널·탭·스크롤·피크를 한 탭 안에서 연다',

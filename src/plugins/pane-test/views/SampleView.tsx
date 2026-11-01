@@ -37,11 +37,10 @@ export function SampleView({ title, tone, scroll, p }: { title: string; tone: nu
         );
     }
 
+    // 🔴 큰 색 알약을 뺐다(쥔님 2026-11-01: *"디자인 좀 조신하게"*) — 제목 한 줄(작게, 색은 글자색만) + 안내 한 줄(muted).
     return (
-        <div className="h-full flex flex-col items-center justify-center gap-3 p-4 text-center select-text">
-            <div className={`px-5 py-3 rounded-lg ${t.chip}`}>
-                <span className={`text-2xl font-bold ${t.text}`}>{title}</span>
-            </div>
+        <div className="h-full flex flex-col items-center justify-center gap-1.5 p-4 text-center select-text">
+            <span className={`text-sm font-semibold ${t.text}`}>{title}</span>
             <p className="text-[12px] text-muted">끌어서 가르기·사이드바로 옮겨 보세요 · 칸 {p.width}×{p.height}px</p>
         </div>
     );
