@@ -50,7 +50,7 @@ export function PeekPanel(props: PeekPanelProps) {
 
 /** 머리줄 — ← · 제목 · ⤢ · ×. dragBind 가 있으면 머리줄을 잡아 끌 수 있다(데스크톱 승격) */
 function PeekHeader({
-    top, depth, onPop, onClear, onPromote, rowId,
+    top, depth, onPop, onClear, onPromote, onCollapse, rowId,
     dragBind, dragHandlers,
 }: {
     top: Leaf;
@@ -58,6 +58,8 @@ function PeekHeader({
     onPop: () => void;
     onClear: () => void;
     onPromote: () => void;
+    /** 접기(데스크톱만) — 오른쪽 벽에 세로 손잡이로 남는다. 모바일 시트는 끌어 내리면 되니 없다 */
+    onCollapse?: () => void;
     rowId?: string;
     dragBind?: React.HTMLAttributes<HTMLDivElement>;
     dragHandlers?: boolean;
@@ -78,7 +80,16 @@ function PeekHeader({
             {depth > 1 && (
                 <span className="shrink-0 text-[11px] text-muted/70 select-none tabular-nums px-1">{depth}장</span>
             )}
-            <IconButton icon="arrowRight" label="탭으로 열기" onClick={onPromote} className="shrink-0" />
+            {/* 🔴 승격은 글자 단추 — 화살표 아이콘은 「접기」로 읽혔다(쥔님 13:36 *"화살표는 잠시 닫는 느낌인데 다시 열 방법이 없네"*) */}
+            <button
+                type="button"
+                onClick={onPromote}
+                title="이 미리 보기를 가운데 탭으로 옮긴다"
+                className="shrink-0 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05] transition-colors select-none"
+            >탭으로</button>
+            {onCollapse && (
+                <IconButton icon="panelRight" label="접기 — 오른쪽 벽에 손잡이로 남는다" onClick={onCollapse} className="shrink-0" />
+            )}
             <IconButton icon="x" label="미리 보기 닫기" onClick={onClear} className="shrink-0" />
         </div>
     );
@@ -90,7 +101,13 @@ function DesktopPeek({
     stack, width, minWidth = 150, maxWidth = 900, onWidth, onPop, onClear, onPromote, onDropLeaf, mode = 'push',
 }: PeekPanelProps) {
     const overlay = mode === 'overlay';
-    const open = stack.length > 0;
+    // 🔴 접기 — 카드를 치우되 더미는 그대로. 오른쪽 벽에 세로 손잡이(제목)가 남아 누르면 다시 편다(쥔님 13:36).
+    //    새 장이 올라오거나 ←로 장이 바뀌면 저절로 펴진다(top 이 바뀌면 리셋).
+    const has = stack.length > 0;
+    const topId = stack[stack.length - 1]?.id ?? null;
+    const [collapsed, setCollapsed] = useState(false);
+    useEffect(() => { setCollapsed(false); }, [topId]);
+    const open = has && !collapsed;
     // 나갈 때도 밀려 나가게 — 언마운트를 폭 전환 끝까지 미룬다(SidePanel 붙박이와 같은 결)
     const [rendered, setRendered] = useState(open);
     const [shown, setShown] = useState(open);
@@ -117,8 +134,24 @@ function DesktopPeek({
     // 피크 머리줄엔 우클릭 메뉴가 없다(틀 메뉴는 탭 줄의 것) — onContext 는 빈 함수
     const { bind, drag } = useDragLeaf({ enabled: true, onContext: () => {}, onDrop });
 
-    if (!rendered) return null;
     const top = stack[stack.length - 1] ?? null;
+    if (!rendered) {
+        // 접힌 손잡이 — 폭 0 자리의 오른쪽 벽에 세로 글자 탭(인덱스 스티커). 누르면 펴진다
+        if (!(has && collapsed && top)) return null;
+        return (
+            <aside className="relative shrink-0 w-0 overflow-visible z-30" data-area="floating" aria-label="미리 보기(접힘)">
+                <button
+                    type="button"
+                    onClick={() => setCollapsed(false)}
+                    title={`${top.title} — 미리 보기 펴기`}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 max-h-[40%] px-1.5 py-3 rounded-l-lg bg-panel peek-card text-[11px] text-muted hover:text-text select-none overflow-hidden"
+                    style={{ writingMode: 'vertical-rl' }}
+                >
+                    <span className="truncate italic">{top.title}</span>
+                </button>
+            </aside>
+        );
+    }
 
     return (
         // 🔴 data-area="floating" — 가운데 탭을 이 기둥에 떨구면 피크로(drop-resolve 가 'floating' 으로 번역)
@@ -149,6 +182,7 @@ function DesktopPeek({
                             onPop={onPop}
                             onClear={onClear}
                             onPromote={onPromote}
+                            onCollapse={() => setCollapsed(true)}
                             rowId={top.id}
                             dragBind={bind}
                             dragHandlers
