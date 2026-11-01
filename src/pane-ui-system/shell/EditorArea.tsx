@@ -8,7 +8,7 @@
  *    - squeeze='scroll' → 넘치면 스크롤 · 그 외 → 넘침 숨김(찌그러짐/접힘은 뷰가 collapsed 로 처리)
  *    유효 레이아웃 = 등록값 + 설정 덮어쓰기(effectiveViewLayout) — 설정이 바뀌면 usePaneSettings 로 다시 그린다.
  */
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Leaf } from '../layout/tree';
 import { getView } from '../view-registry';
 import { effectiveViewLayout, usePaneSettings } from '../layout/pane-settings';
@@ -16,14 +16,24 @@ import { isCollapsed } from '../layout/clamp';
 import { ViewPlaceholder } from '../plugin/Placeholder';
 import { usePluginRegistry } from '../plugin/registry';
 
-/** 제 요소의 폭·높이(px) — ResizeObserver 로 바뀔 때만 깨운다 */
+/**
+ * 제 요소의 폭·높이(px) — ResizeObserver 로 바뀔 때만 깨운다.
+ *
+ * 🔴 ⭐ 콜백 ref 다(useRef + useLayoutEffect 아님). 사유 — 이 칸은 **빈 상태일 때 ref 가 붙은 몸통을 안 그린다**:
+ *    열린 탭이 없으면 「열린 탭이 없습니다」 한 줄, 등록 안 된 뷰면 자리표시가 대신 뜬다.
+ *    effect 가 `[]` 로 한 번만 돌던 옛 판은 그때 `ref.current` 가 null 이라 **관찰을 영영 안 붙였고**,
+ *    나중에 탭이 생겨도 폭이 0 에 멈춰 `isCollapsed(…, 0)` 이 참이 됐다
+ *    → 넓은 화면인데 설정이 아이콘만으로 접혔다(쥔님 2026-11-01 15:26 「설정 플러그인 목록 레이아웃 깨짐」).
+ *    콜백 ref 는 **몸통이 붙고 떨어질 때마다** 불려서 그 구멍이 구조적으로 안 생긴다.
+ */
 function useElementSize() {
-    const ref = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
-    useLayoutEffect(() => {
-        const el = ref.current;
+    const roRef = useRef<ResizeObserver | null>(null);
+    const ref = useCallback((el: HTMLDivElement | null) => {
+        roRef.current?.disconnect();
+        roRef.current = null;
         if (!el) return;
-        // 🔴 ResizeObserver 초기 콜백을 못 믿는 환경이 있다 — 마운트 때 한 번은 동기로 잰다(레이아웃 강제)
+        // 🔴 ResizeObserver 초기 콜백을 못 믿는 환경이 있다 — 붙는 순간 한 번은 동기로 잰다(레이아웃 강제)
         const measure = () => {
             const r = el.getBoundingClientRect();
             setSize((prev) => (prev.width === Math.round(r.width) && prev.height === Math.round(r.height)
@@ -33,7 +43,7 @@ function useElementSize() {
         if (typeof ResizeObserver === 'undefined') return;
         const ro = new ResizeObserver(() => measure());
         ro.observe(el);
-        return () => ro.disconnect();
+        roRef.current = ro;
     }, []);
     return [ref, size] as const;
 }
@@ -67,7 +77,7 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     // 🔴 ③ 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉, 쥔님 2026-11-01). ⚠️ 입력칸에서 깜빡이면 뺀다.
     //    키가 바뀌면 그 뷰가 다시 마운트되며 .view-fade 가 한 번 돈다(움직임 줄이기면 즉시).
     return (
-        <div ref={ref} className={`flex-1 min-h-0 ${overflow} ${surface} select-text`}>
+        <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`flex-1 min-h-0 ${overflow} ${surface} select-text`}>
             <div key={leaf.id} className="view-fade h-full min-h-0">
                 <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} />
             </div>
