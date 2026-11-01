@@ -10,9 +10,11 @@ import { createElement } from 'react';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { MonthView } from './views/MonthView';
+import { MiniCalendarView } from './views/MiniCalendarView';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 const MONTH_ID = 'calendar.month';
+const MINI_ID = 'calendar.mini';
 
 function activate(host: PluginHost): void {
     // ── 뷰: 월 보기(싱글턴·가운데·안 가름) ──
@@ -30,6 +32,19 @@ function activate(host: PluginHost): void {
         run: () => { host.workspace.open(MONTH_ID, { where: 'center' }); },
     });
     host.ribbon.add({ commandId: 'calendar.open', icon: 'calendar', order: 1 });
+
+    // ── 뷰: 미니 캘린더(사이드 패널용 · 싱글턴 · 안 가름) — 가운데엔 못 놓는다(쥔님 *"패널용으로"*) ──
+    host.views.register({
+        id: 'mini', title: '미니 캘린더', icon: 'calendar', defaultArea: 'left',
+        placement: { areas: ['left', 'right'], split: false, singleton: true },
+        layout: { minWidth: 200, squeeze: 'scroll' },
+        Component: () => createElement(MiniCalendarView),
+    });
+    // 여는 길은 명령(팔레트)뿐 — 리본에 같은 달력 아이콘을 둘 세우면 헷갈린다. 왼쪽 패널에 연다.
+    host.commands.add({
+        id: 'calendar.openMini', title: '미니 캘린더 열기(왼쪽 패널)', icon: 'calendar',
+        run: () => { host.workspace.open(MINI_ID, { where: 'left' }); },
+    });
 }
 
 export const calendarPlugin: PluginModule = { manifest, activate };

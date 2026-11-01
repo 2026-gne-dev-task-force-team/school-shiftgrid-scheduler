@@ -42,6 +42,46 @@ export function shiftMonth(year: number, month: number, delta: number): [number,
     return [Math.floor(idx / 12), (idx % 12) + 1];
 }
 
+/** 날짜만 남긴 자정(시·분 버림) */
+function dayOnly(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** d 에서 n 일 뒤(음수면 앞). 달·해 넘김은 Date 가 한다 */
+export function addDays(d: Date, n: number): Date {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+/** d 가 속한 주의 첫날(자정). weekStart 0=일요일 시작 · 1=월요일 시작 */
+export function startOfWeek(d: Date, weekStart: number = 0): Date {
+    const back = (d.getDay() - weekStart + 7) % 7;
+    return addDays(dayOnly(d), -back);
+}
+
+/** 두 주 시작일 사이가 몇 주인가(b − a). 둘 다 startOfWeek 를 거친 값이어야 정수가 나온다 */
+export function weeksBetween(a: Date, b: Date): number {
+    return Math.round((dayOnly(b).getTime() - dayOnly(a).getTime()) / (7 * 86_400_000));
+}
+
+/**
+ * 한 주 7칸 — 이어지는 세로 스크롤 달력의 한 줄(쥔님 2026-11-01 17:01 *"스크롤 부드럽게 — 딱딱 끊어지는게 아니라"*).
+ *   weekStartDate 는 그 주 첫날. 「보는 달」개념이 없어 inMonth 는 늘 true 다 — 달 경계는 d===1 로 안다.
+ */
+export function weekRow(weekStartDate: Date, today?: Date): DayCell[] {
+    const tY = today?.getFullYear();
+    const tM = today ? today.getMonth() + 1 : undefined;
+    const tD = today?.getDate();
+    const cells: DayCell[] = [];
+    for (let i = 0; i < 7; i++) {
+        const dt = addDays(weekStartDate, i);
+        const y = dt.getFullYear();
+        const m = dt.getMonth() + 1;
+        const d = dt.getDate();
+        cells.push({ y, m, d, inMonth: true, isToday: y === tY && m === tM && d === tD, iso: isoOf(y, m, d) });
+    }
+    return cells;
+}
+
 /**
  * year·month(1~12) 달의 42칸 표. 항상 6행×7열 = 42칸.
  *   weekStart: 0=일요일 시작(기본) · 1=월요일 시작.

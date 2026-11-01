@@ -3,7 +3,7 @@
  *   42칸 고정 · 이웃 달 채움 · 윤년 · 오늘 갈림 · 달 넘김 · 주 시작 요일.
  */
 import { describe, it, expect } from 'vitest';
-import { monthGrid, shiftMonth, monthLabel, isoOf } from './date-grid';
+import { monthGrid, shiftMonth, monthLabel, isoOf, addDays, startOfWeek, weeksBetween, weekRow } from './date-grid';
 
 describe('monthGrid — 42칸 격자', () => {
     it('2026-11 은 1일이 일요일이라 앞쪽 이웃이 0칸이다', () => {
@@ -87,5 +87,37 @@ describe('monthLabel · isoOf', () => {
     it('isoOf 는 0 채움', () => {
         expect(isoOf(2026, 1, 1)).toBe('2026-01-01');
         expect(isoOf(2026, 11, 30)).toBe('2026-11-30');
+    });
+});
+
+describe('주 단위 — 이어지는 세로 스크롤 달력의 바닥', () => {
+    it('startOfWeek — 2026-11-04(수) 의 주 첫날은 11-01(일), 월요일 시작이면 11-02', () => {
+        expect(startOfWeek(new Date(2026, 10, 4), 0).getDate()).toBe(1);
+        expect(startOfWeek(new Date(2026, 10, 4), 1).getDate()).toBe(2);
+        // 일요일 자체는 그대로
+        expect(startOfWeek(new Date(2026, 10, 1), 0).getDate()).toBe(1);
+    });
+    it('addDays 는 달·해를 넘긴다', () => {
+        expect(isoOf(...(d => [d.getFullYear(), d.getMonth() + 1, d.getDate()] as const)(addDays(new Date(2026, 11, 30), 3)))).toBe('2027-01-02');
+        expect(addDays(new Date(2026, 2, 1), -1).getDate()).toBe(28);   // 2026-02 는 28일
+    });
+    it('weeksBetween — 두 주 시작일 사이 주 수, 앞뒤 부호', () => {
+        const a = startOfWeek(new Date(2026, 10, 1));
+        expect(weeksBetween(a, startOfWeek(new Date(2026, 10, 29)))).toBe(4);
+        expect(weeksBetween(a, startOfWeek(new Date(2026, 9, 4)))).toBe(-4);
+        expect(weeksBetween(a, a)).toBe(0);
+    });
+    it('weekRow — 7칸, 달 경계를 넘는 주는 두 달이 섞이고 inMonth 는 늘 true', () => {
+        const row = weekRow(startOfWeek(new Date(2026, 10, 29)));   // 11/29(일) ~ 12/5(토)
+        expect(row.length).toBe(7);
+        expect(row[0].iso).toBe('2026-11-29');
+        expect(row[2].iso).toBe('2026-12-01');
+        expect(row[2].d).toBe(1);
+        expect(row.every((c) => c.inMonth)).toBe(true);
+    });
+    it('weekRow — today 를 주면 그 칸만 isToday', () => {
+        const row = weekRow(startOfWeek(new Date(2026, 10, 1)), new Date(2026, 10, 4));
+        expect(row.map((c) => c.isToday)).toEqual([false, false, false, true, false, false, false]);
+        expect(weekRow(startOfWeek(new Date(2026, 10, 1))).some((c) => c.isToday)).toBe(false);
     });
 });
