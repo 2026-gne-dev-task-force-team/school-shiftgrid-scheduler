@@ -9,9 +9,9 @@ import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, emptyTree, uid,
-    createNode, rename, move, remove, toggleCollapse, collapseAll, parentOf,
+    createNode, rename, move, remove, duplicate, toggleCollapse, collapseAll, parentOf,
 } from './model/tree';
-import { isContainerType } from './model/types';
+import { isContainerType, getType, acceptsChild } from './model/types';
 import { load, save } from './persist';
 
 interface ExplorerState {
@@ -95,11 +95,25 @@ function targetParent(): string {
     return state.tree.root;
 }
 
-/** 새 폴더 — 만들자마자 고르고 이름 바꾸기로 들어간다(VS Code 식). */
-export function newFolder(parentId?: string): void {
+/**
+ * 타입 하나를 「새로 만들기」 — 고른 노드(컨테이너면 그 안, 아니면 루트) 밑에. 만들자마자 고르고 이름바꾸기(VS Code 식).
+ *   🔴 타입 이름 비교가 없다 — create.init 과 label 은 등록 표에서 온다. 「새 폴더」도 이 길을 탄다(folder 도 표의 한 줄).
+ */
+export function createUnder(type: string, parentId?: string): void {
     const parent = parentId ?? targetParent();
+    const def = getType(type);
+    const init = def?.create?.init?.(parent) ?? {};
     const id = uid();
-    apply((t) => createNode(t, parent, { id, type: 'folder', name: '새 폴더' }), { selectedId: id, renamingId: id });
+    const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
+    apply(
+        (t) => createNode(t, parent, { id, type, name, data: init.data }),
+        { selectedId: id, renamingId: id },
+    );
+}
+
+/** 새 폴더 — createUnder('folder') 의 설탕(헤더 단추·리본이 부른다). */
+export function newFolder(parentId?: string): void {
+    createUnder('folder', parentId);
 }
 
 /** 고른 노드 이름 바꾸기 시작(F2·메뉴). */
@@ -125,7 +139,38 @@ export function collapseAllNodes(): void {
     apply((t) => collapseAll(t));
 }
 
-/** 옮기기 — N2 드래그가 쓸 자리(API·커맨드 공용). */
+/** 복제 — 고른(또는 준) 노드를 깊은 복제해 바로 뒤에. 복제본 뿌리를 골라 준다. */
+export function duplicateNode(id?: string): void {
+    const target = id ?? state.selectedId;
+    if (!target || target === state.tree.root || target === state.tree.trash) return;
+    if (!state.tree.nodes[target]) return;
+    let firstId: string | null = null;
+    const gen = (): string => { const x = uid(); if (firstId === null) firstId = x; return x; };
+    apply((t) => duplicate(t, target, gen));
+    if (firstId) select(firstId);
+}
+
+/** 옮기기 — N2 드래그·메뉴가 쓸 자리. 🔴 accepts 를 move 에 주입한다(마지막 관문). */
 export function moveNode(id: string, parentId: string, index?: number): void {
-    apply((t) => move(t, id, parentId, index));
+    apply((t) => move(t, id, parentId, index, acceptsChild));
+}
+
+/**
+ * 고른 노드를 형제 사이에서 한 칸 — 좁은 화면 메뉴의 「위로·아래로」(드래그 대신).
+ *   delta: -1 위로 · +1 아래로. 끝이면 아무 일 없음.
+ */
+export function nudgeSelected(delta: -1 | 1): void {
+    const id = state.selectedId;
+    if (!id) return;
+    const parent = parentOf(state.tree, id);
+    if (!parent) return;
+    const sibs = state.tree.nodes[parent].children;
+    const at = sibs.indexOf(id);
+    const to = at + delta;
+    if (to < 0 || to >= sibs.length) return;
+    // move 는 id 를 뺀 뒤 index 에 꽂는다 — 뺀 배열 기준 자리로 환산한다.
+    const without = sibs.filter((c) => c !== id);
+    const anchor = sibs[to];
+    const dest = without.indexOf(anchor) + (delta === 1 ? 1 : 0);
+    moveNode(id, parent, dest);
 }

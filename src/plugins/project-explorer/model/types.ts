@@ -77,6 +77,48 @@ export function isKnownType(type: string): boolean {
     return registry.has(type);
 }
 
+/**
+ * 이 부모 타입이 이 자식 타입을 받나 — 드래그·이동의 accepts 판정 한 곳(model/tree.move 에 주입된다).
+ *   - 컨테이너가 아니면 안 받는다 · container === true 면 전부 · { accepts } 면 그 목록만.
+ *   🔴 모르는 타입(등록 안 됨)은 컨테이너가 아니라고 본다 — 자식을 못 받는다.
+ */
+export function acceptsChild(parentType: string, childType: string): boolean {
+    const c = registry.get(parentType)?.container;
+    if (!c) return false;
+    if (c === true) return true;
+    return c.accepts.includes(childType);
+}
+
+/**
+ * 우클릭 「새로 만들기 ▸」 후보 — 설계 그대로 표를 돈다(⛔ 타입 이름 비교 없음):
+ *   부모 타입이 받는 것(accepts) ∩ 그 타입이 create.under 로 허용하는 부모. create 없는 타입은 후보 아님.
+ *   🔴 지금은 「폴더」 하나뿐이지만 코드는 등록 표 전체를 돈다 — N4 에서 타입이 늘면 저절로 채워진다.
+ */
+export function createCandidates(parentType: string): NodeTypeDef[] {
+    const out: NodeTypeDef[] = [];
+    for (const def of registry.values()) {
+        if (!def.create) continue;
+        if (!acceptsChild(parentType, def.type)) continue;          // 부모가 이 타입을 받나
+        const under = def.create.under;
+        if (under && !under.includes(parentType)) continue;         // 이 타입이 이 부모 밑을 허용하나
+        out.push(def);
+    }
+    return out;
+}
+
+/** 그 타입이 꽂은 줄 메뉴 항목(menu?(nodeId)) — 없으면 빈 배열. 뷰가 구분선 뒤에 붙인다. */
+export function typeMenu(node: Node, nodeId: string): MenuEntry[] {
+    const fn = registry.get(node.type)?.menu;
+    if (!fn) return [];
+    try { return fn(nodeId); } catch { return []; }
+}
+
+/** can.rename/move/delete — 기본 전부 true(타입이 명시로 끌 때만 false). */
+export function canDo(type: string, what: 'rename' | 'move' | 'delete'): boolean {
+    const can = registry.get(type)?.can;
+    return can?.[what] !== false;
+}
+
 /** 테스트·앱 재마운트에서 목록을 비운다(view-registry.clearViews 와 같은 결). */
 export function clearTypes(): void {
     registry.clear();

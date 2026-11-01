@@ -1,35 +1,122 @@
 /**
  * 「프로젝트 탐색기」 패널 — VS Code 파일 탐색기 그림(쥔님 2026-11-01 17:28: *"VS 코드로 가자"*).
  *
- * 🔴 ⛔ 탐색기는 타입을 모른다 — 아이콘·컨테이너 여부·열기는 전부 등록 표(model/types.ts)에 묻는다.
+ * 🔴 ⛔ 탐색기는 타입을 모른다 — 아이콘·컨테이너 여부·열기·「새로 만들기」 목록은 전부 등록 표(model/types.ts)에 묻는다.
  *    이 파일에 `type ===` 비교를 두지 않는다(설계 「여기서 죽는다」 — 탐색기가 타입을 알게 되는 유혹).
- * ⭐ 누르기(VS Code 식): 한 번 = 고르기만(폴더는 접기/펴기도) · 두 번·Enter = 열기(N1 폴더는 접기/펴기와 같다 ·
- *    openable 타입이 오면 open 을 부를 자리만 둔다) · F2 = 이름 바꾸기.
- * 🔴 이름 바꾸기 input 에서 한글 조합 중 Enter 는 무시한다(isComposing || keyCode 229) — 설계 「각 판에서 죽는 방식」 N1.
+ * ⭐ 누르기(VS Code 식): 한 번 = 고르기만(폴더는 접기/펴기도) · 두 번·Enter = 열기 · F2 = 이름 바꾸기.
+ * 🔴 드래그·우클릭은 useDragLeaf 한 훅으로 가른다(탭 드래그와 같은 가름 — 마우스 8px / 손가락 350ms 무장).
+ *    떨굴 자리 셋(줄 위 25% 앞 · 아래 25% 뒤 · 가운데 50% 안으로 · container 일 때만) · accepts/자손 금지는 빨간 표시 +
+ *    모델 move 가 마지막 관문. 좁은 화면(narrow)에선 드래그를 끄고 메뉴의 「위로·아래로」로.
+ * ⭐ params.rootId 로 「이 폴더를 탐색기로」 탭을 그린다 — 루트가 지워졌으면 「없는 노드」 한 줄(유령 탭).
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
-import { Icon, SectionHeader, IconButton, ContextMenu, useContextTrigger } from '../../../pane-ui-system';
-import { flatten, parentOf, type Node } from '../model/tree';
-import { isContainerType, iconOf, isKnownType, getType } from '../model/types';
-import { useExplorer, select, toggle, cancelRename, commitRename } from '../store';
+import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
+import { flatten, filterIds, parentOf, isDescendant, type Node, type Tree } from '../model/tree';
+import { isContainerType, iconOf, isKnownType, getType, createCandidates, typeMenu, canDo, acceptsChild } from '../model/types';
+import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
 const BASE_PAD = 6;
 
-export function ExplorerView({ host }: { host: PluginHost }) {
+/** 드래그가 떨어질 자리 — 포인터 DOM 자리를 「어느 줄·어느 띠」로 번역한 결과. */
+interface DropResolved {
+    targetId: string;
+    pos: 'before' | 'after' | 'into';
+    rect: DOMRect;
+    destParent: string;
+    index: number | undefined;
+    ok: boolean;           // accepts 통과 + 제 자손 아님 (금지면 빨간 선)
+}
+
+/** 포인터 자리(x,y)를 떨굴 자리로 — 줄 높이 25/50/25 띠. DOM 을 더듬으니 순수 아님(drop-resolve 와 같은 결). */
+function resolveDrop(container: HTMLElement | null, x: number, y: number, dragId: string, tree: Tree): DropResolved | null {
+    if (!container) return null;
+    const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-row-id]'));
+    if (rows.length === 0) return null;
+    let target: HTMLElement | null = null;
+    for (const el of rows) {
+        const r = el.getBoundingClientRect();
+        if (y >= r.top && y <= r.bottom) { target = el; break; }
+    }
+    if (!target) target = y < rows[0].getBoundingClientRect().top ? rows[0] : rows[rows.length - 1];
+    const rect = target.getBoundingClientRect();
+    const targetId = target.getAttribute('data-row-id');
+    if (!targetId) return null;
+    const tnode = tree.nodes[targetId];
+    if (!tnode) return null;
+
+    const rel = rect.height > 0 ? (y - rect.top) / rect.height : 0.5;
+    const isCont = isContainerType(tnode.type);
+    const pos: 'before' | 'after' | 'into' = isCont
+        ? (rel < 0.25 ? 'before' : rel > 0.75 ? 'after' : 'into')
+        : (rel < 0.5 ? 'before' : 'after');
+
+    let destParent: string;
+    let index: number | undefined;
+    if (pos === 'into') {
+        destParent = targetId;
+        index = undefined;
+    } else {
+        destParent = parentOf(tree, targetId) ?? tree.root;
+        const sibs = tree.nodes[destParent].children.filter((c) => c !== dragId);
+        const at = sibs.indexOf(targetId);
+        index = pos === 'after' ? at + 1 : at;
+    }
+    const dnode = tree.nodes[dragId];
+    const dp = tree.nodes[destParent];
+    const ok = !!dnode && !!dp
+        && destParent !== dragId
+        && !isDescendant(tree, destParent, dragId)
+        && acceptsChild(dp.type, dnode.type);
+    return { targetId, pos, rect, destParent, index, ok };
+}
+
+export function ExplorerView({ host, rootId }: { host: PluginHost; rootId?: string }) {
     const { tree, selectedId, renamingId } = useExplorer();
-    const rows = flatten(tree, tree.root, isContainerType);
+    const effRoot = rootId ?? tree.root;
+    const rootMissing = rootId != null && !tree.nodes[rootId];
+
+    const [query, setQuery] = useState('');
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+    const [narrow, setNarrow] = useState<boolean>(() => host.screen.narrow());
+    const listRef = useRef<HTMLDivElement>(null);
+    const draggedRef = useRef(false);
+
+    useEffect(() => {
+        setNarrow(host.screen.narrow());
+        const d = host.screen.on((n) => setNarrow(n));
+        return () => d.dispose();
+    }, [host]);
+
     const closeMenu = useCallback(() => setMenu(null), []);
 
-    // 🔴 「무엇이 우클릭인가」는 useContextTrigger 한 곳에만 — 눌린 줄은 data-row-id 로 더듬는다(EmptyArea 와 같은 결).
-    const trigger = useContextTrigger((x, y, e) => {
-        const el = (e.target as HTMLElement | null)?.closest?.('[data-row-id]') as HTMLElement | null;
-        select(el?.getAttribute('data-row-id') ?? null);
+    // ── 줄 목록 — 검색 중이면 맞는 줄 + 그 조상만, 접힘 무시하고 편다 ──
+    const q = query.trim().toLowerCase();
+    const rows = q
+        ? flatten(tree, effRoot, isContainerType, {
+            expandAll: true,
+            keep: (() => { const k = filterIds(tree, effRoot, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
+        })
+        : flatten(tree, effRoot, isContainerType);
+
+    // ── 드래그 + 우클릭 한 훅 — 좁은 화면에선 끈다(그땐 메뉴의 위로/아래로) ──
+    const onDrop = useCallback((dragId: string, x: number, y: number) => {
+        draggedRef.current = true;
+        if (isDescendant(tree, dragId, tree.trash)) return;          // 휴지통 줄은 드래그로 안 옮긴다
+        const hit = resolveDrop(listRef.current, x, y, dragId, tree);
+        if (hit && hit.ok) moveNode(dragId, hit.destParent, hit.index);
+    }, [tree]);
+
+    const onContext = useCallback((x: number, y: number, el: HTMLElement) => {
+        const row = el.closest?.('[data-row-id]') as HTMLElement | null;
+        select(row?.getAttribute('data-row-id') ?? null);
         setMenu({ x, y });
-    });
+    }, []);
+
+    const { bind, drag } = useDragLeaf({ enabled: !narrow, axis: 'y', onContext, onDrop });
+    const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, tree) : null;
 
     // ── 노드 하나를 「연다」 — 폴더는 접기/펴기, openable 타입은 등록된 open ──
     const openNode = (id: string): void => {
@@ -37,21 +124,24 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (!n) return;
         if (isContainerType(n.type)) { toggle(id); return; }
         const def = getType(n.type);
-        if (def?.openable && def.open) def.open(id);   // N1 엔 openable 타입이 없다 — 자리만
+        if (def?.openable && def.open) def.open(id);
     };
 
     const clickRow = (n: Node): void => {
+        if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         select(n.id);
-        if (isContainerType(n.type)) toggle(n.id);   // 폴더는 한 번 눌러도 접기/펴기
+        if (isContainerType(n.type)) toggle(n.id);
     };
     const dblRow = (n: Node): void => {
-        if (isContainerType(n.type)) return;         // 폴더는 clickRow 가 이미 토글했다(이중 토글 방지)
+        if (isContainerType(n.type)) return;
         openNode(n.id);
     };
 
     // ── 키보드 — ↑↓ 고르기 · →← 펴기/접기 또는 자식/부모 · Enter 열기 · F2 이름 · Delete 휴지통 ──
     const onKeyDown = (e: React.KeyboardEvent): void => {
-        if (renamingId) return;                       // input 이 제 키를 쥔다
+        if (renamingId) return;
+        const tgt = e.target as HTMLElement;
+        if (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA') return;   // 검색칸 등은 제 키를 쥔다
         const sel = selectedId;
         const selNode = sel ? tree.nodes[sel] : null;
         const idx = rows.findIndex((r) => r.id === sel);
@@ -72,30 +162,61 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     toggle(sel!);
                 } else if (sel) {
                     const p = parentOf(tree, sel);
-                    if (p && p !== tree.root) select(p);
+                    if (p && p !== effRoot) select(p);
                 }
                 break;
             case 'Enter': e.preventDefault(); if (sel) openNode(sel); break;
-            // 🔴 F2·Delete 도 명령을 거친다(「모든 동작은 명령」) — 대상은 스토어의 고른 노드.
             case 'F2': e.preventDefault(); if (sel) host.commands.run('project-explorer.rename'); break;
             case 'Delete': case 'Backspace': e.preventDefault(); if (sel) host.commands.run('project-explorer.remove'); break;
         }
     };
 
-    const menuItems: MenuEntry[] = [
-        { label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' },
-        { label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !selectedId },
-        { sep: true },
-        { label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !selectedId },
-    ];
+    // ── 우클릭 메뉴 — 등록 표에서 「새로 만들기」를 짜고(⛔ 타입 비교 없음), 나머지 동작을 붙인다 ──
+    const buildMenu = (): MenuEntry[] => {
+        const selNode = selectedId ? tree.nodes[selectedId] : null;
+        const inTrash = !!selectedId && isDescendant(tree, selectedId, tree.trash);
+        // 「새로 만들기 ▸」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용
+        const baseType = selNode ? selNode.type : (tree.nodes[effRoot]?.type ?? 'folder');
+        const items: MenuEntry[] = [];
+        // ContextMenu 는 하위 메뉴가 없다 → 「새 <label>」 로 평평하게(지금은 폴더 하나).
+        for (const def of createCandidates(baseType)) {
+            items.push({ label: `새 ${def.label}`, icon: 'plus', commandId: `project-explorer.new-${def.type}` });
+        }
+        if (selNode && !inTrash) {
+            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !canDo(selNode.type, 'rename') });
+            items.push({ label: '복제', icon: 'copy', commandId: 'project-explorer.duplicate' });
+            items.push({ label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
+            if (isContainerType(selNode.type)) {
+                items.push({ label: '이 폴더를 탐색기로', icon: 'panelRight', commandId: 'project-explorer.open-as-root' });
+            }
+            if (narrow) {
+                items.push({ label: '위로', icon: 'left', commandId: 'project-explorer.move-up' });
+                items.push({ label: '아래로', icon: 'left', commandId: 'project-explorer.move-down' });
+            }
+            const extra = typeMenu(selNode, selNode.id);
+            if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
+        }
+        if (items.length === 0) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
+        return items;
+    };
+
+    if (rootMissing) {
+        return (
+            <div className="h-full flex flex-col bg-side">
+                <SectionHeader title="프로젝트 탐색기" />
+                <p className="px-pad py-3 text-[12px] text-muted select-none">없는 노드 — 이 폴더는 지워졌습니다.</p>
+            </div>
+        );
+    }
 
     return (
         <div
             className="h-full flex flex-col bg-side outline-none"
+            style={drag && preview && !preview.ok ? { cursor: 'not-allowed' } : undefined}
             tabIndex={0}
             role="tree"
             onKeyDown={onKeyDown}
-            {...trigger}
+            {...bind}
         >
             <SectionHeader
                 title="프로젝트 탐색기"
@@ -107,14 +228,29 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 )}
             />
 
-            <div className="flex-1 min-h-0 overflow-auto py-1">
+            {/* 검색 — 맞는 줄과 그 조상만(접힘 무시) · 비우면 원래대로 */}
+            <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0">
+                <Icon name="search" size={13} className="text-muted shrink-0" />
+                <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="검색"
+                    className="flex-1 min-w-0 text-[12px] leading-none bg-transparent text-text placeholder:text-muted outline-none"
+                />
+                {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
+            </div>
+
+            <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative">
                 {rows.length === 0 && (
-                    <p className="px-pad py-2 text-[12px] text-muted select-none">비어 있습니다 — 「새 폴더」로 시작하세요.</p>
+                    <p className="px-pad py-2 text-[12px] text-muted select-none">
+                        {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
+                    </p>
                 )}
                 {rows.map((row) => {
                     const known = isKnownType(row.node.type);
                     const isSel = selectedId === row.id;
                     const isRenaming = renamingId === row.id;
+                    const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
                     return (
                         <div
                             key={row.id}
@@ -127,7 +263,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             onDoubleClick={() => dblRow(row.node)}
                             className={`group flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
                                 isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
-                            }`}
+                            } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : ''}`}
                             style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
                         >
                             {row.hasChildren ? (
@@ -157,7 +293,6 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                     onKeyDown={(e) => {
                                         e.stopPropagation();
                                         if (e.key === 'Enter') {
-                                            // 🔴 한글 조합 중 Enter 는 무시(사파리는 keyCode 229 만 온다)
                                             if (e.nativeEvent.isComposing || e.keyCode === 229) return;
                                             commitRename(e.currentTarget.value);
                                         } else if (e.key === 'Escape') {
@@ -176,11 +311,23 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 })}
             </div>
 
+            {/* 드래그 떨굴 선 — before/after 는 가로선, 금지면 빨강(토큰 색만). into 는 줄 자체에 ring 으로 그린다 */}
+            {drag && preview && preview.pos !== 'into' && (
+                <div
+                    className={`fixed z-[150] h-0.5 pointer-events-none ${preview.ok ? 'bg-accent' : 'bg-bad'}`}
+                    style={{
+                        left: preview.rect.left,
+                        width: preview.rect.width,
+                        top: preview.pos === 'before' ? preview.rect.top : preview.rect.bottom,
+                    }}
+                />
+            )}
+
             {menu && (
                 <ContextMenu
                     x={menu.x}
                     y={menu.y}
-                    items={menuItems}
+                    items={buildMenu()}
                     onClose={closeMenu}
                     onCommand={(id) => host.commands.run(id)}
                 />

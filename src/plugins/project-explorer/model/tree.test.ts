@@ -5,8 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import {
     type Tree, type Node,
-    emptyTree, normalize, createNode, rename, move, remove, toggleCollapse, setData, collapseAll,
-    parentOf, flatten,
+    emptyTree, normalize, createNode, rename, move, remove, duplicate, toggleCollapse, setData, collapseAll,
+    parentOf, flatten, filterIds,
 } from './tree';
 
 /** 검사용 나무를 손으로 짓는다 — id 를 직접 줘서 결과가 예측 가능하게(랜덤 uid 안 씀). */
@@ -97,6 +97,45 @@ describe('move', () => {
     it('루트는 못 움직인다', () => {
         const t = make({ a: {} });
         expect(move(t, 'root', 'a')).toBe(t);
+    });
+    it('컨테이너 안으로 넣는다(index 생략 = 끝)', () => {
+        const t = make({ box: { children: ['x'] }, x: {}, y: {} });
+        const r = move(t, 'y', 'box');
+        expect(r.nodes.box.children).toEqual(['x', 'y']);
+        expect(r.nodes.root.children).toEqual(['box']);   // y 가 루트에서 빠졌다
+    });
+    it('canAccept 가 막으면 그대로, 허용하면 옮긴다(드래그 최종 관문)', () => {
+        const t = make({ box: {}, item: { type: 'leaf' } });
+        expect(move(t, 'item', 'box', undefined, () => false)).toBe(t);
+        expect(move(t, 'item', 'box', undefined, () => true).nodes.box.children).toEqual(['item']);
+    });
+});
+
+describe('duplicate', () => {
+    it('깊은 복제 — 새 id, 원본 바로 뒤 형제, 자식째', () => {
+        const t = make({ p: { children: ['a'] }, a: { name: '원본', children: ['b'] }, b: { name: '자식' } });
+        let i = 0;
+        const r = duplicate(t, 'a', () => `dup${i++}`);
+        expect(r.nodes.p.children).toEqual(['a', 'dup0']);   // 원본(a) 바로 뒤
+        expect(r.nodes.dup0.name).toBe('원본');
+        expect(r.nodes.dup0.children).toEqual(['dup1']);
+        expect(r.nodes.dup1.name).toBe('자식');
+        expect(r.nodes.a.children).toEqual(['b']);           // 원본은 그대로
+    });
+    it('뿌리·휴지통은 복제 안 한다', () => {
+        const t = make({});
+        expect(duplicate(t, 'root')).toBe(t);
+        expect(duplicate(t, 'trash')).toBe(t);
+    });
+});
+
+describe('filterIds (검색)', () => {
+    it('맞는 노드 + 그 조상만 담는다', () => {
+        const t = make({ p: { children: ['a'] }, a: { name: 'needle' }, other: { name: '딴것' } });
+        const keep = filterIds(t, 'root', (n) => n.name.includes('needle'));
+        expect(keep.has('a')).toBe(true);
+        expect(keep.has('p')).toBe(true);     // 조상은 길로 남긴다
+        expect(keep.has('other')).toBe(false);
     });
 });
 
