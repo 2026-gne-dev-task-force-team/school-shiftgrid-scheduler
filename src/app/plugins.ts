@@ -9,6 +9,7 @@
  */
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
+import { projectExplorerPlugin } from '../plugins/project-explorer';
 import { paneTestPlugin } from '../plugins/pane-test';
 import { calendarPlugin } from '../plugins/calendar';
 
@@ -16,6 +17,7 @@ import { calendarPlugin } from '../plugins/calendar';
 //    pane-test(팬 UI 엔진 테스트)는 코어 아님 — 설정에서 끌 수 있다(그 자체가 수명주기 시연).
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
+    projectExplorerPlugin,   // 프로젝트 탐색기 — 코어(core:true), 끌 수 없다. 노드 하이라키 + 탐색기 패널(N1)
     paneTestPlugin,
     calendarPlugin,   // 캘린더(월 보기) — 코어 아님, 설정에서 끌 수 있다
 ];
