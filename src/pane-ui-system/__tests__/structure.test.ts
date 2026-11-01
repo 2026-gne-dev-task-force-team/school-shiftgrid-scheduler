@@ -31,10 +31,11 @@ function walk(dir: string): string[] {
 
 const read = (p: string) => readFileSync(p, 'utf-8');
 
-describe('① app·shell 에 하드코딩 색 0건', () => {
+describe('① app·shell·plugins 에 하드코딩 색 0건', () => {
     // #rrggbb · rgb( · bg-gray- · text-gray- · border-gray-
+    // 🔴 plugins 도 본다 — 뷰가 제멋대로 색을 박으면 테마가 안 먹는다(팬 UI 엔진 테스트의 색 글자도 토큰으로만).
     const BANNED = /#[0-9a-fA-F]{3,8}\b|rgb\(|\b(?:bg|text|border)-gray-/;
-    const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system', 'shell'))];
+    const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system', 'shell')), ...walk(join(ROOT, 'plugins'))];
 
     it('스캔할 파일이 실제로 있다(빈 글롭이 거짓 통과를 주지 않게)', () => {
         expect(files.length).toBeGreaterThan(0);
