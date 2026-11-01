@@ -59,7 +59,8 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
         e.preventDefault();
         try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* 무시 */ }
         setDragging(true);
-        const layer = layerRef.current?.getBoundingClientRect();
+        // 넓음(밀기)이면 이 층이 곧 패널이라 한계는 부모(칸) 폭으로 잰다 · 좁음(덮기)이면 층이 칸 전체다
+        const layer = (wide ? layerRef.current?.parentElement : layerRef.current)?.getBoundingClientRect();
         if (!layer) return;
         const move = (ev: PointerEvent) => {
             if (wide) {
@@ -81,17 +82,21 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
         window.addEventListener('pointerup', up);
     }, [wide]);
 
-    const panelStyle = wide
-        ? { width: `min(${w}px, calc(100% - ${EDGE_GAP}px))` }
-        : { height: h > 0 ? `min(${h}px, calc(100% - ${EDGE_GAP}px))` : '62%' };
+    // 🔴 ⭐ 넓으면 **민다**, 좁으면 **덮는다** — 요구명세 갈림 2(*"사이드 피크는 민다. 모바일은 밀지 않고 덮는다"*).
+    //    밀기: 이 층이 칸의 flex 형제로 서서 본문이 그만큼 좁아진다(노션 side peek). 덮기: 칸 위에 absolute 로 아래에서 올라온다.
+    //    ⛔ 가림막(딤) 없음 · 바깥 클릭을 삼키지도 닫지도 않는다 — 쥔님 2026-11-01 19:08 *"알림창이나 동작 막는 창이 아니라
+    //    목록에서 세부 내용을 보는 창 · 탐색의 흐름은 끊기면 안 돼"*. 뒤의 목록은 그대로 눌리고, 미리보기는 ✕/Esc 로만 닫는다.
+    const rootClass = wide
+        ? 'relative h-full shrink-0 z-30 pointer-events-auto peek-from-right'
+        : 'absolute inset-0 z-30 pointer-events-none';
+    const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${EDGE_GAP}px))` } : undefined;
+    const panelStyle = wide ? undefined : { height: h > 0 ? `min(${h}px, calc(100% - ${EDGE_GAP}px))` : '62%' };
 
     return (
-        <div ref={layerRef} className="absolute inset-0 z-30 pointer-events-none">
-            {/* ⛔ 가림막(딤) 없음 · 바깥 클릭을 삼키지도 닫지도 않는다 — 쥔님 2026-11-01 19:08 *"알림창이나 동작 막는 창이 아니라
-                목록에서 세부 내용을 보는 창 · 탐색의 흐름은 끊기면 안 돼"*. 뒤의 목록은 그대로 눌리고, 미리보기는 ✕/Esc 로만 닫는다 */}
+        <div ref={layerRef} className={rootClass} style={rootStyle}>
             <div
                 className={wide
-                    ? 'absolute top-0 right-0 bottom-0 bg-panel border-l border-line rounded-l-xl shadow-xl flex flex-col pointer-events-auto peek-from-right overflow-hidden'
+                    ? 'absolute inset-0 bg-panel border-l border-line rounded-l-xl shadow-xl flex flex-col overflow-hidden'
                     : 'absolute left-0 right-0 bottom-0 bg-panel border-t border-line rounded-t-xl shadow-xl flex flex-col pointer-events-auto peek-from-bottom overflow-hidden'}
                 style={panelStyle}
                 role="complementary"

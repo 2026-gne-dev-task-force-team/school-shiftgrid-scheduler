@@ -55,6 +55,8 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     const [ref, size] = useElementSize();
     usePaneSettings();       // 뷰 덮어쓰기가 바뀌면 접힘 기준이 바뀐다 → 다시 그린다
     usePluginRegistry();     // 🔴 플러그인을 끄고 켜면 이 뷰가 등록소에서 빠지거나 돌아온다 → 다시 그린다(자리표시 전환)
+    // 본문 상자의 크기 — 미리보기가 옆에서 밀면 칸(size)보다 좁아진다. 뷰에는 이 값을 준다(접힘 판정은 칸 폭으로).
+    const [bodyRef, bodySize] = useElementSize();
 
     // 🔴 피크(미리보기) — 이 칸(leaf)에 겹쳐 뜨는 상태. 뷰가 ViewProps.peek 으로 띄운다.
     //    ⭐ 이 칸의 leaf 가 바뀌면(탭 전환) 피크는 닫는다 — 옛 leaf 의 피크가 새 leaf 에 새지 않게.
@@ -90,18 +92,23 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
     // 🔴 ③ 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉, 쥔님 2026-11-01). ⚠️ 입력칸에서 깜빡이면 뺀다.
     //    키가 바뀌면 그 뷰가 다시 마운트되며 .view-fade 가 한 번 돈다(움직임 줄이기면 즉시).
-    // 🔴 겉은 relative(피크를 이 칸에 가둔다) · 안쪽 몸통 층이 스크롤을 쥔다 · 피크는 그 위에 겹친다.
-    //    피크는 absolute inset-0 라 탭 줄 아래 「내용 위」에만 뜬다(탭 줄·머리줄과 높이를 안 맞춘다).
-    //    넓음/좁음은 **이 칸 폭**(size.width) 으로 가른다 — 창 폭이 아니다(쥔님).
+    // 🔴 겉은 flex 가로줄 — [본문 상자 | (넓으면) 미리보기]. 미리보기가 넓을 땐 **옆에 서서 본문을 민다**(요구명세 갈림 2 ·
+    //    쥔님 19:08 *"탐색의 흐름은 끊기면 안 돼"*), 좁을 땐 본문 상자 위에 absolute 로 **아래에서 덮는다**.
+    //    넓음/좁음은 **이 칸 폭**(size.width) 으로 가른다 — 창 폭도, 밀려 좁아진 본문 폭도 아니다(되먹임 방지).
+    //    본문 상자 안쪽 층이 스크롤을 쥔다 · 탭 줄 아래 「내용」 영역에서만 논다(탭 줄·머리줄과 높이를 안 맞춘다).
     const peekWide = size.width >= (peek?.wideMin ?? PEEK_WIDE_MIN_DEFAULT);
+    const bodyW = bodySize.width || size.width;
     return (
-        <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`relative flex-1 min-h-0 ${surface}`}>
-            <div className={`absolute inset-0 ${overflow} select-text`}>
-                <div key={leaf.id} className="view-fade h-full min-h-0">
-                    <Body leaf={leaf} width={size.width} height={size.height} collapsed={collapsed} peek={peekHandle} />
+        <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`relative flex-1 min-h-0 flex ${surface}`}>
+            <div ref={bodyRef} className="relative flex-1 min-w-0 min-h-0">
+                <div className={`absolute inset-0 ${overflow} select-text`}>
+                    <div key={leaf.id} className="view-fade h-full min-h-0">
+                        <Body leaf={leaf} width={bodyW} height={size.height} collapsed={collapsed} peek={peekHandle} />
+                    </div>
                 </div>
+                {peek && !peekWide && <PeekLayer wide={false} onClose={hidePeek}>{peek.node}</PeekLayer>}
             </div>
-            {peek && <PeekLayer wide={peekWide} onClose={hidePeek}>{peek.node}</PeekLayer>}
+            {peek && peekWide && <PeekLayer wide onClose={hidePeek}>{peek.node}</PeekLayer>}
         </div>
     );
 }
