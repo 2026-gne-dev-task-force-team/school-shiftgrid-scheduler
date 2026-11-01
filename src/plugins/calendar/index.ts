@@ -11,12 +11,19 @@ import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
+import { CalendarSettings } from './settings/CalendarSettings';
+import { initOptions } from './store';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 const MONTH_ID = 'calendar.month';
 const MINI_ID = 'calendar.mini';
 
 function activate(host: PluginHost): void {
+    // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「캘린더」 판에서 켠다
+    initOptions(host);
+    host.settings.addSection('calendar', '캘린더', 'calendar');
+    host.settings.addItem({ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', Pane: () => createElement(CalendarSettings) });
+
     // ── 뷰: 월 보기(싱글턴·가운데·안 가름) ──
     //    아이콘은 Icon 부품의 'calendar'(16:55 추가 — 처음엔 격자 'table' 이었다. 쥔님 *"캘린더 스럽지 않아"*).
     host.views.register({
@@ -24,7 +31,7 @@ function activate(host: PluginHost): void {
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 280, squeeze: 'scroll' },
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab) — 17:06 넷을 더 받으며 MonthView 직접 → 컨테이너로
-        Component: () => createElement(CalendarTab),
+        Component: () => createElement(CalendarTab, { openMini: () => host.workspace.open(MINI_ID, { where: 'left' }) }),
     });
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──
