@@ -49,6 +49,10 @@ export function makeHost(pluginId: string): PluginHost {
                 reportStorageError({ scope: 'local', key: skey(key), reason: classifyStorageError(e), at: Date.now() });
             }
         },
+        remove(key: string) {
+            if (typeof localStorage === 'undefined') return;
+            try { localStorage.removeItem(skey(key)); } catch { /* 삭제 실패는 유실이 아니다 — 조용히 */ }
+        },
     };
 
     // 🔴 큰 저장(비동기 kv) — 키를 host.storage 와 같은 꼴로 가둔다. storageKey 접두사는 kv DB 이름에 이미
@@ -59,7 +63,7 @@ export function makeHost(pluginId: string): PluginHost {
             const v = await kvGet<T>(kkey(key));
             return v == null ? fallback : v;
         },
-        set(key: string, v: unknown): Promise<void> { return kvSet(kkey(key), v); },
+        set(key: string, v: unknown): Promise<boolean> { return kvSet(kkey(key), v); },
         del(key: string): Promise<void> { return kvDel(kkey(key)); },
         available(): Promise<boolean> { return kvAvailable(); },
         estimate(): Promise<{ usage: number; quota: number } | null> { return kvEstimate(); },

@@ -44,42 +44,30 @@ function coerce(raw: unknown): Tree {
     return normalize(tree);
 }
 
-/** localStorage(host.storage)에서 읽기 — kv 불가 환경의 버팀줄. */
-function loadLocal(host: PluginHost): Tree {
-    try {
-        return coerce(host.storage.get<unknown>(KEY, null));
-    } catch {
-        return emptyTree();   // 저장값이 아예 깨졌어도 빈 나무로 — 터지지 않는다
-    }
-}
-
-// 🔴 kv 를 쓰나 — loadTree 가 환경을 보고 정한다. false 면 saveTree 가 옛 경로(localStorage)로 떨어진다.
-//    (모듈 전역 하나 — 이 플러그인의 나무 저장은 한 창구다. 환경은 세션 중에 안 바뀐다.)
-let useKv = true;
-
 /**
- * 나무를 읽어 들인다(비동기) — 🔴 옛 데이터 이사(한 번만)까지 여기서.
+ * 나무를 읽어 들인다(비동기) — 🔴 자료는 IndexedDB(host.store) 하나다. localStorage 는 옛 나무를 읽어
+ *   한 번 이사하는 「입구」로만 남는다(설정 전용으로 돌아갔다 — 버팀줄·사본 없음).
  *   ① kv 에 tree 가 있으면 그걸 쓴다.
- *   ② kv 엔 없고 localStorage(host.storage)에 있으면 그 값을 kv 로 옮기고 그걸 쓴다.
- *      ⛔ localStorage 원본은 지우지 않는다 — 판단 삭제는 사람 몫이다(이 레포·볼트의 규칙). 다음 로드부턴
- *         ①이 먼저 걸리니 두 번 이사하지 않는다(저장은 그 뒤 kv 에만 간다).
+ *   ② kv 엔 없고 옛 localStorage 나무가 있으면 kv 로 옮긴다:
+ *      🔴 이사 성공(true)일 때만 localStorage 원본을 치운다(host.storage.remove) — 그래야 kv 에 사본이
+ *         생긴 걸 확인하고 지운다(판단 삭제가 아니라 「옮겼으니 원본 정리」).
+ *      🔴 이사 실패(false)면 localStorage 원본을 남긴다 — 그게 유일한 사본이다. 실패 보고는 kv 가 이미 했다.
+ *      다음 로드부턴 ①이 먼저 걸려 두 번 이사하지 않는다.
  *   ③ 둘 다 없으면 빈 나무.
- *   🔴 kvAvailable()=false(사파리 프라이빗·정책)면 kv 를 건너뛰고 localStorage 로 버틴다 — saveTree 도 옛 경로로.
  */
 export async function loadTree(host: PluginHost): Promise<Tree> {
     bindFlush();
-    useKv = await host.store.available();
-    if (!useKv) return loadLocal(host);
 
     // ① kv 우선 — 저장된 나무는 늘 객체라 null 이 곧 「없음」이다.
     const inKv = await host.store.get<unknown>(KEY, null);
     if (inKv != null) return coerce(inKv);
 
-    // ② localStorage 에 옛 나무가 있으면 kv 로 이사(원본 유지).
+    // ② 옛 localStorage 나무를 kv 로 이사.
     const inLocal = host.storage.get<unknown>(KEY, null);
     if (inLocal != null) {
         const tree = coerce(inLocal);
-        await host.store.set(KEY, tree);   // 🔴 이사 한 번 — localStorage 원본은 그대로 둔다(위 ⛔)
+        const moved = await host.store.set(KEY, tree);   // 🔴 성공해야 원본을 지운다
+        if (moved) host.storage.remove(KEY);
         return tree;
     }
 
@@ -91,10 +79,9 @@ export async function loadTree(host: PluginHost): Promise<Tree> {
 let pending: { host: PluginHost; tree: Tree } | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-function writeNow(host: PluginHost, tree: Tree): Promise<void> {
-    if (useKv) return host.store.set(KEY, tree);
-    host.storage.set(KEY, tree);   // 🔴 kv 불가 — 옛 경로. 실패는 상태바(StorageErrorStatus)가 비춘다
-    return Promise.resolve();
+async function writeNow(host: PluginHost, tree: Tree): Promise<void> {
+    // 🔴 저장은 kv 한 곳. 실패해도(false) localStorage 로 떨어지는 길은 없다 — 실패는 상태바(StorageErrorStatus)가 비춘다.
+    await host.store.set(KEY, tree);
 }
 
 /** 저장 — 300ms 디바운스. 즉시 쓰기가 필요하면 flushTree. */
@@ -129,9 +116,8 @@ function bindFlush(): void {
     }
 }
 
-/** 🔴 테스트 전용 — 모듈 전역(useKv·디바운스·리스너 플래그)을 비운다. 프로덕션 경로는 안 부른다. */
+/** 🔴 테스트 전용 — 모듈 전역(디바운스·리스너 플래그)을 비운다. 프로덕션 경로는 안 부른다. */
 export function __resetPersistForTest(): void {
-    useKv = true;
     pending = null;
     if (timer) { clearTimeout(timer); timer = null; }
     flushBound = false;

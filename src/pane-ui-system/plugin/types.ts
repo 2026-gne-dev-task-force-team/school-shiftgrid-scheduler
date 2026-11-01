@@ -162,10 +162,12 @@ export interface PluginHost {
     screen: { narrow(): boolean; on(fn: (narrow: boolean) => void): Disposable };
     /** 테마 구독 창구 — mode() 지금 밝기 · on 변화 */
     theme: { mode(): 'light' | 'dark'; on(fn: (m: 'light' | 'dark') => void): Disposable };
-    /** 플러그인별 저장 — storageKey(`plugin.${id}.${key}`). 자기 네임스페이스만. */
+    /** 플러그인별 저장 — storageKey(`plugin.${id}.${key}`). 자기 네임스페이스만. 설정 전용(작은 값). */
     storage: {
         get<T>(key: string, fallback: T): T;
         set(key: string, v: unknown): void;
+        /** 키 하나 지우기 — 큰 자료가 kv 로 이사한 뒤 옛 localStorage 원본을 치울 때. 실패는 조용히(삭제 실패는 유실이 아니다). */
+        remove(key: string): void;
     };
     /**
      * 플러그인별 큰 저장(비동기 · IndexedDB) — 나무처럼 5MB localStorage 천장을 넘기는 자료용.
@@ -175,7 +177,8 @@ export interface PluginHost {
      */
     store: {
         get<T>(key: string, fallback: T): Promise<T>;
-        set(key: string, v: unknown): Promise<void>;
+        /** 🔴 성패를 돌려준다(성공 true · 실패 false). 실패는 상태바(저장 실패)가 이미 비춘다 — 쓰는 쪽은 「원본을 지워도 되나」 판정에만 쓴다. */
+        set(key: string, v: unknown): Promise<boolean>;
         del(key: string): Promise<void>;
         available(): Promise<boolean>;
         estimate(): Promise<{ usage: number; quota: number } | null>;

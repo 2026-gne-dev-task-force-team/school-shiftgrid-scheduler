@@ -12,17 +12,17 @@ import { clearTypes } from './model/types';
 import { clearDerived } from './model/derive';
 import { emptyTree, createNode, type Tree } from './model/tree';
 
-/** 로드 완료를 테스트가 쥐는 가짜 호스트 — available() 이 gate 가 풀릴 때까지 멈춘다. */
+/** 로드 완료를 테스트가 쥐는 가짜 호스트 — 🔴 loadTree 가 제일 먼저 부르는 store.get 이 gate 가 풀릴 때까지 멈춘다. */
 function deferredHost(tree: Tree) {
     const counts = { set: 0 };
     let release!: () => void;
     const gate = new Promise<void>((r) => { release = r; });
     const host = {
-        storage: { get: <T,>(_k: string, f: T) => f, set: () => {} },
+        storage: { get: <T,>(_k: string, f: T) => f, set: () => {}, remove: () => {} },
         store: {
-            available: async () => { await gate; return true; },
-            get: async <T,>(_k: string, _f: T) => tree as unknown as T,
-            set: async () => { counts.set += 1; },
+            available: async () => true,
+            get: async <T,>(_k: string, _f: T) => { await gate; return tree as unknown as T; },
+            set: async () => { counts.set += 1; return true; },
             del: async () => {},
             estimate: async () => null,
         },

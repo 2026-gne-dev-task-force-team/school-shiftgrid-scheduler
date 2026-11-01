@@ -31,5 +31,6 @@ export {
 export { resolveRibbonEntries, ribbonBase, type RibbonEntry } from './ribbon';
 export {
     reportStorageError, clearStorageErrors, useStorageErrors, listStorageErrors, classifyStorageError,
-    type StorageError, type StorageErrorReason,
+    setDurability, getDurability, useDurability,
+    type StorageError, type StorageErrorReason, type StorageDurability,
 } from './storage-errors';

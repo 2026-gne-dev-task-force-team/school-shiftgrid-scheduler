@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { kvGet, kvSet, kvAvailable, __resetKvForTest } from './kv';
 import {
     reportStorageError, clearStorageErrors, listStorageErrors, classifyStorageError,
+    getDurability,
 } from './plugin/storage-errors';
 import { makeHost } from './plugin/host';
 import { disposeOwner } from './plugin/store';
@@ -24,11 +25,66 @@ describe('kv — indexedDB 없는 환경(node)에서 던지지 않고 기능을 
         expect(await kvGet('어떤키')).toBeNull();
     });
 
-    it('kvSet 은 던지지 않고 실패를 보고한다(reason: blocked)', async () => {
-        await expect(kvSet('k1', { a: 1 })).resolves.toBeUndefined();   // 던지지 않는다
+    it('kvSet 은 던지지 않고 실패에 false 를 돌려주며 reason: blocked 로 보고한다', async () => {
+        await expect(kvSet('k1', { a: 1 })).resolves.toBe(false);   // 🔴 실패 → false(던지지 않는다)
         const errs = listStorageErrors();
         expect(errs).toHaveLength(1);
         expect(errs[0]).toMatchObject({ scope: 'kv', key: 'k1', reason: 'blocked' });
+    });
+});
+
+describe('내구성 판정 — openDb 직후 setDurability 로 신호를 보낸다(user agent 스니핑 0)', () => {
+    // 🔴 kv.ts 는 bare `indexedDB`·`navigator` 를 읽으니 globalThis 에 끼운다. 셋 다 끝나면 되돌린다.
+    let savedIdb: unknown;
+    let savedNav: PropertyDescriptor | undefined;
+
+    function stubIdbOk() {
+        savedIdb = (globalThis as { indexedDB?: unknown }).indexedDB;
+        (globalThis as { indexedDB?: unknown }).indexedDB = {
+            open: () => {
+                const req: {
+                    result: unknown;
+                    onsuccess?: () => void; onerror?: () => void;
+                    onupgradeneeded?: () => void; onblocked?: () => void;
+                } = { result: { objectStoreNames: { contains: () => true } } };
+                setTimeout(() => req.onsuccess?.(), 0);   // 비동기 성공 — open() 이 핸들러를 다는 뒤에
+                return req;
+            },
+        };
+    }
+    function stubNavStorage(storage: unknown) {
+        savedNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+        Object.defineProperty(globalThis, 'navigator', { value: { storage }, configurable: true, writable: true });
+    }
+
+    afterEach(() => {
+        if (savedIdb === undefined) delete (globalThis as { indexedDB?: unknown }).indexedDB;
+        else (globalThis as { indexedDB?: unknown }).indexedDB = savedIdb;
+        savedIdb = undefined;
+        if (savedNav) { Object.defineProperty(globalThis, 'navigator', savedNav); savedNav = undefined; }
+        else { delete (globalThis as { navigator?: unknown }).navigator; }
+    });
+
+    it("persisted() 가 true 면 'persisted'", async () => {
+        stubIdbOk();
+        stubNavStorage({ persisted: async () => true, persist: async () => false });
+        await kvAvailable();
+        expect(getDurability()).toBe('persisted');
+    });
+
+    it("persisted()=false·persist()=false 면 'best-effort'", async () => {
+        stubIdbOk();
+        stubNavStorage({ persisted: async () => false, persist: async () => false });
+        await kvAvailable();
+        expect(getDurability()).toBe('best-effort');
+    });
+
+    it("IndexedDB 가 안 열리면 'unavailable'(db 가 null — navigator 를 보기 전에 가른다)", async () => {
+        // indexedDB 를 지운 채(node 기본) 연다 → openDb 가 null → 'unavailable'
+        savedIdb = (globalThis as { indexedDB?: unknown }).indexedDB;
+        delete (globalThis as { indexedDB?: unknown }).indexedDB;
+        await kvAvailable();
+        expect(getDurability()).toBe('unavailable');
     });
 });
 

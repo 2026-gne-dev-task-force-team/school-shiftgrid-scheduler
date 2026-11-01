@@ -12,7 +12,7 @@
  * 🔴 ⛔ 앱 이름을 코드에 박지 않는다(구조 검사 ⑤) — DB 이름은 storageKey 에서 파생한다(localStorage 키와 같은 자리).
  */
 import { storageKey } from './storage';
-import { reportStorageError, classifyStorageError } from './plugin/storage-errors';
+import { reportStorageError, classifyStorageError, setDurability } from './plugin/storage-errors';
 
 const STORE = 'kv';
 const SCOPE = 'kv';
@@ -23,8 +23,31 @@ const dbName = () => storageKey(STORE);
 // 🔴 지연·단일 — 모듈 전역 Promise 하나를 재사용한다. 열기 실패/없음도 받아들여 null 로 떨어진다(던지지 않는다).
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
+/**
+ * 🔴 내구성을 한 번 잰다 — openDb 가 처음 뚫릴 때만(모듈 로드 시점이 아니라). 그래서 저장을 쓰는 플러그인이
+ *    없으면 재지도 않고 경고도 안 뜬다(옳은 동작).
+ *    - db 가 null → 'unavailable'(아예 안 열린다)
+ *    - persisted() 가 이미 true → 'persisted'
+ *    - 아니면 persist() 를 불러 true → 'persisted' / false → 'best-effort'
+ *    - navigator.storage 가 없으면 'best-effort'(모르니 보수적으로)
+ *   ⛔ user agent 스니핑 0 — 브라우저 이름을 묻지 않고 「열리나·승인됐나」 조건으로만 가린다.
+ */
+async function measureDurability(db: IDBDatabase | null): Promise<void> {
+    if (!db) { setDurability('unavailable'); return; }
+    try {
+        const s = typeof navigator !== 'undefined' ? navigator.storage : undefined;
+        if (!s) { setDurability('best-effort'); return; }
+        if (await s.persisted?.()) { setDurability('persisted'); return; }
+        const granted = await s.persist?.();
+        setDurability(granted ? 'persisted' : 'best-effort');
+    } catch {
+        setDurability('best-effort');
+    }
+}
+
 function openDb(): Promise<IDBDatabase | null> {
     if (dbPromise) return dbPromise;
+    // 열기 → 성공 직후 내구성을 한 번 잰다(그 뒤 db 를 돌려준다). openDb 가 메모이즈돼 측정도 딱 한 번.
     dbPromise = new Promise<IDBDatabase | null>((resolve) => {
         try {
             if (typeof indexedDB === 'undefined') { resolve(null); return; }
@@ -39,7 +62,7 @@ function openDb(): Promise<IDBDatabase | null> {
         } catch {
             resolve(null);
         }
-    });
+    }).then(async (db) => { await measureDurability(db); return db; });
     return dbPromise;
 }
 
@@ -64,27 +87,28 @@ export async function kvGet<T>(key: string): Promise<T | null> {
 }
 
 /**
- * 쓰기 — 실패는 던지지 않고 reportStorageError 로 보고한다(부르는 쪽은 await 만, 성공/실패 분기는 안 해도 된다).
- *   - 열기 거부/없음 → 'blocked'
- *   - put() 동기 던짐(DataCloneError 등) / 트랜잭션 실패 → 에러를 사유로 가른다(quota/unknown)
+ * 쓰기 — 🔴 성패를 돌려준다(성공 true · 실패 false). 실패는 던지지 않고 reportStorageError 로도 보고한다.
+ *   부르는 쪽(persist 의 이사)은 이 boolean 으로 「원본을 지워도 되나」를 가른다.
+ *   - 열기 거부/없음 → 'blocked' · false
+ *   - put() 동기 던짐(DataCloneError 등) / 트랜잭션 실패 → 에러를 사유로 가른다(quota/unknown) · false
  */
-export async function kvSet(key: string, value: unknown): Promise<void> {
+export async function kvSet(key: string, value: unknown): Promise<boolean> {
     const db = await openDb();
     if (!db) {
         reportStorageError({ scope: SCOPE, key, reason: 'blocked', at: Date.now() });
-        return;
+        return false;
     }
-    return new Promise<void>((resolve) => {
+    return new Promise<boolean>((resolve) => {
         let settled = false;
-        const done = () => { if (!settled) { settled = true; resolve(); } };
+        const done = (ok: boolean) => { if (!settled) { settled = true; resolve(ok); } };
         const fail = (err: unknown) => {
             reportStorageError({ scope: SCOPE, key, reason: classifyStorageError(err), at: Date.now() });
-            done();
+            done(false);
         };
         try {
             const tx = db.transaction(STORE, 'readwrite');
             tx.objectStore(STORE).put(value, key);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
-            tx.oncomplete = () => done();
+            tx.oncomplete = () => done(true);
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {
@@ -121,5 +145,5 @@ export async function kvEstimate(): Promise<{ usage: number; quota: number } | n
     }
 }
 
-/** 🔴 테스트 전용 — 모듈 전역 DB 핸들을 비운다(환경이 바뀌는 테스트가 다시 열게). 프로덕션 경로는 안 부른다. */
-export function __resetKvForTest(): void { dbPromise = null; }
+/** 🔴 테스트 전용 — 모듈 전역 DB 핸들과 내구성 신호를 비운다(환경이 바뀌는 테스트가 다시 재게). 프로덕션 경로는 안 부른다. */
+export function __resetKvForTest(): void { dbPromise = null; setDurability('unknown'); }

@@ -78,3 +78,36 @@ export function useStorageErrors(): StorageError[] {
         snapshot,
     );
 }
+
+// ── 내구성 신호 ──────────────────────────────────────────────
+// 🔴 저장 실패 목록과 섞지 않는다 — 별 스토어·별 리스너. 실패는 「저장이 안 됐다」,
+//    내구성은 「언젠가 지워질 수 있다」로 다른 것이다(섞으면 "저장 실패 N건"이 거짓이 된다).
+//   unknown    — 아직 안 쟀다(저장을 쓰는 플러그인이 없으면 계속 여기 — 평시 경고 0)
+//   persisted  — navigator.storage.persist() 로 영속이 보장됐다
+//   best-effort— 열리긴 하나 브라우저가 공간 필요 시 지울 수 있다(persist 거부·모름)
+//   unavailable— IndexedDB 가 아예 안 열린다(프라이빗·정책)
+
+/** 저장이 얼마나 오래 살아남나 — kv 가 openDb 직후 한 번 재서 setDurability 로 신호를 보낸다. */
+export type StorageDurability = 'unknown' | 'persisted' | 'best-effort' | 'unavailable';
+
+let durability: StorageDurability = 'unknown';
+const durabilityListeners = new Set<() => void>();
+
+/** kv 가 부른다 — 내구성 신호를 세운다(바뀔 때만 다시 그린다). */
+export function setDurability(d: StorageDurability): void {
+    if (durability === d) return;
+    durability = d;
+    for (const l of durabilityListeners) l();
+}
+
+/** 비(非)React 조회 — 테스트용 */
+export function getDurability(): StorageDurability { return durability; }
+
+/** React 구독 — 내구성이 바뀌면 다시 그린다 */
+export function useDurability(): StorageDurability {
+    return useSyncExternalStore(
+        (l) => { durabilityListeners.add(l); return () => { durabilityListeners.delete(l); }; },
+        () => durability,
+        () => durability,
+    );
+}
