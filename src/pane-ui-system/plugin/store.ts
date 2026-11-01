@@ -15,7 +15,7 @@ import type { ComponentType } from 'react';
 import type { IconName } from '../primitives/Icon';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import type {
-    Disposable, RibbonAction, WorkspaceOpenOptions, CommandDef,
+    Disposable, RibbonAction, WorkspaceOpenOptions, CommandDef, CommandContext,
     StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo,
 } from './types';
 
@@ -82,6 +82,18 @@ export function addCommand(owner: string, c: CommandDef): Disposable {
 
 export function getCommand(id: string): (CommandDef & { owner: string }) | undefined { return commands.get(id); }
 export function listCommands(): (CommandDef & { owner: string })[] { return [...commands.values()]; }
+
+/**
+ * 🔴 ⭐ 명령 실행 — 「모든 동작은 명령」(쥔님). 단추·메뉴·팔레트가 전부 이 한 길로 동작을 부른다.
+ *   ctx 로 「어느 탭에」를 넘긴다(우클릭 메뉴). 팔레트처럼 ctx 없이 부르면 명령이 활성 탭을 쓴다.
+ *   없는 id 는 경고하고 false(조용히 삼키지 않는다).
+ */
+export function runCommand(id: string, ctx?: CommandContext): boolean {
+    const c = commands.get(id);
+    if (!c) { console.warn(`[plugin] 없는 명령을 부름: ${id}`); return false; }
+    try { c.run(ctx); } catch (e) { console.error(`[plugin] 명령 "${id}" 실행 실패`, e); }
+    return true;
+}
 
 // ── 설정 섹션/항목 스토어 ──
 export interface SettingsSectionEntry { id: string; title: string; icon?: IconName; owner: string; seq: number }

@@ -166,10 +166,33 @@ describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
 });
 
 /*
+ * ⑩ 「모든 동작은 명령」 — 탭 메뉴·우클릭 메뉴 항목은 핸들러를 직접 안 부른다(commandId 로 runCommand 를 거친다).
+ *   쥔님 2026-11-01: *"UI 는 있는데 명령어는 없는 그런 일이 없도록"* · *"모든 동작은 일단 명령어에 등록"*.
+ *   장치: 메뉴를 짓는 파일에서 「메뉴 항목의 onClick 이 handlers 나 host.workspace 를 직접 부르는」 꼴을 금지한다.
+ *   (JSX 단추 onClick 은 대상 아님 — 메뉴 항목 객체 리터럴 onClick 만 본다 · host.commands.run 은 허용)
+ */
+describe('⑩ 메뉴 항목은 명령으로 — 직접 핸들러 금지', () => {
+    // 메뉴 항목 객체의 onClick 이 동작을 직접 부르는 꼴(핸들러/작업대 열기). commands.run 은 허용(명령을 거친 것).
+    const BANNED = /onClick:\s*\(\)\s*=>\s*(?:handlers\.|host\.workspace\.|host\.commands\.(?!run))/;
+    const files = [
+        join(ROOT, 'pane-ui-system', 'shell', 'shared', 'WorkspaceView.tsx'),
+        ...walk(join(ROOT, 'plugins')),
+    ];
+
+    it('스캔할 파일이 실제로 있다', () => { expect(files.length).toBeGreaterThan(0); });
+
+    for (const f of files) {
+        it(`메뉴 항목이 핸들러를 직접 안 부른다: ${f.slice(ROOT.length + 1)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => BANNED.test(ln));
+            expect(hit, `메뉴 항목이 ${hit + 1}번째 줄에서 동작을 직접 부른다 — commandId 로 runCommand 를 거친다`).toBe(-1);
+        });
+    }
+});
+
+/*
  * ⑪ 화면 전용 조각은 서로 섞이지 않는다 — shell/desktop(넓은 화면) ↔ shell/mobile(좁은 화면) 서로 import 0.
  *   쥔님 2026-11-01: *"공통, 모바일, 데스크톱 컴포넌트는 폴더 따로 두는 게 좋을 듯"*.
  *   한쪽 전용 조각이 다른 쪽을 끌어오면 「전용」이 거짓이 된다 — 공통으로 쓸 것은 shell/shared 에 둔다.
- *   (⑩ 은 「모든 동작은 명령」 검사 자리 — 명령 팔레트 단계에서 더한다.)
  */
 describe('⑪ shell/desktop ↔ shell/mobile 서로 import 0', () => {
     const SHELL = join(ROOT, 'pane-ui-system', 'shell');

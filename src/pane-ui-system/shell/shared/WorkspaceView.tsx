@@ -15,6 +15,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, Leaf, MovePos } from '../../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../../layout/tree';
 import { getView, canPlace, canSplit } from '../../view-registry';
+import { FRAME_COMMAND } from '../../frame-commands';
+import { runCommand } from '../../plugin';
 import { effectiveViewLayout } from '../../layout/pane-settings';
 import { effectiveMin, clampSplitPair } from '../../layout/clamp';
 import { IconButton } from '../../primitives/IconButton';
@@ -131,23 +133,25 @@ export function WorkspaceView({
 
     const openTab = useCallback((lf: Leaf, tabsId: string, x: number, y: number) => {
         const leafId = lf.id;
-        // 🔴 틀 메뉴 — 닫기·가르기·이동(창틀의 조작). ⛔ 여기까진 도메인 모름
+        const arg = { leafId, tabsId };   // 🔴 우클릭한 그 탭을 명령 맥락으로 넘긴다(활성 탭이 아닐 수 있다)
+        // 🔴 틀 메뉴 — 닫기·가르기·이동(창틀의 조작). ⛔ 핸들러를 직접 안 부른다 — commandId 로 runCommand(구조 검사 ⑩).
+        //    ⛔ 여기까진 도메인 모름 · 명령 id 는 창틀이 쥐고(FRAME_COMMAND) run 은 앱이 꽂는다.
         const frame: MenuEntry[] = [
-            { label: '닫기', icon: 'x', onClick: () => handlers.onClose(leafId) },
-            { label: '다른 탭 모두 닫기', onClick: () => handlers.onCloseOthers(leafId) },
-            { label: '오른쪽 탭 닫기', onClick: () => handlers.onCloseRight(leafId) },
+            { label: '닫기', icon: 'x', commandId: FRAME_COMMAND.closeTab, commandArg: arg },
+            { label: '다른 탭 모두 닫기', commandId: FRAME_COMMAND.closeOthers, commandArg: arg },
+            { label: '오른쪽 탭 닫기', commandId: FRAME_COMMAND.closeRight, commandArg: arg },
             { sep: true },
             // 🔴 가르기는 이 탭을 복제한다 — tabsId 안에서 leafId 를 넘긴다(내용 조작)
             // ⛔ 사이드바에선 안 준다 — 쥔님 2026-11-01 01:51: *"사이드 패널에는 굳이 분할이 필요 없잖아"*
             // 🔴 뷰별 허용 자리(placement) — 등록소가 안 된다고 하면 항목을 잠근다(쥔님 13:43: 설정은 사이드바 무리)
             ...(area === 'center' ? [
-                { label: '오른쪽으로 가르기', icon: 'split', disabled: !canSplit(lf.viewId), onClick: () => handlers.onSplit(tabsId, 'row', leafId) },
-                { label: '아래로 가르기', icon: 'splitH', disabled: !canSplit(lf.viewId), onClick: () => handlers.onSplit(tabsId, 'col', leafId) },
+                { label: '오른쪽으로 가르기', icon: 'split', disabled: !canSplit(lf.viewId), commandId: FRAME_COMMAND.splitRow, commandArg: arg },
+                { label: '아래로 가르기', icon: 'splitH', disabled: !canSplit(lf.viewId), commandId: FRAME_COMMAND.splitCol, commandArg: arg },
                 { sep: true },
             ] as MenuEntry[] : []),
-            { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left' || !canPlace(lf.viewId, 'left'), onClick: () => handlers.onMove(leafId, 'left') },
-            { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right' || !canPlace(lf.viewId, 'right'), onClick: () => handlers.onMove(leafId, 'right') },
-            { label: '가운데로', disabled: area === 'center' || !canPlace(lf.viewId, 'center'), onClick: () => handlers.onMove(leafId, 'center') },
+            { label: '왼쪽 사이드바로', icon: 'panelLeft', disabled: area === 'left' || !canPlace(lf.viewId, 'left'), commandId: FRAME_COMMAND.moveLeft, commandArg: arg },
+            { label: '오른쪽 사이드바로', icon: 'panelRight', disabled: area === 'right' || !canPlace(lf.viewId, 'right'), commandId: FRAME_COMMAND.moveRight, commandArg: arg },
+            { label: '가운데로', disabled: area === 'center' || !canPlace(lf.viewId, 'center'), commandId: FRAME_COMMAND.moveCenter, commandArg: arg },
         ];
         // 🔴 내용 메뉴 — 그 뷰가 menu() 로 준 항목. 구분선 뒤에 붙는다(틀과 구분된다, 쥔님 지시)
         //    ⛔ 창틀은 항목의 뜻을 모른다 — host(rename·close)만 내주고 뷰가 라벨을 붙인다
@@ -165,10 +169,11 @@ export function WorkspaceView({
     }, [handlers, area]);
 
     // 🔴 「틀 메뉴」 — 탭 줄 빈 자리 우클릭. 틀의 조작(새 탭)만 둔다. ⛔ 가르기는 여기 없다(그건 탭의 것 → openTab)
+    //    ⛔ 핸들러 직접 호출 안 함 — commandId 로(구조 검사 ⑩). tabsId 를 맥락으로 넘겨 그 묶음에 새 탭을 연다.
     const openBar = useCallback((tabsId: string, x: number, y: number) => {
         setMenu({
             x, y, items: [
-                { label: handlers.addLabel ?? '새 탭', icon: 'plus', onClick: () => handlers.onAddToTabs(tabsId) },
+                { label: handlers.addLabel ?? '새 탭', icon: 'plus', commandId: FRAME_COMMAND.newTab, commandArg: { tabsId } },
             ],
         });
     }, [handlers]);
@@ -194,7 +199,8 @@ export function WorkspaceView({
 
     const { bind, drag } = useDragLeaf({ enabled: !narrow, onContext, onDrop });
 
-    const menuEl = menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={close} />;
+    // 🔴 메뉴의 동작은 전부 명령으로 — commandId 가 있는 항목은 runCommand 로 부른다(없으면 onClick 폴백=플러그인 콘텐츠 메뉴).
+    const menuEl = menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={close} onCommand={runCommand} />;
 
     if (narrow) {
         // 🔴 좁은 화면: 탭 줄을 없앤다(탭 전환은 하단 바 ▦ → TabSwitcher 가 맡는다). split 도 안 그린다 —

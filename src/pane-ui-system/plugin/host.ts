@@ -19,7 +19,7 @@ import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
     track, addRibbonAction, getWorkspaceBridge,
-    addCommand, getCommand,
+    addCommand, getCommand, runCommand,
     addSettingsSection, addSettingsItem,
     addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
 } from './store';
@@ -81,6 +81,7 @@ export function makeHost(pluginId: string): PluginHost {
 
         commands: {
             add(c: CommandDef) { return track(pluginId, addCommand(pluginId, c)); },
+            run(id, ctx) { return runCommand(id, ctx); },
         },
 
         settings: {

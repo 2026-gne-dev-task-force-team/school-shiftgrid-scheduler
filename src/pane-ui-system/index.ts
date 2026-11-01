@@ -12,6 +12,8 @@
 
 // 조각 — 뜻 없는 UI 부품. 색·치수를 쥐는 유일한 층이다
 export { setStoragePrefix, storageKey } from './storage';
+// 창틀 동작의 명령 id — 창틀이 이름을 쥐고 앱이 run 을 꽂는다(「모든 동작은 명령」)
+export { FRAME_COMMAND, type FrameCommandId } from './frame-commands';
 
 export { Surface } from './primitives/Surface';
 export { IconButton } from './primitives/IconButton';
@@ -35,6 +37,7 @@ export { DropZones } from './shell/shared/DropZones';
 export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/shared/drop-resolve';
 export { TitleBar, type TitleAction } from './shell/shared/TitleBar';
 export { StatusBar, type StatusItem } from './shell/shared/StatusBar';
+export { CommandPalette } from './shell/shared/CommandPalette';
 // 넓은 화면 전용(desktop)
 export { Rail } from './shell/desktop/Rail';
 // 좁은 화면 전용(mobile)

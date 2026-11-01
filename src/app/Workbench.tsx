@@ -9,19 +9,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
-    useTheme, WorkspaceView, EmptyArea,
+    useTheme, WorkspaceView, EmptyArea, CommandPalette,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
-    type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf,
+    FRAME_COMMAND,
+    type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, areaOfLeaf,
     type MovePos,
 } from '../pane-ui-system';
 import {
-    setWorkspaceBridge, type WorkspaceOpenOptions,
+    setWorkspaceBridge, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace,
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
@@ -29,6 +30,18 @@ import { appHost } from './host';
 import { canPlace, canSplit, isSingleton } from '../pane-ui-system/view-registry';   // 자리 제한 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
+
+/** 이 leaf 가 든 탭 묶음의 id — 가르기 명령이 팔레트에서 불릴 때(맥락 없이) 활성 탭의 묶음을 찾는다. */
+function tabsIdOfLeaf(ws: Workspace, leafId: string): string | null {
+    const walk = (n: Node | null): string | null => {
+        if (!n) return null;
+        if (n.kind === 'tabs') return n.children.some((c) => c.id === leafId) ? n.id : null;
+        if (n.kind === 'split') { for (const c of n.children) { const r = walk(c); if (r) return r; } }
+        return null;
+    };
+    for (const area of ['left', 'center', 'right'] as const) { const r = walk(ws[area]); if (r) return r; }
+    return null;
+}
 
 export function Workbench() {
     const narrow = useNarrow();
@@ -48,7 +61,14 @@ export function Workbench() {
     const [tabSwitcher, setTabSwitcher] = useState(false);
     // 좁은 화면 리본 시트(하단 바 ▤ 로 연다, ⑤)
     const [ribbonSheet, setRibbonSheet] = useState(false);
+    // 명령 팔레트(Ctrl/⌘+P)
+    const [palette, setPalette] = useState(false);
     const seq = useRef(0);
+    // 🔴 최신값 ref — 명령 run 은 한 번 등록되고 계속 산다. 그 안에서 늘 최신 handlers·focus·panels 를 읽게 한다.
+    const focusRef = useRef(focus);
+    focusRef.current = focus;
+    const panelsRef = useRef(panels);
+    panelsRef.current = panels;
 
     useEffect(() => { saveWorkspace(ws); }, [ws]);
 
@@ -177,6 +197,47 @@ export function Workbench() {
         // 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸(W6 ④)
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
     }), [makeSheet, addTab, newTab]);
+    const handlersRef = useRef(handlers);
+    handlersRef.current = handlers;
+
+    // 🔴 ⭐ 「모든 동작은 명령」(쥔님) — 창틀이 제공하는 동작을 전부 명령으로 등록한다(FRAME_COMMAND id, 창틀이 이름을 쥔다).
+    //    탭 메뉴·우클릭 메뉴가 이 id 로 runCommand 를 거치고(구조 검사 ⑩), 팔레트에도 같이 뜬다.
+    //    ⛔ run 안에서 handlers/focus/panels 를 ref 로 읽는다 — 한 번 등록되고 계속 살아도 늘 최신이게.
+    useEffect(() => {
+        const H = () => handlersRef.current;
+        const target = (ctx?: CommandContext) => ctx?.leafId ?? focusRef.current;
+        const tabsOf = (ctx: CommandContext | undefined, leafId: string) => ctx?.tabsId ?? tabsIdOfLeaf(wsRef.current, leafId);
+        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: Parameters<typeof appHost.commands.add>[0]['icon']) =>
+            appHost.commands.add({ id, title, icon, run });
+
+        const disp: Disposable[] = [
+            add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x'),
+            add(FRAME_COMMAND.closeOthers, '다른 탭 모두 닫기', (c) => { const id = target(c); if (id) H().onCloseOthers(id); }),
+            add(FRAME_COMMAND.closeRight, '오른쪽 탭 닫기', (c) => { const id = target(c); if (id) H().onCloseRight(id); }),
+            add(FRAME_COMMAND.splitRow, '오른쪽으로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'row', id); }, 'split'),
+            add(FRAME_COMMAND.splitCol, '아래로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'col', id); }, 'splitH'),
+            add(FRAME_COMMAND.moveLeft, '왼쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'left'); }, 'panelLeft'),
+            add(FRAME_COMMAND.moveCenter, '가운데로', (c) => { const id = target(c); if (id) H().onMove(id, 'center'); }),
+            add(FRAME_COMMAND.moveRight, '오른쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'right'); }, 'panelRight'),
+            add(FRAME_COMMAND.newTab, '새 탭', (c) => { if (c?.tabsId) H().onAddToTabs(c.tabsId); else H().onAddGlobal(); }, 'plus'),
+            add(FRAME_COMMAND.openSettings, '설정 열기', () => { openView('settings.main'); }, 'gear'),
+            add(FRAME_COMMAND.toggleLeft, '왼쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('left', !p.state.leftOpen); }, 'panelLeft'),
+            add(FRAME_COMMAND.toggleRight, '오른쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('right', !p.state.rightOpen); }, 'panelRight'),
+        ];
+        return () => { for (const d of disp) d.dispose(); };
+    }, [openView]);
+
+    // 🔴 명령 팔레트 열기 — Ctrl/⌘+P. ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 preventDefault 로 가로챈다(보고 항목).
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                setPalette((v) => !v);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     // 🔴 사이드바 최소/최대 폭 — 설정 기본값에 그 안 뷰의 minWidth 를 얹는다(무한정 못 줄인다, W4)
     const pane = usePaneSettings();
@@ -333,6 +394,9 @@ export function Workbench() {
 
             {/* 🔴 하단 상태바 — 전체 폭 한 줄. 좁은 화면은 기본 숨김(showStatus 가 가른다) */}
             {showStatus && <StatusBar items={statusItems} />}
+
+            {/* 🔴 명령 팔레트 — Ctrl/⌘+P. 스스로 portal 로 뜬다(위치 무관) */}
+            <CommandPalette open={palette} onClose={() => setPalette(false)} />
         </div>
     );
 }

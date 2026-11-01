@@ -15,21 +15,21 @@ import { TestConsole } from './views/TestConsole';
 import { SampleView } from './views/SampleView';
 import { PaneTestSettings } from './settings/PaneTestSettings';
 import { OpenCountStatus } from './components/OpenCountStatus';
-import { setOpenViewCount } from './store';
+import { setOpenViewCount, openCmdId } from './store';
 
 const CONSOLE_ID = 'pane-test.console';
 
-/** 시험 뷰 목록 — 각자 다른 색(tone)·이름. 전부 자유 배치(끌어 가르기·사이드바로 옮겨 시험). */
-const SAMPLES: { id: string; title: string; tone: number; scroll?: boolean }[] = [
-    { id: 'panel-a', title: '패널 A', tone: 0 },
-    { id: 'panel-b', title: '패널 B', tone: 1 },
-    { id: 'panel-c', title: '패널 C', tone: 2 },
-    { id: 'panel-d', title: '패널 D', tone: 3 },
-    { id: 'tab-ga', title: '탭 가', tone: 4 },
-    { id: 'tab-na', title: '탭 나', tone: 5 },
-    { id: 'tab-da', title: '탭 다', tone: 6 },
-    { id: 'tab-ra', title: '탭 라', tone: 7 },
-    { id: 'scroll', title: '스크롤 시험', tone: 8, scroll: true },
+/** 시험 뷰 목록 — 각자 다른 색(tone)·이름·기본 자리. 전부 자유 배치(끌어 가르기·사이드바로 옮겨 시험). */
+const SAMPLES: { id: string; title: string; tone: number; where: 'left' | 'right' | 'center'; scroll?: boolean }[] = [
+    { id: 'panel-a', title: '패널 A', tone: 0, where: 'left' },
+    { id: 'panel-b', title: '패널 B', tone: 1, where: 'right' },
+    { id: 'panel-c', title: '패널 C', tone: 2, where: 'center' },
+    { id: 'panel-d', title: '패널 D', tone: 3, where: 'center' },
+    { id: 'tab-ga', title: '탭 가', tone: 4, where: 'center' },
+    { id: 'tab-na', title: '탭 나', tone: 5, where: 'center' },
+    { id: 'tab-da', title: '탭 다', tone: 6, where: 'center' },
+    { id: 'tab-ra', title: '탭 라', tone: 7, where: 'center' },
+    { id: 'scroll', title: '스크롤 시험', tone: 8, where: 'center', scroll: true },
 ];
 
 function activate(host: PluginHost): void {
@@ -57,6 +57,14 @@ function activate(host: PluginHost): void {
         run: () => { host.workspace.open(CONSOLE_ID, { where: 'center' }); },
     });
     host.ribbon.add({ commandId: 'pane-test.open', icon: 'sparkles', order: 0 });
+
+    // ── 🔴 시험 뷰 열기도 전부 명령으로 — 콘솔 단추·팔레트가 같은 id 로 부른다(「모든 동작은 명령」) ──
+    for (const s of SAMPLES) {
+        host.commands.add({
+            id: openCmdId(s.id), title: `${s.title} 열기`, icon: s.scroll ? 'layers' : 'dot',
+            run: () => { host.workspace.open(`pane-test.${s.id}`, { where: s.where }); },
+        });
+    }
 
     // ── 설정 섹션 — 하네스 설명 + 피크 넓음/좁음 가름 폭(설정으로 뺀 값) ──
     host.settings.addSection('pane-test', '팬 UI 엔진 테스트', 'sparkles');

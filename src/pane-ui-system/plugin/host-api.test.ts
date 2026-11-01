@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { ComponentType } from 'react';
 import { makeHost } from './host';
 import {
-    disposeOwner, listSettings, getCommand,
+    disposeOwner, listSettings, getCommand, runCommand,
     listRibbonActions, listStatusItems, fireWorkspace,
 } from './store';
 
@@ -54,6 +54,17 @@ describe('host.ribbon — 명령을 가리키는 동작이 리본 목록에 뜬�
         expect(act?.label).toBe('리본 명령');
         act!.run();
         expect(ran).toBe(1);
+    });
+});
+
+describe('host.commands.run — id 로 부르고 맥락(ctx)을 넘긴다', () => {
+    it('run(id, ctx) 가 그 명령을 ctx 와 함께 부른다 · 없는 id 는 false', () => {
+        const h = fresh();
+        let got: unknown = 'none';
+        h.commands.add({ id: 't.run', title: '실행', run: (ctx) => { got = ctx; } });
+        expect(h.commands.run('t.run', { leafId: 'L1' })).toBe(true);
+        expect(got).toEqual({ leafId: 'L1' });
+        expect(runCommand('없는명령')).toBe(false);   // 없는 id → false(조용히 삼키지 않는다)
     });
 });
 

@@ -8,6 +8,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from './Icon';
 
+/** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다. */
+export interface MenuCommandArg { leafId?: string; tabsId?: string }
+
 export type MenuEntry =
     | { sep: true }
     | {
@@ -16,16 +19,22 @@ export type MenuEntry =
         icon?: IconName;
         disabled?: boolean;
         danger?: boolean;
+        /** 🔴 동작은 commandId 로 — ContextMenu 가 onCommand(id, arg) 로 부른다(「모든 동작은 명령」). */
+        commandId?: string;
+        commandArg?: MenuCommandArg;
+        /** 명령으로 못 옮긴 창틀 내부용 직접 핸들러(플러그인 콘텐츠 메뉴 등). commandId 가 있으면 그게 이긴다. */
         onClick?: () => void;
     };
 
 const GAP = 6;
 
-export function ContextMenu({ x, y, items, onClose }: {
+export function ContextMenu({ x, y, items, onClose, onCommand }: {
     x: number;
     y: number;
     items: MenuEntry[];
     onClose: () => void;
+    /** 🔴 commandId 가 있는 항목을 누르면 이걸로 부른다(shell 이 runCommand 를 주입). 없으면 onClick 폴백. */
+    onCommand?: (id: string, arg?: MenuCommandArg) => void;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const [pos, setPos] = useState({ x, y });
@@ -78,7 +87,12 @@ export function ContextMenu({ x, y, items, onClose }: {
                             type="button"
                             role="menuitem"
                             disabled={it.disabled}
-                            onClick={() => { if (!it.disabled) { it.onClick?.(); onClose(); } }}
+                            onClick={() => {
+                                if (it.disabled) return;
+                                if (it.commandId && onCommand) onCommand(it.commandId, it.commandArg);
+                                else it.onClick?.();
+                                onClose();
+                            }}
                             className={`w-full flex items-center gap-2 h-row px-pad text-[13px] text-left transition-colors
                                 ${it.disabled
                                     ? 'text-muted/40 cursor-default'

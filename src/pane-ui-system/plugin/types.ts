@@ -57,12 +57,23 @@ export interface WorkspaceOpenOptions {
     reuse?: boolean;
 }
 
-/** 명령(command) — 레지스트리에 쌓인다. 리본 동작이 commandId 로 가리킨다. 팔레트·단축키는 ⏸️. */
+/**
+ * 명령 실행 맥락 — 「어느 탭에/어느 묶음에」. 우클릭 메뉴가 그 leaf 를 넘긴다.
+ *   ⛔ 팔레트처럼 ctx 없이 부르면 명령이 활성 탭을 쓴다(명령 쪽이 fallback 을 쥔다).
+ */
+export interface CommandContext {
+    /** 대상 leaf(탭) — 없으면 명령이 활성 탭을 쓴다 */
+    leafId?: string;
+    /** 대상 탭 묶음(가르기처럼 묶음이 필요한 명령용) */
+    tabsId?: string;
+}
+
+/** 명령(command) — 레지스트리에 쌓인다. 🔴 리본·메뉴·팔레트가 commandId 로 가리켜 runCommand 로 부른다. */
 export interface CommandDef {
     id: string;
     title: string;
     icon?: IconName;
-    run(): void;
+    run(ctx?: CommandContext): void;
     keys?: string;
 }
 /** 설정 기여 항목 — section 에 꽂는다. 같은 section 은 합쳐진다(제목은 첫 등록이 이긴다). */
@@ -115,8 +126,8 @@ export interface PluginHost {
     };
     /** 리본 동작 — commandId 를 가리킨다(「뷰 열기」가 아니라 동작). Rail 이 뷰 설탕과 합쳐 그린다. */
     ribbon: { add(a: RibbonAddInput): Disposable };
-    /** 명령 — 레지스트리에만 쌓인다(팔레트는 ⏸️). 리본 동작이 참조한다. */
-    commands: { add(c: CommandDef): Disposable };
+    /** 명령 — 레지스트리에 쌓이고, 리본·메뉴·팔레트가 run 으로 부른다(「모든 동작은 명령」). */
+    commands: { add(c: CommandDef): Disposable; run(id: string, ctx?: CommandContext): boolean };
     /** 설정 — 섹션을 열고(제목은 첫 등록이 이긴다) 항목을 꽂는다. 빈 섹션은 안 그린다. */
     settings: {
         addSection(id: string, title: string, icon?: IconName): Disposable;

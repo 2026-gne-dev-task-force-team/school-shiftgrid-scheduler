@@ -10,7 +10,7 @@ export type { MenuEntry } from '../primitives/ContextMenu';
 
 export type {
     PluginManifest, PluginModule, PluginHost, Disposable,
-    RibbonAction, RibbonAddInput, CommandDef, SettingsContribution, StatusContribution,
+    RibbonAction, RibbonAddInput, CommandDef, CommandContext, SettingsContribution, StatusContribution,
     TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, WorkspaceOpenOptions,
 } from './types';
 export { HOST_VERSION } from './types';
@@ -24,7 +24,7 @@ export { ViewPlaceholder } from './Placeholder';
 export {
     setWorkspaceBridge, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems, listStatusItems,
-    listSettings, listCommands, getCommand, listTabMenu, getNewTab, fireWorkspace,
+    listSettings, listCommands, getCommand, runCommand, listTabMenu, getNewTab, fireWorkspace,
     type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
     type WorkspaceBridge,
 } from './store';

@@ -4,7 +4,7 @@
  *   🔴 색은 토큰 클래스로만(구조 검사 ①).
  */
 import type { PluginHost, PeekHandle } from '../../../pane-ui-system/plugin';
-import { PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT } from '../store';
+import { PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT, openCmdId } from '../store';
 
 /** 피크 안에 띄울 시험 내용 — 색 글자 + 넘치는 목록(피크 안 스크롤도 시험). 색은 토큰 클래스로만. */
 function PeekContent() {
@@ -41,9 +41,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle }) {
-    const open = (id: string, where?: 'left' | 'center' | 'right') =>
-        host.workspace.open(`pane-test.${id}`, where ? { where } : undefined);
-    // 🔴 피크는 이 탭 안에서 뜬다 — 넓음/좁음 가름 폭은 설정값(host.storage)에서 읽어 넘긴다.
+    // 🔴 단추도 제 동작을 직접 안 부른다 — 명령으로 부른다(「모든 동작은 명령」, 팔레트에도 같이 뜬다).
+    const open = (id: string) => host.commands.run(openCmdId(id));
+    // 🔴 피크는 이 탭 안에서 뜬다(이 뷰의 peek 핸들이 필요해 전역 명령으로 못 뺀다) — 넓음/좁음 가름 폭은 설정값에서 읽어 넘긴다.
     const openPeek = () => peek.show(<PeekContent />, { wideMin: host.storage.get(PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT) });
 
     return (
@@ -54,21 +54,21 @@ export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle
             </header>
 
             <Group title="패널 — 틀에 하나씩">
-                <Btn onClick={() => open('panel-a', 'left')}>패널 A — 왼쪽 틀</Btn>
-                <Btn onClick={() => open('panel-b', 'right')}>패널 B — 오른쪽 틀</Btn>
-                <Btn onClick={() => open('panel-c', 'center')}>패널 C — 가운데</Btn>
-                <Btn onClick={() => open('panel-d', 'center')}>패널 D — 가운데</Btn>
+                <Btn onClick={() => open('panel-a')}>패널 A — 왼쪽 틀</Btn>
+                <Btn onClick={() => open('panel-b')}>패널 B — 오른쪽 틀</Btn>
+                <Btn onClick={() => open('panel-c')}>패널 C — 가운데</Btn>
+                <Btn onClick={() => open('panel-d')}>패널 D — 가운데</Btn>
             </Group>
 
             <Group title="탭 — 가운데에 탭으로">
-                <Btn onClick={() => open('tab-ga', 'center')}>탭 가</Btn>
-                <Btn onClick={() => open('tab-na', 'center')}>탭 나</Btn>
-                <Btn onClick={() => open('tab-da', 'center')}>탭 다</Btn>
-                <Btn onClick={() => open('tab-ra', 'center')}>탭 라</Btn>
+                <Btn onClick={() => open('tab-ga')}>탭 가</Btn>
+                <Btn onClick={() => open('tab-na')}>탭 나</Btn>
+                <Btn onClick={() => open('tab-da')}>탭 다</Btn>
+                <Btn onClick={() => open('tab-ra')}>탭 라</Btn>
             </Group>
 
             <Group title="스크롤">
-                <Btn onClick={() => open('scroll', 'center')}>스크롤 시험 뷰</Btn>
+                <Btn onClick={() => open('scroll')}>스크롤 시험 뷰</Btn>
             </Group>
 
             <Group title="피크 — 이 탭 안에서(넓으면 오른쪽 · 좁으면 아래)">

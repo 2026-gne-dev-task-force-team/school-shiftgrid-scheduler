@@ -9,6 +9,9 @@ import { useSyncExternalStore } from 'react';
 export const PEEK_WIDE_MIN_KEY = 'peekWideMin';
 export const PEEK_WIDE_MIN_DEFAULT = 420;
 
+/** 시험 뷰 열기 명령의 id — 콘솔 단추와 팔레트가 같은 id 로 부른다(「모든 동작은 명령」). */
+export const openCmdId = (sampleId: string) => `pane-test.open-${sampleId}`;
+
 let count = 0;
 const listeners = new Set<() => void>();
 
