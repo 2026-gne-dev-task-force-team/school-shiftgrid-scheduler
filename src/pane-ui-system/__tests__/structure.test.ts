@@ -138,8 +138,13 @@ describe('⑥ plugins 는 pane-ui-system 속(shell·layout·primitives)을 직�
 /*
  * ⑨ 플러그인끼리 직접 의존 금지 — 한 plugins/<a>/ 가 다른 plugins/<b>/ 를 import 하면 빨강.
  *   「다른 플러그인 API 는 자리만」(요구명세 4번) — 플러그인은 host 하나로만 바깥과 말한다.
+ *
+ * 🙋 4 예외(N4) — 「import type 만」은 통과한다: `import type { NodesApi } from '../project-explorer/api'`.
+ *   사유: 공개 API 의 타입은 컴파일 때만 쓰이고(런타임 코드 0), tsc 가 번들에서 지운다 — 플러그인끼리
+ *   「값」을 끌어오는 결합이 아니다. 값/기본/재export import 는 그대로 빨강(런타임 결합이 생긴다).
+ *   ⚠️ 가름선은 「import type」 구문 하나다. 같은 파일에 값 import 가 또 있으면 그건 따로 걸린다.
  */
-describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
+describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다 (import type 만 예외 — 🙋 4)', () => {
     const PLUGROOT = join(ROOT, 'plugins');
     const files = walk(PLUGROOT);
 
@@ -149,8 +154,13 @@ describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
 
     for (const f of files) {
         const self = relative(PLUGROOT, f).split(sep)[0];
-        it(`다른 플러그인 import 없음: ${f.slice(ROOT.length + 1)}`, () => {
+        it(`다른 플러그인 import 없음(값): ${f.slice(ROOT.length + 1)}`, () => {
             const src = read(f);
+            // `import type … from 'spec'` 로 들어온 spec 은 허용 목록 — 타입 전용이라 런타임 결합이 없다.
+            const typeOnly = new Set(
+                [...src.matchAll(/import\s+type\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]),
+            );
+            // 모든 import/재export 의 spec(값·타입·재export 전부) — 이 중 형제 플러그인에 닿는 것만 센다.
             const specs = [...src.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]);
             const offenders: string[] = [];
             for (const s of specs) {
@@ -158,9 +168,9 @@ describe('⑨ plugins 는 다른 plugins 를 import 하지 않는다', () => {
                 const rel = relative(PLUGROOT, resolve(dirname(f), s));
                 if (rel.startsWith('..')) continue;               // plugins 바깥
                 const other = rel.split(sep)[0];
-                if (other && other !== self) offenders.push(s);   // 다른 플러그인 폴더로 들어갔다
+                if (other && other !== self && !typeOnly.has(s)) offenders.push(s);   // 값으로 다른 플러그인에 들어갔다
             }
-            expect(offenders, `${basename(f)} 가 다른 플러그인을 직접 import 한다: ${offenders.join(', ')}`).toEqual([]);
+            expect(offenders, `${basename(f)} 가 다른 플러그인을 값으로 import 한다(import type 만 허용): ${offenders.join(', ')}`).toEqual([]);
         });
     }
 });
@@ -252,7 +262,7 @@ describe('⑬ .select-text 는 예외 목록(ALLOW)에서만 쓴다', () => {
     // 예외 목록 = 옵트인 자리: 셸 본문 칸·피크 본문 · 그 셀렉터를 정의하는 가드 · 플러그인 뷰 본문(글 내용)
     const ALLOW = new Set([
         'EditorArea.tsx', 'PeekLayer.tsx', 'guards.ts',
-        'MonthView.tsx', 'YearView.tsx', 'TimeGridView.tsx', 'SampleView.tsx', 'TestConsole.tsx',
+        'MonthView.tsx', 'YearView.tsx', 'TimeGridView.tsx', 'SampleView.tsx', 'TestConsole.tsx', 'NodeSampleView.tsx',
     ]);
     const files = walk(ROOT);
 

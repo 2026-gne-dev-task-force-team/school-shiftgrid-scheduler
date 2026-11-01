@@ -8,6 +8,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { ComponentType } from 'react';
 import { makeHost } from './host';
+import type { PluginModule, Disposable } from './types';
+import { activateAll, enablePlugin, disablePlugin } from './registry';
 import {
     disposeOwner, listSettings, getCommand, runCommand,
     listRibbonActions, listStatusItems, fireWorkspace,
@@ -89,6 +91,55 @@ describe('host.workspace.on — open/close/activate 를 fireWorkspace 가 쏘면
         fireWorkspace('activate', { id: 'a', viewId: 't.v' });
         fireWorkspace('close', { id: 'a', viewId: 't.v' });
         expect(got).toEqual(['open:t.v', 'activate:t.v', 'close:t.v']);
+    });
+});
+
+describe('host.plugins.get — 다른 플러그인의 공개 api(N4)', () => {
+    /** 공개 api 를 든 모듈 하나 — 활성/비활성에 따라 get 이 달라지는지 본다. */
+    function mod(id: string, api: unknown, core = false): PluginModule {
+        return { manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core }, activate() { /* 등록 없음 */ }, api };
+    }
+
+    beforeEach(() => {
+        try { localStorage.clear(); } catch { /* jsdom 없을 때 */ }
+    });
+
+    it('활성 플러그인의 api 를 돌려주고, 없는 id 는 undefined', () => {
+        const apiObj = { version: 1 as const, hello: () => 'hi' };
+        activateAll([mod('prov', apiObj)]);
+        const h = makeHost('consumer');
+        expect(h.plugins.get('prov')).toBe(apiObj);
+        expect(h.plugins.get('없는것')).toBeUndefined();   // 설치 안 된 것
+        expect(h.plugins.get('consumer')).toBeUndefined(); // api 안 낸 것(여기선 설치도 안 됨)
+    });
+
+    it('꺼진 플러그인은 undefined, 다시 켜면 다시 돌아온다', () => {
+        const apiObj = { version: 1 as const };
+        activateAll([mod('prov', apiObj)]);
+        const h = makeHost('consumer');
+        expect(h.plugins.get('prov')).toBe(apiObj);
+        disablePlugin('prov');
+        expect(h.plugins.get('prov')).toBeUndefined();   // 🔴 꺼지면 공개 표면도 빠진다
+        enablePlugin('prov');
+        expect(h.plugins.get('prov')).toBe(apiObj);
+    });
+
+    it('「호출자별 팩토리」면 호출자 id 와 track 을 넘겨 부른다', () => {
+        let seen: { caller?: string; tracked: number } = { tracked: 0 };
+        const factory = Object.assign(
+            (caller: string | undefined, track?: (d: Disposable) => Disposable) => {
+                seen = { caller, tracked: seen.tracked };
+                track?.({ dispose() { seen.tracked += 1; } });   // 호출자 소유로 모아 둔다
+                return { version: 1 as const, who: caller };
+            },
+            { __perCaller: true as const },
+        );
+        activateAll([mod('prov', factory)]);
+        const got = makeHost('consumer').plugins.get<{ who?: string }>('prov');
+        expect(seen.caller).toBe('consumer');   // 호출자가 threaded
+        expect(got?.who).toBe('consumer');
+        disposeOwner('consumer');               // consumer 가 꺼지면
+        expect(seen.tracked).toBe(1);           // 🔴 상대가 낸 disposable 도 같이 회수된다
     });
 });
 

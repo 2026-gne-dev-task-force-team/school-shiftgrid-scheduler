@@ -15,6 +15,7 @@ import { NARROW_PX } from '../layout/panels';
 import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
+import { getPluginApi } from './registry';
 import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
@@ -140,6 +141,15 @@ export function makeHost(pluginId: string): PluginHost {
             if (storage.get<boolean>('__first-run', false)) return;
             storage.set('__first-run', true);
             try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
+        },
+
+        plugins: {
+            // 🔴 N4 — 다른 플러그인 공개 api. 호출자(pluginId)와 track 을 넘긴다:
+            //   상대가 호출자별 팩토리면 그걸로 바인딩하고, 상대가 낸 Disposable 은 이 호출자 소유로 모아
+            //   둔다(이 플러그인이 꺼지면 상대 쪽 등록도 같이 회수된다 — 노드가 회색이 되는 길).
+            get<T = unknown>(id: string): T | undefined {
+                return getPluginApi<T>(id, pluginId, (d) => track(pluginId, d));
+            },
         },
     };
 }

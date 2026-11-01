@@ -38,6 +38,20 @@ export interface PluginModule {
     manifest: PluginManifest;
     activate: (host: PluginHost) => void | Promise<void>;
     deactivate?: () => void;   // 선택 — 등록물 회수는 호스트가 한다(P2)
+    /**
+     * 🔴 N4 — 다른 플러그인에게 내주는 공개 표면(객체 하나). host.plugins.get(id) 로 받는다.
+     *   ⭐ manifest 옆에 둔다(플러그인 시스템 명세 「공개 API 를 낼 땐 manifest 옆에 api 칸을 더한다」).
+     *   ⭐ 「호출자별 팩토리」도 된다 — api 가 { __perCaller:true } 표식 함수면, host.plugins.get 이
+     *      호출자 id 와 track 을 넘겨 부른다(그래서 setData 같은 게 「그 타입을 등록한 플러그인만」을 가린다).
+     *      표식이 없으면 그 객체를 그대로 돌려준다(평면 객체 api).
+     */
+    api?: unknown;
+}
+
+/** 🔴 호출자별 공개 api 팩토리 — PluginModule.api 가 이 꼴이면 host.plugins.get 이 호출자 맥락으로 부른다. */
+export interface PerCallerApi<T = unknown> {
+    (callerId: string | undefined, track?: (d: Disposable) => Disposable): T;
+    __perCaller: true;
 }
 
 /** 리본 동작 — 「뷰 열기」가 아니라 실제 동작(엑셀 리본, 쥔님). 뷰의 ribbon 칸은 「그 뷰 열기」 동작의 설탕. */
@@ -155,4 +169,13 @@ export interface PluginHost {
     };
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
+
+    /**
+     * 🔴 N4 — 다른 플러그인의 공개 api(PluginModule.api)를 받는다. import 는 여전히 0(구조 검사 ⑨).
+     *   꺼졌거나·활성 실패거나·없으면 undefined. 코어는 먼저 활성되니 코어 api 는 늘 있다.
+     *   ⚠️ 상대 플러그인이 「호출자별 팩토리」면 이 호스트의 id(= 호출자)와 track 으로 불러 바인딩한 것을 돌려준다.
+     */
+    plugins: {
+        get<T = unknown>(id: string): T | undefined;
+    };
 }
