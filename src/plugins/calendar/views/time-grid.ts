@@ -90,6 +90,18 @@ export function quarterLabel(year: number, month: number): string {
     return `${year}년 ${quarterOfMonth(month)}분기`;
 }
 
+/** 열 왼쪽 경계의 세기 — 1일이 아니면 none · 분기 시작월(1·4·7·10) 1일이면 quarter · 그 밖 1일이면 month. */
+export type ColBoundary = 'none' | 'month' | 'quarter';
+export function columnBoundary(month: number, day: number): ColBoundary {
+    if (day !== 1) return 'none';
+    return (month - 1) % 3 === 0 ? 'quarter' : 'month';
+}
+
+/** 달 머리 라벨을 이 열에 띄울까 — 보이는 첫 열이거나 그 달 1일이면(간트·분기 뷰 공용, 중복 금지). */
+export function shouldShowMonth(day: number, index: number): boolean {
+    return index === 0 || day === 1;
+}
+
 /** 시 눈금 글자 — '09:00' 꼴(24시간, 0 채움) */
 export function hourLabel(h: number): string {
     return `${pad2(h)}:00`;

@@ -9,6 +9,7 @@
  */
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton, isoOf, monthLabel } from '../../../pane-ui-system';
+import { shouldShowMonth } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -138,7 +139,7 @@ export function GanttView({ value, onChange, trailing }: { value: Date; onChange
                         {s.offsets.map((o, i) => (
                             <DayHeader
                                 key={o} offset={o} left={s.leftOf(o)} width={s.colW} todayIso={todayIso}
-                                showMonth={dayAt(o).getDate() === 1 || i === 0}
+                                showMonth={shouldShowMonth(dayAt(o).getDate(), i)}
                             />
                         ))}
                     </div>

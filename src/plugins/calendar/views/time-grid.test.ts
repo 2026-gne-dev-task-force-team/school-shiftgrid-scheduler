@@ -3,7 +3,7 @@
  *   열 길이·연속성 · 달 넘김 · 범위 시작(주는 일요일로 당김) · 범위 글자 네 꼴 · 시 눈금 · 하루 중 분.
  */
 import { describe, it, expect } from 'vitest';
-import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, daysBetween, quarterOfMonth, quarterLabel } from './time-grid';
+import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, daysBetween, quarterOfMonth, quarterLabel, columnBoundary, shouldShowMonth } from './time-grid';
 
 describe('dayColumns — days 개 열', () => {
     it('length === days', () => {
@@ -118,6 +118,33 @@ describe('quarterOfMonth — 월 경계 8건(1·3·4·6·7·9·10·12월)', () =
     it('quarterLabel — 년 분기 꼴', () => {
         expect(quarterLabel(2026, 11)).toBe('2026년 4분기');
         expect(quarterLabel(2027, 1)).toBe('2027년 1분기');
+    });
+});
+
+describe('columnBoundary — 분기 뷰 세로선 세기(2026-11-01 22:51)', () => {
+    it('1일이 아니면 none', () => {
+        expect(columnBoundary(11, 2)).toBe('none');
+        expect(columnBoundary(1, 15)).toBe('none');
+        expect(columnBoundary(4, 30)).toBe('none');
+    });
+    it('분기 시작월(1·4·7·10) 1일이면 quarter', () => {
+        for (const m of [1, 4, 7, 10]) expect(columnBoundary(m, 1)).toBe('quarter');
+    });
+    it('그 밖 달의 1일이면 month', () => {
+        for (const m of [2, 3, 5, 6, 8, 9, 11, 12]) expect(columnBoundary(m, 1)).toBe('month');
+    });
+});
+
+describe('shouldShowMonth — 달 띠 라벨 띄울 열', () => {
+    it('보이는 첫 열(index 0)이면 항상', () => {
+        expect(shouldShowMonth(15, 0)).toBe(true);
+    });
+    it('그 달 1일이면', () => {
+        expect(shouldShowMonth(1, 5)).toBe(true);
+    });
+    it('그 밖이면 안 띄운다', () => {
+        expect(shouldShowMonth(2, 3)).toBe(false);
+        expect(shouldShowMonth(28, 7)).toBe(false);
     });
 });
 

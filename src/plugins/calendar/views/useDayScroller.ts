@@ -101,7 +101,10 @@ export function useDayScroller({ days, gutter, align, value, onChange, fixedColW
         const measure = () => {
             const w = fixedColW ?? Math.max(MIN_COL, Math.floor((el.clientWidth - gutter) / days));
             if (w === colWRef.current) return;
-            keepLeftIdx.current = el.scrollLeft / colWRef.current;
+            // 🔴 ⭐ 초기화 전(didInit=false)엔 보존하지 않는다 — 그땐 scrollLeft 이 아직 0 이라
+            //    keepLeftIdx=0 이 되고, 그 0 이 바로 아래 init 이 잡아 둔 자리를 colW 바뀜 때 덮어
+            //    「처음 열면 1년 전(range.from)으로 가 있는」 버그를 냈다(2026-11-01 22:51 실측 재현: 주·분기 다 2025-11-01).
+            if (didInit.current) keepLeftIdx.current = el.scrollLeft / colWRef.current;
             colWRef.current = w;
             setColW(w);
         };
@@ -119,7 +122,9 @@ export function useDayScroller({ days, gutter, align, value, onChange, fixedColW
         if (!didInit.current) {
             didInit.current = true;
             // 🔴 처음엔 value(보던 날)를 맨 왼쪽에 — `new Date()` 가 아니다(뷰를 바꿔도 보던 날이 유지되게).
-            el.scrollLeft = (offsetOf(alignRef.current(initValue.current)) - rangeRef.current.from) * colW;
+            //    🔴 ⭐ colW(클로저 값)가 아니라 colWRef.current(이미 측정된 폭)로 센다 — 측정 effect 가 setColW 로
+            //       re-render 를 예약해도 이 effect 는 아직 옛 colW 를 들고 있어, 그 값으로 자리를 잡으면 틀린 칸으로 간다.
+            el.scrollLeft = (offsetOf(alignRef.current(initValue.current)) - rangeRef.current.from) * colWRef.current;
             onInitRef.current?.(el);
         } else if (keepLeftIdx.current !== null) {
             el.scrollLeft = keepLeftIdx.current * colW;

@@ -142,7 +142,9 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
         const measure = () => {
             const h = Math.max(56, Math.floor((el.clientHeight - WD_HEADER_H) / ROWS_VISIBLE));
             if (h === rowHRef.current) return;
-            keepTopIdx.current = el.scrollTop / rowHRef.current;
+            // 🔴 ⭐ 초기화 전(didInit=false)엔 보존 안 함 — 그땐 scrollTop 이 아직 0 이라 keepTopIdx=0 이 되고,
+            //    그 0 이 바로 아래 init 이 잡은 자리를 rowH 바뀜 때 덮어 「처음 열면 2년 전(range.from)」으로 튀었다(2026-11-01 22:51 실측).
+            if (didInit.current) keepTopIdx.current = el.scrollTop / rowHRef.current;
             rowHRef.current = h;
             setRowH(h);
         };
@@ -159,7 +161,9 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
         if (!didInit.current) {
             didInit.current = true;
             // 🔴 처음엔 value(보던 날)가 든 주를 맨 위에. `- range.from` 을 지켜야 과거(2024년) 맨 위로 안 튄다(scroll-math).
-            el.scrollTop = offsetToScroll(weekOffsetOf(initValue.current), rangeRef.current.from, rowH);
+            //    🔴 ⭐ rowH(클로저)가 아니라 rowHRef.current(이미 측정된 높이)로 센다 — 측정 effect 의 setRowH re-render 전엔
+            //       이 effect 가 옛 rowH 를 들고 있어 틀린 자리로 간다(useDayScroller 와 같은 수정).
+            el.scrollTop = offsetToScroll(weekOffsetOf(initValue.current), rangeRef.current.from, rowHRef.current);
         } else if (keepTopIdx.current !== null) {
             el.scrollTop = keepTopIdx.current * rowH;
             keepTopIdx.current = null;
