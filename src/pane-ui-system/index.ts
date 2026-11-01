@@ -24,6 +24,8 @@ export { Icon, type IconName } from './primitives/Icon';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { useContextTrigger } from './primitives/useContextTrigger';
 export { useDragLeaf, type DragLeafState, type DragBind } from './primitives/useDragLeaf';
+export { DatePicker } from './primitives/DatePicker';
+export { monthGrid, shiftMonth, monthLabel, isoOf, type DayCell } from './primitives/date-grid';
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다.
 //   ⭐ 2026-11-01: 화면 전용 조각을 폴더로 갈랐다(쥔님). shared/ 공통 · desktop/ 넓은 화면 전용 · mobile/ 좁은 화면 전용.

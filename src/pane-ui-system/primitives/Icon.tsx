@@ -6,11 +6,14 @@ export type IconName =
     | 'undo' | 'redo' | 'save' | 'folder' | 'file' | 'plus' | 'trash' | 'check' | 'x'
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
-    | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH';
+    | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
+    | 'calendar';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
     table: 'M3 4h18v16H3zM3 9h18M3 14h18M9 4v16M15 4v16',
+    // 달력 — 상자 + 머리줄 + 고리 둘(쥔님 2026-11-01 16:55 *"캘린더 아이콘이 캘린더 스럽지 않아"* — table 격자를 쓰던 것을 바꿈)
+    calendar: 'M4 6h16v15H4zM4 10h16M8 3v5M16 3v5',
     ban: 'M5 5l14 14M12 3a9 9 0 100 18 9 9 0 000-18z',
     sparkles: 'M12 3l1.8 4.8L18.5 9.6 13.8 11.4 12 16.2 10.2 11.4 5.5 9.6 10.2 7.8zM19 15l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z',
     search: 'M11 4a7 7 0 105 12 7 7 0 000-14zM21 21l-4.5-4.5',

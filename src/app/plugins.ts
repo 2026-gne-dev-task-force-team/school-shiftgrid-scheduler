@@ -10,10 +10,12 @@
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
 import { paneTestPlugin } from '../plugins/pane-test';
+import { calendarPlugin } from '../plugins/calendar';
 
 // 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정 화면은 코어다 — 끌 수 없다.
 //    pane-test(팬 UI 엔진 테스트)는 코어 아님 — 설정에서 끌 수 있다(그 자체가 수명주기 시연).
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
     paneTestPlugin,
+    calendarPlugin,   // 캘린더(월 보기) — 코어 아님, 설정에서 끌 수 있다
 ];
