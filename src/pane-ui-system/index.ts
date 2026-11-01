@@ -15,6 +15,8 @@ export { setStoragePrefix, storageKey } from './storage';
 // 창틀 동작의 명령 id — 창틀이 이름을 쥐고 앱이 run 을 꽂는다(「모든 동작은 명령」)
 export { FRAME_COMMAND, type FrameCommandId } from './frame-commands';
 
+export { FOCUS_RING } from './primitives/focus';
+export { Button } from './primitives/Button';
 export { Surface } from './primitives/Surface';
 export { IconButton } from './primitives/IconButton';
 export { BottomSheet } from './primitives/BottomSheet';

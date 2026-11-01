@@ -8,7 +8,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon, setViewOverride, getViewOverride } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, HOST_VERSION,
@@ -104,15 +104,14 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                             <div className="flex items-start justify-between gap-3">
                                 <ViewSettingsNote />
                                 {anyOverride && (
-                                    <button
-                                        type="button"
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => views.forEach((v) => setViewOverride(v.id, null))}
-                                        className="shrink-0 whitespace-nowrap h-btn px-2 rounded border border-line text-[12px] text-muted
-                                            hover:text-text hover:bg-text/[0.04] transition-colors
-                                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                        className="shrink-0 whitespace-nowrap"
                                     >
                                         전부 되돌리기
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                             <div className="flex flex-col rounded border border-line overflow-hidden">
@@ -124,8 +123,8 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                                                 type="button"
                                                 aria-expanded={open}
                                                 onClick={() => toggleView(v.id)}
-                                                className="w-full text-left flex items-start gap-2 px-2.5 py-1.5 hover:bg-text/[0.04] transition-colors
-                                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                                className={`w-full text-left flex items-start gap-2 px-2.5 py-1.5 hover:bg-text/[0.04] transition-colors
+                                                    ${FOCUS_RING}`}
                                             >
                                                 <Icon name="right" size={12} className={`mt-1 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
                                                 {v.icon && <Icon name={v.icon} size={14} className="mt-0.5 shrink-0 text-muted" />}
@@ -155,15 +154,14 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                         <div className="flex items-center justify-between gap-3">
                             <span className="text-[12px] text-text">{sections.map((s) => `${s.title}(${s.items.length})`).join(' · ')}</span>
                             {firstItemId && (
-                                <button
-                                    type="button"
+                                <Button
+                                    variant="accent"
+                                    size="md"
                                     onClick={() => { chrome.goToItem(firstItemId); chrome.peek?.hide(); }}
-                                    className="shrink-0 whitespace-nowrap h-btn px-3 rounded border border-accent text-[12px] text-text bg-text/[0.06]
-                                        hover:bg-text/[0.1] transition-colors
-                                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                    className="shrink-0 whitespace-nowrap"
                                 >
                                     설정 가기
-                                </button>
+                                </Button>
                             )}
                         </div>
                     )}

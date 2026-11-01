@@ -9,6 +9,7 @@
  */
 import { BottomSheet } from '../../primitives/BottomSheet';
 import { Icon } from '../../primitives/Icon';
+import { FOCUS_RING } from '../../primitives/focus';
 import { usePaneSettings } from '../../layout/pane-settings';
 import { resolveRibbonEntries, useContribVersion, type RibbonEntry } from '../../plugin';
 
@@ -37,8 +38,8 @@ export function RibbonSheet({
                         onClick={() => pick(v)}
                         data-ribbon-kind={v.kind}
                         aria-label={v.title}
-                        className="flex items-center gap-3 h-row px-pad rounded text-text select-none transition-colors
-                            hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                        className={`flex items-center gap-3 h-row px-pad rounded text-text select-none transition-colors
+                            hover:bg-text/[0.06] ${FOCUS_RING}`}
                     >
                         <Icon name={v.icon ?? 'dot'} size={18} />
                         <span className="min-w-0 flex-1 truncate text-left text-[14px]">{v.title}</span>

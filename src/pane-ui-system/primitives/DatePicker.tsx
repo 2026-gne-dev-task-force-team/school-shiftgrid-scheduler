@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { IconButton } from './IconButton';
+import { FOCUS_RING } from './focus';
 import { monthGrid, monthLabel, shiftMonth, isoOf, type DayCell } from './date-grid';
 
 /** 'YYYY-MM-DD' → {y,m,d} 또는 못 읽으면 null */
@@ -159,7 +160,7 @@ export function DatePicker({
                             onClick={() => pick(cell)}
                             className={`grid place-items-center aspect-square rounded text-[12px] leading-none cursor-pointer
                                 transition-colors ${tone} ${todayRing}
-                                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent`}
+                                ${FOCUS_RING}`}
                         >
                             {cell.d}
                         </div>

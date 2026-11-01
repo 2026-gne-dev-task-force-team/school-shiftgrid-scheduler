@@ -3,6 +3,8 @@
  * 🔴 설정 판 전부가 이 하나를 쓴다(창틀·플러그인·…). 📌 17:39 플러그인(settings/panes)에서 창틀 기본 부품(primitives)으로 올렸다 — 다른 플러그인(캘린더)도 써야 하는데 플러그인끼리 import 는 금지(검사 ⑨)라서. 쥔님 *"토글 뷰 기본 컴포넌트가 아니고 따로 만드나"* 글자 단추(켜짐/꺼짐)는 ⛔ — 스위치 하나로 통일.
  * 🔴 토큰 색만. disabled 면 흐리고 안 눌린다.
  */
+import { FOCUS_RING } from './focus';
+
 export function Toggle({ on, onToggle, disabled = false, label }: {
     on: boolean;
     onToggle: (v: boolean) => void;
@@ -18,7 +20,7 @@ export function Toggle({ on, onToggle, disabled = false, label }: {
             disabled={disabled}
             onClick={() => onToggle(!on)}
             className={`relative shrink-0 w-10 h-6 rounded-full transition-colors
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                ${FOCUS_RING}
                 disabled:opacity-40 disabled:cursor-not-allowed
                 ${on ? 'bg-accent' : 'bg-text/[0.18]'}`}
         >

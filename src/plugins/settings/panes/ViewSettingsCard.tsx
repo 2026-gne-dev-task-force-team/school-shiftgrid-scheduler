@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react';
 import {
-    usePaneSettings, setViewOverride, getViewOverride,
+    usePaneSettings, setViewOverride, getViewOverride, Button, FOCUS_RING,
     type Squeeze, type ViewLayout, type ViewDef,
 } from '../../../pane-ui-system';
 
@@ -45,8 +45,8 @@ function NumCell({ label, hint, value, placeholder, onChange }: {
                     const n = Number(t);
                     if (Number.isFinite(n)) onChange(n);
                 }}
-                className="w-28 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
-                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                className={`w-28 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
+                    ${FOCUS_RING}`}
             />
         </Cell>
     );
@@ -87,15 +87,14 @@ export function ViewSettingsCard({ view: v }: { view: ViewDef }) {
         <div className="flex flex-col gap-3 px-2.5 py-2.5 bg-panel2">
             {hasOver && (
                 <div className="flex justify-end">
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => setViewOverride(v.id, null)}
-                        className="shrink-0 whitespace-nowrap h-btn px-2 rounded border border-line text-[12px] text-muted
-                            hover:text-text hover:bg-text/[0.04] transition-colors
-                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                        className="shrink-0 whitespace-nowrap"
                     >
                         등록값으로
-                    </button>
+                    </Button>
                 </div>
             )}
 
@@ -112,8 +111,8 @@ export function ViewSettingsCard({ view: v }: { view: ViewDef }) {
                     <select
                         value={over.squeeze ?? ''}
                         onChange={(e) => patch({ squeeze: (e.target.value || undefined) as Squeeze | undefined })}
-                        className="h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
-                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                        className={`h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
+                            ${FOCUS_RING}`}
                     >
                         <option value="">등록값{base.squeeze ? ` (${base.squeeze})` : ''}</option>
                         {SQUEEZES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}

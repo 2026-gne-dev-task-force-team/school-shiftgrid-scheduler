@@ -11,7 +11,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import {
     COLOR_TOKENS, effectiveColors, rgbToHex, hexToRgb, isTriplet,
     useUserThemes, addUserTheme, removeUserTheme, renameUserTheme,
-    exportThemeJSON, importThemeJSON,
+    exportThemeJSON, importThemeJSON, FOCUS_RING,
     type ColorToken, type ThemeControls, type UserTheme,
 } from '../../../pane-ui-system';
 
@@ -77,7 +77,7 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
     };
 
     const btn = `h-btn px-3 rounded border border-line text-[13px] text-muted hover:text-text hover:bg-text/[0.04]
-        transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent`;
+        transition-colors ${FOCUS_RING}`;
 
     return (
         <div className="flex flex-col gap-4">
@@ -105,17 +105,17 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                                     defaultValue={val}
                                     key={val}
                                     onChange={(e) => { if (isTriplet(e.target.value)) setToken(t, e.target.value.trim()); }}
-                                    className="w-28 h-7 px-2 rounded border border-line bg-bg text-text text-[12px]
-                                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                    className={`w-28 h-7 px-2 rounded border border-line bg-bg text-text text-[12px]
+                                        ${FOCUS_RING}`}
                                 />
                                 <span className="text-[11px] text-muted w-10 shrink-0">{t}</span>
                                 <button
                                     type="button"
                                     onClick={() => revertToken(t)}
                                     disabled={!overridden}
-                                    className="ml-auto h-7 px-2 rounded border border-line text-[12px] text-muted
+                                    className={`ml-auto h-7 px-2 rounded border border-line text-[12px] text-muted
                                         enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
-                                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                        ${FOCUS_RING}`}
                                 >
                                     되돌리기
                                 </button>
@@ -136,8 +136,8 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                         placeholder="이름을 붙여 지금 색을 저장"
                         onChange={(e) => setNewName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') saveAsUserTheme(); }}
-                        className="flex-1 min-w-0 h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
-                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                        className={`flex-1 min-w-0 h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
+                            ${FOCUS_RING}`}
                     />
                     <button type="button" onClick={saveAsUserTheme} disabled={!newName.trim()}
                         className={`${btn} disabled:opacity-30`}>저장</button>
@@ -158,8 +158,8 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                                             if (e.key === 'Escape') setRenaming(null);
                                         }}
                                         onBlur={() => { renameUserTheme(t.id, renaming.name); setRenaming(null); }}
-                                        className="flex-1 min-w-0 h-7 px-2 rounded border border-line bg-bg text-text text-[13px]
-                                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                        className={`flex-1 min-w-0 h-7 px-2 rounded border border-line bg-bg text-text text-[13px]
+                                            ${FOCUS_RING}`}
                                     />
                                 ) : (
                                     <button type="button" onClick={() => applyUserTheme(t)}
@@ -170,8 +170,8 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                                 <button type="button" onClick={() => setRenaming({ id: t.id, name: t.name })} className={`${btn} h-7`}>이름</button>
                                 <button type="button" onClick={() => doExport(t)} className={`${btn} h-7`}>내보내기</button>
                                 <button type="button" onClick={() => removeUserTheme(t.id)}
-                                    className="h-7 px-2 rounded border border-line text-[12px] text-bad hover:bg-bad/10
-                                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+                                    className={`h-7 px-2 rounded border border-line text-[12px] text-bad hover:bg-bad/10
+                                        ${FOCUS_RING}`}>
                                     지우기
                                 </button>
                             </div>

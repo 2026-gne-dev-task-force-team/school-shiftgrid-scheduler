@@ -7,6 +7,7 @@
  * 🔴 색은 토큰으로만(구조 검사 ①). 보임/숨김·좁은 화면 기본 숨김은 WorkbenchScreen 이 가른다 — 여긴 늘 그린다.
  */
 import type { ReactNode } from 'react';
+import { FOCUS_RING } from '../../primitives/focus';
 
 /** 상태바에 앱이 꽂는 항목 하나 — text 나 node 중 하나. onClick 있으면 단추 */
 export interface StatusItem {
@@ -24,8 +25,8 @@ function Item({ it }: { it: StatusItem }) {
             <button
                 type="button"
                 onClick={it.onClick}
-                className="shrink-0 px-1 rounded text-muted hover:text-text hover:bg-text/[0.06] transition-colors
-                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent truncate max-w-[40vw]"
+                className={`shrink-0 px-1 rounded text-muted hover:text-text hover:bg-text/[0.06] transition-colors
+                    ${FOCUS_RING} truncate max-w-[40vw]`}
             >
                 {content}
             </button>

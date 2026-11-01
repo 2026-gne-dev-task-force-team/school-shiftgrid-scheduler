@@ -7,7 +7,7 @@
  *    값만 저장해 두고(창구) 다음 단계에서 각 자리에 물린다 — 창구를 먼저 빼 두라는 지시(쥔님)대로.
  */
 import type { ReactNode } from 'react';
-import { usePaneSettings, setPaneSettings, resetPaneSettings } from '../../../pane-ui-system';
+import { usePaneSettings, setPaneSettings, resetPaneSettings, Button, FOCUS_RING } from '../../../pane-ui-system';
 import type { PaneSettings } from '../../../pane-ui-system';
 import { Toggle } from '../../../pane-ui-system';
 
@@ -29,8 +29,8 @@ function NumberInput({ value, onChange }: { value: number; onChange: (n: number)
             type="number"
             value={value}
             onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) onChange(n); }}
-            className="w-24 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            className={`w-24 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
+                ${FOCUS_RING}`}
         />
     );
 }
@@ -89,15 +89,9 @@ export function PaneSettingsPane() {
             </div>
 
             <div className="pt-2 border-t border-line">
-                <button
-                    type="button"
-                    onClick={resetPaneSettings}
-                    className="h-btn px-3 rounded border border-line text-[13px] text-muted
-                        hover:text-text hover:bg-text/[0.04] transition-colors
-                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                >
+                <Button variant="ghost" size="md" onClick={resetPaneSettings}>
                     기본값으로 되돌리기
-                </button>
+                </Button>
             </div>
         </div>
     );

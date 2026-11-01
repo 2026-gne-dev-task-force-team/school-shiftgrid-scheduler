@@ -4,6 +4,7 @@
  */
 import type { MouseEvent } from 'react';
 import { Icon, type IconName } from './Icon';
+import { FOCUS_RING } from './focus';
 
 export function IconButton({
     icon,
@@ -38,7 +39,7 @@ export function IconButton({
             {...data}
             onClick={onClick}
             className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
-                hover:bg-text/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                hover:bg-text/[0.06] ${FOCUS_RING}
                 ${active ? 'text-text bg-text/[0.06]' : 'text-muted hover:text-text'} ${className}`}
         >
             <Icon name={icon} size={size} />

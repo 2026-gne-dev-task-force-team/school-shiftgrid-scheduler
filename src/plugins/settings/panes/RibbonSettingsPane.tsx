@@ -10,7 +10,7 @@ import { createPortal } from 'react-dom';
 import {
     usePaneSettings, nudgeId, useReorder,
     setRibbonOrder, toggleRibbonHidden, resetRibbon,
-    Icon,
+    Icon, Button, FOCUS_RING,
 } from '../../../pane-ui-system';
 import { resolveRibbonEntries, useContribVersion } from '../../../pane-ui-system/plugin';
 import type { SettingsPaneProps } from '../registry';
@@ -50,7 +50,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                             data-row-id={v.id}
                             tabIndex={0}
                             className={`flex items-center gap-2 px-3 h-row border-b border-line last:border-b-0 cursor-grab select-none
-                                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                                ${FOCUS_RING}
                                 ${on ? 'text-text' : 'text-muted bg-text/[0.02]'}`}
                         >
                             <Icon name="dots" size={14} className="shrink-0 text-muted/60" />
@@ -62,7 +62,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 aria-pressed={on}
                                 onClick={() => toggleRibbonHidden(v.id, on)}
                                 className={`h-7 px-2 rounded border text-[12px] transition-colors
-                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                                    ${FOCUS_RING}
                                     ${on ? 'border-accent text-text bg-text/[0.06]' : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
                             >
                                 {on ? '켜짐' : '꺼짐'}
@@ -74,9 +74,9 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 title="위로"
                                 disabled={i === 0}
                                 onClick={() => setRibbonOrder(nudgeId(ids, v.id, -1))}
-                                className="grid place-items-center w-7 h-7 rounded border border-line text-muted
+                                className={`grid place-items-center w-7 h-7 rounded border border-line text-muted
                                     enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
-                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                    ${FOCUS_RING}`}
                             >
                                 <Icon name="left" size={14} className="-rotate-90" />
                             </button>
@@ -86,9 +86,9 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 title="아래로"
                                 disabled={i === ordered.length - 1}
                                 onClick={() => setRibbonOrder(nudgeId(ids, v.id, 1))}
-                                className="grid place-items-center w-7 h-7 rounded border border-line text-muted
+                                className={`grid place-items-center w-7 h-7 rounded border border-line text-muted
                                     enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
-                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                                    ${FOCUS_RING}`}
                             >
                                 <Icon name="right" size={14} className="rotate-90" />
                             </button>
@@ -98,15 +98,9 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
             </div>
 
             <div>
-                <button
-                    type="button"
-                    onClick={resetRibbon}
-                    className="h-btn px-3 rounded border border-line text-[13px] text-muted
-                        hover:text-text hover:bg-text/[0.04] transition-colors
-                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                >
+                <Button variant="ghost" size="md" onClick={resetRibbon}>
                     기본 순서로
-                </button>
+                </Button>
             </div>
 
             {/* 드래그 미리보기 선 — 포털로 뷰포트에 그린다(스크롤 칸 안에서도 자리가 맞게) */}

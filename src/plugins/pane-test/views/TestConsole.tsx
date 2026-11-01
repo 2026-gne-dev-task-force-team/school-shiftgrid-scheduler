@@ -4,6 +4,7 @@
  *   🔴 색은 토큰 클래스로만(구조 검사 ①).
  */
 import { useState } from 'react';
+import { Button } from '../../../pane-ui-system';
 import type { PluginHost, PeekHandle } from '../../../pane-ui-system/plugin';
 import { PEEK_WIDE_MIN_KEY, PEEK_WIDE_MIN_DEFAULT, openCmdId } from '../store';
 
@@ -17,18 +18,6 @@ function PeekContent() {
                 <div key={i} className="shrink-0 py-1.5 px-2 rounded bg-accent/10 text-[13px] text-text">미리보기 줄 {i + 1} — 피크 안 스크롤 시험</div>
             ))}
         </div>
-    );
-}
-
-function Btn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="px-3 py-2 rounded-md border border-line bg-panel2 hover:bg-panel text-[13px] text-text text-left"
-        >
-            {children}
-        </button>
     );
 }
 
@@ -83,25 +72,25 @@ export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle
             </header>
 
             <Group id="panel" title="패널 — 틀에 하나씩" host={host}>
-                <Btn onClick={() => open('panel-a')}>패널 A — 왼쪽 틀</Btn>
-                <Btn onClick={() => open('panel-b')}>패널 B — 오른쪽 틀</Btn>
-                <Btn onClick={() => open('panel-c')}>패널 C — 가운데</Btn>
-                <Btn onClick={() => open('panel-d')}>패널 D — 가운데</Btn>
+                <Button className="text-left" onClick={() => open('panel-a')}>패널 A — 왼쪽 틀</Button>
+                <Button className="text-left" onClick={() => open('panel-b')}>패널 B — 오른쪽 틀</Button>
+                <Button className="text-left" onClick={() => open('panel-c')}>패널 C — 가운데</Button>
+                <Button className="text-left" onClick={() => open('panel-d')}>패널 D — 가운데</Button>
             </Group>
 
             <Group id="tab" title="탭 — 가운데에 탭으로" host={host}>
-                <Btn onClick={() => open('tab-ga')}>탭 가</Btn>
-                <Btn onClick={() => open('tab-na')}>탭 나</Btn>
-                <Btn onClick={() => open('tab-da')}>탭 다</Btn>
-                <Btn onClick={() => open('tab-ra')}>탭 라</Btn>
+                <Button className="text-left" onClick={() => open('tab-ga')}>탭 가</Button>
+                <Button className="text-left" onClick={() => open('tab-na')}>탭 나</Button>
+                <Button className="text-left" onClick={() => open('tab-da')}>탭 다</Button>
+                <Button className="text-left" onClick={() => open('tab-ra')}>탭 라</Button>
             </Group>
 
             <Group id="scroll" title="스크롤" host={host}>
-                <Btn onClick={() => open('scroll')}>스크롤 시험 뷰</Btn>
+                <Button className="text-left" onClick={() => open('scroll')}>스크롤 시험 뷰</Button>
             </Group>
 
             <Group id="peek" title="미리보기 — 이 탭 안에서(넓으면 오른쪽 · 좁으면 아래)" host={host}>
-                <Btn onClick={openPeek}>미리보기 열기</Btn>
+                <Button className="text-left" onClick={openPeek}>미리보기 열기</Button>
             </Group>
         </div>
     );

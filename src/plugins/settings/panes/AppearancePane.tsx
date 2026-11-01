@@ -6,7 +6,7 @@
  * ⭐ 2026-11-01(W12): 풀 편집·내 테마·JSON 은 ThemeEditor 소절로 뺀다(이 파일은 고르기만).
  */
 import type { ReactNode } from 'react';
-import { Icon, useTheme, type IconName } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, useTheme, type IconName } from '../../../pane-ui-system';
 import { THEMES, type DensityId } from '../../../pane-ui-system';
 import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
@@ -33,7 +33,7 @@ function Choice({
             onClick={onClick}
             aria-pressed={active}
             className={`flex items-center gap-1.5 h-btn px-3 rounded border text-[13px] transition-colors
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                ${FOCUS_RING}
                 ${active
                     ? 'border-accent text-text bg-text/[0.06]'
                     : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
@@ -86,7 +86,7 @@ export function AppearancePane() {
                                 aria-pressed={active}
                                 title={t.name}
                                 className={`flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-md border text-[13px] transition-colors
-                                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
+                                    ${FOCUS_RING}
                                     ${active
                                         ? 'border-accent text-text bg-text/[0.06]'
                                         : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
@@ -129,16 +129,10 @@ export function AppearancePane() {
             </Field>
 
             <div className="pt-2 border-t border-line">
-                <button
-                    type="button"
-                    onClick={reset}
-                    // 🔴 단추는 안 찌그러진다 — shrink-0 + 줄바꿈 금지(쥔님 13:42 「되돌리기 버튼이 찌그러진다」)
-                    className="shrink-0 whitespace-nowrap h-btn px-3 rounded border border-line text-[13px] text-muted
-                        hover:text-text hover:bg-text/[0.04] transition-colors
-                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                >
+                {/* 🔴 단추는 안 찌그러진다 — shrink-0 + 줄바꿈 금지(쥔님 13:42 「되돌리기 버튼이 찌그러진다」) */}
+                <Button variant="ghost" size="md" onClick={reset} className="shrink-0 whitespace-nowrap">
                     기본값으로 되돌리기
-                </button>
+                </Button>
             </div>
 
             <ThemeEditor theme={theme} />

@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Icon, type IconName } from '../../primitives/Icon';
+import { FOCUS_RING } from '../../primitives/focus';
 import { splitBarItems } from '../../layout/mobile';
 
 /** 앱이 바에 꽂는 항목 하나 — 아이콘·동작만. pinned 면 오른쪽에 고정(스크롤 안 함) */
@@ -46,9 +47,9 @@ function BarButton({ icon, label, onClick, badge }: Omit<BarItem, 'id' | 'pinned
             aria-label={label}
             title={label}
             onClick={onClick}
-            className="relative grid place-items-center w-btn h-btn rounded-full shrink-0 transition-colors
+            className={`relative grid place-items-center w-btn h-btn rounded-full shrink-0 transition-colors
                 text-muted hover:text-text hover:bg-text/[0.06]
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                ${FOCUS_RING}`}
         >
             <Icon name={icon} size={18} />
             {badge != null && badge > 0 && (

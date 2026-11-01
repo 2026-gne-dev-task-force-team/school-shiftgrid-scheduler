@@ -7,6 +7,7 @@
  */
 import type { Leaf } from '../layout/tree';
 import { Icon } from '../primitives/Icon';
+import { FOCUS_RING } from '../primitives/focus';
 import { ownerOfView, enablePlugin, usePluginRegistry } from './registry';
 
 export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string }) {
@@ -24,9 +25,9 @@ export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string
                     <button
                         type="button"
                         onClick={() => enablePlugin(owner.id)}
-                        className="h-btn px-3 rounded border border-accent text-[13px] text-text bg-text/[0.06]
+                        className={`h-btn px-3 rounded border border-accent text-[13px] text-text bg-text/[0.06]
                             hover:bg-text/[0.1] transition-colors
-                            focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                            ${FOCUS_RING}`}
                     >
                         켜기
                     </button>
