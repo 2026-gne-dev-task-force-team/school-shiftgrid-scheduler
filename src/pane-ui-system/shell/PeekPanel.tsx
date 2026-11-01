@@ -67,12 +67,14 @@ function PeekHeader({
             {depth > 1 && (
                 <IconButton icon="left" label="한 장 뒤로" onClick={onPop} className="shrink-0" />
             )}
-            <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{top.title}</span>
+            {/* 🔴 제목은 기울임꼴 + 「미리 보기」 뱃지 — VS Code 미리 보기 탭이 임시를 표시하는 방식(쥔님 13:31 이름 확정) */}
+            <span className="flex-1 min-w-0 truncate text-[13px] italic text-text select-none">{top.title}</span>
+            <span className="shrink-0 text-[10px] px-1 rounded bg-text/[0.06] text-muted select-none">미리 보기</span>
             {depth > 1 && (
                 <span className="shrink-0 text-[11px] text-muted/70 select-none tabular-nums px-1">{depth}장</span>
             )}
             <IconButton icon="arrowRight" label="탭으로 열기" onClick={onPromote} className="shrink-0" />
-            <IconButton icon="x" label="피크 닫기" onClick={onClear} className="shrink-0" />
+            <IconButton icon="x" label="미리 보기 닫기" onClick={onClear} className="shrink-0" />
         </div>
     );
 }
@@ -114,14 +116,19 @@ function DesktopPeek({
 
     return (
         // 🔴 data-area="floating" — 가운데 탭을 이 기둥에 떨구면 피크로(drop-resolve 가 'floating' 으로 번역)
+        // 🔴 바깥 틀은 가운데를 「밀고」(폭 전환), 안쪽 카드는 「벽에서 튀어나온다」(peek-in/out) — 둘이 다른 물건이다.
+        //    틀 바탕은 에디터와 같은 bg-bg 라 카드가 그 위에 떠 보인다 · 카드는 오른쪽 벽에 붙고 왼쪽 모서리만 둥글다.
         <aside
-            className="relative shrink-0 bg-panel flex flex-col overflow-hidden pane-wtrans border-l border-line"
+            className="relative shrink-0 bg-bg flex flex-col overflow-hidden pane-wtrans"
             style={{ width: shown ? width : 0 }}
             data-area="floating"
             aria-label="피크"
         >
             {top && (
-                <div className="flex flex-col h-full peek-in" style={{ width }}>
+                <div
+                    className={`flex flex-col h-full my-2 ml-2 rounded-l-xl bg-panel peek-card overflow-hidden ${shown ? 'peek-in' : 'peek-out'}`}
+                    style={{ width: Math.max(0, width - 8) }}
+                >
                     <PeekHeader
                         top={top}
                         depth={stack.length}

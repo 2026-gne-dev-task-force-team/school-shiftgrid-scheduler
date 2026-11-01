@@ -151,7 +151,8 @@ export function WorkspaceView({
             { label: '가운데로', disabled: area === 'center', onClick: () => handlers.onMove(leafId, 'center') },
             { sep: true },
             // 🔴 W9 — 이 탭을 피크(임시로 뜨는 페이지)로 보낸다. onDetach 를 안 주면 비활성(자리만)
-            { label: '떼어 내기', icon: 'copy', disabled: !handlers.onDetach, onClick: () => handlers.onDetach?.(leafId) },
+            //    이름은 「미리 보기」 — 쥔님 13:31 *"미리 보기 하면 언제든지 사라질 수 있다는 느낌이 들고"*(VS Code 미리 보기 탭과 같은 결)
+            { label: '미리 보기', icon: 'copy', disabled: !handlers.onDetach, onClick: () => handlers.onDetach?.(leafId) },
         ];
         // 🔴 내용 메뉴 — 그 뷰가 menu() 로 준 항목. 구분선 뒤에 붙는다(틀과 구분된다, 쥔님 지시)
         //    ⛔ 창틀은 항목의 뜻을 모른다 — host(rename·close)만 내주고 뷰가 라벨을 붙인다
