@@ -4,6 +4,7 @@
  *   그리고 한 anchor 를 네 뷰가 공유해도 같은 날을 가리킨다는 걸(뷰 전환 시 날짜 유지) 변환의 일관성으로 잰다.
  */
 import { describe, it, expect } from 'vitest';
+import { startOfWeek } from '../../../pane-ui-system';
 import { offsetToScroll, weekOffsetBetween, dayOffsetBetween } from './scroll-math';
 
 describe('offsetToScroll — offset 을 스크롤 위치(px)로', () => {
@@ -64,5 +65,48 @@ describe('뷰 전환 시 날짜 유지 — 한 anchor 를 세·가로 두 축이
         // 일 offset 에서 되짚으면 보던 날이 나온다(거리의 가역성)
         expect(dayOffsetBetween(anchorToday, viewing)).toBe(dayOff);
         expect(dayOff).toBeLessThan(0);   // 3월은 11월보다 과거
+    });
+});
+
+// 🔴 가로뷰 초기 날짜 확정(쥔님 2026-11-01 22:17 *"가로뷰도 뷰가 딴날자로 초기화 되어 있더데"* 재확인).
+//    가로 뷰(주·3일·하루·분기·간트)는 첫 배치에서 `new Date()`(오늘)가 아니라 value(보던 날)로 스크롤을 잡아야 한다.
+//    각 뷰가 쓰는 align 규칙(TimeGridView.alignFor · GanttView 의 align=그 날)을 그대로 적어, 「맨 왼쪽에 올 날」이
+//    오늘이 아니라 value(2026-03-15)에서 나오는지, 그 offset 이 올바른 스크롤 위치로 번역되는지 잰다(DOM 없이).
+describe('가로뷰 초기 날짜 — value(2026-03-15) 가 첫 열을 정한다(오늘이 아니다)', () => {
+    const WEEK_START = 0;
+    const anchorToday = new Date(2026, 10, 1);   // ANCHOR(오늘 자리 · 좌표 원점)
+    const value = new Date(2026, 2, 15);         // 보고 있던 날(3월 15일 · 일요일)
+    // 뷰의 align 규칙과 같다: 7의 배수(주·분기)면 그 주 일요일, 아니면(3일·하루·간트) 그 날.
+    const firstVisible = (days: number): Date =>
+        days % 7 === 0 ? startOfWeek(value, WEEK_START) : new Date(value.getFullYear(), value.getMonth(), value.getDate());
+
+    it('주(7)·분기(14) — 첫 열은 value 가 든 주의 일요일(3월, 오늘 아님)', () => {
+        for (const days of [7, 14]) {
+            const first = firstVisible(days);
+            expect(first.getFullYear()).toBe(2026);
+            expect(first.getMonth()).toBe(2);               // 3월 — 11월(오늘)이 아니다
+            expect(first.getDay()).toBe(0);                 // 일요일로 당겨졌다
+            expect(first.getTime()).toBeLessThanOrEqual(value.getTime());
+        }
+    });
+
+    it('3일·하루·간트 — 첫 열은 value 그 날(3/15)', () => {
+        for (const days of [3, 1]) {
+            const first = firstVisible(days);
+            expect(first.getFullYear()).toBe(2026);
+            expect(first.getMonth()).toBe(2);
+            expect(first.getDate()).toBe(15);
+        }
+    });
+
+    it('첫 열 offset 이 그 스크롤 위치(px)로 번역된다 — rangeFrom 을 빼서(2024 튐 방지)', () => {
+        const rangeFrom = -365;
+        const colW = 120;
+        for (const days of [7, 14, 3, 1]) {
+            const off = dayOffsetBetween(anchorToday, firstVisible(days));
+            expect(off).toBeLessThan(0);                                  // 3월은 과거
+            expect(offsetToScroll(off, rangeFrom, colW)).toBe((off - rangeFrom) * colW);
+            expect(offsetToScroll(off, rangeFrom, colW)).toBeGreaterThan(0);   // 범위 안이면 맨 앞(과거)이 아니다
+        }
     });
 });
