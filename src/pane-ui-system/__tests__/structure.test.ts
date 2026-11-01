@@ -304,6 +304,30 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
  *   kvGet/kvSet/kvDel 을 직접 부르면 네임스페이스(plugin.<id>.<key>)를 안 거친 키가 생긴다 —
  *   host.store 가 그걸 가두는 자리다. 저장은 전부 host.store·host.storage 창구로.
  */
+/*
+ * ⑮ kv.ts 의 쓰기 트랜잭션 안에는 await 가 없다 — IndexedDB 트랜잭션은 마이크로태스크가 비면 자동 커밋되니,
+ *   트랜잭션 도중 await 하면 큐가 비어 트랜잭션이 죽는다(저장소 레이어 요구명세 S1 「트랜잭션 안 await 금지」).
+ *   검사: kvSet·nodesWrite 함수 몸(export async function … 다음 export 전)에 `await` 토큰이 0.
+ */
+describe('⑮ kv.ts 쓰기 트랜잭션 안에 await 가 없다 (openDb 직후의 await 는 트랜잭션 밖이라 허용)', () => {
+    const src = read(join(ROOT, 'pane-ui-system', 'kv.ts'));
+    /** `function <name>(` 부터 다음 `export ` 까지의 몸에서, `.transaction(` 뒤쪽(트랜잭션 구간)만 떼 온다. */
+    function txPart(name: string): string {
+        const start = src.indexOf(`function ${name}(`);
+        expect(start, `${name} 를 kv.ts 에서 못 찾았다`).toBeGreaterThan(-1);
+        const after = src.indexOf('\nexport ', start + 1);
+        const fnBody = src.slice(start, after < 0 ? src.length : after);
+        const tx = fnBody.indexOf('.transaction(');
+        expect(tx, `${name} 에 트랜잭션이 없다`).toBeGreaterThan(-1);
+        return fnBody.slice(tx);
+    }
+    for (const name of ['kvSet', 'nodesWrite']) {
+        it(`${name} 의 트랜잭션 구간에 await 0 (자동 커밋에 안 죽는다)`, () => {
+            expect(/\bawait\b/.test(txPart(name)), `${name} 의 트랜잭션 안에 await 가 있다 — 동기로 큐에 넣고 oncomplete 를 기다린다`).toBe(false);
+        });
+    }
+});
+
 describe('⑭ plugins 는 kvGet/kvSet/kvDel 을 직접 부르지 않는다 (host.store 로만)', () => {
     const BANNED = /\bkv(?:Get|Set|Del)\s*\(/;
     const files = walk(join(ROOT, 'plugins'));

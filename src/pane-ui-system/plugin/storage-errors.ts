@@ -9,8 +9,11 @@
  */
 import { useSyncExternalStore } from 'react';
 
-/** 왜 실패했나 — quota(공간 참) · blocked(브라우저가 막음) · unknown(그 밖) */
-export type StorageErrorReason = 'quota' | 'blocked' | 'unknown';
+/**
+ * 왜 실패했나 — quota(공간 참) · blocked(브라우저가 막음) · unknown(그 밖)
+ *   · blocked-upgrade(다른 탭이 옛 버전 DB 를 열고 있어 판올림을 못 함 — 열기 거부와 구별한다)
+ */
+export type StorageErrorReason = 'quota' | 'blocked' | 'blocked-upgrade' | 'unknown';
 
 /** 저장 실패 한 건 — 어느 저장소(scope)의 어느 키(key)가 왜(reason) 언제(at) 실패했나 */
 export interface StorageError {
