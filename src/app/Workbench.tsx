@@ -24,7 +24,7 @@ import {
 } from '../pane-ui-system';
 import {
     setWorkspaceBridge, type WorkspaceOpenOptions, type CommandContext, type Disposable,
-    useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace,
+    useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
@@ -44,6 +44,25 @@ function tabsIdOfLeaf(ws: Workspace, leafId: string): string | null {
     return null;
 }
 
+/**
+ * 🔴 저장된 배치에서 「설치돼 있지 않은 플러그인」의 뷰를 닫는다(쥔님 2026-11-01 19:04 *"개요랑 속성 패널은 뭔데 있냐"* —
+ *    지운 스케줄러의 「개요」·「속성」 leaf 가 localStorage 배치에 남아 자리표시로 떠 있었다).
+ *    ⚠️ 가름선: 플러그인이 **꺼진** 것(ownerOfView 가 있고 enabled=false)은 남긴다 — 다시 켜면 그 자리로 돌아온다(자리표시의 뜻).
+ *    없는 플러그인(ownerOfView=null)만 닫는다. 앱 자체 뷰(app.*)는 플러그인이 아니라 그대로.
+ */
+function pruneOrphanLeaves(ws: Workspace): Workspace {
+    let out = ws;
+    for (const area of ['left', 'center', 'right'] as const) {
+        const n = ws[area];
+        if (!n) continue;
+        for (const l of flatten(n)) {
+            if (l.viewId.startsWith('app.')) continue;
+            if (ownerOfView(l.viewId) === null) out = closeLeaf(out, l.id);
+        }
+    }
+    return out;
+}
+
 export function Workbench() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
@@ -51,7 +70,7 @@ export function Workbench() {
 
     // 패널 트리 — 기기별로 보관된 배치를 읽어 온다. 🔴 첫 실행(저장값 없음)이면 빈 창틀이다 —
     //             ⛔ 아무 뷰도 자동으로 열지 않는다(쥔님 2026-11-01 *"그냥 다 비워줘"*). loadWorkspace 가 빈 배치를 준다.
-    const [ws, setWs] = useState<Workspace>(() => loadWorkspace());
+    const [ws, setWs] = useState<Workspace>(() => pruneOrphanLeaves(loadWorkspace()));
     // 🔴 늘 최신 배치를 가리키는 ref — React 밖(플러그인 다리)·콜백에서 「지금 무엇이 떠 있나」를 결정적으로 읽는다.
     //    렌더 중에 갱신해 두면 setWs 의 비동기 타이밍과 무관하게 openView 가 포커스 id 를 바로 정할 수 있다.
     const wsRef = useRef(ws);
