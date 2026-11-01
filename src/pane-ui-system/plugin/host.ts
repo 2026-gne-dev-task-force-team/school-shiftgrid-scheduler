@@ -8,7 +8,7 @@
  *    🔑 그 덕에 저장된 leaf 의 viewId 만 보고 주인을 안다(꺼진 플러그인의 탭이 자리표시가 되는 데 묘비가 필요 없다).
  */
 import {
-    registerView, unregisterView, getView, listViews, listRibbonViews,
+    registerView, unregisterView, getView, listViews,
 } from '../view-registry';
 import { storageKey } from '../storage';
 import { NARROW_PX } from '../layout/panels';
@@ -61,7 +61,6 @@ export function makeHost(pluginId: string): PluginHost {
             },
             get(id) { return getView(id); },
             list() { return listViews(); },
-            listRibbon() { return listRibbonViews(); },
         },
 
         ribbon: {

@@ -71,7 +71,7 @@ export {
 
 // 창틀 설정 — 사이드바·탭·좁은 화면 기준폭 + 뷰별 덮어쓰기. 기기별 보관 + 외부 스토어
 export {
-    usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings,
+    usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings, resetViewOverrides,
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
     defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,

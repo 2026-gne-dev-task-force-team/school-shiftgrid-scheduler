@@ -1,13 +1,13 @@
 /**
- * 뷰 등록소 — 등록·재정의·조회·리본 정렬.
+ * 뷰 등록소 — 등록·재정의·조회·자리 제한.
  *   ① 등록하면 getView·listViews 로 보인다
  *   ② 같은 id 로 또 등록하면 덮어쓴다(중복이 안 쌓인다)
- *   ③ 리본은 ribbon 이 있는 것만, order 순 · 같으면 등록 순(안정)
+ *   ⛔ 「리본에 올릴지」는 뷰가 안 정한다 — 리본은 host.ribbon.add 로 꽂은 동작만(host-api.test.ts 가 본다).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { ComponentType } from 'react';
 import {
-    registerView, getView, listViews, listRibbonViews, clearViews,
+    registerView, getView, listViews, clearViews,
     canPlace, canSplit, isSingleton,
     type ViewProps,
 } from './view-registry';
@@ -33,21 +33,6 @@ describe('② 재정의(덮어쓰기)', () => {
         registerView({ id: 'a', title: '나중', Component: Dummy });
         expect(listViews().length).toBe(1);
         expect(getView('a')?.title).toBe('나중');
-    });
-});
-
-describe('③ 리본 정렬', () => {
-    it('ribbon 이 있는 것만 order 순으로 — false·생략은 빠진다', () => {
-        registerView({ id: 'x', title: 'X', Component: Dummy, ribbon: { order: 2 } });
-        registerView({ id: 'y', title: 'Y', Component: Dummy, ribbon: { order: 1 } });
-        registerView({ id: 'z', title: 'Z', Component: Dummy, ribbon: false });
-        registerView({ id: 'w', title: 'W', Component: Dummy });   // 생략
-        expect(listRibbonViews().map((v) => v.id)).toEqual(['y', 'x']);
-    });
-    it('order 가 같으면 등록 순서가 남는다(안정 정렬)', () => {
-        registerView({ id: 'first', title: '1', Component: Dummy, ribbon: {} });
-        registerView({ id: 'second', title: '2', Component: Dummy, ribbon: {} });
-        expect(listRibbonViews().map((v) => v.id)).toEqual(['first', 'second']);
     });
 });
 

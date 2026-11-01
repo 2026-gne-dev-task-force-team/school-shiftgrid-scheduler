@@ -122,7 +122,6 @@ export interface PluginHost {
         register(def: ViewDef & { newTab?: { label: string } }): Disposable;
         get(id: string): ViewDef | undefined;
         list(): ViewDef[];
-        listRibbon(): ViewDef[];
     };
     /** 리본 동작 — commandId 를 가리킨다(「뷰 열기」가 아니라 동작). Rail 이 뷰 설탕과 합쳐 그린다. */
     ribbon: { add(a: RibbonAddInput): Disposable };

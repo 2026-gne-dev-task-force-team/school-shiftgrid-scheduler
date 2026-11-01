@@ -270,6 +270,14 @@ export function setViewOverride(id: string, patch: Partial<ViewLayout> | null): 
     emit();
 }
 
+/** 뷰 덮어쓰기만 전부 지운다(등록값으로) — 설정 「등록된 뷰」 판의 「전부 되돌리기」가 쓴다. 다른 설정은 안 건드린다 */
+export function resetViewOverrides(): void {
+    const s = ensure();
+    store = { ...s, overrides: {} };
+    saveViewOverrides({});
+    emit();
+}
+
 export function resetPaneSettings(): void {
     store = { settings: defaultPaneSettings(), overrides: {}, ribbon: defaultRibbon() };
     savePaneSettings(store.settings);

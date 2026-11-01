@@ -3,7 +3,7 @@
  * 🔴 버그 심기 지점: paneZone 의 BAND 비교(안쪽/바깥쪽)를 뒤집으면 여기 경계 테스트가 깨진다.
  */
 import { describe, it, expect } from 'vitest';
-import { paneZone, tabDropSide, EDGE_BAND, type Rect } from './drag';
+import { paneZone, tabDropSide, EDGE_BAND, type Rect } from './drag-geometry';
 
 // 100×100 칸, 왼위 모서리 (0,0) — rx·ry 가 px·py 와 같아 읽기 쉽다
 const R: Rect = { left: 0, top: 0, width: 100, height: 100 };

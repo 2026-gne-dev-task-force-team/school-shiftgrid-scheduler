@@ -7,8 +7,10 @@
  * ⭐ 한 뷰가 들고 오는 것(2026-11-01 W4 증축):
  *    - layout : 뷰별 레이아웃 힌트("무슨 콘텐츠냐에 따라" 최소폭·찌그러짐이 다르다 — 쥔님)
  *    - menu   : 내용 메뉴 — 틀 메뉴(＋·가르기·닫기)와 구분된다(쥔님: "틀이 가지는 메뉴랑 내용이 가지는 메뉴는 구분")
- *    - ribbon : 리본(엑셀 상단 리본처럼 앱 실행·동작 아이콘)에 올릴지
  *    - placement : 🔴 자리 제한 — areas(어느 틀) · split(가를 수 있나) · singleton(딱 한 장만). 아래 설명.
+ *
+ * ⛔ 「리본에 올릴지」는 뷰가 정하지 않는다 — 리본에는 host.ribbon.add 로 명시해 꽂은 동작만 선다(쥔님 2026-11-01:
+ *    *"리본에 요청 안 한 아이콘이 서 있다"* — 뷰 자동 줄 세우기를 뺐다). 그래서 ViewDef 에 ribbon 칸이 없다.
  *
  * ⚠️ 모듈 전역 Map 이다(순수하지 않다) — 등록은 본래 부수효과다. tree.ts 와 달리 여기선 괜찮다.
  */
@@ -67,8 +69,6 @@ export interface ViewDef {
     layout?: ViewLayout;
     /** 🔴 내용 메뉴 — 탭 우클릭 메뉴의 구분선 아래쪽에 붙는다 */
     menu?: ViewMenu;
-    /** 리본에 올릴지. { order } 면 그 순서로 선다 · false·생략이면 리본에 없다 */
-    ribbon?: { order?: number } | false;
     /**
      * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. 생략이면 전부 허용. 세 축:
      *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. 생략이면 전부.
@@ -119,16 +119,6 @@ export function getView(id: string): ViewDef | undefined {
 
 export function listViews(): ViewDef[] {
     return [...registry.values()];
-}
-
-/**
- * 리본에 올릴 뷰들 — ribbon 이 객체인 것만, order 오름차순(없으면 0).
- * 🔴 Array.sort 는 안정 정렬이라 order 가 같으면 등록 순서가 남는다.
- */
-export function listRibbonViews(): ViewDef[] {
-    return [...registry.values()]
-        .filter((v): v is ViewDef & { ribbon: { order?: number } } => !!v.ribbon)
-        .sort((a, b) => (a.ribbon.order ?? 0) - (b.ribbon.order ?? 0));
 }
 
 /** 테스트·앱 재마운트에서 목록을 비운다 */
