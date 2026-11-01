@@ -76,13 +76,14 @@ export function Workbench() {
 
     // 🔴 작업대 이벤트 — 트리 변화를 재서 플러그인에 쏜다(open/close/activate). 모든 경로를 잡는다
     //    (리본·+·드래그·피크 무엇으로 열든). 데모 상태바 「열린 탭 N」이 이걸로 센다.
-    const prevLeaves = useRef<Map<string, Leaf>>(new Map());
+    type Area = 'left' | 'center' | 'right' | 'floating';
+    const prevLeaves = useRef<Map<string, Leaf & { area: Area }>>(new Map());
     useEffect(() => {
-        const cur = new Map<string, Leaf>();
-        for (const n of [ws.left, ws.center, ws.right]) if (n) for (const l of flatten(n)) cur.set(l.id, l);
-        for (const l of ws.floating) cur.set(l.id, l);
-        for (const [id, l] of cur) if (!prevLeaves.current.has(id)) fireWorkspace('open', { id, viewId: l.viewId, params: l.params });
-        for (const [id, l] of prevLeaves.current) if (!cur.has(id)) fireWorkspace('close', { id, viewId: l.viewId, params: l.params });
+        const cur = new Map<string, Leaf & { area: Area }>();
+        for (const area of ['left', 'center', 'right'] as const) { const n = ws[area]; if (n) for (const l of flatten(n)) cur.set(l.id, { ...l, area }); }
+        for (const l of ws.floating) cur.set(l.id, { ...l, area: 'floating' });
+        for (const [id, l] of cur) if (!prevLeaves.current.has(id)) fireWorkspace('open', { id, viewId: l.viewId, params: l.params, area: l.area });
+        for (const [id, l] of prevLeaves.current) if (!cur.has(id)) fireWorkspace('close', { id, viewId: l.viewId, params: l.params, area: l.area });
         prevLeaves.current = cur;
     }, [ws]);
     // 활성 바뀜 — focus 로. 같은 뷰로 다시 와도 한 번만

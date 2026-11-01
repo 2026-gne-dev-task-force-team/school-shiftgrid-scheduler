@@ -5,6 +5,7 @@
  */
 import { Icon } from '../../../pane-ui-system';
 import { listPlugins, enablePlugin, disablePlugin, usePluginRegistry } from '../../../pane-ui-system/plugin';
+import { Toggle } from './Toggle';
 
 export function PluginsPane() {
     usePluginRegistry();   // 켜고 끄면 다시 그린다
@@ -37,21 +38,15 @@ export function PluginsPane() {
                             <span className="text-[11px] text-muted font-mono">{p.id}</span>
                         </div>
 
-                        <button
-                            type="button"
-                            aria-pressed={p.enabled}
-                            disabled={p.core}
-                            title={p.core ? '코어 플러그인은 끌 수 없습니다' : (p.enabled ? '끄기' : '켜기')}
-                            onClick={() => (p.enabled ? disablePlugin(p.id) : enablePlugin(p.id))}
-                            className={`h-7 px-3 rounded border text-[12px] transition-colors shrink-0
-                                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
-                                disabled:opacity-40 disabled:cursor-not-allowed
-                                ${p.enabled
-                                    ? 'border-accent text-text bg-text/[0.06]'
-                                    : 'border-line text-muted enabled:hover:text-text enabled:hover:bg-text/[0.04]'}`}
-                        >
-                            {p.enabled ? '켜짐' : '꺼짐'}
-                        </button>
+                        {/* 켜기/끄기는 스위치 하나 — 코어는 잠긴다(쥔님 13:42 「항상 쓰던 토글 UI 로」) */}
+                        <span title={p.core ? '코어 플러그인은 끌 수 없습니다' : undefined} className="shrink-0">
+                            <Toggle
+                                on={p.enabled}
+                                disabled={p.core}
+                                label={`${p.name} ${p.enabled ? '끄기' : '켜기'}`}
+                                onToggle={(v) => (v ? enablePlugin(p.id) : disablePlugin(p.id))}
+                            />
+                        </span>
                     </div>
                 ))}
             </div>

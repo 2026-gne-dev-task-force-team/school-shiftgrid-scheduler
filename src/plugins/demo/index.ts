@@ -56,7 +56,8 @@ function activate(host: PluginHost): void {
     let savedAt = new Date();
     host.statusBar.add({ id: 'tab-count', side: 'left', render: () => `열린 탭 ${openLeaves.size}` });
     host.statusBar.add({ id: 'saved', side: 'right', render: () => `저장됨 ${hhmm(savedAt)}` });
-    host.workspace.on('open', (l) => { openLeaves.add(l.id); savedAt = new Date(); });
+    // 🔴 가운데 탭만 센다 — 사이드바·미리 보기는 「탭」이 아니다(쥔님 13:42)
+    host.workspace.on('open', (l) => { if (l.area === 'center') openLeaves.add(l.id); savedAt = new Date(); });
     host.workspace.on('close', (l) => { openLeaves.delete(l.id); savedAt = new Date(); });
     // 저장 증명 — 마지막으로 활성화한 뷰를 기기별 저장에 남긴다(자기 네임스페이스)
     host.workspace.on('activate', (l) => { host.storage.set('last-view', l.viewId); });

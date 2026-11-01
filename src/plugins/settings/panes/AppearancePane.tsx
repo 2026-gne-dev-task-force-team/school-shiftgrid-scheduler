@@ -132,7 +132,8 @@ export function AppearancePane() {
                 <button
                     type="button"
                     onClick={reset}
-                    className="h-btn px-3 rounded border border-line text-[13px] text-muted
+                    // 🔴 단추는 안 찌그러진다 — shrink-0 + 줄바꿈 금지(쥔님 13:42 「되돌리기 버튼이 찌그러진다」)
+                    className="shrink-0 whitespace-nowrap h-btn px-3 rounded border border-line text-[13px] text-muted
                         hover:text-text hover:bg-text/[0.04] transition-colors
                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
                 >

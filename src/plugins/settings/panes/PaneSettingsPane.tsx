@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react';
 import { usePaneSettings, setPaneSettings, resetPaneSettings } from '../../../pane-ui-system';
 import type { PaneSettings } from '../../../pane-ui-system';
+import { Toggle } from './Toggle';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (
@@ -31,21 +32,6 @@ function NumberInput({ value, onChange }: { value: number; onChange: (n: number)
             className="w-24 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         />
-    );
-}
-
-function Toggle({ on, onToggle }: { on: boolean; onToggle: (v: boolean) => void }) {
-    return (
-        <button
-            type="button"
-            aria-pressed={on}
-            onClick={() => onToggle(!on)}
-            className={`h-btn px-3 rounded border text-[13px] transition-colors
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent
-                ${on ? 'border-accent text-text bg-text/[0.06]' : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
-        >
-            {on ? '켜짐' : '꺼짐'}
-        </button>
     );
 }
 

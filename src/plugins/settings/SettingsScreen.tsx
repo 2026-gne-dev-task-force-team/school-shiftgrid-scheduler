@@ -84,9 +84,18 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
         </nav>
     );
 
+    // 🔴 내용 위에 제목 한 줄 — 어느 설정이 열려 있는지 보이게(쥔님 13:42 *"상단에 제목 정도는 띄워야"*)
     const Content = (
-        <div className="flex-1 min-w-0 overflow-auto px-6 py-5">
-            {Pane && <Pane />}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+            {item && !narrow && (
+                <div className="shrink-0 flex items-center gap-2 h-header px-6 border-b border-line select-none">
+                    {item.icon && <Icon name={item.icon} size={15} className="text-muted" />}
+                    <span className="text-[13px] font-semibold text-text truncate">{item.title}</span>
+                </div>
+            )}
+            <div className="flex-1 min-h-0 overflow-auto px-6 py-5">
+                {Pane && <Pane />}
+            </div>
         </div>
     );
 

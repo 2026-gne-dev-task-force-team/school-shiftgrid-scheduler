@@ -95,7 +95,8 @@ export interface TabMenuContext {
 }
 /** 작업대 이벤트 — 뷰(leaf)가 열리고·닫히고·활성화될 때 */
 export type WorkspaceEvent = 'open' | 'close' | 'activate';
-export interface WorkspaceLeafInfo { id: string; viewId: string; params?: unknown }
+/** area — 어느 자리에 있나(left·center·right·floating). 플러그인이 「가운데 탭만」 셀 수 있게(쥔님 13:42: 열린 탭 수가 사이드바까지 셌다) */
+export interface WorkspaceLeafInfo { id: string; viewId: string; params?: unknown; area?: 'left' | 'center' | 'right' | 'floating' }
 
 /** 문서 이벤트 — 문서 내용이 바뀌거나(change) 새 문서·파일이 열리거나(open) 닫힐 때(close) */
 export type DocEvent = 'change' | 'open' | 'close';
