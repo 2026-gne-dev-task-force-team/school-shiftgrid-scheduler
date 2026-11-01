@@ -5,8 +5,8 @@
  *   🔴 색은 토큰 클래스로만(구조 검사 ①) · 여백 넉넉 · 장식 없음 · 얇은 1px 경계선(line 토큰).
  */
 import { useState } from 'react';
-import { IconButton } from '../../../pane-ui-system';
-import { monthGrid, shiftMonth, monthLabel } from '../grid';
+// 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다(메인 머지 때 합침 16:5x)
+import { IconButton, monthGrid, shiftMonth, monthLabel } from '../../../pane-ui-system';
 
 // 🔑 주 시작 요일은 일요일 고정 — 설정으로 뺄 자리다. 지금은 weekStart 인자만 열어 두고 0 으로만 부른다.
 const WEEK_START = 0;
@@ -26,7 +26,7 @@ export function MonthView() {
         setYm({ y: n.getFullYear(), m: n.getMonth() + 1 });
     };
 
-    const cells = monthGrid(ym.y, ym.m, WEEK_START);   // today 기본값 = 지금(실시간 오늘 표시)
+    const cells = monthGrid(ym.y, ym.m, WEEK_START, new Date());   // 부품 쪽은 today 기본값이 없다 — 여기서 지금을 넘긴다
     const labels = Array.from({ length: 7 }, (_, i) => WEEKDAYS[(WEEK_START + i) % 7]);
 
     return (
