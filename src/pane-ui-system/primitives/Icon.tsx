@@ -7,7 +7,7 @@ export type IconName =
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
-    | 'calendar' | 'calendarMini' | 'flask';
+    | 'calendar' | 'calendarMini' | 'flask' | 'grip';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -61,6 +61,8 @@ const P: Record<IconName, string> = {
     splitH: 'M4 5h16v14H4zM4 12h16',
     // 시험 플라스크(Pane UI Test) — 목·몸통·액체선. 단순 선 하나, 18px 에서도 「실험」으로 읽힌다(쥔님 2026-11-01: "창이랑 실험하는 아이콘")
     flask: 'M9 3h6M10 3v6l-4.3 8.7A1.5 1.5 0 007 20h10a1.5 1.5 0 001.3-2.3L14 9V3M8.5 14h7',
+    // 끌기 손잡이 — 점 2×3(쥔님 2026-11-01 20:02 "핸들 아이콘스럽지 않고 잘 안 보여" — 세로 점 셋(dots)은 메뉴로 읽힌다)
+    grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
