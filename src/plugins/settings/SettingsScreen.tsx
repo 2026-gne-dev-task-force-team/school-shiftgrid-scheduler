@@ -10,12 +10,13 @@
  *    데모가 끄면 「데모」 섹션이 사라지고, 플러그인이 더해지면 섹션이 는다(useContribVersion 구독).
  * 🔴 색은 토큰 클래스로만.
  */
-import { useMemo, useState } from 'react';
-import { Row, Icon, IconButton, SectionHeader, useNarrow } from '../../pane-ui-system';
+import { useCallback, useMemo, useState } from 'react';
+import { Row, Icon, IconButton, SectionHeader, useNarrow, type PeekHandle } from '../../pane-ui-system';
 import { listSettings, useContribVersion } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
+import { SettingsChromeContext, type SettingsChrome } from './chrome-context';
 
-export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
+export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolean; peek?: PeekHandle }) {
     const narrow = useNarrow();
     useContribVersion();   // 설정 섹션/항목이 바뀌면(플러그인 켜고 끄기) 다시 그린다
     const sections = listSettings();
@@ -24,6 +25,10 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     const [selectedId, setSelectedId] = useState<string>('');
     // 좁은 화면에서만 뜻이 있다 — 메뉴 목록을 보는 중인가, 내용을 보는 중인가
     const [showContent, setShowContent] = useState(false);
+
+    // 🔴 Pane 들이 바깥 설정 화면에 손 뻗는 창구 — 피크 띄우기(플러그인 상세) · 다른 설정 항목으로 가기(설정 가기)
+    const goToItem = useCallback((id: string) => { setSelectedId(id); if (narrow) setShowContent(true); }, [narrow]);
+    const chrome: SettingsChrome = useMemo(() => ({ peek: peek ?? null, goToItem }), [peek, goToItem]);
 
     // 고른 항목이 사라졌으면(플러그인을 껐다) 첫 항목으로 떨어뜨린다
     const item = items.find((m) => m.id === selectedId) ?? items[0];
@@ -103,22 +108,26 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     if (narrow) {
         if (!showContent) {
             return (
-                <div className="h-full min-h-0 overflow-auto bg-bg">
-                    <div className="h-header px-pad flex items-center border-b border-line select-none">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                <SettingsChromeContext.Provider value={chrome}>
+                    <div className="h-full min-h-0 overflow-auto bg-bg">
+                        <div className="h-header px-pad flex items-center border-b border-line select-none">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                        </div>
+                        {MenuList}
                     </div>
-                    {MenuList}
-                </div>
+                </SettingsChromeContext.Provider>
             );
         }
         return (
-            <div className="h-full min-h-0 flex flex-col bg-bg">
-                <div className="h-header px-pad flex items-center gap-1 border-b border-line select-none shrink-0">
-                    <IconButton icon="left" label="메뉴로" size={15} onClick={() => setShowContent(false)} />
-                    <span className="text-[13px] font-semibold text-text">{item?.title}</span>
+            <SettingsChromeContext.Provider value={chrome}>
+                <div className="h-full min-h-0 flex flex-col bg-bg">
+                    <div className="h-header px-pad flex items-center gap-1 border-b border-line select-none shrink-0">
+                        <IconButton icon="left" label="메뉴로" size={15} onClick={() => setShowContent(false)} />
+                        <span className="text-[13px] font-semibold text-text">{item?.title}</span>
+                    </div>
+                    {Content}
                 </div>
-                {Content}
-            </div>
+            </SettingsChromeContext.Provider>
         );
     }
 
@@ -127,16 +136,18 @@ export function SettingsScreen({ collapsed = false }: { collapsed?: boolean }) {
     // 🔴 뿌리는 h-full 이다 — EditorArea 가 뷰를 「블록 h-full」 안에 그리므로 flex-1 은 아무 뜻이 없고
     //    높이가 내용만큼 자라 overflow-auto 가 영영 안 걸렸다(쥔님 13:14 「설정 안이 스크롤이 안 돼」)
     return (
-        <div className="h-full min-h-0 flex items-stretch bg-bg overflow-hidden">
-            <div className={`shrink-0 self-stretch border-r border-line overflow-auto ${collapsed ? 'w-rail' : 'w-44'}`}>
-                {!collapsed && (
-                    <div className="h-header px-pad flex items-center border-b border-line select-none">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
-                    </div>
-                )}
-                {collapsed ? IconMenu : MenuList}
+        <SettingsChromeContext.Provider value={chrome}>
+            <div className="h-full min-h-0 flex items-stretch bg-bg overflow-hidden">
+                <div className={`shrink-0 self-stretch border-r border-line overflow-auto ${collapsed ? 'w-rail' : 'w-44'}`}>
+                    {!collapsed && (
+                        <div className="h-header px-pad flex items-center border-b border-line select-none">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                        </div>
+                    )}
+                    {collapsed ? IconMenu : MenuList}
+                </div>
+                {Content}
             </div>
-            {Content}
-        </div>
+        </SettingsChromeContext.Provider>
     );
 }

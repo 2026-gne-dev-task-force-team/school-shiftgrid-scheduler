@@ -62,6 +62,8 @@ export interface ViewDef {
     id: string;
     title: string;
     icon?: IconName;
+    /** 🔴 선택 — 플러그인 상세(설정 「설치된 플러그인」 피크)가 보여 주는 한 줄 설명(쥔님 2026-11-01). */
+    description?: string;
     /** 어느 자리에 처음 열릴지(앱·리본 참고용 힌트) */
     defaultArea?: 'left' | 'center' | 'right';
     Component: ComponentType<ViewProps>;

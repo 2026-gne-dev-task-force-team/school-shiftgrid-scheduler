@@ -36,9 +36,12 @@ function activate(host: PluginHost): void {
         Pane: () => createElement(ViewSettingsPane, { host }),
     });
 
-    // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김). 설정 기여점으로 수명주기를 조종한다
+    // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄을 누르면 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
     host.settings.addSection('plugins', '플러그인', 'play');
-    host.settings.addItem({ section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'play', Pane: PluginsPane });
+    host.settings.addItem({
+        section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'play',
+        Pane: () => createElement(PluginsPane, { host }),
+    });
 
     // 이 프로그램 — 이름·판·창틀 판·플러그인 수(쥔님 13:14)
     host.settings.addSection('about', '정보', 'info');
@@ -49,9 +52,10 @@ function activate(host: PluginHost): void {
     //    singleton 은 placement 의 한 축이다 — 이미 떠 있으면 새로 안 열고 그리로 간다.
     host.views.register({
         id: 'main', title: '설정', icon: 'gear', defaultArea: 'center',
+        description: '모양·창틀·뷰·리본·플러그인 설정을 한 화면에서 — 2단 메뉴(좁아지면 아이콘·한 단계)',
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
-        Component: (p: ViewProps) => createElement(SettingsScreen, { collapsed: p.collapsed }),
+        Component: (p: ViewProps) => createElement(SettingsScreen, { collapsed: p.collapsed, peek: p.peek }),
     });
 }
 

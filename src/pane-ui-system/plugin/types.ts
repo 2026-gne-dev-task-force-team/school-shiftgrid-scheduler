@@ -75,6 +75,8 @@ export interface CommandDef {
     icon?: IconName;
     run(ctx?: CommandContext): void;
     keys?: string;
+    /** 🔴 선택 — 플러그인 상세(설정 「설치된 플러그인」 피크)가 보여 주는 한 줄 설명(쥔님 2026-11-01). */
+    description?: string;
 }
 /** 설정 기여 항목 — section 에 꽂는다. 같은 section 은 합쳐진다(제목은 첫 등록이 이긴다). */
 export interface SettingsContribution {
