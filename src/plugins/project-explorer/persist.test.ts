@@ -1,84 +1,247 @@
 /**
- * 나무 보관(persist.ts) 검사 — 저장소가 localStorage → IndexedDB(host.store)로 갈아탄 뒤의 약속.
- *   ① 이사(한 번만) ② 두 번 안 옮긴다 ③ flush(탭 닫힘) ④ kv 불가 → localStorage 로 버틴다.
- *   🔴 IndexedDB 가 없는 node 환경이라 kv 를 가짜로 끼우지 않는다 — persist 는 host.store·host.storage
- *      창구만 쓰니, 그 둘을 메모리로 가진 가짜 호스트를 넘기면 프로덕션 코드가 그대로 돈다.
+ * 나무 보관(persist.ts) 검사 — 저장소가 「나무 통째 한 레코드」에서 「노드당 한 레코드」로 바뀐 뒤의 약속.
+ *   A. 이사 — 노드 스토어가 비어 있을 때만 옛 자료(옛 kv 'tree' · 더 옛 localStorage)를 옮긴다(성공 뒤에만 원본 삭제).
+ *   B. dirty 쓰기 — store 의 apply/undo/redo 가 넘긴 changedIds 로 바뀐 노드만 put/del(한 트랜잭션 · __meta 는 rev 바뀔 때).
+ *
+ * 🔴 노드 스토어(nodesGetAll/nodesWrite)는 kv 모듈 함수라 모킹한다 — 메모리 Map 하나로 흉내 내고,
+ *    옛 자료 이사가 읽는 host.store·host.storage 는 가짜 호스트가 따로 메모리로 가진다.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { PluginHost } from '../../pane-ui-system/plugin';
-import { loadTree, saveTree, __resetPersistForTest } from './persist';
 import { emptyTree, createNode, type Tree } from './model/tree';
 
-/**
- * 메모리 host — storage(동기 localStorage 꼴) · store(비동기 kv 꼴).
- *   setOk 로 kv 저장 성패를 흉내낸다(false 면 kv 에 안 담고 false 를 돌려준다 — 이사 실패 경로).
- */
-function makeHost(opts?: { setOk?: boolean }) {
+// 🔴 vi.mock 보다 먼저 서는 공용 모킹 상태(hoisted) — nodesGetAll/nodesWrite 를 메모리 Map 으로.
+const kv = vi.hoisted(() => {
+    const store = new Map<string, Record<string, unknown>>();
+    const flags = { open: true, writeOk: true };
+    const nodesGetAll = vi.fn(async (): Promise<unknown[] | null> => (flags.open ? [...store.values()] : null));
+    const nodesWrite = vi.fn(async (batch: { put?: Record<string, unknown>[]; del?: string[]; clear?: boolean }): Promise<boolean> => {
+        if (!flags.writeOk) return false;
+        if (batch.clear) store.clear();
+        for (const v of batch.put ?? []) store.set(v.id as string, v);
+        for (const id of batch.del ?? []) store.delete(id);
+        return true;
+    });
+    return { store, flags, nodesGetAll, nodesWrite };
+});
+vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
+
+import { loadTree, saveTree, flushTree, __resetPersistForTest } from './persist';
+import { initStore, getState, newFolder, apiRename, undoAction, redoAction, select, removeSelected, askPurge, purgeConfirmed } from './store';
+import { registerType, clearTypes } from './model/types';
+import { clearDerived } from './model/derive';
+
+/** 가짜 host — 이사가 읽는 옛 창구(storage=동기 localStorage 꼴 · store=비동기 kv 꼴). 노드 스토어는 안 거친다. */
+function makeHost() {
     const local = new Map<string, unknown>();
-    const kv = new Map<string, unknown>();
-    const calls = { localGet: 0, localSet: 0, localRemove: 0, kvGet: 0, kvSet: 0 };
-    const setOk = opts?.setOk ?? true;
+    const oldKv = new Map<string, unknown>();
+    const calls = { localRemove: 0, kvGet: 0, kvDel: 0 };
     const host = {
         storage: {
-            get: <T,>(k: string, f: T) => { calls.localGet += 1; return local.has(k) ? (local.get(k) as T) : f; },
-            set: (k: string, v: unknown) => { calls.localSet += 1; local.set(k, v); },
+            get: <T,>(k: string, f: T) => (local.has(k) ? (local.get(k) as T) : f),
+            set: (k: string, v: unknown) => { local.set(k, v); },
             remove: (k: string) => { calls.localRemove += 1; local.delete(k); },
         },
         store: {
-            get: async <T,>(k: string, f: T) => { calls.kvGet += 1; return kv.has(k) ? (kv.get(k) as T) : f; },
-            set: async (k: string, v: unknown) => { calls.kvSet += 1; if (setOk) kv.set(k, v); return setOk; },
-            del: async (k: string) => { kv.delete(k); },
+            get: async <T,>(k: string, f: T) => { calls.kvGet += 1; return oldKv.has(k) ? (oldKv.get(k) as T) : f; },
+            set: async (k: string, v: unknown) => { oldKv.set(k, v); return true; },
+            del: async (k: string) => { calls.kvDel += 1; oldKv.delete(k); },
             available: async () => true,
             estimate: async () => null,
         },
     } as unknown as PluginHost;
-    return { host, local, kv, calls };
+    return { host, local, oldKv, calls };
 }
 
-/** 노드 하나(id) 든 나무 — 이사·비교용. */
 function treeWith(id: string): Tree {
     return createNode(emptyTree(), 'root', { id, type: 'folder', name: `폴더-${id}` });
 }
+/** 나무를 노드 스토어 Map 에 미리 심는다(노드 레코드 + __meta). */
+function seedNodes(tree: Tree): void {
+    kv.store.clear();
+    for (const n of Object.values(tree.nodes)) kv.store.set(n.id, n as unknown as Record<string, unknown>);
+    kv.store.set('__meta', { id: '__meta', root: tree.root, trash: tree.trash, rev: tree.rev });
+}
 
-beforeEach(() => { __resetPersistForTest(); });
+beforeEach(() => {
+    kv.store.clear();
+    kv.flags.open = true;
+    kv.flags.writeOk = true;
+    kv.nodesGetAll.mockClear();
+    kv.nodesWrite.mockClear();
+    clearTypes();
+    clearDerived();
+    __resetPersistForTest();
+});
 afterEach(() => { __resetPersistForTest(); });
 
-describe('① 이사 성공 — localStorage 에만 있던 나무를 kv 로 옮기고 원본을 치운다', () => {
-    it('loadTree 가 kv 에 나무를 만들고, 이사 성공이면 localStorage 원본을 지운다', async () => {
-        const { host, local, kv, calls } = makeHost({ setOk: true });
-        const old = treeWith('X');
-        local.set('tree', old);              // localStorage 에만 있다
+// ───────────────────────────── A. 이사 ─────────────────────────────
+
+describe('A① 이사 성공 — 노드 스토어가 비어 있으면 옛 kv 나무를 옮기고 원본을 치운다', () => {
+    it('loadTree 가 노드 스토어에 심고, 이사 성공이면 옛 kv 레코드를 지운다', async () => {
+        const { host, oldKv, calls } = makeHost();
+        oldKv.set('tree', treeWith('X'));                    // 옛 kv 에만 있다(노드 스토어는 비었다)
 
         const t = await loadTree(host);
 
-        expect(t.nodes['X']).toBeTruthy();        // 옛 나무를 읽었다
-        expect(kv.get('tree')).toBeTruthy();      // 🔴 kv 로 옮겨졌다
-        expect((kv.get('tree') as Tree).nodes['X']).toBeTruthy();
-        expect(local.has('tree')).toBe(false);    // 🔴 이사 성공 → 원본을 치웠다(host.storage.remove)
+        expect(t.nodes['X']).toBeTruthy();                   // 옛 나무를 읽었다
+        expect(kv.store.get('X')).toBeTruthy();              // 🔴 노드 스토어로 옮겨졌다(노드 하나 = 레코드 하나)
+        expect(kv.store.get('__meta')).toMatchObject({ root: 'root', trash: 'trash' });
+        expect(oldKv.has('tree')).toBe(false);               // 🔴 이사 성공 → 옛 레코드 삭제
+        expect(calls.kvDel).toBe(1);
+    });
+});
+
+describe('A② 두 번 안 옮긴다 — 노드 스토어에 이미 있으면 옛 창구를 안 본다', () => {
+    it('노드 스토어 우선 — 옛 kv 에 다른 나무가 있어도 안 읽고(kvGet 0) 노드 스토어 것을 쓴다', async () => {
+        const { host, oldKv, calls } = makeHost();
+        seedNodes(treeWith('K'));                            // 노드 스토어에 이미
+        oldKv.set('tree', treeWith('L'));                    // 옛 kv 엔 다른 것
+
+        const t = await loadTree(host);
+
+        expect(t.nodes['K']).toBeTruthy();
+        expect(t.nodes['L']).toBeUndefined();
+        expect(calls.kvGet).toBe(0);                         // 🔴 옛 창구를 아예 안 봤다
+    });
+});
+
+describe('A③ 이사 실패 — 노드 스토어 쓰기가 실패하면 옛 kv 원본을 남긴다', () => {
+    it('nodesWrite 가 false 면 옛 레코드를 안 지우고(그대로) 그 나무를 돌려준다', async () => {
+        const { host, oldKv, calls } = makeHost();
+        kv.flags.writeOk = false;                            // 노드 스토어 쓰기 실패
+        oldKv.set('tree', treeWith('X'));
+
+        const t = await loadTree(host);
+
+        expect(t.nodes['X']).toBeTruthy();                   // 옛 나무는 읽혔다(메모리로)
+        expect(kv.store.size).toBe(0);                       // 🔴 노드 스토어엔 안 담겼다
+        expect(oldKv.has('tree')).toBe(true);                // 🔴 ⛔ 원본을 남겼다(유일한 사본)
+        expect(calls.kvDel).toBe(0);
+    });
+});
+
+describe('A④ 더 옛 localStorage 이사 — 같은 길(성공 뒤에만 원본 치움)', () => {
+    it('옛 kv 가 없고 localStorage 에만 있으면 노드 스토어로 옮기고 원본을 지운다', async () => {
+        const { host, local, calls } = makeHost();
+        local.set('tree', treeWith('L'));
+
+        const t = await loadTree(host);
+
+        expect(t.nodes['L']).toBeTruthy();
+        expect(kv.store.get('L')).toBeTruthy();
+        expect(local.has('tree')).toBe(false);
         expect(calls.localRemove).toBe(1);
     });
 });
 
-describe('② 두 번 안 옮긴다 — kv 에 이미 있으면 localStorage 를 보지 않는다', () => {
-    it('kv 우선 — localStorage 에 다른 나무가 있어도 안 읽고(localGet 0) kv 것을 쓴다', async () => {
-        const { host, local, kv, calls } = makeHost({ setOk: true });
-        kv.set('tree', treeWith('K'));       // kv 에 이미
-        local.set('tree', treeWith('L'));    // localStorage 엔 다른 것
+describe('A⑤ 열기 실패(null) — 메모리만, 옛 자료는 안 건드린다', () => {
+    it('nodesGetAll 이 null 이면 빈 나무를 돌려주고 이사도 안 한다', async () => {
+        const { host, oldKv, calls } = makeHost();
+        kv.flags.open = false;                               // 열기 거부
+        oldKv.set('tree', treeWith('X'));
 
         const t = await loadTree(host);
 
-        expect(t.nodes['K']).toBeTruthy();        // kv 것
-        expect(t.nodes['L']).toBeUndefined();     // localStorage 것은 아니다
-        expect(calls.localGet).toBe(0);           // 🔴 localStorage 를 아예 안 봤다
+        expect(t.nodes['X']).toBeUndefined();                // 메모리만(빈 나무)
+        expect(calls.kvGet).toBe(0);                         // 옛 창구를 안 봤다
+        expect(kv.nodesWrite).not.toHaveBeenCalled();
     });
 });
 
-describe('③ flush — 디바운스 중 탭 닫힘(visibilitychange·beforeunload)에 즉시 쓴다', () => {
+// ───────────────────────────── B. dirty 쓰기(store 를 통해) ─────────────────────────────
+
+/** 마지막 nodesWrite 호출의 배치. */
+function lastWrite() {
+    const calls = kv.nodesWrite.mock.calls;
+    return calls[calls.length - 1][0] as { put?: { id: string }[]; del?: string[]; clear?: boolean };
+}
+
+describe('B 노드당 레코드 — 바뀐 노드만 쓴다(diffIds 를 store 가 넘긴다)', () => {
+    beforeEach(async () => {
+        const { host } = makeHost();
+        await initStore(host);                               // 빈 나무로 로드(노드 스토어 비었음)
+        registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
+    });
+
+    it('노드 하나 이름 바꾸면 put 1건(__meta 포함 2건)·del 0', async () => {
+        newFolder();
+        const id = getState().selectedId!;
+        await flushTree();
+        kv.nodesWrite.mockClear();
+
+        apiRename(id, '바뀐이름');                           // 그 노드만 바뀐다(부모 불변)
+        await flushTree();
+
+        const b = lastWrite();
+        expect(b.del ?? []).toHaveLength(0);
+        expect(b.put).toHaveLength(2);                       // 🔴 노드 1 + __meta
+        expect(b.put!.some((r) => r.id === id)).toBe(true);
+        expect(b.put!.some((r) => r.id === '__meta')).toBe(true);
+    });
+
+    it('purge 가지(노드 5) → del 5건', async () => {
+        newFolder();
+        const f = getState().selectedId!;
+        for (let i = 0; i < 4; i++) newFolder(f);            // f 밑에 4개 → 가지 5
+        await flushTree();
+        kv.nodesWrite.mockClear();
+
+        const sub = Object.keys(getState().tree.nodes).filter((k) => k !== 'root' && k !== 'trash');
+        expect(sub).toHaveLength(5);
+
+        // f 를 휴지통으로 보낸 뒤 가지째 영구 삭제
+        select(f);
+        removeSelected();
+        await flushTree();
+        kv.nodesWrite.mockClear();
+        askPurge(f);
+        purgeConfirmed();
+        await flushTree();
+
+        const b = lastWrite();
+        expect(b.del).toHaveLength(5);                       // 🔴 가지 5가 전부 del
+    });
+
+    it('undo 로 사라졌다 redo 로 되살아난 노드가 put 된다(diffIds 양방향)', async () => {
+        newFolder();
+        const id = getState().selectedId!;
+        await flushTree();
+
+        undoAction();                                        // 사라짐 — prev 에만 있던 id → del
+        await flushTree();
+        expect(lastWrite().del).toContain(id);
+
+        kv.nodesWrite.mockClear();
+        redoAction();                                        // 되살아남 — next 에만 있는 id → put
+        await flushTree();
+        expect(lastWrite().put!.some((r) => r.id === id)).toBe(true);
+    });
+
+    it("'all' 은 clear + 전부 put", async () => {
+        const { host } = makeHost();
+        newFolder();
+        const tree = getState().tree;
+        kv.nodesWrite.mockClear();
+        saveTree(host, tree, 'all');
+        await flushTree();
+
+        const b = lastWrite();
+        expect(b.clear).toBe(true);
+        expect(b.put!.some((r) => r.id === '__meta')).toBe(true);
+    });
+});
+
+// ───────────────────────────── flush(탭 닫힘) ─────────────────────────────
+
+describe('flush — 디바운스 중 탭 닫힘(visibilitychange·beforeunload)에 즉시 쓴다', () => {
     const g = globalThis as unknown as { window?: unknown; document?: unknown };
     let handlers: Record<string, Array<() => void>>;
 
     beforeEach(() => {
         __resetPersistForTest();
+        kv.store.clear();
+        kv.nodesWrite.mockClear();
         handlers = {};
         const add = (ev: string, h: () => void) => { (handlers[ev] ||= []).push(h); };
         g.window = { addEventListener: add };
@@ -87,33 +250,19 @@ describe('③ flush — 디바운스 중 탭 닫힘(visibilitychange·beforeunlo
     afterEach(() => { delete g.window; delete g.document; __resetPersistForTest(); });
 
     it('visibilitychange(hidden) 가 보류분을 바로 쓰고, beforeunload 도 같은 길', async () => {
-        const { host, kv } = makeHost();
-        await loadTree(host);                // 여기서 flush 리스너가 붙는다(window/document 가 있으니)
+        const { host } = makeHost();
+        await loadTree(host);                                // flush 리스너가 붙는다(window/document 가 있으니)
 
-        saveTree(host, treeWith('A'));       // 디바운스 중 — 아직 안 쓴다
-        expect(kv.get('tree')).toBeUndefined();
+        saveTree(host, treeWith('A'), ['A']);                // 디바운스 중 — 아직 안 쓴다
+        expect(kv.store.has('A')).toBe(false);
 
-        for (const h of handlers['visibilitychange'] ?? []) h();   // 탭이 가려짐 → 즉시 flush
-        expect((kv.get('tree') as Tree)?.nodes['A']).toBeTruthy();
+        for (const h of handlers['visibilitychange'] ?? []) h();
+        await Promise.resolve();                             // flushTree(비동기) 마무리
+        expect(kv.store.has('A')).toBe(true);
 
-        saveTree(host, treeWith('B'));
-        expect((kv.get('tree') as Tree).nodes['A']).toBeTruthy();  // 아직 A(디바운스 중)
-        for (const h of handlers['beforeunload'] ?? []) h();       // 탭 닫힘 → 즉시 flush
-        expect((kv.get('tree') as Tree).nodes['B']).toBeTruthy();
-    });
-});
-
-describe('④ 이사 실패 — kv 저장이 실패하면 localStorage 원본을 남긴다(그게 유일한 사본)', () => {
-    it('loadTree 가 이사(set)에 false 를 받으면 원본을 안 지우고(그대로 둔다) 그 나무를 돌려준다', async () => {
-        const { host, local, kv, calls } = makeHost({ setOk: false });
-        const old = treeWith('X');
-        local.set('tree', old);
-
-        const t = await loadTree(host);
-
-        expect(t.nodes['X']).toBeTruthy();        // 옛 나무는 읽혔다
-        expect(kv.size).toBe(0);                  // 🔴 kv 에는 안 담겼다(set 실패)
-        expect(local.get('tree')).toBe(old);      // 🔴 ⛔ 원본을 남겼다(동일 객체)
-        expect(calls.localRemove).toBe(0);        // remove 를 부르지 않았다
+        saveTree(host, treeWith('B'), ['B']);
+        for (const h of handlers['beforeunload'] ?? []) h();
+        await Promise.resolve();
+        expect(kv.store.has('B')).toBe(true);
     });
 });

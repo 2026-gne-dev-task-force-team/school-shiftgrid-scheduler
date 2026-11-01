@@ -328,8 +328,11 @@ describe('⑮ kv.ts 쓰기 트랜잭션 안에 await 가 없다 (openDb 직후�
     }
 });
 
-describe('⑭ plugins 는 kvGet/kvSet/kvDel 을 직접 부르지 않는다 (host.store 로만)', () => {
-    const BANNED = /\bkv(?:Get|Set|Del)\s*\(/;
+describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로만 (노드 스토어만 persist.ts 예외)', () => {
+    // kvGet/kvSet/kvDel 은 전부 금지(네임스페이스 없는 키를 막는다).
+    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 project-explorer/persist.ts 하나만 예외.
+    const BANNED = /\b(?:kv(?:Get|Set|Del)|nodesGetAll|nodesWrite)\s*\(/;
+    const PERSIST = join('project-explorer', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
     const files = walk(join(ROOT, 'plugins'));
 
     it('스캔할 플러그인 파일이 실제로 있다', () => {
@@ -337,9 +340,16 @@ describe('⑭ plugins 는 kvGet/kvSet/kvDel 을 직접 부르지 않는다 (host
     });
 
     for (const f of files) {
-        it(`kv 직접 호출 없음: ${f.slice(ROOT.length + 1)}`, () => {
+        const exempt = f.endsWith(PERSIST);
+        it(`kv 직접 호출 없음${exempt ? '(노드 스토어는 예외)' : ''}: ${f.slice(ROOT.length + 1)}`, () => {
             const hit = read(f).split('\n').findIndex((ln) => BANNED.test(ln));
-            expect(hit, `kv 를 ${hit + 1}번째 줄에서 직접 부른다 — host.store 로 거친다`).toBe(-1);
+            if (exempt) {
+                // persist.ts 는 nodesGetAll/nodesWrite 는 써도 되지만 kvGet/kvSet/kvDel 은 여전히 금지.
+                const kvHit = read(f).split('\n').findIndex((ln) => /\bkv(?:Get|Set|Del)\s*\(/.test(ln));
+                expect(kvHit, `persist.ts 가 ${kvHit + 1}번째 줄에서 kvGet/Set/Del 을 직접 부른다 — host.store 로`).toBe(-1);
+            } else {
+                expect(hit, `kv/노드 스토어를 ${hit + 1}번째 줄에서 직접 부른다 — host.store 로 거친다(노드 스토어는 persist.ts 만)`).toBe(-1);
+            }
         });
     }
 });

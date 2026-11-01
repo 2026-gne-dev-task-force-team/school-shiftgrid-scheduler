@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
-    type Tree, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
+    type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, purge, purgeAll, toggleCollapse, parentOf,
     isDescendant, setData as setDataTree, newFolderParent,
 } from './model/tree';
@@ -51,11 +51,29 @@ function emit(): void {
     for (const l of listeners) l();
 }
 
-/** prev→next 에서 바뀐(추가·제거·교체된) 노드 id — 불변 연산이라 객체 동일성으로 싸게 가린다. */
+/**
+ * 두 노드가 「같은가」 — 🔴 ref 로 못 가린다: normalize 가 연산마다 모든 노드 객체를 새로 짓는다(`{...n, children}`).
+ *   그래서 값으로 본다. collapsed·data·trashedFrom 은 normalize 의 얕은 spread 가 ref 를 지켜 주니 그대로 비교가 먹는다
+ *   (data 는 불투명 — setData 만 바꾸고 그때 ref 가 달라진다 · children 은 배열이라 원소까지 본다).
+ */
+function nodeEqual(a: Node | undefined, b: Node | undefined): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (a.id !== b.id || a.type !== b.type || a.name !== b.name
+        || a.collapsed !== b.collapsed || a.trashedFrom !== b.trashedFrom || a.data !== b.data) return false;
+    if (a.children.length !== b.children.length) return false;
+    for (let i = 0; i < a.children.length; i++) if (a.children[i] !== b.children[i]) return false;
+    return true;
+}
+
+/**
+ * prev→next 에서 바뀐(추가·제거·수정된) 노드 id — 🔴 양방향:
+ *   prev 에만 있는 id = 삭제 · next 에만 있는 id = 추가 · 둘 다 있는데 값이 다름 = 수정. 저장 층 dirty 집합이 이걸 먹는다.
+ */
 function diffIds(prev: Tree, next: Tree): string[] {
     const ids = new Set<string>();
-    for (const id of Object.keys(prev.nodes)) if (prev.nodes[id] !== next.nodes[id]) ids.add(id);
-    for (const id of Object.keys(next.nodes)) if (prev.nodes[id] !== next.nodes[id]) ids.add(id);
+    for (const id of Object.keys(prev.nodes)) if (!nodeEqual(prev.nodes[id], next.nodes[id])) ids.add(id);
+    for (const id of Object.keys(next.nodes)) if (!nodeEqual(prev.nodes[id], next.nodes[id])) ids.add(id);
     return [...ids];
 }
 
@@ -102,7 +120,8 @@ function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; h
         : mode === 'clear' ? emptyHistory()
             : state.history;
     state = { ...state, tree: bumped, history, ...opts?.patch };
-    if (hostRef) saveTree(hostRef, bumped);
+    // 🔴 저장 층엔 「바뀐 노드」만 넘긴다(dirty 집합) — bumped.nodes === next.nodes 라 diffIds 결과가 같다.
+    if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
     emit();
     fireChange(prev, next);   // 🔴 유도 캐시 무효화 + NodesApi.subscribe 알림
 }
@@ -278,7 +297,8 @@ export function undoAction(): void {
     const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
-    if (hostRef) saveTree(hostRef, bumped);
+    // 🔴 양방향 diffIds — 되돌리면 되살아난(prev 에 없고 bumped 에 있는) 노드도 센다 → put 된다.
+    if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
     emit();
     fireChange(prev, bumped);
 }
@@ -353,7 +373,7 @@ export function redoAction(): void {
     const prev = state.tree;
     const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
-    if (hostRef) saveTree(hostRef, bumped);
+    if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
     emit();
     fireChange(prev, bumped);
 }
