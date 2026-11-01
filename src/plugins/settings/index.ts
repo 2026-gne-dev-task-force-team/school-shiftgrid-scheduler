@@ -48,8 +48,8 @@ function activate(host: PluginHost): void {
     host.views.register({
         id: 'main', title: '설정', icon: 'gear', defaultArea: 'center',
         singleton: true,
-        // 🔴 설정은 가운데 탭에만 산다 — 사이드바·미리 보기·가르기 금지(쥔님 13:43: "설정이 사이드바로 들어가기엔 무리")
-        placement: { areas: ['center'], peek: false, split: false },
+        // 🔴 설정은 가운데 탭에만 산다 — 사이드바·가르기 금지(쥔님 13:43: "설정이 사이드바로 들어가기엔 무리")
+        placement: { areas: ['center'], split: false },
         layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
         Component: (p: ViewProps) => createElement(SettingsScreen, { collapsed: p.collapsed }),
     });

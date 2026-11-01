@@ -5,9 +5,8 @@
  *   ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다.
  * 🔴 ⛔ 창틀은 이 폴더를 모른다. 바깥으로 나가는 값은 PluginModule 하나뿐이다.
  *
- * 🔴 피크 우회(「호스트에 바라는 것」): workspace.open(where:'peek') 는 reuse·singleton 을 안 먹어 카드마다 피크가 쌓인다.
- *    그래서 ① 선택을 스토어에 두고(CardView 가 읽는다) ② 카드 피크를 "한 장만" 열어 둔다
- *    (열린 카드 피크의 leafId 를 작업대 close 이벤트로 추적해 닫히면 다시 열 수 있게 한다).
+ * 🔴 카드 상세는 가운데 탭으로 연다 — 카드 뷰는 singleton 이라 몇 번을 눌러도 「한 장만」 선다.
+ *    어느 카드를 보여줄지는 스토어의 selectedCardId 로 바뀐다(CardView 가 읽는다).
  */
 import { createElement } from 'react';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
@@ -20,17 +19,13 @@ import { CardCountStatus } from './components/CardCountStatus';
 function activate(host: PluginHost): void {
     const store = createScheduleStore(host);
 
-    // 🔴 피크 한 장만 — 열린 카드 피크의 leafId
-    let cardPeekLeafId: string | null = null;
+    // 🔴 카드를 누르면 선택을 바꾸고 상세 뷰를 가운데 탭으로 연다 — singleton 이라 한 장만 선다(또 눌러도 그 탭 활성).
     const openCard = (cardId: string) => {
         store.select(cardId);
-        if (cardPeekLeafId == null) {
-            cardPeekLeafId = host.workspace.open('scheduler.card', { where: 'peek', title: '카드', params: {} });
-        }
+        host.workspace.open('scheduler.card', { where: 'center', title: '카드' });
     };
-    host.workspace.on('close', (l) => { if (l.id === cardPeekLeafId) cardPeekLeafId = null; });
 
-    // ── 뷰 — 주간 캘린더(center) · 카드 상세(피크) ──
+    // ── 뷰 — 주간 캘린더(center) · 카드 상세(가운데 탭) ──
     // ⛔ newTab 을 안 잡는다 — 「+」는 빈 탭(app.blank)이다(쥔님 13:15). 스케줄은 리본 「새 스케줄」로 연다
     host.views.register({
         id: 'week', title: '스케줄', icon: 'table', defaultArea: 'center',
@@ -38,7 +33,7 @@ function activate(host: PluginHost): void {
         Component: (p) => createElement(WeekView, { ...p, store, onCardClick: openCard }),
     });
     host.views.register({
-        id: 'card', title: '카드', icon: 'info', defaultArea: 'right',
+        id: 'card', title: '카드', icon: 'info', defaultArea: 'center',
         singleton: true, layout: { minWidth: 220 },
         Component: (p) => createElement(CardView, { ...p, store }),
     });

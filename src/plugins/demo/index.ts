@@ -1,7 +1,7 @@
 /**
  * 데모 플러그인 — ⭐ 플러그인 기여점 전부를 하나로 증명한다.
  *   뷰(표·개요·속성·정보) · 명령+리본 동작(새 표) · 상태바(열린 탭 N·저장됨) ·
- *   설정 섹션(데모) · 탭 메뉴(이 탭 정보 → 피크) · 작업대 이벤트(탭 수 세기) · 저장(마지막 연 탭).
+ *   설정 섹션(데모) · 탭 메뉴(이 탭 정보) · 작업대 이벤트(탭 수 세기) · 저장(마지막 연 탭).
  *
  *   ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다(열면 켤 때마다 탭이 는다).
  * 🔴 ⛔ 창틀은 이 폴더를 모른다. 바깥으로 나가는 값은 PluginModule 하나뿐이다.
@@ -38,7 +38,7 @@ function activate(host: PluginHost): void {
         id: 'props', title: '속성', icon: 'info', defaultArea: 'right', Component: EmptyView,
         layout: { minWidth: 200, squeeze: 'shrink' }, ribbon: { order: 2 },
     });
-    // 정보 — 피크로 매니페스트를 띄우는 뷰(탭 메뉴가 연다)
+    // 정보 — 매니페스트를 띄우는 뷰(탭 메뉴가 연다)
     host.views.register({
         id: 'about', title: '데모 정보', icon: 'info', defaultArea: 'center', Component: AboutView,
         singleton: true, layout: { minWidth: 260 },
@@ -56,7 +56,7 @@ function activate(host: PluginHost): void {
     let savedAt = new Date();
     host.statusBar.add({ id: 'tab-count', side: 'left', render: () => `열린 탭 ${openLeaves.size}` });
     host.statusBar.add({ id: 'saved', side: 'right', render: () => `저장됨 ${hhmm(savedAt)}` });
-    // 🔴 가운데 탭만 센다 — 사이드바·미리 보기는 「탭」이 아니다(쥔님 13:42)
+    // 🔴 가운데 탭만 센다 — 사이드바는 「탭」이 아니다(쥔님 13:42)
     host.workspace.on('open', (l) => { if (l.area === 'center') openLeaves.add(l.id); savedAt = new Date(); });
     host.workspace.on('close', (l) => { openLeaves.delete(l.id); savedAt = new Date(); });
     // 저장 증명 — 마지막으로 활성화한 뷰를 기기별 저장에 남긴다(자기 네임스페이스)
@@ -65,12 +65,12 @@ function activate(host: PluginHost): void {
     // ⛔ 설정 「데모 › 이 플러그인 정보」 판은 뺐다 — 쥔님 2026-11-01 13:40 *"다 똑같은 건데 왜 3개씩이나"*
     //    (설정 「이 프로그램」·「설치된 플러그인」과 겹쳤다). 플러그인 정보는 「설치된 플러그인」 목록이 보여 준다.
 
-    // ── 탭 메뉴: 「이 탭 정보」 → 피크로 매니페스트(host.menu + 피크 증명) ──
+    // ── 탭 메뉴: 「이 탭 정보」 → 가운데 탭으로 매니페스트(host.menu 증명) ──
     host.menu.addTabMenuItem((ctx) => [
         {
             label: '이 탭 정보', icon: 'info',
             onClick: () => host.workspace.open('demo.about', {
-                where: 'peek', reuse: true, title: '데모 정보', params: { aboutViewId: ctx.viewId },
+                where: 'center', reuse: true, title: '데모 정보', params: { aboutViewId: ctx.viewId },
             }),
         },
     ]);

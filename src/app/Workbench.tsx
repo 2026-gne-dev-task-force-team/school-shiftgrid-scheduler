@@ -11,14 +11,13 @@ import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea,
     usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
-    BottomBar, TabSwitcher, RibbonSheet, PeekPanel, storageKey, type BarItem,
+    BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, hasWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, areaOfLeaf,
-    peekPush, peekPop, peekClear, peekPromote,
     type MovePos,
 } from '../pane-ui-system';
 import {
@@ -27,7 +26,7 @@ import {
     type WorkspaceEvent,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
-import { canPlace, canPeek, canSplit } from '../pane-ui-system/view-registry';   // 허용 자리 — 호스트 앱이 모델 앞에서 묻는다
+import { canPlace, canSplit } from '../pane-ui-system/view-registry';   // 허용 자리 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 const BLANK_VIEW_ID = 'app.blank';
 import { migrateViewIds } from './migrate';
@@ -57,26 +56,10 @@ export function Workbench() {
     const [ribbonSheet, setRibbonSheet] = useState(false);
     const seq = useRef(0);
 
-    // 🔴 미리 보기(피크) 폭 — 기기별 보관(더미 자체는 저장 안 한다, W9).
-    //    기본 480 — 쥔님 13:34 *"속성 패널이랑 다를 바 없는데, 카드나 문서급의 개념이니까 기본적으로 조금 넓어야"*(280→480)
-    const PEEK_DEFAULT = 480;
-    const peekWKey = useCallback(() => storageKey('peek-width'), []);
-    const [peekW, setPeekW] = useState<number>(() => {
-        try {
-            const s = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey('peek-width')) : null;
-            const n = s ? Number(s) : NaN;
-            return Number.isFinite(n) ? n : PEEK_DEFAULT;
-        } catch { return PEEK_DEFAULT; }
-    });
-    const setPeekWidth = useCallback((w: number) => {
-        setPeekW(w);
-        try { localStorage.setItem(peekWKey(), String(w)); } catch { /* 조용히 */ }
-    }, [peekWKey]);
-
     useEffect(() => { saveWorkspace(ws); }, [ws]);
 
     // 🔴 작업대 이벤트 — 트리 변화를 재서 플러그인에 쏜다(open/close/activate). 모든 경로를 잡는다
-    //    (리본·+·드래그·피크 무엇으로 열든). 데모 상태바 「열린 탭 N」이 이걸로 센다.
+    //    (리본·+·드래그 무엇으로 열든). 플러그인 상태바가 이걸로 센다.
     type Area = 'left' | 'center' | 'right' | 'floating';
     const prevLeaves = useRef<Map<string, Leaf & { area: Area }>>(new Map());
     useEffect(() => {
@@ -104,12 +87,6 @@ export function Workbench() {
                 const def = appHost.views.get(viewId);
                 if (!def) return null;
                 const title = o?.title ?? def.title;
-                if (o?.where === 'peek') {
-                    const lf = leaf(viewId, title, { params: o?.params });
-                    setWs((w) => peekPush(w, lf));
-                    setFocus(lf.id);
-                    return lf.id;
-                }
                 const area: AreaKey = (o?.where as AreaKey | undefined) ?? def.defaultArea ?? 'center';
                 const lf = leaf(viewId, title, { id: def.singleton ? viewId : undefined, params: o?.params });
                 setWs((w) => {
@@ -190,9 +167,8 @@ export function Workbench() {
                 if (!l) return w;
                 // target 이 자리 이름이면 그 자리로, leaf id 면 그 leaf 가 있는 자리로 묻는다
                 const area = (target === 'left' || target === 'center' || target === 'right') ? target
-                    : target === 'floating' ? 'floating' : areaOfLeaf(w, target);
-                if (area === 'floating') { if (!canPeek(l.viewId)) return w; }
-                else if (area && !canPlace(l.viewId, area)) return w;
+                    : areaOfLeaf(w, target);
+                if (!area || area === 'floating' || !canPlace(l.viewId, area)) return w;
                 // 가장자리 드롭(새 split)은 가르기 허용도 본다
                 if ((pos === 'left' || pos === 'right' || pos === 'up' || pos === 'down') && !canSplit(l.viewId)) return w;
                 return moveLeaf(w, id, target, pos);
@@ -201,8 +177,6 @@ export function Workbench() {
         },
         // 키보드 Alt+←/→ 로 같은 줄 안에서 한 칸(W6 ④)
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
-        // 🔴 떼어 내기(W9) — 이 탭을 피크 더미로. moveLeaf …'floating' 한 번으로(트리 연산 새로 안 짬)
-        onDetach: (id) => setWs((w) => { const l = findLeaf(w, id); return l && canPeek(l.viewId) ? moveLeaf(w, id, 'floating', 'after') : w; }),
     }), [makeSheet, addTab, newTab]);
 
     // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)
@@ -339,25 +313,6 @@ export function Workbench() {
                     }}
                 />
             </main>
-
-            {/* 🔴 피크(W9) — 가운데와 오른쪽 독 사이에 서는 임시 기둥(데스크톱, 가운데를 민다) / 바텀 시트(모바일, 덮는다).
-                더미(ws.floating)는 저장 안 한다. 데스크톱에선 여기 flex 형제로 서서 가운데(flex-1)를 밀어낸다. */}
-            <PeekPanel
-                stack={ws.floating}
-                narrow={narrow}
-                width={peekW}
-                maxWidth={900}
-                mode={pane.settings.peekMode}
-                onWidth={setPeekWidth}
-                onPop={() => setWs((w) => peekPop(w))}
-                onClear={() => setWs((w) => peekClear(w))}
-                onPromote={() => {
-                    const top = ws.floating[ws.floating.length - 1];
-                    setWs((w) => peekPromote(w, 'center'));
-                    if (top) setFocus(top.id);
-                }}
-                onDropLeaf={handlers.onDropLeaf}
-            />
 
             {/* 오른쪽 사이드바 — 같은 패널 트리(W3) */}
             <SidePanel

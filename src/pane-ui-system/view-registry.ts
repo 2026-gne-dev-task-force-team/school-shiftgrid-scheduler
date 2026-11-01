@@ -56,13 +56,12 @@ export interface ViewDef {
     singleton?: boolean;
     /**
      * 🔴 허용 자리 — 어디에 놓일 수 있나. 생략이면 전부 허용.
-     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로 할 수 있는지 사이드바로 할 수 있는지 피크로 찍을 수 있는지
+     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로 할 수 있는지 사이드바로 할 수 있는지
      *    분할할 수 있는지 제한을 걸어야 — 설정이 사이드바로 들어가기엔 무리"*
-     *    메뉴·드래그·단축키가 전부 이 셋(canPlace·canPeek·canSplit)으로 묻는다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
+     *    메뉴·드래그·단축키가 전부 이 둘(canPlace·canSplit)로 묻는다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
      */
     placement?: {
         areas?: ('left' | 'center' | 'right')[];
-        peek?: boolean;
         split?: boolean;
     };
 }
@@ -73,9 +72,6 @@ const registry = new Map<string, ViewDef>();
 export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boolean {
     const p = registry.get(viewId)?.placement;
     return !p?.areas || p.areas.includes(area);
-}
-export function canPeek(viewId: string): boolean {
-    return registry.get(viewId)?.placement?.peek !== false;
 }
 export function canSplit(viewId: string): boolean {
     return registry.get(viewId)?.placement?.split !== false;

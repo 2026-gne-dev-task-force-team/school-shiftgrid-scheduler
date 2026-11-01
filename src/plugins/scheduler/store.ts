@@ -7,9 +7,8 @@
  * ⭐ 상태 = { schedule(저장됨), selectedCardId(기기·뷰 상태, 저장 안 함) } 를 한 불변 객체로.
  *    useSyncExternalStore 가 안정된 스냅샷을 받도록 바뀔 때마다 객체를 통째로 새로 만든다.
  *
- * 🔴 피크 우회(「호스트에 바라는 것」): host.workspace.open(where:'peek') 는 reuse·singleton 을 안 먹어
- *    카드를 클릭할 때마다 피크가 쌓인다. 그래서 selectedCardId 를 스토어에 두고 CardView 가 그걸 읽게 하고,
- *    피크는 "한 장만" 열어 둔다(열린 카드 피크의 leafId 를 작업대 이벤트로 추적). 상세는 selectedCardId 로 바뀐다.
+ * 🔴 ⭐ 어느 카드를 보여줄지는 params 가 아니라 selectedCardId 로 — 카드 상세 뷰는 singleton 이라 한 장이고,
+ *    카드를 누르면 select 로 선택만 바꾼다(CardView 가 그걸 읽어 다시 그린다). 편집은 같은 스토어라 WeekView 에 바로 반영된다.
  */
 import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';

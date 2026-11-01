@@ -53,7 +53,7 @@ export interface RibbonAction {
 export interface WorkspaceOpenOptions {
     title?: string;
     params?: Record<string, unknown>;
-    where?: 'center' | 'left' | 'right' | 'peek';
+    where?: 'center' | 'left' | 'right';
     reuse?: boolean;
 }
 
@@ -143,7 +143,7 @@ export interface PluginHost {
     statusBar: { add(i: StatusContribution): Disposable };
     /** 「모든 탭 메뉴」에 항목을 더한다 — 우클릭 때 그 탭 맥락으로 factory 를 부른다. */
     menu: { addTabMenuItem(fn: (ctx: TabMenuContext) => MenuEntry[]): Disposable };
-    /** 작업대 조작·구독 — 자리는 힌트까지(where). 트리 모양·setWs·DOM 은 안 준다. peek 은 where:'peek'. */
+    /** 작업대 조작·구독 — 자리는 힌트까지(where). 트리 모양·setWs·DOM 은 안 준다. */
     workspace: {
         open(viewId: string, o?: WorkspaceOpenOptions): string | null;   // leafId
         close(leafId: string): void;

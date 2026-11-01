@@ -1,7 +1,7 @@
 /**
- * 카드 상세 — 피크로 뜬다(노션식). 🔴 ⛔ 오른쪽에 「속성」을 고정하지 않는다(쥔님) — 피크 한 장.
+ * 카드 상세 — 가운데 탭으로 뜬다(singleton 한 장).
  *
- * 🔴 ⭐ 어느 카드를 보여줄지는 params 가 아니라 스토어의 selectedCardId 로 읽는다 — 피크 우회(store.ts 주석).
+ * 🔴 ⭐ 어느 카드를 보여줄지는 params 가 아니라 스토어의 selectedCardId 로 읽는다(store.ts 주석).
  *    편집은 store.update 로 즉시 반영된다(같은 스토어를 WeekView 가 구독하므로 카드가 바로 바뀐다).
  */
 import type { ViewProps } from '../../../pane-ui-system/plugin';

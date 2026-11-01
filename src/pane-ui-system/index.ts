@@ -31,7 +31,6 @@ export { EditorArea } from './shell/EditorArea';
 export { EmptyArea } from './shell/EmptyArea';
 export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/WorkspaceView';
 export { DropZones } from './shell/DropZones';
-export { PeekPanel, type PeekPanelProps } from './shell/PeekPanel';
 export { resolveDropAt, type DropMove, type DropResolution, type DropPreview, type DropBox } from './shell/drop-resolve';
 export { BottomBar, type BarItem } from './shell/BottomBar';
 export { TabSwitcher } from './shell/TabSwitcher';
@@ -70,7 +69,6 @@ export {
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, renameLeaf,
-    peekPush, peekPop, peekClear, peekPromote,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';

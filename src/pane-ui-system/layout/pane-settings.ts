@@ -36,11 +36,6 @@ export interface PaneSettings {
      */
     statusBarNarrow: boolean;
     /**
-     * 🔴 미리 보기(피크) 방식 — 'push' 는 가운데를 밀고 들어온다 · 'overlay' 는 가운데 위에 떠서 덮는다.
-     *    쥔님 2026-11-01 13:34: *"화면이 부족해서 밀어내서 보는 게 안 될 수도 — 설정할 수 있게. 밀어내지 말고 살짝 뜨는 형식"*
-     */
-    peekMode: 'push' | 'overlay';
-    /**
      * 🔴 리본 자리 — 'left'(기본, 옵시디언식 세로 띠) · 'top'(엑셀식 가로 줄 — 상단에 선다).
      *    쥔님 2026-11-01 13:39: *"엑셀 쓰는 사람들은 아이콘이 상단 앱바에 있는 게 익숙할 수도 — 옵션으로"*
      */
@@ -75,7 +70,6 @@ const DEFAULTS: PaneSettings = {
     showTitleBar: false,
     showStatusBar: true,
     statusBarNarrow: false,
-    peekMode: 'push',
     ribbonPosition: 'left',
 };
 
@@ -112,7 +106,6 @@ export function normalizePaneSettings(raw: unknown): PaneSettings {
         showTitleBar: typeof o.showTitleBar === 'boolean' ? o.showTitleBar : d.showTitleBar,
         showStatusBar: typeof o.showStatusBar === 'boolean' ? o.showStatusBar : d.showStatusBar,
         statusBarNarrow: typeof o.statusBarNarrow === 'boolean' ? o.statusBarNarrow : d.statusBarNarrow,
-        peekMode: o.peekMode === 'overlay' || o.peekMode === 'push' ? o.peekMode : d.peekMode,
         ribbonPosition: o.ribbonPosition === 'top' || o.ribbonPosition === 'left' ? o.ribbonPosition : d.ribbonPosition,
     };
 }

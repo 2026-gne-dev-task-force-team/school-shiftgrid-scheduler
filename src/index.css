@@ -208,21 +208,10 @@
 @media (prefers-reduced-motion: reduce) { .sheet-in, .sheet-out { animation: none; } }
 
 /*
- * 피크(W9) — 데스크톱 기둥은 가운데를 「밀며」 들어온다(폭 0↔W 전환, 서랍 pane-wtrans 와 같은 결). 내용은 고정
- *   폭을 지키며 미끄러진다(글자 안 찌그러짐). 들어올 때 살짝 떠오른다(peek-in). 모바일 시트는 두 단 snap 을
- *   확정할 때만 높이를 미끄러뜨린다(pane-htrans) — 손가락 따라가는 중엔 끈다(즉각).
- *
- * 🔴 피크는 「오른쪽 벽에서 쑥 나왔다 들어가는 카드」다(쥔님 2026-11-01 13:29: *"활어처럼 나왔다 들어갔다 · 오른쪽 벽에서
- *   나온다는 느낌 · 조금 뜨는 느낌"*). 분할된 칸과 같은 모양이면 「임시」가 안 읽힌다 — 그래서:
- *   ① 카드가 벽(오른쪽)에 붙어 왼쪽 모서리만 둥글고 ② 그림자로 떠 있고 ③ 100% 바깥에서 살짝 넘치며(overshoot) 튀어나온다.
+ * 바텀 시트 높이 미끄러짐 — snap 을 확정할 때만 높이를 미끄러뜨린다(손가락 따라가는 중엔 끈다, 즉각).
  */
-@keyframes peek-in  { from { transform: translateX(104%); opacity: .6; } 70% { transform: translateX(-2%); opacity: 1; } to { transform: none; opacity: 1; } }
-@keyframes peek-out { from { transform: none; opacity: 1; } to { transform: translateX(104%); opacity: .6; } }
-.peek-in  { animation: peek-in  .26s cubic-bezier(.2,.9,.3,1); }
-.peek-out { animation: peek-out .18s cubic-bezier(.4,0,1,1) forwards; }
-.peek-card { box-shadow: -6px 0 18px rgb(0 0 0 / .18), -1px 0 0 rgb(var(--c-line)); }
 .pane-htrans { transition: height .2s cubic-bezier(.2,.8,.3,1); }
-@media (prefers-reduced-motion: reduce) { .peek-in, .peek-out { animation: none; } .pane-htrans { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pane-htrans { transition: none; } }
 
 /*
  * 🔴 전환 애니메이션(쥔님 2026-11-01 ③: *"애니메이션 없이 바뀌니까 뭐가 어떤지 보이질 않아"*) — 라이브러리 없이 CSS 로.
