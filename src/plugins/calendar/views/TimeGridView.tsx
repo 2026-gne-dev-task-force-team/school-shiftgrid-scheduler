@@ -73,7 +73,7 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     );
 });
 
-export function TimeGridView({ days, trailing }: { days: number; trailing?: ReactNode }) {
+export function TimeGridView({ days, value, onChange, trailing }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -81,6 +81,8 @@ export function TimeGridView({ days, trailing }: { days: number; trailing?: Reac
         days,
         gutter: GUTTER,
         align: alignFor(days),
+        value,
+        onChange,
         // 처음 열 때 오전 7시가 맨 위 — 선 위에 걸친 「07:00」 글자가 열 머리에 안 깔리게 14px 여유(쥔님 17:27 *"요부분이 좀 어색해"*)
         onInit: (el) => { el.scrollTop = START_HOUR * HOUR_H - 14; },
     });

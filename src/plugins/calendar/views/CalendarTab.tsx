@@ -3,7 +3,12 @@
  *   *"연간 뷰 필요하네 … 주간뷰 3일뷰 하루 스케줄 뷰도 필요하네"* — 탭 다섯이 아니라 한 탭의 다섯 모습).
  *   각 뷰는 머리줄 오른쪽 끝 `trailing` 자리에 이 전환 단추를 그대로 그린다.
  *   17:23 — 설정에서 켜면 「분기」「간트」 단추가 더 붙는다(기본 꺼짐 · store.ts).
- *   🔴 ⛔ 일정 없음 — 전부 눈금뿐이다. 어느 모습을 보고 있었나는 ⛔ 저장 안 함.
+ *   🔴 ⛔ 일정 없음 — 전부 눈금뿐이다. 어느 모습을 보고 있었나(mode)도, 보고 있는 날짜(anchor)도 ⛔ 저장 안 함.
+ *
+ *   📌 21:47 쥔님 *"월이 왜 계속 2024년에 가가있노 … 다른 뷰도 다 다른데로 가가 있네"* →
+ *      「보고 있는 날짜」를 각 뷰가 제각기 쥐던 걸 여기(anchor) 하나로 끌어올렸다. 그 한 수로 둘이 같이 풀린다:
+ *      ① 월 보기가 초기 scrollTop 을 안 잡아 맨 위(104주 전=2024년)로 가 있던 것 ② 뷰를 바꾸면 각자 오늘로 리셋되던 것.
+ *      각 뷰는 제 날짜 useState 를 버리고 value 를 쓰고, 스크롤·단추로 옮기면 onChange 로 올린다(한쪽만 흐른다 — 루프 방지).
  */
 import { useEffect, useState } from 'react';
 import { IconButton } from '../../../pane-ui-system';
@@ -27,6 +32,8 @@ const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 
 
 export function CalendarTab({ openMini }: { openMini?: () => void }) {
     const [mode, setMode] = useState<Mode>('month');
+    // 🔴 「보고 있는 날짜」의 단일 진실 — 초기값은 오늘. 각 뷰에 value 로 내리고 onChange 로 받는다(뷰를 바꿔도 유지된다).
+    const [anchor, setAnchor] = useState<Date>(() => new Date());
     const opts = useOptions();
 
     const modes = [...BASE_MODES];
@@ -61,12 +68,12 @@ export function CalendarTab({ openMini }: { openMini?: () => void }) {
     );
 
     switch (mode) {
-        case 'year': return <YearView trailing={switcher} />;
-        case 'week': return <TimeGridView days={7} trailing={switcher} />;
-        case '3day': return <TimeGridView days={3} trailing={switcher} />;
-        case 'day': return <TimeGridView days={1} trailing={switcher} />;
-        case 'dense': return <TimeGridView days={DENSE_DAYS} trailing={switcher} />;
-        case 'gantt': return <GanttView trailing={switcher} />;
-        default: return <MonthView trailing={switcher} />;
+        case 'year': return <YearView value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} />;
+        default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} />;
     }
 }

@@ -2,13 +2,16 @@
  * 연간 뷰 — 다이어리 수첩의 연간 계획표 그 느낌. **월 보기를 작게 깐 게 아니라** 가로 12달 × 세로 31일 표 하나다.
  *   쥔님 2026-11-01: *"연간 뷰 필요하네, 연간뷰는 월뷰 작게해서 보이는게 아니라. 그 다이어리 수첩처럼 테이블 형식 같은 느낌으로"*.
  *
- *   🔴 ⛔ 일정 데이터·칸 클릭·호버·저장 없음(쥔님: *"일정 추가 하지마"*). 보고 있는 자리는 해(year) 하나뿐 — ⛔ 저장 안 함.
+ *   🔴 ⛔ 일정 데이터·칸 클릭·호버·저장 없음(쥔님: *"일정 추가 하지마"*). 보고 있는 해는 ⛔ 저장 안 함.
+ *
+ *   📌 21:47 — 보고 있는 날짜를 탭(CalendarTab)이 쥔다. 여긴 제 year useState 를 버리고 value 의 해를 보여주고,
+ *      ◀ ▶ 올해로 해를 옮기면 onChange 로 올린다(월·일은 그대로 둬 다른 뷰로 가도 그 달·날이 보존된다).
  *   🔴 색은 토큰 클래스로만(구조 검사 ①) · 얇은 1px 경계선(line) · 토·일은 바탕 한 단(panel2) · 오늘은 accent 바탕.
  *
  *   머리줄은 월 보기와 같은 꼴: 왼쪽 「2026년」 · 오른쪽 「◀ 올해 ▶」. 오른쪽 끝의 trailing 은 메인이 뷰 전환 단추를 꽂는 자리다.
  *   본문은 표 하나로 탭을 꽉 채운다: 31행이 1fr 로 늘고, 탭이 너무 낮으면(행 18px 밑) 세로 스크롤 · 폭 560px 밑이면 가로 스크롤.
  */
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품과 한 벌이다(배럴로만) · 연간표 펴기는 옆 순수 함수(year-table)
 import { IconButton } from '../../../pane-ui-system';
 import { yearTable, yearLabel } from './year-table';
@@ -17,10 +20,12 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
-export function YearView({ trailing }: { trailing?: ReactNode }) {
+export function YearView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
     const now = new Date();
-    const [year, setYear] = useState(now.getFullYear());
+    const year = value.getFullYear();                      // 🔴 제 state 없음 — 탭의 anchor 가 진실
     const table = yearTable(year, now);   // cells[m-1][d-1]
+    // 해만 바꾸고 월·일은 그대로 올린다(다른 뷰로 가도 그 달·날이 보존된다)
+    const goYear = (y: number) => onChange(new Date(y, value.getMonth(), value.getDate()));
 
     return (
         <div className="h-full flex flex-col bg-bg select-text">
@@ -28,15 +33,15 @@ export function YearView({ trailing }: { trailing?: ReactNode }) {
             <header className="flex items-center justify-between px-pad py-2 shrink-0">
                 <span className="text-base font-semibold text-text tabular-nums">{yearLabel(year)}</span>
                 <div className="flex items-center gap-1">
-                    <IconButton icon="left" label="지난 해" onClick={() => setYear((y) => y - 1)} />
+                    <IconButton icon="left" label="지난 해" onClick={() => goYear(year - 1)} />
                     <button
                         type="button"
-                        onClick={() => setYear(now.getFullYear())}
+                        onClick={() => goYear(now.getFullYear())}
                         className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
                     >
                         올해
                     </button>
-                    <IconButton icon="right" label="다음 해" onClick={() => setYear((y) => y + 1)} />
+                    <IconButton icon="right" label="다음 해" onClick={() => goYear(year + 1)} />
                     {trailing}
                 </div>
             </header>

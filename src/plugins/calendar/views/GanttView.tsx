@@ -67,14 +67,16 @@ const DayColumn = memo(function DayColumn({ offset, left, width, height, todayIs
     );
 });
 
-export function GanttView({ trailing }: { trailing?: ReactNode }) {
+export function GanttView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
     const s = useDayScroller({
         days: 1,                 // fixedColW 가 있어 무시된다
         gutter: LABEL_W,
-        align: (d) => d,         // 오늘이 맨 왼쪽
+        align: (d) => d,         // value 날이 맨 왼쪽
+        value,
+        onChange,
         fixedColW: COL_W,
     });
 

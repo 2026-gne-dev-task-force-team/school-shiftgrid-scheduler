@@ -21,6 +21,7 @@ import {
     Icon, IconButton, Surface,
     monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell,
 } from '../../../pane-ui-system';
+import { offsetToScroll } from './scroll-math';
 
 // 🔑 주 시작 요일은 일요일 고정 — 설정으로 뺄 자리다. 지금은 weekStart 인자만 열어 두고 0 으로만 부른다.
 const WEEK_START = 0;
@@ -37,6 +38,11 @@ const ANCHOR = startOfWeek(new Date(), WEEK_START);
 /** y년 m월 1일이 든 주의 offset */
 function monthStartOffset(y: number, m: number): number {
     return weeksBetween(ANCHOR, startOfWeek(new Date(y, m - 1, 1), WEEK_START));
+}
+
+/** 어느 날이 든 주의 offset — 첫 배치에서 value(보던 날)의 주로 스크롤을 잡을 때 쓴다 */
+function weekOffsetOf(d: Date): number {
+    return weeksBetween(ANCHOR, startOfWeek(d, WEEK_START));
 }
 
 /** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게 */
@@ -74,9 +80,14 @@ const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM }
     );
 });
 
-export function MonthView({ trailing }: { trailing?: ReactNode }) {
+export function MonthView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    // 🔴 첫 배치에서 scrollTop 을 맞출 날 — 탭(anchor)이 내려준 value. 마운트 때 한 번만 읽는다(이후 스크롤→날짜만 흐른다).
+    const initValue = useRef(value);
+    // onChange 는 매 렌더 바뀔 수 있으니 ref 로 — 효과가 onChange 를 deps 에 넣어 다시 돌지 않게
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
 
     // 깔린 주 범위 [from, to) — offset 단위
     const [range, setRange] = useState({ from: -INIT_WEEKS, to: INIT_WEEKS });
@@ -91,8 +102,8 @@ export function MonthView({ trailing }: { trailing?: ReactNode }) {
     const rowHRef = useRef(rowH);
     const scrollerRef = useRef<HTMLDivElement>(null);
 
-    // 머리줄의 달 — 화면 위쪽 1/3 지점에 걸린 주의 수요일이 속한 달
-    const [head, setHead] = useState({ y: now.getFullYear(), m: now.getMonth() + 1 });
+    // 머리줄의 달 — 화면 위쪽 1/3 지점에 걸린 주의 수요일이 속한 달. 처음엔 value(보던 날)의 달.
+    const [head, setHead] = useState({ y: initValue.current.getFullYear(), m: initValue.current.getMonth() + 1 });
 
     const prevFrom = useRef(range.from);
     const keepTopIdx = useRef<number | null>(null);      // 줄 높이가 바뀔 때 맨 위 줄을 그대로 두기 위해
@@ -147,7 +158,8 @@ export function MonthView({ trailing }: { trailing?: ReactNode }) {
         if (!el) return;
         if (!didInit.current) {
             didInit.current = true;
-            el.scrollTop = (monthStartOffset(head.y, head.m) - rangeRef.current.from) * rowH;
+            // 🔴 처음엔 value(보던 날)가 든 주를 맨 위에. `- range.from` 을 지켜야 과거(2024년) 맨 위로 안 튄다(scroll-math).
+            el.scrollTop = offsetToScroll(weekOffsetOf(initValue.current), rangeRef.current.from, rowH);
         } else if (keepTopIdx.current !== null) {
             el.scrollTop = keepTopIdx.current * rowH;
             keepTopIdx.current = null;
@@ -175,6 +187,14 @@ export function MonthView({ trailing }: { trailing?: ReactNode }) {
         raf.current = requestAnimationFrame(() => { raf.current = 0; syncFromScroll(); });
     };
     useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
+
+    // 🔴 스크롤로 머리줄 달이 바뀌면 탭의 anchor 로 올린다(그 달 1일) — 뷰를 바꿔도 그 달이 보존된다.
+    //    ⚠️ 첫 마운트는 건너뛴다(그땐 value→스크롤만 흐른다. 올리면 value→스크롤→onChange→value 루프의 씨앗이 된다).
+    const reportedHead = useRef(true);
+    useEffect(() => {
+        if (reportedHead.current) { reportedHead.current = false; return; }
+        onChangeRef.current(new Date(head.y, head.m - 1, 1));
+    }, [head.y, head.m]);
 
     /** y년 m월 1일이 든 주로 부드럽게 간다 — 범위 밖이면 먼저 깔고 간다 */
     const scrollToMonth = (y: number, m: number) => {

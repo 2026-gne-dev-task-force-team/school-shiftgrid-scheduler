@@ -38,13 +38,17 @@ export interface DayScroller {
     scrollToOffset: (offset: number) => void;
 }
 
-export function useDayScroller({ days, gutter, align, fixedColW, onInit }: {
+export function useDayScroller({ days, gutter, align, value, onChange, fixedColW, onInit }: {
     /** 한 화면에 들어올 열 수(fixedColW 가 있으면 무시) */
     days: number;
     /** 왼쪽 고정 칸 폭(px) — 시간 눈금·행 이름 */
     gutter: number;
     /** 「이 날이 보이게」 할 때 맨 왼쪽에 둘 날로 당기는 규칙(주 보기는 그 주 일요일, 하루는 그날) */
     align: (d: Date) => Date;
+    /** 🔴 보고 있는 날짜 — 탭(anchor)이 내려준다. 첫 배치에서 이 날로 스크롤을 잡는다(옛 `new Date()` 대신). */
+    value: Date;
+    /** 스크롤·단추로 날이 바뀌면 맨 왼쪽 날을 탭으로 올린다(뷰를 바꿔도 그 날이 보존된다). */
+    onChange?: (d: Date) => void;
     fixedColW?: number;
     /** 첫 배치 뒤 한 번(세로 scrollTop 잡기 등) */
     onInit?: (el: HTMLDivElement) => void;
@@ -60,7 +64,11 @@ export function useDayScroller({ days, gutter, align, fixedColW, onInit }: {
     alignRef.current = align;
     const onInitRef = useRef(onInit);
     onInitRef.current = onInit;
-    const [headOff, setHeadOff] = useState(() => offsetOf(align(new Date())));
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
+    // 🔴 value 는 마운트 때 한 번만 읽는다(이후 스크롤→날짜만 흐른다 — value→스크롤→onChange→value 루프 방지).
+    const initValue = useRef(value);
+    const [headOff, setHeadOff] = useState(() => offsetOf(align(initValue.current)));
 
     const prevFrom = useRef(range.from);
     const keepLeftIdx = useRef<number | null>(null);
@@ -110,7 +118,8 @@ export function useDayScroller({ days, gutter, align, fixedColW, onInit }: {
         if (!el) return;
         if (!didInit.current) {
             didInit.current = true;
-            el.scrollLeft = (offsetOf(alignRef.current(new Date())) - rangeRef.current.from) * colW;
+            // 🔴 처음엔 value(보던 날)를 맨 왼쪽에 — `new Date()` 가 아니다(뷰를 바꿔도 보던 날이 유지되게).
+            el.scrollLeft = (offsetOf(alignRef.current(initValue.current)) - rangeRef.current.from) * colW;
             onInitRef.current?.(el);
         } else if (keepLeftIdx.current !== null) {
             el.scrollLeft = keepLeftIdx.current * colW;
@@ -148,6 +157,13 @@ export function useDayScroller({ days, gutter, align, fixedColW, onInit }: {
         raf.current = requestAnimationFrame(() => { raf.current = 0; sync(); });
     };
     useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
+
+    // 🔴 스크롤·단추로 맨 왼쪽 날이 바뀌면 탭의 anchor 로 올린다 — 첫 마운트는 건너뛴다(그땐 value→스크롤만 흐른다).
+    const firstReport = useRef(true);
+    useEffect(() => {
+        if (firstReport.current) { firstReport.current = false; return; }
+        onChangeRef.current?.(dayAt(headOff));
+    }, [headOff]);
 
     const scrollToOffset = (off: number) => {
         const el = scrollerRef.current;
