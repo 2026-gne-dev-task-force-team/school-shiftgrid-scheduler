@@ -53,7 +53,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 ${FOCUS_RING}
                                 ${on ? 'text-text' : 'text-muted bg-text/[0.02]'}`}
                         >
-                            <Icon name="dots" size={14} className="shrink-0 text-muted/60" />
+                            <Icon name="grip" size={16} className="shrink-0 text-muted" />
                             <Icon name={v.icon ?? 'dot'} size={16} className="shrink-0" />
                             <span className="flex-1 min-w-0 truncate text-[13px]">{v.title}</span>
 

@@ -43,7 +43,7 @@ function activate(host: PluginHost): void {
 
     // ── 뷰: 미니 캘린더(사이드 패널용 · 싱글턴 · 안 가름) — 가운데엔 못 놓는다(쥔님 *"패널용으로"*) ──
     host.views.register({
-        id: 'mini', title: '미니 캘린더', icon: 'calendar', defaultArea: 'left',
+        id: 'mini', title: '미니 캘린더', icon: 'calendarMini', defaultArea: 'left',
         placement: { areas: ['left', 'right'], split: false, singleton: true },
         layout: { minWidth: 200, squeeze: 'scroll' },
         Component: () => createElement(MiniCalendarView),

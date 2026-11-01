@@ -19,10 +19,10 @@ export type ExplorerRow =
     };
 
 /**
- * rootId 자손을 순서대로 — 각 컨테이너는 저장된 자식(재귀) 다음에 유도 자식을 붙인다.
+ * fromId 자손을 순서대로 — 각 컨테이너는 저장된 자식(재귀) 다음에 유도 자식을 붙인다.
  *   접힘(collapsed)은 실노드 컨테이너에서만 — 유도 줄은 1차엔 늘 펼쳐 그린다(중첩 유도 포함).
  */
-export function buildMainRows(tree: Tree, rootId: string): ExplorerRow[] {
+export function buildMainRows(tree: Tree, fromId: string): ExplorerRow[] {
     const out: ExplorerRow[] = [];
 
     const emitVirtual = (
@@ -67,6 +67,6 @@ export function buildMainRows(tree: Tree, rootId: string): ExplorerRow[] {
         }
     };
 
-    walk(rootId, 0);
+    walk(fromId, 0);
     return out;
 }

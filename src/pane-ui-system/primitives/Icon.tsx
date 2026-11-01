@@ -7,7 +7,7 @@ export type IconName =
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
-    | 'calendar' | 'calendarMini' | 'flask';
+    | 'calendar' | 'calendarMini' | 'flask' | 'grip';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -19,7 +19,8 @@ const P: Record<IconName, string> = {
     calendarMini: 'M3 5h18v15H3zM10 5v15M5 10h3M5 13h3M5 16h3M15 9v2M18 9v2M13 11h7v6h-7z',
     ban: 'M5 5l14 14M12 3a9 9 0 100 18 9 9 0 000-18z',
     sparkles: 'M12 3l1.8 4.8L18.5 9.6 13.8 11.4 12 16.2 10.2 11.4 5.5 9.6 10.2 7.8zM19 15l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z',
-    search: 'M11 4a7 7 0 105 12 7 7 0 000-14zM21 21l-4.5-4.5',
+    // 돋보기 — 원(중심 11,11 · 반지름 7) + 45° 손잡이. 18px 에서도 「검색」으로 읽히게(쥔님 2026-11-01 19:37)
+    search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4',
     edit: 'M4 4h7M4 4v16h16v-7M20.5 3.5a2.1 2.1 0 013 3L12 18l-4 1 1-4z',
     layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
     printer: 'M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v6H8z',
@@ -60,6 +61,8 @@ const P: Record<IconName, string> = {
     splitH: 'M4 5h16v14H4zM4 12h16',
     // 시험 플라스크(Pane UI Test) — 목·몸통·액체선. 단순 선 하나, 18px 에서도 「실험」으로 읽힌다(쥔님 2026-11-01: "창이랑 실험하는 아이콘")
     flask: 'M9 3h6M10 3v6l-4.3 8.7A1.5 1.5 0 007 20h10a1.5 1.5 0 001.3-2.3L14 9V3M8.5 14h7',
+    // 끌기 손잡이 — 점 2×3(쥔님 2026-11-01 20:02 "핸들 아이콘스럽지 않고 잘 안 보여" — 세로 점 셋(dots)은 메뉴로 읽힌다)
+    grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {

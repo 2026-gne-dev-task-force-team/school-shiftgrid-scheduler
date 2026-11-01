@@ -4,30 +4,23 @@
  *
  * 🔴 ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다(onFirstRun 에서만 왼쪽 패널을 한 번 연다).
  * ⭐ 내장 타입은 「폴더」 하나뿐 — 교사·시간표 같은 실제 타입은 각 플러그인이 규격에 맞춰 꽂는다(N4).
- * ⭐ 모든 동작은 명령(new-folder·rename·remove·collapse-all·open-panel) — 리본·메뉴·키보드·팔레트가 같은 id 로 부른다.
+ * ⭐ 모든 동작은 명령(new-folder·rename·remove·open-panel) — 리본·메뉴·키보드·팔레트가 같은 id 로 부른다.
  */
 import { createElement } from 'react';
-import type { PluginModule, PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
+import type { PluginModule, PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { registerType } from './model/types';
 import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
-import { saveJson, pickJsonFile } from './views/file-io';
 import {
     initStore, getState, newFolder, renameSelected, removeSelected,
-    duplicateNode, collapseAllNodes, nudgeSelected, openById,
+    nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
-    undoAction, redoAction, exportBranchById, importBranchText,
+    undoAction, redoAction,
 } from './store';
 
 const TREE_VIEW_ID = 'project-explorer.tree';   // host 가 'project-explorer.' 를 붙인다(id: 'tree')
-
-/** 고른 노드 이름 — 「이 폴더를 탐색기로」 탭의 제목(없으면 '프로젝트 탐색기'). */
-function selectedName(): string {
-    const s = getState();
-    return (s.selectedId && s.tree.nodes[s.selectedId]?.name) || '프로젝트 탐색기';
-}
 
 function activate(host: PluginHost): void {
     // ── 저장된 나무 읽어 들이기(host.store = IndexedDB, 비동기) — 끝날 때까지 뷰는 「불러오는 중…」 ──
@@ -44,7 +37,7 @@ function activate(host: PluginHost): void {
         id: 'tree', title: '프로젝트 탐색기', icon: 'folder', defaultArea: 'left',
         placement: { areas: ['left', 'right'] },
         layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
-        Component: (p: ViewProps) => createElement(ExplorerView, { host, rootId: p.leaf.params?.rootId as string | undefined }),
+        Component: () => createElement(ExplorerView, { host }),
     });
 
     // ── 명령 — 전부 등록. 대상 노드는 스토어의 「고른 노드」에서 읽는다(🙋 5) ──
@@ -56,22 +49,11 @@ function activate(host: PluginHost): void {
     // 🔴 「새 폴더」 = 「새로 만들기 ▸ 폴더」. 헤더 단추·우클릭 메뉴가 같은 id(new-<type> 규칙, folder 는 곧 new-folder)를 부른다.
     host.commands.add({ id: 'project-explorer.new-folder', title: '새 폴더', icon: 'plus', run: () => newFolder() });
     host.commands.add({ id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit', run: () => renameSelected() });
-    host.commands.add({ id: 'project-explorer.duplicate', title: '복제', icon: 'copy', run: () => duplicateNode() });
     host.commands.add({ id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash', run: () => removeSelected() });
-    host.commands.add({ id: 'project-explorer.collapse-all', title: '모두 접기', icon: 'left', run: () => collapseAllNodes() });
     // 열기 — 고른 노드의 타입 open 을 실행(실노드·유도 가상 줄 공통). 컨테이너 접기/펴기는 뷰가 맡는다.
     host.commands.add({ id: 'project-explorer.open', title: '열기', icon: 'arrowRight', run: () => { const id = getState().selectedId; if (id) openById(id); } });
     host.commands.add({ id: 'project-explorer.move-up', title: '위로', icon: 'left', run: () => nudgeSelected(-1) });
     host.commands.add({ id: 'project-explorer.move-down', title: '아래로', icon: 'left', run: () => nudgeSelected(1) });
-    // 「이 폴더를 탐색기로」 — 같은 뷰를 rootId 파라미터로 가운데 탭에(VS Code 「Open Folder as Workspace」).
-    host.commands.add({
-        id: 'project-explorer.open-as-root', title: '이 폴더를 탐색기로', icon: 'panelRight',
-        run: () => {
-            const id = getState().selectedId;
-            if (!id) return;
-            host.workspace.open(TREE_VIEW_ID, { where: 'center', params: { rootId: id }, title: selectedName() });
-        },
-    });
 
     // ── 휴지통(N3) — 복원·영구삭제(인라인 확인)·비우기 · 되돌리기/다시하기 ──
     host.commands.add({ id: 'project-explorer.restore', title: '복원', icon: 'undo', run: () => restoreSelected() });
@@ -82,23 +64,6 @@ function activate(host: PluginHost): void {
     host.commands.add({ id: 'project-explorer.cancel-purge', title: '삭제 취소', icon: 'x', run: () => cancelPurgeConfirm() });
     host.commands.add({ id: 'project-explorer.undo', title: '되돌리기', icon: 'undo', run: () => undoAction() });
     host.commands.add({ id: 'project-explorer.redo', title: '다시 하기', icon: 'redo', run: () => redoAction() });
-
-    // ── 가지 내보내기/들여오기(N5) — 파일 I/O 는 비동기라 run 안에서 삼킨다 ──
-    //    내보내기: 고른 노드의 가지 통째(data 포함·유도 자식 제외) → showSaveFilePicker ↝ 다운로드 폴백.
-    host.commands.add({
-        id: 'project-explorer.export-branch', title: '내보내기(JSON)', icon: 'download',
-        run: () => {
-            const file = exportBranchById();
-            if (!file) return;
-            const name = `${getState().tree.nodes[file.root]?.name ?? 'branch'}.json`;
-            void saveJson(name, JSON.stringify(file, null, 2));
-        },
-    });
-    //    들여오기: 🔴 덮지 않고 새 가지로(id 재발급). 파일 고르기 → 텍스트 → 스토어가 검증·병합.
-    host.commands.add({
-        id: 'project-explorer.import-branch', title: '들여오기(JSON)', icon: 'upload',
-        run: () => { void (async () => { const text = await pickJsonFile(); if (text != null) importBranchText(text); })(); },
-    });
 
     // ── 리본 아이콘 하나 — 누르면 탐색기 패널을 연다(reuse 로 한 장만) ──
     host.ribbon.add({ commandId: 'project-explorer.open-panel', icon: 'folder', order: 2 });

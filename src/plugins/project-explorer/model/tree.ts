@@ -64,15 +64,15 @@ export function emptyTree(): Tree {
  */
 export function normalize(tree: Tree): Tree {
     const src = tree.nodes;
-    const rootId = tree.root;
+    const rootNodeId = tree.root;
     const trashId = tree.trash;
 
     const ensured: Record<string, Node> = { ...src };
-    if (!ensured[rootId]) ensured[rootId] = { id: rootId, type: 'folder', name: '루트', children: [] };
+    if (!ensured[rootNodeId]) ensured[rootNodeId] = { id: rootNodeId, type: 'folder', name: '루트', children: [] };
     if (!ensured[trashId]) ensured[trashId] = { id: trashId, type: 'folder', name: '휴지통', children: [] };
 
     const result: Record<string, Node> = {};
-    const claimed = new Set<string>([rootId, trashId]);   // 이미 부모가 생겼거나 뿌리인 것
+    const claimed = new Set<string>([rootNodeId, trashId]);   // 이미 부모가 생겼거나 뿌리인 것
 
     const visit = (id: string, inTrash: boolean): void => {
         const n = ensured[id];
@@ -81,7 +81,7 @@ export function normalize(tree: Tree): Tree {
         for (const cid of n.children) {
             if (cid === id) continue;                      // 자기 자신 — 사이클 한 칸
             if (!ensured[cid]) continue;                   // 없는 자식
-            if (cid === rootId || cid === trashId) continue; // 뿌리는 자식이 될 수 없다
+            if (cid === rootNodeId || cid === trashId) continue; // 뿌리는 자식이 될 수 없다
             if (claimed.has(cid)) continue;                // 두 부모 / 더 긴 사이클 — 먼저 본 쪽이 이긴다
             claimed.add(cid);
             kids.push(cid);
@@ -93,10 +93,10 @@ export function normalize(tree: Tree): Tree {
         for (const cid of kids) visit(cid, inTrash);
     };
 
-    visit(rootId, false);
+    visit(rootNodeId, false);
     visit(trashId, true);
 
-    return { ...tree, root: rootId, trash: trashId, nodes: result };
+    return { ...tree, root: rootNodeId, trash: trashId, nodes: result };
 }
 
 // ─────────────────────────── 역색인(파생) ───────────────────────────
@@ -185,35 +185,6 @@ export function move(
     return normalize({ ...tree, nodes });
 }
 
-/**
- * 깊은 복제 — 가지 통째로 베껴 원본 바로 뒤 형제로 꽂는다(이름은 그대로). 새 노드는 전부 새 id.
- *   🔴 순수를 지키려 id 생성기(gen)를 받는다 — 기본은 uid(), 테스트는 결정적 생성기를 넣어 id 를 예측한다.
- *   ⭐ 뿌리 id 를 제일 먼저 뽑는다(gen 첫 호출 = 복제본의 뿌리) — store 가 그걸 잡아 바로 고르기/이름바꾸기로 간다.
- */
-export function duplicate(tree: Tree, id: string, gen: () => string = uid): Tree {
-    if (id === tree.root || id === tree.trash) return tree;
-    if (id.includes('/')) return tree;                        // 🔴 유도(가상) id — 복제할 실물이 없다
-    const src = tree.nodes[id];
-    if (!src) return tree;
-    const parentId = parentOf(tree, id);
-    if (!parentId) return tree;   // 뿌리 밖(고아)은 복제 안 함
-
-    const added: Record<string, Node> = {};
-    const clone = (srcId: string): string => {
-        const s = tree.nodes[srcId];
-        const nid = gen();                               // 🔴 자식보다 먼저 — 첫 gen 이 복제본 뿌리
-        const kids = s.children.map(clone);
-        added[nid] = { ...s, id: nid, children: kids };
-        return nid;
-    };
-    const copyRoot = clone(id);
-
-    const parent = tree.nodes[parentId];
-    const kids = [...parent.children];
-    kids.splice(kids.indexOf(id) + 1, 0, copyRoot);
-    return normalize({ ...tree, nodes: { ...tree.nodes, ...added, [parentId]: { ...parent, children: kids } } });
-}
-
 /** 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). 원래 부모를 trashedFrom 에 적어 둔다. */
 export function remove(tree: Tree, id: string): Tree {
     if (id === tree.root || id === tree.trash) return tree;
@@ -297,16 +268,6 @@ export function setData(tree: Tree, id: string, data: unknown): Tree {
     return normalize({ ...tree, nodes: { ...tree.nodes, [id]: { ...n, data } } });
 }
 
-/** 모두 접기 — 자식이 있는 노드(루트·휴지통 제외)를 전부 접는다. 패널 머리 「모두 접기」·폰 서랍이 쓴다. */
-export function collapseAll(tree: Tree): Tree {
-    const nodes: Record<string, Node> = {};
-    for (const [id, n] of Object.entries(tree.nodes)) {
-        const collapsible = id !== tree.root && id !== tree.trash && n.children.length > 0;
-        nodes[id] = collapsible && !n.collapsed ? { ...n, collapsed: true } : n;
-    }
-    return normalize({ ...tree, nodes });
-}
-
 // ─────────────────────────── flatten ───────────────────────────
 
 export interface FlatRow {
@@ -317,7 +278,7 @@ export interface FlatRow {
 }
 
 /**
- * 보이는 줄을 순서대로 — rootId 의 자손만(rootId 줄 자체는 안 낸다 · 휴지통은 루트 밖이라 안 나온다).
+ * 보이는 줄을 순서대로 — fromId 의 자손만(fromId 줄 자체는 안 낸다 · 휴지통은 루트 밖이라 안 나온다).
  *   접힌 컨테이너 밑은 안 펼친다. 탐색기는 이 배열만 그린다(설계 「갈아끼울 데」: 투영은 이 함수 하나만 바꾸는 것).
  *   isContainer: 타입이 컨테이너(폴더 역할)인가 — 등록 표(model/types.ts)가 답을 준다. 없으면 자식 유무로 본다.
  *
@@ -328,7 +289,7 @@ export interface FlatRow {
  */
 export function flatten(
     tree: Tree,
-    rootId: string,
+    fromId: string,
     isContainer?: (type: string) => boolean,
     opts?: { expandAll?: boolean; keep?: (id: string) => boolean },
 ): FlatRow[] {
@@ -347,19 +308,19 @@ export function flatten(
             if (expand && inKeep) walk(cid, depth + 1);
         }
     };
-    walk(rootId, 0);
+    walk(fromId, 0);
     return out;
 }
 
 /**
- * 검색이 남길 id 모음 — pred 가 참인 노드 + 그 모든 조상(rootId 제외). flatten 의 keep 에 바로 먹인다.
+ * 검색이 남길 id 모음 — pred 가 참인 노드 + 그 모든 조상(fromId 제외). flatten 의 keep 에 바로 먹인다.
  *   🔴 조상을 함께 담는 게 핵심이다 — 안 그러면 「맞는 줄」만 뜨고 길(부모 폴더)이 사라진다.
  */
-export function filterIds(tree: Tree, rootId: string, pred: (n: Node) => boolean): Set<string> {
+export function filterIds(tree: Tree, fromId: string, pred: (n: Node) => boolean): Set<string> {
     const keep = new Set<string>();
     const addAncestors = (id: string): void => {
         let cur = parentOf(tree, id);
-        while (cur && cur !== rootId) { keep.add(cur); cur = parentOf(tree, cur); }
+        while (cur && cur !== fromId) { keep.add(cur); cur = parentOf(tree, cur); }
     };
     const walk = (id: string): void => {
         const n = tree.nodes[id];
@@ -371,7 +332,7 @@ export function filterIds(tree: Tree, rootId: string, pred: (n: Node) => boolean
             walk(cid);
         }
     };
-    walk(rootId);
+    walk(fromId);
     return keep;
 }
 

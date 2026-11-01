@@ -14,7 +14,7 @@ import type { Node } from './tree';
 
 /**
  * 유도 트리(derive)가 돌려주는 가짜 자식 — 🔴 Tree.nodes 에 안 들어간다(저장 안 됨).
- *   id 는 뷰가 `<부모id>/<key>` 꼴로 짓는다 — `/` 가 「가상」 표식이라 move·duplicate·remove 가 거부한다.
+ *   id 는 뷰가 `<부모id>/<key>` 꼴로 짓는다 — `/` 가 「가상」 표식이라 move·remove 가 거부한다.
  */
 export interface VirtualNode {
     key: string;                 // 부모 안에서 안정한 키(= id 꼬리)
