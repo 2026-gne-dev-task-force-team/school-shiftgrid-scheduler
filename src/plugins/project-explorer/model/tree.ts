@@ -122,6 +122,28 @@ export function isDescendant(tree: Tree, id: string, anc: string): boolean {
     return false;
 }
 
+/**
+ * 「새 폴더/노드」가 생길 부모 — 🔴 늘 어떤 폴더의 하위다(쥔님 2026-11-01 21:47: *"새 폴더 생성하면 무조건 어떤 폴더의 하위로 생겨야해"*).
+ *   컨테이너를 골랐으면 그 안 · 파일을 골랐으면 그 부모 · 아무것도 안 골랐으면(또는 가상·휴지통) 루트 안.
+ *   부모가 애매해 안 생기는 경우가 없다 — 그래서 store·우클릭이 같은 이 함수를 쓴다(두 곳에서 낡지 않게).
+ *   isContainer: 타입이 컨테이너(폴더 역할)인가 — 등록 표를 모델이 모르니 바깥(store)이 주입한다.
+ */
+export function newFolderParent(
+    tree: Tree,
+    selectedId: string | null,
+    isContainer: (type: string) => boolean,
+): string {
+    const inTrashZone = (id: string): boolean => id === tree.trash || isDescendant(tree, id, tree.trash);
+    const sel = selectedId;
+    // 유도(가상 `<부모>/<key>`) id 는 실부모가 없고, 휴지통 안은 새 폴더 자리가 아니다 → 루트
+    if (sel && !sel.includes('/') && tree.nodes[sel] && !inTrashZone(sel)) {
+        if (isContainer(tree.nodes[sel].type)) return sel;       // 컨테이너면 그 안(루트도 포함 — 루트도 폴더다)
+        const p = parentOf(tree, sel);                           // 파일이면 그 부모
+        if (p && !inTrashZone(p)) return p;
+    }
+    return tree.root;
+}
+
 // ─────────────────────────── 연산 (전부 순수 · 끝에 normalize) ───────────────────────────
 
 /** 새 노드 — parentId 아래 index 자리(기본 끝)에 꽂는다. id 는 바깥(store)이 uid() 로 미리 만들어 넘긴다(순수 유지). */

@@ -7,7 +7,7 @@ import {
     type Tree, type Node,
     emptyTree, normalize, createNode, rename, move, remove, toggleCollapse, setData,
     restore, purge, purgeAll, countUnder,
-    parentOf, flatten, filterIds,
+    parentOf, flatten, filterIds, newFolderParent,
     emptyHistory, record, undo, redo,
 } from './tree';
 
@@ -367,5 +367,50 @@ describe('유도(가상) id(`/`) 는 저장 연산이 거부한다 (N4)', () => 
         // 실노드 'a' 를 가상 부모(a/d1) 밑으로 — 부모가 실물이 아니라 거부(a 는 그대로 루트 밑)
         const moved = move(t, 'a', 'a/d1');
         expect(parentOf(moved, 'a')).toBe('root');
+    });
+});
+
+describe('newFolderParent — 새 폴더는 늘 어떤 폴더 하위로', () => {
+    // 폴더만 컨테이너, file 은 아니다(등록 표 대신 테스트가 주입하는 판정)
+    const isC = (type: string) => type === 'folder';
+    // f1(폴더) ▸ file1(파일) · f2(폴더) — file1 만 f1 의 자식, 나머지는 루트 직속
+    const base = () => make({
+        f1: { type: 'folder', children: ['file1'] },
+        file1: { type: 'file' },
+        f2: { type: 'folder' },
+    });
+
+    it('컨테이너를 고르면 그 안', () => {
+        expect(newFolderParent(base(), 'f1', isC)).toBe('f1');
+    });
+
+    it('파일을 고르면 그 부모', () => {
+        expect(newFolderParent(base(), 'file1', isC)).toBe('f1');
+    });
+
+    it('아무것도 안 골랐으면 루트', () => {
+        expect(newFolderParent(base(), null, isC)).toBe('root');
+    });
+
+    it('루트를 고르면 루트 안(루트도 컨테이너다)', () => {
+        expect(newFolderParent(base(), 'root', isC)).toBe('root');
+    });
+
+    it('휴지통 안 노드를 고르면 루트(새 폴더는 휴지통에 안 생긴다)', () => {
+        const t = remove(base(), 'f2');          // f2 를 휴지통으로
+        expect(newFolderParent(t, 'f2', isC)).toBe('root');
+    });
+
+    it('휴지통 자체를 고르면 루트', () => {
+        const t = base();
+        expect(newFolderParent(t, t.trash, isC)).toBe('root');
+    });
+
+    it('가상(유도) id 를 고르면 루트(실부모가 없다)', () => {
+        expect(newFolderParent(base(), 'f1/v', isC)).toBe('root');
+    });
+
+    it('없는 id 를 고르면 루트', () => {
+        expect(newFolderParent(base(), 'nope', isC)).toBe('root');
     });
 });

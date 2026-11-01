@@ -10,7 +10,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, purge, purgeAll, toggleCollapse, parentOf,
-    isDescendant, setData as setDataTree,
+    isDescendant, setData as setDataTree, newFolderParent,
 } from './model/tree';
 import { isContainerType, getType, acceptsChild, openType } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
@@ -149,11 +149,9 @@ export function commitRename(name: string): void {
 
 // ─────────────────────────── 구조 연산(명령이 부른다) ───────────────────────────
 
-/** 「새 폴더」를 꽂을 부모 — 고른 노드가 컨테이너면 그 안, 아니면 루트. */
+/** 「새 폴더」를 꽂을 부모 — 컨테이너면 그 안, 파일이면 그 부모, 미선택이면 루트(model/tree.newFolderParent 한 규칙). */
 function targetParent(): string {
-    const sel = state.selectedId;
-    if (sel && state.tree.nodes[sel] && isContainerType(state.tree.nodes[sel].type)) return sel;
-    return state.tree.root;
+    return newFolderParent(state.tree, state.selectedId, isContainerType);
 }
 
 /**
@@ -177,9 +175,11 @@ export function newFolder(parentId?: string): void {
     createUnder('folder', parentId);
 }
 
-/** 고른 노드 이름 바꾸기 시작(F2·메뉴). */
+/** 고른 노드 이름 바꾸기 시작(F2·메뉴). 🔴 루트·휴지통은 이름을 못 바꾼다(id 비교 — folder 타입엔 can 이 없다). */
 export function renameSelected(): void {
-    if (state.selectedId) startRename(state.selectedId);
+    const id = state.selectedId;
+    if (!id || id === state.tree.root || id === state.tree.trash) return;
+    startRename(id);
 }
 
 /** 고른 노드 삭제 → 휴지통(메뉴·Delete). 지운 뒤엔 선택을 부모로 옮긴다. */
