@@ -4,7 +4,7 @@
  * 🔴 ⛔ 이게 「주인 없는 등록」을 막는 장치다 — 등록은 전부 이 객체를 거쳐 주인 꼬리표가 붙는다.
  *    바깥(앱)도 같은 길을 쓴다(주인 'app'). registerView 직접 호출은 수출에서 빠졌다(구조 검사 ⑥).
  *
- * ⭐ viewId 접두사 강제 — 등록 id 가 `${pluginId}.` 로 시작 안 하면 붙인다(demo → demo.sheet).
+ * ⭐ viewId 접두사 강제 — 등록 id 가 `${pluginId}.` 로 시작 안 하면 붙인다(scheduler → scheduler.week).
  *    🔑 그 덕에 저장된 leaf 의 viewId 만 보고 주인을 안다(꺼진 플러그인의 탭이 자리표시가 되는 데 묘비가 필요 없다).
  */
 import {

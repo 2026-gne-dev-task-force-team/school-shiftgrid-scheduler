@@ -158,11 +158,12 @@ describe('setSlice — 자기 칸만 바꾼다', () => {
 describe('왕복 — serialize → parse 하면 모든 칸이 그대로', () => {
     it('옛 파일을 열어 저장해도 legacy 바이트 수가 안 줄어든다(무결성)', () => {
         const { doc } = migrateToDoc(V1_SAMPLE);
-        const filled = setSlice(doc, 'demo', { text: '메모 한 줄' });
+        // 임의의 플러그인 칸(키는 그냥 문자열 — 어느 플러그인이 꽂혀 있든 무관)
+        const filled = setSlice(doc, 'memo', { text: '메모 한 줄' });
         const text = serializeDoc(filled);
         const { doc: reopened } = parseDocFile(text);
         expect(reopened.legacy).toEqual(V1_SAMPLE);                 // 🔴 통째 보존
-        expect(reopened.plugins.demo).toEqual({ text: '메모 한 줄' }); // 🔴 플러그인 몫 보존
+        expect(reopened.plugins.memo).toEqual({ text: '메모 한 줄' }); // 🔴 플러그인 몫 보존
         expect(countItems(reopened.legacy)).toBe(countItems(V1_SAMPLE));
     });
     it('normalizeV6 는 모르는 플러그인 칸을 안 지운다', () => {

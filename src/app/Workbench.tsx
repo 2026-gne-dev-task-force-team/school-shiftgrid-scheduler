@@ -4,7 +4,7 @@
  *
  * ⭐ 가운데·왼쪽·오른쪽이 전부 같은 패널 트리 모델(Workspace)이 쥔다 — 탭·스플릿·비율이 한 자료구조에(W3).
  *    창틀은 viewId 가 무엇인지 모른다. 무엇을 그릴지는 플러그인이 host.views.register 로 꽂고,
- *    앱은 appHost 로만 읽는다(registerView 직접 호출 0). 뷰 id 엔 플러그인 접두사가 붙어 있다(demo.sheet 등).
+ *    앱은 appHost 로만 읽는다(registerView 직접 호출 0). 뷰 id 엔 플러그인 접두사가 붙어 있다(scheduler.week 등).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -32,11 +32,10 @@ const BLANK_VIEW_ID = 'app.blank';
 import { migrateViewIds } from './migrate';
 import { useDoc } from './document';
 
-/** 첫 실행(저장값 없음)에만 까는 기본 배치 — 사이드바에 데모 뷰 둘을 기본으로 */
+/** 첫 실행(저장값 없음)에만 까는 기본 배치 — 가운데에 스케줄 뷰 하나를 기본으로 */
 function firstRunWorkspace(): Workspace {
     let ws = loadWorkspace();                                   // 빈 배치
-    ws = openLeaf(ws, leaf('demo.outline', '개요', { id: 'outline' }), 'left');
-    ws = openLeaf(ws, leaf('demo.props', '속성', { id: 'props' }), 'right');
+    ws = openLeaf(ws, leaf('scheduler.week', '스케줄', { id: 'scheduler.week' }), 'center');
     return ws;
 }
 
@@ -45,7 +44,7 @@ export function Workbench() {
     const panels = usePanels(narrow);
     useTheme();    // 마운트 때 저장된 테마를 적용한다(반환값은 설정 화면이 따로 쥔다)
 
-    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다(옛 맨 id 는 migrateViewIds 로 demo.* 로 옮긴다).
+    // 패널 트리 — 기기별로 보관된 배치를 읽어 온다(옛 설정 id 는 migrateViewIds 로 settings.main 으로 옮긴다).
     //             저장값이 없으면 기본 배치를 깐다.
     const [ws, setWs] = useState<Workspace>(() => (hasWorkspace() ? migrateViewIds(loadWorkspace()) : firstRunWorkspace()));
     // 좁은 화면에서 지금 보는 leaf(넓은 화면에선 각 묶음의 activeId 를 쓴다)
@@ -80,7 +79,7 @@ export function Workbench() {
     }, [focus, ws]);
 
     // 🔴 작업대 다리 — 플러그인의 host.workspace.open/close 가 이리로 들어온다(host 는 React 밖에 산다).
-    //    P0 에선 아무도 안 부른다(리본은 Workbench 핸들러로 간다) — 자리를 깔아 둔다(P4 스케줄러 피크가 첫 손님).
+    //    스케줄러 카드 상세가 이 다리로 가운데 탭을 연다(singleton).
     useEffect(() => {
         setWorkspaceBridge({
             open: (viewId: string, o?: WorkspaceOpenOptions): string | null => {
@@ -151,7 +150,7 @@ export function Workbench() {
             setFocus(lf.id);
         },
         onAddGlobal: addTab,
-        // 🔴 + 가 여는 것의 이름 — 플러그인이 newTab 으로 준다(데모 '새 표'). 없으면 뜻 없는 '새 탭'
+        // 🔴 + 가 여는 것의 이름 — 플러그인이 newTab 으로 준다(없으면 뜻 없는 '새 탭')
         addLabel: newTab?.label ?? '새 탭',
         // 🔴 「모든 탭 메뉴」 기여 — 플러그인이 host.menu 로 꽂은 항목을 이 leaf 로 푼다
         tabMenu: (lf: Leaf) => listTabMenu({ id: lf.id, viewId: lf.viewId, title: lf.title, params: lf.params }),
@@ -179,11 +178,10 @@ export function Workbench() {
         onReorderTab: (id, delta) => { setWs((w) => moveTabWithin(w, id, delta)); setFocus(id); },
     }), [makeSheet, addTab, newTab]);
 
-    // 리본 아이콘 → 그 뷰 열기. 표는 매번 새 표, 나머지는 있으면 그 탭으로(singleton 은 id 고정)
+    // 리본 아이콘 → 그 뷰 열기. 있으면 그 탭으로(singleton 은 id 고정), 없으면 defaultArea 에 새로
     const openView = useCallback((viewId: string) => {
         const def = appHost.views.get(viewId);
         if (!def) return;
-        if (viewId === 'demo.sheet') { addTab(); return; }
         setWs((w) => {
             const existing = findLeafByView(w, viewId);
             if (existing) { setFocus(existing.id); return activateLeaf(w, existing.id); }
@@ -192,7 +190,7 @@ export function Workbench() {
             setFocus(lf.id);
             return openLeaf(w, lf, area);
         });
-    }, [addTab]);
+    }, []);
 
     // 🔴 사이드바 최소/최대 폭 — 설정 기본값에 그 안 뷰의 minWidth 를 얹는다(무한정 못 줄인다, W4)
     const pane = usePaneSettings();
@@ -246,14 +244,13 @@ export function Workbench() {
     ];
 
     // 🔴 타이틀바 오른쪽 액션 슬롯 — 앱이 꽂는다(배열). ⛔ 설정 ⚙ 는 여기 안 둔다(리본 아래에 그대로).
-    //    ⛔ 데모 「+ 새 표」는 뺐다(쥔님 2026-11-01 ② *"필요없는 아이 버튼"* — 표는 리본·탭 줄 + 로 연다).
     //    슬롯 자체는 살아 있다 — 쌓을 액션이 생기면 이 배열에 줄을 더한다. 지금은 비운다.
     const titleActions: TitleAction[] = [];
     const showTitleBar = pane.settings.showTitleBar;
 
     // 🔴 상태바 — 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김(statusBarNarrow 로 켠다, 쥔님).
     const showStatus = narrow ? pane.settings.statusBarNarrow : pane.settings.showStatusBar;
-    // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(데모의 「열린 탭 N」·「저장됨」). 스토어에서 읽어 그린다.
+    // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(스케줄러의 「카드 N」). 스토어에서 읽어 그린다.
     //    render() 를 여기서 불러 노드로 넘긴다 — 작업대 이벤트로 스토어가 다시 그려지면 이 render 가 새 값을 준다.
     const statusEntries = useStatusItems();
     // 🔴 ⭐ 문서 이름 + 더티 표시(●) — 창틀은 문서를 모른다(app 이 넣는다). 더티면 ● 가 붙는다.

@@ -74,11 +74,11 @@ describe('왕복 — 플러그인 칸 + legacy 가 열고 저장해도 그대로
     it('옛 파일을 열어 메모를 쓰고 저장·재열기 하면 둘 다 남는다', () => {
         const v1 = JSON.stringify({ meta: { name: '옛학교' }, tracks: [{ id: 't1' }], assignments: [{ a: 1 }, { a: 2 }] });
         loadDocText(v1, 'old.shiftgrid.json');
-        const h = makeHost('demo');
+        const h = makeHost('memo');   // 임의의 플러그인 id — doc 칸 격리만 본다
         h.doc.set({ text: '메모' });
         const text = serializeDoc(getDocState().doc);
         loadDocText(text, '다시.shiftgrid.json');
-        expect(getDocState().doc.plugins.demo).toEqual({ text: '메모' });   // 플러그인 몫
+        expect(getDocState().doc.plugins.memo).toEqual({ text: '메모' });   // 플러그인 몫
         expect((getDocState().doc.legacy as { tracks: unknown[] }).tracks).toHaveLength(1);
         expect((getDocState().doc.legacy as { assignments: unknown[] }).assignments).toHaveLength(2);  // legacy 통째
     });

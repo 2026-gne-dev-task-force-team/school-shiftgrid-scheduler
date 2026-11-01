@@ -9,13 +9,12 @@
 import type { Workspace, Node, Leaf } from '../pane-ui-system';
 
 /** 맨 id → 플러그인 id. 새 플러그인이 옛 id 를 물려받으면 여기 한 줄.
- *  📌 설정은 코어 settings 플러그인으로 이사했다(demo.settings 저장분도 settings.main 으로 옮긴다). */
+ *  📌 설정은 코어 settings 플러그인으로 이사했다(demo.settings 저장분도 settings.main 으로 옮긴다).
+ *  ⛔ 데모 뷰(sheet·outline·props)는 플러그인째 사라졌다(쥔님 판정 11-01) — 매핑하지 않는다.
+ *     옛 저장분(바 id 든 demo.* 든)은 그대로 두면 ViewPlaceholder 가 「제목만 옅게」로 받는다(흰 화면 아님). */
 const LEGACY_VIEW_IDS: Record<string, string> = {
-    sheet: 'demo.sheet',
     settings: 'settings.main',
     'demo.settings': 'settings.main',
-    outline: 'demo.outline',
-    props: 'demo.props',
 };
 
 function mapLeaf(l: Leaf): Leaf {

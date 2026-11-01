@@ -159,7 +159,7 @@ export function setNewTab(owner: string, viewId: string, label: string): Disposa
 export function getNewTab(): NewTabContribution | null { return newTab; }
 
 // ── ③ 상태바 스토어 ──
-interface StatusEntry extends StatusContribution { owner: string; seq: number }
+export interface StatusEntry extends StatusContribution { owner: string; seq: number }
 let statusSeq = 0;
 const statusItems = new Map<string, StatusEntry>();   // key: owner \0 id
 let statusCache: StatusEntry[] | null = null;
@@ -182,6 +182,10 @@ function subscribeStatus(l: () => void): () => void { statusListeners.add(l); re
 /** React 구독 — 상태바 항목(또는 작업대 변화로 인한 다시 그림). */
 export function useStatusItems(): StatusEntry[] {
     return useSyncExternalStore(subscribeStatus, statusSnapshot, statusSnapshot);
+}
+/** 비(非)React 조회 — 지금 등록된 상태바 항목(등록 순). listSettings·listCommands 와 대칭. */
+export function listStatusItems(): StatusEntry[] {
+    return statusSnapshot();
 }
 
 // ── ④ 작업대 다리 ──

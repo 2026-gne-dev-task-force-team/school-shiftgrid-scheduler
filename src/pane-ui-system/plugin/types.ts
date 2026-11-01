@@ -25,7 +25,7 @@ export interface Disposable {
 
 /** 신분증 — contributes 없음. id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). */
 export interface PluginManifest {
-    id: string;              // 'demo' · 'scheduler' — 영문 소문자·하이픈
+    id: string;              // 'scheduler' · 'settings' — 영문 소문자·하이픈
     name: string;            // 사람에게 보이는 이름
     version: string;         // '0.1.0'
     minHostVersion: string;  // 모자라면 활성 안 함(P2)

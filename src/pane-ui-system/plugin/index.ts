@@ -24,9 +24,9 @@ export {
 export { ViewPlaceholder } from './Placeholder';
 export {
     setWorkspaceBridge, setDocBridge, getDocBridge, disposeOwner, listRibbonActions,
-    useContribVersion, useStatusItems,
+    useContribVersion, useStatusItems, listStatusItems,
     listSettings, listCommands, getCommand, listTabMenu, getNewTab, fireWorkspace,
-    type SettingsSectionEntry, type SettingsItemEntry, type NewTabContribution,
+    type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
     type WorkspaceBridge, type DocBridge,
 } from './store';
 export { resolveRibbonEntries, ribbonBase, type RibbonEntry } from './ribbon';
