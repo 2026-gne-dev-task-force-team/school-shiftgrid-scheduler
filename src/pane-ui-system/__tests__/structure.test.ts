@@ -374,3 +374,26 @@ describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로�
         });
     }
 });
+
+/*
+ * ⑰ 선언형 전환 마무리(D5③·⑤) — 플러그인(src/plugins/**)은 「매니페스트 밖 등록」을 하지 않는다.
+ *   옛 5종 host.views.register·commands.add·ribbon.add·settings.add(Section|Item)·statusBar.add 는 지웠고,
+ *   호스트에 뷰·명령·리본·설정·상태바를 꽂는 길은 manifest.contributes 와 host.declare 둘뿐이다(명세 「플러그인 선언형 전환」).
+ *   ⚠️ ( 를 붙여 실제 호출만 본다 — 「host.settings.add* · …」 같은 주석 문구(괄호 없음)·host.views.get·host.commands.run 은 안 걸린다.
+ *   (검사 자신은 __tests__ 라 walk 가 건너뛴다 — 금지 문자열을 품어도 제 발을 안 밟는다.)
+ */
+describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contributes·host.declare 로만', () => {
+    const BANNED = /host\.(?:views\.register|commands\.add|ribbon\.add|settings\.add(?:Section|Item)|statusBar\.add)\s*\(/;
+    const files = walk(join(ROOT, 'plugins'));
+
+    it('스캔할 플러그인 파일이 실제로 있다', () => {
+        expect(files.length).toBeGreaterThan(0);
+    });
+
+    for (const f of files) {
+        it(`옛 등록 호출 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => BANNED.test(ln));
+            expect(hit, `${basename(f)} 가 ${hit + 1}번째 줄에서 옛 등록 5종을 직접 부른다 — contributes 또는 host.declare 로`).toBe(-1);
+        });
+    }
+});
