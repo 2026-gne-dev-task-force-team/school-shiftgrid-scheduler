@@ -15,7 +15,7 @@
  *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「(보이는 높이 − 요일 머리) ÷ 6」 — 한 화면에 늘 6주.
  */
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
     Icon, IconButton, Surface,
@@ -23,8 +23,12 @@ import {
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
-import { buildDayIndex, hhmm, type CalEvent } from '../events';
+import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
+import { createEvent } from '../nodes';
 import { paletteAt } from '../palette';
+import { EventCard } from './EventCard';
+
+const DAY_MS = 86_400_000;
 
 // 🔑 주 시작 요일은 일요일 고정 — 설정으로 뺄 자리다. 지금은 weekStart 인자만 열어 두고 0 으로만 부른다.
 const WEEK_START = 0;
@@ -122,8 +126,29 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
     // 🔴 일정은 노드에서 온다(useEvents) — subscribe 변경 때만 색인을 다시 짓는다(스크롤엔 안 바뀐다)
-    const { events } = useCalendarData();
+    const { events, storeList } = useCalendarData();
     const dayIndex = useMemo(() => buildDayIndex(events), [events]);
+    const eventsById = useMemo(() => { const m = new Map<string, CalEvent>(); for (const e of events) m.set(e.id, e); return m; }, [events]);
+
+    // 인라인 카드 — 열린 일정 id. 그 일정이 휴지통에 가면 eventsById 에서 빠져 카드가 저절로 닫힌다.
+    const [cardId, setCardId] = useState<string | null>(null);
+    const card = cardId ? eventsById.get(cardId) ?? null : null;
+
+    // 날 칸 더블클릭 → 종일 일정 생성 + 카드(제목 포커스) · 일정 클릭 → 카드. 칸 바깥 위임(data-day·data-event-id).
+    const onCellClick = (e: ReactMouseEvent) => {
+        const chip = (e.target as HTMLElement).closest('[data-event-id]');
+        if (chip) setCardId(chip.getAttribute('data-event-id'));
+    };
+    const onCellDouble = (e: ReactMouseEvent) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-event-id]')) return;              // 일정 위 더블클릭은 생성이 아니다
+        const iso = t.closest('[data-day]')?.getAttribute('data-day');
+        if (!iso) return;
+        const start = parseLocal(iso);
+        if (Number.isNaN(start.getTime())) return;
+        const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
+        if (id) setCardId(id);
+    };
     // 🔴 첫 배치에서 scrollTop 을 맞출 날 — 탭(anchor)이 내려준 value. 마운트 때 한 번만 읽는다(이후 스크롤→날짜만 흐른다).
     const initValue = useRef(value);
     // onChange 는 매 렌더 바뀔 수 있으니 ref 로 — 효과가 onChange 를 deps 에 넣어 다시 돌지 않게
@@ -349,6 +374,8 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
             <div
                 ref={scrollerRef}
                 onScroll={onScroll}
+                onClick={onCellClick}
+                onDoubleClick={onCellDouble}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
             >
                 <div
@@ -368,6 +395,8 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
                 ))}
                 <div style={{ height: Math.max(0, total - vis.end) * rowH }} />
             </div>
+
+            {card && <EventCard event={card} stores={storeList} onClose={() => setCardId(null)} />}
         </div>
     );
 }

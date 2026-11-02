@@ -99,3 +99,17 @@ export function hhmm(ms: number): string {
     const m = d.getMinutes();
     return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
 }
+
+const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+
+/** Date → 'YYYY-MM-DDTHH:mm'(지역 시각 · 분 단위) — 저장·datetime-local 입력 공통. */
+export function isoMinuteOf(d: Date): string {
+    return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
+
+/** 'YYYY-MM-DDTHH:mm' 또는 'YYYY-MM-DD' → 지역 Date(구성요소로 — new Date(문자열)의 UTC 함정 피함). */
+export function parseLocal(s: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(s);
+    if (!m) return new Date(NaN);
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0));
+}

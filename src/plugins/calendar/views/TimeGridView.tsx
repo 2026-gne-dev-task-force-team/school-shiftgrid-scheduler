@@ -11,11 +11,15 @@
  *
  *   trailing: 머리줄 오른쪽 끝에 그대로 그린다 — 메인이 전환 단추를 여기 꽂는다.
  */
-import { memo, useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { IconButton, isoOf, startOfWeek, monthLabel } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
+import { useCalendarData } from '../useEvents';
+import { createEvent } from '../nodes';
+import { isoMinuteOf, type CalEvent } from '../events';
+import { EventCard } from './EventCard';
 
 const WEEK_START = 0;                 // 주 시작 요일 일요일 고정(월 보기와 같다 — 설정으로 뺄 자리)
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -84,7 +88,7 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     const d = dayAt(offset);
     const isToday = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate()) === todayIso;
     return (
-        <div className={`absolute top-0 ${boundaryBorderClass(boundary)}`} style={{ left, width, height: HOURS * HOUR_H }}>
+        <div data-day-offset={offset} className={`absolute top-0 ${boundaryBorderClass(boundary)}`} style={{ left, width, height: HOURS * HOUR_H }}>
             {HOUR_LINES.map((h) => (
                 <div key={h} className="absolute left-0 right-0 border-t border-line" style={{ top: h * HOUR_H }} />
             ))}
@@ -129,8 +133,28 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
     const dense = days === DENSE_DAYS;
     const hdrH = dense ? HDR_H + MONTH_BAND : HDR_H;
 
+    // 일정 — 인라인 카드용(그리기는 C3). 시간 칸 더블클릭 → 그 시각부터 1시간 생성 + 카드.
+    const { events, storeList } = useCalendarData();
+    const eventsById = useMemo(() => { const m = new Map<string, CalEvent>(); for (const e of events) m.set(e.id, e); return m; }, [events]);
+    const [cardId, setCardId] = useState<string | null>(null);
+    const card = cardId ? eventsById.get(cardId) ?? null : null;
+
+    const onGridDouble = (e: ReactMouseEvent) => {
+        const colEl = (e.target as HTMLElement).closest('[data-day-offset]') as HTMLElement | null;
+        if (!colEl) return;
+        const offset = Number(colEl.getAttribute('data-day-offset'));
+        const rect = colEl.getBoundingClientRect();
+        const raw = Math.floor(((e.clientY - rect.top) / HOUR_H) * 60);
+        const min = Math.max(0, Math.min(23 * 60, Math.round(raw / 30) * 30));   // 30분 눈금 · 끝 1시간 여유
+        const base = dayAt(offset);
+        const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
+        const end = new Date(start.getTime() + 3_600_000);
+        const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
+        if (id) setCardId(id);
+    };
+
     return (
-        <div className="h-full flex flex-col bg-bg select-text">
+        <div className="relative h-full flex flex-col bg-bg select-text">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
                 <div className="min-w-0">
@@ -173,8 +197,8 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
                             />
                         ))}
                     </div>
-                    {/* 본문 — 시간 눈금(sticky left) + 날 열들 */}
-                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }}>
+                    {/* 본문 — 시간 눈금(sticky left) + 날 열들. 시간 칸 더블클릭 → 1시간 일정(data-day-offset 위임) */}
+                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onDoubleClick={onGridDouble}>
                         <div className="sticky left-0 z-10 bg-bg border-r border-line" style={{ width: GUTTER, height: HOURS * HOUR_H }}>
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span
@@ -195,6 +219,8 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
                     </div>
                 </div>
             </div>
+
+            {card && <EventCard event={card} stores={storeList} onClose={() => setCardId(null)} />}
         </div>
     );
 }
