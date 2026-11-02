@@ -110,6 +110,33 @@ describe('new-<type> 명령 자동 등록 — create 가 있는 타입마다', (
     });
 });
 
+describe('새 폴더 부모 경로 — 헤더(선택 기준)는 형제로, 우클릭(이 노드에서)은 그 안으로', () => {
+    it('헤더 경로(via selection 기본) — 새 폴더 두 번 연속이면 둘 다 루트 직속(두 번째가 첫째 안에 안 들어간다)', () => {
+        registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
+        const root = getState().tree.root;
+
+        newNode('folder');                       // 미선택 → 루트
+        const id1 = getState().selectedId!;
+        expect(parentOf(getState().tree, id1)).toBe(root);
+
+        // id1 이 고른 채로 또 — 형제(루트)로, id1 안에 안 생긴다(쥔님 2026-11-02 *"안에 막 새폴더로 들어가지 않았던거 같은데"*)
+        newNode('folder');
+        const id2 = getState().selectedId!;
+        expect(id2).not.toBe(id1);
+        expect(parentOf(getState().tree, id2)).toBe(root);
+        expect(getState().tree.nodes[id1].children).toEqual([]);
+    });
+
+    it('우클릭 경로(via context · targetId=폴더) — 그 폴더 안에 생긴다', () => {
+        registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
+        newNode('folder');
+        const parent = getState().selectedId!;
+        newNode('folder', { via: 'context', targetId: parent });
+        const child = getState().selectedId!;
+        expect(parentOf(getState().tree, child)).toBe(parent);
+    });
+});
+
 describe('newNode — accepts 안 받는 부모를 피해 루트에', () => {
     it('③ 고른 노드가 그 타입을 안 받으면(달력 저장소 안에 또 달력 저장소) 루트에 만든다', () => {
         registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });

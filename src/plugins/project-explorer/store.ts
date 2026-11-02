@@ -179,11 +179,6 @@ export function commitRename(name: string): void {
 
 // ─────────────────────────── 구조 연산(명령이 부른다) ───────────────────────────
 
-/** 「새 폴더」를 꽂을 부모 — 컨테이너면 그 안, 파일이면 그 부모, 미선택이면 루트(model/tree.newFolderParent 한 규칙). */
-function targetParent(): string {
-    return newFolderParent(state.tree, state.selectedId, isContainerType);
-}
-
 /** 이 부모가 이 타입을 자식으로 받나 — 실노드 + 등록 표(acceptsChild) 한 줄. */
 function parentAccepts(parentId: string, type: string): boolean {
     const p = state.tree.nodes[parentId];
@@ -191,14 +186,19 @@ function parentAccepts(parentId: string, type: string): boolean {
 }
 
 /**
- * 타입 하나를 「새로 만들기」 — 고른 노드(컨테이너면 그 안, 아니면 루트) 밑에. 만들자마자 고르고 이름바꾸기(VS Code 식).
- *   🔴 타입 이름 비교가 없다 — create.init 과 label 은 등록 표에서 온다. 「새 폴더」도 이 길을 탄다(folder 도 표의 한 줄).
- *   🔴 부모는 newFolderParent 규칙(targetParent) 그대로지만, 마지막에 그 부모가 accepts 로 이 타입을 받는지 한 번 더 묻는다:
- *      안 받으면 루트에, 루트도 안 받으면 만들지 않고 상태바 한 줄(메뉴만 보고 뚫는 것을 여기서 막는다 — move 의 canAccept 와 같은 결).
+ * 타입 하나를 「새로 만들기」 — 만들자마자 고르고 이름바꾸기(VS Code 식). 🔴 타입 이름 비교가 없다 —
+ *   create.init 과 label 은 등록 표에서 온다. 「새 폴더」도 이 길을 탄다(folder 도 표의 한 줄).
+ *   🔴 부모는 newFolderParent(via) 가 정한다 — 두 경로(쥔님 2026-11-02):
+ *      - via 'selection'(기본 · 헤더 단추·팔레트·단축키): 고른 노드의 **형제로**(⛔ 고른 폴더 안으로 안 들어간다).
+ *      - via 'context'(우클릭): targetId(우클릭한 노드)가 컨테이너면 그 안, 파일이면 그 부모.
+ *   🔴 마지막에 그 부모가 accepts 로 이 타입을 받는지 한 번 더 묻는다: 안 받으면 루트에, 루트도 안 받으면 만들지 않고
+ *      상태바 한 줄(메뉴만 보고 뚫는 것을 여기서 막는다 — move 의 canAccept 와 같은 결).
  */
-export function newNode(type: string, parentId?: string): void {
+export function newNode(type: string, opts?: { via?: 'selection' | 'context'; targetId?: string }): void {
     if (state.loading) return;
-    let parent = parentId ?? targetParent();
+    const via = opts?.via ?? 'selection';
+    const basis = opts?.targetId !== undefined ? opts.targetId : state.selectedId;
+    let parent = newFolderParent(state.tree, basis, isContainerType, via);
     if (!parentAccepts(parent, type)) {
         if (parentAccepts(state.tree.root, type)) {
             parent = state.tree.root;
@@ -218,9 +218,13 @@ export function newNode(type: string, parentId?: string): void {
     );
 }
 
-/** 새 폴더 — newNode('folder') 의 설탕(헤더 단추·리본이 부른다). */
+/**
+ * 새 폴더 — newNode('folder') 의 설탕. parentId 를 주면 그 노드 안에 바로(via 'context' 로 그 노드를 target 삼는다 —
+ *   폴더면 그 안), 없으면 헤더 단추처럼 「고른 것 기준」(via 'selection').
+ */
 export function newFolder(parentId?: string): void {
-    newNode('folder', parentId);
+    if (parentId !== undefined) newNode('folder', { via: 'context', targetId: parentId });
+    else newNode('folder', { via: 'selection' });
 }
 
 /** 고른 노드 이름 바꾸기 시작(F2·메뉴). 🔴 루트·휴지통은 이름을 못 바꾼다(id 비교 — folder 타입엔 can 이 없다). */

@@ -124,19 +124,31 @@ export function isDescendant(tree: Tree, id: string, anc: string): boolean {
 
 /**
  * 「새 폴더/노드」가 생길 부모 — 🔴 늘 어떤 폴더의 하위다(쥔님 2026-11-01 21:47: *"새 폴더 생성하면 무조건 어떤 폴더의 하위로 생겨야해"*).
- *   컨테이너를 골랐으면 그 안 · 파일을 골랐으면 그 부모 · 아무것도 안 골랐으면(또는 가상·휴지통) 루트 안.
  *   부모가 애매해 안 생기는 경우가 없다 — 그래서 store·우클릭이 같은 이 함수를 쓴다(두 곳에서 낡지 않게).
  *   isContainer: 타입이 컨테이너(폴더 역할)인가 — 등록 표를 모델이 모르니 바깥(store)이 주입한다.
+ *
+ * 🔴 두 경로로 갈린다(쥔님 2026-11-02): via
+ *   - 'selection' (헤더 단추·팔레트·단축키 = 「고른 것 기준」): 고른 노드가 있으면 **그 형제로**(= 고른 노드의 부모 안).
+ *       ⛔ 고른 폴더 안으로 안 들어간다(옵시디언 헤더 단추) — 그래서 연속으로 눌러도 같은 층에 나란히 생긴다.
+ *   - 'context' (우클릭 = 「이 노드에서」): 컨테이너면 그 안 · 파일이면 그 부모(지금까지의 규칙 그대로).
+ *   둘 다 — 유도(가상 `<부모>/<key>`) id·휴지통 안·없는 id·루트 부모 없음 → 루트.
  */
 export function newFolderParent(
     tree: Tree,
-    selectedId: string | null,
+    basisId: string | null,
     isContainer: (type: string) => boolean,
+    via: 'selection' | 'context' = 'context',
 ): string {
     const inTrashZone = (id: string): boolean => id === tree.trash || isDescendant(tree, id, tree.trash);
-    const sel = selectedId;
+    const sel = basisId;
     // 유도(가상 `<부모>/<key>`) id 는 실부모가 없고, 휴지통 안은 새 폴더 자리가 아니다 → 루트
     if (sel && !sel.includes('/') && tree.nodes[sel] && !inTrashZone(sel)) {
+        if (via === 'selection') {
+            // 형제로 — 고른 노드의 부모 안(컨테이너여도 그 안으로 안 들어간다). 부모가 없으면(루트를 골랐으면) 루트.
+            const p = parentOf(tree, sel);
+            if (p && !inTrashZone(p)) return p;
+            return tree.root;
+        }
         if (isContainer(tree.nodes[sel].type)) return sel;       // 컨테이너면 그 안(루트도 포함 — 루트도 폴더다)
         const p = parentOf(tree, sel);                           // 파일이면 그 부모
         if (p && !inTrashZone(p)) return p;
@@ -271,9 +283,26 @@ export function purgeAll(tree: Tree): Tree {
     return t;
 }
 
-/** id 밑 자손 수(자신 제외) — 상태바 「노드 N · 휴지통 M」. */
-export function countUnder(tree: Tree, id: string): number {
-    return Math.max(0, subtreeIds(tree, id).length - 1);
+/**
+ * id 밑 자손 수(자신 제외) — 상태바 「노드 N · 휴지통 M」.
+ *   🔴 isRecord 를 주면 레코드성 노드(일정 등)와 그 아래를 세지 않는다(flatten 과 같은 규칙 · 쥔님 2026-11-02:
+ *      *"레코드 노드 타입은 … 그냥 그 상위 노드의 데이터로 본다"* — 탐색기가 세는 곳에선 안 보인다). 없으면 옛 동작(전부).
+ */
+export function countUnder(tree: Tree, id: string, isRecord?: (type: string) => boolean): number {
+    if (!isRecord) return Math.max(0, subtreeIds(tree, id).length - 1);
+    let n = 0;
+    const walk = (x: string): void => {
+        const node = tree.nodes[x];
+        if (!node) return;
+        for (const cid of node.children) {
+            const c = tree.nodes[cid];
+            if (!c || isRecord(c.type)) continue;   // 레코드성 — 줄도 그 아래도 안 센다
+            n += 1;
+            walk(cid);
+        }
+    };
+    walk(id);
+    return n;
 }
 
 /** 접기/펴기 토글 — 접힘은 나무에 산다(기기별 아님). */

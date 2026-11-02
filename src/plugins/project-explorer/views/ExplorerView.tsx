@@ -18,7 +18,7 @@ import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/
 import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
-import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
+import { useExplorer, select, toggle, cancelRename, commitRename, moveNode, newNode } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
@@ -146,7 +146,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
             isRecord: isRecordType,
-            keep: (() => { const k = filterIds(tree, tree.root, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
+            // 🔴 레코드성(일정 등)은 검색에도 안 걸린다(「상위의 데이터」 · 쥔님 2026-11-02) — 안 그러면 숨은 레코드가 제 부모 폴더를 「맞은 줄」로 띄운다.
+            keep: (() => { const k = filterIds(tree, tree.root, (n) => !isRecordType(n.type) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
         : buildMainRows(tree, tree.root, isRecordType);
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
@@ -278,8 +279,10 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         const baseType = selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder');
         const items: MenuEntry[] = [];
         // ContextMenu 는 하위 메뉴가 없다 → 「새 <label>」 로 평평하게(지금은 폴더 하나).
+        // 🔴 우클릭 = 「이 노드에서」(via 'context') — 명령(선택 기준) 대신 onClick 으로 직접 부른다(targetId=우클릭한 노드).
+        //    그래야 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(헤더 단추는 형제로 — 두 경로가 갈린다).
         for (const def of createCandidates(baseType)) {
-            items.push({ label: `새 ${def.label}`, icon: 'plus', commandId: `project-explorer.new-${def.type}` });
+            items.push({ label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
         }
         if (selNode && !inTrash) {
             items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !canDo(selNode.type, 'rename') });
@@ -292,7 +295,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
         }
         // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
-        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
+        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'plus', onClick: () => newNode('folder', { via: 'context', targetId: selectedId ?? undefined }) });
         return items;
     };
 

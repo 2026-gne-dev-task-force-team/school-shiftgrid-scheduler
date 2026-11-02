@@ -38,7 +38,8 @@ export function registerTypeCommands(host: PluginHost): Disposable {
         cmds.set(def.type, host.commands.add({
             id: `project-explorer.new-${def.type}`,
             title: `새 ${def.label}`, icon: 'plus',
-            run: () => newNode(def.type),
+            // 🔴 명령 경로(헤더 단추·팔레트·단축키) = 「고른 것 기준」 — 고른 노드의 형제로(⛔ 안으로 안 들어간다). 우클릭은 뷰가 via:'context' 로 직접 부른다.
+            run: () => newNode(def.type, { via: 'selection' }),
         }));
     };
     const remove = (type: string): void => { cmds.get(type)?.dispose(); cmds.delete(type); };
