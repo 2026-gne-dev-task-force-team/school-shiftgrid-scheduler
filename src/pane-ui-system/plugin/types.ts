@@ -4,14 +4,16 @@
  * 🔴 ⛔ 여기(pane-ui-system/plugin)는 창틀의 일부지만 도메인을 모른다 — 구조 검사 ⑤가 막는다.
  *    플러그인 실물은 src/plugins/ 바깥에 산다. 이 폴더는 「규격」만 낸다.
  *
- * ⭐ 매니페스트는 신분증이지 기능 목록이 아니다 — contributes 칸을 두지 않는다(실적은 레지스트리가 안다).
+ * ⭐ 매니페스트는 「나는 이 뷰·명령·리본·설정·상태바를 낸다」를 contributes 로 적어 둔다(2026-11-02 선언형 전환).
+ *    실행에 필요한 함수·컴포넌트는 모듈이 이름 붙여 내놓고(components·commands·panes·renders), 짝은 호스트가 맞춘다.
+ *    📌 옛 설계 「매니페스트 = 신분증, contributes 없음」은 이 판으로 뒤집혔다(명세: 플러그인 선언형 전환).
  * ⭐ 「코어」는 권한이 아니다 — 받는 호스트 API 는 여느 플러그인과 같다. 다른 점은 「끌 수 없다 · 먼저 산다」 둘뿐.
  *
  * 📌 범위: commands·settings·statusBar·menu·workspace.on·screen·theme·onFirstRun·newTab.
  *    (문서 창구 doc 은 2026-11-01 걷어냈다 — 쓰는 플러그인이 없다.)
  */
 import type { ComponentType, ReactNode } from 'react';
-import type { ViewDef } from '../view-registry';
+import type { ViewDef, ViewProps } from '../view-registry';
 import type { IconName } from '../primitives/Icon';
 import type { MenuEntry } from '../primitives/ContextMenu';
 
@@ -23,7 +25,7 @@ export interface Disposable {
     dispose(): void;
 }
 
-/** 신분증 — contributes 없음. id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). */
+/** 매니페스트 — id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). contributes 로 「무엇을 내나」를 적는다. */
 export interface PluginManifest {
     id: string;              // 'scheduler' · 'settings' — 영문 소문자·하이픈
     name: string;            // 사람에게 보이는 이름
@@ -31,12 +33,27 @@ export interface PluginManifest {
     minHostVersion: string;  // 모자라면 활성 안 함(P2)
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
     description?: string;
+    /**
+     * 🔴 선언형 기여 — 「나는 이 뷰·명령·리본·설정·상태바·노드 타입을 낸다」를 데이터로 적는다.
+     *   ⛔ 순수 데이터만(함수·컴포넌트는 이름으로 가리킨다 — 모듈의 components·commands·panes·renders 키).
+     *   ⛔ 이 객체 안에서 모듈의 다른 것을 import 하지 않는다 — 나중에 매니페스트만 떼어 먼저 읽을 수 있어야 한다(지연 로딩 자리).
+     */
+    contributes?: Contributes;
 }
 
-/** 플러그인 = 객체 하나(클래스 상속 안 함). activate 는 등록만 한다 — 여기서 탭을 열지 않는다. */
-export interface PluginModule {
+/**
+ * 플러그인 = 객체 하나(클래스 상속 안 함).
+ *   ⭐ 선언형 전환(2026-11-02): 등록은 manifest.contributes 로 적고, 실행 함수·컴포넌트는 아래 이름 붙은 칸으로 내놓는다.
+ *      매니페스트가 가리키는 이름(component·pane·render·command id)을 호스트가 이 칸에서 찾아 꽂는다.
+ *   🔴 activate 는 이제 선택이다 — 등록이 아니라 「구독·동작」(workspace.on·onFirstRun 등)만 남을 때 쓴다.
+ *      activate 와 lifecycle.onActivate 둘 다 있으면 activate 먼저, 그 다음 onActivate(활성 순서는 로더가 쥔다).
+ */
+export interface PluginModule extends PluginImpl {
     manifest: PluginManifest;
-    activate: (host: PluginHost) => void | Promise<void>;
+    /** 선택 — 등록 외 동작·구독. ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가 한다). */
+    activate?: (host: PluginHost) => void | Promise<void>;
+    /** 선택 — 수명주기 훅(안드로이드 onCreate 결). onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */
+    lifecycle?: PluginLifecycle;
     deactivate?: () => void;   // 선택 — 등록물 회수는 호스트가 한다(P2)
     /**
      * 🔴 N4 — 다른 플러그인에게 내주는 공개 표면(객체 하나). host.plugins.get(id) 로 받는다.
@@ -113,6 +130,88 @@ export interface RibbonAddInput {
     icon?: IconName;
     order?: number;
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// 🔴 선언형 기여(contributes) — 매니페스트가 데이터로 적는 것. 함수·컴포넌트는 「이름」으로 가리킨다.
+//   이름(CompName 등)은 definePlugin 이 구현 객체의 keyof 로 파생시킨다 — 틀리면 tsc 가 그 자리에서 잡는다.
+//   제네릭 기본값은 string 이라, 파생 없이 쓰는 평면 PluginManifest·DeclareInput 도 그대로 쓸 수 있다.
+// ──────────────────────────────────────────────────────────────────────────
+
+/** 뷰 기여 — ViewDef 에서 Component 함수를 빼고 component(모듈 components 의 키)로 가리킨다 + newTab. */
+export interface ViewContribution<CompName extends string = string> extends Omit<ViewDef, 'Component'> {
+    /** 모듈 components 의 키 — 호스트가 이 이름으로 Component 를 찾아 꽂는다. */
+    component: CompName;
+    newTab?: { label: string };
+}
+
+/** 명령 기여 — CommandDef 에서 run 을 빼고 id 로 구현을 찾는다(모듈 commands 의 키 = 이 id). */
+export interface CommandContribution<CmdName extends string = string> extends Omit<CommandDef, 'run' | 'id'> {
+    /** 모듈 commands 의 키 = 이 명령 id — 호스트가 이 이름으로 run 을 찾아 꽂는다. */
+    id: CmdName;
+}
+
+/** 설정 기여 — 섹션·항목. 항목의 Pane 은 pane(모듈 panes 의 키)으로 가리킨다. */
+export interface SettingsContributes<PaneName extends string = string> {
+    sections?: { id: string; title: string; icon?: IconName }[];
+    items?: { section: string; id: string; title: string; icon: IconName; pane: PaneName }[];
+}
+
+/** 상태바 기여 — render 함수를 빼고 render(모듈 renders 의 키)로 가리킨다. */
+export interface StatusBarContribution<RenderName extends string = string> {
+    id: string;
+    side: 'left' | 'right';
+    render: RenderName;
+}
+
+/**
+ * 매니페스트 contributes 칸 — 여섯 종류(뷰·명령·리본·설정·상태바·노드 타입).
+ *   제네릭 넷(이름 집합)은 definePlugin 이 구현 객체의 keyof 로 채운다 — 평소엔 string(파생 안 함).
+ */
+export interface Contributes<
+    CompName extends string = string,
+    CmdName extends string = string,
+    PaneName extends string = string,
+    RenderName extends string = string,
+> {
+    views?: ViewContribution<CompName>[];
+    commands?: CommandContribution<CmdName>[];
+    ribbon?: RibbonAddInput[];
+    settings?: SettingsContributes<PaneName>;
+    statusBar?: StatusBarContribution<RenderName>[];
+    /** ⚠️ D2(project-explorer 옮기는 판)에서 채운다 — 노드 레지스트리를 탐색기가 쥐고 있어 여기선 자리만(타입 placeholder). */
+    nodeTypes?: unknown[];
+}
+
+/**
+ * 모듈이 이름 붙여 내놓는 구현 — 매니페스트 contributes 가 이름으로 가리킨다(전부 선택).
+ *   🔴 host.declare 도 이 네 칸에서 이름으로 구현을 찾는다(함수 직접 받기 금지).
+ */
+export interface PluginImpl {
+    components?: Record<string, ComponentType<ViewProps>>;
+    commands?: Record<string, (ctx?: CommandContext) => void>;
+    panes?: Record<string, ComponentType>;
+    renders?: Record<string, () => ReactNode>;
+}
+
+/** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */
+export interface PluginLifecycle {
+    onActivate?(host: PluginHost): void | Promise<void>;
+    onFirstRun?(host: PluginHost): void;
+    onDeactivate?(): void;
+}
+
+/**
+ * 🔴 동적 선언(host.declare) 입력 — contributes 의 「한 항목」과 같은 타입(판별 유니온).
+ *   ⛔ 옛 register 보다 더 받지 않는다 — 함수 직접 받기 금지, 이름으로만(그 플러그인의 impl 에서 찾는다).
+ *   같은 검증·같은 꽂기 경로를 탄다(declareOne 하나). 설정은 「한 항목」이 섹션·항목 둘로 갈린다.
+ */
+export type DeclareInput =
+    | ({ kind: 'view' } & ViewContribution)
+    | ({ kind: 'command' } & CommandContribution)
+    | ({ kind: 'ribbon' } & RibbonAddInput)
+    | { kind: 'settingsSection'; id: string; title: string; icon?: IconName }
+    | { kind: 'settingsItem'; section: string; id: string; title: string; icon: IconName; pane: string }
+    | ({ kind: 'statusBar' } & StatusBarContribution);
 /** 탭 메뉴 기여가 받는 맥락 — 그 탭의 leaf 정보 */
 export interface TabMenuContext {
     id: string;
@@ -194,4 +293,6 @@ export interface PluginHost {
     plugins: {
         get<T = unknown>(id: string): T | undefined;
     };
+
+    // 🔴 declare(item: DeclareInput): Disposable — 동적 선언 창구. ④⑤ 로더 단계에서 더한다(host.ts 구현과 함께).
 }

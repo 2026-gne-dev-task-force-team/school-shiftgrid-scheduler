@@ -68,7 +68,8 @@ function activateOne(m: PluginModule): void {
         return;
     }
     try {
-        void m.activate(makeHost(m.manifest.id));
+        // activate 는 선택이다(선언형 전환) — 등록은 contributes 가 하고, activate 는 구독·동작만 남는다.
+        if (m.activate) void m.activate(makeHost(m.manifest.id));
     } catch (e) {
         failedIds.add(m.manifest.id);
         console.error(`[plugin] "${m.manifest.id}" 활성 실패 — 나머지는 계속`, e);
