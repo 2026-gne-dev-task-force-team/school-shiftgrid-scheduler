@@ -1,20 +1,22 @@
 /**
- * 선언형 기여(contributes) · 동적 선언(host.declare) 증명 — 선언형 전환 D0.
+ * 선언형 기여(contributes) · 동적 선언(host.declare) 증명 — 선언형 전환 D0(+ D0+ host 바인딩).
  *
  * ⭐ 재는 것 다섯:
- *   ① contributes(뷰·명령·리본·설정·상태바)로 적은 가짜 플러그인이 켜지면 레지스트리에 들어간다
+ *   ① contributes(뷰·명령·리본·설정·상태바)로 적은 가짜 플러그인이 켜지면 레지스트리에 들어가고,
+ *      🔴 명령은 (host, ctx) 를, 뷰 컴포넌트는 props.host 를 받는다(호스트가 꽂을 때 바인딩 — 안드로이드 Context)
  *   ② 이름이 구현에 없는 가짜 플러그인은 「활성 실패」로 보인다(조용히 안 넘어간다)
- *   ③ host.declare 가 같은 결과를 내고, dispose 로 빠지고, 이름 없으면 던진다
+ *   ③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩하고, dispose 로 빠지고, 이름 없으면 던진다
  *   ④ 옛 길(activate 안에서 host.views.register·host.commands.add 함수 직접)로도 그대로 켜진다
  *   ⑤ 활성 순서: contributes → activate → lifecycle.onActivate
  *
  * 🔴 모듈 전역 스토어·뷰 레지스트리라 테스트끼리 안 번지게 beforeEach 에서 비운다.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { ComponentType } from 'react';
+import { createElement } from 'react';
+import type { ComponentType, ReactElement } from 'react';
 import type { ViewProps } from '../view-registry';
 import { getView, clearViews } from '../view-registry';
-import type { PluginModule } from './types';
+import type { PluginModule, PluginImpl, PluginHost, CommandContext } from './types';
 import { definePlugin } from './define';
 import { makeHost } from './host';
 import { activateAll, listPlugins } from './registry';
@@ -23,7 +25,16 @@ import {
 } from './store';
 
 const viewFn = (() => null) as unknown as ComponentType<ViewProps>;
-const paneFn = (() => null) as unknown as ComponentType;
+// host 를 받아 그리는 가짜 구현 — host.id 를 props 에 담아 되비춘다(테스트가 element.props.host 로 읽는다).
+const hostView: ComponentType<ViewProps & { host: PluginHost }> = (p) => createElement('div', { 'data-host': p.host.id });
+const hostPane: ComponentType<{ host: PluginHost }> = (p) => createElement('div', { 'data-host': p.host.id });
+
+/** 등록된 뷰(래퍼)를 가짜 props 로 불러 element.props.host.id 를 꺼낸다 — 렌더 없이 host 바인딩을 본다. */
+const FAKE_VIEW_PROPS = {} as unknown as ViewProps;
+function viewHostId(viewId: string): string | undefined {
+    const C = getView(viewId)!.Component as unknown as (p: ViewProps) => ReactElement;
+    return (C(FAKE_VIEW_PROPS).props as { host?: PluginHost }).host?.id;
+}
 
 /** 쓰는 주인들을 깨끗이 — 뷰 레지스트리까지 비운다(모듈 전역). */
 const OWNERS = ['cfake', 'badfake', 'dyn', 'oldfake', 'lifefake'];
@@ -32,8 +43,10 @@ beforeEach(() => {
     clearViews();
 });
 
-describe('① contributes 로 적은 가짜 플러그인이 켜지면 레지스트리에 들어간다', () => {
-    it('뷰·명령·리본·설정·상태바가 전부 꽂힌다 + 활성 실패 아님', () => {
+describe('① contributes 로 적은 가짜 플러그인이 켜지면 레지스트리에 들어가고 host 가 바인딩된다', () => {
+    it('뷰·명령·리본·설정·상태바가 전부 꽂히고, 명령은 (host,ctx) 를·뷰는 props.host 를 받는다', () => {
+        let cmdHostId: string | undefined;
+        let cmdLeafId: string | undefined;
         const fake = definePlugin({
             manifest: {
                 id: 'cfake', name: 'C Fake', version: '0.1.0', minHostVersion: '0.1.0',
@@ -48,10 +61,11 @@ describe('① contributes 로 적은 가짜 플러그인이 켜지면 레지스�
                     statusBar: [{ id: 'count', side: 'left', render: 'Count' }],
                 },
             },
-            components: { Board: viewFn },
-            commands: { 'cfake.open': () => { /* 동작 */ } },
-            panes: { Main: paneFn },
-            renders: { Count: () => '0' },
+            components: { Board: hostView },
+            // 🔴 명령은 첫 인자로 host, 둘째로 ctx — 둘 다 받아 기록한다
+            commands: { 'cfake.open': (host: PluginHost, ctx?: CommandContext) => { cmdHostId = host.id; cmdLeafId = ctx?.leafId; } },
+            panes: { Main: hostPane },
+            renders: { Count: (host: PluginHost) => host.id },
         });
 
         activateAll([fake]);
@@ -62,6 +76,14 @@ describe('① contributes 로 적은 가짜 플러그인이 켜지면 레지스�
         expect(listSettings().find((s) => s.id === 'cfake')?.items.map((i) => i.id)).toEqual(['main']);
         expect(listStatusItems().some((s) => s.owner === 'cfake' && s.id === 'count')).toBe(true);
         expect(listPlugins().find((p) => p.id === 'cfake')?.failed).toBe(false);
+
+        // 🔴 명령 run 이 host 와 ctx 를 둘 다 받는다
+        getCommand('cfake.open')!.run({ leafId: 'L7' });
+        expect(cmdHostId, '명령이 host 를 받는다').toBe('cfake');
+        expect(cmdLeafId, '명령이 ctx 를 받는다').toBe('L7');
+
+        // 🔴 뷰 컴포넌트 props 에 host 가 온다
+        expect(viewHostId('cfake.board'), '뷰 컴포넌트 props.host').toBe('cfake');
     });
 });
 
@@ -73,7 +95,7 @@ describe('② 이름이 구현에 없으면 활성 실패', () => {
                 id: 'badfake', name: 'Bad', version: '0.1.0', minHostVersion: '0.1.0',
                 contributes: { views: [{ id: 'x', title: 'X', component: 'Ghost' }] },
             },
-            components: { Real: viewFn },   // 'Ghost' 는 없다
+            components: { Real: hostView },   // 'Ghost' 는 없다
         };
 
         activateAll([bad]);
@@ -83,12 +105,13 @@ describe('② 이름이 구현에 없으면 활성 실패', () => {
     });
 });
 
-describe('③ host.declare 가 같은 결과를 낸다', () => {
-    it('declare 로 명령·뷰가 꽂히고, dispose 로 빠지고, 이름 없으면 던진다', () => {
+describe('③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩한다', () => {
+    it('declare 로 명령·뷰가 꽂히고 host 를 받고, dispose 로 빠지고, 이름 없으면 던진다', () => {
         let ran = 0;
-        const impl = {
-            components: { Dash: viewFn },
-            commands: { 'dyn.go': () => { ran += 1; } },
+        let declHostId: string | undefined;
+        const impl: PluginImpl = {
+            components: { Dash: hostView },
+            commands: { 'dyn.go': (host) => { ran += 1; declHostId = host.id; } },
         };
         const h = makeHost('dyn', impl);
 
@@ -99,6 +122,10 @@ describe('③ host.declare 가 같은 결과를 낸다', () => {
         expect(getView('dyn.dash')).toBeTruthy();
         getCommand('dyn.go')!.run();
         expect(ran).toBe(1);
+        // 🔴 declare 로 꽂은 명령도 같은 host 를 받는다
+        expect(declHostId, 'declare 명령이 같은 host').toBe('dyn');
+        // 🔴 declare 로 꽂은 뷰도 props.host 를 받는다
+        expect(viewHostId('dyn.dash'), 'declare 뷰 props.host').toBe('dyn');
 
         dCmd.dispose(); dView.dispose();
         expect(getCommand('dyn.go')).toBeUndefined();

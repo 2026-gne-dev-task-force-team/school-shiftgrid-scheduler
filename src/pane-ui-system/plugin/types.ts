@@ -185,12 +185,16 @@ export interface Contributes<
 /**
  * 모듈이 이름 붙여 내놓는 구현 — 매니페스트 contributes 가 이름으로 가리킨다(전부 선택).
  *   🔴 host.declare 도 이 네 칸에서 이름으로 구현을 찾는다(함수 직접 받기 금지).
+ *   🔴 넷 다 첫 인자로 host 를 받는다 — 안드로이드 Activity 가 Context 를 받듯, 호스트가 꽂을 때 바인딩한다
+ *      (applyContributes·declareOne 이 run: (ctx)=>fn(host,ctx) · Component: (p)=>createElement(impl,{...p,host}) 로 감싼다).
+ *      그래서 선언형으로 넘어온 명령·뷰·설정·상태바가 host.workspace.open 등을 그대로 쓸 수 있다.
+ *   ⚠️ 뷰·설정은 창틀 ViewProps 를 안 더럽히려 교차 타입(& { host })으로 받는다 — host 가 끼워져 들어온다.
  */
 export interface PluginImpl {
-    components?: Record<string, ComponentType<ViewProps>>;
-    commands?: Record<string, (ctx?: CommandContext) => void>;
-    panes?: Record<string, ComponentType>;
-    renders?: Record<string, () => ReactNode>;
+    components?: Record<string, ComponentType<ViewProps & { host: PluginHost }>>;
+    commands?: Record<string, (host: PluginHost, ctx?: CommandContext) => void>;
+    panes?: Record<string, ComponentType<{ host: PluginHost }>>;
+    renders?: Record<string, (host: PluginHost) => ReactNode>;
 }
 
 /** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */

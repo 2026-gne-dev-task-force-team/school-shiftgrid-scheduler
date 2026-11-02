@@ -16,10 +16,11 @@
  *         ribbon: [{ commandId: 'x.open' }],
  *       },
  *     },
- *     components: { Main: (p) => createElement(XView, p) },
- *     commands: { 'x.open': () => openX() },
+ *     components: { Main: (p) => createElement(XView, { ...p }) },   // p.host 로 창틀 호스트가 온다
+ *     commands: { 'x.open': (host) => host.workspace.open('x.main') },   // 명령은 첫 인자로 host
  *   });
  *   // component 를 'Mian' 으로 오타 내면 tsc 가 거부한다(keyof typeof components 로 좁혔다).
+ *   // ⭐ host 는 호스트가 꽂을 때 바인딩한다(안드로이드 Activity 의 Context) — 명령은 (host, ctx), 뷰·설정은 props.host, 상태바는 (host).
  */
 import type { ComponentType, ReactNode } from 'react';
 import type { ViewProps } from '../view-registry';
@@ -33,10 +34,10 @@ import type {
 type EmptyRec = {};
 
 export function definePlugin<
-    C extends Record<string, ComponentType<ViewProps>> = EmptyRec,
-    Cmd extends Record<string, (ctx?: CommandContext) => void> = EmptyRec,
-    P extends Record<string, ComponentType> = EmptyRec,
-    R extends Record<string, () => ReactNode> = EmptyRec,
+    C extends Record<string, ComponentType<ViewProps & { host: PluginHost }>> = EmptyRec,
+    Cmd extends Record<string, (host: PluginHost, ctx?: CommandContext) => void> = EmptyRec,
+    P extends Record<string, ComponentType<{ host: PluginHost }>> = EmptyRec,
+    R extends Record<string, (host: PluginHost) => ReactNode> = EmptyRec,
 >(spec: {
     manifest: Omit<PluginManifest, 'contributes'> & {
         contributes?: Contributes<

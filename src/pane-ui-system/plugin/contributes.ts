@@ -5,23 +5,32 @@
  * 🔴 이름이 impl 에 없으면 던진다 — 로더(registry.activateOne)의 try/catch 가 받아 그 플러그인을 「활성 실패」로
  *    올린다(⛔ 콘솔만 찍고 넘어가지 않는다). 매니페스트가 가리키는 이름과 구현이 어긋나는 걸 켤 때 잡는 자리다.
  */
+import { createElement } from 'react';
+import type { ComponentType } from 'react';
+import type { ViewProps } from '../view-registry';
 import type {
     PluginHost, PluginImpl, DeclareInput, Contributes, Disposable,
 } from './types';
 
-/** 동적 선언 하나 — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로. host.declare 가 이걸 부른다. */
+/**
+ * 동적 선언 하나 — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로. host.declare 가 이걸 부른다.
+ *   🔴 이름으로 찾은 구현(run·Component·Pane·render)에 host 를 바인딩해 옛 host 등록 메서드로 꽂는다 —
+ *      안드로이드가 Activity 에 Context 를 꽂듯. 그래서 선언형 구현도 host.workspace.open 등을 쓸 수 있다.
+ */
 export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Disposable {
     switch (item.kind) {
         case 'command': {
-            const run = impl.commands?.[item.id];
-            if (!run) throw new Error(`[plugin] "${host.id}" 명령 "${item.id}" 의 구현이 commands 에 없다`);
+            const fn = impl.commands?.[item.id];
+            if (!fn) throw new Error(`[plugin] "${host.id}" 명령 "${item.id}" 의 구현이 commands 에 없다`);
             const { kind, ...rest } = item;
-            return host.commands.add({ ...rest, run });
+            return host.commands.add({ ...rest, run: (ctx) => fn(host, ctx) });
         }
         case 'view': {
-            const Component = impl.components?.[item.component];
-            if (!Component) throw new Error(`[plugin] "${host.id}" 뷰 "${item.id}" 가 가리키는 component "${item.component}" 가 components 에 없다`);
+            const Impl = impl.components?.[item.component];
+            if (!Impl) throw new Error(`[plugin] "${host.id}" 뷰 "${item.id}" 가 가리키는 component "${item.component}" 가 components 에 없다`);
             const { kind, component, ...rest } = item;
+            // ViewProps 는 창틀 타입 그대로 — host 는 꽂을 때 끼워 넣는다(교차 타입).
+            const Component: ComponentType<ViewProps> = (p) => createElement(Impl, { ...p, host });
             return host.views.register({ ...rest, Component });
         }
         case 'ribbon': {
@@ -31,15 +40,16 @@ export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHos
         case 'settingsSection':
             return host.settings.addSection(item.id, item.title, item.icon);
         case 'settingsItem': {
-            const Pane = impl.panes?.[item.pane];
-            if (!Pane) throw new Error(`[plugin] "${host.id}" 설정 항목 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
+            const Impl = impl.panes?.[item.pane];
+            if (!Impl) throw new Error(`[plugin] "${host.id}" 설정 항목 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
             const { kind, pane, ...rest } = item;
+            const Pane: ComponentType = (p) => createElement(Impl, { ...p, host });
             return host.settings.addItem({ ...rest, Pane });
         }
         case 'statusBar': {
-            const render = impl.renders?.[item.render];
-            if (!render) throw new Error(`[plugin] "${host.id}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
-            return host.statusBar.add({ id: item.id, side: item.side, render });
+            const fn = impl.renders?.[item.render];
+            if (!fn) throw new Error(`[plugin] "${host.id}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
+            return host.statusBar.add({ id: item.id, side: item.side, render: () => fn(host) });
         }
     }
 }
