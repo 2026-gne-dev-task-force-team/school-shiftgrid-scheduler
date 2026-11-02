@@ -7,7 +7,7 @@
  * 싱글턴·가운데·안 가름 — pane-test 와 같은 placement(딱 한 장만, 가운데만, 못 가른다).
  */
 import { createElement } from 'react';
-import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginModule, PluginHost, ViewProps } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 노드 시스템 「값」은 host.plugins.get 으로 받는다(구조 검사 ⑨)
 import type { NodesApi } from '../project-explorer/api';
 import { manifest } from './manifest';
@@ -43,7 +43,8 @@ function activate(host: PluginHost): void {
         placement: { areas: ['center'], split: false, singleton: true },
         layout: { minWidth: 280, squeeze: 'scroll' },
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab) — 17:06 넷을 더 받으며 MonthView 직접 → 컨테이너로
-        Component: () => createElement(CalendarTab),
+        //   🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — ViewProps.peek 을 CalendarTab 에 내린다(설정 선례와 같은 꼴).
+        Component: (p: ViewProps) => createElement(CalendarTab, { peek: p.peek }),
     });
 
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──

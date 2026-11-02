@@ -1,13 +1,14 @@
 /**
- * 일정 인라인 카드 — 일정을 누르면 뜨는 작은 편집 패널(요구명세 C2). ⛔ window.prompt/confirm 안 씀.
+ * 일정 카드 — 일정을 누르면 뜨는 편집 폼(요구명세 C2). ⛔ window.prompt/confirm 안 씀.
  *   제목·시작·끝·종일 토글·메모·저장소 고르기·휴지통. 바꾸면 바로 노드에 쓴다(nodes.ts → NodesApi).
  *   🔴 한글 조합 중 Enter 무시(isComposing || keyCode 229) · 🔴 색은 토큰만.
+ *   🔴 ⭐ 자리·테두리·그림자는 창틀의 미리보기(peek)가 쥔다 — 여긴 세로 폼만 그린다(EventCardPeek 가 peek 에 담는다).
  *
  * 저장소를 바꾸면 nodes.move(다른 저장소로) · 「휴지통」은 nodes.remove(영구 아님 — 복원된다).
  */
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Icon, Surface, Toggle } from '../../../pane-ui-system';
+import { Icon, Toggle } from '../../../pane-ui-system';
 import { isoMinuteOf, parseLocal, type CalEvent, type StoreInfo, type EventData } from '../events';
 import { renameEvent, updateEventData, moveEvent, removeEvent } from '../nodes';
 
@@ -65,7 +66,7 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
     const trash = () => { removeEvent(event.id); onClose(); };
 
     return (
-        <Surface bordered rounded className="absolute top-14 right-3 z-30 w-64 p-3 shadow-lg flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
                 <input
                     ref={titleRef}
@@ -126,6 +127,6 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
             <button type="button" onClick={trash} className="flex items-center justify-center gap-1 rounded border border-line py-1 text-[12px] text-bad hover:bg-bad/[0.1]">
                 <Icon name="trash" size={13} /> 휴지통
             </button>
-        </Surface>
+        </div>
     );
 }

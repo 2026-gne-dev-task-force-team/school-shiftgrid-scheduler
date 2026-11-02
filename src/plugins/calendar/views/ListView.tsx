@@ -5,12 +5,12 @@
  */
 import { useMemo, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { Icon, type PeekHandle } from '../../../pane-ui-system';
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent } from '../nodes';
 import { paletteAt } from '../palette';
-import { EventCard } from './EventCard';
+import { useCardPeek } from './useCardPeek';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 const DAY_MS = 86_400_000;
@@ -23,23 +23,22 @@ function timeLabel(e: CalEvent): string {
     return e.allDay ? '종일' : `${hhmm(e.startMs)}–${hhmm(e.endMs)}`;
 }
 
-export function ListView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
-    const { events, stores, storeList } = useCalendarData();
+export function ListView({ value, onChange, trailing, peek }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
+    const { events, stores } = useCalendarData();
     const [query, setQuery] = useState('');
-    const [cardId, setCardId] = useState<string | null>(null);
+    // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
+    const card = useCardPeek(peek);
 
-    const eventsById = useMemo(() => { const m = new Map<string, CalEvent>(); for (const e of events) m.set(e.id, e); return m; }, [events]);
-    const card = cardId ? eventsById.get(cardId) ?? null : null;
     const rows = useMemo(() => sortEvents(filterEvents(events, query)), [events, query]);
 
     const newEvent = () => {
         const base = new Date(value.getFullYear(), value.getMonth(), value.getDate());
         const id = createEvent({ start: isoMinuteOf(base), end: isoMinuteOf(new Date(base.getTime() + DAY_MS)), allDay: true }, '');
-        if (id) setCardId(id);
+        if (id) card.open(id);
     };
     const openRow = (e: CalEvent) => {
         onChange(new Date(e.startMs));   // anchor 를 그 날로 — 다른 뷰로 가도 그 날이 보인다
-        setCardId(e.id);
+        card.open(e.id);
     };
     const onSearchKey = (ev: KeyboardEvent<HTMLInputElement>) => { if (ev.key === 'Escape') setQuery(''); };
 
@@ -104,8 +103,6 @@ export function ListView({ value, onChange, trailing }: { value: Date; onChange:
                     </table>
                 )}
             </div>
-
-            {card && <EventCard event={card} stores={storeList} onClose={() => setCardId(null)} />}
         </div>
     );
 }

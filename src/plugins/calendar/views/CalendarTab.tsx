@@ -11,6 +11,7 @@
  *      각 뷰는 제 날짜 useState 를 버리고 value 를 쓰고, 스크롤·단추로 옮기면 onChange 로 올린다(한쪽만 흐른다 — 루프 방지).
  */
 import { useEffect, useState } from 'react';
+import type { PeekHandle } from '../../../pane-ui-system';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
@@ -21,7 +22,7 @@ import { ALL_MODES, type Mode } from '../modes';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
-export function CalendarTab() {
+export function CalendarTab({ peek }: { peek: PeekHandle }) {
     const [mode, setMode] = useState<Mode>('month');
     // 🔴 「보고 있는 날짜」의 단일 진실 — 초기값은 오늘. 각 뷰에 value 로 내리고 onChange 로 받는다(뷰를 바꿔도 유지된다).
     const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -56,14 +57,15 @@ export function CalendarTab() {
         </>
     );
 
+    // 🔴 peek 을 쓰는 뷰(월·시간축·일정)만 받는다 — 년·간트는 일정 카드가 없다.
     switch (mode) {
         case 'year': return <YearView value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case 'list': return <ListView value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
+        case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
+        case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
+        case 'list': return <ListView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
+        case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
         case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} />;
-        default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} />;
+        default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
     }
 }

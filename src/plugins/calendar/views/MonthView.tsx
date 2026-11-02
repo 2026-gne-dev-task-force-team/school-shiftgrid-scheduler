@@ -19,14 +19,14 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
     Icon, IconButton, Surface,
-    monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell,
+    monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell, type PeekHandle,
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
 import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
 import { createEvent } from '../nodes';
 import { paletteAt } from '../palette';
-import { EventCard } from './EventCard';
+import { useCardPeek } from './useCardPeek';
 
 const DAY_MS = 86_400_000;
 
@@ -121,23 +121,21 @@ const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM, 
 /** 빈 칸 공유 참조 — DayBox memo 가 매번 새 배열을 안 받게 */
 const EMPTY: CalEvent[] = [];
 
-export function MonthView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
+export function MonthView({ value, onChange, trailing, peek }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
     // 🔴 일정은 노드에서 온다(useEvents) — subscribe 변경 때만 색인을 다시 짓는다(스크롤엔 안 바뀐다)
-    const { events, storeList } = useCalendarData();
+    const { events } = useCalendarData();
     const dayIndex = useMemo(() => buildDayIndex(events), [events]);
-    const eventsById = useMemo(() => { const m = new Map<string, CalEvent>(); for (const e of events) m.set(e.id, e); return m; }, [events]);
 
-    // 인라인 카드 — 열린 일정 id. 그 일정이 휴지통에 가면 eventsById 에서 빠져 카드가 저절로 닫힌다.
-    const [cardId, setCardId] = useState<string | null>(null);
-    const card = cardId ? eventsById.get(cardId) ?? null : null;
+    // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
+    const card = useCardPeek(peek);
 
     // 날 칸 더블클릭 → 종일 일정 생성 + 카드(제목 포커스) · 일정 클릭 → 카드. 칸 바깥 위임(data-day·data-event-id).
     const onCellClick = (e: ReactMouseEvent) => {
-        const chip = (e.target as HTMLElement).closest('[data-event-id]');
-        if (chip) setCardId(chip.getAttribute('data-event-id'));
+        const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
+        if (id) card.open(id);
     };
     const onCellDouble = (e: ReactMouseEvent) => {
         const t = e.target as HTMLElement;
@@ -147,7 +145,7 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
         const start = parseLocal(iso);
         if (Number.isNaN(start.getTime())) return;
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
-        if (id) setCardId(id);
+        if (id) card.open(id);
     };
     // 🔴 첫 배치에서 scrollTop 을 맞출 날 — 탭(anchor)이 내려준 value. 마운트 때 한 번만 읽는다(이후 스크롤→날짜만 흐른다).
     const initValue = useRef(value);
@@ -395,8 +393,6 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
                 ))}
                 <div style={{ height: Math.max(0, total - vis.end) * rowH }} />
             </div>
-
-            {card && <EventCard event={card} stores={storeList} onClose={() => setCardId(null)} />}
         </div>
     );
 }

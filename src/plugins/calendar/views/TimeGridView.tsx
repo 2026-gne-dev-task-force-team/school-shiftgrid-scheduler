@@ -13,14 +13,14 @@
  */
 import { memo, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
-import { IconButton, isoOf, startOfWeek, monthLabel } from '../../../pane-ui-system';
+import { IconButton, isoOf, startOfWeek, monthLabel, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 import { useCalendarData } from '../useEvents';
 import { createEvent } from '../nodes';
 import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
-import { EventCard } from './EventCard';
+import { useCardPeek } from './useCardPeek';
 
 const WEEK_START = 0;                 // 주 시작 요일 일요일 고정(월 보기와 같다 — 설정으로 뺄 자리)
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -137,7 +137,7 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     );
 });
 
-export function TimeGridView({ days, value, onChange, trailing }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
+export function TimeGridView({ days, value, onChange, trailing, peek }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -168,16 +168,15 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
     const dense = days === DENSE_DAYS;
     const hdrH = dense ? HDR_H + MONTH_BAND : HDR_H;
 
-    // 일정 — 열마다 카드로 그리고(dayIndex), 시간 칸 더블클릭 → 1시간 생성, 카드 클릭 → 인라인 편집.
-    const { events, storeList } = useCalendarData();
+    // 일정 — 열마다 카드로 그리고(dayIndex), 시간 칸 더블클릭 → 1시간 생성, 카드 클릭 → 미리보기 편집.
+    const { events } = useCalendarData();
     const dayIndex = useMemo(() => buildDayIndex(events), [events]);
-    const eventsById = useMemo(() => { const m = new Map<string, CalEvent>(); for (const e of events) m.set(e.id, e); return m; }, [events]);
-    const [cardId, setCardId] = useState<string | null>(null);
-    const card = cardId ? eventsById.get(cardId) ?? null : null;
+    // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
+    const card = useCardPeek(peek);
 
     const onGridClick = (e: ReactMouseEvent) => {
-        const chip = (e.target as HTMLElement).closest('[data-event-id]');
-        if (chip) setCardId(chip.getAttribute('data-event-id'));
+        const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
+        if (id) card.open(id);
     };
     const onGridDouble = (e: ReactMouseEvent) => {
         const colEl = (e.target as HTMLElement).closest('[data-day-offset]') as HTMLElement | null;
@@ -190,7 +189,7 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
         const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
         const end = new Date(start.getTime() + 3_600_000);
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
-        if (id) setCardId(id);
+        if (id) card.open(id);
     };
 
     return (
@@ -260,8 +259,6 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
                     </div>
                 </div>
             </div>
-
-            {card && <EventCard event={card} stores={storeList} onClose={() => setCardId(null)} />}
         </div>
     );
 }
