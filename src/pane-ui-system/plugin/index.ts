@@ -18,6 +18,7 @@ export type {
 } from './types';
 export { HOST_VERSION } from './types';
 
+export { definePlugin } from './define';
 export { makeHost } from './host';
 export {
     activateAll, enablePlugin, disablePlugin, listPlugins, ownerOfView, usePluginRegistry,
