@@ -31,7 +31,7 @@ import { __resetPersistForTest } from './persist';
 import { registerType, clearTypes } from './model/types';
 import { clearDerived } from './model/derive';
 import { parentOf } from './model/tree';
-import { registerTypeCommands } from './index';
+import { registerTypeCommands, projectExplorerPlugin } from './index';
 
 const OWNER = 'project-explorer';
 
@@ -43,9 +43,10 @@ function storeHost(): PluginHost {
     } as unknown as PluginHost;
 }
 
-/** 명령 배선용 real host — commands.add/run 이 모듈 전역 레지스트리로 간다(getCommand·runCommand 로 들여다본다). */
+/** 명령 배선용 real host — 🔴 impl(projectExplorerPlugin)을 함께 넣는다: registerTypeCommands 가 host.declare({impl:'newNode'})
+ *   로 꽂으니 declareOne 이 그 이름을 commands 에서 찾는다(모듈 전역 레지스트리로 간다 — getCommand·runCommand 로 본다). */
 function host(): PluginHost {
-    return makeHost(OWNER);
+    return makeHost(OWNER, projectExplorerPlugin);
 }
 
 beforeEach(async () => {

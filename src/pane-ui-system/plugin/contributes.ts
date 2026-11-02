@@ -26,10 +26,12 @@ const NODE_TYPE_REGISTRAR = 'project-explorer';
 export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Disposable {
     switch (item.kind) {
         case 'command': {
-            const fn = impl.commands?.[item.id];
-            if (!fn) throw new Error(`[plugin] "${host.id}" 명령 "${item.id}" 의 구현이 commands 에 없다`);
-            const { kind, ...rest } = item;
-            return host.commands.add({ ...rest, run: (ctx) => fn(host, ctx) });
+            // 구현 키 = impl 이 있으면 impl(id 는 런타임값일 수 있다), 없으면 id 자체.
+            const key = item.impl ?? item.id;
+            const fn = impl.commands?.[key];
+            if (!fn) throw new Error(`[plugin] "${host.id}" 명령 "${item.id}" 의 구현("${key}")이 commands 에 없다`);
+            const { kind, impl: _impl, args, ...rest } = item;
+            return host.commands.add({ ...rest, run: (ctx) => fn(host, ctx, args) });
         }
         case 'view': {
             const Impl = impl.components?.[item.component];

@@ -144,11 +144,27 @@ export interface ViewContribution<CompName extends string = string> extends Omit
     newTab?: { label: string };
 }
 
-/** 명령 기여 — CommandDef 에서 run 을 빼고 id 로 구현을 찾는다(모듈 commands 의 키 = 이 id). */
-export interface CommandContribution<CmdName extends string = string> extends Omit<CommandDef, 'run' | 'id'> {
-    /** 모듈 commands 의 키 = 이 명령 id — 호스트가 이 이름으로 run 을 찾아 꽂는다. */
-    id: CmdName;
-}
+/**
+ * 명령 기여 — CommandDef 에서 run 을 뺀다. 구현을 찾는 길은 둘(판별 유니온):
+ *   ① impl 없음 — id 가 곧 구현 키(모듈 commands 의 키). 평범한 선언 명령.
+ *   ② impl 있음 — id 는 런타임값이어도 되고(예: new-<type>), impl 이 구현 키다. args(데이터)를 run(host, ctx, args) 로 넘긴다.
+ *      🔴 ⛔ 함수 직접 받기 금지 — args 는 데이터뿐, 함수는 여전히 impl 이름으로만. 「런타임이니까 더 받자」를 막는다.
+ */
+export type CommandContribution<CmdName extends string = string> =
+    | (Omit<CommandDef, 'run' | 'id'> & {
+        /** 모듈 commands 의 키 = 이 명령 id — 호스트가 이 이름으로 run 을 찾아 꽂는다. */
+        id: CmdName;
+        impl?: never;
+        args?: never;
+    })
+    | (Omit<CommandDef, 'run' | 'id'> & {
+        /** 런타임에 정해지는 명령 id(id 는 자유 문자열) — 구현은 impl 이름이 가리킨다. */
+        id: string;
+        /** 모듈 commands 의 키 — run 을 이 이름으로 찾는다. */
+        impl: CmdName;
+        /** 데이터 — run(host, ctx, args) 로 넘어간다(순수 데이터뿐). */
+        args?: unknown;
+    });
 
 /** 설정 기여 — 섹션·항목. 항목의 Pane 은 pane(모듈 panes 의 키)으로 가리킨다. */
 export interface SettingsContributes<PaneName extends string = string> {
@@ -225,7 +241,8 @@ export interface Contributes<
  */
 export interface PluginImpl {
     components?: Record<string, ComponentType<ViewProps & { host: PluginHost }>>;
-    commands?: Record<string, (host: PluginHost, ctx?: CommandContext) => void>;
+    /** 🔴 첫 인자 host(안드로이드 Context) · ctx(우클릭 맥락) · args(선언이 붙인 데이터 — declare 의 args·contributes 명령의 args). */
+    commands?: Record<string, (host: PluginHost, ctx?: CommandContext, args?: unknown) => void>;
     panes?: Record<string, ComponentType<{ host: PluginHost }>>;
     renders?: Record<string, (host: PluginHost) => ReactNode>;
     /**
