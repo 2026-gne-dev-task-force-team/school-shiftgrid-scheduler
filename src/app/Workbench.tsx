@@ -23,10 +23,10 @@ import {
     type MovePos,
 } from '../pane-ui-system';
 import {
-    setWorkspaceBridge, type WorkspaceOpenOptions, type CommandContext, type Disposable,
+    setWorkspaceBridge, makeHost, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
     useStorageErrors, useDurability,
-    type WorkspaceEvent,
+    type WorkspaceEvent, type PluginHost, type IconName,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
 import { canPlace, canSplit, isSingleton, leafTitle } from '../pane-ui-system/view-registry';   // 자리 제한·제목 — 호스트 앱이 모델 앞에서 묻는다
@@ -227,8 +227,15 @@ export function Workbench() {
         const H = () => handlersRef.current;
         const target = (ctx?: CommandContext) => ctx?.leafId ?? focusRef.current;
         const tabsOf = (ctx: CommandContext | undefined, leafId: string) => ctx?.tabsId ?? tabsIdOfLeaf(wsRef.current, leafId);
-        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: Parameters<typeof appHost.commands.add>[0]['icon']) =>
-            appHost.commands.add({ id, title, icon, run });
+        // 🔴 D5③: appHost.commands.add 가 사라졌다 — 창틀 자신의 프레임 명령도 host.declare 로 꽂는다.
+        //    run 은 이 effect 의 클로저(refs)라 이름(= 명령 id)으로 impl 에 담고, declare 가 그 이름을 찾아 꽂는다
+        //    (함수 직접 받기 금지는 지킨다 — impl 객체를 거친다). fh 의 impl.commands(runs)를 declare 전에 채운다.
+        const runs: Record<string, (host: PluginHost, ctx?: CommandContext) => void> = {};
+        const fh = makeHost('app', { commands: runs });
+        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: IconName) => {
+            runs[id] = (_host, ctx) => run(ctx);
+            return fh.declare({ kind: 'command', id, title, icon });
+        };
 
         const disp: Disposable[] = [
             add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x'),

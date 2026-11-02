@@ -3,8 +3,12 @@
  *
  * 🔴 앱 자신의 뷰다(주인 'app') — 플러그인이 newTab 을 잡지 않으면 Workbench 가 이걸 연다.
  *    아무것도 안 그린다 — 리본에서 고르면 그 뷰가 **이 탭 자리에** 열리는 게 다음 손(지금은 새 탭으로 열린다).
+ *
+ * 📌 D5③: 옛 appHost.views.register 가 사라져(선언형 전환 마무리), host.declare 로 꽂는다 — 구현 'Blank' 를 이름으로 가리킨다.
+ *    viewId 는 'app.blank'(host 가 접두사를 붙인다) — Workbench 가 그 글자로 연다.
  */
-import { appHost } from './host';
+import { createElement } from 'react';
+import { makeHost } from '../pane-ui-system/plugin';
 
 function BlankView() {
     return (
@@ -14,11 +18,12 @@ function BlankView() {
     );
 }
 
-// viewId 는 'app.blank' (host 가 접두사를 붙인다) — Workbench 가 그 글자로 연다
-appHost.views.register({
-    id: 'blank', title: '새 탭', icon: 'plus', defaultArea: 'center',
-    layout: { minWidth: 120, squeeze: 'shrink' },
-    Component: BlankView,
-});
+makeHost('app', { components: { Blank: () => createElement(BlankView) } })
+    .declare({
+        kind: 'view',
+        id: 'blank', title: '새 탭', icon: 'plus', defaultArea: 'center',
+        layout: { minWidth: 120, squeeze: 'shrink' },
+        component: 'Blank',
+    });
 
 export default BlankView;

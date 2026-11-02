@@ -7,7 +7,12 @@
  */
 import { createElement } from 'react';
 import type { ComponentType } from 'react';
+import { registerView, unregisterView } from '../view-registry';
 import type { ViewProps } from '../view-registry';
+import {
+    track, addCommand, addRibbonAction, getCommand,
+    addSettingsSection, addSettingsItem, addStatusItem, setNewTab, touchContrib,
+} from './store';
 import type {
     PluginHost, PluginImpl, DeclareInput, Contributes, Disposable, NodeTypeRegistrar,
 } from './types';
@@ -20,44 +25,62 @@ const NODE_TYPE_REGISTRAR = 'project-explorer';
 
 /**
  * 동적 선언 하나 — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로. host.declare 가 이걸 부른다.
- *   🔴 이름으로 찾은 구현(run·Component·Pane·render)에 host 를 바인딩해 옛 host 등록 메서드로 꽂는다 —
+ *   🔴 이름으로 찾은 구현(run·Component·Pane·render)에 host 를 바인딩해 스토어 등록소에 꽂는다(주인 = host.id) —
  *      안드로이드가 Activity 에 Context 를 꽂듯. 그래서 선언형 구현도 host.workspace.open 등을 쓸 수 있다.
+ *   📌 D5③: 옛 host.views.register·commands.add·ribbon.add·settings.add*·statusBar.add 를 지웠으니, 등록은 여기서
+ *      스토어 함수(addCommand·registerView·… + track)로 바로 한다 — 이제 「꽂는 길」은 contributes·declare(둘 다 여기로) 뿐.
  */
 export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Disposable {
+    const owner = host.id;
+    // viewId 접두사 강제 — `${owner}.` 로 시작 안 하면 붙인다(저장된 leaf 의 viewId 만 보고 주인을 안다).
+    const scoped = (id: string) => (id.startsWith(`${owner}.`) ? id : `${owner}.${id}`);
     switch (item.kind) {
         case 'command': {
             // 구현 키 = impl 이 있으면 impl(id 는 런타임값일 수 있다), 없으면 id 자체.
             const key = item.impl ?? item.id;
             const fn = impl.commands?.[key];
-            if (!fn) throw new Error(`[plugin] "${host.id}" 명령 "${item.id}" 의 구현("${key}")이 commands 에 없다`);
+            if (!fn) throw new Error(`[plugin] "${owner}" 명령 "${item.id}" 의 구현("${key}")이 commands 에 없다`);
             const { kind, impl: _impl, args, ...rest } = item;
-            return host.commands.add({ ...rest, run: (ctx) => fn(host, ctx, args) });
+            return track(owner, addCommand(owner, { ...rest, run: (ctx) => fn(host, ctx, args) }));
         }
         case 'view': {
             const Impl = impl.components?.[item.component];
-            if (!Impl) throw new Error(`[plugin] "${host.id}" 뷰 "${item.id}" 가 가리키는 component "${item.component}" 가 components 에 없다`);
-            const { kind, component, ...rest } = item;
+            if (!Impl) throw new Error(`[plugin] "${owner}" 뷰 "${item.id}" 가 가리키는 component "${item.component}" 가 components 에 없다`);
+            const { kind, component, newTab, ...rest } = item;
+            const full = scoped(item.id);
             // ViewProps 는 창틀 타입 그대로 — host 는 꽂을 때 끼워 넣는다(교차 타입).
             const Component: ComponentType<ViewProps> = (p) => createElement(Impl, { ...p, host });
-            return host.views.register({ ...rest, Component });
+            registerView({ ...rest, id: full, Component });
+            touchContrib();   // 뷰가 늘면 리본·뷰 목록이 바뀐다 — 다시 그리게
+            const d = track(owner, { dispose() { unregisterView(full); touchContrib(); } });
+            if (newTab) track(owner, setNewTab(owner, full, newTab.label));   // 「+ 새 탭」 한 칸(뒤가 이긴다)
+            return d;
         }
         case 'ribbon': {
-            const { kind, ...rest } = item;
-            return host.ribbon.add(rest);
+            // 🔴 리본 동작은 명령을 가리킨다 — label·run 을 명령에서 푼다(없으면 경고하고 빈 동작).
+            const cmd = getCommand(item.commandId);
+            if (!cmd) console.warn(`[plugin] 리본 동작이 없는 명령을 가리킨다: ${item.commandId}`);
+            return track(owner, addRibbonAction(owner, {
+                id: item.commandId,
+                icon: item.icon ?? cmd?.icon ?? 'dot',
+                label: cmd?.title ?? item.commandId,
+                run: cmd?.run ?? (() => { /* 없는 명령 */ }),
+                order: item.order,
+            }));
         }
         case 'settingsSection':
-            return host.settings.addSection(item.id, item.title, item.icon);
+            return track(owner, addSettingsSection(owner, item.id, item.title, item.icon));
         case 'settingsItem': {
             const Impl = impl.panes?.[item.pane];
-            if (!Impl) throw new Error(`[plugin] "${host.id}" 설정 항목 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
+            if (!Impl) throw new Error(`[plugin] "${owner}" 설정 항목 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
             const { kind, pane, ...rest } = item;
             const Pane: ComponentType = (p) => createElement(Impl, { ...p, host });
-            return host.settings.addItem({ ...rest, Pane });
+            return track(owner, addSettingsItem(owner, { ...rest, Pane }));
         }
         case 'statusBar': {
             const fn = impl.renders?.[item.render];
-            if (!fn) throw new Error(`[plugin] "${host.id}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
-            return host.statusBar.add({ id: item.id, side: item.side, render: () => fn(host) });
+            if (!fn) throw new Error(`[plugin] "${owner}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
+            return track(owner, addStatusItem(owner, { id: item.id, side: item.side, render: () => fn(host) }));
         }
     }
 }

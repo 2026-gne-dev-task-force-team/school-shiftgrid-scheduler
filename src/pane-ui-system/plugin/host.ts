@@ -7,9 +7,7 @@
  * ⭐ viewId 접두사 강제 — 등록 id 가 `${pluginId}.` 로 시작 안 하면 붙인다(scheduler → scheduler.week).
  *    🔑 그 덕에 저장된 leaf 의 viewId 만 보고 주인을 안다(꺼진 플러그인의 탭이 자리표시가 되는 데 묘비가 필요 없다).
  */
-import {
-    registerView, unregisterView, getView, listViews,
-} from '../view-registry';
+import { getView, listViews } from '../view-registry';
 import { storageKey } from '../storage';
 import { kvGet, kvSet, kvDel, kvAvailable, kvEstimate } from '../kv';
 import { NARROW_PX } from '../layout/panels';
@@ -18,18 +16,15 @@ import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
 import { getPluginApi } from './registry';
 import { declareOne } from './contributes';
-import type { PluginHost, PluginImpl, DeclareInput, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
+import type { PluginHost, PluginImpl, DeclareInput, WorkspaceOpenOptions, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
-    track, addRibbonAction, getWorkspaceBridge, whenWorkspaceReady,
-    addCommand, getCommand, runCommand,
-    addSettingsSection, addSettingsItem,
-    addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
+    track, getWorkspaceBridge, whenWorkspaceReady, runCommand,
+    addTabMenuItem, onWorkspace,
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
 
 export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
-    const scoped = (id: string) => (id.startsWith(`${pluginId}.`) ? id : `${pluginId}.${id}`);
     const skey = (key: string) => storageKey(`plugin.${pluginId}.${key}`);
 
     const storage = {
@@ -74,59 +69,17 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         id: pluginId,
         hostVersion: HOST_VERSION,
 
-        // 🔴 ⛔ 옛 등록 5종(views.register·ribbon.add·commands.add·settings.addSection/addItem·statusBar.add)은
-        //    함수(Component·run·Pane·render)를 직접 받는다 — declare 는 이름만 받으니 여기로 못 접힌다.
-        //    선언형 전환 뒤 플러그인은 contributes·host.declare 를 쓴다. 이 5종은 플러그인 4개가 아직 쓰는 「옛 길」이다.
-        //    D5(넷 다 옮긴 뒤)에서 지운다 — 그때 구조 검사 「매니페스트 밖 등록 0건」을 켠다.
+        // 🔴 ⛔ 옛 등록 5종(views.register·ribbon.add·commands.add·settings.add*·statusBar.add)은 D5③ 에서 지웠다.
+        //    이제 플러그인이 호스트에 꽂는 길은 manifest.contributes 와 host.declare 둘뿐이다(둘 다 declareOne 으로 간다).
+        //    여기 남는 건 읽기·동작(views.get/list·commands.run)뿐 — 등록이 아니다. 구조 검사 ⑰ 이 매니페스트 밖 등록 0건을 지킨다.
         views: {
-            // D5 에서 지운다 (옛 길 — 함수 직접 받음)
-            register(def) {
-                const full = scoped(def.id);
-                const { newTab, ...rest } = def;
-                registerView({ ...rest, id: full });
-                touchContrib();   // 뷰가 늘면 리본·뷰 목록이 바뀐다 — 다시 그리게
-                const d = track(pluginId, { dispose() { unregisterView(full); touchContrib(); } });
-                // 「+ 새 탭」이 여는 것 — 한 칸(뒤가 이긴다). dispose 는 따로 track 한다
-                if (newTab) track(pluginId, setNewTab(pluginId, full, newTab.label));
-                return d;
-            },
             get(id) { return getView(id); },
             list() { return listViews(); },
         },
 
-        ribbon: {
-            // D5 에서 지운다 (옛 길). ⚠️ 단 ribbon 은 commandId 참조라 데이터다 — contributes.ribbon 이 그대로 받는다.
-            add(a: RibbonAddInput) {
-                // 🔴 리본 동작은 명령을 가리킨다 — label·run 을 명령에서 푼다(없으면 경고하고 빈 동작).
-                const cmd = getCommand(a.commandId);
-                if (!cmd) console.warn(`[plugin] 리본 동작이 없는 명령을 가리킨다: ${a.commandId}`);
-                return track(pluginId, addRibbonAction(pluginId, {
-                    id: a.commandId,
-                    icon: a.icon ?? cmd?.icon ?? 'dot',
-                    label: cmd?.title ?? a.commandId,
-                    run: cmd?.run ?? (() => { /* 없는 명령 */ }),
-                    order: a.order,
-                }));
-            },
-        },
-
         commands: {
-            // D5 에서 지운다 (옛 길 — run 함수 직접 받음). run(id) 호출은 「옛 길」이 아니다(동작 — 그대로 둔다).
-            add(c: CommandDef) { return track(pluginId, addCommand(pluginId, c)); },
+            // run(id) 는 동작(「옛 길」이 아니다) — 리본·메뉴·팔레트가 명령을 부르는 창구. add 는 지웠다(contributes·declare 로).
             run(id, ctx) { return runCommand(id, ctx); },
-        },
-
-        settings: {
-            // D5 에서 지운다 (옛 길 — Pane 함수 직접 받음)
-            addSection(id: string, title: string, icon) {
-                return track(pluginId, addSettingsSection(pluginId, id, title, icon));
-            },
-            addItem(i: SettingsContribution) { return track(pluginId, addSettingsItem(pluginId, i)); },
-        },
-
-        statusBar: {
-            // D5 에서 지운다 (옛 길 — render 함수 직접 받음)
-            add(i: StatusContribution) { return track(pluginId, addStatusItem(pluginId, i)); },
         },
 
         menu: {

@@ -292,23 +292,16 @@ export interface PluginHost {
     readonly id: string;
     readonly hostVersion: string;
 
-    /** 뷰 등록 — id 는 `${id}.` 로 접두사가 붙는다(host 가 붙인다). newTab 한 칸으로 「+ 새 탭」을 정한다. */
+    /**
+     * 뷰 읽기 — get/list. 🔴 D5③: 등록(register)은 지웠다(선언형 전환 마무리). 뷰·리본·명령·설정·상태바를 호스트에
+     *   꽂는 길은 manifest.contributes 와 host.declare 둘뿐이다(둘 다 declareOne 으로 간다). 여기 get/list 는 읽기다.
+     */
     views: {
-        register(def: ViewDef & { newTab?: { label: string } }): Disposable;
         get(id: string): ViewDef | undefined;
         list(): ViewDef[];
     };
-    /** 리본 동작 — commandId 를 가리킨다(「뷰 열기」가 아니라 동작). Rail 이 뷰 설탕과 합쳐 그린다. */
-    ribbon: { add(a: RibbonAddInput): Disposable };
-    /** 명령 — 레지스트리에 쌓이고, 리본·메뉴·팔레트가 run 으로 부른다(「모든 동작은 명령」). */
-    commands: { add(c: CommandDef): Disposable; run(id: string, ctx?: CommandContext): boolean };
-    /** 설정 — 섹션을 열고(제목은 첫 등록이 이긴다) 항목을 꽂는다. 빈 섹션은 안 그린다. */
-    settings: {
-        addSection(id: string, title: string, icon?: IconName): Disposable;
-        addItem(i: SettingsContribution): Disposable;
-    };
-    /** 상태바 — side 로 갈라 render 를 그린다. */
-    statusBar: { add(i: StatusContribution): Disposable };
+    /** 명령 — 리본·메뉴·팔레트가 run 으로 부른다(「모든 동작은 명령」). add 는 지웠다(contributes·declare 로). */
+    commands: { run(id: string, ctx?: CommandContext): boolean };
     /** 「모든 탭 메뉴」에 항목을 더한다 — 우클릭 때 그 탭 맥락으로 factory 를 부른다. */
     menu: { addTabMenuItem(fn: (ctx: TabMenuContext) => MenuEntry[]): Disposable };
     /** 작업대 조작·구독 — 자리는 힌트까지(where). 트리 모양·setWs·DOM 은 안 준다. */
