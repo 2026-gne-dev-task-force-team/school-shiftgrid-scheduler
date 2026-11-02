@@ -7,9 +7,10 @@
  * ⭐ 모든 동작은 명령(new-folder·rename·remove·open-panel) — 리본·메뉴·키보드·팔레트가 같은 id 로 부른다.
  */
 import { createElement } from 'react';
-import type { PluginModule, PluginHost, Disposable } from '../../pane-ui-system/plugin';
+import { definePlugin } from '../../pane-ui-system/plugin';
+import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { registerType, onTypeRegistered, createTypes, type NodeTypeDef } from './model/types';
+import { onTypeRegistered, createTypes, type NodeTypeDef } from './model/types';
 import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
@@ -50,61 +51,19 @@ export function registerTypeCommands(host: PluginHost): Disposable {
     return { dispose() { sub.dispose(); for (const d of cmds.values()) d.dispose(); cmds.clear(); } };
 }
 
+/**
+ * 선언 안 되는 것만 남긴 activate(선언형 전환 D2) — 등록(뷰·명령 14·리본·상태바·노드 타입 folder)은 아래 contributes 로 옮겼다.
+ *   ⭐ 여기 남는 둘은 「동작·동적 등록」이라 선언이 아니다:
+ *     ① initStore — 저장된 나무 읽기(비동기 동작) · ⛔ await 안 한다(등록이 아니라 로드 깨우기).
+ *     ② registerTypeCommands — create 있는 타입마다 `project-explorer.new-<type>` 를 **런타임에** 켜고 끈다.
+ *        타입은 다른 플러그인(달력 등)이 런타임에 꽂아 집합이 변하니(동적) 선언으로 못 적는다 — host.declare 도
+ *        run 을 이름으로 찾는데 여기 run 은 타입마다 만드는 클로저라 못 쓴다. 그래서 옛 host.commands.add 를 그대로 둔다.
+ *   🔴 folder 노드 타입은 contributes.nodeTypes 로 옮겨 applyContributes(= activate 보다 먼저)가 꽂는다 →
+ *      registerTypeCommands 의 「활성 전 등록분 한 번 돌기」가 folder 를 잡아 new-folder 를 켠다(순서 그대로).
+ */
 function activate(host: PluginHost): void {
-    // ── 저장된 나무 읽어 들이기(host.store = IndexedDB, 비동기) — 끝날 때까지 뷰는 「불러오는 중…」 ──
-    //    🔴 await 하지 않는다(activate 는 등록만 하고 바로 돌아간다) — 로드 완료는 스토어가 알아서 깨운다.
     void initStore(host);
-
-    // ── 내장 타입: 「폴더」 하나(컨테이너) — ⛔ 유일한 내장 타입. 나머지는 각 플러그인 몫 ──
-    //    create 로 「새로 만들기 ▸ 폴더」 후보가 된다(표를 돈다 — 타입 이름 비교 없음).
-    //    🔴 registerTypeCommands 보다 먼저 꽂는다 — 그래야 「활성 전 등록분 한 번 돌기」가 folder 를 잡아 new-folder 를 켠다.
-    registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
-
-    // ── 「새로 만들기 ▸」 명령 자동 등록 — create 있는 타입마다 project-explorer.new-<type>(folder 는 new-folder). ──
-    //    🔴 N4 반쪽을 여기서 메꾼다: 메뉴가 부르는 new-<type> 명령을 아무도 등록 안 해 떨어지던 것(새 달력 저장소 먹통)을 고친다.
     registerTypeCommands(host);
-
-    // ── 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만) ──
-    //    🔴 쥔님 2026-11-01 19:34 *"탐색기가 가운데로 또 갈 수 있네 — 패널 뷰는 탭 뷰로 못 간다니까"* → areas 에서 center 를 뺐다 · split 도 뺐다(기본 false)
-    host.views.register({
-        id: 'tree', title: '탐색기', icon: 'folder', defaultArea: 'left',
-        placement: { areas: ['left', 'right'] },
-        layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
-        Component: () => createElement(ExplorerView, { host }),
-    });
-
-    // ── 명령 — 전부 등록. 대상 노드는 스토어의 「고른 노드」에서 읽는다(🙋 5) ──
-    //    🔴 reuse: true — 싱글턴을 뗐으니 리본을 또 눌러도 루트 패널은 한 장만(⚠️ reuse 는 params 를 안 본다 → 보고).
-    host.commands.add({
-        id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder',
-        run: () => { host.workspace.open(TREE_VIEW_ID, { where: 'left', reuse: true }); },
-    });
-    // 🔴 「새 폴더」(project-explorer.new-folder)는 위 registerTypeCommands 가 folder 타입에서 자동으로 켠다 — 여기서 손으로 또 꽂지 않는다(두 벌 금지).
-    host.commands.add({ id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit', run: () => renameSelected() });
-    host.commands.add({ id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash', run: () => removeSelected() });
-    // 열기 — 고른 노드의 타입 open 을 실행(실노드·유도 가상 줄 공통). 컨테이너 접기/펴기는 뷰가 맡는다.
-    host.commands.add({ id: 'project-explorer.open', title: '열기', icon: 'arrowRight', run: () => { const id = getState().selectedId; if (id) openById(id); } });
-    host.commands.add({ id: 'project-explorer.move-up', title: '위로', icon: 'left', run: () => nudgeSelected(-1) });
-    host.commands.add({ id: 'project-explorer.move-down', title: '아래로', icon: 'left', run: () => nudgeSelected(1) });
-
-    // ── 휴지통(N3) — 복원·영구삭제(인라인 확인)·비우기 · 되돌리기/다시하기 ──
-    host.commands.add({ id: 'project-explorer.restore', title: '복원', icon: 'undo', run: () => restoreSelected() });
-    host.commands.add({ id: 'project-explorer.ask-purge', title: '영구 삭제', icon: 'trash', run: () => askPurge() });
-    host.commands.add({ id: 'project-explorer.ask-purge-all', title: '휴지통 비우기', icon: 'trash', run: () => askPurgeAll() });
-    host.commands.add({ id: 'project-explorer.purge', title: '영구 삭제 확정', icon: 'trash', run: () => purgeConfirmed() });
-    host.commands.add({ id: 'project-explorer.purge-all', title: '휴지통 비우기 확정', icon: 'trash', run: () => purgeAllConfirmed() });
-    host.commands.add({ id: 'project-explorer.cancel-purge', title: '삭제 취소', icon: 'x', run: () => cancelPurgeConfirm() });
-    host.commands.add({ id: 'project-explorer.undo', title: '되돌리기', icon: 'undo', run: () => undoAction() });
-    host.commands.add({ id: 'project-explorer.redo', title: '다시 하기', icon: 'redo', run: () => redoAction() });
-
-    // ── 리본 아이콘 하나 — 누르면 탐색기 패널을 연다(reuse 로 한 장만) ──
-    host.ribbon.add({ commandId: 'project-explorer.open-panel', icon: 'folder', order: 2 });
-
-    // ── 상태바 — 「노드 N · 휴지통 M」(M=0 이면 「노드 N」만). 스토어를 스스로 구독해 바뀔 때 다시 그린다 ──
-    host.statusBar.add({ id: 'count', side: 'left', render: () => createElement(ExplorerStatus) });
-
-    // ── 첫 실행 때 왼쪽에 패널 한 번 열기(⛔ activate 에서가 아니라 여기서) ──
-    host.onFirstRun(() => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); });
 }
 
 /**
@@ -116,5 +75,72 @@ const nodesApiFactory = Object.assign(
     { __perCaller: true as const },
 );
 
-export const projectExplorerPlugin: PluginModule = { manifest, activate, api: nodesApiFactory };
+export const projectExplorerPlugin = definePlugin({
+    manifest: {
+        ...manifest,
+        // 🔴 선언형 기여 — 「무엇을 내나」를 데이터로 적는다. 함수·컴포넌트는 이름으로(아래 components·commands·renders).
+        contributes: {
+            // 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만 — center 없음·split 없음, 쥔님 2026-11-01 19:34).
+            views: [{
+                id: 'tree', title: '탐색기', icon: 'folder', defaultArea: 'left',
+                placement: { areas: ['left', 'right'] },
+                layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
+                component: 'Tree',
+            }],
+            // 명령 14 — 대상 노드는 스토어의 「고른 노드」에서 읽는다. 🔴 new-folder 는 여기 없다(registerTypeCommands 가 folder 타입에서 자동).
+            commands: [
+                { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder' },
+                { id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit' },
+                { id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
+                { id: 'project-explorer.open', title: '열기', icon: 'arrowRight' },
+                { id: 'project-explorer.move-up', title: '위로', icon: 'left' },
+                { id: 'project-explorer.move-down', title: '아래로', icon: 'left' },
+                { id: 'project-explorer.restore', title: '복원', icon: 'undo' },
+                { id: 'project-explorer.ask-purge', title: '영구 삭제', icon: 'trash' },
+                { id: 'project-explorer.ask-purge-all', title: '휴지통 비우기', icon: 'trash' },
+                { id: 'project-explorer.purge', title: '영구 삭제 확정', icon: 'trash' },
+                { id: 'project-explorer.purge-all', title: '휴지통 비우기 확정', icon: 'trash' },
+                { id: 'project-explorer.cancel-purge', title: '삭제 취소', icon: 'x' },
+                { id: 'project-explorer.undo', title: '되돌리기', icon: 'undo' },
+                { id: 'project-explorer.redo', title: '다시 하기', icon: 'redo' },
+            ],
+            // 리본 아이콘 하나 — open-panel 명령을 가리킨다(누르면 탐색기 패널).
+            ribbon: [{ commandId: 'project-explorer.open-panel', icon: 'folder', order: 2 }],
+            // 상태바 — 「노드 N · 휴지통 M」. render 는 아래 renders.Count.
+            statusBar: [{ id: 'count', side: 'left', render: 'Count' }],
+            // ⭐ 내장 노드 타입 「폴더」 하나(컨테이너) — 함수 칸 없는 순수 데이터라 impl 이 없다(folder 는 접두사 없는 예외).
+            nodeTypes: [{ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } }],
+        },
+    },
+    // 🔴 뷰·상태바 구현은 이름으로 — 호스트가 꽂을 때 host(p.host)를 끼워 넣는다(안드로이드 Context).
+    components: {
+        Tree: (p) => createElement(ExplorerView, { host: p.host }),
+    },
+    // 명령 run — 전부 여기로. host 를 쓰는 건 open-panel 뿐(나머지는 스토어 함수).
+    //   🔴 reuse: true — 싱글턴을 뗐으니 리본을 또 눌러도 루트 패널은 한 장만(⚠️ reuse 는 params 를 안 본다).
+    commands: {
+        'project-explorer.open-panel': (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left', reuse: true }); },
+        'project-explorer.rename': () => renameSelected(),
+        'project-explorer.remove': () => removeSelected(),
+        'project-explorer.open': () => { const id = getState().selectedId; if (id) openById(id); },
+        'project-explorer.move-up': () => nudgeSelected(-1),
+        'project-explorer.move-down': () => nudgeSelected(1),
+        'project-explorer.restore': () => restoreSelected(),
+        'project-explorer.ask-purge': () => askPurge(),
+        'project-explorer.ask-purge-all': () => askPurgeAll(),
+        'project-explorer.purge': () => purgeConfirmed(),
+        'project-explorer.purge-all': () => purgeAllConfirmed(),
+        'project-explorer.cancel-purge': () => cancelPurgeConfirm(),
+        'project-explorer.undo': () => undoAction(),
+        'project-explorer.redo': () => redoAction(),
+    },
+    // 상태바 그림 — 스토어를 스스로 구독해 나무가 바뀔 때 다시 그린다(host 는 안 쓴다).
+    renders: {
+        Count: () => createElement(ExplorerStatus),
+    },
+    activate,
+    // 첫 실행 때 왼쪽에 패널 한 번(⛔ activate 가 아니라 여기 — 다리가 설 때까지 호스트가 미룬다).
+    lifecycle: { onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); } },
+    api: nodesApiFactory,
+});
 export default projectExplorerPlugin;

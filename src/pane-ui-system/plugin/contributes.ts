@@ -9,8 +9,14 @@ import { createElement } from 'react';
 import type { ComponentType } from 'react';
 import type { ViewProps } from '../view-registry';
 import type {
-    PluginHost, PluginImpl, DeclareInput, Contributes, Disposable,
+    PluginHost, PluginImpl, DeclareInput, Contributes, Disposable, NodeTypeRegistrar,
 } from './types';
+
+/**
+ * 🔴 노드 타입 레지스트라의 플러그인 id — 창틀이 도메인(노드 하이라키)을 쥔 플러그인에 거는 유일한 끈이다.
+ *   ⛔ 다른 도메인 지식은 창틀에 없다. contributes.nodeTypes 를 적은 플러그인이 켜질 때만 이 id 로 api 를 찾는다.
+ */
+const NODE_TYPE_REGISTRAR = 'project-explorer';
 
 /**
  * 동적 선언 하나 — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로. host.declare 가 이걸 부른다.
@@ -68,4 +74,16 @@ export function applyContributes(c: Contributes | undefined, impl: PluginImpl, h
     for (const s of c.settings?.sections ?? []) declareOne({ kind: 'settingsSection', ...s }, impl, host);
     for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host);
     for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host);
+
+    // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). 노드 하이라키를 쥔 플러그인(NODE_TYPE_REGISTRAR)의 api 에
+    //    항목·impl·host 를 통째로 넘겨 꽂는다. 없으면(꺼짐·활성 실패·먼저 안 삼) 던져서 「활성 실패」로 올린다
+    //    — 명세 「조용히 안 넘어간다」. 코어(탐색기)가 먼저 사니 평소엔 늘 있다.
+    //    ⚠️ Disposable 은 안 모은다 — api(host.plugins.get 바인딩)가 이미 이 플러그인 주인으로 track 한다.
+    if (c.nodeTypes?.length) {
+        const reg = host.plugins.get<NodeTypeRegistrar>(NODE_TYPE_REGISTRAR);
+        if (!reg || typeof reg.registerContributed !== 'function') {
+            throw new Error(`[plugin] "${host.id}" 의 nodeTypes 기여를 받을 노드 레지스트라("${NODE_TYPE_REGISTRAR}")가 없다 — 켜져 있고 먼저 산 코어인가`);
+        }
+        for (const nt of c.nodeTypes) reg.registerContributed(nt, impl, host);
+    }
 }

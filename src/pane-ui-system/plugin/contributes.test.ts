@@ -37,7 +37,7 @@ function viewHostId(viewId: string): string | undefined {
 }
 
 /** 쓰는 주인들을 깨끗이 — 뷰 레지스트리까지 비운다(모듈 전역). */
-const OWNERS = ['cfake', 'badfake', 'dyn', 'oldfake', 'lifefake'];
+const OWNERS = ['cfake', 'badfake', 'dyn', 'oldfake', 'lifefake', 'project-explorer', 'ntfake', 'ntbad'];
 beforeEach(() => {
     for (const o of OWNERS) disposeOwner(o);
     clearViews();
@@ -151,6 +151,53 @@ describe('④ 옛 길(activate 안 함수 직접 등록)로도 그대로 켜진�
         expect(getView('oldfake.v')).toBeTruthy();
         expect(getCommand('oldfake.cmd')).toBeTruthy();
         expect(listPlugins().find((p) => p.id === 'oldfake')?.failed).toBe(false);
+    });
+});
+
+describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)에 통째로 넘어간다', () => {
+    /** id='project-explorer' 인 가짜 레지스트라(코어 — 먼저 산다). registerContributed 가 받은 것을 기록한다. */
+    function registrar(got: { type: string; implHas: boolean; hostId?: string }[]): PluginModule {
+        return {
+            manifest: { id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
+            api: {
+                registerContributed(item: { type: string }, impl: PluginImpl, host: PluginHost) {
+                    got.push({ type: item.type, implHas: !!impl.nodeTypes, hostId: host.id });
+                    return { dispose() { /* 테스트 */ } };
+                },
+            },
+        };
+    }
+
+    it('nodeTypes 를 적은 플러그인이 켜지면 레지스트라가 항목·impl·host 를 받는다', () => {
+        const got: { type: string; implHas: boolean; hostId?: string }[] = [];
+        const consumer = definePlugin({
+            manifest: {
+                id: 'ntfake', name: 'NT', version: '0.1.0', minHostVersion: '0.1.0',
+                contributes: { nodeTypes: [{ type: 'ntfake.box', label: '상자', impl: 'boxFns' }] },
+            },
+            nodeTypes: { boxFns: { open: () => { /* 함수 묶음 */ } } },
+        });
+
+        activateAll([registrar(got), consumer]);
+
+        expect(got.length, '레지스트라가 한 번 불린다').toBe(1);
+        expect(got[0].type).toBe('ntfake.box');
+        expect(got[0].implHas, 'impl(함수 묶음)이 레지스트라로 넘어간다').toBe(true);
+        expect(got[0].hostId, '그 플러그인 host 가 넘어간다').toBe('ntfake');
+        expect(listPlugins().find((p) => p.id === 'ntfake')?.failed).toBe(false);
+    });
+
+    it('레지스트라가 없으면 활성 실패(조용히 안 넘어간다)', () => {
+        const consumer: PluginModule = {
+            manifest: {
+                id: 'ntbad', name: 'NTB', version: '0.1.0', minHostVersion: '0.1.0',
+                contributes: { nodeTypes: [{ type: 'ntbad.box', label: '상자' }] },
+            },
+        };
+
+        activateAll([consumer]);   // 레지스트라(project-explorer) 없음
+
+        expect(listPlugins().find((p) => p.id === 'ntbad')?.failed, 'nodeTypes 를 받을 데가 없으면 활성 실패').toBe(true);
     });
 });
 
