@@ -4,7 +4,7 @@
  *   ② 설정 화면 뷰 하나(settings.main)를 contributes.views 로 적는다.
  *   실행에 필요한 Pane·컴포넌트는 panes·components 로 이름 붙여 내놓고, 짝은 호스트가 맞춘다.
  *
- * 📌 2026-11-02 선언형 전환(D1): 옛 activate 안 host.settings.add* · host.views.register 호출을 전부 contributes 로 옮겼다.
+ * 📌 2026-11-02 선언형 전환(D1): 옛 onActivate 안 host.settings.add* · host.views.register 호출을 전부 contributes 로 옮겼다.
  *    섹션·항목·순서·제목·화면은 전후 같다(applyContributes 는 섹션 전부→항목 전부 순으로 꽂지만,
  *    listSettings 가 seq 로 정렬해 섹션별로 묶으므로 최종 상대 순서가 옛 결과와 같다).
  *

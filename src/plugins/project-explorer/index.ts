@@ -2,7 +2,7 @@
  * 「탐색기」 플러그인 — 노드 하이라키 한 벌 + 파일 탐색기 패널(설계 「노드 시스템 요구명세」 N1).
  *   쥔님 2026-11-01: *"노드 타입이나 그런 거는 여기서 규격만 정해주고 … 탐색기처럼 보여주면 돼"*.
  *
- * 🔴 ⛔ activate 는 등록만 한다 — 여기서 탭을 열지 않는다(onFirstRun 에서만 왼쪽 패널을 한 번 연다).
+ * 🔴 ⛔ onActivate 는 등록만 한다 — 여기서 탭을 열지 않는다(onFirstRun 에서만 왼쪽 패널을 한 번 연다).
  * ⭐ 내장 타입은 「폴더」 하나뿐 — 교사·시간표 같은 실제 타입은 각 플러그인이 규격에 맞춰 꽂는다(N4).
  * ⭐ 모든 동작은 명령(new-folder·rename·remove·open-panel) — 리본·메뉴·키보드·팔레트가 같은 id 로 부른다.
  */
@@ -55,16 +55,16 @@ export function registerTypeCommands(host: PluginHost): Disposable {
 }
 
 /**
- * 선언 안 되는 것만 남긴 activate(선언형 전환 D2) — 등록(뷰·명령 14·리본·상태바·노드 타입 folder)은 아래 contributes 로 옮겼다.
+ * 선언 안 되는 것만 남긴 onActivate(선언형 전환 D2) — 등록(뷰·명령 14·리본·상태바·노드 타입 folder)은 아래 contributes 로 옮겼다.
  *   ⭐ 여기 남는 둘은 「동작·동적 등록」이라 선언이 아니다:
  *     ① initStore — 저장된 나무 읽기(비동기 동작) · ⛔ await 안 한다(등록이 아니라 로드 깨우기).
  *     ② registerTypeCommands — create 있는 타입마다 `project-explorer.new-<type>` 를 **런타임에** 켜고 끈다.
  *        타입은 다른 플러그인(달력 등)이 런타임에 꽂아 집합이 변하니(동적) contributes 에 못 적는다 — id 가 런타임값이라서다.
  *        그래서 host.declare 로: 구현은 하나(commands.newNode)고 타입을 args{type} 데이터로 넘긴다(명세 「구현하며 바뀐 것 둘」 ②).
- *   🔴 folder 노드 타입은 contributes.nodeTypes 로 옮겨 applyContributes(= activate 보다 먼저)가 꽂는다 →
+ *   🔴 folder 노드 타입은 contributes.nodeTypes 로 옮겨 applyContributes(= onActivate 보다 먼저)가 꽂는다 →
  *      registerTypeCommands 의 「활성 전 등록분 한 번 돌기」가 folder 를 잡아 new-folder 를 켠다(순서 그대로).
  */
-function activate(host: PluginHost): void {
+function onActivate(host: PluginHost): void {
     void initStore(host);
     registerTypeCommands(host);
 }
@@ -144,9 +144,8 @@ export const projectExplorerPlugin = definePlugin({
     renders: {
         Count: () => createElement(ExplorerStatus),
     },
-    activate,
-    // 첫 실행 때 왼쪽에 패널 한 번(⛔ activate 가 아니라 여기 — 다리가 설 때까지 호스트가 미룬다).
-    lifecycle: { onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); } },
+    // 첫 실행 때 왼쪽에 패널 한 번(⛔ onActivate 가 아니라 여기 — 다리가 설 때까지 호스트가 미룬다).
+    lifecycle: { onActivate, onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); } },
     api: nodesApiFactory,
 });
 export default projectExplorerPlugin;

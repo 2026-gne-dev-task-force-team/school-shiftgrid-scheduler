@@ -45,14 +45,12 @@ export interface PluginManifest {
  * 플러그인 = 객체 하나(클래스 상속 안 함).
  *   ⭐ 선언형 전환(2026-11-02): 등록은 manifest.contributes 로 적고, 실행 함수·컴포넌트는 아래 이름 붙은 칸으로 내놓는다.
  *      매니페스트가 가리키는 이름(component·pane·render·command id)을 호스트가 이 칸에서 찾아 꽂는다.
- *   🔴 activate 는 이제 선택이다 — 등록이 아니라 「구독·동작」(workspace.on·onFirstRun 등)만 남을 때 쓴다.
- *      activate 와 lifecycle.onActivate 둘 다 있으면 activate 먼저, 그 다음 onActivate(활성 순서는 로더가 쥔다).
+ *   🔴 lifecycle.onActivate 는 이제 선택이다 — 등록이 아니라 「구독·동작」(workspace.on·onFirstRun 등)만 남을 때 쓴다.
+ *      활성 순서는 로더가 쥔다(contributes 꽂기 → onActivate → onFirstRun).
  */
 export interface PluginModule extends PluginImpl {
     manifest: PluginManifest;
-    /** 선택 — 등록 외 동작·구독. ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가 한다). */
-    activate?: (host: PluginHost) => void | Promise<void>;
-    /** 선택 — 수명주기 훅(안드로이드 onCreate 결). onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */
+    /** 선택 — 수명주기 훅(안드로이드 onCreate 결). onActivate 는 등록 외 동작·구독, onFirstRun 은 첫 실행 때 한 번. */
     lifecycle?: PluginLifecycle;
     deactivate?: () => void;   // 선택 — 등록물 회수는 호스트가 한다(P2)
     /**
@@ -253,7 +251,7 @@ export interface PluginImpl {
     nodeTypes?: Record<string, unknown>;
 }
 
-/** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */
+/** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 등록 뒤 동작·구독, onFirstRun 은 첫 실행 때 한 번. */
 export interface PluginLifecycle {
     onActivate?(host: PluginHost): void | Promise<void>;
     onFirstRun?(host: PluginHost): void;

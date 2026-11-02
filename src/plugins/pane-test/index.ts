@@ -11,8 +11,8 @@
  *    manifest.contributes 로 적어 두고, 실행에 필요한 함수·컴포넌트는 아래 components·commands·panes·renders
  *    로 이름 붙여 내놓는다. 짝은 호스트가 맞춘다(안드로이드 매니페스트 결). 옛 5종 register/add 는 안 쓴다.
  *   ⭐ 「동적인 것은 어디 남나」의 본보기: 상태바가 둘로 갈린다 —
- *      · open-count 는 늘 뜨니 **선언**(contributes.statusBar)이고, 그 수를 세는 workspace.on 구독만 activate 에 남는다.
- *      · node-count 는 탐색기 api 가 있을 때만 뜨니 **조건부라 선언이 아니다** — activate 에서 host.declare 로 급조한다.
+ *      · open-count 는 늘 뜨니 **선언**(contributes.statusBar)이고, 그 수를 세는 workspace.on 구독만 onActivate 에 남는다.
+ *      · node-count 는 탐색기 api 가 있을 때만 뜨니 **조건부라 선언이 아니다** — onActivate 에서 host.declare 로 급조한다.
  *    선언에는 조건이 없다(명세 「여기서 죽는다: 조건부 등록」) — 조건이 붙는 것만 declare 로 간다.
  */
 import { createElement } from 'react';
@@ -110,7 +110,7 @@ const commandDefs: CommandContribution[] = [
  * 활성(선택) — 선언 안 되는 것만 남는다: 상태바 open-count 를 먹이는 작업대 구독, 그리고 조건부 노드 배선.
  *   🔴 ⛔ 여기서 탭을 열지 않는다(열기는 리본·명령이). 등록(뷰·명령·리본·설정·상태바 open-count)은 contributes 가 끝냈다.
  */
-function activate(host: PluginHost): void {
+function onActivate(host: PluginHost): void {
     // ── 상태바 open-count 는 contributes 가 꽂았다. 여기선 그 수를 세는 구독만 — 열린 시험 뷰(샘플) 수 ──
     const openSamples = new Set<string>();
     const isSample = (viewId?: string) => !!viewId && viewId.startsWith('pane-test.') && viewId !== CONSOLE_ID;
@@ -156,6 +156,6 @@ export const paneTestPlugin = definePlugin({
     commands,
     panes,
     renders,
-    activate,
+    lifecycle: { onActivate },
 });
 export default paneTestPlugin;

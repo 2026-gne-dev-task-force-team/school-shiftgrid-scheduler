@@ -20,7 +20,7 @@ let hostRef: PluginHost | null = null;
 const listeners = new Set<() => void>();
 const emit = () => { for (const l of listeners) l(); };
 
-/** activate 에서 한 번 — 저장된 값을 읽어 온다 */
+/** onActivate 에서 한 번 — 저장된 값을 읽어 온다 */
 export function initOptions(host: PluginHost): void {
     hostRef = host;
     const saved = host.storage.get<Partial<CalendarOptions>>(KEY, {});

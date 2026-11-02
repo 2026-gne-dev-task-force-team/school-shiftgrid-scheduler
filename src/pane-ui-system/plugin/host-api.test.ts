@@ -87,20 +87,20 @@ describe('host.workspace.on — open/close/activate 를 fireWorkspace 가 쏘면
     it('세 이벤트가 각각 제 콜백으로 간다', () => {
         const h = fresh();
         const got: string[] = [];
-        h.workspace.on('open', (l) => got.push(`open:${l.viewId}`));
-        h.workspace.on('activate', (l) => got.push(`activate:${l.viewId}`));
-        h.workspace.on('close', (l) => got.push(`close:${l.viewId}`));
+        h.workspace.on('open', (l) => got.push(`open ${l.viewId}`));
+        h.workspace.on('activate', (l) => got.push(`activate ${l.viewId}`));
+        h.workspace.on('close', (l) => got.push(`close ${l.viewId}`));
         fireWorkspace('open', { id: 'a', viewId: 't.v' });
         fireWorkspace('activate', { id: 'a', viewId: 't.v' });
         fireWorkspace('close', { id: 'a', viewId: 't.v' });
-        expect(got).toEqual(['open:t.v', 'activate:t.v', 'close:t.v']);
+        expect(got).toEqual(['open t.v', 'activate t.v', 'close t.v']);
     });
 });
 
 describe('host.plugins.get — 다른 플러그인의 공개 api(N4)', () => {
     /** 공개 api 를 든 모듈 하나 — 활성/비활성에 따라 get 이 달라지는지 본다. */
     function mod(id: string, api: unknown, core = false): PluginModule {
-        return { manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core }, activate() { /* 등록 없음 */ }, api };
+        return { manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core }, lifecycle: { onActivate() { /* 등록 없음 */ } }, api };
     }
 
     beforeEach(() => {

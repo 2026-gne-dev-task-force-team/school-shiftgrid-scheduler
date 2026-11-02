@@ -2,7 +2,7 @@
  * 유도 자식 캐시 — 노드마다 derive() 결과를 한 번 계산해 둔다(설계 「노드마다 캐시」).
  *   🔴 다시 계산하는 때는 둘뿐: ① 나무가 바뀌어 그 노드가 changedIds 에 들어올 때(store 가 invalidate)
  *      ② 플러그인이 nodes.invalidate(id) 를 부를 때. 그 밖엔 캐시를 쓴다(derive 가 비싸도 괜찮게).
- *   🔴 derive 가 던지면 「유도 실패」로 접어 둔다 — 나무는 산다(플러그인 activate 예외 격리와 같은 결).
+ *   🔴 derive 가 던지면 「유도 실패」로 접어 둔다 — 나무는 산다(플러그인 onActivate 예외 격리와 같은 결).
  */
 import type { Node } from './tree';
 import type { NodeTypeDef, VirtualNode } from './types';

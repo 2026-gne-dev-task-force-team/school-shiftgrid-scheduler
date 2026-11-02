@@ -1,7 +1,7 @@
 /**
  * 선언형 전환 증명(D2) — 탐색기를 선언형(definePlugin + contributes)으로 켜도 **옛 집합과 같다**.
  *   ① 실 플러그인을 activateAll 로 켜면 뷰1·명령15(14 선언 + new-folder 자동)·리본1·상태바1 이 옛 그대로 선다
- *   ② 노드 타입 folder 가 contributes.nodeTypes 로 꽂힌다(activate 는 이제 registerType 을 안 부른다 → 켜졌으면 레지스트라 경로다)
+ *   ② 노드 타입 folder 가 contributes.nodeTypes 로 꽂힌다(onActivate 는 이제 registerType 을 안 부른다 → 켜졌으면 레지스트라 경로다)
  *      + 그 덕에 registerTypeCommands 가 new-folder 를 자동으로 켠다(순서 보존)
  *
  *   🔴 store 가 비동기 로드(kv)라 kv 를 메모리로 모킹한다(new-node-command.test 와 같은 결) — 등록만 보니 초기화는 비워도 된다.
@@ -59,7 +59,7 @@ describe('① 선언형으로 켜도 뷰·명령·리본·상태바가 옛 집�
 });
 
 describe('② folder 노드 타입은 contributes.nodeTypes 로 꽂힌다(레지스트라 경로)', () => {
-    it('켜면 folder 가 등록되고(activate 는 registerType 을 안 부른다) new-folder 가 자동으로 선다', () => {
+    it('켜면 folder 가 등록되고(onActivate 는 registerType 을 안 부른다) new-folder 가 자동으로 선다', () => {
         activateAll([projectExplorerPlugin]);
 
         expect(isKnownType('folder'), 'folder 가 레지스트리에 있다 = contributes→registerContributed 로 꽂혔다').toBe(true);

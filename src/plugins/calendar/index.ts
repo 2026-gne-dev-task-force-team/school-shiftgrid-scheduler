@@ -5,7 +5,7 @@
  *
  * ⭐ 선언형 전환(2026-11-02 D3): 뷰·명령·리본·설정을 매니페스트 contributes 에 「적고」, 실행 함수·컴포넌트는
  *    이름 붙여 내놓는다(components·commands·panes). 짝은 호스트가 맞춘다(옛 host.*.register/add 는 없앴다).
- *    🔴 ⛔ 선언 안 되는 것만 activate 에 남는다 — 노드 타입 등록(plugins.get)·스토어 초기화·노드 다리 구독,
+ *    🔴 ⛔ 선언 안 되는 것만 lifecycle.onActivate 에 남는다 — 노드 타입 등록(plugins.get)·스토어 초기화·노드 다리 구독,
  *       첫 실행 기본 배치는 lifecycle.onFirstRun. 화면·기능은 전후 같다.
  *
  * 싱글턴·가운데·안 가름 — pane-test 와 같은 placement(딱 한 장만, 가운데만, 못 가른다).
@@ -68,7 +68,7 @@ export const calendarPlugin = definePlugin({
                 items: [{ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', pane: 'Settings' }],
             },
             // 🔴 노드 타입 둘(저장소·일정) — 선언형 전환 D5. 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
-            //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 activate 의 registerCalendarTypes 를 대체.
+            //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 onActivate 의 registerCalendarTypes 를 대체.
             nodeTypes: calendarNodeTypes,
         },
     },
@@ -96,28 +96,27 @@ export const calendarPlugin = definePlugin({
         'calendar.openMini': (host: PluginHost) => { host.workspace.open(MINI_ID, { where: 'right' }); },
     },
     panes: {
-        // 설정 「달력」 판 본문 — 기기별 옵션 토글. host 는 안 쓴다(initOptions 가 activate 에서 쥐었다).
+        // 설정 「달력」 판 본문 — 기기별 옵션 토글. host 는 안 쓴다(initOptions 가 onActivate 에서 쥐었다).
         Settings: (_p: { host: PluginHost }) => createElement(CalendarSettings),
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
     nodeTypes: calendarNodeTypeImpl,
 
-    /**
-     * 선언 안 되는 것만 — 스토어 초기화·노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
-     *   🔴 ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가, 첫 배치는 onFirstRun 이 한다).
-     */
-    activate(host: PluginHost) {
-        // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
-        initOptions(host);
-
-        // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
-        //    노드 타입 둘(저장소·일정)은 contributes.nodeTypes 가 applyContributes(= activate 보다 먼저)에서 꽂았다.
-        //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
-        const nodes = host.plugins.get<NodesApi>('project-explorer');
-        initCalendarNodes(nodes ?? null);
-    },
-
     lifecycle: {
+        /**
+         * 선언 안 되는 것만 — 스토어 초기화·노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
+         *   🔴 ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가, 첫 배치는 onFirstRun 이 한다).
+         */
+        onActivate(host: PluginHost) {
+            // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
+            initOptions(host);
+
+            // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
+            //    노드 타입 둘(저장소·일정)은 contributes.nodeTypes 가 applyContributes(= onActivate 보다 먼저)에서 꽂았다.
+            //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
+            const nodes = host.plugins.get<NodesApi>('project-explorer');
+            initCalendarNodes(nodes ?? null);
+        },
         /**
          * 첫 실행 기본 배치: 가운데 달력 탭 하나 + 오른쪽 패널에 작은 달력(쥔님 2026-11-01 21:47·2026-11-02 15:52).
          *   🔴 ⛔ 기기별 플래그라 한 번만 — 이미 쓰던 기기는 저장된 워크스페이스가 있어 안 바뀐다(⛔ 저장된 배치를 덮지 않는다).

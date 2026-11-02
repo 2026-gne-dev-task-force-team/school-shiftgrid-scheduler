@@ -6,8 +6,8 @@
  *      🔴 명령은 (host, ctx) 를, 뷰 컴포넌트는 props.host 를 받는다(호스트가 꽂을 때 바인딩 — 안드로이드 Context)
  *   ② 이름이 구현에 없는 가짜 플러그인은 「활성 실패」로 보인다(조용히 안 넘어간다)
  *   ③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩하고, dispose 로 빠지고, 이름 없으면 던진다
- *   ④ 옛 길(activate 안에서 host.views.register·host.commands.add 함수 직접)로도 그대로 켜진다
- *   ⑤ 활성 순서: contributes → activate → lifecycle.onActivate
+ *   ④ 옛 길(onActivate 안에서 host.views.register·host.commands.add 함수 직접)로도 그대로 켜진다
+ *   ⑤ 활성 순서: contributes → lifecycle.onActivate
  *
  * 🔴 모듈 전역 스토어·뷰 레지스트리라 테스트끼리 안 번지게 beforeEach 에서 비운다.
  */
@@ -135,7 +135,7 @@ describe('③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩
     });
 });
 
-// ④ 「옛 길(activate 안 host.views.register·host.commands.add 직접 등록)」 케이스는 D5③ 에서 그 5종을 지워
+// ④ 「옛 길(onActivate 안 host.views.register·host.commands.add 직접 등록)」 케이스는 D5③ 에서 그 5종을 지워
 //    길 자체가 없어졌으므로 제거했다(선언형 전환 마무리 — 플러그인이 꽂는 길은 contributes·declare 둘뿐).
 
 describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)에 통째로 넘어간다', () => {
@@ -185,8 +185,8 @@ describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)
     });
 });
 
-describe('⑤ 활성 순서 — contributes → activate → lifecycle.onActivate', () => {
-    it('셋이 적힌 순서대로 돈다', () => {
+describe('⑤ 활성 순서 — contributes → lifecycle.onActivate', () => {
+    it('contributes 가 먼저라 onActivate 시점에 명령이 이미 보인다', () => {
         const order: string[] = [];
         const life = definePlugin({
             manifest: {
@@ -194,13 +194,12 @@ describe('⑤ 활성 순서 — contributes → activate → lifecycle.onActivat
                 contributes: { commands: [{ id: 'lifefake.a', title: 'A' }] },
             },
             commands: { 'lifefake.a': () => { /* 동작 */ } },
-            activate: () => { order.push(getCommand('lifefake.a') ? 'activate(뒤:contributes 보임)' : 'activate'); },
-            lifecycle: { onActivate: () => { order.push('onActivate'); } },
+            lifecycle: { onActivate: () => { order.push(getCommand('lifefake.a') ? 'onActivate(뒤:contributes 보임)' : 'onActivate'); } },
         });
 
         activateAll([life]);
 
-        // contributes 가 먼저라 activate 시점에 명령이 이미 보인다 · onActivate 는 activate 뒤
-        expect(order).toEqual(['activate(뒤:contributes 보임)', 'onActivate']);
+        // contributes 가 먼저라 onActivate 시점에 명령이 이미 보인다
+        expect(order).toEqual(['onActivate(뒤:contributes 보임)']);
     });
 });

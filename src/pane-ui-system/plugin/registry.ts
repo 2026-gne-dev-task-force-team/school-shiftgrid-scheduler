@@ -2,7 +2,7 @@
  * 플러그인 수명주기 — 활성 · 비활성 · 다시 켜기. 정적 번들(모듈 배열).
  *
  * 🔴 activateAll 은 React 가 뜨기 전 main.tsx 에서 **한 번** 부른다(effect 안에서 안 부른다 — StrictMode 가 두 번 돈다).
- * 🔴 activate 가 던져도 **그 플러그인만** 실패하고 나머지는 계속 산다 — 하나가 앱을 못 뜨게 하면 안 된다.
+ * 🔴 onActivate 가 던져도 **그 플러그인만** 실패하고 나머지는 계속 산다 — 하나가 앱을 못 뜨게 하면 안 된다.
  *
  * ⭐ 비활성 = 그 주인의 Disposable 전부 회수(뷰·리본·설정·상태바·메뉴·명령·구독). 열려 있던 leaf 는 트리에 남아
  *    자리표시가 된다(EditorArea 가 ownerOfView 로 주인을 알아내 「켜기」를 단다). 다시 켜면 그 자리에서 실뷰로.
@@ -18,7 +18,7 @@ import { disposeOwner } from './store';
 
 // ── 설치된 모듈 + 상태 ──
 let installed: PluginModule[] = [];
-const failedIds = new Set<string>();      // activate 가 던졌거나 minHostVersion 미달
+const failedIds = new Set<string>();      // onActivate 가 던졌거나 minHostVersion 미달
 let disabledIds = new Set<string>();      // 사용자가 끈 것(기기별 저장)
 
 // ── 기기별 저장: { disabled: string[] } ──
@@ -69,13 +69,12 @@ function activateOne(m: PluginModule): void {
         return;
     }
     try {
-        // 🔴 순서: contributes 꽂기 → activate → lifecycle.onActivate → onFirstRun.
-        //    호스트 하나를 만들어 넷이 같이 쓴다(등록물은 전부 이 주인 꼬리표로 모여 끌 때 회수된다).
+        // 🔴 순서: contributes 꽂기 → lifecycle.onActivate → onFirstRun.
+        //    호스트 하나를 만들어 셋이 같이 쓴다(등록물은 전부 이 주인 꼬리표로 모여 끌 때 회수된다).
         //    applyContributes 가 이름 어긋남에 던지면 아래 catch 가 받아 「활성 실패」로 올린다(조용히 안 넘긴다).
         const host = makeHost(m.manifest.id, m);
         applyContributes(m.manifest.contributes, m, host);
-        // activate 는 선택이다(선언형 전환) — 등록은 contributes 가 하고, activate 는 구독·동작만 남는다.
-        if (m.activate) void m.activate(host);
+        // onActivate 는 선택이다(선언형 전환) — 등록은 contributes 가 하고, onActivate 는 구독·동작만 남는다.
         if (m.lifecycle?.onActivate) void m.lifecycle.onActivate(host);
         if (m.lifecycle?.onFirstRun) {
             const firstRun = m.lifecycle.onFirstRun;
@@ -98,7 +97,7 @@ export function activateAll(modules: PluginModule[]): void {
     }
 }
 
-/** 다시 켜기 — 등록물을 깨끗이 비우고 activate 를 다시 돌린다(그 자리 leaf 가 실뷰로 돌아온다). */
+/** 다시 켜기 — 등록물을 깨끗이 비우고 활성(onActivate)을 다시 돌린다(그 자리 leaf 가 실뷰로 돌아온다). */
 export function enablePlugin(id: string): void {
     const m = installed.find((x) => x.manifest.id === id);
     if (!m) return;

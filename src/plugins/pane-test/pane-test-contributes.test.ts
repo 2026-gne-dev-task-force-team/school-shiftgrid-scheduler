@@ -1,10 +1,10 @@
 /**
  * pane-test 선언형 전환 증명(D4) — contributes 로 꽂힌 집합이 「옛 집합」과 같고, 상태바 render 가 host 를 받나.
  *
- * ⭐ 「옛 집합」은 아래 골든 리터럴이다(전환 전 activate 가 register/add 로 꽂던 것) — 독립 오라클이라
+ * ⭐ 「옛 집합」은 아래 골든 리터럴이다(전환 전 onActivate 가 register/add 로 꽂던 것) — 독립 오라클이라
  *    새 contributes 가 뷰·명령·리본·설정·상태바 중 하나라도 빠뜨리거나 이름이 밀리면 여기서 잡힌다.
  * 🔴 상태바 가름의 본보기: open-count 는 늘 뜨니 선언(contributes.statusBar)으로 꽂히고,
- *    node-count 는 탐색기 api 가 있을 때만이라 activate 의 host.declare 로 — 탐색기 없는 이 테스트에선 안 떠야 맞다.
+ *    node-count 는 탐색기 api 가 있을 때만이라 onActivate 의 host.declare 로 — 탐색기 없는 이 테스트에선 안 떠야 맞다.
  * 🔴 상태바 render 가 host 를 받나: renders.OpenCount 를 탐침으로 바꿔 끼워, 등록된 render() 가 불릴 때
  *    pane-test 의 host(id)가 넘어오는지 본다(declareOne 이 `render: () => fn(host)` 로 감싼다).
  */
@@ -17,7 +17,7 @@ import {
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import { paneTestPlugin } from './index';
 
-// ── 옛 집합(골든) — 전환 전 activate 가 꽂던 그대로 ──
+// ── 옛 집합(골든) — 전환 전 onActivate 가 꽂던 그대로 ──
 const SAMPLE_IDS = ['panel-a', 'panel-b', 'panel-c', 'panel-d', 'tab-ga', 'tab-na', 'tab-da', 'tab-ra', 'scroll'];
 const GOLDEN_VIEWS = ['pane-test.console', ...SAMPLE_IDS.map((id) => `pane-test.${id}`)];
 const GOLDEN_CMDS = ['pane-test.open', ...SAMPLE_IDS.map((id) => `pane-test.open-${id}`)];

@@ -56,7 +56,6 @@ export function definePlugin<
     renders?: R;
     /** 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이 이 키를 가리킨다(오타는 tsc 가 잡는다). */
     nodeTypes?: NT;
-    activate?: (host: PluginHost) => void | Promise<void>;
     lifecycle?: PluginLifecycle;
     deactivate?: () => void;
     api?: unknown;

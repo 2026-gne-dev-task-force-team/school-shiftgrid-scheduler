@@ -1,7 +1,7 @@
 /**
  * 달력 선언형 전환 증명(D3) — 매니페스트 contributes 로 켜면 「옛 집합」과 같은 뷰·명령·리본·설정이 꽂히나.
  *
- * ⭐ 옛 길은 activate 안에서 host.views.register·commands.add·ribbon.add·settings.addSection/addItem 를
+ * ⭐ 옛 길은 onActivate 안에서 host.views.register·commands.add·ribbon.add·settings.addSection/addItem 를
  *    직접 불렀다. 지금은 contributes 에 적고 이름으로 구현을 가리킨다 — 꽂힌 결과(레지스트리)는 전후 같아야 한다.
  *    그래서 「옛 집합」을 골든으로 박아 두고 대조한다(한 글자라도 달라지면 여기서 걸린다).
  *
@@ -18,7 +18,7 @@ import { calendarPlugin } from './index';
 
 // 🔴 calendar 가 선언형 전환(D5) 로 contributes.nodeTypes(저장소·일정)를 내므로, 그걸 받을 노드 레지스트라(코어)가
 //    먼저 켜져 있어야 한다 — 없으면 applyContributes 가 던져 calendar 가 활성 실패로 올라간다. 여기선 뷰·명령·리본·설정
-//    집합만 보므로 노드 쪽은 최소 가짜로 둔다(registerContributed·subscribe·byType — calendar activate 의 다리가 쓴다).
+//    집합만 보므로 노드 쪽은 최소 가짜로 둔다(registerContributed·subscribe·byType — calendar onActivate 의 다리가 쓴다).
 const registrar: PluginModule = {
     manifest: { id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
     api: {

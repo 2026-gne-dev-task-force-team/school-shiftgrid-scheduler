@@ -2,7 +2,7 @@
  * settings 플러그인 선언형 전환 증명(D1) — 가짜 호스트로 켜면 contributes 로 꽂힌 섹션·항목이
  *   옛 호출형(host.settings.addSection/addItem)이 내던 것과 같은 집합·같은 순서인가.
  *
- * ⭐ 「옛 결과」는 전환 전 index.ts 의 activate 가 만들던 골든 구조다(아래 EXPECTED):
+ * ⭐ 「옛 결과」는 전환 전 index.ts 의 onActivate 가 만들던 골든 구조다(아래 EXPECTED):
  *   섹션 순서 모양→창틀→플러그인→정보, 창틀 안 패널→리본. 전환 뒤에도 listSettings 가 같은 걸 내야 한다.
  *
  * 🔴 모듈 전역 스토어·뷰 레지스트리라 다른 테스트와 안 번지게 뒤에 비운다.
@@ -14,7 +14,7 @@ import { listSettings } from '../../pane-ui-system/plugin/store';
 import { disposeOwner } from '../../pane-ui-system/plugin/store';
 import { settingsPlugin } from './index';
 
-// 전환 전 activate 가 만들던 골든 구조 — 섹션 id·제목·순서 + 섹션별 항목 id·순서.
+// 전환 전 onActivate 가 만들던 골든 구조 — 섹션 id·제목·순서 + 섹션별 항목 id·순서.
 const EXPECTED = [
     { id: 'appearance', title: '모양', items: ['theme'] },
     { id: 'frame', title: '창틀', items: ['pane', 'ribbon'] },
