@@ -11,7 +11,7 @@
  *
  *   trailing: 머리줄 오른쪽 끝에 그대로 그린다 — 메인이 전환 단추를 여기 꽂는다.
  */
-import { memo, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { IconButton, isoOf, startOfWeek, monthLabel, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
@@ -21,6 +21,10 @@ import { createEvent } from '../nodes';
 import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { useRangeSelect, type RangeHit } from './useRangeSelect';
+import { timeSelection, timeSliceForDay, floorToSnap, type CalSelection } from '../selection';
+
+const SNAP_MIN = 30;   // 시간 칸 스냅 — 더블클릭 생성(onGridDouble)과 같은 30분 단위
 
 const WEEK_START = 0;                 // 주 시작 요일 일요일 고정(월 보기와 같다 — 설정으로 뺄 자리)
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -102,8 +106,8 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
 }
 
 /** 날 열 하나 — 시간마다 가로선 · 오늘이면 지금 시각 선 · 달·분기 경계 열 왼쪽 선 굵게 · 종일 바(맨 위) + 시간 카드 */
-const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMin, boundary, dayIndex }: {
-    offset: number; left: number; width: number; todayIso: string; nowMin: number; boundary: ColBoundary; dayIndex: Map<string, CalEvent[]>;
+const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMin, boundary, dayIndex, selection }: {
+    offset: number; left: number; width: number; todayIso: string; nowMin: number; boundary: ColBoundary; dayIndex: Map<string, CalEvent[]>; selection: CalSelection;
 }) {
     const d = dayAt(offset);
     const iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
@@ -112,8 +116,16 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     const dayEvents = dayIndex.get(iso) ?? [];
     const allDay = dayEvents.filter((e) => e.allDay);
     const timed = dayEvents.filter((e) => !e.allDay);
+    // 고른 범위를 이 열에 자른 구간 — 알약 카드 아래 z(맨 앞 자식이라 뒤 형제들이 위에 그려진다) · 포인터 안 먹음
+    const slice = timeSliceForDay(selection, dayStartMs, iso);
     return (
         <div data-day-offset={offset} className={`absolute top-0 ${boundaryBorderClass(boundary)}`} style={{ left, width, height: HOURS * HOUR_H }}>
+            {slice && (
+                <div
+                    className="absolute left-0 right-0 pointer-events-none bg-accent/[0.14] ring-1 ring-inset ring-accent"
+                    style={{ top: ((slice.startMs - dayStartMs) / 60_000) * (HOUR_H / 60), height: ((slice.endMs - slice.startMs) / 60_000) * (HOUR_H / 60) }}
+                />
+            )}
             {HOUR_LINES.map((h) => (
                 <div key={h} className="absolute left-0 right-0 border-t border-line" style={{ top: h * HOUR_H }} />
             ))}
@@ -137,7 +149,7 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     );
 });
 
-export function TimeGridView({ days, value, onChange, trailing, peek }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
+export function TimeGridView({ days, value, onChange, trailing, peek, selection, onSelect }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -192,6 +204,39 @@ export function TimeGridView({ days, value, onChange, trailing, peek }: { days: 
         if (id) card.open(id);
     };
 
+    // 범위 선택 — 빈 시간 칸을 죽 끌어 [start,end) 를 고른다(일정 생성 아님). anchor 는 슬롯 시작 ms.
+    const selAnchor = useRef<number | null>(null);
+    const slotMs = (offset: number, slotMin: number) => dayAt(offset).getTime() + slotMin * 60_000;
+    const resolveSlot = (x: number, y: number): RangeHit<{ offset: number; slotMin: number }> => {
+        const el = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (!el) return { value: null, onEvent: false };
+        const onEvent = !!el.closest('[data-event-id]');
+        const colEl = el.closest('[data-day-offset]') as HTMLElement | null;
+        if (!colEl) return { value: null, onEvent };
+        const offset = Number(colEl.getAttribute('data-day-offset'));
+        const rect = colEl.getBoundingClientRect();
+        const rawMin = ((y - rect.top) / HOUR_H) * 60;
+        return { value: { offset, slotMin: floorToSnap(rawMin, SNAP_MIN) }, onEvent };
+    };
+    const range = useRangeSelect<{ offset: number; slotMin: number }>({
+        resolve: resolveSlot,
+        onSet: (v, shift) => {
+            const cur = slotMs(v.offset, v.slotMin);
+            if (shift) {
+                const a = selAnchor.current ?? (selection?.kind === 'time' ? selection.startMs : cur);
+                selAnchor.current = a;
+                onSelect(timeSelection(a, cur, SNAP_MIN));
+            } else {
+                selAnchor.current = cur;
+                onSelect(timeSelection(cur, cur, SNAP_MIN));
+            }
+        },
+        onExtend: (v) => {
+            const cur = slotMs(v.offset, v.slotMin);
+            onSelect(timeSelection(selAnchor.current ?? cur, cur, SNAP_MIN));
+        },
+    });
+
     return (
         <div className="relative h-full flex flex-col bg-bg select-text">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
@@ -237,7 +282,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek }: { days: 
                         ))}
                     </div>
                     {/* 본문 — 시간 눈금(sticky left) + 날 열들. 시간 칸 더블클릭 → 1시간 일정(data-day-offset 위임) */}
-                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble}>
+                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble} {...range.bind}>
                         <div className="sticky left-0 z-10 bg-bg border-r border-line" style={{ width: GUTTER, height: HOURS * HOUR_H }}>
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span
@@ -253,7 +298,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek }: { days: 
                             <DayColumn
                                 key={o} offset={o} left={s.leftOf(o)} width={s.colW} todayIso={todayIso} nowMin={nowMin}
                                 boundary={dense ? columnBoundary(dayAt(o).getMonth() + 1, dayAt(o).getDate()) : 'none'}
-                                dayIndex={dayIndex}
+                                dayIndex={dayIndex} selection={selection}
                             />
                         ))}
                     </div>
