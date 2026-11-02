@@ -270,6 +270,24 @@ export type DeclareInput =
     | { kind: 'settingsSection'; id: string; title: string; icon?: IconName }
     | { kind: 'settingsItem'; section: string; id: string; title: string; icon: IconName; pane: string }
     | ({ kind: 'statusBar' } & StatusBarContribution);
+
+/**
+ * 🔴 기여 장부 한 줄 — 「이 플러그인이 호스트에 지금 무엇을 꽂아 두었나」의 읽기 전용 거울(2026-11-02 D7).
+ *   declareOne 이 꽂을 때 남기고, 그 Disposable 이 불리면 뺀다(동적 선언은 켜졌다 꺼질 수 있다 — pane-test 의 node-count 가 그 예).
+ *   ⛔ 새 등록소가 아니다 — 실제 등록은 지금 경로(스토어) 그대로고, 장부는 그걸 비추기만 한다.
+ */
+export type ContributionKind = DeclareInput['kind'] | 'nodeType';
+export interface ContributionRecord {
+    /** 기여 종류 — declareOne 이 꽂는 여섯(뷰·명령·리본·설정 섹션·설정 항목·상태바). nodeType 은 라벨 완성용(declareOne 밖). */
+    kind: ContributionKind;
+    /** 등록 id — 뷰는 접두사 붙인 전체 id(calendar.month), 명령·리본은 명령 id, 설정은 섹션/항목 id. */
+    id: string;
+    /** 표시 제목 — 상태바처럼 제목이 없으면 비운다(UI 가 id 로 떨어진다). */
+    title?: string;
+    /** 출처 — 매니페스트 contributes 면 'manifest', host.declare(급조) 면 'declare'. */
+    origin: 'manifest' | 'declare';
+}
+
 /** 탭 메뉴 기여가 받는 맥락 — 그 탭의 leaf 정보 */
 export interface TabMenuContext {
     id: string;

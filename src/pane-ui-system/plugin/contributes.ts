@@ -12,9 +12,11 @@ import type { ViewProps } from '../view-registry';
 import {
     track, addCommand, addRibbonAction, getCommand,
     addSettingsSection, addSettingsItem, addStatusItem, setNewTab, touchContrib,
+    recordContribution,
 } from './store';
 import type {
     PluginHost, PluginImpl, DeclareInput, Contributes, Disposable, NodeTypeRegistrar,
+    ContributionRecord,
 } from './types';
 
 /**
@@ -30,10 +32,41 @@ const NODE_TYPE_REGISTRAR = 'project-explorer';
  *   📌 D5③: 옛 host.views.register·commands.add·ribbon.add·settings.add*·statusBar.add 를 지웠으니, 등록은 여기서
  *      스토어 함수(addCommand·registerView·… + track)로 바로 한다 — 이제 「꽂는 길」은 contributes·declare(둘 다 여기로) 뿐.
  */
-export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Disposable {
+// viewId 접두사 강제 — `${owner}.` 로 시작 안 하면 붙인다(저장된 leaf 의 viewId 만 보고 주인을 안다).
+const scopedId = (owner: string, id: string) => (id.startsWith(`${owner}.`) ? id : `${owner}.${id}`);
+
+/**
+ * 🔴 기여 장부 한 줄로 바꾼다 — 실제 등록 뒤에 부른다(리본 제목은 그때 명령이 이미 있어 풀린다).
+ *   id 는 등록된 실제 키: 뷰는 접두사 붙인 전체 id(scopedId), 명령·리본은 명령 id, 설정은 섹션/항목 id.
+ */
+function ledgerRecord(owner: string, item: DeclareInput, origin: ContributionRecord['origin']): ContributionRecord {
+    switch (item.kind) {
+        case 'view': return { kind: 'view', id: scopedId(owner, item.id), title: item.title, origin };
+        case 'command': return { kind: 'command', id: item.id, title: item.title, origin };
+        case 'ribbon': return { kind: 'ribbon', id: item.commandId, title: getCommand(item.commandId)?.title, origin };
+        case 'settingsSection': return { kind: 'settingsSection', id: item.id, title: item.title, origin };
+        case 'settingsItem': return { kind: 'settingsItem', id: item.id, title: item.title, origin };
+        case 'statusBar': return { kind: 'statusBar', id: item.id, origin };
+    }
+}
+
+/**
+ * 동적 선언/매니페스트 기여 하나를 꽂고, 장부에 한 줄을 남긴다.
+ *   origin: applyContributes 경로는 'manifest', host.declare 경로는 'declare'(기본값).
+ *   🔴 장부 Disposable 도 주인별로 track 한다 — 끌 때(disposeOwner) 등록과 함께 장부에서도 빠진다.
+ */
+export function declareOne(
+    item: DeclareInput, impl: PluginImpl, host: PluginHost, origin: ContributionRecord['origin'] = 'declare',
+): Disposable {
+    const reg = registerOne(item, impl, host);
+    const led = track(host.id, recordContribution(host.id, ledgerRecord(host.id, item, origin)));
+    return { dispose() { led.dispose(); reg.dispose(); } };
+}
+
+/** 실제 등록 — 「이름 → 구현」을 impl 에서 찾아 스토어·뷰 레지스트리에 꽂는다(장부는 안 건드린다). */
+function registerOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Disposable {
     const owner = host.id;
-    // viewId 접두사 강제 — `${owner}.` 로 시작 안 하면 붙인다(저장된 leaf 의 viewId 만 보고 주인을 안다).
-    const scoped = (id: string) => (id.startsWith(`${owner}.`) ? id : `${owner}.${id}`);
+    const scoped = (id: string) => scopedId(owner, id);
     switch (item.kind) {
         case 'command': {
             // 구현 키 = impl 이 있으면 impl(id 는 런타임값일 수 있다), 없으면 id 자체.
@@ -93,12 +126,12 @@ export function declareOne(item: DeclareInput, impl: PluginImpl, host: PluginHos
  */
 export function applyContributes(c: Contributes | undefined, impl: PluginImpl, host: PluginHost): void {
     if (!c) return;
-    for (const cmd of c.commands ?? []) declareOne({ kind: 'command', ...cmd }, impl, host);
-    for (const v of c.views ?? []) declareOne({ kind: 'view', ...v }, impl, host);
-    for (const r of c.ribbon ?? []) declareOne({ kind: 'ribbon', ...r }, impl, host);
-    for (const s of c.settings?.sections ?? []) declareOne({ kind: 'settingsSection', ...s }, impl, host);
-    for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host);
-    for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host);
+    for (const cmd of c.commands ?? []) declareOne({ kind: 'command', ...cmd }, impl, host, 'manifest');
+    for (const v of c.views ?? []) declareOne({ kind: 'view', ...v }, impl, host, 'manifest');
+    for (const r of c.ribbon ?? []) declareOne({ kind: 'ribbon', ...r }, impl, host, 'manifest');
+    for (const s of c.settings?.sections ?? []) declareOne({ kind: 'settingsSection', ...s }, impl, host, 'manifest');
+    for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host, 'manifest');
+    for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host, 'manifest');
 
     // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). 노드 하이라키를 쥔 플러그인(NODE_TYPE_REGISTRAR)의 api 에
     //    항목·impl·host 를 통째로 넘겨 꽂는다. 없으면(꺼짐·활성 실패·먼저 안 삼) 던져서 「활성 실패」로 올린다

@@ -16,6 +16,7 @@ export type {
     Contributes, ViewContribution, CommandContribution, SettingsContributes, StatusBarContribution,
     NodeTypeContribution, NodeTypeRegistrar,
     PluginImpl, PluginLifecycle, DeclareInput,
+    ContributionKind, ContributionRecord,
 } from './types';
 export { HOST_VERSION } from './types';
 
@@ -30,6 +31,7 @@ export {
     setWorkspaceBridge, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems, listStatusItems,
     listSettings, listCommands, getCommand, runCommand, listTabMenu, getNewTab, fireWorkspace,
+    listContributions,
     type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
     type WorkspaceBridge,
 } from './store';

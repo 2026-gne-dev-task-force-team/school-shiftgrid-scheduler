@@ -150,7 +150,7 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         // 🔴 동적 선언 창구 하나 — contributes 항목과 같은 타입·같은 검증·같은 꽂기 경로(declareOne).
         //    impl(이 플러그인의 components·commands·panes·renders)에서 이름으로 구현을 찾는다. 없으면 던진다.
         declare(item: DeclareInput) {
-            return declareOne(item, impl ?? {}, host);
+            return declareOne(item, impl ?? {}, host, 'declare');
         },
     };
     return host;

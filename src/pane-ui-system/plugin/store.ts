@@ -16,7 +16,7 @@ import type { IconName } from '../primitives/Icon';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import type {
     Disposable, RibbonAction, WorkspaceOpenOptions, CommandDef, CommandContext,
-    StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo,
+    StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, ContributionRecord,
 } from './types';
 
 // ── ① 주인별 Disposable ──
@@ -52,6 +52,33 @@ export function touchContrib(): void { emitContrib(); }
 /** React 구독 — 기여물(리본·명령·설정·새 탭)이 바뀌면 다시 그린다. */
 export function useContribVersion(): number {
     return useSyncExternalStore(subscribeContrib, contribSnapshot, contribSnapshot);
+}
+
+// ── 기여 장부(읽기 전용 거울) ──
+// 🔴 ⛔ 등록소가 아니다 — 실제 등록은 위 스토어(명령·리본·설정·상태바·뷰 레지스트리)가 한다.
+//    declareOne 이 꽂을 때 한 줄을 남기고, 그 Disposable 이 불리면(개별 dispose·disposeOwner) 뺀다.
+//    주인(플러그인 id)별 목록. 꺼지면 그 주인 Disposable 이 전부 회수되며 장부도 비므로, 「켜져 있을 때의 값」을 비춘다.
+const ledger = new Map<string, ContributionRecord[]>();
+
+/** 장부에 한 줄 남긴다 — Disposable 을 돌려준다(declareOne 이 track 해, 개별 dispose·disposeOwner 때 빠진다). */
+export function recordContribution(owner: string, rec: ContributionRecord): Disposable {
+    const arr = ledger.get(owner) ?? [];
+    arr.push(rec);
+    ledger.set(owner, arr);
+    emitContrib();
+    return {
+        dispose() {
+            const a = ledger.get(owner);
+            if (!a) return;
+            const i = a.indexOf(rec);
+            if (i >= 0) { a.splice(i, 1); emitContrib(); }
+        },
+    };
+}
+
+/** 이 플러그인이 지금 호스트에 꽂아 둔 기여 전부(등록 순). 꺼진·안 꽂은 플러그인은 빈 배열. */
+export function listContributions(owner: string): ContributionRecord[] {
+    return [...(ledger.get(owner) ?? [])];
 }
 
 // ── 리본 동작 스토어 ──
