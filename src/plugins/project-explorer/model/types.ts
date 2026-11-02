@@ -146,6 +146,7 @@ export function createCandidates(parentType: string): NodeTypeDef[] {
     const out: NodeTypeDef[] = [];
     for (const def of registry.values()) {
         if (!def.create) continue;
+        if (def.record) continue;                                   // 🔴 레코드성(일정 등)은 탐색기로 못 만든다 — 보이지도 않는 걸 만들면 이름칸이 허공에 뜬다
         if (!acceptsChild(parentType, def.type)) continue;          // 부모가 이 타입을 받나
         const under = def.create.under;
         if (under && !under.includes(parentType)) continue;         // 이 타입이 이 부모 밑을 허용하나
@@ -170,6 +171,18 @@ export function typeMenuByType(type: string, nodeId: string): MenuEntry[] {
 export function canOpenType(type: string): boolean {
     const def = registry.get(type);
     return !!def?.openable && typeof def.open === 'function';
+}
+
+/**
+ * 두 번 누르기·Enter 가 이 타입에 할 일 — 한 곳에서 가른다(ExplorerView 가 이 답으로 open/toggle 을 부른다).
+ *   🔴 openable 이 컨테이너를 **이긴다**: 달력 저장소처럼 「폴더+파일」인 타입은 두 번 누르기 = 열기(펴기는 ▸ 화살표가 쥔다).
+ *   컨테이너이기만 하면(openable 아님) — Enter 는 펴기/접기(toggle), 두 번 누르기는 가만(none, 한 번 누르기가 이미 토글했으니 되돌리지 않는다).
+ *   둘 다 아니면(파일 역할이거나 모르는 타입) 열기 — openById 가 openable 아니면 조용히 아무 일도 안 한다.
+ */
+export function activateVerb(type: string, via: 'enter' | 'dblclick'): 'open' | 'toggle' | 'none' {
+    if (canOpenType(type)) return 'open';
+    if (isContainerType(type)) return via === 'enter' ? 'toggle' : 'none';
+    return 'open';
 }
 
 /** 그 타입의 open 을 실행(없으면 아무 일 없음) — 유도 줄·실노드 공통 열기 경로. */

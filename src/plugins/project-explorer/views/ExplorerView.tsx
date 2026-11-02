@@ -14,7 +14,7 @@ import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/tree';
-import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
+import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
@@ -182,12 +182,15 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         select(row.id);
         if (row.kind === 'node' && isContainerType(row.node.type)) toggle(row.id);
     };
-    // 두 번 누르기 — 예약된 이름바꾸기를 취소하고(열기가 이긴다), 컨테이너는 아무 일 없음, openable 이면 열기(실노드·유도 공통).
+    // 두 번 누르기 — 예약된 이름바꾸기를 취소하고(열기가 이긴다). openable 이면 열기(컨테이너여도 · 달력 저장소),
+    //   컨테이너이기만 하면 가만(한 번 누르기가 이미 토글했다), 그 외는 열기. 유도(가상) 줄은 늘 열기(실노드·유도 공통).
     const dblRow = (row: ExplorerRow): void => {
         clearRenameTimer();
-        if (row.kind === 'node' && isContainerType(row.node.type)) return;
+        const verb = row.kind === 'node' ? activateVerb(row.node.type, 'dblclick') : 'open';
+        if (verb === 'none') return;
         select(row.id);
-        run('project-explorer.open');
+        if (verb === 'toggle') toggle(row.id);
+        else run('project-explorer.open');
     };
 
     // ── 바깥 빈 공간 누르기(마지막 줄 아래 바닥·빈 목록·패널 여백) = 고른 것 해제 → 「미선택=루트」 ──
@@ -235,13 +238,16 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     if (p && p !== tree.root) select(p);   // 루트는 줄이 아니다 — 부모로만(루트 해제는 Esc·빈 공간)
                 }
                 break;
-            case 'Enter':
+            case 'Enter': {
                 e.preventDefault();
                 if (sel) {
-                    if (selNode && isContainerType(selNode.type)) toggle(sel);   // 컨테이너는 펴기/접기
-                    else run('project-explorer.open');                          // openable·유도는 열기
+                    // openable 이면 열기(컨테이너여도 · 달력 저장소) · 컨테이너만이면 펴기/접기 · 유도(selNode 없음)는 열기
+                    const verb = selNode ? activateVerb(selNode.type, 'enter') : 'open';
+                    if (verb === 'toggle') toggle(sel);
+                    else run('project-explorer.open');
                 }
                 break;
+            }
             case 'F2': e.preventDefault(); if (sel) host.commands.run('project-explorer.rename'); break;
             case 'Delete': case 'Backspace': e.preventDefault(); if (sel) host.commands.run('project-explorer.remove'); break;
             case 'Escape': if (sel) { e.preventDefault(); select(null); } break;   // 선택 해제 = 루트(쥔님 22:17)
@@ -287,7 +293,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             const extra = typeMenu(selNode, selNode.id);
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
         }
-        if (items.length === 0) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
+        // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
+        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
         return items;
     };
 
