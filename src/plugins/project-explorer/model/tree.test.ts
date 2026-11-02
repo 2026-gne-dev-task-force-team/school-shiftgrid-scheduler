@@ -369,6 +369,24 @@ describe('flatten', () => {
         const t = make({ f: { children: ['ev'] }, ev: { type: 'cal.event' } });
         expect(flatten(t, 'root', isContainer).map((r) => r.id)).toEqual(['f', 'ev']);
     });
+
+    // 🔴 쥔님 2026-11-02: *"하위 레코드 노드 보고 하위 토글 보이는게 아니고, 다른 하위 노드가 붙엇을때"* —
+    //    ▸ 토글(hasChildren)은 보이는(레코드 아닌) 자식이 있을 때만 선다.
+    it('레코드만 든 컨테이너 → hasChildren false(일정만 든 저장소엔 ▸ 안 선다)', () => {
+        const t = make({ s: { children: ['ev1', 'ev2'] }, ev1: { type: 'cal.event' }, ev2: { type: 'cal.event' } });
+        const isRecord = (type: string) => type === 'cal.event';
+        const rows = flatten(t, 'root', isContainer, { isRecord });
+        const s = rows.find((r) => r.id === 's')!;
+        expect(s.hasChildren).toBe(false);
+    });
+
+    it('폴더(보이는 하위) 하나 붙으면 hasChildren true', () => {
+        const t = make({ s: { children: ['ev1', 'sub'] }, ev1: { type: 'cal.event' }, sub: { type: 'folder' } });
+        const isRecord = (type: string) => type === 'cal.event';
+        const rows = flatten(t, 'root', isContainer, { isRecord });
+        const s = rows.find((r) => r.id === 's')!;
+        expect(s.hasChildren).toBe(true);
+    });
 });
 
 describe('레코드성 노드는 저장·삭제·휴지통·복원·비우기가 일반 노드와 같다 (캐스케이딩 공짜)', () => {

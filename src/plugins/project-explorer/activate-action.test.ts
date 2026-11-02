@@ -1,9 +1,10 @@
 /**
- * 두 번 누르기·Enter 의 동작 결정(activateVerb) + 「새로 만들기」 후보에서 레코드 제외 — 쥔님 2026-11-02
- *   *"달력 저장소 열어도 달력 안열리노"* 의 뿌리: 컨테이너이면서 openable 인 타입(달력 저장소)이 open 에 못 가고 toggle 에서 끝났다.
- *   ① openable 은 컨테이너를 이긴다 — 두 번 누르기·Enter 모두 open(toggle 아님)
- *   ② 컨테이너이기만 하면 — Enter 는 toggle, 두 번 누르기는 none(한 번 누르기가 이미 토글했으니 안 되돌린다)
+ * 한 번 누르기·Enter·↑↓ 의 동작 결정(activateVerb) + 「새로 만들기」 후보에서 레코드 제외 — 쥔님 2026-11-02
+ *   *"파일 선택 방법 그냥 다시 옵시디언으로 가야겠다"* — 옵시디언식(한 번 누르기=고르기+openable 이면 열기)으로 뒤집었다.
+ *   ① openable 은 컨테이너를 이긴다 — 한 번 누르기·Enter 모두 open(toggle 아님)
+ *   ② 컨테이너이기만 하면 — 한 번 누르기·Enter 둘 다 toggle(펴기/접기)
  *   ③ openable 도 컨테이너도 아니면 — 둘 다 open(openById 가 못 열면 조용히 아무 일 없음)
+ *   ⑤ ↑↓(arrow)는 늘 none — 고르기만(옵시디언도 그렇다)
  *   ④ record 타입은 create 가 있어도 createCandidates 에 안 나온다(탐색기로 레코드를 못 만든다)
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -12,36 +13,42 @@ import { registerType, clearTypes, activateVerb, createCandidates } from './mode
 beforeEach(() => { clearTypes(); });
 afterEach(() => { clearTypes(); });
 
-describe('activateVerb — openable 이 컨테이너를 이긴다', () => {
-    it('① 컨테이너 + openable(달력 저장소) → 두 번 누르기·Enter 모두 open', () => {
+describe('activateVerb — 옵시디언식(한 번 누르기=Enter) · openable 이 컨테이너를 이긴다', () => {
+    it('① 컨테이너 + openable(달력 저장소) → 한 번 누르기·Enter 모두 open · arrow 는 none', () => {
         registerType({
             type: 'cal.store', label: '달력 저장소', icon: 'calendar',
             container: { accepts: ['cal.event'] }, openable: true, open: () => {},
         });
-        expect(activateVerb('cal.store', 'dblclick')).toBe('open');
+        expect(activateVerb('cal.store', 'click')).toBe('open');
         expect(activateVerb('cal.store', 'enter')).toBe('open');
+        expect(activateVerb('cal.store', 'arrow')).toBe('none');
     });
 
-    it('② 컨테이너만(폴더) → Enter 는 toggle, 두 번 누르기는 none', () => {
+    it('② 컨테이너만(폴더) → 한 번 누르기·Enter 모두 toggle · arrow 는 none', () => {
         registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
+        expect(activateVerb('folder', 'click')).toBe('toggle');
         expect(activateVerb('folder', 'enter')).toBe('toggle');
-        expect(activateVerb('folder', 'dblclick')).toBe('none');
+        expect(activateVerb('folder', 'arrow')).toBe('none');
     });
 
-    it('② openable 플래그만 있고 open 핸들러가 없으면 열 수 없다 → 컨테이너 규칙으로', () => {
-        // canOpenType 은 openable + open 핸들러 둘 다를 본다 — 핸들러 없는 컨테이너는 toggle/none 으로 떨어진다
+    it('② openable 플래그만 있고 open 핸들러가 없으면 열 수 없다 → 컨테이너 규칙(toggle)으로', () => {
+        // canOpenType 은 openable + open 핸들러 둘 다를 본다 — 핸들러 없는 컨테이너는 toggle 로 떨어진다
         registerType({ type: 'cal.half', label: '반쪽', icon: 'calendar', container: true, openable: true });
+        expect(activateVerb('cal.half', 'click')).toBe('toggle');
         expect(activateVerb('cal.half', 'enter')).toBe('toggle');
-        expect(activateVerb('cal.half', 'dblclick')).toBe('none');
+        expect(activateVerb('cal.half', 'arrow')).toBe('none');
     });
 
-    it('③ 컨테이너도 openable 도 아닌 타입 → 둘 다 open · 모르는 타입도 open', () => {
+    it('③ 컨테이너도 openable 도 아닌 타입 → 한 번 누르기·Enter 둘 다 open · 모르는 타입도 open', () => {
         registerType({ type: 'x.leaf', label: '잎', icon: 'file', openable: true, open: () => {} });
+        expect(activateVerb('x.leaf', 'click')).toBe('open');
         expect(activateVerb('x.leaf', 'enter')).toBe('open');
-        expect(activateVerb('x.leaf', 'dblclick')).toBe('open');
         // 등록 안 된 타입(회색) — 컨테이너도 openable 도 아니다 → open(openById 가 못 열면 가만)
+        expect(activateVerb('nope', 'click')).toBe('open');
         expect(activateVerb('nope', 'enter')).toBe('open');
-        expect(activateVerb('nope', 'dblclick')).toBe('open');
+        // ↑↓ 는 어느 타입이든 고르기만
+        expect(activateVerb('x.leaf', 'arrow')).toBe('none');
+        expect(activateVerb('nope', 'arrow')).toBe('none');
     });
 });
 

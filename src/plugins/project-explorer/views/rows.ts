@@ -55,7 +55,11 @@ export function buildMainRows(tree: Tree, fromId: string, isRecord?: (type: stri
             const container = isContainerType(c.type);
             const der = def?.derive ? getDerived(c, def) : null;
             const hasDerived = !!der && (der.failed || der.children.length > 0);
-            const hasChildren = container && (c.children.length > 0 || hasDerived);
+            // 🔴 ▸ 토글은 「보이는 하위」로만 선다 — 레코드성 자식(일정)은 세지 않는다(flatten 과 같은 규칙 · 쥔님 11-02).
+            const visibleKids = isRecord
+                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !isRecord(kn.type) ? 1 : 0); }, 0)
+                : c.children.length;
+            const hasChildren = container && (visibleKids > 0 || hasDerived);
             out.push({ kind: 'node', id: cid, depth, node: c, hasChildren });
 
             const expand = hasChildren && !c.collapsed;

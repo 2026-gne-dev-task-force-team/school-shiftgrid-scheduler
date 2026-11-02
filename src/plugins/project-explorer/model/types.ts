@@ -174,14 +174,17 @@ export function canOpenType(type: string): boolean {
 }
 
 /**
- * 두 번 누르기·Enter 가 이 타입에 할 일 — 한 곳에서 가른다(ExplorerView 가 이 답으로 open/toggle 을 부른다).
- *   🔴 openable 이 컨테이너를 **이긴다**: 달력 저장소처럼 「폴더+파일」인 타입은 두 번 누르기 = 열기(펴기는 ▸ 화살표가 쥔다).
- *   컨테이너이기만 하면(openable 아님) — Enter 는 펴기/접기(toggle), 두 번 누르기는 가만(none, 한 번 누르기가 이미 토글했으니 되돌리지 않는다).
+ * 한 번 누르기(click)·Enter·키보드 ↑↓(arrow)가 이 타입에 할 일 — 한 곳에서 가른다(옵시디언식 · 쥔님 2026-11-02:
+ *   *"파일 선택 방법 그냥 다시 옵시디언으로 가야겠다"* — 11-01 의 VS Code 식(한 번=고르기, 두 번=열기)을 뒤집었다).
+ *   🔴 openable 이 컨테이너를 **이긴다**: 달력 저장소처럼 「폴더+파일」인 타입은 한 번 누르기·Enter = 열기(펴기는 ▸ 화살표가 쥔다).
+ *   컨테이너이기만 하면(openable 아님) — 한 번 누르기·Enter 는 펴기/접기(toggle).
  *   둘 다 아니면(파일 역할이거나 모르는 타입) 열기 — openById 가 openable 아니면 조용히 아무 일도 안 한다.
+ *   🔴 arrow(↑↓)는 늘 none — 고르기만 하고 열지도 펴지도 않는다(옵시디언도 그렇다).
  */
-export function activateVerb(type: string, via: 'enter' | 'dblclick'): 'open' | 'toggle' | 'none' {
+export function activateVerb(type: string, via: 'click' | 'enter' | 'arrow'): 'open' | 'toggle' | 'none' {
+    if (via === 'arrow') return 'none';
     if (canOpenType(type)) return 'open';
-    if (isContainerType(type)) return via === 'enter' ? 'toggle' : 'none';
+    if (isContainerType(type)) return 'toggle';
     return 'open';
 }
 

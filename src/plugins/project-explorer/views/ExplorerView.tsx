@@ -1,13 +1,14 @@
 /**
- * 「탐색기」 패널 — VS Code 파일 탐색기 그림(쥔님 2026-11-01 17:28: *"VS 코드로 가자"*).
+ * 「탐색기」 패널 — 옵시디언 파일 탐색기 그림(쥔님 2026-11-02: *"파일 선택 방법 그냥 다시 옵시디언으로 가야겠다"* —
+ *   11-01 의 VS Code 식(한 번=고르기, 두 번=열기)을 뒤집었다).
  *
  * 🔴 ⛔ 탐색기는 타입을 모른다 — 아이콘·컨테이너 여부·열기·「새로 만들기」 목록은 전부 등록 표(model/types.ts)에 묻는다.
  *    이 파일에 `type ===` 비교를 두지 않는다(설계 「여기서 죽는다」 — 탐색기가 타입을 알게 되는 유혹).
- * ⭐ 누르기(VS Code 식): 한 번 = 고르기만(폴더는 접기/펴기도) · 두 번·Enter = 열기 · F2 = 이름 바꾸기.
+ * ⭐ 누르기(옵시디언식): 한 번 = 고르기 + openable 이면 바로 열기 · 컨테이너만이면 펴기/접기 · Enter 는 한 번 누르기와 같은 일 · F2 = 이름.
  * 🔴 드래그·우클릭은 useDragLeaf 한 훅으로 가른다(탭 드래그와 같은 가름 — 마우스 8px / 손가락 350ms 무장).
  *    떨굴 자리 셋(줄 위 25% 앞 · 아래 25% 뒤 · 가운데 50% 안으로 · container 일 때만) · accepts/자손 금지는 빨간 표시 +
  *    모델 move 가 마지막 관문. 좁은 화면(narrow)에선 드래그를 끄고 메뉴의 「위로·아래로」로.
- * ⭐ 누르기: 한 번 = 고르기(폴더는 접기/펴기) · 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder) · 두 번 = 열기 · F2 = 이름.
+ * ⭐ 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder 느린 재클릭 · 유지) · 두 번 누르기는 그 예약만 취소(열기는 한 번 누르기가 이미 했다).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
@@ -167,9 +168,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const { bind, drag } = useDragLeaf({ enabled: !narrow, axis: 'y', onContext, onDrop });
     const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, tree) : null;
 
-    // ── 줄 하나 누르기 — 고르기(+ 실노드 컨테이너는 접기/펴기). 유도 줄은 고르기만. ──
-    //    🔴 이미 고른 실노드를 또 누르면(맥 Finder) 지연 뒤 이름바꾸기 — 두 번 누르기(열기)면 dblRow 가 취소한다.
-    //    접기/펴기는 그래도 쉐브론으로 쥔다(이미 고른 폴더 몸통을 눌러도 토글 대신 이름바꾸기로 간다).
+    // ── 줄 하나 누르기(옵시디언식 · 쥔님 2026-11-02) — 고르기 + openable 이면 바로 열기 · 컨테이너만이면 펴기/접기. ──
+    //    🔴 이미 고른 실노드를 또 누르면(맥 Finder 느린 재클릭) 지연 뒤 이름바꾸기 — 두 번 누르기면 dblRow 가 취소한다(유지).
+    //    접기/펴기는 그래도 ▸ 쉐브론으로도 쥔다(stopPropagation) — 폴더+파일(달력 저장소)은 몸통=열기, ▸=펴기/접기.
     const clickRow = (row: ExplorerRow): void => {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
@@ -180,17 +181,14 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             return;
         }
         select(row.id);
-        if (row.kind === 'node' && isContainerType(row.node.type)) toggle(row.id);
-    };
-    // 두 번 누르기 — 예약된 이름바꾸기를 취소하고(열기가 이긴다). openable 이면 열기(컨테이너여도 · 달력 저장소),
-    //   컨테이너이기만 하면 가만(한 번 누르기가 이미 토글했다), 그 외는 열기. 유도(가상) 줄은 늘 열기(실노드·유도 공통).
-    const dblRow = (row: ExplorerRow): void => {
-        clearRenameTimer();
-        const verb = row.kind === 'node' ? activateVerb(row.node.type, 'dblclick') : 'open';
-        if (verb === 'none') return;
-        select(row.id);
+        // 🔴 한 번 누르기 = Enter 와 같은 일: openable → 열기 · 컨테이너만 → 펴기/접기 · 그 외 → 열기(유도 줄도 열기 시도, openById 가 안 열면 가만).
+        const verb = row.kind === 'node' ? activateVerb(row.node.type, 'click') : 'open';
         if (verb === 'toggle') toggle(row.id);
-        else run('project-explorer.open');
+        else if (verb === 'open') run('project-explorer.open');
+    };
+    // 두 번 누르기 — 옵시디언식이라 따로 할 일이 없다(한 번 누르기가 이미 열거나 폈다). 예약된 이름바꾸기만 취소한다(빠른 둘째 클릭 = 열기, 이름바꾸기 아님).
+    const dblRow = (): void => {
+        clearRenameTimer();
     };
 
     // ── 바깥 빈 공간 누르기(마지막 줄 아래 바닥·빈 목록·패널 여백) = 고른 것 해제 → 「미선택=루트」 ──
@@ -359,7 +357,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                 aria-selected={isSel}
                                 title={row.name}
                                 onClick={() => clickRow(row)}
-                                onDoubleClick={() => dblRow(row)}
+                                onDoubleClick={() => dblRow()}
                                 className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
                                     isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
                                 }`}
@@ -391,7 +389,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             aria-expanded={row.hasChildren ? !row.node.collapsed : undefined}
                             title={row.node.name}
                             onClick={() => clickRow(row)}
-                            onDoubleClick={() => dblRow(row)}
+                            onDoubleClick={() => dblRow()}
                             onMouseEnter={() => setHoverId(row.id)}
                             onMouseLeave={() => setHoverId((h) => (h === row.id ? null : h))}
                             className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${

@@ -326,7 +326,13 @@ export function flatten(
             if (opts?.isRecord?.(c.type)) continue;   // 🔴 레코드성 — 줄도 그 아래도 건너뛴다
             const inKeep = !opts?.keep || opts.keep(cid);
             const container = isContainer ? isContainer(c.type) : c.children.length > 0;
-            const hasChildren = container && c.children.length > 0;
+            // 🔴 ▸ 토글은 「보이는 하위」가 있을 때만 선다 — 레코드성 자식(일정)은 세지 않는다(쥔님 2026-11-02:
+            //    *"하위 레코드 노드 보고 하위 토글 보이는게 아니고, 다른 하위 노드가 붙엇을때 하위 노드 보이는거야"*).
+            const isRec = opts?.isRecord;
+            const visibleKids = isRec
+                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !isRec(kn.type) ? 1 : 0); }, 0)
+                : c.children.length;
+            const hasChildren = container && visibleKids > 0;
             if (inKeep) out.push({ id: cid, depth, node: c, hasChildren });
             const expand = hasChildren && (opts?.expandAll ? true : !c.collapsed);
             if (expand && inKeep) walk(cid, depth + 1);
