@@ -13,7 +13,7 @@ import { createElement } from 'react';
 import type { ComponentType } from 'react';
 import type { ViewProps } from '../view-registry';
 import { clearViews } from '../view-registry';
-import type { PluginHost, Disposable } from './types';
+import type { PluginHost, Disposable, PluginModule } from './types';
 import { definePlugin } from './define';
 import { activateAll, disablePlugin } from './registry';
 import { disposeOwner, listContributions } from './store';
@@ -21,8 +21,10 @@ import { disposeOwner, listContributions } from './store';
 const hostView: ComponentType<ViewProps & { host: PluginHost }> = (p) => createElement('div', { 'data-host': p.host.id });
 
 const OWNER = 'lfake';
+// ④ 가 쓰는 레지스트라(코어)·소비 플러그인 주인까지 깨끗이(모듈 전역 스토어라 번지지 않게).
+const OWNERS = [OWNER, 'project-explorer', 'ntled'];
 beforeEach(() => {
-    disposeOwner(OWNER);
+    for (const o of OWNERS) disposeOwner(o);
     clearViews();
 });
 
@@ -88,5 +90,56 @@ describe('③ 플러그인을 끄면 장부가 빈다', () => {
         disablePlugin(OWNER);
 
         expect(listContributions(OWNER), '끄면 장부가 빈다').toEqual([]);
+    });
+});
+
+describe('④ nodeTypes 도 장부에 — 레지스트라로 꽂힌 것을 호스트가 거울에 남긴다', () => {
+    const REG = 'project-explorer';   // 노드 레지스트라(코어 — 먼저 산다)
+    const NT = 'ntled';               // nodeTypes 둘을 적는 소비 플러그인
+
+    /** 가짜 레지스트라 — 실제 등록 대신 되돌림 손잡이만 준다(장부는 호스트가 applyContributes 에서 남긴다). */
+    function registrar(): PluginModule {
+        return {
+            manifest: { id: REG, name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
+            api: {
+                registerContributed() { return { dispose() { /* 테스트 */ } }; },
+            },
+        };
+    }
+
+    /** nodeTypes 둘(상자·핀)을 적은 소비 플러그인 — 함수 묶음 없는 순수 데이터 타입. */
+    function consumer(): PluginModule {
+        return definePlugin({
+            manifest: {
+                id: NT, name: 'NT Led', version: '0.1.0', minHostVersion: '0.1.0',
+                contributes: {
+                    nodeTypes: [
+                        { type: 'ntled.box', label: '상자' },
+                        { type: 'ntled.pin', label: '핀' },
+                    ],
+                },
+            },
+        });
+    }
+
+    it('① 켜지면 장부에 nodeType 2건(origin manifest · id=type · title=label)', () => {
+        activateAll([registrar(), consumer()]);
+
+        const nt = listContributions(NT).filter((c) => c.kind === 'nodeType');
+        expect(nt.length, 'nodeType 2건').toBe(2);
+        expect(nt.every((c) => c.origin === 'manifest'), '전부 manifest').toBe(true);
+        expect(nt.find((c) => c.id === 'ntled.box'), 'id=type · title=label')
+            .toMatchObject({ kind: 'nodeType', id: 'ntled.box', title: '상자', origin: 'manifest' });
+        expect(nt.find((c) => c.id === 'ntled.pin'))
+            .toMatchObject({ kind: 'nodeType', id: 'ntled.pin', title: '핀', origin: 'manifest' });
+    });
+
+    it('② 끄면 장부에서 빠진다', () => {
+        activateAll([registrar(), consumer()]);
+        expect(listContributions(NT).length, '끄기 전엔 2건').toBe(2);
+
+        disablePlugin(NT);
+
+        expect(listContributions(NT), '끄면 장부가 빈다').toEqual([]);
     });
 });

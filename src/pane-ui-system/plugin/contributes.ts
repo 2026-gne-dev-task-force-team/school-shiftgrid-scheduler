@@ -136,12 +136,19 @@ export function applyContributes(c: Contributes | undefined, impl: PluginImpl, h
     // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). 노드 하이라키를 쥔 플러그인(NODE_TYPE_REGISTRAR)의 api 에
     //    항목·impl·host 를 통째로 넘겨 꽂는다. 없으면(꺼짐·활성 실패·먼저 안 삼) 던져서 「활성 실패」로 올린다
     //    — 명세 「조용히 안 넘어간다」. 코어(탐색기)가 먼저 사니 평소엔 늘 있다.
-    //    ⚠️ Disposable 은 안 모은다 — api(host.plugins.get 바인딩)가 이미 이 플러그인 주인으로 track 한다.
+    //    🔴 장부(거울)엔 호스트가 직접 한 줄 남긴다 — 레지스트라(플러그인 api)는 안 건드린다(장부는 호스트의 거울).
+    //       레지스트라로 꽂은 건 declareOne 경로가 아니라 여기로만 오니, 호스트가 kind:'nodeType'(id=type·title=label·
+    //       origin:'manifest') 로 적는다. 레지스트라가 돌려준 Disposable 을 장부 제거와 함께 감싸 track 해, 끌 때
+    //       (disposeOwner) 등록과 장부 줄이 같이 빠진다. registerType dispose 는 멱등이라 api 자동 track 과 겹쳐도 안전.
     if (c.nodeTypes?.length) {
         const reg = host.plugins.get<NodeTypeRegistrar>(NODE_TYPE_REGISTRAR);
         if (!reg || typeof reg.registerContributed !== 'function') {
             throw new Error(`[plugin] "${host.id}" 의 nodeTypes 기여를 받을 노드 레지스트라("${NODE_TYPE_REGISTRAR}")가 없다 — 켜져 있고 먼저 산 코어인가`);
         }
-        for (const nt of c.nodeTypes) reg.registerContributed(nt, impl, host);
+        for (const nt of c.nodeTypes) {
+            const regDisp = reg.registerContributed(nt, impl, host);
+            const led = recordContribution(host.id, { kind: 'nodeType', id: nt.type, title: nt.label, origin: 'manifest' });
+            track(host.id, { dispose() { led.dispose(); regDisp.dispose(); } });
+        }
     }
 }
