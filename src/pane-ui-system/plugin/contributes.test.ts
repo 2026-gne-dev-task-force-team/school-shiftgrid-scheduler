@@ -24,7 +24,6 @@ import {
     disposeOwner, getCommand, listRibbonActions, listSettings, listStatusItems,
 } from './store';
 
-const viewFn = (() => null) as unknown as ComponentType<ViewProps>;
 // host 를 받아 그리는 가짜 구현 — host.id 를 props 에 담아 되비춘다(테스트가 element.props.host 로 읽는다).
 const hostView: ComponentType<ViewProps & { host: PluginHost }> = (p) => createElement('div', { 'data-host': p.host.id });
 const hostPane: ComponentType<{ host: PluginHost }> = (p) => createElement('div', { 'data-host': p.host.id });
@@ -37,7 +36,7 @@ function viewHostId(viewId: string): string | undefined {
 }
 
 /** 쓰는 주인들을 깨끗이 — 뷰 레지스트리까지 비운다(모듈 전역). */
-const OWNERS = ['cfake', 'badfake', 'dyn', 'oldfake', 'lifefake', 'project-explorer', 'ntfake', 'ntbad'];
+const OWNERS = ['cfake', 'badfake', 'dyn', 'lifefake', 'project-explorer', 'ntfake', 'ntbad'];
 beforeEach(() => {
     for (const o of OWNERS) disposeOwner(o);
     clearViews();
@@ -136,23 +135,8 @@ describe('③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩
     });
 });
 
-describe('④ 옛 길(activate 안 함수 직접 등록)로도 그대로 켜진다', () => {
-    it('host.views.register·host.commands.add 를 activate 에서 부르면 등록된다', () => {
-        const old: PluginModule = {
-            manifest: { id: 'oldfake', name: 'Old', version: '0.1.0', minHostVersion: '0.1.0' },
-            activate(host) {
-                host.views.register({ id: 'v', title: '옛뷰', defaultArea: 'center', Component: viewFn });
-                host.commands.add({ id: 'oldfake.cmd', title: '옛명령', run: () => { /* 동작 */ } });
-            },
-        };
-
-        activateAll([old]);
-
-        expect(getView('oldfake.v')).toBeTruthy();
-        expect(getCommand('oldfake.cmd')).toBeTruthy();
-        expect(listPlugins().find((p) => p.id === 'oldfake')?.failed).toBe(false);
-    });
-});
+// ④ 「옛 길(activate 안 host.views.register·host.commands.add 직접 등록)」 케이스는 D5③ 에서 그 5종을 지워
+//    길 자체가 없어졌으므로 제거했다(선언형 전환 마무리 — 플러그인이 꽂는 길은 contributes·declare 둘뿐).
 
 describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)에 통째로 넘어간다', () => {
     /** id='project-explorer' 인 가짜 레지스트라(코어 — 먼저 산다). registerContributed 가 받은 것을 기록한다. */
