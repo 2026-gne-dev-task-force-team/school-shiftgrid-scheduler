@@ -17,7 +17,8 @@ import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
 import { getPluginApi } from './registry';
-import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
+import { declareOne } from './contributes';
+import type { PluginHost, PluginImpl, DeclareInput, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
     track, addRibbonAction, getWorkspaceBridge, whenWorkspaceReady,
@@ -27,7 +28,7 @@ import {
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
 
-export function makeHost(pluginId: string): PluginHost {
+export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
     const scoped = (id: string) => (id.startsWith(`${pluginId}.`) ? id : `${pluginId}.${id}`);
     const skey = (key: string) => storageKey(`plugin.${pluginId}.${key}`);
 
@@ -69,7 +70,7 @@ export function makeHost(pluginId: string): PluginHost {
         estimate(): Promise<{ usage: number; quota: number } | null> { return kvEstimate(); },
     };
 
-    return {
+    const host: PluginHost = {
         id: pluginId,
         hostVersion: HOST_VERSION,
 
@@ -183,5 +184,12 @@ export function makeHost(pluginId: string): PluginHost {
                 return getPluginApi<T>(id, pluginId, (d) => track(pluginId, d));
             },
         },
+
+        // 🔴 동적 선언 창구 하나 — contributes 항목과 같은 타입·같은 검증·같은 꽂기 경로(declareOne).
+        //    impl(이 플러그인의 components·commands·panes·renders)에서 이름으로 구현을 찾는다. 없으면 던진다.
+        declare(item: DeclareInput) {
+            return declareOne(item, impl ?? {}, host);
+        },
     };
+    return host;
 }

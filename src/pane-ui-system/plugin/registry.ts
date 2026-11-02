@@ -13,6 +13,7 @@ import { storageKey } from '../storage';
 import type { PluginModule, Disposable, PerCallerApi } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
+import { applyContributes } from './contributes';
 import { disposeOwner } from './store';
 
 // ── 설치된 모듈 + 상태 ──
@@ -68,8 +69,18 @@ function activateOne(m: PluginModule): void {
         return;
     }
     try {
+        // 🔴 순서: contributes 꽂기 → activate → lifecycle.onActivate → onFirstRun.
+        //    호스트 하나를 만들어 넷이 같이 쓴다(등록물은 전부 이 주인 꼬리표로 모여 끌 때 회수된다).
+        //    applyContributes 가 이름 어긋남에 던지면 아래 catch 가 받아 「활성 실패」로 올린다(조용히 안 넘긴다).
+        const host = makeHost(m.manifest.id, m);
+        applyContributes(m.manifest.contributes, m, host);
         // activate 는 선택이다(선언형 전환) — 등록은 contributes 가 하고, activate 는 구독·동작만 남는다.
-        if (m.activate) void m.activate(makeHost(m.manifest.id));
+        if (m.activate) void m.activate(host);
+        if (m.lifecycle?.onActivate) void m.lifecycle.onActivate(host);
+        if (m.lifecycle?.onFirstRun) {
+            const firstRun = m.lifecycle.onFirstRun;
+            host.onFirstRun(() => firstRun(host));   // 첫 실행 게이트(다리·플래그)를 그대로 탄다
+        }
     } catch (e) {
         failedIds.add(m.manifest.id);
         console.error(`[plugin] "${m.manifest.id}" 활성 실패 — 나머지는 계속`, e);

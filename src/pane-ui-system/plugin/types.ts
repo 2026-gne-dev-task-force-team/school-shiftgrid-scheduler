@@ -294,5 +294,10 @@ export interface PluginHost {
         get<T = unknown>(id: string): T | undefined;
     };
 
-    // 🔴 declare(item: DeclareInput): Disposable — 동적 선언 창구. ④⑤ 로더 단계에서 더한다(host.ts 구현과 함께).
+    /**
+     * 🔴 동적 선언 창구 하나(급조용) — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로(declareOne).
+     *   ⛔ 함수 직접 받기 금지(이름으로만 — 이 플러그인의 impl 에서 찾는다). 이름이 없으면 던진다.
+     *   Disposable 을 돌려준다(안 챙겨도 호스트가 주인별로 모아 끌 때 회수).
+     */
+    declare(item: DeclareInput): Disposable;
 }
