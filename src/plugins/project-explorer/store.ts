@@ -10,15 +10,20 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, purge, purgeAll, toggleCollapse, parentOf,
-    isDescendant, setData as setDataTree, newFolderParent,
+    isDescendant, setData as setDataTree, newFolderParent, topmostOnly,
 } from './model/tree';
+import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from './model/selection';
 import { isContainerType, getType, acceptsChild, openType } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
 import { loadTree, saveTree } from './persist';
 
 interface ExplorerState {
     tree: Tree;
-    /** 고른 노드 — 명령·키보드의 대상. */
+    /** 🔴 고른 노드 전부 — 명령(삭제·이동·복원·휴지통행)은 이것 전부에 돈다(멀티 셀렉트 · 쥔님 2026-11-02). */
+    selectedIds: string[];
+    /** Shift 범위의 기준 — 맨 클릭·Ctrl 토글이 옮긴다. */
+    anchorId: string | null;
+    /** 🔴 포커스(키보드 커서) — 호환을 위해 이름은 selectedId 로 남긴다(읽는 자리가 많다). selectedIds 비면 null. */
     selectedId: string | null;
     /** 이름 바꾸는 중인 노드(줄 자리에 input 이 뜬다). */
     renamingId: string | null;
@@ -39,7 +44,12 @@ interface ExplorerState {
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, loading: false, notice: null };
+    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, loading: false, notice: null };
+}
+
+/** 한 개만 고른 상태로 쓰는 patch 조각 — selectedId 를 설정하던 모든 자리가 이걸 쓴다(불변식: selectedId ∈ selectedIds). */
+function singleSel(id: string | null): Pick<ExplorerState, 'selectedIds' | 'anchorId' | 'selectedId'> {
+    return id ? { selectedIds: [id], anchorId: id, selectedId: id } : { selectedIds: [], anchorId: null, selectedId: null };
 }
 
 let state: ExplorerState = freshState(emptyTree());
@@ -153,14 +163,35 @@ export function getState(): ExplorerState {
 
 // ─────────────────────────── 선택·이름바꾸기 상태 ───────────────────────────
 
+/** 하나만 고른다(맨 클릭·화살표·우클릭·바깥 클릭 해제). 🔴 멀티 선택을 한 개로 접는다. */
 export function select(id: string | null): void {
-    if (state.selectedId === id) return;
-    state = { ...state, selectedId: id };
+    if (state.selectedId === id && state.selectedIds.length === (id ? 1 : 0)) return;
+    state = { ...state, ...singleSel(id) };
+    emit();
+}
+
+/** 지금 선택을 Selection 꼴로 — 순수 계산기(applyClick·selectAll)에 넘긴다. */
+function curSel(): Selection {
+    return { ids: state.selectedIds, anchorId: state.anchorId, focusId: state.selectedId };
+}
+
+/** 누르기 한 번(Ctrl/⌘ 토글·Shift 범위·맨 클릭)을 선택에 반영 — rowsOrder 는 보이는 줄 id 순서. */
+export function clickSelect(id: string, rowsOrder: string[], mods: { ctrl?: boolean; shift?: boolean }): void {
+    const next = applyClickSel(curSel(), rowsOrder, id, mods);
+    state = { ...state, selectedIds: next.ids, anchorId: next.anchorId, selectedId: next.focusId };
+    emit();
+}
+
+/** 보이는 줄 전부(Ctrl/⌘+A). */
+export function selectAllRows(rowsOrder: string[]): void {
+    const next = selectAllSel(rowsOrder);
+    if (next.ids.length === 0) return;
+    state = { ...state, selectedIds: next.ids, anchorId: next.anchorId, selectedId: next.focusId };
     emit();
 }
 
 export function startRename(id: string): void {
-    state = { ...state, selectedId: id, renamingId: id };
+    state = { ...state, ...singleSel(id), renamingId: id };
     emit();
 }
 
@@ -214,7 +245,7 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
     apply(
         (t) => createNode(t, parent, { id, type, name, data: init.data }),
-        { patch: { selectedId: id, renamingId: id } },
+        { patch: { ...singleSel(id), renamingId: id } },
     );
 }
 
@@ -227,19 +258,26 @@ export function newFolder(parentId?: string): void {
     else newNode('folder', { via: 'selection' });
 }
 
-/** 고른 노드 이름 바꾸기 시작(F2·메뉴). 🔴 루트·휴지통은 이름을 못 바꾼다(id 비교 — folder 타입엔 can 이 없다). */
+/** 고른 노드 이름 바꾸기 시작(F2·메뉴). 🔴 하나일 때만(여럿 고르면 이름 바꾸기는 비활성) · 루트·휴지통은 못 바꾼다. */
 export function renameSelected(): void {
+    if (state.selectedIds.length !== 1) return;
     const id = state.selectedId;
     if (!id || id === state.tree.root || id === state.tree.trash) return;
     startRename(id);
 }
 
-/** 고른 노드 삭제 → 휴지통(메뉴·Delete). 지운 뒤엔 선택을 부모로 옮긴다. */
+/**
+ * 고른 노드 전부 삭제 → 휴지통(메뉴·Delete). 🔴 한 번의 apply = 한 묶음(Ctrl+Z 한 번에 전부 복원).
+ *   조상-자손이 같이 고쳤으면 조상만 옮긴다(topmostOnly — 자손은 따라간다). 지운 뒤 선택은 해제.
+ */
 export function removeSelected(): void {
-    const id = state.selectedId;
-    if (!id || id === state.tree.root || id === state.tree.trash) return;
-    const nextSel = parentOf(state.tree, id);
-    apply((t) => remove(t, id), { patch: { selectedId: nextSel === state.tree.root ? null : nextSel, renamingId: null } });
+    const ids = state.selectedIds.filter((id) => id !== state.tree.root && id !== state.tree.trash && state.tree.nodes[id]);
+    if (ids.length === 0) return;
+    apply((t) => {
+        let x = t;
+        for (const id of topmostOnly(t, ids)) x = remove(x, id);
+        return x;
+    }, { patch: { ...singleSel(null), renamingId: null } });
 }
 
 /** 접기/펴기 토글 — 화살표·오른쪽/왼쪽 화살표 키가 쓴다. ⛔ 더미에 안 쌓는다(접힘은 되돌릴 값 아님). */
@@ -247,9 +285,26 @@ export function toggle(id: string): void {
     apply((t) => toggleCollapse(t, id), { history: 'skip' });
 }
 
-/** 옮기기 — N2 드래그·메뉴가 쓸 자리. 🔴 accepts 를 move 에 주입한다(마지막 관문). */
+/** 옮기기(하나) — accepts 를 move 에 주입한다(마지막 관문). */
 export function moveNode(id: string, parentId: string, index?: number): void {
     apply((t) => move(t, id, parentId, index, acceptsChild));
+}
+
+/**
+ * 옮기기(여럿) — 고른 것 전부를 순서대로. 🔴 조상-자손이 같이 고쳤으면 조상만(topmostOnly · 자손은 따라간다).
+ *   한 번의 apply = 한 묶음. index 를 주면 그 자리부터 차례로 꽂는다(순서 유지).
+ */
+export function moveNodes(ids: string[], parentId: string, index?: number): void {
+    if (ids.length === 0) return;
+    apply((t) => {
+        let x = t;
+        let at = index;
+        for (const id of topmostOnly(t, ids)) {
+            x = move(x, id, parentId, at, acceptsChild);
+            if (at != null) at += 1;
+        }
+        return x;
+    });
 }
 
 /**
@@ -274,20 +329,23 @@ export function nudgeSelected(delta: -1 | 1): void {
 
 // ─────────────────────────── 휴지통(N3) ───────────────────────────
 
-/** 복원 — 고른 노드를 원래 부모(살아 있으면)로, 아니면 루트로. 복원한 노드를 골라 준다. */
+/** 복원 — 고른(휴지통 안) 노드 전부를 원래 부모(살아 있으면)로, 아니면 루트로. 🔴 한 묶음(Ctrl+Z 한 번). */
 export function restoreSelected(): void {
-    const id = state.selectedId;
-    if (!id || !state.tree.nodes[id]) return;
-    if (!isDescendant(state.tree, id, state.tree.trash)) return;   // 휴지통 안 노드만
-    apply((t) => restore(t, id), { patch: { selectedId: id } });
+    const ids = state.selectedIds.filter((id) => state.tree.nodes[id] && isDescendant(state.tree, id, state.tree.trash));
+    if (ids.length === 0) return;
+    apply((t) => {
+        let x = t;
+        for (const id of topmostOnly(t, ids)) x = restore(x, id);
+        return x;
+    }, { patch: { ...singleSel(ids[0]) } });
 }
 
-/** 인라인 「정말 지울까요?」 켜기 — 고른(또는 준) 휴지통 노드에. */
+/** 인라인 「정말 지울까요?」 켜기 — 고른(또는 준) 휴지통 노드에. 🔴 그 하나만 고른 꼴로(영구삭제는 줄별 확인). */
 export function askPurge(id?: string): void {
     const target = id ?? state.selectedId;
     if (!target || !state.tree.nodes[target]) return;
     if (!isDescendant(state.tree, target, state.tree.trash)) return;
-    state = { ...state, selectedId: target, purgeConfirmId: target, purgeAllConfirm: false };
+    state = { ...state, ...singleSel(target), purgeConfirmId: target, purgeAllConfirm: false };
     emit();
 }
 
@@ -309,16 +367,18 @@ export function cancelPurgeConfirm(): void {
 export function purgeConfirmed(): void {
     const id = state.purgeConfirmId;
     if (!id) return;
+    const ids = state.selectedIds.filter((x) => x !== id);
+    const focus = state.selectedId === id ? (ids[ids.length - 1] ?? null) : state.selectedId;
     apply((t) => purge(t, id), {
         history: 'clear',
-        patch: { purgeConfirmId: null, selectedId: state.selectedId === id ? null : state.selectedId },
+        patch: { purgeConfirmId: null, selectedIds: ids, selectedId: focus, anchorId: state.anchorId === id ? focus : state.anchorId },
     });
 }
 
 /** 🔴 휴지통 비우기 확정. ⛔ 못 되돌림 → 더미 비운다. */
 export function purgeAllConfirmed(): void {
     if (!state.purgeAllConfirm) return;
-    apply((t) => purgeAll(t), { history: 'clear', patch: { purgeAllConfirm: false, selectedId: null } });
+    apply((t) => purgeAll(t), { history: 'clear', patch: { purgeAllConfirm: false, ...singleSel(null) } });
 }
 
 // ─────────────────────────── 되돌리기/다시하기(N3) ───────────────────────────

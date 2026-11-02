@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
     type Tree, type Node,
     emptyTree, normalize, createNode, rename, move, remove, toggleCollapse, setData,
-    restore, purge, purgeAll, countUnder,
+    restore, purge, purgeAll, countUnder, topmostOnly,
     parentOf, flatten, filterIds, newFolderParent,
     emptyHistory, record, undo, redo,
 } from './tree';
@@ -234,6 +234,21 @@ describe('countUnder', () => {
         expect(countUnder(t, 'root')).toBe(5);              // 옛 동작 — 전부
         expect(countUnder(t, 'root', isRec)).toBe(2);       // 🔴 폴더 2만(레코드 3 제외)
         expect(countUnder(t, 'a', isRec)).toBe(0);          // a 밑은 레코드뿐
+    });
+});
+
+describe('topmostOnly — 조상-자손이 같이 고르면 조상만', () => {
+    // f1 ▸ g1 ▸ h1 · f2 — 깊은 사슬 + 형제
+    const t = make({ f1: { children: ['g1'] }, g1: { children: ['h1'] }, h1: {}, f2: {} });
+
+    it('조상이 함께 고르면 자손을 뺀다(자손은 따라간다)', () => {
+        expect(topmostOnly(t, ['f1', 'g1', 'h1'])).toEqual(['f1']);
+    });
+    it('조상-자손이 아니면 전부 남는다(입력 순서 유지)', () => {
+        expect(topmostOnly(t, ['f2', 'f1'])).toEqual(['f2', 'f1']);
+    });
+    it('중간만 둘이면 그 중간만(그 밑 h1 은 빠진다)', () => {
+        expect(topmostOnly(t, ['g1', 'h1'])).toEqual(['g1']);
     });
 });
 

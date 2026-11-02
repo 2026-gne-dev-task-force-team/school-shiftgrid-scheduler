@@ -156,6 +156,23 @@ export function newFolderParent(
     return tree.root;
 }
 
+/**
+ * 고른 것 중 「맨 위(조상)만」 — 조상과 자손이 같이 고른 경우 자손을 뺀다(자손은 조상을 따라 움직인다).
+ *   🔴 멀티 셀렉트 이동·삭제가 쓴다(쥔님 2026-11-02 *"조상-자손이 같이 고른 경우 조상만 옮기고 자손은 따라간다"*).
+ *   입력 순서를 지킨다(드래그가 순서대로 꽂을 수 있게).
+ */
+export function topmostOnly(tree: Tree, ids: string[]): string[] {
+    const set = new Set(ids);
+    return ids.filter((id) => {
+        let cur = parentOf(tree, id);
+        while (cur) {
+            if (set.has(cur)) return false;   // 조상이 함께 고른 안에 있다 → 이 자손은 뺀다
+            cur = parentOf(tree, cur);
+        }
+        return true;
+    });
+}
+
 // ─────────────────────────── 연산 (전부 순수 · 끝에 normalize) ───────────────────────────
 
 /** 새 노드 — parentId 아래 index 자리(기본 끝)에 꽂는다. id 는 바깥(store)이 uid() 로 미리 만들어 넘긴다(순수 유지). */
