@@ -13,6 +13,7 @@ import type { NodesApi, PublicNode } from '../project-explorer/api';
 import type { Disposable, MenuEntry } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
+import { getScope } from './store';
 
 export const STORE_TYPE = 'calendar.store';
 export const EVENT_TYPE = 'calendar.event';
@@ -145,10 +146,20 @@ export function ensureStore(): string | null {
     return id || null;
 }
 
-/** 일정 하나 만들기 — 저장소를 보장하고 그 밑에. 돌려주는 id 가 빈 문자열이면 못 만든 것. */
+/** 범위 저장소가 살아 있으면(휴지통 아님) 그 id, 아니면 null — 「새 일정」 기본 저장소가 범위를 따라가게(쥔님 2026-11-02). */
+function liveScopeStore(): string | null {
+    const id = getScope();
+    if (!id || !api) return null;
+    return storeNodes.some((s) => s.id === id) && !inTrash(id) ? id : null;
+}
+
+/**
+ * 일정 하나 만들기 — 저장소를 보장하고 그 밑에. 돌려주는 id 가 빈 문자열이면 못 만든 것.
+ *   🔴 storeId 를 안 주면(더블클릭·「새 일정」 단추) 범위 저장소(있으면) → 아니면 기본 저장소(지금 규칙) 순으로(쥔님 2026-11-02).
+ */
 export function createEvent(data: EventData, name = '', storeId?: string): string {
     if (!api) return '';
-    const target = storeId ?? ensureStore();
+    const target = storeId ?? liveScopeStore() ?? ensureStore();
     if (!target) return '';
     return api.create(target, { type: EVENT_TYPE, name, data });
 }

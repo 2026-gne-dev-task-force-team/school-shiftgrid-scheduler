@@ -7,8 +7,9 @@
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import { subscribeNodes, getEventNodes, getStoreNodes, getNodesApi, inTrash } from './nodes';
+import { useScope } from './store';
 import { PALETTE_LEN } from './palette';
-import type { CalEvent, StoreInfo, EventData } from './events';
+import { eventsInScope, type CalEvent, type StoreInfo, type EventData } from './events';
 
 function toMs(s: unknown): number {
     if (typeof s !== 'string') return NaN;
@@ -27,14 +28,16 @@ export interface CalendarData {
 export function useCalendarData(): CalendarData {
     const eventNodes = useSyncExternalStore(subscribeNodes, getEventNodes, getEventNodes);
     const storeNodes = useSyncExternalStore(subscribeNodes, getStoreNodes, getStoreNodes);
+    const scope = useScope();
 
-    return useMemo<CalendarData>(() => {
+    // 파싱(노드 → CalEvent)·저장소 목록은 노드가 바뀔 때만 다시 — 범위(scope)만 바뀌면 재파싱 안 한다.
+    const base = useMemo(() => {
         const api = getNodesApi();
         const stores = new Map<string, StoreInfo>();
         const storeList: StoreInfo[] = [];
         storeNodes.forEach((s) => {
             if (inTrash(s.id)) return;                 // 휴지통 저장소는 색 목록에서도 뺀다
-            const info: StoreInfo = { id: s.id, name: s.name, colorIdx: storeList.length % PALETTE_LEN };
+            const info: StoreInfo = { id: s.id, name: s.name, colorIdx: storeList.length % PALETTE_LEN, path: api?.path(s.id) ?? [] };
             stores.set(s.id, info);
             storeList.push(info);
         });
@@ -62,4 +65,10 @@ export function useCalendarData(): CalendarData {
         }
         return { events, stores, storeList };
     }, [eventNodes, storeNodes]);
+
+    // 범위 필터 — scope 가 살아 있는 저장소일 때만 건다(휴지통에 가거나 사라졌으면 전체로 · 지움은 CalendarTab 이 setScope(null)).
+    return useMemo<CalendarData>(() => {
+        const effScope = scope && base.stores.has(scope) ? scope : null;
+        return { events: eventsInScope(base.events, base.stores, effScope), stores: base.stores, storeList: base.storeList };
+    }, [base, scope]);
 }

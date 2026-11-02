@@ -2,12 +2,12 @@
  * 일정 순수 함수 — 범위 겹침·날짜 색인(C1) · 정렬·검색(C3). 🔴 노드·React 0 — CalEvent 평면 객체만.
  */
 import { describe, it, expect } from 'vitest';
-import { overlaps, eventsInRange, buildDayIndex, sortEvents, filterEvents, type CalEvent } from './events';
+import { overlaps, eventsInRange, eventsInScope, buildDayIndex, sortEvents, filterEvents, type CalEvent, type StoreInfo } from './events';
 
 /** 테스트용 일정 하나 — start/end 는 'YYYY-MM-DDTHH:mm' */
 function ev(id: string, start: string, end: string, opts: Partial<CalEvent> = {}): CalEvent {
     return {
-        id, storeId: 's', name: opts.name ?? id, start, end,
+        id, storeId: opts.storeId ?? 's', name: opts.name ?? id, start, end,
         startMs: new Date(start).getTime(), endMs: new Date(end).getTime(),
         allDay: opts.allDay ?? false, memo: opts.memo ?? '', colorIdx: opts.colorIdx ?? 0,
     };
@@ -37,6 +37,34 @@ describe('eventsInRange — 11월 10일 하루 범위', () => {
             .toEqual(['걸침', '오전', '종일', '통째덮음'].sort());
     });
     it('빈 목록은 빈 결과', () => { expect(eventsInRange([], FROM, TO)).toEqual([]); });
+});
+
+describe('eventsInScope — 저장소 범위(자손 포함 · 형제 제외 · null 이면 전부)', () => {
+    // 나무: 루트 ▸ A(저장소) ▸ 폴더f ▸ B(자손 저장소) · C(형제 저장소)
+    //   path 는 조상→자신(사이 폴더 포함). A=[A] · B=[A,f,B] · C=[C]
+    const stores = new Map<string, StoreInfo>([
+        ['A', { id: 'A', name: 'A', colorIdx: 0, path: ['A'] }],
+        ['B', { id: 'B', name: 'B', colorIdx: 1, path: ['A', 'f', 'B'] }],
+        ['C', { id: 'C', name: 'C', colorIdx: 2, path: ['C'] }],
+    ]);
+    const list = [
+        ev('a1', '2026-11-10T09:00', '2026-11-10T10:00', { storeId: 'A' }),
+        ev('b1', '2026-11-10T09:00', '2026-11-10T10:00', { storeId: 'B' }),   // A 의 자손 저장소
+        ev('c1', '2026-11-10T09:00', '2026-11-10T10:00', { storeId: 'C' }),   // 형제 저장소
+    ];
+
+    it('A 로 좁히면 A 와 자손 B 는 포함 · 형제 C 는 제외', () => {
+        expect(eventsInScope(list, stores, 'A').map((e) => e.id).sort()).toEqual(['a1', 'b1']);
+    });
+    it('자손 저장소 B 로 좁히면 B 것만(위로 안 올라간다)', () => {
+        expect(eventsInScope(list, stores, 'B').map((e) => e.id)).toEqual(['b1']);
+    });
+    it('형제 저장소 C 로 좁히면 C 것만', () => {
+        expect(eventsInScope(list, stores, 'C').map((e) => e.id)).toEqual(['c1']);
+    });
+    it('null 이면 거르지 않는다(전부)', () => {
+        expect(eventsInScope(list, stores, null).map((e) => e.id)).toEqual(['a1', 'b1', 'c1']);
+    });
 });
 
 describe('buildDayIndex — 여러 날 걸침은 각 날에', () => {

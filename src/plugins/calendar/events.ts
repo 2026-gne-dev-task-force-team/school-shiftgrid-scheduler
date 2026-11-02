@@ -6,11 +6,13 @@
  */
 import { isoOf } from '../../pane-ui-system';
 
-/** 저장소 한 줄 — 이름 + 팔레트 색인(저장소 순서). */
+/** 저장소 한 줄 — 이름 + 팔레트 색인(저장소 순서) + 조상 사슬(범위 판정용). */
 export interface StoreInfo {
     id: string;
     name: string;
     colorIdx: number;
+    /** 루트 밑 첫 조상 → 자신(저장소 id 뿐 아니라 사이 폴더 id 도 담는다 · nodes.path). 범위(scope) 안인지 가른다. */
+    path: string[];
 }
 
 /** 파싱된 일정 하나 — 노드 name/data 를 평면으로 편 것 + 색인. */
@@ -45,6 +47,21 @@ export function overlaps(startMs: number, endMs: number, fromMs: number, toMs: n
 /** 범위 [fromMs,toMs) 안(겹치는) 일정만. */
 export function eventsInRange(events: CalEvent[], fromMs: number, toMs: number): CalEvent[] {
     return events.filter((e) => overlaps(e.startMs, e.endMs, fromMs, toMs));
+}
+
+/**
+ * 범위(scope) 저장소 안 일정만 — 쥔님 2026-11-02: 저장소를 열면 그 저장소 것만, **하위(자손) 저장소 포함**.
+ *   🔴 저장소 S 가 범위 안인지는 S.path(조상→자신)에 scopeId 가 있나로 가른다 — scopeId 자신이면 path 가 자신을 담아 참,
+ *      자손 저장소면 조상 사슬에 scopeId 가 있어 참, 형제 저장소면 없어 거짓(자동으로 빠진다).
+ *   scopeId 가 null 이면 거르지 않는다(전체 · 지금 동작).
+ */
+export function eventsInScope(events: CalEvent[], stores: Map<string, StoreInfo>, scopeId: string | null): CalEvent[] {
+    if (!scopeId) return events;
+    const inScope = new Set<string>();
+    for (const s of stores.values()) {
+        if (s.path.includes(scopeId)) inScope.add(s.id);
+    }
+    return events.filter((e) => inScope.has(e.storeId));
 }
 
 /** 정렬 비교 — 시작 이른 순, 같으면 종일 먼저, 그다음 이름. 표·날 칸 공통. */

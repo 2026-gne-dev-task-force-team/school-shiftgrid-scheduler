@@ -14,7 +14,7 @@ import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
-import { initOptions } from './store';
+import { initOptions, setScope } from './store';
 import {
     registerCalendarTypes, initCalendarNodes, getNodesApi,
     getMenuTarget, setDefaultStore, newEventInStore,
@@ -32,8 +32,9 @@ function activate(host: PluginHost): void {
     //    🔴 일정은 노드다 — 달력은 저장을 모른다(요구명세). 탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
     const nodes = host.plugins.get<NodesApi>('project-explorer');
     if (nodes) {
-        // 저장소를 열면(탐색기 두 번 누르기·Enter) 달력 월 보기를 가운데에 연다(싱글턴). 그 저장소가 「기본 저장소」가 된다(nodes.ts).
-        registerCalendarTypes(nodes, () => { host.workspace.open(MONTH_ID, { where: 'center' }); });
+        // 저장소를 열면(탐색기 한 번 누르기·「달력에서 열기」) 달력 월 보기를 가운데에 연다(싱글턴). 그 저장소가 「기본 저장소」가 되고(nodes.ts),
+        //   범위(scope)도 그 저장소로 좁힌다 — 그 저장소와 그 자손 저장소 일정만 보인다(쥔님 2026-11-02).
+        registerCalendarTypes(nodes, (id) => { setScope(id); host.workspace.open(MONTH_ID, { where: 'center' }); });
     }
     initCalendarNodes(nodes ?? null);
     host.settings.addSection('calendar', '달력', 'calendar');
@@ -53,7 +54,8 @@ function activate(host: PluginHost): void {
     // ── 명령 + 리본 아이콘 하나 — 누르면 월 보기를 연다(싱글턴이라 두 장 안 열린다) ──
     host.commands.add({
         id: 'calendar.open', title: '달력 열기', icon: 'calendar',
-        run: () => { host.workspace.open(MONTH_ID, { where: 'center' }); },
+        // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
+        run: () => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },
     });
     host.ribbon.add({ commandId: 'calendar.open', icon: 'calendar', order: 1 });
 
