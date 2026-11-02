@@ -8,11 +8,14 @@
  */
 import { createElement } from 'react';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
+// 🔴 import type 만 — 노드 시스템 「값」은 host.plugins.get 으로 받는다(구조 검사 ⑨)
+import type { NodesApi } from '../project-explorer/api';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { initOptions } from './store';
+import { registerCalendarTypes, initCalendarNodes } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 const MONTH_ID = 'calendar.month';
@@ -21,6 +24,15 @@ const MINI_ID = 'calendar.mini';
 function activate(host: PluginHost): void {
     // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
     initOptions(host);
+
+    // ── 노드 시스템에 타입 둘을 꽂고(저장소·일정) 일정 자료 다리를 건다 ──
+    //    🔴 일정은 노드다 — 달력은 저장을 모른다(요구명세). 탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
+    const nodes = host.plugins.get<NodesApi>('project-explorer');
+    if (nodes) {
+        // 저장소를 열면(탐색기 두 번 누르기·Enter) 달력 월 보기를 가운데에 연다(싱글턴). 그 저장소가 「기본 저장소」가 된다(nodes.ts).
+        registerCalendarTypes(nodes, () => { host.workspace.open(MONTH_ID, { where: 'center' }); });
+    }
+    initCalendarNodes(nodes ?? null);
     host.settings.addSection('calendar', '달력', 'calendar');
     host.settings.addItem({ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', Pane: () => createElement(CalendarSettings) });
 
