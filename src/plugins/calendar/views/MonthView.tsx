@@ -14,14 +14,21 @@
  *   얼개: 기준 주(ANCHOR = 오늘이 든 주의 첫날)에서 앞뒤로 offset 주를 깐다. 처음엔 ±2년, 끝에 가까워지면 반년씩 더 깐다
  *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「(보이는 높이 − 요일 머리) ÷ 6」 — 한 화면에 늘 6주.
  */
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
     Icon, IconButton, Surface,
-    monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell,
+    monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell, type PeekHandle,
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
+import { useCalendarData } from '../useEvents';
+import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
+import { createEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
+import { paletteAt } from '../palette';
+import { useCardPeek } from './useCardPeek';
+
+const DAY_MS = 86_400_000;
 
 // 🔑 주 시작 요일은 일요일 고정 — 설정으로 뺄 자리다. 지금은 weekStart 인자만 열어 두고 0 으로만 부른다.
 const WEEK_START = 0;
@@ -45,13 +52,37 @@ function weekOffsetOf(d: Date): number {
     return weeksBetween(ANCHOR, startOfWeek(d, WEEK_START));
 }
 
-/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게 */
-function DayBox({ c, isToday, inHead }: { c: DayCell; isToday: boolean; inHead: boolean }) {
+/** 일정 한 줄 — 종일은 채운 막대, 시간은 「점 + HH:MM 제목」. data-event-id 로 칸 바깥 위임 클릭을 받는다(C2). */
+function EventChip({ e }: { e: CalEvent }) {
+    const pal = paletteAt(e.colorIdx);
+    const title = e.name || '새 일정';
+    if (e.allDay) {
+        return (
+            <div data-event-id={e.id} className={`truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${pal.bar}`}>
+                {title}
+            </div>
+        );
+    }
+    return (
+        <div data-event-id={e.id} className="flex items-center gap-1 px-1 text-[10px] leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
+            <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
+            <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
+        </div>
+    );
+}
+
+/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게 · 아래로 일정들 */
+function DayBox({ c, isToday, inHead, height, events }: { c: DayCell; isToday: boolean; inHead: boolean; height: number; events: CalEvent[] }) {
     const first = c.d === 1;
     const label = first ? `${c.m}월 ${c.d}일` : c.d;
+    // 날짜 머리(약 22px) 아래로 한 줄 16px — 넘치면 마지막 자리에 「+N」
+    const room = Math.max(0, Math.floor((height - 22) / 16));
+    const over = events.length > room;
+    const shown = over ? events.slice(0, Math.max(0, room - 1)) : events;
+    const hidden = events.length - shown.length;
     return (
-        <div className={`min-h-0 overflow-hidden border-r border-b border-line p-1 ${inHead ? 'bg-bg' : 'bg-panel2'}`}>
-            <div className="flex">
+        <div data-day={c.iso} className={`min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col gap-0.5 ${inHead ? 'bg-bg' : 'bg-panel2'}`}>
+            <div className="flex shrink-0">
                 {isToday ? (
                     <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-[11px] font-semibold">
                         {label}
@@ -62,27 +93,68 @@ function DayBox({ c, isToday, inHead }: { c: DayCell; isToday: boolean; inHead: 
                     </span>
                 )}
             </div>
+            {shown.map((e) => <EventChip key={e.id} e={e} />)}
+            {over && hidden > 0 && (
+                <div className="px-1 text-[10px] leading-4 text-muted">+{hidden}</div>
+            )}
         </div>
     );
 }
 
-/** 한 주 줄 — memo: 스크롤마다 머리줄만 다시 그리고 줄들은 그대로 둔다(머리줄의 달이 바뀔 때만 다시 칠한다) */
-const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM }: {
-    offset: number; height: number; todayIso: string; headY: number; headM: number;
+/** 한 주 줄 — memo: 스크롤마다 머리줄만 다시 그리고 줄들은 그대로 둔다(머리줄의 달·일정 색인이 바뀔 때만 다시 그린다) */
+const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM, dayIndex }: {
+    offset: number; height: number; todayIso: string; headY: number; headM: number; dayIndex: Map<string, CalEvent[]>;
 }) {
     const cells = weekRow(addDays(ANCHOR, offset * 7));
     return (
         <div className="grid grid-cols-7" style={{ height }}>
             {cells.map((c) => (
-                <DayBox key={c.iso} c={c} isToday={c.iso === todayIso} inHead={c.y === headY && c.m === headM} />
+                <DayBox
+                    key={c.iso} c={c} isToday={c.iso === todayIso} inHead={c.y === headY && c.m === headM}
+                    height={height} events={dayIndex.get(c.iso) ?? EMPTY}
+                />
             ))}
         </div>
     );
 });
 
-export function MonthView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
+/** 빈 칸 공유 참조 — DayBox memo 가 매번 새 배열을 안 받게 */
+const EMPTY: CalEvent[] = [];
+
+export function MonthView({ value, onChange, trailing, peek }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+    // 🔴 일정은 노드에서 온다(useEvents) — subscribe 변경 때만 색인을 다시 짓는다(스크롤엔 안 바뀐다)
+    const { events } = useCalendarData();
+    const dayIndex = useMemo(() => buildDayIndex(events), [events]);
+
+    // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
+    const card = useCardPeek(peek);
+
+    // 🔴 탐색기 메뉴(뷰 밖)에서 「새 일정」을 만들면 nodes 에 「열 카드」를 담는다 — 여기서 열고 비운다.
+    //    마운트 때 한 번(탭이 방금 열렸을 수 있다) + 구독(이미 떠 있을 때). useCardPeek 이 뷰 안이라 이 다리가 필요하다.
+    useEffect(() => {
+        const tryOpen = () => { const id = getPendingCard(); if (id) { clearPendingCard(); card.open(id); } };
+        tryOpen();
+        return subscribeCardOpen(tryOpen);
+    }, [card]);
+
+    // 날 칸 더블클릭 → 종일 일정 생성 + 카드(제목 포커스) · 일정 클릭 → 카드. 칸 바깥 위임(data-day·data-event-id).
+    const onCellClick = (e: ReactMouseEvent) => {
+        const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
+        if (id) card.open(id);
+    };
+    const onCellDouble = (e: ReactMouseEvent) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-event-id]')) return;              // 일정 위 더블클릭은 생성이 아니다
+        const iso = t.closest('[data-day]')?.getAttribute('data-day');
+        if (!iso) return;
+        const start = parseLocal(iso);
+        if (Number.isNaN(start.getTime())) return;
+        const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
+        if (id) card.open(id);
+    };
     // 🔴 첫 배치에서 scrollTop 을 맞출 날 — 탭(anchor)이 내려준 value. 마운트 때 한 번만 읽는다(이후 스크롤→날짜만 흐른다).
     const initValue = useRef(value);
     // onChange 는 매 렌더 바뀔 수 있으니 ref 로 — 효과가 onChange 를 deps 에 넣어 다시 돌지 않게
@@ -308,6 +380,8 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
             <div
                 ref={scrollerRef}
                 onScroll={onScroll}
+                onClick={onCellClick}
+                onDoubleClick={onCellDouble}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
             >
                 <div
@@ -323,7 +397,7 @@ export function MonthView({ value, onChange, trailing }: { value: Date; onChange
                 {/* 위쪽 빈 높이 → 보이는 줄들 → 아래쪽 빈 높이 */}
                 <div style={{ height: vis.start * rowH }} />
                 {rows.map((o) => (
-                    <WeekRow key={o} offset={o} height={rowH} todayIso={todayIso} headY={head.y} headM={head.m} />
+                    <WeekRow key={o} offset={o} height={rowH} todayIso={todayIso} headY={head.y} headM={head.m} dayIndex={dayIndex} />
                 ))}
                 <div style={{ height: Math.max(0, total - vis.end) * rowH }} />
             </div>

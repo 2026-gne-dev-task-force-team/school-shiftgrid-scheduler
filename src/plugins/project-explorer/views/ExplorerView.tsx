@@ -1,23 +1,24 @@
 /**
- * 「탐색기」 패널 — VS Code 파일 탐색기 그림(쥔님 2026-11-01 17:28: *"VS 코드로 가자"*).
+ * 「탐색기」 패널 — 옵시디언 파일 탐색기 그림(쥔님 2026-11-02: *"파일 선택 방법 그냥 다시 옵시디언으로 가야겠다"* —
+ *   11-01 의 VS Code 식(한 번=고르기, 두 번=열기)을 뒤집었다).
  *
  * 🔴 ⛔ 탐색기는 타입을 모른다 — 아이콘·컨테이너 여부·열기·「새로 만들기」 목록은 전부 등록 표(model/types.ts)에 묻는다.
  *    이 파일에 `type ===` 비교를 두지 않는다(설계 「여기서 죽는다」 — 탐색기가 타입을 알게 되는 유혹).
- * ⭐ 누르기(VS Code 식): 한 번 = 고르기만(폴더는 접기/펴기도) · 두 번·Enter = 열기 · F2 = 이름 바꾸기.
+ * ⭐ 누르기(옵시디언식): 한 번 = 고르기 + openable 이면 바로 열기 · 컨테이너만이면 펴기/접기 · Enter 는 한 번 누르기와 같은 일 · F2 = 이름.
  * 🔴 드래그·우클릭은 useDragLeaf 한 훅으로 가른다(탭 드래그와 같은 가름 — 마우스 8px / 손가락 350ms 무장).
  *    떨굴 자리 셋(줄 위 25% 앞 · 아래 25% 뒤 · 가운데 50% 안으로 · container 일 때만) · accepts/자손 금지는 빨간 표시 +
  *    모델 move 가 마지막 관문. 좁은 화면(narrow)에선 드래그를 끄고 메뉴의 「위로·아래로」로.
- * ⭐ 누르기: 한 번 = 고르기(폴더는 접기/펴기) · 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder) · 두 번 = 열기 · F2 = 이름.
+ * ⭐ 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder 느린 재클릭 · 유지) · 두 번 누르기는 그 예약만 취소(열기는 한 번 누르기가 이미 했다).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/tree';
-import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild } from '../model/types';
+import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
-import { useExplorer, select, toggle, cancelRename, commitRename, moveNode } from '../store';
+import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
@@ -42,8 +43,11 @@ interface DropResolved {
     ok: boolean;           // accepts 통과 + 제 자손 아님 (금지면 빨간 선)
 }
 
-/** 포인터 자리(x,y)를 떨굴 자리로 — 줄 높이 25/50/25 띠. DOM 을 더듬으니 순수 아님(drop-resolve 와 같은 결). */
-function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragId: string, tree: Tree): DropResolved | null {
+/**
+ * 포인터 자리(x,y)를 떨굴 자리로 — 줄 높이 25/50/25 띠. DOM 을 더듬으니 순수 아님(drop-resolve 와 같은 결).
+ *   🔴 dragIds = 같이 끌리는 것 전부(멀티 셀렉트) — ok 는 **전부**가 통과해야 참(하나라도 막히면 금지 표시 · 쥔님 2026-11-02).
+ */
+function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragId: string, dragIds: string[], tree: Tree): DropResolved | null {
     if (!container) return null;
     const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-row-id]'));
     if (rows.length === 0) return null;
@@ -53,12 +57,12 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
     const lastEl = rows[rows.length - 1];
     const lastRect = lastEl.getBoundingClientRect();
     if (y > lastRect.bottom) {
-        const dnode = tree.nodes[dragId];
         const rootNode = tree.nodes[tree.root];
         const sibs = rootNode.children.filter((c) => c !== dragId);
-        const ok = !!dnode && tree.root !== dragId
-            && !isDescendant(tree, tree.root, dragId)
-            && acceptsChild(rootNode.type, dnode.type);
+        const ok = dragIds.every((did) => {
+            const dn = tree.nodes[did];
+            return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did) && acceptsChild(rootNode.type, dn.type);
+        });
         return { targetId: lastEl.getAttribute('data-row-id') ?? tree.root, pos: 'after', rect: lastRect, destParent: tree.root, index: sibs.length, ok };
     }
 
@@ -91,17 +95,16 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
         const at = sibs.indexOf(targetId);
         index = pos === 'after' ? at + 1 : at;
     }
-    const dnode = tree.nodes[dragId];
     const dp = tree.nodes[destParent];
-    const ok = !!dnode && !!dp
-        && destParent !== dragId
-        && !isDescendant(tree, destParent, dragId)
-        && acceptsChild(dp.type, dnode.type);
+    const ok = !!dp && dragIds.every((did) => {
+        const dn = tree.nodes[did];
+        return !!dn && destParent !== did && !isDescendant(tree, destParent, did) && acceptsChild(dp.type, dn.type);
+    });
     return { targetId, pos, rect, destParent, index, ok };
 }
 
 export function ExplorerView({ host }: { host: PluginHost }) {
-    const { tree, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, loading } = useExplorer();
+    const { tree, selectedIds, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, loading } = useExplorer();
 
     const [query, setQuery] = useState('');
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -145,49 +148,65 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
             isRecord: isRecordType,
-            keep: (() => { const k = filterIds(tree, tree.root, (n) => n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
+            // 🔴 레코드성(일정 등)은 검색에도 안 걸린다(「상위의 데이터」 · 쥔님 2026-11-02) — 안 그러면 숨은 레코드가 제 부모 폴더를 「맞은 줄」로 띄운다.
+            keep: (() => { const k = filterIds(tree, tree.root, (n) => !isRecordType(n.type) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
         : buildMainRows(tree, tree.root, isRecordType);
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
+    const rowsOrder = rows.map((r) => r.id);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
+
+    // 끌리는 것 전부 — 고른 것 중 하나를 끌면 고른 전부, 아니면 그 하나만(쥔님 2026-11-02).
+    const dragSetOf = (id: string): string[] => (selectedIds.includes(id) ? selectedIds : [id]);
 
     // ── 드래그 + 우클릭 한 훅 — 좁은 화면에선 끈다(그땐 메뉴의 위로/아래로) ──
     const onDrop = useCallback((dragId: string, x: number, y: number) => {
         draggedRef.current = true;
         if (isDescendant(tree, dragId, tree.trash)) return;          // 휴지통 줄은 드래그로 안 옮긴다
-        const hit = resolveDrop(listRef.current, x, y, dragId, tree);
-        if (hit && hit.ok) moveNode(dragId, hit.destParent, hit.index);
-    }, [tree]);
+        const set = selectedIds.includes(dragId) ? selectedIds : [dragId];
+        const hit = resolveDrop(listRef.current, x, y, dragId, set, tree);
+        if (hit && hit.ok) moveNodes(set, hit.destParent, hit.index);
+    }, [tree, selectedIds]);
 
+    // 🔴 고른 것 밖을 우클릭하면 그 하나로 바뀐다(VS Code) · 안을 우클릭하면 선택 유지 · 빈 바닥이면 해제.
     const onContext = useCallback((x: number, y: number, el: HTMLElement) => {
         const row = el.closest?.('[data-row-id]') as HTMLElement | null;
-        select(row?.getAttribute('data-row-id') ?? null);
+        const id = row?.getAttribute('data-row-id') ?? null;
+        if (id === null || !selectedIds.includes(id)) select(id);
         setMenu({ x, y });
-    }, []);
+    }, [selectedIds]);
 
     const { bind, drag } = useDragLeaf({ enabled: !narrow, axis: 'y', onContext, onDrop });
-    const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, tree) : null;
+    const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, dragSetOf(drag.leafId), tree) : null;
 
-    // ── 줄 하나 누르기 — 고르기(+ 실노드 컨테이너는 접기/펴기). 유도 줄은 고르기만. ──
-    //    🔴 이미 고른 실노드를 또 누르면(맥 Finder) 지연 뒤 이름바꾸기 — 두 번 누르기(열기)면 dblRow 가 취소한다.
-    //    접기/펴기는 그래도 쉐브론으로 쥔다(이미 고른 폴더 몸통을 눌러도 토글 대신 이름바꾸기로 간다).
-    const clickRow = (row: ExplorerRow): void => {
+    // ── 줄 하나 누르기(옵시디언식 · 쥔님 2026-11-02) — 고르기 + openable 이면 바로 열기 · 컨테이너만이면 펴기/접기. ──
+    //    🔴 이미 고른 실노드를 또 누르면(맥 Finder 느린 재클릭) 지연 뒤 이름바꾸기 — 두 번 누르기면 dblRow 가 취소한다(유지).
+    //    접기/펴기는 그래도 ▸ 쉐브론으로도 쥔다(stopPropagation) — 폴더+파일(달력 저장소)은 몸통=열기, ▸=펴기/접기.
+    const clickRow = (row: ExplorerRow, e: React.MouseEvent): void => {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
-        const wasSelected = selectedId === row.id && row.kind === 'node';
+        // 🔴 Ctrl/⌘·Shift 가 눌린 클릭은 **고르기만**(열지도 펴지도 않는다 · 쥔님 2026-11-02) — 맨 클릭만 연다.
+        const ctrl = e.ctrlKey || e.metaKey;
+        if (ctrl || e.shiftKey) {
+            clearRenameTimer();
+            clickSelect(row.id, rowsOrder, { ctrl, shift: e.shiftKey });
+            return;
+        }
+        // 이미 **그 하나만** 고른 실노드를 또 누르면(맥 Finder 느린 재클릭) 지연 뒤 이름바꾸기 — 두 번 누르기면 dblRow 가 취소.
+        const wasSelected = selectedId === row.id && selectedIds.length === 1 && row.kind === 'node';
         if (wasSelected && canDo(row.node.type, 'rename')) {
             clearRenameTimer();
             renameTimer.current = window.setTimeout(() => { host.commands.run('project-explorer.rename'); }, RENAME_CLICK_DELAY);
             return;
         }
         select(row.id);
-        if (row.kind === 'node' && isContainerType(row.node.type)) toggle(row.id);
+        // 🔴 한 번 누르기 = Enter 와 같은 일: openable → 열기 · 컨테이너만 → 펴기/접기 · 그 외 → 열기(유도 줄도 열기 시도, openById 가 안 열면 가만).
+        const verb = row.kind === 'node' ? activateVerb(row.node.type, 'click') : 'open';
+        if (verb === 'toggle') toggle(row.id);
+        else if (verb === 'open') run('project-explorer.open');
     };
-    // 두 번 누르기 — 예약된 이름바꾸기를 취소하고(열기가 이긴다), 컨테이너는 아무 일 없음, openable 이면 열기(실노드·유도 공통).
-    const dblRow = (row: ExplorerRow): void => {
+    // 두 번 누르기 — 옵시디언식이라 따로 할 일이 없다(한 번 누르기가 이미 열거나 폈다). 예약된 이름바꾸기만 취소한다(빠른 둘째 클릭 = 열기, 이름바꾸기 아님).
+    const dblRow = (): void => {
         clearRenameTimer();
-        if (row.kind === 'node' && isContainerType(row.node.type)) return;
-        select(row.id);
-        run('project-explorer.open');
     };
 
     // ── 바깥 빈 공간 누르기(마지막 줄 아래 바닥·빈 목록·패널 여백) = 고른 것 해제 → 「미선택=루트」 ──
@@ -212,10 +231,22 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             run(e.shiftKey ? 'project-explorer.redo' : 'project-explorer.undo');
             return;
         }
+        // 🔴 Ctrl/⌘+A — 보이는 줄 전부 고르기(이름칸·검색칸 안에선 위 INPUT 가드가 이미 브라우저에 양보한다)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+            e.preventDefault();
+            selectAllRows(rowsOrder);
+            return;
+        }
         const sel = selectedId;
         const selNode = sel ? tree.nodes[sel] : null;
         const idx = rows.findIndex((r) => r.id === sel);
-        const selectRow = (i: number): void => { const r = rows[i]; if (r) select(r.id); };
+        // ↑↓ — Shift 면 범위 늘리기(anchor~새 줄), 아니면 하나만 고르기.
+        const selectRow = (i: number): void => {
+            const r = rows[i];
+            if (!r) return;
+            if (e.shiftKey) clickSelect(r.id, rowsOrder, { shift: true });
+            else select(r.id);
+        };
         switch (e.key) {
             case 'ArrowDown': e.preventDefault(); selectRow(idx < 0 ? 0 : Math.min(rows.length - 1, idx + 1)); break;
             case 'ArrowUp': e.preventDefault(); selectRow(idx < 0 ? rows.length - 1 : Math.max(0, idx - 1)); break;
@@ -235,13 +266,16 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     if (p && p !== tree.root) select(p);   // 루트는 줄이 아니다 — 부모로만(루트 해제는 Esc·빈 공간)
                 }
                 break;
-            case 'Enter':
+            case 'Enter': {
                 e.preventDefault();
                 if (sel) {
-                    if (selNode && isContainerType(selNode.type)) toggle(sel);   // 컨테이너는 펴기/접기
-                    else run('project-explorer.open');                          // openable·유도는 열기
+                    // openable 이면 열기(컨테이너여도 · 달력 저장소) · 컨테이너만이면 펴기/접기 · 유도(selNode 없음)는 열기
+                    const verb = selNode ? activateVerb(selNode.type, 'enter') : 'open';
+                    if (verb === 'toggle') toggle(sel);
+                    else run('project-explorer.open');
                 }
                 break;
+            }
             case 'F2': e.preventDefault(); if (sel) host.commands.run('project-explorer.rename'); break;
             case 'Delete': case 'Backspace': e.preventDefault(); if (sel) host.commands.run('project-explorer.remove'); break;
             case 'Escape': if (sel) { e.preventDefault(); select(null); } break;   // 선택 해제 = 루트(쥔님 22:17)
@@ -274,12 +308,16 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         const baseType = selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder');
         const items: MenuEntry[] = [];
         // ContextMenu 는 하위 메뉴가 없다 → 「새 <label>」 로 평평하게(지금은 폴더 하나).
+        // 🔴 우클릭 = 「이 노드에서」(via 'context') — 명령(선택 기준) 대신 onClick 으로 직접 부른다(targetId=우클릭한 노드).
+        //    그래야 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(헤더 단추는 형제로 — 두 경로가 갈린다).
         for (const def of createCandidates(baseType)) {
-            items.push({ label: `새 ${def.label}`, icon: 'plus', commandId: `project-explorer.new-${def.type}` });
+            items.push({ label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
         }
         if (selNode && !inTrash) {
-            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: !canDo(selNode.type, 'rename') });
-            items.push({ label: '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
+            // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
+            const multi = selectedIds.length > 1;
+            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: multi || !canDo(selNode.type, 'rename') });
+            items.push({ label: multi ? `삭제 (${selectedIds.length}개)` : '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
             if (narrow) {
                 items.push({ label: '위로', icon: 'left', commandId: 'project-explorer.move-up' });
                 items.push({ label: '아래로', icon: 'left', commandId: 'project-explorer.move-down' });
@@ -287,7 +325,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             const extra = typeMenu(selNode, selNode.id);
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
         }
-        if (items.length === 0) items.push({ label: '새 폴더', icon: 'plus', commandId: 'project-explorer.new-folder' });
+        // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
+        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'plus', onClick: () => newNode('folder', { via: 'context', targetId: selectedId ?? undefined }) });
         return items;
     };
 
@@ -310,6 +349,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             style={drag && preview && !preview.ok ? { cursor: 'not-allowed' } : undefined}
             tabIndex={0}
             role="tree"
+            aria-multiselectable="true"
             onKeyDown={onKeyDown}
             {...bind}
         >
@@ -339,7 +379,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     </p>
                 )}
                 {rows.map((row) => {
-                    const isSel = selectedId === row.id;
+                    const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
+                    const isFocus = selectedId === row.id && selectedIds.length > 1;   // 키보드 커서 — 여럿일 때만 포커스 링
                     const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
 
                     // 🔴 유도(가상) 줄 — 회색 글자, 이름바꾸기·드래그 없음(data-row-id 는 둬 드롭에서 자동 거부된다).
@@ -351,8 +392,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                 role="treeitem"
                                 aria-selected={isSel}
                                 title={row.name}
-                                onClick={() => clickRow(row)}
-                                onDoubleClick={() => dblRow(row)}
+                                onClick={(e) => clickRow(row, e)}
+                                onDoubleClick={() => dblRow()}
                                 className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
                                     isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
                                 }`}
@@ -383,13 +424,14 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             aria-selected={isSel}
                             aria-expanded={row.hasChildren ? !row.node.collapsed : undefined}
                             title={row.node.name}
-                            onClick={() => clickRow(row)}
-                            onDoubleClick={() => dblRow(row)}
+                            onClick={(e) => clickRow(row, e)}
+                            onDoubleClick={() => dblRow()}
                             onMouseEnter={() => setHoverId(row.id)}
                             onMouseLeave={() => setHoverId((h) => (h === row.id ? null : h))}
+                            aria-current={isFocus ? true : undefined}
                             className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
                                 isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
-                            } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : ''}`}
+                            } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : isFocus ? 'ring-1 ring-inset ring-accent/40' : ''}`}
                             style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
                         >
                             {row.hasChildren ? (

@@ -60,12 +60,41 @@ export interface NodeTypeDef {
 
 const registry = new Map<string, NodeTypeDef>();
 
+/**
+ * 🔴 등록/해제 알림 — index.ts 가 「create 있는 타입마다 new-<type> 명령」을 자동으로 켜고 끈다(N4 반쪽 메꿈).
+ *   create 가 있는 타입이 등록되면 register, 그 등록이 거둬지면 unregister. create 없는 타입(일정 record 등)은 안 알린다.
+ */
+export type TypeRegEvent =
+    | { kind: 'register'; type: string; def: NodeTypeDef }
+    | { kind: 'unregister'; type: string };
+
+const typeListeners = new Set<(ev: TypeRegEvent) => void>();
+
+/** 등록/해제를 받는 구독 — 돌려주는 Disposable 로 해지(index.ts 가 활성 동안 쥔다). */
+export function onTypeRegistered(fn: (ev: TypeRegEvent) => void): Disposable {
+    typeListeners.add(fn);
+    return { dispose() { typeListeners.delete(fn); } };
+}
+
+function notifyTypes(ev: TypeRegEvent): void {
+    for (const fn of typeListeners) { try { fn(ev); } catch { /* 하나가 던져도 나머지 */ } }
+}
+
+/** create 가 있는(= 「새로 만들기」 후보가 되는) 타입들 — 명령 자동 등록이 「활성 전 등록분」을 한 번 돌 때 쓴다. */
+export function createTypes(): NodeTypeDef[] {
+    return [...registry.values()].filter((d) => d.create);
+}
+
 /** 타입을 꽂는다 — 같은 type 재등록은 덮어쓴다. dispose 는 「그 등록이 아직 그대로일 때만」 거둔다. */
 export function registerType(def: NodeTypeDef): Disposable {
     registry.set(def.type, def);
+    if (def.create) notifyTypes({ kind: 'register', type: def.type, def });
     return {
         dispose() {
-            if (registry.get(def.type) === def) registry.delete(def.type);
+            if (registry.get(def.type) === def) {
+                registry.delete(def.type);
+                if (def.create) notifyTypes({ kind: 'unregister', type: def.type });
+            }
         },
     };
 }
@@ -117,6 +146,7 @@ export function createCandidates(parentType: string): NodeTypeDef[] {
     const out: NodeTypeDef[] = [];
     for (const def of registry.values()) {
         if (!def.create) continue;
+        if (def.record) continue;                                   // 🔴 레코드성(일정 등)은 탐색기로 못 만든다 — 보이지도 않는 걸 만들면 이름칸이 허공에 뜬다
         if (!acceptsChild(parentType, def.type)) continue;          // 부모가 이 타입을 받나
         const under = def.create.under;
         if (under && !under.includes(parentType)) continue;         // 이 타입이 이 부모 밑을 허용하나
@@ -143,6 +173,21 @@ export function canOpenType(type: string): boolean {
     return !!def?.openable && typeof def.open === 'function';
 }
 
+/**
+ * 한 번 누르기(click)·Enter·키보드 ↑↓(arrow)가 이 타입에 할 일 — 한 곳에서 가른다(옵시디언식 · 쥔님 2026-11-02:
+ *   *"파일 선택 방법 그냥 다시 옵시디언으로 가야겠다"* — 11-01 의 VS Code 식(한 번=고르기, 두 번=열기)을 뒤집었다).
+ *   🔴 openable 이 컨테이너를 **이긴다**: 달력 저장소처럼 「폴더+파일」인 타입은 한 번 누르기·Enter = 열기(펴기는 ▸ 화살표가 쥔다).
+ *   컨테이너이기만 하면(openable 아님) — 한 번 누르기·Enter 는 펴기/접기(toggle).
+ *   둘 다 아니면(파일 역할이거나 모르는 타입) 열기 — openById 가 openable 아니면 조용히 아무 일도 안 한다.
+ *   🔴 arrow(↑↓)는 늘 none — 고르기만 하고 열지도 펴지도 않는다(옵시디언도 그렇다).
+ */
+export function activateVerb(type: string, via: 'click' | 'enter' | 'arrow'): 'open' | 'toggle' | 'none' {
+    if (via === 'arrow') return 'none';
+    if (canOpenType(type)) return 'open';
+    if (isContainerType(type)) return 'toggle';
+    return 'open';
+}
+
 /** 그 타입의 open 을 실행(없으면 아무 일 없음) — 유도 줄·실노드 공통 열기 경로. */
 export function openType(type: string, nodeId: string): void {
     const def = registry.get(type);
@@ -155,7 +200,8 @@ export function canDo(type: string, what: 'rename' | 'move' | 'delete'): boolean
     return can?.[what] !== false;
 }
 
-/** 테스트·앱 재마운트에서 목록을 비운다(view-registry.clearViews 와 같은 결). */
+/** 테스트·앱 재마운트에서 목록을 비운다(view-registry.clearViews 와 같은 결). 알림 구독도 같이 끊는다. */
 export function clearTypes(): void {
     registry.clear();
+    typeListeners.clear();
 }

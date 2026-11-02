@@ -9,18 +9,46 @@
 import { createElement } from 'react';
 import type { PluginModule, PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { registerType } from './model/types';
+import { registerType, onTypeRegistered, createTypes, type NodeTypeDef } from './model/types';
 import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
 import {
-    initStore, getState, newFolder, renameSelected, removeSelected,
+    initStore, getState, newNode, renameSelected, removeSelected,
     nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
     undoAction, redoAction,
 } from './store';
 
 const TREE_VIEW_ID = 'project-explorer.tree';   // host 가 'project-explorer.' 를 붙인다(id: 'tree')
+
+/**
+ * 🔴 「새로 만들기 ▸」 명령 자동 등록 — create 가 있는 타입마다 `project-explorer.new-<type>` 명령을 켠다(N4 반쪽 메꿈).
+ *   메뉴(ExplorerView)는 등록 표를 돌아 `new-<type>` 를 부르는데, 지금껏 그 명령을 아무도 등록하지 않아 「없는 명령」으로 떨어졌다.
+ *   folder 의 손 등록(옛 project-explorer.new-folder)도 여기로 흡수한다 — folder 도 create 를 가진 표의 한 줄(두 벌 금지).
+ *
+ *   🔴 알림을 걸기 전에 현재 표를 한 번 돈다 — 활성 전에 이미 등록된 타입(순서가 달력이 먼저일 수 있다)도 빠짐없이.
+ *   타입이 해제되면 그 명령도 해제(dispose 묶음). 같은 타입 재등록은 옛 명령을 거두고 새로.
+ */
+export function registerTypeCommands(host: PluginHost): Disposable {
+    const cmds = new Map<string, Disposable>();
+    const add = (def: NodeTypeDef): void => {
+        if (!def.create) return;
+        cmds.get(def.type)?.dispose();                       // 재등록이면 옛 명령 먼저 거둔다
+        cmds.set(def.type, host.commands.add({
+            id: `project-explorer.new-${def.type}`,
+            title: `새 ${def.label}`, icon: 'plus',
+            // 🔴 명령 경로(헤더 단추·팔레트·단축키) = 「고른 것 기준」 — 고른 노드의 형제로(⛔ 안으로 안 들어간다). 우클릭은 뷰가 via:'context' 로 직접 부른다.
+            run: () => newNode(def.type, { via: 'selection' }),
+        }));
+    };
+    const remove = (type: string): void => { cmds.get(type)?.dispose(); cmds.delete(type); };
+
+    for (const def of createTypes()) add(def);               // 🔴 활성 전 등록분 한 번 — 이 줄이 빠지면 달력이 먼저 켜졌을 때 명령이 안 생긴다
+    const sub = onTypeRegistered((ev) => { if (ev.kind === 'register') add(ev.def); else remove(ev.type); });
+
+    return { dispose() { sub.dispose(); for (const d of cmds.values()) d.dispose(); cmds.clear(); } };
+}
 
 function activate(host: PluginHost): void {
     // ── 저장된 나무 읽어 들이기(host.store = IndexedDB, 비동기) — 끝날 때까지 뷰는 「불러오는 중…」 ──
@@ -29,7 +57,12 @@ function activate(host: PluginHost): void {
 
     // ── 내장 타입: 「폴더」 하나(컨테이너) — ⛔ 유일한 내장 타입. 나머지는 각 플러그인 몫 ──
     //    create 로 「새로 만들기 ▸ 폴더」 후보가 된다(표를 돈다 — 타입 이름 비교 없음).
+    //    🔴 registerTypeCommands 보다 먼저 꽂는다 — 그래야 「활성 전 등록분 한 번 돌기」가 folder 를 잡아 new-folder 를 켠다.
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
+
+    // ── 「새로 만들기 ▸」 명령 자동 등록 — create 있는 타입마다 project-explorer.new-<type>(folder 는 new-folder). ──
+    //    🔴 N4 반쪽을 여기서 메꾼다: 메뉴가 부르는 new-<type> 명령을 아무도 등록 안 해 떨어지던 것(새 달력 저장소 먹통)을 고친다.
+    registerTypeCommands(host);
 
     // ── 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만) ──
     //    🔴 쥔님 2026-11-01 19:34 *"탐색기가 가운데로 또 갈 수 있네 — 패널 뷰는 탭 뷰로 못 간다니까"* → areas 에서 center 를 뺐다 · split 도 뺐다(기본 false)
@@ -46,8 +79,7 @@ function activate(host: PluginHost): void {
         id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder',
         run: () => { host.workspace.open(TREE_VIEW_ID, { where: 'left', reuse: true }); },
     });
-    // 🔴 「새 폴더」 = 「새로 만들기 ▸ 폴더」. 헤더 단추·우클릭 메뉴가 같은 id(new-<type> 규칙, folder 는 곧 new-folder)를 부른다.
-    host.commands.add({ id: 'project-explorer.new-folder', title: '새 폴더', icon: 'plus', run: () => newFolder() });
+    // 🔴 「새 폴더」(project-explorer.new-folder)는 위 registerTypeCommands 가 folder 타입에서 자동으로 켠다 — 여기서 손으로 또 꽂지 않는다(두 벌 금지).
     host.commands.add({ id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit', run: () => renameSelected() });
     host.commands.add({ id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash', run: () => removeSelected() });
     // 열기 — 고른 노드의 타입 open 을 실행(실노드·유도 가상 줄 공통). 컨테이너 접기/펴기는 뷰가 맡는다.

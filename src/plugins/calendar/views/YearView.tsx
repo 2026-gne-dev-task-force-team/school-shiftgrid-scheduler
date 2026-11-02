@@ -11,10 +11,12 @@
  *   머리줄은 월 보기와 같은 꼴: 왼쪽 「2026년」 · 오른쪽 「◀ 올해 ▶」. 오른쪽 끝의 trailing 은 메인이 뷰 전환 단추를 꽂는 자리다.
  *   본문은 표 하나로 탭을 꽉 채운다: 31행이 1fr 로 늘고, 탭이 너무 낮으면(행 18px 밑) 세로 스크롤 · 폭 560px 밑이면 가로 스크롤.
  */
-import { type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품과 한 벌이다(배럴로만) · 연간표 펴기는 옆 순수 함수(year-table)
 import { IconButton } from '../../../pane-ui-system';
 import { yearTable, yearLabel } from './year-table';
+import { useCalendarData } from '../useEvents';
+import { buildDayIndex } from '../events';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -24,6 +26,9 @@ export function YearView({ value, onChange, trailing }: { value: Date; onChange:
     const now = new Date();
     const year = value.getFullYear();                      // 🔴 제 state 없음 — 탭의 anchor 가 진실
     const table = yearTable(year, now);   // cells[m-1][d-1]
+    // 일정 있는 날에 점 하나(개수 아님) — subscribe 변경 때만 색인을 다시 짓는다
+    const { events } = useCalendarData();
+    const dayIndex = useMemo(() => buildDayIndex(events), [events]);
     // 해만 바꾸고 월·일은 그대로 올린다(다른 뷰로 가도 그 달·날이 보존된다)
     const goYear = (y: number) => onChange(new Date(y, value.getMonth(), value.getDate()));
 
@@ -79,6 +84,7 @@ export function YearView({ value, onChange, trailing }: { value: Date; onChange:
                                     return <div key={m} className="border-r border-b border-line" />;
                                 }
                                 const weekend = c.weekday === 0 || c.weekday === 6;
+                                const hasEvent = dayIndex.has(c.iso);
                                 return (
                                     <div
                                         key={m}
@@ -91,6 +97,9 @@ export function YearView({ value, onChange, trailing }: { value: Date; onChange:
                                         <span className={`text-[10px] leading-none ${c.isToday ? 'text-bg' : 'text-muted'}`}>
                                             {WEEKDAYS[c.weekday]}
                                         </span>
+                                        {hasEvent && (
+                                            <span className={`ml-auto shrink-0 w-1 h-1 rounded-full ${c.isToday ? 'bg-bg' : 'bg-accent'}`} />
+                                        )}
                                     </div>
                                 );
                             })}

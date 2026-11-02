@@ -24,7 +24,7 @@ import { flushTree, __resetPersistForTest } from './persist';
 import { makeNodesApi } from './api';
 import { registerType, clearTypes, isRecordType, isContainerType } from './model/types';
 import { clearDerived } from './model/derive';
-import { flatten } from './model/tree';
+import { flatten, countUnder } from './model/tree';
 import { buildMainRows } from './views/rows';
 
 function host(): PluginHost {
@@ -61,6 +61,10 @@ describe('레코드성 노드 — 탐색기엔 0줄, API·저장엔 일반 노�
         expect(flatIds).not.toContain(eid);
         const mainIds = buildMainRows(tree, root, isRecordType).map((r) => r.id);
         expect(mainIds).not.toContain(eid);
+
+        // ①-b 상태바 「노드 N」 도 레코드를 안 센다(「상위의 데이터」) — 폴더 1(묶음)만, 일정은 빠진다
+        expect(countUnder(tree, root, isRecordType)).toBe(1);
+        expect(countUnder(tree, root)).toBe(2);   // isRecord 없으면 옛 동작 — 폴더+일정 둘
 
         // ② API 론 보인다 — byType·children
         expect(api.byType('pt.event').map((n) => n.id)).toEqual([eid]);

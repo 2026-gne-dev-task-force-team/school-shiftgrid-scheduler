@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
     type Tree, type Node,
     emptyTree, normalize, createNode, rename, move, remove, toggleCollapse, setData,
-    restore, purge, purgeAll, countUnder,
+    restore, purge, purgeAll, countUnder, topmostOnly,
     parentOf, flatten, filterIds, newFolderParent,
     emptyHistory, record, undo, redo,
 } from './tree';
@@ -222,6 +222,34 @@ describe('countUnder', () => {
         expect(countUnder(t, 'root')).toBe(3);   // a,b,c
         expect(countUnder(t, 'a')).toBe(1);      // b
     });
+
+    it('isRecord 를 주면 레코드성(일정 등)은 안 센다 — 상태바 「노드 N」', () => {
+        // 폴더 2(a,b) + 레코드 3(e1,e2,e3) — e1,e2 는 a 밑, e3 은 루트 직속
+        const t = make({
+            a: { type: 'folder', children: ['e1', 'e2'] },
+            b: { type: 'folder' },
+            e1: { type: 'evt' }, e2: { type: 'evt' }, e3: { type: 'evt' },
+        });
+        const isRec = (type: string) => type === 'evt';
+        expect(countUnder(t, 'root')).toBe(5);              // 옛 동작 — 전부
+        expect(countUnder(t, 'root', isRec)).toBe(2);       // 🔴 폴더 2만(레코드 3 제외)
+        expect(countUnder(t, 'a', isRec)).toBe(0);          // a 밑은 레코드뿐
+    });
+});
+
+describe('topmostOnly — 조상-자손이 같이 고르면 조상만', () => {
+    // f1 ▸ g1 ▸ h1 · f2 — 깊은 사슬 + 형제
+    const t = make({ f1: { children: ['g1'] }, g1: { children: ['h1'] }, h1: {}, f2: {} });
+
+    it('조상이 함께 고르면 자손을 뺀다(자손은 따라간다)', () => {
+        expect(topmostOnly(t, ['f1', 'g1', 'h1'])).toEqual(['f1']);
+    });
+    it('조상-자손이 아니면 전부 남는다(입력 순서 유지)', () => {
+        expect(topmostOnly(t, ['f2', 'f1'])).toEqual(['f2', 'f1']);
+    });
+    it('중간만 둘이면 그 중간만(그 밑 h1 은 빠진다)', () => {
+        expect(topmostOnly(t, ['g1', 'h1'])).toEqual(['g1']);
+    });
 });
 
 describe('되돌리기 더미(순수)', () => {
@@ -369,6 +397,24 @@ describe('flatten', () => {
         const t = make({ f: { children: ['ev'] }, ev: { type: 'cal.event' } });
         expect(flatten(t, 'root', isContainer).map((r) => r.id)).toEqual(['f', 'ev']);
     });
+
+    // 🔴 쥔님 2026-11-02: *"하위 레코드 노드 보고 하위 토글 보이는게 아니고, 다른 하위 노드가 붙엇을때"* —
+    //    ▸ 토글(hasChildren)은 보이는(레코드 아닌) 자식이 있을 때만 선다.
+    it('레코드만 든 컨테이너 → hasChildren false(일정만 든 저장소엔 ▸ 안 선다)', () => {
+        const t = make({ s: { children: ['ev1', 'ev2'] }, ev1: { type: 'cal.event' }, ev2: { type: 'cal.event' } });
+        const isRecord = (type: string) => type === 'cal.event';
+        const rows = flatten(t, 'root', isContainer, { isRecord });
+        const s = rows.find((r) => r.id === 's')!;
+        expect(s.hasChildren).toBe(false);
+    });
+
+    it('폴더(보이는 하위) 하나 붙으면 hasChildren true', () => {
+        const t = make({ s: { children: ['ev1', 'sub'] }, ev1: { type: 'cal.event' }, sub: { type: 'folder' } });
+        const isRecord = (type: string) => type === 'cal.event';
+        const rows = flatten(t, 'root', isContainer, { isRecord });
+        const s = rows.find((r) => r.id === 's')!;
+        expect(s.hasChildren).toBe(true);
+    });
 });
 
 describe('레코드성 노드는 저장·삭제·휴지통·복원·비우기가 일반 노드와 같다 (캐스케이딩 공짜)', () => {
@@ -420,37 +466,65 @@ describe('newFolderParent — 새 폴더는 늘 어떤 폴더 하위로', () => 
         f2: { type: 'folder' },
     });
 
-    it('컨테이너를 고르면 그 안', () => {
-        expect(newFolderParent(base(), 'f1', isC)).toBe('f1');
+    // ── via 'context'(우클릭 = 「이 노드에서」, 기본값) — 컨테이너면 그 안, 파일이면 그 부모 ──
+    it('[context] 컨테이너를 고르면 그 안', () => {
+        expect(newFolderParent(base(), 'f1', isC, 'context')).toBe('f1');
+        expect(newFolderParent(base(), 'f1', isC)).toBe('f1');            // 기본값이 context
     });
 
-    it('파일을 고르면 그 부모', () => {
-        expect(newFolderParent(base(), 'file1', isC)).toBe('f1');
+    it('[context] 파일을 고르면 그 부모', () => {
+        expect(newFolderParent(base(), 'file1', isC, 'context')).toBe('f1');
     });
 
-    it('아무것도 안 골랐으면 루트', () => {
-        expect(newFolderParent(base(), null, isC)).toBe('root');
+    it('[context] 루트를 고르면 루트 안(루트도 컨테이너다)', () => {
+        expect(newFolderParent(base(), 'root', isC, 'context')).toBe('root');
     });
 
-    it('루트를 고르면 루트 안(루트도 컨테이너다)', () => {
-        expect(newFolderParent(base(), 'root', isC)).toBe('root');
+    // ── via 'selection'(헤더 단추·팔레트·단축키 = 「고른 것 기준」) — 늘 고른 노드의 형제로 ──
+    it('[selection] 컨테이너를 골라도 그 안이 아니라 형제로(= 부모 안) — 옵시디언 헤더 단추', () => {
+        // f1 은 루트 직속 → 형제는 루트. ⛔ f1 안으로 안 들어간다
+        expect(newFolderParent(base(), 'f1', isC, 'selection')).toBe('root');
+    });
+
+    it('[selection] 깊은 노드를 고르면 그 부모(같은 층)', () => {
+        // file1 은 f1 밑 → 형제 자리는 f1
+        expect(newFolderParent(base(), 'file1', isC, 'selection')).toBe('f1');
+    });
+
+    it('[selection] 연속 두 번 — 방금 만든 형제를 골라도 또 같은 층(하위로 파고들지 않는다)', () => {
+        // 루트 밑 sub(폴더) 하나를 상정: 그걸 고른 채 selection 으로 또 만들면 형제(루트)가 나온다
+        const t = make({ sub: { type: 'folder' } });     // sub 은 루트 직속
+        expect(newFolderParent(t, 'sub', isC, 'selection')).toBe('root');
+    });
+
+    it('[selection] 아무것도 안 골랐으면 루트', () => {
+        expect(newFolderParent(base(), null, isC, 'selection')).toBe('root');
+    });
+
+    // ── 두 경로 공통 — 유도·휴지통·없는 id 는 루트 ──
+    it('아무것도 안 골랐으면 루트(context)', () => {
+        expect(newFolderParent(base(), null, isC, 'context')).toBe('root');
     });
 
     it('휴지통 안 노드를 고르면 루트(새 폴더는 휴지통에 안 생긴다)', () => {
         const t = remove(base(), 'f2');          // f2 를 휴지통으로
-        expect(newFolderParent(t, 'f2', isC)).toBe('root');
+        expect(newFolderParent(t, 'f2', isC, 'context')).toBe('root');
+        expect(newFolderParent(t, 'f2', isC, 'selection')).toBe('root');
     });
 
     it('휴지통 자체를 고르면 루트', () => {
         const t = base();
-        expect(newFolderParent(t, t.trash, isC)).toBe('root');
+        expect(newFolderParent(t, t.trash, isC, 'context')).toBe('root');
+        expect(newFolderParent(t, t.trash, isC, 'selection')).toBe('root');
     });
 
     it('가상(유도) id 를 고르면 루트(실부모가 없다)', () => {
-        expect(newFolderParent(base(), 'f1/v', isC)).toBe('root');
+        expect(newFolderParent(base(), 'f1/v', isC, 'context')).toBe('root');
+        expect(newFolderParent(base(), 'f1/v', isC, 'selection')).toBe('root');
     });
 
     it('없는 id 를 고르면 루트', () => {
-        expect(newFolderParent(base(), 'nope', isC)).toBe('root');
+        expect(newFolderParent(base(), 'nope', isC, 'context')).toBe('root');
+        expect(newFolderParent(base(), 'nope', isC, 'selection')).toBe('root');
     });
 });

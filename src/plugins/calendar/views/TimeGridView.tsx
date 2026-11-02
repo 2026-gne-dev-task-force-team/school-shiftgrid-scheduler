@@ -11,11 +11,16 @@
  *
  *   trailing: 머리줄 오른쪽 끝에 그대로 그린다 — 메인이 전환 단추를 여기 꽂는다.
  */
-import { memo, useEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
-import { IconButton, isoOf, startOfWeek, monthLabel } from '../../../pane-ui-system';
+import { IconButton, isoOf, startOfWeek, monthLabel, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
+import { useCalendarData } from '../useEvents';
+import { createEvent } from '../nodes';
+import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
+import { paletteAt } from '../palette';
+import { useCardPeek } from './useCardPeek';
 
 const WEEK_START = 0;                 // 주 시작 요일 일요일 고정(월 보기와 같다 — 설정으로 뺄 자리)
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -77,17 +82,51 @@ const DayHeader = memo(function DayHeader(
     );
 });
 
-/** 날 열 하나 — 시간마다 가로선 · 오늘이면 지금 시각 선 · 달·분기 경계 열은 왼쪽 선을 굵게(boundary) */
-const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMin, boundary }: {
-    offset: number; left: number; width: number; todayIso: string; nowMin: number; boundary: ColBoundary;
+/** 시간 일정 카드 하나 — 그 날 안에서 시작~끝 분으로 자리를 잡는다(겹침 1/n 은 1차 없음 — 그냥 겹친다). */
+function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
+    const pal = paletteAt(e.colorIdx);
+    const startMin = Math.max(0, (e.startMs - dayStartMs) / 60_000);
+    const endMin = Math.min(24 * 60, (e.endMs - dayStartMs) / 60_000);
+    const top = startMin * (HOUR_H / 60);
+    const height = Math.max(14, (endMin - startMin) * (HOUR_H / 60));
+    return (
+        <div
+            data-event-id={e.id}
+            className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
+            style={{ top, height }}
+        >
+            <div className="truncate text-[10px] leading-4 text-text">{e.name || '새 일정'}</div>
+            <div className="truncate text-[9px] leading-3 text-muted tabular-nums">{hhmm(e.startMs)}</div>
+        </div>
+    );
+}
+
+/** 날 열 하나 — 시간마다 가로선 · 오늘이면 지금 시각 선 · 달·분기 경계 열 왼쪽 선 굵게 · 종일 바(맨 위) + 시간 카드 */
+const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMin, boundary, dayIndex }: {
+    offset: number; left: number; width: number; todayIso: string; nowMin: number; boundary: ColBoundary; dayIndex: Map<string, CalEvent[]>;
 }) {
     const d = dayAt(offset);
-    const isToday = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate()) === todayIso;
+    const iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const isToday = iso === todayIso;
+    const dayStartMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const dayEvents = dayIndex.get(iso) ?? [];
+    const allDay = dayEvents.filter((e) => e.allDay);
+    const timed = dayEvents.filter((e) => !e.allDay);
     return (
-        <div className={`absolute top-0 ${boundaryBorderClass(boundary)}`} style={{ left, width, height: HOURS * HOUR_H }}>
+        <div data-day-offset={offset} className={`absolute top-0 ${boundaryBorderClass(boundary)}`} style={{ left, width, height: HOURS * HOUR_H }}>
             {HOUR_LINES.map((h) => (
                 <div key={h} className="absolute left-0 right-0 border-t border-line" style={{ top: h * HOUR_H }} />
             ))}
+            {/* 종일 — 맨 위에 쌓인 가는 막대들(시간축 밖이라 상단에 겹쳐 놓는다) */}
+            {allDay.map((e, i) => {
+                const pal = paletteAt(e.colorIdx);
+                return (
+                    <div key={e.id} data-event-id={e.id} className={`absolute left-0.5 right-0.5 z-30 truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${pal.bar}`} style={{ top: 1 + i * 17 }}>
+                        {e.name || '새 일정'}
+                    </div>
+                );
+            })}
+            {timed.map((e) => <TimedCard key={e.id} e={e} dayStartMs={dayStartMs} />)}
             {isToday && (
                 <div className="absolute left-0 right-0 z-10 pointer-events-none" style={{ top: nowMin * (HOUR_H / 60) }}>
                     <div className="h-0.5 bg-accent" />
@@ -98,7 +137,7 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     );
 });
 
-export function TimeGridView({ days, value, onChange, trailing }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
+export function TimeGridView({ days, value, onChange, trailing, peek }: { days: number; value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
@@ -129,8 +168,32 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
     const dense = days === DENSE_DAYS;
     const hdrH = dense ? HDR_H + MONTH_BAND : HDR_H;
 
+    // 일정 — 열마다 카드로 그리고(dayIndex), 시간 칸 더블클릭 → 1시간 생성, 카드 클릭 → 미리보기 편집.
+    const { events } = useCalendarData();
+    const dayIndex = useMemo(() => buildDayIndex(events), [events]);
+    // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
+    const card = useCardPeek(peek);
+
+    const onGridClick = (e: ReactMouseEvent) => {
+        const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
+        if (id) card.open(id);
+    };
+    const onGridDouble = (e: ReactMouseEvent) => {
+        const colEl = (e.target as HTMLElement).closest('[data-day-offset]') as HTMLElement | null;
+        if (!colEl) return;
+        const offset = Number(colEl.getAttribute('data-day-offset'));
+        const rect = colEl.getBoundingClientRect();
+        const raw = Math.floor(((e.clientY - rect.top) / HOUR_H) * 60);
+        const min = Math.max(0, Math.min(23 * 60, Math.round(raw / 30) * 30));   // 30분 눈금 · 끝 1시간 여유
+        const base = dayAt(offset);
+        const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
+        const end = new Date(start.getTime() + 3_600_000);
+        const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
+        if (id) card.open(id);
+    };
+
     return (
-        <div className="h-full flex flex-col bg-bg select-text">
+        <div className="relative h-full flex flex-col bg-bg select-text">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
                 <div className="min-w-0">
@@ -173,8 +236,8 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
                             />
                         ))}
                     </div>
-                    {/* 본문 — 시간 눈금(sticky left) + 날 열들 */}
-                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }}>
+                    {/* 본문 — 시간 눈금(sticky left) + 날 열들. 시간 칸 더블클릭 → 1시간 일정(data-day-offset 위임) */}
+                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble}>
                         <div className="sticky left-0 z-10 bg-bg border-r border-line" style={{ width: GUTTER, height: HOURS * HOUR_H }}>
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span
@@ -190,6 +253,7 @@ export function TimeGridView({ days, value, onChange, trailing }: { days: number
                             <DayColumn
                                 key={o} offset={o} left={s.leftOf(o)} width={s.colW} todayIso={todayIso} nowMin={nowMin}
                                 boundary={dense ? columnBoundary(dayAt(o).getMonth() + 1, dayAt(o).getDate()) : 'none'}
+                                dayIndex={dayIndex}
                             />
                         ))}
                     </div>

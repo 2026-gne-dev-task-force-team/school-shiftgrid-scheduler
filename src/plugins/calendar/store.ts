@@ -42,3 +42,27 @@ export function useOptions(): CalendarOptions {
         () => opts,
     );
 }
+
+// ── 범위 저장소(scope) — 저장소를 열면 그 저장소(+자손)만 보이게. 전체면 null. ──
+//    🔴 ⛔ 저장 안 함(anchor·mode 와 같은 결 — 「보고 있는 것」은 기기에 안 남긴다). 쥔님 2026-11-02:
+//       *"일정 저장소 클릭해서 열리면 그 일정 저장소에 대한 거만 보여줘야지. 그 하위 일정저장소가 있다면 그거 포함해서"*.
+let scopeStoreId: string | null = null;
+const scopeListeners = new Set<() => void>();
+
+/** 범위 저장소를 바꾼다 — 저장소 open(탐색기 한 번 누르기·「달력에서 열기」)이면 그 id, 리본 「달력 열기」면 null(전체). */
+export function setScope(id: string | null): void {
+    if (scopeStoreId === id) return;
+    scopeStoreId = id;
+    for (const l of scopeListeners) l();
+}
+
+/** 지금 범위 저장소 id(없으면 null) — 뷰 밖(nodes.createEvent 기본 저장소)에서 읽는다. */
+export function getScope(): string | null { return scopeStoreId; }
+
+export function useScope(): string | null {
+    return useSyncExternalStore(
+        (l) => { scopeListeners.add(l); return () => { scopeListeners.delete(l); }; },
+        () => scopeStoreId,
+        () => scopeStoreId,
+    );
+}
