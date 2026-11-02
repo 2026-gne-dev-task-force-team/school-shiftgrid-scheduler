@@ -10,11 +10,14 @@
  */
 // 🔴 import type 만 — 값은 host.plugins.get 으로 받는다(구조 검사 ⑨ 예외는 타입 전용뿐)
 import type { NodesApi, PublicNode } from '../project-explorer/api';
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable, MenuEntry } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
+import { isoMinuteOf } from './events';
 
 export const STORE_TYPE = 'calendar.store';
 export const EVENT_TYPE = 'calendar.event';
+
+const DAY_MS = 86_400_000;
 
 // ── 다리 상태(모듈 전역 — store.ts·view-registry 와 같은 결) ──
 let api: NodesApi | null = null;
@@ -22,6 +25,23 @@ let defaultStoreId: string | null = null;
 let eventNodes: PublicNode[] = [];
 let storeNodes: PublicNode[] = [];
 const subs = new Set<() => void>();
+
+// ── 우클릭 메뉴가 가리킨 저장소 — 탐색기가 storeMenu(nodeId) 를 그릴 때 잡아 둔다. ──
+//    🔴 ContextMenu 는 commandId 만 넘기고 인자를 안 싣는다(탐색기 onCommand=run(id)) → 명령 대상을 여기서 쥔다
+//       (탐색기 명령이 스토어의 「고른 노드」를 쓰는 것과 같은 결).
+let menuTargetId: string | null = null;
+export function setMenuTarget(id: string): void { menuTargetId = id; }
+export function getMenuTarget(): string | null { return menuTargetId; }
+
+// ── 「열 카드」 한 칸 — 탐색기 메뉴(뷰 밖)에서 새 일정을 만들면 여기 담고, 월 보기가 마운트/구독 때 열고 비운다. ──
+//    🔴 useCardPeek(뷰 안)은 뷰에 포커스가 있을 때만 돈다 — 탐색기 메뉴는 뷰 밖이라 이 한 칸을 거쳐 뷰에 넘긴다.
+let pendingCardId: string | null = null;
+const cardSubs = new Set<() => void>();
+/** 그 일정 카드를 다음에 뜨는/떠 있는 월 보기에 열어 달라 — 담고 구독자(월 보기)를 깨운다. */
+export function requestOpenCard(id: string): void { pendingCardId = id; for (const s of cardSubs) s(); }
+export function subscribeCardOpen(fn: () => void): () => void { cardSubs.add(fn); return () => { cardSubs.delete(fn); }; }
+export function getPendingCard(): string | null { return pendingCardId; }
+export function clearPendingCard(): void { pendingCardId = null; }
 
 /** byType 스냅샷을 다시 뜨고 구독자(useEvents)를 깨운다 — subscribe 변경 때만 불린다(매 렌더 아님). */
 function recompute(): void {
@@ -41,9 +61,35 @@ export function registerCalendarTypes(nodes: NodesApi, onOpenStore: (id: string)
         container: { accepts: [EVENT_TYPE] }, openable: true,
         open: (id) => { setDefaultStore(id); onOpenStore(id); },
         create: { label: '달력 저장소', under: ['folder'] },
+        menu: storeMenu,
     });
     const d2 = nodes.types.register({ type: EVENT_TYPE, label: '일정', icon: 'calendar', record: true });
     return { dispose() { d1.dispose(); d2.dispose(); } };
+}
+
+/**
+ * 저장소 우클릭 메뉴(타입이 꽂는 항목) — 탐색기가 메뉴를 그릴 때 부른다.
+ *   🔴 부르는 그 순간 이 저장소를 명령 대상으로 잡아 둔다(setMenuTarget) — 명령 둘(calendar.openStore·newEventIn)이 그걸 쓴다.
+ *   ⛔ 「새로 만들기」는 createCandidates 가 짠다(저장소는 일정만 받고 일정은 record 라 후보 0) — 여긴 동작만.
+ */
+export function storeMenu(nodeId: string): MenuEntry[] {
+    setMenuTarget(nodeId);
+    return [
+        { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore' },
+        { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn' },
+    ];
+}
+
+/** 그 저장소에 「오늘 종일」 일정 하나를 만들고, 월 보기가 열 수 있게 담는다(requestOpenCard). 돌려주는 id 가 빈 문자열이면 못 만든 것. */
+export function newEventInStore(storeId?: string): string {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());   // 오늘 자정(지역)
+    const id = createEvent(
+        { start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true },
+        '', storeId,
+    );
+    if (id) requestOpenCard(id);
+    return id;
 }
 
 /** 활성(index.ts)이 한 번 — NodesApi 를 쥐고 구독을 건다(없으면 조용히 빈 상태). 돌려준 Disposable 은 호스트가 회수. */

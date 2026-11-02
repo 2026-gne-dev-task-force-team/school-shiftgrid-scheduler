@@ -15,7 +15,10 @@ import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { initOptions } from './store';
-import { registerCalendarTypes, initCalendarNodes } from './nodes';
+import {
+    registerCalendarTypes, initCalendarNodes, getNodesApi,
+    getMenuTarget, setDefaultStore, newEventInStore,
+} from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 const MONTH_ID = 'calendar.month';
@@ -53,6 +56,23 @@ function activate(host: PluginHost): void {
         run: () => { host.workspace.open(MONTH_ID, { where: 'center' }); },
     });
     host.ribbon.add({ commandId: 'calendar.open', icon: 'calendar', order: 1 });
+
+    // ── 저장소 우클릭 메뉴가 부르는 명령 둘 — 대상은 nodes.ts 의 「메뉴가 가리킨 저장소」(storeMenu 가 그릴 때 잡아 둔다) ──
+    //    🔴 ContextMenu 는 commandId 만 넘기니(인자 없음) 탐색기 명령이 「고른 노드」를 쓰듯 여기선 getMenuTarget() 을 쓴다.
+    host.commands.add({
+        id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar',
+        run: () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },   // open → 저장소 타입 open(기본 지정 + 월 보기)
+    });
+    host.commands.add({
+        id: 'calendar.newEventIn', title: '새 일정', icon: 'plus',
+        run: () => {
+            const id = getMenuTarget();
+            if (!id) return;
+            setDefaultStore(id);
+            if (!newEventInStore(id)) return;                                          // 오늘 종일 일정 + 「열 카드」로 담기
+            host.workspace.open(MONTH_ID, { where: 'center' });                        // 월 보기(마운트/구독 때 카드를 연다)
+        },
+    });
 
     // ── 뷰: 작은 달력(사이드 패널용 · 싱글턴) — 가운데엔 못 놓는다(쥔님 *"패널용으로"*) · 기본은 오른쪽(쥔님 22:51 *"작은 달력은 기본적으로 오른쪽 패널"*) ──
     //    🔴 split 을 명시하지 않는다(생략=가름 허용, 22:51 뒤집음) — 왼쪽 패널에서 탐색기 아래에 세로로 끼울 수 있어야 한다.

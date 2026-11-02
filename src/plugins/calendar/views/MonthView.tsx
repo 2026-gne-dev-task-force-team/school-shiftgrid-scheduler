@@ -24,7 +24,7 @@ import {
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
 import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
-import { createEvent } from '../nodes';
+import { createEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 
@@ -131,6 +131,14 @@ export function MonthView({ value, onChange, trailing, peek }: { value: Date; on
 
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
+
+    // 🔴 탐색기 메뉴(뷰 밖)에서 「새 일정」을 만들면 nodes 에 「열 카드」를 담는다 — 여기서 열고 비운다.
+    //    마운트 때 한 번(탭이 방금 열렸을 수 있다) + 구독(이미 떠 있을 때). useCardPeek 이 뷰 안이라 이 다리가 필요하다.
+    useEffect(() => {
+        const tryOpen = () => { const id = getPendingCard(); if (id) { clearPendingCard(); card.open(id); } };
+        tryOpen();
+        return subscribeCardOpen(tryOpen);
+    }, [card]);
 
     // 날 칸 더블클릭 → 종일 일정 생성 + 카드(제목 포커스) · 일정 클릭 → 카드. 칸 바깥 위임(data-day·data-event-id).
     const onCellClick = (e: ReactMouseEvent) => {
