@@ -74,7 +74,12 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         id: pluginId,
         hostVersion: HOST_VERSION,
 
+        // 🔴 ⛔ 옛 등록 5종(views.register·ribbon.add·commands.add·settings.addSection/addItem·statusBar.add)은
+        //    함수(Component·run·Pane·render)를 직접 받는다 — declare 는 이름만 받으니 여기로 못 접힌다.
+        //    선언형 전환 뒤 플러그인은 contributes·host.declare 를 쓴다. 이 5종은 플러그인 4개가 아직 쓰는 「옛 길」이다.
+        //    D5(넷 다 옮긴 뒤)에서 지운다 — 그때 구조 검사 「매니페스트 밖 등록 0건」을 켠다.
         views: {
+            // D5 에서 지운다 (옛 길 — 함수 직접 받음)
             register(def) {
                 const full = scoped(def.id);
                 const { newTab, ...rest } = def;
@@ -90,6 +95,7 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         },
 
         ribbon: {
+            // D5 에서 지운다 (옛 길). ⚠️ 단 ribbon 은 commandId 참조라 데이터다 — contributes.ribbon 이 그대로 받는다.
             add(a: RibbonAddInput) {
                 // 🔴 리본 동작은 명령을 가리킨다 — label·run 을 명령에서 푼다(없으면 경고하고 빈 동작).
                 const cmd = getCommand(a.commandId);
@@ -105,11 +111,13 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         },
 
         commands: {
+            // D5 에서 지운다 (옛 길 — run 함수 직접 받음). run(id) 호출은 「옛 길」이 아니다(동작 — 그대로 둔다).
             add(c: CommandDef) { return track(pluginId, addCommand(pluginId, c)); },
             run(id, ctx) { return runCommand(id, ctx); },
         },
 
         settings: {
+            // D5 에서 지운다 (옛 길 — Pane 함수 직접 받음)
             addSection(id: string, title: string, icon) {
                 return track(pluginId, addSettingsSection(pluginId, id, title, icon));
             },
@@ -117,6 +125,7 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
         },
 
         statusBar: {
+            // D5 에서 지운다 (옛 길 — render 함수 직접 받음)
             add(i: StatusContribution) { return track(pluginId, addStatusItem(pluginId, i)); },
         },
 
