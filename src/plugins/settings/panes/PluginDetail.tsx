@@ -11,13 +11,43 @@ import { useState, type ReactNode } from 'react';
 import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
-    listCommands, listSettings, HOST_VERSION,
+    listCommands, listSettings, listContributions, HOST_VERSION,
+    type ContributionKind, type ContributionRecord,
 } from '../../../pane-ui-system/plugin';
 import { Toggle } from '../../../pane-ui-system';
 import { useSettingsChrome } from '../chrome-context';
 import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
 
 const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center: '가운데', right: '오른쪽 사이드바' };
+
+// 🔴 기여 종류 한국어 라벨 — 장부 줄의 kind 를 사람 말로(nodeType 은 라벨 완성용 · declareOne 밖이라 평소엔 안 뜬다).
+const KIND_LABEL: Record<ContributionKind, string> = {
+    view: '뷰', command: '명령', ribbon: '리본',
+    settingsSection: '설정 섹션', settingsItem: '설정 항목',
+    statusBar: '상태바', nodeType: '노드 타입',
+};
+
+/**
+ * 기여 한 묶음 — 「선언(매니페스트)」 또는 「동적(host.declare)」. 0건이면 한 줄만(빈 목록 안 늘어놓는다).
+ *   각 줄: 종류 라벨 · id · 제목(없으면 id 만).
+ */
+function ContribGroup({ label, records }: { label: string; records: ContributionRecord[] }) {
+    if (records.length === 0) return <p className="text-[12px] text-muted">{label} 0건</p>;
+    return (
+        <div className="flex flex-col gap-1">
+            <h5 className="text-[11px] font-medium text-muted">{label} <span className="text-muted/70">{records.length}건</span></h5>
+            <div className="flex flex-col rounded border border-line overflow-hidden">
+                {records.map((c, i) => (
+                    <div key={`${c.kind}:${c.id}:${i}`} className="flex items-center gap-2 px-2.5 py-1 border-b border-line last:border-b-0">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-side text-muted shrink-0">{KIND_LABEL[c.kind]}</span>
+                        <span className="text-[11px] text-muted font-mono truncate">{c.id}</span>
+                        {c.title && <span className="text-[12px] text-text truncate ml-auto">{c.title}</span>}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
     return (
@@ -40,6 +70,12 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
     const [openViews, setOpenViews] = useState<Set<string>>(() => new Set());
     const toggleView = (id: string) => setOpenViews((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
     const anyOverride = views.some((v) => Object.keys(getViewOverride(v.id) ?? {}).length > 0);
+
+    // 🔴 기여 장부 — 이 플러그인이 호스트에 꽂은 것 전부를 「선언(매니페스트)」·「동적(host.declare)」으로 가른다(쥔님 2026-11-02 21:22).
+    //    꺼진 플러그인은 장부가 비므로 「꺼짐 — 기여 없음」. 켜져 있을 때의 값만 비춘다.
+    const contribs = listContributions(p.id);
+    const declared = contribs.filter((c) => c.origin === 'manifest');
+    const dynamic = contribs.filter((c) => c.origin === 'declare');
 
     return (
         <div className="flex flex-col gap-4">
@@ -71,6 +107,18 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                 <dt className="text-muted">요구 창틀</dt><dd className="text-text">≥ {p.minHostVersion} (지금 {HOST_VERSION})</dd>
                 <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 코어' : ''}</dd>
             </dl>
+
+            {/* 기여 — 호스트에 꽂은 것 전부를 선언(매니페스트)·동적(host.declare)으로 갈라 목록으로 */}
+            <Section title="기여" count={p.enabled ? contribs.length : undefined}>
+                {!p.enabled
+                    ? <p className="text-[12px] text-muted">꺼짐 — 기여 없음</p>
+                    : (
+                        <div className="flex flex-col gap-2">
+                            <ContribGroup label="선언" records={declared} />
+                            <ContribGroup label="동적" records={dynamic} />
+                        </div>
+                    )}
+            </Section>
 
             {/* 명령 — 이름 + 단축키 + 설명 */}
             <Section title="명령" count={commands.length}>
