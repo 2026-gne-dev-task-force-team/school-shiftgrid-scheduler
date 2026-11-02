@@ -24,7 +24,7 @@ import { makeNodesApi } from '../project-explorer/api';
 import { registerType, clearTypes } from '../project-explorer/model/types';
 import { clearDerived } from '../project-explorer/model/derive';
 import {
-    registerCalendarTypes, initCalendarNodes, getNodesApi, getEventNodes, getStoreNodes,
+    calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, getEventNodes, getStoreNodes,
     inTrash, createEvent, ensureStore, moveEvent, removeEvent, STORE_TYPE, EVENT_TYPE,
 } from './nodes';
 
@@ -46,7 +46,7 @@ beforeEach(async () => {
     await initStore(host());
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
     const api = makeNodesApi('calendar');
-    registerCalendarTypes(api, () => {});
+    for (const nt of calendarNodeTypes) api.registerContributed(nt, { nodeTypes: calendarNodeTypeImpl }, host());
     disp = initCalendarNodes(api);
 });
 afterEach(() => { disp?.dispose(); disp = null; __resetPersistForTest(); });

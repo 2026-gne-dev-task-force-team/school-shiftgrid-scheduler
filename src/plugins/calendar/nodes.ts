@@ -9,14 +9,17 @@
  *   ④ 만들기·고치기·휴지통·저장소 바꾸기 조작(전부 NodesApi 로)
  */
 // 🔴 import type 만 — 값은 host.plugins.get 으로 받는다(구조 검사 ⑨ 예외는 타입 전용뿐)
-import type { NodesApi, PublicNode } from '../project-explorer/api';
-import type { Disposable, MenuEntry } from '../../pane-ui-system/plugin';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/api';
+import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
-import { getScope } from './store';
+import { getScope, setScope } from './store';
 
 export const STORE_TYPE = 'calendar.store';
 export const EVENT_TYPE = 'calendar.event';
+
+// 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다). 저장소 open 이 여는 월 보기.
+const MONTH_ID = 'calendar.month';
 
 const DAY_MS = 86_400_000;
 
@@ -52,23 +55,40 @@ function recompute(): void {
 }
 
 /**
- * 타입 둘을 꽂는다 — 🔴 record 리터럴은 여기(비-뷰)에 산다(구조 검사 ⑯: 뷰엔 소문자 record 금지).
- *   저장소: 폴더 역할(일정만 받음)·열 수 있음(열면 달력 탭 + 기본 저장소 지정)·우클릭 「새로 만들기」 후보.
- *   일정: record: true — 탐색기에 어떤 경우에도 안 보인다. 저장·휴지통은 일반 노드와 같다.
+ * 🔴 노드 타입 함수 묶음(선언형 전환 D5) — contributes.nodeTypes 의 impl 이름('store')이 가리킨다.
+ *   매니페스트엔 함수를 못 넣으니(순수 데이터) 저장소의 동작 함수(open·menu)는 여기 모아 둔다 — 노드 레지스트라
+ *   (project-explorer.registerContributed)가 host 를 꽂아 NodeTypeDef 로 조립한다.
+ *   · open — 열면 기본 저장소 지정 + 범위를 그 저장소로 좁히고 달력 월 보기를 가운데에(옛 onOpenStore 와 같다).
+ *   · menu — 저장소 우클릭 항목 둘(storeMenu). host 는 안 쓴다.
+ *   일정(record)은 순수 데이터라 impl 이 없다.
  */
-export function registerCalendarTypes(nodes: NodesApi, onOpenStore: (id: string) => void): Disposable {
-    const d1 = nodes.types.register({
+export const calendarNodeTypeImpl = {
+    store: {
+        open: (host: PluginHost, id: string) => {
+            setDefaultStore(id);
+            setScope(id);
+            host.workspace.open(MONTH_ID, { where: 'center' });
+        },
+        menu: (_host: PluginHost, id: string) => storeMenu(id),
+    } satisfies NodeTypeImplFns,
+};
+
+/**
+ * 타입 둘을 contributes.nodeTypes 로 적는다 — 🔴 record 리터럴은 여기(비-뷰)에 산다(구조 검사 ⑯: 뷰엔 소문자 record 금지).
+ *   저장소: 폴더 역할(일정·폴더·저장소를 받음)·열 수 있음·우클릭 「새로 만들기」 후보 · 함수는 impl 'store' 로 가리킨다.
+ *   일정: record: true — 탐색기에 어떤 경우에도 안 보인다. 저장·휴지통은 일반 노드와 같다(순수 데이터·impl 없음).
+ *   🔴 쥔님 11-02 10:34: *"일정 저장소 노드는 하위 가능하고 그때 하위 펼침 그런거 넣는거고 · 하위 레코드 노드는 그냥 품고 있어야지 드러내지 말고"*
+ *   📌 impl 의 키('store')는 definePlugin 이 매니페스트 쪽과 묶는다(nodes 의 <'store'> 제네릭 ↔ calendarNodeTypeImpl 의 keyof).
+ */
+export const calendarNodeTypes: NodeTypeContribution<'store'>[] = [
+    {
         type: STORE_TYPE, label: '달력 저장소', icon: 'calendar',
-        // 🔴 쥔님 11-02 10:34: *"일정 저장소 노드는 하위 가능하고 그때 하위 펼침 그런거 넣는거고 · 하위 레코드 노드는 그냥 품고 있어야지 드러내지 말고"*
-        //    → 저장소는 폴더·저장소를 품을 수 있다(보이는 하위 → ▸ 펼침·「새로 만들기」). 일정(레코드)은 같이 품되 탐색기엔 안 드러난다.
         container: { accepts: [EVENT_TYPE, 'folder', STORE_TYPE] }, openable: true,
-        open: (id) => { setDefaultStore(id); onOpenStore(id); },
         create: { label: '달력 저장소', under: ['folder', STORE_TYPE] },
-        menu: storeMenu,
-    });
-    const d2 = nodes.types.register({ type: EVENT_TYPE, label: '일정', icon: 'calendar', record: true });
-    return { dispose() { d1.dispose(); d2.dispose(); } };
-}
+        impl: 'store',
+    },
+    { type: EVENT_TYPE, label: '일정', icon: 'calendar', record: true },
+];
 
 /**
  * 저장소 우클릭 메뉴(타입이 꽂는 항목) — 탐색기가 메뉴를 그릴 때 부른다.

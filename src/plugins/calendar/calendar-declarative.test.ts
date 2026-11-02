@@ -13,13 +13,26 @@ import {
     activateAll, listPlugins, disposeOwner,
     listRibbonActions, listSettings, listCommands, getCommand,
 } from '../../pane-ui-system/plugin';
+import type { PluginModule } from '../../pane-ui-system/plugin';
 import { calendarPlugin } from './index';
 
-beforeEach(() => { disposeOwner('calendar'); clearViews(); });
+// 🔴 calendar 가 선언형 전환(D5) 로 contributes.nodeTypes(저장소·일정)를 내므로, 그걸 받을 노드 레지스트라(코어)가
+//    먼저 켜져 있어야 한다 — 없으면 applyContributes 가 던져 calendar 가 활성 실패로 올라간다. 여기선 뷰·명령·리본·설정
+//    집합만 보므로 노드 쪽은 최소 가짜로 둔다(registerContributed·subscribe·byType — calendar activate 의 다리가 쓴다).
+const registrar: PluginModule = {
+    manifest: { id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
+    api: {
+        registerContributed: () => ({ dispose() { /* 테스트 */ } }),
+        subscribe: () => ({ dispose() { /* 테스트 */ } }),
+        byType: () => [],
+    },
+};
+
+beforeEach(() => { disposeOwner('calendar'); disposeOwner('project-explorer'); clearViews(); });
 
 describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집합과 같다', () => {
     it('뷰·명령·리본·설정이 옛 등록과 같은 집합으로 꽂히고 활성 실패가 없다', () => {
-        activateAll([calendarPlugin]);
+        activateAll([registrar, calendarPlugin]);
 
         // 활성 실패 아님(이름이 구현과 다 맞는다)
         expect(listPlugins().find((p) => p.id === 'calendar')?.failed).toBe(false);

@@ -21,7 +21,7 @@ import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { initOptions, setScope } from './store';
 import {
-    registerCalendarTypes, initCalendarNodes, getNodesApi,
+    calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
     getMenuTarget, setDefaultStore, newEventInStore,
 } from './nodes';
 
@@ -67,6 +67,9 @@ export const calendarPlugin = definePlugin({
                 sections: [{ id: 'calendar', title: '달력', icon: 'calendar' }],
                 items: [{ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', pane: 'Settings' }],
             },
+            // 🔴 노드 타입 둘(저장소·일정) — 선언형 전환 D5. 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
+            //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 activate 의 registerCalendarTypes 를 대체.
+            nodeTypes: calendarNodeTypes,
         },
     },
 
@@ -96,23 +99,21 @@ export const calendarPlugin = definePlugin({
         // 설정 「달력」 판 본문 — 기기별 옵션 토글. host 는 안 쓴다(initOptions 가 activate 에서 쥐었다).
         Settings: (_p: { host: PluginHost }) => createElement(CalendarSettings),
     },
+    // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
+    nodeTypes: calendarNodeTypeImpl,
 
     /**
-     * 선언 안 되는 것만 — 노드 타입 등록(plugins.get)·스토어 초기화·노드 다리 구독.
+     * 선언 안 되는 것만 — 스토어 초기화·노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
      *   🔴 ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가, 첫 배치는 onFirstRun 이 한다).
      */
     activate(host: PluginHost) {
         // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
         initOptions(host);
 
-        // ── 노드 시스템에 타입 둘을 꽂고(저장소·일정) 일정 자료 다리를 건다 ──
-        //    🔴 일정은 노드다 — 달력은 저장을 모른다(요구명세). 탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
+        // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
+        //    노드 타입 둘(저장소·일정)은 contributes.nodeTypes 가 applyContributes(= activate 보다 먼저)에서 꽂았다.
+        //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
         const nodes = host.plugins.get<NodesApi>('project-explorer');
-        if (nodes) {
-            // 저장소를 열면(탐색기 한 번 누르기·「달력에서 열기」) 달력 월 보기를 가운데에 연다(싱글턴). 그 저장소가 「기본 저장소」가 되고(nodes.ts),
-            //   범위(scope)도 그 저장소로 좁힌다 — 그 저장소와 그 자손 저장소 일정만 보인다(쥔님 2026-11-02).
-            registerCalendarTypes(nodes, (id) => { setScope(id); host.workspace.open(MONTH_ID, { where: 'center' }); });
-        }
         initCalendarNodes(nodes ?? null);
     },
 

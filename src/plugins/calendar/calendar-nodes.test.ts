@@ -26,7 +26,7 @@ import { registerType, clearTypes, isRecordType, isContainerType } from '../proj
 import { clearDerived } from '../project-explorer/model/derive';
 import { flatten } from '../project-explorer/model/tree';
 import { buildMainRows } from '../project-explorer/views/rows';
-import { registerCalendarTypes, STORE_TYPE, EVENT_TYPE } from './nodes';
+import { calendarNodeTypes, calendarNodeTypeImpl, STORE_TYPE, EVENT_TYPE } from './nodes';
 
 function host(): PluginHost {
     return {
@@ -46,7 +46,7 @@ describe('달력 타입 둘 — 저장소는 보이고, 일정(record)은 탐색
     it('접두사 calendar. · 저장소는 flatten 에 · 일정은 안 보이고 byType·children 엔 있다', () => {
         registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
         const api = makeNodesApi('calendar');
-        registerCalendarTypes(api, () => {});
+        for (const nt of calendarNodeTypes) api.registerContributed(nt, { nodeTypes: calendarNodeTypeImpl }, host());
 
         // 접두사 규칙(요구명세) — 둘 다 'calendar.' 로 시작
         expect(STORE_TYPE.startsWith('calendar.')).toBe(true);
@@ -75,7 +75,7 @@ describe('달력 타입 둘 — 저장소는 보이고, 일정(record)은 탐색
     it('저장소는 하위 가능 — 폴더·저장소를 품고(accepts), 일정(레코드)도 품되 탐색기엔 안 드러난다 (쥔님 11-02 10:34)', () => {
         registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
         const api = makeNodesApi('calendar');
-        registerCalendarTypes(api, () => {});
+        for (const nt of calendarNodeTypes) api.registerContributed(nt, { nodeTypes: calendarNodeTypeImpl }, host());
         const sid = api.create(api.roots.main, { type: STORE_TYPE, name: '기본' });
 
         // move 는 accepts 를 본다 — 폴더·저장소는 저장소 밑으로 든다
