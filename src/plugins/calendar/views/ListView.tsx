@@ -3,14 +3,16 @@
  *   열: 날짜 · 시간(종일이면 「종일」) · 제목 · 저장소. 머리에 검색 상자(제목·메모) + 「새 일정」(오늘 종일).
  *   줄을 누르면 그 날로 anchor 를 옮기고 인라인 카드를 연다. 정렬·검색은 events.ts 순수 함수.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent } from '../nodes';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { useRangeSelect, type RangeHit } from './useRangeSelect';
+import { daysSelection, dayInSelection, type CalSelection } from '../selection';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 const DAY_MS = 86_400_000;
@@ -19,17 +21,44 @@ function dateLabel(ms: number): string {
     const d = new Date(ms);
     return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WD[d.getDay()]})`;
 }
+/** 일정 시작의 날 iso — 줄의 data-day(범위 선택이 이 날을 고른다). */
+function dayIso(ms: number): string {
+    const d = new Date(ms);
+    return isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
 function timeLabel(e: CalEvent): string {
     return e.allDay ? '종일' : `${hhmm(e.startMs)}–${hhmm(e.endMs)}`;
 }
 
-export function ListView({ value, onChange, trailing, peek }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle }) {
+export function ListView({ value, onChange, trailing, peek, selection, onSelect }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void }) {
     const { events, stores } = useCalendarData();
     const [query, setQuery] = useState('');
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
 
     const rows = useMemo(() => sortEvents(filterEvents(events, query)), [events, query]);
+
+    // 범위 선택 — 줄(일정)의 「날」을 고른다. 끌면 지나간 줄들의 날 min~max. 줄 클릭은 peek 도 연다(공존).
+    const selAnchor = useRef<string | null>(null);
+    const resolveRow = (x: number, y: number): RangeHit<string> => {
+        const el = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (!el) return { value: null, onEvent: false };
+        return { value: el.closest('[data-day]')?.getAttribute('data-day') ?? null, onEvent: false };
+    };
+    const range = useRangeSelect<string>({
+        resolve: resolveRow,
+        onSet: (iso, shift) => {
+            if (shift) {
+                const a = selAnchor.current ?? (selection?.kind === 'days' ? selection.from : iso);
+                selAnchor.current = a;
+                onSelect(daysSelection(a, iso));
+            } else {
+                selAnchor.current = iso;
+                onSelect(daysSelection(iso, iso));
+            }
+        },
+        onExtend: (iso) => onSelect(daysSelection(selAnchor.current ?? iso, iso)),
+    });
 
     const newEvent = () => {
         const base = new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -69,7 +98,7 @@ export function ListView({ value, onChange, trailing, peek }: { value: Date; onC
             </header>
 
             {/* 표 — 날짜·시간·제목·저장소 */}
-            <div className="flex-1 min-h-0 overflow-auto border-t border-line">
+            <div className="flex-1 min-h-0 overflow-auto border-t border-line" {...range.bind}>
                 {rows.length === 0 ? (
                     <div className="grid place-items-center h-full text-[12px] text-muted">{query ? '찾는 일정이 없다' : '일정이 없다 — 「새 일정」이나 달력 칸 더블클릭으로'}</div>
                 ) : (
@@ -85,8 +114,10 @@ export function ListView({ value, onChange, trailing, peek }: { value: Date; onC
                         <tbody>
                             {rows.map((e) => {
                                 const store = stores.get(e.storeId);
+                                const iso = dayIso(e.startMs);
+                                const selected = dayInSelection(selection, iso);
                                 return (
-                                    <tr key={e.id} onClick={() => openRow(e)} className="cursor-pointer hover:bg-text/[0.04]">
+                                    <tr key={e.id} data-day={iso} onClick={() => openRow(e)} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
                                         <td className="px-3 py-1.5 border-b border-line truncate">{e.name || '새 일정'}</td>
