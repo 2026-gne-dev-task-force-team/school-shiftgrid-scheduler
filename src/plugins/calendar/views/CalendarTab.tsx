@@ -14,25 +14,11 @@ import { useEffect, useState } from 'react';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
+import { ListView } from './ListView';
 import { GanttView } from './GanttView';
 import { useOptions } from '../store';
+import { ALL_MODES, type Mode } from '../modes';
 
-type Mode = 'year' | 'month' | 'week' | '3day' | 'day' | 'dense' | 'gantt';
-
-// 순서 — 큰 단위부터 작은 단위로. 쥔님 2026-11-01 22:17: *"년 분기 월 주 3일 하루 일정 간트 이렇게 하지"*
-//   「분기」(dense)·「간트」(gantt)는 설정 토글(기본 꺼짐)이라 꺼져 있으면 이 순서에서 걸러 빠진다(끝에 push 안 함).
-//   🔴 ⛔ 「일정」(일정 목록 표·리스트)은 이번에 만들지 않는다 — 일정 자료가 아직 없다(쥔님 *"일정은 일정 목록들
-//      그대로 보는거 표나 리스트로"* 는 자료가 생긴 뒤). 자리만 년·간트 사이에 둔다(아래 ALL_MODES 주석).
-const ALL_MODES: { id: Mode; label: string; opt?: 'dense' | 'gantt' }[] = [
-    { id: 'year', label: '년' },
-    { id: 'dense', label: '분기', opt: 'dense' },
-    { id: 'month', label: '월' },
-    { id: 'week', label: '주' },
-    { id: '3day', label: '3일' },
-    { id: 'day', label: '하루' },
-    // ⛔ (미구현 자리) '일정' — 하루와 간트 사이. 일정 자료가 생기면 표·리스트 뷰로.
-    { id: 'gantt', label: '간트', opt: 'gantt' },
-];
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
 export function CalendarTab() {
@@ -75,6 +61,7 @@ export function CalendarTab() {
         case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} />;
         case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} />;
         case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} />;
+        case 'list': return <ListView value={anchor} onChange={setAnchor} trailing={switcher} />;
         case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} />;
         case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} />;
         default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} />;
