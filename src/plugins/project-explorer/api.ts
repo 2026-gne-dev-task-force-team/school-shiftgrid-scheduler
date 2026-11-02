@@ -10,10 +10,12 @@
  *    ② setData 는 「그 타입을 등록한 플러그인(= 타입 접두사)만」을 호출자 id 로 가린다(🙋 3)
  *    ③ register·subscribe 가 낸 Disposable 을 track 으로 호출자 소유에 모아 둔다 — 호출자가 꺼지면 같이 회수.
  */
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type {
+    Disposable, PluginHost, PluginImpl, NodeTypeContribution, IconName, MenuEntry,
+} from '../../pane-ui-system/plugin';
 import type { Node } from './model/tree';
 import { parentOf } from './model/tree';
-import type { NodeTypeDef } from './model/types';
+import type { NodeTypeDef, VirtualNode } from './model/types';
 import { registerType } from './model/types';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData,
@@ -23,6 +25,21 @@ import {
 export type { NodeTypeDef, VirtualNode, CreateSpec } from './model/types';
 export type { Node } from './model/tree';
 
+/**
+ * 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 `impl` 이름이 가리키는 레코드 값(모듈 nodeTypes[impl]).
+ *   매니페스트엔 함수를 못 넣으니(순수 데이터), 노드 타입의 함수 칸은 여기 모아 두고 이름 하나로 가리킨다.
+ *   ⭐ 동작성 함수(open·menu·createInit)는 첫 인자로 host 를 받는다 — 명령·뷰와 같은 결(레지스트라가 host 를 꽂는다).
+ *      순수 계산(icon·derive)은 노드만 받는다. 전부 선택 — 쓰는 칸만 적는다.
+ *   D3(calendar)가 nodes.ts 의 타입 둘을 옮길 때 이 꼴로 적는다(보고 「예시」 참고).
+ */
+export interface NodeTypeImplFns {
+    icon?: (node: Node) => IconName;
+    open?: (host: PluginHost, nodeId: string) => void;
+    derive?: (node: Node) => VirtualNode[];
+    menu?: (host: PluginHost, nodeId: string) => MenuEntry[];
+    createInit?: (host: PluginHost, parentId: string) => Partial<Node>;
+}
+
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
 export type PublicNode = Readonly<Node>;
 
@@ -31,6 +48,13 @@ export interface NodesApi {
     version: 1;
     /** 타입 등록 — `<pluginId>.` 접두사 강제. 꺼지면 아이콘·열기·메뉴만 빠지고 노드는 남는다. */
     types: { register(def: NodeTypeDef): Disposable };
+
+    /**
+     * 🔴 로더 전용(NodeTypeRegistrar) — 창틀 applyContributes 가 contributes.nodeTypes 를 꽂을 때 부른다.
+     *   ⛔ 플러그인이 직접 부르는 창구가 아니다(그건 types.register) — 여긴 매니페스트 항목(순수 데이터)+impl 함수
+     *      묶음(모듈 nodeTypes[impl])을 받아 이름을 풀고 NodeTypeDef 를 조립해 꽂는다. Disposable 은 호출자 소유로 추적된다.
+     */
+    registerContributed(item: NodeTypeContribution, impl: PluginImpl, host: PluginHost): Disposable;
 
     // ── 읽기(전부 얼린 복사본) ──
     get(id: string): PublicNode | undefined;
@@ -87,6 +111,29 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 }
                 return keep(registerType(def));
             },
+        },
+
+        registerContributed(item: NodeTypeContribution, impl: PluginImpl, host: PluginHost): Disposable {
+            const fns = (item.impl ? impl.nodeTypes?.[item.impl] : undefined) as NodeTypeImplFns | undefined;
+            const def: NodeTypeDef = {
+                type: item.type,
+                label: item.label,
+                icon: fns?.icon ?? item.icon ?? 'file',   // 함수 아이콘(impl) → 데이터 아이콘 → 기본 'file'
+                container: item.container,
+                openable: item.openable,
+                open: fns?.open ? (id) => fns.open!(host, id) : undefined,
+                derive: fns?.derive,
+                create: item.create
+                    ? { ...item.create, init: fns?.createInit ? (pid) => fns.createInit!(host, pid) : undefined }
+                    : undefined,
+                menu: fns?.menu ? (id) => fns.menu!(host, id) : undefined,
+                can: item.can,
+                record: item.record,
+            };
+            // 🔴 선언형 노드 타입은 raw registerType — 접두사 검사를 안 탄다. 내장 'folder' 는 접두사 없는 예외고,
+            //    선언형 기여는 in-tree·tsc 검사된 1차 자료라 런타임 types.register 의 접두사 가드가 불필요하다.
+            //    (런타임 동적 등록은 여전히 types.register 가 접두사를 강제한다 — 창구가 다르다.)
+            return keep(registerType(def));
         },
 
         get(id) { const n = getState().tree.nodes[id]; return n ? freeze(n) : undefined; },
