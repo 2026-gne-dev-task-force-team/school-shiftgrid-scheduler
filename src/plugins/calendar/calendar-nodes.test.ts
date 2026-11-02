@@ -72,15 +72,20 @@ describe('달력 타입 둘 — 저장소는 보이고, 일정(record)은 탐색
         expect(api.children(sid).map((n) => n.id)).toContain(eid);
     });
 
-    it('저장소는 일정만 받는다(accepts) — 저장소 안에 저장소·폴더는 못 든다', () => {
+    it('저장소는 하위 가능 — 폴더·저장소를 품고(accepts), 일정(레코드)도 품되 탐색기엔 안 드러난다 (쥔님 11-02 10:34)', () => {
         registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
         const api = makeNodesApi('calendar');
         registerCalendarTypes(api, () => {});
         const sid = api.create(api.roots.main, { type: STORE_TYPE, name: '기본' });
 
-        // move 는 accepts 를 본다 — 폴더를 저장소 밑으로 옮기려 하면 거부(부모 안 바뀜)
+        // move 는 accepts 를 본다 — 폴더·저장소는 저장소 밑으로 든다
         const fid = api.create(api.roots.main, { type: 'folder', name: '폴더' });
         api.move(fid, sid);
-        expect(api.parent(fid)).toBe(api.roots.main);
+        expect(api.parent(fid)).toBe(sid);
+        const sub = api.create(sid, { type: STORE_TYPE, name: '하위 저장소' });
+        expect(api.parent(sub)).toBe(sid);
+        // 일정은 레코드 — children 엔 있지만 탐색기 flatten 엔 없다(record-node.test 가 flatten 쪽을 못 박는다)
+        const eid = api.create(sid, { type: EVENT_TYPE, name: '일정', data: { start: '2026-11-02T00:00', end: '2026-11-03T00:00', allDay: true } });
+        expect(api.children(sid).map((n) => n.id)).toEqual(expect.arrayContaining([fid, sub, eid]));
     });
 });

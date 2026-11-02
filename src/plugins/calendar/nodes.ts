@@ -58,9 +58,11 @@ function recompute(): void {
 export function registerCalendarTypes(nodes: NodesApi, onOpenStore: (id: string) => void): Disposable {
     const d1 = nodes.types.register({
         type: STORE_TYPE, label: '달력 저장소', icon: 'calendar',
-        container: { accepts: [EVENT_TYPE] }, openable: true,
+        // 🔴 쥔님 11-02 10:34: *"일정 저장소 노드는 하위 가능하고 그때 하위 펼침 그런거 넣는거고 · 하위 레코드 노드는 그냥 품고 있어야지 드러내지 말고"*
+        //    → 저장소는 폴더·저장소를 품을 수 있다(보이는 하위 → ▸ 펼침·「새로 만들기」). 일정(레코드)은 같이 품되 탐색기엔 안 드러난다.
+        container: { accepts: [EVENT_TYPE, 'folder', STORE_TYPE] }, openable: true,
         open: (id) => { setDefaultStore(id); onOpenStore(id); },
-        create: { label: '달력 저장소', under: ['folder'] },
+        create: { label: '달력 저장소', under: ['folder', STORE_TYPE] },
         menu: storeMenu,
     });
     const d2 = nodes.types.register({ type: EVENT_TYPE, label: '일정', icon: 'calendar', record: true });
