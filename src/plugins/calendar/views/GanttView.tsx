@@ -11,6 +11,8 @@ import { memo, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton, isoOf, monthLabel } from '../../../pane-ui-system';
 import { shouldShowMonth } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
+import { useRangeSelect, type RangeHit } from './useRangeSelect';
+import { daysSelection, dayInSelection, type CalSelection } from '../selection';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const LABEL_W = 160;     // 왼쪽 행 이름 칸 폭(px)
@@ -53,24 +55,50 @@ const DayHeader = memo(function DayHeader({ offset, left, width, todayIso, showM
     );
 });
 
-/** 날 열 본문 — 세로선 하나 · 토·일은 바탕 · 오늘은 accent 띠 */
-const DayColumn = memo(function DayColumn({ offset, left, width, height, todayIso }: {
-    offset: number; left: number; width: number; height: number; todayIso: string;
+/** 날 열 본문 — 세로선 하나 · 토·일은 바탕 · 오늘은 accent 띠 · 고른 날은 연한 accent + 안쪽 테두리 */
+const DayColumn = memo(function DayColumn({ offset, left, width, height, todayIso, selection }: {
+    offset: number; left: number; width: number; height: number; todayIso: string; selection: CalSelection;
 }) {
     const d = dayAt(offset);
-    const isToday = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate()) === todayIso;
+    const iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    const isToday = iso === todayIso;
     const weekend = d.getDay() === 0 || d.getDay() === 6;
+    const selected = dayInSelection(selection, iso);
+    const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : isToday ? 'bg-accent/[0.08]' : weekend ? 'bg-panel2' : '';
     return (
         <div
-            className={`absolute top-0 border-l border-line ${isToday ? 'bg-accent/[0.08]' : weekend ? 'bg-panel2' : ''}`}
+            data-day={iso}
+            className={`absolute top-0 border-l border-line ${bg}`}
             style={{ left, width, height }}
         />
     );
 });
 
-export function GanttView({ value, onChange, trailing }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode }) {
+export function GanttView({ value, onChange, trailing, selection, onSelect }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; selection: CalSelection; onSelect: (s: CalSelection) => void }) {
     const now = new Date();
     const todayIso = isoOf(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+    // 범위 선택 — 날 열을 죽 끌어 날짜 범위를 고른다(간트는 날 축만 고른다 · 행은 아직 비어 있다).
+    const selAnchor = useRef<string | null>(null);
+    const resolveDay = (x: number, y: number): RangeHit<string> => {
+        const el = document.elementFromPoint(x, y) as HTMLElement | null;
+        if (!el) return { value: null, onEvent: false };
+        return { value: el.closest('[data-day]')?.getAttribute('data-day') ?? null, onEvent: false };
+    };
+    const rangeSel = useRangeSelect<string>({
+        resolve: resolveDay,
+        onSet: (iso, shift) => {
+            if (shift) {
+                const a = selAnchor.current ?? (selection?.kind === 'days' ? selection.from : iso);
+                selAnchor.current = a;
+                onSelect(daysSelection(a, iso));
+            } else {
+                selAnchor.current = iso;
+                onSelect(daysSelection(iso, iso));
+            }
+        },
+        onExtend: (iso) => onSelect(daysSelection(selAnchor.current ?? iso, iso)),
+    });
 
     const s = useDayScroller({
         days: 1,                 // fixedColW 가 있어 무시된다
@@ -131,6 +159,7 @@ export function GanttView({ value, onChange, trailing }: { value: Date; onChange
             <div
                 ref={s.scrollerRef}
                 onScroll={s.onScroll}
+                {...rangeSel.bind}
                 className="flex-1 min-h-0 overflow-auto overscroll-contain border-t border-line"
             >
                 <div className="relative" style={{ width: s.contentW, height: HDR_H + bodyH }}>
@@ -151,7 +180,7 @@ export function GanttView({ value, onChange, trailing }: { value: Date; onChange
                             ))}
                         </div>
                         {s.offsets.map((o) => (
-                            <DayColumn key={o} offset={o} left={s.leftOf(o)} width={s.colW} height={bodyH} todayIso={todayIso} />
+                            <DayColumn key={o} offset={o} left={s.leftOf(o)} width={s.colW} height={bodyH} todayIso={todayIso} selection={selection} />
                         ))}
                         {/* 행 가로선 — 열 위로 전체 폭 */}
                         {rowLines.map((i) => (

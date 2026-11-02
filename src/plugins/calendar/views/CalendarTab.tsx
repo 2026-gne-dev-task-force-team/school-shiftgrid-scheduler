@@ -20,6 +20,7 @@ import { GanttView } from './GanttView';
 import { useOptions, useScope, setScope } from '../store';
 import { useCalendarData } from '../useEvents';
 import { ALL_MODES, type Mode } from '../modes';
+import { selectionLabel, type CalSelection } from '../selection';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
@@ -27,6 +28,8 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
     const [mode, setMode] = useState<Mode>('month');
     // 🔴 「보고 있는 날짜」의 단일 진실 — 초기값은 오늘. 각 뷰에 value 로 내리고 onChange 로 받는다(뷰를 바꿔도 유지된다).
     const [anchor, setAnchor] = useState<Date>(() => new Date());
+    // 🔴 「범위 선택」의 단일 진실 — 모드를 바꿔도 남는다(쥔님 2026-11-02 *"선택할 수 있게 해줘 … 모든 뷰다"*). ⛔ 저장 안 함.
+    const [selection, setSelection] = useState<CalSelection>(null);
     const opts = useOptions();
     const scope = useScope();
     const { stores } = useCalendarData();
@@ -45,6 +48,14 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
         if (scope && !stores.has(scope)) setScope(null);
     }, [scope, stores]);
 
+    // Esc 로 범위 선택 해제 — 선택이 있을 때만(점프 판·검색 Esc 와 공존). 뷰 어디든 받게 창(window)에 건다.
+    useEffect(() => {
+        if (!selection) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelection(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selection]);
+
     // 전환 단추. (작은 달력 여는 단추는 23:27 쥔님 *"요 버튼은 이제 없어져도 될듯"* — 리본에 있고 기본 오른쪽이라 걷었다)
     //   범위 저장소가 있으면 왼쪽에 「📁 <이름> · 전체」 칩을 붙인다(쥔님 2026-11-02: 저장소를 열면 그 저장소 것만 · 「전체」로 되돌림).
     const switcher = (
@@ -60,6 +71,20 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
                         title="전체 저장소 보기"
                     >
                         전체
+                    </button>
+                </span>
+            )}
+            {selection && (
+                <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-accent/60 bg-accent/[0.08] text-[12px]" title="고른 범위">
+                    <span className="truncate max-w-[18rem] text-text tabular-nums">{selectionLabel(selection)}</span>
+                    <button
+                        type="button"
+                        onClick={() => setSelection(null)}
+                        className="ml-0.5 px-1 rounded text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                        title="선택 해제"
+                        aria-label="선택 해제"
+                    >
+                        ✕
                     </button>
                 </span>
             )}
@@ -81,15 +106,16 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
         </div>
     );
 
-    // 🔴 peek 을 쓰는 뷰(월·시간축·일정)만 받는다 — 년·간트는 일정 카드가 없다.
+    // 🔴 peek 을 쓰는 뷰(월·시간축·일정)만 받는다 — 년·간트는 일정 카드가 없다. 범위 선택(selection·onSelect)은 모두 받는다.
+    const sel = { selection, onSelect: setSelection };
     switch (mode) {
-        case 'year': return <YearView value={anchor} onChange={setAnchor} trailing={switcher} />;
-        case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
-        case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
-        case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
-        case 'list': return <ListView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
-        case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
-        case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} />;
-        default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} />;
+        case 'year': return <YearView value={anchor} onChange={setAnchor} trailing={switcher} {...sel} />;
+        case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
+        case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
+        case 'day': return <TimeGridView days={1} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
+        case 'list': return <ListView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
+        case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
+        case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} {...sel} />;
+        default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
     }
 }
