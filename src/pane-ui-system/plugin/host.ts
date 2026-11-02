@@ -20,7 +20,7 @@ import { getPluginApi } from './registry';
 import type { PluginHost, WorkspaceOpenOptions, CommandDef, SettingsContribution, StatusContribution, RibbonAddInput, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
-    track, addRibbonAction, getWorkspaceBridge,
+    track, addRibbonAction, getWorkspaceBridge, whenWorkspaceReady,
     addCommand, getCommand, runCommand,
     addSettingsSection, addSettingsItem,
     addStatusItem, addTabMenuItem, setNewTab, onWorkspace, touchContrib,
@@ -163,9 +163,16 @@ export function makeHost(pluginId: string): PluginHost {
 
         onFirstRun(fn: () => void) {
             // 저장값 없이 그 플러그인이 처음 켜질 때 한 번 — 기기별 플래그로 가린다.
+            // 🔴 ⛔ 여기서 바로 돌리지 않는다. activateAll 은 React 렌더보다 먼저 돌아(main.tsx) 작업대 다리가 아직 없고,
+            //    그 상태에서 workspace.open 을 부르면 조용히 null 을 주고 사라진다. 그런데 플래그는 켜지니
+            //    「첫 실행 기본 배치가 영영 안 깔리는」 상태로 굳는다(실측 2026-11-02 — 깨끗한 프로파일에서 좌우 패널이 빈 채였다).
+            // ⭐ 그래서 다리가 설 때까지 미루고, 플래그는 **진짜로 돌았을 때만** 소비한다.
             if (storage.get<boolean>('__first-run', false)) return;
-            storage.set('__first-run', true);
-            try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
+            whenWorkspaceReady(() => {
+                if (storage.get<boolean>('__first-run', false)) return;   // 그 사이 다른 경로로 소비됐으면 그만
+                storage.set('__first-run', true);
+                try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
+            });
         },
 
         plugins: {

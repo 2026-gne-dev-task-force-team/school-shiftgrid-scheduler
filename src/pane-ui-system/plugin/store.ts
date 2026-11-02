@@ -205,8 +205,24 @@ export interface WorkspaceBridge {
     close(leafId: string): void;
 }
 let bridge: WorkspaceBridge | null = null;
-export function setWorkspaceBridge(b: WorkspaceBridge | null): void { bridge = b; }
+// 🔴 다리가 서기를 기다리는 일감. activateAll 은 React 렌더보다 먼저 돈다(main.tsx) — 그때는 다리가 없고,
+//    거기서 workspace.open 을 부르면 조용히 null 만 주고 사라진다. 그래서 「서면 돌린다」를 따로 둔다.
+const bridgeWaiters: (() => void)[] = [];
+export function setWorkspaceBridge(b: WorkspaceBridge | null): void {
+    bridge = b;
+    if (!b || bridgeWaiters.length === 0) return;
+    // ⛔ 큐를 먼저 비우고 돈다 — 콜백 안에서 또 등록해도 이번 판에 섞이지 않는다.
+    const pending = bridgeWaiters.splice(0);
+    for (const fn of pending) {
+        try { fn(); } catch (e) { console.error('[plugin] 작업대 대기 일감 실패', e); }
+    }
+}
 export function getWorkspaceBridge(): WorkspaceBridge | null { return bridge; }
+/** 다리가 이미 서 있으면 지금, 아니면 설 때 한 번 돌린다. */
+export function whenWorkspaceReady(fn: () => void): void {
+    if (bridge) { fn(); return; }
+    bridgeWaiters.push(fn);
+}
 
 // ── ⑤ 작업대 이벤트 ──
 const wsListeners: { owner: string; ev: WorkspaceEvent; fn: (leaf: WorkspaceLeafInfo) => void }[] = [];
