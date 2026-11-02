@@ -164,6 +164,38 @@ export interface StatusBarContribution<RenderName extends string = string> {
 }
 
 /**
+ * 🔴 노드 타입 기여 — 「나는 이런 노드를 낸다」를 데이터로 적는다(순수 데이터). views·commands 와 같은 「이름으로 가리키기」.
+ *   ⛔ 함수 칸(아이콘 함수·open·derive·menu·create.init)은 매니페스트에 못 들어간다 — impl 이름 하나로 가리키고,
+ *      그 함수 묶음은 모듈 nodeTypes[impl] 에 둔다(함수가 없는 순수 데이터 타입이면 impl 을 생략한다).
+ *   ⚠️ 창틀은 노드 타입의 속뜻을 모른다(도메인) — 활성 때 applyContributes 가 항목을 통째로 노드 레지스트라
+ *      (host.plugins.get(…))에 넘긴다. 이름 풀기·레지스트리 꽂기는 레지스트라 몫이다. 아래 칸은 적는 쪽이 쓰기 좋게
+ *      흔한 꼴만 세워 둔 것이고, 레지스트라가 더 넓게 해석할 수 있다.
+ */
+export interface NodeTypeContribution<ImplName extends string = string> {
+    type: string;
+    label: string;
+    /** 데이터 아이콘(고정) — 노드마다 달라지는 함수 아이콘은 impl 로 뺀다. */
+    icon?: IconName;
+    container?: boolean | { accepts: string[] };
+    openable?: boolean;
+    create?: { label: string; under?: string[] };
+    can?: { rename?: boolean; move?: boolean; delete?: boolean };
+    record?: boolean;
+    /** 모듈 nodeTypes 의 키 — 함수 묶음(아이콘 함수·open·derive·menu·create.init)을 레지스트라가 여기서 찾는다. */
+    impl?: ImplName;
+}
+
+/**
+ * 🔴 노드 타입 레지스트라 — 노드 하이라키를 쥔 플러그인이 공개 api(PluginModule.api)로 내준다.
+ *   applyContributes 가 contributes.nodeTypes 를 만나면 host.plugins.get(NODE_TYPE_REGISTRAR) 로 이걸 받아
+ *   항목 하나 + 그 플러그인의 impl + host 를 통째로 넘긴다 — 이름 풀기·NodeTypeDef 조립·레지스트리 꽂기는
+ *   레지스트라 몫이다(창틀은 노드 타입의 속을 끝내 모른다). Disposable 을 돌려주면 그 플러그인 소유로 추적된다.
+ */
+export interface NodeTypeRegistrar {
+    registerContributed(item: NodeTypeContribution, impl: PluginImpl, host: PluginHost): Disposable;
+}
+
+/**
  * 매니페스트 contributes 칸 — 여섯 종류(뷰·명령·리본·설정·상태바·노드 타입).
  *   제네릭 넷(이름 집합)은 definePlugin 이 구현 객체의 keyof 로 채운다 — 평소엔 string(파생 안 함).
  */
@@ -172,14 +204,15 @@ export interface Contributes<
     CmdName extends string = string,
     PaneName extends string = string,
     RenderName extends string = string,
+    NTName extends string = string,
 > {
     views?: ViewContribution<CompName>[];
     commands?: CommandContribution<CmdName>[];
     ribbon?: RibbonAddInput[];
     settings?: SettingsContributes<PaneName>;
     statusBar?: StatusBarContribution<RenderName>[];
-    /** ⚠️ D2(project-explorer 옮기는 판)에서 채운다 — 노드 레지스트리를 탐색기가 쥐고 있어 여기선 자리만(타입 placeholder). */
-    nodeTypes?: unknown[];
+    /** 노드 타입 — applyContributes 가 노드 레지스트라(host.plugins.get)에 통째로 넘긴다(위 NodeTypeContribution). */
+    nodeTypes?: NodeTypeContribution<NTName>[];
 }
 
 /**
@@ -195,6 +228,12 @@ export interface PluginImpl {
     commands?: Record<string, (host: PluginHost, ctx?: CommandContext) => void>;
     panes?: Record<string, ComponentType<{ host: PluginHost }>>;
     renders?: Record<string, (host: PluginHost) => ReactNode>;
+    /**
+     * 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이름이 이 키를 가리킨다.
+     *   값의 꼴(아이콘 함수·open·derive·menu·create.init)은 창틀이 모른다(도메인) — 노드 레지스트라가 해석한다.
+     *   함수 없는 순수 데이터 노드 타입만 내는 플러그인이면 비운다.
+     */
+    nodeTypes?: Record<string, unknown>;
 }
 
 /** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 activate 뒤, onFirstRun 은 첫 실행 때 한 번. */

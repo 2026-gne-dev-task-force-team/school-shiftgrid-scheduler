@@ -38,19 +38,24 @@ export function definePlugin<
     Cmd extends Record<string, (host: PluginHost, ctx?: CommandContext) => void> = EmptyRec,
     P extends Record<string, ComponentType<{ host: PluginHost }>> = EmptyRec,
     R extends Record<string, (host: PluginHost) => ReactNode> = EmptyRec,
+    // 🔴 노드 타입 함수 묶음 레코드 — 값의 꼴은 창틀이 모른다(도메인). 키(impl 이름)만 contributes 가 파생해 쓴다.
+    NT extends Record<string, unknown> = EmptyRec,
 >(spec: {
     manifest: Omit<PluginManifest, 'contributes'> & {
         contributes?: Contributes<
             Extract<keyof C, string>,
             Extract<keyof Cmd, string>,
             Extract<keyof P, string>,
-            Extract<keyof R, string>
+            Extract<keyof R, string>,
+            Extract<keyof NT, string>
         >;
     };
     components?: C;
     commands?: Cmd;
     panes?: P;
     renders?: R;
+    /** 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이 이 키를 가리킨다(오타는 tsc 가 잡는다). */
+    nodeTypes?: NT;
     activate?: (host: PluginHost) => void | Promise<void>;
     lifecycle?: PluginLifecycle;
     deactivate?: () => void;
