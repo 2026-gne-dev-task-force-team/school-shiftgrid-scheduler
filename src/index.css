@@ -3,57 +3,138 @@
 @tailwind utilities;
 
 /*
- * 테마 — 값은 "r g b" (tailwind.config.js 가 rgb(var(--c-x) / a) 로 감싼다).
- * 기본은 밝은 화면(학교 PC의 다른 창들과 같은 결). html[data-theme="dark"] 가 어두운 화면.
- * 뜻색 셋(ok 초록 · bad 빨강 · warn 노랑)은 두 테마에서 뜻이 같고 명도만 다르다.
- * SVG 등 클래스를 못 쓰는 자리는 var(--c-…) 를 직접 읽는다: fill: rgb(var(--c-accent)).
+ * 테마 — 노션 룩. 값은 "r g b" (tailwind.config.js 가 rgb(var(--c-x) / a) 로 감싼다).
+ * 화면·셸 코드는 bg-panel · text-muted 같은 토큰 이름만 쓰고 실제 색은 모른다.
+ * 바탕은 거의 흰색, 사이드바·패널만 아주 옅은 회색, 선은 1px 옅은 회색 하나, 포인트는 파랑 하나.
+ * 다크 짝은 같은 변수의 다른 값 — 토글은 안 만들고 prefers-color-scheme 만 따른다.
  */
-:root, html[data-theme="light"] {
+:root {
   color-scheme: light;
-  --c-bg: 244 246 249;       /* #f4f6f9 */
-  --c-panel: 255 255 255;    /* #ffffff */
-  --c-panel2: 238 241 245;   /* #eef1f5 */
-  --c-line: 213 219 227;     /* #d5dbe3 */
-  --c-text: 28 36 48;        /* #1c2430 */
-  --c-muted: 95 107 122;     /* #5f6b7a */
-  --c-accent: 43 108 176;    /* #2b6cb0 */
-  --c-accenth: 29 90 154;    /* #1d5a9a — 밝은 바탕에선 호버가 더 짙어진다 */
+  --c-bg: 255 255 255;       /* #ffffff — 가운데 캔버스 */
+  --c-panel: 247 247 245;    /* #f7f7f5 — 사이드바·패널 바탕 */
+  --c-panel2: 241 241 239;   /* #f1f1ef — 머리줄·살짝 깊은 면 */
+  --c-line: 223 223 220;     /* #dfdfdc — 1px 선 (이것 하나뿐) · 2026-10-31 살짝 진하게(경계선 놓침 방지) */
+  /* 🔴 사이드바 전용(판 A, 2026-11-01) — 에디터보다 한 단 짙은 회색. tokens.ts 의 notion-light 와 거울 */
+  --c-side: 236 236 233;     /* #ececE9 — 사이드바 바탕(panel 보다 한 단 어둡다) */
+  --c-side2: 229 229 226;    /* #e5e5e2 — 사이드바 탭 줄 */
+  --c-edge: 206 206 202;     /* #cecec9 — 사이드바↔가운데 경계선(line 보다 한 단 진하다) */
+  --c-text: 55 53 47;        /* #37352f — 노션의 near-black */
+  --c-muted: 145 145 142;    /* #91918e — 회색 글자·아이콘 */
+  --c-accent: 35 131 226;    /* #2383e2 — 파랑 하나(선택·포커스) */
+  --c-accenth: 24 115 204;   /* #1873cc — 호버 때 짙어지는 파랑 */
   --c-ok: 31 138 76;         /* #1f8a4c */
   --c-bad: 197 48 48;        /* #c53030 */
   --c-warn: 183 121 31;      /* #b7791f */
+
+  /*
+   * 치수 — 색과 같은 층이다. 작업대 UI 는 머리줄이 낮고 여백이 얇아야 「도구」로 느껴진다.
+   * ⛔ 셸·화면 코드가 px 를 직접 쓰지 않는다 — h-header · px-pad 같은 이름만 쓴다.
+   *
+   * 🔴 값의 원본은 src/pane-ui-system/theme/tokens.ts 다(이름·기본값·바닥). 여기 값은 두 몫만 한다:
+   *    ① 첫 화면 깜빡임 방지(JS 가 돌기 전의 기본 그림) ② 손가락 바닥을 max() 로 지키는 장치.
+   *    토큰 "이름" 이 tokens.ts 와 어긋나면 theme/__tests__ 의 대조 검사가 빨간불을 낸다.
+   *
+   * 🔴 밀도(빽빽/편안)는 --s-* 를 "직접 인라인으로 꽂지 않는다". 인라인은 아래 coarse media 를
+   *    이겨서 손가락 기기의 큰 치수(바닥)를 깨 버린다 — 손가락인데 24px 단추로 돌아간다.
+   *    그래서 applyTheme 은 배율 --density 하나만 인라인으로 꽂고, 여기서 곱한다:
+   *      --s-* = max(바닥, 기본 × 밀도)
+   *    ⭐ 어느 쪽이 이기나: coarse(손가락) 바닥이 이긴다. 빽빽(0.85)을 골라도 손가락이면 바닥 아래로
+   *       안 내려간다. 마우스 기기는 바닥이 0 이라 밀도가 그대로 먹는다.
+   */
+  --density: 1;       /* applyTheme 이 인라인으로 덮는다(빽빽 0.85 / 편안 1) */
+
+  /* 🔴 탭 줄과 패널 머리줄은 같은 높이다 — 다르면 좌·중·우가 단차로 어긋나 보인다(쥔님 지적 21:55) */
+  --s-topbar: max(var(--f-topbar, 0px), calc(32px * var(--density)));   /* 탭 줄 */
+  --s-header: max(var(--f-header, 0px), calc(32px * var(--density)));   /* 사이드바·패널 머리줄 — ⛔ topbar 와 어긋나게 두지 말 것 */
+  --s-row:    max(var(--f-row,    0px), calc(28px * var(--density)));   /* 목록 한 줄(탭 한 칸 포함) */
+  --s-btn:    max(var(--f-btn,    0px), calc(24px * var(--density)));   /* 아이콘 단추 */
+  --s-pad:    max(var(--f-pad,    0px), calc(8px  * var(--density)));   /* 패널 안쪽 가로 여백 (6→8, 쥔님 2026-10-31 "여백 더") */
+  --s-rail:   max(var(--f-rail,   0px), calc(48px * var(--density)));   /* 리본 폭 — 옵시디언 44 보다 조금 넓다 */
+  --s-railbtn: max(var(--f-railbtn, 0px), calc(28px * var(--density)));  /* 리본 아이콘 버튼 — 리본 폭보다 20px 작아 좌우 10px 여백 */
+  /* 🔴 틀 두 줄(판 A, 2026-11-01) — 전체 폭 상단 타이틀바·하단 상태바. 치수 토큰과 같은 층(코드는 h-titlebar 이름만) */
+  --s-titlebar:  max(var(--f-titlebar,  0px), calc(32px * var(--density)));  /* 상단 타이틀바(앱 이름 + 액션) */
+  --s-statusbar: max(var(--f-statusbar, 0px), calc(22px * var(--density))); /* 하단 상태바(정보 줄) */
 }
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --c-bg: 16 21 28;          /* #10151c */
-  --c-panel: 22 29 39;       /* #161d27 */
-  --c-panel2: 27 36 48;      /* #1b2430 */
-  --c-line: 36 48 65;        /* #243041 */
-  --c-text: 230 233 238;     /* #e6e9ee */
-  --c-muted: 139 149 165;    /* #8b95a5 */
-  --c-accent: 43 108 176;    /* #2b6cb0 */
-  --c-accenth: 59 130 196;   /* #3b82c4 */
-  --c-ok: 47 158 91;         /* #2f9e5b */
-  --c-bad: 214 69 69;        /* #d64545 */
-  --c-warn: 217 164 65;      /* #d9a441 */
+
+/*
+ * 손가락 기기는 같은 치수가 너무 작다(손가락으로 24px 단추를 못 맞춘다).
+ * 🔴 색과 마찬가지로 값만 바꾼다 — 컴포넌트는 한 줄도 안 바뀐다. 이게 치수를 토큰으로 둔 값어치다.
+ * ⭐ 여기선 --s-* 를 직접 덮지 않고 "바닥(--f-*)" 만 올린다 — 위 max() 가 밀도보다 이 바닥을 세운다.
+ */
+@media (hover: none) and (pointer: coarse) {
+  :root {
+    --f-topbar: 40px;
+    --f-header: 40px;
+    --f-row: 36px;
+    --f-btn: 32px;
+    --f-pad: 8px;
+    --f-rail: 56px;
+    --f-railbtn: 40px;
+    --f-titlebar: 44px;
+    --f-statusbar: 28px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --c-bg: 25 25 25;        /* #191919 */
+    --c-panel: 32 32 32;     /* #202020 */
+    --c-panel2: 37 37 37;    /* #252525 */
+    --c-line: 60 60 60;      /* #3c3c3c — 2026-10-31 살짝 밝게(경계선 놓침 방지) */
+    /* 🔴 사이드바 전용(판 A, 2026-11-01) — 에디터보다 한 단 더 어둡다. tokens.ts 의 notion-dark 와 거울.
+       ⚠️ edge 는 다크에선 「더 밝은 선」이 더 진한 경계다(어두운 바탕에 선이 보이려면 밝아야 한다) */
+    --c-side: 20 20 20;      /* #141414 — 사이드바 바탕(bg 보다 어둡다) */
+    --c-side2: 28 28 28;     /* #1c1c1c — 사이드바 탭 줄 */
+    --c-edge: 78 78 78;      /* #4e4e4e — 경계선(line 보다 한 단 뚜렷하다) */
+    --c-text: 235 235 235;   /* #ebebeb */
+    --c-muted: 155 155 155;  /* #9b9b9b */
+    --c-accent: 45 140 240;  /* #2d8cf0 */
+    --c-accenth: 80 160 245; /* #50a0f5 */
+    --c-ok: 47 158 91;       /* #2f9e5b */
+    --c-bad: 214 69 69;      /* #d64545 */
+    --c-warn: 217 164 65;    /* #d9a441 */
+  }
+}
+
+/*
+ * 🔴 ⭐ 전역 기본값을 뒤집는다 — UI 는 「선택도 끌림도 안 됨」이 기본이다(항목 A, 쥔님 2026-11-01 두 번 지시:
+ *    *"UI 기본적으로 마우스 셀렉트 안 되게 해 줘"* · *"UI 텍스트 셀렉트나 우클릭 그것 좀 전역적으로 통제해 줘"*).
+ *    ⛔ 자리마다 user-select:none 을 흩뿌리지 않는다 — html 한 곳에서 끄고, 예외만 되살린다.
+ *    (브라우저 기본 우클릭 메뉴는 JS 로 막는다 — interactive/guards.ts, 같은 예외 셀렉터를 쓴다.)
+ *  예외(옵트인)로만 선택을 되살린다:
+ *    ① 입력칸: input · textarea · [contenteditable]
+ *    ② 「문서·글 내용」임을 뷰가 밝힌 자리: .select-text · .view-body (구조 검사가 예외 목록을 지킨다)
+ *  user-select 는 상속되므로 .select-text 컨테이너 하나면 그 안 글자까지 선택된다.
+ *  SVG·이미지는 브라우저가 「이미지 끌기」로 떼 가므로 -webkit-user-drag 로 막고, 파이어폭스는 draggable 속성으로.
+ */
+@layer base {
+  html {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  svg, img {
+    -webkit-user-drag: none;
+    pointer-events: none;   /* 아이콘은 제 부모(단추)가 클릭을 받는다 — 아이콘이 드래그 핸들이 되지 않게 */
+  }
+  /* 예외 — 입력칸·본문 글자는 선택이 돼야 한다(위 전역 차단을 되살린다) */
+  input, textarea, [contenteditable="true"], [contenteditable=""], .select-text, .view-body {
+    user-select: text;
+    -webkit-user-select: text;
+  }
 }
 
 @layer base {
-  html, body, #root {
-    height: 100%;
-  }
-  /* 🔴 폰 브라우저의 100% 는 주소창을 뺀 높이가 아니다 — 그래서 아래쪽이 주소창 뒤로 잘린다.
-     dvh(동적 뷰포트 높이)는 주소창이 접히고 펴지는 것까지 따라온다. 모르는 브라우저는 위 100% 로 돈다. */
-  #root {
-    height: 100dvh;
-  }
+  html, body, #root { height: 100%; }
+  /* 폰 브라우저의 100% 는 주소창을 뺀 높이가 아니다 — dvh 는 주소창이 접히는 것까지 따라온다 */
+  #root { height: 100dvh; }
   body {
     margin: 0;
-    /* 가로로는 절대 안 늘어난다 — 폰에서 표가 삐져나오면 화면 전체가 좌우로 흔들린다
-       (표 자체의 가로 스크롤은 편집 영역 안에서 따로 돈다) */
-    overflow: hidden;
+    overflow: hidden;              /* 가로로 안 늘어난다 — 안쪽 영역이 각자 스크롤한다 */
     overscroll-behavior: none;
     background: rgb(var(--c-bg));
     color: rgb(var(--c-text));
+    /* 글자가 주인공 — 시스템 폰트(한글 포함) */
     font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
@@ -66,79 +147,150 @@ html[data-theme="dark"] {
   ::-webkit-scrollbar-track { background: transparent; }
 }
 
-/* 시간표 격자는 12px */
-.grid-cell { font-size: 12px; }
-
-/* 🔴 마우스가 없는 기기에선 hover 로 숨긴 단추가 영영 안 나타난다 — 폰에서 「이름 바꾸기·지우기가 없는」 것처럼 보인다.
-   손가락 기기에서는 늘 보이게 한다. (화면 폭이 아니라 입력 수단으로 가른다 — 창을 좁힌 PC 는 마우스가 있다) */
+/*
+ * 🔴 호버 함정 — 마우스가 없는 기기에선 hover 로 숨긴 단추(끝단 ×)가 영영 안 나타난다.
+ * 가름선은 화면 폭이 아니라 입력 수단이다(창을 좁힌 PC 는 마우스가 있다).
+ * 손가락 기기(@media hover:none)에서는 hidden 을 덮고 늘 보이게 한다.
+ * ⛔ 이 판정은 Row 조각 한 곳에서만 쓴다 — 다른 데로 복사하지 않는다.
+ */
 @media (hover: none) {
   .hover-only { display: flex !important; }
 }
 
-/* 🔴 iOS 사파리는 16px 미만인 입력칸에 포커스가 가면 화면을 확대한다 — 그리고 스스로 안 되돌린다.
-   한 번 당겨지면 표가 화면 밖으로 밀려 「깨진 것」처럼 보인다. 손가락 기기에서만 16px 로 올린다. */
+/*
+ * 서랍(좁은 화면 · 넓은 화면 고정 풀림) — 들어올 때도 나갈 때도 밀린다 (쥔님 2026-10-31: *"폰에 사이드 바 애니메이션이 없노"*).
+ * ⭐ 나갈 때는 SidePanel 이 언마운트를 애니메이션 끝까지 미룬다(상태 하나) — ⛔ 라이브러리 없이.
+ * ⭐ 「움직임 줄이기」를 켠 기기에서는 안 움직인다(멀미·전정기관 문제는 설정이 아니라 접근성이다).
+ *    그때는 SidePanel 이 애니메이션 끝을 안 기다리고 바로 접는다(reduced-motion 분기).
+ */
+@keyframes drawer-in-left  { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes drawer-in-right { from { transform: translateX(100%);  } to { transform: none; } }
+@keyframes drawer-out-left  { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes drawer-out-right { from { transform: none; } to { transform: translateX(100%);  } }
+@keyframes drawer-scrim-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawer-scrim-out { from { opacity: 1; } to { opacity: 0; } }
+.drawer-in-left  { animation: drawer-in-left  .18s cubic-bezier(.2,.8,.3,1); }
+.drawer-in-right { animation: drawer-in-right .18s cubic-bezier(.2,.8,.3,1); }
+.drawer-out-left  { animation: drawer-out-left  .18s cubic-bezier(.4,0,1,1) forwards; }
+.drawer-out-right { animation: drawer-out-right .18s cubic-bezier(.4,0,1,1) forwards; }
+.drawer-scrim     { animation: drawer-scrim-in  .18s ease; }
+.drawer-scrim-out { animation: drawer-scrim-out .18s ease forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-in-left, .drawer-in-right, .drawer-out-left, .drawer-out-right, .drawer-scrim, .drawer-scrim-out { animation: none; }
+}
+
+/*
+ * 탭 줄 가로 스크롤 — 평소엔 스크롤바를 숨기고, 탭 줄에 마우스를 올렸을 때만 얇게 보인다(항목 11, 쥔님 2026-10-31).
+ * ⛔ 자리를 차지하지 않는다(overlay) — 스크롤바가 떠도 탭 높이가 안 흔들린다.
+ */
+.tab-scroll { scrollbar-width: none; }                        /* 파이어폭스 — 평소엔 없음 */
+.tab-scroll:hover { scrollbar-width: thin; scrollbar-color: rgb(var(--c-line)) transparent; }
+.tab-scroll::-webkit-scrollbar { height: 6px; }
+.tab-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 6px; }
+.tab-scroll:hover::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); }
+.tab-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/*
+ * 붙박이 사이드바 폭 애니메이션 — 넓은 화면에서 접고 펼 때 폭이 미끄러진다(항목 7, 쥔님 2026-10-31 "접기 펼치기 애니메이션 좀").
+ * ⛔ 서랍(fixed overlay)은 위 drawer-* 가 맡는다 — 이건 「자리를 먹는」 붙박이·레일 쪽이다.
+ * ⭐ 움직임 줄이기면 즉시(접근성) · 안쪽 내용은 접히는 동안 넘침을 숨겨 글자가 삐져나오지 않게(인라인 overflow-hidden).
+ */
+.pane-wtrans { transition: width .18s cubic-bezier(.2,.8,.3,1); }
+@media (prefers-reduced-motion: reduce) { .pane-wtrans { transition: none; } }
+
+/*
+ * 좁은 화면 서랍 스와이프(③) — 손가락을 놓은 뒤 남은 거리를 미끄러져 확정하거나 되돌아간다.
+ * ⭐ 끄는 동안엔 class 를 안 붙여 즉각 따라오고(SidePanel), 확정·단추 여닫기 때만 붙여 미끄러진다.
+ * ⛔ 움직임 줄이기면 즉시(접근성).
+ */
+.pane-strans { transition: transform .18s cubic-bezier(.2,.8,.3,1), opacity .18s ease; }
+@media (prefers-reduced-motion: reduce) { .pane-strans { transition: none; } }
+
+/*
+ * 바텀 시트 — 아래에서 올라오고, 나갈 땐 내려간다(탭 전환이 쓰고 나중에 피크도 같은 껍데기).
+ */
+@keyframes sheet-in  { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+.sheet-in  { animation: sheet-in  .2s cubic-bezier(.2,.8,.3,1); }
+.sheet-out { animation: sheet-out .2s cubic-bezier(.4,0,1,1) forwards; }
+@media (prefers-reduced-motion: reduce) { .sheet-in, .sheet-out { animation: none; } }
+
+/*
+ * 바텀 시트 높이 미끄러짐 — snap 을 확정할 때만 높이를 미끄러뜨린다(손가락 따라가는 중엔 끈다, 즉각).
+ */
+.pane-htrans { transition: height .2s cubic-bezier(.2,.8,.3,1); }
+@media (prefers-reduced-motion: reduce) { .pane-htrans { transition: none; } }
+
+/*
+ * 🔴 전환 애니메이션(쥔님 2026-11-01 ③: *"애니메이션 없이 바뀌니까 뭐가 어떤지 보이질 않아"*) — 라이브러리 없이 CSS 로.
+ * ⛔ 전부 .16~.22s · 움직임 줄이기면 즉시(접근성). 「넣었다」가 아니라 「돈다」 — DropZones·서랍과 같은 결.
+ */
+/* 탭 열기 — 새 탭이 살짝 떠오르며 또렷해진다(마운트 때 한 번. 기존 탭은 리마운트가 아니라 안 튄다) */
+@keyframes tab-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.tab-in { animation: tab-in .18s cubic-bezier(.2,.8,.3,1); }
+/* 탭 닫기 — 언마운트를 미루고 폭이 줄며 사라진다(Tabs 가 나가는 탭을 이 래퍼로 감싼다 · 폭은 JS 가 잰 값에서 0 으로) */
+.tab-collapse { overflow: hidden; transition: max-width .16s cubic-bezier(.4,0,1,1), opacity .16s ease; }
+/* 스플릿 칸 비율 — 생길 때 0→비율로 자라고, 닫힐 때 줄어든다. ⛔ 스플리터로 끄는 동안엔 꺼진다(SplitView 가 class 를 뗀다) */
+.pane-btrans { transition: flex-basis .18s cubic-bezier(.2,.8,.3,1); }
+/* 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉) */
+@keyframes view-fade { from { opacity: 0; } to { opacity: 1; } }
+.view-fade { animation: view-fade .12s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-in, .view-fade { animation: none; }
+  .tab-collapse, .pane-btrans { transition: none; }
+}
+
+/* 피크(미리보기) — 그 탭 안에서 뜬다. 넓으면 오른쪽에서 떠서, 좁으면 아래에서 올라온다(EditorArea 가 wide 로 가른다) */
+@keyframes peek-from-right  { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes peek-from-bottom { from { transform: translateY(100%); } to { transform: none; } }
+.peek-from-right  { animation: peek-from-right  .18s cubic-bezier(.2,.8,.3,1); }
+.peek-from-bottom { animation: peek-from-bottom .2s cubic-bezier(.2,.8,.3,1); }
+.peek-scrim { animation: view-fade .18s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .peek-from-right, .peek-from-bottom, .peek-scrim { animation: none; }
+}
+
+/*
+ * 🔴 창틀 크롬(하단 바·바텀 시트·탭 카드)은 끌리지도 선택되지도, iOS 콜아웃도 안 뜬다(항목 ④, 쥔님 "드래그 되면 곤란한 애들").
+ * ⛔ 뷰 본문엔 안 건다 — 이 class 를 단 컨테이너(크롬)에만. 안의 글자도 선택 안 되는 게 맞다(크롬이라서).
+ */
+.ui-chrome-nodrag, .ui-chrome-nodrag * {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/*
+ * 🔴 탭 드래그 중(W6·W7) — body 에 .is-dragging 이 붙는다(useDragLeaf). 끄는 동안만:
+ *   본문 글자 선택·터치 스크롤을 막고 커서를 쥔 손으로. ⛔ touch-action:none 은 「드래그 시작 후」에만 걸어야
+ *   평소 스크롤이 죽지 않는다 — 그래서 class 로 켠다(평소엔 탭 줄이 touch-pan-x 로 스크롤을 양보한다).
+ */
+body.is-dragging, body.is-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+body.is-dragging {
+  cursor: grabbing;
+  touch-action: none;
+}
+/*
+ * 🔴 ④ 탭을 끄는 동안엔 비고정 서랍의 막 전체(drawer-layer)가 포인터를 통과시킨다 —
+ *    안 그러면 elementFromPoint 가 전면을 덮은 막(투명 scrim + 그 컨테이너)을 집어 드롭 지점을 못 찾아
+ *    「사이드바↔가운데 이동이 안 되는」 것처럼 보인다(실측). DropZones 오버레이와 같은 결(아래 진짜 DOM 을 뚫는다).
+ *    ⭐ 단 서랍 본체(drawer-panel)는 다시 살린다 — 그 사이드바 위로 떨구는 길은 열어 둔다.
+ */
+body.is-dragging .drawer-layer { pointer-events: none; }
+body.is-dragging .drawer-panel { pointer-events: auto; }
+
+/*
+ * 패널 폭/높이 손잡이 — 🔴 평소에도 1px 선이 보인다(스플리터가 투명이라 자식 사이 경계가 사라지던 것, 항목 2).
+ * 올리면 파랑으로 밝아지고, 끄는 동안 짙은 파랑. (쥔님 2026-10-31 "스플릿 자식 사이 경계선 없고")
+ */
+.resize-handle .resize-bar { background: rgb(var(--c-line)); transition: background-color .12s ease; }
+.resize-handle:hover .resize-bar { background: rgb(var(--c-accent) / .6); }
+.resize-handle .resize-bar.is-dragging { background: rgb(var(--c-accent)); }
+
+/* iOS 사파리는 16px 미만 입력칸에 포커스가 가면 화면을 확대하고 안 되돌린다 — 손가락 기기에서만 올린다 */
 @media (hover: none) and (pointer: coarse) {
   input, select, textarea { font-size: 16px; }
-}
-
-/* 폰: 체크박스가 딸린 라벨의 탭 영역을 44px 로 키운다 (데스크톱은 그대로) */
-@media (max-width: 767px) {
-  label:has(> input[type="checkbox"]) { min-height: 44px; }
-  label:has(> input[type="checkbox"]) input[type="checkbox"] { width: 18px; height: 18px; }
-}
-
-/* 인쇄 — 껍데기(상단 바·왼쪽 탭·상태줄)를 숨기고 표만 흑백으로 */
-@media print {
-  body { background: #fff; color: #000; }
-  .no-print { display: none !important; }
-  .print-area { display: block !important; }
-  .print-table { border-collapse: collapse; width: 100%; }
-  .print-table th, .print-table td {
-    border: 1px solid #000; padding: 3px 5px; font-size: 11px; color: #000;
-  }
-}
-
-/* ── 움직이는 사용법(demo) ── */
-/* 장면이 바뀌면 요소의 fill·opacity·transform 이 저절로 이어진다(요소 key 를 장면 사이에 유지해야 걸린다). */
-.demo-root { width: 100%; }
-.demo-root svg .demo-el {
-  transition: transform .45s ease, opacity .45s ease, fill .45s ease,
-    fill-opacity .45s ease, stroke .45s ease;
-}
-.demo-cursor { transition: transform .45s ease; }
-
-/* 자막 — 최소 2줄을 확보해 장면이 바뀌어도 아래가 흔들리지 않는다 */
-.demo-caption {
-  min-height: 2.6em; margin-top: 4px; font-size: 12px; line-height: 1.3;
-  color: rgb(var(--c-muted)); text-align: center;
-}
-
-/* 조작 줄 — 높이 28px */
-.demo-controls { display: flex; align-items: center; gap: 6px; height: 28px; margin-top: 2px; }
-.demo-btn {
-  width: 24px; height: 22px; padding: 0; border: 1px solid rgb(var(--c-line));
-  background: rgb(var(--c-panel2)); color: rgb(var(--c-text));
-  border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer;
-}
-.demo-btn:hover { background: rgb(var(--c-panel)); }
-.demo-btn:disabled { opacity: .4; cursor: default; }
-.demo-dots { display: flex; align-items: center; gap: 4px; }
-.demo-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--c-line)); }
-.demo-dots span.on { background: rgb(var(--c-accent)); }
-.demo-count { margin-left: auto; font-size: 11px; color: rgb(var(--c-muted)); font-variant-numeric: tabular-nums; }
-
-/* 누름 잔물결 — 누름 장면에서 한 번 */
-.demo-ripple { transform-origin: 0 0; animation: demo-ripple .55s ease-out 1; }
-@keyframes demo-ripple {
-  from { transform: scale(.3); opacity: .45; }
-  to { transform: scale(3.6); opacity: 0; }
-}
-/* 강조 깜박임 — 문제 칸을 2회 */
-.demo-blink { animation: demo-blink 1s ease-in-out 2; }
-@keyframes demo-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
-
-/* reduced-motion: 전환·애니메이션을 끈다(자동 재생도 스크립트에서 멈춘다) */
-@media (prefers-reduced-motion: reduce) {
-  .demo-root svg .demo-el, .demo-cursor { transition: none; }
-  .demo-ripple, .demo-blink { animation: none; }
 }

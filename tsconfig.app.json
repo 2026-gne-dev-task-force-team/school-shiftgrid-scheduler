@@ -1,3 +1,4 @@
+// 웹(src) 타입 체크.
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
@@ -22,5 +23,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  // 검사 파일은 node API(fs·path·process)를 쓴다 — 별도 tsconfig.test.json 에서 node 타입으로 본다
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

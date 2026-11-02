@@ -1,0 +1,145 @@
+/**
+ * 뷰 등록소 — leaf 는 viewId(문자열)만 들고, 무엇을 그릴지는 앱이 여기 등록한다.
+ *
+ * 🔴 ⛔ 이게 「창틀이 도메인을 모른다」를 지키는 장치다. 리본·패널·탭은 전부 이 목록을 읽을 뿐,
+ *    viewId 가 무엇을 뜻하는지는 끝내 모른다. 앱이 registerView 로 render 함수·힌트·메뉴를 꽂아 준다.
+ *
+ * ⭐ 한 뷰가 들고 오는 것(2026-11-01 W4 증축):
+ *    - layout : 뷰별 레이아웃 힌트("무슨 콘텐츠냐에 따라" 최소폭·찌그러짐이 다르다 — 쥔님)
+ *    - menu   : 내용 메뉴 — 틀 메뉴(＋·가르기·닫기)와 구분된다(쥔님: "틀이 가지는 메뉴랑 내용이 가지는 메뉴는 구분")
+ *    - placement : 🔴 자리 제한 — areas(어느 틀) · split(가를 수 있나) · singleton(딱 한 장만). 아래 설명.
+ *
+ * ⛔ 「리본에 올릴지」는 뷰가 정하지 않는다 — 리본에는 host.ribbon.add 로 명시해 꽂은 동작만 선다(쥔님 2026-11-01:
+ *    *"리본에 요청 안 한 아이콘이 서 있다"* — 뷰 자동 줄 세우기를 뺐다). 그래서 ViewDef 에 ribbon 칸이 없다.
+ *
+ * ⚠️ 모듈 전역 Map 이다(순수하지 않다) — 등록은 본래 부수효과다. tree.ts 와 달리 여기선 괜찮다.
+ */
+import type { ComponentType, ReactNode } from 'react';
+import type { Leaf } from './layout/tree';
+import type { ViewLayout } from './layout/clamp';
+import type { IconName } from './primitives/Icon';
+import type { MenuEntry } from './primitives/ContextMenu';
+
+/**
+ * 🔴 피크(미리보기) 손잡이 — 뷰가 **제 탭(leaf) 안에서** 겹쳐 띄우는 창구(쥔님 2026-11-01).
+ *   *"피크는 전역 창에 나오는 게 아니고 그 탭 안에서 나오는 거야"* — 전역 workspace.open 이 아니라 이 손잡이다.
+ *   넓으면(칸 폭 ≥ wideMin) 그 탭 안 오른쪽에서, 좁으면 아래에서 — 가름은 **그 탭 칸의 폭**이다(창 폭 아님).
+ *   ⛔ 탭 줄·패널 머리줄과 높이를 맞추지 않는다 — 탭 내용 위에 겹친다(EditorArea 가 그린다).
+ */
+export interface PeekHandle {
+    /** 이 탭 안에 피크를 띄운다 — content 는 뷰가 그린다. wideMin: 이 폭 이상이면 오른쪽, 아래면 바닥(기본 420). */
+    show(content: ReactNode, opts?: { wideMin?: number }): void;
+    /** 피크를 닫는다 */
+    hide(): void;
+    /** 지금 피크가 떠 있나 */
+    readonly visible: boolean;
+}
+
+/** 뷰 몸통이 받는 것 — 자기 leaf + 지금 제 칸의 크기·접힘 상태 + 제 탭 안 피크 손잡이 */
+export interface ViewProps {
+    leaf: Leaf;
+    /** 지금 이 뷰가 차지한 칸의 폭·높이(px) — 창틀이 재서 준다 */
+    width: number;
+    height: number;
+    /** squeeze='collapse' 이고 폭이 collapseBelow 아래면 true — 뷰가 접힌 그림을 그린다 */
+    collapsed: boolean;
+    /** 🔴 제 탭 안에서 피크를 띄우는 손잡이 — EditorArea 가 이 leaf 범위로 준다 */
+    peek: PeekHandle;
+}
+
+/** 내용 메뉴가 쓸 수 있는 틀 기능 — 창틀이 내주는 공통 조작(도메인 모름). 뷰가 골라 라벨만 붙인다 */
+export interface ViewMenuHost {
+    /** 이 leaf 의 제목을 바꾼다 */
+    rename: (title: string) => void;
+    /** 이 leaf 를 닫는다 */
+    close: () => void;
+}
+
+/** 내용 메뉴 factory — leaf 와 틀 기능(host)을 받아 메뉴 항목을 돌려준다 */
+export type ViewMenu = (leaf: Leaf, host: ViewMenuHost) => MenuEntry[];
+
+export interface ViewDef {
+    id: string;
+    title: string;
+    icon?: IconName;
+    /** 🔴 선택 — 플러그인 상세(설정 「설치된 플러그인」 피크)가 보여 주는 한 줄 설명(쥔님 2026-11-01). */
+    description?: string;
+    /** 어느 자리에 처음 열릴지(앱·리본 참고용 힌트) */
+    defaultArea?: 'left' | 'center' | 'right';
+    Component: ComponentType<ViewProps>;
+    /** 🔴 뷰별 레이아웃 힌트 — 등록값은 기본일 뿐, 설정이 덮을 수 있다(pane-settings) */
+    layout?: ViewLayout;
+    /** 🔴 내용 메뉴 — 탭 우클릭 메뉴의 구분선 아래쪽에 붙는다 */
+    menu?: ViewMenu;
+    /**
+     * 🔴 자리 제한 — 어디에·어떻게 놓일 수 있나. areas 는 보수적(쥔님 2026-11-01 19:34 *"아예 막는 것보단 기본값으로
+     *    — 새로 생성하는 뷰들도 기본값은 비활성화"* · *"패널 뷰는 탭 뷰로 못 간다니까"*)이고, split 은 거꾸로 관대하다:
+     *    - areas     : 어느 틀(left·center·right)에 놓일 수 있나. **생략이면 defaultArea 하나뿐**(사이드 패널 뷰가 가운데로 못 간다).
+     *    - split     : 이 뷰를 **끌어다 가른 칸에 넣을 수 있나**(드롭 띠). **생략이면 true(가름 허용)** — 못 가르는 쪽이
+     *                  **split: false 를 명시**한다(가운데 싱글턴 등). 🔴 ⭐ 2026-11-01 22:51 뒤집음(쥔님 *"여전히 사이드
+     *                  패널쪽 애들은 스플릿이 안된다"*): 생략=false 였더니 사이드 패널 뷰가 전부 못 갈랐다. ⚠️ 탭 줄의 「가르기」
+     *                  단추는 뷰 복제가 아니라 빈 탭을 여는 틀 조작이라 이 값과 무관하다(복제는 19:34 폐기).
+     *    - singleton : 🔴 딱 한 장만 뜨나. 이미 떠 있으면 새로 안 열고 그리로 간다(id 고정 재사용). 생략이면 false.
+     *    쥔님 2026-11-01 13:43: *"콘텐츠마다 탭으로/사이드바로/분할할 수 있는지 제한을 걸어야"* ·
+     *      *"스플릿할 수 있는가 · 딱 한 창만 띄울 수 있는가 그거 두 개 다 하자"*(두 축).
+     *    🔴 메뉴·드래그·키보드·workspace.open 이 전부 이 셋(canPlace·canSplit·isSingleton)으로 묻는다 —
+     *       한 곳만 막으면 다른 길로 뚫린다. ⛔ 창틀은 뷰가 뭔지는 여전히 모른다.
+     */
+    placement?: {
+        areas?: ('left' | 'center' | 'right')[];
+        split?: boolean;
+        singleton?: boolean;
+    };
+}
+
+const registry = new Map<string, ViewDef>();
+
+/** 이 뷰가 그 자리에 갈 수 있나 — areas 생략이면 **defaultArea 하나만**(기본 보수적). 등록 안 된 뷰는 전부 허용(꺼진 플러그인 자리표시를 옮길 수 있어야 한다) */
+export function canPlace(viewId: string, area: 'left' | 'center' | 'right'): boolean {
+    const def = registry.get(viewId);
+    if (!def) return true;
+    const areas = def.placement?.areas ?? [def.defaultArea ?? 'center'];
+    return areas.includes(area);
+}
+/** 이 뷰를 끌어다 가른 칸(드롭 띠)에 넣을 수 있나 — split: false 를 **명시한** 뷰만 못 들어간다(생략은 허용). 등록 안 된 뷰(자리표시)는 허용 */
+export function canSplit(viewId: string): boolean {
+    const def = registry.get(viewId);
+    if (!def) return true;
+    return def.placement?.split !== false;
+}
+/** 이 뷰가 싱글턴인가 — 열기(workspace.open·리본)가 「이미 있으면 그리로」로 가는 판정. */
+export function isSingleton(viewId: string): boolean {
+    return registry.get(viewId)?.placement?.singleton === true;
+}
+
+/**
+ * 🔴 탭·헤더에 그릴 제목 — 사용자가 직접 바꾼(renamed) leaf 는 저장값, 아니면 **뷰 등록소의 현재 title**.
+ *   저장된 워크스페이스에 옛 뷰 이름(「프로젝트 탐색기」)이 박혀 있어도 코드가 바꾼 현재 이름(「탐색기」)이 이긴다
+ *   (쥔님 2026-11-01 22:51 스샷 — 탭 제목이 옛 이름으로 남던 버그). 등록 안 된 뷰면 저장값 그대로.
+ */
+export function leafTitle(leaf: Leaf): string {
+    if (leaf.renamed) return leaf.title;
+    return registry.get(leaf.viewId)?.title ?? leaf.title;
+}
+
+export function registerView(def: ViewDef): void {
+    registry.set(def.id, def);
+}
+
+/** 등록을 되돌린다 — 호스트의 Disposable 이 부른다(P2 비활성에서 뷰가 자리표시로 바뀌는 자리). */
+export function unregisterView(id: string): void {
+    registry.delete(id);
+}
+
+export function getView(id: string): ViewDef | undefined {
+    return registry.get(id);
+}
+
+export function listViews(): ViewDef[] {
+    return [...registry.values()];
+}
+
+/** 테스트·앱 재마운트에서 목록을 비운다 */
+export function clearViews(): void {
+    registry.clear();
+}

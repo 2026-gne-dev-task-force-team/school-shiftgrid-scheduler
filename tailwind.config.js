@@ -24,10 +24,28 @@ export default {
         ok: v('ok'),
         bad: v('bad'),
         warn: v('warn'),
+        // 사이드바 전용(판 A) — 에디터보다 한 단 어두운 바탕·탭 줄·경계선
+        side: v('side'),
+        side2: v('side2'),
+        edge: v('edge'),
       },
       fontFamily: {
         sys: ['system-ui', '"Apple SD Gothic Neo"', '"Malgun Gothic"', 'sans-serif'],
       },
+      // 치수도 색과 같은 층이다 — 화면 코드는 h-header 처럼 이름만 쓰고 몇 px 인지 모른다.
+      // 손가락 기기에서 값이 커지는 것도 index.css 변수가 혼자 한다.
+      height: {
+        topbar: 'var(--s-topbar)',
+        header: 'var(--s-header)',
+        row: 'var(--s-row)',
+        btn: 'var(--s-btn)',
+        railbtn: 'var(--s-railbtn)',
+        titlebar: 'var(--s-titlebar)',
+        statusbar: 'var(--s-statusbar)',
+        rail: 'var(--s-rail)',          // 리본을 상단에 눕혔을 때의 줄 높이(= 세로일 때의 폭)
+      },
+      width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
+      spacing: { pad: 'var(--s-pad)' },
     },
   },
   plugins: [],

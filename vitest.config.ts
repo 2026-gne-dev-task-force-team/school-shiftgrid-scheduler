@@ -1,10 +1,11 @@
 import { defineConfig } from 'vitest/config';
 
-// 엔진 판 전용 vitest 설정. vite.config.ts(껍데기 판이 electron 플러그인을 넣는다)를 import 하지 않는다.
+// vite.config.ts(웹 빌드 설정)를 import 하지 않고 독립 설정으로 둔다 — 테스트엔 PWA 플러그인 등이 필요 없다.
 export default defineConfig({
     test: {
-        // 엔진 + 순수 스토어 연산(doc-ops) + 엑셀 입출력(io). 화면(React)은 안 돈다 — DOM 이 없다
-        include: ['src/engine/**/*.test.ts', 'src/store/**/*.test.ts', 'src/types/**/*.test.ts', 'src/io/**/*.test.ts', 'src/v2/**/*.test.ts'],
+        include: ['src/**/*.test.{ts,tsx}'],
         environment: 'node',
+        // 새 v2 는 아직 테스트가 없다 — 0건을 실패로 보지 않는다 (옛 테스트는 main·v1 브랜치에 있다)
+        passWithNoTests: true,
     },
 });
