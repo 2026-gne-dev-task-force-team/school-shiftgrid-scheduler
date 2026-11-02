@@ -34,15 +34,26 @@ interface ExplorerState {
      *   빈 나무 위에 쌓인 뒤 저장돼 옛 나무를 덮는 사고를 막는 자리다.
      */
     loading: boolean;
+    /** 상태바에 잠깐 비추는 한 줄(ExplorerStatus) — 「어디에도 못 넣었다」처럼 조용히 실패한 것을 알린다. null 이면 평소(노드 N). */
+    notice: string | null;
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, loading: false };
+    return { tree, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, loading: false, notice: null };
 }
 
 let state: ExplorerState = freshState(emptyTree());
 let hostRef: PluginHost | null = null;
 const listeners = new Set<() => void>();
+
+/** 상태바 한 줄 — 잠깐 띄우고 스스로 지운다(겹치면 최신 하나만). */
+let noticeTimer: ReturnType<typeof setTimeout> | null = null;
+function flashNotice(msg: string): void {
+    if (noticeTimer) clearTimeout(noticeTimer);
+    state = { ...state, notice: msg };
+    emit();
+    noticeTimer = setTimeout(() => { noticeTimer = null; state = { ...state, notice: null }; emit(); }, 5000);
+}
 
 /** 🔴 N4 — 나무가 바뀔 때 「무엇이 바뀌었나(changedIds)」를 받는 구독(NodesApi.subscribe 가 이 위에 선다). */
 const changeListeners = new Set<(ids: string[]) => void>();
@@ -173,12 +184,30 @@ function targetParent(): string {
     return newFolderParent(state.tree, state.selectedId, isContainerType);
 }
 
+/** 이 부모가 이 타입을 자식으로 받나 — 실노드 + 등록 표(acceptsChild) 한 줄. */
+function parentAccepts(parentId: string, type: string): boolean {
+    const p = state.tree.nodes[parentId];
+    return !!p && acceptsChild(p.type, type);
+}
+
 /**
  * 타입 하나를 「새로 만들기」 — 고른 노드(컨테이너면 그 안, 아니면 루트) 밑에. 만들자마자 고르고 이름바꾸기(VS Code 식).
  *   🔴 타입 이름 비교가 없다 — create.init 과 label 은 등록 표에서 온다. 「새 폴더」도 이 길을 탄다(folder 도 표의 한 줄).
+ *   🔴 부모는 newFolderParent 규칙(targetParent) 그대로지만, 마지막에 그 부모가 accepts 로 이 타입을 받는지 한 번 더 묻는다:
+ *      안 받으면 루트에, 루트도 안 받으면 만들지 않고 상태바 한 줄(메뉴만 보고 뚫는 것을 여기서 막는다 — move 의 canAccept 와 같은 결).
  */
-export function createUnder(type: string, parentId?: string): void {
-    const parent = parentId ?? targetParent();
+export function newNode(type: string, parentId?: string): void {
+    if (state.loading) return;
+    let parent = parentId ?? targetParent();
+    if (!parentAccepts(parent, type)) {
+        if (parentAccepts(state.tree.root, type)) {
+            parent = state.tree.root;
+        } else {
+            const def = getType(type);
+            flashNotice(`「${def?.create?.label ?? def?.label ?? type}」를 넣을 자리가 없습니다.`);
+            return;
+        }
+    }
     const def = getType(type);
     const init = def?.create?.init?.(parent) ?? {};
     const id = uid();
@@ -189,9 +218,9 @@ export function createUnder(type: string, parentId?: string): void {
     );
 }
 
-/** 새 폴더 — createUnder('folder') 의 설탕(헤더 단추·리본이 부른다). */
+/** 새 폴더 — newNode('folder') 의 설탕(헤더 단추·리본이 부른다). */
 export function newFolder(parentId?: string): void {
-    createUnder('folder', parentId);
+    newNode('folder', parentId);
 }
 
 /** 고른 노드 이름 바꾸기 시작(F2·메뉴). 🔴 루트·휴지통은 이름을 못 바꾼다(id 비교 — folder 타입엔 can 이 없다). */

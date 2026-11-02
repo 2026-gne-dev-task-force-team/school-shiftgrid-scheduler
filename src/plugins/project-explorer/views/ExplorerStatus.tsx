@@ -6,7 +6,8 @@ import { countUnder } from '../model/tree';
 import { useExplorer } from '../store';
 
 export function ExplorerStatus() {
-    const { tree } = useExplorer();
+    const { tree, notice } = useExplorer();
+    if (notice) return <span className="text-[12px] text-bad">{notice}</span>;
     const nodes = countUnder(tree, tree.root);
     const trash = countUnder(tree, tree.trash);
     return <span className="text-[12px] text-muted">{trash > 0 ? `노드 ${nodes} · 휴지통 ${trash}` : `노드 ${nodes}`}</span>;
