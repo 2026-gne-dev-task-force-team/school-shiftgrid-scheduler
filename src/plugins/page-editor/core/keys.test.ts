@@ -61,6 +61,13 @@ describe('⌘ 단축', () => {
         expect(decideKey(k({ key: 'b', metaKey: true }))).toBe('bold');
         expect(decideKey(k({ key: 'i', metaKey: true }))).toBe('italic');
     });
+    it('⌘E → code · ⌘⇧S → strike', () => {
+        expect(decideKey(k({ key: 'e', metaKey: true }))).toBe('code');
+        expect(decideKey(k({ key: 's', metaKey: true, shiftKey: true }))).toBe('strike');
+    });
+    it('⌘S(시프트 없음)는 서식이 아니다(default)', () => {
+        expect(decideKey(k({ key: 's', metaKey: true }))).toBe('default');
+    });
     it('⌘Z / ⇧⌘Z', () => {
         expect(decideKey(k({ key: 'z', metaKey: true }))).toBe('undo');
         expect(decideKey(k({ key: 'z', metaKey: true, shiftKey: true }))).toBe('redo');
