@@ -25,6 +25,8 @@ export { BottomSheet } from './primitives/BottomSheet';
 export { Row } from './primitives/Row';
 export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
+export { StartScreen, type StartItem } from './primitives/StartScreen';
+export { uniqueName } from './primitives/naming';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { DatePicker } from './primitives/DatePicker';
 export { Toggle } from './primitives/Toggle';
