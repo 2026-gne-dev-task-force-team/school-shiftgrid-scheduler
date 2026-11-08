@@ -14,7 +14,7 @@ import type { NodesApi, Node, PublicNode } from '../project-explorer/contracts/n
 import { accountPlugin } from './index';
 import * as core from './core';
 import * as credCore from './credential/core';
-import { SECRET_TYPE } from './nodes';
+import { SECRET_TYPE, accountNodeTypeImpl } from './nodes';
 
 // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속 셋(identity·credential·permit)은 account 꾸러미가 들고 온다(contributes.interfaces).
 //    nodes 약속은 아래 가짜 nodes 제공자가 들고 온다(선언+제공). 증명(credential)은 account 꾸러미 안 내부 모듈이다(따로 안 켠다).
@@ -297,6 +297,53 @@ describe('계정 — 9가지 검산', () => {
         nodes.load();                                    // loadTree 완료처럼 첫 subscribe 알림
         expect(core.getCurrent().kind).toBe('guest');    // 재초기화 → 암호 있으니 손님
         expect(cons.idChanges).toBeGreaterThan(before);  // 누구가 바뀌어 울린다
+    });
+
+    // ── 노드 조작 판정(2026-11-08 「계정은 보이는 노드」) — 마스터만 루트 생성·삭제 · 손님 삭제 불가 ──
+    const impl = accountNodeTypeImpl;
+
+    it('12) 계정 루트: 마스터만 만들고 지운다 · 지울 땐 경고 · 손님은 둘 다 막힌다', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 암호 없음 → 마스터
+        expect(core.isMaster()).toBe(true);
+        expect(impl.root.canCreate()).toBe(true);               // 마스터는 루트 만들기 가능
+        expect(impl.root.can().delete).toBe(true);              // 마스터는 루트 지우기 가능
+        expect(impl.root.confirmDelete()).toMatch(/계정/);       // 지울 땐 경고 문구
+
+        await core.setProjectPassword('', 'pw');
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 재시작 → 손님
+        expect(core.getCurrent().kind).toBe('guest');
+        expect(impl.root.canCreate()).toBe(false);              // 손님은 루트 못 만든다
+        expect(impl.root.can().delete).toBe(false);             // 손님은 루트 못 지운다
+    });
+
+    it('13) 손님은 사용자를 보지도 만들지도 지우지도 못한다(권한 0)', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 마스터
+        core.createUser('아무개');
+        await core.setProjectPassword('', 'pw');
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 손님
+        expect(core.getCurrent().kind).toBe('guest');
+        expect(impl.user.hidden()).toBe(true);                  // 보기 권한 0 → 숨김
+        expect(impl.user.canCreate()).toBe(false);              // 만들기 권한 0
+        expect(impl.user.can().delete).toBe(false);             // 지우기 권한 0
+        expect(impl.user.can().rename).toBe(false);             // 고치기 권한 0
+    });
+
+    it('14) 지우기 권한을 받은 사용자는 사용자를 지우고 볼 수 있다(길③ 역할 경유)', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 마스터
+        const rid = core.createRole('관리', { permissions: ['account.users.view', 'account.users.delete'] });
+        const uid = core.createUser('관리자', { roleIds: [rid] });
+        core.setPolicy({ paths: { direct: false, level: false, role: true } });
+        await core.setProjectPassword('', 'pw');
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 손님
+        await core.login(uid);
+        expect(core.getCurrent().kind).toBe('user');
+        expect(impl.user.hidden()).toBe(false);                 // 보기 권한 있음 → 보인다
+        expect(impl.user.can().delete).toBe(true);              // 지우기 권한 있음
+        expect(impl.user.can().rename).toBe(false);             // 고치기 권한은 안 줬다
+        expect(impl.user.canCreate()).toBe(false);              // 만들기 권한도 안 줬다
     });
 
     it('11) 옛 credential-local.secret 노드는 활성화 시 account.cred-secret 로 자동 이사되고 증명도 그대로 통과한다', async () => {
