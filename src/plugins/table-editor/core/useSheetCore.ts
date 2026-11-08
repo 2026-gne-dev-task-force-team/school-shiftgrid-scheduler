@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
+import { parseClipboard, toTsv } from './tsv';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';
@@ -180,13 +181,13 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
     const buildTsv = useCallback(() => {
         const a = adapterRef.current;
         const s = selRef.current;
-        const lines: string[] = [];
+        const grid: string[][] = [];
         for (let r = s.r1; r <= s.r2; r++) {
             const cells: string[] = [];
             for (let c = s.c1; c <= s.c2; c++) cells.push(a.getText(r, c));
-            lines.push(cells.join('\t'));
+            grid.push(cells);
         }
-        return lines.join('\n');
+        return toTsv(grid);   // 칸 안 탭·줄바꿈은 따옴표로 보존(붙여넣기 매트릭스)
     }, []);
 
     const doCopy = useCallback(() => {
@@ -204,12 +205,8 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         const a = adapterRef.current;
         const baseR = atR ?? activeRef.current.r;
         const baseC = atC ?? activeRef.current.c;
-        const grid = tsv
-            .replace(/\r/g, '')
-            .replace(/\n$/, '')
-            .split('\n')
-            .map((l) => l.split('\t'));
-        if (grid.length === 0) return;
+        const grid = parseClipboard(tsv);   // 따옴표 안 줄바꿈·탭 보존
+        if (grid.length === 1 && grid[0].length === 0) return;   // 빈 클립보드
         const changes: CellChange[] = [];
         grid.forEach((line, dr) => {
             line.forEach((raw, dc) => {

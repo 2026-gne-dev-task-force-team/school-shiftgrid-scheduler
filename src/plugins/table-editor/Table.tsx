@@ -255,7 +255,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                         onKeyDown={onEditorKey}
                                                         onBlur={() => core.commitEdit(0, 0)}
                                                         aria-label={col.title}
-                                                        className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1"
+                                                        /* select-text: 편집창 안에서는 글자를 끌어 고를 수 있어야 한다(전역 선택 차단 예외 · 구조 검사 ⑬ ALLOW). */
+                                                        className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
                                                     />
                                                 ) : (
                                                     <>
