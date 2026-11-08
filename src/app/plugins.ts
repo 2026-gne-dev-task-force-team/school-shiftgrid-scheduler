@@ -19,6 +19,14 @@ import { calendarPlugin } from '../plugins/calendar';
  */
 export const INTERFACES: InterfaceDecl[] = [
     { name: 'nodes', version: '0.1.0' },
+    // ── 학교 인터페이스 일곱 장(M0.5 · 2026-11-08) — 타입은 src/interfaces/<이름>.ts · 제공자는 M1 레인이 채운다
+    { name: 'roster', version: '0.1.0' },
+    { name: 'clock', version: '0.1.0' },
+    { name: 'week-grid', version: '0.1.0' },
+    { name: 'timetable', version: '0.1.0' },
+    { name: 'absence', version: '0.1.0' },
+    { name: 'identity', version: '0.1.0' },
+    { name: 'export', version: '0.1.0' },
 ];
 
 // 🔴 코어(settings)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정 화면은 코어다 — 끌 수 없다.
