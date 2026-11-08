@@ -23,6 +23,8 @@ const registrar: PluginModule = {
     manifest: {
         id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
         provides: { nodes: '0.1.0' },
+        // 🔴 3판 — nodes 약속도 이 가짜가 선언한다(약속 없이는 provides 가 「약속 없음」으로 막혀 calendar 까지 끊긴다).
+        contributes: { interfaces: [{ name: 'nodes', version: '0.1.0' }] },
     },
     modules: {
         nodes: {

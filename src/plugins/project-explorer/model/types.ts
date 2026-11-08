@@ -12,51 +12,10 @@ import type { IconName } from '../../../pane-ui-system/plugin';
 import type { MenuEntry, Disposable } from '../../../pane-ui-system/plugin';
 import type { Node } from './tree';
 
-/**
- * 유도 트리(derive)가 돌려주는 가짜 자식 — 🔴 Tree.nodes 에 안 들어간다(저장 안 됨).
- *   id 는 뷰가 `<부모id>/<key>` 꼴로 짓는다 — `/` 가 「가상」 표식이라 move·remove 가 거부한다.
- */
-export interface VirtualNode {
-    key: string;                 // 부모 안에서 안정한 키(= id 꼬리)
-    name: string;                // 탐색기에 보이는 이름
-    icon?: IconName;             // 없으면 뷰가 기본 아이콘
-    type?: string;               // 등록된 타입이면 열기·메뉴가 그 타입에서 온다
-    openable?: boolean;          // 두 번 누르기·Enter 로 열리나(type.open 을 탄다)
-    children?: VirtualNode[];    // 중첩 유도(1차는 항상 펼쳐 그린다)
-}
-
-/** 우클릭 「새로 만들기 ▸」 한 칸 규격 — 부모가 받고(accepts) 이 타입이 under 를 허용할 때 후보가 된다. */
-export interface CreateSpec {
-    label: string;
-    under?: string[];
-    init?: (parentId: string) => Partial<Node>;
-}
-
-/** 노드 타입 한 벌 — 플러그인이 register 로 꽂는다. */
-export interface NodeTypeDef {
-    /** 🔴 `<pluginId>.` 접두사 강제(viewId 와 같은 규칙) — 내장 'folder' 만 접두사 없는 예외. */
-    type: string;
-    label: string;
-    icon: IconName | ((node: Node) => IconName);
-    /** 폴더 역할 — 자식을 받나(true), 어떤 타입만 받나({ accepts }). */
-    container?: boolean | { accepts: string[] };
-    /** 파일 역할 — 두 번 누르기·Enter 로 열리나. */
-    openable?: boolean;
-    /** 열면 뭐가 되나(보통 host.workspace.open 한 줄). */
-    open?: (nodeId: string) => void;
-    /** 🔑 유도 트리 — 자식을 저장소가 아니라 이 함수가 만든다(저장 안 됨 · 이름 못 바꿈 · 못 끔). */
-    derive?: (node: Node) => VirtualNode[];
-    create?: CreateSpec;
-    menu?: (nodeId: string) => MenuEntry[];
-    /** 기본 전부 true. */
-    can?: { rename?: boolean; move?: boolean; delete?: boolean };
-    /**
-     * 🔑 레코드성 — 이 타입의 노드는 탐색기에 「어떤 경우에도」 안 보인다(본 나무·검색·휴지통 어디서도).
-     *   저장·삭제·휴지통·복원·되돌리기는 일반 노드와 완전히 같다(캐스케이딩이 공짜) — 보여주는 건 그 타입의 플러그인 몫.
-     *   예: 달력의 'calendar.event'(일정). 🔴 탐색기는 이 칸을 콜백(isRecordType)으로만 묻는다 — 타입 낱말은 모른다.
-     */
-    record?: boolean;
-}
+// 🔴 노드 타입 규격(VirtualNode·CreateSpec·NodeTypeDef)은 약속(contract-nodes)이 쥔다 — 제공자가 import 해 구현한다(3판 부채 끊기).
+//    ⭐ 재export 는 이 폴더가 `./types` 로 받던 길을 안 깨려는 것뿐(derive·index·api 가 그대로 쓴다). NodeTypeDef 만 이 파일 런타임이 쓴다.
+import type { NodeTypeDef } from '../../contract-nodes/types';
+export type { VirtualNode, CreateSpec, NodeTypeDef } from '../../contract-nodes/types';
 
 const registry = new Map<string, NodeTypeDef>();
 

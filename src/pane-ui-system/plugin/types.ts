@@ -25,10 +25,16 @@ export interface Disposable {
     dispose(): void;
 }
 
-/** 인터페이스 선언 — 이름 + 버전. 🔴 src/app 이 데이터로 activateAll 에 넘긴다(창틀은 src/interfaces 를 import 하지 않는다 · 구조 검사 ⑦). */
-export interface InterfaceDecl {
+/**
+ * 🔴 약속(인터페이스) 기여 한 줄 — **약속 플러그인**(`contract-<이름>`)이 매니페스트 contributes.interfaces 로 선언한다.
+ *   약속은 플랫폼(창틀·앱)이 아니라 플러그인 소속이다 — 필요 없으면 그 약속 플러그인을 끄거나 빼면 사라진다(쥔님 2026-11-08 14:23).
+ *   uses: 이 약속의 **타입이 실제로 import 하는** 다른 약속 이름(약속끼리 기대기). 그 약속이 없으면 이 약속 플러그인이 「약속 없음」으로 막힌다.
+ *   ⛔ 창틀은 어떤 약속 이름도 고정으로 모른다 — 켜진 플러그인들의 이 선언을 모아 목록을 만든다(고정 배열 없음).
+ */
+export interface InterfaceContribution {
     name: string;
     version: string;
+    uses?: string[];
 }
 
 /** 매니페스트 — id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). contributes 로 「무엇을 내나」를 적는다. */
@@ -241,6 +247,16 @@ export interface Contributes<
     statusBar?: StatusBarContribution<RenderName>[];
     /** 노드 타입 — applyContributes 가 노드 레지스트라(host.modules.use('nodes'))에 통째로 넘긴다(위 NodeTypeContribution). */
     nodeTypes?: NodeTypeContribution<NTName>[];
+    /**
+     * 🔴 약속(인터페이스) 선언 — 이 플러그인이 「이런 모양의 것이 올 수 있다」를 등록한다(약속 플러그인은 이것만 적는다).
+     *   호스트는 켜진 플러그인들의 이 칸을 **모아** 약속 목록을 만든다(옛 INTERFACES 고정 배열을 대체 · 2026-11-08 3판).
+     */
+    interfaces?: InterfaceContribution[];
+    /**
+     * 🔴 권한 낱말 — 플러그인이 「나는 이런 권한을 가린다」를 선언한다(identity 가 can() 으로 본다).
+     *   호스트는 **모으기만** 한다(장부에 표시) — 진짜 검사는 identity 제공자·서버 몫(client can() 은 화면 가림).
+     */
+    permissions?: { id: string; title: string; default?: string[] }[];
 }
 
 /**

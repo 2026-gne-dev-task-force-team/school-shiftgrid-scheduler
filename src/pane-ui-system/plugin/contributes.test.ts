@@ -145,6 +145,8 @@ describe('⑥ contributes.nodeTypes 는 nodes 인터페이스 모듈(host.module
             manifest: {
                 id: 'nodes-prov', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
                 provides: { nodes: '0.1.0' },
+                // 🔴 3판 — nodes 약속을 이 가짜가 직접 선언도 한다(약속 플러그인이 없으면 provides 도 「약속 없음」으로 막힌다).
+                contributes: { interfaces: [{ name: 'nodes', version: '0.1.0' }] },
             },
             modules: {
                 nodes: {

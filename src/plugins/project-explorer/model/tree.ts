@@ -12,16 +12,10 @@
  *    연산마다 따로 챙기면 어딘가 빠진다 — layout/tree.ts 와 같은 결.
  */
 
-export interface Node {
-    id: string;
-    type: string;               // 'folder' · 'calendar.year' … — model/types.ts 등록 표의 키
-    name: string;               // 탐색기에 보이는 이름(F2 로 바꾼다)
-    children: string[];         // 저장된 자식 id, 순서 있음
-    collapsed?: boolean;        // 접힘 — 나무에 산다(기기별 아님)
-    data?: unknown;             // 🔴 그 타입의 플러그인만 읽고 쓰는 불투명 칸. 모델·탐색기는 안 본다
-    /** 휴지통에 있는 동안만: 지우기 전 원래 부모 id(복원 자리). 🔴 normalize 가 휴지통 밖으로 나오면 지운다. */
-    trashedFrom?: string;
-}
+// 🔴 Node 타입은 약속(contract-nodes)이 쥔다 — project-explorer 는 「제공자」로서 그걸 import 해 구현한다(3판 부채 끊기).
+//    ⭐ 여기서 재export 하는 건 이 폴더의 많은 파일이 `import type { Node } from './tree'` 로 받던 길을 안 깨려는 것뿐이다.
+import type { Node } from '../../contract-nodes/types';
+export type { Node } from '../../contract-nodes/types';
 
 export interface Tree {
     root: string;

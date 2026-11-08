@@ -11,73 +11,22 @@
  *    ③ register·subscribe 가 낸 Disposable 을 track 으로 호출자 소유에 모아 둔다 — 호출자가 꺼지면 같이 회수.
  */
 import type {
-    Disposable, PluginHost, PluginImpl, NodeTypeContribution, IconName, MenuEntry,
+    Disposable, PluginHost, PluginImpl, NodeTypeContribution,
 } from '../../pane-ui-system/plugin';
 import type { Node } from './model/tree';
 import { parentOf } from './model/tree';
-import type { NodeTypeDef, VirtualNode } from './model/types';
+import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData,
     apiInvalidate, openById, subscribeChanges,
 } from './store';
 
-export type { NodeTypeDef, VirtualNode, CreateSpec } from './model/types';
-export type { Node } from './model/tree';
-
-/**
- * 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 `impl` 이름이 가리키는 레코드 값(모듈 nodeTypes[impl]).
- *   매니페스트엔 함수를 못 넣으니(순수 데이터), 노드 타입의 함수 칸은 여기 모아 두고 이름 하나로 가리킨다.
- *   ⭐ 동작성 함수(open·menu·createInit)는 첫 인자로 host 를 받는다 — 명령·뷰와 같은 결(레지스트라가 host 를 꽂는다).
- *      순수 계산(icon·derive)은 노드만 받는다. 전부 선택 — 쓰는 칸만 적는다.
- *   D3(calendar)가 nodes.ts 의 타입 둘을 옮길 때 이 꼴로 적는다(보고 「예시」 참고).
- */
-export interface NodeTypeImplFns {
-    icon?: (node: Node) => IconName;
-    open?: (host: PluginHost, nodeId: string) => void;
-    derive?: (node: Node) => VirtualNode[];
-    menu?: (host: PluginHost, nodeId: string) => MenuEntry[];
-    createInit?: (host: PluginHost, parentId: string) => Partial<Node>;
-}
-
-/** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
-export type PublicNode = Readonly<Node>;
-
-/** 다른 플러그인이 받는 노드 시스템 표면. 🔴 version 을 처음부터(갈아끼울 데: 버전 달린 표면으로 큰다). */
-export interface NodesApi {
-    version: 1;
-    /** 타입 등록 — `<pluginId>.` 접두사 강제. 꺼지면 아이콘·열기·메뉴만 빠지고 노드는 남는다. */
-    types: { register(def: NodeTypeDef): Disposable };
-
-    /**
-     * 🔴 로더 전용(NodeTypeRegistrar) — 창틀 applyContributes 가 contributes.nodeTypes 를 꽂을 때 부른다.
-     *   ⛔ 플러그인이 직접 부르는 창구가 아니다(그건 types.register) — 여긴 매니페스트 항목(순수 데이터)+impl 함수
-     *      묶음(모듈 nodeTypes[impl])을 받아 이름을 풀고 NodeTypeDef 를 조립해 꽂는다. Disposable 은 호출자 소유로 추적된다.
-     */
-    registerContributed(item: NodeTypeContribution, impl: PluginImpl, host: PluginHost): Disposable;
-
-    // ── 읽기(전부 얼린 복사본) ──
-    get(id: string): PublicNode | undefined;
-    children(id: string): PublicNode[];
-    parent(id: string): string | null;
-    path(id: string): string[];                         // 루트 밑 첫 조상 → id (루트 sentinel 제외)
-    find(pred: (n: PublicNode) => boolean): PublicNode[];
-    byType(type: string): PublicNode[];
-
-    // ── 쓰기 ──
-    create(parentId: string, spec: { type: string; name: string; data?: unknown; index?: number }): string;
-    rename(id: string, name: string): void;
-    setData(id: string, data: unknown): void;           // 🔴 그 타입을 등록한 플러그인만
-    move(id: string, parentId: string, index?: number): void;
-    remove(id: string): void;                           // 🔴 휴지통으로(영구 아님)
-
-    invalidate(id: string): void;                       // 유도 자식 다시 계산
-    select(id: string): void;                           // 탐색기에서 그 노드로 가기
-    open(id: string): void;                             // 그 타입의 open 실행
-
-    subscribe(fn: (changedIds: string[]) => void): Disposable;
-    roots: { main: string; trash: string };
-}
+// 🔴 공개 노드 약속(NodesApi·PublicNode·NodeTypeImplFns)은 contract-nodes 가 쥔다 — 이 파일은 그걸 **구현**한다(makeNodesApi).
+//    ⭐ 재export 는 이 폴더·이 플러그인이 그대로 쓰던 길을 안 깨려는 것(index·테스트가 './api' 로 받는다). 타입 정의는 contract-nodes/types.
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
+export type { NodeTypeDef, VirtualNode, CreateSpec, Node } from '../contract-nodes/types';
+export type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
 
 const freeze = (n: Node): PublicNode => Object.freeze({ ...n, children: Object.freeze([...n.children]) }) as PublicNode;
 

@@ -18,8 +18,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps, ViewContribution, CommandContribution } from '../../pane-ui-system/plugin';
-// 🔴 인터페이스의 「타입만」 import(import type). 값은 host.modules.use('nodes') 로만 받는다(구조 검사 ⑱).
-import type { NodesApi } from '../../interfaces/nodes';
+// 🔴 약속의 「타입만」 import(import type) — 약속 플러그인(contract-nodes)에서. 값은 host.modules.use('nodes') 로만(구조 검사 ⑱·g).
+import type { NodesApi } from '../contract-nodes/types';
 import { manifest } from './manifest';
 import { TestConsole } from './views/TestConsole';
 import { SampleView } from './views/SampleView';

@@ -101,7 +101,11 @@ describe('host.modules.use — 다른 플러그인의 모듈(M0)', () => {
     /** iface 인터페이스를 채우는 모듈 하나 — 활성/비활성에 따라 use 가 달라지는지 본다. */
     function mod(id: string, module: unknown, core = false): PluginModule {
         return {
-            manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core, provides: { iface: '0.1.0' } },
+            manifest: {
+                id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core, provides: { iface: '0.1.0' },
+                // 🔴 3판 — iface 약속도 이 가짜가 선언한다(약속 없이는 provides 가 「약속 없음」으로 막힌다).
+                contributes: { interfaces: [{ name: 'iface', version: '0.1.0' }] },
+            },
             modules: { iface: module },
             lifecycle: { onActivate() { /* 등록 없음 */ } },
         };

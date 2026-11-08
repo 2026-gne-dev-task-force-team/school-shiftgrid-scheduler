@@ -8,8 +8,8 @@
  *   ③ byType 스냅샷(일정·저장소)을 subscribe 로 갱신 — useEvents 가 useSyncExternalStore 로 읽는다
  *   ④ 만들기·고치기·휴지통·저장소 바꾸기 조작(전부 NodesApi 로)
  */
-// 🔴 import type 만 — 인터페이스 타입은 src/interfaces 에서(값 아님, 구조 검사 ⑱). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../interfaces/nodes';
+// 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';

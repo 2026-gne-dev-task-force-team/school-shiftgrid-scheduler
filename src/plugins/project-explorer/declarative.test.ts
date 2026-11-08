@@ -25,6 +25,7 @@ import { isKnownType, clearTypes } from './model/types';
 import { clearDerived } from './model/derive';
 import { __resetPersistForTest } from './persist';
 import { projectExplorerPlugin } from './index';
+import { contractNodesPlugin } from '../contract-nodes';   // 🔴 nodes 약속 선언 — 없으면 provides(탐색기)가 「약속 없음」으로 막힌다
 
 const OWNER = 'project-explorer';
 
@@ -45,7 +46,7 @@ afterEach(() => { disposeOwner(OWNER); clearTypes(); __resetPersistForTest(); })
 
 describe('① 선언형으로 켜도 뷰·명령·리본·상태바가 옛 집합과 같다', () => {
     it('명령 15(14 선언 + new-folder) · 뷰 tree · 리본 open-panel · 상태바 count', () => {
-        activateAll([projectExplorerPlugin]);
+        activateAll([contractNodesPlugin, projectExplorerPlugin]);
 
         const cmds = listCommands().filter((c) => c.owner === OWNER).map((c) => c.id).sort();
         expect(cmds, '명령 집합이 옛 그대로(15)').toEqual(EXPECTED_COMMANDS);
@@ -60,7 +61,7 @@ describe('① 선언형으로 켜도 뷰·명령·리본·상태바가 옛 집�
 
 describe('② folder 노드 타입은 contributes.nodeTypes 로 꽂힌다(레지스트라 경로)', () => {
     it('켜면 folder 가 등록되고(onActivate 는 registerType 을 안 부른다) new-folder 가 자동으로 선다', () => {
-        activateAll([projectExplorerPlugin]);
+        activateAll([contractNodesPlugin, projectExplorerPlugin]);
 
         expect(isKnownType('folder'), 'folder 가 레지스트리에 있다 = contributes→registerContributed 로 꽂혔다').toBe(true);
         const cmds = listCommands().filter((c) => c.owner === OWNER).map((c) => c.id);

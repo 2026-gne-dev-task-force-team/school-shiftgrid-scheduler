@@ -6,8 +6,9 @@
  *   얹기 전에 **지금 순서 그대로** 못 박아, 리팩토링이 배치를 흔들면 여기서 빨간불이 켜진다.
  *
  * ⭐ 재는 것 둘:
- *   ① 활성 순서 — 코어(settings·project-explorer) 먼저, 그 뒤 목록 순(calendar). onActivate 가 도는 차례.
+ *   ① 활성 순서 — 코어(settings·contract-nodes·project-explorer) 먼저, 그 뒤 목록 순(calendar). onActivate 가 도는 차례.
  *   ② onFirstRun 이 다리가 선 뒤에 여는 viewId 순서 — project-explorer.tree → calendar.month → calendar.mini.
+ *      (약속 플러그인 contract-nodes 는 화면·onFirstRun 이 없어 여는 순서에 안 낀다.)
  * ⚠️ node 라 localStorage 가 없다 — first-run.test 와 같은 메모리 스텁(깨끗한 프로파일 = 첫 실행).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -41,9 +42,10 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
     it('셋 다 활성되고(실패 0) 끄지 않았다', () => {
         activateAll(PLUGINS);
         const ps = listPlugins();
-        expect(ps.map((p) => p.id)).toEqual(['settings', 'project-explorer', 'calendar']);
+        expect(ps.map((p) => p.id)).toEqual(['settings', 'contract-nodes', 'project-explorer', 'calendar']);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
+        expect(ps.some((p) => p.blocked)).toBe(false);
     });
 
     it('onFirstRun 이 다리가 선 뒤 여는 순서: 탐색기 트리 → 달력 월 → 작은 달력', () => {

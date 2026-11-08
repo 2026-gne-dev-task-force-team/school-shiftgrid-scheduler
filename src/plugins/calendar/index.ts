@@ -13,8 +13,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps } from '../../pane-ui-system/plugin';
-// 🔴 import type 만 — 인터페이스 타입은 src/interfaces 에서(값 아님, 구조 검사 ⑱). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../../interfaces/nodes';
+// 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi } from '../contract-nodes/types';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';

@@ -16,7 +16,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
-import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceDecl } from './types';
+import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { applyContributes } from './contributes';
@@ -24,7 +24,6 @@ import { disposeOwner, trackScope, disposeScope, disposeConsumerScopes } from '.
 
 // ── 설치된 모듈 + 상태 ──
 let installed: PluginModule[] = [];
-let activeInterfaces: InterfaceDecl[] = [];     // src/app 이 데이터로 넘긴 인터페이스 목록(창틀은 src/interfaces 를 모른다)
 const failedIds = new Set<string>();            // onActivate 가 던졌거나 minHostVersion 미달
 let disabledIds = new Set<string>();            // 사용자가 끈 것(기기별 저장)
 const blockedReasons = new Map<string, string>();  // 🔴 비영구 — 제공자가 켜지면 reconcile 이 지운다
@@ -41,6 +40,39 @@ function byId(id: string): PluginModule | undefined { return installed.find((x) 
 const req = (m: PluginModule) => m.manifest.requires ?? {};
 const sup = (m: PluginModule) => m.manifest.supports ?? {};
 const prov = (m: PluginModule) => m.manifest.provides ?? {};
+const decl = (m: PluginModule): InterfaceContribution[] => m.manifest.contributes?.interfaces ?? [];
+
+/** 약속 한 줄 — 어느 플러그인이 어느 버전·어떤 uses 로 선언했나. */
+interface DeclaredIface { name: string; version: string; uses: string[]; pluginId: string }
+
+/** 켜고 싶은(core||!disabled) 후보들의 contributes.interfaces 를 모아 약속 목록을 만든다. ⛔ 고정 배열 없음. 같은 이름은 먼저 선언한 쪽. */
+function collectDeclared(cands: PluginModule[]): Map<string, DeclaredIface> {
+    const out = new Map<string, DeclaredIface>();
+    for (const m of cands) {
+        for (const it of decl(m)) {
+            if (!out.has(it.name)) out.set(it.name, { name: it.name, version: it.version, uses: it.uses ?? [], pluginId: m.manifest.id });
+            else console.warn(`[plugin] 약속 "${it.name}" 를 둘이 선언한다 — "${out.get(it.name)!.pluginId}" 가 이긴다, "${m.manifest.id}" 는 무시`);
+        }
+    }
+    return out;
+}
+
+/**
+ * 🔴 「쓸 수 있는 약속」 집합 — 약속 플러그인이 켜져 있고(= declared 에 있음), 그 약속의 uses 가 전부 쓸 수 있을 때만 산다.
+ *   uses 대상이 없으면 그 약속을 떨구고(고정점 반복), 그러면 그 약속을 쓰던 약속도 연쇄로 떨어진다.
+ */
+function availablePromises(declared: Map<string, DeclaredIface>): Set<string> {
+    const avail = new Set(declared.keys());
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (const [name, d] of declared) {
+            if (!avail.has(name)) continue;
+            if (d.uses.some((u) => !avail.has(u))) { avail.delete(name); changed = true; }
+        }
+    }
+    return avail;
+}
 
 /**
  * 🔴 인터페이스 이름으로 모듈을 찾아 소비자에 바인딩해 돌려준다(host.modules.use 의 알맹이).
@@ -110,29 +142,50 @@ export function usePluginRegistry(): number {
  * 🔴 켜고 싶은 후보(= core 이거나 사용자가 안 끈 것)에서 위상 정렬을 돌려
  *   { order(켤 순서) · blocked(id→사유) · providers(인터페이스→승자) } 를 낸다. 🔴 순수 — 상태를 안 바꾼다.
  */
-function computeActivation(): { order: string[]; blocked: Map<string, string>; providers: Map<string, string>; standby: Map<string, string> } {
+function computeActivation(): { order: string[]; blocked: Map<string, string>; providers: Map<string, string>; standby: Map<string, string>; declared: Map<string, DeclaredIface> } {
     const cands = installed.filter((m) => m.manifest.core || !disabledIds.has(m.manifest.id));
     // 안정 순서: core 먼저, 같은 층은 설치(목록) 순
     const ordered = [...cands].sort((a, b) => Number(!!b.manifest.core) - Number(!!a.manifest.core));
 
-    // ① 제공자 승자 — 같은 인터페이스를 둘이 채우면 먼저 온 쪽(ordered 순). 진 쪽은 standby.
+    // 🔴 약속 모음 + 쓸 수 있는 약속(약속 플러그인이 켜졌고 그 uses 가 전부 찬 것) — 창틀은 약속 이름을 고정으로 안 모은다.
+    const declared = collectDeclared(cands);
+    const avail = availablePromises(declared);
+
+    // ① 제공자 승자 — 약속이 쓸 수 있을 때만 등록(약속 없으면 그 제공자는 아래서 ①로 막힌다). 둘이 채우면 먼저 온 쪽. 진 쪽은 standby.
     const providers = new Map<string, string>();
     const standby = new Map<string, string>();
     for (const m of ordered) {
         for (const iface of Object.keys(prov(m))) {
+            if (!avail.has(iface)) continue;   // 약속 없음 → 제공자로 못 선다(그 자신도 ①로 막힌다)
             if (!providers.has(iface)) providers.set(iface, m.manifest.id);
             else standby.set(m.manifest.id, `인터페이스 "${iface}" 는 이미 "${providers.get(iface)}" 가 채움 — 대기`);
         }
     }
 
     const blocked = new Map<string, string>();
-    // ② 직접 블록 — requires 인터페이스가 없거나 버전이 안 맞는다
+    // ② 직접 블록 — 🔴 사유 둘을 가른다: ①「약속 없음」(약속 플러그인 꺼짐/미설치·연쇄) ②「채운 모듈 없음」(제공자 꺼짐).
     for (const m of cands) {
+        const id = m.manifest.id;
+        // ①-a 이 플러그인이 선언한 약속의 uses 가 없다(= 그 약속이 avail 에서 떨어졌다) → 약속 플러그인 자신이 ①로 막힌다 → 연쇄
+        for (const it of decl(m)) {
+            if (!avail.has(it.name)) {
+                const miss = (it.uses ?? []).find((u) => !avail.has(u)) ?? it.name;
+                blocked.set(id, `꺼짐 — 약속 "${miss}" 없음`); break;
+            }
+        }
+        if (blocked.has(id)) continue;
+        // ①-b provides 인데 그 약속이 없다 → 제공자도 ①로 막힌다
+        for (const iface of Object.keys(prov(m))) {
+            if (!avail.has(iface)) { blocked.set(id, `꺼짐 — 약속 "${iface}" 없음`); break; }
+        }
+        if (blocked.has(id)) continue;
+        // requires — ① 약속 없음 / ② 채운 모듈 없음(약속은 있는데 제공자가 없거나 버전 불일치)
         for (const [iface, range] of Object.entries(req(m))) {
+            if (!avail.has(iface)) { blocked.set(id, `꺼짐 — 약속 "${iface}" 없음`); break; }
             const pid = providers.get(iface);
-            if (!pid) { blocked.set(m.manifest.id, `꺼짐 — "${iface}" ${range} 없음`); break; }
+            if (!pid) { blocked.set(id, `꺼짐 — "${iface}" 채운 모듈 없음`); break; }
             const ver = prov(byId(pid)!)[iface];
-            if (!satisfies(range, ver)) { blocked.set(m.manifest.id, `꺼짐 — "${iface}" ${range} 없음(있는 것 ${ver})`); break; }
+            if (!satisfies(range, ver)) { blocked.set(id, `꺼짐 — "${iface}" ${range} 채운 모듈 없음(있는 것 ${ver})`); break; }
         }
     }
     // ②' 호스트 검사 — nodeTypes 를 기여하는 플러그인은 requires.nodes 필수(제공자는 provides.nodes 로 면제).
@@ -162,11 +215,27 @@ function computeActivation(): { order: string[]; blocked: Map<string, string>; p
     }
 
     // ④ 위상 정렬(survivors) — 안정 Kahn. 남는 것은 순환.
+    //    간선: 요구/채움/있으면쓰는 약속을 「선언한 약속 플러그인」이 먼저 · requires 의 제공자가 먼저 · 내 약속의 uses 를 선언한 플러그인이 먼저.
     const survivors = ordered.filter((m) => !blocked.has(m.manifest.id));
     const remaining = new Set(survivors.map((m) => m.manifest.id));
-    const depsOf = (id: string): string[] =>
-        Object.keys(req(byId(id)!)).map((iface) => providers.get(iface))
-            .filter((p): p is string => !!p && p !== id && remaining.has(p));
+    const edgesOf = (id: string): string[] => {
+        const m = byId(id)!;
+        const out = new Set<string>();
+        for (const iface of [...Object.keys(req(m)), ...Object.keys(prov(m)), ...Object.keys(sup(m))]) {
+            const dp = declared.get(iface)?.pluginId;            // 약속 선언 플러그인이 먼저
+            if (dp && dp !== id) out.add(dp);
+        }
+        for (const iface of Object.keys(req(m))) {               // requires 의 제공자가 먼저(onActivate 가 바로 use 할 수 있게)
+            const pp = providers.get(iface);
+            if (pp && pp !== id) out.add(pp);
+        }
+        for (const it of decl(m)) for (const u of it.uses ?? []) {   // 내 약속이 기대는 약속의 선언 플러그인이 먼저
+            const dp = declared.get(u)?.pluginId;
+            if (dp && dp !== id) out.add(dp);
+        }
+        return [...out];
+    };
+    const depsOf = (id: string): string[] => edgesOf(id).filter((p) => remaining.has(p));
     const order: string[] = [];
     let progress = true;
     while (progress && remaining.size) {
@@ -181,15 +250,14 @@ function computeActivation(): { order: string[]; blocked: Map<string, string>; p
     }
     // 남은 것 = 순환 — 고리를 찾아 사유로
     if (remaining.size) {
-        for (const id of remaining) blocked.set(id, `꺼짐 — 순환: ${cyclePath(id, remaining, providers)}`);
+        for (const id of remaining) blocked.set(id, `꺼짐 — 순환: ${cyclePath(id, remaining, edgesOf)}`);
     }
-    return { order, blocked, providers, standby };
+    return { order, blocked, providers, standby, declared };
 }
 
 /** 순환 고리 한 줄 — DFS 로 back-edge 를 찾아 `a → b → a` 로. 못 찾으면 남은 것들을 쉼표로. */
-function cyclePath(start: string, nodes: Set<string>, providers: Map<string, string>): string {
-    const edges = (id: string): string[] =>
-        Object.keys(req(byId(id)!)).map((i) => providers.get(i)).filter((p): p is string => !!p && p !== id && nodes.has(p));
+function cyclePath(start: string, nodes: Set<string>, edgesOfAll: (id: string) => string[]): string {
+    const edges = (id: string): string[] => edgesOfAll(id).filter((p) => p !== id && nodes.has(p));
     const color = new Map<string, number>();   // 1 gray · 2 black
     const stack: string[] = [];
     let found: string[] | null = null;
@@ -323,11 +391,11 @@ function reconcile(): void {
     for (const id of order) runAttach(id);
 }
 
-export function activateAll(modules: PluginModule[], options?: { interfaces?: InterfaceDecl[] }): void {
+export function activateAll(modules: PluginModule[]): void {
     // 🔴 깨끗한 시작 — 런타임 상태를 전부 비운다(activateAll 은 「다시 켜기」가 아니라 처음부터다).
     //    ⛔ activeIds 를 안 비우면 두 번째 activateAll 이 「이미 활성」으로 보고 등록을 건너뛴다.
+    //    ⭐ 약속 목록은 이제 플러그인들의 contributes.interfaces 에서 모은다 — 창틀에 고정 배열(옛 INTERFACES)이 없다.
     installed = [...modules];
-    activeInterfaces = options?.interfaces ? [...options.interfaces] : [];
     disabledIds = loadDisabled();
     failedIds.clear();
     blockedReasons.clear();
@@ -369,12 +437,20 @@ export function dependentsOf(id: string): string[] {
     const stack = [id];
     while (stack.length) {
         const cur = stack.pop()!;
-        const curProvides = Object.keys(prov(byId(cur) ?? ({} as PluginModule))).filter((i) => activeProviders.get(i) === cur);
-        if (!curProvides.length) continue;
+        const m0 = byId(cur) ?? ({} as PluginModule);
+        // 🔴 「내 것」 = 지금 내가 채우는 약속(provides) + 내가 **선언한** 약속(contributes.interfaces).
+        //    약속 플러그인을 끄면 그 약속에 requires 로 매달린 것 + 그 약속을 uses 로 기대는 다른 약속 플러그인이 같이 꺼진다.
+        const mine = [
+            ...Object.keys(prov(m0)).filter((i) => activeProviders.get(i) === cur),
+            ...decl(m0).map((x) => x.name),
+        ];
+        if (!mine.length) continue;
         for (const m of installed) {
             const mid = m.manifest.id;
             if (out.has(mid) || mid === id) continue;
-            if (Object.keys(req(m)).some((i) => curProvides.includes(i))) { out.add(mid); stack.push(mid); }
+            const requiresMine = Object.keys(req(m)).some((i) => mine.includes(i));
+            const contractUsesMine = decl(m).some((x) => (x.uses ?? []).some((u) => mine.includes(u)));
+            if (requiresMine || contractUsesMine) { out.add(mid); stack.push(mid); }
         }
     }
     return [...out];
@@ -440,15 +516,18 @@ export function consumersOf(id: string): string[] {
         .map((m) => m.manifest.id);
 }
 
-/** 인터페이스 목록(설정 「인터페이스」 화면용) — 이름·버전·채운 모듈·기다리는 플러그인. */
-export interface InterfaceStatus { name: string; version: string; provider: string | null; waiting: string[] }
+/** 인터페이스 목록(설정 「인터페이스」 화면용) — 이름·버전·선언한 플러그인·채운 모듈·기다리는 플러그인. */
+export interface InterfaceStatus { name: string; version: string; declaredBy: string; provider: string | null; waiting: string[] }
 export function listInterfaces(): InterfaceStatus[] {
-    return activeInterfaces.map((decl) => ({
-        name: decl.name,
-        version: decl.version,
-        provider: activeProviders.get(decl.name) ?? null,
+    // 🔴 켜진(core||!disabled) 플러그인들의 contributes.interfaces 를 모은다 — 약속 플러그인을 끄면 그 약속이 목록에서 사라진다.
+    const declared = collectDeclared(installed.filter((m) => m.manifest.core || !disabledIds.has(m.manifest.id)));
+    return [...declared.values()].map((d) => ({
+        name: d.name,
+        version: d.version,
+        declaredBy: d.pluginId,
+        provider: activeProviders.get(d.name) ?? null,
         waiting: installed
-            .filter((m) => decl.name in { ...req(m), ...sup(m) } && activeProviders.get(decl.name) !== m.manifest.id)
+            .filter((m) => d.name in { ...req(m), ...sup(m) } && activeProviders.get(d.name) !== m.manifest.id)
             .map((m) => m.manifest.id),
     }));
 }
