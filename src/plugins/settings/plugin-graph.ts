@@ -1,22 +1,20 @@
 /**
- * 설정 「플러그인·약속」 계산 로직 — 🔴 화면과 떼어 둔 순수 함수다(vitest 단독으로 잰다).
- *   ⭐ 입력은 호스트가 주는 PluginStatus[](listPlugins()) 하나뿐 — 매니페스트(provides/requires/supports·
- *      선언한 약속 interfaces)와 지금 상태(enabled/blocked/failed)만 읽는다. 전역 런타임을 안 건드린다.
- *   ⭐ 약속(인터페이스) 목록은 「켜진 플러그인들의 contributes.interfaces 모음」으로 센다(명세 「인터페이스도 꽂는다」).
- *      ⛔ 약속 = contract-* 라는 가정에 묶지 않는다 — 어느 플러그인이 선언하든 interfaces 에 적힌 것이 약속이다.
+ * 설정 「플러그인」 사유 계산 — 🔴 화면과 떼어 둔 순수 함수다(vitest 단독으로 잰다).
+ *   ⭐ 입력은 호스트가 주는 PluginStatus[](listPlugins()) 하나뿐 — 매니페스트(provides/requires/supports)와
+ *      지금 상태(enabled/blocked/failed)만 읽는다. 전역 런타임을 안 건드린다.
  *
- * 담는 셈 둘:
- *   ③ explainBlock — 꺼진(blocked) 사유를 사람 말로. 「약속 없음」 vs 「채운 모듈 없음」을 가르고 무엇을 켜면 풀리는지.
- *   ④ disableImpact — 끄기 전에 「같이 꺼질 것(requires)」·「기능만 떨어질 것(supports)」을 전이까지 계산.
+ * 🔴 ⭐ 끄기 영향(disableImpact)은 **호스트가 단일 진실**이다 — 여기선 그대로 불러 쓴다(아래 re-export).
+ *    계산이 두 벌로 갈리지 않게, 「누가 같이 꺼지나」 규칙은 pane-ui-system/plugin 한 곳에만 산다.
  *
- * 📌 2026-11-08 쥔님: 설정의 별도 「약속(인터페이스)」 화면(InterfacesPane)을 없앴다 — 약속별 「누가 기다리나」는
- *    플러그인 상세의 「나를 쓰는 것(consumersOf)」 장부로 이미 보인다. 그래서 ⑤ 약속별 셈(listPromiseRows·promiseDetail)은
- *    쓰이는 데가 없어져 걷어냈다(explainBlock·disableImpact 가 쓰는 availablePromises·declarerOf 등은 남는다).
+ * 여기 남는 것은 explainBlock 하나 — 꺼진(blocked) 플러그인 **자신의** 사유를 사람 말로 푼다(자리표시·상세가 그린다).
+ *   🔴 실행 판정과 같은 규칙 하나뿐: requires 한 약속을 **채우는 활성 플러그인이 없으면** 꺼진다(사유 「채워 주는 플러그인 없음」).
+ *   정의(contributes.interfaces)·uses 연쇄는 보지 않는다(쥔님 2026-11-08 19:42 — 정의와 제공은 서로 기대지 않는다).
  */
 import type { PluginStatus } from '../../pane-ui-system/plugin';
 
-export interface PluginRef { id: string; name: string }
-const ref = (p: PluginStatus): PluginRef => ({ id: p.id, name: p.name });
+// 🔴 끄기 영향은 호스트 단일 진실을 그대로 쓴다 — 설정에서 쓰던 이름(disableImpact·ImpactItem·DisableImpact)은 여기로 재수출한다.
+export { disableImpact } from '../../pane-ui-system/plugin';
+export type { ImpactItem, DisableImpact } from '../../pane-ui-system/plugin';
 
 // ── 버전 범위: `*`·`^a.b` 둘만(호스트 satisfies 와 같은 규칙) ──
 function satisfies(range: string, version: string): boolean {
@@ -29,55 +27,16 @@ function satisfies(range: string, version: string): boolean {
     return v[0] === maj && (v[1] ?? 0) >= min;
 }
 
-interface DeclaredIface { name: string; version: string; uses: string[]; pluginId: string }
-
-/** 켜진(enabled) 플러그인들이 선언한 약속 모음 — 같은 이름은 먼저 선언한 쪽. (호스트 collectDeclared 와 같은 규칙) */
-function declaredByEnabled(plugins: PluginStatus[]): Map<string, DeclaredIface> {
-    const out = new Map<string, DeclaredIface>();
-    for (const p of plugins) {
-        if (!p.enabled) continue;
-        for (const it of p.interfaces) {
-            if (!out.has(it.name)) out.set(it.name, { name: it.name, version: it.version, uses: it.uses, pluginId: p.id });
-        }
-    }
-    return out;
-}
-
-/**
- * 🔴 「쓸 수 있는 약속」 — 약속 플러그인이 켜져 있고(선언됨) 그 약속의 uses 가 전부 쓸 수 있을 때만 산다.
- *   uses 대상이 없으면 그 약속을 떨구고(고정점), 그 약속에 기대던 약속도 연쇄로 떨어진다. (호스트 availablePromises 와 같다)
- */
-export function availablePromises(plugins: PluginStatus[]): Set<string> {
-    const declared = declaredByEnabled(plugins);
-    const avail = new Set(declared.keys());
-    let changed = true;
-    while (changed) {
-        changed = false;
-        for (const [name, d] of declared) {
-            if (!avail.has(name)) continue;
-            if (d.uses.some((u) => !avail.has(u))) { avail.delete(name); changed = true; }
-        }
-    }
-    return avail;
-}
-
-/** 지금 그 약속을 실제로 채우고 있는 제공자(켜졌고·안 막혔고·안 터진 첫 플러그인). 약속이 없으면 null. */
-function activeProviderOf(iface: string, plugins: PluginStatus[], avail: Set<string>): PluginStatus | undefined {
-    if (!avail.has(iface)) return undefined;
+/** 그 약속을 지금 실제로 채우고 있는 제공자(켜졌고·안 막혔고·안 터진 첫 플러그인). 없으면 undefined. */
+function activeProviderOf(iface: string, plugins: PluginStatus[]): PluginStatus | undefined {
     return plugins.find((p) => p.enabled && !p.blocked && !p.failed && iface in p.provides);
-}
-
-/** 그 약속을 선언한 플러그인(켜짐 우선, 없으면 아무 선언자). 설치 안 됐으면 undefined. */
-function declarerOf(iface: string, plugins: PluginStatus[]): PluginStatus | undefined {
-    return plugins.find((p) => p.enabled && p.interfaces.some((i) => i.name === iface))
-        ?? plugins.find((p) => p.interfaces.some((i) => i.name === iface));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ③ 꺼진 사유를 사람 말로
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type BlockKind = 'no-promise' | 'no-provider' | 'version' | 'cycle' | 'other';
+export type BlockKind = 'no-provider' | 'version' | 'cycle' | 'other';
 
 export interface BlockCause {
     kind: BlockKind;
@@ -91,55 +50,31 @@ export interface BlockCause {
     fixId?: string;
 }
 
-/** 「약속 없음」 사유 한 줄 — 약속 플러그인이 꺼졌나·막혔나·설치 안 됐나로 가른다. */
-function noPromiseCause(iface: string, plugins: PluginStatus[], prefix = ''): BlockCause {
-    const dp = declarerOf(iface, plugins);
-    const head = `${prefix}약속 ‘${iface}’ 이(가) 없습니다`;
-    if (dp && !dp.enabled) {
-        return { kind: 'no-promise', iface, text: `${head} — 약속 플러그인 ‘${dp.name}’ 이 꺼져 있습니다.`, fix: `약속 플러그인 ‘${dp.name}’ 을 켜면 풀립니다.`, fixId: dp.id };
-    }
-    if (dp && dp.blocked) {
-        return { kind: 'no-promise', iface, text: `${head} — 약속 플러그인 ‘${dp.name}’ 이 다른 의존 때문에 막혀 있습니다.`, fix: `먼저 ‘${dp.name}’ 의 막힘을 풀어야 합니다.`, fixId: dp.id };
-    }
-    return { kind: 'no-promise', iface, text: `${head} — 그 약속 플러그인이 설치돼 있지 않습니다.` };
-}
-
-/** 「채운 모듈 없음」 사유 한 줄 — 제공자가 꺼졌나·미설치인가로 가른다. */
+/** 「채워 주는 플러그인 없음」 사유 한 줄 — 채우는 플러그인이 꺼졌나·막혔나·아예 없나로 가른다. */
 function noProviderCause(iface: string, plugins: PluginStatus[], self: PluginStatus): BlockCause {
-    const head = `약속 ‘${iface}’ 은(는) 있지만 그 약속을 채운 모듈이 없습니다`;
+    const head = `약속 ‘${iface}’ 을(를) 채워 주는 플러그인이 없습니다`;
+    // 끈 제공자가 있으면 그걸 켜라고 짚는다.
     const off = plugins.find((p) => p.id !== self.id && !p.enabled && iface in p.provides);
-    if (off) {
-        return { kind: 'no-provider', iface, text: `${head}.`, fix: `제공자 ‘${off.name}’ 을 켜면 풀립니다.`, fixId: off.id };
-    }
+    if (off) return { kind: 'no-provider', iface, text: `${head}.`, fix: `제공자 ‘${off.name}’ 을 켜면 풀립니다.`, fixId: off.id };
+    // 켜져 있지만 다른 의존 때문에 막힌 제공자가 있으면 그 막힘부터.
+    const blockedProv = plugins.find((p) => p.id !== self.id && p.enabled && p.blocked && iface in p.provides);
+    if (blockedProv) return { kind: 'no-provider', iface, text: `${head} — 제공자 ‘${blockedProv.name}’ 이 다른 의존 때문에 막혀 있습니다.`, fix: `먼저 ‘${blockedProv.name}’ 의 막힘을 풀어야 합니다.`, fixId: blockedProv.id };
     return { kind: 'no-provider', iface, text: `${head} — 그 약속을 채우는 제공자 플러그인이 설치돼 있지 않습니다.` };
 }
 
 /**
  * 🔴 ③ 꺼진 플러그인의 사유를 사람 말 목록으로. blocked 가 아니면 빈 배열.
- *   사유 둘을 가른다(명세): ①약속 없음(약속 플러그인 꺼짐/미설치) ②약속은 있는데 채운 모듈 없음(제공자 꺼짐).
  *   그래프에서 직접 다시 재므로 reason 문자열 파싱에 안 기댄다 — 못 재는 경우(순환 등)만 reason 으로 폴백.
  */
 export function explainBlock(p: PluginStatus, plugins: PluginStatus[]): BlockCause[] {
     if (!p.blocked) return [];
-    const avail = availablePromises(plugins);
     const causes: BlockCause[] = [];
     const seen = new Set<string>();
     const push = (c: BlockCause) => { const k = `${c.kind}:${c.iface}`; if (!seen.has(k)) { seen.add(k); causes.push(c); } };
 
-    // a. 내가 선언한 약속이 기대는(uses) 약속이 없다 → 내 약속 자신이 선다(약속 플러그인이 막히는 꼴).
-    for (const it of p.interfaces) {
-        for (const u of it.uses) {
-            if (!avail.has(u)) push(noPromiseCause(u, plugins, `약속 ‘${it.name}’ 이 기대는 `));
-        }
-    }
-    // b. 내가 채우기로 한(provides) 약속이 없다.
-    for (const iface of Object.keys(p.provides)) {
-        if (!avail.has(iface)) push(noPromiseCause(iface, plugins));
-    }
-    // c. 내가 필요로 하는(requires) 약속 — 약속 없음 / 채운 모듈 없음 / 판 안 맞음.
+    // requires 한 약속 — 채운 플러그인이 없음 / 판 안 맞음.
     for (const [iface, range] of Object.entries(p.requires)) {
-        if (!avail.has(iface)) { push(noPromiseCause(iface, plugins)); continue; }
-        const prov = activeProviderOf(iface, plugins, avail);
+        const prov = activeProviderOf(iface, plugins);
         if (!prov) { push(noProviderCause(iface, plugins, p)); continue; }
         const have = prov.provides[iface];
         if (!satisfies(range, have)) {
@@ -154,83 +89,4 @@ export function explainBlock(p: PluginStatus, plugins: PluginStatus[]): BlockCau
         else if (raw) push({ kind: 'other', iface: '', text: raw });
     }
     return causes;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ④ 끄기 전 영향 — 같이 꺼질 것(requires) · 기능만 떨어질 것(supports)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface ImpactItem extends PluginRef {
-    /** 어느 약속을 통해 매였나(사람에게 보여 줄 꼬리표). */
-    via: string;
-}
-export interface DisableImpact {
-    /** requires 로 매달려 **같이 꺼질**(blocked 될) 플러그인 — 전이 포함. */
-    willBlock: ImpactItem[];
-    /** supports 로 붙어 **기능만 떨어질**(detach) 플러그인 — 계속 켜져 있다. */
-    willDegrade: ImpactItem[];
-}
-
-/**
- * 🔴 ④ targetId 를 끄면 생기는 영향. 전이(연쇄)까지 고정점으로 계산.
- *   willBlock(requires 쪽) — 지금 살아 있는 플러그인이 끄는 집합 때문에 막히는 네 길:
- *     ① 약속 자체가 사라짐(약속 플러그인을 끈다) 을 requires · ② 제공자가 사라짐(다른 제공자도 없음) 을 requires ·
- *     ③ 자기 provides 하던 약속이 사라짐(제공자 자신이 막힘) · ④ 약속끼리 기대기(uses) 가 사라짐.
- *   willDegrade(supports 쪽) — 사라지는 약속을 supports 로 붙였던, 집합 밖의 살아 있는 플러그인(detach · 계속 켜짐).
- */
-export function disableImpact(targetId: string, plugins: PluginStatus[]): DisableImpact {
-    const byId = new Map(plugins.map((p) => [p.id, p]));
-    if (!byId.has(targetId)) return { willBlock: [], willDegrade: [] };
-
-    const live = (p: PluginStatus) => p.enabled && !p.blocked && !p.failed;
-    const blockVia = new Map<string, string>();
-    const down = new Set<string>([targetId]);       // 꺼질(또는 블록될) 집합
-
-    // 집합이 내놓는 약속 — 선언한 약속(declaredDown)과 지금 채우는 약속(providedDown)을 가른다.
-    const setsFromDown = () => {
-        const declaredDown = new Set<string>();
-        const providedDown = new Set<string>();
-        for (const id of down) {
-            const p = byId.get(id)!;
-            for (const i of p.interfaces) declaredDown.add(i.name);
-            for (const k of Object.keys(p.provides)) providedDown.add(k);
-        }
-        // 제공자가 사라지는 약속 = providedDown 중 집합 밖에 살아 있는 다른 제공자가 없는 것.
-        const providerGone = new Set<string>();
-        for (const x of providedDown) {
-            const other = plugins.some((p) => !down.has(p.id) && live(p) && x in p.provides);
-            if (!other) providerGone.add(x);
-        }
-        return { declaredDown, providerGone };
-    };
-
-    // 고정점 — 집합이 자라는 동안 네 길로 더 끌어들인다.
-    let changed = true;
-    while (changed) {
-        changed = false;
-        const { declaredDown, providerGone } = setsFromDown();
-        for (const m of plugins) {
-            if (down.has(m.id) || !live(m)) continue;
-            const via =
-                Object.keys(m.requires).find((i) => declaredDown.has(i))                 // ① 약속 사라짐
-                ?? Object.keys(m.requires).find((i) => providerGone.has(i))              // ② 제공자 사라짐
-                ?? Object.keys(m.provides).find((i) => declaredDown.has(i))              // ③ 내 약속 사라짐
-                ?? m.interfaces.flatMap((i) => i.uses).find((u) => declaredDown.has(u)); // ④ 약속끼리 기대기
-            if (via) { down.add(m.id); blockVia.set(m.id, via); changed = true; }
-        }
-    }
-    const willBlock: ImpactItem[] = plugins
-        .filter((m) => m.id !== targetId && down.has(m.id))
-        .map((m) => ({ ...ref(m), via: blockVia.get(m.id) ?? '' }));
-
-    // ── willDegrade: 사라지는 약속(declaredDown ∪ providerGone)을 supports 로 붙인, 집합 밖의 살아 있는 플러그인.
-    const { declaredDown, providerGone } = setsFromDown();
-    const gone = new Set<string>([...declaredDown, ...providerGone]);
-    const willDegrade: ImpactItem[] = [];
-    for (const m of plugins) {
-        if (down.has(m.id) || !live(m)) continue;
-        const hit = Object.keys(m.supports).find((i) => gone.has(i));
-        if (hit) willDegrade.push({ ...ref(m), via: hit });
-    }
-    return { willBlock, willDegrade };
 }

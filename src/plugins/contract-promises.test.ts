@@ -49,7 +49,7 @@ describe('약속 열 — 선언·활성·uses', () => {
         const ps = listPlugins().filter((p) => IDS.includes(p.id));
         expect(ps.length).toBe(6);
         expect(ps.some((p) => p.failed)).toBe(false);
-        expect(ps.some((p) => p.blocked)).toBe(false);   // clock 이 있어 week-grid·timetable·absence 의 uses 가 찬다
+        expect(ps.some((p) => p.blocked)).toBe(false);   // 정의 플러그인은 requires 가 없어 전부 그냥 켜진다
 
         const names = listInterfaces().map((i) => i.name).sort();
         expect(names).toEqual(['absence', 'clock', 'export', 'roster', 'timetable', 'week-grid']);
@@ -57,20 +57,16 @@ describe('약속 열 — 선언·활성·uses', () => {
         expect(listInterfaces().every((i) => i.provider === null)).toBe(true);
     });
 
-    it('🔴 clock 약속을 끄면 그에 기대는 week-grid·timetable·absence 가 「약속 없음」으로 연쇄로 막힌다', () => {
-        activateAll(ALL.filter((p) => p.manifest.id !== 'contract-clock'));   // clock 약속만 뺀다
+    it('🔴 정의는 서로 안 기댄다 — clock 정의 플러그인을 빼도 week-grid·timetable·absence 는 그냥 켜진다(uses 는 실행 판정 밖)', () => {
+        activateAll(ALL.filter((p) => p.manifest.id !== 'contract-clock'));   // clock 정의만 뺀다
         const find = (id: string) => listPlugins().find((p) => p.id === id)!;
-        for (const id of ['contract-week-grid', 'contract-timetable', 'contract-absence']) {
-            expect(find(id).blocked, `${id} 는 clock 없이 막힌다`).toBe(true);
-            expect(find(id).reason).toContain('clock');
-        }
-        // clock 을 안 쓰는 약속은 멀쩡하다
-        for (const id of ['contract-roster', 'contract-export']) {
-            expect(find(id).blocked, `${id} 는 clock 과 무관`).toBe(false);
+        // 🔴 uses 는 실행 판정 밖(쥔님 2026-11-08 19:42) — clock 정의가 없어도 그냥 켜진다(정의는 타입/문서일 뿐).
+        for (const id of ['contract-week-grid', 'contract-timetable', 'contract-absence', 'contract-roster', 'contract-export']) {
+            expect(find(id).blocked, `${id} 는 clock 정의가 없어도 안 막힌다`).toBe(false);
         }
     });
 
-    it('🔴 매니페스트 uses 가 types.ts 의 실제 import type 그래프와 글자 단위로 일치한다(페이블 10)', () => {
+    it('🔴 매니페스트 uses 가 types.ts 의 실제 import type 그래프와 글자 단위로 일치한다(페이블 10 · 정의 무결성 — 실행과 무관)', () => {
         for (const p of ALL) {
             expect(declaredUsesOf(p), `${p.manifest.id} 의 uses ≠ 실제 import`).toEqual(importedContractsOf(p.manifest.id));
         }
