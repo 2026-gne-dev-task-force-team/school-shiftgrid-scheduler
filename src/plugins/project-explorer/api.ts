@@ -77,6 +77,8 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                     : undefined,
                 menu: fns?.menu ? (id) => fns.menu!(host, id) : undefined,
                 can: item.can,
+                unique: item.unique,
+                slots: item.slots,
                 record: item.record,
             };
             // 🔴 선언형 노드 타입은 raw registerType — 접두사 검사를 안 탄다. 내장 'folder' 는 접두사 없는 예외고,

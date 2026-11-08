@@ -167,16 +167,59 @@ export function topmostOnly(tree: Tree, ids: string[]): string[] {
     });
 }
 
+// ─────────────────────────── 싱글톤(유일성) 관문 ───────────────────────────
+
+/**
+ * 🔑 싱글톤 위반인가 — type 노드를 parentId 아래 두면 유일성 규칙을 깨나(설계 「싱글톤 노드 타입」).
+ *   관문은 이 함수 하나다 — createNode·move·restore 가 전부 이걸 지난다(복제·N5 들여오기가 생겨도 그 둘을 타니 저절로 걸린다).
+ *
+ *   - uniqueOf: 그 타입의 규칙('tree'|'parent'|없음). 모델은 등록 표를 모르니 바깥(store)이 주입한다(acceptsChild 와 같은 결).
+ *   - excludeId: 자기 자신 — 옮길 때 셈에서 뺀다(제자리 이동·형제 재정렬이 자기 자신에 걸리지 않게).
+ *   🔴 휴지통(또는 그 안)은 세지 않는다(설계) — 거기로 넣는 건 늘 허용하고(삭제가 막히면 안 된다), 거기 있는 노드도 안 센다.
+ *      그래서 복원할 때 밖에 이미 같은 게 있으면 그때 충돌이 난다.
+ */
+export function violatesUnique(
+    tree: Tree,
+    type: string,
+    parentId: string,
+    excludeId: string | null,
+    uniqueOf: (type: string) => 'tree' | 'parent' | undefined,
+): boolean {
+    const mode = uniqueOf(type);
+    if (!mode) return false;
+    // 휴지통으로 넣는 건 세지도 막지도 않는다 — 삭제가 늘 되게(remove 가 여기로 온다).
+    if (parentId === tree.trash || isDescendant(tree, parentId, tree.trash)) return false;
+    const inTrashZone = (id: string): boolean => id === tree.trash || isDescendant(tree, id, tree.trash);
+    if (mode === 'parent') {
+        const parent = tree.nodes[parentId];
+        if (!parent) return false;
+        return parent.children.some((cid) => cid !== excludeId && tree.nodes[cid]?.type === type);
+    }
+    // 'tree' — 나무 전체(뿌리·휴지통 제외)에 자기 말고 그 타입이 하나라도 살아 있나.
+    for (const n of Object.values(tree.nodes)) {
+        if (n.id === excludeId || n.id === tree.root || n.id === tree.trash) continue;
+        if (n.type !== type) continue;
+        if (inTrashZone(n.id)) continue;
+        return true;
+    }
+    return false;
+}
+
 // ─────────────────────────── 연산 (전부 순수 · 끝에 normalize) ───────────────────────────
 
-/** 새 노드 — parentId 아래 index 자리(기본 끝)에 꽂는다. id 는 바깥(store)이 uid() 로 미리 만들어 넘긴다(순수 유지). */
+/**
+ * 새 노드 — parentId 아래 index 자리(기본 끝)에 꽂는다. id 는 바깥(store)이 uid() 로 미리 만들어 넘긴다(순수 유지).
+ * 🔴 uniqueOf 를 주면 싱글톤 관문을 지난다 — 규칙을 깨는 생성은 나무를 그대로 돌려준다(안 준 호출은 옛 동작). 메뉴만 보고 뚫는 걸 막는 자리.
+ */
 export function createNode(
     tree: Tree,
     parentId: string,
     opts: { id: string; type: string; name: string; data?: unknown; index?: number },
+    uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
 ): Tree {
     const parent = tree.nodes[parentId];
     if (!parent) return tree;
+    if (uniqueOf && violatesUnique(tree, opts.type, parentId, null, uniqueOf)) return tree;   // 🔑 싱글톤 관문
     const node: Node = { id: opts.id, type: opts.type, name: opts.name, children: [], data: opts.data };
     const kids = [...parent.children];
     const at = opts.index == null ? kids.length : Math.max(0, Math.min(kids.length, opts.index));
@@ -208,6 +251,7 @@ export function move(
     parentId: string,
     index?: number,
     canAccept?: (parentType: string, childType: string) => boolean,
+    uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
 ): Tree {
     if (id === tree.root || id === tree.trash) return tree;   // 뿌리는 안 움직인다
     if (id.includes('/')) return tree;                        // 🔴 유도(가상) id 는 저장 안 됨 — 못 옮긴다
@@ -217,6 +261,7 @@ export function move(
     if (parentId === id) return tree;
     if (isDescendant(tree, parentId, id)) return tree;        // 제 자손 밑으로 — 사이클
     if (canAccept && !canAccept(parent.type, node.type)) return tree;   // 🔴 accepts 최종 관문
+    if (uniqueOf && violatesUnique(tree, node.type, parentId, id, uniqueOf)) return tree;   // 🔑 싱글톤 최종 관문(자기 제외)
 
     const nodes: Record<string, Node> = {};
     for (const [nid, n] of Object.entries(tree.nodes)) {
@@ -244,16 +289,31 @@ export function remove(tree: Tree, id: string): Tree {
 }
 
 /**
- * 복원 — 휴지통에서 꺼낸다. 원래 부모(trashedFrom)가 살아 있고 휴지통 밖이면 거기 끝에, 아니면 루트 끝에.
- *   🔴 trashedFrom 은 normalize 가 「휴지통 밖으로 나온 순간」 지운다 — 여기서 따로 안 지워도 된다.
+ * 복원하면 갈 부모 — 원래 부모(trashedFrom)가 살아 있고 휴지통 밖이면 거기, 아니면 루트.
+ *   🔴 store 의 싱글톤 사전점검(복원 거절 알림)이 같은 자리를 봐야 하니 밖으로 뺐다(두 곳에서 낡지 않게).
  */
-export function restore(tree: Tree, id: string): Tree {
+export function restoreDest(tree: Tree, id: string): string {
     const n = tree.nodes[id];
-    if (!n || id === tree.root || id === tree.trash) return tree;
+    if (!n) return tree.root;
     const from = n.trashedFrom;
     const destOk = from != null && !!tree.nodes[from]
         && from !== tree.trash && !isDescendant(tree, from, tree.trash);
-    return move(tree, id, destOk ? from! : tree.root);
+    return destOk ? from! : tree.root;
+}
+
+/**
+ * 복원 — 휴지통에서 꺼낸다. restoreDest 가 정한 자리 끝에.
+ *   🔴 trashedFrom 은 normalize 가 「휴지통 밖으로 나온 순간」 지운다 — 여기서 따로 안 지워도 된다.
+ *   🔑 uniqueOf 를 주면 싱글톤 관문을 지난다 — 밖에 이미 같은 게 있으면 move 가 거절해 노드는 휴지통에 남는다(복원 거절).
+ */
+export function restore(
+    tree: Tree,
+    id: string,
+    uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
+): Tree {
+    const n = tree.nodes[id];
+    if (!n || id === tree.root || id === tree.trash) return tree;
+    return move(tree, id, restoreDest(tree, id), undefined, undefined, uniqueOf);
 }
 
 /** 그 노드 밑(자신 포함) 자손 id 모두 — purge·셈에 쓴다. */
