@@ -81,7 +81,14 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
         if (st.current.timer != null) { clearTimeout(st.current.timer); st.current.timer = null; }
     }, []);
 
+    // 🔴 마우스 pending 동안만 window 에서 움직임을 본다 — 리스트(탭 줄) 위 pointermove 만 보면, 8px 넘기 전에
+    //    포인터가 줄 밖으로 나가는 빠른 끌기(탭 줄 높이 32px · 한 프레임 20px+)는 드래그가 영영 시작 안 된다
+    //    (2026-11-08 쥔님 「탭 끌어서 스플릿 안 됨」 실측 원인). capture 는 여전히 시작 순간에만 건다(클릭 보존).
+    const detachWin = useRef<(() => void) | null>(null);
+    const detachWindow = useCallback(() => { detachWin.current?.(); detachWin.current = null; }, []);
+
     const reset = useCallback(() => {
+        detachWindow();
         const s = st.current;
         if (s.timer != null) { clearTimeout(s.timer); }
         if (s.captureEl && s.pointerId >= 0) {
@@ -90,17 +97,18 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
         st.current = freshState();
         document.body.classList.remove('is-dragging');
         setDrag(null);
-    }, []);
+    }, [detachWindow]);
 
     const startDrag = useCallback((x: number, y: number) => {
         const s = st.current;
         if (!s.leafId || !s.captureEl) { reset(); return; }
         clearTimer();
+        detachWindow();
         try { s.captureEl.setPointerCapture(s.pointerId); } catch { /* 무시 */ }
         s.phase = 'dragging';
         document.body.classList.add('is-dragging');
         setDrag({ leafId: s.leafId, title: s.title, x, y, width: s.width, axis });
-    }, [reset, clearTimer, axis]);
+    }, [reset, clearTimer, detachWindow, axis]);
 
     const onContextMenu = useCallback((e: React.MouseEvent) => {
         if (!enabled) return;
@@ -134,6 +142,25 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
             s.width = r.width;
             s.title = tabEl.getAttribute('title') ?? tabEl.textContent ?? '';
         }
+        if (e.pointerType === 'mouse' && s.leafId) {
+            detachWindow();
+            const pid = e.pointerId;
+            const onWinMove = (ev: PointerEvent) => {
+                const c = st.current;
+                if (c.phase !== 'pending' || ev.pointerId !== pid) return;
+                if (Math.hypot(ev.clientX - c.startX, ev.clientY - c.startY) > MOUSE_START) startDrag(ev.clientX, ev.clientY);
+            };
+            // 줄 밖에서 뗀 클릭 — 리스트의 onPointerUp 이 못 받으니 여기서 pending 을 푼다
+            const onWinUp = (ev: PointerEvent) => {
+                if (ev.pointerId === pid && st.current.phase === 'pending') reset();
+            };
+            window.addEventListener('pointermove', onWinMove);
+            window.addEventListener('pointerup', onWinUp);
+            detachWin.current = () => {
+                window.removeEventListener('pointermove', onWinMove);
+                window.removeEventListener('pointerup', onWinUp);
+            };
+        }
         if (e.pointerType !== 'mouse') {
             // 손가락/펜: 350ms 안 움직이면 무장(그동안의 10px 판정은 onPointerMove)
             s.timer = window.setTimeout(() => {
@@ -142,7 +169,7 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
                 try { navigator.vibrate?.(10); } catch { /* 지원 안 함 */ }
             }, TOUCH_HOLD);
         }
-    }, [enabled, clearTimer]);
+    }, [enabled, clearTimer, detachWindow, startDrag, reset]);
 
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         const s = st.current;
@@ -195,7 +222,7 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [drag, reset]);
-    useEffect(() => () => { clearTimer(); }, [clearTimer]);
+    useEffect(() => () => { clearTimer(); detachWindow(); }, [clearTimer, detachWindow]);
 
     const bind = { onContextMenu, onPointerDown, onPointerMove, onPointerUp, onPointerCancel };
     return { bind, drag };
