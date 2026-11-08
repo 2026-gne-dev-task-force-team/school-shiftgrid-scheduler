@@ -14,8 +14,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
-import { flatten, filterIds, parentOf, isDescendant, type Tree } from '../model/tree';
-import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb } from '../model/types';
+import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
+import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
@@ -61,7 +61,9 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
         const sibs = rootNode.children.filter((c) => c !== dragId);
         const ok = dragIds.every((did) => {
             const dn = tree.nodes[did];
-            return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did) && acceptsChild(rootNode.type, dn.type);
+            return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did)
+                && acceptsChild(rootNode.type, dn.type)
+                && !violatesUnique(tree, dn.type, tree.root, did, uniqueOf);
         });
         return { targetId: lastEl.getAttribute('data-row-id') ?? tree.root, pos: 'after', rect: lastRect, destParent: tree.root, index: sibs.length, ok };
     }
@@ -98,7 +100,9 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
     const dp = tree.nodes[destParent];
     const ok = !!dp && dragIds.every((did) => {
         const dn = tree.nodes[did];
-        return !!dn && destParent !== did && !isDescendant(tree, destParent, did) && acceptsChild(dp.type, dn.type);
+        return !!dn && destParent !== did && !isDescendant(tree, destParent, did)
+            && acceptsChild(dp.type, dn.type)
+            && !violatesUnique(tree, dn.type, destParent, did, uniqueOf);
     });
     return { targetId, pos, rect, destParent, index, ok };
 }
@@ -310,8 +314,13 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         // ContextMenu 는 하위 메뉴가 없다 → 「새 <label>」 로 평평하게(지금은 폴더 하나).
         // 🔴 우클릭 = 「이 노드에서」(via 'context') — 명령(선택 기준) 대신 onClick 으로 직접 부른다(targetId=우클릭한 노드).
         //    그래야 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(헤더 단추는 형제로 — 두 경로가 갈린다).
+        // 🔑 싱글톤이 이미 있으면 숨기지 말고 회색(비활성) + 이유를 라벨에 보인다(설계) — 생길 자리(via:'context')에서 판정.
+        const ctxParent = newFolderParent(tree, selectedId, isContainerType, 'context');
         for (const def of createCandidates(baseType)) {
-            items.push({ label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
+            const dup = violatesUnique(tree, def.type, ctxParent, null, uniqueOf);
+            items.push(dup
+                ? { label: `새 ${def.label} (이미 있음)`, icon: 'plus', disabled: true }
+                : { label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
         }
         if (selNode && !inTrash) {
             // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).

@@ -153,6 +153,19 @@ export function openType(type: string, nodeId: string): void {
     if (def?.openable && def.open) def.open(nodeId);
 }
 
+/**
+ * 이 타입의 싱글톤 규칙 — 'tree'(나무에 하나)·'parent'(부모마다 하나)·없음. 🔴 model/tree 의 유일성 관문(violatesUnique)에
+ *   주입한다(모델은 등록 표를 모르니 바깥이 준다 — acceptsChild 와 같은 결). 모르는 타입은 제한 없음.
+ */
+export function uniqueOf(type: string): 'tree' | 'parent' | undefined {
+    return registry.get(type)?.unique;
+}
+
+/** 이 타입을 만들 때 같이 만들 슬롯 자식 타입들(자동 슬롯) — 없으면 빈 배열. store 가 한 묶음으로 만든다. */
+export function slotsOf(type: string): string[] {
+    return registry.get(type)?.slots ?? [];
+}
+
 /** can.rename/move/delete — 기본 전부 true(타입이 명시로 끌 때만 false). */
 export function canDo(type: string, what: 'rename' | 'move' | 'delete'): boolean {
     const can = registry.get(type)?.can;

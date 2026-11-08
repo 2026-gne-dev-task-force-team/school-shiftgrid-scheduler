@@ -215,6 +215,10 @@ export interface NodeTypeContribution<ImplName extends string = string> {
     create?: { label: string; under?: string[] };
     can?: { rename?: boolean; move?: boolean; delete?: boolean };
     record?: boolean;
+    /** 🔑 싱글톤 — 'tree' 나무에 하나 · 'parent' 부모마다 하나(없으면 제한 없음). 레지스트라가 NodeTypeDef.unique 로 넘긴다. */
+    unique?: 'tree' | 'parent';
+    /** 🔑 자동 슬롯 — 이 타입을 만들면 같이 만들 자식 타입들. 레지스트라가 NodeTypeDef.slots 로 넘긴다. */
+    slots?: string[];
     /** 모듈 nodeTypes 의 키 — 함수 묶음(아이콘 함수·open·derive·menu·create.init)을 레지스트라가 여기서 찾는다. */
     impl?: ImplName;
 }
