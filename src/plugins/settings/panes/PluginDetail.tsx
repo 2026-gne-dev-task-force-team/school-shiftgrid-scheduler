@@ -11,13 +11,13 @@ import { useState, type ReactNode } from 'react';
 import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
-    listCommands, listSettings, listContributions, HOST_VERSION,
-    dependentsOf, attachmentsOf, consumersOf,
+    listCommands, listSettings, listContributions, listPlugins, usePluginRegistry, HOST_VERSION,
+    attachmentsOf, consumersOf,
     type ContributionKind, type ContributionRecord,
 } from '../../../pane-ui-system/plugin';
-import { Toggle } from '../../../pane-ui-system';
 import { useSettingsChrome } from '../chrome-context';
 import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
+import { explainBlock, disableImpact, type ImpactItem } from '../plugin-graph';
 
 const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center: '가운데', right: '오른쪽 사이드바' };
 
@@ -50,6 +50,24 @@ function ContribGroup({ label, records }: { label: string; records: Contribution
     );
 }
 
+/** ④ 끄기 영향 한 묶음 — 「같이 꺼짐(requires)」·「기능만 빠짐(supports)」 각각. 어느 약속을 통해 매였나 꼬리표. */
+function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'muted'; items: ImpactItem[] }) {
+    return (
+        <div className="flex flex-col gap-1">
+            <p className={`text-[11px] ${tone === 'warn' ? 'text-warn' : 'text-muted'}`}>{title}</p>
+            <ul className="flex flex-col gap-0.5 pl-1">
+                {items.map((x) => (
+                    <li key={x.id} className="text-[12px] text-text flex items-baseline gap-1.5">
+                        <Icon name="dot" size={10} className="text-muted shrink-0 translate-y-0.5" />
+                        <span>{x.name}</span>
+                        {x.via && <span className="text-[11px] text-muted">— 약속 ‘{x.via}’</span>}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
 function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
     return (
         <section className="flex flex-col gap-1.5">
@@ -61,8 +79,18 @@ function Section({ title, count, children }: { title: string; count?: number; ch
     );
 }
 
-export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost }) {
+export function PluginDetail({ p: p0, host, startConfirming = false }: { p: PluginStatus; host: PluginHost; startConfirming?: boolean }) {
     const chrome = useSettingsChrome();
+    // 🔴 피크 안에서 켜고/끄면 이 상세도 바로 다시 그린다 — listPlugins 로 지금 상태를 다시 읽는다(스냅샷 p0 는 낡는다).
+    usePluginRegistry();
+    const all = listPlugins();
+    const p = all.find((x) => x.id === p0.id) ?? p0;
+    // ④ 끄기 영향 · ③ 꺼짐 사유 — 화면 밖 순수 함수가 센다.
+    const impact = disableImpact(p.id, all);
+    const hasImpact = impact.willBlock.length > 0 || impact.willDegrade.length > 0;
+    const causes = p.blocked ? explainBlock(p, all) : [];
+    // 줄의 끄기 스위치에서 열렸으면(startConfirming) 바로 확인 단계를 보여 준다.
+    const [confirming, setConfirming] = useState(startConfirming && !p.core);
     const commands = listCommands().filter((c) => c.owner === p.id);
     const views = host.views.list().filter((v) => v.id === p.id || v.id.startsWith(`${p.id}.`));
     const sections = listSettings().filter((s) => s.owner === p.id);
@@ -87,7 +115,6 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
     const requires = Object.entries(p.requires);
     const attachments = attachmentsOf(p.id);     // supports → 붙었나
     const consumers = consumersOf(p.id);         // 나를 쓰는 플러그인
-    const dependents = dependentsOf(p.id);       // 끄면 같이 꺼질 것(requires 로 매달린)
     const hasDeps = declaredInterfaces.length || provides.length || requires.length || attachments.length || consumers.length
         || permissions.length || userFields.length || roleFields.length;
 
@@ -104,25 +131,52 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
                     </div>
                     <span className="text-[11px] text-muted font-mono">{p.id}</span>
                 </div>
-                <span title={p.core ? '코어 플러그인은 끌 수 없습니다' : undefined} className="shrink-0">
-                    <Toggle
-                        on={p.enabled}
-                        disabled={p.core}
-                        label={`${p.name} ${p.enabled ? '끄기' : '켜기'}`}
-                        onToggle={(v) => (v ? enablePlugin(p.id) : disablePlugin(p.id))}
-                    />
-                </span>
+                {/* 🔴 ④ 코어는 끄기 단추 자체가 없다(쥔님) — 잠김 표시만. 비코어는 끄기/켜기 단추. */}
+                <div className="shrink-0">
+                    {p.core
+                        ? <span className="flex items-center gap-1 text-[11px] text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={12} /> 코어 · 끌 수 없음</span>
+                        : p.enabled
+                            ? <Button variant="ghost" size="sm" onClick={() => { if (hasImpact) setConfirming(true); else disablePlugin(p.id); }}>끄기</Button>
+                            : <Button variant="accent" size="sm" onClick={() => enablePlugin(p.id)}>켜기</Button>}
+                </div>
             </div>
 
-            {/* 🔴 끄면 같이 꺼지는 것(requires 로 매달린) — 모달 없이 토글 옆 인라인(쥔님: 끄기 전에 보이게) */}
-            {p.enabled && !p.core && dependents.length > 0 && (
-                <p className="text-[12px] text-warn leading-relaxed">
-                    끄면 같이 꺼집니다: {dependents.join(', ')}
-                </p>
+            {/* 🔴 ④ 끄기 확인 — 끄기 전에 「같이 꺼질 것(requires)」·「기능만 떨어질 것(supports)」을 전이까지 보여 준다 */}
+            {confirming && !p.core && (
+                <div className="rounded border border-warn/40 bg-warn/5 p-3 flex flex-col gap-2">
+                    <p className="text-[12px] font-semibold text-text">‘{p.name}’ 을 끄면:</p>
+                    {impact.willBlock.length > 0 && (
+                        <ImpactList
+                            title="같이 꺼집니다 — 이 플러그인을 요구(requires)해서 함께 막힙니다"
+                            tone="warn" items={impact.willBlock}
+                        />
+                    )}
+                    {impact.willDegrade.length > 0 && (
+                        <ImpactList
+                            title="기능만 빠집니다 — 선택 연동(supports)이라 계속 켜져 있습니다"
+                            tone="muted" items={impact.willDegrade}
+                        />
+                    )}
+                    <div className="flex gap-2 pt-0.5">
+                        <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>취소</Button>
+                        <Button variant="accent" size="sm" onClick={() => { disablePlugin(p.id); setConfirming(false); }}>그래도 끄기</Button>
+                    </div>
+                </div>
             )}
-            {/* 블록 사유 — 의존을 못 채워 꺼진 경우(비영구 · 제공자가 켜지면 복귀) */}
-            {p.blocked && p.reason && (
-                <p className="text-[12px] text-warn leading-relaxed">{p.reason.replace(/^꺼짐 — /, '막힘 — ')}</p>
+
+            {/* 🔴 ③ 막힘 사유 — 「약속 없음」 vs 「채운 모듈 없음」을 사람 말로, 무엇을 켜면 풀리는지 한 줄 */}
+            {p.blocked && causes.length > 0 && (
+                <div className="rounded border border-warn/40 bg-warn/5 p-3 flex flex-col gap-2">
+                    <p className="text-[12px] font-semibold text-warn">막힘 — 지금 켤 수 없습니다(의존이 안 찼습니다)</p>
+                    {causes.map((c, i) => (
+                        <div key={`${c.kind}:${c.iface}:${i}`} className="flex flex-col gap-1">
+                            <p className="text-[12px] text-text leading-relaxed">{c.text}</p>
+                            {c.fix && (c.fixId
+                                ? <Button variant="ghost" size="sm" className="self-start" onClick={() => enablePlugin(c.fixId!)}>{c.fix}</Button>
+                                : <p className="text-[11px] text-muted leading-relaxed">{c.fix}</p>)}
+                        </div>
+                    ))}
+                </div>
             )}
 
             <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>
