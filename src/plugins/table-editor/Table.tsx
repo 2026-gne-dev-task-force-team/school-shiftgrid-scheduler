@@ -57,6 +57,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
+    const outerRef = useRef<HTMLDivElement>(null);   // 바깥 래퍼 — 떠있는 알약을 스크롤러 바깥에 띄운다(안 잘리게)
     const config = buildConfig(features ?? DEFAULT_FEATURES, lookupFeature, () => stateRef.current);
     const has = (c: TableCapability): boolean => config.caps.has(c);
     const hasRows = has('rows');
@@ -445,25 +446,26 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         });
     }, [sel.r1, sel.c1, sel.r2, sel.c2, rows, columns, merges, liveResize, liveWeight, core.containerRef]);
 
-    // ── 떠있는 「칸 합치기」 알약 — 고른 범위 바로 아래(넘치면 위)에 떠서 아무것도 안 가린다 ──
+    // ── 떠있는 「칸 합치기」 알약 — 고른 범위 바로 위(넘치면 아래)에 떠서 아무것도 안 가린다 ──
+    //    🔴 스크롤러 바깥(바깥 래퍼 기준)에 둔다 — 표 맨 윗줄을 골라도 잘리지 않고 표 위 여백에 뜬다(열 손잡이와 안 겹침).
     const canMergeSel = hasMerge && regionFromSelection(sel, rows, columns) != null;
     const canUnmerge = hasMerge && anchorCovering(merges, core.active.r, core.active.c, rows, columns) != null;
     const [pill, setPill] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
     useLayoutEffect(() => {
         if (!canMergeSel && !canUnmerge) return;
-        const cont = core.containerRef.current; if (!cont) return;
+        const cont = core.containerRef.current; const outer = outerRef.current; if (!cont || !outer) return;
         const top = cont.querySelector<HTMLElement>(`[data-rc="${sel.r1}:${sel.c1}"]`);
         const bot = cont.querySelector<HTMLElement>(`[data-rc="${sel.r2}:${sel.c1}"]`) ?? top;
         if (!top) return;
-        const cr = cont.getBoundingClientRect();
+        const or = outer.getBoundingClientRect();
         const tr = top.getBoundingClientRect();
         const br = bot!.getBoundingClientRect();
-        const left = tr.left - cr.left + cont.scrollLeft;
-        // 기본은 선택 아래 — 열 손잡이는 표 위에 있으니 아래로 두면 손잡이와 안 겹친다. 아래가 스크롤러에 잘리면 위로 뒤집는다.
-        const below = br.bottom - cr.top + cont.scrollTop + 6;
-        const above = tr.top - cr.top + cont.scrollTop - 32;
-        const overflowBottom = below + 28 > cont.scrollTop + cont.clientHeight;
-        const topPos = overflowBottom && above > cont.scrollTop + 2 ? above : below;
+        const left = tr.left - or.left;
+        // 기본은 선택 바로 위 — 래퍼 바깥이라 안 잘리고, 표 윗줄을 골라도 제목·표 사이 여백으로 떠오른다(음수 top 허용).
+        //    위가 창 밖으로 나갈 때(표가 화면 맨 위)만 선택 아래로 뒤집는다.
+        const above = tr.top - or.top - 30;
+        const below = br.bottom - or.top + 6;
+        const topPos = or.top + above < 4 ? below : above;
         setPill({ top: topPos, left });
     }, [canMergeSel, canUnmerge, sel.r1, sel.c1, sel.r2, sel.c2, core.containerRef]);
 
@@ -474,7 +476,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const showColTitles = !hideColHeader;
 
     return (
-        <div className={`text-[14px] ${className ?? ''}`}>
+        <div ref={outerRef} className={`relative text-[14px] ${className ?? ''}`}>
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
@@ -721,24 +723,25 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     />
                 )}
 
-                {/* 떠있는 합치기 알약 */}
-                {(canMergeSel || canUnmerge) && (
-                    <div className="absolute z-30 flex gap-1" style={{ top: pill.top, left: pill.left }}>
-                        {canMergeSel && (
-                            <button type="button" onClick={mergeSelection}
-                                className="h-row px-2 rounded border border-line bg-panel shadow text-[12px] text-text hover:bg-text/[0.06]">
-                                ⊞ {lb.mergeCells}
-                            </button>
-                        )}
-                        {canUnmerge && (
-                            <button type="button" onClick={unmergeAtActive}
-                                className="h-row px-2 rounded border border-line bg-panel shadow text-[12px] text-text hover:bg-text/[0.06]">
-                                ⊟ {lb.unmergeCells}
-                            </button>
-                        )}
-                    </div>
-                )}
             </div>
+
+            {/* 떠있는 합치기 알약 — 스크롤러 바깥(래퍼 기준)에 둬 표 윗줄에서도 안 잘린다. 그림자 있는 작은 떠있는 메뉴. */}
+            {(canMergeSel || canUnmerge) && (
+                <div className="absolute z-30 flex gap-1" style={{ top: pill.top, left: pill.left }}>
+                    {canMergeSel && (
+                        <button type="button" onClick={mergeSelection}
+                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
+                            ⊞ {lb.mergeCells}
+                        </button>
+                    )}
+                    {canUnmerge && (
+                        <button type="button" onClick={unmergeAtActive}
+                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
+                            ⊟ {lb.unmergeCells}
+                        </button>
+                    )}
+                </div>
+            )}
             {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
     );
