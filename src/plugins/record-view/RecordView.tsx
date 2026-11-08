@@ -128,7 +128,9 @@ export function RecordView<T>({
         [records, fields, search, view.filter, view.sorts],
     );
 
-    const widthOf = (f: RecordField) => view.columns.find((c) => c.key === f.key)?.width ?? f.width ?? DEFAULT_COL_WIDTH;
+    // 🔴 폭 끌기 중에는 임시 폭만 그린다 — 손을 뗄 때 한 번만 보기 정의에 쓴다(안 그러면 포인터 한 칸마다 되돌리기 한 단계가 쌓인다)
+    const [liveW, setLiveW] = useState<{ key: string; w: number } | null>(null);
+    const widthOf = (f: RecordField) => (liveW?.key === f.key ? liveW.w : view.columns.find((c) => c.key === f.key)?.width ?? f.width ?? DEFAULT_COL_WIDTH);
     const canEditCell = (f: RecordField) => !!onCellChange && !f.readOnly;
 
     const setColumn = (key: string, p: { width?: number; hidden?: boolean }) =>
@@ -159,11 +161,14 @@ export function RecordView<T>({
     const onResizeMove = (e: ReactPointerEvent) => {
         const d = drag.current;
         if (!d) return;
-        setColumn(d.key, { width: Math.max(MIN_COL_WIDTH, d.startW + (e.clientX - d.startX)) });
+        setLiveW({ key: d.key, w: Math.max(MIN_COL_WIDTH, d.startW + (e.clientX - d.startX)) });
     };
     const onResizeUp = (e: ReactPointerEvent) => {
         if (drag.current) { try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* 이미 풀림 */ } }
+        const d = drag.current;
         drag.current = null;
+        if (d && liveW && liveW.key === d.key) setColumn(d.key, { width: liveW.w });
+        setLiveW(null);
     };
 
     // ── 칸 순서 끌기(보기마다) ────────────────────────────────────────────────
@@ -259,7 +264,7 @@ export function RecordView<T>({
                 onSearch={setSearch}
                 onFilters={(rules) => patchView({ filter: withFlatRules(view.filter, rules) })}
                 onSorts={(s) => patchView({ sorts: s })}
-                onHidden={(h) => patchView({ columns: view.columns.map((c) => ({ ...c, hidden: h.includes(c.key) ? true : undefined })).map((c) => (c.hidden ? c : { key: c.key, width: c.width, wrap: c.wrap })).map((c) => JSON.parse(JSON.stringify(c))) })}
+                onHidden={(h) => patchView({ columns: view.columns.map((c) => { const { hidden: _drop, ...rest } = c; void _drop; return h.includes(c.key) ? { ...rest, hidden: true } : rest; }) })}
             />
 
             {/* 선택 막대 */}
