@@ -47,46 +47,8 @@ jobs:
         with:
           ref: main
           path: v2
-          # 🔴 이게 없으면 checkout 이 v2/.git/config 에 자기 인증 헤더(기본 GITHUB_TOKEN)를
-          #    심어 두고, npm ci 가 부르는 git 이 그 헤더를 물고 나간다. 그 토큰은 자기 레포
-          #    밖을 못 읽어서 부품 레포가 Repository not found 로 떨어진다
-          #    (2026-10-17 실측: 내 전용 토큰은 "Never used" 인데 에러는 not found 였다).
+          # 작업트리에 인증 헤더를 남기지 않는다(빌드 단계가 토큰을 쓸 일이 없다).
           persist-credentials: false
-
-      # v2 는 표 부품을 비공개 레포(gne-sheet)에서 git 의존성으로 받는다.
-      # 기본 GITHUB_TOKEN 은 자기 레포 밖을 못 읽어서, 읽기 전용 토큰을 git 에 꽂아 준다.
-      # ⭐ 토큰이 없으면 이 단계를 건너뛴다 — 아직 그 의존성을 안 넣었으면 아무 일도 안 일어난다.
-      #    (토큰 만드는 법·만료 때 할 일은 볼트 「표 부품 라이브러리 설계」)
-      - name: 비공개 부품 레포 읽기 권한
-        env:
-          GNE_SHEET_TOKEN: ${{ secrets.GNE_SHEET_TOKEN }}
-        run: |
-          # 🔴 값은 안 찍는다. 「있나 없나」만 길이로 센다 — 빈 토큰과 틀린 토큰은
-          #    둘 다 Repository not found 로 똑같이 보여서, 이 줄이 없으면 안 갈린다.
-          echo "토큰 길이: ${#GNE_SHEET_TOKEN}"
-          if [ -z "$GNE_SHEET_TOKEN" ]; then
-            echo "토큰이 비어 있다 — 인증을 안 꽂고 넘어간다"
-            exit 0
-          fi
-          AUTH="https://x-access-token:${GNE_SHEET_TOKEN}@github.com/"
-          # 🔴 세 가지 주소 모양을 전부 덮는다. package-lock.json 의 resolved 가
-          #    git+ssh://git@github.com/… 로 박히는데(npm 이 그렇게 적는다) CI 엔 SSH 키가 없다.
-          #    https 만 덮으면 그 ssh 주소에서 죽는다 — 2026-10-17 실측으로 걸렸다.
-          # 🔴 --add 가 핵심이다. insteadOf 는 여러 값을 갖는 키라서, --add 없이 세 번 부르면
-          #    앞의 것을 덮어쓰고 마지막 하나만 남는다(2026-10-17 실측 — ssh 가 안 덮여 죽었다).
-          git config --global --add url."$AUTH".insteadOf "https://github.com/"
-          git config --global --add url."$AUTH".insteadOf "ssh://git@github.com/"
-          git config --global --add url."$AUTH".insteadOf "git@github.com:"
-          echo "꽂힌 규칙 $(git config --global --get-all url."$AUTH".insteadOf | wc -l) 개 (3 이어야 한다)"
-          git config --global --get-all url."$AUTH".insteadOf | sed 's/^/  · /'
-          # 🔴 npm 에 맡기지 말고 여기서 먼저 인증을 재 본다. npm 의 에러는 「빈 토큰」과
-          #    「권한 없음」을 똑같이 Repository not found 로 보여줘서 원인이 안 갈린다.
-          echo "── v2 작업트리에 남의 인증 헤더가 있나 (있으면 그게 우리 토큰을 밀어낸다) ──"
-          git -C v2 config --local --name-only --list | grep -i extraheader || echo "  없다 (정상)"
-          echo "── 부품 레포에 실제로 닿나 (https) ──"
-          git ls-remote "https://github.com/2026-gne-dev-task-force-team/gne-sheet.git" HEAD
-          echo "── npm 이 쓰는 꼴(ssh)로도 닿나 ──"
-          git ls-remote "ssh://git@github.com/2026-gne-dev-task-force-team/gne-sheet.git" HEAD
 
       - run: npm ci
         working-directory: v2
