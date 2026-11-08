@@ -8,12 +8,15 @@
 import { useEffect } from 'react';
 import { useCalendarData } from '../useEvents';
 import { EventCard } from './EventCard';
+import { FeedEventCard } from './FeedEventCard';
 
 export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: () => void }) {
     const { events, storeList } = useCalendarData();
     const event = events.find((e) => e.id === eventId) ?? null;
-    // 일정이 사라지면(휴지통) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
+    // 일정이 사라지면(휴지통·출처 해제) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
     useEffect(() => { if (!event) onClose(); }, [event, onClose]);
     if (!event) return null;
+    // 🔴 남의 일정이면 출처 카드(editor 있으면 그 화면, 없으면 읽기 전용)로 — 자기 일정 편집 폼(EventCard)엔 안 넘긴다.
+    if (event.foreign) return <FeedEventCard event={event} onClose={onClose} />;
     return <EventCard event={event} stores={storeList} onClose={onClose} />;
 }

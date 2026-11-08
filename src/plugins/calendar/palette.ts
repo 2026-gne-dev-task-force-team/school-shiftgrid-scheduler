@@ -28,7 +28,17 @@ export const PALETTE: PaletteEntry[] = [
 
 export const PALETTE_LEN = PALETTE.length;
 
+/** 뜻색 토큰 이름 → 팔레트 색인(순서와 같다). 남의 일정이 color 로 토큰을 주면 그 색으로 그린다. */
+const TOKEN_INDEX: Record<string, number> = { accent: 0, ok: 1, warn: 2, bad: 3, accenth: 4 };
+
 /** 저장소 순서 i 의 색 한 벌(음수·초과 모두 순환). */
 export function paletteAt(i: number): PaletteEntry {
     return PALETTE[((i % PALETTE_LEN) + PALETTE_LEN) % PALETTE_LEN];
+}
+
+/** 토큰 이름('accent' 등)의 색인(없거나 모르는 토큰이면 null) — 아는 토큰만 받는다(⛔ 임의 hex 금지, 구조 검사 ①). */
+export function paletteIndexOfToken(token: string | undefined): number | null {
+    if (!token) return null;
+    const i = TOKEN_INDEX[token];
+    return i === undefined ? null : i;
 }

@@ -124,7 +124,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect 
                                         <td className="px-3 py-1.5 border-b border-line">
                                             <span className="flex items-center gap-1.5 min-w-0">
                                                 <span className={`shrink-0 w-2 h-2 rounded-full ${paletteAt(e.colorIdx).dot}`} />
-                                                <span className="truncate text-muted">{store?.name ?? '—'}</span>
+                                                <span className="truncate text-muted">{store?.name ?? e.foreign?.sourceLabel ?? '—'}</span>
                                             </span>
                                         </td>
                                     </tr>
