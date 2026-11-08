@@ -48,6 +48,8 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             'contract-identity', 'contract-credential', 'contract-permit', 'account', 'credential-local',
             // 사람 명단(2026-11-08 머지) — 약속이 제공자보다 앞에 선다.
             'contract-people', 'people',
+            // 표 편집기·시간표 그리드·달력 약속(2026-11-08 머지) — 달력 약속은 끝에 붙어도 calendar 가 provides 로 쓰는 쪽이라 막히지 않는다.
+            'contract-table', 'table-editor', 'timetable-grid', 'contract-calendar',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
