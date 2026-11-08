@@ -76,7 +76,11 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                     ? { ...item.create, init: fns?.createInit ? (pid) => fns.createInit!(host, pid) : undefined }
                     : undefined,
                 menu: fns?.menu ? (id) => fns.menu!(host, id) : undefined,
-                can: item.can,
+                // 🔑 조작 가능 여부 — 함수 꼴(impl.can)이 있으면 그걸(노드·상황에 따라), 없으면 매니페스트의 고정 객체(item.can).
+                can: fns?.can ?? item.can,
+                canCreate: fns?.canCreate,          // 🔑 「만들기」 가림 — 함수뿐이라 impl 에서만 온다(매니페스트엔 함수 못 넣음)
+                confirmDelete: fns?.confirmDelete,  // 🔑 지울 때 경고(함수 꼴) — impl 에서
+                hidden: fns?.hidden,                // 🔑 조건부 숨김 — impl 에서
                 unique: item.unique,
                 slots: item.slots,
                 record: item.record,

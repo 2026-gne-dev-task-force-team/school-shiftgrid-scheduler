@@ -216,9 +216,11 @@ export function createNode(
     parentId: string,
     opts: { id: string; type: string; name: string; data?: unknown; index?: number },
     uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
+    canCreate?: (type: string, parentId: string) => boolean,
 ): Tree {
     const parent = tree.nodes[parentId];
     if (!parent) return tree;
+    if (canCreate && !canCreate(opts.type, parentId)) return tree;                            // 🔑 「만들기」 가림 관문 — 메뉴만 보고 뚫는 것을 막는다
     if (uniqueOf && violatesUnique(tree, opts.type, parentId, null, uniqueOf)) return tree;   // 🔑 싱글톤 관문
     const node: Node = { id: opts.id, type: opts.type, name: opts.name, children: [], data: opts.data };
     const kids = [...parent.children];
@@ -230,10 +232,19 @@ export function createNode(
     });
 }
 
-/** 이름 바꾸기 — 비면(공백뿐이면) 원래 이름을 지킨다(설계: *"비우면 원래 이름"*). */
-export function rename(tree: Tree, id: string, name: string): Tree {
+/**
+ * 이름 바꾸기 — 비면(공백뿐이면) 원래 이름을 지킨다(설계: *"비우면 원래 이름"*).
+ * 🔴 canRename 를 주면 「이름 바꾸기 가능」 관문을 지난다(can.rename) — 막힌 노드는 나무를 그대로 돌려준다(안 준 호출은 옛 동작).
+ */
+export function rename(
+    tree: Tree,
+    id: string,
+    name: string,
+    canRename?: (type: string, id: string) => boolean,
+): Tree {
     const n = tree.nodes[id];
     if (!n) return tree;
+    if (canRename && !canRename(n.type, id)) return tree;   // 🔑 can.rename 관문
     const t = name.trim();
     if (!t) return tree;
     return normalize({ ...tree, nodes: { ...tree.nodes, [id]: { ...n, name: t } } });
@@ -252,6 +263,7 @@ export function move(
     index?: number,
     canAccept?: (parentType: string, childType: string) => boolean,
     uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
+    canMove?: (type: string, id: string) => boolean,
 ): Tree {
     if (id === tree.root || id === tree.trash) return tree;   // 뿌리는 안 움직인다
     if (id.includes('/')) return tree;                        // 🔴 유도(가상) id 는 저장 안 됨 — 못 옮긴다
@@ -260,6 +272,7 @@ export function move(
     if (!node || !parent) return tree;
     if (parentId === id) return tree;
     if (isDescendant(tree, parentId, id)) return tree;        // 제 자손 밑으로 — 사이클
+    if (canMove && !canMove(node.type, id)) return tree;      // 🔑 can.move 관문 — 드래그·메뉴가 뚫는 것을 막는다(remove·restore 는 안 넘긴다)
     if (canAccept && !canAccept(parent.type, node.type)) return tree;   // 🔴 accepts 최종 관문
     if (uniqueOf && violatesUnique(tree, node.type, parentId, id, uniqueOf)) return tree;   // 🔑 싱글톤 최종 관문(자기 제외)
 
@@ -275,17 +288,26 @@ export function move(
     return normalize({ ...tree, nodes });
 }
 
-/** 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). 원래 부모를 trashedFrom 에 적어 둔다. */
-export function remove(tree: Tree, id: string): Tree {
+/**
+ * 삭제 = 휴지통 가지로 옮기기(🔴 영구삭제 아님 — 설계 「마지막 한 타는 사람이 친다」). 원래 부모를 trashedFrom 에 적어 둔다.
+ * 🔴 canDelete 를 주면 「지우기 가능」 관문을 지난다(can.delete) — 막힌 노드는 그대로 둔다(안 준 호출은 옛 동작).
+ *    ⛔ 안쪽 move 엔 can.move 관문을 안 넘긴다 — 지우기는 삭제 권한이지 이동 권한이 아니다(move:false 라도 지울 수 있어야 한다).
+ */
+export function remove(
+    tree: Tree,
+    id: string,
+    canDelete?: (type: string, id: string) => boolean,
+): Tree {
     if (id === tree.root || id === tree.trash) return tree;
     if (id.includes('/')) return tree;                        // 🔴 유도(가상) id — 지울 실물이 없다
     const n = tree.nodes[id];
     if (!n) return tree;
+    if (canDelete && !canDelete(n.type, id)) return tree;     // 🔑 can.delete 관문
     const from = parentOf(tree, id);
     const marked: Tree = from
         ? { ...tree, nodes: { ...tree.nodes, [id]: { ...n, trashedFrom: from } } }
         : tree;
-    return move(marked, id, marked.trash);
+    return move(marked, id, marked.trash);                    // ⛔ canMove 안 넘김 — 휴지통행은 삭제지 이동이 아니다
 }
 
 /**
@@ -408,29 +430,33 @@ export interface FlatRow {
  *   - expandAll: 접힘을 무시하고 전부 펼친다(검색 중엔 접힌 가지도 뒤져야 한다)
  *   - keep: 이 줄을 보일까 — 주면 keep(id) 가 참인 줄만 낸다. 안 맞는 조상은 keep 에 담겨 있으니 길이 이어진다.
  *     🔴 keep 밖 노드 밑으로는 안 내려간다(그 밑엔 맞는 게 없다 — filterIds 가 조상까지 담아 주니 성립).
- *   - isRecord: 레코드성 타입이면 🔴 그 줄도 그 아래도 통째로 건너뛴다(탐색기에 「어떤 경우에도」 안 보인다).
+ *   - isRecord: 레코드성 타입(무조건 숨김 · 옛 소비자용) · hidden: 노드째 판정(record+조건부 합침 · 탐색기용) — 둘 중 하나라도 참이면 🔴 그 줄도 그 아래도 건너뛴다.
  */
 export function flatten(
     tree: Tree,
     fromId: string,
     isContainer?: (type: string) => boolean,
-    opts?: { expandAll?: boolean; keep?: (id: string) => boolean; isRecord?: (type: string) => boolean },
+    opts?: { expandAll?: boolean; keep?: (id: string) => boolean; isRecord?: (type: string) => boolean; hidden?: (node: Node) => boolean },
 ): FlatRow[] {
     const out: FlatRow[] = [];
+    // 🔴 「이 노드를 건너뛸까」 — isRecord(무조건 · 타입) 와 hidden(조건부 · 노드) 둘 다 본다(둘 중 하나면 숨긴다).
+    //    옛 소비자는 isRecord 만, 탐색기는 hidden(=record+조건부 합침)만 준다 — 둘 다 선택이라 섞여도 안전하다.
+    const hid = opts?.isRecord || opts?.hidden
+        ? (node: Node): boolean => (opts?.isRecord?.(node.type) ?? false) || (opts?.hidden?.(node) ?? false)
+        : null;
     const walk = (id: string, depth: number): void => {
         const n = tree.nodes[id];
         if (!n) return;
         for (const cid of n.children) {
             const c = tree.nodes[cid];
             if (!c) continue;
-            if (opts?.isRecord?.(c.type)) continue;   // 🔴 레코드성 — 줄도 그 아래도 건너뛴다
+            if (hid?.(c)) continue;   // 🔴 숨김(record 무조건 + hidden 조건부) — 줄도 그 아래도 건너뛴다
             const inKeep = !opts?.keep || opts.keep(cid);
             const container = isContainer ? isContainer(c.type) : c.children.length > 0;
-            // 🔴 ▸ 토글은 「보이는 하위」가 있을 때만 선다 — 레코드성 자식(일정)은 세지 않는다(쥔님 2026-11-02:
+            // 🔴 ▸ 토글은 「보이는 하위」가 있을 때만 선다 — 숨긴 자식(레코드·조건부)은 세지 않는다(쥔님 2026-11-02:
             //    *"하위 레코드 노드 보고 하위 토글 보이는게 아니고, 다른 하위 노드가 붙엇을때 하위 노드 보이는거야"*).
-            const isRec = opts?.isRecord;
-            const visibleKids = isRec
-                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !isRec(kn.type) ? 1 : 0); }, 0)
+            const visibleKids = hid
+                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !hid(kn) ? 1 : 0); }, 0)
                 : c.children.length;
             const hasChildren = container && visibleKids > 0;
             if (inKeep) out.push({ id: cid, depth, node: c, hasChildren });

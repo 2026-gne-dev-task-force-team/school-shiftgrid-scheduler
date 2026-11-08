@@ -13,7 +13,7 @@ import {
     isDescendant, setData as setDataTree, newFolderParent, topmostOnly, violatesUnique,
 } from './model/tree';
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from './model/selection';
-import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf } from './model/types';
+import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
 import { loadTree, saveTree } from './persist';
 
@@ -34,6 +34,11 @@ interface ExplorerState {
     /** 「휴지통 비우기」 인라인 확인 중. */
     purgeAllConfirm: boolean;
     /**
+     * 🔑 인라인 「지울까요?」 — 노드 타입이 confirmDelete 로 경고를 요청했을 때(⛔ window.confirm 안 씀).
+     *   ids: 확정 때 지울 노드들(이미 can.delete 통과분) · msg: 노드 타입이 준 경고 문구. null 이면 평소.
+     */
+    deleteConfirm: { ids: string[]; msg: string } | null;
+    /**
      * 🔴 비동기 로드가 끝나기 전인가 — 저장소(IndexedDB)가 비동기라 생긴 칸.
      *   true 인 동안 뷰는 「불러오는 중…」 한 줄만 그리고, apply(조작)도 전부 막힌다 —
      *   빈 나무 위에 쌓인 뒤 저장돼 옛 나무를 덮는 사고를 막는 자리다.
@@ -44,8 +49,16 @@ interface ExplorerState {
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, loading: false, notice: null };
+    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, deleteConfirm: null, loading: false, notice: null };
 }
+
+// ─────────────────────────── 조작 가능 관문(model 에 주입) ───────────────────────────
+// 🔴 model/tree 는 등록 표를 모른다 — 「이 노드를 옮겨/지워/고쳐도 되나」 판정을 바깥(여기)이 주입한다(uniqueOf·acceptsChild 와 같은 결).
+//    한 곳(canDo)만 지나므로 드래그·메뉴·단축키·공개 API 가 전부 같은 답을 받는다.
+const permitMove = (type: string, id: string): boolean => canDo(type, id, 'move');
+const permitRename = (type: string, id: string): boolean => canDo(type, id, 'rename');
+const permitDelete = (type: string, id: string): boolean => canDo(type, id, 'delete');
+const permitCreate = (type: string, parentId: string): boolean => canCreateType(type, parentId);
 
 /** 한 개만 고른 상태로 쓰는 patch 조각 — selectedId 를 설정하던 모든 자리가 이걸 쓴다(불변식: selectedId ∈ selectedIds). */
 function singleSel(id: string | null): Pick<ExplorerState, 'selectedIds' | 'anchorId' | 'selectedId'> {
@@ -205,7 +218,7 @@ export function cancelRename(): void {
 export function commitRename(name: string): void {
     const id = state.renamingId;
     if (!id) return;
-    apply((t) => rename(t, id, name), { patch: { renamingId: null } });
+    apply((t) => rename(t, id, name, permitRename), { patch: { renamingId: null } });
 }
 
 // ─────────────────────────── 구조 연산(명령이 부른다) ───────────────────────────
@@ -263,6 +276,12 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
             return;
         }
     }
+    // 🔑 「만들기」 가림 사전점검 — 모델 관문(createNode 의 canCreate)이 막기 전에 이유를 알린다(메뉴 회색과 같은 판정).
+    if (!canCreateType(type, parent)) {
+        const d = getType(type);
+        flashNotice(`「${d?.create?.label ?? d?.label ?? type}」를 여기에 만들 수 없습니다.`);
+        return;
+    }
     // 🔑 싱글톤 사전점검 — 모델 관문(createNode 의 uniqueOf)이 막기 전에 이유를 알린다(메뉴 회색과 같은 판정).
     if (violatesUnique(state.tree, type, parent, null, uniqueOf)) {
         const d = getType(type);
@@ -275,7 +294,7 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
     apply(
         (t) => {
-            const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf);
+            const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf, permitCreate);
             if (made === t) return t;                                     // 관문에 막힘(이론상 위에서 걸러짐)
             return createSlots(made, id, type, new Set());                // 🔑 자동 슬롯 — 한 묶음(되돌리기 한 번)
         },
@@ -307,11 +326,41 @@ export function renameSelected(): void {
 export function removeSelected(): void {
     const ids = state.selectedIds.filter((id) => id !== state.tree.root && id !== state.tree.trash && state.tree.nodes[id]);
     if (ids.length === 0) return;
+    // 🔑 can.delete 로 지울 수 있는 것만(막힌 건 조용히 빠진다 — 메뉴는 이미 회색이지만 단축키·멀티 선택 대비).
+    const deletable = topmostOnly(state.tree, ids).filter((id) => {
+        const n = state.tree.nodes[id];
+        return !!n && canDo(n.type, id, 'delete');
+    });
+    if (deletable.length === 0) return;
+    // 🔑 confirmDelete — 지울 것 중 하나라도 노드 타입이 경고를 요청하면 먼저 인라인으로 묻는다(⛔ window.confirm 안 씀).
+    const msg = deletable
+        .map((id) => { const n = state.tree.nodes[id]; return n ? confirmDeleteMsg(n.type, id) : null; })
+        .find((m): m is string => !!m);
+    if (msg) { state = { ...state, deleteConfirm: { ids: deletable, msg } }; emit(); return; }
+    doRemove(deletable);
+}
+
+/** 실제 삭제 — can.delete 통과분을 휴지통으로(한 묶음). removeSelected 와 confirmRemove 가 공유한다. */
+function doRemove(ids: string[]): void {
     apply((t) => {
         let x = t;
-        for (const id of topmostOnly(t, ids)) x = remove(x, id);
+        for (const id of topmostOnly(t, ids)) x = remove(x, id, permitDelete);
         return x;
-    }, { patch: { ...singleSel(null), renamingId: null } });
+    }, { patch: { ...singleSel(null), renamingId: null, deleteConfirm: null } });
+}
+
+/** 인라인 「지울까요?」 확정 — confirmDelete 경고를 받아들여 지운다. */
+export function confirmRemove(): void {
+    const c = state.deleteConfirm;
+    if (!c) return;
+    doRemove(c.ids);
+}
+
+/** 인라인 「지울까요?」 취소 — 경고 줄을 닫는다(아무것도 안 지운다). */
+export function cancelRemove(): void {
+    if (!state.deleteConfirm) return;
+    state = { ...state, deleteConfirm: null };
+    emit();
 }
 
 /** 접기/펴기 토글 — 화살표·오른쪽/왼쪽 화살표 키가 쓴다. ⛔ 더미에 안 쌓는다(접힘은 되돌릴 값 아님). */
@@ -319,9 +368,9 @@ export function toggle(id: string): void {
     apply((t) => toggleCollapse(t, id), { history: 'skip' });
 }
 
-/** 옮기기(하나) — accepts·싱글톤을 move 에 주입한다(마지막 관문). */
+/** 옮기기(하나) — accepts·싱글톤·can.move 를 move 에 주입한다(마지막 관문). */
 export function moveNode(id: string, parentId: string, index?: number): void {
-    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf));
+    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf, permitMove));
 }
 
 /**
@@ -334,7 +383,7 @@ export function moveNodes(ids: string[], parentId: string, index?: number): void
         let x = t;
         let at = index;
         for (const id of topmostOnly(t, ids)) {
-            x = move(x, id, parentId, at, acceptsChild, uniqueOf);
+            x = move(x, id, parentId, at, acceptsChild, uniqueOf, permitMove);
             if (at != null) at += 1;
         }
         return x;
@@ -451,10 +500,11 @@ export function apiCreate(
 ): string {
     if (state.loading) return '';   // 🔴 로딩 중엔 안 만든다(apply 가 막히니 가짜 id 를 돌려주지 않게)
     if (!state.tree.nodes[parentId]) return '';
+    if (!canCreateType(opts.type, parentId)) return '';   // 🔑 「만들기」 가림 — 안 만든다(빈 id)
     if (violatesUnique(state.tree, opts.type, parentId, null, uniqueOf)) return '';   // 🔑 싱글톤 — 안 만든다(빈 id)
     const id = uid();
     apply((t) => {
-        const made = createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }, uniqueOf);
+        const made = createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }, uniqueOf, permitCreate);
         if (made === t) return t;
         return createSlots(made, id, opts.type, new Set());   // 🔑 자동 슬롯 — 부모 생성과 한 묶음
     });
@@ -463,17 +513,17 @@ export function apiCreate(
 
 export function apiRename(id: string, name: string): void {
     if (!state.tree.nodes[id]) return;
-    apply((t) => rename(t, id, name));
+    apply((t) => rename(t, id, name, permitRename));
 }
 
 export function apiMove(id: string, parentId: string, index?: number): void {
-    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf));
+    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf, permitMove));
 }
 
 /** 휴지통으로(영구삭제 아님) — API 엔 purge 가 없다(사람만 비운다). */
 export function apiRemove(id: string): void {
     if (!state.tree.nodes[id]) return;
-    apply((t) => remove(t, id));
+    apply((t) => remove(t, id, permitDelete));
 }
 
 /** 불투명 data 쓰기 — 🔴 주인(타입 접두사) 검사는 api.ts 가 하고, 여기선 모델만 바꾼다. */

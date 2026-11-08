@@ -15,7 +15,7 @@ import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
 import {
-    initStore, getState, newNode, renameSelected, removeSelected,
+    initStore, getState, newNode, renameSelected, removeSelected, confirmRemove, cancelRemove,
     nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
     undoAction, redoAction,
@@ -101,6 +101,8 @@ export const projectExplorerPlugin = definePlugin({
                 { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder' },
                 { id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit' },
                 { id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
+                { id: 'project-explorer.confirm-remove', title: '삭제 확인', icon: 'trash' },
+                { id: 'project-explorer.cancel-remove', title: '삭제 취소', icon: 'x' },
                 { id: 'project-explorer.open', title: '열기', icon: 'arrowRight' },
                 { id: 'project-explorer.move-up', title: '위로', icon: 'left' },
                 { id: 'project-explorer.move-down', title: '아래로', icon: 'left' },
@@ -131,6 +133,8 @@ export const projectExplorerPlugin = definePlugin({
         'project-explorer.open-panel': (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left', reuse: true }); },
         'project-explorer.rename': () => renameSelected(),
         'project-explorer.remove': () => removeSelected(),
+        'project-explorer.confirm-remove': () => confirmRemove(),
+        'project-explorer.cancel-remove': () => cancelRemove(),
         'project-explorer.open': () => { const id = getState().selectedId; if (id) openById(id); },
         'project-explorer.move-up': () => nudgeSelected(-1),
         'project-explorer.move-down': () => nudgeSelected(1),

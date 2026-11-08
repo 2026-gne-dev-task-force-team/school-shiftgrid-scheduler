@@ -21,11 +21,21 @@ export type ExplorerRow =
 /**
  * fromId 자손을 순서대로 — 각 컨테이너는 저장된 자식(재귀) 다음에 유도 자식을 붙인다.
  *   접힘(collapsed)은 실노드 컨테이너에서만 — 유도 줄은 1차엔 늘 펼쳐 그린다(중첩 유도 포함).
- *   🔴 이 빌더는 flatten 을 안 거치고 tree.nodes 를 직접 돈다 — 그래서 레코드성(isRecord) 건너뛰기를 여기서도 해야 한다
- *     (안 하면 본 나무에 레코드가 뜬다 — flatten 과 같은 규칙: 그 줄도 그 아래도 건너뛴다). isRecord 없으면 옛 동작.
+ *   🔴 이 빌더는 flatten 을 안 거치고 tree.nodes 를 직접 돈다 — 그래서 숨김 건너뛰기를 여기서도 해야 한다
+ *     (안 하면 본 나무에 숨길 노드가 뜬다 — flatten 과 같은 규칙: 그 줄도 그 아래도 건너뛴다). 둘 다 없으면 옛 동작.
+ *     isRecord(무조건 · 타입 · 옛 소비자) 와 hidden(노드째 · 레코드+조건부 합침 · 탐색기) 둘 중 하나라도 참이면 건너뛴다.
  */
-export function buildMainRows(tree: Tree, fromId: string, isRecord?: (type: string) => boolean): ExplorerRow[] {
+export function buildMainRows(
+    tree: Tree,
+    fromId: string,
+    isRecord?: (type: string) => boolean,
+    hidden?: (node: Node) => boolean,
+): ExplorerRow[] {
     const out: ExplorerRow[] = [];
+    // 🔴 「이 노드를 건너뛸까」 — isRecord(타입) 와 hidden(노드) 둘 다 본다(flatten 과 같은 규칙).
+    const hid = isRecord || hidden
+        ? (node: Node): boolean => (isRecord?.(node.type) ?? false) || (hidden?.(node) ?? false)
+        : null;
 
     const emitVirtual = (
         vnodes: { key: string; name: string; icon?: IconName; type?: string; openable?: boolean; children?: unknown[] }[],
@@ -50,14 +60,14 @@ export function buildMainRows(tree: Tree, fromId: string, isRecord?: (type: stri
         for (const cid of n.children) {
             const c = tree.nodes[cid];
             if (!c) continue;
-            if (isRecord?.(c.type)) continue;   // 🔴 레코드성 — 줄도 그 아래도 건너뛴다(flatten 과 같은 규칙)
+            if (hid?.(c)) continue;   // 🔴 숨김(레코드 무조건 + hidden 조건부) — 줄도 그 아래도 건너뛴다(flatten 과 같은 규칙)
             const def = getType(c.type);
             const container = isContainerType(c.type);
             const der = def?.derive ? getDerived(c, def) : null;
             const hasDerived = !!der && (der.failed || der.children.length > 0);
-            // 🔴 ▸ 토글은 「보이는 하위」로만 선다 — 레코드성 자식(일정)은 세지 않는다(flatten 과 같은 규칙 · 쥔님 11-02).
-            const visibleKids = isRecord
-                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !isRecord(kn.type) ? 1 : 0); }, 0)
+            // 🔴 ▸ 토글은 「보이는 하위」로만 선다 — 숨긴 자식(레코드·조건부)은 세지 않는다(flatten 과 같은 규칙 · 쥔님 11-02).
+            const visibleKids = hid
+                ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !hid(kn) ? 1 : 0); }, 0)
                 : c.children.length;
             const hasChildren = container && (visibleKids > 0 || hasDerived);
             out.push({ kind: 'node', id: cid, depth, node: c, hasChildren });

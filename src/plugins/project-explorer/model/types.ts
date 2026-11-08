@@ -15,7 +15,7 @@ import type { Node } from './tree';
 // 🔴 노드 타입 규격(VirtualNode·CreateSpec·NodeTypeDef)은 약속(이 꾸러미 contracts/nodes)이 쥔다 — 제공자가 import 해 구현한다(3판 부채 끊기).
 //    ⭐ 재export 는 이 폴더가 `./types` 로 받던 길을 안 깨려는 것뿐(derive·index·api 가 그대로 쓴다). NodeTypeDef 만 이 파일 런타임이 쓴다.
 import type { NodeTypeDef } from '../contracts/nodes';
-export type { VirtualNode, CreateSpec, NodeTypeDef } from '../contracts/nodes';
+export type { VirtualNode, CreateSpec, NodeTypeDef, CanFlags } from '../contracts/nodes';
 
 const registry = new Map<string, NodeTypeDef>();
 
@@ -166,10 +166,51 @@ export function slotsOf(type: string): string[] {
     return registry.get(type)?.slots ?? [];
 }
 
-/** can.rename/move/delete — 기본 전부 true(타입이 명시로 끌 때만 false). */
-export function canDo(type: string, what: 'rename' | 'move' | 'delete'): boolean {
+/**
+ * can.rename/move/delete — 기본 전부 true(타입이 명시로 끌 때만 false). 🔴 관문 한 곳:
+ *   메뉴 회색·드래그·모델 move/remove/rename·공개 API 가 전부 이걸 지난다(violatesUnique·acceptsChild 와 같은 결).
+ *   can 은 고정 객체일 수도, 함수 `(nodeId) => CanFlags` 일 수도 있다 — 함수면 그 노드·현재 상황으로 답한다(모르는 타입은 전부 허용).
+ */
+export function canDo(type: string, nodeId: string, what: 'rename' | 'move' | 'delete'): boolean {
     const can = registry.get(type)?.can;
-    return can?.[what] !== false;
+    if (can == null) return true;
+    const flags = typeof can === 'function' ? can(nodeId) : can;
+    return flags?.[what] !== false;
+}
+
+/**
+ * 이 타입을 parentId 아래 새로 만들어도 되나 — 기본 true(canCreate 가 없으면). 🔴 관문 한 곳:
+ *   우클릭 메뉴 회색·헤더 단추·공개 API create 가 전부 지난다. parentId 가 null 이면 부모 미정 자리(헤더 단추 등).
+ */
+export function canCreateType(type: string, parentId: string | null): boolean {
+    const fn = registry.get(type)?.canCreate;
+    return fn ? fn(parentId) : true;
+}
+
+/**
+ * 이 노드를 지우기 전에 보일 경고 문구 — 없으면 null(바로 휴지통으로). 고정 문자열이거나 `(nodeId) => string | null` 함수.
+ *   🔴 window.confirm 이 아니라 탐색기가 인라인 확인 줄로 띄운다(볼트 규칙).
+ */
+export function confirmDeleteMsg(type: string, nodeId: string): string | null {
+    const cd = registry.get(type)?.confirmDelete;
+    if (cd == null) return null;
+    return typeof cd === 'function' ? cd(nodeId) : cd;
+}
+
+/**
+ * 이 노드를 지금 숨길까 — record(무조건 숨김)와 달리 상황(권한 등)에 따라 그때그때. 없으면 늘 보인다.
+ *   🔴 탐색기는 record(무조건) 와 hidden(조건) 을 합쳐 「이 노드를 건너뛸까」로 쓴다(nodeHidden).
+ */
+export function isHiddenNode(node: Node): boolean {
+    return registry.get(node.type)?.hidden?.(node.id) === true;
+}
+
+/** 탐색기가 「이 노드(와 그 아래)를 통째로 건너뛸까」 — 무조건 숨김(record) 또는 조건부 숨김(hidden). flatten·buildMainRows 에 콜백으로 준다. */
+export function nodeHidden(node: Node): boolean {
+    const def = registry.get(node.type);
+    if (!def) return false;
+    if (def.record === true) return true;
+    return def.hidden?.(node.id) === true;
 }
 
 /** 테스트·앱 재마운트에서 목록을 비운다(view-registry.clearViews 와 같은 결). 알림 구독도 같이 끊는다. */

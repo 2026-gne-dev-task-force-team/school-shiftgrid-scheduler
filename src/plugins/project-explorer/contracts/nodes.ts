@@ -44,6 +44,12 @@ export interface CreateSpec {
     init?: (parentId: string) => Partial<Node>;
 }
 
+/**
+ * 🔑 조작 가능 플래그 — rename·move·delete 각각 「해도 되나」. 생략/undefined 는 true.
+ *   ⭐ 고정 객체(타입 전체가 늘 같은 답)로도, 함수(노드·현재 상황에 따라 답이 다름)로도 줄 수 있다 — NodeTypeDef.can 참고.
+ */
+export interface CanFlags { rename?: boolean; move?: boolean; delete?: boolean }
+
 /** 노드 타입 한 벌 — 플러그인이 register 로 꽂는다. */
 export interface NodeTypeDef {
     /** 🔴 `<pluginId>.` 접두사 강제(viewId 와 같은 규칙) — 내장 'folder' 만 접두사 없는 예외. */
@@ -60,8 +66,33 @@ export interface NodeTypeDef {
     derive?: (node: Node) => VirtualNode[];
     create?: CreateSpec;
     menu?: (nodeId: string) => MenuEntry[];
-    /** 기본 전부 true. */
-    can?: { rename?: boolean; move?: boolean; delete?: boolean };
+    /**
+     * 🔑 이름바꾸기·옮기기·지우기를 「해도 되나」 — 기본 전부 true. 두 꼴:
+     *   - 고정 객체 `{ rename?, move?, delete? }` — 타입 전체가 늘 같은 답(옛 꼴 그대로).
+     *   - 함수 `(nodeId) => CanFlags` — 노드·현재 상황(로그인한 사람·권한 등)에 따라 그때그때 답한다.
+     *   🔴 관문은 한 곳(canDo) — 메뉴 회색·드래그·모델 move/remove/rename·공개 API 가 전부 이걸 지난다(violatesUnique 와 같은 결).
+     *   ⛔ 탐색기는 이 함수의 속을 모른다 — 판정은 노드 타입 주인(플러그인)이 준다(계정·권한 낱말 0).
+     */
+    can?: CanFlags | ((nodeId: string) => CanFlags);
+    /**
+     * 🔑 「만들기」 가림 — 이 타입을 parentId 아래 새로 만들어도 되나(기본 true). 없으면 늘 만들 수 있다.
+     *   parentId 는 만들어질 부모(루트 포함) · null 은 부모가 정해지지 않은 자리(헤더 단추 등). 막히면 「새로 만들기」 후보가 회색.
+     *   🔴 관문은 한 곳(canCreate) — 우클릭 메뉴·헤더 단추·공개 API create 가 전부 지난다.
+     */
+    canCreate?: (parentId: string | null) => boolean;
+    /**
+     * 🔑 「지울 때 경고」 — 이 타입을 지우기 전에 사람에게 한 번 물을 말(없으면 바로 휴지통으로). 두 꼴:
+     *   - 고정 문자열 — 늘 같은 경고.
+     *   - 함수 `(nodeId) => string | null` — 그 노드에 경고가 필요하면 문구, 아니면 null(바로 지움).
+     *   ⛔ window.confirm 이 아니라 탐색기가 인라인 확인 줄로 띄운다(볼트 규칙과 같은 결).
+     */
+    confirmDelete?: string | ((nodeId: string) => string | null);
+    /**
+     * 🔑 조건부 숨김 — 이 노드를 지금 사람에게 보일까(true 면 record 처럼 「안 보인다」). 없으면 늘 보인다.
+     *   record(무조건 숨김)와 다르다 — 상황(권한)에 따라 보였다 숨었다 한다. 본 나무·검색·휴지통 어디서도 안 보인다.
+     *   ⛔ 탐색기는 판정의 속을 모른다 — 노드 타입 주인이 준다(예: 보기 권한 없으면 숨김).
+     */
+    hidden?: (nodeId: string) => boolean;
     /**
      * 🔑 싱글톤 — 이 타입의 노드를 몇 개까지 두나(🔴 휴지통은 안 센다):
      *   - 'tree'   나무 전체(휴지통 제외)에 하나만. 예: 학교 정보·설정.
@@ -93,6 +124,16 @@ export interface NodeTypeImplFns {
     derive?: (node: Node) => VirtualNode[];
     menu?: (host: PluginHost, nodeId: string) => MenuEntry[];
     createInit?: (host: PluginHost, parentId: string) => Partial<Node>;
+    /**
+     * 🔑 상황에 따라 답하는 판정·가림 함수들 — 매니페스트엔 함수를 못 넣으니 여기 모아 두고 impl 이름으로 가리킨다.
+     *   can — 노드별 rename/move/delete 가능 여부(고정 객체는 매니페스트 can 에 둬도 된다 · 함수면 여기).
+     *   canCreate — 그 부모 밑에 이 타입을 만들어도 되나 · confirmDelete — 지울 때 경고(없으면 null) · hidden — 지금 숨길까.
+     *   ⛔ 전부 순수 판정이라 host 를 안 받는다(open·menu 와 다르다) — nodeId/parentId 로만 답한다(값은 플러그인이 제 모듈 전역에서 읽는다).
+     */
+    can?: (nodeId: string) => CanFlags;
+    canCreate?: (parentId: string | null) => boolean;
+    confirmDelete?: (nodeId: string) => string | null;
+    hidden?: (nodeId: string) => boolean;
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */

@@ -15,7 +15,7 @@ import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
-import { isContainerType, isRecordType, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, acceptsChild, activateVerb, uniqueOf } from '../model/types';
+import { isContainerType, nodeHidden, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
@@ -62,6 +62,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
         const ok = dragIds.every((did) => {
             const dn = tree.nodes[did];
             return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did)
+                && canDo(dn.type, did, 'move')
                 && acceptsChild(rootNode.type, dn.type)
                 && !violatesUnique(tree, dn.type, tree.root, did, uniqueOf);
         });
@@ -101,6 +102,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
     const ok = !!dp && dragIds.every((did) => {
         const dn = tree.nodes[did];
         return !!dn && destParent !== did && !isDescendant(tree, destParent, did)
+            && canDo(dn.type, did, 'move')
             && acceptsChild(dp.type, dn.type)
             && !violatesUnique(tree, dn.type, destParent, did, uniqueOf);
     });
@@ -108,7 +110,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
 }
 
 export function ExplorerView({ host }: { host: PluginHost }) {
-    const { tree, selectedIds, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, loading } = useExplorer();
+    const { tree, selectedIds, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
 
     const [query, setQuery] = useState('');
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -129,7 +131,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     useEffect(() => () => clearRenameTimer(), [clearRenameTimer]);
 
     // 휴지통 줄(루트 밖) — 맨 아래 접이식 구역. 🔴 listRef(본 나무) 밖이라 드래그 떨굴 자리에 안 걸린다.
-    const trashRows = flatten(tree, tree.trash, isContainerType, { isRecord: isRecordType });
+    const trashRows = flatten(tree, tree.trash, isContainerType, { hidden: nodeHidden });
     const run = (id: string) => host.commands.run(id);
 
     useEffect(() => {
@@ -151,11 +153,11 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const rows: ExplorerRow[] = q
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
-            isRecord: isRecordType,
-            // 🔴 레코드성(일정 등)은 검색에도 안 걸린다(「상위의 데이터」 · 쥔님 2026-11-02) — 안 그러면 숨은 레코드가 제 부모 폴더를 「맞은 줄」로 띄운다.
-            keep: (() => { const k = filterIds(tree, tree.root, (n) => !isRecordType(n.type) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
+            hidden: nodeHidden,
+            // 🔴 숨긴 노드(레코드·조건부)는 검색에도 안 걸린다(「상위의 데이터」·권한 없음 · 쥔님 2026-11-02) — 안 그러면 숨은 노드가 제 부모 폴더를 「맞은 줄」로 띄운다.
+            keep: (() => { const k = filterIds(tree, tree.root, (n) => !nodeHidden(n) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
-        : buildMainRows(tree, tree.root, isRecordType);
+        : buildMainRows(tree, tree.root, undefined, nodeHidden);
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
     const rowsOrder = rows.map((r) => r.id);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
 
@@ -197,7 +199,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         }
         // 이미 **그 하나만** 고른 실노드를 또 누르면(맥 Finder 느린 재클릭) 지연 뒤 이름바꾸기 — 두 번 누르기면 dblRow 가 취소.
         const wasSelected = selectedId === row.id && selectedIds.length === 1 && row.kind === 'node';
-        if (wasSelected && canDo(row.node.type, 'rename')) {
+        if (wasSelected && canDo(row.node.type, row.id, 'rename')) {
             clearRenameTimer();
             renameTimer.current = window.setTimeout(() => { host.commands.run('project-explorer.rename'); }, RENAME_CLICK_DELAY);
             return;
@@ -318,15 +320,17 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         const ctxParent = newFolderParent(tree, selectedId, isContainerType, 'context');
         for (const def of createCandidates(baseType)) {
             const dup = violatesUnique(tree, def.type, ctxParent, null, uniqueOf);
-            items.push(dup
-                ? { label: `새 ${def.label} (이미 있음)`, icon: 'plus', disabled: true }
-                : { label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
+            const blocked = !canCreateType(def.type, ctxParent);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
+            items.push(
+                dup ? { label: `새 ${def.label} (이미 있음)`, icon: 'plus', disabled: true }
+                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon: 'plus', disabled: true }
+                        : { label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
         }
         if (selNode && !inTrash) {
             // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
             const multi = selectedIds.length > 1;
-            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: multi || !canDo(selNode.type, 'rename') });
-            items.push({ label: multi ? `삭제 (${selectedIds.length}개)` : '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
+            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: multi || !canDo(selNode.type, selectedId!, 'rename') });
+            items.push({ label: multi ? `삭제 (${selectedIds.length}개)` : '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, selectedId!, 'delete') });
             if (narrow) {
                 items.push({ label: '위로', icon: 'left', commandId: 'project-explorer.move-up' });
                 items.push({ label: '아래로', icon: 'left', commandId: 'project-explorer.move-down' });
@@ -380,6 +384,16 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 />
                 {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
             </div>
+
+            {/* 🔑 인라인 「지울까요?」 — 노드 타입이 confirmDelete 로 요청한 경고(⛔ window.confirm 안 씀) */}
+            {deleteConfirm && (
+                <div className="flex items-center gap-2 px-pad py-1.5 border-b border-line shrink-0 bg-bad/5">
+                    <Icon name="trash" size={13} className="text-bad shrink-0" />
+                    <span className="flex-1 min-w-0 text-[12px] text-text">{deleteConfirm.msg}</span>
+                    <button type="button" onClick={() => run('project-explorer.confirm-remove')} className="px-1.5 py-0.5 rounded text-[11px] text-bad hover:bg-bad/10">지우기</button>
+                    <button type="button" onClick={() => run('project-explorer.cancel-remove')} className="px-1.5 py-0.5 rounded text-[11px] text-muted hover:bg-text/[0.06]">취소</button>
+                </div>
+            )}
 
             <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
                 {rows.length === 0 && (
