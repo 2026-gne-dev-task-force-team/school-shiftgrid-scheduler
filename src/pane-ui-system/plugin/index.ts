@@ -15,7 +15,7 @@ export type {
     // 🔴 선언형 기여(2026-11-02 선언형 전환) — 매니페스트 contributes · 모듈 구현 칸 · 동적 선언
     Contributes, ViewContribution, CommandContribution, SettingsContributes, StatusBarContribution,
     NodeTypeContribution, NodeTypeRegistrar,
-    PluginImpl, PluginLifecycle, DeclareInput,
+    PluginImpl, PerCallerApi, PluginLifecycle, DeclareInput,
     ContributionKind, ContributionRecord,
     // 🔴 M0 모듈·의존성 — 약속(인터페이스) 기여 선언 · supports 훅
     InterfaceContribution, InterfaceHook,

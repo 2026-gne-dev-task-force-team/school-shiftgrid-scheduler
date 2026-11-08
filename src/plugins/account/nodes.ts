@@ -43,7 +43,7 @@ export type SecretData = Hashed;
  * 노드 타입 넷 — 전부 record: true(탐색기에 안 보인다). 순수 데이터라 impl(함수 묶음) 없음(달력 일정과 같은 꼴).
  *   🔴 record 리터럴은 여기(비-뷰)에 산다 — 구조 검사 ⑯ 은 뷰에서만 소문자 record 를 막는다.
  */
-export const accountNodeTypes: NodeTypeContribution[] = [
+export const accountNodeTypes: NodeTypeContribution<never>[] = [
     { type: USER_TYPE, label: '사용자', record: true },
     { type: ROLE_TYPE, label: '역할', record: true },
     { type: POLICY_TYPE, label: '정책', record: true },

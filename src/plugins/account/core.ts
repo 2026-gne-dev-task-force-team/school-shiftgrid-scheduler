@@ -23,6 +23,11 @@ let nodesApi: NodesApi | null = null;
 let hostRef: PluginHost | null = null;
 let session: CurrentUser = guest();
 let nodesUnsub: Disposable | null = null;
+// 🔴 비동기 저장소 경합 방어 — onActivate 시점엔 노드가 아직 안 왔을 수 있다(project-explorer 의 loadTree 가 await).
+//    그 사이 hasSecret() 가 거짓이라 암호 걸린 프로젝트도 마스터로 시작해 버린다. 로드가 끝나 「첫 알림」이 오면
+//    초기 상태를 딱 한 번 다시 센다(store 가 loadTree 완료 때 빈 나무→실나무 diff 로 subscribe 를 깨운다).
+//    사용자가 그 전에 명시적으로 로그인/로그아웃하면 끈다(setSession 이 false 로).
+let awaitingFirstLoad = false;
 const identityListeners = new Set<() => void>();
 const permitListeners = new Set<() => void>();
 
@@ -56,8 +61,15 @@ function policyData(): PolicyData {
     };
 }
 
-// ── 시작 상태(열 때) — 암호 없으면 마스터, 있으면 손님 ──
+// ── 시작 상태(열 때) — 암호 없으면 마스터, 있으면 손님(기기 저장의 'user' 를 되살릴 수 있으면 그 사람) ──
 function initialState(): CurrentUser { return hasSecret() ? guest() : master(); }
+/** 열 때의 초기 세션을 센다 — 암호 유무가 정하고, 암호가 있으면 기기 저장의 'user'(증명 안 됨)를 되살린다. */
+function deriveInitial(): CurrentUser {
+    if (!hasSecret()) return master();
+    const saved = hostRef?.storage.get<{ kind?: string; id?: string } | null>(SESSION_KEY, null) ?? null;
+    const u = saved?.kind === 'user' && saved.id ? readUser(saved.id) : null;
+    return u && saved?.id ? userSession(saved.id, u, false) : guest();
+}
 
 // ── 알림 ──
 function fireIdentity(): void { for (const f of [...identityListeners]) f(); }
@@ -66,6 +78,7 @@ export function onIdentityChange(fn: () => void): Disposable { identityListeners
 export function onPermitChange(fn: () => void): Disposable { permitListeners.add(fn); return { dispose() { permitListeners.delete(fn); } }; }
 
 function setSession(next: CurrentUser): void {
+    awaitingFirstLoad = false;   // 🔴 사용자가 명시적으로 바꿨으면 늦은 재초기화를 끈다(로드 알림이 와도 덮지 않는다)
     session = next;
     persistSession();
     fireIdentity();   // 세션이 바뀌면 누구·판정 둘 다 울린다
@@ -88,18 +101,26 @@ export function initAccount(host: PluginHost, nodes: NodesApi | null): void {
     hostRef = host;
     nodesApi = nodes;
     nodesUnsub?.dispose();
-    nodesUnsub = nodes ? nodes.subscribe(() => firePermit()) : null;   // 역할·정책·사용자가 바뀌면 판정이 바뀐다
     identityListeners.clear();
     permitListeners.clear();
 
-    // 시작 상태 — 암호 유무가 정한다. 암호가 있을 때만 기기 저장의 'user' 를 되살린다(마스터는 절대 되살리지 않는다).
-    if (hasSecret()) {
-        const saved = host.storage.get<{ kind?: string; id?: string } | null>(SESSION_KEY, null);
-        const u = saved?.kind === 'user' && saved.id ? readUser(saved.id) : null;
-        session = u && saved?.id ? userSession(saved.id, u, false) : guest();
-    } else {
-        session = master();
-    }
+    // 시작 상태 — 암호 유무가 정한다(마스터는 절대 되살리지 않는다). 🔴 비동기 저장소면 지금은 노드가 비어 있을 수 있다.
+    session = deriveInitial();
+    awaitingFirstLoad = true;
+    nodesUnsub = nodes ? nodes.subscribe(() => {
+        // 🔴 로드가 끝나 처음 알림이 오면 초기 상태를 한 번 다시 센다(비어 보여 마스터로 굳은 걸 바로잡는다).
+        //    그 뒤로는(사용자 조작·데이터 변경) 다시 세지 않는다 — 마스터가 암호를 걸어도 강등되지 않는다.
+        if (awaitingFirstLoad) {
+            awaitingFirstLoad = false;
+            const next = deriveInitial();
+            if (next.kind !== session.kind || next.id !== session.id) {
+                session = next;
+                persistSession();
+                fireIdentity();
+            }
+        }
+        firePermit();   // 역할·정책·사용자가 바뀌면 판정이 바뀐다
+    }) : null;
 }
 
 // ── 약속으로 받는 읽기 창구(index.ts 의 per-caller 모듈이 부른다) ──

@@ -12,6 +12,6 @@ export interface LocalSecret extends Hashed {
     userId: string;
 }
 
-export const credentialLocalNodeTypes: NodeTypeContribution[] = [
+export const credentialLocalNodeTypes: NodeTypeContribution<never>[] = [
     { type: SECRET_TYPE, label: '비밀', record: true },
 ];

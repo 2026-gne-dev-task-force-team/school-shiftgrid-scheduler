@@ -6,7 +6,9 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { activateAll, disablePlugin, enablePlugin, listPlugins, disposeOwner } from '../../pane-ui-system/plugin';
-import type { PluginModule, PluginHost, Identity, Permit } from '../../pane-ui-system/plugin';
+import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
+import type { Identity } from '../contract-identity/types';
+import type { Permit } from '../contract-permit/types';
 import type { NodesApi, Node, PublicNode } from '../contract-nodes/types';
 
 import { contractNodesPlugin } from '../contract-nodes';
@@ -17,6 +19,7 @@ import { accountPlugin } from './index';
 import { credentialLocalPlugin } from '../credential-local';
 import * as core from './core';
 import * as credCore from '../credential-local/core';
+import { SECRET_TYPE } from './nodes';
 
 const BASE = (): PluginModule[] => [contractNodesPlugin, contractIdentityPlugin, contractCredentialPlugin, contractPermitPlugin];
 const IDS = ['contract-nodes', 'contract-identity', 'contract-credential', 'contract-permit', 'fake-nodes', 'account', 'credential-local', 'cons'];
@@ -29,7 +32,9 @@ afterEach(() => {
 const find = (id: string) => listPlugins().find((p) => p.id === id);
 
 // ── 인메모리 nodes 제공자(제공만 — 약속은 contract-nodes 가 선언) ──
-function makeNodes() {
+//    opts.deferred: true 면 「로드 전」 상태로 시작한다 — 읽기(get·byType·find·children)가 빈 값을 주다가
+//    load() 를 부르면 그제야 보이고 subscribe 를 깨운다(project-explorer 의 loadTree 비동기 로드 흉내).
+function makeNodes(opts?: { deferred?: boolean }) {
     const map = new Map<string, Node>();
     const subs = new Set<(ids: string[]) => void>();
     const ROOT = 'root-main';
@@ -37,17 +42,18 @@ function makeNodes() {
     map.set(ROOT, { id: ROOT, type: 'folder', name: 'root', children: [] });
     map.set(TRASH, { id: TRASH, type: 'folder', name: 'trash', children: [] });
     let seq = 0;
+    let loaded = !opts?.deferred;   // 지연 모드면 로드 전
     const notify = (ids: string[]) => { for (const s of [...subs]) s(ids); };
     const api: NodesApi = {
         version: 1,
         types: { register: () => ({ dispose() { /* 테스트 */ } }) },
         registerContributed: () => ({ dispose() { /* 테스트 */ } }),
-        get: (id) => map.get(id) as PublicNode | undefined,
-        children: (id) => (map.get(id)?.children ?? []).map((c) => map.get(c)).filter((n): n is Node => !!n) as PublicNode[],
+        get: (id) => (loaded ? (map.get(id) as PublicNode | undefined) : undefined),
+        children: (id) => (loaded ? (map.get(id)?.children ?? []).map((c) => map.get(c)).filter((n): n is Node => !!n) as PublicNode[] : []),
         parent: (id) => { for (const [pid, n] of map) if (n.children.includes(id)) return pid; return null; },
         path: () => [],
-        find: (pred) => [...map.values()].filter((n) => pred(n as PublicNode)) as PublicNode[],
-        byType: (t) => [...map.values()].filter((n) => n.type === t) as PublicNode[],
+        find: (pred) => (loaded ? [...map.values()].filter((n) => pred(n as PublicNode)) as PublicNode[] : []),
+        byType: (t) => (loaded ? [...map.values()].filter((n) => n.type === t) as PublicNode[] : []),
         create: (parentId, spec) => {
             const id = `n${++seq}`;
             map.set(id, { id, type: spec.type, name: spec.name, children: [], data: spec.data });
@@ -76,7 +82,9 @@ function makeNodes() {
         },
         modules: { nodes: api },
     } as PluginModule;
-    return { plugin, api, allData: () => [...map.values()].map((n) => n.data) };
+    /** 지연 로드 완료 — 읽기를 열고 subscribe 를 깨운다(loadTree 완료 때 「빈 나무→실나무 diff」 알림 흉내). */
+    const load = () => { loaded = true; notify([...map.keys()]); };
+    return { plugin, api, allData: () => [...map.values()].map((n) => n.data), load };
 }
 
 // ── identity·permit 를 받아 쓰는 가짜 소비자(onChange 를 센다) ──
@@ -275,5 +283,20 @@ describe('계정 — 9가지 검산', () => {
         const c = core.getCurrent();
         expect(c.kind).toBe('user');
         expect(c.verified).toBe(true);
+    });
+
+    it('10) 비동기 저장소 경합 — 활성 땐 노드 비어 master, 로드 뒤 secret 읽어 guest(+onChange)', () => {
+        const nodes = makeNodes({ deferred: true });
+        // 디스크엔 이미 프로젝트 암호(secret)가 있다 — 아직 로드 전이라 안 보인다(loadTree 가 await 중).
+        nodes.api.create(nodes.api.roots.main, { type: SECRET_TYPE, name: '프로젝트 암호', data: { v: 1, salt: 's', hash: 'h' } });
+
+        const cons = makeConsumer();
+        activateAll([...BASE(), nodes.plugin, accountPlugin, cons.plugin]);
+        expect(core.getCurrent().kind).toBe('master');   // 🔴 로드 전이라 비어 보임 → master (옛 버그는 여기서 멈춰 손님이 안 됐다)
+
+        const before = cons.idChanges;
+        nodes.load();                                    // loadTree 완료처럼 첫 subscribe 알림
+        expect(core.getCurrent().kind).toBe('guest');    // 재초기화 → 암호 있으니 손님
+        expect(cons.idChanges).toBeGreaterThan(before);  // 누구가 바뀌어 울린다
     });
 });
