@@ -71,7 +71,7 @@ export const calendarPlugin = definePlugin({
                 { commandId: 'calendar.open', icon: 'calendar', order: 1 },
                 { commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 },
             ],
-            // 설정 「달력」 판 — 보기 옵션(간트·분기) 토글.
+            // 설정 「달력」 판 — 「시험 기능 보기」 토글(분기·3일·하루·간트).
             settings: {
                 sections: [{ id: 'calendar', title: '달력', icon: 'calendar' }],
                 items: [{ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', pane: 'Settings' }],
@@ -119,7 +119,7 @@ export const calendarPlugin = definePlugin({
          *   🔴 ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가, 첫 배치는 onFirstRun 이 한다).
          */
         onActivate(host: PluginHost) {
-            // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
+            // 옵션(「시험 기능 보기」 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
             initOptions(host);
 
             // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
