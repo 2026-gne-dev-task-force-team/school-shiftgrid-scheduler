@@ -111,6 +111,17 @@ export interface NodeTypeDef {
      *   저장·삭제·휴지통·복원·되돌리기는 일반 노드와 완전히 같다. 예: 달력의 'calendar.event'.
      */
     record?: boolean;
+    /**
+     * 🔑 만들 때 인라인 입력 — 이 타입을 「새로 만들기」로 만들면 이름칸 자리에 (빈) 입력을 띄우고(placeholder 안내),
+     *   커밋값을 onInput(kind:'create') 으로 넘긴다. 이름이 아니라 「다른 값」(예: 링크)을 받아야 하는 타입을 위한 자리.
+     *   ⛔ window.prompt 없이 — 탐색기가 이름바꾸기와 같은 인라인 입력을 띄운다(볼트 규칙과 같은 결).
+     */
+    createInput?: { placeholder?: string };
+    /**
+     * 🔑 인라인 입력 커밋 — createInput 생성 입력이나 promptInput(kind) 호출의 커밋값을 받는다.
+     *   kind 는 'create'(생성 입력) 또는 플러그인이 promptInput 에 준 이름. host 는 등록 때 끼워졌다(open·menu 와 같은 결).
+     */
+    onInput?: (nodeId: string, kind: string, value: string) => void;
 }
 
 /**
@@ -134,6 +145,8 @@ export interface NodeTypeImplFns {
     canCreate?: (parentId: string | null) => boolean;
     confirmDelete?: (nodeId: string) => string | null;
     hidden?: (nodeId: string) => boolean;
+    /** 🔑 인라인 입력 커밋 핸들러 — createInput 생성 입력·promptInput 의 커밋값(host 를 받는다 · open·menu 와 같은 결). */
+    onInput?: (host: PluginHost, nodeId: string, kind: string, value: string) => void;
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
@@ -170,6 +183,11 @@ export interface NodesApi {
     invalidate(id: string): void;                       // 유도 자식 다시 계산
     select(id: string): void;                           // 탐색기에서 그 노드로 가기
     open(id: string): void;                             // 그 타입의 open 실행
+    /**
+     * 🔑 인라인 입력 띄우기 — 그 노드의 이름칸 자리에 입력을 띄우고, 커밋하면 그 타입의 onInput(kind) 으로 값을 넘긴다
+     *   (⛔ window.prompt 없이). 생성이 아니라 「값 바꾸기」(예: 링크 바꾸기)에 쓴다. initial 은 미리 채울 값.
+     */
+    promptInput(id: string, opts: { kind: string; initial?: string; placeholder?: string }): void;
 
     subscribe(fn: (changedIds: string[]) => void): Disposable;
     roots: { main: string; trash: string };

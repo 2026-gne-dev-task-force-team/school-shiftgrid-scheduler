@@ -235,6 +235,8 @@ export interface NodeTypeContribution<ImplName extends string = string> {
     create?: { label: string; under?: string[] };
     can?: { rename?: boolean; move?: boolean; delete?: boolean };
     record?: boolean;
+    /** 🔑 만들 때 인라인 입력 — 이 타입을 「새로 만들기」로 만들면 이름칸 자리에 입력을 띄우고, 커밋값을 impl.onInput(kind:'create')으로 넘긴다(레지스트라가 NodeTypeDef.createInput 로). */
+    createInput?: { placeholder?: string };
     /** 🔑 싱글톤 — 'tree' 나무에 하나 · 'parent' 부모마다 하나(없으면 제한 없음). 레지스트라가 NodeTypeDef.unique 로 넘긴다. */
     unique?: 'tree' | 'parent';
     /** 🔑 자동 슬롯 — 이 타입을 만들면 같이 만들 자식 타입들. 레지스트라가 NodeTypeDef.slots 로 넘긴다. */
