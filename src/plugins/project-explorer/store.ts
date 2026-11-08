@@ -9,11 +9,11 @@ import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
-    createNode, rename, move, remove, restore, purge, purgeAll, toggleCollapse, parentOf,
-    isDescendant, setData as setDataTree, newFolderParent, topmostOnly,
+    createNode, rename, move, remove, restore, restoreDest, purge, purgeAll, toggleCollapse, parentOf,
+    isDescendant, setData as setDataTree, newFolderParent, topmostOnly, violatesUnique,
 } from './model/tree';
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from './model/selection';
-import { isContainerType, getType, acceptsChild, openType } from './model/types';
+import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
 import { loadTree, saveTree } from './persist';
 
@@ -217,6 +217,30 @@ function parentAccepts(parentId: string, type: string): boolean {
 }
 
 /**
+ * 🔑 자동 슬롯 — 방금 만든 노드(parentId · parentType)의 slots 타입마다 자식을 만든다(재귀 — 슬롯의 슬롯까지).
+ *   🔴 바깥 apply 안에서 부모 생성과 한 묶음으로 돈다(되돌리기 한 번에 전부). 순수하지 않다(uid) — model 밖(store)에 둔다.
+ *   - accepts 가 막거나 싱글톤에 걸려 안 생긴 슬롯은 조용히 건너뛴다(그 자식의 슬롯도 안 판다).
+ *   - seen: 타입 사이클(제 슬롯 체인이 자신을 다시 부름) 방지 — 한 번 판 타입은 다시 안 판다(종료 보장).
+ */
+function createSlots(tree: Tree, parentId: string, parentType: string, seen: Set<string>): Tree {
+    if (seen.has(parentType)) return tree;
+    seen.add(parentType);
+    let x = tree;
+    for (const slotType of slotsOf(parentType)) {
+        if (!acceptsChild(parentType, slotType)) continue;        // 부모가 못 받는 슬롯 타입 — 건너뛴다
+        const def = getType(slotType);
+        const init = def?.create?.init?.(parentId) ?? {};
+        const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? slotType);
+        const sid = uid();
+        const before = x;
+        x = createNode(x, parentId, { id: sid, type: slotType, name, data: init.data }, uniqueOf);
+        if (x === before) continue;                               // 안 생겼으면(싱글톤 등) 그 슬롯의 슬롯도 건너뛴다
+        x = createSlots(x, sid, slotType, seen);                  // 슬롯의 슬롯
+    }
+    return x;
+}
+
+/**
  * 타입 하나를 「새로 만들기」 — 만들자마자 고르고 이름바꾸기(VS Code 식). 🔴 타입 이름 비교가 없다 —
  *   create.init 과 label 은 등록 표에서 온다. 「새 폴더」도 이 길을 탄다(folder 도 표의 한 줄).
  *   🔴 부모는 newFolderParent(via) 가 정한다 — 두 경로(쥔님 2026-11-02):
@@ -239,12 +263,22 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
             return;
         }
     }
+    // 🔑 싱글톤 사전점검 — 모델 관문(createNode 의 uniqueOf)이 막기 전에 이유를 알린다(메뉴 회색과 같은 판정).
+    if (violatesUnique(state.tree, type, parent, null, uniqueOf)) {
+        const d = getType(type);
+        flashNotice(`「${d?.create?.label ?? d?.label ?? type}」는 이미 있습니다.`);
+        return;
+    }
     const def = getType(type);
     const init = def?.create?.init?.(parent) ?? {};
     const id = uid();
     const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
     apply(
-        (t) => createNode(t, parent, { id, type, name, data: init.data }),
+        (t) => {
+            const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf);
+            if (made === t) return t;                                     // 관문에 막힘(이론상 위에서 걸러짐)
+            return createSlots(made, id, type, new Set());                // 🔑 자동 슬롯 — 한 묶음(되돌리기 한 번)
+        },
         { patch: { ...singleSel(id), renamingId: id } },
     );
 }
@@ -285,9 +319,9 @@ export function toggle(id: string): void {
     apply((t) => toggleCollapse(t, id), { history: 'skip' });
 }
 
-/** 옮기기(하나) — accepts 를 move 에 주입한다(마지막 관문). */
+/** 옮기기(하나) — accepts·싱글톤을 move 에 주입한다(마지막 관문). */
 export function moveNode(id: string, parentId: string, index?: number): void {
-    apply((t) => move(t, id, parentId, index, acceptsChild));
+    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf));
 }
 
 /**
@@ -300,7 +334,7 @@ export function moveNodes(ids: string[], parentId: string, index?: number): void
         let x = t;
         let at = index;
         for (const id of topmostOnly(t, ids)) {
-            x = move(x, id, parentId, at, acceptsChild);
+            x = move(x, id, parentId, at, acceptsChild, uniqueOf);
             if (at != null) at += 1;
         }
         return x;
@@ -333,9 +367,19 @@ export function nudgeSelected(delta: -1 | 1): void {
 export function restoreSelected(): void {
     const ids = state.selectedIds.filter((id) => state.tree.nodes[id] && isDescendant(state.tree, id, state.tree.trash));
     if (ids.length === 0) return;
+    // 🔑 싱글톤 충돌 — 복원하면 규칙을 깨는 것은 거절하고 이유를 알린다(휴지통은 안 세니 복원 때 충돌이 난다).
+    //    막힌 것은 restore(uniqueOf) 가 그대로 두고(휴지통에 남는다), 안 막힌 것만 복원된다.
+    const blocked = topmostOnly(state.tree, ids).filter((id) => {
+        const n = state.tree.nodes[id];
+        return !!n && violatesUnique(state.tree, n.type, restoreDest(state.tree, id), id, uniqueOf);
+    });
+    if (blocked.length) {
+        const names = blocked.map((id) => state.tree.nodes[id]?.name ?? '?').join(', ');
+        flashNotice(`복원할 수 없습니다 — 이미 있습니다: ${names}`);
+    }
     apply((t) => {
         let x = t;
-        for (const id of topmostOnly(t, ids)) x = restore(x, id);
+        for (const id of topmostOnly(t, ids)) x = restore(x, id, uniqueOf);
         return x;
     }, { patch: { ...singleSel(ids[0]) } });
 }
@@ -407,9 +451,14 @@ export function apiCreate(
 ): string {
     if (state.loading) return '';   // 🔴 로딩 중엔 안 만든다(apply 가 막히니 가짜 id 를 돌려주지 않게)
     if (!state.tree.nodes[parentId]) return '';
+    if (violatesUnique(state.tree, opts.type, parentId, null, uniqueOf)) return '';   // 🔑 싱글톤 — 안 만든다(빈 id)
     const id = uid();
-    apply((t) => createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }));
-    return id;
+    apply((t) => {
+        const made = createNode(t, parentId, { id, type: opts.type, name: opts.name, data: opts.data, index: opts.index }, uniqueOf);
+        if (made === t) return t;
+        return createSlots(made, id, opts.type, new Set());   // 🔑 자동 슬롯 — 부모 생성과 한 묶음
+    });
+    return state.tree.nodes[id] ? id : '';   // 실제로 생겼을 때만 id(관문에 막혔으면 빈 문자열)
 }
 
 export function apiRename(id: string, name: string): void {
@@ -418,7 +467,7 @@ export function apiRename(id: string, name: string): void {
 }
 
 export function apiMove(id: string, parentId: string, index?: number): void {
-    apply((t) => move(t, id, parentId, index, acceptsChild));
+    apply((t) => move(t, id, parentId, index, acceptsChild, uniqueOf));
 }
 
 /** 휴지통으로(영구삭제 아님) — API 엔 purge 가 없다(사람만 비운다). */
