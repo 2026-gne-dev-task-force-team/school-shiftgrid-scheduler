@@ -7,7 +7,8 @@ export type IconName =
     | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
-    | 'calendar' | 'calendarMini' | 'flask' | 'grip';
+    | 'calendar' | 'calendarMini' | 'flask' | 'grip'
+    | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -63,6 +64,20 @@ const P: Record<IconName, string> = {
     flask: 'M9 3h6M10 3v6l-4.3 8.7A1.5 1.5 0 007 20h10a1.5 1.5 0 001.3-2.3L14 9V3M8.5 14h7',
     // 끌기 손잡이 — 점 2×3(쥔님 2026-11-01 20:02 "핸들 아이콘스럽지 않고 잘 안 보여" — 세로 점 셋(dots)은 메뉴로 읽힌다)
     grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
+    // 글자 칸(text) — 가로 글줄 세 개
+    text: 'M5 7h14M5 12h14M5 17h9',
+    // 숫자 칸(number) — 샵(#)
+    hash: 'M10 4L8 20M16 4l-2 16M5 9h15M4 15h15',
+    // 아래 꺾쇠 — 고르기 칸(select)·펼침 표시
+    chevronDown: 'M6 9l6 6 6-6',
+    // 깔때기 — 필터
+    filter: 'M4 5h16l-6 7v6l-4 2v-8z',
+    // 정렬 — 길이 다른 세 줄 + 내림 화살표
+    sort: 'M4 6h12M4 12h8M4 18h4M17 7v11M17 18l3-3M17 18l-3-3',
+    // 눈 — 칸 보이기
+    eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7zM12 9a3 3 0 100 6 3 3 0 000-6z',
+    // 눈 가림 — 칸 숨기기
+    eyeOff: 'M4 4l16 16M9.5 9.6a3 3 0 004.3 4.2M6.6 6.7C4 8.3 2 12 2 12s4 7 10 7c1.7 0 3.2-.4 4.5-1M11 5.1C11.3 5 11.6 5 12 5c6 0 10 7 10 7s-.8 1.4-2.3 2.9',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {

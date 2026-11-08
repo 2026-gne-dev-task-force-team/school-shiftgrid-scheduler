@@ -21,9 +21,12 @@ import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
+import { parseIcs, writeIcs } from './ics';
+import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
     getMenuTarget, setDefaultStore, newEventInStore,
+    importItemsToStore, collectForExport, storeName,
 } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
@@ -65,13 +68,16 @@ export const calendarPlugin = definePlugin({
                 { id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar' },
                 { id: 'calendar.newEventIn', title: '새 일정', icon: 'plus' },
                 { id: 'calendar.openMini', title: '작은 달력 열기(오른쪽 패널)', icon: 'calendarMini' },
+                { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
+                { id: 'calendar.exportIcs', title: 'ICS 내보내기', icon: 'download' },
+                { id: 'calendar.exportAll', title: '일정 전체 ICS 내보내기', icon: 'download' },
             ],
             // 리본 아이콘 둘 — 월 보기(calendar·order 1) · 작은 달력(calendarMini·order 2).
             ribbon: [
                 { commandId: 'calendar.open', icon: 'calendar', order: 1 },
                 { commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 },
             ],
-            // 설정 「달력」 판 — 보기 옵션(간트·분기) 토글.
+            // 설정 「달력」 판 — 「시험 기능 보기」 토글(분기·3일·하루·간트).
             settings: {
                 sections: [{ id: 'calendar', title: '달력', icon: 'calendar' }],
                 items: [{ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', pane: 'Settings' }],
@@ -103,10 +109,28 @@ export const calendarPlugin = definePlugin({
         },
         // 작은 달력 리본 — 점 찍힌 달력(calendarMini)으로 월 보기와 가른다. 오른쪽 패널에 연다(22:51).
         'calendar.openMini': (host: PluginHost) => { host.workspace.open(MINI_ID, { where: 'right' }); },
+        // 저장소 우클릭 「ICS 가져오기」 — .ics 파일을 골라 그 저장소에 내 일정으로 복사(UID 중복 제외). 끝나면 그 저장소 달력을 연다.
+        'calendar.importIcs': (host: PluginHost) => {
+            const storeId = getMenuTarget();
+            if (!storeId) return;
+            pickIcsFile((text) => {
+                importItemsToStore(storeId, parseIcs(text));   // {created, skipped} — 중복은 UID 로 거른다
+                setScope(storeId);
+                host.workspace.open(MONTH_ID, { where: 'center' });
+            });
+        },
+        // 저장소 우클릭 「ICS 내보내기」 — 그 저장소(+자손) 내 일정을 .ics 파일로 내려받는다.
+        'calendar.exportIcs': () => {
+            const storeId = getMenuTarget();
+            if (!storeId) return;
+            downloadText(`${storeName(storeId)}.ics`, writeIcs(collectForExport(storeId)));
+        },
+        // 「일정 전체 ICS 내보내기」(설정 판 단추·팔레트) — 모든 저장소 내 일정을 한 파일로.
+        'calendar.exportAll': () => { downloadText('달력 전체.ics', writeIcs(collectForExport(null))); },
     },
     panes: {
-        // 설정 「달력」 판 본문 — 기기별 옵션 토글. host 는 안 쓴다(initOptions 가 onActivate 에서 쥐었다).
-        Settings: (_p: { host: PluginHost }) => createElement(CalendarSettings),
+        // 설정 「달력」 판 본문 — 「시험 기능 보기」 토글 + 「일정 전체 내보내기」 단추. host 로 내보내기 명령을 부른다.
+        Settings: (p: { host: PluginHost }) => createElement(CalendarSettings, { host: p.host }),
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
     nodeTypes: calendarNodeTypeImpl,
@@ -119,7 +143,7 @@ export const calendarPlugin = definePlugin({
          *   🔴 ⛔ 여기서 탭을 열지 않는다(등록은 contributes 가, 첫 배치는 onFirstRun 이 한다).
          */
         onActivate(host: PluginHost) {
-            // 옵션(간트·분기 보기 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
+            // 옵션(「시험 기능 보기」 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
             initOptions(host);
 
             // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).

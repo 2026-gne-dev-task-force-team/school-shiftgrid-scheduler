@@ -1,9 +1,10 @@
 /**
- * 「달력」 설정 판 — 기본 꺼져 있는 보기 둘을 켠다(쥔님 2026-11-01 17:23).
- *   스위치는 창틀 기본 부품 Toggle(배럴) — 📌 처음엔 여기 따로 그렸다가 손잡이가 알약 밖으로 나갔다(17:39 쥔님
- *   *"이게 머꼬 혹시 토글 뷰 기본 컴포넌트가 아니고 따로 만드나"*). 설정 플러그인에만 있던 Toggle 을 primitives 로 올려 같이 쓴다.
+ * 「달력」 설정 판 — 「시험 기능 보기」 하나를 켠다(쥔님 2026-11-08).
+ *   📌 2026-11-01 엔 분기·간트 토글 둘이었는데, 선생님이 실수로 켜면 당황한다는 쥔님 판단으로 하나로 합쳤다.
+ *   스위치는 창틀 기본 부품 Toggle(배럴) — 설정 플러그인에만 있던 Toggle 을 primitives 로 올려 같이 쓴다.
  */
-import { Toggle } from '../../../pane-ui-system';
+import { Toggle, Button } from '../../../pane-ui-system';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { setOption, useOptions, type CalendarOptions } from '../store';
 
 function OptionRow({ k, title, desc }: { k: keyof CalendarOptions; title: string; desc: string }) {
@@ -19,23 +20,28 @@ function OptionRow({ k, title, desc }: { k: keyof CalendarOptions; title: string
     );
 }
 
-export function CalendarSettings() {
+export function CalendarSettings({ host }: { host: PluginHost }) {
     return (
-        <div className="flex flex-col gap-3 max-w-[560px] text-[13px] text-text">
-            <p className="text-muted">
-                달력 탭의 전환 단추에 보기를 더합니다. 기본은 둘 다 꺼져 있습니다.
-            </p>
-            <div className="flex flex-col">
-                <OptionRow
-                    k="dense"
-                    title="분기 뷰"
-                    desc="주 보기와 같은 시간축인데 열이 더 좁아 2주가 한눈에 들어옵니다. 시간의 패턴을 오밀조밀하게 볼 때."
-                />
-                <OptionRow
-                    k="gantt"
-                    title="간트 뷰"
-                    desc="행은 항목, 열은 날(좁게). 일정을 오밀조밀하게 볼 때. 지금은 일정이 없어 빈 행뿐입니다."
-                />
+        <div className="flex flex-col gap-4 max-w-[560px] text-[13px] text-text">
+            <div className="flex flex-col gap-3">
+                <p className="text-muted">
+                    평소에는 년·월·주·일정 네 가지 보기만 씁니다. 아래를 켜면 아직 다듬는 중인 보기(분기·3일·하루·간트)도
+                    전환 단추에 같이 나옵니다.
+                </p>
+                <div className="flex flex-col">
+                    <OptionRow
+                        k="experimental"
+                        title="시험 기능 보기"
+                        desc="분기·3일·하루·간트 보기를 전환 단추에 더합니다. 아직 다듬는 중이라 기본은 꺼져 있습니다."
+                    />
+                </div>
+            </div>
+            <div className="flex items-start justify-between gap-4 pt-1">
+                <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-text">일정 내보내기</span>
+                    <span className="text-muted">모든 저장소의 내 일정을 .ics 파일 하나로 내려받습니다(다른 달력에서 읽히는 표준 꼴).</span>
+                </div>
+                <Button onClick={() => host.commands.run('calendar.exportAll')}>전체 내보내기</Button>
             </div>
         </div>
     );

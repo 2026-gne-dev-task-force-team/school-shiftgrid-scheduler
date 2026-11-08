@@ -19,7 +19,7 @@ import { ListView } from './ListView';
 import { GanttView } from './GanttView';
 import { useOptions, useScope, setScope } from '../store';
 import { useCalendarData } from '../useEvents';
-import { ALL_MODES, type Mode } from '../modes';
+import { visibleModes, resolveMode, type Mode } from '../modes';
 import { selectionLabel, type CalSelection } from '../selection';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
@@ -35,13 +35,14 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
     const { stores } = useCalendarData();
     const scopeStore = scope ? stores.get(scope) : null;
 
-    // 순서 배열 하나(ALL_MODES)로 고정하고, 토글이 켜진 것만 거른다 — 끝에 push 하면 순서가 틀어졌다(쥔님 22:17).
-    const modes = ALL_MODES.filter((m) => !m.opt || opts[m.opt]);
+    // 순서 배열 하나(ALL_MODES)로 고정하고, 지금 보일 것만 거른다 — 끝에 push 하면 순서가 틀어졌다(쥔님 22:17).
+    const modes = visibleModes(opts.experimental);
 
-    // 보고 있던 옵션 보기를 설정에서 끄면 월로 돌아간다
+    // 보고 있던 모드가 지금 안 보이면(시험 기능을 껐다) 월로 돌아간다 — resolveMode 한 곳으로.
     useEffect(() => {
-        if ((mode === 'dense' && !opts.dense) || (mode === 'gantt' && !opts.gantt)) setMode('month');
-    }, [mode, opts.dense, opts.gantt]);
+        const next = resolveMode(mode, opts.experimental);
+        if (next !== mode) setMode(next);
+    }, [mode, opts.experimental]);
 
     // 🔴 범위 저장소가 휴지통에 가거나 사라지면 자동으로 전체(null)로 — 죽은 저장소에 갇히지 않게(쥔님 2026-11-02).
     useEffect(() => {
