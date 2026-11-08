@@ -44,9 +44,10 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
-            // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶어 8꾸러미만 남았다.
+            // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶었다.
             //    코어(settings·project-explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
-            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid', 'rooms',
+            //    2026-11-08: 구독 캘린더 꾸러미(calendar-subscribe) 합류 — calendar·nodes 를 requires 라 그 뒤에 선다.
+            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid', 'rooms', 'calendar-subscribe',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
