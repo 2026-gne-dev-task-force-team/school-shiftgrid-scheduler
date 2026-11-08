@@ -10,7 +10,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { onTypeRegistered, createTypes, type NodeTypeDef } from './model/types';
+import { onTypeRegistered, createTypes, createIconOf, type NodeTypeDef } from './model/types';
 import { makeNodesApi } from './api';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
@@ -42,7 +42,7 @@ export function registerTypeCommands(host: PluginHost): Disposable {
         cmds.set(def.type, host.declare({
             kind: 'command',
             id: `project-explorer.new-${def.type}`,
-            title: `새 ${def.label}`, icon: 'plus',
+            title: `새 ${def.label}`, icon: createIconOf(def),
             impl: 'newNode', args: { type: def.type },
         }));
     };

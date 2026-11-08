@@ -15,7 +15,7 @@ import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
-import { isContainerType, nodeHidden, iconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
+import { isContainerType, nodeHidden, iconOf, createIconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
@@ -321,10 +321,11 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         for (const def of createCandidates(baseType)) {
             const dup = violatesUnique(tree, def.type, ctxParent, null, uniqueOf);
             const blocked = !canCreateType(def.type, ctxParent);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
+            const icon = createIconOf(def);   // 「plus」만 줄지어 있으면 무엇을 만드는지 안 보인다 — 타입 자신의 아이콘
             items.push(
-                dup ? { label: `새 ${def.label} (이미 있음)`, icon: 'plus', disabled: true }
-                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon: 'plus', disabled: true }
-                        : { label: `새 ${def.label}`, icon: 'plus', onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
+                dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
+                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
+                        : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
         }
         if (selNode && !inTrash) {
             // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
@@ -339,7 +340,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
         }
         // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
-        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'plus', onClick: () => newNode('folder', { via: 'context', targetId: selectedId ?? undefined }) });
+        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'folder', onClick: () => newNode('folder', { via: 'context', targetId: selectedId ?? undefined }) });
         return items;
     };
 

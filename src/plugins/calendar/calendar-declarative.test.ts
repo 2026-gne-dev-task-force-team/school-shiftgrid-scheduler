@@ -45,41 +45,36 @@ describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집�
         // 활성 실패 아님(이름이 구현과 다 맞는다)
         expect(listPlugins().find((p) => p.id === 'calendar')?.failed).toBe(false);
 
-        // ── 뷰 둘 — host 가 'calendar.' 접두사를 붙인다(옛 host.views.register 와 같은 id·제목·자리) ──
+        // ── 뷰 하나 — host 가 'calendar.' 접두사를 붙인다. 작은 달력은 2026-11-09 비활성화(쥔님) — 꽂히면 안 된다 ──
         const month = getView('calendar.month');
         const mini = getView('calendar.mini');
         expect(month?.title).toBe('달력');
         expect(month?.placement).toEqual({ areas: ['center'], singleton: true });
-        expect(mini?.title).toBe('작은 달력');
-        expect(mini?.placement).toEqual({ areas: ['left', 'right'], singleton: true });
+        expect(mini).toBeUndefined();
 
-        // ── 명령 일곱 — 기존 넷 + 가져오기·내보내기·전체 내보내기(2026-11-08) ──
+        // ── 명령 여섯 — 열기·저장소에서 열기·새 일정 + 가져오기·내보내기·전체 내보내기(작은 달력 열기는 11-09 뺐다) ──
         const cmds = listCommands()
             .filter((c) => c.id.startsWith('calendar.'))
             .map((c) => c.id)
             .sort();
         expect(cmds).toEqual([
             'calendar.exportAll', 'calendar.exportIcs', 'calendar.importIcs',
-            'calendar.newEventIn', 'calendar.open', 'calendar.openMini', 'calendar.openStore',
+            'calendar.newEventIn', 'calendar.open', 'calendar.openStore',
         ]);
         expect(getCommand('calendar.open')?.title).toBe('달력 열기');
         expect(getCommand('calendar.openStore')?.title).toBe('달력에서 열기');
         expect(getCommand('calendar.newEventIn')?.title).toBe('새 일정');
-        expect(getCommand('calendar.openMini')?.title).toBe('작은 달력 열기(오른쪽 패널)');
         expect(getCommand('calendar.importIcs')?.title).toBe('ICS 가져오기');
         expect(getCommand('calendar.exportIcs')?.title).toBe('ICS 내보내기');
 
-        // ── 리본 둘 — 명령을 가리킨다(옛 host.ribbon.add 와 같은 commandId·순서) ──
+        // ── 리본 하나 — 월 보기만(작은 달력 리본은 11-09 뺐다) ──
         const ribbon = listRibbonActions()
             .filter((a) => a.id.startsWith('calendar.'))
             .map((a) => a.id)
             .sort();
-        expect(ribbon).toEqual(['calendar.open', 'calendar.openMini']);
+        expect(ribbon).toEqual(['calendar.open']);
 
-        // ── 설정 섹션 하나 + 항목 하나(옛 host.settings.addSection/addItem 와 같은 id·제목) ──
-        const sec = listSettings().find((s) => s.id === 'calendar');
-        expect(sec?.title).toBe('달력');
-        expect(sec?.items.map((i) => i.id)).toEqual(['calendar']);
-        expect(sec?.items.map((i) => i.title)).toEqual(['보기']);
+        // ── 설정 판 없음 — 「시험 기능 보기」를 걷어 「달력」 설정 판이 사라졌다(쥔님 2026-11-09 *"시험보기도 그냥 없애"*) ──
+        expect(listSettings().find((s) => s.id === 'calendar')).toBeUndefined();
     });
 });

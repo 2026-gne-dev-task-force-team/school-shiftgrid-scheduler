@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-    detectBlockShortcut, parseInline, toggleMark, exportMarkdown, parseMarkdown,
+    detectBlockShortcut, parseInline, toggleMark, exportMarkdown, parseMarkdown, spansToMarkdown,
 } from './markdown';
 import type { Page } from './types';
 
@@ -58,6 +58,20 @@ describe('인라인 서식 파싱(요구 4)', () => {
     });
 });
 
+describe('실시간 토크나이저 — 미완성 마커는 글자로(P2 요구 1)', () => {
+    it('닫는 기호가 와야 서식이 된다(그 순간 변환)', () => {
+        expect(parseInline('**굵게')).toEqual([{ text: '**굵게' }]);        // 아직 안 닫힘 → 글자
+        expect(parseInline('**굵게**')).toEqual([{ text: '굵게', bold: true }]); // 닫는 ** 순간 굵게
+    });
+    it('빈 마커는 글자(코드 울타리 ``·빈 **)', () => {
+        expect(parseInline('``')).toEqual([{ text: '``' }]);
+        expect(parseInline('****')).toEqual([{ text: '****' }]);
+    });
+    it('중첩 없음 — 서식 안쪽은 글자 그대로(왕복 안전)', () => {
+        expect(parseInline('**a*b**')).toEqual([{ text: 'a*b', bold: true }]);
+    });
+});
+
 describe('인라인 토글 — ⌘B/⌘I 자리(요구 4)', () => {
     it('고른 범위를 감싼다', () => {
         const r = toggleMark('가나다', 0, 3, '**');
@@ -72,6 +86,23 @@ describe('인라인 토글 — ⌘B/⌘I 자리(요구 4)', () => {
     it('안쪽이 감싸여 있어도 벗긴다', () => {
         const r = toggleMark('**가나다**', 0, 7, '**');
         expect(r.text).toBe('가나다');
+    });
+    it('코드(⌘E)·취소선(⌘⇧S) 토글과 해제', () => {
+        const code = toggleMark('abc', 0, 3, '`');
+        expect(code.text).toBe('`abc`');
+        expect(code.text.slice(code.start, code.end)).toBe('abc');
+        const strike = toggleMark('abc', 0, 3, '~~');
+        expect(strike.text).toBe('~~abc~~');
+        const off = toggleMark('~~abc~~', 2, 5, '~~');
+        expect(off.text).toBe('abc');
+    });
+});
+
+describe('spansToMarkdown — parse 와 왕복(P2 요구: 내보내기 왕복 유지)', () => {
+    it('parse → spansToMarkdown 이 원문 그대로', () => {
+        for (const t of ['**굵게**', '앞 *기울임* 뒤', '`코드`', '~~취소~~', '**굵게', '그냥 글']) {
+            expect(spansToMarkdown(parseInline(t))).toBe(t);
+        }
     });
 });
 

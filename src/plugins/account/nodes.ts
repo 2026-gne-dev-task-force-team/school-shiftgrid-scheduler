@@ -117,17 +117,17 @@ export const accountNodeTypeImpl = {
  */
 export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'rolesFolder' | 'user' | 'role' | 'policy'>[] = [
     {
-        type: ROOT_TYPE, label: '계정', icon: 'gear',
+        type: ROOT_TYPE, label: '계정', icon: 'key',
         container: { accepts: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE] },
         create: { label: '계정' }, unique: 'tree',
         slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE],
         impl: 'root',
     },
-    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'book', container: { accepts: [USER_TYPE] }, impl: 'usersFolder' },
-    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'layers', container: { accepts: [ROLE_TYPE] }, impl: 'rolesFolder' },
-    { type: USER_TYPE, label: '사용자', icon: 'file', openable: true, create: { label: '사용자', under: [USERS_FOLDER_TYPE] }, impl: 'user' },
-    { type: ROLE_TYPE, label: '역할', icon: 'file', openable: true, create: { label: '역할', under: [ROLES_FOLDER_TYPE] }, impl: 'role' },
-    { type: POLICY_TYPE, label: '정책', icon: 'check', openable: true, unique: 'tree', impl: 'policy' },
+    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, impl: 'usersFolder' },
+    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, impl: 'rolesFolder' },
+    { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, create: { label: '사용자', under: [USERS_FOLDER_TYPE] }, impl: 'user' },
+    { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, create: { label: '역할', under: [ROLES_FOLDER_TYPE] }, impl: 'role' },
+    { type: POLICY_TYPE, label: '정책', icon: 'shieldCheck', openable: true, unique: 'tree', impl: 'policy' },
 ];
 
 /**

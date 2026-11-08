@@ -17,8 +17,9 @@ import type { PluginHost, ViewProps } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
-import { MiniCalendarView } from './views/MiniCalendarView';
-import { CalendarSettings } from './settings/CalendarSettings';
+// 📌 2026-11-09 쥔님 *"작은 달력도 일단 비활성화"* — 작은 달력(views/MiniCalendarView.tsx)은 코드만 남기고 뷰·명령·리본·첫 배치에서 뺐다.
+//    되살릴 땐 contributes.views 의 'mini'·명령 'calendar.openMini'·리본·components.Mini·onFirstRun 을 git 이력에서 되돌린다.
+// 📌 같은 날 *"시험보기도 그냥 없애"* — 설정 「달력」 판(시험 기능 보기 토글)을 걷었다. 전체 내보내기는 명령 팔레트에 남는다.
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
 import { parseIcs, writeIcs } from './ics';
@@ -32,7 +33,6 @@ import {
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 //    contributes.views 의 id 는 접두사 없는 'month'·'mini' 로 적고, 호스트가 붙인 뒤의 전체 id 를 여기서 연다.
 const MONTH_ID = 'calendar.month';
-const MINI_ID = 'calendar.mini';
 
 export const calendarPlugin = definePlugin({
     manifest: {
@@ -55,33 +55,19 @@ export const calendarPlugin = definePlugin({
                     layout: { minWidth: 280, squeeze: 'scroll' },
                     component: 'Month',
                 },
-                // 작은 달력(사이드 패널용 · 싱글턴) — 기본 오른쪽(22:51). split 생략=가름 허용(왼쪽 탐색기 아래 세로로).
-                {
-                    id: 'mini', title: '작은 달력', icon: 'calendarMini', defaultArea: 'right',
-                    placement: { areas: ['left', 'right'], singleton: true },
-                    layout: { minWidth: 200, squeeze: 'scroll' },
-                    component: 'Mini',
-                },
             ],
             commands: [
                 { id: 'calendar.open', title: '달력 열기', icon: 'calendar' },
                 { id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar' },
                 { id: 'calendar.newEventIn', title: '새 일정', icon: 'plus' },
-                { id: 'calendar.openMini', title: '작은 달력 열기(오른쪽 패널)', icon: 'calendarMini' },
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
                 { id: 'calendar.exportIcs', title: 'ICS 내보내기', icon: 'download' },
                 { id: 'calendar.exportAll', title: '일정 전체 ICS 내보내기', icon: 'download' },
             ],
-            // 리본 아이콘 둘 — 월 보기(calendar·order 1) · 작은 달력(calendarMini·order 2).
+            // 리본 아이콘 하나 — 월 보기(calendar·order 1). 작은 달력 리본은 2026-11-09 비활성화로 뺐다.
             ribbon: [
                 { commandId: 'calendar.open', icon: 'calendar', order: 1 },
-                { commandId: 'calendar.openMini', icon: 'calendarMini', order: 2 },
             ],
-            // 설정 「달력」 판 — 「시험 기능 보기」 토글(분기·3일·하루·간트).
-            settings: {
-                sections: [{ id: 'calendar', title: '달력', icon: 'calendar' }],
-                items: [{ section: 'calendar', id: 'calendar', title: '보기', icon: 'calendar', pane: 'Settings' }],
-            },
             // 🔴 노드 타입 둘(저장소·일정) — 선언형 전환 D5. 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 onActivate 의 registerCalendarTypes 를 대체.
             nodeTypes: calendarNodeTypes,
@@ -92,7 +78,6 @@ export const calendarPlugin = definePlugin({
     components: {
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
         Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek }),
-        Mini: (_p: ViewProps & { host: PluginHost }) => createElement(MiniCalendarView),
     },
     commands: {
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
@@ -107,8 +92,6 @@ export const calendarPlugin = definePlugin({
             if (!newEventInStore(id)) return;                      // 오늘 종일 일정 + 「열 카드」로 담기
             host.workspace.open(MONTH_ID, { where: 'center' });    // 월 보기(마운트/구독 때 카드를 연다)
         },
-        // 작은 달력 리본 — 점 찍힌 달력(calendarMini)으로 월 보기와 가른다. 오른쪽 패널에 연다(22:51).
-        'calendar.openMini': (host: PluginHost) => { host.workspace.open(MINI_ID, { where: 'right' }); },
         // 저장소 우클릭 「ICS 가져오기」 — .ics 파일을 골라 그 저장소에 내 일정으로 복사(UID 중복 제외). 끝나면 그 저장소 달력을 연다.
         'calendar.importIcs': (host: PluginHost) => {
             const storeId = getMenuTarget();
@@ -127,10 +110,6 @@ export const calendarPlugin = definePlugin({
         },
         // 「일정 전체 ICS 내보내기」(설정 판 단추·팔레트) — 모든 저장소 내 일정을 한 파일로.
         'calendar.exportAll': () => { downloadText('달력 전체.ics', writeIcs(collectForExport(null))); },
-    },
-    panes: {
-        // 설정 「달력」 판 본문 — 「시험 기능 보기」 토글 + 「일정 전체 내보내기」 단추. host 로 내보내기 명령을 부른다.
-        Settings: (p: { host: PluginHost }) => createElement(CalendarSettings, { host: p.host }),
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
     nodeTypes: calendarNodeTypeImpl,
@@ -153,12 +132,11 @@ export const calendarPlugin = definePlugin({
             initCalendarNodes(nodes ?? null);
         },
         /**
-         * 첫 실행 기본 배치: 가운데 달력 탭 하나 + 오른쪽 패널에 작은 달력(쥔님 2026-11-01 21:47·2026-11-02 15:52).
+         * 첫 실행 기본 배치: 가운데 달력 탭 하나(쥔님 2026-11-01 21:47 · 작은 달력은 2026-11-09 비활성화로 뺐다).
          *   🔴 ⛔ 기기별 플래그라 한 번만 — 이미 쓰던 기기는 저장된 워크스페이스가 있어 안 바뀐다(⛔ 저장된 배치를 덮지 않는다).
          */
         onFirstRun(host: PluginHost) {
             host.workspace.open(MONTH_ID, { where: 'center' });
-            host.workspace.open(MINI_ID, { where: 'right' });
         },
     },
 });

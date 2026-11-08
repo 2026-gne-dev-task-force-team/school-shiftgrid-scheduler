@@ -53,43 +53,85 @@ export interface InlineSpan {
     strike?: boolean;
 }
 
+/** 인라인 서식 한 벌 — 종류 → 마커. 🔴 실시간 렌더·직렬화가 같은 표를 쓴다(왕복 안전). */
+export type InlineKind = 'bold' | 'italic' | 'code' | 'strike';
+export const INLINE_MARKERS: Record<InlineKind, string> = {
+    bold: '**', italic: '*', code: '`', strike: '~~',
+};
+
+/** 한 자리에서 닫히는(= 완성된) 마커를 가려낸다. 못 맞으면 null(그 글자는 리터럴). */
+function matchMarkerAt(text: string, i: number): { kind: InlineKind; inner: string; end: number } | null {
+    const c = text[i]; const c2 = text[i + 1];
+    // 코드가 가장 세다 — 안쪽은 전부 글자 그대로(다른 마커도 리터럴).
+    if (c === '`') {
+        const j = text.indexOf('`', i + 1);
+        if (j > i + 1) return { kind: 'code', inner: text.slice(i + 1, j), end: j + 1 };
+        return null;
+    }
+    if (c === '*' && c2 === '*') {
+        const j = text.indexOf('**', i + 2);
+        if (j > i + 2) return { kind: 'bold', inner: text.slice(i + 2, j), end: j + 2 };
+        return null;
+    }
+    if (c === '~' && c2 === '~') {
+        const j = text.indexOf('~~', i + 2);
+        if (j > i + 2) return { kind: 'strike', inner: text.slice(i + 2, j), end: j + 2 };
+        return null;
+    }
+    if (c === '*') {
+        const j = text.indexOf('*', i + 1);
+        if (j > i + 1) return { kind: 'italic', inner: text.slice(i + 1, j), end: j + 1 };
+        return null;
+    }
+    return null;
+}
+
 /**
- * 인라인 마크다운을 글자 조각으로 — 토글식(마커를 만나면 그 서식을 켜고/끈다).
- *   코드(`` ` ``) 안에서는 다른 마커를 글자 그대로 둔다(노션과 같다).
- *   짝이 안 맞는 마커는 끝까지 그 서식으로(드문 경우 · 치는 중엔 흔하다).
+ * 인라인 마크다운을 글자 조각으로 — 🔴 실시간 렌더용. **완성된** 마커 짝만 서식으로 바꾸고,
+ *   아직 안 닫힌/빈 마커(`**bold`·`` ` ``·`****`)는 글자 그대로 둔다(치는 중엔 흔하다 · 노션과 같다).
+ *   ⛔ 중첩은 안 한다 — 서식 안쪽은 전부 글자 그대로다(직렬화 왕복이 글자 단위로 안전해진다).
+ *   🔑 왕복 보장: serialize(parseInline(text)) === text (마커·리터럴을 소비한 그대로 되쓴다).
  */
 export function parseInline(text: string): InlineSpan[] {
     const spans: InlineSpan[] = [];
-    let buf = '';
-    let bold = false; let italic = false; let strike = false; let code = false;
-
-    const flush = () => {
-        if (buf === '') return;
-        const s: InlineSpan = { text: buf };
-        if (bold) s.bold = true;
-        if (italic) s.italic = true;
-        if (strike) s.strike = true;
-        if (code) s.code = true;
-        spans.push(s);
-        buf = '';
-    };
+    let lit = '';
+    const flushLit = () => { if (lit !== '') { spans.push({ text: lit }); lit = ''; } };
 
     let i = 0;
     while (i < text.length) {
-        const two = text.slice(i, i + 2);
-        if (code) {
-            // 코드 안 — 닫는 백틱만 본다.
-            if (text[i] === '`') { flush(); code = false; i += 1; continue; }
-            buf += text[i]; i += 1; continue;
+        const m = matchMarkerAt(text, i);
+        if (m) {
+            flushLit();
+            const span: InlineSpan = { text: m.inner };
+            span[m.kind] = true;
+            spans.push(span);
+            i = m.end;
+        } else {
+            lit += text[i];
+            i += 1;
         }
-        if (text[i] === '`') { flush(); code = true; i += 1; continue; }
-        if (two === '**') { flush(); bold = !bold; i += 2; continue; }
-        if (two === '~~') { flush(); strike = !strike; i += 2; continue; }
-        if (text[i] === '*') { flush(); italic = !italic; i += 1; continue; }
-        buf += text[i]; i += 1;
     }
-    flush();
+    flushLit();
     return spans;
+}
+
+/** 조각 하나의 서식 종류(없으면 null) — 직렬화·DOM 빌드가 쓴다. */
+export function kindOf(span: InlineSpan): InlineKind | null {
+    if (span.bold) return 'bold';
+    if (span.italic) return 'italic';
+    if (span.code) return 'code';
+    if (span.strike) return 'strike';
+    return null;
+}
+
+/** 조각들을 다시 마크다운 문자열로(왕복) — 서식 조각은 마커로 감싸고 리터럴은 그대로. */
+export function spansToMarkdown(spans: InlineSpan[]): string {
+    return spans.map((s) => {
+        const k = kindOf(s);
+        if (!k) return s.text;
+        const mk = INLINE_MARKERS[k];
+        return mk + s.text + mk;
+    }).join('');
 }
 
 /** 토글 결과 — 바뀐 글자와, 안쪽 내용을 가리키는 새 선택 범위. */

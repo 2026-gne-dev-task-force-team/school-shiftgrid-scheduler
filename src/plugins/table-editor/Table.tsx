@@ -488,7 +488,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 onBlur={core.onBlur}
                 onMouseEnter={() => setHoverTable(true)}
                 onMouseLeave={leaveTable}
-                className="relative overflow-auto outline-none max-h-full w-max max-w-full pr-3 pb-3"
+                className="relative overflow-auto outline-none max-h-full w-max max-w-full"
             >
                 <table className="border-collapse">
                     <thead>
@@ -624,7 +624,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         // 🔴 선택 테두리는 칸이 아니라 바깥 상자(selRect) 한 겹으로 그린다 — 칸엔 안쪽 옅은 바탕만(이중선·어긋남 방지).
                                         //    편집 중인 칸은 input 자신의 테두리만 보이게 바탕을 빼지 않는다(input 이 흰 바탕으로 덮는다).
                                         const cls = [
-                                            'relative border border-line px-2.5 py-2 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
+                                            'relative border px-2.5 py-2 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
+                                            // 머리 칸은 바탕이 옅은 회색(panel2)이라 line 경계가 묻힌다 — 한 단 진한 edge 로 본문 칸과 같은 또렷함을 준다(세로 칸선이 보이게).
+                                            isHeadCell ? 'border-edge' : 'border-line',
                                             col.readOnly ? 'text-muted' : '',
                                             isHeadCell ? 'bg-panel2 font-medium' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
@@ -694,7 +696,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addCol}
                         onClick={addColAt.bind(null, columns.length)}
                         title={lb.addCol}
-                        className={`absolute top-0 bottom-3 right-0 w-4 flex items-center justify-center rounded transition-opacity
+                        className={`absolute top-0 bottom-0 right-0 w-4 flex items-center justify-center rounded transition-opacity
                             ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
                         <span className="text-[12px] leading-none">＋</span>
@@ -708,7 +710,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addRow}
                         onClick={addRowAtEnd}
                         title={lb.addRow}
-                        className={`absolute left-5 right-3 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
+                        className={`absolute left-5 right-0 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
                             ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
                         <span className="text-[12px] leading-none">＋</span>
@@ -772,6 +774,7 @@ function renderEditor(
     return (
         <input
             autoFocus
+            size={1}
             value={text}
             inputMode={col.type === 'number' ? 'numeric' : undefined}
             onChange={(e) => core.setEditText(e.target.value)}
@@ -794,7 +797,8 @@ function renderEditor(
             }}
             onBlur={() => core.commitEdit(0, 0)}
             aria-label={col.title}
-            className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
+            // w-full·min-w-0·size=1 — 편집창이 칸보다 커지지 않게(input 기본 size 가 열을 넓히는 걸 막는다). 열 폭 고정.
+            className="w-full min-w-0 bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
         />
     );
 }
