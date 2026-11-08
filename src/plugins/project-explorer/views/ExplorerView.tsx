@@ -110,7 +110,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
 }
 
 export function ExplorerView({ host }: { host: PluginHost }) {
-    const { tree, selectedIds, selectedId, renamingId, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
+    const { tree, selectedIds, selectedId, renamingId, renameInitial, renamePlaceholder, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
 
     const [query, setQuery] = useState('');
     const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -476,7 +476,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             {isRenaming ? (
                                 <input
                                     autoFocus
-                                    defaultValue={row.node.name}
+                                    key={`${row.id}:${renameInitial ?? ''}`}
+                                    defaultValue={renameInitial ?? row.node.name}
+                                    placeholder={renamePlaceholder ?? undefined}
                                     onFocus={(e) => e.currentTarget.select()}
                                     onClick={(e) => e.stopPropagation()}
                                     onDoubleClick={(e) => e.stopPropagation()}

@@ -19,7 +19,7 @@ import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData,
-    apiInvalidate, apiBatch, openById, subscribeChanges,
+    apiInvalidate, apiBatch, openById, subscribeChanges, startInput,
 } from './store';
 
 // 🔴 공개 노드 약속(NodesApi·PublicNode·NodeTypeImplFns)은 이 꾸러미의 contracts/nodes 가 쥔다 — 이 파일은 그걸 **구현**한다(makeNodesApi).
@@ -84,6 +84,8 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 unique: item.unique,
                 slots: item.slots,
                 record: item.record,
+                createInput: item.createInput,      // 🔑 만들 때 인라인 입력(순수 데이터) — 커밋은 onInput(kind:'create')
+                onInput: fns?.onInput ? (id, kind, val) => fns.onInput!(host, id, kind, val) : undefined,
             };
             // 🔴 선언형 노드 타입은 raw registerType — 접두사 검사를 안 탄다. 내장 'folder' 는 접두사 없는 예외고,
             //    선언형 기여는 in-tree·tsc 검사된 1차 자료라 런타임 types.register 의 접두사 가드가 불필요하다.
@@ -134,6 +136,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         invalidate(id) { apiInvalidate(id); },
         select(id) { selectNode(id); },
         open(id) { selectNode(id); openById(id); },
+        promptInput(id, opts) { startInput(id, opts.kind, opts.initial ?? '', opts.placeholder ?? null); },
 
         subscribe(fn) { return keep({ dispose: subscribeChanges(fn) }); },
         get roots() { const t = getState().tree; return { main: t.root, trash: t.trash }; },

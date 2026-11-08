@@ -54,6 +54,21 @@ export function eventToIcs(node: { id: string; name: string; data: EventData }):
     };
 }
 
+/**
+ * CalendarItem(파서 결과·남의 일정 평면값) → .ics 작성기 입력 — 구독 노드 내보내기가 쓴다(받아 둔 lastIcs 를 파싱해 다시 쓴다).
+ *   🔴 start/end 는 parseIcs 가 이미 우리 저장 꼴('YYYY-MM-DD'·'...THH:mm')로 정규화했으니 그대로 넘긴다(작성기가 꼴을 맞춘다).
+ */
+export function itemToIcs(item: CalendarItem): IcsWriteEvent {
+    return {
+        uid: item.id,
+        title: item.title || '(제목 없음)',
+        start: item.start,
+        end: item.end,
+        allDay: item.allDay,
+        ...(item.memo ? { memo: item.memo } : {}),
+    };
+}
+
 /** 파싱된 내 일정(CalEvent) → .ics 작성기 입력 — 내보내기가 메모리 CalEvent 로 모을 때. */
 export function calEventToIcs(e: CalEvent): IcsWriteEvent {
     return {

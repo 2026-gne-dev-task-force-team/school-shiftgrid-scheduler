@@ -4,8 +4,8 @@
  *   전이: 구독 노드가 바뀌면(추가·끄기·lastIcs 갱신·삭제) index 가 reconcile 을 부른다 → 켜진 것만 다시 등록 → 달력이 다시 그린다.
  *   받기: index(열 때)·설정 「새로고침」이 refresh 를 부른다 → fetch → updateSub(노드 갱신) → 노드 변경 → reconcile.
  */
-import type { Calendar } from '../calendar/contracts/calendar';
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Calendar } from '../contracts/calendar';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 import { buildSources } from './model';
 import { listSubs, updateSub } from './subscriptions';
 import { fetchIcs, type FetchResult } from './fetch';

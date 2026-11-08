@@ -32,7 +32,7 @@ function fakeApi() {
         move: (id, pid) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(pid)!.children.push(id); delete nodes.get(id)!.trashedFrom; },
         remove: (id) => { write(); const from = parentOf(id)!; nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(id)!.trashedFrom = from; nodes.get('trash')!.children.push(id); },
         batch: (fn) => { log.batches++; depth++; try { fn(); } finally { depth--; for (const l of listeners) l([]); } },
-        invalidate: () => {}, select: () => {}, open: () => {},
+        invalidate: () => {}, select: () => {}, open: () => {}, promptInput: () => {},
         subscribe: (fn) => { listeners.add(fn); return { dispose() { listeners.delete(fn); } }; },
         roots: { main: 'root', trash: 'trash' },
     };

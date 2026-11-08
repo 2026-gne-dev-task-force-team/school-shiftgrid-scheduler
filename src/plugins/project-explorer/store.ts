@@ -27,6 +27,15 @@ interface ExplorerState {
     selectedId: string | null;
     /** 이름 바꾸는 중인 노드(줄 자리에 input 이 뜬다). */
     renamingId: string | null;
+    /**
+     * 🔑 그 인라인 입력이 「무엇」인가 — 'name'(이름바꾸기, 기본) 또는 그 외(타입의 onInput 으로 보낼 kind).
+     *   'name' 이면 커밋이 노드 이름을 바꾸고, 그 외면 그 타입의 onInput(kind, 값) 으로 넘긴다(⛔ window.prompt 없이).
+     */
+    renameKind: string;
+    /** 그 입력에 미리 채울 값(null 이면 노드 이름). createInput 생성 입력은 ''(빈 칸) · promptInput 은 준 initial. */
+    renameInitial: string | null;
+    /** 그 입력의 안내(placeholder) — 없으면 안 보인다. */
+    renamePlaceholder: string | null;
     /** 되돌리기/다시하기 더미(스냅샷) — 구조 연산만 쌓인다. */
     history: History;
     /** 인라인 「정말 지울까요?」 — 영구 삭제를 기다리는 휴지통 노드 id(⛔ window.confirm 안 씀). */
@@ -49,7 +58,7 @@ interface ExplorerState {
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, deleteConfirm: null, loading: false, notice: null };
+    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, deleteConfirm: null, loading: false, notice: null };
 }
 
 // ─────────────────────────── 조작 가능 관문(model 에 주입) ───────────────────────────
@@ -209,21 +218,44 @@ export function selectAllRows(rowsOrder: string[]): void {
 }
 
 export function startRename(id: string): void {
-    state = { ...state, ...singleSel(id), renamingId: id };
+    state = { ...state, ...singleSel(id), renamingId: id, renameKind: 'name', renameInitial: null, renamePlaceholder: null };
+    emit();
+}
+
+/**
+ * 🔑 인라인 입력 띄우기 — 이름바꾸기가 아니라 「값 입력」(kind). 커밋하면 그 타입의 onInput(kind, 값) 으로 넘어간다.
+ *   promptInput(공개 API)·newNode(createInput 타입)가 부른다. initial 은 미리 채울 값(빈 칸이면 '').
+ */
+export function startInput(id: string, kind: string, initial: string, placeholder: string | null): void {
+    if (state.loading) return;
+    state = { ...state, ...singleSel(id), renamingId: id, renameKind: kind, renameInitial: initial, renamePlaceholder: placeholder };
     emit();
 }
 
 export function cancelRename(): void {
     if (state.renamingId == null) return;
-    state = { ...state, renamingId: null };
+    state = { ...state, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null };
     emit();
 }
 
-/** 이름 확정 — 비면 model/tree.rename 이 원래 이름을 지킨다. 어느 쪽이든 input 은 닫는다. */
-export function commitRename(name: string): void {
+/**
+ * 인라인 입력 확정 — 어느 쪽이든 input 은 닫는다.
+ *   · renameKind === 'name' → 노드 이름을 바꾼다(비면 model/tree.rename 이 원래 이름을 지킨다).
+ *   · 그 외 → 그 노드 타입의 onInput(kind, 값) 으로 넘긴다(⛔ 탐색기는 그 값의 뜻을 모른다 — 타입 주인이 푼다).
+ */
+export function commitRename(value: string): void {
     const id = state.renamingId;
     if (!id) return;
-    apply((t) => rename(t, id, name, permitRename), { patch: { renamingId: null } });
+    const kind = state.renameKind;
+    if (kind === 'name') {
+        apply((t) => rename(t, id, value, permitRename), { patch: { renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null } });
+        return;
+    }
+    // 값 입력 — 입력을 먼저 닫고(재진입 방지) 타입에게 넘긴다.
+    const def = getType(state.tree.nodes[id]?.type ?? '');
+    state = { ...state, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null };
+    emit();
+    try { def?.onInput?.(id, kind, value); } catch { /* 타입 핸들러가 던져도 입력은 이미 닫혔다 */ }
 }
 
 // ─────────────────────────── 구조 연산(명령이 부른다) ───────────────────────────
@@ -297,13 +329,18 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const init = def?.create?.init?.(parent) ?? {};
     const id = uid();
     const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
+    // 🔑 createInput 타입이면 이름칸 자리에 「값 입력」(kind:'create')을 띄운다 — 커밋은 onInput 으로(이름이 아니라 링크 등).
+    const ci = def?.createInput;
+    const inputPatch = ci
+        ? { renameKind: 'create', renameInitial: '', renamePlaceholder: ci.placeholder ?? null }
+        : { renameKind: 'name', renameInitial: null, renamePlaceholder: null };
     apply(
         (t) => {
             const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf, permitCreate);
             if (made === t) return t;                                     // 관문에 막힘(이론상 위에서 걸러짐)
             return createSlots(made, id, type, new Set());                // 🔑 자동 슬롯 — 한 묶음(되돌리기 한 번)
         },
-        { patch: { ...singleSel(id), renamingId: id } },
+        { patch: { ...singleSel(id), renamingId: id, ...inputPatch } },
     );
 }
 

@@ -7,7 +7,7 @@
  * (테스트 파일은 구조 검사 walk 가 건너뛰므로 달력 내부(feed·events)를 직접 import 해 끝단을 잰다.)
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 
 const kv = vi.hoisted(() => {
     const store = new Map<string, Record<string, unknown>>();
@@ -20,17 +20,19 @@ const kv = vi.hoisted(() => {
     });
     return { store, nodesGetAll, nodesWrite };
 });
-vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
+vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore } from '../project-explorer/store';
-import { __resetPersistForTest } from '../project-explorer/persist';
-import { makeNodesApi } from '../project-explorer/api';
-import { registerType, clearTypes } from '../project-explorer/model/types';
-import { clearDerived } from '../project-explorer/model/derive';
-import { calendarModule, listFeedSources, __resetFeeds } from '../calendar/feed';
-import { mapFeedEvents } from '../calendar/feed-events';
-import { eventsInRange } from '../calendar/events';
-import { SUB_TYPE, initSubs, listSubs, addSub, updateSub, removeSub } from './subscriptions';
+import { initStore } from '../../project-explorer/store';
+import { __resetPersistForTest } from '../../project-explorer/persist';
+import { makeNodesApi } from '../../project-explorer/api';
+import { registerType, clearTypes } from '../../project-explorer/model/types';
+import { clearDerived } from '../../project-explorer/model/derive';
+import { calendarModule, listFeedSources, __resetFeeds } from '../feed';
+import { mapFeedEvents } from '../feed-events';
+import { eventsInRange } from '../events';
+import { parseIcs, writeIcs } from '../ics';
+import { itemToIcs } from '../io';
+import { SUB_TYPE, initSubs, listSubs, addSub, updateSub, removeSub, getSubById } from './subscriptions';
 import { setCalendar, reconcile, disposeAll, refresh, registeredCount } from './controller';
 
 function host(): PluginHost {
@@ -99,6 +101,23 @@ describe('끄기·지우기 → 사라짐', () => {
         removeSub(id);
         reconcile();
         expect(registeredCount()).toBe(0);
+    });
+});
+
+describe('내보내기 — 구독 노드(lastIcs → 우리 작성기 꼴 .ics)', () => {
+    // index.ts 명령 'calendar-subscribe.export' 가 쓰는 변환 그대로: parseIcs(lastIcs) → itemToIcs → writeIcs.
+    it('받아 둔 일정을 .ics 로 내면 같은 일정이 돈다(왕복)', () => {
+        const id = addEnabledWithIcs('공휴일', ICS);
+        const sub = getSubById(id)!;
+        const ics = writeIcs(parseIcs(sub.data.lastIcs ?? '').map(itemToIcs));
+        const round = parseIcs(ics);
+        expect(round.map((e) => e.title).sort()).toEqual(['신정', '지방선거일']);
+    });
+    it('받아 둔 게 없으면(lastIcs 없음) 빈 달력이 난다(일정 0)', () => {
+        const id = addSub('빈 구독', 'https://example.com/a.ics');
+        const sub = getSubById(id)!;
+        const ics = writeIcs(parseIcs(sub.data.lastIcs ?? '').map(itemToIcs));
+        expect(parseIcs(ics).length).toBe(0);
     });
 });
 

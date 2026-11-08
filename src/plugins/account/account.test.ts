@@ -70,6 +70,7 @@ function makeNodes(opts?: { deferred?: boolean }) {
         invalidate: () => { /* 테스트 */ },
         select: () => { /* 테스트 */ },
         open: () => { /* 테스트 */ },
+        promptInput: () => { /* 테스트 */ },
         subscribe: (fn) => { subs.add(fn); return { dispose() { subs.delete(fn); } }; },
         roots: { main: ROOT, trash: TRASH },
     };

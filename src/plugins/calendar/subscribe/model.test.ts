@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { normalizeUrl, buildSource, buildSources, defaultColor, COLOR_TOKENS, CORS_HINT, type SubNode } from './model';
-import type { CalendarItem } from '../calendar/contracts/calendar';
+import type { CalendarItem } from '../contracts/calendar';
 
 const items: CalendarItem[] = [
     { id: 'a', title: '신정', start: '2026-01-01', end: '2026-01-02', allDay: true },
@@ -40,12 +40,15 @@ describe('buildSource', () => {
 
 describe('buildSources — 켜짐 + lastIcs 만', () => {
     const subs: SubNode[] = [
-        { id: '1', data: { name: '켜짐+캐시', url: 'u', enabled: true, lastIcs: 'X' } },
-        { id: '2', data: { name: '꺼짐', url: 'u', enabled: false, lastIcs: 'X' } },
-        { id: '3', data: { name: '켜짐+캐시없음', url: 'u', enabled: true } },
+        { id: '1', name: '켜짐+캐시', data: { url: 'u', enabled: true, lastIcs: 'X' } },
+        { id: '2', name: '꺼짐', data: { url: 'u', enabled: false, lastIcs: 'X' } },
+        { id: '3', name: '켜짐+캐시없음', data: { url: 'u', enabled: true } },
     ];
     it('켜져 있고 받아 둔 것만 출처가 된다', () => {
         expect(buildSources(subs, parse).map((s) => s.id)).toEqual(['1']);
+    });
+    it('출처 라벨은 노드 이름이다(data 가 아니라)', () => {
+        expect(buildSources(subs, parse)[0].source.label).toBe('켜짐+캐시');
     });
 });
 

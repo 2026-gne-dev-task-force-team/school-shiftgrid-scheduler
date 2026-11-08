@@ -27,7 +27,7 @@ import { registerType, clearTypes } from '../project-explorer/model/types';
 import { clearDerived } from '../project-explorer/model/derive';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes,
-    importItemsToStore, collectForExport, STORE_TYPE, EVENT_TYPE,
+    importItemsToStore, collectForExport, collectEventForExport, STORE_TYPE, EVENT_TYPE,
 } from './nodes';
 import { parseIcs, writeIcs } from './ics';
 import type { CalendarItem } from './contracts/calendar';
@@ -110,5 +110,33 @@ describe('내보내기 — 저장소/전체, 왕복', () => {
         expect(titles).toEqual(['신정', '회의']);
         const sinjeong = round.find((e) => e.title === '신정')!;
         expect(sinjeong.allDay).toBe(true);
+    });
+});
+
+describe('내보내기 — 노드 단위(저장소+하위 저장소·일정 하나)', () => {
+    it('저장소를 내보내면 하위 저장소 일정까지 담는다', () => {
+        const parent = newStore();
+        const api = makeNodesApi('calendar');
+        const child = api.create(parent, { type: STORE_TYPE, name: '하위 저장소' });
+        importItemsToStore(parent, [{ id: 'p1', title: '부모 일정', start: '2026-03-01', end: '2026-03-02', allDay: true } as CalendarItem]);
+        importItemsToStore(child, [{ id: 'c1', title: '자식 일정', start: '2026-03-10', end: '2026-03-11', allDay: true } as CalendarItem]);
+        // 부모를 내보내면 둘 다(path 가 부모를 지난다)
+        expect(collectForExport(parent).map((e) => e.title).sort()).toEqual(['부모 일정', '자식 일정']);
+        // 자식만 내보내면 자식 일정만
+        expect(collectForExport(child).map((e) => e.title)).toEqual(['자식 일정']);
+    });
+    it('일정 하나만 내보내면 그 일정만 난다', () => {
+        const sid = newStore();
+        importItemsToStore(sid, parseIcs(ICS));   // 신정·회의 둘
+        const api = makeNodesApi('calendar');
+        const sinjeong = api.children(sid).find((n) => n.type === EVENT_TYPE && n.name === '신정')!;
+        const w = collectEventForExport(sinjeong.id)!;
+        expect(w.title).toBe('신정');
+        const round = parseIcs(writeIcs([w]));
+        expect(round.map((e) => e.title)).toEqual(['신정']);   // 회의는 안 담긴다
+    });
+    it('일정 노드가 아니면(저장소 id) null', () => {
+        const sid = newStore();
+        expect(collectEventForExport(sid)).toBeNull();
     });
 });
