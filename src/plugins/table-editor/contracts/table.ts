@@ -66,6 +66,8 @@ export interface TableTx {
         resize?: { key: string; width: number }[];
         /** 머리 이름 고치기(M2 axis-edit). */
         rename?: { key: string; title: string }[];
+        /** 열 순서 바꾸기(v3 — 손잡이 끌기). to 는 「옮긴 뒤」 index. */
+        move?: { key: string; to: number }[];
     };
     /** 경계 끌기(M2 row-weight) — 밀지 말지는 소유자가 정한다. */
     axis?: { rowWeight?: { id: string; delta: number }[] };
@@ -74,9 +76,12 @@ export interface TableTx {
     source: TableTxSource;
 }
 
+/** 바탕 틴트 — 토큰 이름으로만(하드코딩 색 금지). 색 메뉴·decorate 가 쓴다. */
+export type CellTone = 'accent' | 'ok' | 'bad' | 'warn' | 'muted';
+
 /** 칸 꾸밈 — ③(손님)이 글자를 해석해 돌려준다(M2 decorate). 색은 토큰 이름으로만. */
 export interface CellDecoration {
-    tone?: 'accent' | 'ok' | 'bad' | 'warn' | 'muted';
+    tone?: CellTone;
     badge?: string;
     title?: string;
 }
@@ -170,6 +175,17 @@ export interface TableProps {
     headerMenu?(kind: 'row' | 'col', id: string): HeaderMenuEntry[];
     /** 🔴 병합 영역(M2 merge) — 소유자가 쥔다(controlled). 편집기는 onCommit 의 tx.merge 로 바꿔 달라고만 한다. */
     merges?: MergeRegion[];
+    /** v3 노션식 — 첫 줄을 머리 행으로(옅은 바탕·굵게). 소유자가 쥔다(controlled). */
+    headerRow?: boolean;
+    /** v3 노션식 — 첫 칸을 머리 열로. */
+    headerCol?: boolean;
+    /** v3 — 열 제목 줄(thead 제목)을 감춘다(노션 단순 표: 열 이름 없음). 손잡이는 그대로 뜬다. */
+    hideColHeader?: boolean;
+    /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */
+    onSetHeaderRow?(v: boolean): void;
+    onSetHeaderCol?(v: boolean): void;
+    /** v3 색 — 손잡이 메뉴에서 행·열 바탕 틴트를 고른다(소유자가 저장 → decorate 로 되비친다). undefined 는 색 없음. */
+    onColor?(kind: 'row' | 'col', id: string, tone?: CellTone): void;
     labels?: Partial<TableLabels>;
     emptyHint?: string;
     className?: string;

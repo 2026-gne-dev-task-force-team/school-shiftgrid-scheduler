@@ -71,9 +71,11 @@ describe('표 자리 어댑터 — 손님 콜백으로 되돌린다', () => {
         const slot = makeSlot();
         const props = slotToTableProps(slot);
         mount(<Table {...props} />);
-        // 행 머리의 ✕(지우기) 단추를 누른다
-        const del = hostEl!.querySelector<HTMLButtonElement>('button[aria-label="지우기"]')!;
-        act(() => { del.click(); });
+        // v3 노션식: 행 손잡이를 우클릭 → 「줄 지우기」.
+        const handle = hostEl!.querySelector<HTMLElement>('[data-testid="row-handle"]')!;
+        act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })); });
+        const del = [...document.querySelectorAll('button')].find((b) => b.textContent?.includes('줄 지우기'))!;
+        act(() => { del.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect(slot.onDeleteRow).toHaveBeenCalledWith('p1');
     });
 });

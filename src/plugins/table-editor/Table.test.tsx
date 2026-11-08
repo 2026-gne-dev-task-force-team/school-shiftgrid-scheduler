@@ -59,7 +59,8 @@ describe('Table — controlled 편집·키보드', () => {
     it('글자 입력 후 Enter 로 확정하면 데이터가 바뀌고 커서가 아래로', () => {
         const ref = createRef<CtrlRef>();
         const onTx = vi.fn();
-        mount(<Controlled ref={ref} initial={oneRow()} features={['rows']} onTx={onTx} />);
+        // v3: 바닥 「유령 줄」을 걷었다 — 아래로 갈 진짜 줄이 있게 두 줄로 둔다(노션식: 새 줄은 + 막대로).
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: { a: '', b: '' } }, { id: 'r2', cells: { a: '', b: '' } }]} features={['rows']} onTx={onTx} />);
         act(() => ref.current!.h().focus());
         act(() => ref.current!.h().type('가', 0, 0));
         act(() => ref.current!.h().commit());

@@ -100,5 +100,9 @@ export const BUILTIN: Record<string, TableFeature> = {
     [mergeFeature.id]: mergeFeature,
 };
 
-/** 기본 묶음 — 아무것도 안 적으면 이게 끼워진다(「설정 몰라도 바로」). */
-export const DEFAULT_FEATURES: string[] = ['rows', 'fill', 'paste-policy:append', 'history'];
+/**
+ * 기본 묶음 — 아무것도 안 적으면 이게 끼워진다(「설정 몰라도 바로」).
+ *   ⭐ v3: 노션 「단순 표 블록」에 있는 것만 — 행·열 늘리고 줄이기(axis-edit)·열 폭·칸 합치기·머리 고정.
+ *   ⛔ 체크칸(col-types)·검증(validate)·행 높이(row-weight)·채우기 핸들(fill)은 **빼 둔다** — 손님(시간표 등)이 켠다.
+ */
+export const DEFAULT_FEATURES: string[] = ['rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:append', 'history'];
