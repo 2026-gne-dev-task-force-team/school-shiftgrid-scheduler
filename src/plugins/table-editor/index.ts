@@ -6,9 +6,10 @@
  *   ⭐ v3(2026-11-08): 「표 연습장」을 걷고 **표 노드**로 바꿨다 — 탐색기에서 「새로 만들기 ▸ 표」로 만들고 열면
  *      노션식 표 화면(TableNodeView)이 뜬다. 내용은 그 노드에 저장돼 다시 열어도 남는다(requires: nodes).
  */
-import { createElement } from 'react';
+import { createElement, useEffect } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { ViewProps } from '../../pane-ui-system';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
@@ -18,6 +19,27 @@ import { tableNodeTypes, tableNodeTypeImpl, initTableNodes } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'table-editor.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로.
 const SHEET_ID = 'table-editor.sheet';
+
+/**
+ * 옛 「표 연습장」 탭 자동 정리 — v3 에서 연습장 뷰('playground')를 걷었다.
+ *   저장된 레이아웃에 그 탭이 남아 있으면 자리표시(유령 탭)가 뜨는데, 이 뷰가 그 자리에 들어와
+ *   조용히 닫고 가운데 표 화면으로 잇는다(쥔님: 자리표시 대신 닫히거나 표로 이어지게). 명령·리본엔 안 올린다(저장된 잔재만 탄다).
+ */
+function LegacyPlaygroundRedirect({ host, leaf }: ViewProps & { host: PluginHost }) {
+    useEffect(() => {
+        // 🔴 복원 시동 중엔 작업대 다리가 아직 안 서 있다(open 이 null) — 설 때까지 몇 번 다시 시도한 뒤 잇고 닫는다.
+        let tries = 0;
+        let timer = 0;
+        const attempt = (): void => {
+            const opened = host.workspace.open(SHEET_ID, { where: 'center' });
+            if (opened == null && tries < 40) { tries += 1; timer = window.setTimeout(attempt, 50); return; }
+            host.workspace.close(leaf.id);
+        };
+        attempt();
+        return () => window.clearTimeout(timer);
+    }, [host, leaf.id]);
+    return null;
+}
 
 export const tableEditorPlugin = definePlugin({
     manifest: {
@@ -34,6 +56,11 @@ export const tableEditorPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Sheet',
+            }, {
+                // 옛 「표 연습장」 잔재 탭 — 들어오면 바로 닫고 표 화면으로 잇는다(위 LegacyPlaygroundRedirect).
+                id: 'playground', title: '표 연습장', icon: 'table', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                component: 'LegacyPlayground',
             }],
             commands: [{ id: 'table-editor.open', title: '표 열기', icon: 'table' }],
             ribbon: [{ commandId: 'table-editor.open', icon: 'table', order: 6 }],
@@ -45,6 +72,8 @@ export const tableEditorPlugin = definePlugin({
     components: {
         // 표 화면 — 보고 있는 표 노드(store)를 그린다. host 는 안 쓴다(다리가 쥔다).
         Sheet: () => createElement(TableNodeView),
+        // 옛 연습장 탭 자동 정리 — host·leaf 를 받아 닫고 표로 잇는다(위 redirect).
+        LegacyPlayground: LegacyPlaygroundRedirect,
     },
     commands: {
         // 리본 「표 열기」 — 보고 있는 표는 그대로 두고 화면만 연다(없으면 안내가 뜬다).
