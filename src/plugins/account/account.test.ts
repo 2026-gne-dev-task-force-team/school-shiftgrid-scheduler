@@ -66,6 +66,7 @@ function makeNodes(opts?: { deferred?: boolean }) {
             notify([id]);
         },
         remove: (id) => { for (const n of map.values()) { const i = n.children.indexOf(id); if (i >= 0) n.children.splice(i, 1); } map.delete(id); notify([id]); },
+        batch: (fn) => { fn(); },
         invalidate: () => { /* 테스트 */ },
         select: () => { /* 테스트 */ },
         open: () => { /* 테스트 */ },

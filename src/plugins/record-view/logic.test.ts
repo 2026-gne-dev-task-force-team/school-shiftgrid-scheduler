@@ -4,10 +4,10 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-    applySorts, compareByField, deriveRows, displayText, isEmptyValue,
-    matchesRule, matchesSearch, opNeedsValue, opsFor, toNumber,
+    applySorts, compareByField, deriveRows, displayText, evalFilter, filterIsEmpty, flatRules, isEmptyValue,
+    matchesRule, matchesSearch, normalizeFilter, opNeedsValue, opsFor, pruneFilter, toNumber, withFlatRules,
 } from './logic';
-import type { RecordField, RecordViewState } from './contracts/record-view';
+import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/record-view';
 
 const F: Record<string, RecordField> = {
     name: { key: 'name', label: '이름', type: 'text' },
@@ -18,8 +18,9 @@ const F: Record<string, RecordField> = {
     done: { key: 'done', label: '끝', type: 'check' },
 };
 
-function st(p: Partial<RecordViewState>): RecordViewState {
-    return { kind: 'table', search: '', filters: [], sorts: [], hidden: [], widths: {}, ...p };
+/** deriveRows 입력 — 평평한 규칙 목록을 and 묶음으로 */
+function st(p: { search?: string; filters?: FilterRule[]; sorts?: SortRule[] }) {
+    return { search: p.search ?? '', filter: { and: p.filters ?? [] }, sorts: p.sorts ?? [] };
 }
 
 describe('isEmptyValue — 타입마다 「비었다」가 다르다', () => {
@@ -111,6 +112,8 @@ describe('opsFor / opNeedsValue', () => {
         expect(opNeedsValue('empty')).toBe(false);
         expect(opNeedsValue('isTrue')).toBe(false);
         expect(opNeedsValue('contains')).toBe(true);
+        expect(opNeedsValue('empty', 'text')).toBe(false);   // 칸 타입을 알면 그 정의를 본다
+        expect(opNeedsValue('gt', 'number')).toBe(true);
     });
 });
 
@@ -193,5 +196,55 @@ describe('deriveRows — 필터(AND) → 검색 → 정렬', () => {
         const before = recs.map((r) => r.id);
         deriveRows(recs, fields, st({ sorts: [{ key: 'age', dir: 'asc' }] }));
         expect(recs.map((r) => r.id)).toEqual(before);
+    });
+});
+
+describe('FilterNode — 규칙·and·or 2단', () => {
+    const byKey = new Map(Object.values(F).map((f) => [f.key, f]));
+    const a: FilterRule = { key: 'age', op: 'gt', value: 10 };
+    const b: FilterRule = { key: 'team', op: 'eq', value: 'a' };
+    const c: FilterRule = { key: 'name', op: 'contains', value: '홍' };
+
+    it('and·or 가 섞인 2단 평가 — { or: [a, { and: [b, c] }] }', () => {
+        const node: FilterNode = { or: [a, { and: [b, c] }] };
+        expect(evalFilter(node, byKey, { age: 20, team: 'b', name: '이' })).toBe(true);    // a 만 참
+        expect(evalFilter(node, byKey, { age: 1, team: 'a', name: '홍길동' })).toBe(true);  // b·c 둘 다 참
+        expect(evalFilter(node, byKey, { age: 1, team: 'a', name: '이' })).toBe(false);    // 셋 다 아님
+    });
+    it('빈 and·or 는 「조건 없음」이라 참', () => {
+        expect(evalFilter({ and: [] }, byKey, {})).toBe(true);
+        expect(evalFilter({ or: [] }, byKey, {})).toBe(true);
+        expect(filterIsEmpty({ and: [{ or: [] }] })).toBe(true);
+        expect(filterIsEmpty({ and: [a] })).toBe(false);
+    });
+    it('칸이 없는 규칙은 통과한다', () => {
+        expect(evalFilter({ and: [{ key: 'ghost', op: 'eq', value: 1 }] }, byKey, {})).toBe(true);
+    });
+    it('정규화 — 3단째 묶음은 버린다(2단까지)', () => {
+        const deep = { and: [a, { or: [b, { and: [c] }] }] };
+        const n = normalizeFilter(deep) as { and: FilterNode[] };
+        expect(n.and).toHaveLength(2);
+        const inner = n.and[1] as { or: FilterNode[] };
+        expect(inner.or).toEqual([b]);   // 그 안의 { and: [c] } 는 3단이라 사라졌다
+    });
+    it('정규화 — 깨진 값은 빈 and', () => {
+        expect(normalizeFilter(null)).toEqual({ and: [] });
+        expect(normalizeFilter({ and: 3 })).toEqual({ and: [] });
+    });
+    it('툴바용 평평한 목록 — 규칙만 꺼내고, 바꿔 넣어도 or 묶음은 보존', () => {
+        const node: FilterNode = { and: [a, { or: [b, c] }] };
+        expect(flatRules(node)).toEqual([a]);
+        const next = withFlatRules(node, [c]);
+        expect(next).toEqual({ and: [c, { or: [b, c] }] });
+    });
+    it('칸을 지우면 그 칸의 규칙이 묶음 속까지 빠진다', () => {
+        const node: FilterNode = { and: [a, { or: [b, c] }] };
+        expect(pruneFilter(node, 'team')).toEqual({ and: [a, { or: [c] }] });
+        expect(pruneFilter({ and: [{ or: [b] }] }, 'team')).toEqual({ and: [] });
+    });
+    it('deriveRows 가 or 필터를 먹는다', () => {
+        const recs = [{ id: 1, age: 20, team: 'b' }, { id: 2, age: 1, team: 'a' }, { id: 3, age: 1, team: 'b' }];
+        const out = deriveRows(recs, [F.age, F.team], { search: '', filter: { or: [a, b] }, sorts: [] });
+        expect(out.map((r) => r.id)).toEqual([1, 2]);
     });
 });

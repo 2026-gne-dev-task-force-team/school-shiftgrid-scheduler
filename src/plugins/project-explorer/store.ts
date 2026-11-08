@@ -78,6 +78,9 @@ function flashNotice(msg: string): void {
     noticeTimer = setTimeout(() => { noticeTimer = null; state = { ...state, notice: null }; emit(); }, 5000);
 }
 
+/** 🔑 apiBatch 중첩 깊이 — 0 이 아니면 apply 는 나무만 바꾼다(더미·저장·알림은 묶음 끝에서). */
+let batchDepth = 0;
+
 /** 🔴 N4 — 나무가 바뀔 때 「무엇이 바뀌었나(changedIds)」를 받는 구독(NodesApi.subscribe 가 이 위에 선다). */
 const changeListeners = new Set<(ids: string[]) => void>();
 
@@ -149,6 +152,8 @@ function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; h
     const prev = state.tree;
     const next = fn(prev);
     const bumped: Tree = { ...next, rev: next.rev + 1 };
+    // 🔑 묶음(apiBatch) 안 — 나무만 갈아 끼운다. 더미·저장·알림은 묶음이 끝날 때 한 번에(되돌리기 한 칸).
+    if (batchDepth > 0) { state = { ...state, tree: bumped, ...opts?.patch }; return; }
     const mode = opts?.history ?? 'push';
     const history = mode === 'push' ? record(state.history, prev)
         : mode === 'clear' ? emptyHistory()
@@ -509,6 +514,27 @@ export function apiCreate(
         return createSlots(made, id, opts.type, new Set());   // 🔑 자동 슬롯 — 부모 생성과 한 묶음
     });
     return state.tree.nodes[id] ? id : '';   // 실제로 생겼을 때만 id(관문에 막혔으면 빈 문자열)
+}
+
+/**
+ * 🔑 묶음 — fn 안의 모든 연산이 되돌리기 한 칸 · 저장 한 번 · 알림 한 번이 된다(붙여넣기 100행 = ⌘Z 한 번).
+ *   중첩이면 바깥 묶음에 합쳐진다. fn 이 던져도 지금까지의 변경은 한 칸으로 마감한 뒤 던진다.
+ */
+export function apiBatch(fn: () => void): void {
+    if (state.loading) return;
+    if (batchDepth > 0) { fn(); return; }
+    const base = state.tree;
+    batchDepth = 1;
+    try { fn(); } finally {
+        batchDepth = 0;
+        const next = state.tree;
+        if (next !== base) {
+            state = { ...state, history: record(state.history, base) };
+            if (hostRef) saveTree(hostRef, next, diffIds(base, next));
+            emit();
+            fireChange(base, next);
+        }
+    }
 }
 
 export function apiRename(id: string, name: string): void {
