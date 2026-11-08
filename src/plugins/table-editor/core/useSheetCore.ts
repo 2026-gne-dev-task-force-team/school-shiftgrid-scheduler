@@ -129,6 +129,9 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (!ed) return;
             const raw = pickText != null ? pickText : ed.text;
             adapterRef.current.commit([{ r: ed.r, c: ed.c, text: raw }], 'edit');
+            // 🔴 editRef 를 동기로 비운다 — 아래 focusGrid 가 편집창을 blur 시키고, 그 blur 핸들러가
+            //    commitEdit 을 재진입하는데(이중 확정 → 커서가 편집 자리로 되돌아감), 그때 ed 를 null 로 보게 한다.
+            editRef.current = null;
             setEdit(null);
             moveTo(ed.r + moveR, ed.c + moveC);
             focusGrid();
@@ -137,6 +140,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
     );
 
     const cancelEdit = useCallback(() => {
+        editRef.current = null;   // 🔴 commitEdit 과 같은 이유 — focusGrid 가 부르는 blur 재진입을 막는다
         setEdit(null);
         focusGrid();
     }, [focusGrid]);

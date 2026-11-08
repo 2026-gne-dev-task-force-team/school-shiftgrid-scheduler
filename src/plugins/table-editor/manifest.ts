@@ -4,10 +4,11 @@
  */
 import type { PluginManifest } from '../../pane-ui-system/plugin';
 
-export const manifest: PluginManifest = {
+// satisfies 로 둬서 contributes 키가 추론 타입에 안 생긴다(헤드리스 제공자 — 뷰·명령 0, provides 는 index 에서).
+export const manifest = {
     id: 'table-editor',
     name: '표 편집기',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '범용 표 편집기(엑셀·한글 표식) — 엔진 + 조립형 기능 모듈. 손님은 host.modules.use(\'table\') 로 Table 을 받는다.',
-};
+    description: '범용 표 편집기(엑셀·한글 표식) — 엔진 + 조립형 기능 모듈. 손님은 host.modules 로 table 모듈을 받아 Table 을 쓴다.',
+} satisfies PluginManifest;
