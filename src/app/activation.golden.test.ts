@@ -60,3 +60,18 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         expect(opened).toEqual(['project-explorer.tree', 'calendar.month', 'calendar.mini']);
     });
 });
+
+/**
+ * 🔴 사람용 설명이 비지 않았다(쥔님 2026-11-08 「설명이 너무 부족」) — 등록된 모든 플러그인은
+ *   목록 한 줄 요약(description)과 상세 「무엇을 하나」(about.what)를 반드시 가진다. 빈 문자열·공백만도 막는다.
+ */
+describe('모든 플러그인에 한 줄 요약(description)·상세(about.what)가 비어 있지 않다', () => {
+    it('description·about.what 이 전부 채워져 있다', () => {
+        activateAll(PLUGINS);
+        const ps = listPlugins();
+        for (const p of ps) {
+            expect(p.description?.trim(), `${p.id} 의 한 줄 요약(description)이 비었다`).toBeTruthy();
+            expect(p.about?.what?.trim(), `${p.id} 의 상세 설명(about.what)이 비었다`).toBeTruthy();
+        }
+    });
+});

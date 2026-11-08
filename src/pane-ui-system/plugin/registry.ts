@@ -16,7 +16,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
-import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution } from './types';
+import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution, PluginAbout } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { applyContributes } from './contributes';
@@ -404,6 +404,8 @@ export interface PluginStatus {
     /** blocked·failed·standby 사유 한 줄 — 자리표시·상세가 그대로 그린다. */
     reason?: string;
     description?: string;
+    /** 🔴 사람용 상세 설명(무엇을/이럴 때/끄면/같이) — 상세 맨 위에 그린다. 개발 낱말 금지(PluginAbout). */
+    about?: PluginAbout;
     minHostVersion: string;
     /** 모듈·의존성 — 채우는/필요한/있으면 쓰는 인터페이스(장부가 그린다). */
     provides: Record<string, string>;
@@ -428,6 +430,7 @@ export function listPlugins(): PluginStatus[] {
             name: m.manifest.name,
             version: m.manifest.version,
             description: m.manifest.description,
+            about: m.manifest.about,
             minHostVersion: m.manifest.minHostVersion,
             core: !!m.manifest.core,
             enabled: !disabledIds.has(id),

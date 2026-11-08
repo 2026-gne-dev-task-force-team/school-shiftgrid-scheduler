@@ -9,7 +9,7 @@ export type { IconName } from '../primitives/Icon';
 export type { MenuEntry } from '../primitives/ContextMenu';
 
 export type {
-    PluginManifest, PluginModule, PluginHost, Disposable,
+    PluginManifest, PluginAbout, PluginModule, PluginHost, Disposable,
     RibbonAction, RibbonAddInput, CommandDef, CommandContext, SettingsContribution, StatusContribution,
     TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, WorkspaceOpenOptions,
     // 🔴 선언형 기여(2026-11-02 선언형 전환) — 매니페스트 contributes · 모듈 구현 칸 · 동적 선언

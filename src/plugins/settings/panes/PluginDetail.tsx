@@ -79,6 +79,45 @@ function Section({ title, count, children }: { title: string; count?: number; ch
     );
 }
 
+/**
+ * 사람용 상세 설명 — 무엇을 하나 → 이럴 때 씁니다 → 끄면 → 같이 쓰는 것(쥔님 2026-11-08 「설명이 너무 부족」).
+ *   about 이 없으면 한 줄 요약(description)으로 떨어진다. 개발 낱말은 여기 안 온다(매니페스트가 쉬운 말로 적는다).
+ */
+function AboutBlock({ p }: { p: PluginStatus }) {
+    const about = p.about;
+    if (!about) return <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>;
+    return (
+        <div className="flex flex-col gap-3">
+            <p className="text-[13px] text-text leading-relaxed">{about.what}</p>
+            {about.use && about.use.length > 0 && (
+                <div className="flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold text-muted">이럴 때 씁니다</p>
+                    <ul className="flex flex-col gap-1 pl-1">
+                        {about.use.map((u, i) => (
+                            <li key={i} className="text-[12px] text-text leading-snug flex items-baseline gap-1.5">
+                                <Icon name="dot" size={10} className="text-muted shrink-0 translate-y-0.5" />
+                                <span>{u}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {about.off && (
+                <div className="flex flex-col gap-0.5">
+                    <p className="text-[11px] font-semibold text-muted">끄면</p>
+                    <p className="text-[12px] text-text leading-snug">{about.off}</p>
+                </div>
+            )}
+            {about.with && (
+                <div className="flex flex-col gap-0.5">
+                    <p className="text-[11px] font-semibold text-muted">같이 쓰는 것</p>
+                    <p className="text-[12px] text-text leading-snug">{about.with}</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function PluginDetail({ p: p0, host, startConfirming = false }: { p: PluginStatus; host: PluginHost; startConfirming?: boolean }) {
     const chrome = useSettingsChrome();
     // 🔴 피크 안에서 켜고/끄면 이 상세도 바로 다시 그린다 — listPlugins 로 지금 상태를 다시 읽는다(스냅샷 p0 는 낡는다).
@@ -98,6 +137,8 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
     // 뷰 줄을 누르면 그 뷰의 설정 카드가 펼쳐진다(쥔님 19:06 — 뷰 설정은 그 플러그인 상세 안에). 처음엔 전부 접힘
     const [openViews, setOpenViews] = useState<Set<string>>(() => new Set());
     const toggleView = (id: string) => setOpenViews((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    // 🔴 개발자 정보(모듈·의존성·기여 장부)는 평소엔 접어 둔다 — 설명이 먼저 보이게(쥔님 2026-11-08).
+    const [showDev, setShowDev] = useState(false);
     const anyOverride = views.some((v) => Object.keys(getViewOverride(v.id) ?? {}).length > 0);
 
     // 🔴 기여 장부 — 이 플러그인이 호스트에 꽂은 것 전부를 「선언(매니페스트)」·「동적(host.declare)」으로 가른다(쥔님 2026-11-02 21:22).
@@ -179,7 +220,8 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                 </div>
             )}
 
-            <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>
+            {/* 🔴 사람용 설명 — 상세 맨 위. 무엇을/이럴 때/끄면/같이(개발 낱말 없음). */}
+            <AboutBlock p={p} />
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[12px]">
                 <dt className="text-muted">판</dt><dd className="text-text">{p.version}</dd>
@@ -187,6 +229,19 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                 <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 코어' : ''}</dd>
             </dl>
 
+            {/* 🔴 개발자 정보 — 모듈·의존성·기여 장부는 평소엔 접어 둔다(쥔님 2026-11-08: 설명이 먼저 보이게). */}
+            <div className="flex flex-col gap-2">
+                <button
+                    type="button"
+                    onClick={() => setShowDev((v) => !v)}
+                    aria-expanded={showDev}
+                    className={`self-start flex items-center gap-1 text-[11px] text-muted hover:text-text transition-colors ${FOCUS_RING}`}
+                >
+                    <Icon name="right" size={11} className={`transition-transform ${showDev ? 'rotate-90' : ''}`} />
+                    개발자 정보 (모듈·의존성·기여)
+                </button>
+                {showDev && (
+                    <div className="flex flex-col gap-4 pl-2 border-l border-line">
             {/* 🔴 모듈·의존성(M0) — 채우는 인터페이스 / 필요한 것 / 있으면 쓰는 것(붙음·안 붙음) / 누가 나를 쓰나 */}
             {hasDeps ? (
                 <Section title="모듈·의존성">
@@ -258,6 +313,9 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                         </div>
                     )}
             </Section>
+                    </div>
+                )}
+            </div>
 
             {/* 명령 — 이름 + 단축키 + 설명 */}
             <Section title="명령" count={commands.length}>
