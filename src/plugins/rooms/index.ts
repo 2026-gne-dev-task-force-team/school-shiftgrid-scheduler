@@ -27,7 +27,7 @@ export const roomsPlugin = definePlugin({
         requires: { nodes: '^0.1' },
         contributes: {
             // 🔴 rooms 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 방 목록 꾸러미가 약속·provides·화면을 한 폴더에.
-            interfaces: [{ name: 'rooms', version: '0.1.0' }],
+            interfaces: [{ name: 'rooms', version: '0.1.0', label: '방 목록', desc: '방·공간을 담는 목록' }],
             // 방 목록 화면(싱글턴·가운데·안 가름 — 달력 월 보기와 같은 placement).
             views: [{
                 id: 'sheet', title: '방 목록', icon: 'book', defaultArea: 'center',

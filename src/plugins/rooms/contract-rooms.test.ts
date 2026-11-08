@@ -34,7 +34,7 @@ describe('rooms 약속 — 값 0 · 꾸러미가 들고 옴 · 활성', () => {
     it('rooms 꾸러미가 rooms 약속 0.1.0 을 들고 오고(contributes.interfaces) provides 로 채운다', () => {
         expect(roomsPlugin.manifest.id).toBe('rooms');
         const ifaces = roomsPlugin.manifest.contributes?.interfaces ?? [];
-        expect(ifaces).toEqual([{ name: 'rooms', version: '0.1.0' }]);
+        expect(ifaces).toEqual([{ name: 'rooms', version: '0.1.0', label: '방 목록', desc: '방·공간을 담는 목록' }]);
         expect(roomsPlugin.manifest.provides?.rooms).toBe('0.1.0');
     });
 
