@@ -8,9 +8,9 @@
  * 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-*)에서. 값은 host.modules.use 로 받는다(구조 검사 ⑱).
  */
 import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
-import type { CurrentUser } from '../contract-identity/types';
-import type { Credential } from '../contract-credential/types';
-import type { NodesApi, PublicNode } from '../contract-nodes/types';
+import type { CurrentUser } from './contracts/identity';
+import type { Credential } from './contracts/credential';
+import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
 import { makeHash, verifyHash } from './hash';
 import type { Hashed } from './hash';
 import {

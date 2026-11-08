@@ -1,59 +1,36 @@
 /**
- * 설치된 플러그인 목록 — ⭐ 여기 한 줄이 「설치」다(정적 번들).
+ * 설치된 플러그인(꾸러미) 목록 — ⭐ 여기 한 줄이 「설치」다(정적 번들).
  *
  * 🔑 「나중에 갈아끼울 데」: 동적 로드(외부 .js)로 가도 바뀌는 파일은 이 한 장이다
  *    — activateAll 은 모듈이 어디서 왔는지 모른다.
  *
  * 🧪 플러그인 하나를 뺐다 넣었다: 코어가 아닌 줄을 주석 처리하면 리본이 비고
  *    저장된 탭은 자리표시 글자(EditorArea)로 남는다 — 되돌리면 그 자리에서 돌아온다.
+ *
+ * 🔴 ⭐ 2026-11-08 「플러그인은 꾸러미다」(쥔님 18:55) — 약속(contract-*)을 터뜨려 두지 않고 **꾸러미 안으로 묶었다**.
+ *    약속(타입)·제공 부품은 그 꾸러미 폴더 안의 부품이고 따로 토글되지 않는다. 약속은 꾸러미가
+ *    매니페스트 contributes.interfaces 로 들고 온다(옛 별도 contract-* 플러그인 7개 삭제). 켜고 끄는 단위 = 꾸러미 하나.
+ *    ⛔ 미등록 약속 폴더 여섯(contract-absence·clock·export·roster·timetable·week-grid)은 소비자·제공자가 생길 때
+ *       그 꾸러미로 들어간다 — 지금은 PLUGINS 에 없다(「필요 없는 건 안 박힌다」).
  */
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
-import { contractNodesPlugin } from '../plugins/contract-nodes';
 import { projectExplorerPlugin } from '../plugins/project-explorer';
 import { calendarPlugin } from '../plugins/calendar';
-import { contractIdentityPlugin } from '../plugins/contract-identity';
-import { contractCredentialPlugin } from '../plugins/contract-credential';
-import { contractPermitPlugin } from '../plugins/contract-permit';
 import { accountPlugin } from '../plugins/account';
-import { credentialLocalPlugin } from '../plugins/credential-local';
-import { contractPeoplePlugin } from '../plugins/contract-people';
 import { peoplePlugin } from '../plugins/people';
-import { contractTablePlugin } from '../plugins/contract-table';
 import { tableEditorPlugin } from '../plugins/table-editor';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
-import { contractCalendarPlugin } from '../plugins/contract-calendar';
 
-/**
- * 🔴 3판(2026-11-08) — 약속(인터페이스)은 **약속 플러그인**(contract-*)이 contributes.interfaces 로 선언한다.
- *   옛 INTERFACES 고정 배열은 폐기했다(쥔님 *"여긴 범용 플랫폼 … 도메인 특화가 박히면 안 됨 … 필요 없을 땐 뺄 수 있어야"*).
- *   호스트가 켜진 플러그인들의 선언을 모아 약속 목록을 만든다 — 창틀·앱에 약속 이름이 고정으로 박히지 않는다.
- *   ⭐ nodes 는 범용 약속이라 contract-nodes(core)로 박는다. 학교 약속 일곱(contract-roster 등)은 소비자·제공자가
- *      생길 때 한 줄 추가한다 — 「필요 없는 건 안 박힌다」(지금은 PLUGINS 에 없다).
- */
-
-// 🔴 코어(settings·contract-nodes)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정 화면은 코어다 — 끌 수 없다.
-// 📌 2026-11-01 21:47 쥔님: *"Pane UI Test는 이제 등록해지하자, 코드에서는 안지우는데, 이제 쓸일이 없어서"* →
-//    `paneTestPlugin` 을 이 목록에서 뺐다(앱이 더는 등록하지 않는다). ⛔ 코드·폴더(plugins/pane-test/)는 그대로 둔다 —
-//    되살리려면 import 를 다시 걸고 아래 배열에 한 줄 더하면 된다. (N4 첫 소비자 증명이라 런타임에서만 사라진다 · 구조 검사 ⑧ 은 폴더를 본다)
+// 🔴 코어(settings·project-explorer)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
+//    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
+// 📌 2026-11-01 21:47 쥔님: Pane UI Test 는 런타임 등록 해지(paneTestPlugin 을 뺐다 · 코드·폴더는 그대로).
 export const PLUGINS: PluginModule[] = [
     settingsPlugin,
-    contractNodesPlugin,     // 약속 「nodes」 — 코어(core:true). 제공자(탐색기)보다 먼저 서야 약속이 선다
-    projectExplorerPlugin,   // 탐색기 — 코어(core:true), 끌 수 없다. nodes 약속을 채운다(provides) + 탐색기 패널(N1)
-    calendarPlugin,   // 달력(월 보기) — 코어 아님, 설정에서 끌 수 있다. nodes 약속을 requires
-    // 🔴 계정(2026-11-08 머지 · 쥔님 지시) — 약속 셋이 제공자보다 앞에 선다(약속이 서야 제공자가 provides 를 건다).
-    contractIdentityPlugin,     // 약속(누구) — 제공자 account 보다 먼저
-    contractCredentialPlugin,   // 약속(증명) — 제공자 credential-local 보다 먼저
-    contractPermitPlugin,       // 약속(판정) — 제공자 account 보다 먼저
-    accountPlugin,              // 제공자 — 누구·판정을 채운다 · 증명은 지원 · nodes 를 requires
-    credentialLocalPlugin,     // 제공자 — 증명(이름+암호)을 채운다 · nodes 를 requires
-    // 사람 명단(2026-11-08 머지) — 약속이 제공자보다 앞에 선다.
-    contractPeoplePlugin,      // 약속(사람 명단)
-    peoplePlugin,              // 제공자 — 명단 여럿 · nodes 를 requires
-    // 표 편집기(2026-11-08 머지) — 약속(core:true)이 제공자보다 앞에 선다.
-    contractTablePlugin,       // 약속(표) — 코어
-    tableEditorPlugin,         // 제공자 — 표를 채운다(헤드리스)
-    timetableGridPlugin,       // 시간표 그리드(2026-11-08 머지)
-    // 달력 뷰 빌려주기(2026-11-08 머지) — calendar 가 provides.calendar 를 쓴다. 이게 없으면 달력이 「약속 calendar 없음」으로 막힌다.
-    contractCalendarPlugin,    // 약속(달력) — 레인 지시대로 끝에
+    projectExplorerPlugin,   // 탐색기 꾸러미 — 코어(끌 수 없다). nodes 약속을 들고 와 채운다(provides) + 탐색기 패널(N1)
+    calendarPlugin,          // 달력 꾸러미 — calendar 약속을 들고 와 채운다 · nodes 를 requires
+    accountPlugin,           // 계정 꾸러미 — identity·credential·permit 를 들고 와 채운다(증명은 꾸러미 안 내부 모듈) · nodes 를 requires
+    peoplePlugin,            // 사람 명단 꾸러미 — people 약속을 들고 와 채운다 · nodes 를 requires
+    tableEditorPlugin,       // 표 편집기 꾸러미 — table 약속을 들고 와 채운다(헤드리스)
+    timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
 ];

@@ -4,7 +4,7 @@
  *      빈 줄 무시 · 이름이 빈(공백뿐인) 줄 무시 · 줄끝 CRLF/CR/LF 섞여도 같게.
  *   ⛔ 노드·저장을 모른다 — 순수 함수(테스트가 바로 잰다). nodes.ts 가 이 결과를 받아 사람으로 만든다.
  */
-import type { PersonInput } from '../contract-people/types';
+import type { PersonInput } from './contracts/people';
 
 /** 탭·줄바꿈 텍스트 → 사람 입력 줄들(이름·메모). 빈 줄·이름 없는 줄은 뺀다. */
 export function parsePasted(text: string): PersonInput[] {

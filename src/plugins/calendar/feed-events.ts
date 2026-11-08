@@ -5,7 +5,7 @@
  */
 import { paletteIndexOfToken } from './palette';
 import { parseLocal, type CalEvent } from './events';
-import type { CalendarItem, CalendarSource } from '../contract-calendar/types';
+import type { CalendarItem, CalendarSource } from './contracts/calendar';
 
 /** 자기 일정 노드 id 와 안 겹치게 붙이는 접두사. */
 export const FEED_ID_PREFIX = 'feed:';

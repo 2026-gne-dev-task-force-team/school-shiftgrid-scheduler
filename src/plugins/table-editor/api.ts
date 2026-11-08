@@ -2,7 +2,7 @@
  * table 모듈 값 — host.modules 로 손님에게 가는 TableApi 한 벌. Table 컴포넌트 + 기능 레지스트리 + TSV 왕복.
  */
 import type { ComponentType } from 'react';
-import type { TableApi, TableProps } from '../contract-table/types';
+import type { TableApi, TableProps } from './contracts/table';
 import { Table } from './Table';
 import { parseClipboard, toTsv } from './core/tsv';
 import { listFeatureIds, registerFeature } from './features/registry';

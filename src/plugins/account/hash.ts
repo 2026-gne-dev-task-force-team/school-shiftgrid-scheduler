@@ -1,7 +1,7 @@
 /**
  * 솔트 해시 — crypto.subtle 로 비밀번호를 해시한다(평문 0). 🔴 ⛔ 평문을 노드에 싣지 않는다(쥔님 2026-11-08 · 실수 방지라도 해시로).
  *   강도 논쟁은 접었다(쥔님 판정) — SHA-256(솔트+비번) 한 겹. 서버 판이 오면 그때 PBKDF2·서버 해시로 갈아 낀다.
- *   ⚠️ 이 파일은 account 전용 사본이다(플러그인끼리 값 import 금지 — 구조 검사 ⑨). credential-local 은 제 사본을 둔다.
+ *   ⚠️ 이 파일은 account 전용 사본이다(플러그인끼리 값 import 금지 — 구조 검사 ⑨). 증명 부품(account/credential)은 제 사본을 둔다.
  */
 export interface Hashed {
     salt: string;   // hex

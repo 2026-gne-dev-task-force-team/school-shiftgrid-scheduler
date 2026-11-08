@@ -3,7 +3,7 @@
  *   조립기(resolveFeatures)의 lookup 은 이걸 쓴다.
  */
 import type { Disposable } from '../../../pane-ui-system/plugin';
-import type { TableFeature } from '../../contract-table/types';
+import type { TableFeature } from '../contracts/table';
 import { BUILTIN } from './modules';
 
 const registered = new Map<string, TableFeature>();

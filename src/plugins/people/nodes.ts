@@ -8,8 +8,8 @@
  *   ③ 명단·사람 읽기·쓰기(더하기·고치기·휴지통·옮기기·붙여 넣기) — 전부 NodesApi 로
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
-import type { PeopleList, Person, PersonInput, PersonPatch } from '../contract-people/types';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
+import type { PeopleList, Person, PersonInput, PersonPatch } from './contracts/people';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { parsePasted } from './parse';
 import { setActiveList } from './store';

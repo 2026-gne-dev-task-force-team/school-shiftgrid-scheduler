@@ -1,13 +1,13 @@
 /**
  * 🔴 약속 「identity」 0.2 — 지금 **누구**인가. (「이걸 해도 되나」 판정은 permit 약속으로 갈랐다 · 2026-11-08 계정 설계.)
  *   ⭐ 바닥은 정책 0이다(쥔님 14:54). 이 약속은 「누구」의 **모양**만 안다 — 역할 이름·권한 낱말·학교 낱말 0.
- *   ⭐ 갈아 끼는 자리 셋(누구 / 증명 / 판정) 중 「누구」. 증명은 contract-credential, 판정은 contract-permit.
+ *   ⭐ 갈아 끼는 자리 셋(누구 / 증명 / 판정) 중 「누구」. 증명은 credential, 판정은 permit.
  *
  *   소비자: supports: { identity: '^0.2' } + lifecycle.onInterface.identity.attach 로 미리 적어 둔다.
  *   오늘은 account 제공자가 채우고, 나중에 account-server 가 같은 이름으로 갈아 낀다 — 소비자 무변경.
- *   ⛔ 비밀번호·PIN 을 이 약속으로 주고받지 않는다(증명은 contract-credential 몫).
+ *   ⛔ 비밀번호·PIN 을 이 약속으로 주고받지 않는다(증명은 credential 몫).
  */
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /**
  * 지금 로그인한 사람 — current() 는 **항상 객체**(null 없음 · 비로그인은 kind:'guest').

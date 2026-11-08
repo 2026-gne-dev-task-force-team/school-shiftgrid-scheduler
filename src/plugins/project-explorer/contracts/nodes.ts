@@ -2,13 +2,13 @@
  * 🔴 약속 「nodes」 — 노드 하이라키를 다루는 범용 약속의 **타입 정의 자리**(값 0).
  *   ⭐ 3판(2026-11-08): 옛 `src/interfaces/nodes.ts` 는 제공자(project-explorer)의 타입을 **재export** 만 했다(M0 부채).
  *      이번에 그 부채를 끊었다 — 타입 정의를 여기(약속 쪽)에 두고, 제공자(project-explorer)가 이걸 **import 해서 구현**한다.
- *      그래서 소비자도 제공자도 약속(contract-nodes)에서만 `import type` 한다 — project-explorer 가 서버로 바뀌어도 이 자리는 그대로다.
+ *      그래서 소비자도 제공자도 약속(이 꾸러미 contracts/nodes)에서만 `import type` 한다 — project-explorer 가 서버로 바뀌어도 이 자리는 그대로다.
  *   ⛔ 값(const·function) 0 — 런타임 실체(makeNodesApi·레지스트리)는 제공자 플러그인 안에 산다.
  *   소비자는 이 타입을 host.modules 로 받는다(약속 이름 nodes).
  */
 import type {
     Disposable, PluginHost, PluginImpl, NodeTypeContribution, IconName, MenuEntry,
-} from '../../pane-ui-system/plugin';
+} from '../../../pane-ui-system/plugin';
 
 /**
  * 노드 나무의 한 칸 — 「누가 누구 밑에 어떤 순서로」. 🔴 data 는 그 타입을 등록한 플러그인만 읽고 쓰는 불투명 칸.

@@ -13,8 +13,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps } from '../../pane-ui-system/plugin';
-// 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../contract-nodes/types';
+// 🔴 import type 만 — 약속 타입은 노드 약속(project-explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
@@ -38,10 +38,12 @@ export const calendarPlugin = definePlugin({
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
-        //    ⚠️ 이 약속을 선언하는 contract-calendar 가 PLUGINS 에 있어야 산다(없으면 「약속 없음」으로 막힌다) — 설치 줄은 app/plugins.ts.
         provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
         contributes: {
+            // 🔴 calendar 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 달력 꾸러미가 약속·provides·화면을 한 폴더에 묶는다
+            //    — 들고 오는 쪽과 채우는 쪽이 같아도 된다(소비자는 남의 일정을 modules.calendar 로 꽂는다).
+            interfaces: [{ name: 'calendar', version: '0.1.0' }],
             views: [
                 // 월 보기(싱글턴·가운데·안 가름) — 아이콘은 'calendar'(쥔님 *"캘린더 스럽지 않아"* 로 'table' 에서 바꿈).
                 {

@@ -1,5 +1,5 @@
 /**
- * 솔트 해시 — crypto.subtle(평문 0). ⚠️ credential-local 전용 사본이다(플러그인끼리 값 import 금지 — 구조 검사 ⑨).
+ * 솔트 해시 — crypto.subtle(평문 0). ⚠️ account 꾸러미 증명 부품 전용 사본이다(플러그인끼리 값 import 금지 — 구조 검사 ⑨).
  *   account 의 hash.ts 와 같은 꼴이지만 각자 둔다(결합 0). 강도 논쟁은 접었다(쥔님 판정) — SHA-256(솔트+비번) 한 겹.
  */
 export interface Hashed {

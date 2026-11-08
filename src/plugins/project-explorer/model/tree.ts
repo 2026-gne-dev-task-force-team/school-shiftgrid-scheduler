@@ -12,10 +12,10 @@
  *    연산마다 따로 챙기면 어딘가 빠진다 — layout/tree.ts 와 같은 결.
  */
 
-// 🔴 Node 타입은 약속(contract-nodes)이 쥔다 — project-explorer 는 「제공자」로서 그걸 import 해 구현한다(3판 부채 끊기).
+// 🔴 Node 타입은 약속(이 꾸러미 contracts/nodes)이 쥔다 — project-explorer 는 「제공자」로서 그걸 import 해 구현한다(3판 부채 끊기).
 //    ⭐ 여기서 재export 하는 건 이 폴더의 많은 파일이 `import type { Node } from './tree'` 로 받던 길을 안 깨려는 것뿐이다.
-import type { Node } from '../../contract-nodes/types';
-export type { Node } from '../../contract-nodes/types';
+import type { Node } from '../contracts/nodes';
+export type { Node } from '../contracts/nodes';
 
 export interface Tree {
     root: string;

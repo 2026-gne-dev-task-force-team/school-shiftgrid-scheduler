@@ -86,6 +86,9 @@ export const projectExplorerPlugin = definePlugin({
         provides: { nodes: '0.1.0' },
         // 🔴 선언형 기여 — 「무엇을 내나」를 데이터로 적는다. 함수·컴포넌트는 이름으로(아래 components·commands·renders).
         contributes: {
+            // 🔴 nodes 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」 — 탐색기 꾸러미가 약속·제공·화면을 한 폴더에).
+            //    탐색기는 core 라 nodes 는 끌 수 없는 범용 약속으로 선다(쥔님 14:32 「컨트랙트 노드 끌수 없는 코어로」 — 꾸러미가 코어라 자연히).
+            interfaces: [{ name: 'nodes', version: '0.1.0' }],
             // 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만 — center 없음·split 없음, 쥔님 2026-11-01 19:34).
             views: [{
                 id: 'tree', title: '탐색기', icon: 'folder', defaultArea: 'left',

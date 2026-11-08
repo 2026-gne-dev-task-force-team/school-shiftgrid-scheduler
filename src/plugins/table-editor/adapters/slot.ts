@@ -9,7 +9,7 @@
  *    onAddRowWith(cells) — 붙여넣기 넘침이 「값 있는 새 행」으로 · onMoveRowTo(id,to) — ±1 대신 index 이동.
  *    없으면 onAddRow()/onMoveRow(±1) 로 떨어진다(값·먼 이동이 빠질 수 있다).
  */
-import type { TableFeature, TableProps, TableTx } from '../../contract-table/types';
+import type { TableFeature, TableProps, TableTx } from '../contracts/table';
 
 export interface SlotColumn { key: string; title: string; width?: number }
 export interface SlotRow { id: string; cells: Record<string, string> }
