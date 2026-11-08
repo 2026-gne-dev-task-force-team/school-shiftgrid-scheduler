@@ -411,8 +411,8 @@ export interface PluginStatus {
     provides: Record<string, string>;
     requires: Record<string, string>;
     supports: Record<string, string>;
-    /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). */
-    interfaces: { name: string; version: string; uses: string[] }[];
+    /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). label·desc 는 사람 이름(쥔님 2026-11-08 21:27). */
+    interfaces: { name: string; version: string; uses: string[]; label?: string; desc?: string }[];
     /** 🔴 선언한 권한 낱말(contributes.permissions) — 호스트는 모으기만, 장부가 표시(페이블 8). 정책 편집 화면도 이걸 모은다. */
     permissions: { id: string; title: string }[];
     /** 🔴 선언한 사용자 칸(contributes.userFields) — 계정 화면이 모아 그린다. */
@@ -440,7 +440,7 @@ export function listPlugins(): PluginStatus[] {
             provides: { ...prov(m) },
             requires: { ...req(m) },
             supports: { ...sup(m) },
-            interfaces: decl(m).map((it) => ({ name: it.name, version: it.version, uses: it.uses ?? [] })),
+            interfaces: decl(m).map((it) => ({ name: it.name, version: it.version, uses: it.uses ?? [], label: it.label, desc: it.desc })),
             permissions: (m.manifest.contributes?.permissions ?? []).map((p) => ({ ...p })),
             userFields: (m.manifest.contributes?.userFields ?? []).map((f) => ({ ...f })),
             roleFields: (m.manifest.contributes?.roleFields ?? []).map((f) => ({ ...f })),

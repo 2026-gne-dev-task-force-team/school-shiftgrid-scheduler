@@ -35,6 +35,10 @@ export interface InterfaceContribution {
     name: string;
     version: string;
     uses?: string[];
+    /** 🔴 사람 이름(쥔님 2026-11-08 21:27) — 설정 상세 「다른 플러그인과의 관계」가 id 대신 이 이름을 보여 준다(예: people → 「사람 명단」). */
+    label?: string;
+    /** 선택 — 한 줄 풀이(그 약속이 뭘 담나). 없으면 이름만. */
+    desc?: string;
 }
 
 /**

@@ -34,7 +34,9 @@ describe('people 약속 — 값 0 · 꾸러미가 들고 옴 · 활성', () => {
     it('people 꾸러미가 people 약속 0.1.0 을 들고 오고(contributes.interfaces) provides 로 채운다', () => {
         expect(peoplePlugin.manifest.id).toBe('people');
         const ifaces = peoplePlugin.manifest.contributes?.interfaces ?? [];
-        expect(ifaces).toEqual([{ name: 'people', version: '0.1.0' }]);
+        expect(ifaces).toHaveLength(1);
+        expect(ifaces[0]).toMatchObject({ name: 'people', version: '0.1.0' });
+        expect(ifaces[0].label).toBeTruthy();   // 🔴 사람 이름(쥔님 2026-11-08 21:27) — 설정 상세가 id 대신 이걸 보여 준다
         expect(peoplePlugin.manifest.provides?.people).toBe('0.1.0');
     });
 

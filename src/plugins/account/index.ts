@@ -53,9 +53,9 @@ export const accountPlugin = definePlugin({
         contributes: {
             // 🔴 약속 셋을 들고 온다(꾸러미 매니페스트). 켜진 account 가 호스트 약속 목록에 identity·credential·permit 를 올린다.
             interfaces: [
-                { name: 'identity', version: '0.2.0' },
-                { name: 'credential', version: '0.1.0' },
-                { name: 'permit', version: '0.1.0' },
+                { name: 'identity', version: '0.2.0', label: '로그인', desc: '지금 누가 들어와 있나' },
+                { name: 'credential', version: '0.1.0', label: '비밀번호 확인', desc: '비밀번호가 맞는지 확인' },
+                { name: 'permit', version: '0.1.0', label: '권한', desc: '무엇을 할 수 있나' },
             ],
             // 계정 데이터(사용자·역할·정책·암호 해시) + 증명 비밀 해시 — 전부 record 노드라 탐색기에 안 보인다.
             nodeTypes: [...accountNodeTypes, ...credentialLocalNodeTypes],

@@ -88,7 +88,7 @@ export const projectExplorerPlugin = definePlugin({
         contributes: {
             // 🔴 nodes 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」 — 탐색기 꾸러미가 약속·제공·화면을 한 폴더에).
             //    탐색기는 core 라 nodes 는 끌 수 없는 범용 약속으로 선다(쥔님 14:32 「컨트랙트 노드 끌수 없는 코어로」 — 꾸러미가 코어라 자연히).
-            interfaces: [{ name: 'nodes', version: '0.1.0' }],
+            interfaces: [{ name: 'nodes', version: '0.1.0', label: '폴더 나무(탐색기)', desc: '만든 것을 담는 폴더 나무' }],
             // 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만 — center 없음·split 없음, 쥔님 2026-11-01 19:34).
             views: [{
                 id: 'tree', title: '탐색기', icon: 'folder', defaultArea: 'left',

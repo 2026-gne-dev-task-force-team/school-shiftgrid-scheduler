@@ -43,7 +43,7 @@ export const calendarPlugin = definePlugin({
         contributes: {
             // 🔴 calendar 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 달력 꾸러미가 약속·provides·화면을 한 폴더에 묶는다
             //    — 들고 오는 쪽과 채우는 쪽이 같아도 된다(소비자는 남의 일정을 modules.calendar 로 꽂는다).
-            interfaces: [{ name: 'calendar', version: '0.1.0' }],
+            interfaces: [{ name: 'calendar', version: '0.1.0', label: '달력', desc: '달력에 넣는 일정' }],
             views: [
                 // 월 보기(싱글턴·가운데·안 가름) — 아이콘은 'calendar'(쥔님 *"캘린더 스럽지 않아"* 로 'table' 에서 바꿈).
                 {
