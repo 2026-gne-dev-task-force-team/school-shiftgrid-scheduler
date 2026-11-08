@@ -488,7 +488,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 onBlur={core.onBlur}
                 onMouseEnter={() => setHoverTable(true)}
                 onMouseLeave={leaveTable}
-                className="relative overflow-auto outline-none max-h-full w-max max-w-full pr-3 pb-3"
+                className="relative overflow-auto outline-none max-h-full w-max max-w-full"
             >
                 <table className="border-collapse">
                     <thead>
@@ -696,7 +696,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addCol}
                         onClick={addColAt.bind(null, columns.length)}
                         title={lb.addCol}
-                        className={`absolute top-0 bottom-3 right-0 w-4 flex items-center justify-center rounded transition-opacity
+                        className={`absolute top-0 bottom-0 right-0 w-4 flex items-center justify-center rounded transition-opacity
                             ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
                         <span className="text-[12px] leading-none">＋</span>
@@ -710,7 +710,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addRow}
                         onClick={addRowAtEnd}
                         title={lb.addRow}
-                        className={`absolute left-5 right-3 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
+                        className={`absolute left-5 right-0 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
                             ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
                         <span className="text-[12px] leading-none">＋</span>
