@@ -14,6 +14,9 @@ import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '..
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
 import { getScope, setScope } from './store';
+import type { CalendarItem } from './contracts/calendar';
+import type { IcsWriteEvent } from './ics';
+import { eventToIcs, planImport } from './io';
 
 export const STORE_TYPE = 'calendar.store';
 export const EVENT_TYPE = 'calendar.event';
@@ -100,6 +103,8 @@ export function storeMenu(nodeId: string): MenuEntry[] {
     return [
         { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore' },
         { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn' },
+        { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs' },
+        { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs' },
     ];
 }
 
@@ -188,3 +193,43 @@ export function updateEventData(id: string, data: EventData): void { api?.setDat
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
 export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
 export function removeEvent(id: string): void { api?.remove(id); }
+
+// ── 가져오기·내보내기(.ics) — 2·3번. 순수 변환은 io.ts, 여기선 노드를 읽고 쓴다. ──
+
+/** 저장소 이름(없으면 '달력'). 내보내기 파일 이름에 쓴다. */
+export function storeName(storeId: string): string {
+    return api?.get(storeId)?.name || '달력';
+}
+
+/**
+ * CalendarItem 들을 저장소에 가져온다 — UID 가 그 저장소에 이미 있으면 건너뛴다(중복). 돌려주는 {created, skipped}.
+ *   🔴 index.ts 가 parseIcs 로 편 항목을 넘긴다(nodes 는 파서를 모른다 — 노드만 만진다).
+ */
+export function importItemsToStore(storeId: string, items: readonly CalendarItem[]): { created: number; skipped: number } {
+    if (!api) return { created: 0, skipped: 0 };
+    const existing = api.children(storeId)
+        .filter((n) => n.type === EVENT_TYPE)
+        .map((n) => ((n.data ?? {}) as EventData).uid)
+        .filter((u): u is string => !!u);
+    const { specs, skipped } = planImport(existing, items);
+    let created = 0;
+    for (const s of specs) {
+        if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data: s.data })) created++;
+    }
+    return { created, skipped };
+}
+
+/**
+ * 저장소(+자손 저장소)의 내 일정을 .ics 작성기 입력으로 모은다. storeId 가 null 이면 전체(모든 저장소).
+ *   🔴 남의 일정(출처)은 안 담는다 — eventNodes(= 내 일정 노드)만 본다.
+ */
+export function collectForExport(storeId: string | null): IcsWriteEvent[] {
+    if (!api) return [];
+    const out: IcsWriteEvent[] = [];
+    for (const n of eventNodes) {
+        if (inTrash(n.id)) continue;
+        if (storeId && !api.path(n.id).includes(storeId)) continue;   // 그 저장소 subtree 밖은 건너뜀
+        out.push(eventToIcs({ id: n.id, name: n.name, data: (n.data ?? {}) as EventData }));
+    }
+    return out;
+}

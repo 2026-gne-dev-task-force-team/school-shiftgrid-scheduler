@@ -56,6 +56,8 @@ export interface EventData {
     end: string;
     allDay: boolean;
     memo?: string;
+    /** 🔴 .ics 에서 가져온 일정의 원본 UID — 같은 파일을 두 번 넣을 때 중복을 거르는 열쇠(가져오기 전용). 손으로 만든 일정엔 없다. */
+    uid?: string;
 }
 
 /** [start,end) 가 [from,to) 와 겹치나 — 반열린 구간(경계가 맞닿으면 안 겹침). */

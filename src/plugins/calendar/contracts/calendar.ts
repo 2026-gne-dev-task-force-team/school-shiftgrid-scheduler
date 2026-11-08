@@ -51,7 +51,10 @@ export interface CalendarSource {
 
 /**
  * 달력이 채우는 모듈 — 출처를 하나 등록한다. 돌려준 Disposable 을 해제하면 그 출처와 일정이 사라지고 onChange 구독도 끊긴다.
+ *   · parseIcs — .ics 텍스트를 CalendarItem 들로 편다(가져오기·링크 구독이 같이 쓰는 파서). 🔴 구독 플러그인이 달력 내부
+ *     파일을 직접 import 하지 않게(꾸러미 경계), 파서는 달력이 이 약속으로 내준다. 못 읽는 VEVENT 는 건너뛴다 · RRULE 은 YEARLY 만 펼친다.
  */
 export interface Calendar {
     registerSource(source: CalendarSource): Disposable;
+    parseIcs(text: string): CalendarItem[];
 }
