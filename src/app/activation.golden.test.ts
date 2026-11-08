@@ -46,7 +46,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         expect(ps.map((p) => p.id)).toEqual([
             // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶어 8꾸러미만 남았다.
             //    코어(settings·project-explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
-            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid', 'rooms',
+            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid', 'rooms', 'page-editor',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);

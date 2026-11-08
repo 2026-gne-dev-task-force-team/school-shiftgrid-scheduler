@@ -22,6 +22,7 @@ import { peoplePlugin } from '../plugins/people';
 import { tableEditorPlugin } from '../plugins/table-editor';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { roomsPlugin } from '../plugins/rooms';
+import { pageEditorPlugin } from '../plugins/page-editor';
 
 // 🔴 코어(settings·project-explorer)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
@@ -35,4 +36,5 @@ export const PLUGINS: PluginModule[] = [
     tableEditorPlugin,       // 표 편집기 꾸러미 — table 약속을 들고 와 채운다(헤드리스)
     timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
     roomsPlugin,             // 방 목록 꾸러미 — rooms 약속을 들고 와 채운다 · nodes 를 requires
+    pageEditorPlugin,        // 페이지 편집기 꾸러미 — 노션식 블록 페이지 노드 · nodes 를 requires
 ];
