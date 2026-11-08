@@ -41,11 +41,10 @@ export function TableNodeView() {
     };
 
     return (
-        <div className="h-full flex flex-col overflow-auto">
-            <div className="px-4 pt-4 pb-2 shrink-0 select-none">
-                <h1 className="text-xl font-semibold text-text truncate">{node.name}</h1>
-            </div>
-            <div className="px-4 pb-6 grow">
+        // 노션 페이지처럼 — 가운데 정렬된 읽기 폭(≈900px) · 큰 제목 · 넉넉한 여백. 표가 더 넓으면 표 자체가 가로 스크롤.
+        <div className="h-full overflow-auto">
+            <div className="mx-auto w-full max-w-[900px] px-8 pt-12 pb-16">
+                <h1 className="mb-6 text-[32px] font-bold leading-tight tracking-tight text-text truncate select-none">{node.name}</h1>
                 <Table
                     columns={doc.cols}
                     rows={doc.rows}

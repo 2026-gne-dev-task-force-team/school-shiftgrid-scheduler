@@ -351,6 +351,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
     // ── 손잡이·+막대 띄우기(표에 마우스가 올라왔을 때) ────────
     const [hoverTable, setHoverTable] = useState(false);
+    // 지금 마우스가 올라와 있는 칸(r,c) — 손잡이는 그 줄/칸에만 뜬다(노션식 · 덩어리 막대 ⛔).
+    const [hoverRC, setHoverRC] = useState<{ r: number; c: number } | null>(null);
+    const leaveTable = (): void => { setHoverTable(false); setHoverRC(null); };
 
     // ── 머리 메뉴(손잡이) + 셀 우클릭 메뉴 ────────────────────
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -418,7 +421,31 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const sel = core.sel;
     const stickyColHandleCls = hasSticky ? 'sticky top-0 z-20' : '';
 
-    // ── 떠있는 「칸 합치기」 알약 — 범위를 고르면 선택 위에 뜬다 ──
+    // ── 선택 테두리 한 겹 — 고른 범위를 2px 파란 상자로 통째로 감싼다(칸마다 테두리를 박지 않아 이중선·어긋남이 안 난다) ──
+    //    칸 안쪽 옅은 파란 바탕은 칸이 직접 칠한다(bg-accent/10) — 병합 칸도 자연히 덮인다.
+    const [selRect, setSelRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+    useLayoutEffect(() => {
+        const cont = core.containerRef.current; if (!cont) return;
+        // 범위 안에서 실제로 그려진 칸들의 바깥 경계를 모은다(덮인 병합 칸은 그 앵커 하나로 이미 덮여 있다).
+        let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
+        const cells = cont.querySelectorAll<HTMLElement>('[data-rc]');
+        const cr = cont.getBoundingClientRect();
+        cells.forEach((el) => {
+            const rc = el.getAttribute('data-rc'); if (!rc) return;
+            const [cr0, cc0] = rc.split(':').map(Number);
+            if (cr0 < sel.r1 || cr0 > sel.r2 || cc0 < sel.c1 || cc0 > sel.c2) return;
+            const b = el.getBoundingClientRect();
+            minL = Math.min(minL, b.left); minT = Math.min(minT, b.top);
+            maxR = Math.max(maxR, b.right); maxB = Math.max(maxB, b.bottom);
+        });
+        if (minL === Infinity) { setSelRect(null); return; }
+        setSelRect({
+            left: minL - cr.left + cont.scrollLeft, top: minT - cr.top + cont.scrollTop,
+            width: maxR - minL, height: maxB - minT,
+        });
+    }, [sel.r1, sel.c1, sel.r2, sel.c2, rows, columns, merges, liveResize, liveWeight, core.containerRef]);
+
+    // ── 떠있는 「칸 합치기」 알약 — 고른 범위 바로 아래(넘치면 위)에 떠서 아무것도 안 가린다 ──
     const canMergeSel = hasMerge && regionFromSelection(sel, rows, columns) != null;
     const canUnmerge = hasMerge && anchorCovering(merges, core.active.r, core.active.c, rows, columns) != null;
     const [pill, setPill] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -432,9 +459,11 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         const tr = top.getBoundingClientRect();
         const br = bot!.getBoundingClientRect();
         const left = tr.left - cr.left + cont.scrollLeft;
-        const above = tr.top - cr.top + cont.scrollTop - 30;
-        // 선택이 맨 위면 위에 두면 스크롤러에 잘린다 — 그땐 선택 아래에 둔다.
-        const topPos = above < cont.scrollTop + 2 ? (br.bottom - cr.top + cont.scrollTop + 4) : above;
+        // 기본은 선택 아래 — 열 손잡이는 표 위에 있으니 아래로 두면 손잡이와 안 겹친다. 아래가 스크롤러에 잘리면 위로 뒤집는다.
+        const below = br.bottom - cr.top + cont.scrollTop + 6;
+        const above = tr.top - cr.top + cont.scrollTop - 32;
+        const overflowBottom = below + 28 > cont.scrollTop + cont.clientHeight;
+        const topPos = overflowBottom && above > cont.scrollTop + 2 ? above : below;
         setPill({ top: topPos, left });
     }, [canMergeSel, canUnmerge, sel.r1, sel.c1, sel.r2, sel.c2, core.containerRef]);
 
@@ -445,7 +474,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const showColTitles = !hideColHeader;
 
     return (
-        <div className={`text-[13px] ${className ?? ''}`}>
+        <div className={`text-[14px] ${className ?? ''}`}>
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
@@ -456,7 +485,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 onFocus={core.onFocus}
                 onBlur={core.onBlur}
                 onMouseEnter={() => setHoverTable(true)}
-                onMouseLeave={() => setHoverTable(false)}
+                onMouseLeave={leaveTable}
                 className="relative overflow-auto outline-none max-h-full w-max max-w-full pr-3 pb-3"
             >
                 <table className="border-collapse">
@@ -478,10 +507,13 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             onClick={(e) => { e.stopPropagation(); selectLine('col', idx); }}
                                             onContextMenu={(e) => openColMenu(e, col.key, idx)}
                                             title="눌러서 열 고르기 · 끌어서 순서 · 우클릭 메뉴"
-                                            className={`mx-0.5 h-2.5 rounded-sm cursor-grab transition-opacity
-                                                ${hoverTable || reorder?.kind === 'col' ? 'opacity-100' : 'opacity-0'}
-                                                ${core.inSel(0, idx) && sel.r1 === 0 && sel.r2 >= rows.length - 1 ? 'bg-accent/60' : 'bg-muted/40 hover:bg-muted/70'}`}
-                                        />
+                                            className={`mx-auto grid place-items-center h-3 w-5 rounded cursor-grab leading-none select-none transition-opacity
+                                                ${(hoverRC?.c === idx) || reorder?.kind === 'col' ? 'opacity-100' : 'opacity-0'}
+                                                ${core.inSel(0, idx) && sel.r1 === 0 && sel.r2 >= rows.length - 1
+                                                    ? 'bg-accent/15 text-accent' : 'text-muted/50 hover:bg-text/[0.06] hover:text-muted'}`}
+                                        >
+                                            <span className="text-[9px] tracking-[0.1em] -mt-px">⋯</span>
+                                        </div>
                                         {reorder?.kind === 'col' && reorder.over === idx && (
                                             <span className="absolute left-0 top-0 h-3 w-0.5 bg-accent" />
                                         )}
@@ -553,10 +585,13 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                     onClick={(e) => { e.stopPropagation(); selectLine('row', r); }}
                                                     onContextMenu={(e) => openRowMenu(e, row.id, r)}
                                                     title="눌러서 줄 고르기 · 끌어서 순서 · 우클릭 메뉴"
-                                                    className={`w-2 h-4 rounded-sm cursor-grab transition-opacity
-                                                        ${hoverTable || reorder?.kind === 'row' ? 'opacity-100' : 'opacity-0'}
-                                                        ${core.inSel(r, 0) && sel.c1 === 0 && sel.c2 >= columns.length - 1 ? 'bg-accent/60' : 'bg-muted/40 hover:bg-muted/70'}`}
-                                                />
+                                                    className={`grid place-items-center w-4 h-5 rounded cursor-grab leading-none select-none transition-opacity
+                                                        ${(hoverRC?.r === r) || reorder?.kind === 'row' ? 'opacity-100' : 'opacity-0'}
+                                                        ${core.inSel(r, 0) && sel.c1 === 0 && sel.c2 >= columns.length - 1
+                                                            ? 'bg-accent/15 text-accent' : 'text-muted/50 hover:bg-text/[0.06] hover:text-muted'}`}
+                                                >
+                                                    <span className="text-[10px] tracking-tighter">⋮⋮</span>
+                                                </div>
                                             </div>
                                         )}
                                         {hasRowWeight && (
@@ -584,19 +619,14 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         const vErr = hasValidate && validate ? validate(row.id, col.key, value) : undefined;
                                         const isBool = hasColTypes && col.type === 'bool';
                                         const isHeadCell = (headerRow && r === 0) || (headerCol && c === 0);
-                                        // 선택 바깥 테두리(노션식 파란 상자) — 경계 칸만 그 변을 파랗게.
-                                        const edge = selected ? [
-                                            r === sel.r1 ? 'border-t-accent' : '', r === sel.r2 ? 'border-b-accent' : '',
-                                            c === sel.c1 ? 'border-l-accent' : '', c === sel.c2 ? 'border-r-accent' : '',
-                                        ].filter(Boolean).join(' ') : '';
+                                        // 🔴 선택 테두리는 칸이 아니라 바깥 상자(selRect) 한 겹으로 그린다 — 칸엔 안쪽 옅은 바탕만(이중선·어긋남 방지).
+                                        //    편집 중인 칸은 input 자신의 테두리만 보이게 바탕을 빼지 않는다(input 이 흰 바탕으로 덮는다).
                                         const cls = [
-                                            'relative border border-line px-2 py-1 align-top text-text whitespace-pre-wrap min-w-[84px]',
+                                            'relative border border-line px-2.5 py-2 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
                                             col.readOnly ? 'text-muted' : '',
-                                            isHeadCell ? 'bg-panel font-medium' : '',
+                                            isHeadCell ? 'bg-panel2 font-medium' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
                                             selected || inFill ? 'bg-accent/10' : '',
-                                            edge,
-                                            isActive ? 'ring-1 ring-inset ring-accent z-10' : '',
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
                                             col.align === 'right' || col.type === 'number' ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
                                         ].filter(Boolean).join(' ');
@@ -611,7 +641,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 colSpan={span?.colSpan}
                                                 title={title}
                                                 onMouseDown={(e) => core.beginDrag(r, c, e)}
-                                                onMouseEnter={() => core.onCellEnter(r, c)}
+                                                onMouseEnter={() => { core.onCellEnter(r, c); setHoverRC({ r, c }); }}
                                                 onContextMenu={(e) => openCellMenu(e, r, c)}
                                                 onDoubleClick={() => !isBool && core.beginEdit(r, c)}
                                             >
@@ -662,10 +692,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addCol}
                         onClick={addColAt.bind(null, columns.length)}
                         title={lb.addCol}
-                        className={`absolute top-0 bottom-3 right-0 w-3 flex items-center justify-center rounded-sm transition-opacity
-                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-muted/10 hover:bg-accent/20 text-muted hover:text-accent`}
+                        className={`absolute top-0 bottom-3 right-0 w-4 flex items-center justify-center rounded transition-opacity
+                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
-                        <span className="text-[11px] leading-none">＋</span>
+                        <span className="text-[12px] leading-none">＋</span>
                     </button>
                 )}
                 {/* 아래 가장자리 + 막대(행 추가) */}
@@ -676,11 +706,19 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         aria-label={lb.addRow}
                         onClick={addRowAtEnd}
                         title={lb.addRow}
-                        className={`absolute left-5 right-3 bottom-0 h-3 flex items-center justify-center rounded-sm transition-opacity
-                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-muted/10 hover:bg-accent/20 text-muted hover:text-accent`}
+                        className={`absolute left-5 right-3 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
+                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
                     >
-                        <span className="text-[11px] leading-none">＋</span>
+                        <span className="text-[12px] leading-none">＋</span>
                     </button>
+                )}
+
+                {/* 선택 테두리 — 고른 범위를 2px 파란 상자 한 겹으로(칸 안쪽 옅은 바탕은 칸이 칠한다). */}
+                {selRect && columns.length > 0 && rows.length > 0 && (
+                    <div
+                        className="pointer-events-none absolute z-20 rounded-[2px] border-2 border-accent"
+                        style={{ top: selRect.top - 1, left: selRect.left - 1, width: selRect.width, height: selRect.height }}
+                    />
                 )}
 
                 {/* 떠있는 합치기 알약 */}
