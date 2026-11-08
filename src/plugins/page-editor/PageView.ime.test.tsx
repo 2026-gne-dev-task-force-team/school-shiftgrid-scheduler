@@ -21,6 +21,7 @@ const fakeNodes = {
     get: (id: string) => store.get(id) as unknown as PublicNode | undefined,
     setData: (id: string, data: unknown) => { const n = store.get(id); if (n) n.data = data; },
     subscribe: () => ({ dispose() {} }),
+    parent: () => null,   // 휴지통 판정(inTrash)이 묻는다 — 이 테스트의 페이지는 루트에 있다
 } as unknown as NodesApi;
 const host = { modules: { use: () => null } } as unknown as PluginHost;
 
