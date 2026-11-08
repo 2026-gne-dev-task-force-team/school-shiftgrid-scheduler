@@ -22,9 +22,9 @@ import {
 } from '../core/history';
 import { decideKey } from '../core/keys';
 import {
-    caretAtStart, caretAtEnd, caretOffset, selectionRange, setCaret, setSelection,
+    caretAtStart, caretAtEnd, caretSourceOffset, selectionSourceRange,
+    setCaretSource, setSelectionSource, serializeInline, buildInlineDom, inlineDomMatches,
 } from './caret';
-import { InlineText } from './Inline';
 import { SlashMenu, filterSlash } from './SlashMenu';
 import { TableBlock } from './TableBlock';
 
@@ -63,7 +63,8 @@ export function PageView({ host }: { host: PluginHost }) {
         typingRunRef.current = null;
     }, [activeId]);
 
-    // 캐럿 둘 자리 — resync 신호가 오면 그 블록의 DOM 글자를 맞추고 캐럿을 놓는다.
+    // 캐럿 둘 자리 — resync 신호가 오면 그 블록의 DOM 을 맞추고 캐럿을 소스 오프셋으로 놓는다.
+    //   🔴 글자 블록 DOM 은 Editable 의 레이아웃 효과(자식)가 먼저 다시 그린다 → 여기선(부모) 캐럿만 놓는다.
     useLayoutEffect(() => {
         if (!focusIntent) return;
         const el = els.current.get(focusIntent.id);
@@ -75,10 +76,11 @@ export function PageView({ host }: { host: PluginHost }) {
                 const end = focusIntent.end ?? focusIntent.offset;
                 el.setSelectionRange(focusIntent.offset, end);
             } else {
-                if (blk && el.textContent !== blk.text) el.textContent = blk.text;
+                // 혹시 아직 안 그려졌으면 맞춘다(자식 효과가 보통 먼저 돌지만 방어).
+                if (blk && !inlineDomMatches(el, blk.text)) buildInlineDom(el, blk.text);
                 el.focus();
-                if (focusIntent.end != null) setSelection(el, focusIntent.offset, focusIntent.end);
-                else setCaret(el, focusIntent.offset);
+                if (focusIntent.end != null) setSelectionSource(el, focusIntent.offset, focusIntent.end);
+                else setCaretSource(el, focusIntent.offset);
             }
         }
         setFocusIntent(null);
@@ -115,8 +117,10 @@ export function PageView({ host }: { host: PluginHost }) {
     };
 
     // ── 입력 들어옴(contentEditable·textarea) ──
-    const onInput = (id: string, text: string) => {
-        if (composingRef.current) { applyText(id, text); return; }
+    //   el 이 있으면 글자 블록(contentEditable)이고 text 는 거기서 직렬화한 마크다운이다.
+    //   🔴 조합 중(IME)엔 아무것도 하지 않는다 — compositionend 뒤에 한 번만 처리(명세 요구 11).
+    const onInput = (id: string, text: string, el?: HTMLElement) => {
+        if (composingRef.current) return;
 
         // `/` 메뉴 열고/거르기
         if (slash && slash.blockId === id) {
@@ -134,6 +138,15 @@ export function PageView({ host }: { host: PluginHost }) {
         if (blk && blk.type === 'paragraph') {
             const sc = detectBlockShortcut(text);
             if (sc) { convertByShortcut(id, sc); return; }
+        }
+
+        // 🔴 인라인 실시간 변환 — 완성된 마커로 서식 구조가 바뀌면 다시 그리고 캐럿을 소스 오프셋으로 복원.
+        //   (평문 입력은 구조가 그대로라 다시 그리지 않는다 → 브라우저 캐럿을 건드리지 않는다)
+        if (el && !inlineDomMatches(el, text)) {
+            const off = caretSourceOffset(el);
+            applyText(id, text);
+            setFocusIntent({ id, offset: off });
+            return;
         }
         applyText(id, text);
     };
@@ -180,7 +193,8 @@ export function PageView({ host }: { host: PluginHost }) {
         const el = e.currentTarget as HTMLElement;
         const isComposing = composingRef.current || e.nativeEvent.isComposing;
         const isTa = el instanceof HTMLTextAreaElement;
-        const liveText = isTa ? (el as HTMLTextAreaElement).value : (el.textContent ?? '');
+        // 🔴 글자 블록은 DOM 에 서식이 입혀져 있다 — 모델 값(마크다운)은 직렬화로 읽는다(el.textContent 는 마커가 없다).
+        const liveText = isTa ? (el as HTMLTextAreaElement).value : serializeInline(el);
 
         let atStart: boolean; let atEnd: boolean; let offset: number;
         if (isTa) {
@@ -189,7 +203,7 @@ export function PageView({ host }: { host: PluginHost }) {
             atEnd = ta.selectionStart === ta.value.length && ta.selectionEnd === ta.value.length;
             offset = ta.selectionStart;
         } else {
-            atStart = caretAtStart(el); atEnd = caretAtEnd(el); offset = caretOffset(el);
+            atStart = caretAtStart(el); atEnd = caretAtEnd(el); offset = caretSourceOffset(el);
         }
 
         // `/` 메뉴가 떠 있으면 그 키를 먼저 쓴다.
@@ -228,29 +242,33 @@ export function PageView({ host }: { host: PluginHost }) {
                 commitPage(next, { id: block.id, offset });
                 break;
             }
-            case 'nav-prev': { e.preventDefault(); navBlock(block.id, -1); break; }
-            case 'nav-next': { e.preventDefault(); navBlock(block.id, 1); break; }
+            case 'nav-prev': { e.preventDefault(); navBlock(block.id, -1, offset); break; }
+            case 'nav-next': { e.preventDefault(); navBlock(block.id, 1, offset); break; }
             case 'bold': { e.preventDefault(); doMark(el, block.id, '**'); break; }
             case 'italic': { e.preventDefault(); doMark(el, block.id, '*'); break; }
+            case 'code': { e.preventDefault(); doMark(el, block.id, '`'); break; }
+            case 'strike': { e.preventDefault(); doMark(el, block.id, '~~'); break; }
             case 'undo': { e.preventDefault(); doUndo(); break; }
             case 'redo': { e.preventDefault(); doRedo(); break; }
         }
     };
 
-    const navBlock = (id: string, dir: -1 | 1) => {
+    // ↑↓ 블록 이동 — 가로 위치(소스 오프셋 열)를 가능한 만큼 유지한다(명세 요구 2).
+    const navBlock = (id: string, dir: -1 | 1, column: number) => {
         const blocks = pageRef.current.blocks;
         let j = blocks.findIndex((b) => b.id === id) + dir;
         while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table')) j += dir;
         if (j < 0 || j >= blocks.length) return;
         const t = blocks[j];
         setActiveBlockId(t.id);
-        setFocusIntent({ id: t.id, offset: dir > 0 ? 0 : t.text.length });
+        setFocusIntent({ id: t.id, offset: Math.min(column, t.text.length) });
     };
 
     const doMark = (el: HTMLElement, id: string, marker: string) => {
         if (el instanceof HTMLTextAreaElement) return;   // 코드 블록엔 서식 토글 안 함
-        const live = el.textContent ?? '';
-        const { start, end } = selectionRange(el);
+        const { start, end } = selectionSourceRange(el);
+        if (start === end) return;                       // 고른 영역이 없으면 토글 안 함(명세: 선택 영역에)
+        const live = serializeInline(el);
         const r = toggleMark(live, start, end, marker);
         const next = setText(pageRef.current, id, r.text);
         commitPage(next, { id, offset: r.start, end: r.end });
@@ -297,6 +315,13 @@ export function PageView({ host }: { host: PluginHost }) {
         setSlash(null);
         setActiveBlockId(id);
         setFocusIntent({ id, offset });
+    };
+
+    // 🔴 클릭·탭으로 블록에 포커스가 가면 활성만 바꾼다(캐럿은 브라우저가 클릭 자리에 이미 놓았다 → 건드리지 않는다).
+    const onFocusActive = (id: string) => {
+        if (activeBlockRef.current === id) return;
+        setActiveBlockId(id);
+        setSlash(null);
     };
 
     // ── 그리기 ──
@@ -351,6 +376,7 @@ export function PageView({ host }: { host: PluginHost }) {
                             onKeyDown={onKeyDown}
                             composingRef={composingRef}
                             onFocusBlock={onFocusBlock}
+                            onFocusActive={onFocusActive}
                             onChecked={onChecked}
                             onTableChange={onTableChange}
                             onPickSlash={pickSlash}
@@ -378,10 +404,11 @@ interface RowProps {
     ordinal?: number;
     slash: { query: string; index: number } | null;
     setEl: (id: string, el: HTMLElement | null) => void;
-    onInput: (id: string, text: string) => void;
+    onInput: (id: string, text: string, el?: HTMLElement) => void;
     onKeyDown: (e: ReactKeyboardEvent, block: Block) => void;
     composingRef: { current: boolean };
     onFocusBlock: (id: string, offset: number) => void;
+    onFocusActive: (id: string) => void;
     onChecked: (id: string, checked: boolean) => void;
     onTableChange: (id: string, table: TableBlockData) => void;
     onPickSlash: (id: string, type: BlockType) => void;
@@ -455,7 +482,7 @@ function HandleMenuItem({ label, onPick }: { label: string; onPick: () => void }
 }
 
 function renderContent(props: RowProps): ReactElement {
-    const { block, host, active } = props;
+    const { block, host } = props;
 
     if (block.type === 'divider') {
         return <hr className="my-2 border-0 border-t border-line" />;
@@ -473,22 +500,14 @@ function renderContent(props: RowProps): ReactElement {
         return <CodeBlock {...props} />;
     }
 
-    // 글자 블록(문단·제목·목록·인용) — 목록 표식 + 편집창/서식
+    // 🔴 글자 블록(문단·제목·목록·인용) — 늘 편집 가능하고 늘 서식이 입혀져 보인다(렌더/편집 두 모드를 없앴다).
+    //   클릭하면 브라우저가 그 자리에 캐럿을 놓는다(명세 요구 2).
     const marker = listMarker(props);
     return (
         <div className="flex items-start gap-1.5">
             {marker}
             <div className="flex-1 min-w-0">
-                {active
-                    ? <Editable {...props} />
-                    : (
-                        <div
-                            className={`${textClass(block)} cursor-text whitespace-pre-wrap break-words`}
-                            onMouseDown={(e) => { e.stopPropagation(); props.onFocusBlock(block.id, block.text.length); }}
-                        >
-                            <InlineText text={block.text} />
-                        </div>
-                    )}
+                <Editable {...props} />
             </div>
         </div>
     );
@@ -521,16 +540,22 @@ function textClass(block: Block): string {
     return `${base} ${text} ${quote} ${strike}`.trim();
 }
 
-/** 활성 블록의 편집창 — 원본 글자(한 덩이). React 는 글자를 안 건드린다(ref 로만 세팅). */
+/**
+ * 글자 블록 편집창 — 🔴 서식이 입혀진 DOM(strong/em/code/s)을 직접 쥔다. React 는 자식을 안 그린다(ref 로만).
+ *   · 모델(block.text=마크다운)이 바뀌고 구조가 달라졌을 때만 다시 그린다(캐럿 보존 · 조합 중엔 안 그린다).
+ *   · 캐럿은 부모(focusIntent 효과)가 소스 오프셋으로 놓는다 — 자식 효과가 DOM 을 먼저 맞춘 뒤다.
+ */
 function Editable(props: RowProps) {
-    const { block } = props;
+    const { block, composingRef } = props;
     const ref = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
         const el = ref.current;
-        if (el) el.textContent = block.text;   // 마운트 때 초기 글자
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (!el) return;
+        if (composingRef.current) return;                 // 🔴 IME 조합 중엔 다시 그리지 않는다(글자가 갈라진다)
+        if (inlineDomMatches(el, block.text)) return;     // 이미 같은 구조 → 손대지 않는다(브라우저 캐럿 유지)
+        buildInlineDom(el, block.text);
+    });
 
     return (
         <div
@@ -543,25 +568,21 @@ function Editable(props: RowProps) {
             className={`${textClass(block)} outline-none whitespace-pre-wrap break-words`}
             style={{ userSelect: 'text' as const, WebkitUserSelect: 'text' }}
             onMouseDown={(e) => e.stopPropagation()}
-            onInput={(e) => props.onInput(block.id, e.currentTarget.textContent ?? '')}
+            onFocus={() => props.onFocusActive(block.id)}
+            onInput={(e) => props.onInput(block.id, serializeInline(e.currentTarget), e.currentTarget)}
             onKeyDown={(e) => props.onKeyDown(e, block)}
             onCompositionStart={() => { props.composingRef.current = true; }}
-            onCompositionEnd={(e) => { props.composingRef.current = false; props.onInput(block.id, e.currentTarget.textContent ?? ''); }}
+            onCompositionEnd={(e) => {
+                props.composingRef.current = false;
+                props.onInput(block.id, serializeInline(e.currentTarget), e.currentTarget);
+            }}
         />
     );
 }
 
-/** 코드 블록 — 여러 줄이라 textarea(캐럿·IME 가 안전하다). */
+/** 코드 블록 — 여러 줄이라 늘 textarea(캐럿·IME 가 안전하다 · 클릭 자리에 캐럿). 글자 그대로라 서식 변환 없음. */
 function CodeBlock(props: RowProps) {
-    const { block, active } = props;
-    if (!active) {
-        return (
-            <pre
-                className="my-1 rounded border border-line bg-text/[0.03] px-3 py-2 text-[13px] font-mono text-text whitespace-pre-wrap break-words cursor-text"
-                onMouseDown={(e) => { e.stopPropagation(); props.onFocusBlock(block.id, block.text.length); }}
-            >{block.text === '' ? ' ' : block.text}</pre>
-        );
-    }
+    const { block } = props;
     return (
         <textarea
             ref={(el) => props.setEl(block.id, el)}
@@ -571,6 +592,7 @@ function CodeBlock(props: RowProps) {
             className="my-1 w-full rounded border border-line bg-text/[0.03] px-3 py-2 text-[13px] font-mono text-text outline-none resize-none"
             style={{ userSelect: 'text' as const, WebkitUserSelect: 'text' }}
             onMouseDown={(e) => e.stopPropagation()}
+            onFocus={() => props.onFocusActive(block.id)}
             onChange={(e) => props.onInput(block.id, e.target.value)}
             onKeyDown={(e) => props.onKeyDown(e, block)}
             onCompositionStart={() => { props.composingRef.current = true; }}
