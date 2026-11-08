@@ -5,8 +5,8 @@ import type { PluginManifest } from '../../pane-ui-system/plugin';
 
 export const manifest: PluginManifest = {
     id: 'contract-week-grid',
-    name: '약속: 주 격자',
+    name: '약속: 시간표 모양',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '주 격자 약속(week-grid 0.1) — 요일×교시 격자·칸 열쇠. 타입만. clock 에 기댄다(uses). 제공자: school-clock(M1).',
+    description: '시간표 모양 약속(week-grid 0.1) — 범위·열·행·칸 + 일정 목록(ScheduleEntry). 타입만. clock 에 기댄다(uses). 제공자: 시간표 그리드.',
 };
