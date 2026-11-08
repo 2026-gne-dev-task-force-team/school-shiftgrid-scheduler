@@ -17,6 +17,8 @@ import { contractCredentialPlugin } from '../plugins/contract-credential';
 import { contractPermitPlugin } from '../plugins/contract-permit';
 import { accountPlugin } from '../plugins/account';
 import { credentialLocalPlugin } from '../plugins/credential-local';
+import { contractPeoplePlugin } from '../plugins/contract-people';
+import { peoplePlugin } from '../plugins/people';
 
 /**
  * 🔴 3판(2026-11-08) — 약속(인터페이스)은 **약속 플러그인**(contract-*)이 contributes.interfaces 로 선언한다.
@@ -41,4 +43,7 @@ export const PLUGINS: PluginModule[] = [
     contractPermitPlugin,       // 약속(판정) — 제공자 account 보다 먼저
     accountPlugin,              // 제공자 — 누구·판정을 채운다 · 증명은 지원 · nodes 를 requires
     credentialLocalPlugin,     // 제공자 — 증명(이름+암호)을 채운다 · nodes 를 requires
+    // 사람 명단(2026-11-08 머지) — 약속이 제공자보다 앞에 선다.
+    contractPeoplePlugin,      // 약속(사람 명단)
+    peoplePlugin,              // 제공자 — 명단 여럿 · nodes 를 requires
 ];
