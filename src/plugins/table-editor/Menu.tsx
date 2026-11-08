@@ -29,7 +29,7 @@ export function Menu({ x, y, items, onClose }: { x: number; y: number; items: Me
         <div
             data-table-menu
             role="menu"
-            className="fixed z-[200] min-w-[160px] py-1 rounded-md border border-line bg-panel shadow-lg select-none"
+            className="fixed z-[200] w-max min-w-[160px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none"
             style={{ left: x, top: y }}
         >
             {items.map((it, i) => (
