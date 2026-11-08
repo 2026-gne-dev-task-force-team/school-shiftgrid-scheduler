@@ -18,7 +18,7 @@ import { settingsPlugin } from './index';
 const EXPECTED = [
     { id: 'appearance', title: '모양', items: ['theme'] },
     { id: 'frame', title: '창틀', items: ['pane', 'ribbon'] },
-    { id: 'plugins', title: '플러그인', items: ['plugins', 'interfaces'] },
+    { id: 'plugins', title: '플러그인', items: ['plugins'] },
     { id: 'about', title: '정보', items: ['about'] },
 ];
 

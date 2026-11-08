@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveFeatures } from './assemble';
 import { BUILTIN } from './modules';
-import type { TableFeature } from '../../contract-table/types';
+import type { TableFeature } from '../contracts/table';
 
 const lookup = (id: string) => BUILTIN[id];
 const ids = (fs: TableFeature[]) => fs.map((f) => f.id);

@@ -2,7 +2,7 @@
  * 조립 설치 — resolveFeatures 로 정렬한 모듈을 ctx 로 설치해 Table 이 읽을 설정을 모은다.
  *   caps(켠 능력) · pasteOverflow(붙여넣기 넘침) · keymap(겹치면 던진다) · commitWrappers(확정 직전).
  */
-import type { FeatureCtx, PasteOverflow, TableCapability, TableState, TableTx, TableFeature } from '../../contract-table/types';
+import type { FeatureCtx, PasteOverflow, TableCapability, TableState, TableTx, TableFeature } from '../contracts/table';
 import { resolveFeatures, type FeatureLookup } from './assemble';
 
 export interface TableConfig {

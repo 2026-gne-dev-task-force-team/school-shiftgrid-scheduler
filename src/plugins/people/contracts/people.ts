@@ -9,7 +9,7 @@
  *   - 칸은 **이름·메모 둘뿐**이다. 학교 낱말(담임·반·과목)·계정 낱말은 ⛔ 여기 없다 — 그건 위층(school-roster·계정)의 몫이다.
  *   - 칸 꽂기 자리(ext)는 **타입에만** 비워 둔다 — 위층이 플러그인 id 로 이름공간을 잡아 꽂는다(⛔ 이 약속엔 쓰는 코드가 없다).
  */
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /** 명단 — 사람 여럿을 담는 묶음(달력 저장소와 같은 결). 명단 안에 명단을 둘 수 있다. */
 export interface PeopleList {

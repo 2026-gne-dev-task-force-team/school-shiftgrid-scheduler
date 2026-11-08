@@ -1,8 +1,10 @@
 /**
- * 약속 플러그인 열(nodes + 학교 일곱 + 계정 둘) — 켜지면 선언·uses·활성이 서나, 그리고 🔴 uses 가 **실제 import type 그래프와 일치**하나(페이블 10).
+ * 미편입 약속 폴더 여섯(roster·clock·week-grid·timetable·absence·export) — 켜지면 선언·uses·활성이 서나,
+ *   그리고 🔴 uses 가 **실제 import type 그래프와 일치**하나(페이블 10).
  *
- * ⭐ 이 아홉(roster·clock·week-grid·timetable·absence·identity·export·credential·permit)은 PLUGINS 에 안 박았다
- *    (소비자·제공자 0 — 필요할 때 한 줄). 그래도 타입·선언·기대기가 서는지는 여기서 켜서 증명한다(제공자 없이도 약속은 산다).
+ * ⭐ 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」): nodes·identity·credential·permit·people·table·calendar 는
+ *    각 꾸러미 폴더 안으로 묶여(contributes.interfaces) 별도 contract-* 플러그인이 사라졌다. 이 여섯만 아직 소비자·제공자가
+ *    없어 미편입 약속 폴더(contract-*)로 남아 있다(쥔님: 모듈을 지시할 때 그 꾸러미로 간다). 제공자 없이도 약속은 산다.
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -10,21 +12,16 @@ import { resolve } from 'node:path';
 import { activateAll, listPlugins, listInterfaces, disposeOwner } from '../pane-ui-system/plugin';
 import type { PluginModule } from '../pane-ui-system/plugin';
 
-import { contractNodesPlugin } from './contract-nodes';
 import { contractRosterPlugin } from './contract-roster';
 import { contractClockPlugin } from './contract-clock';
 import { contractWeekGridPlugin } from './contract-week-grid';
 import { contractTimetablePlugin } from './contract-timetable';
 import { contractAbsencePlugin } from './contract-absence';
-import { contractIdentityPlugin } from './contract-identity';
 import { contractExportPlugin } from './contract-export';
-import { contractCredentialPlugin } from './contract-credential';
-import { contractPermitPlugin } from './contract-permit';
 
 const ALL: PluginModule[] = [
-    contractNodesPlugin, contractRosterPlugin, contractClockPlugin, contractWeekGridPlugin,
-    contractTimetablePlugin, contractAbsencePlugin, contractIdentityPlugin, contractExportPlugin,
-    contractCredentialPlugin, contractPermitPlugin,
+    contractRosterPlugin, contractClockPlugin, contractWeekGridPlugin,
+    contractTimetablePlugin, contractAbsencePlugin, contractExportPlugin,
 ];
 const IDS = ALL.map((p) => p.manifest.id);
 
@@ -47,15 +44,15 @@ function declaredUsesOf(p: PluginModule): string[] {
 }
 
 describe('약속 열 — 선언·활성·uses', () => {
-    it('켜면 열 다 활성(실패·블록 0)이고 약속 목록에 열 이름이 뜬다', () => {
+    it('켜면 여섯 다 활성(실패·블록 0)이고 약속 목록에 여섯 이름이 뜬다', () => {
         activateAll(ALL);
         const ps = listPlugins().filter((p) => IDS.includes(p.id));
-        expect(ps.length).toBe(10);
+        expect(ps.length).toBe(6);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);   // clock 이 있어 week-grid·timetable·absence 의 uses 가 찬다
 
         const names = listInterfaces().map((i) => i.name).sort();
-        expect(names).toEqual(['absence', 'clock', 'credential', 'export', 'identity', 'nodes', 'permit', 'roster', 'timetable', 'week-grid']);
+        expect(names).toEqual(['absence', 'clock', 'export', 'roster', 'timetable', 'week-grid']);
         // 제공자 0명이어도 약속은 산다
         expect(listInterfaces().every((i) => i.provider === null)).toBe(true);
     });
@@ -68,7 +65,7 @@ describe('약속 열 — 선언·활성·uses', () => {
             expect(find(id).reason).toContain('clock');
         }
         // clock 을 안 쓰는 약속은 멀쩡하다
-        for (const id of ['contract-roster', 'contract-identity', 'contract-export', 'contract-nodes']) {
+        for (const id of ['contract-roster', 'contract-export']) {
             expect(find(id).blocked, `${id} 는 clock 과 무관`).toBe(false);
         }
     });

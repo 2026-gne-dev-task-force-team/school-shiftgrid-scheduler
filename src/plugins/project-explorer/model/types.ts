@@ -12,10 +12,10 @@ import type { IconName } from '../../../pane-ui-system/plugin';
 import type { MenuEntry, Disposable } from '../../../pane-ui-system/plugin';
 import type { Node } from './tree';
 
-// 🔴 노드 타입 규격(VirtualNode·CreateSpec·NodeTypeDef)은 약속(contract-nodes)이 쥔다 — 제공자가 import 해 구현한다(3판 부채 끊기).
+// 🔴 노드 타입 규격(VirtualNode·CreateSpec·NodeTypeDef)은 약속(이 꾸러미 contracts/nodes)이 쥔다 — 제공자가 import 해 구현한다(3판 부채 끊기).
 //    ⭐ 재export 는 이 폴더가 `./types` 로 받던 길을 안 깨려는 것뿐(derive·index·api 가 그대로 쓴다). NodeTypeDef 만 이 파일 런타임이 쓴다.
-import type { NodeTypeDef } from '../../contract-nodes/types';
-export type { VirtualNode, CreateSpec, NodeTypeDef } from '../../contract-nodes/types';
+import type { NodeTypeDef } from '../contracts/nodes';
+export type { VirtualNode, CreateSpec, NodeTypeDef } from '../contracts/nodes';
 
 const registry = new Map<string, NodeTypeDef>();
 

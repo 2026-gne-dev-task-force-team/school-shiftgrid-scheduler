@@ -22,11 +22,11 @@ import {
     apiInvalidate, openById, subscribeChanges,
 } from './store';
 
-// 🔴 공개 노드 약속(NodesApi·PublicNode·NodeTypeImplFns)은 contract-nodes 가 쥔다 — 이 파일은 그걸 **구현**한다(makeNodesApi).
-//    ⭐ 재export 는 이 폴더·이 플러그인이 그대로 쓰던 길을 안 깨려는 것(index·테스트가 './api' 로 받는다). 타입 정의는 contract-nodes/types.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
-export type { NodeTypeDef, VirtualNode, CreateSpec, Node } from '../contract-nodes/types';
-export type { NodesApi, PublicNode, NodeTypeImplFns } from '../contract-nodes/types';
+// 🔴 공개 노드 약속(NodesApi·PublicNode·NodeTypeImplFns)은 이 꾸러미의 contracts/nodes 가 쥔다 — 이 파일은 그걸 **구현**한다(makeNodesApi).
+//    ⭐ 재export 는 이 폴더·이 플러그인이 그대로 쓰던 길을 안 깨려는 것(index·테스트가 './api' 로 받는다). 타입 정의는 ./contracts/nodes.
+import type { NodesApi, PublicNode, NodeTypeImplFns } from './contracts/nodes';
+export type { NodeTypeDef, VirtualNode, CreateSpec, Node } from './contracts/nodes';
+export type { NodesApi, PublicNode, NodeTypeImplFns } from './contracts/nodes';
 
 const freeze = (n: Node): PublicNode => Object.freeze({ ...n, children: Object.freeze([...n.children]) }) as PublicNode;
 

@@ -5,7 +5,7 @@
  *   바뀜 알림: 출처 onChange 가 울리면 version 을 올려 구독자(useCalendarData)가 다시 그린다.
  *   ⭐ store.ts(scope)와 같은 결의 모듈 전역 싱글턴 — 테스트 격리는 __resetFeeds 로.
  */
-import type { Calendar, CalendarSource } from '../contract-calendar/types';
+import type { Calendar, CalendarSource } from './contracts/calendar';
 import type { Disposable } from '../../pane-ui-system/plugin';
 import { PALETTE_LEN } from './palette';
 

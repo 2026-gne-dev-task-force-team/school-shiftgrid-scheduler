@@ -3,7 +3,7 @@
  *   M1 넷: rows(행 조작) · fill(채우기 핸들) · paste-policy:append|clip(붙여넣기 넘침) · history(내장 되돌리기).
  *   ⭐ 「끌어서」 = 플러그인이 Table 을 새로 안 만들고 features 목록으로 가져다 쓴다(쥔님 2026-11-08 16:20).
  */
-import type { TableFeature } from '../../contract-table/types';
+import type { TableFeature } from '../contracts/table';
 
 /** 행 넣기·빼기·옮기기 + 맨 아래 「새 행」 자리를 켠다(UI 는 Table 이 이 능력을 보고 그린다). */
 export const rowsFeature: TableFeature = {

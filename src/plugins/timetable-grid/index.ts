@@ -11,7 +11,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../contract-nodes/types';
+import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { GridTab } from './views/GridTab';
 import {

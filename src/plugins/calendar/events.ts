@@ -5,8 +5,8 @@
  * ⭐ 겹침 판정: 일정 [start,end) 가 범위 [from,to) 와 겹치면 start < to && end > from (반열린 구간).
  */
 import { isoOf } from '../../pane-ui-system';
-// 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-calendar)에서(값 아님, 구조 검사 ⑱·g).
-import type { CalendarItem } from '../contract-calendar/types';
+// 🔴 import type 만 — 약속 타입은 달력 약속(이 꾸러미 contracts/calendar)에서(값 아님, 구조 검사 ⑱·g).
+import type { CalendarItem } from './contracts/calendar';
 
 /**
  * 남의 일정(다른 플러그인이 꽂은 출처 항목)임을 가리키는 꼬리표 — 자기 일정(노드)이면 없다(undefined).

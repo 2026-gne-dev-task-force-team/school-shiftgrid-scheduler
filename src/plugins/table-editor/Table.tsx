@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { useSheetCore } from './core/useSheetCore';
 import type { CellChange, CommitSource, SheetCoreAdapter, SheetCoreHandle } from './core/types';
-import type { CellChange as TxCellChange, TableProps, TableState, TableTx } from '../contract-table/types';
+import type { CellChange as TxCellChange, TableProps, TableState, TableTx } from './contracts/table';
 import { buildConfig } from './features/install';
 import { DEFAULT_FEATURES } from './features/modules';
 import { lookupFeature } from './features/registry';

@@ -4,7 +4,7 @@
  *   ⚠️ 전역 오버레이로 어디에 mount 하나는 호스트(앱) 몫 — 제공자는 이 부품을 낼 뿐이다(main 이 App 에 끼운다).
  */
 import { useState, useSyncExternalStore } from 'react';
-import { Button } from '../../pane-ui-system';
+import { Button } from '../../../pane-ui-system';
 import { subscribeDialog, getPending, submitDialog, cancelDialog } from './dialog';
 
 export function CredentialDialog() {

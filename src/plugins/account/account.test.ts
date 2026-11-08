@@ -7,22 +7,19 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { activateAll, disablePlugin, enablePlugin, listPlugins, disposeOwner } from '../../pane-ui-system/plugin';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
-import type { Identity } from '../contract-identity/types';
-import type { Permit } from '../contract-permit/types';
-import type { NodesApi, Node, PublicNode } from '../contract-nodes/types';
+import type { Identity } from './contracts/identity';
+import type { Permit } from './contracts/permit';
+import type { NodesApi, Node, PublicNode } from '../project-explorer/contracts/nodes';
 
-import { contractNodesPlugin } from '../contract-nodes';
-import { contractIdentityPlugin } from '../contract-identity';
-import { contractCredentialPlugin } from '../contract-credential';
-import { contractPermitPlugin } from '../contract-permit';
 import { accountPlugin } from './index';
-import { credentialLocalPlugin } from '../credential-local';
 import * as core from './core';
-import * as credCore from '../credential-local/core';
+import * as credCore from './credential/core';
 import { SECRET_TYPE } from './nodes';
 
-const BASE = (): PluginModule[] => [contractNodesPlugin, contractIdentityPlugin, contractCredentialPlugin, contractPermitPlugin];
-const IDS = ['contract-nodes', 'contract-identity', 'contract-credential', 'contract-permit', 'fake-nodes', 'account', 'credential-local', 'cons'];
+// 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속 셋(identity·credential·permit)은 account 꾸러미가 들고 온다(contributes.interfaces).
+//    nodes 약속은 아래 가짜 nodes 제공자가 들고 온다(선언+제공). 증명(credential)은 account 꾸러미 안 내부 모듈이다(따로 안 켠다).
+const BASE = (): PluginModule[] => [];
+const IDS = ['fake-nodes', 'account', 'cons'];
 
 afterEach(() => {
     for (const id of IDS) disposeOwner(id);
@@ -31,7 +28,7 @@ afterEach(() => {
 
 const find = (id: string) => listPlugins().find((p) => p.id === id);
 
-// ── 인메모리 nodes 제공자(제공만 — 약속은 contract-nodes 가 선언) ──
+// ── 인메모리 nodes 제공자(nodes 약속을 들고 오고 채운다 — 탐색기 꾸러미 흉내) ──
 //    opts.deferred: true 면 「로드 전」 상태로 시작한다 — 읽기(get·byType·find·children)가 빈 값을 주다가
 //    load() 를 부르면 그제야 보이고 subscribe 를 깨운다(project-explorer 의 loadTree 비동기 로드 흉내).
 function makeNodes(opts?: { deferred?: boolean }) {
@@ -79,6 +76,8 @@ function makeNodes(opts?: { deferred?: boolean }) {
         manifest: {
             id: 'fake-nodes', name: 'fake-nodes', version: '0.1.0', minHostVersion: '0.1.0', core: true,
             provides: { nodes: '0.1.0' },
+            // 🔴 꾸러미 전환 — nodes 약속도 이 가짜가 들고 온다(약속 없이는 provides 가 「약속 없음」으로 막혀 account 까지 끊긴다).
+            contributes: { interfaces: [{ name: 'nodes', version: '0.1.0' }] },
         },
         modules: { nodes: api },
     } as PluginModule;
@@ -249,10 +248,10 @@ describe('계정 — 9가지 검산', () => {
         expect(cons.pm).not.toBeNull();
     });
 
-    it('8) credential-local 없음 → account 켜짐 · 증명 요구 역할 로그인 → verified false · 마스터 암호는 통함', async () => {
+    it('8) 비밀 안 걸린 사용자 → 증명 요구 역할 로그인 → verified false(증명 실패) · 마스터 암호는 통함', async () => {
         const nodes = makeNodes();
-        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 증명 제공자 없음
-        expect(find('account')!.blocked).toBe(false);           // supports 라 제공자 0이어도 켜진다
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 증명은 꾸러미 안 내부 모듈 — account 가 provides.credential
+        expect(find('account')!.blocked).toBe(false);           // nodes 만 requires — 막히지 않는다
 
         const rid = core.createRole('관리');
         const uid = core.createUser('박', { roleIds: [rid] });
@@ -269,7 +268,7 @@ describe('계정 — 9가지 검산', () => {
 
     it('9) 마스터가 다른 사용자로 → 증명 통과해야 그 사용자 · 실패면 마스터 그대로', async () => {
         const nodes = makeNodes();
-        activateAll([...BASE(), nodes.plugin, accountPlugin, credentialLocalPlugin]);   // 증명 제공자 있음
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);   // 증명은 account 꾸러미 안 내부 모듈(provides.credential)
         const uid = core.createUser('최');
         await credCore.setSecret(uid, 'mypw');
         expect(core.getCurrent().kind).toBe('master');

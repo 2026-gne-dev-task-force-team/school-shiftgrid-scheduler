@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
     registerSource, subscribeFeeds, getFeedsVersion, listFeedSources, getFeedSource, __resetFeeds,
 } from './feed';
-import type { CalendarSource } from '../contract-calendar/types';
+import type { CalendarSource } from './contracts/calendar';
 
 afterEach(() => __resetFeeds());
 

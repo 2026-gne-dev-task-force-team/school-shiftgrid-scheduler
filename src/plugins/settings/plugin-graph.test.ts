@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PluginStatus } from '../../pane-ui-system/plugin';
 import {
-    availablePromises, explainBlock, disableImpact, listPromiseRows, promiseDetail,
+    availablePromises, explainBlock, disableImpact,
 } from './plugin-graph';
 
 type P = Partial<PluginStatus> & { id: string };
@@ -123,38 +123,18 @@ describe('disableImpact ④ — 같이 꺼질 것 / 기능만 떨어질 것', ()
     it('없는 id 는 빈 영향', () => {
         expect(disableImpact('nope', base())).toEqual({ willBlock: [], willDegrade: [] });
     });
-});
 
-describe('promiseDetail / listPromiseRows ⑤ — 약속별', () => {
-    it('약속 목록은 켜진 약속 플러그인의 선언 모음', () => {
-        const names = listPromiseRows(base()).map((r) => r.name).sort();
-        expect(names).toEqual(['credential', 'identity', 'nodes']);
-    });
-
-    it('identity — 제공자 account · 기다리는 쪽 boss(requires, 붙음)', () => {
-        const d = promiseDetail('identity', base())!;
-        expect(d.available).toBe(true);
-        expect(d.provider?.id).toBe('account');
-        const boss = d.consumers.find((c) => c.id === 'boss')!;
-        expect(boss.relation).toBe('requires');
-        expect(boss.attached).toBe(true);
-    });
-
-    it('제공자가 꺼지면 소비자는 안 붙음', () => {
-        const ps = base().map((p) => (p.id === 'account' ? { ...p, enabled: false } : p));
-        const d = promiseDetail('identity', ps)!;
-        expect(d.provider).toBeNull();
-        expect(d.consumers.find((c) => c.id === 'boss')!.attached).toBe(false);
-    });
-
-    it('credential — account 는 supports 로 기다린다', () => {
-        const d = promiseDetail('credential', base())!;
-        const acct = d.consumers.find((c) => c.id === 'account')!;
-        expect(acct.relation).toBe('supports');
-        expect(acct.attached).toBe(true);
-    });
-
-    it('없는 약속은 null', () => {
-        expect(promiseDetail('ghost', base())).toBeNull();
+    // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속을 들고 온 꾸러미가 그 약속을 provides 로도 채운다(둘이 한 꾸러미).
+    //    그 꾸러미를 끄면 ①약속 자체가 사라지고(declaredDown) ②제공자도 사라진다(providerGone) — 소비자는 어느 길로도 같이 꺼져야 한다.
+    //    (옛 구조에서 선언자와 제공자가 갈려 있어 한쪽만 보면 소비자를 빠뜨릴 수 있던 결함 — 꾸러미로 묶여 자연히 막힌다.)
+    it('약속을 들고 와 채우는 한 꾸러미를 끄면 그 약속 소비자가 같이 꺼진다(선언+제공 동시)', () => {
+        const ps = [
+            mk({ id: 'fake-nodes', core: true, provides: { nodes: '0.1.0' }, interfaces: C('nodes') }),
+            // account 꾸러미: identity 를 들고 오고(interfaces) 동시에 채운다(provides) — 새 구조.
+            mk({ id: 'account', provides: { identity: '0.2.0' }, requires: { nodes: '^0.1' }, interfaces: C('identity') }),
+            mk({ id: 'boss', requires: { identity: '^0.1' } }),   // identity 소비자
+        ];
+        const { willBlock } = disableImpact('account', ps);
+        expect(willBlock.map((x) => x.id)).toContain('boss');     // 꾸러미를 끄면 약속·제공자가 같이 사라져 소비자가 막힌다
     });
 });

@@ -3,7 +3,7 @@
  *   속은 노드 다리(nodes.ts)로만 — 다리가 쥔 NodesApi 를 읽고 쓴다(값은 모듈 전역이라 호출 시점에 산다).
  *   ⛔ 호출자별 팩토리 아님 — 명단·사람은 누가 봐도 같다(저장·휴지통 주인은 노드 시스템이 쥔다).
  */
-import type { People } from '../contract-people/types';
+import type { People } from './contracts/people';
 import type { Disposable } from '../../pane-ui-system/plugin';
 import {
     listsOf, peopleIn, personOf, addPerson, updatePerson, removePerson, movePerson, pastePeople, onNodesChange,

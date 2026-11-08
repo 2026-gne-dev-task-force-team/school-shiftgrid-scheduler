@@ -1,14 +1,14 @@
 /**
  * 🔴 약속 「calendar」 0.1 — **달력이 남의 일정을 받아 그려 주는 입구**. 달력은 뷰를 빌려주고, 다른 플러그인이
  *   「달력에 맞춘 모양」으로 넣으면 받은 대로 그린다(쥔님 2026-11-08 15:45·16:25).
- *   ⭐ 갈아 끼는 자리: 「출처(CalendarSource)」 하나. 달력은 출처가 무엇을 담는지(부재·보결·시간표…) 모른다 — 모양만 안다.
+ *   ⭐ 갈아 끼는 자리: 「출처(CalendarSource)」 하나. 달력은 출처가 무엇을 담는지(남의 분야) 모른다 — 모양만 안다.
  *   ⛔ 분야 낱말 0 · ⛔ contract-clock 에 기대지 않는다(결합을 늘리지 않으려는 판단 — 날짜는 아래 문자열 꼴 하나로).
  *
  *   소비자(남의 일정을 꽂는 쪽): requires/supports { calendar: '^0.1' } + host.modules 로 calendar 를 받아 registerSource(…).
  *   제공자(달력): provides { calendar: '0.1.0' } + modules.calendar. 오늘은 calendar 플러그인이 채운다.
  */
 import type { ComponentType } from 'react';
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /**
  * 달력에 그려 달라고 넘기는 일정 한 칸 — 노드도 뭐도 아닌 **평면 값**이다.

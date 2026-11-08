@@ -4,7 +4,7 @@
  *   ⛔ 조용히 하나를 빼지 않는다 — 어긋나면 던져서 조립한 사람이 안다.
  *   🔴 순수 함수(ctx 없음) — install 은 Table 이 ctx 로 돌린다. 던지는 길을 테스트로 못 박는다(버그 심기 검산).
  */
-import type { TableFeature } from '../../contract-table/types';
+import type { TableFeature } from '../contracts/table';
 
 export type FeatureLookup = (id: string) => TableFeature | undefined;
 

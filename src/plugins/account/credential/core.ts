@@ -1,11 +1,11 @@
 /**
- * credential-local 엔진 — 「이름+암호」 한 방법으로 증명한다. 🔴 입력 화면은 스스로 띄운다(prompt 자리).
+ * 증명(credential · account 꾸러미 안 부품) 엔진 — 「이름+암호」 한 방법으로 증명한다. 🔴 입력 화면은 스스로 띄운다(prompt 자리).
  *   challenge(methodId, userId): 입력을 받아 저장된 해시와 맞나만 돌려준다 — 🔴 ⛔ 비밀번호를 약속으로 주고받지 않는다.
  *   ⭐ prompt 는 갈아 끼는 자리다 — 기본은 다이얼로그(requestSecret), 테스트는 setPrompt 로 입력을 직접 넣는다.
  */
-import type { PluginHost } from '../../pane-ui-system/plugin';
-import type { CredentialMethod } from '../contract-credential/types';
-import type { NodesApi, PublicNode } from '../contract-nodes/types';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+import type { CredentialMethod } from '../contracts/credential';
+import type { NodesApi, PublicNode } from '../../project-explorer/contracts/nodes';
 import { makeHash, verifyHash } from './hash';
 import { SECRET_TYPE, type LocalSecret } from './nodes';
 import { requestSecret } from './dialog';

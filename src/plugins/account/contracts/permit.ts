@@ -7,7 +7,7 @@
  *
  *   소비자: supports: { permit: '^0.1' } + onInterface.permit.attach 로 미리 적어 둔다.
  */
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 
 export interface Permit {
     /** 그 권한 낱말('<pluginId>.<name>')을 지금 사람이 가졌나 — 화면 가리기용. 마스터면 항상 true. */

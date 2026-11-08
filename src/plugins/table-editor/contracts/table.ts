@@ -7,7 +7,7 @@
  * ⭐ 「한 번 확정 = undo 한 단위」가 뼈대다(TableTx 하나 = 되돌리기 한 칸). 병합(merge)은 M2 — 모델이 막지 않게만 둔다.
  */
 import type { ComponentType } from 'react';
-import type { Disposable } from '../../pane-ui-system/plugin';
+import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /** 열 정의 — 편집기는 key·title·width·readOnly·align 만 안다(type 은 M2 col-types 가 해석). */
 export interface TableColumn {
