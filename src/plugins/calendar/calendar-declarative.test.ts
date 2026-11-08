@@ -15,6 +15,7 @@ import {
 } from '../../pane-ui-system/plugin';
 import type { PluginModule } from '../../pane-ui-system/plugin';
 import { calendarPlugin } from './index';
+import { contractCalendarPlugin } from '../contract-calendar';
 
 // 🔴 calendar 가 contributes.nodeTypes(저장소·일정)를 내고 requires.nodes 를 선언하므로, nodes 를 채우는 제공자(코어)가
 //    먼저 켜져 있어야 한다 — 없으면 calendar 가 blocked 가 된다. 여기선 뷰·명령·리본·설정 집합만 보므로 nodes 모듈은
@@ -35,11 +36,12 @@ const registrar: PluginModule = {
     },
 };
 
-beforeEach(() => { disposeOwner('calendar'); disposeOwner('project-explorer'); clearViews(); });
+beforeEach(() => { disposeOwner('calendar'); disposeOwner('project-explorer'); disposeOwner('contract-calendar'); clearViews(); });
 
 describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집합과 같다', () => {
     it('뷰·명령·리본·설정이 옛 등록과 같은 집합으로 꽂히고 활성 실패가 없다', () => {
-        activateAll([registrar, calendarPlugin]);
+        // 🔴 calendar 가 provides.calendar 를 선언하므로, 그 약속을 선언하는 contract-calendar 가 같이 켜져 있어야 막히지 않는다.
+        activateAll([registrar, contractCalendarPlugin, calendarPlugin]);
 
         // 활성 실패 아님(이름이 구현과 다 맞는다)
         expect(listPlugins().find((p) => p.id === 'calendar')?.failed).toBe(false);

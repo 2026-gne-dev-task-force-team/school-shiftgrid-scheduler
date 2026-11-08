@@ -7,6 +7,8 @@
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import { subscribeNodes, getEventNodes, getStoreNodes, getNodesApi, inTrash } from './nodes';
+import { subscribeFeeds, getFeedsVersion, listFeedSources } from './feed';
+import { mapFeedEvents, FEED_FROM, FEED_TO } from './feed-events';
 import { useScope } from './store';
 import { PALETTE_LEN } from './palette';
 import { eventsInScope, type CalEvent, type StoreInfo, type EventData } from './events';
@@ -29,6 +31,9 @@ export function useCalendarData(): CalendarData {
     const eventNodes = useSyncExternalStore(subscribeNodes, getEventNodes, getEventNodes);
     const storeNodes = useSyncExternalStore(subscribeNodes, getStoreNodes, getStoreNodes);
     const scope = useScope();
+    // 🔴 남의 일정(출처) — register·dispose·출처 onChange 때만 버전이 바뀌고, 그때만 다시 편다(scope·노드엔 안 바뀐다).
+    const feedsVer = useSyncExternalStore(subscribeFeeds, getFeedsVersion, getFeedsVersion);
+    const foreign = useMemo(() => mapFeedEvents(listFeedSources(), FEED_FROM, FEED_TO), [feedsVer]);
 
     // 파싱(노드 → CalEvent)·저장소 목록은 노드가 바뀔 때만 다시 — 범위(scope)만 바뀌면 재파싱 안 한다.
     const base = useMemo(() => {
@@ -67,8 +72,10 @@ export function useCalendarData(): CalendarData {
     }, [eventNodes, storeNodes]);
 
     // 범위 필터 — scope 가 살아 있는 저장소일 때만 건다(휴지통에 가거나 사라졌으면 전체로 · 지움은 CalendarTab 이 setScope(null)).
+    //   🔴 scope(저장소 범위)는 자기 일정에만 건다 — 남의 일정은 저장소 밖 층이라 늘 함께 그린다(받은 대로).
     return useMemo<CalendarData>(() => {
         const effScope = scope && base.stores.has(scope) ? scope : null;
-        return { events: eventsInScope(base.events, base.stores, effScope), stores: base.stores, storeList: base.storeList };
-    }, [base, scope]);
+        const own = eventsInScope(base.events, base.stores, effScope);
+        return { events: foreign.length ? [...own, ...foreign] : own, stores: base.stores, storeList: base.storeList };
+    }, [base, scope, foreign]);
 }

@@ -5,6 +5,23 @@
  * ⭐ 겹침 판정: 일정 [start,end) 가 범위 [from,to) 와 겹치면 start < to && end > from (반열린 구간).
  */
 import { isoOf } from '../../pane-ui-system';
+// 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-calendar)에서(값 아님, 구조 검사 ⑱·g).
+import type { CalendarItem } from '../contract-calendar/types';
+
+/**
+ * 남의 일정(다른 플러그인이 꽂은 출처 항목)임을 가리키는 꼬리표 — 자기 일정(노드)이면 없다(undefined).
+ *   달력은 이게 붙은 CalEvent 를 **편집 코드로 넘기지 않는다**(카드가 분기한다) · readOnly 면 읽기 전용 카드만.
+ */
+export interface ForeignRef {
+    /** 등록된 출처 id */
+    sourceId: string;
+    /** 출처 이름(카드·표에 보인다) */
+    sourceLabel: string;
+    /** editor 가 없어 읽기 전용인가 */
+    readOnly: boolean;
+    /** 눌렀을 때 출처의 editor 에 그대로 넘길 원본 항목 */
+    item: CalendarItem;
+}
 
 /** 저장소 한 줄 — 이름 + 팔레트 색인(저장소 순서) + 조상 사슬(범위 판정용). */
 export interface StoreInfo {
@@ -29,6 +46,8 @@ export interface CalEvent {
     memo: string;
     /** 속한 저장소의 팔레트 색인 */
     colorIdx: number;
+    /** 🔴 남의 일정이면 붙는다(자기 일정은 undefined). 붙으면 편집은 카드가 출처 editor 로만 보낸다. */
+    foreign?: ForeignRef;
 }
 
 /** 일정 data 의 생김새(노드에 저장되는 불투명 값). */

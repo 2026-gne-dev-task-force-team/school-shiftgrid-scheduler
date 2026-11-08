@@ -15,6 +15,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { activateAll, listPlugins } from '../pane-ui-system/plugin';
 import { setWorkspaceBridge } from '../pane-ui-system/plugin';
 import { PLUGINS } from './plugins';
+// 🔴 2026-11-08 달력 뷰 빌려주기 — calendar 가 provides.calendar 를 선언하면서 그 약속을 선언하는 contract-calendar 가
+//    있어야 막히지 않는다. ⚠️ app/plugins.ts 에 contractCalendarPlugin 을 **끝에** 더하는 것이 메인 몫(이 세션은 plugins.ts 를
+//    안 건드린다). 그 전까지 이 골든은 「붙였을 때」를 모델링한다 — 메인이 PLUGINS 끝에 더하면 아래 activateAll 을
+//    activateAll(PLUGINS) 로 되돌려도 결과가 같다(해소 순서 끝에 contract-calendar).
+import { contractCalendarPlugin } from '../plugins/contract-calendar';
+
+/** PLUGINS + 달력 약속(메인이 plugins.ts 끝에 더할 것 — 지금은 테스트용 목록으로 모델링). */
+const PLUGINS_WITH_CALENDAR_CONTRACT = [...PLUGINS, contractCalendarPlugin];
 
 // ── localStorage 스텁 (node 환경 · 깨끗한 프로파일) ──
 const mem = new Map<string, string>();
@@ -40,12 +48,14 @@ beforeEach(() => { setWorkspaceBridge(null); mem.clear(); });
 
 describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토링 전 고정)', () => {
     it('셋 다 활성되고(실패 0) 끄지 않았다', () => {
-        activateAll(PLUGINS);
+        activateAll(PLUGINS_WITH_CALENDAR_CONTRACT);
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
             'settings', 'contract-nodes', 'project-explorer', 'calendar',
             // 🔴 계정(2026-11-08 머지) — 약속 셋이 제공자(account·credential-local)보다 앞에 선다.
             'contract-identity', 'contract-credential', 'contract-permit', 'account', 'credential-local',
+            // 🔴 달력 약속(2026-11-08) — 해소 순서 끝에 붙는다(calendar 가 provides 로 쓰는 쪽이라 뒤여도 약속은 선다).
+            'contract-calendar',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
@@ -53,7 +63,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
     });
 
     it('onFirstRun 이 다리가 선 뒤 여는 순서: 탐색기 트리 → 달력 월 → 작은 달력', () => {
-        activateAll(PLUGINS);
+        activateAll(PLUGINS_WITH_CALENDAR_CONTRACT);
         const opened: string[] = [];
         setWorkspaceBridge(bridgeCollecting(opened));
         expect(opened).toEqual(['project-explorer.tree', 'calendar.month', 'calendar.mini']);

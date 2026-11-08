@@ -20,6 +20,7 @@ import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { initOptions, setScope } from './store';
+import { calendarModule } from './feed';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
     getMenuTarget, setDefaultStore, newEventInStore,
@@ -36,6 +37,9 @@ export const calendarPlugin = definePlugin({
         // 🔴 M0 — 일정은 노드다(달력은 저장을 모른다). nodes 인터페이스가 없으면 달력이 의미가 없으니 requires.
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
+        //    ⚠️ 이 약속을 선언하는 contract-calendar 가 PLUGINS 에 있어야 산다(없으면 「약속 없음」으로 막힌다) — 설치 줄은 app/plugins.ts.
+        provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
         contributes: {
             views: [
@@ -104,6 +108,8 @@ export const calendarPlugin = definePlugin({
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
     nodeTypes: calendarNodeTypeImpl,
+    // 🔴 calendar 약속을 채우는 모듈 — provides.calendar 와 짝(키 이름이 같아야 tsc 가 통과). 남의 일정 입구.
+    modules: { calendar: calendarModule },
 
     lifecycle: {
         /**
