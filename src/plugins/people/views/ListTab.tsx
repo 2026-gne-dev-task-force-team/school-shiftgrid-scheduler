@@ -8,7 +8,8 @@
  *    아직 그 약속이 없어 분기를 안 만든다(간이 표 하나) — table-slot.tsx 머리의 「요구서」가 그 세션에 건넬 꼴이다.
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { useActiveList } from '../store';
+import { Icon } from '../../../pane-ui-system';
+import { useActiveList, setActiveList } from '../store';
 import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
 import { SimpleTable, type TableColumn, type TableRow } from './table-slot';
 import { StartScreen } from './StartScreen';
@@ -34,9 +35,15 @@ export function ListTab() {
     // 보고 있는 명단이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
 
+    const btn = 'flex items-center gap-1 h-btn px-2 rounded border border-line text-[12px] text-muted hover:text-text hover:bg-text/[0.04] disabled:opacity-40 disabled:hover:bg-transparent';
+
     return (
         <div className="h-full flex flex-col overflow-auto select-none">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
+                <button type="button" className={btn} title="명단 목록" onClick={() => { setActiveList(null); }}>
+                    <Icon name="left" size={12} /> 목록
+                </button>
+                <Icon name="users" size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{list.name}</span>
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}명</span>
             </div>
