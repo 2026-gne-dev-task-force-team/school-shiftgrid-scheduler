@@ -26,7 +26,8 @@ export function PluginsPane({ host }: { host: PluginHost }) {
 
     const openDetail = (p: PluginStatus, startConfirming = false) => {
         if (chrome.peek) {
-            chrome.peek.show(<PluginDetail p={p} host={host} startConfirming={startConfirming} />, { wideMin: 480 });
+            // 🔴 key 로 리마운트를 강제한다 — 피크가 같은 컴포넌트 자리를 재사용하면 startConfirming 초기 상태가 안 먹는다.
+            chrome.peek.show(<PluginDetail key={`${p.id}:${startConfirming}`} p={p} host={host} startConfirming={startConfirming} />, { wideMin: 480 });
         } else {
             // 폴백 — 줄 안에서 펼침. 끄기 확인으로 왔으면 접지 말고 연다.
             setOpenId((cur) => (startConfirming ? p.id : cur === p.id ? null : p.id));
