@@ -480,14 +480,19 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
+            {/* 떠있는 + 막대는 스크롤러(overflow-auto) 밖에 둬야 표 가장자리에서 안 잘린다.
+                이 래퍼가 표 + 오른쪽·아래 16px 투명 띠를 함께 감싸 호버 범위로 쓴다 — 쉬는 상태엔 자국이 없다(투명 여백). */}
+            <div
+                className="relative w-max max-w-full pr-4 pb-4"
+                onMouseEnter={() => setHoverTable(true)}
+                onMouseLeave={leaveTable}
+            >
             <div
                 ref={core.containerRef}
                 tabIndex={0}
                 data-testid="table-grid"
                 onFocus={core.onFocus}
                 onBlur={core.onBlur}
-                onMouseEnter={() => setHoverTable(true)}
-                onMouseLeave={leaveTable}
                 className="relative overflow-auto outline-none max-h-full w-max max-w-full"
             >
                 <table className="border-collapse">
@@ -688,35 +693,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     </tbody>
                 </table>
 
-                {/* 오른쪽 가장자리 + 막대(열 추가) */}
-                {hasAxisEdit && columns.length > 0 && (
-                    <button
-                        type="button"
-                        data-testid="add-col"
-                        aria-label={lb.addCol}
-                        onClick={addColAt.bind(null, columns.length)}
-                        title={lb.addCol}
-                        className={`absolute top-0 bottom-0 right-0 w-4 flex items-center justify-center rounded transition-opacity
-                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
-                    >
-                        <span className="text-[12px] leading-none">＋</span>
-                    </button>
-                )}
-                {/* 아래 가장자리 + 막대(행 추가) */}
-                {hasRows && (
-                    <button
-                        type="button"
-                        data-testid="add-row"
-                        aria-label={lb.addRow}
-                        onClick={addRowAtEnd}
-                        title={lb.addRow}
-                        className={`absolute left-5 right-0 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
-                            ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
-                    >
-                        <span className="text-[12px] leading-none">＋</span>
-                    </button>
-                )}
-
                 {/* 선택 테두리 — 고른 범위를 2px 파란 상자 한 겹으로(칸 안쪽 옅은 바탕은 칸이 칠한다). */}
                 {selRect && columns.length > 0 && rows.length > 0 && (
                     <div
@@ -725,6 +701,36 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     />
                 )}
 
+            </div>
+
+            {/* 오른쪽 가장자리 + 막대(열 추가) — 스크롤러 밖·표 오른쪽 투명 띠에 떠서 마지막 열을 안 가린다(노션식). */}
+            {hasAxisEdit && columns.length > 0 && (
+                <button
+                    type="button"
+                    data-testid="add-col"
+                    aria-label={lb.addCol}
+                    onClick={addColAt.bind(null, columns.length)}
+                    title={lb.addCol}
+                    className={`absolute top-0 bottom-4 right-0 w-4 flex items-center justify-center rounded transition-opacity
+                        ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
+                >
+                    <span className="text-[12px] leading-none">＋</span>
+                </button>
+            )}
+            {/* 아래 가장자리 + 막대(행 추가) — 스크롤러 밖·표 아래 투명 띠에 떠서 마지막 행을 안 가린다. */}
+            {hasRows && (
+                <button
+                    type="button"
+                    data-testid="add-row"
+                    aria-label={lb.addRow}
+                    onClick={addRowAtEnd}
+                    title={lb.addRow}
+                    className={`absolute left-5 right-4 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
+                        ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
+                >
+                    <span className="text-[12px] leading-none">＋</span>
+                </button>
+            )}
             </div>
 
             {/* 떠있는 합치기 알약 — 스크롤러 바깥(래퍼 기준)에 둬 표 윗줄에서도 안 잘린다. 그림자 있는 작은 떠있는 메뉴. */}
