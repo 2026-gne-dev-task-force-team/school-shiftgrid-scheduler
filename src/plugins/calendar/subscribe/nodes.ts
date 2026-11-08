@@ -43,13 +43,14 @@ export function applyLink(id: string, kind: string, value: string, fetcher: (url
     void refresh(id, fetcher);
 }
 
-/** 구독 노드 우클릭 메뉴 — 새로고침·파일로 갱신·링크 바꾸기·켜기/끄기. 지우기는 노드 시스템 휴지통 그대로(탐색기가 붙인다). */
+/** 구독 노드 우클릭 메뉴 — 새로고침·파일로 갱신·내보내기·링크 바꾸기·켜기/끄기. 지우기는 노드 시스템 휴지통 그대로(탐색기가 붙인다). */
 function subMenu(id: string): MenuEntry[] {
     setMenuTarget(id);
     const enabled = getSubById(id)?.data.enabled ?? true;
     return [
         { label: '새로고침', icon: 'redo', commandId: 'calendar-subscribe.refresh' },
         { label: '파일로 갱신(.ics)', icon: 'upload', commandId: 'calendar-subscribe.from-file' },
+        { label: '내보내기(.ics)', icon: 'download', commandId: 'calendar-subscribe.export' },
         { label: '링크 바꾸기', icon: 'edit', commandId: 'calendar-subscribe.change-link' },
         { label: enabled ? '끄기' : '켜기', icon: enabled ? 'eyeOff' : 'eye', commandId: 'calendar-subscribe.toggle' },
     ];

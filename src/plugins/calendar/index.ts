@@ -23,6 +23,7 @@ import { CalendarTab } from './views/CalendarTab';
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
 import { parseIcs, writeIcs } from './ics';
+import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
@@ -78,6 +79,7 @@ export const calendarPlugin = definePlugin({
                 // 구독 노드 우클릭 메뉴가 부르는 명령 넷(대상 노드는 subscribe/nodes 의 「메뉴가 가리킨 구독」에서 읽는다).
                 { id: 'calendar-subscribe.refresh', title: '구독 새로고침', icon: 'redo' },
                 { id: 'calendar-subscribe.from-file', title: '구독 파일로 갱신', icon: 'upload' },
+                { id: 'calendar-subscribe.export', title: '구독 내보내기', icon: 'download' },
                 { id: 'calendar-subscribe.change-link', title: '구독 링크 바꾸기', icon: 'edit' },
                 { id: 'calendar-subscribe.toggle', title: '구독 켜기/끄기', icon: 'eye' },
             ],
@@ -136,6 +138,14 @@ export const calendarPlugin = definePlugin({
             const id = getSubMenuTarget();
             if (!id) return;
             pickIcsText((text) => updateSub(id, { lastIcs: text, lastFetched: Date.now(), lastError: undefined }));
+        },
+        // 내보내기 — 그 구독이 받아 둔 일정(lastIcs)을 우리 작성기 꼴 .ics 로 내려받는다(파일 이름은 노드 이름).
+        'calendar-subscribe.export': () => {
+            const id = getSubMenuTarget();
+            const sub = id ? getSubById(id) : undefined;
+            if (!sub) return;
+            const items = parseIcs(sub.data.lastIcs ?? '');
+            downloadText(`${sub.name || '구독'}.ics`, writeIcs(items.map(itemToIcs)));
         },
         // 링크 바꾸기 — 탐색기 인라인 입력(현재 링크를 미리 채운다) · 커밋은 subscribe/nodes.onInput(kind:'link')으로.
         'calendar-subscribe.change-link': () => {

@@ -110,22 +110,23 @@ describe('받기 — applyLink 가 lastIcs 를 채운다(주입 fetcher)', () =>
     });
 });
 
-describe('메뉴 — 새로고침·파일로 갱신·링크 바꾸기·켜기/끄기', () => {
-    it('항목 넷을 commandId 로 낸다', () => {
+describe('메뉴 — 새로고침·파일로 갱신·내보내기·링크 바꾸기·켜기/끄기', () => {
+    it('항목 다섯을 commandId 로 낸다', () => {
         const id = addSub('공휴일', 'https://x/y.ics');
         const entries = getType(SUB_TYPE)!.menu!(id);
         expect(entries.map((e) => (e as { commandId?: string }).commandId)).toEqual([
             'calendar-subscribe.refresh',
             'calendar-subscribe.from-file',
+            'calendar-subscribe.export',
             'calendar-subscribe.change-link',
             'calendar-subscribe.toggle',
         ]);
     });
     it('토글 라벨은 켜짐 여부를 비춘다(끄기 ↔ 켜기)', () => {
         const id = addSub('공휴일', 'https://x/y.ics');
-        expect((getType(SUB_TYPE)!.menu!(id)[3] as { label: string }).label).toBe('끄기');
+        expect((getType(SUB_TYPE)!.menu!(id)[4] as { label: string }).label).toBe('끄기');
         updateSub(id, { enabled: false });
-        expect((getType(SUB_TYPE)!.menu!(id)[3] as { label: string }).label).toBe('켜기');
+        expect((getType(SUB_TYPE)!.menu!(id)[4] as { label: string }).label).toBe('켜기');
     });
 });
 
