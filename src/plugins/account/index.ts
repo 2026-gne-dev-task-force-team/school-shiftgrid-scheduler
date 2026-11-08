@@ -19,6 +19,7 @@ import { UsersPane } from './panes/UsersPane';
 import { RolesPane } from './panes/RolesPane';
 import { PolicyPane } from './panes/PolicyPane';
 import { ProjectPasswordPane } from './panes/ProjectPasswordPane';
+import { AccountStatus } from './panes/AccountStatus';
 
 /** 호출자별 팩토리로 감싼다 — host.modules.use 가 (소비자, scope track) 으로 부른다. 소비자 구독이 (소비자, 약속) scope 에 모인다. */
 function perCaller<T>(make: (track?: (d: Disposable) => Disposable) => T): PerCallerApi<T> {
@@ -57,6 +58,8 @@ export const accountPlugin = definePlugin({
                     { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'pin', pane: 'ProjectPassword' },
                 ],
             },
+            // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기(AccountStatus).
+            statusBar: [{ id: 'account.whoami', side: 'right', render: 'AccountStatus' }],
         },
     },
 
@@ -66,6 +69,11 @@ export const accountPlugin = definePlugin({
         Roles: () => createElement(RolesPane),
         Policy: () => createElement(PolicyPane),
         ProjectPassword: () => createElement(ProjectPasswordPane),
+    },
+
+    // ── 상태바 「지금 누구」 render(이름으로 가리킴) — 호스트가 첫 인자로 host 를 꽂는다 ──
+    renders: {
+        AccountStatus: (host: PluginHost) => createElement(AccountStatus, { host }),
     },
 
     // ── 모듈(provides 와 짝) — 누구·판정을 호출자별로 내준다 ──
