@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import { readFileSync } from 'node:fs'
+import { basename } from 'node:path'
+import { fileURLToPath } from 'node:url'
 // 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 import react from '@vitejs/plugin-react'
@@ -14,6 +16,10 @@ const https = process.env.VITE_HTTPS === '1'
 // 웹(GitHub Pages) 빌드 설정. 일렉트론 판은 2026-10-31 걷어냈다 — 이제 이 설정 하나뿐이다.
 export default defineConfig({
   define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
+  // 🔴 워크트리마다 의존성 캐시를 따로 둔다. 워크트리들이 node_modules 를 심링크로 같이 쓰면
+  //    기본 캐시(node_modules/.vite)도 하나라서, 한 서버가 재최적화할 때 다른 서버의 deps 를
+  //    지워 「504 Outdated Optimize Dep」이 난다 (2026-11-08 실측). 폴더 이름으로 칸을 가른다.
+  cacheDir: `node_modules/.vite/${basename(fileURLToPath(new URL('.', import.meta.url)))}`,
   // GitHub Pages는 .../<repo>/ 하위 경로로 서빙되므로 상대 경로로 자산을 참조.
   // 레포 이름에 종속되지 않아 안전 (단일 페이지 앱 기준).
   base: './',
