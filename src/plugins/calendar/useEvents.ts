@@ -33,6 +33,8 @@ export function useCalendarData(): CalendarData {
     const scope = useScope();
     // 🔴 남의 일정(출처) — register·dispose·출처 onChange 때만 버전이 바뀌고, 그때만 다시 편다(scope·노드엔 안 바뀐다).
     const feedsVer = useSyncExternalStore(subscribeFeeds, getFeedsVersion, getFeedsVersion);
+    // 🔴 feedsVer 는 「다시 펴라」는 신호다 — 레지스트리(listFeedSources)는 반응형이 아니라 버전으로 캐시를 깬다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const foreign = useMemo(() => mapFeedEvents(listFeedSources(), FEED_FROM, FEED_TO), [feedsVer]);
 
     // 파싱(노드 → CalEvent)·저장소 목록은 노드가 바뀔 때만 다시 — 범위(scope)만 바뀌면 재파싱 안 한다.
