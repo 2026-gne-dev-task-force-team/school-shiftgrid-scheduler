@@ -5,9 +5,12 @@
  */
 import type { CalendarItem, CalendarSource } from '../calendar/contracts/calendar';
 
-/** 구독 하나의 저장값(노드 data) — 프로젝트 데이터와 같이 다닌다(노드). lastIcs 덕에 오프라인에서도 보인다. */
+/**
+ * 구독 하나의 저장값(노드 data) — 프로젝트 데이터와 같이 다닌다(노드). lastIcs 덕에 오프라인에서도 보인다.
+ *   🔴 이름(출처 라벨)은 **노드 이름**이 쥔다(data 가 아니라) — 탐색기 이름바꾸기가 그대로 라벨이 되게(쥔님 2026-11-08
+ *      "구독도 노드로"). 그래서 여기엔 name 이 없다(옛 record 구독의 data.name 은 남아 있어도 무해 — 그냥 안 읽는다).
+ */
 export interface SubData {
-    name: string;
     url: string;
     /** 뜻색 토큰 이름(accent·ok·warn·bad·accenth) — 없으면 달력이 출처 순서 색. */
     color?: string;
@@ -19,8 +22,8 @@ export interface SubData {
     lastError?: string;
 }
 
-/** 구독 노드 하나(얇은 뷰). */
-export interface SubNode { id: string; data: SubData }
+/** 구독 노드 하나(얇은 뷰) — name 은 노드 이름(= 출처 라벨). */
+export interface SubNode { id: string; name: string; data: SubData }
 
 /** 달력 팔레트 색 토큰 이름 — 달력 palette.ts 와 같은 순서(값이 아니라 이름만 공유). */
 export const COLOR_TOKENS = ['accent', 'ok', 'warn', 'bad', 'accenth'] as const;
@@ -64,7 +67,7 @@ export function buildSources(
     const out: { id: string; source: CalendarSource }[] = [];
     for (const s of subs) {
         if (!s.data.enabled || !s.data.lastIcs) continue;
-        out.push({ id: s.id, source: buildSource(s.id, s.data.name || '구독', s.data.color, parseIcs(s.data.lastIcs)) });
+        out.push({ id: s.id, source: buildSource(s.id, s.name || '구독', s.data.color, parseIcs(s.data.lastIcs)) });
     }
     return out;
 }

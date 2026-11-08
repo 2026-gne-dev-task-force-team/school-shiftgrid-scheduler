@@ -48,26 +48,33 @@ export function getSubsApi(): NodesApi | null { return api; }
 export function subscribeSubs(fn: () => void): () => void { subs.add(fn); return () => { subs.delete(fn); }; }
 export function getSubsSnapshot(): PublicNode[] { return subNodes; }
 
-/** 얇은 뷰 — {id, data}. */
+/** 얇은 뷰 — {id, name, data}. name 은 노드 이름(= 출처 라벨). */
 export function listSubs(): SubNode[] {
-    return subNodes.map((n) => ({ id: n.id, data: (n.data ?? {}) as SubData }));
+    return subNodes.map((n) => ({ id: n.id, name: n.name, data: (n.data ?? {}) as SubData }));
 }
 
-/** 링크로 구독 하나 추가 — 루트 밑 record 노드로. 돌려주는 id 가 빈 문자열이면 못 만든 것. */
+/** 구독 하나(얇은 뷰) — 없으면 undefined. */
+export function getSubById(id: string): SubNode | undefined {
+    const n = api?.get(id);
+    return n ? { id: n.id, name: n.name, data: (n.data ?? {}) as SubData } : undefined;
+}
+
+/** 링크로 구독 하나 추가 — 루트 밑 보이는 노드로. 돌려주는 id 가 빈 문자열이면 못 만든 것(이름 = 출처 라벨). */
 export function addSub(name: string, url: string, color?: string): string {
     if (!api) return '';
-    const data: SubData = { name, url, color: color ?? defaultColor(subNodes.length), enabled: true };
+    const data: SubData = { url, color: color ?? defaultColor(subNodes.length), enabled: true };
     return api.create(api.roots.main, { type: SUB_TYPE, name: name || '구독', data });
 }
 
-/** 구독 data 일부를 고친다(켜기/끄기·색·이름·lastIcs·오류 등). */
+/** 구독 data 일부를 고친다(켜기/끄기·색·링크·lastIcs·오류 등). 🔴 이름은 여기서 안 건드린다(노드 rename 이 쥔다). */
 export function updateSub(id: string, patch: Partial<SubData>): void {
     if (!api) return;
     const cur = (api.get(id)?.data ?? {}) as SubData;
-    const next = { ...cur, ...patch };
-    api.setData(id, next);
-    if (patch.name !== undefined) api.rename(id, patch.name || '구독');
+    api.setData(id, { ...cur, ...patch });
 }
+
+/** 구독 이름(= 출처 라벨)을 바꾼다 — 노드 rename. */
+export function renameSub(id: string, name: string): void { api?.rename(id, name || '구독'); }
 
 /** 구독을 휴지통으로. */
 export function removeSub(id: string): void { api?.remove(id); }
