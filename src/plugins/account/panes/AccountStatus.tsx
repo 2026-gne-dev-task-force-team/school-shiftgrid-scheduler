@@ -8,7 +8,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Button } from '../../../pane-ui-system';
-import { getCurrent, listUsers, login, loginMaster, logout } from '../core';
+import { getCurrent, listUsers, login, loginMaster, logout, openAccount } from '../core';
 import { useAccountVersion } from './useAccount';
 
 type View = 'menu' | 'master' | 'users';
@@ -40,7 +40,11 @@ export function AccountStatus({ host }: { host: PluginHost }) {
         await login(id);         // 정책이 증명을 요구하거나 마스터 전환이면 증명 입력창이 뜬다
     };
     const doLogout = () => { logout(); close(); };
-    const openAccountSettings = () => { host.workspace.open('settings.main'); close(); };
+    const openAccountNode = () => {
+        const ok = openAccount(host);
+        if (ok) close();
+        else setMsg('아직 계정이 없습니다 — 탐색기에서 「새로 만들기 ▸ 계정」으로 만드세요.');
+    };
 
     const users = open && view === 'users' ? listUsers() : [];
 
@@ -77,7 +81,8 @@ export function AccountStatus({ host }: { host: PluginHost }) {
                         {view === 'menu' && isMaster && (
                             <>
                                 <MenuBtn onClick={() => setView('users')}>다른 사용자로</MenuBtn>
-                                <MenuBtn onClick={openAccountSettings}>설정에서 계정 관리</MenuBtn>
+                                <MenuBtn onClick={openAccountNode}>계정 열기</MenuBtn>
+                                {msg && <p className="text-[11px] text-muted px-1">{msg}</p>}
                             </>
                         )}
 

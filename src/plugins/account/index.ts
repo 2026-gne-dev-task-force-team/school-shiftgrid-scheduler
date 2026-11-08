@@ -14,13 +14,11 @@ import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
-import { accountNodeTypes } from './nodes';
+import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl } from './nodes';
 import * as core from './core';
 // 🔴 증명(credential)은 account 꾸러미 안 내부 모듈 — 별도 플러그인이 아니다(2026-11-08 「플러그인은 꾸러미다」).
 import { credentialModule, credentialLocalNodeTypes, initCredentialLocal } from './credential';
-import { UsersPane } from './panes/UsersPane';
-import { RolesPane } from './panes/RolesPane';
-import { PolicyPane } from './panes/PolicyPane';
+import { AccountEditor } from './panes/AccountEditor';
 import { ProjectPasswordPane } from './panes/ProjectPasswordPane';
 import { AccountStatus } from './panes/AccountStatus';
 
@@ -57,30 +55,53 @@ export const accountPlugin = definePlugin({
                 { name: 'credential', version: '0.1.0', label: '비밀번호 확인', desc: '비밀번호가 맞는지 확인' },
                 { name: 'permit', version: '0.1.0', label: '권한', desc: '무엇을 할 수 있나' },
             ],
-            // 계정 데이터(사용자·역할·정책·암호 해시) + 증명 비밀 해시 — 전부 record 노드라 탐색기에 안 보인다.
-            nodeTypes: [...accountNodeTypes, ...credentialLocalNodeTypes],
-            // 정책 편집 화면을 설정에 꽂는다 — 섹션 account · 항목 넷(id 는 전역 평면이라 스스로 접두).
+            // 🔴 ⭐ 권한의 첫 본보기 — account 가 자기 노드 조작을 가릴 권한 낱말을 선언한다(보기·만들기·고치기·지우기 각각).
+            //    호스트는 모으기만(장부 표시) · 누가 가지나는 사람이 「정책」에서 조립한다(바닥 정책 0 · ⛔ 역할 기본값 없음).
+            permissions: [
+                { id: 'account.users.view', title: '사용자 보기' },
+                { id: 'account.users.create', title: '사용자 만들기' },
+                { id: 'account.users.edit', title: '사용자 고치기' },
+                { id: 'account.users.delete', title: '사용자 지우기' },
+                { id: 'account.roles.view', title: '역할 보기' },
+                { id: 'account.roles.create', title: '역할 만들기' },
+                { id: 'account.roles.edit', title: '역할 고치기' },
+                { id: 'account.roles.delete', title: '역할 지우기' },
+                { id: 'account.policy.view', title: '정책 보기' },
+                { id: 'account.policy.edit', title: '정책 고치기' },
+            ],
+            // 🔴 계정은 보이는 노드다 — 루트(싱글턴)·사용자 폴더·역할 폴더·사용자·역할·정책. 숨김 둘(프로젝트 암호·증명 비밀)은 record.
+            nodeTypes: [...accountNodeTypes, ...accountSecretNodeTypes, ...credentialLocalNodeTypes],
+            // 노드를 누르면 열리는 편집 탭(가운데) — 지금 열린 노드의 종류에 맞는 편집기를 그린다(page-editor 와 같은 결).
+            views: [{
+                id: 'editor', title: '계정', icon: 'gear', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Editor',
+            }],
+            // 프로젝트 암호만 설정에 남긴다(마스터용) — 사용자·역할·정책은 노드로 옮겨 설정에서 걷었다.
             settings: {
                 sections: [{ id: 'account', title: '계정', icon: 'gear' }],
                 items: [
-                    { section: 'account', id: 'account.users', title: '사용자', icon: 'book', pane: 'Users' },
-                    { section: 'account', id: 'account.roles', title: '역할', icon: 'layers', pane: 'Roles' },
-                    { section: 'account', id: 'account.policy', title: '정책', icon: 'check', pane: 'Policy' },
                     { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'pin', pane: 'ProjectPassword' },
                 ],
             },
-            // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기(AccountStatus).
+            // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기·계정 열기(AccountStatus).
             statusBar: [{ id: 'account.whoami', side: 'right', render: 'AccountStatus' }],
         },
     },
 
-    // ── 설정 패널 구현(이름으로 가리킴) ──
+    // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
+    components: {
+        Editor: () => createElement(AccountEditor),
+    },
+
+    // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──
     panes: {
-        Users: () => createElement(UsersPane),
-        Roles: () => createElement(RolesPane),
-        Policy: () => createElement(PolicyPane),
         ProjectPassword: () => createElement(ProjectPasswordPane),
     },
+
+    // ── 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이름이 가리킨다(open·can·canCreate·confirmDelete·hidden) ──
+    nodeTypes: accountNodeTypeImpl,
 
     // ── 상태바 「지금 누구」 render(이름으로 가리킴) — 호스트가 첫 인자로 host 를 꽂는다 ──
     renders: {
