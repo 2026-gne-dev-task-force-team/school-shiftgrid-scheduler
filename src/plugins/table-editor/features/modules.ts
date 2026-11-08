@@ -37,6 +37,53 @@ export const historyFeature: TableFeature = {
     install: (ctx) => { ctx.capabilities.enable('history'); },
 };
 
+// ── M2 ────────────────────────────────────────────────────────────────────
+
+/** 열 폭 끌기 + 더블클릭 자동 맞춤을 켠다(머리 오른쪽 경계). */
+export const colResizeFeature: TableFeature = {
+    id: 'col-resize', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('col-resize'); },
+};
+
+/** 머리(열 머리·행 머리)를 **같은 스크롤러 안에서** sticky 로 고정 — 스크롤바 폭 단차 0(달력 교훈). */
+export const stickyHeadersFeature: TableFeature = {
+    id: 'sticky-headers', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('sticky-headers'); },
+};
+
+/** 행 높이 ∝ weight · 행 머리 아래 경계 끌기 → axis.rowWeight 트랜잭션. 뷰 순서를 흔드는 sort·filter 와는 못 쓴다. */
+export const rowWeightFeature: TableFeature = {
+    id: 'row-weight', version: '0.1.0',
+    conflicts: ['sort', 'filter'],
+    install: (ctx) => { ctx.capabilities.enable('row-weight'); },
+};
+
+/** 행·열을 표에서 바로 늘리고 줄인다(머리 우클릭 넣기/빼기 · 이름 고치기). 행 조작이 바탕이라 rows 가 있어야 한다. */
+export const axisEditFeature: TableFeature = {
+    id: 'axis-edit', version: '0.1.0',
+    needs: ['rows'],
+    install: (ctx) => { ctx.capabilities.enable('axis-edit'); },
+};
+
+/** 열 타입별 편집기 — number·bool(체크)·select·multiselect. 열 정의의 type 을 Table 이 읽는다. */
+export const colTypesFeature: TableFeature = {
+    id: 'col-types', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('col-types'); },
+};
+
+/** 칸 검증 표시 — 손님의 validate(rowId,key,value) 를 읽어 빨강/노랑 테두리·툴팁(저장은 안 막는다). */
+export const validateFeature: TableFeature = {
+    id: 'validate', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('validate'); },
+};
+
+/** 칸 병합 — 범위를 골라 한 칸으로 덮는다. 뷰 순서/줄 수를 흔드는 sort·filter·virtual 과는 못 쓴다. */
+export const mergeFeature: TableFeature = {
+    id: 'merge', version: '0.1.0',
+    conflicts: ['sort', 'filter', 'virtual'],
+    install: (ctx) => { ctx.capabilities.enable('merge'); },
+};
+
 /** 내장 모듈 표 — 조립기가 문자열 id 를 이걸로 푼다. */
 export const BUILTIN: Record<string, TableFeature> = {
     [rowsFeature.id]: rowsFeature,
@@ -44,6 +91,13 @@ export const BUILTIN: Record<string, TableFeature> = {
     [pastePolicyAppend.id]: pastePolicyAppend,
     [pastePolicyClip.id]: pastePolicyClip,
     [historyFeature.id]: historyFeature,
+    [colResizeFeature.id]: colResizeFeature,
+    [stickyHeadersFeature.id]: stickyHeadersFeature,
+    [rowWeightFeature.id]: rowWeightFeature,
+    [axisEditFeature.id]: axisEditFeature,
+    [colTypesFeature.id]: colTypesFeature,
+    [validateFeature.id]: validateFeature,
+    [mergeFeature.id]: mergeFeature,
 };
 
 /** 기본 묶음 — 아무것도 안 적으면 이게 끼워진다(「설정 몰라도 바로」). */

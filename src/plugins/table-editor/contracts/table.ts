@@ -35,6 +35,16 @@ export interface CellPos { r: number; c: number }
 /** 한 칸 글자 변경 — 뷰가 아니라 데이터(rowId·key) 기준이라 정렬·필터가 섞여도 안전하다. */
 export interface CellChange { rowId: string; key: string; value: string }
 
+/**
+ * 🔴 병합 영역(M2 merge) — 앵커 칸(rowId·key)에서 아래로 rowSpan 행·오른쪽으로 colSpan 열을 한 칸으로 덮는다.
+ *   뷰(r,c)가 아니라 **데이터(rowId·key)** 기준이라 무관한 행이 움직여도 앵커가 안 흔들린다.
+ *   ⚠️ 그래도 span 은 「앵커 아래 뷰 N행」이라, 뷰 순서를 바꾸는 sort·filter·virtual 과는 conflicts 다.
+ */
+export interface MergeRegion { rowId: string; key: string; rowSpan: number; colSpan: number }
+
+/** 칸 검증 결과(M2 validate) — 손님(③)이 돌려준다. 저장을 막지는 않는다(빨강/노랑 테두리 + 툴팁). */
+export interface CellValidation { level: 'bad' | 'warn'; message?: string }
+
 /** 커밋을 일으킨 동작 — 손님이 분기에 쓸 수 있게 싣는다. */
 export type TableTxSource = 'edit' | 'paste' | 'fill' | 'clear' | 'menu' | 'drag';
 
@@ -45,7 +55,8 @@ export type TableTxSource = 'edit' | 'paste' | 'fill' | 'clear' | 'menu' | 'drag
 export interface TableTx {
     cells: CellChange[];
     rows?: {
-        add?: { at: number; count: number; cells?: Record<string, string>[] }[];
+        /** ids: 편집기가 미리 매긴 새 행 id(내장 되돌리기가 add↔remove 를 짝 맞추려면 필요). 소유자는 있으면 그대로 쓴다. */
+        add?: { at: number; count: number; cells?: Record<string, string>[]; ids?: string[] }[];
         remove?: string[];
         move?: { id: string; to: number }[];
     };
@@ -53,9 +64,13 @@ export interface TableTx {
         add?: { at: number; key: string; title: string }[];
         remove?: string[];
         resize?: { key: string; width: number }[];
+        /** 머리 이름 고치기(M2 axis-edit). */
+        rename?: { key: string; title: string }[];
     };
     /** 경계 끌기(M2 row-weight) — 밀지 말지는 소유자가 정한다. */
     axis?: { rowWeight?: { id: string; delta: number }[] };
+    /** 칸 병합·해제(M2 merge). set 은 앵커를 더하거나 덮고, clear 는 앵커를 푼다. */
+    merge?: { set?: MergeRegion[]; clear?: { rowId: string; key: string }[] };
     source: TableTxSource;
 }
 
@@ -72,6 +87,7 @@ export interface HeaderMenuEntry { label: string; commandId?: string; onSelect?:
 /** 글자 바꿀 수 있는 자리 — 손님이 labels 로 덮는다. */
 export interface TableLabels {
     addRow: string;
+    addCol: string;
     emptyHint: string;
     rowMenuTitle: string;
     insertAbove: string;
@@ -79,6 +95,12 @@ export interface TableLabels {
     deleteRow: string;
     moveUp: string;
     moveDown: string;
+    insertColLeft: string;
+    insertColRight: string;
+    deleteCol: string;
+    renameCol: string;
+    mergeCells: string;
+    unmergeCells: string;
 }
 
 /** 엔진 상태 읽기 — 기능 모듈·호스트가 본다. */
@@ -94,8 +116,13 @@ export interface TableState {
 /** 붙여넣기가 표보다 클 때 — 행을 더한다(append) / 잘라낸다(clip). */
 export type PasteOverflow = 'append' | 'clip';
 
-/** 편집기가 켠 능력 — 손님/다른 모듈이 읽을 수 있게 기능 모듈이 켠다. */
-export type TableCapability = 'rows' | 'fill' | 'history';
+/**
+ * 편집기가 켠 능력 — 손님/다른 모듈이 읽을 수 있게 기능 모듈이 켠다. Table 이 이걸 보고 무엇을 그릴지 정한다.
+ *   M1: rows·fill·history. M2: col-resize·sticky-headers·row-weight·axis-edit·col-types·validate·merge.
+ */
+export type TableCapability =
+    | 'rows' | 'fill' | 'history'
+    | 'col-resize' | 'sticky-headers' | 'row-weight' | 'axis-edit' | 'col-types' | 'validate' | 'merge';
 
 /**
  * 🔴 기능이 엔진에 손대는 창구 전부 — 이 밖은 없다(0.1). cell/header 렌더 주입·clipboard 파서는 M2 에서 넓힌다.
@@ -135,10 +162,14 @@ export interface TableProps {
     features?: (string | TableFeature)[];
     onUndo?(): void;
     onRedo?(): void;
-    /** ③ 글자 해석(M2) — 지금은 받아 두기만 한다. */
+    /** ③ 글자 해석(M2 decorate) — 손님이 칸 글자를 읽어 tone/badge/title 로 꾸민다. */
     decorate?(rowId: string, key: string, value: string): CellDecoration | undefined;
-    /** ③ 머리 메뉴(M2). */
+    /** ③ 칸 검증(M2 validate) — validate 기능이 켜졌을 때만 쓴다. 손님이 틀린 칸을 알려 준다(저장은 안 막는다). */
+    validate?(rowId: string, key: string, value: string): CellValidation | undefined;
+    /** ③ 머리 메뉴(M2 headerMenu) — 손님이 행·열 머리 우클릭 메뉴에 줄을 더한다. */
     headerMenu?(kind: 'row' | 'col', id: string): HeaderMenuEntry[];
+    /** 🔴 병합 영역(M2 merge) — 소유자가 쥔다(controlled). 편집기는 onCommit 의 tx.merge 로 바꿔 달라고만 한다. */
+    merges?: MergeRegion[];
     labels?: Partial<TableLabels>;
     emptyHint?: string;
     className?: string;
