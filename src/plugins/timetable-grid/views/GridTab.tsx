@@ -9,8 +9,9 @@ import { Icon } from '../../../pane-ui-system';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,
-    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi,
+    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash,
 } from '../nodes';
+import { StartScreen } from './StartScreen';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells,
     addRow, removeRow, addColumn, removeColumn, renameRow, renameColumn, setRowTime, setCellText,
@@ -36,13 +37,8 @@ export function GridTab() {
         [activeId, kind, sheetNodes, specialNodes],
     );
 
-    if (!activeId || !kind || !data) {
-        return (
-            <div className="h-full flex items-center justify-center p-6 text-center text-muted select-none">
-                왼쪽 탐색기에서 시간표를 열면 여기에 표가 뜬다. (새로 만들면 월~금 × 6행 빈 표)
-            </div>
-        );
-    }
+    // 보고 있는 시간표가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
+    if (!activeId || !kind || !data || inTrash(activeId)) return <StartScreen />;
 
     const nCols = columnCount(data.columns);
     const nRows = rowCount(data);
@@ -77,6 +73,9 @@ export function GridTab() {
         <div className="h-full flex flex-col overflow-hidden select-none">
             {/* 머리줄 — 이름 + 종류 */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
+                <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
+                    <Icon name="left" size={12} /> 목록
+                </button>
                 <Icon name={kind === 'special' ? 'sparkles' : 'table'} size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{node?.name ?? '시간표'}</span>
                 {kind === 'special' && <span className="text-[11px] text-accent">특별 시간표</span>}

@@ -104,6 +104,26 @@ export function subscribeNodes(fn: () => void): () => void { subs.add(fn); retur
 export function getSheetNodes(): PublicNode[] { return sheetNodes; }
 export function getSpecialNodes(): PublicNode[] { return specialNodes; }
 
+/**
+ * 시작 화면 「새 시간표」 — 탐색기 맨 위(main 루트)에 빈 시간표 한 장을 만든다. 이름이 겹치면 「시간표 2」…
+ *   데이터는 비워 둔다(dataOf 가 기본 월~금 × 6행을 깐다 — 탐색기 「새로 만들기」와 같은 결). 새 id 를 돌려준다.
+ */
+export function createSheet(): string | null {
+    if (!api) return null;
+    const taken = new Set(sheetNodes.map((n) => n.name));
+    let name = '시간표';
+    for (let i = 2; taken.has(name); i++) name = `시간표 ${i}`;
+    return api.create(api.roots.main, { type: SHEET_TYPE, name });
+}
+
+/** 노드가 든 폴더 이름(맨 위면 null) — 시작 화면 목록의 꼬리표. */
+export function parentNameOf(id: string): string | null {
+    if (!api) return null;
+    const p = api.parent(id);
+    if (!p || p === api.roots.main) return null;
+    return api.get(p)?.name ?? null;
+}
+
 /** 조상에 휴지통이 있나(달력·명단과 같은 규칙). */
 export function inTrash(id: string): boolean {
     if (!api) return false;

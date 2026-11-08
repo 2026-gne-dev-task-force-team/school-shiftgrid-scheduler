@@ -49,7 +49,7 @@ export const timetableGridPlugin = definePlugin({
         Grid: () => createElement(GridTab),
     },
     commands: {
-        // 리본 「시간표 열기」 — 보고 있는 시간표는 그대로 두고 화면만 연다(없으면 안내가 뜬다).
+        // 리본 「시간표 열기」 — 보고 있는 시간표는 그대로 두고 화면만 연다(없으면 시작 화면 — 새 시간표·목록).
         'timetable-grid.open': (host: PluginHost) => { host.workspace.open(GRID_ID, { where: 'center' }); },
         // 시간표/특별 우클릭 「열기」 — 대상은 nodes.ts 의 「메뉴가 가리킨 노드」(open 이 setActive + 화면 열기).
         'timetable-grid.openSheet': () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },
