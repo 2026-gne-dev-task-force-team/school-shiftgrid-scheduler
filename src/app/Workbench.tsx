@@ -23,7 +23,7 @@ import {
     type MovePos,
 } from '../pane-ui-system';
 import {
-    setWorkspaceBridge, makeHost, type WorkspaceOpenOptions, type CommandContext, type Disposable,
+    setWorkspaceBridge, makeHost, resetFirstRunFlags, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
     useStorageErrors, useDurability,
     type WorkspaceEvent, type PluginHost, type IconName,
@@ -71,7 +71,15 @@ export function Workbench() {
 
     // 패널 트리 — 기기별로 보관된 배치를 읽어 온다. 🔴 첫 실행(저장값 없음)이면 빈 창틀이다 —
     //             ⛔ 아무 뷰도 자동으로 열지 않는다(쥔님 2026-11-01 *"그냥 다 비워줘"*). loadWorkspace 가 빈 배치를 준다.
-    const [ws, setWs] = useState<Workspace>(() => pruneOrphanLeaves(loadWorkspace()));
+    //             🔴 단, 저장된 배치가 깨졌거나 고아 뷰 정리(pruneOrphanLeaves)로 왼쪽·가운데·오른쪽이 모두 텅 비었는데
+    //                옛 '__first-run' 플래그만 남아 있으면 영영 빈 창에 갇히므로, 첫 실행 플래그를 풀어 기본 배치를 복구한다.
+    const [ws, setWs] = useState<Workspace>(() => {
+        const loaded = pruneOrphanLeaves(loadWorkspace());
+        if (!loaded.left && !loaded.right && flatten(loaded.center).length === 0) {
+            resetFirstRunFlags();
+        }
+        return loaded;
+    });
     // 🔴 늘 최신 배치를 가리키는 ref — React 밖(플러그인 다리)·콜백에서 「지금 무엇이 떠 있나」를 결정적으로 읽는다.
     //    렌더 중에 갱신해 두면 setWs 의 비동기 타이밍과 무관하게 openView 가 포커스 id 를 바로 정할 수 있다.
     const wsRef = useRef(ws);

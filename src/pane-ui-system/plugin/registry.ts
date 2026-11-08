@@ -90,9 +90,16 @@ function loadDisabled(): Set<string> {
         const s = localStorage.getItem(pluginsKey());
         if (!s) return new Set();
         const raw = JSON.parse(s) as { disabled?: unknown };
-        const arr = Array.isArray(raw?.disabled) ? raw.disabled.filter((x): x is string => typeof x === 'string') : [];
+        if (!raw || typeof raw !== 'object') {
+            localStorage.removeItem(pluginsKey());
+            return new Set();
+        }
+        const arr = Array.isArray(raw.disabled) ? raw.disabled.filter((x): x is string => typeof x === 'string') : [];
         return new Set(arr);
-    } catch { return new Set(); }
+    } catch {
+        try { localStorage.removeItem(pluginsKey()); } catch { /* 조용히 */ }
+        return new Set();
+    }
 }
 function saveDisabled(): void {
     try {
@@ -354,6 +361,17 @@ export function activateAll(modules: PluginModule[]): void {
     //    ⭐ 약속 목록은 이제 플러그인들의 contributes.interfaces 에서 모은다 — 창틀에 고정 배열(옛 INTERFACES)이 없다.
     installed = [...modules];
     disabledIds = loadDisabled();
+    // 🔴 유령·코어 ID 자동 정리 — 플러그인이 통폐합·삭제됐거나 코어로 승격됐는데 옛 localStorage 의 disabled 에
+    //    남아 있으면 거둬내고 저장소를 깨끗이 맞춘다.
+    const validToggleable = new Set(modules.filter((m) => !m.manifest.core).map((m) => m.manifest.id));
+    let pruned = false;
+    for (const id of [...disabledIds]) {
+        if (!validToggleable.has(id)) {
+            disabledIds.delete(id);
+            pruned = true;
+        }
+    }
+    if (pruned) saveDisabled();
     failedIds.clear();
     blockedReasons.clear();
     activeProviders.clear();

@@ -28,8 +28,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      // 🔴 dev 에서도 manifest·서비스워커가 돌게 한다 — 안 그러면 dev 서버에서 「설치」가 안 뜬다(폰 확인용)
-      devOptions: { enabled: true },
+      // 🔴 dev 서비스워커는 VITE_HTTPS=1(폰 홈 화면 설치 확인용 · 5201)일 때만 켠다 — 평소 HTTP(5173)에서 켜 두면
+      //    브랜치·워크트리 전환 때 dev-dist/sw.js 가 옛 응답을 캐시해 강력 새로고침으로도 안 풀리는 빈 창을 만든다.
+      devOptions: { enabled: https },
       includeAssets: ['favicon.svg', 'icons.svg', 'icons/*.png'],
       manifest: {
         name: '시간표 짜기',

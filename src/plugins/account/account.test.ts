@@ -298,4 +298,26 @@ describe('계정 — 9가지 검산', () => {
         expect(core.getCurrent().kind).toBe('guest');    // 재초기화 → 암호 있으니 손님
         expect(cons.idChanges).toBeGreaterThan(before);  // 누구가 바뀌어 울린다
     });
+
+    it('11) 옛 credential-local.secret 노드는 활성화 시 account.cred-secret 로 자동 이사되고 증명도 그대로 통과한다', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const uid = core.createUser('구버전사용자');
+        await credCore.setSecret(uid, 'legacy-pw');
+
+        // 새 노드를 지우고 옛 타입('credential-local.secret')으로 심어 꾸러미 통합 전 저장소를 재현
+        const cur = nodes.api.byType('account.cred-secret')[0]!;
+        const savedData = cur.data;
+        nodes.api.remove(cur.id);
+        nodes.api.create(nodes.api.roots.main, { type: 'credential-local.secret', name: '비밀', data: savedData });
+
+        // 재활성화 → 자동 이사
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        expect(nodes.api.byType('credential-local.secret')).toHaveLength(0);
+        expect(nodes.api.byType('account.cred-secret')).toHaveLength(1);
+
+        credCore.setPrompt(async () => 'legacy-pw');
+        expect(await core.login(uid)).toBe(true);
+        expect(core.getCurrent().verified).toBe(true);
+    });
 });

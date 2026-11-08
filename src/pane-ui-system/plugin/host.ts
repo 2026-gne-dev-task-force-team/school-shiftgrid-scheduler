@@ -24,6 +24,27 @@ import {
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
 
+const FIRST_RUN_KEY = '__first-run';
+
+/**
+ * 저장된 배치가 깨졌거나 텅 비어 기본 배치를 다시 깔아야 할 때, 모든 플러그인의 첫 실행 플래그를 지운다.
+ *   🔴 onFirstRun 이 whenWorkspaceReady 안에서 플래그를 확인하므로, 다리가 서기 전(initialWorkspace)에
+ *      이 함수를 부르면 대기 중이던 onFirstRun 일감들이 정상 실행되어 기본 화면을 복구한다.
+ */
+export function resetFirstRunFlags(): void {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        const prefix = storageKey('plugin.');
+        const suffix = `.${FIRST_RUN_KEY}`;
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(prefix) && k.endsWith(suffix)) keys.push(k);
+        }
+        for (const k of keys) localStorage.removeItem(k);
+    } catch { /* 조용히 */ }
+}
+
 export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginManifest): PluginHost {
     const skey = (key: string) => storageKey(`plugin.${pluginId}.${key}`);
 
@@ -33,7 +54,10 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
                 if (typeof localStorage === 'undefined') return fallback;
                 const s = localStorage.getItem(skey(key));
                 return s == null ? fallback : (JSON.parse(s) as T);
-            } catch { return fallback; }
+            } catch {
+                try { localStorage.removeItem(skey(key)); } catch { /* 조용히 */ }
+                return fallback;
+            }
         },
         set(key: string, v: unknown) {
             if (typeof localStorage === 'undefined') return;
@@ -136,11 +160,11 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
             // 🔴 ⛔ 여기서 바로 돌리지 않는다. activateAll 은 React 렌더보다 먼저 돌아(main.tsx) 작업대 다리가 아직 없고,
             //    그 상태에서 workspace.open 을 부르면 조용히 null 을 주고 사라진다. 그런데 플래그는 켜지니
             //    「첫 실행 기본 배치가 영영 안 깔리는」 상태로 굳는다(실측 2026-11-02 — 깨끗한 프로파일에서 좌우 패널이 빈 채였다).
-            // ⭐ 그래서 다리가 설 때까지 미루고, 플래그는 **진짜로 돌았을 때만** 소비한다.
-            if (storage.get<boolean>('__first-run', false)) return;
+            // ⭐ 그래서 다리가 설 때까지 미루고, 플래그 검사도 **다리가 서서 실제로 돌 시점**에 한다(그 사이 빈 창 복구로
+            //    resetFirstRunFlags 가 불렸으면 대기 중이던 일감이 살아나 기본 배치를 다시 깐다).
             whenWorkspaceReady(() => {
-                if (storage.get<boolean>('__first-run', false)) return;   // 그 사이 다른 경로로 소비됐으면 그만
-                storage.set('__first-run', true);
+                if (storage.get<boolean>(FIRST_RUN_KEY, false)) return;
+                storage.set(FIRST_RUN_KEY, true);
                 try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
             });
         },

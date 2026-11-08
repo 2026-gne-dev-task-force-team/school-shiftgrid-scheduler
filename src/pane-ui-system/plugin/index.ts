@@ -23,7 +23,7 @@ export type {
 export { HOST_VERSION } from './types';
 
 export { definePlugin } from './define';
-export { makeHost } from './host';
+export { makeHost, resetFirstRunFlags } from './host';
 export {
     activateAll, enablePlugin, disablePlugin, listPlugins, ownerOfView, usePluginRegistry,
     dependentsOf, disableImpact, attachmentsOf, consumersOf, listInterfaces,

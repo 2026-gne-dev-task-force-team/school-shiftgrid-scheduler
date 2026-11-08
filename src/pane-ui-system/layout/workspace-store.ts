@@ -62,12 +62,22 @@ export function normalizeRaw(raw: unknown): Workspace {
     return normalize({ left, center, right, floating });
 }
 
-/** 저장된 배치가 있나 — 「첫 실행(저장값 없음)에만 기본 배치를 깐다」를 가르는 데 쓴다 */
+/** 저장된 배치가 있나 — 「첫 실행(저장값 없음)에만 기본 배치를 깐다」를 가르는 데 쓴다(깨진 JSON 은 자동 정리 후 false) */
 export function hasWorkspace(): boolean {
     try {
         if (typeof localStorage === 'undefined') return false;
-        return localStorage.getItem(workspaceKey()) != null;
-    } catch { return false; }
+        const s = localStorage.getItem(workspaceKey());
+        if (s == null) return false;
+        const parsed = JSON.parse(s);
+        if (!isObj(parsed)) {
+            localStorage.removeItem(workspaceKey());
+            return false;
+        }
+        return true;
+    } catch {
+        try { localStorage.removeItem(workspaceKey()); } catch { /* 조용히 */ }
+        return false;
+    }
 }
 
 export function loadWorkspace(): Workspace {
@@ -75,8 +85,14 @@ export function loadWorkspace(): Workspace {
         if (typeof localStorage === 'undefined') return emptyWorkspace();
         const s = localStorage.getItem(workspaceKey());
         if (!s) return emptyWorkspace();
-        return normalizeRaw(JSON.parse(s));
+        const parsed = JSON.parse(s);
+        if (!isObj(parsed)) {
+            localStorage.removeItem(workspaceKey());
+            return emptyWorkspace();
+        }
+        return normalizeRaw(parsed);
     } catch {
+        try { localStorage.removeItem(workspaceKey()); } catch { /* 조용히 */ }
         return emptyWorkspace();
     }
 }
