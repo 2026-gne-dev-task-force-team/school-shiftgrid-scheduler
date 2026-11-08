@@ -14,6 +14,8 @@ export type KeyAction =
     | 'nav-next'       // ↓(맨 끝) → 뒤 블록으로
     | 'bold'           // ⌘B
     | 'italic'         // ⌘I
+    | 'code'           // ⌘E
+    | 'strike'         // ⌘⇧S
     | 'undo'           // ⌘Z
     | 'redo';          // ⇧⌘Z
 
@@ -50,6 +52,8 @@ export function decideKey(i: KeyInput): KeyAction {
         if (k === 'y') return 'redo';
         if (k === 'b') return 'bold';
         if (k === 'i') return 'italic';
+        if (k === 'e') return 'code';            // ⌘E — 코드 서식(명세 요구 4 확장)
+        if (k === 's' && i.shiftKey) return 'strike';  // ⌘⇧S — 취소선
         return 'default';
     }
 
