@@ -12,6 +12,11 @@ import { settingsPlugin } from '../plugins/settings';
 import { contractNodesPlugin } from '../plugins/contract-nodes';
 import { projectExplorerPlugin } from '../plugins/project-explorer';
 import { calendarPlugin } from '../plugins/calendar';
+import { contractIdentityPlugin } from '../plugins/contract-identity';
+import { contractCredentialPlugin } from '../plugins/contract-credential';
+import { contractPermitPlugin } from '../plugins/contract-permit';
+import { accountPlugin } from '../plugins/account';
+import { credentialLocalPlugin } from '../plugins/credential-local';
 
 /**
  * 🔴 3판(2026-11-08) — 약속(인터페이스)은 **약속 플러그인**(contract-*)이 contributes.interfaces 로 선언한다.
@@ -30,4 +35,10 @@ export const PLUGINS: PluginModule[] = [
     contractNodesPlugin,     // 약속 「nodes」 — 코어(core:true). 제공자(탐색기)보다 먼저 서야 약속이 선다
     projectExplorerPlugin,   // 탐색기 — 코어(core:true), 끌 수 없다. nodes 약속을 채운다(provides) + 탐색기 패널(N1)
     calendarPlugin,   // 달력(월 보기) — 코어 아님, 설정에서 끌 수 있다. nodes 약속을 requires
+    // 🔴 계정(2026-11-08 머지 · 쥔님 지시) — 약속 셋이 제공자보다 앞에 선다(약속이 서야 제공자가 provides 를 건다).
+    contractIdentityPlugin,     // 약속(누구) — 제공자 account 보다 먼저
+    contractCredentialPlugin,   // 약속(증명) — 제공자 credential-local 보다 먼저
+    contractPermitPlugin,       // 약속(판정) — 제공자 account 보다 먼저
+    accountPlugin,              // 제공자 — 누구·판정을 채운다 · 증명은 지원 · nodes 를 requires
+    credentialLocalPlugin,     // 제공자 — 증명(이름+암호)을 채운다 · nodes 를 requires
 ];

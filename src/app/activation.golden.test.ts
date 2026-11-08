@@ -42,7 +42,11 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
     it('셋 다 활성되고(실패 0) 끄지 않았다', () => {
         activateAll(PLUGINS);
         const ps = listPlugins();
-        expect(ps.map((p) => p.id)).toEqual(['settings', 'contract-nodes', 'project-explorer', 'calendar']);
+        expect(ps.map((p) => p.id)).toEqual([
+            'settings', 'contract-nodes', 'project-explorer', 'calendar',
+            // 🔴 계정(2026-11-08 머지) — 약속 셋이 제공자(account·credential-local)보다 앞에 선다.
+            'contract-identity', 'contract-credential', 'contract-permit', 'account', 'credential-local',
+        ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
