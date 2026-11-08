@@ -8,5 +8,5 @@ export const manifest: PluginManifest = {
     name: '약속: 시각',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '시각 약속(clock 0.1) — 교시↔시각·급식 교대·하교 + 학교 시각 낱말. 타입만. 제공자: school-clock(M1).',
+    description: '시각 약속(clock 0.1) — 얇은 창구: 행 시각을 내준다 + 공용 시각 낱말(Weekday·Minute·TimeRange·IsoDate). 타입만. 제공자: 그리드·school-clock(나중).',
 };
