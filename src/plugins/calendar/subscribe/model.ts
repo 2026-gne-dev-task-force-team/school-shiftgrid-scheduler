@@ -3,7 +3,7 @@
  *   달력 약속의 **타입만** 끌어오고(parseIcs·registerSource 는 host.modules.use('calendar') 로 받는다), 색 토큰은 여기 하드코딩한다
  *   (팔레트 값을 달력에서 끌면 결합 — 토큰 「이름」은 창틀·달력 공통 약속이라 글자만 적는다).
  */
-import type { CalendarItem, CalendarSource } from '../calendar/contracts/calendar';
+import type { CalendarItem, CalendarSource } from '../contracts/calendar';
 
 /**
  * 구독 하나의 저장값(노드 data) — 프로젝트 데이터와 같이 다닌다(노드). lastIcs 덕에 오프라인에서도 보인다.

@@ -7,7 +7,7 @@
  * (테스트 파일은 구조 검사 walk 가 건너뛰므로 달력 내부(feed·events)를 직접 import 해 끝단을 잰다.)
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 
 const kv = vi.hoisted(() => {
     const store = new Map<string, Record<string, unknown>>();
@@ -20,16 +20,16 @@ const kv = vi.hoisted(() => {
     });
     return { store, nodesGetAll, nodesWrite };
 });
-vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
+vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore } from '../project-explorer/store';
-import { __resetPersistForTest } from '../project-explorer/persist';
-import { makeNodesApi } from '../project-explorer/api';
-import { registerType, clearTypes } from '../project-explorer/model/types';
-import { clearDerived } from '../project-explorer/model/derive';
-import { calendarModule, listFeedSources, __resetFeeds } from '../calendar/feed';
-import { mapFeedEvents } from '../calendar/feed-events';
-import { eventsInRange } from '../calendar/events';
+import { initStore } from '../../project-explorer/store';
+import { __resetPersistForTest } from '../../project-explorer/persist';
+import { makeNodesApi } from '../../project-explorer/api';
+import { registerType, clearTypes } from '../../project-explorer/model/types';
+import { clearDerived } from '../../project-explorer/model/derive';
+import { calendarModule, listFeedSources, __resetFeeds } from '../feed';
+import { mapFeedEvents } from '../feed-events';
+import { eventsInRange } from '../events';
 import { SUB_TYPE, initSubs, listSubs, addSub, updateSub, removeSub } from './subscriptions';
 import { setCalendar, reconcile, disposeAll, refresh, registeredCount } from './controller';
 

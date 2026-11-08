@@ -8,8 +8,8 @@
  * ⛔ 탐색기 인라인 입력은 「만들 때 링크」·「링크 바꾸기」 둘 다 탐색기가 쥔다(NodeTypeDef.createInput·NodesApi.promptInput)
  *    — window.prompt/confirm 없이, 한글 조합 Enter 도 탐색기 입력이 이미 가린다(isComposing||keyCode===229).
  */
-import type { NodeTypeContribution, PluginHost, MenuEntry } from '../../pane-ui-system/plugin';
-import type { NodeTypeImplFns } from '../project-explorer/contracts/nodes';
+import type { NodeTypeContribution, PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
+import type { NodeTypeImplFns } from '../../project-explorer/contracts/nodes';
 import { normalizeUrl } from './model';
 import { SUB_TYPE, getSubsApi, getSubById, updateSub, removeSub } from './subscriptions';
 import { refresh } from './controller';

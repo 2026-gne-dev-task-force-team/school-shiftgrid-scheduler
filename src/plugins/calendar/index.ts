@@ -12,7 +12,7 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost, ViewProps } from '../../pane-ui-system/plugin';
+import type { PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 노드 약속(project-explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
@@ -29,10 +29,22 @@ import {
     getMenuTarget, setDefaultStore, newEventInStore,
     importItemsToStore, collectForExport, storeName,
 } from './nodes';
+// 🔴 구독 캘린더 — 2026-11-09 쥔님 *"달력 플러그인 안으로 들여라"* 로 별도 꾸러미에서 달력 안(subscribe/)으로 들였다.
+//    달력이 자기 약속(calendar 모듈·parseIcs·registerSource)을 스스로 쓰는 소비자다 — 남의 플러그인용 입구는 그대로 열려 있다.
+//    🔴 저장 노드 타입 이름(calendar-subscribe.subscription)·명령 id(calendar-subscribe.*)는 **안 바꿨다** — 이미 깔린
+//       구독 노드가 그 타입으로 저장돼 있어, 이름을 바꾸면 byType 매치가 끊겨 데이터가 사라진다(유실 0 원칙).
+import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
+import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget } from './subscribe/nodes';
+import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
+import { pickIcsText } from './subscribe/file-pick';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다 · 구조 검사가 접두사를 본다).
 //    contributes.views 의 id 는 접두사 없는 'month'·'mini' 로 적고, 호스트가 붙인 뒤의 전체 id 를 여기서 연다.
 const MONTH_ID = 'calendar.month';
+
+// 구독 다리(노드 구독·달력 출처 등록) — deactivate 가 거둔다(옛 구독 꾸러미의 모듈 전역과 같은 결).
+let subBridge: Disposable | null = null;
+let offSubs: (() => void) | null = null;
 
 export const calendarPlugin = definePlugin({
     manifest: {
@@ -63,6 +75,11 @@ export const calendarPlugin = definePlugin({
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
                 { id: 'calendar.exportIcs', title: 'ICS 내보내기', icon: 'download' },
                 { id: 'calendar.exportAll', title: '일정 전체 ICS 내보내기', icon: 'download' },
+                // 구독 노드 우클릭 메뉴가 부르는 명령 넷(대상 노드는 subscribe/nodes 의 「메뉴가 가리킨 구독」에서 읽는다).
+                { id: 'calendar-subscribe.refresh', title: '구독 새로고침', icon: 'redo' },
+                { id: 'calendar-subscribe.from-file', title: '구독 파일로 갱신', icon: 'upload' },
+                { id: 'calendar-subscribe.change-link', title: '구독 링크 바꾸기', icon: 'edit' },
+                { id: 'calendar-subscribe.toggle', title: '구독 켜기/끄기', icon: 'eye' },
             ],
             // 리본 아이콘 하나 — 월 보기(calendar·order 1). 작은 달력 리본은 2026-11-09 비활성화로 뺐다.
             ribbon: [
@@ -70,7 +87,8 @@ export const calendarPlugin = definePlugin({
             ],
             // 🔴 노드 타입 둘(저장소·일정) — 선언형 전환 D5. 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 onActivate 의 registerCalendarTypes 를 대체.
-            nodeTypes: calendarNodeTypes,
+            //    🔴 구독 노드 타입(impl 'sub')도 같이 낸다 — 구독 하나 = 탐색기에 보이는 노드(subscribe/nodes).
+            nodeTypes: [...calendarNodeTypes, ...subscribeNodeTypes],
         },
     },
 
@@ -110,9 +128,31 @@ export const calendarPlugin = definePlugin({
         },
         // 「일정 전체 ICS 내보내기」(설정 판 단추·팔레트) — 모든 저장소 내 일정을 한 파일로.
         'calendar.exportAll': () => { downloadText('달력 전체.ics', writeIcs(collectForExport(null))); },
+        // ── 구독 노드 우클릭 명령 넷(대상은 subscribe/nodes 의 getSubMenuTarget) ──
+        // 새로고침 — 그 구독을 다시 받는다(브라우저 네트워크에서만 실제로 돈다).
+        'calendar-subscribe.refresh': () => { const id = getSubMenuTarget(); if (id) void refreshSub(id); },
+        // 파일로 갱신 — .ics 파일을 골라 lastIcs 로 넣는다(CORS 로 링크가 안 받힐 때).
+        'calendar-subscribe.from-file': () => {
+            const id = getSubMenuTarget();
+            if (!id) return;
+            pickIcsText((text) => updateSub(id, { lastIcs: text, lastFetched: Date.now(), lastError: undefined }));
+        },
+        // 링크 바꾸기 — 탐색기 인라인 입력(현재 링크를 미리 채운다) · 커밋은 subscribe/nodes.onInput(kind:'link')으로.
+        'calendar-subscribe.change-link': () => {
+            const id = getSubMenuTarget();
+            const api = getSubsApi();
+            if (!id || !api) return;
+            api.promptInput(id, { kind: 'link', initial: getSubById(id)?.data.url ?? '', placeholder: '달력 링크(.ics)' });
+        },
+        // 켜기/끄기 — 끄면 달력에서 그 구독이 빠진다(reconcile 가 다시 그린다). 내 일정은 그대로.
+        'calendar-subscribe.toggle': () => {
+            const id = getSubMenuTarget();
+            if (!id) return;
+            updateSub(id, { enabled: !(getSubById(id)?.data.enabled ?? true) });
+        },
     },
-    // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'store' 가 가리킨다(저장소 open·menu). 일정은 순수 데이터라 없다.
-    nodeTypes: calendarNodeTypeImpl,
+    // 🔴 노드 타입 함수 묶음 — impl 'store'(저장소 open·menu) + 'sub'(구독 open·menu·createInit·onInput). 일정은 순수 데이터라 없다.
+    nodeTypes: { ...calendarNodeTypeImpl, ...subscribeNodeTypeImpl },
     // 🔴 calendar 약속을 채우는 모듈 — provides.calendar 와 짝(키 이름이 같아야 tsc 가 통과). 남의 일정 입구.
     modules: { calendar: calendarModule },
 
@@ -130,6 +170,15 @@ export const calendarPlugin = definePlugin({
             //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
             const nodes = host.modules.use<NodesApi>('nodes');
             initCalendarNodes(nodes ?? null);
+
+            // ── 구독 다리 — 구독 노드(subscribe/)를 켜진 것만 달력 출처로 꽂는다. 달력은 자기 calendarModule 을 바로 쓴다
+            //    (남의 플러그인은 host.modules.use('calendar') 로 받지만, 달력 자신은 같은 꾸러미라 모듈을 직접 건넨다).
+            //    🔴 구독 노드가 바뀌면(추가·끄기·lastIcs·이름·삭제) reconcile 로 다시 등록 · 열 때 켜진 구독을 새로 받는다.
+            subBridge = initSubs(nodes ?? null);
+            setCalendar(calendarModule);
+            reconcile();
+            offSubs = subscribeSubs(reconcile);
+            refreshAllEnabled();   // 열 때 받기 — 네트워크(브라우저)에서만 실제로 돈다
         },
         /**
          * 첫 실행 기본 배치: 가운데 달력 탭 하나(쥔님 2026-11-01 21:47 · 작은 달력은 2026-11-09 비활성화로 뺐다).
@@ -138,6 +187,14 @@ export const calendarPlugin = definePlugin({
         onFirstRun(host: PluginHost) {
             host.workspace.open(MONTH_ID, { where: 'center' });
         },
+    },
+    // 구독 다리 거두기 — 노드 구독 해제 + 등록한 달력 출처 전부 dispose(달력 참조도 놓는다).
+    deactivate() {
+        offSubs?.();
+        offSubs = null;
+        subBridge?.dispose();
+        subBridge = null;
+        disposeSubs();
     },
 });
 

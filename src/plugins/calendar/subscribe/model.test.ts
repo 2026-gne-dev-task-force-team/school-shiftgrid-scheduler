@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { normalizeUrl, buildSource, buildSources, defaultColor, COLOR_TOKENS, CORS_HINT, type SubNode } from './model';
-import type { CalendarItem } from '../calendar/contracts/calendar';
+import type { CalendarItem } from '../contracts/calendar';
 
 const items: CalendarItem[] = [
     { id: 'a', title: '신정', start: '2026-01-01', end: '2026-01-02', allDay: true },
