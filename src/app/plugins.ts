@@ -21,6 +21,7 @@ import { accountPlugin } from '../plugins/account';
 import { peoplePlugin } from '../plugins/people';
 import { tableEditorPlugin } from '../plugins/table-editor';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
+import { recordPlaygroundPlugin } from '../plugins/record-playground';
 
 // 🔴 코어(settings·project-explorer)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
@@ -33,4 +34,5 @@ export const PLUGINS: PluginModule[] = [
     peoplePlugin,            // 사람 명단 꾸러미 — people 약속을 들고 와 채운다 · nodes 를 requires
     tableEditorPlugin,       // 표 편집기 꾸러미 — table 약속을 들고 와 채운다(헤드리스)
     timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
+    recordPlaygroundPlugin,  // 레코드 뷰 연습장 — 공통 목록 화면 부품을 직접 만져 보는 자리(약속·의존 없음)
 ];
