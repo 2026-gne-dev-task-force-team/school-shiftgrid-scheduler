@@ -20,7 +20,6 @@ import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
 import { PluginsPane } from './panes/PluginsPane';
-import { InterfacesPane } from './panes/InterfacesPane';
 import { AboutPane } from './panes/AboutPane';
 
 export const settingsPlugin = definePlugin({
@@ -40,10 +39,10 @@ export const settingsPlugin = definePlugin({
                     { section: 'frame', id: 'pane', title: '패널', icon: 'panelLeft', pane: 'PaneSettings' },
                     { section: 'frame', id: 'ribbon', title: '리본', icon: 'menu', pane: 'Ribbon' },
                     // 📌 「뷰 › 등록된 뷰」 판은 2026-11-01 19:06 폐기 — 뷰 설정은 그 플러그인 상세(PluginDetail) 안으로 들어갔다(쥔님).
-                    // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄을 누르면 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
+                    // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄의 「자세히」로 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
+                    //   📌 2026-11-08 쥔님: 「약속(인터페이스)」 별도 항목을 없앴다 — 사용자가 따로 볼 이유가 없어, 그 정보(채우는/필요한/
+                    //      있으면 쓰는/나를 쓰는 약속)는 플러그인 상세(PluginDetail) 안 「모듈·의존성」 한 요소로만 둔다(다른 칸처럼).
                     { section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'play', pane: 'Plugins' },
-                    // ⑤ 약속(인터페이스)별 화면 — 약속 하나의 채운 모듈(제공자)·기다리는 플러그인. 약속 = 켜진 플러그인의 contributes.interfaces 모음
-                    { section: 'plugins', id: 'interfaces', title: '약속(인터페이스)', icon: 'layers', pane: 'Interfaces' },
                     // 이 프로그램 — 이름·판·창틀 판·플러그인 수(쥔님 13:14)
                     { section: 'about', id: 'about', title: '이 프로그램', icon: 'info', pane: 'About' },
                 ],
@@ -70,7 +69,6 @@ export const settingsPlugin = definePlugin({
         PaneSettings: PaneSettingsPane,
         Ribbon: RibbonSettingsPane,
         Plugins: PluginsPane,
-        Interfaces: InterfacesPane,
         About: AboutPane,
     },
 });

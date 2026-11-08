@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PluginStatus } from '../../pane-ui-system/plugin';
 import {
-    availablePromises, explainBlock, disableImpact, listPromiseRows, promiseDetail,
+    availablePromises, explainBlock, disableImpact,
 } from './plugin-graph';
 
 type P = Partial<PluginStatus> & { id: string };
@@ -136,39 +136,5 @@ describe('disableImpact ④ — 같이 꺼질 것 / 기능만 떨어질 것', ()
         ];
         const { willBlock } = disableImpact('account', ps);
         expect(willBlock.map((x) => x.id)).toContain('boss');     // 꾸러미를 끄면 약속·제공자가 같이 사라져 소비자가 막힌다
-    });
-});
-
-describe('promiseDetail / listPromiseRows ⑤ — 약속별', () => {
-    it('약속 목록은 켜진 약속 플러그인의 선언 모음', () => {
-        const names = listPromiseRows(base()).map((r) => r.name).sort();
-        expect(names).toEqual(['credential', 'identity', 'nodes']);
-    });
-
-    it('identity — 제공자 account · 기다리는 쪽 boss(requires, 붙음)', () => {
-        const d = promiseDetail('identity', base())!;
-        expect(d.available).toBe(true);
-        expect(d.provider?.id).toBe('account');
-        const boss = d.consumers.find((c) => c.id === 'boss')!;
-        expect(boss.relation).toBe('requires');
-        expect(boss.attached).toBe(true);
-    });
-
-    it('제공자가 꺼지면 소비자는 안 붙음', () => {
-        const ps = base().map((p) => (p.id === 'account' ? { ...p, enabled: false } : p));
-        const d = promiseDetail('identity', ps)!;
-        expect(d.provider).toBeNull();
-        expect(d.consumers.find((c) => c.id === 'boss')!.attached).toBe(false);
-    });
-
-    it('credential — account 는 supports 로 기다린다', () => {
-        const d = promiseDetail('credential', base())!;
-        const acct = d.consumers.find((c) => c.id === 'account')!;
-        expect(acct.relation).toBe('supports');
-        expect(acct.attached).toBe(true);
-    });
-
-    it('없는 약속은 null', () => {
-        expect(promiseDetail('ghost', base())).toBeNull();
     });
 });

@@ -5,10 +5,13 @@
  *   ⭐ 약속(인터페이스) 목록은 「켜진 플러그인들의 contributes.interfaces 모음」으로 센다(명세 「인터페이스도 꽂는다」).
  *      ⛔ 약속 = contract-* 라는 가정에 묶지 않는다 — 어느 플러그인이 선언하든 interfaces 에 적힌 것이 약속이다.
  *
- * 담는 셈 셋:
+ * 담는 셈 둘:
  *   ③ explainBlock — 꺼진(blocked) 사유를 사람 말로. 「약속 없음」 vs 「채운 모듈 없음」을 가르고 무엇을 켜면 풀리는지.
  *   ④ disableImpact — 끄기 전에 「같이 꺼질 것(requires)」·「기능만 떨어질 것(supports)」을 전이까지 계산.
- *   ⑤ promiseDetail/listPromiseRows — 약속 하나의 채운 모듈(제공자)·기다리는 플러그인(지금 붙었나).
+ *
+ * 📌 2026-11-08 쥔님: 설정의 별도 「약속(인터페이스)」 화면(InterfacesPane)을 없앴다 — 약속별 「누가 기다리나」는
+ *    플러그인 상세의 「나를 쓰는 것(consumersOf)」 장부로 이미 보인다. 그래서 ⑤ 약속별 셈(listPromiseRows·promiseDetail)은
+ *    쓰이는 데가 없어져 걷어냈다(explainBlock·disableImpact 가 쓰는 availablePromises·declarerOf 등은 남는다).
  */
 import type { PluginStatus } from '../../pane-ui-system/plugin';
 
@@ -230,87 +233,4 @@ export function disableImpact(targetId: string, plugins: PluginStatus[]): Disabl
         if (hit) willDegrade.push({ ...ref(m), via: hit });
     }
     return { willBlock, willDegrade };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ⑤ 약속별 화면
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface PromiseRow {
-    name: string;
-    version: string;
-    declaredBy: PluginRef;
-    available: boolean;
-    provider: PluginRef | null;
-    /** requires·supports 로 이 약속을 기다리는 플러그인 수. */
-    consumerCount: number;
-}
-
-export interface PromiseConsumer extends PluginRef {
-    relation: 'requires' | 'supports';
-    /** 지금 붙었나 — 제공자가 살아 있고 이 소비자도 살아 있을 때 true. */
-    attached: boolean;
-}
-
-export interface PromiseDetailInfo {
-    name: string;
-    version: string;
-    declaredBy: PluginRef | null;
-    available: boolean;
-    provider: PluginRef | null;
-    consumers: PromiseConsumer[];
-}
-
-/** 이 약속을 requires·supports 로 기다리는 플러그인들(지금 붙었나까지). */
-function consumersOfPromise(name: string, plugins: PluginStatus[], providerLive: boolean): PromiseConsumer[] {
-    const out: PromiseConsumer[] = [];
-    const live = (p: PluginStatus) => p.enabled && !p.blocked && !p.failed;
-    for (const p of plugins) {
-        const relation: 'requires' | 'supports' | null =
-            name in p.requires ? 'requires' : name in p.supports ? 'supports' : null;
-        if (!relation) continue;
-        out.push({ ...ref(p), relation, attached: providerLive && live(p) });
-    }
-    return out;
-}
-
-/**
- * ⑤ 켜진 플러그인들이 선언한 약속 모음 — 약속 하나하나의 제공자·소비자 수. (호스트 listInterfaces 와 같은 집합)
- *   ⛔ contract-* 라는 이름에 안 묶는다 — p.interfaces(선언한 약속)만 읽는다.
- */
-export function listPromiseRows(plugins: PluginStatus[]): PromiseRow[] {
-    const declared = declaredByEnabled(plugins);
-    const avail = availablePromises(plugins);
-    return [...declared.values()].map((d) => {
-        const prov = activeProviderOf(d.name, plugins, avail);
-        const count = plugins.filter((p) => d.name in p.requires || d.name in p.supports).length;
-        const declarer = plugins.find((p) => p.id === d.pluginId);
-        return {
-            name: d.name,
-            version: d.version,
-            declaredBy: declarer ? ref(declarer) : { id: d.pluginId, name: d.pluginId },
-            available: avail.has(d.name),
-            provider: prov ? ref(prov) : null,
-            consumerCount: count,
-        };
-    });
-}
-
-/** ⑤ 약속 하나의 상세 — 채운 모듈(제공자) · 기다리는 플러그인(지금 붙었나). 없는 약속이면 null. */
-export function promiseDetail(name: string, plugins: PluginStatus[]): PromiseDetailInfo | null {
-    const declarer = declarerOf(name, plugins);
-    const declaredFromEnabled = declaredByEnabled(plugins).get(name);
-    if (!declarer && !declaredFromEnabled) return null;
-    const avail = availablePromises(plugins);
-    const prov = activeProviderOf(name, plugins, avail);
-    const version = declarer?.interfaces.find((i) => i.name === name)?.version
-        ?? declaredFromEnabled?.version ?? '';
-    return {
-        name,
-        version,
-        declaredBy: declarer ? ref(declarer) : null,
-        available: avail.has(name),
-        provider: prov ? ref(prov) : null,
-        consumers: consumersOfPromise(name, plugins, !!prov),
-    };
 }
