@@ -5,27 +5,22 @@
 import { useRef, useState } from 'react';
 import { Icon, IconButton } from '../../pane-ui-system';
 import { Popover } from './Popover';
-import { opNeedsValue, opsFor } from './logic';
-import type { FilterOp, FilterRule, RecordField, SortRule } from './contracts/record-view';
-
-const OP_LABEL: Record<FilterOp, string> = {
-    contains: '포함', notContains: '미포함', eq: '같음', ne: '다름',
-    gt: '초과', gte: '이상', lt: '미만', lte: '이하',
-    before: '이전', after: '이후', has: '포함', notHas: '미포함',
-    empty: '비어 있음', notEmpty: '안 비어 있음', isTrue: '켜짐', isFalse: '꺼짐',
-};
+import { opDefsFor, opNeedsValue, opsFor } from './logic';
+import { fieldTypes } from './fields/registry';
+import type { FilterRule, RecordField, SortRule } from './contracts/record-view';
 
 const selCls = 'h-row rounded border border-line bg-bg text-text text-[12px] px-1 min-w-0';
 
-function firstOp(field: RecordField): FilterOp {
-    return opsFor(field.type)[0];
+function firstOp(field: RecordField): string {
+    return opsFor(field.type)[0] ?? 'empty';
 }
 
-/** 한 필터 줄의 값 입력칸 — 칸 종류에 맞춰 바뀐다 */
+/** 한 필터 줄의 값 입력칸 — 칸 타입 정의의 filterInput 에 맞춰 바뀐다(타입 이름을 모른다) */
 function ValueEditor({ field, rule, onChange }: { field: RecordField; rule: FilterRule; onChange: (v: string | number) => void }) {
-    if (!opNeedsValue(rule.op)) return null;
+    if (!opNeedsValue(rule.op, field.type)) return null;
     const val = rule.value ?? '';
-    if (field.type === 'select' || field.type === 'multi') {
+    const input = fieldTypes.get(field.type)?.filterInput ?? 'text';
+    if (input === 'option') {
         return (
             <select className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)}>
                 <option value="">(고르기)</option>
@@ -33,10 +28,10 @@ function ValueEditor({ field, rule, onChange }: { field: RecordField; rule: Filt
             </select>
         );
     }
-    if (field.type === 'number') {
+    if (input === 'number') {
         return <input type="number" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} />;
     }
-    if (field.type === 'date') {
+    if (input === 'date') {
         return <input type="date" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)} />;
     }
     return <input type="text" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)} placeholder="값" />;
@@ -144,11 +139,11 @@ export function Toolbar({
                                         value={rule.op}
                                         onChange={(e) => {
                                             const next = [...filters];
-                                            next[i] = { ...rule, op: e.target.value as FilterOp, value: undefined };
+                                            next[i] = { key: rule.key, op: e.target.value };
                                             onFilters(next);
                                         }}
                                     >
-                                        {opsFor(f.type).map((op) => <option key={op} value={op}>{OP_LABEL[op]}</option>)}
+                                        {opDefsFor(f.type).map((od) => <option key={od.id} value={od.id}>{od.label}</option>)}
                                     </select>
                                     <ValueEditor
                                         field={f}
