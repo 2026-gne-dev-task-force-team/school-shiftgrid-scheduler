@@ -78,13 +78,15 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
     const declared = contribs.filter((c) => c.origin === 'manifest');
     const dynamic = contribs.filter((c) => c.origin === 'declare');
 
-    // 🔴 모듈·의존성 장부(M0) — 채우는 인터페이스 / 필요한 것 / 있으면 쓰는 것(붙음·안 붙음) / 누가 나를 쓰나.
+    // 🔴 모듈·의존성 장부(M0) — 선언한 약속 / 채우는 인터페이스 / 필요한 것 / 있으면 쓰는 것(붙음·안 붙음) / 누가 나를 쓰나.
+    const declaredInterfaces = p.interfaces;      // 🔴 선언한 약속(약속 플러그인은 이것만)
+    const permissions = p.permissions;           // 🔴 선언한 권한 낱말(페이블 8 — 호스트는 모으기만, 여기서 표시)
     const provides = Object.entries(p.provides);
     const requires = Object.entries(p.requires);
     const attachments = attachmentsOf(p.id);     // supports → 붙었나
     const consumers = consumersOf(p.id);         // 나를 쓰는 플러그인
     const dependents = dependentsOf(p.id);       // 끄면 같이 꺼질 것(requires 로 매달린)
-    const hasDeps = provides.length || requires.length || attachments.length || consumers.length;
+    const hasDeps = declaredInterfaces.length || provides.length || requires.length || attachments.length || consumers.length || permissions.length;
 
     return (
         <div className="flex flex-col gap-4">
@@ -132,6 +134,20 @@ export function PluginDetail({ p, host }: { p: PluginStatus; host: PluginHost })
             {hasDeps ? (
                 <Section title="모듈·의존성">
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px]">
+                        {declaredInterfaces.length > 0 && (
+                            <>
+                                <dt className="text-muted">선언한 약속</dt>
+                                <dd className="text-text font-mono">
+                                    {declaredInterfaces.map((i) => `${i.name} ${i.version}${i.uses.length ? ` ▸ ${i.uses.join('·')}` : ''}`).join(' · ')}
+                                </dd>
+                            </>
+                        )}
+                        {permissions.length > 0 && (
+                            <>
+                                <dt className="text-muted">권한 낱말</dt>
+                                <dd className="text-text">{permissions.map((pm) => `${pm.title}(${pm.id})`).join(' · ')}</dd>
+                            </>
+                        )}
                         {provides.length > 0 && (
                             <>
                                 <dt className="text-muted">채우는 인터페이스</dt>

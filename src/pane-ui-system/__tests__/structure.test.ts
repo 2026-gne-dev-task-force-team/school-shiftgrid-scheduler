@@ -400,14 +400,17 @@ describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contribu
 });
 
 /*
- * ⑱ 모듈·의존성(M0) — 플러그인이 모듈을 받는 길은 host.modules.use(인터페이스 이름) 하나뿐이고,
- *   쓰는 인터페이스는 반드시 매니페스트에 선언한다. 옛 host.plugins.get 은 걷혔다. 네 가지를 지킨다:
+ * ⑱ 모듈·의존성(M0 · 3판) — 플러그인이 모듈을 받는 길은 host.modules.use(약속 이름) 하나뿐이고,
+ *   쓰는 약속은 매니페스트에 선언한다. 약속(타입)은 **약속 플러그인**(contract-* 의 types)에만 산다. 일곱을 지킨다:
  *     (a) src/plugins 에 host.plugins.get( 0건(설탕 없음 — modules.use 로만)
  *     (b) modules.use('x') 인데 x 가 그 플러그인 requires/supports/provides 에 없음 0건(선언 안 된 의존)
  *     (c) onInterface.x(= onInterface: { x: … }) 인데 x 가 supports 에 없음 0건(짝 없는 훅)
- *     (d) src/plugins 가 src/interfaces 를 **값**으로 import 0건(타입 전용만 — 값은 modules.use 로)
+ *     (d) src/plugins 가 contract-* 약속을 **값**으로 import 0건(타입 전용만 — 값은 modules.use 로)
+ *     (e) src/interfaces 는 0파일이다(약속은 플러그인으로 옮겼다 · 옛 고정 목록 자리 소멸)
+ *     (f) src/app·src/pane-ui-system 에 **학교 약속 이름** 하드코딩 0(플랫폼이 도메인 약속을 모른다 · 3판 핵심)
+ *     (g) 플러그인이 **남의 약속 타입**을 import 할 땐 형제 plugins 중 contract-* 에서만(비-contract 플러그인에서 타입을 끌면 빨강)
  */
-describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 인터페이스만 · interfaces 값 import 0', () => {
+describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 약속만 · 약속 타입은 contract-*/ 에서만', () => {
     const PLUGROOT = join(ROOT, 'plugins');
     const files = walk(PLUGROOT);
     const plugins = [...new Set(files.map((f) => relative(PLUGROOT, f).split(sep)[0]))];
@@ -495,17 +498,54 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
         });
     }
 
-    // (d) src/interfaces 값 import 0 (import type 만 허용)
+    // (d)·(g) 약속 타입은 contract-*/ 에서만 · import type 만 — 형제 플러그인에 닿는 import 를 통째로 본다.
     for (const f of files) {
-        it(`(d) interfaces 값 import 없음(타입만): ${f.slice(ROOT.length + 1)}`, () => {
+        const self = relative(PLUGROOT, f).split(sep)[0];
+        it(`(d·g) 약속 타입은 contract-*/ 에서만·타입 전용: ${f.slice(ROOT.length + 1)}`, () => {
             const src = read(f);
             const typeOnly = new Set(
                 [...src.matchAll(/import\s+type\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]),
             );
-            const offenders = [...src.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1])
-                .filter((s) => /(?:^|\/)interfaces\//.test(s) || /\.\.\/interfaces/.test(s))
-                .filter((s) => !typeOnly.has(s));
-            expect(offenders, `${basename(f)} 가 src/interfaces 를 값으로 import 한다(타입 전용만 허용 — 값은 host.modules.use): ${offenders.join(', ')}`).toEqual([]);
+            const dVal: string[] = [];   // (d) contract-* 를 값으로 끌었다
+            const gBad: string[] = [];   // (g) 비-contract 형제 플러그인에서 타입을 끌었다
+            for (const m of src.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+                const s = m[1];
+                if (!s.startsWith('.')) continue;                 // 상대 경로만 형제 플러그인에 닿는다
+                const rel = relative(PLUGROOT, resolve(dirname(f), s));
+                if (rel.startsWith('..')) continue;               // plugins 바깥
+                const other = rel.split(sep)[0];
+                if (!other || other === self) continue;           // 자기 플러그인 안은 자유
+                if (other.startsWith('contract-')) {
+                    if (!typeOnly.has(s)) dVal.push(s);           // (d) 약속을 값으로 끌면 안 된다
+                } else {
+                    gBad.push(s);                                 // (g) 남의 약속 타입은 contract-*/ 에서만
+                }
+            }
+            expect(dVal, `${basename(f)} 가 contract-* 약속을 값으로 import 한다(타입 전용만 — 값은 host.modules.use): ${dVal.join(', ')}`).toEqual([]);
+            expect(gBad, `${basename(f)} 가 비-contract 형제 플러그인에서 타입을 끈다(약속 타입은 contract-*/ 에서만): ${gBad.join(', ')}`).toEqual([]);
         });
     }
+
+    // (e) src/interfaces/ 는 0파일 — 약속을 플러그인(contract-*)으로 옮겼으니 이 폴더는 비어 있거나 없다.
+    it('(e) src/interfaces/ 0파일 (약속은 contract-* 플러그인으로 옮겼다)', () => {
+        let entries: string[] = [];
+        try { entries = readdirSync(join(ROOT, 'interfaces')); } catch { entries = []; }   // 폴더가 없으면 0
+        expect(entries, `src/interfaces/ 에 파일이 남았다: ${entries.join(', ')}`).toEqual([]);
+    });
+
+    // (f) 학교 약속 이름이 src/app·src/pane-ui-system 에 하드코딩 0 — 플랫폼은 도메인 약속을 모른다(3판 핵심).
+    //   ⭐ 판정 기준: 「학교 약속 일곱」 이름만 본다. 'nodes' 는 창틀의 유일한 레지스트라 다리(contributes.ts NODES_INTERFACE)라
+    //      제외한다(범용 약속 · 도메인 아님). 테스트 픽스처(.test.ts·__tests__)는 walk 가 이미 건너뛴다.
+    describe('(f) src/app·src/pane-ui-system 에 학교 약속 이름 0', () => {
+        const SCHOOL = ['roster', 'clock', 'week-grid', 'timetable', 'absence', 'identity', 'export'];
+        const platformFiles = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system'))];
+        // 낱말 경계로 — 'export' 키워드와 안 겹치게 따옴표로 감싼 리터럴만 본다('roster' 등).
+        for (const f of platformFiles) {
+            it(`학교 약속 이름 없음: ${f.slice(ROOT.length + 1)}`, () => {
+                const src = read(f);
+                const hit = SCHOOL.filter((n) => src.includes(`'${n}'`) || src.includes(`"${n}"`));
+                expect(hit, `플랫폼 파일에 학교 약속 이름이 리터럴로 박혔다: ${hit.join(', ')}`).toEqual([]);
+            });
+        }
+    });
 });

@@ -472,6 +472,10 @@ export interface PluginStatus {
     provides: Record<string, string>;
     requires: Record<string, string>;
     supports: Record<string, string>;
+    /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). */
+    interfaces: { name: string; version: string; uses: string[] }[];
+    /** 🔴 선언한 권한 낱말(contributes.permissions) — 호스트는 모으기만, 장부가 표시(페이블 8). */
+    permissions: { id: string; title: string; default?: string[] }[];
 }
 export function listPlugins(): PluginStatus[] {
     return installed.map((m) => {
@@ -492,6 +496,8 @@ export function listPlugins(): PluginStatus[] {
             provides: { ...prov(m) },
             requires: { ...req(m) },
             supports: { ...sup(m) },
+            interfaces: decl(m).map((it) => ({ name: it.name, version: it.version, uses: it.uses ?? [] })),
+            permissions: (m.manifest.contributes?.permissions ?? []).map((p) => ({ ...p })),
         };
     });
 }
