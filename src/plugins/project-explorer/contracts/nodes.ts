@@ -125,6 +125,8 @@ export interface NodesApi {
     setData(id: string, data: unknown): void;           // 🔴 그 타입을 등록한 플러그인만
     move(id: string, parentId: string, index?: number): void;
     remove(id: string): void;                           // 🔴 휴지통으로(영구 아님)
+    /** 🔑 묶음 — fn 안의 쓰기 전부가 되돌리기 한 칸·저장 한 번·알림 한 번이 된다(붙여넣기·일괄 편집). 중첩은 바깥에 합쳐진다. */
+    batch(fn: () => void): void;
 
     invalidate(id: string): void;                       // 유도 자식 다시 계산
     select(id: string): void;                           // 탐색기에서 그 노드로 가기

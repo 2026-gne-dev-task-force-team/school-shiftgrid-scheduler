@@ -19,7 +19,7 @@ import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData,
-    apiInvalidate, openById, subscribeChanges,
+    apiInvalidate, apiBatch, openById, subscribeChanges,
 } from './store';
 
 // 🔴 공개 노드 약속(NodesApi·PublicNode·NodeTypeImplFns)은 이 꾸러미의 contracts/nodes 가 쥔다 — 이 파일은 그걸 **구현**한다(makeNodesApi).
@@ -125,6 +125,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         },
         move(id, parentId, index) { apiMove(id, parentId, index); },
         remove(id) { apiRemove(id); },
+        batch(fn) { apiBatch(fn); },
 
         invalidate(id) { apiInvalidate(id); },
         select(id) { selectNode(id); },
