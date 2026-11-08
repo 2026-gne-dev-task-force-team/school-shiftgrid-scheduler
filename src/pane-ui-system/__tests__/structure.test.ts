@@ -86,8 +86,9 @@ describe('③ 호버-숨김(group-hover)은 Row 조각 한 곳에만', () => {
  *      ⑦ 안에서 바깥(app·plugins)을 부르지 않는다 — 부르면 떼어 갈 때 끊긴다
  *      ⑤ 도메인 낱말이 안 들어온다 — 들어오면 이 창틀이 도메인 전용이 된다
  */
-describe('⑦ pane-ui-system 은 바깥(app·plugins)을 import 하지 않는다', () => {
-    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App)[^'"]*['"]/;
+describe('⑦ pane-ui-system 은 바깥(app·plugins·interfaces)을 import 하지 않는다', () => {
+    // 🔴 /interfaces/ 추가(M0) — 창틀은 인터페이스를 「이름 문자열」로만 안다(src/interfaces 를 import 하면 도메인이 샌다).
+    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App|\.\.\/interfaces|\/interfaces\/)[^'"]*['"]/;
     const files = walk(join(ROOT, 'pane-ui-system'));
 
     it('스캔할 파일이 있다', () => { expect(files.length).toBeGreaterThan(0); });
@@ -394,6 +395,117 @@ describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contribu
         it(`옛 등록 호출 없음: ${f.slice(ROOT.length + 1)}`, () => {
             const hit = read(f).split('\n').findIndex((ln) => BANNED.test(ln));
             expect(hit, `${basename(f)} 가 ${hit + 1}번째 줄에서 옛 등록 5종을 직접 부른다 — contributes 또는 host.declare 로`).toBe(-1);
+        });
+    }
+});
+
+/*
+ * ⑱ 모듈·의존성(M0) — 플러그인이 모듈을 받는 길은 host.modules.use(인터페이스 이름) 하나뿐이고,
+ *   쓰는 인터페이스는 반드시 매니페스트에 선언한다. 옛 host.plugins.get 은 걷혔다. 네 가지를 지킨다:
+ *     (a) src/plugins 에 host.plugins.get( 0건(설탕 없음 — modules.use 로만)
+ *     (b) modules.use('x') 인데 x 가 그 플러그인 requires/supports/provides 에 없음 0건(선언 안 된 의존)
+ *     (c) onInterface.x(= onInterface: { x: … }) 인데 x 가 supports 에 없음 0건(짝 없는 훅)
+ *     (d) src/plugins 가 src/interfaces 를 **값**으로 import 0건(타입 전용만 — 값은 modules.use 로)
+ */
+describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 인터페이스만 · interfaces 값 import 0', () => {
+    const PLUGROOT = join(ROOT, 'plugins');
+    const files = walk(PLUGROOT);
+    const plugins = [...new Set(files.map((f) => relative(PLUGROOT, f).split(sep)[0]))];
+
+    it('스캔할 플러그인 폴더가 실제로 있다', () => { expect(plugins.length).toBeGreaterThan(0); });
+
+    /** provides/requires/supports 객체 리터럴의 키(= 선언된 인터페이스 이름)를 그 플러그인 파일들에서 모은다. */
+    function declaredFor(plugin: string): { all: Set<string>; supports: Set<string> } {
+        const all = new Set<string>(); const supports = new Set<string>();
+        for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+            const src = read(f);
+            for (const kind of ['provides', 'requires', 'supports']) {
+                for (const m of src.matchAll(new RegExp(`${kind}\\s*:\\s*\\{([^{}]*)\\}`, 'g'))) {
+                    for (const km of m[1].matchAll(/['"]?([a-zA-Z_][\w-]*)['"]?\s*:/g)) {
+                        all.add(km[1]);
+                        if (kind === 'supports') supports.add(km[1]);
+                    }
+                }
+            }
+        }
+        return { all, supports };
+    }
+
+    /** modules.use('x')(제네릭 있어도) 로 쓰는 인터페이스 이름들. */
+    function usedIn(src: string): string[] {
+        return [...src.matchAll(/modules\.use\s*(?:<[^>]*>)?\s*\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
+    }
+
+    /** onInterface: { x: {…} } 의 최상위 키(x)들 — 균형 괄호로 블록을 떼고 depth-0 의 `name: {` 를 센다. */
+    function onInterfaceKeys(src: string): string[] {
+        const out: string[] = [];
+        let idx = 0;
+        while ((idx = src.indexOf('onInterface', idx)) >= 0) {
+            const brace = src.indexOf('{', idx);
+            if (brace < 0) break;
+            let depth = 0; let end = -1;
+            for (let i = brace; i < src.length; i++) {
+                const c = src[i];
+                if (c === '{') depth++;
+                else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+            }
+            if (end < 0) break;
+            const inner = src.slice(brace + 1, end);
+            let d = 0;
+            for (let i = 0; i < inner.length; i++) {
+                const c = inner[i];
+                if (c === '{' || c === '(' || c === '[') d++;
+                else if (c === '}' || c === ')' || c === ']') d--;
+                else if (d === 0) {
+                    const m = /^([a-zA-Z_][\w-]*)\s*:\s*\{/.exec(inner.slice(i));
+                    if (m) { out.push(m[1]); i += m[0].length - 1; d++; }
+                }
+            }
+            idx = end + 1;
+        }
+        return out;
+    }
+
+    // (a) host.plugins.get( 0건
+    const GET = /host\.plugins\.get\s*\(/;
+    for (const f of files) {
+        it(`(a) host.plugins.get 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            const hit = read(f).split('\n').findIndex((ln) => GET.test(ln));
+            expect(hit, `${basename(f)} ${hit + 1}번째 줄 — host.plugins.get 은 걷혔다(host.modules.use 로)`).toBe(-1);
+        });
+    }
+
+    // (b)·(c) 선언된 인터페이스만 use/onInterface
+    for (const plugin of plugins) {
+        it(`(b) use 는 선언된 인터페이스만: ${plugin}`, () => {
+            const { all } = declaredFor(plugin);
+            const bad: string[] = [];
+            for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+                for (const name of usedIn(read(f))) if (!all.has(name)) bad.push(`${basename(f)}:${name}`);
+            }
+            expect(bad, `${plugin} 가 선언 안 한 인터페이스를 use 한다(requires/supports/provides 에 적어라): ${bad.join(', ')}`).toEqual([]);
+        });
+        it(`(c) onInterface 는 supports 와 짝: ${plugin}`, () => {
+            const { supports } = declaredFor(plugin);
+            const bad: string[] = [];
+            for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+                for (const name of onInterfaceKeys(read(f))) if (!supports.has(name)) bad.push(`${basename(f)}:${name}`);
+            }
+            expect(bad, `${plugin} 의 onInterface.${bad.join('/')} 가 supports 에 없다 — supports 에 그 인터페이스를 적어라`).toEqual([]);
+        });
+    }
+
+    // (d) src/interfaces 값 import 0 (import type 만 허용)
+    for (const f of files) {
+        it(`(d) interfaces 값 import 없음(타입만): ${f.slice(ROOT.length + 1)}`, () => {
+            const src = read(f);
+            const typeOnly = new Set(
+                [...src.matchAll(/import\s+type\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]),
+            );
+            const offenders = [...src.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1])
+                .filter((s) => /(?:^|\/)interfaces\//.test(s) || /\.\.\/interfaces/.test(s))
+                .filter((s) => !typeOnly.has(s));
+            expect(offenders, `${basename(f)} 가 src/interfaces 를 값으로 import 한다(타입 전용만 허용 — 값은 host.modules.use): ${offenders.join(', ')}`).toEqual([]);
         });
     }
 });

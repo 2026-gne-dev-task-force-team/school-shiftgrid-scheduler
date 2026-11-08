@@ -90,7 +90,14 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
 
         workspace: {
             open(viewId: string, o?: WorkspaceOpenOptions) {
-                return getWorkspaceBridge()?.open(viewId, o) ?? null;
+                const b = getWorkspaceBridge();
+                if (!b) {
+                    // 🔴 다리가 아직 없다 — activateAll/attach 가 시동 중에 열려 하면 조용히 null 만 주고 사라진다(ad43f55).
+                    //    onFirstRun 은 whenWorkspaceReady 로 미루니 정상이고, 그 밖에서 여기 오면 보이게 경고한다.
+                    console.warn(`[plugin] "${pluginId}" 가 작업대 다리가 서기 전에 workspace.open("${viewId}") 를 불렀다 — onFirstRun/구독으로 미뤄라`);
+                    return null;
+                }
+                return b.open(viewId, o) ?? null;
             },
             close(leafId: string) { getWorkspaceBridge()?.close(leafId); },
             on(ev: WorkspaceEvent, fn: (leaf: WorkspaceLeafInfo) => void) {
