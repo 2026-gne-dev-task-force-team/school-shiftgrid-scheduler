@@ -138,25 +138,31 @@ describe('③ host.declare 가 같은 결과를 내고 같은 host 를 바인딩
 // ④ 「옛 길(onActivate 안 host.views.register·host.commands.add 직접 등록)」 케이스는 D5③ 에서 그 5종을 지워
 //    길 자체가 없어졌으므로 제거했다(선언형 전환 마무리 — 플러그인이 꽂는 길은 contributes·declare 둘뿐).
 
-describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)에 통째로 넘어간다', () => {
-    /** id='project-explorer' 인 가짜 레지스트라(코어 — 먼저 산다). registerContributed 가 받은 것을 기록한다. */
+describe('⑥ contributes.nodeTypes 는 nodes 인터페이스 모듈(host.modules.use)에 통째로 넘어간다', () => {
+    /** nodes 를 채우는 가짜 제공자(코어 — 먼저 산다). registerContributed 가 받은 것을 기록한다. */
     function registrar(got: { type: string; implHas: boolean; hostId?: string }[]): PluginModule {
         return {
-            manifest: { id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
-            api: {
-                registerContributed(item: { type: string }, impl: PluginImpl, host: PluginHost) {
-                    got.push({ type: item.type, implHas: !!impl.nodeTypes, hostId: host.id });
-                    return { dispose() { /* 테스트 */ } };
+            manifest: {
+                id: 'nodes-prov', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
+                provides: { nodes: '0.1.0' },
+            },
+            modules: {
+                nodes: {
+                    registerContributed(item: { type: string }, impl: PluginImpl, host: PluginHost) {
+                        got.push({ type: item.type, implHas: !!impl.nodeTypes, hostId: host.id });
+                        return { dispose() { /* 테스트 */ } };
+                    },
                 },
             },
         };
     }
 
-    it('nodeTypes 를 적은 플러그인이 켜지면 레지스트라가 항목·impl·host 를 받는다', () => {
+    it('nodeTypes 를 적은 플러그인(requires.nodes)이 켜지면 모듈이 항목·impl·host 를 받는다', () => {
         const got: { type: string; implHas: boolean; hostId?: string }[] = [];
         const consumer = definePlugin({
             manifest: {
                 id: 'ntfake', name: 'NT', version: '0.1.0', minHostVersion: '0.1.0',
+                requires: { nodes: '^0.1' },
                 contributes: { nodeTypes: [{ type: 'ntfake.box', label: '상자', impl: 'boxFns' }] },
             },
             nodeTypes: { boxFns: { open: () => { /* 함수 묶음 */ } } },
@@ -164,24 +170,38 @@ describe('⑥ contributes.nodeTypes 는 노드 레지스트라(host.plugins.get)
 
         activateAll([registrar(got), consumer]);
 
-        expect(got.length, '레지스트라가 한 번 불린다').toBe(1);
+        expect(got.length, '모듈이 한 번 불린다').toBe(1);
         expect(got[0].type).toBe('ntfake.box');
-        expect(got[0].implHas, 'impl(함수 묶음)이 레지스트라로 넘어간다').toBe(true);
+        expect(got[0].implHas, 'impl(함수 묶음)이 모듈로 넘어간다').toBe(true);
         expect(got[0].hostId, '그 플러그인 host 가 넘어간다').toBe('ntfake');
         expect(listPlugins().find((p) => p.id === 'ntfake')?.failed).toBe(false);
     });
 
-    it('레지스트라가 없으면 활성 실패(조용히 안 넘어간다)', () => {
+    it('nodeTypes 인데 requires.nodes 를 선언 안 하면 blocked(호스트 검사 — 조용히 안 넘어간다)', () => {
         const consumer: PluginModule = {
             manifest: {
                 id: 'ntbad', name: 'NTB', version: '0.1.0', minHostVersion: '0.1.0',
                 contributes: { nodeTypes: [{ type: 'ntbad.box', label: '상자' }] },
             },
         };
+        activateAll([registrar([]), consumer]);
+        const p = listPlugins().find((x) => x.id === 'ntbad')!;
+        expect(p.blocked, 'requires.nodes 선언이 없으면 blocked').toBe(true);
+        expect(p.reason).toContain('requires.nodes');
+    });
 
-        activateAll([consumer]);   // 레지스트라(project-explorer) 없음
-
-        expect(listPlugins().find((p) => p.id === 'ntbad')?.failed, 'nodeTypes 를 받을 데가 없으면 활성 실패').toBe(true);
+    it('requires.nodes 는 선언했지만 제공자가 없으면 blocked(활성 실패 아님)', () => {
+        const consumer: PluginModule = {
+            manifest: {
+                id: 'ntnoprov', name: 'NTN', version: '0.1.0', minHostVersion: '0.1.0',
+                requires: { nodes: '^0.1' },
+                contributes: { nodeTypes: [{ type: 'ntnoprov.box', label: '상자' }] },
+            },
+        };
+        activateAll([consumer]);   // nodes 제공자 없음
+        const p = listPlugins().find((x) => x.id === 'ntnoprov')!;
+        expect(p.blocked).toBe(true);
+        expect(p.failed).toBe(false);
     });
 });
 

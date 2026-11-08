@@ -14,7 +14,7 @@ import { makeHost } from './host';
 import type { PluginModule, PluginImpl, PluginHost, Disposable } from './types';
 import { activateAll, enablePlugin, disablePlugin } from './registry';
 import {
-    disposeOwner, listSettings, getCommand, runCommand,
+    disposeOwner, disposeConsumerScopes, listSettings, getCommand, runCommand,
     listRibbonActions, listStatusItems, fireWorkspace,
 } from './store';
 
@@ -97,52 +97,61 @@ describe('host.workspace.on — open/close/activate 를 fireWorkspace 가 쏘면
     });
 });
 
-describe('host.plugins.get — 다른 플러그인의 공개 api(N4)', () => {
-    /** 공개 api 를 든 모듈 하나 — 활성/비활성에 따라 get 이 달라지는지 본다. */
-    function mod(id: string, api: unknown, core = false): PluginModule {
-        return { manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core }, lifecycle: { onActivate() { /* 등록 없음 */ } }, api };
+describe('host.modules.use — 다른 플러그인의 모듈(M0)', () => {
+    /** iface 인터페이스를 채우는 모듈 하나 — 활성/비활성에 따라 use 가 달라지는지 본다. */
+    function mod(id: string, module: unknown, core = false): PluginModule {
+        return {
+            manifest: { id, name: id, version: '0.1.0', minHostVersion: '0.1.0', core, provides: { iface: '0.1.0' } },
+            modules: { iface: module },
+            lifecycle: { onActivate() { /* 등록 없음 */ } },
+        };
     }
+    // 소비자 호스트 — iface 를 requires, maybe 를 supports 로 선언(안 선언한 이름은 throw).
+    const consumerManifest: PluginModule['manifest'] = {
+        id: 'consumer', name: 'consumer', version: '0.1.0', minHostVersion: '0.1.0',
+        requires: { iface: '^0.1' }, supports: { maybe: '^0.1' },
+    };
 
     beforeEach(() => {
         try { localStorage.clear(); } catch { /* jsdom 없을 때 */ }
     });
 
-    it('활성 플러그인의 api 를 돌려주고, 없는 id 는 undefined', () => {
-        const apiObj = { version: 1 as const, hello: () => 'hi' };
-        activateAll([mod('prov', apiObj)]);
-        const h = makeHost('consumer');
-        expect(h.plugins.get('prov')).toBe(apiObj);
-        expect(h.plugins.get('없는것')).toBeUndefined();   // 설치 안 된 것
-        expect(h.plugins.get('consumer')).toBeUndefined(); // api 안 낸 것(여기선 설치도 안 됨)
+    it('활성 제공자의 모듈을 돌려주고, 미선언은 throw · supports 미제공은 null', () => {
+        const moduleObj = { version: 1 as const, hello: () => 'hi' };
+        activateAll([mod('prov', moduleObj)]);
+        const h = makeHost('consumer', undefined, consumerManifest);
+        expect(h.modules.use('iface')).toBe(moduleObj);
+        expect(() => h.modules.use('없는것')).toThrow();   // 선언 안 한 이름
+        expect(h.modules.use('maybe')).toBeNull();         // supports 선언했으나 제공자 없음
     });
 
-    it('꺼진 플러그인은 undefined, 다시 켜면 다시 돌아온다', () => {
-        const apiObj = { version: 1 as const };
-        activateAll([mod('prov', apiObj)]);
-        const h = makeHost('consumer');
-        expect(h.plugins.get('prov')).toBe(apiObj);
+    it('꺼진 제공자는 null, 다시 켜면 다시 돌아온다', () => {
+        const moduleObj = { version: 1 as const };
+        activateAll([mod('prov', moduleObj)]);
+        const h = makeHost('consumer', undefined, consumerManifest);
+        expect(h.modules.use('iface')).toBe(moduleObj);
         disablePlugin('prov');
-        expect(h.plugins.get('prov')).toBeUndefined();   // 🔴 꺼지면 공개 표면도 빠진다
+        expect(h.modules.use('iface')).toBeNull();   // 🔴 꺼지면 모듈도 빠진다
         enablePlugin('prov');
-        expect(h.plugins.get('prov')).toBe(apiObj);
+        expect(h.modules.use('iface')).toBe(moduleObj);
     });
 
-    it('「호출자별 팩토리」면 호출자 id 와 track 을 넘겨 부른다', () => {
+    it('「호출자별 팩토리」면 호출자 id 와 (소비자,인터페이스) scope track 을 넘겨 부른다', () => {
         let seen: { caller?: string; tracked: number } = { tracked: 0 };
         const factory = Object.assign(
             (caller: string | undefined, track?: (d: Disposable) => Disposable) => {
                 seen = { caller, tracked: seen.tracked };
-                track?.({ dispose() { seen.tracked += 1; } });   // 호출자 소유로 모아 둔다
+                track?.({ dispose() { seen.tracked += 1; } });   // (소비자,iface) scope 에 모아 둔다
                 return { version: 1 as const, who: caller };
             },
             { __perCaller: true as const },
         );
         activateAll([mod('prov', factory)]);
-        const got = makeHost('consumer').plugins.get<{ who?: string }>('prov');
+        const got = makeHost('consumer', undefined, consumerManifest).modules.use<{ who?: string }>('iface');
         expect(seen.caller).toBe('consumer');   // 호출자가 threaded
         expect(got?.who).toBe('consumer');
-        disposeOwner('consumer');               // consumer 가 꺼지면
-        expect(seen.tracked).toBe(1);           // 🔴 상대가 낸 disposable 도 같이 회수된다
+        disposeConsumerScopes('consumer');      // consumer 의 인터페이스 scope 를 거두면
+        expect(seen.tracked).toBe(1);           // 🔴 모듈이 낸 disposable 도 같이 회수된다
     });
 });
 

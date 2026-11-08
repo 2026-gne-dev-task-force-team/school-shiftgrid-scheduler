@@ -20,10 +20,12 @@ import type {
 } from './types';
 
 /**
- * 🔴 노드 타입 레지스트라의 플러그인 id — 창틀이 도메인(노드 하이라키)을 쥔 플러그인에 거는 유일한 끈이다.
- *   ⛔ 다른 도메인 지식은 창틀에 없다. contributes.nodeTypes 를 적은 플러그인이 켜질 때만 이 id 로 api 를 찾는다.
+ * 🔴 노드 타입 레지스트라의 인터페이스 이름 — 창틀이 도메인(노드 하이라키)을 쥔 모듈에 거는 유일한 끈이다.
+ *   ⛔ 다른 도메인 지식은 창틀에 없다(이름은 문자열 하나 — src/interfaces 를 import 하지 않는다 · 구조 검사 ⑦).
+ *   contributes.nodeTypes 를 적은 플러그인이 켜질 때만 이 이름으로 모듈(host.modules.use)을 찾는다.
+ *   그래서 그 플러그인은 requires.nodes(또는 제공자면 provides.nodes)를 반드시 선언한다(호스트 검사 + ⑱).
  */
-const NODE_TYPE_REGISTRAR = 'project-explorer';
+const NODES_INTERFACE = 'nodes';
 
 /**
  * 동적 선언 하나 — contributes 항목 하나와 같은 타입·같은 검증·같은 꽂기 경로. host.declare 가 이걸 부른다.
@@ -133,17 +135,17 @@ export function applyContributes(c: Contributes | undefined, impl: PluginImpl, h
     for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host, 'manifest');
     for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host, 'manifest');
 
-    // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). 노드 하이라키를 쥔 플러그인(NODE_TYPE_REGISTRAR)의 api 에
-    //    항목·impl·host 를 통째로 넘겨 꽂는다. 없으면(꺼짐·활성 실패·먼저 안 삼) 던져서 「활성 실패」로 올린다
-    //    — 명세 「조용히 안 넘어간다」. 코어(탐색기)가 먼저 사니 평소엔 늘 있다.
+    // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). nodes 인터페이스 모듈(host.modules.use)에 항목·impl·host 를
+    //    통째로 넘겨 꽂는다. 없으면 던져서 「활성 실패」로 올린다 — 명세 「조용히 안 넘어간다」. 이 플러그인은
+    //    requires.nodes 를 선언했으니(호스트 검사) 위상 정렬이 제공자를 먼저 켠다 — 평소엔 늘 있다.
     //    🔴 장부(거울)엔 호스트가 직접 한 줄 남긴다 — 레지스트라(플러그인 api)는 안 건드린다(장부는 호스트의 거울).
     //       레지스트라로 꽂은 건 declareOne 경로가 아니라 여기로만 오니, 호스트가 kind:'nodeType'(id=type·title=label·
     //       origin:'manifest') 로 적는다. 레지스트라가 돌려준 Disposable 을 장부 제거와 함께 감싸 track 해, 끌 때
     //       (disposeOwner) 등록과 장부 줄이 같이 빠진다. registerType dispose 는 멱등이라 api 자동 track 과 겹쳐도 안전.
     if (c.nodeTypes?.length) {
-        const reg = host.plugins.get<NodeTypeRegistrar>(NODE_TYPE_REGISTRAR);
+        const reg = host.modules.use<NodeTypeRegistrar>(NODES_INTERFACE);
         if (!reg || typeof reg.registerContributed !== 'function') {
-            throw new Error(`[plugin] "${host.id}" 의 nodeTypes 기여를 받을 노드 레지스트라("${NODE_TYPE_REGISTRAR}")가 없다 — 켜져 있고 먼저 산 코어인가`);
+            throw new Error(`[plugin] "${host.id}" 의 nodeTypes 기여를 받을 "${NODES_INTERFACE}" 모듈이 없다 — requires.${NODES_INTERFACE} 를 선언했고 제공자가 켜졌나`);
         }
         for (const nt of c.nodeTypes) {
             const regDisp = reg.registerContributed(nt, impl, host);

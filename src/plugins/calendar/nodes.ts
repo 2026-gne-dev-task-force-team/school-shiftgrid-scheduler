@@ -1,6 +1,6 @@
 /**
  * 달력 ↔ 노드 시스템 다리 — 🔴 달력은 「저장」을 모른다(요구명세 핵심). 일정은 노드고, 저장·휴지통·캐스케이딩은 노드 시스템이 한다.
- *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만(구조 검사 ⑨: import type 만 허용 → 값은 host.plugins.get).
+ *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만(import type 만 · 값은 host.modules.use('nodes')).
  *
  * 이 모듈이 쥐는 것:
  *   ① 노드 타입 둘 등록(calendar.store·calendar.event record) — index.ts 가 부른다
@@ -8,8 +8,8 @@
  *   ③ byType 스냅샷(일정·저장소)을 subscribe 로 갱신 — useEvents 가 useSyncExternalStore 로 읽는다
  *   ④ 만들기·고치기·휴지통·저장소 바꾸기 조작(전부 NodesApi 로)
  */
-// 🔴 import type 만 — 값은 host.plugins.get 으로 받는다(구조 검사 ⑨ 예외는 타입 전용뿐)
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/api';
+// 🔴 import type 만 — 인터페이스 타입은 src/interfaces 에서(값 아님, 구조 검사 ⑱). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../interfaces/nodes';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';

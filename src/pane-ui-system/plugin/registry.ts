@@ -135,6 +135,15 @@ function computeActivation(): { order: string[]; blocked: Map<string, string>; p
             if (!satisfies(range, ver)) { blocked.set(m.manifest.id, `꺼짐 — "${iface}" ${range} 없음(있는 것 ${ver})`); break; }
         }
     }
+    // ②' 호스트 검사 — nodeTypes 를 기여하는 플러그인은 requires.nodes 필수(제공자는 provides.nodes 로 면제).
+    //    창틀이 nodeTypes 를 nodes 인터페이스 모듈에 넘기므로(applyContributes), 그 모듈 의존을 선언 안 하면 조용히 터진다.
+    for (const m of cands) {
+        if (blocked.has(m.manifest.id)) continue;
+        const hasNodeTypes = (m.manifest.contributes?.nodeTypes?.length ?? 0) > 0;
+        if (hasNodeTypes && !('nodes' in req(m)) && !('nodes' in prov(m))) {
+            blocked.set(m.manifest.id, `꺼짐 — nodeTypes 기여엔 requires.nodes 선언이 필요하다`);
+        }
+    }
     // ③ 전이 블록 — 필요한 제공자가 블록이면 나도 블록(고정점)
     let changed = true;
     while (changed) {
@@ -442,25 +451,6 @@ export function listInterfaces(): InterfaceStatus[] {
             .filter((m) => decl.name in { ...req(m), ...sup(m) } && activeProviders.get(decl.name) !== m.manifest.id)
             .map((m) => m.manifest.id),
     }));
-}
-
-/**
- * 🔴 N4(옛) — 활성(켜진) 플러그인의 공개 api(PluginModule.api). 꺼졌거나·실패거나·블록이거나·없으면 undefined.
- *   📌 M0 이행이 끝나면 api 와 함께 걷는다 — 지금은 아직 쓰는 실 플러그인이 있어 남긴다.
- */
-export function getPluginApi<T = unknown>(
-    id: string,
-    caller?: string,
-    track?: (d: Disposable) => Disposable,
-): T | undefined {
-    const m = byId(id);
-    if (!m) return undefined;
-    if (!activeIds.has(id)) return undefined;   // 실패·블록·꺼짐 — 활성 집합에 없으면 없는 것
-    const api = m.api;
-    if (typeof api === 'function' && (api as Partial<PerCallerApi>).__perCaller) {
-        return (api as PerCallerApi<T>)(caller, track);
-    }
-    return api as T | undefined;
 }
 
 /** 이 viewId 의 주인 플러그인 — 자리표시가 「누가 꺼졌나/블록됐나」를 알아내는 창구(viewId 접두사로). */

@@ -94,24 +94,28 @@ describe('③ 플러그인을 끄면 장부가 빈다', () => {
 });
 
 describe('④ nodeTypes 도 장부에 — 레지스트라로 꽂힌 것을 호스트가 거울에 남긴다', () => {
-    const REG = 'project-explorer';   // 노드 레지스트라(코어 — 먼저 산다)
-    const NT = 'ntled';               // nodeTypes 둘을 적는 소비 플러그인
+    const REG = 'nodes-prov';   // nodes 인터페이스 제공자(코어 — 먼저 산다)
+    const NT = 'ntled';         // nodeTypes 둘을 적는 소비 플러그인
 
-    /** 가짜 레지스트라 — 실제 등록 대신 되돌림 손잡이만 준다(장부는 호스트가 applyContributes 에서 남긴다). */
+    /** 가짜 nodes 모듈 — 실제 등록 대신 되돌림 손잡이만 준다(장부는 호스트가 applyContributes 에서 남긴다). */
     function registrar(): PluginModule {
         return {
-            manifest: { id: REG, name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
-            api: {
-                registerContributed() { return { dispose() { /* 테스트 */ } }; },
+            manifest: {
+                id: REG, name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
+                provides: { nodes: '0.1.0' },
+            },
+            modules: {
+                nodes: { registerContributed() { return { dispose() { /* 테스트 */ } }; } },
             },
         };
     }
 
-    /** nodeTypes 둘(상자·핀)을 적은 소비 플러그인 — 함수 묶음 없는 순수 데이터 타입. */
+    /** nodeTypes 둘(상자·핀)을 적은 소비 플러그인(requires.nodes) — 함수 묶음 없는 순수 데이터 타입. */
     function consumer(): PluginModule {
         return definePlugin({
             manifest: {
                 id: NT, name: 'NT Led', version: '0.1.0', minHostVersion: '0.1.0',
+                requires: { nodes: '^0.1' },
                 contributes: {
                     nodeTypes: [
                         { type: 'ntled.box', label: '상자' },

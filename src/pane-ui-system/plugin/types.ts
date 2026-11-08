@@ -75,14 +75,9 @@ export interface PluginModule extends PluginImpl {
      *      표식이 없으면 그 값을 그대로 돌려준다.
      */
     modules?: Record<string, unknown>;
-    /**
-     * 🔴 옛 N4 공개 표면 — host.plugins.get(id) 로 받던 것. 📌 M0 이행으로 provides+modules 로 옮기는 중이며,
-     *    이행 끝 커밋에서 api 칸과 host.plugins.get 을 **같이** 걷는다(설탕 없음). ⛔ 새 플러그인은 modules 를 쓴다.
-     */
-    api?: unknown;
 }
 
-/** 🔴 호출자별 공개 api 팩토리 — PluginModule.api 가 이 꼴이면 host.plugins.get 이 호출자 맥락으로 부른다. */
+/** 🔴 호출자별 모듈 팩토리 — PluginModule.modules[이름] 이 이 꼴이면 host.modules.use 가 호출자 맥락으로 부른다. */
 export interface PerCallerApi<T = unknown> {
     (callerId: string | undefined, track?: (d: Disposable) => Disposable): T;
     __perCaller: true;
@@ -201,7 +196,7 @@ export interface StatusBarContribution<RenderName extends string = string> {
  *   ⛔ 함수 칸(아이콘 함수·open·derive·menu·create.init)은 매니페스트에 못 들어간다 — impl 이름 하나로 가리키고,
  *      그 함수 묶음은 모듈 nodeTypes[impl] 에 둔다(함수가 없는 순수 데이터 타입이면 impl 을 생략한다).
  *   ⚠️ 창틀은 노드 타입의 속뜻을 모른다(도메인) — 활성 때 applyContributes 가 항목을 통째로 노드 레지스트라
- *      (host.plugins.get(…))에 넘긴다. 이름 풀기·레지스트리 꽂기는 레지스트라 몫이다. 아래 칸은 적는 쪽이 쓰기 좋게
+ *      (host.modules.use('nodes'))에 넘긴다. 이름 풀기·레지스트리 꽂기는 레지스트라 몫이다. 아래 칸은 적는 쪽이 쓰기 좋게
  *      흔한 꼴만 세워 둔 것이고, 레지스트라가 더 넓게 해석할 수 있다.
  */
 export interface NodeTypeContribution<ImplName extends string = string> {
@@ -219,8 +214,8 @@ export interface NodeTypeContribution<ImplName extends string = string> {
 }
 
 /**
- * 🔴 노드 타입 레지스트라 — 노드 하이라키를 쥔 플러그인이 공개 api(PluginModule.api)로 내준다.
- *   applyContributes 가 contributes.nodeTypes 를 만나면 host.plugins.get(NODE_TYPE_REGISTRAR) 로 이걸 받아
+ * 🔴 노드 타입 레지스트라 — 노드 하이라키를 쥔 플러그인이 「nodes」 인터페이스 모듈(PluginModule.modules.nodes)로 내준다.
+ *   applyContributes 가 contributes.nodeTypes 를 만나면 host.modules.use('nodes') 로 이걸 받아
  *   항목 하나 + 그 플러그인의 impl + host 를 통째로 넘긴다 — 이름 풀기·NodeTypeDef 조립·레지스트리 꽂기는
  *   레지스트라 몫이다(창틀은 노드 타입의 속을 끝내 모른다). Disposable 을 돌려주면 그 플러그인 소유로 추적된다.
  */
@@ -244,7 +239,7 @@ export interface Contributes<
     ribbon?: RibbonAddInput[];
     settings?: SettingsContributes<PaneName>;
     statusBar?: StatusBarContribution<RenderName>[];
-    /** 노드 타입 — applyContributes 가 노드 레지스트라(host.plugins.get)에 통째로 넘긴다(위 NodeTypeContribution). */
+    /** 노드 타입 — applyContributes 가 노드 레지스트라(host.modules.use('nodes'))에 통째로 넘긴다(위 NodeTypeContribution). */
     nodeTypes?: NodeTypeContribution<NTName>[];
 }
 
@@ -384,15 +379,6 @@ export interface PluginHost {
     };
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
-
-    /**
-     * 🔴 N4 — 다른 플러그인의 공개 api(PluginModule.api)를 받는다. import 는 여전히 0(구조 검사 ⑨).
-     *   꺼졌거나·활성 실패거나·없으면 undefined. 코어는 먼저 활성되니 코어 api 는 늘 있다.
-     *   ⚠️ 상대 플러그인이 「호출자별 팩토리」면 이 호스트의 id(= 호출자)와 track 으로 불러 바인딩한 것을 돌려준다.
-     */
-    plugins: {
-        get<T = unknown>(id: string): T | undefined;
-    };
 
     /**
      * 🔴 M0 — 모듈 소비. 인터페이스 **이름**으로 받는다(누가 채웠는지 소비자는 모른다 — 그래서 갈아 껴도 안 바뀐다).

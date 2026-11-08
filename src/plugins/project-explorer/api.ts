@@ -1,11 +1,11 @@
 /**
- * 공개 API — 다른 플러그인이 host.plugins.get<NodesApi>('project-explorer') 로 받는 표면 하나(설계 「공개 API」).
+ * 공개 API — 「nodes」 인터페이스를 채우는 모듈. 다른 플러그인이 host.modules.use<NodesApi>('nodes') 로 받는다.
  *
  * 🔴 ⛔ purge·purgeAll·replaceTree 는 **없다** — 영구 삭제·나무 통째 교체는 사람이 탐색기 단추/N5 들여오기로만.
  *    다른 플러그인이 사람 자료를 영구히 지우거나 통째로 덮을 길을 두지 않는다(설계 「마지막 한 타는 사람이 친다」).
  * 🔴 ⛔ Tree 객체 자체를 안 내보낸다 — 노드는 「얼린 복사본」으로만 준다(남이 나무를 직접 못 만지게).
  *
- * ⭐ 호출자별 팩토리(makeNodesApi(callerId, track)) — host.plugins.get 이 호출자 id 와 track 을 넣어 부른다:
+ * ⭐ 호출자별 팩토리(makeNodesApi(callerId, track)) — host.modules.use 가 호출자 id 와 scope track 을 넣어 부른다:
  *    ① types.register 는 `<callerId>.` 접두사를 강제(틀리면 콘솔 경고 + 빈 Disposable)
  *    ② setData 는 「그 타입을 등록한 플러그인(= 타입 접두사)만」을 호출자 id 로 가린다(🙋 3)
  *    ③ register·subscribe 가 낸 Disposable 을 track 으로 호출자 소유에 모아 둔다 — 호출자가 꺼지면 같이 회수.
@@ -89,7 +89,7 @@ function realNodes(): Node[] {
 
 /**
  * 호출자별 NodesApi 하나를 짓는다.
- *   callerId — host.plugins.get 을 부른 플러그인 id(접두사·주인 검사의 기준). 모르면 1차는 접두사 검사만.
+ *   callerId — host.modules.use 를 부른 플러그인 id(접두사·주인 검사의 기준). 모르면 1차는 접두사 검사만.
  *   track — 호출자 소유로 Disposable 을 모아 두는 함수(호출자가 꺼지면 같이 회수). 없으면 안 모은다.
  */
 export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Disposable): NodesApi {

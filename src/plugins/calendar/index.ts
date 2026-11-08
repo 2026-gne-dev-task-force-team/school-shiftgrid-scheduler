@@ -5,7 +5,7 @@
  *
  * ⭐ 선언형 전환(2026-11-02 D3): 뷰·명령·리본·설정을 매니페스트 contributes 에 「적고」, 실행 함수·컴포넌트는
  *    이름 붙여 내놓는다(components·commands·panes). 짝은 호스트가 맞춘다(옛 host.*.register/add 는 없앴다).
- *    🔴 ⛔ 선언 안 되는 것만 lifecycle.onActivate 에 남는다 — 노드 타입 등록(plugins.get)·스토어 초기화·노드 다리 구독,
+ *    🔴 ⛔ 선언 안 되는 것만 lifecycle.onActivate 에 남는다 — 노드 다리(modules.use)·스토어 초기화·노드 구독,
  *       첫 실행 기본 배치는 lifecycle.onFirstRun. 화면·기능은 전후 같다.
  *
  * 싱글턴·가운데·안 가름 — pane-test 와 같은 placement(딱 한 장만, 가운데만, 못 가른다).
@@ -13,8 +13,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps } from '../../pane-ui-system/plugin';
-// 🔴 import type 만 — 노드 시스템 「값」은 host.plugins.get 으로 받는다(구조 검사 ⑨)
-import type { NodesApi } from '../project-explorer/api';
+// 🔴 import type 만 — 인터페이스 타입은 src/interfaces 에서(값 아님, 구조 검사 ⑱). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi } from '../../interfaces/nodes';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 import { MiniCalendarView } from './views/MiniCalendarView';
@@ -33,6 +33,9 @@ const MINI_ID = 'calendar.mini';
 export const calendarPlugin = definePlugin({
     manifest: {
         ...manifest,
+        // 🔴 M0 — 일정은 노드다(달력은 저장을 모른다). nodes 인터페이스가 없으면 달력이 의미가 없으니 requires.
+        //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
+        requires: { nodes: '^0.1' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
         contributes: {
             views: [
@@ -114,7 +117,7 @@ export const calendarPlugin = definePlugin({
             // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
             //    노드 타입 둘(저장소·일정)은 contributes.nodeTypes 가 applyContributes(= onActivate 보다 먼저)에서 꽂았다.
             //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
-            const nodes = host.plugins.get<NodesApi>('project-explorer');
+            const nodes = host.modules.use<NodesApi>('nodes');
             initCalendarNodes(nodes ?? null);
         },
         /**

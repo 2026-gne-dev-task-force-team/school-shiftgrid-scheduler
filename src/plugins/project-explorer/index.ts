@@ -70,8 +70,8 @@ function onActivate(host: PluginHost): void {
 }
 
 /**
- * 🔴 N4 공개 api — 「호출자별 팩토리」(__perCaller). host.plugins.get<NodesApi>('project-explorer') 가
- *   호출자 id 와 track 을 넣어 부른다. 그래서 register 접두사·setData 주인·disposable 회수가 호출자 기준으로 선다.
+ * 🔴 nodes 인터페이스 모듈 — 「호출자별 팩토리」(__perCaller). host.modules.use<NodesApi>('nodes') 가
+ *   호출자 id 와 (소비자,nodes) scope track 을 넣어 부른다. 그래서 register 접두사·setData 주인·disposable 회수가 호출자 기준으로 선다.
  */
 const nodesApiFactory = Object.assign(
     (callerId: string | undefined, track?: (d: Disposable) => Disposable) => makeNodesApi(callerId, track),
@@ -81,6 +81,9 @@ const nodesApiFactory = Object.assign(
 export const projectExplorerPlugin = definePlugin({
     manifest: {
         ...manifest,
+        // 🔴 M0 — 「nodes」 인터페이스를 채운다(provides). 모듈 값은 아래 modules.nodes(짝). nodeTypes 기여가 있어도
+        //    제공자라 requires.nodes 가 면제된다(호스트 검사의 「제공자 예외」).
+        provides: { nodes: '0.1.0' },
         // 🔴 선언형 기여 — 「무엇을 내나」를 데이터로 적는다. 함수·컴포넌트는 이름으로(아래 components·commands·renders).
         contributes: {
             // 뷰: 탐색기 패널(왼쪽 기본 · 사이드 패널 둘만 — center 없음·split 없음, 쥔님 2026-11-01 19:34).
@@ -144,8 +147,10 @@ export const projectExplorerPlugin = definePlugin({
     renders: {
         Count: () => createElement(ExplorerStatus),
     },
+    // 🔴 M0 — nodes 인터페이스를 채우는 모듈(provides 와 짝). host.modules.use<NodesApi>('nodes') 가 이걸 받는다.
+    //    「호출자별 팩토리」라 use 가 (소비자 id, scope track) 으로 부른다.
+    modules: { nodes: nodesApiFactory },
     // 첫 실행 때 왼쪽에 패널 한 번(⛔ onActivate 가 아니라 여기 — 다리가 설 때까지 호스트가 미룬다).
     lifecycle: { onActivate, onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); } },
-    api: nodesApiFactory,
 });
 export default projectExplorerPlugin;

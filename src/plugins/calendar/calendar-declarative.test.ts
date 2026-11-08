@@ -16,15 +16,20 @@ import {
 import type { PluginModule } from '../../pane-ui-system/plugin';
 import { calendarPlugin } from './index';
 
-// 🔴 calendar 가 선언형 전환(D5) 로 contributes.nodeTypes(저장소·일정)를 내므로, 그걸 받을 노드 레지스트라(코어)가
-//    먼저 켜져 있어야 한다 — 없으면 applyContributes 가 던져 calendar 가 활성 실패로 올라간다. 여기선 뷰·명령·리본·설정
-//    집합만 보므로 노드 쪽은 최소 가짜로 둔다(registerContributed·subscribe·byType — calendar onActivate 의 다리가 쓴다).
+// 🔴 calendar 가 contributes.nodeTypes(저장소·일정)를 내고 requires.nodes 를 선언하므로, nodes 를 채우는 제공자(코어)가
+//    먼저 켜져 있어야 한다 — 없으면 calendar 가 blocked 가 된다. 여기선 뷰·명령·리본·설정 집합만 보므로 nodes 모듈은
+//    최소 가짜로 둔다(registerContributed·subscribe·byType — calendar onActivate 의 다리가 쓴다).
 const registrar: PluginModule = {
-    manifest: { id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true },
-    api: {
-        registerContributed: () => ({ dispose() { /* 테스트 */ } }),
-        subscribe: () => ({ dispose() { /* 테스트 */ } }),
-        byType: () => [],
+    manifest: {
+        id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
+        provides: { nodes: '0.1.0' },
+    },
+    modules: {
+        nodes: {
+            registerContributed: () => ({ dispose() { /* 테스트 */ } }),
+            subscribe: () => ({ dispose() { /* 테스트 */ } }),
+            byType: () => [],
+        },
     },
 };
 

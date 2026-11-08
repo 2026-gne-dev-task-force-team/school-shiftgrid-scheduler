@@ -18,8 +18,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps, ViewContribution, CommandContribution } from '../../pane-ui-system/plugin';
-// 🔴 N4 — 다른 플러그인의 「타입만」 import(import type). 값은 host.plugins.get 으로만 받는다(구조 검사 ⑨ 예외 🙋 4).
-import type { NodesApi } from '../project-explorer/api';
+// 🔴 인터페이스의 「타입만」 import(import type). 값은 host.modules.use('nodes') 로만 받는다(구조 검사 ⑱).
+import type { NodesApi } from '../../interfaces/nodes';
 import { manifest } from './manifest';
 import { TestConsole } from './views/TestConsole';
 import { SampleView } from './views/SampleView';
@@ -128,8 +128,8 @@ function onActivate(host: PluginHost): void {
  *      Disposable 은 host 가 주인(pluginId)별로 모아 끌 때 회수한다. subscribe 도 같은 길.
  */
 function wireNodes(host: PluginHost): void {
-    const nodes = host.plugins.get<NodesApi>('project-explorer');
-    if (!nodes) return;   // 탐색기가 없거나 꺼졌다 — 노드 기능은 그냥 없다
+    const nodes = host.modules.use<NodesApi>('nodes');
+    if (!nodes) return;   // nodes 제공자가 없다(supports 라 null) — 노드 기능은 그냥 없다
 
     // 「노드 N」 — subscribe 로 센다(상태바가 비춘다). 처음 한 번 + 바뀔 때마다.
     const recount = () => setNodeCount(nodes.find(() => true).length);
@@ -141,6 +141,8 @@ function wireNodes(host: PluginHost): void {
 export const paneTestPlugin = definePlugin({
     manifest: {
         ...manifest,
+        // 🔴 M0 — nodes 는 「있으면 쓰는」 것(supports) — 없어도 하네스는 돈다(use('nodes') 가 null 이면 노드 셈만 빠진다).
+        supports: { nodes: '^0.1' },
         contributes: {
             views: viewDefs,
             commands: commandDefs,

@@ -14,7 +14,7 @@ import { NARROW_PX } from '../layout/panels';
 import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
-import { getPluginApi, resolveModule } from './registry';
+import { resolveModule } from './registry';
 import { declareOne } from './contributes';
 import type { PluginHost, PluginImpl, PluginManifest, DeclareInput, WorkspaceOpenOptions, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
@@ -136,15 +136,6 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
                 storage.set('__first-run', true);
                 try { fn(); } catch (e) { console.error(`[plugin] "${pluginId}" onFirstRun 실패`, e); }
             });
-        },
-
-        plugins: {
-            // 🔴 N4 — 다른 플러그인 공개 api. 호출자(pluginId)와 track 을 넘긴다:
-            //   상대가 호출자별 팩토리면 그걸로 바인딩하고, 상대가 낸 Disposable 은 이 호출자 소유로 모아
-            //   둔다(이 플러그인이 꺼지면 상대 쪽 등록도 같이 회수된다 — 노드가 회색이 되는 길).
-            get<T = unknown>(id: string): T | undefined {
-                return getPluginApi<T>(id, pluginId, (d) => track(pluginId, d));
-            },
         },
 
         // 🔴 M0 — 모듈 소비(인터페이스 이름으로). ⛔ requires·supports·자기 provides 에 선언한 이름만 — 안 선언하면 던진다.
