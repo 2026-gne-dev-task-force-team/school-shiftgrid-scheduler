@@ -29,7 +29,7 @@ export const peoplePlugin = definePlugin({
             // 명단 화면(싱글턴·가운데·안 가름 — 달력 월 보기와 같은 placement).
             views: [{
                 id: 'sheet', title: '사람 명단', icon: 'book', defaultArea: 'center',
-                placement: { areas: ['center'], split: false, singleton: true },
+                placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 280, squeeze: 'scroll' },
                 component: 'Sheet',
             }],

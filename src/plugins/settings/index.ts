@@ -54,7 +54,7 @@ export const settingsPlugin = definePlugin({
             views: [{
                 id: 'main', title: '설정', icon: 'gear', defaultArea: 'center',
                 description: '모양·창틀·뷰·리본·플러그인 설정을 한 화면에서 — 2단 메뉴(좁아지면 아이콘·한 단계)',
-                placement: { areas: ['center'], split: false, singleton: true },
+                placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'collapse', collapseBelow: 480 },
                 component: 'Main',
             }],

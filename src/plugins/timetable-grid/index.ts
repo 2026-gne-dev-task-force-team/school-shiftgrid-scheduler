@@ -30,7 +30,7 @@ export const timetableGridPlugin = definePlugin({
             // 그리드 화면(싱글턴·가운데·안 가름 — 달력·명단과 같은 placement).
             views: [{
                 id: 'grid', title: '시간표', icon: 'table', defaultArea: 'center',
-                placement: { areas: ['center'], split: false, singleton: true },
+                placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Grid',
             }],

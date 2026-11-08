@@ -108,8 +108,11 @@ export function resolveDropAt(px: number, py: number, dragId: string, dragViewId
         const active = pane?.getAttribute('data-pane-active') ?? '';
         const others = leaves.filter((id) => id !== dragId);
         const r = body.getBoundingClientRect();
-        const zone = paneZone(px, py, { left: r.left, top: r.top, width: r.width, height: r.height });
         const bodyArea = areaOf(body);
+        // 🔴 ⭐ 사이드 패널은 위아래로만 가른다(쥔님 2026-11-08 19:22 *"사이드 패널들은 위아래로만 분리가능하게 하고
+        //    좌우로는 분리 못하게"*) — 좁은 패널의 좌우 띠는 가운데(탭 합치기)로 본다. ⛔ Workbench onDropLeaf 도 겹으로 막는다.
+        const raw = paneZone(px, py, { left: r.left, top: r.top, width: r.width, height: r.height });
+        const zone = bodyArea !== 'center' && (raw === 'left' || raw === 'right') ? 'center' : raw;
 
         // 자기뿐(또는 빈) 칸은 가를 수 없다 → 그 자리로 이동만(자리 이름)
         if (others.length === 0) {

@@ -50,7 +50,7 @@ describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집�
         const month = getView('calendar.month');
         const mini = getView('calendar.mini');
         expect(month?.title).toBe('달력');
-        expect(month?.placement).toEqual({ areas: ['center'], split: false, singleton: true });
+        expect(month?.placement).toEqual({ areas: ['center'], singleton: true });
         expect(mini?.title).toBe('작은 달력');
         expect(mini?.placement).toEqual({ areas: ['left', 'right'], singleton: true });
 

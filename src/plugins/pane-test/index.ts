@@ -87,7 +87,7 @@ const renders = {
 const viewDefs: ViewContribution<'Console' | 'Sample'>[] = [
     {
         id: 'console', title: 'Pane UI Test', icon: 'flask', defaultArea: 'center',
-        placement: { areas: ['center'], split: false, singleton: true },
+        placement: { areas: ['center'], singleton: true },
         layout: { minWidth: 240, squeeze: 'scroll' },
         component: 'Console',
     },

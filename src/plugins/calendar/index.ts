@@ -46,7 +46,7 @@ export const calendarPlugin = definePlugin({
                 // 월 보기(싱글턴·가운데·안 가름) — 아이콘은 'calendar'(쥔님 *"캘린더 스럽지 않아"* 로 'table' 에서 바꿈).
                 {
                     id: 'month', title: '달력', icon: 'calendar', defaultArea: 'center',
-                    placement: { areas: ['center'], split: false, singleton: true },
+                    placement: { areas: ['center'], singleton: true },
                     layout: { minWidth: 280, squeeze: 'scroll' },
                     component: 'Month',
                 },

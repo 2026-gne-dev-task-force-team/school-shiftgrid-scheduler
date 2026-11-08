@@ -210,6 +210,8 @@ export function Workbench() {
                 if (!area || area === 'floating' || !canPlace(l.viewId, area)) return w;
                 // 가장자리 드롭(새 split)은 가르기 허용도 본다
                 if ((pos === 'left' || pos === 'right' || pos === 'up' || pos === 'down') && !canSplit(l.viewId)) return w;
+                // 사이드 패널은 위아래로만 가른다(쥔님 2026-11-08) — 좌우 가르기는 가운데만
+                if ((pos === 'left' || pos === 'right') && area !== 'center') return w;
                 return moveLeaf(w, id, target, pos);
             });
             setFocus(id);
