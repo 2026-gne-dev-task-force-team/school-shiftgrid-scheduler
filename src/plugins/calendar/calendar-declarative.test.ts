@@ -53,16 +53,21 @@ describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집�
         expect(mini?.title).toBe('작은 달력');
         expect(mini?.placement).toEqual({ areas: ['left', 'right'], singleton: true });
 
-        // ── 명령 넷 — 옛 host.commands.add 와 같은 id 집합 + 제목 ──
+        // ── 명령 일곱 — 기존 넷 + 가져오기·내보내기·전체 내보내기(2026-11-08) ──
         const cmds = listCommands()
             .filter((c) => c.id.startsWith('calendar.'))
             .map((c) => c.id)
             .sort();
-        expect(cmds).toEqual(['calendar.newEventIn', 'calendar.open', 'calendar.openMini', 'calendar.openStore']);
+        expect(cmds).toEqual([
+            'calendar.exportAll', 'calendar.exportIcs', 'calendar.importIcs',
+            'calendar.newEventIn', 'calendar.open', 'calendar.openMini', 'calendar.openStore',
+        ]);
         expect(getCommand('calendar.open')?.title).toBe('달력 열기');
         expect(getCommand('calendar.openStore')?.title).toBe('달력에서 열기');
         expect(getCommand('calendar.newEventIn')?.title).toBe('새 일정');
         expect(getCommand('calendar.openMini')?.title).toBe('작은 달력 열기(오른쪽 패널)');
+        expect(getCommand('calendar.importIcs')?.title).toBe('ICS 가져오기');
+        expect(getCommand('calendar.exportIcs')?.title).toBe('ICS 내보내기');
 
         // ── 리본 둘 — 명령을 가리킨다(옛 host.ribbon.add 와 같은 commandId·순서) ──
         const ribbon = listRibbonActions()

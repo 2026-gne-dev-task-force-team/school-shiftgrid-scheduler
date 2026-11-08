@@ -53,12 +53,12 @@ beforeEach(async () => {
 afterEach(() => { disp?.dispose(); disp = null; clearPendingCard(); __resetPersistForTest(); });
 
 describe('저장소 우클릭 메뉴', () => {
-    it('① 타입 표에 menu 가 꽂혀 있고, 항목 둘(commandId)을 낸다', () => {
+    it('① 타입 표에 menu 가 꽂혀 있고, 항목 넷(commandId)을 낸다 — 열기·새 일정·가져오기·내보내기', () => {
         const menu = getType(STORE_TYPE)?.menu;
         expect(typeof menu).toBe('function');
         const items = storeMenu('store-1');
         expect(items.map((i) => ('commandId' in i ? i.commandId : undefined)))
-            .toEqual(['calendar.openStore', 'calendar.newEventIn']);
+            .toEqual(['calendar.openStore', 'calendar.newEventIn', 'calendar.importIcs', 'calendar.exportIcs']);
     });
 
     it('① 메뉴를 그리면 그 저장소를 명령 대상으로 잡아 둔다', () => {
