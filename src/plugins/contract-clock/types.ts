@@ -1,14 +1,14 @@
 /**
- * 🔴 약속 「clock」 0.1 — 교시 ↔ 실제 시각 · 급식 교대 · 학년별 하교. **학교 시각 낱말의 주인**.
+ *   📌 약속 플러그인 contract-clock — 내용은 e38940a 그대로(쥔님 검토 전 초안 · 2026-11-08 14:59 「리버트」).
+ *      구조만 바꿨다: import 자리(contract-*) · 공용 시각 낱말은 contract-clock · onChange 인라인.
+ * 🔴 인터페이스 「clock」 0.1.0 — 교시 ↔ 실제 시각 · 급식 교대 · 학년별 하교.
  *   ⭐ 벽시계 모델: 학년마다 점심이 어긋나서 「4교시」의 실제 시각이 학년마다 다르다. 충돌은 시각으로 판정한다.
+ *      (선생님 시간표 생성기와 보결 GAS 가 독립적으로 같은 답에 왔다 — [[김은지 선생님 코드 요구 해부]] 5-2)
  *   ⭐ 급식 교대는 **시각 구간**으로 낸다 — 「교사 식사용 빈 칸 1개 이상」 하드 제약·보결 「급식지도 중」 제외가 이걸 쓴다.
- *
- * 🔑 공용 시각 낱말(Weekday·Minute·TimeRange·IsoDate·PeriodRef)을 여기 둔 이유: clock 은 「시각」 자체를 뜻하는 가장 아래 약속이고,
- *    주 격자(week-grid)·부재(absence)·시간표(timetable)가 요일·분·시각구간을 쓸 때 이미 clock 에 시각을 묻는다(실제 import 로도 기댄다).
- *    별도 contract-school-time 을 두면 모두가 타입 하나 때문에 그 약속을 import 하는 「contract-common」이 되어 쥔님이 금한 꼴이 된다.
- *   ⛔ 값 0 — 타입만. 소비자는 host.modules 로 clock 모듈을 받는다(약속 이름 clock).
+ *   소비자: host.modules 로 clock 모듈을 받는다. ⛔ 값 0.
  */
-import type { Disposable } from '../../pane-ui-system/plugin';
+
+// ── 공용 시각 낱말(옛 common.ts) — 시각의 가장 아래 약속인 clock 이 갖는다 ──
 
 /** 요일 — 1=월 … 5=금(주 5일). 토·일은 1차에 없다. */
 export type Weekday = 1 | 2 | 3 | 4 | 5;
@@ -30,6 +30,8 @@ export interface PeriodRef {
     day: Weekday;
     period: number;   // 1부터
 }
+
+import type { Disposable } from '../../pane-ui-system/plugin';
 
 /** 교시 하나의 실제 시각. */
 export interface PeriodSlot {
@@ -56,12 +58,11 @@ export interface Clock {
     periodAt(grade: number, day: Weekday, at: Minute): number | null;
     /** 급식 교대 전부. 통일 급식이면 하나. */
     lunchShifts(): readonly LunchShift[];
-    /** 🔴 그 학년 그 요일의 점심 시각 — 요일마다 다를 수 있어 day 를 받는다(페이블 5). 교대에 안 묶였으면 null. */
-    lunchOf(grade: number, day: Weekday): TimeRange | null;
+    /** 그 학년의 점심 시각(요일마다 같다고 본다 — 1차). 교대에 안 묶였으면 null. */
+    lunchOf(grade: number): TimeRange | null;
     /** 그 학년 그 요일 하교 시각 = 마지막 교시 끝. 수업 없으면 null. */
     dismissalOf(grade: number, day: Weekday): Minute | null;
     /** 두 구간이 겹치나([start,end) 기준 — 맞닿기만 하면 안 겹친다). */
     overlaps(a: TimeRange, b: TimeRange): boolean;
-    /** 🔴 바뀜 알림 — 제공자는 「호출자별 팩토리(__perCaller)」로 내 구독을 소비자 scope 에 모은다(detach 때 회수). */
     onChange(listener: () => void): Disposable;
 }

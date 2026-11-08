@@ -8,5 +8,5 @@ export const manifest: PluginManifest = {
     name: '약속: 부재',
     version: '0.1.0',
     minHostVersion: '0.1.0',
-    description: '복무·부재 약속(absence 0.1) — 출장·연수·병가·회의(매주 반복 포함). 타입만. clock 에 기댄다(uses). 제공자: absence(M1).',
+    description: '복무·부재 약속(absence 0.1) — 출장·연수·병가 + 고정 일정(회의). 타입만. clock 에 기댄다(uses). 제공자: absence(M1).',
 };

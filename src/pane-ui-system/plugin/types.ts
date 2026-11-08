@@ -252,11 +252,6 @@ export interface Contributes<
      *   호스트는 켜진 플러그인들의 이 칸을 **모아** 약속 목록을 만든다(옛 INTERFACES 고정 배열을 대체 · 2026-11-08 3판).
      */
     interfaces?: InterfaceContribution[];
-    /**
-     * 🔴 권한 낱말 — 플러그인이 「나는 이런 권한을 가린다」를 선언한다(identity 가 can() 으로 본다).
-     *   호스트는 **모으기만** 한다(장부에 표시) — 진짜 검사는 identity 제공자·서버 몫(client can() 은 화면 가림).
-     */
-    permissions?: { id: string; title: string; default?: string[] }[];
 }
 
 /**

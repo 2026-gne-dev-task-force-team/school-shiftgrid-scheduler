@@ -1,11 +1,14 @@
 /**
- * 🔴 약속 「roster」 0.1 — 학교의 사람·반·과목·특별실 명부. 네 과제(보결·특별실·보조인력·시간표 편성)가 전부 읽는다.
- *   ⛔ 값 0 — 타입만. 제공자(school-roster 레인)가 채운다. 소비자는 host.modules 로 roster 모듈을 받는다(약속 이름 roster).
+ *   📌 약속 플러그인 contract-roster — 내용은 e38940a 그대로(쥔님 검토 전 초안 · 2026-11-08 14:59 「리버트」).
+ *      구조만 바꿨다: import 자리(contract-*) · 공용 시각 낱말은 contract-clock · onChange 인라인.
+ * 🔴 인터페이스 「roster」 0.1.0 — 학교의 사람·반·과목·특별실 명부.
+ *   네 과제(보결·특별실·보조인력·시간표 편성)가 전부 이걸 읽는다. 소비자는 host.modules 로 roster 모듈을 받는다.
+ *   ⛔ 값 0 — 타입만. 제공자(M1 roster 레인)가 채운다.
  *
  * ⭐ 낱말 판정
- *   - 담임은 사람의 종류가 아니라 **반의 속성**이다 → ClassGroup.homeroomId
- *   - 복식학급(두 학년 한 반)은 ClassGroup.grades 가 둘 이상인 것 — 🔴 clock 질의는 grades[0] 로 한다(벨 기준 학년을 첫 자리에, 페이블 6)
- *   - 도움반(특수학급)은 ClassGroup.special
+ *   - 담임은 사람의 종류가 아니라 **반의 속성**이다(v0.2 선생님 #3) → ClassGroup.homeroomId
+ *   - 복식학급(두 학년 한 반)은 ClassGroup.grades 가 둘 이상인 것 — 1차 범위 밖이지만 표현은 막지 않는다
+ *   - 도움반(특수학급)은 ClassGroup.special — 「특정 교시 국어·수학 필수」 같은 제약은 시간표 규칙 쪽 몫
  *   - 보조인력(스포츠강사·원어민·기초학력 전담강사…)은 혼자 수업을 못 한다 → canTeachAlone:false (보결 제외 사유 ①)
  */
 import type { Disposable } from '../../pane-ui-system/plugin';
@@ -35,7 +38,7 @@ export interface Person {
 
 export interface ClassGroup {
     id: string;
-    /** 학년 — 단식학급은 하나, 복식학급은 둘 이상. 🔴 복식이면 clock 질의는 grades[0](벨 기준 학년을 첫 자리에). */
+    /** 학년 — 단식학급은 하나, 복식학급은 둘 이상. */
     grades: number[];
     /** 같은 학년 안 반 번호(1반=1). 복식이면 학교가 붙인 번호. */
     no: number;
@@ -56,12 +59,9 @@ export interface Subject {
 export interface Room {
     id: string;
     name: string;
-    /**
-     * 🔴 동시 수용 반 수 — ⭐ **방은 실물 하나씩** 적는다(과학실이 둘이면 Room 둘). capacity 는 「한 방에 두 반이 **실제로 함께** 들어가는 곳」만 2 이상(페이블 6).
-     *    같은 과목 방이 둘이면 합산은 소비자가 한다(⛔ capacity 로 「방 수」를 흉내 내지 않는다).
-     */
+    /** 동시 수용 반 수(과학실 2개를 한 방으로 적으면 2). 🔴 같은 과목 방이 둘이면 합산은 소비자가 한다. */
     capacity: number;
-    /** 🔴 이 방을 쓰는 과목. **비면 「고정 배정 과목 없음」**(예약 전용 — 도서관·시청각실, 페이블 6). */
+    /** 이 방을 쓰는 과목. 비면 예약 전용(도서관·시청각실). */
     subjectIds: string[];
 }
 
@@ -74,15 +74,8 @@ export interface Collection<T extends { id: string }> {
     remove(id: string): void;
 }
 
-/** 엑셀 업로드 자리 — 파일 읽기는 export 약속(readXlsx)이, 행 해석은 roster 가 한다. */
+/** 엑셀 업로드 자리 — 파일 읽기는 export 인터페이스(readXlsx)가, 행 해석은 roster 가 한다. */
 export type RosterSheetKind = 'people' | 'classes' | 'subjects' | 'rooms';
-
-/** 가져오기 결과 — 실패한 줄을 숨기지 않고 돌려준다. 🔴 skipped.row 는 **엑셀 행 번호(1부터, 머리글 포함)**(페이블 7). */
-export interface ImportReport {
-    added: number;
-    updated: number;
-    skipped: { row: number; reason: string }[];
-}
 
 export interface Roster {
     people: Collection<Person>;
@@ -95,6 +88,12 @@ export interface Roster {
     importRows(kind: RosterSheetKind, rows: readonly (readonly unknown[])[]): ImportReport;
     /** 빈 양식(머리글 한 줄) — 「빈 양식 내려받기」용. */
     template(kind: RosterSheetKind): string[];
-    /** 🔴 바뀜 알림 — 제공자는 「호출자별 팩토리(__perCaller)」로 내 구독을 소비자 scope 에 모은다(detach 때 회수, 페이블 7). */
     onChange(listener: () => void): Disposable;
+}
+
+/** 가져오기 결과 — 엑셀 업로드 자리(roster.importRows 등). 실패한 줄을 숨기지 않고 돌려준다. */
+export interface ImportReport {
+    added: number;
+    updated: number;
+    skipped: { row: number; reason: string }[];
 }
