@@ -774,6 +774,7 @@ function renderEditor(
     return (
         <input
             autoFocus
+            size={1}
             value={text}
             inputMode={col.type === 'number' ? 'numeric' : undefined}
             onChange={(e) => core.setEditText(e.target.value)}
@@ -796,7 +797,8 @@ function renderEditor(
             }}
             onBlur={() => core.commitEdit(0, 0)}
             aria-label={col.title}
-            className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
+            // w-full·min-w-0·size=1 — 편집창이 칸보다 커지지 않게(input 기본 size 가 열을 넓히는 걸 막는다). 열 폭 고정.
+            className="w-full min-w-0 bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
         />
     );
 }
