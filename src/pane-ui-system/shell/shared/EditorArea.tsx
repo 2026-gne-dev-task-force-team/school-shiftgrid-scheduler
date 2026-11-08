@@ -16,6 +16,7 @@ import { isCollapsed } from '../../layout/clamp';
 import { ViewPlaceholder } from '../../plugin/Placeholder';
 import { usePluginRegistry } from '../../plugin/registry';
 import { PeekLayer } from './PeekLayer';
+import { ViewErrorBoundary } from './ErrorBoundary';
 
 const PEEK_WIDE_MIN_DEFAULT = 420;   // 뷰가 wideMin 을 안 주면 이 폭 이상을 「넓다」로 본다
 
@@ -103,7 +104,9 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
             <div ref={bodyRef} className="relative flex-1 min-w-0 min-h-0">
                 <div className={`absolute inset-0 ${overflow} select-text`}>
                     <div key={leaf.id} className="view-fade h-full min-h-0">
-                        <Body leaf={leaf} width={bodyW} height={size.height} collapsed={collapsed} peek={peekHandle} />
+                        <ViewErrorBoundary resetKey={`${leaf.id}:${leaf.viewId}`} surface={surface}>
+                            <Body leaf={leaf} width={bodyW} height={size.height} collapsed={collapsed} peek={peekHandle} />
+                        </ViewErrorBoundary>
                     </div>
                 </div>
                 {peek && !peekWide && <PeekLayer wide={false} onClose={hidePeek}>{peek.node}</PeekLayer>}

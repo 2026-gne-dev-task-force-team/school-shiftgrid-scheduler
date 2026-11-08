@@ -46,6 +46,7 @@ export { monthGrid, shiftMonth, monthLabel, isoOf, addDays, startOfWeek, weeksBe
 export { SidePanel } from './shell/shared/SidePanel';
 export { Tabs, type TabItem } from './shell/shared/Tabs';
 export { EditorArea } from './shell/shared/EditorArea';
+export { ViewErrorBoundary, RootErrorBoundary, healLayoutStorage } from './shell/shared/ErrorBoundary';
 export { EmptyArea } from './shell/shared/EmptyArea';
 export { WorkspaceView, type WorkspaceHandlers, type TabButtons, type RootChrome, type CenterEdges } from './shell/shared/WorkspaceView';
 export { DropZones } from './shell/shared/DropZones';

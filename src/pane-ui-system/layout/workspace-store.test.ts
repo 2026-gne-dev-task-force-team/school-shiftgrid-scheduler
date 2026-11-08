@@ -2,7 +2,7 @@
  * 보관 받아들이기 — 모양이 틀린 저장값을 통째로 버리지 않고 살릴 만큼 살린다.
  */
 import { describe, it, expect } from 'vitest';
-import { normalizeRaw } from './workspace-store';
+import { normalizeRaw, hasWorkspace, loadWorkspace, workspaceKey } from './workspace-store';
 import { flatten } from './tree';
 
 describe('normalizeRaw', () => {
@@ -60,6 +60,30 @@ describe('normalizeRaw', () => {
         if (ws.center.kind === 'split') {
             expect(ws.center.sizes.length).toBe(2);
             expect(ws.center.sizes.reduce((x, y) => x + y, 0)).toBeCloseTo(1);
+        }
+    });
+
+    it('깨진 JSON 이나 비객체가 localStorage 에 들어 있으면 자동 삭제하고 hasWorkspace=false 로 복구한다', () => {
+        const mem = new Map<string, string>();
+        const prev = globalThis.localStorage;
+        Object.defineProperty(globalThis, 'localStorage', {
+            configurable: true,
+            value: {
+                getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
+                setItem: (k: string, v: string) => { mem.set(k, String(v)); },
+                removeItem: (k: string) => { mem.delete(k); },
+            },
+        });
+        try {
+            mem.set(workspaceKey(), '{broken-json');
+            expect(hasWorkspace()).toBe(false);
+            expect(mem.has(workspaceKey())).toBe(false);
+
+            mem.set(workspaceKey(), '"문자열"');
+            expect(flatten(loadWorkspace().center)).toEqual([]);
+            expect(mem.has(workspaceKey())).toBe(false);
+        } finally {
+            Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: prev });
         }
     });
 });

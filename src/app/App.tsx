@@ -7,14 +7,15 @@
  *    한 번 끼운다(plugins.ts 가 플러그인을 값으로 들이는 것과 같은 층). 요청이 없으면 null 을 그려 아무 것도 안 띄운다.
  *    ⛔ 약속 이름을 문자열 리터럴로 쓰지 않는다 — 부품(컴포넌트)만 가져온다(구조 검사 ⑱-f).
  */
+import { RootErrorBoundary } from '../pane-ui-system'
 import { Workbench } from './Workbench'
 import { CredentialDialog } from '../plugins/account'
 
 export default function App() {
   return (
-    <>
+    <RootErrorBoundary>
       <Workbench />
       <CredentialDialog />
-    </>
+    </RootErrorBoundary>
   )
 }
