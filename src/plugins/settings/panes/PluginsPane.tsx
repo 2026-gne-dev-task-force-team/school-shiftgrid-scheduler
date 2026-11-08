@@ -15,6 +15,7 @@ import {
 import { Toggle } from '../../../pane-ui-system';
 import { PluginDetail } from './PluginDetail';
 import { useSettingsChrome } from '../chrome-context';
+import { disableImpact } from '../plugin-graph';
 
 export function PluginsPane({ host }: { host: PluginHost }) {
     usePluginRegistry();   // 켜고 끄면 다시 그린다
@@ -23,11 +24,13 @@ export function PluginsPane({ host }: { host: PluginHost }) {
     const plugins = listPlugins();
     const [openId, setOpenId] = useState<string | null>(null);   // 폴백(피크 없을 때)
 
-    const openDetail = (p: PluginStatus) => {
+    const openDetail = (p: PluginStatus, startConfirming = false) => {
         if (chrome.peek) {
-            chrome.peek.show(<PluginDetail p={p} host={host} />, { wideMin: 480 });
+            // 🔴 key 로 리마운트를 강제한다 — 피크가 같은 컴포넌트 자리를 재사용하면 startConfirming 초기 상태가 안 먹는다.
+            chrome.peek.show(<PluginDetail key={`${p.id}:${startConfirming}`} p={p} host={host} startConfirming={startConfirming} />, { wideMin: 480 });
         } else {
-            setOpenId((cur) => (cur === p.id ? null : p.id));   // 폴백 — 줄 안에서 펼침
+            // 폴백 — 줄 안에서 펼침. 끄기 확인으로 왔으면 접지 말고 연다.
+            setOpenId((cur) => (startConfirming ? p.id : cur === p.id ? null : p.id));
         }
     };
 
@@ -63,19 +66,27 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                     </div>
                                     <span className="text-[11px] text-muted font-mono">{p.id}</span>
                                 </div>
-                                {/* 켜기/끄기는 스위치 하나 — 코어는 잠긴다. 줄 클릭과 안 섞이게 전파를 끊는다 */}
+                                {/* 🔴 ④ 코어는 끄기 단추 자체가 없다 — 잠김 표시만. 비코어는 스위치 하나(줄 클릭과 안 섞이게 전파를 끊는다).
+                                    끌 때 같이 꺼질 것이 있으면 바로 끄지 않고 상세를 열어 확인 단계를 보여 준다. */}
                                 <span
-                                    title={p.core ? '코어 플러그인은 끌 수 없습니다' : undefined}
                                     className="shrink-0"
                                     onClick={(e) => e.stopPropagation()}
                                     onKeyDown={(e) => e.stopPropagation()}
                                 >
-                                    <Toggle
-                                        on={p.enabled}
-                                        disabled={p.core}
-                                        label={`${p.name} ${p.enabled ? '끄기' : '켜기'}`}
-                                        onToggle={(v) => (v ? enablePlugin(p.id) : disablePlugin(p.id))}
-                                    />
+                                    {p.core
+                                        ? <span className="flex items-center gap-1 text-[11px] text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={11} /> 끌 수 없음</span>
+                                        : (
+                                            <Toggle
+                                                on={p.enabled}
+                                                label={`${p.name} ${p.enabled ? '끄기' : '켜기'}`}
+                                                onToggle={(v) => {
+                                                    if (v) { enablePlugin(p.id); return; }
+                                                    const { willBlock, willDegrade } = disableImpact(p.id, plugins);
+                                                    if (willBlock.length || willDegrade.length) openDetail(p, true);   // 확인은 상세에서
+                                                    else disablePlugin(p.id);
+                                                }}
+                                            />
+                                        )}
                                 </span>
                             </div>
                             {open && (
