@@ -1,7 +1,7 @@
 /**
  * 🔴 약속 「table」 0.1 — 범용 표(스프레드시트식) 편집기. 타입만(값 0).
  *   한 칸 = 한 글자, (r,c) 뷰 좌표만 안다. 요일·교시·사람 같은 도메인은 모른다(손님이 밖에서 꽂는다).
- *   제공자: table-editor(provides: table). 손님은 host.modules.use<TableApi>('table') 로 Table 컴포넌트를 받는다.
+ *   제공자: table-editor(provides: table). 손님은 host.modules 로 table 모듈(TableApi)을 받아 Table 컴포넌트를 쓴다.
  *
  * ⭐ 범용 바닥(core:true) — 쥔님 2026-11-08 16:20 *"범용 표야"*. ⛔ 흡수한 엔진(옛 도메인 부품)의 이름을 여기 남기지 않는다.
  * ⭐ 「한 번 확정 = undo 한 단위」가 뼈대다(TableTx 하나 = 되돌리기 한 칸). 병합(merge)은 M2 — 모델이 막지 않게만 둔다.
@@ -144,7 +144,7 @@ export interface TableProps {
     className?: string;
 }
 
-/** host.modules.use<TableApi>('table') 가 돌려주는 것. */
+/** host.modules 로 받는 table 모듈 — 손님이 쓰는 전부. */
 export interface TableApi {
     version: 1;
     Table: ComponentType<TableProps>;
