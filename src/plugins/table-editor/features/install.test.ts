@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { buildConfig } from './install';
 import { lookupFeature, registerFeature } from './registry';
 import { DEFAULT_FEATURES } from './modules';
-import type { TableFeature, TableState } from '../../contract-table/types';
+import type { TableFeature, TableState } from '../contracts/table';
 
 const S = (): TableState => ({ active: { r: 0, c: 0 }, anchor: { r: 0, c: 0 }, sel: { r1: 0, r2: 0, c1: 0, c2: 0 }, editing: false, rowCount: 0, colCount: 0 });
 

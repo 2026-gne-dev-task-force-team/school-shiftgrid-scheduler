@@ -8,7 +8,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Table, type TableHandle } from './Table';
 import { tableApi } from './api';
-import type { TableColumn, TableRow, TableTx } from '../contract-table/types';
+import type { TableColumn, TableRow, TableTx } from './contracts/table';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

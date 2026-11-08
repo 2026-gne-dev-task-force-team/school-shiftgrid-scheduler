@@ -400,17 +400,19 @@ describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contribu
 });
 
 /*
- * ⑱ 모듈·의존성(M0 · 3판) — 플러그인이 모듈을 받는 길은 host.modules.use(약속 이름) 하나뿐이고,
- *   쓰는 약속은 매니페스트에 선언한다. 약속(타입)은 **약속 플러그인**(contract-* 의 types)에만 산다. 일곱을 지킨다:
+ * ⑱ 모듈·의존성(M0 · 4판 「플러그인은 꾸러미다」 2026-11-08) — 플러그인이 모듈을 받는 길은 host.modules.use(약속 이름)
+ *   하나뿐이고, 쓰는 약속은 매니페스트에 선언한다. 🔴 약속(타입)은 **그 약속을 들고 온 꾸러미** 안에 산다 — 꾸러미의
+ *   `contracts/` 하위(예: project-explorer/contracts/nodes), 또는 아직 미편입인 약속 폴더(contract-* 폴더). 일곱을 지킨다:
  *     (a) src/plugins 에 host.plugins.get( 0건(설탕 없음 — modules.use 로만)
  *     (b) modules.use('x') 인데 x 가 그 플러그인 requires/supports/provides 에 없음 0건(선언 안 된 의존)
  *     (c) onInterface.x(= onInterface: { x: … }) 인데 x 가 supports 에 없음 0건(짝 없는 훅)
- *     (d) src/plugins 가 contract-* 약속을 **값**으로 import 0건(타입 전용만 — 값은 modules.use 로)
- *     (e) src/interfaces 는 0파일이다(약속은 플러그인으로 옮겼다 · 옛 고정 목록 자리 소멸)
+ *     (d) src/plugins 가 남의 약속(contracts/ 또는 contract-*)을 **값**으로 import 0건(타입 전용만 — 값은 modules.use 로)
+ *     (e) src/interfaces 는 0파일이다(약속은 꾸러미로 옮겼다 · 옛 고정 목록 자리 소멸)
  *     (f) src/app·src/pane-ui-system 에 **학교 약속 이름** 하드코딩 0(플랫폼이 도메인 약속을 모른다 · 3판 핵심)
- *     (g) 플러그인이 **남의 약속 타입**을 import 할 땐 형제 plugins 중 contract-* 에서만(비-contract 플러그인에서 타입을 끌면 빨강)
+ *     (g) 플러그인이 **남의 약속 타입**을 import 할 땐 그 꾸러미의 `contracts/` 하위 또는 미편입 `contract-*` 폴더에서만
+ *         (남의 꾸러미 일반 코드에서 타입/값을 끌면 빨강 — 약속만 꾸러미 밖으로 드러낸다)
  */
-describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 약속만 · 약속 타입은 contract-*/ 에서만', () => {
+describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 약속만 · 약속 타입은 꾸러미 contracts/ 또는 contract-*/ 에서만', () => {
     const PLUGROOT = join(ROOT, 'plugins');
     const files = walk(PLUGROOT);
     const plugins = [...new Set(files.map((f) => relative(PLUGROOT, f).split(sep)[0]))];
@@ -498,31 +500,36 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
         });
     }
 
-    // (d)·(g) 약속 타입은 contract-*/ 에서만 · import type 만 — 형제 플러그인에 닿는 import 를 통째로 본다.
+    // (d)·(g) 약속 타입은 꾸러미 contracts/ 또는 미편입 contract-*/ 에서만 · import type 만 — 다른 꾸러미에 닿는 import 를 통째로 본다.
+    //   🔴 꾸러미 전환(2026-11-08): 약속을 꾸러미 안으로 묶어 「약속 위치」가 둘이다 — ①다른 꾸러미의 `contracts/` 하위, ②미편입 `contract-*/`.
+    //      그 둘에서만 **타입 전용**으로 끌 수 있고, 남의 꾸러미 일반 코드를 끌면(약속이 아닌 결합) 빨강.
     for (const f of files) {
         const self = relative(PLUGROOT, f).split(sep)[0];
-        it(`(d·g) 약속 타입은 contract-*/ 에서만·타입 전용: ${f.slice(ROOT.length + 1)}`, () => {
+        it(`(d·g) 약속 타입은 꾸러미 contracts/·contract-*/ 에서만·타입 전용: ${f.slice(ROOT.length + 1)}`, () => {
             const src = read(f);
             const typeOnly = new Set(
                 [...src.matchAll(/import\s+type\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]),
             );
-            const dVal: string[] = [];   // (d) contract-* 를 값으로 끌었다
-            const gBad: string[] = [];   // (g) 비-contract 형제 플러그인에서 타입을 끌었다
+            const dVal: string[] = [];   // (d) 남의 약속을 값으로 끌었다
+            const gBad: string[] = [];   // (g) 약속이 아닌 남의 꾸러미 코드를 끌었다
             for (const m of src.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
                 const s = m[1];
-                if (!s.startsWith('.')) continue;                 // 상대 경로만 형제 플러그인에 닿는다
+                if (!s.startsWith('.')) continue;                 // 상대 경로만 다른 꾸러미에 닿는다
                 const rel = relative(PLUGROOT, resolve(dirname(f), s));
                 if (rel.startsWith('..')) continue;               // plugins 바깥
-                const other = rel.split(sep)[0];
-                if (!other || other === self) continue;           // 자기 플러그인 안은 자유
-                if (other.startsWith('contract-')) {
-                    if (!typeOnly.has(s)) dVal.push(s);           // (d) 약속을 값으로 끌면 안 된다
+                const parts = rel.split(sep);
+                const other = parts[0];
+                if (!other || other === self) continue;           // 자기 꾸러미 안은 자유
+                // 🔴 「약속 위치」 — 미편입 약속 폴더(contract-*) 또는 다른 꾸러미의 contracts/ 하위.
+                const isPromise = other.startsWith('contract-') || parts[1] === 'contracts';
+                if (isPromise) {
+                    if (!typeOnly.has(s)) dVal.push(s);           // (d) 약속을 값으로 끌면 안 된다(값은 host.modules.use)
                 } else {
-                    gBad.push(s);                                 // (g) 남의 약속 타입은 contract-*/ 에서만
+                    gBad.push(s);                                 // (g) 약속이 아닌 남의 꾸러미 코드는 끌면 안 된다
                 }
             }
-            expect(dVal, `${basename(f)} 가 contract-* 약속을 값으로 import 한다(타입 전용만 — 값은 host.modules.use): ${dVal.join(', ')}`).toEqual([]);
-            expect(gBad, `${basename(f)} 가 비-contract 형제 플러그인에서 타입을 끈다(약속 타입은 contract-*/ 에서만): ${gBad.join(', ')}`).toEqual([]);
+            expect(dVal, `${basename(f)} 가 남의 약속을 값으로 import 한다(타입 전용만 — 값은 host.modules.use): ${dVal.join(', ')}`).toEqual([]);
+            expect(gBad, `${basename(f)} 가 남의 꾸러미 일반 코드를 끈다(약속 타입은 꾸러미 contracts/·contract-*/ 에서만): ${gBad.join(', ')}`).toEqual([]);
         });
     }
 

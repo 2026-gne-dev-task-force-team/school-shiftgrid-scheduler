@@ -6,9 +6,10 @@
  *   얹기 전에 **지금 순서 그대로** 못 박아, 리팩토링이 배치를 흔들면 여기서 빨간불이 켜진다.
  *
  * ⭐ 재는 것 둘:
- *   ① 활성 순서 — 코어(settings·contract-nodes·project-explorer) 먼저, 그 뒤 목록 순(calendar). onActivate 가 도는 차례.
+ *   ① 활성 순서 — 코어(settings·project-explorer) 먼저, 그 뒤 목록 순(calendar·account·people·table-editor·timetable-grid). onActivate 가 도는 차례.
+ *      🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」): 약속(contract-*)을 꾸러미 안으로 묶어 별도 약속 플러그인 7개가 사라졌다 — 7꾸러미만 선다.
  *   ② onFirstRun 이 다리가 선 뒤에 여는 viewId 순서 — project-explorer.tree → calendar.month → calendar.mini.
- *      (약속 플러그인 contract-nodes 는 화면·onFirstRun 이 없어 여는 순서에 안 낀다.)
+ *      (account·people·table-editor·timetable-grid 는 onFirstRun 자동 열기가 없어 여는 순서에 안 낀다.)
  * ⚠️ node 라 localStorage 가 없다 — first-run.test 와 같은 메모리 스텁(깨끗한 프로파일 = 첫 실행).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -43,13 +44,9 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
-            'settings', 'contract-nodes', 'project-explorer', 'calendar',
-            // 🔴 계정(2026-11-08 머지) — 약속 셋이 제공자(account·credential-local)보다 앞에 선다.
-            'contract-identity', 'contract-credential', 'contract-permit', 'account', 'credential-local',
-            // 사람 명단(2026-11-08 머지) — 약속이 제공자보다 앞에 선다.
-            'contract-people', 'people',
-            // 표 편집기·시간표 그리드·달력 약속(2026-11-08 머지) — 달력 약속은 끝에 붙어도 calendar 가 provides 로 쓰는 쪽이라 막히지 않는다.
-            'contract-table', 'table-editor', 'timetable-grid', 'contract-calendar',
+            // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶어 7꾸러미만 남았다.
+            //    코어(settings·project-explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
+            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);

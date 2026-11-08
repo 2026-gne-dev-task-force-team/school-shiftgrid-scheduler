@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { mapFeedEvents, feedEventId, feedStoreId, type FeedSourceInput } from './feed-events';
-import type { CalendarItem, CalendarSource } from '../contract-calendar/types';
+import type { CalendarItem, CalendarSource } from './contracts/calendar';
 
 const item = (over: Partial<CalendarItem>): CalendarItem => ({
     id: 'i', title: '제목', start: '2026-11-10T09:00', end: '2026-11-10T10:00', allDay: false, ...over,

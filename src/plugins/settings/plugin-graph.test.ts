@@ -123,6 +123,20 @@ describe('disableImpact ④ — 같이 꺼질 것 / 기능만 떨어질 것', ()
     it('없는 id 는 빈 영향', () => {
         expect(disableImpact('nope', base())).toEqual({ willBlock: [], willDegrade: [] });
     });
+
+    // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속을 들고 온 꾸러미가 그 약속을 provides 로도 채운다(둘이 한 꾸러미).
+    //    그 꾸러미를 끄면 ①약속 자체가 사라지고(declaredDown) ②제공자도 사라진다(providerGone) — 소비자는 어느 길로도 같이 꺼져야 한다.
+    //    (옛 구조에서 선언자와 제공자가 갈려 있어 한쪽만 보면 소비자를 빠뜨릴 수 있던 결함 — 꾸러미로 묶여 자연히 막힌다.)
+    it('약속을 들고 와 채우는 한 꾸러미를 끄면 그 약속 소비자가 같이 꺼진다(선언+제공 동시)', () => {
+        const ps = [
+            mk({ id: 'fake-nodes', core: true, provides: { nodes: '0.1.0' }, interfaces: C('nodes') }),
+            // account 꾸러미: identity 를 들고 오고(interfaces) 동시에 채운다(provides) — 새 구조.
+            mk({ id: 'account', provides: { identity: '0.2.0' }, requires: { nodes: '^0.1' }, interfaces: C('identity') }),
+            mk({ id: 'boss', requires: { identity: '^0.1' } }),   // identity 소비자
+        ];
+        const { willBlock } = disableImpact('account', ps);
+        expect(willBlock.map((x) => x.id)).toContain('boss');     // 꾸러미를 끄면 약속·제공자가 같이 사라져 소비자가 막힌다
+    });
 });
 
 describe('promiseDetail / listPromiseRows ⑤ — 약속별', () => {
