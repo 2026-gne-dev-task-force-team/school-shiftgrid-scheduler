@@ -5,8 +5,8 @@ import type { PluginManifest } from '../../pane-ui-system/plugin';
 
 export const manifest: PluginManifest = {
     id: 'contract-identity',
-    name: '약속: 계정',
-    version: '0.1.0',
+    name: '약속: 누구',
+    version: '0.2.0',
     minHostVersion: '0.1.0',
-    description: '계정 약속(identity 0.1) — 지금 누구·권한. 타입만. 제공자: account-local(M1) → account-server(나중).',
+    description: '계정 약속(identity 0.2) — 지금 누구(master·guest·user). 타입만. 제공자: account → account-server(나중).',
 };

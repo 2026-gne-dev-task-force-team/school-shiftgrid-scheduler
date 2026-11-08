@@ -1,8 +1,8 @@
 /**
- * 약속 플러그인 여덟(nodes + 학교 일곱) — 켜지면 선언·uses·활성이 서나, 그리고 🔴 uses 가 **실제 import type 그래프와 일치**하나(페이블 10).
+ * 약속 플러그인 열(nodes + 학교 일곱 + 계정 둘) — 켜지면 선언·uses·활성이 서나, 그리고 🔴 uses 가 **실제 import type 그래프와 일치**하나(페이블 10).
  *
- * ⭐ 이 일곱(roster·clock·week-grid·timetable·absence·identity·export)은 PLUGINS 에 안 박았다(소비자·제공자 0 — 필요할 때 한 줄).
- *    그래도 타입·선언·기대기가 서는지는 여기서 켜서 증명한다(제공자 없이도 약속은 산다).
+ * ⭐ 이 아홉(roster·clock·week-grid·timetable·absence·identity·export·credential·permit)은 PLUGINS 에 안 박았다
+ *    (소비자·제공자 0 — 필요할 때 한 줄). 그래도 타입·선언·기대기가 서는지는 여기서 켜서 증명한다(제공자 없이도 약속은 산다).
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -18,10 +18,13 @@ import { contractTimetablePlugin } from './contract-timetable';
 import { contractAbsencePlugin } from './contract-absence';
 import { contractIdentityPlugin } from './contract-identity';
 import { contractExportPlugin } from './contract-export';
+import { contractCredentialPlugin } from './contract-credential';
+import { contractPermitPlugin } from './contract-permit';
 
 const ALL: PluginModule[] = [
     contractNodesPlugin, contractRosterPlugin, contractClockPlugin, contractWeekGridPlugin,
     contractTimetablePlugin, contractAbsencePlugin, contractIdentityPlugin, contractExportPlugin,
+    contractCredentialPlugin, contractPermitPlugin,
 ];
 const IDS = ALL.map((p) => p.manifest.id);
 
@@ -43,16 +46,16 @@ function declaredUsesOf(p: PluginModule): string[] {
     return [...names].sort();
 }
 
-describe('약속 여덟 — 선언·활성·uses', () => {
-    it('켜면 여덟 다 활성(실패·블록 0)이고 약속 목록에 여덟 이름이 뜬다', () => {
+describe('약속 열 — 선언·활성·uses', () => {
+    it('켜면 열 다 활성(실패·블록 0)이고 약속 목록에 열 이름이 뜬다', () => {
         activateAll(ALL);
         const ps = listPlugins().filter((p) => IDS.includes(p.id));
-        expect(ps.length).toBe(8);
+        expect(ps.length).toBe(10);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);   // clock 이 있어 week-grid·timetable·absence 의 uses 가 찬다
 
         const names = listInterfaces().map((i) => i.name).sort();
-        expect(names).toEqual(['absence', 'clock', 'export', 'identity', 'nodes', 'roster', 'timetable', 'week-grid']);
+        expect(names).toEqual(['absence', 'clock', 'credential', 'export', 'identity', 'nodes', 'permit', 'roster', 'timetable', 'week-grid']);
         // 제공자 0명이어도 약속은 산다
         expect(listInterfaces().every((i) => i.provider === null)).toBe(true);
     });

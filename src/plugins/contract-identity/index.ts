@@ -7,7 +7,7 @@ import { manifest } from './manifest';
 export const contractIdentityPlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'identity', version: '0.1.0' }] },
+        contributes: { interfaces: [{ name: 'identity', version: '0.2.0' }] },
     },
 });
 export default contractIdentityPlugin;

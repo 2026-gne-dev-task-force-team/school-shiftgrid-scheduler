@@ -1,31 +1,33 @@
 /**
- *   📌 약속 플러그인 contract-identity — 내용은 e38940a 그대로(쥔님 검토 전 초안 · 2026-11-08 14:59 「리버트」).
- *      구조만 바꿨다: import 자리(contract-*) · 공용 시각 낱말은 contract-clock · onChange 인라인.
- * 🔴 인터페이스 「identity」 0.1.0 — 지금 누가 쓰고 있나 · 이걸 해도 되나.
- *   ⭐ 「인터페이스 먼저, 모듈 나중」의 첫 손님(쥔님 2026-11-08 12:33 *"미리 인터페이스 만들고, 각 모듈이 지원 여부 등록하고, 끼면 연동"*).
- *      과제 플러그인은 supports: { identity: '^0.1' } + lifecycle.onInterface.identity.attach 로 미리 적어 둔다.
- *      오늘은 account-local(이 기기 = 담당자 한 명)이 채우고, 나중에 account-server 가 같은 이름으로 갈아 낀다 — 소비자 무변경.
- *   ⭐ identity 가 없으면(제공자 0) 소비자는 「담당자 한 명 · 전부 허용」으로 동작한다.
- *   🔴 can() 은 화면을 가리는 것이지 막는 것이 아니다 — 진짜 보안은 서버·공유 저장소 판에서.
- *   ⛔ 비밀번호·PIN 을 이 인터페이스로 주고받지 않는다.
- *   소비자: host.modules 로 identity 모듈을 받는다 — supports 라 null 이 올 수 있다. ⛔ 값 0.
+ * 🔴 약속 「identity」 0.2 — 지금 **누구**인가. (「이걸 해도 되나」 판정은 permit 약속으로 갈랐다 · 2026-11-08 계정 설계.)
+ *   ⭐ 바닥은 정책 0이다(쥔님 14:54). 이 약속은 「누구」의 **모양**만 안다 — 역할 이름·권한 낱말·학교 낱말 0.
+ *   ⭐ 갈아 끼는 자리 셋(누구 / 증명 / 판정) 중 「누구」. 증명은 contract-credential, 판정은 contract-permit.
+ *
+ *   소비자: supports: { identity: '^0.2' } + lifecycle.onInterface.identity.attach 로 미리 적어 둔다.
+ *   오늘은 account 제공자가 채우고, 나중에 account-server 가 같은 이름으로 갈아 낀다 — 소비자 무변경.
+ *   ⛔ 비밀번호·PIN 을 이 약속으로 주고받지 않는다(증명은 contract-credential 몫).
  */
 import type { Disposable } from '../../pane-ui-system/plugin';
 
+/**
+ * 지금 로그인한 사람 — current() 는 **항상 객체**(null 없음 · 비로그인은 kind:'guest').
+ *   kind — master: 프로젝트 만든 사람(체계 밖 수정자) · guest: 비로그인(아무도 아님) · user: 명단의 그 사람.
+ *   verified — 증명을 거쳤나(이름만 댄 사용자는 false · 마스터는 true · 손님은 false).
+ *   roles — 이용자가 만든 역할의 id 목록(코드가 아는 역할 이름 0 · 플러그인이 보고 판단할 수 있다).
+ *   fields — 다른 플러그인이 꽂은 칸('<pluginId>.<name>' → 값). 뜻은 꽂은 플러그인만 안다(노드 data 와 같은 결).
+ */
 export interface CurrentUser {
-    /** roster Person.id — 명부에 없는 사람(외부 관리자)이면 null. */
-    personId: string | null;
-    /** 역할 낱말 — 'admin' · 'teacher' · 'aide' … 플러그인이 선언한 권한 표가 이걸 본다. */
-    roles: string[];
-    /** 화면에 보일 이름. */
+    kind: 'master' | 'guest' | 'user';
+    id?: string;                       // user 일 때만(master·guest 는 없음)
     displayName: string;
+    verified: boolean;
+    roles: string[];
+    fields?: Record<string, unknown>;
 }
 
 export interface Identity {
-    /** 로그인 전이면 null. account-local 은 늘 담당자 한 명을 돌려준다. */
-    current(): CurrentUser | null;
-    /** 권한 낱말(플러그인이 contributes.permissions 로 선언 — 'room.approve' 등) 허용 여부. */
-    can(action: string): boolean;
-    /** 사람이 바뀌면(로그인·로그아웃·「~로 보기」 전환) 울린다. */
+    /** 지금 누구 — 항상 객체. 비로그인은 kind:'guest'. */
+    current(): CurrentUser;
+    /** 사람이 바뀌면(로그인·로그아웃·전환) 울린다. */
     onChange(listener: () => void): Disposable;
 }

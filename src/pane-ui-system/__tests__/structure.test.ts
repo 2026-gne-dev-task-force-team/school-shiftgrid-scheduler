@@ -534,10 +534,10 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
     });
 
     // (f) 학교 약속 이름이 src/app·src/pane-ui-system 에 하드코딩 0 — 플랫폼은 도메인 약속을 모른다(3판 핵심).
-    //   ⭐ 판정 기준: 「학교 약속 일곱」 이름만 본다. 'nodes' 는 창틀의 유일한 레지스트라 다리(contributes.ts NODES_INTERFACE)라
-    //      제외한다(범용 약속 · 도메인 아님). 테스트 픽스처(.test.ts·__tests__)는 walk 가 이미 건너뛴다.
+    //   ⭐ 판정 기준: 「도메인 약속 아홉」(학교 일곱 + 계정 둘) 이름만 본다. 'nodes' 는 창틀의 유일한 레지스트라 다리
+    //      (contributes.ts NODES_INTERFACE)라 제외한다(범용 약속 · 도메인 아님). 테스트 픽스처(.test.ts·__tests__)는 walk 가 이미 건너뛴다.
     describe('(f) src/app·src/pane-ui-system 에 학교 약속 이름 0', () => {
-        const SCHOOL = ['roster', 'clock', 'week-grid', 'timetable', 'absence', 'identity', 'export'];
+        const SCHOOL = ['roster', 'clock', 'week-grid', 'timetable', 'absence', 'identity', 'export', 'credential', 'permit'];
         const platformFiles = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system'))];
         // 낱말 경계로 — 'export' 키워드와 안 겹치게 따옴표로 감싼 리터럴만 본다('roster' 등).
         for (const f of platformFiles) {

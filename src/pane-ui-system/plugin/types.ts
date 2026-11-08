@@ -252,6 +252,20 @@ export interface Contributes<
      *   호스트는 켜진 플러그인들의 이 칸을 **모아** 약속 목록을 만든다(옛 INTERFACES 고정 배열을 대체 · 2026-11-08 3판).
      */
     interfaces?: InterfaceContribution[];
+    /**
+     * 🔴 권한 낱말 — 플러그인이 「나는 이런 권한을 가린다」를 선언한다(permit 제공자가 can() 으로 본다).
+     *   호스트는 **모으기만** 한다(장부에 표시) — 진짜 판정은 permit 제공자·서버 몫(client can() 은 화면 가림).
+     *   ⛔ default(역할 기본값)를 넣지 않는다 — 그게 정책이고, 정책은 편집 화면에서 사람이 건다(쥔님 2026-11-08 14:54).
+     */
+    permissions?: { id: string; title: string }[];
+    /**
+     * 🔴 사용자 칸 꽂기 — 다른 플러그인이 「사용자에 이런 칸을 끼운다」를 선언한다(노드 data 와 같은 결).
+     *   값은 꽂은 플러그인만 고친다 · editor 가 있으면 계정 화면이 그 pane 을 끼워 그리고, 없으면 값을 표시만.
+     *   ⛔ 칸 이름(id)은 호스트가 접두사를 붙이지 않는다 — 꽂는 쪽이 `<pluginId>.` 로 스스로 접두한다(충돌 방지).
+     */
+    userFields?: { id: string; title: string; editor?: string }[];
+    /** 🔴 역할 칸 꽂기 — userFields 와 같은 결(역할에도 플러그인이 칸을 꽂는다 · 예: 「이 역할로 들어오면 먼저 보일 화면」). */
+    roleFields?: { id: string; title: string; editor?: string }[];
 }
 
 /**
