@@ -14,6 +14,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
 import type { RoomList, Room, RoomInput, RoomPatch } from './contracts/rooms';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { uniqueName } from '../../pane-ui-system';
 import { parsePasted } from './parse';
 import { effectiveParentId, wouldCycle } from './tree';
 import { setActiveList } from './store';
@@ -119,6 +120,24 @@ export function inTrash(id: string): boolean {
 /** 살아 있는 목록 전부(트리 순서). */
 export function listsOf(): RoomList[] {
     return listNodes.filter((n) => !inTrash(n.id)).map((n) => ({ id: n.id, name: n.name }));
+}
+
+/**
+ * 시작 화면 「새 방 목록」 — 탐색기 맨 위(main 루트)에 빈 목록 하나를 만든다. 이름이 겹치면 「방 목록 2」…
+ *   데이터는 비워 둔다(방은 열고 나서 더한다). 새 id 를 돌려준다(못 만들면 null).
+ */
+export function createList(): string | null {
+    if (!api) return null;
+    const name = uniqueName('방 목록', listNodes.map((n) => n.name));
+    return api.create(api.roots.main, { type: LIST_TYPE, name }) || null;
+}
+
+/** 노드가 든 폴더 이름(맨 위면 null) — 시작 화면 목록의 꼬리표. */
+export function parentNameOf(id: string): string | null {
+    if (!api) return null;
+    const p = api.parent(id);
+    if (!p || p === api.roots.main) return null;
+    return api.get(p)?.name ?? null;
 }
 
 // ── 방 읽기 ──

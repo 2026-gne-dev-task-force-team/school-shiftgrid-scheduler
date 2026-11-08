@@ -8,8 +8,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { useActivePage } from '../store';
-import { pageDataOf, savePage, getNodesApi } from '../nodes';
+import { useActivePage, setActivePage } from '../store';
+import { pageDataOf, savePage, getNodesApi, inTrash } from '../nodes';
+import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList } from '../core/types';
 import {
@@ -300,13 +301,8 @@ export function PageView({ host }: { host: PluginHost }) {
     };
 
     // ── 그리기 ──
-    if (!activeId) {
-        return (
-            <div className="h-full flex items-center justify-center p-6 text-center text-muted select-none">
-                왼쪽 탐색기에서 페이지를 열면 여기에서 쓸 수 있어요. (없으면 폴더에서 「새 페이지」로 만드세요)
-            </div>
-        );
-    }
+    // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
+    if (!activeId || inTrash(activeId)) return <StartScreen />;
 
     const node = getNodesApi()?.get(activeId);
     const copyMarkdown = () => { void navigator.clipboard?.writeText(exportMarkdown(pageRef.current)); };
@@ -323,6 +319,9 @@ export function PageView({ host }: { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
+                <button type="button" className={btn} title="페이지 목록" onClick={() => setActivePage(null)}>
+                    <Icon name="left" size={12} /> 목록
+                </button>
                 <Icon name="fileText" size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{node?.name ?? '페이지'}</span>
                 <div className="ml-auto flex items-center gap-1.5">

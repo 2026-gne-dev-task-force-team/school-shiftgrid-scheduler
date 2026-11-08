@@ -9,8 +9,9 @@
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import { useActiveList } from '../store';
-import { subscribeNodes, getListNodes, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
+import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
 import { SimpleTable, type TableColumn, type TableRow } from './table-slot';
+import { StartScreen } from './StartScreen';
 
 const COLUMNS: TableColumn[] = [
     { key: 'name', title: '이름' },
@@ -30,13 +31,8 @@ export function ListTab() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listNodes, activeId]);
 
-    if (!activeId || !list) {
-        return (
-            <div className="h-full flex items-center justify-center p-6 text-center text-muted select-none">
-                왼쪽 탐색기에서 명단을 열면 여기에 사람들이 뜬다.
-            </div>
-        );
-    }
+    // 보고 있는 명단이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
+    if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
 
     return (
         <div className="h-full flex flex-col overflow-auto select-none">
