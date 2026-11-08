@@ -264,6 +264,7 @@ describe('⑬ .select-text 는 예외 목록(ALLOW)에서만 쓴다', () => {
     const ALLOW = new Set([
         'EditorArea.tsx', 'PeekLayer.tsx', 'guards.ts',
         'MonthView.tsx', 'YearView.tsx', 'TimeGridView.tsx', 'SampleView.tsx', 'TestConsole.tsx', 'NodeSampleView.tsx',
+        'Table.tsx',   // 표 편집기 편집창 — 칸 글자를 끌어 고른다(옵트인)
     ]);
     const files = walk(ROOT);
 

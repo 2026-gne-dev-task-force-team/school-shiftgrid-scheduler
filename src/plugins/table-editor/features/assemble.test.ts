@@ -47,4 +47,22 @@ describe('조립기 — 푼다·정렬한다·던진다', () => {
         const out = resolveFeatures(['rows', 'rows', 'fill'], lookup);
         expect(ids(out).sort()).toEqual(['fill', 'rows']);
     });
+
+    // ── M2 ──────────────────────────────────────────────────────────────
+    it('axis-edit 는 rows 를 needs 한다 — rows 없이 주면 던진다', () => {
+        expect(() => resolveFeatures(['axis-edit'], lookup)).toThrow(/needs|rows/);
+    });
+    it('axis-edit + rows 는 rows 를 먼저 설치한다', () => {
+        const out = ids(resolveFeatures(['axis-edit', 'rows'], lookup));
+        expect(out.indexOf('rows')).toBeLessThan(out.indexOf('axis-edit'));
+    });
+    it('🔴 merge 와 sort 를 같이 주면 던진다(conflicts)', () => {
+        const sort: TableFeature = { id: 'sort', version: '0.1.0', install: () => {} };
+        expect(() => resolveFeatures(['merge', sort], (id) => BUILTIN[id] ?? (id === 'sort' ? sort : undefined))).toThrow(/같이 쓸 수 없다/);
+    });
+    it('M2 기본 묶음(병합·열폭·머리고정·행높이·축편집·타입·검증)은 그대로 풀린다', () => {
+        const feats = ['rows', 'fill', 'paste-policy:append', 'col-resize', 'sticky-headers', 'row-weight', 'axis-edit', 'col-types', 'validate', 'merge'];
+        const out = ids(resolveFeatures(feats, lookup));
+        for (const f of feats) expect(out).toContain(f);
+    });
 });
