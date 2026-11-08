@@ -29,17 +29,17 @@ export const timetableGridPlugin = definePlugin({
         contributes: {
             // 그리드 화면(싱글턴·가운데·안 가름 — 달력·명단과 같은 placement).
             views: [{
-                id: 'grid', title: '시간표', icon: 'table', defaultArea: 'center',
+                id: 'grid', title: '시간표', icon: 'schedule', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Grid',
             }],
             commands: [
-                { id: 'timetable-grid.open', title: '시간표 열기', icon: 'table' },
-                { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'table' },
+                { id: 'timetable-grid.open', title: '시간표 열기', icon: 'schedule' },
+                { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'schedule' },
                 { id: 'timetable-grid.duplicate', title: '표 복사(통째)', icon: 'copy' },
             ],
-            ribbon: [{ commandId: 'timetable-grid.open', icon: 'table', order: 4 }],
+            ribbon: [{ commandId: 'timetable-grid.open', icon: 'schedule', order: 4 }],
             nodeTypes: gridNodeTypes,
         },
     },

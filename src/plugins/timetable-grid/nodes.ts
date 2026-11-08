@@ -61,7 +61,7 @@ export const gridNodeTypeImpl = {
  */
 export const gridNodeTypes: NodeTypeContribution<'sheet' | 'special'>[] = [
     {
-        type: SHEET_TYPE, label: '시간표', icon: 'table',
+        type: SHEET_TYPE, label: '시간표', icon: 'schedule',
         container: { accepts: [SPECIAL_TYPE, 'folder', SHEET_TYPE] }, openable: true,
         create: { label: '시간표', under: ['folder', SHEET_TYPE] },
         impl: 'sheet',
@@ -77,7 +77,7 @@ export const gridNodeTypes: NodeTypeContribution<'sheet' | 'special'>[] = [
 export function sheetMenu(nodeId: string): MenuEntry[] {
     setMenuTarget(nodeId);
     return [
-        { label: '시간표 열기', icon: 'table', commandId: 'timetable-grid.openSheet' },
+        { label: '시간표 열기', icon: 'schedule', commandId: 'timetable-grid.openSheet' },
         { label: '표 복사(통째)', icon: 'copy', commandId: 'timetable-grid.duplicate' },
     ];
 }

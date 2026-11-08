@@ -61,12 +61,12 @@ export const peopleNodeTypeImpl = {
  */
 export const peopleNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, label: '명단', icon: 'book',
+        type: LIST_TYPE, label: '명단', icon: 'users',
         container: { accepts: [PERSON_TYPE, 'folder', LIST_TYPE] }, openable: true,
         create: { label: '명단', under: ['folder', LIST_TYPE] },
         impl: 'list',
     },
-    { type: PERSON_TYPE, label: '사람', icon: 'file', record: true },
+    { type: PERSON_TYPE, label: '사람', icon: 'user', record: true },
 ];
 
 /**
@@ -77,7 +77,7 @@ export const peopleNodeTypes: NodeTypeContribution<'list'>[] = [
 export function listMenu(nodeId: string): MenuEntry[] {
     setMenuTarget(nodeId);
     return [
-        { label: '명단 열기', icon: 'book', commandId: 'people.openList' },
+        { label: '명단 열기', icon: 'users', commandId: 'people.openList' },
     ];
 }
 

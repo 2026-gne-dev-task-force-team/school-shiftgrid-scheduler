@@ -36,7 +36,7 @@ export const pageNodeTypeImpl = {
 /** 노드 타입 하나 — 페이지(파일 역할 · 폴더·페이지 밑에 만들 수 있다). */
 export const pageNodeTypes: NodeTypeContribution<'page'>[] = [
     {
-        type: PAGE_TYPE, label: '페이지', icon: 'file',
+        type: PAGE_TYPE, label: '페이지', icon: 'fileText',
         openable: true,
         create: { label: '페이지', under: ['folder', PAGE_TYPE] },
         container: { accepts: [PAGE_TYPE] },
@@ -47,7 +47,7 @@ export const pageNodeTypes: NodeTypeContribution<'page'>[] = [
 export function pageMenu(nodeId: string): MenuEntry[] {
     setMenuTarget(nodeId);
     return [
-        { label: '페이지 열기', icon: 'file', commandId: 'page-editor.openPage' },
+        { label: '페이지 열기', icon: 'fileText', commandId: 'page-editor.openPage' },
     ];
 }
 

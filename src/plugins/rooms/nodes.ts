@@ -65,12 +65,12 @@ export const roomsNodeTypeImpl = {
  */
 export const roomsNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, label: '방 목록', icon: 'book',
+        type: LIST_TYPE, label: '방 목록', icon: 'door',
         container: { accepts: [ROOM_TYPE, 'folder', LIST_TYPE] }, openable: true,
         create: { label: '방 목록', under: ['folder', LIST_TYPE] },
         impl: 'list',
     },
-    { type: ROOM_TYPE, label: '방', icon: 'file', record: true },
+    { type: ROOM_TYPE, label: '방', icon: 'door', record: true },
 ];
 
 /**
@@ -81,7 +81,7 @@ export const roomsNodeTypes: NodeTypeContribution<'list'>[] = [
 export function listMenu(nodeId: string): MenuEntry[] {
     setMenuTarget(nodeId);
     return [
-        { label: '방 목록 열기', icon: 'book', commandId: 'rooms.openList' },
+        { label: '방 목록 열기', icon: 'door', commandId: 'rooms.openList' },
     ];
 }
 

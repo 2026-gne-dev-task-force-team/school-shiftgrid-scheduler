@@ -31,7 +31,7 @@ export const settingsPlugin = definePlugin({
                 sections: [
                     { id: 'appearance', title: '모양', icon: 'sun' },
                     { id: 'frame', title: '창틀', icon: 'panelLeft' },
-                    { id: 'plugins', title: '플러그인', icon: 'play' },
+                    { id: 'plugins', title: '플러그인', icon: 'puzzle' },
                     { id: 'about', title: '정보', icon: 'info' },
                 ],
                 items: [
@@ -42,7 +42,7 @@ export const settingsPlugin = definePlugin({
                     // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄의 「자세히」로 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
                     //   📌 2026-11-08 쥔님: 「약속(인터페이스)」 별도 항목을 없앴다 — 사용자가 따로 볼 이유가 없어, 그 정보(채우는/필요한/
                     //      있으면 쓰는/나를 쓰는 약속)는 플러그인 상세(PluginDetail) 안 「모듈·의존성」 한 요소로만 둔다(다른 칸처럼).
-                    { section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'play', pane: 'Plugins' },
+                    { section: 'plugins', id: 'plugins', title: '설치된 플러그인', icon: 'puzzle', pane: 'Plugins' },
                     // 이 프로그램 — 이름·판·창틀 판·플러그인 수(쥔님 13:14)
                     { section: 'about', id: 'about', title: '이 프로그램', icon: 'info', pane: 'About' },
                 ],

@@ -30,16 +30,16 @@ export const roomsPlugin = definePlugin({
             interfaces: [{ name: 'rooms', version: '0.1.0', label: '방 목록', desc: '방·공간을 담는 목록' }],
             // 방 목록 화면(싱글턴·가운데·안 가름 — 달력 월 보기와 같은 placement).
             views: [{
-                id: 'sheet', title: '방 목록', icon: 'book', defaultArea: 'center',
+                id: 'sheet', title: '방 목록', icon: 'door', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 280, squeeze: 'scroll' },
                 component: 'Sheet',
             }],
             commands: [
-                { id: 'rooms.open', title: '방 목록 열기', icon: 'book' },
-                { id: 'rooms.openList', title: '목록 열기', icon: 'book' },
+                { id: 'rooms.open', title: '방 목록 열기', icon: 'door' },
+                { id: 'rooms.openList', title: '목록 열기', icon: 'door' },
             ],
-            ribbon: [{ commandId: 'rooms.open', icon: 'book', order: 4 }],
+            ribbon: [{ commandId: 'rooms.open', icon: 'door', order: 4 }],
             // 🔴 노드 타입 둘(목록·방) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: roomsNodeTypes,
         },

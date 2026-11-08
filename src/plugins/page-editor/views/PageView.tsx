@@ -323,7 +323,7 @@ export function PageView({ host }: { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
-                <Icon name="file" size={15} className="text-muted" />
+                <Icon name="fileText" size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{node?.name ?? '페이지'}</span>
                 <div className="ml-auto flex items-center gap-1.5">
                     <button type="button" className={btn} disabled={!canUndo(hist)} onMouseDown={(e) => { e.preventDefault(); doUndo(); }}><Icon name="undo" size={12} /> 되돌리기</button>

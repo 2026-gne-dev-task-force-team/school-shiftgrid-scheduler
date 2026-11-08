@@ -63,10 +63,10 @@ export const accountPlugin = definePlugin({
             settings: {
                 sections: [{ id: 'account', title: '계정', icon: 'gear' }],
                 items: [
-                    { section: 'account', id: 'account.users', title: '사용자', icon: 'book', pane: 'Users' },
-                    { section: 'account', id: 'account.roles', title: '역할', icon: 'layers', pane: 'Roles' },
-                    { section: 'account', id: 'account.policy', title: '정책', icon: 'check', pane: 'Policy' },
-                    { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'pin', pane: 'ProjectPassword' },
+                    { section: 'account', id: 'account.users', title: '사용자', icon: 'users', pane: 'Users' },
+                    { section: 'account', id: 'account.roles', title: '역할', icon: 'shield', pane: 'Roles' },
+                    { section: 'account', id: 'account.policy', title: '정책', icon: 'shieldCheck', pane: 'Policy' },
+                    { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'key', pane: 'ProjectPassword' },
                 ],
             },
             // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기(AccountStatus).

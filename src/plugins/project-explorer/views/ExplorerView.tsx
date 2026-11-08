@@ -328,8 +328,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'project-explorer.rename', disabled: multi || !canDo(selNode.type, 'rename') });
             items.push({ label: multi ? `삭제 (${selectedIds.length}개)` : '삭제', icon: 'trash', danger: true, commandId: 'project-explorer.remove', disabled: !canDo(selNode.type, 'delete') });
             if (narrow) {
-                items.push({ label: '위로', icon: 'left', commandId: 'project-explorer.move-up' });
-                items.push({ label: '아래로', icon: 'left', commandId: 'project-explorer.move-down' });
+                items.push({ label: '위로', icon: 'up', commandId: 'project-explorer.move-up' });
+                items.push({ label: '아래로', icon: 'down', commandId: 'project-explorer.move-down' });
             }
             const extra = typeMenu(selNode, selNode.id);
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
