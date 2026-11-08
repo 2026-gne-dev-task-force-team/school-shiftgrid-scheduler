@@ -797,8 +797,9 @@ function renderEditor(
             }}
             onBlur={() => core.commitEdit(0, 0)}
             aria-label={col.title}
-            // w-full·min-w-0·size=1 — 편집창이 칸보다 커지지 않게(input 기본 size 가 열을 넓히는 걸 막는다). 열 폭 고정.
-            className="w-full min-w-0 bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
+            // 노션식 — 칸 안엔 글자만. 바탕·테두리·링 없이 셀 글자와 같은 자리에 뜬다(파란 테두리는 바깥 selRect 가 그린다).
+            // w-full·min-w-0·size=1 로 편집창이 열을 넓히지 않게(열 폭 고정) · p-0 로 셀 글자와 자리를 맞춰 글자가 안 튀게.
+            className="w-full min-w-0 appearance-none border-0 bg-transparent text-text leading-normal p-0 outline-none select-text"
         />
     );
 }
