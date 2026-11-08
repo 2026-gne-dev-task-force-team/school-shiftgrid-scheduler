@@ -24,16 +24,16 @@ export const pageEditorPlugin = definePlugin({
         supports: { table: '^0.1' },
         contributes: {
             views: [{
-                id: 'editor', title: '페이지', icon: 'file', defaultArea: 'center',
+                id: 'editor', title: '페이지', icon: 'fileText', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 360, squeeze: 'scroll' },
                 component: 'Editor',
             }],
             commands: [
-                { id: 'page-editor.open', title: '페이지 열기', icon: 'file' },
-                { id: 'page-editor.openPage', title: '페이지 열기(탐색기)', icon: 'file' },
+                { id: 'page-editor.open', title: '페이지 열기', icon: 'fileText' },
+                { id: 'page-editor.openPage', title: '페이지 열기(탐색기)', icon: 'fileText' },
             ],
-            ribbon: [{ commandId: 'page-editor.open', icon: 'file', order: 7 }],
+            ribbon: [{ commandId: 'page-editor.open', icon: 'fileText', order: 7 }],
             nodeTypes: pageNodeTypes,
         },
     },
