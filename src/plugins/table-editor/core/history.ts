@@ -59,6 +59,12 @@ export function inverseTx(
                 return { at: e?.i ?? columns.length, key, title: e?.col.title ?? key };
             });
         }
+        // move → 옛 자리로 되돌린다(지금 index).
+        if (tx.cols.move?.length) {
+            c.move = tx.cols.move
+                .map((m) => ({ key: m.key, to: colByKey.get(m.key)?.i ?? -1 }))
+                .filter((m) => m.to >= 0);
+        }
         inv.cols = c;
     }
 
@@ -84,7 +90,7 @@ export function txHasEffect(tx: TableTx): boolean {
     return !!(
         tx.cells.length ||
         tx.rows?.add?.length || tx.rows?.remove?.length || tx.rows?.move?.length ||
-        tx.cols?.add?.length || tx.cols?.remove?.length || tx.cols?.resize?.length || tx.cols?.rename?.length ||
+        tx.cols?.add?.length || tx.cols?.remove?.length || tx.cols?.resize?.length || tx.cols?.rename?.length || tx.cols?.move?.length ||
         tx.axis?.rowWeight?.length ||
         tx.merge?.set?.length || tx.merge?.clear?.length
     );

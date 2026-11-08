@@ -131,26 +131,28 @@ describe('Table M2 — 열 폭(col-resize)', () => {
 });
 
 describe('Table M2 — 행열 편집(axis-edit)', () => {
-    it('「칸 추가」 로 열을 더한다', () => {
+    it('오른쪽 + 막대로 열을 더한다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows', 'axis-edit']} />);
         expect(ref.current!.st().cols).toHaveLength(3);
-        clickText('칸 추가');
+        const addCol = document.querySelector('[data-testid="add-col"]')!;
+        act(() => { addCol.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect(ref.current!.st().cols).toHaveLength(4);
     });
-    it('머리 우클릭 메뉴에서 「이 칸 지우기」 로 열을 뺀다', () => {
+    it('열 손잡이 메뉴에서 「이 칸 지우기」 로 열을 뺀다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows', 'axis-edit']} />);
-        const th = document.querySelector('thead th:nth-child(2)')!;   // 행 머리 다음 = A 열
-        act(() => { th.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
+        const handle = document.querySelectorAll('[data-testid="col-handle"]')[0];   // A 열 손잡이
+        act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
         clickText('이 칸 지우기');
         expect(ref.current!.st().cols.map((c) => c.key)).toEqual(['b', 'c']);
     });
-    it('줄 머리 ✕ 로 행을 지운다', () => {
+    it('행 손잡이 메뉴 「줄 지우기」 로 행을 지운다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows']} />);
-        const del = [...document.querySelectorAll('button[aria-label="지우기"]')][0];
-        act(() => { del.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        const handle = document.querySelectorAll('[data-testid="row-handle"]')[0];
+        act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
+        clickText('줄 지우기');
         expect(ref.current!.st().rows.map((r) => r.id)).toEqual(['r1', 'r2']);
     });
 });
@@ -219,7 +221,8 @@ describe('Table M2 — 구조 되돌리기(history + 행/열)', () => {
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows', 'history']} />);
         const h = () => ref.current!.h();
         act(() => h().focus());
-        clickText('줄 추가');
+        const addRow = document.querySelector('[data-testid="add-row"]')!;
+        act(() => { addRow.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect(ref.current!.st().rows).toHaveLength(4);
         act(() => h().focus());
         act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true })); });
@@ -229,8 +232,9 @@ describe('Table M2 — 구조 되돌리기(history + 행/열)', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows', 'history']} />);
         const h = () => ref.current!.h();
-        const del = [...document.querySelectorAll('button[aria-label="지우기"]')][0];
-        act(() => { del.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        const handle = document.querySelectorAll('[data-testid="row-handle"]')[0];
+        act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
+        clickText('줄 지우기');
         expect(ref.current!.st().rows.map((r) => r.id)).toEqual(['r1', 'r2']);
         act(() => h().focus());
         act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true })); });
