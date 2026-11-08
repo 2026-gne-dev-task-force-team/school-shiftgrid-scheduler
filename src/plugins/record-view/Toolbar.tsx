@@ -3,11 +3,10 @@
  *   🔴 데이터는 안 쥔다 — 보기 상태만 바꾸는 콜백을 받는다. 색·치수는 토큰 클래스로만.
  */
 import { useRef, useState } from 'react';
-import { Icon } from '../primitives/Icon';
-import { IconButton } from '../primitives/IconButton';
+import { Icon, IconButton } from '../../pane-ui-system';
 import { Popover } from './Popover';
 import { opNeedsValue, opsFor } from './logic';
-import type { FilterOp, FilterRule, RecordField, SortRule } from './types';
+import type { FilterOp, FilterRule, RecordField, SortRule } from './contracts/record-view';
 
 const OP_LABEL: Record<FilterOp, string> = {
     contains: '포함', notContains: '미포함', eq: '같음', ne: '다름',

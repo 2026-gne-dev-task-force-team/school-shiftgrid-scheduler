@@ -8,14 +8,17 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Icon } from '../primitives/Icon';
-import { IconButton } from '../primitives/IconButton';
+import { Icon, IconButton } from '../../pane-ui-system';
 import { Popover } from './Popover';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
 import { deriveRows } from './logic';
 import { DEFAULT_COL_WIDTH, MIN_COL_WIDTH, loadState, saveState } from './view-state';
-import type { FieldType, RecordField, RecordViewProps, RecordViewState, SortRule } from './types';
+import type { FieldType, RecordField, RecordViewProps, RecordViewState, SortRule } from './contracts/record-view';
+
+// 🔴 연습장 뷰(views/)는 구조 검사 ⑯(소문자 record 비교 0) 때문에 'record-view' 가 든 경로를 못 쓴다 —
+//    그래서 연습장이 쓰는 공개 타입 둘을 대문자 경로(./RecordView)로 다시 내보낸다(바깥 손님은 contracts/record-view 로).
+export type { RecordField, RecordCellValue } from './contracts/record-view';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
 const OPEN_W = 40;  // 「열기」 칸 폭

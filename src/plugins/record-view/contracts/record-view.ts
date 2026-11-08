@@ -1,12 +1,16 @@
 /**
- * 레코드 뷰 — 공개 타입. 노션 표 보기를 본뜬 「도메인을 모르는 목록 화면」의 규격이다.
+ * 🔴 약속 「record-view」 0.1 — 노션 표 보기를 본뜬 「도메인을 모르는 목록 화면」의 규격(타입만).
+ *   제공자: record-view 꾸러미(provides: record-view · 모듈 값 recordViewApi). 손님은 host.modules 로
+ *   record-view 모듈(RecordViewApi)을 받아 RecordView 컴포넌트를 쓴다. ⛔ 손님은 꾸러미 속 파일을 직접 import 안 한다
+ *   — 타입은 이 contracts 파일에서 import type, 값은 host.modules.use<RecordViewApi>('record-view') 로.
  *
- * 🔴 ⛔ 도메인을 한 글자도 모른다(구조 검사 ⑤). 쓰는 쪽(사람 명단·계정·달력…)이 「칸 정의 + 행 + 콜백」만
+ * 🔴 ⛔ 도메인을 한 글자도 모른다. 쓰는 쪽(사람 명단·계정·달력…)이 「칸 정의 + 행 + 콜백」만
  *    넘기면 목록 화면을 공짜로 얻는다. 데이터는 바깥 소유, 이 부품은 **보기 상태(view state)만** 쥔다.
  *
  * ⭐ 「제어형(controlled)」이다 — 셀을 고치면 onCellChange 로 바깥에 알리고, 바깥이 records 를 바꿔 되돌려 준다.
  *    이 부품은 records 를 저장하지 않는다(정렬·필터·검색·숨긴 칸·칸 폭만 viewKey 로 보관).
  */
+import type { ReactElement } from 'react';
 
 /** 칸(필드) 종류 — 여섯. 셀 표시·편집·정렬·필터가 전부 이 종류로 갈린다. */
 export type FieldType = 'text' | 'number' | 'select' | 'multi' | 'date' | 'check';
@@ -98,4 +102,14 @@ export interface RecordViewProps<T> {
     /** 넘기면 칸 추가·이름·타입 바꾸기·삭제를 허용한다. 안 넘기면 칸 구조는 고정. */
     onFieldsChange?: (fields: RecordField[]) => void;
     className?: string;
+}
+
+/**
+ * 🔴 host.modules 로 받는 record-view 모듈 — 손님이 쓰는 전부. provides 와 짝(모듈 값 recordViewApi).
+ *   host.modules.use<RecordViewApi>('record-view') 가 돌려준다. 지금은 RecordView 컴포넌트 하나(버전 달린 표면).
+ */
+export interface RecordViewApi {
+    version: 1;
+    /** 제어형 목록 화면. T 는 행 하나의 타입(객체). */
+    RecordView<T>(props: RecordViewProps<T>): ReactElement | null;
 }

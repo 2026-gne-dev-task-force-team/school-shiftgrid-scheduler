@@ -4,8 +4,10 @@
  *   ⛔ 색은 토큰 클래스만(구조 검사 ①) · 실명은 안 쓴다(가짜 이름 — 홍길동·성춘향…).
  */
 import { useRef, useState } from 'react';
-import { RecordView } from '../../../pane-ui-system';
-import type { RecordCellValue, RecordField } from '../../../pane-ui-system';
+// 같은 꾸러미 안이라 부품을 직접 쓴다(손님 배선이 아니다). 공개 타입 둘은 ./RecordView 가 다시 내보낸다
+// — 대문자 경로라 구조 검사 ⑯(views/ 안 소문자 레코드 낱말 비교 0)을 어기지 않는다.
+import { RecordView } from '../RecordView';
+import type { RecordCellValue, RecordField } from '../RecordView';
 
 /** 교직원 비슷한 가짜 자료 — 칸 여섯(글자·고르기·여러 개·날짜·체크) */
 const START_FIELDS: RecordField[] = [

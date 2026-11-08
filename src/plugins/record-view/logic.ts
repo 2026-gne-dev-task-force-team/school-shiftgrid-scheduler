@@ -4,7 +4,7 @@
  * 🔴 「됐다」의 자리: 화면이 보여 주는 행 순서는 전부 여기서 난다. 타입별 비교·빈 값 순서·multi 포함 판정이
  *    여기 한곳에 모여 있어야 한눈에 검산된다. 🔴 ⛔ 도메인을 모른다 — 칸 종류(FieldType)로만 가른다.
  */
-import type { FieldType, FilterOp, FilterRule, RecordField, RecordViewState, SortRule } from './types';
+import type { FieldType, FilterOp, FilterRule, RecordField, RecordViewState, SortRule } from './contracts/record-view';
 
 /** 행 하나를 「key→값」 사전으로 본다(T 가 무엇이든 셀은 [key] 로 읽는다). */
 function row(r: unknown): Record<string, unknown> {

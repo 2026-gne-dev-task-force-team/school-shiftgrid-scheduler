@@ -40,18 +40,8 @@ export {
 } from './interactive';
 export { monthGrid, shiftMonth, monthLabel, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell } from './primitives/date-grid';
 
-// 레코드 뷰 — 노션 표 보기를 본뜬 도메인-무지 목록 화면 부품 하나(+ 순수 로직·보기 상태·알약 색).
-//   모듈이 「칸 정의 + 행 + 콜백」만 넘기면 목록 화면을 공짜로 얻는다(사람 명단·계정·달력…).
-export { RecordView } from './record-view';
-export {
-    PILL_COLORS, pillStyle,
-    deriveRows, matchesRule, matchesSearch, compareByField, applySorts,
-    opsFor, opNeedsValue, isEmptyValue, displayText, rawValue, toNumber,
-    defaultState, normalizeState, loadState, saveState, DEFAULT_COL_WIDTH, MIN_COL_WIDTH,
-    type PillColor,
-    type FieldType, type FieldOption, type RecordField, type RecordCellValue,
-    type FilterOp, type FilterRule, type SortRule, type RecordViewKind, type RecordViewState, type RecordViewProps,
-} from './record-view';
+// 🔴 레코드 뷰(노션 표 보기를 본뜬 목록 화면 부품)는 2026-11-08 record-view 꾸러미(src/plugins/record-view)로 내려갔다.
+//    창틀 엔진은 도메인 없는 자리라 목록 화면 부품을 품지 않는다 — 손님은 host.modules.use<RecordViewApi>('record-view') 로 받는다.
 
 // 셸 — 자리 짜기. 내용은 모르고 자리만 안다.
 //   ⭐ 2026-11-01: 화면 전용 조각을 폴더로 갈랐다(쥔님). shared/ 공통 · desktop/ 넓은 화면 전용 · mobile/ 좁은 화면 전용.

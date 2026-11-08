@@ -7,7 +7,7 @@ import {
     applySorts, compareByField, deriveRows, displayText, isEmptyValue,
     matchesRule, matchesSearch, opNeedsValue, opsFor, toNumber,
 } from './logic';
-import type { RecordField, RecordViewState } from './types';
+import type { RecordField, RecordViewState } from './contracts/record-view';
 
 const F: Record<string, RecordField> = {
     name: { key: 'name', label: '이름', type: 'text' },

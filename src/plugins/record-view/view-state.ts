@@ -4,8 +4,8 @@
  * 🔴 창틀은 자기를 쓰는 앱 이름을 모른다 — storageKey 접두사(setStoragePrefix)를 거쳐 키를 만든다.
  *    ⚠️ 저장이 막혀도(사파리 프라이빗) 조용히 기본값으로 산다(목록은 그냥 안 기억될 뿐 고장 아님).
  */
-import { storageKey } from '../storage';
-import type { FilterRule, RecordViewState, SortRule } from './types';
+import { storageKey } from '../../pane-ui-system';
+import type { FilterRule, RecordViewState, SortRule } from './contracts/record-view';
 
 /** 칸 폭 기본값 — field.width 도 state.widths 도 없을 때 */
 export const DEFAULT_COL_WIDTH = 170;

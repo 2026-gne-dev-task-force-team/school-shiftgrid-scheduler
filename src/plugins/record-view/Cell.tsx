@@ -7,12 +7,11 @@
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
 import { useEffect, useRef, useState } from 'react';
-import { DatePicker } from '../primitives/DatePicker';
-import { Icon } from '../primitives/Icon';
+import { DatePicker, Icon } from '../../pane-ui-system';
 import { Popover } from './Popover';
 import { pillStyle } from './colors';
 import { rawValue } from './logic';
-import type { FieldOption, RecordCellValue, RecordField } from './types';
+import type { FieldOption, RecordCellValue, RecordField } from './contracts/record-view';
 
 /** 색 알약 한 개 */
 function Pill({ option }: { option: FieldOption }) {
