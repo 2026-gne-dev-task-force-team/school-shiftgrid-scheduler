@@ -17,7 +17,7 @@ import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
 import { ListView } from './ListView';
 import { GanttView } from './GanttView';
-import { useOptions, useScope, setScope } from '../store';
+import { useScope, setScope } from '../store';
 import { useCalendarData } from '../useEvents';
 import { visibleModes, resolveMode, type Mode } from '../modes';
 import { selectionLabel, type CalSelection } from '../selection';
@@ -30,19 +30,20 @@ export function CalendarTab({ peek }: { peek: PeekHandle }) {
     const [anchor, setAnchor] = useState<Date>(() => new Date());
     // 🔴 「범위 선택」의 단일 진실 — 모드를 바꿔도 남는다(쥔님 2026-11-02 *"선택할 수 있게 해줘 … 모든 뷰다"*). ⛔ 저장 안 함.
     const [selection, setSelection] = useState<CalSelection>(null);
-    const opts = useOptions();
     const scope = useScope();
     const { stores } = useCalendarData();
     const scopeStore = scope ? stores.get(scope) : null;
 
     // 순서 배열 하나(ALL_MODES)로 고정하고, 지금 보일 것만 거른다 — 끝에 push 하면 순서가 틀어졌다(쥔님 22:17).
-    const modes = visibleModes(opts.experimental);
+    //    🔴 2026-11-09 쥔님 *"시험보기도 그냥 없애"* — 「시험 기능 보기」 설정을 걷었다. 시험 모드(분기·3일·하루·간트)는
+    //       코드만 남고 전환 단추엔 영영 안 낀다(옛 기기에 저장된 experimental:true 도 무시한다).
+    const modes = visibleModes(false);
 
-    // 보고 있던 모드가 지금 안 보이면(시험 기능을 껐다) 월로 돌아간다 — resolveMode 한 곳으로.
+    // 보고 있던 모드가 지금 안 보이면 월로 돌아간다 — resolveMode 한 곳으로.
     useEffect(() => {
-        const next = resolveMode(mode, opts.experimental);
+        const next = resolveMode(mode, false);
         if (next !== mode) setMode(next);
-    }, [mode, opts.experimental]);
+    }, [mode]);
 
     // 🔴 범위 저장소가 휴지통에 가거나 사라지면 자동으로 전체(null)로 — 죽은 저장소에 갇히지 않게(쥔님 2026-11-02).
     useEffect(() => {
