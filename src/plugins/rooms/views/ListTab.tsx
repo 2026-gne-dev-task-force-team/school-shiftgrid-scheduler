@@ -8,13 +8,15 @@
  *    부모 방을 지우면 자식은 최상위로 올라온다(effectiveParentId 가 최상위로 돌린다).
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { useActiveList } from '../store';
+import { Icon } from '../../../pane-ui-system';
+import { useActiveList, setActiveList } from '../store';
 import {
-    subscribeNodes, getListNodes, roomsIn,
+    subscribeNodes, getListNodes, inTrash, roomsIn,
     addRoom, updateRoom, removeRoom, nudgeRoom, indentRoom, outdentRoom, pasteRooms,
 } from '../nodes';
 import { buildRoomTree } from '../tree';
 import { SimpleTable, type TableColumn, type TableRow } from './table-slot';
+import { StartScreen } from './StartScreen';
 
 const COLUMNS: TableColumn[] = [
     { key: 'name', title: '이름' },
@@ -39,17 +41,18 @@ export function ListTab() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listNodes, activeId]);
 
-    if (!activeId || !list) {
-        return (
-            <div className="h-full flex items-center justify-center p-6 text-center text-muted select-none">
-                왼쪽 탐색기에서 방 목록을 열면 여기에 방들이 뜬다.
-            </div>
-        );
-    }
+    // 보고 있는 목록이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
+    if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
+
+    const btn = 'flex items-center gap-1 h-btn px-2 rounded border border-line text-[12px] text-muted hover:text-text hover:bg-text/[0.04] disabled:opacity-40 disabled:hover:bg-transparent';
 
     return (
         <div className="h-full flex flex-col overflow-auto select-none">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
+                <button type="button" className={btn} title="방 목록" onClick={() => { setActiveList(null); }}>
+                    <Icon name="left" size={12} /> 목록
+                </button>
+                <Icon name="door" size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{list.name}</span>
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}개</span>
             </div>

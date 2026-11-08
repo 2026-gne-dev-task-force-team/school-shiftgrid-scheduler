@@ -22,6 +22,10 @@ const fakeNodes = {
     get: (id: string) => store.get(id) as unknown as PublicNode | undefined,
     setData: (id: string, data: unknown) => { const n = store.get(id); if (n) n.data = data; },
     subscribe: () => ({ dispose() {} }),
+    // 시작 화면(StartScreen)이 쓰는 최소 표면 — 타입별 목록·부모·루트.
+    byType: (type: string) => [...store.values()].filter((n) => n.type === type) as unknown as PublicNode[],
+    parent: () => null,
+    roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 
 const host = { modules: { use: () => null } } as unknown as PluginHost;   // table 약속 없음 → 읽기 전용 표

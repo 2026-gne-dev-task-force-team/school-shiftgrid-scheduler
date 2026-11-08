@@ -26,13 +26,13 @@ export const recordViewPlugin = definePlugin({
             interfaces: [{ name: 'record-view', version: '0.1.0', label: '목록 화면', desc: '목록을 보고 고치는 공통 화면' }],
             // 레코드 뷰 연습장 — 가운데 싱글턴(한 장만). 손님과 무관한 「만져 보는」 화면.
             views: [{
-                id: 'playground', title: '레코드 뷰 연습장', icon: 'table', defaultArea: 'center',
+                id: 'playground', title: '레코드 뷰 연습장', icon: 'layers', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 300, squeeze: 'scroll' },
                 component: 'Playground',
             }],
-            commands: [{ id: 'record-view.openPlayground', title: '레코드 뷰 연습장 열기', icon: 'table' }],
-            ribbon: [{ commandId: 'record-view.openPlayground', icon: 'table', order: 20 }],
+            commands: [{ id: 'record-view.openPlayground', title: '레코드 뷰 연습장 열기', icon: 'layers' }],
+            ribbon: [{ commandId: 'record-view.openPlayground', icon: 'layers', order: 20 }],
         },
     },
 

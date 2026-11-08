@@ -76,7 +76,7 @@ export function GridTab() {
                 <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <Icon name={kind === 'special' ? 'sparkles' : 'table'} size={15} className="text-muted" />
+                <Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />
                 <span className="font-medium text-text truncate">{node?.name ?? '시간표'}</span>
                 {kind === 'special' && <span className="text-[11px] text-accent">특별 시간표</span>}
                 {kind === 'special' && (

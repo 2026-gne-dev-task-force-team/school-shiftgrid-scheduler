@@ -82,7 +82,7 @@ export const accountPlugin = definePlugin({
             settings: {
                 sections: [{ id: 'account', title: '계정', icon: 'gear' }],
                 items: [
-                    { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'pin', pane: 'ProjectPassword' },
+                    { section: 'account', id: 'account.password', title: '프로젝트 암호', icon: 'key', pane: 'ProjectPassword' },
                 ],
             },
             // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기·계정 열기(AccountStatus).

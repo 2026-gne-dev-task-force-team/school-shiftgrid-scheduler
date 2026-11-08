@@ -64,7 +64,7 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
                 // 플러그인 묶음 — 굵은 선 + 「플러그인」 머리 + 살짝 어두운 바탕으로 앱 설정과 갈린다
                 <div className="mt-2 pt-1 border-t-2 border-line bg-side/60">
                     <div className="flex items-center gap-1.5 px-pad h-header select-none">
-                        <Icon name="play" size={13} className="text-muted" />
+                        <Icon name="puzzle" size={13} className="text-muted" />
                         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">플러그인</span>
                     </div>
                     {pluginSections.map(renderSection)}

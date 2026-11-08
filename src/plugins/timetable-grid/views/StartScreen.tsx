@@ -25,7 +25,7 @@ export function StartScreen() {
             <div className="max-w-[560px] mx-auto px-6 py-10 flex flex-col gap-6">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-text">
-                        <Icon name="table" size={18} className="text-muted" />
+                        <Icon name="schedule" size={18} className="text-muted" />
                         <span className="text-[16px] font-medium">시간표</span>
                     </div>
                     <div className="text-[12px] text-muted">새로 만들거나, 만들어 둔 시간표를 고른다.</div>
@@ -62,7 +62,7 @@ export function StartScreen() {
                                             onClick={() => open(n.id)}
                                             className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-text/[0.04]"
                                         >
-                                            <Icon name="table" size={14} className="text-muted shrink-0" />
+                                            <Icon name="schedule" size={14} className="text-muted shrink-0" />
                                             <span className="text-[13px] text-text truncate">{n.name}</span>
                                             {sp > 0 && (
                                                 <span className="flex items-center gap-0.5 text-[11px] text-accent shrink-0">

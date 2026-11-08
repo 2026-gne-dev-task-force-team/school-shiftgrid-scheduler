@@ -8,7 +8,9 @@ export type IconName =
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
     | 'calendar' | 'calendarMini' | 'flask' | 'grip'
-    | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff';
+    | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff'
+    | 'users' | 'user' | 'door' | 'schedule' | 'fileText' | 'calendarEvent'
+    | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -78,6 +80,30 @@ const P: Record<IconName, string> = {
     eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7zM12 9a3 3 0 100 6 3 3 0 000-6z',
     // 눈 가림 — 칸 숨기기
     eyeOff: 'M4 4l16 16M9.5 9.6a3 3 0 004.3 4.2M6.6 6.7C4 8.3 2 12 2 12s4 7 10 7c1.7 0 3.2-.4 4.5-1M11 5.1C11.3 5 11.6 5 12 5c6 0 10 7 10 7s-.8 1.4-2.3 2.9',
+    // 여러 사람(명단) — 앞사람 머리+어깨 + 뒤에 반쯤 걸친 한 사람. file 과 겹치던 명단을 가른다
+    users: 'M9 11a3 3 0 100-6 3 3 0 000 6zM4 20v-1a4 4 0 014-4h2a4 4 0 014 4v1M15 5.3a3 3 0 010 5.4M16 15.1a4 4 0 014 3.9v1',
+    // 한 사람(레코드) — 머리 동그라미 + 어깨. 명단(users)의 한 명
+    user: 'M12 3a4 4 0 100 8 4 4 0 000-8zM5 21v-1a6 6 0 016-6h2a6 6 0 016 6v1',
+    // 문(방·방 목록) — 문틀 + 손잡이 점 + 바닥선. book/file 로 겹치던 방을 가른다
+    door: 'M6 21V4a1 1 0 011-1h10a1 1 0 011 1v17M4 21h16M14 12h.01',
+    // 시간 격자 — 격자(오른 아래 한 칸을 비움) + 시계. 18px 에서 보통 표(table)와 한눈에 갈리게 시계를 얹었다
+    schedule: 'M11 20H3V4h18v7M3 9h18M3 14h8M9 4v16M15 4v5M17 13a4 4 0 100 8 4 4 0 000-8zM17 15v2l1.5 1',
+    // 글 있는 문서(페이지) — 파일 + 접힌 모서리 + 글줄 셋. 보통 file 과 갈린다
+    fileText: 'M6 2h8l4 4v16H6zM14 2v4h4M9 12h6M9 16h6M9 8h3',
+    // 일정(레코드) — 달력 몸통에 체크. 저장소(calendar)와 갈린다
+    calendarEvent: 'M4 6h16v15H4zM4 10h16M8 3v5M16 3v5M9 15l2 2 4-4',
+    // 열쇠(암호) — 고리 + 자루 + 이빨 둘. pin(압정)으로 엉뚱하던 암호를 가른다
+    key: 'M7 9a3 3 0 100 6 3 3 0 000-6zM10 12h10M16 12v3M19 12v3',
+    // 방패(역할) — layers 로 엉뚱하던 역할을 가른다
+    shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+    // 방패+체크(정책) — check 혼자로 엉뚱하던 정책을 가른다
+    shieldCheck: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
+    // 퍼즐 조각(플러그인) — play(재생)로 엉뚱하던 플러그인을 가른다
+    puzzle: 'M10 3a2 2 0 012 2v1h3a1 1 0 011 1v3h1a2 2 0 010 4h-1v3a1 1 0 01-1 1h-3v-1a2 2 0 00-4 0v1H5a1 1 0 01-1-1v-3H3a2 2 0 010-4h1V7a1 1 0 011-1h3V5a2 2 0 012-2z',
+    // 위로 화살표 — 항목 올리기(left 로 겹치던 「위로」)
+    up: 'M12 20V4M6 10l6-6 6 6',
+    // 아래로 화살표 — 항목 내리기(left 로 겹치던 「아래로」)
+    down: 'M12 4v16M6 14l6 6 6-6',
 };
 
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {

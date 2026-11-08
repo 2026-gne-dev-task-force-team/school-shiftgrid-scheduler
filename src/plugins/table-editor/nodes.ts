@@ -12,6 +12,7 @@
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
 import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { uniqueName } from '../../pane-ui-system';
 import type { CellTone, MergeRegion, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
 
@@ -134,3 +135,41 @@ export function docOf(id: string | null): TableDoc {
 
 /** 문서를 통째로 쓴다(트랜잭션 적용 결과) — setData 는 타입 주인(table-editor)만 지난다. */
 export function writeDoc(id: string, doc: TableDoc): void { api?.setData(id, doc); }
+
+/** 조상에 휴지통이 있나 — 부모 사슬을 직접 탄다(달력·명단과 같은 규칙). */
+export function inTrash(id: string): boolean {
+    if (!api) return false;
+    let cur: string | null = api.parent(id);
+    let guard = 0;
+    while (cur && guard < 1000) {
+        if (cur === api.roots.trash) return true;
+        if (cur === api.roots.main) return false;
+        cur = api.parent(cur);
+        guard++;
+    }
+    return false;
+}
+
+/** 살아 있는 표 노드 전부(트리 순서) — 시작 화면 목록. */
+export function liveTables(): PublicNode[] {
+    if (!api) return [];
+    return api.byType(TABLE_TYPE).filter((n) => !inTrash(n.id));
+}
+
+/**
+ * 시작 화면 「새 표」 — 탐색기 맨 위(main 루트)에 빈 표(3×3, 머리 행 켬)를 만든다. 이름 겹치면 「표 2」…
+ *   data 에 blankTable 을 바로 심는다(탐색기 「새로 만들기」의 createInit 과 같은 결). 새 id 를 돌려준다(못 만들면 null).
+ */
+export function createTable(): string | null {
+    if (!api) return null;
+    const name = uniqueName('표', api.byType(TABLE_TYPE).map((n) => n.name));
+    return api.create(api.roots.main, { type: TABLE_TYPE, name, data: blankTable() }) || null;
+}
+
+/** 노드가 든 폴더 이름(맨 위면 null) — 시작 화면 목록의 꼬리표. */
+export function parentNameOf(id: string): string | null {
+    if (!api) return null;
+    const p = api.parent(id);
+    if (!p || p === api.roots.main) return null;
+    return api.get(p)?.name ?? null;
+}

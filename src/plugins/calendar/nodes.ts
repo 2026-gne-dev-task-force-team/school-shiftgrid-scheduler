@@ -90,7 +90,7 @@ export const calendarNodeTypes: NodeTypeContribution<'store'>[] = [
         create: { label: '달력 저장소', under: ['folder', STORE_TYPE] },
         impl: 'store',
     },
-    { type: EVENT_TYPE, label: '일정', icon: 'calendar', record: true },
+    { type: EVENT_TYPE, label: '일정', icon: 'calendarEvent', record: true },
 ];
 
 /**
