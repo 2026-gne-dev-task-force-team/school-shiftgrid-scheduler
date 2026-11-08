@@ -61,6 +61,8 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                             </span>
                                         )}
                                     </div>
+                                    {/* 🔴 한 줄 요약(쥔님 2026-11-08 「설명이 너무 부족」) — 목록에서 뭐 하는 것인지 바로 보이게. */}
+                                    {p.description && <p className="text-[12px] text-text/80 leading-snug">{p.description}</p>}
                                     <span className="text-[11px] text-muted font-mono">{p.id}</span>
                                 </div>
                                 {/* 🔴 상세 열기 — 제목이 아니라 이 별도 단추로(오클릭 방지). 테두리 있는 작은 단추. */}

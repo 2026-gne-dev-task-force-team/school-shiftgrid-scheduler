@@ -50,6 +50,32 @@ function ContribGroup({ label, records }: { label: string; records: Contribution
     );
 }
 
+/**
+ * 🔴 「다른 플러그인과의 관계」 한 묶음 — 쉬운 말 제목 + 작은 한 줄 풀이 + 「기여」와 같은 카드 줄(쥔님 2026-11-08 21:27).
+ */
+function RelGroup({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+    return (
+        <div className="flex flex-col gap-1">
+            <h5 className="text-[12px] font-medium text-text">{title}</h5>
+            <p className="text-[10px] text-muted leading-snug">{note}</p>
+            <div className="flex flex-col rounded border border-line overflow-hidden">{children}</div>
+        </div>
+    );
+}
+
+/** 관계 카드 한 줄 — 왼쪽: 사람 이름 + 지금 상태 · 오른쪽 끝: 작은 회색 원래 id·버전(영어 식별자는 여기만). */
+function RelRow({ left, note, right }: { left: string; note?: string; right?: string }) {
+    return (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-line last:border-b-0">
+            <div className="min-w-0 flex-1">
+                <span className="text-[12px] text-text">{left}</span>
+                {note && <span className="text-[11px] text-muted ml-2">{note}</span>}
+            </div>
+            {right && <span className="text-[10px] text-muted/70 font-mono shrink-0">{right}</span>}
+        </div>
+    );
+}
+
 /** ④ 끄기 영향 한 묶음 — 「같이 꺼짐(requires)」·「기능만 빠짐(supports)」 각각. 어느 약속을 통해 매였나 꼬리표. */
 function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'muted'; items: ImpactItem[] }) {
     return (
@@ -79,6 +105,45 @@ function Section({ title, count, children }: { title: string; count?: number; ch
     );
 }
 
+/**
+ * 사람용 상세 설명 — 무엇을 하나 → 이럴 때 씁니다 → 끄면 → 같이 쓰는 것(쥔님 2026-11-08 「설명이 너무 부족」).
+ *   about 이 없으면 한 줄 요약(description)으로 떨어진다. 개발 낱말은 여기 안 온다(매니페스트가 쉬운 말로 적는다).
+ */
+function AboutBlock({ p }: { p: PluginStatus }) {
+    const about = p.about;
+    if (!about) return <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>;
+    return (
+        <div className="flex flex-col gap-3">
+            <p className="text-[13px] text-text leading-relaxed">{about.what}</p>
+            {about.use && about.use.length > 0 && (
+                <div className="flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold text-muted">이럴 때 씁니다</p>
+                    <ul className="flex flex-col gap-1 pl-1">
+                        {about.use.map((u, i) => (
+                            <li key={i} className="text-[12px] text-text leading-snug flex items-baseline gap-1.5">
+                                <Icon name="dot" size={10} className="text-muted shrink-0 translate-y-0.5" />
+                                <span>{u}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {about.off && (
+                <div className="flex flex-col gap-0.5">
+                    <p className="text-[11px] font-semibold text-muted">끄면</p>
+                    <p className="text-[12px] text-text leading-snug">{about.off}</p>
+                </div>
+            )}
+            {about.with && (
+                <div className="flex flex-col gap-0.5">
+                    <p className="text-[11px] font-semibold text-muted">같이 쓰는 것</p>
+                    <p className="text-[12px] text-text leading-snug">{about.with}</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function PluginDetail({ p: p0, host, startConfirming = false }: { p: PluginStatus; host: PluginHost; startConfirming?: boolean }) {
     const chrome = useSettingsChrome();
     // 🔴 피크 안에서 켜고/끄면 이 상세도 바로 다시 그린다 — listPlugins 로 지금 상태를 다시 읽는다(스냅샷 p0 는 낡는다).
@@ -98,6 +163,8 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
     // 뷰 줄을 누르면 그 뷰의 설정 카드가 펼쳐진다(쥔님 19:06 — 뷰 설정은 그 플러그인 상세 안에). 처음엔 전부 접힘
     const [openViews, setOpenViews] = useState<Set<string>>(() => new Set());
     const toggleView = (id: string) => setOpenViews((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    // 🔴 개발자 정보(모듈·의존성·기여 장부)는 평소엔 접어 둔다 — 설명이 먼저 보이게(쥔님 2026-11-08).
+    const [showDev, setShowDev] = useState(false);
     const anyOverride = views.some((v) => Object.keys(getViewOverride(v.id) ?? {}).length > 0);
 
     // 🔴 기여 장부 — 이 플러그인이 호스트에 꽂은 것 전부를 「선언(매니페스트)」·「동적(host.declare)」으로 가른다(쥔님 2026-11-02 21:22).
@@ -115,8 +182,18 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
     const requires = Object.entries(p.requires);
     const attachments = attachmentsOf(p.id);     // supports → 붙었나
     const consumers = consumersOf(p.id);         // 나를 쓰는 플러그인
-    const hasDeps = declaredInterfaces.length || provides.length || requires.length || attachments.length || consumers.length
-        || permissions.length || userFields.length || roleFields.length;
+
+    // 🔴 약속의 사람 이름 — 모든 플러그인의 선언한 약속에서 label·desc 를 모은다(없으면 id 그대로). 설정은 「전체 선언에서 이름으로」.
+    const ifaceMeta = new Map<string, { label?: string; desc?: string }>();
+    for (const pl of all) for (const it of pl.interfaces) if (it.label && !ifaceMeta.has(it.name)) ifaceMeta.set(it.name, { label: it.label, desc: it.desc });
+    const nameOf = (n: string) => ifaceMeta.get(n)?.label ?? n;
+    const descOf = (n: string) => ifaceMeta.get(n)?.desc;
+    // 지금 이 약속을 내주는(켜지고 안 막힌) 플러그인 — 「꼭 있어야 하는 것」의 상태용.
+    const providerOf = (n: string) => all.find((pl) => pl.enabled && !pl.blocked && !pl.failed && n in pl.provides);
+
+    // 관계(약속) 칸은 접힘 밖, 권한·칸 장부는 접힘 안.
+    const hasRel = declaredInterfaces.length || provides.length || requires.length || attachments.length || consumers.length;
+    const hasPermFields = permissions.length + userFields.length + roleFields.length > 0;
 
     return (
         <div className="flex flex-col gap-4">
@@ -179,7 +256,8 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                 </div>
             )}
 
-            <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>
+            {/* 🔴 사람용 설명 — 상세 맨 위. 무엇을/이럴 때/끄면/같이(개발 낱말 없음). */}
+            <AboutBlock p={p} />
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[12px]">
                 <dt className="text-muted">판</dt><dd className="text-text">{p.version}</dd>
@@ -187,77 +265,96 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                 <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 코어' : ''}</dd>
             </dl>
 
-            {/* 🔴 모듈·의존성(M0) — 채우는 인터페이스 / 필요한 것 / 있으면 쓰는 것(붙음·안 붙음) / 누가 나를 쓰나 */}
-            {hasDeps ? (
-                <Section title="모듈·의존성">
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px]">
+            {/* 🔴 다른 플러그인과의 관계 — 「기여」와 같은 카드 줄 꼴로, 사람 말 이름 + 지금 상태(쥔님 2026-11-08 21:27). 접힘 밖에 둔다. */}
+            {hasRel && (
+                <Section title="다른 플러그인과의 관계">
+                    <div className="flex flex-col gap-3">
                         {declaredInterfaces.length > 0 && (
-                            <>
-                                <dt className="text-muted">선언한 약속</dt>
-                                <dd className="text-text font-mono">
-                                    {declaredInterfaces.map((i) => `${i.name} ${i.version}${i.uses.length ? ` ▸ ${i.uses.join('·')}` : ''}`).join(' · ')}
-                                </dd>
-                            </>
-                        )}
-                        {permissions.length > 0 && (
-                            <>
-                                <dt className="text-muted">권한 낱말</dt>
-                                <dd className="text-text">{permissions.map((pm) => `${pm.title}(${pm.id})`).join(' · ')}</dd>
-                            </>
-                        )}
-                        {userFields.length > 0 && (
-                            <>
-                                <dt className="text-muted">사용자 칸</dt>
-                                <dd className="text-text">{userFields.map((f) => `${f.title}(${f.id})${f.editor ? ' ▸ ' + f.editor : ''}`).join(' · ')}</dd>
-                            </>
-                        )}
-                        {roleFields.length > 0 && (
-                            <>
-                                <dt className="text-muted">역할 칸</dt>
-                                <dd className="text-text">{roleFields.map((f) => `${f.title}(${f.id})${f.editor ? ' ▸ ' + f.editor : ''}`).join(' · ')}</dd>
-                            </>
+                            <RelGroup title="정해 둔 데이터 꼴" note="다른 플러그인과 주고받으려고 이 플러그인이 정해 둔 꼴입니다.">
+                                {declaredInterfaces.map((i) => (
+                                    <RelRow key={i.name} left={nameOf(i.name)} note={descOf(i.name)} right={`${i.name} ${i.version}`} />
+                                ))}
+                            </RelGroup>
                         )}
                         {provides.length > 0 && (
-                            <>
-                                <dt className="text-muted">채우는 인터페이스</dt>
-                                <dd className="text-text font-mono">{provides.map(([n, v]) => `${n} ${v}`).join(' · ')}</dd>
-                            </>
+                            <RelGroup title="내주는 것" note="다른 플러그인이 쓸 수 있게 내줍니다.">
+                                {provides.map(([n, v]) => <RelRow key={n} left={nameOf(n)} note={descOf(n)} right={`${n} ${v}`} />)}
+                            </RelGroup>
                         )}
                         {requires.length > 0 && (
-                            <>
-                                <dt className="text-muted">필요한 것</dt>
-                                <dd className="text-text font-mono">{requires.map(([n, r]) => `${n} ${r}`).join(' · ')}</dd>
-                            </>
+                            <RelGroup title="꼭 있어야 하는 것" note="없으면 이 플러그인이 꺼집니다.">
+                                {requires.map(([n, r]) => {
+                                    const prov = providerOf(n);
+                                    return <RelRow key={n} left={nameOf(n)} note={prov ? `${prov.name}가 내주는 중 ✓` : '내주는 플러그인 없음'} right={`${n} ${r}`} />;
+                                })}
+                            </RelGroup>
                         )}
                         {attachments.length > 0 && (
-                            <>
-                                <dt className="text-muted">있으면 쓰는 것</dt>
-                                <dd className="text-text font-mono">
-                                    {attachments.map((a) => `${a.iface}(${a.attached ? '붙음' : '안 붙음'})`).join(' · ')}
-                                </dd>
-                            </>
+                            <RelGroup title="있으면 더 좋은 것" note="없어도 돌아가고, 있으면 기능이 붙습니다.">
+                                {attachments.map((a) => <RelRow key={a.iface} left={nameOf(a.iface)} note={a.attached ? '지금 붙음 ✓' : '아직 없음'} right={a.iface} />)}
+                            </RelGroup>
                         )}
                         {consumers.length > 0 && (
-                            <>
-                                <dt className="text-muted">누가 나를 쓰나</dt>
-                                <dd className="text-text">{consumers.join(', ')}</dd>
-                            </>
+                            <RelGroup title="이걸 쓰는 플러그인" note="이 플러그인이 내주는 것을 쓰는 다른 플러그인입니다.">
+                                {consumers.map((cid) => { const c = all.find((x) => x.id === cid); return <RelRow key={cid} left={c?.name ?? cid} right={cid} />; })}
+                            </RelGroup>
                         )}
-                    </dl>
+                    </div>
                 </Section>
-            ) : null}
+            )}
 
-            {/* 기여 — 호스트에 꽂은 것 전부를 선언(매니페스트)·동적(host.declare)으로 갈라 목록으로 */}
-            <Section title="기여" count={p.enabled ? contribs.length : undefined}>
-                {!p.enabled
-                    ? <p className="text-[12px] text-muted">꺼짐 — 기여 없음</p>
-                    : (
-                        <div className="flex flex-col gap-2">
-                            <ContribGroup label="선언" records={declared} />
-                            <ContribGroup label="동적" records={dynamic} />
-                        </div>
-                    )}
-            </Section>
+            {/* 🔴 개발자 정보 — 권한·칸 장부와 기여 목록은 평소엔 접어 둔다(쥔님 2026-11-08: 설명·관계가 먼저 보이게). */}
+            <div className="flex flex-col gap-2">
+                <button
+                    type="button"
+                    onClick={() => setShowDev((v) => !v)}
+                    aria-expanded={showDev}
+                    className={`self-start flex items-center gap-1 text-[11px] text-muted hover:text-text transition-colors ${FOCUS_RING}`}
+                >
+                    <Icon name="right" size={11} className={`transition-transform ${showDev ? 'rotate-90' : ''}`} />
+                    개발자 정보 (권한·칸·기여)
+                </button>
+                {showDev && (
+                    <div className="flex flex-col gap-4 pl-2 border-l border-line">
+                        {hasPermFields && (
+                            <Section title="권한·칸">
+                                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px]">
+                                    {permissions.length > 0 && (
+                                        <>
+                                            <dt className="text-muted">권한 낱말</dt>
+                                            <dd className="text-text">{permissions.map((pm) => `${pm.title}(${pm.id})`).join(' · ')}</dd>
+                                        </>
+                                    )}
+                                    {userFields.length > 0 && (
+                                        <>
+                                            <dt className="text-muted">사용자 칸</dt>
+                                            <dd className="text-text">{userFields.map((f) => `${f.title}(${f.id})${f.editor ? ' ▸ ' + f.editor : ''}`).join(' · ')}</dd>
+                                        </>
+                                    )}
+                                    {roleFields.length > 0 && (
+                                        <>
+                                            <dt className="text-muted">역할 칸</dt>
+                                            <dd className="text-text">{roleFields.map((f) => `${f.title}(${f.id})${f.editor ? ' ▸ ' + f.editor : ''}`).join(' · ')}</dd>
+                                        </>
+                                    )}
+                                </dl>
+                            </Section>
+                        )}
+
+                        {/* 기여 — 호스트에 꽂은 것 전부를 선언(매니페스트)·동적(host.declare)으로 갈라 목록으로 */}
+                        <Section title="기여" count={p.enabled ? contribs.length : undefined}>
+                            {!p.enabled
+                                ? <p className="text-[12px] text-muted">꺼짐 — 기여 없음</p>
+                                : (
+                                    <div className="flex flex-col gap-2">
+                                        <ContribGroup label="선언" records={declared} />
+                                        <ContribGroup label="동적" records={dynamic} />
+                                    </div>
+                                )}
+                        </Section>
+                    </div>
+                )}
+            </div>
 
             {/* 명령 — 이름 + 단축키 + 설명 */}
             <Section title="명령" count={commands.length}>

@@ -35,6 +35,24 @@ export interface InterfaceContribution {
     name: string;
     version: string;
     uses?: string[];
+    /** 🔴 사람 이름(쥔님 2026-11-08 21:27) — 설정 상세 「다른 플러그인과의 관계」가 id 대신 이 이름을 보여 준다(예: people → 「사람 명단」). */
+    label?: string;
+    /** 선택 — 한 줄 풀이(그 약속이 뭘 담나). 없으면 이름만. */
+    desc?: string;
+}
+
+/**
+ * 🔴 사람용 상세 설명 — 설정 「설치된 플러그인」 상세 맨 위에 그린다(쥔님 2026-11-08: *"플러그인 설명이 너무 부족"* ·
+ *   *"뭐가 뭔지 모르겠는데 플러그인 설명도 좀 자세히"*). 읽는 사람은 개발자가 아닌 보통 사용자다.
+ *   ⛔ 개발 낱말 금지(모듈·약속·레코드 노드·바닥 정책·하네스·엔진 등) · 짧은 문장 · 꾸밈말·이모지 금지.
+ *   네 칸: 무엇을 하나(what, 필수) · 이럴 때 쓴다(use) · 끄면 어떻게 되나(off · 코어는 왜 못 끄나 한 줄) · 무엇과 같이 쓰나(with).
+ *   목록 줄에 보이는 한 줄 요약은 description 이 맡는다(이건 상세 전용).
+ */
+export interface PluginAbout {
+    what: string;
+    use?: string[];
+    off?: string;
+    with?: string;
 }
 
 /** 매니페스트 — id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). contributes 로 「무엇을 내나」를 적는다. */
@@ -44,7 +62,9 @@ export interface PluginManifest {
     version: string;         // '0.1.0'
     minHostVersion: string;  // 모자라면 활성 안 함(P2)
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
-    description?: string;
+    description?: string;     // 목록 줄에 보이는 한 줄 요약(쉬운 말)
+    /** 🔴 상세에 보이는 사람용 설명 — 무엇을/이럴 때/끄면/같이(위 PluginAbout). 개발 낱말 금지. */
+    about?: PluginAbout;
     /**
      * 🔴 모듈·의존성(M0) — 전부 **인터페이스 이름**에 건다(플러그인·모듈 이름 아님). 범위는 `*`·`^a.b` 둘.
      *   provides: 내가 채우는 인터페이스 → 그 인터페이스 버전. 모듈 값은 PluginModule.modules[이름] 에 있다(짝).

@@ -16,7 +16,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
-import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution } from './types';
+import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution, PluginAbout } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { applyContributes } from './contributes';
@@ -422,13 +422,15 @@ export interface PluginStatus {
     /** blocked·failed·standby 사유 한 줄 — 자리표시·상세가 그대로 그린다. */
     reason?: string;
     description?: string;
+    /** 🔴 사람용 상세 설명(무엇을/이럴 때/끄면/같이) — 상세 맨 위에 그린다. 개발 낱말 금지(PluginAbout). */
+    about?: PluginAbout;
     minHostVersion: string;
     /** 모듈·의존성 — 채우는/필요한/있으면 쓰는 인터페이스(장부가 그린다). */
     provides: Record<string, string>;
     requires: Record<string, string>;
     supports: Record<string, string>;
-    /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). */
-    interfaces: { name: string; version: string; uses: string[] }[];
+    /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). label·desc 는 사람 이름(쥔님 2026-11-08 21:27). */
+    interfaces: { name: string; version: string; uses: string[]; label?: string; desc?: string }[];
     /** 🔴 선언한 권한 낱말(contributes.permissions) — 호스트는 모으기만, 장부가 표시(페이블 8). 정책 편집 화면도 이걸 모은다. */
     permissions: { id: string; title: string }[];
     /** 🔴 선언한 사용자 칸(contributes.userFields) — 계정 화면이 모아 그린다. */
@@ -446,6 +448,7 @@ export function listPlugins(): PluginStatus[] {
             name: m.manifest.name,
             version: m.manifest.version,
             description: m.manifest.description,
+            about: m.manifest.about,
             minHostVersion: m.manifest.minHostVersion,
             core: !!m.manifest.core,
             enabled: !disabledIds.has(id),
@@ -455,7 +458,7 @@ export function listPlugins(): PluginStatus[] {
             provides: { ...prov(m) },
             requires: { ...req(m) },
             supports: { ...sup(m) },
-            interfaces: decl(m).map((it) => ({ name: it.name, version: it.version, uses: it.uses ?? [] })),
+            interfaces: decl(m).map((it) => ({ name: it.name, version: it.version, uses: it.uses ?? [], label: it.label, desc: it.desc })),
             permissions: (m.manifest.contributes?.permissions ?? []).map((p) => ({ ...p })),
             userFields: (m.manifest.contributes?.userFields ?? []).map((f) => ({ ...f })),
             roleFields: (m.manifest.contributes?.roleFields ?? []).map((f) => ({ ...f })),

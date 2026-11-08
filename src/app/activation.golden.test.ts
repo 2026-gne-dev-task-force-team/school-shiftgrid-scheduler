@@ -60,3 +60,34 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         expect(opened).toEqual(['project-explorer.tree', 'calendar.month', 'calendar.mini']);
     });
 });
+
+/**
+ * 🔴 사람용 설명이 비지 않았다(쥔님 2026-11-08 「설명이 너무 부족」) — 등록된 모든 플러그인은
+ *   목록 한 줄 요약(description)과 상세 「무엇을 하나」(about.what)를 반드시 가진다. 빈 문자열·공백만도 막는다.
+ */
+describe('모든 플러그인에 한 줄 요약(description)·상세(about.what)가 비어 있지 않다', () => {
+    it('description·about.what 이 전부 채워져 있다', () => {
+        activateAll(PLUGINS);
+        const ps = listPlugins();
+        for (const p of ps) {
+            expect(p.description?.trim(), `${p.id} 의 한 줄 요약(description)이 비었다`).toBeTruthy();
+            expect(p.about?.what?.trim(), `${p.id} 의 상세 설명(about.what)이 비었다`).toBeTruthy();
+        }
+    });
+});
+
+/**
+ * 🔴 선언한 약속마다 사람 이름(label)이 있다(쥔님 2026-11-08 21:27 「이게 뭔지 모르겠다」) — 설정 「다른 플러그인과의 관계」가
+ *   id(people·nodes) 대신 이 이름을 보여 준다. 빈 문자열·공백만도 막는다(영어 id 만으로 두지 않게).
+ */
+describe('선언한 약속마다 사람 이름(label)이 비어 있지 않다', () => {
+    it('모든 contributes.interfaces 에 label 이 채워져 있다', () => {
+        activateAll(PLUGINS);
+        const ps = listPlugins();
+        for (const p of ps) {
+            for (const it of p.interfaces) {
+                expect(it.label?.trim(), `${p.id} 의 약속 ‘${it.name}’ 에 사람 이름(label)이 없다`).toBeTruthy();
+            }
+        }
+    });
+});

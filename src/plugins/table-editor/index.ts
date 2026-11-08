@@ -20,7 +20,7 @@ export const tableEditorPlugin = definePlugin({
         provides: { table: '0.1.0' },
         contributes: {
             // 🔴 table 약속을 들고 온다(꾸러미 매니페스트) — 켜진 table-editor 가 호스트 약속 목록에 table 을 올린다.
-            interfaces: [{ name: 'table', version: '0.1.0' }],
+            interfaces: [{ name: 'table', version: '0.1.0', label: '표', desc: '값을 담는 표' }],
             // 표 연습장 — 가운데 싱글턴(한 장만). 손님과 무관한 「만져 보는」 화면.
             views: [{
                 id: 'playground', title: '표 연습장', icon: 'table', defaultArea: 'center',
