@@ -26,8 +26,8 @@ export { definePlugin } from './define';
 export { makeHost } from './host';
 export {
     activateAll, enablePlugin, disablePlugin, listPlugins, ownerOfView, usePluginRegistry,
-    dependentsOf, attachmentsOf, consumersOf, listInterfaces,
-    type PluginStatus, type InterfaceStatus,
+    dependentsOf, disableImpact, attachmentsOf, consumersOf, listInterfaces,
+    type PluginStatus, type InterfaceStatus, type ImpactItem, type DisableImpact,
 } from './registry';
 export { ViewPlaceholder } from './Placeholder';
 export {

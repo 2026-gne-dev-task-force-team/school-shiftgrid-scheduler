@@ -556,3 +556,57 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
         }
     });
 });
+
+/*
+ * ⑲ 약속 이름은 레포 어딘가에 정의돼 있어야 한다 (이름 오타 방지 — 2026-11-08 19:42 「정의와 제공은 서로 기대지 않는다」).
+ *   🔴 실행 중엔 정의를 안 본다(제공자는 정의 없이도 선다). 그래서 이름 오타는 런타임이 아니라 **구조 검사**가 잡는다:
+ *     등록된 플러그인들의 provides·requires·supports 에 적힌 약속 이름은 레포에 정의가 있어야 한다 —
+ *       ① 미편입 약속 폴더 `src/plugins/contract-<이름>/`, 또는 ② 어느 꾸러미의 `contracts/<이름>.ts`.
+ *   오타(정의 없는 이름)를 provides/requires/supports 에 적으면 여기서 빨간불(실행 판정은 못 잡는다).
+ */
+describe('⑲ provides·requires·supports 의 약속 이름은 레포에 정의(contract-dir 또는 꾸러미 contracts 파일)가 있다', () => {
+    const PLUGROOT = join(ROOT, 'plugins');
+
+    /** 정의된 약속 이름 모음 — ① contract-<이름> 폴더 ② 꾸러미 contracts 폴더의 <이름>.ts 파일. */
+    function definedPromises(): Set<string> {
+        const out = new Set<string>();
+        let top: Array<{ name: string; isDirectory(): boolean }> = [];
+        try { top = readdirSync(PLUGROOT, { withFileTypes: true }); } catch { top = []; }
+        for (const e of top) {
+            if (!e.isDirectory()) continue;
+            if (e.name.startsWith('contract-')) out.add(e.name.slice('contract-'.length));   // ① 미편입 약속 폴더
+            // ② 꾸러미 안 contracts/<이름>.ts
+            let inner: string[] = [];
+            try { inner = readdirSync(join(PLUGROOT, e.name, 'contracts')); } catch { inner = []; }
+            for (const f of inner) if (/\.ts$/.test(f) && !/\.test\.ts$/.test(f)) out.add(f.replace(/\.ts$/, ''));
+        }
+        return out;
+    }
+
+    /** 모든 플러그인 파일의 provides/requires/supports 객체 리터럴 키(= 쓰인 약속 이름)와 어디 쓰였나. */
+    function usedPromises(): { name: string; where: string }[] {
+        const out: { name: string; where: string }[] = [];
+        for (const f of walk(PLUGROOT)) {
+            const src = read(f);
+            for (const kind of ['provides', 'requires', 'supports']) {
+                for (const m of src.matchAll(new RegExp(`${kind}\\s*:\\s*\\{([^{}]*)\\}`, 'g'))) {
+                    for (const km of m[1].matchAll(/['"]?([a-zA-Z_][\w-]*)['"]?\s*:/g)) {
+                        out.push({ name: km[1], where: `${f.slice(ROOT.length + 1)} (${kind})` });
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    it('정의가 하나 이상 있다(빈 글롭 거짓 통과 방지)', () => {
+        expect(definedPromises().size).toBeGreaterThan(0);
+    });
+
+    it('쓰인 약속 이름이 전부 정의돼 있다(오타 0건)', () => {
+        const defined = definedPromises();
+        const undefined_ = usedPromises().filter((u) => !defined.has(u.name));
+        expect(undefined_.map((u) => `${u.name} @ ${u.where}`),
+            `정의 없는 약속 이름 — contract-<이름>/ 또는 contracts/<이름>.ts 를 만들어라`).toEqual([]);
+    });
+});
