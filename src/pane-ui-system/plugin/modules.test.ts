@@ -5,7 +5,7 @@
  *    가짜 비-코어 제공자로 연쇄/복귀를 잰다. 인터페이스 이름도 가짜(roster·identity·clock)로 — nodes 경로와 안 겹친다.
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { activateAll, enablePlugin, disablePlugin, listPlugins, dependentsOf } from './registry';
+import { activateAll, enablePlugin, disablePlugin, listPlugins, dependentsOf, attachmentsOf, consumersOf, listInterfaces } from './registry';
 import { makeHost } from './host';
 import { disposeOwner, scopeSize, listContributions, getCommand } from './store';
 import type { PluginModule, PluginHost, Disposable, PerCallerApi } from './types';
@@ -193,5 +193,35 @@ describe('host.modules.use — 선언 검사 · 자기 provides', () => {
             lifecycle: { onActivate(host) { got = host.modules.use('roster'); } },
         })]);
         expect(got).toEqual({ tag: 'self-mod' });
+    });
+});
+
+describe('장부 — consumersOf · attachmentsOf · listInterfaces', () => {
+    it('consumersOf 는 requires·supports 로 나를 쓰는 플러그인을, attachmentsOf 는 붙음 여부를 준다', () => {
+        activateAll([
+            fake({ id: 'prov', provides: { roster: '0.1.0' }, modules: { roster: {} } }),
+            fake({ id: 'cons', requires: { roster: '^0.1' } }),
+            fake({
+                id: 'a', supports: { roster: '^0.1' },
+                lifecycle: { onInterface: { roster: { attach() { }, detach() { } } } },
+            }),
+        ], { interfaces: [{ name: 'roster', version: '0.1.0' }] });
+
+        expect(consumersOf('prov').sort()).toEqual(['a', 'cons']);
+        expect(attachmentsOf('a')).toEqual([{ iface: 'roster', attached: true }]);
+    });
+
+    it('listInterfaces 는 선언된 인터페이스의 제공자·기다리는 플러그인을 준다', () => {
+        activateAll([
+            fake({ id: 'prov', provides: { roster: '0.1.0' }, modules: { roster: {} } }),
+            fake({ id: 'cons', requires: { roster: '^0.1' } }),
+        ], { interfaces: [{ name: 'roster', version: '0.1.0' }, { name: 'clock', version: '0.1.0' }] });
+
+        const ifaces = listInterfaces();
+        const roster = ifaces.find((i) => i.name === 'roster')!;
+        expect(roster.provider).toBe('prov');
+        expect(roster.waiting).toContain('cons');
+        const clock = ifaces.find((i) => i.name === 'clock')!;
+        expect(clock.provider).toBeNull();   // 채운 모듈 없음(제공자 0명이어도 인터페이스는 산다)
     });
 });

@@ -11,8 +11,22 @@ import { FOCUS_RING } from '../primitives/focus';
 import { ownerOfView, enablePlugin, usePluginRegistry } from './registry';
 
 export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string }) {
-    usePluginRegistry();   // 켜기/끄기에 다시 그린다
+    usePluginRegistry();   // 켜기/끄기·블록 복귀에 다시 그린다
     const owner = ownerOfView(leaf.viewId);
+
+    // 🔴 블록 — requires 가 안 찼다(사유를 그린다). 사용자가 끈 게 아니라 비영구라, 「켜기」가 아니라 사유만 보인다
+    //    (제공자가 켜지면 자동 복귀한다 — 조용히 죽지 않는다, 명세 「페이블 설계 검증 반영」 1).
+    if (owner && owner.blocked) {
+        return (
+            <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
+                <div className="flex flex-col items-center gap-3 max-w-[22rem]">
+                    <Icon name="warn" size={28} className="text-warn/60" />
+                    <p className="text-[13px] text-text leading-relaxed select-none">「{owner.name}」 플러그인이 의존을 못 채웠습니다.</p>
+                    {owner.reason && <p className="text-[12px] text-muted leading-relaxed select-none">{owner.reason.replace(/^꺼짐 — /, '')}</p>}
+                </div>
+            </div>
+        );
+    }
 
     if (owner && !owner.enabled) {
         return (
