@@ -25,6 +25,12 @@ export interface Disposable {
     dispose(): void;
 }
 
+/** 인터페이스 선언 — 이름 + 버전. 🔴 src/app 이 데이터로 activateAll 에 넘긴다(창틀은 src/interfaces 를 import 하지 않는다 · 구조 검사 ⑦). */
+export interface InterfaceDecl {
+    name: string;
+    version: string;
+}
+
 /** 매니페스트 — id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). contributes 로 「무엇을 내나」를 적는다. */
 export interface PluginManifest {
     id: string;              // 'scheduler' · 'settings' — 영문 소문자·하이픈
@@ -33,6 +39,15 @@ export interface PluginManifest {
     minHostVersion: string;  // 모자라면 활성 안 함(P2)
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
     description?: string;
+    /**
+     * 🔴 모듈·의존성(M0) — 전부 **인터페이스 이름**에 건다(플러그인·모듈 이름 아님). 범위는 `*`·`^a.b` 둘.
+     *   provides: 내가 채우는 인터페이스 → 그 인터페이스 버전. 모듈 값은 PluginModule.modules[이름] 에 있다(짝).
+     *   requires: 없으면 안 켜진다(blocked, 자동 복귀) — 위상 정렬이 이 순서로 켠다.
+     *   supports: 없어도 켜진다 · 오면 붙는다(lifecycle.onInterface.attach) · 가면 떨어진다(detach).
+     */
+    provides?: Record<string, string>;
+    requires?: Record<string, string>;
+    supports?: Record<string, string>;
     /**
      * 🔴 선언형 기여 — 「나는 이 뷰·명령·리본·설정·상태바·노드 타입을 낸다」를 데이터로 적는다.
      *   ⛔ 순수 데이터만(함수·컴포넌트는 이름으로 가리킨다 — 모듈의 components·commands·panes·renders 키).
@@ -54,11 +69,15 @@ export interface PluginModule extends PluginImpl {
     lifecycle?: PluginLifecycle;
     deactivate?: () => void;   // 선택 — 등록물 회수는 호스트가 한다(P2)
     /**
-     * 🔴 N4 — 다른 플러그인에게 내주는 공개 표면(객체 하나). host.plugins.get(id) 로 받는다.
-     *   ⭐ manifest 옆에 둔다(플러그인 시스템 명세 「공개 API 를 낼 땐 manifest 옆에 api 칸을 더한다」).
-     *   ⭐ 「호출자별 팩토리」도 된다 — api 가 { __perCaller:true } 표식 함수면, host.plugins.get 이
-     *      호출자 id 와 track 을 넘겨 부른다(그래서 setData 같은 게 「그 타입을 등록한 플러그인만」을 가린다).
-     *      표식이 없으면 그 객체를 그대로 돌려준다(평면 객체 api).
+     * 🔴 M0 — manifest.provides 와 짝(같은 키). 인터페이스 이름 → 모듈 값. host.modules.use(name) 가 이걸 돌려준다.
+     *   ⭐ 값이 「호출자별 팩토리」(__perCaller 표식 함수)면 use 가 (소비자id, scopedTrack) 로 불러 바인딩한 것을 준다 —
+     *      소비자가 낸 Disposable 이 (소비자, 인터페이스) scope 에 모여, detach 때 그 묶음만 거둬진다.
+     *      표식이 없으면 그 값을 그대로 돌려준다.
+     */
+    modules?: Record<string, unknown>;
+    /**
+     * 🔴 옛 N4 공개 표면 — host.plugins.get(id) 로 받던 것. 📌 M0 이행으로 provides+modules 로 옮기는 중이며,
+     *    이행 끝 커밋에서 api 칸과 host.plugins.get 을 **같이** 걷는다(설탕 없음). ⛔ 새 플러그인은 modules 를 쓴다.
      */
     api?: unknown;
 }
@@ -251,11 +270,23 @@ export interface PluginImpl {
     nodeTypes?: Record<string, unknown>;
 }
 
+/**
+ * 🔴 인터페이스 훅 — manifest.supports 와 짝(같은 이름). 늦게 오는 모듈에 붙는 자리.
+ *   그 인터페이스가 채워지면 attach(host, mod), 사라지면 detach(host). 다시 채워지면 attach 가 다시 불린다.
+ *   attach 안에서 mod 로 건 구독(Disposable)은 (이 소비자, 이 인터페이스) scope 에 모여 detach 때 그 묶음만 거둬진다.
+ */
+export interface InterfaceHook {
+    attach(host: PluginHost, mod: unknown): void;
+    detach(host: PluginHost): void;
+}
+
 /** 수명주기 훅(안드로이드 onCreate 결) — 전부 선택. onActivate 는 등록 뒤 동작·구독, onFirstRun 은 첫 실행 때 한 번. */
 export interface PluginLifecycle {
     onActivate?(host: PluginHost): void | Promise<void>;
     onFirstRun?(host: PluginHost): void;
     onDeactivate?(): void;
+    /** 🔴 supports 와 짝 — 인터페이스 이름 → attach/detach. 활성 순서·재시작과 무관하게 「채워지는 순간」 불린다. */
+    onInterface?: Record<string, InterfaceHook>;
 }
 
 /**
@@ -361,6 +392,16 @@ export interface PluginHost {
      */
     plugins: {
         get<T = unknown>(id: string): T | undefined;
+    };
+
+    /**
+     * 🔴 M0 — 모듈 소비. 인터페이스 **이름**으로 받는다(누가 채웠는지 소비자는 모른다 — 그래서 갈아 껴도 안 바뀐다).
+     *   ⛔ requires·supports·자기 provides 에 선언한 이름만 — 안 선언한 이름을 use 하면 던진다(선언 안 된 의존 0건).
+     *   supports 인데 아직 제공자가 없으면 null(requires 는 있으면 블록이 아니라 늘 차 있다).
+     *   ⚠️ 모듈이 「호출자별 팩토리」면 이 호스트 id(= 소비자)와 (소비자,인터페이스) scope track 으로 바인딩해 돌려준다.
+     */
+    modules: {
+        use<T = unknown>(name: string): T | null;
     };
 
     /**

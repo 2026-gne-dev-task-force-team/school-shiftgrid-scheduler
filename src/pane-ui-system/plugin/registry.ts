@@ -14,12 +14,32 @@ import type { PluginModule, Disposable, PerCallerApi } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { applyContributes } from './contributes';
-import { disposeOwner } from './store';
+import { disposeOwner, trackScope } from './store';
 
 // ── 설치된 모듈 + 상태 ──
 let installed: PluginModule[] = [];
 const failedIds = new Set<string>();      // onActivate 가 던졌거나 minHostVersion 미달
 let disabledIds = new Set<string>();      // 사용자가 끈 것(기기별 저장)
+
+// 🔴 인터페이스 이름 → 지금 그걸 채우는 플러그인 id(위상 정렬이 고른 승자). host.modules.use 가 여기로 모듈을 찾는다.
+//    (채우는 이가 둘이면 먼저 켜진 쪽만 여기 들어온다 — 뒤는 「대기」.)
+const activeProviders = new Map<string, string>();
+
+/**
+ * 🔴 인터페이스 이름으로 모듈을 찾아 소비자에 바인딩해 돌려준다(host.modules.use 의 알맹이).
+ *   없으면 undefined. 「호출자별 팩토리」(__perCaller)면 (소비자, (소비자,인터페이스) scope track) 으로 불러 바인딩.
+ */
+export function resolveModule(ifaceName: string, consumerId: string): unknown {
+    const providerId = activeProviders.get(ifaceName);
+    if (!providerId) return undefined;
+    const m = installed.find((x) => x.manifest.id === providerId);
+    const mod = m?.modules?.[ifaceName];
+    if (mod === undefined) return undefined;
+    if (typeof mod === 'function' && (mod as Partial<PerCallerApi>).__perCaller) {
+        return (mod as PerCallerApi)(consumerId, (d: Disposable) => trackScope(consumerId, ifaceName, d));
+    }
+    return mod;
+}
 
 // ── 기기별 저장: { disabled: string[] } ──
 const pluginsKey = () => storageKey('plugins');
@@ -72,7 +92,7 @@ function activateOne(m: PluginModule): void {
         // 🔴 순서: contributes 꽂기 → lifecycle.onActivate → onFirstRun.
         //    호스트 하나를 만들어 셋이 같이 쓴다(등록물은 전부 이 주인 꼬리표로 모여 끌 때 회수된다).
         //    applyContributes 가 이름 어긋남에 던지면 아래 catch 가 받아 「활성 실패」로 올린다(조용히 안 넘긴다).
-        const host = makeHost(m.manifest.id, m);
+        const host = makeHost(m.manifest.id, m, m.manifest);
         applyContributes(m.manifest.contributes, m, host);
         // onActivate 는 선택이다(선언형 전환) — 등록은 contributes 가 하고, onActivate 는 구독·동작만 남는다.
         if (m.lifecycle?.onActivate) void m.lifecycle.onActivate(host);

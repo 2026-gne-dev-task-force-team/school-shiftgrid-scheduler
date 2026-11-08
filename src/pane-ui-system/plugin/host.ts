@@ -14,9 +14,9 @@ import { NARROW_PX } from '../layout/panels';
 import { resolveMode, onThemeApplied } from '../theme/apply';
 import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
-import { getPluginApi } from './registry';
+import { getPluginApi, resolveModule } from './registry';
 import { declareOne } from './contributes';
-import type { PluginHost, PluginImpl, DeclareInput, WorkspaceOpenOptions, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
+import type { PluginHost, PluginImpl, PluginManifest, DeclareInput, WorkspaceOpenOptions, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
     track, getWorkspaceBridge, whenWorkspaceReady, runCommand,
@@ -24,7 +24,7 @@ import {
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
 
-export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
+export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginManifest): PluginHost {
     const skey = (key: string) => storageKey(`plugin.${pluginId}.${key}`);
 
     const storage = {
@@ -144,6 +144,19 @@ export function makeHost(pluginId: string, impl?: PluginImpl): PluginHost {
             //   둔다(이 플러그인이 꺼지면 상대 쪽 등록도 같이 회수된다 — 노드가 회색이 되는 길).
             get<T = unknown>(id: string): T | undefined {
                 return getPluginApi<T>(id, pluginId, (d) => track(pluginId, d));
+            },
+        },
+
+        // 🔴 M0 — 모듈 소비(인터페이스 이름으로). ⛔ requires·supports·자기 provides 에 선언한 이름만 — 안 선언하면 던진다.
+        //    supports 인데 제공자 없음 → null. requires 는 블록 덕에 평소 차 있다. 바인딩·scope 는 resolveModule 이 쥔다.
+        modules: {
+            use<T = unknown>(name: string): T | null {
+                const declared = !!(manifest?.provides?.[name] || manifest?.requires?.[name] || manifest?.supports?.[name]);
+                if (!declared) {
+                    throw new Error(`[plugin] "${pluginId}" 가 선언 안 한 인터페이스 "${name}" 를 use 한다 — requires/supports/provides 에 적어라`);
+                }
+                const mod = resolveModule(name, pluginId);
+                return (mod === undefined ? null : (mod as T));
             },
         },
 

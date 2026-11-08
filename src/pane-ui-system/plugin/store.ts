@@ -40,6 +40,50 @@ export function disposeOwner(owner: string): void {
     owned.set(owner, []);
 }
 
+// ── 모듈 scope (소비자, 인터페이스) ──
+// 🔴 host.modules.use·onInterface.attach 가 받은 구독(Disposable)을 이 묶음에 모은다 — detach 때 그 묶음만 거둔다.
+//    owner(소비자) 묶음과 **따로**다: supports 제공자가 사라져도 소비자 뷰(owner)는 안 죽고, 그 인터페이스 scope 만 거둬진다.
+const scopes = new Map<string, Disposable[]>();
+const scopeKey = (consumer: string, iface: string) => `${consumer}\u0000${iface}`;
+
+/** 그 (소비자,인터페이스) scope 에 구독을 단다 — 돌려주는 Disposable 은 거둘 때 제 자리를 scope 에서 뺀다(scopeSize 가 정확하게). */
+export function trackScope(consumer: string, iface: string, d: Disposable): Disposable {
+    const k = scopeKey(consumer, iface);
+    const arr = scopes.get(k) ?? [];
+    scopes.set(k, arr);
+    const wrapped: Disposable = {
+        dispose() {
+            const i = arr.indexOf(wrapped);
+            if (i >= 0) arr.splice(i, 1);
+            try { d.dispose(); } catch { /* 조용히 */ }
+        },
+    };
+    arr.push(wrapped);
+    return wrapped;
+}
+
+/** 그 (소비자,인터페이스) scope 를 통째로 거둔다(detach 때). 각 래퍼가 제 자리를 빼므로 끝나면 scopeSize 0. */
+export function disposeScope(consumer: string, iface: string): void {
+    const arr = scopes.get(scopeKey(consumer, iface));
+    if (!arr) return;
+    for (const w of [...arr]) { try { w.dispose(); } catch { /* 하나 던져도 나머지 */ } }
+}
+
+/** 지금 그 scope 에 살아 있는 구독 수 — 테스트·장부가 「붙어 있나」를 잰다. */
+export function scopeSize(consumer: string, iface: string): number {
+    return (scopes.get(scopeKey(consumer, iface)) ?? []).length;
+}
+
+/** 그 소비자의 **모든** 인터페이스 scope 를 거둔다 — 소비자가 꺼질 때(disposeOwner 와 짝). */
+export function disposeConsumerScopes(consumer: string): void {
+    const prefix = `${consumer}\u0000`;
+    for (const k of [...scopes.keys()]) {
+        if (!k.startsWith(prefix)) continue;
+        const arr = scopes.get(k)!;
+        for (const w of [...arr]) { try { w.dispose(); } catch { /* */ } }
+    }
+}
+
 // ── ② 기여 버전 구독 — 등록물이 바뀌면(활성·비활성·등록·회수) 이 버전이 오른다 ──
 // 🔴 리본·설정·새 탭을 그리는 React 컴포넌트가 이걸 구독해 다시 그린다(P2 토글이 라이브인 이유).
 const contribListeners = new Set<() => void>();

@@ -17,6 +17,8 @@ export type {
     NodeTypeContribution, NodeTypeRegistrar,
     PluginImpl, PluginLifecycle, DeclareInput,
     ContributionKind, ContributionRecord,
+    // 🔴 M0 모듈·의존성 — 인터페이스 선언 · supports 훅
+    InterfaceDecl, InterfaceHook,
 } from './types';
 export { HOST_VERSION } from './types';
 

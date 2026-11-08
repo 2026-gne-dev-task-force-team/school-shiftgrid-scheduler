@@ -40,8 +40,10 @@ export function definePlugin<
     R extends Record<string, (host: PluginHost) => ReactNode> = EmptyRec,
     // 🔴 노드 타입 함수 묶음 레코드 — 값의 꼴은 창틀이 모른다(도메인). 키(impl 이름)만 contributes 가 파생해 쓴다.
     NT extends Record<string, unknown> = EmptyRec,
+    // 🔴 모듈 레코드 — provides 와 짝. manifest.provides 의 키는 이 레코드의 키(= 인터페이스 이름)여야 한다(아래 파생 검사).
+    Mods extends Record<string, unknown> = EmptyRec,
 >(spec: {
-    manifest: Omit<PluginManifest, 'contributes'> & {
+    manifest: Omit<PluginManifest, 'contributes' | 'provides'> & {
         contributes?: Contributes<
             Extract<keyof C, string>,
             Extract<keyof Cmd, string>,
@@ -49,6 +51,8 @@ export function definePlugin<
             Extract<keyof R, string>,
             Extract<keyof NT, string>
         >;
+        /** 🔴 내가 채우는 인터페이스 → 버전. 🔴 키는 modules 의 키여야 한다 — 짝 없는 provides 를 tsc 가 잡는다. */
+        provides?: { [K in keyof Mods]?: string };
     };
     components?: C;
     commands?: Cmd;
@@ -56,6 +60,8 @@ export function definePlugin<
     renders?: R;
     /** 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이 이 키를 가리킨다(오타는 tsc 가 잡는다). */
     nodeTypes?: NT;
+    /** 🔴 모듈 — provides 가 가리키는 인터페이스를 채운 값. host.modules.use 가 돌려준다(__perCaller 팩토리 가능). */
+    modules?: Mods;
     lifecycle?: PluginLifecycle;
     deactivate?: () => void;
     api?: unknown;
