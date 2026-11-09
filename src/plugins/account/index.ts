@@ -49,6 +49,8 @@ export const accountPlugin = definePlugin({
         // 🔴 누구·판정·증명을 전부 채운다 — 증명은 꾸러미 안 내부 모듈이라 ⛔ supports 아닌 provides(늘 있다). 계정 데이터는 레코드 노드라 nodes 필요.
         provides: { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' },
         requires: { nodes: '^0.1' },
+        // 사용자·역할 목록은 레코드 뷰를 빌린다(없으면 간이 목록) — 있으면 쓰는 것이라 supports
+        supports: { 'record-view': '^0.2' },
         contributes: {
             // 🔴 약속 셋을 들고 온다(꾸러미 매니페스트). 켜진 account 가 호스트 약속 목록에 identity·credential·permit 를 올린다.
             interfaces: [
@@ -98,7 +100,7 @@ export const accountPlugin = definePlugin({
 
     // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
     components: {
-        Editor: () => createElement(AccountEditor),
+        Editor: ({ host }) => createElement(AccountEditor, { host }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──

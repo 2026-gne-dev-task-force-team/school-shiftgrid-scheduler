@@ -80,10 +80,12 @@ export const accountNodeTypeImpl = {
     } satisfies NodeTypeImplFns,
     // 사용자·역할 폴더 — 구조물이라 이름/옮기기/지우기 모두 막고, 보기 권한 없으면 숨긴다.
     usersFolder: {
+        open: openEditor,   // 누르면 편집 탭에 사용자 목록(레코드 뷰)
         can: () => ({ rename: false, move: false, delete: false }),
         hidden: () => !core.can('account.users.view'),
     } satisfies NodeTypeImplFns,
     rolesFolder: {
+        open: openEditor,   // 누르면 편집 탭에 역할 목록(레코드 뷰)
         can: () => ({ rename: false, move: false, delete: false }),
         hidden: () => !core.can('account.roles.view'),
     } satisfies NodeTypeImplFns,
@@ -123,10 +125,11 @@ export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'ro
         slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE],
         impl: 'root',
     },
-    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, impl: 'usersFolder' },
-    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, impl: 'rolesFolder' },
-    { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, create: { label: '사용자', under: [USERS_FOLDER_TYPE] }, impl: 'user' },
-    { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, create: { label: '역할', under: [ROLES_FOLDER_TYPE] }, impl: 'role' },
+    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, openable: true, impl: 'usersFolder' },
+    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, openable: true, impl: 'rolesFolder' },
+    // 🔴 사용자·역할은 나무에 안 띄운다(record · 쥔님 2026-11-09 *"하위노드로 띄우지 말고 레코드 뷰로"*) — 폴더를 열면 목록에 한 줄씩, 만들기도 목록에서.
+    { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, record: true, impl: 'user' },
+    { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, record: true, impl: 'role' },
     { type: POLICY_TYPE, label: '정책', icon: 'shieldCheck', openable: true, unique: 'tree', impl: 'policy' },
 ];
 

@@ -326,6 +326,8 @@ export function createRole(name: string, opts?: Partial<Omit<RoleData, 'name'>>)
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
 export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
+/** 부모 노드 id — 편집기의 「← 목록」이 쓴다(사용자·역할은 나무에 안 보인다). */
+export function parentOf(id: string): string | null { return nodesApi?.parent(id) ?? null; }
 
 function patchUser(userId: string, patch: Partial<UserData>): void {
     const u = readUser(userId);
@@ -388,10 +390,11 @@ export function getUser(userId: string): UserData | null { return readUser(userI
 /** 편집 탭이 읽는 역할 하나(없으면 null). */
 export function getRole(roleId: string): RoleData | null { return readRole(roleId); }
 /** 그 노드가 사용자/역할/정책 중 무엇인가(편집 탭이 어느 편집기를 그릴지 고른다). 그 외/없음은 null. */
-export function nodeKindOf(id: string): 'user' | 'role' | 'policy' | null {
+export function nodeKindOf(id: string): 'user' | 'role' | 'policy' | 'users' | 'roles' | null {
     const n = nodesApi?.get(id);
     if (!n) return null;
-    return n.type === USER_TYPE ? 'user' : n.type === ROLE_TYPE ? 'role' : n.type === POLICY_TYPE ? 'policy' : null;
+    return n.type === USER_TYPE ? 'user' : n.type === ROLE_TYPE ? 'role' : n.type === POLICY_TYPE ? 'policy'
+        : n.type === USERS_FOLDER_TYPE ? 'users' : n.type === ROLES_FOLDER_TYPE ? 'roles' : null;
 }
 
 /**

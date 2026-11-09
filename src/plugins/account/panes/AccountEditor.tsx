@@ -10,8 +10,13 @@ import { useAccountVersion } from './useAccount';
 import { UserEditor } from './UserEditor';
 import { RoleEditor } from './RoleEditor';
 import { PolicyEditor } from './PolicyEditor';
+import { AccountList } from './AccountList';
+import { Icon } from '../../../pane-ui-system';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { parentOf } from '../core';
+import { setActiveAccountNode } from '../nodes';
 
-export function AccountEditor() {
+export function AccountEditor({ host }: { host?: PluginHost }) {
     useAccountVersion();   // 세션·데이터가 바뀌면 다시 그린다(종류 판정이 달라질 수 있다)
     const id = useSyncExternalStore(subscribeActiveNode, getActiveAccountNode, getActiveAccountNode);
     const kind = id ? nodeKindOf(id) : null;
@@ -19,7 +24,15 @@ export function AccountEditor() {
     if (!id || !kind) {
         return <p className="text-[12px] text-muted p-4">탐색기에서 사용자·역할·정책을 누르면 여기서 편집합니다.</p>;
     }
-    if (kind === 'user') return <UserEditor userId={id} />;
-    if (kind === 'role') return <RoleEditor roleId={id} />;
+    if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} />;
+    // 사용자·역할 편집기 위에 「← 목록」 — 나무에 안 보이니 목록으로 돌아갈 길을 여기 둔다
+    const back = (
+        <button type="button" onClick={() => { const p = parentOf(id); if (p) setActiveAccountNode(p); }}
+            className="flex items-center gap-1 m-2 mb-0 px-2 h-7 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06]">
+            <Icon name="left" size={12} /> {kind === 'user' ? '사용자 목록' : '역할 목록'}
+        </button>
+    );
+    if (kind === 'user') return <div className="flex flex-col">{back}<UserEditor userId={id} /></div>;
+    if (kind === 'role') return <div className="flex flex-col">{back}<RoleEditor roleId={id} /></div>;
     return <PolicyEditor />;
 }
