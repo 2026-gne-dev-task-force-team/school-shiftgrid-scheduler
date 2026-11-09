@@ -74,7 +74,7 @@ function weekOffsetOf(d: Date): number {
 function EventChip({ b }: { b: WeekBar }) {
     const { e } = b;
     const pal = paletteAt(e.colorIdx);
-    const title = e.name || '새 일정';
+    const title = e.name || <span className="opacity-60">제목 없음</span>;
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
