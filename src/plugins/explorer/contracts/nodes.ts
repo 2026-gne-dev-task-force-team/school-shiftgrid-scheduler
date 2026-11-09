@@ -113,6 +113,8 @@ export interface NodeTypeDef {
      *   없으면 제한 없음(기본 · 내장 '폴더'가 그렇다). 관문은 모델 한 곳(violatesUnique) — 만들기·옮기기·복원·API 가 전부 지난다.
      */
     unique?: 'tree' | 'parent';
+    /** 🔑 끼워 넣기 모습(P5) — impl.embed 에 host 를 묶어 온다. 없으면 링크 줄. */
+    embed?: ComponentType<EmbedProps>;
     /**
      * 🔑 자동 슬롯 — 이 타입의 노드를 만들면 같이 만들 자식 타입들(예: 시간표를 만들면 선생님 목록·반 목록·규칙 폴더도).
      *   🔴 부모 생성과 슬롯 생성은 되돌리기 한 묶음(한 번의 apply). 슬롯 자식을 못 지우게/못 바꾸게 할지는
@@ -162,7 +164,12 @@ export interface NodeTypeImplFns {
     hidden?: (nodeId: string) => boolean;
     /** 🔑 인라인 입력 커밋 핸들러 — createInput 생성 입력·promptInput 의 커밋값(host 를 받는다 · open·menu 와 같은 결). */
     onInput?: (host: PluginHost, nodeId: string, kind: string, value: string) => void;
+    /** 🔑 끼워 넣기 모습(P5) — 다른 노드 안(페이지 블록)에 이 타입이 어떻게 보일지. 없으면 「아이콘+이름」 링크 한 줄. */
+    embed?: ComponentType<EmbedProps & { host: PluginHost }>;
 }
+
+/** nodes.Embed 속성 — 끼워 넣을 노드 id(+ 타입이 알아듣는 보기 이름). */
+export interface EmbedProps { nodeId: string; view?: string }
 
 /** nodes.Header 속성 — 뷰는 노드 id 만 주면 아이콘·제목이 알아서 그려지고 고쳐진다. */
 export interface NodeHeaderProps {
@@ -175,6 +182,10 @@ export interface NodeHeaderProps {
     titleClass?: string;
     /** 아이콘이 없을 때 보일 것 — 기본은 그 타입의 기본 아이콘. */
     fallback?: ReactNode;
+    /** 제목 입력칸 접근성 이름 · 빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
+    titleAriaLabel?: string;
+    titlePlaceholder?: string;
+    onTitleEnter?: () => void;
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
@@ -210,6 +221,8 @@ export interface NodesApi {
     setBody(id: string, body: unknown): void;
     /** 🔑 노드 공통 머리 부품 — 아이콘 고르기 + 제목 입력(탐색기·탭 제목에 같이 반영). 뷰가 제 머리줄 안에 끼운다. */
     Header: ComponentType<NodeHeaderProps>;
+    /** 🔑 끼워 넣기 부품 — 그 타입의 embed 모습(없으면 링크 줄). 지워진 노드면 안내 줄. */
+    Embed: ComponentType<EmbedProps>;
     move(id: string, parentId: string, index?: number): void;
     remove(id: string): void;                           // 🔴 휴지통으로(영구 아님)
     /** 🔑 묶음 — fn 안의 쓰기 전부가 되돌리기 한 칸·저장 한 번·알림 한 번이 된다(붙여넣기·일괄 편집). 중첩은 바깥에 합쳐진다. */

@@ -58,4 +58,16 @@ describe('nodes.Header', () => {
         act(() => { pick.click(); });
         expect(getState().tree.nodes[id].icon).toBe('📌');
     });
+
+    it('제목에서 Enter 면 이름을 확정하고 onTitleEnter 를 부른다(IME 조합 중엔 안 부른다)', () => {
+        const id = getState().selectedId!;
+        let n = 0;
+        act(() => { root.render(<NodeHeader nodeId={id} onTitleEnter={() => { n += 1; }} />); });
+        const input = container.querySelector('input[aria-label="제목"]') as HTMLInputElement;
+        input.focus();
+        act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true })); });
+        expect(n).toBe(0);
+        act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
+        expect(n).toBe(1);
+    });
 });

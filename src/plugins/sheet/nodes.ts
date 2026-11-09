@@ -15,6 +15,7 @@ import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui
 import { uniqueName } from '../../pane-ui-system';
 import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
+import { SheetPreview } from './views/SheetPreview';
 
 export const TABLE_TYPE = 'sheet.sheet';
 
@@ -98,6 +99,7 @@ export const tableNodeTypeImpl = {
             host.workspace.open(SHEET_ID, { where: 'center' });
         },
         createInit: () => ({ data: blankTable() }),
+        embed: SheetPreview,
     } satisfies NodeTypeImplFns,
 };
 

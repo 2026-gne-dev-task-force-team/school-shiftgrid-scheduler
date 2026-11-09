@@ -5,7 +5,7 @@
  *   🔴 데이터는 노드 다리(nodes.ts)로만 — 페이지도 노드고 저장·휴지통은 노드 시스템이 쥔다.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactElement, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
@@ -14,7 +14,7 @@ import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList } from '../core/types';
 import {
-    setText, setChecked, setTable, splitBlock, outdentOrParagraph, mergeBackspace,
+    setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
     indentBlock, moveBlock, removeBlock, changeType, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
@@ -28,17 +28,19 @@ import {
 } from './caret';
 import { SlashMenu, filterSlash } from './SlashMenu';
 import { TableBlock } from './TableBlock';
+import { NodeBlock } from './NodeBlock';
 
 /** 캐럿을 둘 자리(resync 신호) — end 가 있으면 범위를 고른다(토글 결과). */
 interface FocusIntent { id: string; offset: number; end?: number; }
 /** `/` 메뉴 상태 — 어느 블록에서 무엇으로 걸렀나. */
 interface SlashState { blockId: string; query: string; index: number; }
 
-export function PageView({ host }: { host: PluginHost }) {
+export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }) {
     const activeId = useActivePage();
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || inTrash(activeId)) return <StartScreen />;
     const node = getNodesApi()?.get(activeId);
+    const Header = getNodesApi()?.Header;
     return (
         <PageEditor
             host={host}
@@ -50,6 +52,11 @@ export function PageView({ host }: { host: PluginHost }) {
             icon={node?.icon}
             onSetIcon={(i) => getNodesApi()?.setIcon(activeId, i)}
             onBack={() => setActivePage(null)}
+            renderHeader={Header && ((onEnter) => (
+                <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-4xl"
+                    titleClass="flex-1 text-3xl font-bold" titleAriaLabel="페이지 제목" titlePlaceholder="제목 없음"
+                    onTitleEnter={onEnter} fallback={<Icon name="fileText" size={32} className="text-muted" />} />
+            ))}
         />
     );
 }
@@ -70,9 +77,11 @@ export interface PageEditorProps {
     onSetIcon?: (icon: string | undefined) => void;
     /** 주면 머리줄에 「← 목록」 */
     onBack?: () => void;
+    /** 주면 큰 제목 자리를 이걸로(노드 공통 머리 nodes.Header) — 없으면 내장 PageHeader. onEnter = 본문 첫 블록으로. */
+    renderHeader?: (onEnter: () => void) => ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack, renderHeader }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -222,7 +231,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
         const cleared = setText(pageRef.current, id, '');
         const next = changeType(cleared, id, type);
         commitPage(next);
-        if (type === 'table') { setActiveBlockId(null); }
+        if (type === 'table' || type === 'node') { setActiveBlockId(null); }
         else { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
     };
 
@@ -295,7 +304,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
     const navBlock = (id: string, dir: -1 | 1, column: number) => {
         const blocks = pageRef.current.blocks;
         let j = blocks.findIndex((b) => b.id === id) + dir;
-        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table')) j += dir;
+        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table' || blocks[j].type === 'node')) j += dir;
         if (j < 0 || j >= blocks.length) return;
         const t = blocks[j];
         setActiveBlockId(t.id);
@@ -334,11 +343,12 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
     // ── 블록 조작(손잡이) ──
     const onChecked = (id: string, checked: boolean) => { const next = setChecked(pageRef.current, id, checked); commitPage(next); };
     const onTableChange = (id: string, table: TableBlockData) => { const next = setTable(pageRef.current, id, table); commitPage(next); };
+    const onNodePick = (id: string, nodeId: string) => { commitPage(setNodeRef(pageRef.current, id, nodeId)); };
     const onDelete = (id: string) => { const r = removeBlock(pageRef.current, id); commitResult(r); };
     const onChangeTypeMenu = (id: string, type: BlockType) => {
         const next = changeType(pageRef.current, id, type);
         commitPage(next);
-        if (type !== 'table' && type !== 'divider') { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
+        if (type !== 'table' && type !== 'divider' && type !== 'node') { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
         else setActiveBlockId(null);
     };
     const onDrop = (toIndex: number) => {
@@ -413,14 +423,14 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                     className="max-w-3xl mx-auto px-6 py-8"
                     onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                 >
-                    <PageHeader
+                    {renderHeader ? <div className="mb-1 flex items-center gap-2" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader
                         key={activeId}
                         initialName={title}
                         icon={icon}
                         onRename={renameTitle}
                         onEnter={titleEnterToBody}
                         onSetIcon={onSetIcon}
-                    />
+                    />}
                     {page.blocks.map((b, i) => (
                         <BlockRow
                             key={b.id}
@@ -438,6 +448,8 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                             onFocusActive={onFocusActive}
                             onChecked={onChecked}
                             onTableChange={onTableChange}
+                            onNodePick={onNodePick}
+                            selfId={activeId}
                             onPickSlash={pickSlash}
                             onDelete={onDelete}
                             onChangeType={onChangeTypeMenu}
@@ -553,6 +565,8 @@ interface RowProps {
     onFocusActive: (id: string) => void;
     onChecked: (id: string, checked: boolean) => void;
     onTableChange: (id: string, table: TableBlockData) => void;
+    onNodePick: (id: string, nodeId: string) => void;
+    selfId: string;
     onPickSlash: (id: string, type: BlockType) => void;
     onDelete: (id: string) => void;
     onChangeType: (id: string, type: BlockType) => void;
@@ -598,6 +612,7 @@ function BlockRow(props: RowProps) {
                         <HandleMenuItem label="글머리표" onPick={() => { props.onChangeType(block.id, 'bulleted'); setMenuOpen(false); }} />
                         <HandleMenuItem label="체크 목록" onPick={() => { props.onChangeType(block.id, 'todo'); setMenuOpen(false); }} />
                         <HandleMenuItem label="표" onPick={() => { props.onChangeType(block.id, 'table'); setMenuOpen(false); }} />
+                        <HandleMenuItem label="노드 끼워 넣기" onPick={() => { props.onChangeType(block.id, 'node'); setMenuOpen(false); }} />
                         <div className="my-1 border-t border-line" />
                         <HandleMenuItem label="삭제" onPick={() => { props.onDelete(block.id); setMenuOpen(false); }} />
                     </div>
@@ -637,6 +652,9 @@ function renderContent(props: RowProps): ReactElement {
                 onChange={(t) => props.onTableChange(block.id, t)}
             />
         );
+    }
+    if (block.type === 'node') {
+        return <NodeBlock nodeId={block.nodeId} selfId={props.selfId} onPick={(nid) => props.onNodePick(block.id, nid)} />;
     }
     if (block.type === 'code') {
         return <CodeBlock {...props} />;

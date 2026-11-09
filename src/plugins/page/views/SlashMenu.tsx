@@ -26,6 +26,7 @@ export const SLASH_ITEMS: SlashItem[] = [
     { type: 'code', label: '코드', hint: 'code 코드', icon: 'flask' },
     { type: 'divider', label: '구분선', hint: 'divider line 구분선', icon: 'dots' },
     { type: 'table', label: '표', hint: 'table 표', icon: 'table' },
+    { type: 'node', label: '노드 끼워 넣기', hint: 'node embed link 노드 끼우기 링크 페이지 시트', icon: 'fileText' },
 ];
 
 /** query(/ 뒤 글자)로 거른 항목. */

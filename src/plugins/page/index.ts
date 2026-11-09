@@ -62,7 +62,7 @@ export const pagePlugin = definePlugin({
     panes: { PageProps },
     components: {
         // 편집 화면 — 보고 있는 페이지(store)를 그린다. host 는 표 약속을 받는 데 쓴다.
-        Editor: (p) => createElement(PageView, { host: p.host }),
+        Editor: (p) => createElement(PageView, { host: p.host, leafId: p.leaf?.id }),
     },
     commands: {
         'page.open': (host: PluginHost) => { host.workspace.open(EDITOR_ID, { where: 'center' }); },

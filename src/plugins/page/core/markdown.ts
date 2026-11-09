@@ -191,6 +191,7 @@ export function blockToMarkdown(b: Block, numberInRun = 1): string {
         case 'quote': return `> ${b.text}`;
         case 'code': return `\`\`\`\n${b.text}\n\`\`\``;
         case 'divider': return '---';
+        case 'node': return b.nodeId ? `[[${b.nodeId}]]` : '';
         case 'table': return b.table ? tableToGfm(b.table) : '';
         default: return b.text;
     }

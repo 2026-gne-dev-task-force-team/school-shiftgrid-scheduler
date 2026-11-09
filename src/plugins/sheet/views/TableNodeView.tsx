@@ -10,11 +10,11 @@ import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
 import { useActiveTable, setActiveTable } from '../store';
-import { subscribeTableNodes, getTableRev, tableNodeOf, docOf, writeDoc, applyTx, inTrash } from '../nodes';
+import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, docOf, writeDoc, applyTx, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 
 
-export function TableNodeView() {
+export function TableNodeView({ leafId }: { leafId?: string }) {
     const activeId = useActiveTable();
     // 노드가 바뀔 때만 다시 읽는다(rev 스냅샷).
     useSyncExternalStore(subscribeTableNodes, getTableRev, getTableRev);
@@ -24,6 +24,7 @@ export function TableNodeView() {
     if (!activeId || !node || inTrash(activeId)) return <StartScreen />;
 
     const doc = docOf(activeId);
+    const Header = getNodesApi()?.Header;
 
     const decorate = (rowId: string, key: string): CellDecoration | undefined => {
         const tone = doc.rowTones?.[rowId] ?? doc.colTones?.[key];
@@ -48,7 +49,12 @@ export function TableNodeView() {
                 >
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <h1 className="mb-6 text-[32px] font-bold leading-tight tracking-tight text-text truncate select-none">{node.name}</h1>
+                <div className="mb-6 flex items-center gap-2">
+                    {Header
+                        ? <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-3xl" titleClass="flex-1 text-3xl font-bold leading-tight tracking-tight"
+                            fallback={<Icon name="table" size={30} className="text-muted" />} />
+                        : <h1 className="text-[32px] font-bold leading-tight tracking-tight text-text truncate select-none">{node.name}</h1>}
+                </div>
                 <Table
                     columns={doc.cols}
                     rows={doc.rows}

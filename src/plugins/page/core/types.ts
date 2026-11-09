@@ -9,7 +9,7 @@ export type BlockType =
     | 'paragraph'
     | 'heading1' | 'heading2' | 'heading3'
     | 'bulleted' | 'numbered' | 'todo'
-    | 'quote' | 'code' | 'divider' | 'table';
+    | 'quote' | 'code' | 'divider' | 'table' | 'node';
 
 /** 목록 종류(들여쓰기·같은 종류 이어짐 규칙이 붙는다). */
 export const LIST_TYPES: BlockType[] = ['bulleted', 'numbered', 'todo'];
@@ -31,6 +31,9 @@ export interface Block {
     indent?: number;
     /** 표 블록 전용. */
     table?: TableBlockData;
+    /** 끼워 넣기 블록 전용(P5) — 끼운 노드 id(없으면 아직 고르는 중) · 그 타입이 알아듣는 보기 이름. */
+    nodeId?: string;
+    view?: string;
 }
 
 /** 페이지 = 블록 배열. */
