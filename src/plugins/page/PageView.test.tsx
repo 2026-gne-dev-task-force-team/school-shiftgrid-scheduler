@@ -16,6 +16,7 @@ import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const trashed = new Set<string>();
 const store = new Map<string, { id: string; type: string; name: string; children: string[]; body?: unknown }>();
 const fakeNodes = {
     version: 1,
@@ -27,7 +28,7 @@ const fakeNodes = {
     parent: () => null,
     children: () => [],   // Q8: 본문의 하위 페이지 줄을 맞추느라 자식을 묻는다 — 이 테스트의 페이지엔 자식이 없다
     batch: (fn: () => void) => fn(),
-    isTrashed: () => false,   // R5-8 정식 휴지통 판정 — 이 테스트의 페이지는 휴지통 밖
+    isTrashed: (id: string) => trashed.has(id),   // R5-8 정식 휴지통 판정 — 기본은 휴지통 밖
     liveByType: (type: string) => [...store.values()].filter((n) => n.type === type) as unknown as PublicNode[],
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
@@ -35,7 +36,7 @@ const fakeNodes = {
 const host = frameHost(fakeNodes);   // table 약속 없음 → 읽기 전용 표
 
 let root: Root; let container: HTMLDivElement;
-afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); trashed.clear(); });
 
 function render() {
     container = document.createElement('div');
@@ -49,6 +50,17 @@ describe('PageView 통합', () => {
         setActivePage(null);
         initPageNodes(fakeNodes);
         render();
+        expect(container.textContent).toContain('새 페이지');
+    });
+
+    it('휴지통에 든 페이지는 편집 화면 대신 시작 화면을 보여 준다(nodes.isTrashed)', () => {
+        store.set('pt', { id: 'pt', type: 'page.page', name: '버린 페이지', children: [], body: { blocks: [{ id: 'p', type: 'paragraph', text: '비밀 본문' }] } });
+        trashed.add('pt');
+        initPageNodes(fakeNodes);
+        act(() => { setActivePage('pt'); });
+        render();
+        expect(container.querySelector('input[aria-label="페이지 제목"]')).toBeNull();
+        expect(container.textContent).not.toContain('비밀 본문');
         expect(container.textContent).toContain('새 페이지');
     });
 
