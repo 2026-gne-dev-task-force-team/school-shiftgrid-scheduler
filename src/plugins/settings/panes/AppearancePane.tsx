@@ -16,8 +16,8 @@ function Field({ title, hint, children }: { title: string; hint?: string; childr
     return (
         <div className="flex flex-col gap-2">
             <div>
-                <div className="text-[13px] font-semibold text-text">{title}</div>
-                {hint && <div className="text-[12px] text-muted">{hint}</div>}
+                <div className="text-body font-semibold text-text">{title}</div>
+                {hint && <div className="text-small text-muted">{hint}</div>}
             </div>
             {children}
         </div>
@@ -28,19 +28,15 @@ function Choice({
     active, onClick, icon, children,
 }: { active: boolean; onClick: () => void; icon?: IconName; children: ReactNode }) {
     return (
-        <button
-            type="button"
+        <Button
+            variant={active ? 'accent' : 'ghost'}
             onClick={onClick}
             aria-pressed={active}
-            className={`flex items-center gap-1.5 h-btn px-3 rounded border text-[13px] transition-colors
-                ${FOCUS_RING}
-                ${active
-                    ? 'border-accent text-text bg-text/[0.06]'
-                    : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
+            className="flex items-center gap-1.5"
         >
             {icon && <Icon name={icon} size={14} />}
             {children}
-        </button>
+        </Button>
     );
 }
 
@@ -85,7 +81,7 @@ export function AppearancePane() {
                                 onClick={() => setSettings({ theme: t.id })}
                                 aria-pressed={active}
                                 title={t.name}
-                                className={`flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-md border text-[13px] transition-colors
+                                className={`flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-md border text-body transition-colors
                                     ${FOCUS_RING}
                                     ${active
                                         ? 'border-accent text-text bg-text/[0.06]'

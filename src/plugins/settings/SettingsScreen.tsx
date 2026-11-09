@@ -16,6 +16,9 @@ import { listSettings, useContribVersion } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { SettingsChromeContext, type SettingsChrome } from './chrome-context';
 
+/** 플러그인이 더한 설정 묶음 머리 — 앱 섹션 제목(모양·창틀·플러그인·정보)과 같으면 메뉴에 같은 낱말이 두 번 뜬다(S12) */
+export const PLUGIN_GROUP_TITLE = '플러그인이 더한 설정';
+
 export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolean; peek?: PeekHandle }) {
     const narrow = useNarrow();
     useContribVersion();   // 설정 섹션/항목이 바뀌면(플러그인 켜고 끄기) 다시 그린다
@@ -61,11 +64,11 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
         <nav className="flex flex-col py-1">
             {appSections.map(renderSection)}
             {pluginSections.length > 0 && (
-                // 플러그인 묶음 — 굵은 선 + 「플러그인」 머리 + 살짝 어두운 바탕으로 앱 설정과 갈린다
+                // 플러그인 묶음 — 굵은 선 + 「플러그인이 더한 설정」 머리(앱 섹션 「플러그인」과 낱말이 겹치지 않게) + 살짝 어두운 바탕으로 앱 설정과 갈린다
                 <div className="mt-2 pt-1 border-t-2 border-line bg-side/60">
                     <div className="flex items-center gap-1.5 px-pad h-header select-none">
                         <Icon name="puzzle" size={13} className="text-muted" />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">플러그인</span>
+                        <span className="text-note font-semibold uppercase tracking-wide text-muted">{PLUGIN_GROUP_TITLE}</span>
                     </div>
                     {pluginSections.map(renderSection)}
                 </div>
@@ -95,7 +98,7 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
             {item && !narrow && (
                 <div className="shrink-0 flex items-center gap-2 h-header px-6 border-b border-line select-none">
                     {item.icon && <Icon name={item.icon} size={15} className="text-muted" />}
-                    <span className="text-[13px] font-semibold text-text truncate">{item.title}</span>
+                    <span className="text-body font-semibold text-text truncate">{item.title}</span>
                 </div>
             )}
             <div className="flex-1 min-h-0 overflow-auto px-6 py-5">
@@ -111,7 +114,7 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
                 <SettingsChromeContext.Provider value={chrome}>
                     <div className="h-full min-h-0 overflow-auto bg-bg">
                         <div className="h-header px-pad flex items-center border-b border-line select-none">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                            <span className="text-note font-semibold uppercase tracking-wide text-muted">설정</span>
                         </div>
                         {MenuList}
                     </div>
@@ -123,7 +126,7 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
                 <div className="h-full min-h-0 flex flex-col bg-bg">
                     <div className="h-header px-pad flex items-center gap-1 border-b border-line select-none shrink-0">
                         <IconButton icon="left" label="메뉴로" size={15} onClick={() => setShowContent(false)} />
-                        <span className="text-[13px] font-semibold text-text">{item?.title}</span>
+                        <span className="text-body font-semibold text-text">{item?.title}</span>
                     </div>
                     {Content}
                 </div>
@@ -141,7 +144,7 @@ export function SettingsScreen({ collapsed = false, peek }: { collapsed?: boolea
                 <div className={`shrink-0 self-stretch border-r border-line overflow-auto ${collapsed ? 'w-rail' : 'w-44'}`}>
                     {!collapsed && (
                         <div className="h-header px-pad flex items-center border-b border-line select-none">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">설정</span>
+                            <span className="text-note font-semibold uppercase tracking-wide text-muted">설정</span>
                         </div>
                     )}
                     {collapsed ? IconMenu : MenuList}

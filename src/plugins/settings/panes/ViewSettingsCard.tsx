@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react';
 import {
-    usePaneSettings, setViewOverride, getViewOverride, Button, FOCUS_RING,
+    usePaneSettings, setViewOverride, getViewOverride, Button, TextInput, Select,
     type Squeeze, type ViewLayout, type ViewDef,
 } from '../../../pane-ui-system';
 
@@ -22,9 +22,9 @@ const SQUEEZES: { id: Squeeze; name: string; hint: string }[] = [
 function Cell({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
     return (
         <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-medium text-text">{label}</span>
+            <span className="text-note font-medium text-text">{label}</span>
             {children}
-            {hint && <span className="text-[11px] text-muted leading-snug">{hint}</span>}
+            {hint && <span className="text-note text-muted leading-snug">{hint}</span>}
         </label>
     );
 }
@@ -35,7 +35,7 @@ function NumCell({ label, hint, value, placeholder, onChange }: {
 }) {
     return (
         <Cell label={label} hint={hint}>
-            <input
+            <TextInput
                 type="number"
                 value={value ?? ''}
                 placeholder={placeholder != null ? `기본 ${placeholder}` : '없음'}
@@ -45,8 +45,7 @@ function NumCell({ label, hint, value, placeholder, onChange }: {
                     const n = Number(t);
                     if (Number.isFinite(n)) onChange(n);
                 }}
-                className={`w-28 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
-                    ${FOCUS_RING}`}
+                className="w-28 text-right"
             />
         </Cell>
     );
@@ -56,9 +55,9 @@ function NumCell({ label, hint, value, placeholder, onChange }: {
 function FactRow({ label, value, hint }: { label: string; value: string; hint: string }) {
     return (
         <div className="flex items-baseline gap-2">
-            <span className="w-24 shrink-0 text-[11px] text-muted">{label}</span>
-            <span className="text-[12px] text-text">{value}</span>
-            <span className="text-[11px] text-muted/80">— {hint}</span>
+            <span className="w-24 shrink-0 text-note text-muted">{label}</span>
+            <span className="text-small text-text">{value}</span>
+            <span className="text-note text-muted/80">— {hint}</span>
         </div>
     );
 }
@@ -66,7 +65,7 @@ function FactRow({ label, value, hint }: { label: string; value: string; hint: s
 /** 안내 한 줄 — 「이 기기에만 · 비우면 기본」. 뷰 목록 머리에 한 번 */
 export function ViewSettingsNote() {
     return (
-        <p className="text-[11px] text-muted leading-snug">
+        <p className="text-note text-muted leading-snug">
             여기서 바꾼 것은 <span className="text-text">이 기기에만</span> 남습니다. 비우면 등록값(기본)을 따릅니다.
             「놓일 수 있는 틀·가르기·한 장만」은 플러그인이 정한 값이라 읽기 전용입니다.
         </p>
@@ -108,15 +107,15 @@ export function ViewSettingsCard({ view: v }: { view: ViewDef }) {
                     onChange={(n) => patch({ minWidth: n })}
                 />
                 <Cell label="좁아질 때" hint={SQUEEZES.find((s) => s.id === (over.squeeze ?? base.squeeze))?.hint}>
-                    <select
+                    <Select
                         value={over.squeeze ?? ''}
                         onChange={(e) => patch({ squeeze: (e.target.value || undefined) as Squeeze | undefined })}
-                        className={`h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
-                            ${FOCUS_RING}`}
-                    >
-                        <option value="">등록값{base.squeeze ? ` (${base.squeeze})` : ''}</option>
-                        {SQUEEZES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                        className="px-2"
+                        options={[
+                            { value: '', label: `등록값${base.squeeze ? ` (${base.squeeze})` : ''}` },
+                            ...SQUEEZES.map((s) => ({ value: s.id, label: s.name })),
+                        ]}
+                    />
                 </Cell>
                 <NumCell
                     label="접힘 폭(px)"

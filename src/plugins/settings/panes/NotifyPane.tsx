@@ -3,7 +3,7 @@
  *   기본 200 · 0 = 이 세션 메모리에만(새로고침하면 비움). 줄이면 넘치는 옛 기록은 바로 잘린다.
  *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
-import { usePaneSettings, setPaneSettings, Button, FOCUS_RING } from '../../../pane-ui-system';
+import { usePaneSettings, setPaneSettings, Button, TextInput } from '../../../pane-ui-system';
 import { applyNotifyRetain, clearNotifications, useNotifications } from '../../../pane-ui-system/plugin';
 
 export function NotifyPane() {
@@ -18,7 +18,7 @@ export function NotifyPane() {
                         알림 패널에 남길 최근 알림 수 · 0 이면 새로고침하면 비웁니다 · 이 기기에만 저장됩니다
                     </div>
                 </div>
-                <input
+                <TextInput
                     type="number"
                     min={0}
                     max={1000}
@@ -29,7 +29,7 @@ export function NotifyPane() {
                         setPaneSettings({ notifyRetain: Math.max(0, Math.min(1000, Math.round(n))) });
                         applyNotifyRetain();
                     }}
-                    className={`shrink-0 w-24 h-btn px-2 rounded border border-line bg-bg text-text text-body text-right ${FOCUS_RING}`}
+                    className="shrink-0 w-24 text-right"
                 />
             </div>
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-line">

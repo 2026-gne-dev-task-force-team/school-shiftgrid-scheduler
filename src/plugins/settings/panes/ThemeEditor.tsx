@@ -11,7 +11,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import {
     COLOR_TOKENS, effectiveColors, rgbToHex, hexToRgb, isTriplet,
     useUserThemes, addUserTheme, removeUserTheme, renameUserTheme,
-    exportThemeJSON, importThemeJSON, FOCUS_RING,
+    exportThemeJSON, importThemeJSON, FOCUS_RING, Button, TextInput, InlineRename,
     type ColorToken, type ThemeControls, type UserTheme,
 } from '../../../pane-ui-system';
 
@@ -24,7 +24,7 @@ const LABELS: Partial<Record<ColorToken, string>> = {
 function Section({ title, children }: { title: string; children: ReactNode }) {
     return (
         <div className="flex flex-col gap-3 pt-4 border-t border-line">
-            <div className="text-[13px] font-semibold text-text">{title}</div>
+            <div className="text-body font-semibold text-text">{title}</div>
             {children}
         </div>
     );
@@ -76,13 +76,11 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
         setNote(res.skipped > 0 ? `「${res.theme.name}」 가져옴 — ${res.skipped}개 건너뜀` : `「${res.theme.name}」 가져옴`);
     };
 
-    const btn = `h-btn px-3 rounded border border-line text-[13px] text-muted hover:text-text hover:bg-text/[0.04]
-        transition-colors ${FOCUS_RING}`;
 
     return (
         <div className="flex flex-col gap-4">
             <Section title="테마 편집">
-                <p className="text-[12px] text-muted">
+                <p className="text-small text-muted">
                     색을 바꾸면 곧바로 적용됩니다. 바꾼 색은 지금 테마 위에 덮입니다 — 「전부 되돌리기」로 원래 테마 색으로 돌아갑니다.
                 </p>
                 <div className="flex flex-col gap-1.5">
@@ -98,22 +96,22 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                                     onChange={(e) => { const v = hexToRgb(e.target.value); if (v) setToken(t, v); }}
                                     className="w-8 h-8 shrink-0 rounded border border-line bg-bg p-0.5 cursor-pointer"
                                 />
-                                <span className="w-24 shrink-0 text-[12px] text-text truncate">{LABELS[t] ?? t}</span>
+                                <span className="w-24 shrink-0 text-small text-text truncate">{LABELS[t] ?? t}</span>
                                 <input
                                     type="text"
                                     aria-label={`${LABELS[t] ?? t} r g b`}
                                     defaultValue={val}
                                     key={val}
                                     onChange={(e) => { if (isTriplet(e.target.value)) setToken(t, e.target.value.trim()); }}
-                                    className={`w-28 h-7 px-2 rounded border border-line bg-bg text-text text-[12px]
+                                    className={`w-28 h-7 px-2 rounded border border-line bg-bg text-text text-small
                                         ${FOCUS_RING}`}
                                 />
-                                <span className="text-[11px] text-muted w-10 shrink-0">{t}</span>
+                                <span className="text-note text-muted w-10 shrink-0">{t}</span>
                                 <button
                                     type="button"
                                     onClick={() => revertToken(t)}
                                     disabled={!overridden}
-                                    className={`ml-auto h-7 px-2 rounded border border-line text-[12px] text-muted
+                                    className={`ml-auto h-7 px-2 rounded border border-line text-small text-muted
                                         enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
                                         ${FOCUS_RING}`}
                                 >
@@ -124,23 +122,21 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                     })}
                 </div>
                 <div>
-                    <button type="button" onClick={revertAll} className={btn}>전부 되돌리기</button>
+                    <Button onClick={revertAll}>전부 되돌리기</Button>
                 </div>
             </Section>
 
             <Section title="내 테마">
                 <div className="flex items-center gap-2">
-                    <input
+                    <TextInput
                         type="text"
                         value={newName}
                         placeholder="이름을 붙여 지금 색을 저장"
                         onChange={(e) => setNewName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') saveAsUserTheme(); }}
-                        className={`flex-1 min-w-0 h-btn px-2 rounded border border-line bg-bg text-text text-[13px]
-                            ${FOCUS_RING}`}
+                        onEnter={() => saveAsUserTheme()}
+                        className="flex-1 min-w-0"
                     />
-                    <button type="button" onClick={saveAsUserTheme} disabled={!newName.trim()}
-                        className={`${btn} disabled:opacity-30`}>저장</button>
+                    <Button onClick={saveAsUserTheme} disabled={!newName.trim()} className="disabled:opacity-30">저장</Button>
                 </div>
 
                 {userThemes.length > 0 && (
@@ -148,29 +144,23 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                         {userThemes.map((t) => (
                             <div key={t.id} className="flex items-center gap-2 px-3 h-row border-b border-line last:border-b-0">
                                 {renaming?.id === t.id ? (
-                                    <input
-                                        type="text"
-                                        autoFocus
+                                    <InlineRename
                                         value={renaming.name}
-                                        onChange={(e) => setRenaming({ id: t.id, name: e.target.value })}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') { renameUserTheme(t.id, renaming.name); setRenaming(null); }
-                                            if (e.key === 'Escape') setRenaming(null);
-                                        }}
-                                        onBlur={() => { renameUserTheme(t.id, renaming.name); setRenaming(null); }}
-                                        className={`flex-1 min-w-0 h-7 px-2 rounded border border-line bg-bg text-text text-[13px]
-                                            ${FOCUS_RING}`}
+                                        ariaLabel="테마 이름"
+                                        className="flex-1 min-w-0"
+                                        onCommit={(next) => { renameUserTheme(t.id, next); setRenaming(null); }}
+                                        onCancel={() => setRenaming(null)}
                                     />
                                 ) : (
                                     <button type="button" onClick={() => applyUserTheme(t)}
-                                        className="flex-1 min-w-0 text-left text-[13px] text-text truncate hover:text-accent">
+                                        className="flex-1 min-w-0 text-left text-body text-text truncate hover:text-accent">
                                         {t.name}
                                     </button>
                                 )}
-                                <button type="button" onClick={() => setRenaming({ id: t.id, name: t.name })} className={`${btn} h-7`}>이름</button>
-                                <button type="button" onClick={() => doExport(t)} className={`${btn} h-7`}>내보내기</button>
+                                <Button onClick={() => setRenaming({ id: t.id, name: t.name })}>이름</Button>
+                                <Button onClick={() => doExport(t)}>내보내기</Button>
                                 <button type="button" onClick={() => removeUserTheme(t.id)}
-                                    className={`h-7 px-2 rounded border border-line text-[12px] text-bad hover:bg-bad/10
+                                    className={`h-7 px-2 rounded border border-line text-small text-bad hover:bg-bad/10
                                         ${FOCUS_RING}`}>
                                     지우기
                                 </button>
@@ -180,7 +170,7 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                 )}
 
                 <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => fileRef.current?.click()} className={btn}>JSON 가져오기</button>
+                    <Button onClick={() => fileRef.current?.click()}>JSON 가져오기</Button>
                     <input
                         ref={fileRef}
                         type="file"
@@ -188,7 +178,7 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
                         className="hidden"
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) void doImport(f); e.target.value = ''; }}
                     />
-                    {note && <span className="text-[12px] text-muted">{note}</span>}
+                    {note && <span className="text-small text-muted">{note}</span>}
                 </div>
             </Section>
         </div>

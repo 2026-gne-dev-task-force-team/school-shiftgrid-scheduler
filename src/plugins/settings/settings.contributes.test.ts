@@ -13,6 +13,7 @@ import { activateAll, listPlugins } from '../../pane-ui-system/plugin/registry';
 import { listSettings } from '../../pane-ui-system/plugin/store';
 import { disposeOwner } from '../../pane-ui-system/plugin/store';
 import { settingsPlugin } from './index';
+import { PLUGIN_GROUP_TITLE } from './SettingsScreen';
 
 // 전환 전 onActivate 가 만들던 골든 구조 — 섹션 id·제목·순서 + 섹션별 항목 id·순서.
 const EXPECTED = [
@@ -42,5 +43,16 @@ describe('settings 선언형 전환 — contributes 가 옛 호출형과 같은 
 
         // 설정 화면 뷰가 접두사 붙어 꽂힌다(settings.main)
         expect(getView('settings.main'), '설정 뷰 등록').toBeTruthy();
+    });
+
+    it('S12 — 항목 id·섹션 id 가 겹치지 않고, 메뉴에 같은 제목이 두 번 뜨지 않는다', () => {
+        activateAll([settingsPlugin]);
+        const secs = listSettings();
+        const itemIds = secs.flatMap((s) => s.items.map((i) => i.id));
+        expect(new Set(itemIds).size, '항목 id 중복').toBe(itemIds.length);
+        expect(new Set(secs.map((s) => s.id)).size, '섹션 id 중복').toBe(secs.length);
+        // 메뉴에 보이는 글자: 섹션 머리 + 「플러그인이 더한 설정」 머리 — 서로 같으면 안 된다
+        const heads = [...secs.map((s) => s.title), PLUGIN_GROUP_TITLE];
+        expect(new Set(heads).size, `메뉴 머리 제목 중복: ${heads.join(' / ')}`).toBe(heads.length);
     });
 });
