@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Button } from '../../primitives/Button';
+import { ConfirmDialog } from '../../primitives/ConfirmDialog';
 import { Icon } from '../../primitives/Icon';
 import { ViewHeader } from '../../primitives/ViewHeader';
 import {
@@ -46,6 +47,8 @@ function Entry({ it }: { it: NotifyItem }) {
 export function NotifyPanel() {
     const { items, unread } = useNotifications();
     const [owner, setOwner] = useState<string | null>(null);
+    const [confirmClear, setConfirmClear] = useState(false);
+    const errorCount = items.filter((i) => i.level === 'error').length;
 
     useEffect(() => { if (unread > 0) markAllRead(); }, [unread]);
 
@@ -60,7 +63,7 @@ export function NotifyPanel() {
                 icon={<Icon name="bell" size={14} />}
                 title={<>알림{items.length > 0 && <span className="ml-2 text-small font-normal text-muted">전체 {items.length}건</span>}</>}
                 actions={items.length > 0 && (
-                    <Button size="sm" title="알림 기록을 모두 지웁니다" onClick={clearNotifications}>
+                    <Button size="sm" title="알림 기록을 모두 지웁니다" onClick={() => (errorCount > 0 ? setConfirmClear(true) : clearNotifications())}>
                         <Icon name="trash" size={13} />모두 지우기
                     </Button>
                 )}
@@ -74,6 +77,12 @@ export function NotifyPanel() {
                         </Button>
                     ))}
                 </div>
+            )}
+            {confirmClear && (
+                <ConfirmDialog title="오류 알림도 지울까요?" confirmLabel="모두 지우기" danger
+                    onConfirm={() => { setConfirmClear(false); clearNotifications(); }} onCancel={() => setConfirmClear(false)}>
+                    오류 알림 {errorCount}건이 들어 있습니다. 지우면 되돌릴 수 없습니다.
+                </ConfirmDialog>
             )}
             {shown.length === 0
                 ? <div className="px-pad py-4 text-small text-muted">알림이 없습니다.</div>

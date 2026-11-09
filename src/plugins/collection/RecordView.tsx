@@ -8,7 +8,7 @@
  * 🔴 칸 종류를 모른다 — 셀·연산자·변환이 전부 칸 타입 레지스트리(fields/)에서 온다. 화면에 switch(type) 이 없다.
  * 🔑 보기 종류(kind)는 지금 'table' 하나지만 ViewDef.kind 로 갈라 둬 보드·목록·갤러리를 꽂을 자리를 열어 뒀다.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
@@ -56,6 +56,151 @@ function useCoarsePointer(): boolean {
 
 const isEmptyVal = (v: RecordCellValue): boolean => v === null || v === '' || (Array.isArray(v) && v.length === 0);
 
+/** 행 컴포넌트가 받는 동작 — 바깥에서 한 번만 만든 안정 객체(최신 클로저는 ref 로 위임). 이게 바뀌면 행 메모가 깨진다 */
+interface RowAct {
+    toggleOne(id: string): void;
+    hover(id: string): void;
+    leave(id: string): void;
+    cellMouseDown(e: React.MouseEvent, ri: number, fi: number): void;
+    changeCell(id: string, key: string, value: RecordCellValue): void;
+    setOptions(key: string, o: FieldOption[]): void;
+    toggleCollapse(id: string): void;
+    addChild(id: string): void;
+    open(id: string): void;
+    tab(id: string, shift: boolean): void;
+    moveAlt(id: string, dir: 'up' | 'down'): void;
+}
+type DragBindLike = ReturnType<typeof useDragLeaf>['bind'];
+
+/** 고정 칸(앞에서 frozen 칸) 달라붙기 — 머리줄·행이 같이 쓴다 */
+const frozenStyleOf = (fi: number, frozen: number, lead: number, widths: number[]) =>
+    (fi < frozen ? { position: 'sticky' as const, left: lead + widths.slice(0, fi).reduce((a, w) => a + w, 0), zIndex: 5 } : {});
+
+/** 칸 껍데기(여백)를 눌러도 안쪽 글/숫자 칸 편집이 열린다 — 선택·체크·관계 칸(BUTTON)·이미 편집 중인 칸은 건드리지 않는다. */
+const openEditFromWrapper = (e: React.MouseEvent<HTMLElement>) => {
+    // 껍데기·칸 상자 같은 빈 영역만 — 입력·단추·칸 자체(자기 click 이 연다)는 건드리지 않는다
+    if ((e.target as HTMLElement).closest('input,textarea,select,button,[data-rv-cell],[data-rv-open],[data-rv-add-child]')) return;
+    const inner = e.currentTarget.querySelector<HTMLElement>('[data-rv-cell]');
+    if (inner && inner.tagName !== 'BUTTON' && !inner.hasAttribute('data-rv-editing')) inner.click();
+};
+
+/** 시험용 — 행이 실제로 그려진 횟수(메모가 풀리면 행 수에 비례해 폭증한다). 화면 동작엔 안 쓴다 */
+export const rowRenderProbe = { n: 0 };
+
+interface RecordRowProps {
+    r: unknown; id: string; ri: number; depth: number; hasChildren: boolean;
+    fields: RecordField[]; widths: number[]; wraps: boolean[];
+    lead: number; frozen: number; titleKey?: string;
+    treeOn: boolean; reorderable: boolean; selectable: boolean; fieldsEditable: boolean;
+    cellEditable: boolean; hasOpen: boolean; hasAddChild: boolean;
+    checked: boolean; hovered: boolean; collapsed: boolean;
+    markZone: 'before' | 'into' | 'after' | null; isFresh: boolean;
+    rc0: number; rc1: number;
+    icon: string | undefined; hasIconOf: boolean;
+    act: RowAct; dragBind: DragBindLike;
+}
+
+/** 🔴 행 하나 — React.memo. 새 행을 더해도 옛 행은 props 가 그대로라 다시 안 그려진다(#50: 1,000행에서 추가마다 전부 리렌더 → 비례 이상 느려짐) */
+const RecordRow = memo(function RecordRow({
+    r, id, ri, depth, hasChildren, fields, widths, wraps, lead, frozen, titleKey, treeOn, reorderable, selectable, fieldsEditable,
+    cellEditable, hasOpen, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, act, dragBind,
+}: RecordRowProps) {
+    rowRenderProbe.n++;
+    const showOpen = hasOpen && hovered;
+    const showTree = treeOn && hovered;
+    const isTitle = (key: string) => key === titleKey;
+    const inRange = (fi: number) => rc0 >= 0 && fi >= rc0 && fi <= rc1;
+    const frozenStyle = (fi: number) => frozenStyleOf(fi, frozen, lead, widths);
+    return (
+        <div
+            data-rv-row={id}
+            tabIndex={treeOn ? 0 : undefined}
+            onKeyDown={treeOn ? (e) => {
+                // 행 포커스에서 Tab=들여쓰기 · Shift+Tab=내어쓰기. 셀 편집 중(입력칸)엔 안 가로챈다.
+                if (e.key !== 'Tab') return;
+                const t = e.target as HTMLElement;
+                if (t !== e.currentTarget) return;   // 셀 안(셀 이동·편집)이면 표가 받는다
+                e.preventDefault();
+                act.tab(id, e.shiftKey);
+            } : undefined}
+            onMouseEnter={() => act.hover(id)}
+            onMouseLeave={() => act.leave(id)}
+            className={`flex border-b border-line min-h-[32px] ${isFresh ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${markZone === 'before' ? 'border-t-2 border-t-accent' : ''} ${markZone === 'after' ? 'border-b-2 border-b-accent' : ''} ${markZone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
+        >
+            {reorderable && (
+                <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
+                    data-rv-row-drag={id} data-row-id={id} title={String(rawValue(r, titleKey ?? '') ?? '') || '제목 없음'}
+                    tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...dragBind}
+                    onKeyDown={(e) => {
+                        // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
+                        if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+                        e.preventDefault(); e.stopPropagation();
+                        act.moveAlt(id, e.key === 'ArrowUp' ? 'up' : 'down');
+                    }}>
+                    <Icon name="grip" size={16} className={`text-text/80 hover:text-text cursor-grab ${hovered ? '' : 'opacity-0'}`} />
+                </div>
+            )}
+            {selectable && (
+                <div className="shrink-0 grid place-items-center bg-bg" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
+                    <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => act.toggleOne(id)}
+                        className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
+                        {checked && <Icon name="check" size={12} />}
+                    </button>
+                </div>
+            )}
+            {fields.map((f, fi) => (
+                <div key={f.key} data-rv-pos={`${ri}:${fi}`} tabIndex={-1} data-rv-sel={inRange(fi) ? '' : undefined}
+                    onMouseDown={(e) => act.cellMouseDown(e, ri, fi)}
+                    onMouseUp={openEditFromWrapper}
+                    onDoubleClick={openEditFromWrapper}
+                    className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
+                    style={{ width: widths[fi], ...frozenStyle(fi) }}>
+                    {fi === 0 && treeOn && (
+                        <div className="shrink-0 flex items-center self-stretch">
+                            {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
+                            {hasChildren ? (
+                                <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
+                                    onClick={() => act.toggleCollapse(id)}
+                                    className="hit-44 relative grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
+                                    <Icon name="chevronDown" size={13} className={collapsed ? '-rotate-90' : ''} />
+                                </button>
+                            ) : <span className="inline-block w-4" />}
+                        </div>
+                    )}
+                    {isTitle(f.key) && hasIconOf && (
+                        <span className="shrink-0 pl-1.5 text-body leading-none select-none" data-rv-icon={id}>
+                            {icon ?? <Icon name="fileText" size={14} className="text-muted" />}
+                        </span>
+                    )}
+                    <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
+                        {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
+                        {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
+                            <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
+                        )}
+                        <Cell
+                            field={f}
+                            rowValue={r}
+                            editable={cellEditable && !f.readOnly}
+                            onChange={(val) => act.changeCell(id, f.key, val)}
+                            onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => act.setOptions(f.key, o) : undefined}
+                        />
+                    </div>
+                    {isTitle(f.key) && showTree && hasAddChild && (
+                        <Tooltip text="하위 항목 추가">
+                            <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
+                                onClick={() => { if (collapsed) act.toggleCollapse(id); act.addChild(id); }} />
+                        </Tooltip>
+                    )}
+                    {isTitle(f.key) && showOpen && (
+                        <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id} onClick={() => act.open(id)}>열기</Button>
+                    )}
+                </div>
+            ))}
+            {fieldsEditable && <div className="shrink-0" style={{ width: 40 }} />}
+        </div>
+    );
+});
+
 export function RecordView<T>({
     fields,
     records,
@@ -68,6 +213,7 @@ export function RecordView<T>({
     onCellChange,
     onCellsChange,
     onAddRecord,
+    emptyHint,
     onDeleteRecords,
     onDestructive,
     onOpenRecord,
@@ -393,7 +539,6 @@ export function RecordView<T>({
         r0: Math.min(cur.r, (anchor ?? cur).r), r1: Math.max(cur.r, (anchor ?? cur).r),
         c0: Math.min(cur.c, (anchor ?? cur).c), c1: Math.max(cur.c, (anchor ?? cur).c),
     } : null;
-    const inRange = (r: number, c: number) => !!range && r >= range.r0 && r <= range.r1 && c >= range.c0 && c <= range.c1;
     const cellEl = (r: number, c: number) => gridRef.current?.querySelector<HTMLElement>(`[data-rv-pos="${r}:${c}"]`) ?? null;
     const moveTo = (r: number, c: number, extend: boolean) => {
         const nr = Math.max(0, Math.min(rows.length - 1, r));
@@ -401,14 +546,6 @@ export function RecordView<T>({
         if (!extend) setAnchor(null); else if (!anchor) setAnchor(cur);
         setCur({ r: nr, c: nc });
         cellEl(nr, nc)?.focus();
-    };
-    // 칸 껍데기(여백·아이콘·줄바꿈 칸 위아래)를 눌러도 안쪽 글/숫자 칸 편집이 열린다 — 안쪽 칸만 클릭을 받던 탓에 빈 자리 클릭·더블클릭이 헛돌았다.
-    // 선택·체크·관계 칸(BUTTON)·이미 편집 중인 칸은 건드리지 않는다.
-    const openEditFromWrapper = (e: React.MouseEvent<HTMLElement>) => {
-        // 껍데기·칸 상자 같은 빈 영역만 — 입력·단추·칸 자체(자기 click 이 연다)는 건드리지 않는다
-        if ((e.target as HTMLElement).closest('input,textarea,select,button,[data-rv-cell],[data-rv-open],[data-rv-add-child]')) return;
-        const inner = e.currentTarget.querySelector<HTMLElement>('[data-rv-cell]');
-        if (inner && inner.tagName !== 'BUTTON' && !inner.hasAttribute('data-rv-editing')) inner.click();
     };
     const fillDown = () => {
         if (!range) return;
@@ -507,12 +644,57 @@ export function RecordView<T>({
     // ── 칸 고정(frozen = 앞에서 몇 칸) · 줄바꿈 ──
     const frozen = Math.min(view.frozen ?? 0, visibleFields.length);
     const lead = (reorderable ? 16 : 0) + (selectable ? SEL_W : 0);   // 고정 칸 앞의 손잡이·선택 칸 폭
-    const stickyLeft = (fi: number) => lead + visibleFields.slice(0, fi).reduce((a, f) => a + widthOf(f), 0);
-    const frozenStyle = (fi: number) => (fi < frozen ? { position: 'sticky' as const, left: stickyLeft(fi), zIndex: 5 } : {});
+    const frozenStyle = (fi: number) => frozenStyleOf(fi, frozen, lead, widths);
     const wrapOf = (key: string) => view.columns.find((c) => c.key === key)?.wrap === true;
 
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
+
+    // ── 행 메모용 — 폭·줄바꿈 배열과 안정 동작 객체(최신 클로저는 ref 로 위임). 행 props 가 안 바뀌면 행이 안 그려진다 ──
+    const widths = useMemo(() => visibleFields.map((f) => (liveW?.key === f.key ? liveW.w : view.columns.find((c) => c.key === f.key)?.width ?? f.width ?? DEFAULT_COL_WIDTH)), [visibleFields, view.columns, liveW]);
+    const wraps = useMemo(() => visibleFields.map((f) => wrapOf(f.key)), [visibleFields, view.columns]);   // eslint-disable-line react-hooks/exhaustive-deps
+    const latest = useRef<RowAct>(null as unknown as RowAct);
+    latest.current = {
+        toggleOne,
+        hover: (id) => setHoverRow(id),
+        leave: (id) => setHoverRow((h) => (h === id ? null : h)),
+        cellMouseDown: (e, ri, fi) => {
+            if ((e.target as HTMLElement).closest('input,textarea,select')) return;
+            if (e.shiftKey && cur) { if (!anchor) setAnchor(cur); setCur({ r: ri, c: fi }); e.preventDefault(); return; }
+            setAnchor(null); setCur({ r: ri, c: fi });
+        },
+        changeCell: (id, key, value) => changeCells([{ id, key, value }]),
+        setOptions,
+        toggleCollapse: (id) => tree?.onToggleCollapse(id),
+        addChild: (id) => tree?.onAddChild?.(id),
+        open: (id) => onOpenRecord?.(id),
+        tab: (id, shift) => { if (shift) tree?.onOutdent(id); else tree?.onIndent(id); },
+        moveAlt: (id, dir) => {
+            const at = rowIds.indexOf(id);
+            if (dir === 'up' && at > 0) moveRow(id, rowIds[at - 1], 'before');
+            else if (dir === 'down' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
+        },
+    };
+    const act = useMemo<RowAct>(() => ({
+        toggleOne: (id) => latest.current.toggleOne(id),
+        hover: (id) => latest.current.hover(id),
+        leave: (id) => latest.current.leave(id),
+        cellMouseDown: (e, ri, fi) => latest.current.cellMouseDown(e, ri, fi),
+        changeCell: (id, key, v) => latest.current.changeCell(id, key, v),
+        setOptions: (key, o) => latest.current.setOptions(key, o),
+        toggleCollapse: (id) => latest.current.toggleCollapse(id),
+        addChild: (id) => latest.current.addChild(id),
+        open: (id) => latest.current.open(id),
+        tab: (id, s) => latest.current.tab(id, s),
+        moveAlt: (id, d) => latest.current.moveAlt(id, d),
+    }), []);
+    const dragLatest = useRef(rowDrag.bind);
+    dragLatest.current = rowDrag.bind;
+    const dragBindStable = useMemo<DragBindLike>(() => {
+        const o: Record<string, unknown> = {};
+        for (const k of Object.keys(dragLatest.current) as (keyof DragBindLike)[]) o[k] = (...a: unknown[]) => (dragLatest.current[k] as (...x: unknown[]) => unknown)(...a);
+        return o as DragBindLike;
+    }, []);
 
     const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (fieldsEditable ? 40 : 0);
 
@@ -621,106 +803,24 @@ export function RecordView<T>({
                     {/* 본문 */}
                     {displayRows.map(({ row: r, depth, hasChildren }, ri) => {
                         const id = getId(r);
-                        const checked = selected.has(id);
                         const hovered = coarse || hoverRow === id;
-                        const showOpen = onOpenRecord && hovered;
-                        const showTree = treeOn && tree && hovered;
-                        const collapsed = treeOn && tree ? tree.collapsed(id) : false;
                         const mark = dropMark && dropMark !== '__end__' && dropMark.id === id ? dropMark : null;
+                        const inRow = !!range && ri >= range.r0 && ri <= range.r1;
                         return (
-                            <div
+                            <RecordRow
                                 key={id}
-                                data-rv-row={id}
-                                tabIndex={treeOn ? 0 : undefined}
-                                onKeyDown={treeOn && tree ? (e) => {
-                                    // 행 포커스에서 Tab=들여쓰기 · Shift+Tab=내어쓰기. 셀 편집 중(입력칸)엔 안 가로챈다.
-                                    if (e.key !== 'Tab') return;
-                                    const t = e.target as HTMLElement;
-                                    if (t !== e.currentTarget) return;   // 셀 안(셀 이동·편집)이면 표가 받는다
-                                    e.preventDefault();
-                                    if (e.shiftKey) tree.onOutdent(id); else tree.onIndent(id);
-                                } : undefined}
-                                onMouseEnter={() => setHoverRow(id)}
-                                onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
-                                className={`flex border-b border-line min-h-[32px] ${fresh.has(id) ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
-                            >
-                                {reorderable && (
-                                    <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
-                                        data-rv-row-drag={id} data-row-id={id} title={String(rawValue(r, titleKey ?? '') ?? '') || '제목 없음'}
-                                        tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...rowDrag.bind}
-                                        onKeyDown={(e) => {
-                                            // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
-                                            if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
-                                            e.preventDefault(); e.stopPropagation();
-                                            const at = rowIds.indexOf(id);
-                                            if (e.key === 'ArrowUp' && at > 0) moveRow(id, rowIds[at - 1], 'before');
-                                            else if (e.key === 'ArrowDown' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
-                                        }}>
-                                        <Icon name="grip" size={16} className={`text-text/80 hover:text-text cursor-grab ${hovered ? '' : 'opacity-0'}`} />
-                                    </div>
-                                )}
-                                {selectable && (
-                                    <div className="shrink-0 grid place-items-center bg-bg" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
-                                        <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => toggleOne(id)}
-                                            className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
-                                            {checked && <Icon name="check" size={12} />}
-                                        </button>
-                                    </div>
-                                )}
-                                {visibleFields.map((f, fi) => (
-                                    <div key={f.key} data-rv-pos={`${ri}:${fi}`} tabIndex={-1} data-rv-sel={inRange(ri, fi) ? '' : undefined}
-                                        onMouseDown={(e) => {
-                                            if ((e.target as HTMLElement).closest('input,textarea,select')) return;
-                                            if (e.shiftKey && cur) { if (!anchor) setAnchor(cur); setCur({ r: ri, c: fi }); e.preventDefault(); return; }
-                                            setAnchor(null); setCur({ r: ri, c: fi });
-                                        }}
-                                        onMouseUp={openEditFromWrapper}
-                                        onDoubleClick={openEditFromWrapper}
-                                        className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wrapOf(f.key) ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(ri, fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
-                                        style={{ width: widthOf(f), ...frozenStyle(fi) }}>
-                                        {fi === 0 && treeOn && (
-                                            <div className="shrink-0 flex items-center self-stretch">
-                                                {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
-                                                {hasChildren ? (
-                                                    <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
-                                                        onClick={() => tree?.onToggleCollapse(id)}
-                                                        className="hit-44 relative grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
-                                                        <Icon name="chevronDown" size={13} className={collapsed ? '-rotate-90' : ''} />
-                                                    </button>
-                                                ) : <span className="inline-block w-4" />}
-                                            </div>
-                                        )}
-                                        {isTitle(f.key) && iconOf && (
-                                            <span className="shrink-0 pl-1.5 text-body leading-none select-none" data-rv-icon={id}>
-                                                {iconOf(id) ?? <Icon name="fileText" size={14} className="text-muted" />}
-                                            </span>
-                                        )}
-                                        <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
-                                            {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
-                                            {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
-                                                <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
-                                            )}
-                                            <Cell
-                                                field={f}
-                                                rowValue={r}
-                                                editable={canEditCell(f)}
-                                                onChange={(val) => changeCells([{ id, key: f.key, value: val }])}
-                                                onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
-                                            />
-                                        </div>
-                                        {isTitle(f.key) && showTree && tree?.onAddChild && (
-                                            <Tooltip text="하위 항목 추가">
-                                                <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
-                                                    onClick={() => { if (collapsed) tree.onToggleCollapse(id); tree.onAddChild!(id); }} />
-                                            </Tooltip>
-                                        )}
-                                        {isTitle(f.key) && showOpen && (
-                                            <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id} onClick={() => onOpenRecord?.(id)}>열기</Button>
-                                        )}
-                                    </div>
-                                ))}
-                                {fieldsEditable && <div className="shrink-0" style={{ width: 40 }} />}
-                            </div>
+                                r={r} id={id} ri={ri} depth={depth} hasChildren={hasChildren}
+                                fields={visibleFields} widths={widths} wraps={wraps}
+                                lead={lead} frozen={frozen} titleKey={titleKey}
+                                treeOn={treeOn} reorderable={reorderable} selectable={selectable} fieldsEditable={fieldsEditable}
+                                cellEditable={!!onCellChange} hasOpen={!!onOpenRecord} hasAddChild={!!tree?.onAddChild}
+                                checked={selected.has(id)} hovered={hovered}
+                                collapsed={treeOn && tree ? tree.collapsed(id) : false}
+                                markZone={mark?.zone ?? null} isFresh={fresh.has(id)}
+                                rc0={inRow ? range!.c0 : -1} rc1={inRow ? range!.c1 : -1}
+                                icon={iconOf ? iconOf(id) : undefined} hasIconOf={!!iconOf}
+                                act={act} dragBind={dragBindStable}
+                            />
                         );
                     })}
 
@@ -733,7 +833,7 @@ export function RecordView<T>({
                     ) : (
                         <div data-rv-empty>
                             <EmptyState compact icon="table" title="표시할 행이 없습니다"
-                                description={onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined} />
+                                description={emptyHint ?? (onAddRecord ? (onPaste ? '아래 「새로 만들기」를 누르거나 엑셀 표를 복사해 붙여넣으면 만들 수 있습니다.' : '아래 「새로 만들기」를 누르면 첫 항목을 만듭니다.') : onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined)} />
                         </div>
                     ))}
 

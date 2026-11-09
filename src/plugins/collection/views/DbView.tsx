@@ -4,7 +4,7 @@
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -54,6 +54,9 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
             if (cmd) host.commands.run(u === 'redo' ? cmd.redo : cmd.undo);
         }
     }, [host]);
+
+    // 접힘 장부 — 행마다 records.find 로 훑으면 행 수² (#50). 레코드가 같은 동안 한 번만 만든다
+    const collapsedIds = useMemo(() => new Set((snap?.records ?? []).filter((r) => r.__collapsed === true).map((r) => r.id)), [snap?.records]);
 
     // 🔴 휴지통에 든 컬렉션은 그리지도 편집도 받지 않는다(페이지·시트·시간표와 같은 동작) — 시작 화면으로
     if (!snap || getNodesApi()?.isTrashed(snap.id)) {
@@ -114,7 +117,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                     onOpenRecord={(rowId) => peek.show(<RowDoc host={host} dbId={id} rowId={rowId} />, { wideMin: 480 })}
                     tree={{
                         parentOf: (r) => (r.__parent as string | null) ?? null,
-                        collapsed: (rowId) => records.find((r) => r.id === rowId)?.__collapsed === true,
+                        collapsed: (rowId) => collapsedIds.has(rowId),
                         onToggleCollapse: toggleRowCollapse,
                         onIndent: indentRow,
                         onOutdent: outdentRow,

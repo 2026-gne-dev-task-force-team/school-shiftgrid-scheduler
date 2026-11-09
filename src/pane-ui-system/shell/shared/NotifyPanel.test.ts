@@ -54,4 +54,18 @@ describe('NotifyPanel', () => {
         expect(h.textContent).toContain('알림이 없습니다');
         expect(getNotifications().items).toHaveLength(0);
     });
+
+    it('🔴 오류 알림이 있으면 확인창 — 취소하면 그대로, 확인하면 지운다(#55)', () => {
+        notify('a', { title: '일반' }); notify('a', { level: 'error', title: '깨짐' });
+        const h = mount();
+        act(() => btn(h, '모두 지우기').click());
+        expect(document.body.textContent).toContain('오류 알림도 지울까요?');
+        expect(getNotifications().items).toHaveLength(2);
+        act(() => [...document.body.querySelectorAll('button')].find((b) => b.textContent === '취소')!.click());
+        expect(getNotifications().items).toHaveLength(2);
+        act(() => btn(h, '모두 지우기').click());
+        const ok = [...document.body.querySelectorAll('button')].filter((b) => b.textContent === '모두 지우기').pop()!;
+        act(() => ok.click());
+        expect(getNotifications().items).toHaveLength(0);
+    });
 });

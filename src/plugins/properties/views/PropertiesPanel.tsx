@@ -10,9 +10,9 @@ import type { SelectionApi } from '../../selection/contracts/selection';
 /** 고른 대상 하나를 받아 그린다 — 대상이 어디서 오는지는 PropertiesView 몫(시험은 이걸 바로 그린다). */
 export function PropertiesBody({ target }: { target: PropertiesTarget | null }) {
     useContribVersion();   // 칸을 낸 플러그인이 켜지고/꺼지면 다시 그린다
-    if (!target) return <Empty text="고른 것이 없습니다." />;
+    if (!target) return <Empty text="고른 것이 없습니다." hint="탐색기나 목록에서 항목을 누르면 속성이 여기에 보입니다." />;
     const panes = listPropertiesPanes(target.type);
-    if (panes.length === 0) return <Empty text="이것은 보여 줄 속성이 없습니다." />;
+    if (panes.length === 0) return <Empty text="이것은 보여 줄 속성이 없습니다." hint="다른 항목을 누르면 그 항목의 속성을 볼 수 있습니다." />;
     return (
         <div className="flex flex-col">
             {panes.map(({ owner, id, title, Pane }) => (
@@ -25,8 +25,8 @@ export function PropertiesBody({ target }: { target: PropertiesTarget | null }) 
     );
 }
 
-function Empty({ text }: { text: string }) {
-    return <EmptyState compact icon="info" title={text} />;
+function Empty({ text, hint }: { text: string; hint: string }) {
+    return <EmptyState compact icon="info" title={text} description={hint} />;
 }
 
 const noSub = () => () => {};

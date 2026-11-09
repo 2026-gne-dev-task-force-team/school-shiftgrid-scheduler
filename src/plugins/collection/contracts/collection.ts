@@ -272,6 +272,8 @@ export interface RecordViewProps<T> {
     onCellChange?: (id: string, key: string, value: RecordCellValue) => void;
     /** 여러 셀을 한 번에(채우기 ⌘D·일괄 편집) — 한 묶음으로 저장하면 되돌리기 한 칸. 안 넘기면 onCellChange 를 셀마다 부른다. */
     onCellsChange?: (changes: CellChange[]) => void;
+    /** 행이 하나도 없을 때 빈 상태 안내 한 줄 — 안 넘기면 onAddRecord 가 있을 때 「새로 만들기」 안내를 낸다. */
+    emptyHint?: string;
     /** 「+ 새로 만들기」 줄을 누르면. 안 넘기면 그 줄이 안 뜬다. */
     onAddRecord?: () => void;
     /** 고른 행들을 지우라고 부른다(일괄 삭제 막대). 안 넘기면 선택·삭제 UI 가 안 뜬다. */
