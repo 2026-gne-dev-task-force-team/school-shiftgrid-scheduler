@@ -67,7 +67,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <Frame nodeId={id} leafId={leaf.id} toolbar={bar.slot}
                 headerExtra={snap.trashedRows > 0 && (
-                    <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}>
+                    <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' }))}>
                         <Icon name="undo" size={13} /> 휴지통의 행 {snap.trashedRows}개 복원
                     </Button>
                 )}>

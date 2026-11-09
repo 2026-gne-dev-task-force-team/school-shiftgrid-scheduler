@@ -347,12 +347,15 @@ export function commit(dbId: string, tx: DbTx): string[] {
     return created;
 }
 
-/** 휴지통의 행을 전부 되살린다 — 메뉴·화면 단추가 같이 쓴다. */
-export function restoreTrashedRows(dbId: string): number {
+/** 휴지통의 행을 전부 되살린다 — 메뉴·화면 단추가 같이 쓴다. 유일 칸이 겹쳐 못 돌아온 줄이 있으면 notify 로 알린다(조용히 빠지지 않게). */
+export function restoreTrashedRows(dbId: string, notify?: (title: string) => void): number {
     const rows = trashedRows(dbId);
     if (rows.length === 0) return 0;
     commit(dbId, { restoreRows: rows.map((r) => r.id) });
-    return rows.length - trashedRows(dbId).length;   // 유일 칸이 겹쳐 못 돌아온 줄은 센 수에서 빠진다
+    const restored = rows.length - trashedRows(dbId).length;   // 유일 칸이 겹쳐 못 돌아온 줄은 센 수에서 빠진다
+    const skipped = rows.length - restored;
+    if (skipped > 0) notify?.(`${skipped}개 항목은 같은 값이 있어 되살리지 않았습니다 — 휴지통에 그대로 있습니다.`);
+    return restored;
 }
 
 // ── 하위 항목(행 밑에 행) 구조 조작 — 전부 노드 move/setData 한 번(되돌리기 한 칸) ──

@@ -313,8 +313,17 @@ describe('유일 칸 — 노드 다리로 들어오는 모든 쓰기가 같은 �
         const [a] = commit(dbId, { addRows: [{ code: 'A' }] });
         commit(dbId, { removeRows: [a] });
         commit(dbId, { addRows: [{ code: 'a' }] });
-        expect(restoreTrashedRows(dbId)).toBe(0);
+        const msgs: string[] = [];
+        expect(restoreTrashedRows(dbId, (t) => msgs.push(t))).toBe(0);
         expect(trashedRows(dbId)).toHaveLength(1);
+        expect(msgs).toEqual(['1개 항목은 같은 값이 있어 되살리지 않았습니다 — 휴지통에 그대로 있습니다.']);   // 조용히 빠지지 않는다
+    });
+    it('겹침이 없으면 알림도 없다', () => {
+        const [a] = commit(dbId, { addRows: [{}] });
+        commit(dbId, { removeRows: [a] });
+        const msgs: string[] = [];
+        expect(restoreTrashedRows(dbId, (t) => msgs.push(t))).toBe(1);
+        expect(msgs).toEqual([]);
     });
     it('칸이 많아도 변경마다 줄 전체를 다시 훑지 않는다 — 큰 묶음이 짧게 끝난다', () => {
         const { kept, rejected } = filterUniqueChanges(
