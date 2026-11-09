@@ -8,7 +8,7 @@ import { manifest } from './manifest';
 export const contractAbsencePlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'absence', version: '0.1.0', uses: ['clock'] }] },
+        contributes: { interfaces: [{ name: 'absence', version: '0.1.0', label: '출장·연수·병가 같은 부재', uses: ['clock'] }] },
     },
 });
 export default contractAbsencePlugin;

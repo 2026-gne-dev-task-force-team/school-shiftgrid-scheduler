@@ -10,4 +10,11 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     description: '명부 약속(roster 0.1) — 사람·반·과목·특별실. 타입만(모듈 0·화면 0). 제공자: school-roster(M1).',
+    about: {
+        what: '학교의 사람·반·과목·특별실을 어떻게 적을지 정해 둔 약속입니다. 화면은 없습니다.',
+        use: [
+            '학교 명부를 다루는 기능을 켤 때 함께 켜 둡니다',
+        ],
+        off: '이 약속을 쓰는 기능이 함께 꺼집니다. 저장된 자료는 지워지지 않습니다.',
+    },
 };
