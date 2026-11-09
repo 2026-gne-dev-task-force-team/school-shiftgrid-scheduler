@@ -233,6 +233,13 @@ export interface RecordTree<T> {
     onOutdent: (id: string) => void;
 }
 
+/** 셀 하나의 바뀐 값 — onCellsChange 묶음의 한 줄 */
+export interface CellChange {
+    id: string;
+    key: string;
+    value: RecordCellValue;
+}
+
 /**
  * 레코드 뷰 props — 제어형. 데이터는 바깥 소유, 보기 정의는 바깥(views)이거나 안 주면 localStorage.
  *   T 는 행 하나의 타입(객체). 셀 값은 (행)[field.key] 로 읽는다 — getId 로만 신원을 받는다.
@@ -252,6 +259,8 @@ export interface RecordViewProps<T> {
     onViewsChange?: (views: ViewDef[]) => void;
     /** 셀을 고치면 부른다. 안 넘기면 모든 칸이 읽기 전용이 된다. */
     onCellChange?: (id: string, key: string, value: RecordCellValue) => void;
+    /** 여러 셀을 한 번에(채우기 ⌘D·일괄 편집) — 한 묶음으로 저장하면 되돌리기 한 칸. 안 넘기면 onCellChange 를 셀마다 부른다. */
+    onCellsChange?: (changes: CellChange[]) => void;
     /** 「+ 새로 만들기」 줄을 누르면. 안 넘기면 그 줄이 안 뜬다. */
     onAddRecord?: () => void;
     /** 고른 행들을 지우라고 부른다(일괄 삭제 막대). 안 넘기면 선택·삭제 UI 가 안 뜬다. */

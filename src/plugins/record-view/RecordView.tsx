@@ -14,7 +14,9 @@ import { Icon, IconButton } from '../../pane-ui-system';
 import { Popover } from './Popover';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
-import { deriveRows, filterIsEmpty, flatRules, pruneFilter, rawValue, withFlatRules } from './logic';
+import { ViewTabs } from './ViewTabs';
+import { calcFnsFor, runCalc } from './calc';
+import { deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { parseTsv } from './paste';
@@ -22,15 +24,15 @@ import { fieldTypes } from './fields/registry';
 import { isImeEnter } from './fields/ime';
 import { newField } from './schema';
 import {
-    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveViews,
+    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews,
 } from './view-state';
 import type {
-    ConvertPlan, FieldOption, RecordCellValue, RecordField, RecordViewProps, SortRule, ViewDef,
+    CellChange, ConvertPlan, FieldOption, RecordCellValue, RecordField, RecordViewProps, SortRule, ViewDef,
 } from './contracts/record-view';
 
 // 🔴 연습장 뷰(views/)는 구조 검사 ⑯(소문자 record 비교 0) 때문에 'record-view' 가 든 경로를 못 쓴다 —
 //    그래서 연습장·노드 화면이 쓰는 공개 타입을 대문자 경로(./RecordView)로 다시 내보낸다(바깥 손님은 contracts/record-view 로).
-export type { RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/record-view';
+export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/record-view';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
 const OPEN_W = 40;  // 「열기」 칸 폭
@@ -77,6 +79,7 @@ export function RecordView<T>({
     activeView,
     onViewsChange,
     onCellChange,
+    onCellsChange,
     onAddRecord,
     onDeleteRecords,
     onOpenRecord,
@@ -95,18 +98,29 @@ export function RecordView<T>({
         if (keyRef.current !== viewKey) {
             keyRef.current = viewKey;
             if (!controlled) setLocalViews(loadViews(viewKey));
+            setActiveLocal(loadActiveView(viewKey));
         }
     }, [viewKey, controlled]);
     const views = controlled ? viewsProp : localViews;
-    const activeId = activeView ?? (controlled ? undefined : loadActiveView(viewKey)) ?? undefined;
+    // 🔴 활성 탭은 기기별(localStorage) — 보기 목록이 노드에 있어도 「지금 어느 탭」은 여기 둔다
+    const [activeLocal, setActiveLocal] = useState<string | null>(() => loadActiveView(viewKey));
+    const activeId = activeView ?? activeLocal ?? undefined;
     const view0 = views.find((v) => v.id === activeId) ?? views[0] ?? defaultView();
     const view = useMemo(() => reconcileColumns(view0, fields), [view0, fields]);
+    const selectView = (id: string) => { setActiveLocal(id); saveActiveView(viewKey, id); };
 
     const commitViews = useCallback((next: ViewDef[]) => {
         if (controlled) { onViewsChange?.(next); return; }
         setLocalViews(next);
         saveViews(viewKey, next);
     }, [controlled, onViewsChange, viewKey]);
+    /** 여러 셀을 한 묶음으로(되돌리기 한 칸) — onCellsChange 가 없으면 한 칸씩 흉내 */
+    const changeCells = (changes: CellChange[]) => {
+        const live = changes.filter((c) => !byKey.get(c.key)?.readOnly);
+        if (live.length === 0) return;
+        if (onCellsChange) onCellsChange(live);
+        else for (const c of live) onCellChange?.(c.id, c.key, c.value);
+    };
     const patchView = useCallback((p: Partial<ViewDef>) => {
         const base = views.length > 0 ? views : [view];
         commitViews(base.map((v) => (v.id === view.id ? { ...reconcileColumns(v, fields), ...p } : v)));
@@ -147,7 +161,7 @@ export function RecordView<T>({
     const widthOf = (f: RecordField) => (liveW?.key === f.key ? liveW.w : view.columns.find((c) => c.key === f.key)?.width ?? f.width ?? DEFAULT_COL_WIDTH);
     const canEditCell = (f: RecordField) => !!onCellChange && !f.readOnly;
 
-    const setColumn = (key: string, p: { width?: number; hidden?: boolean }) =>
+    const setColumn = (key: string, p: { width?: number; hidden?: boolean; wrap?: boolean }) =>
         patchView({ columns: view.columns.map((c) => (c.key === key ? { ...c, ...p } : c)) });
 
     // ── 선택 ──────────────────────────────────────────────────────────────────
@@ -276,6 +290,85 @@ export function RecordView<T>({
         gridRef.current?.focus({ preventScroll: true });
     };
 
+    // ── 셀 이동·범위·복사·채우기 — cur 는 지금 셀, anchor 는 Shift 로 넓힌 범위의 다른 끝(행·칸은 보이는 순서 번호) ──
+    const [cur, setCur] = useState<{ r: number; c: number } | null>(null);
+    const [anchor, setAnchor] = useState<{ r: number; c: number } | null>(null);
+    const range = cur ? {
+        r0: Math.min(cur.r, (anchor ?? cur).r), r1: Math.max(cur.r, (anchor ?? cur).r),
+        c0: Math.min(cur.c, (anchor ?? cur).c), c1: Math.max(cur.c, (anchor ?? cur).c),
+    } : null;
+    const inRange = (r: number, c: number) => !!range && r >= range.r0 && r <= range.r1 && c >= range.c0 && c <= range.c1;
+    const cellEl = (r: number, c: number) => gridRef.current?.querySelector<HTMLElement>(`[data-rv-pos="${r}:${c}"]`) ?? null;
+    const moveTo = (r: number, c: number, extend: boolean) => {
+        const nr = Math.max(0, Math.min(rows.length - 1, r));
+        const nc = Math.max(0, Math.min(visibleFields.length - 1, c));
+        if (!extend) setAnchor(null); else if (!anchor) setAnchor(cur);
+        setCur({ r: nr, c: nc });
+        cellEl(nr, nc)?.focus();
+    };
+    const fillDown = () => {
+        if (!range) return;
+        // 한 줄만 골랐으면 바로 위 행 값을, 여러 줄이면 맨 윗줄 값을 아래로(엑셀·노션 ⌘D)
+        const src = range.r0 === range.r1 ? range.r0 - 1 : range.r0;
+        if (src < 0) return;
+        const changes: CellChange[] = [];
+        for (let r = src + 1; r <= range.r1; r++) {
+            for (let c = range.c0; c <= range.c1; c++) {
+                const f = visibleFields[c];
+                if (!f || !canEditCell(f)) continue;
+                changes.push({ id: getId(rows[r]), key: f.key, value: (rawValue(rows[src], f.key) ?? null) as RecordCellValue });
+            }
+        }
+        changeCells(changes);
+    };
+    const onGridKeyDown = (e: React.KeyboardEvent) => {
+        const t = e.target as HTMLElement;
+        if (!cur || e.nativeEvent.isComposing || t.closest('input,textarea,select,[contenteditable="true"],[data-rv-editing]')) return;
+        const mod = e.metaKey || e.ctrlKey;
+        const step: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+        if (step[e.key]) { e.preventDefault(); moveTo(cur.r + step[e.key][0], cur.c + step[e.key][1], e.shiftKey); return; }
+        if (e.key === 'Tab') { e.preventDefault(); moveTo(cur.r, cur.c + (e.shiftKey ? -1 : 1), false); return; }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            cellEl(cur.r, cur.c)?.querySelector<HTMLElement>('[data-rv-cell]')?.click();   // 셀의 편집 열기 = 클릭과 같은 길
+            return;
+        }
+        if (e.key === 'Escape') { setCur(null); setAnchor(null); return; }
+        if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); fillDown(); }
+    };
+    const onGridCopy = (e: React.ClipboardEvent) => {
+        if (!range || (e.target as HTMLElement).closest('input,textarea,select')) return;
+        const lines: string[] = [];
+        for (let r = range.r0; r <= range.r1; r++) {
+            const cols: string[] = [];
+            for (let c = range.c0; c <= range.c1; c++) {
+                const f = visibleFields[c];
+                // TSV 칸 안의 탭·줄바꿈은 공백으로(붙여넣기 쪽 parseTsv 가 칸을 잘못 자르지 않게)
+                cols.push(f && rows[r] ? displayText(rows[r], f).replace(/[\t\r\n]+/g, ' ') : '');
+            }
+            lines.push(cols.join('\t'));
+        }
+        e.preventDefault();
+        e.clipboardData.setData('text/plain', lines.join('\n'));
+    };
+
+    // ── 일괄 편집(선택 막대 「칸 바꾸기」) · 계산 행 메뉴 ──
+    const [bulk, setBulk] = useState<{ rect: DOMRect; key: string } | null>(null);
+    const [calcMenu, setCalcMenu] = useState<{ key: string; rect: DOMRect } | null>(null);
+    const setCalc = (key: string, id: string | null) => {
+        const next = { ...(view.calc ?? {}) };
+        if (id) next[key] = id; else delete next[key];
+        patchView({ calc: next });
+        setCalcMenu(null);
+    };
+
+    // ── 칸 고정(frozen = 앞에서 몇 칸) · 줄바꿈 ──
+    const frozen = Math.min(view.frozen ?? 0, visibleFields.length);
+    const lead = (reorderable ? 16 : 0) + (selectable ? SEL_W : 0);   // 고정 칸 앞의 손잡이·선택 칸 폭
+    const stickyLeft = (fi: number) => lead + visibleFields.slice(0, fi).reduce((a, f) => a + widthOf(f), 0);
+    const frozenStyle = (fi: number) => (fi < frozen ? { position: 'sticky' as const, left: stickyLeft(fi), zIndex: 5 } : {});
+    const wrapOf = (key: string) => view.columns.find((c) => c.key === key)?.wrap === true;
+
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
 
@@ -283,14 +376,21 @@ export function RecordView<T>({
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
+            <ViewTabs
+                views={views.length > 0 ? views : [view]}
+                activeId={view.id}
+                fields={fields}
+                onSelect={(id) => { selectView(id); setCur(null); setAnchor(null); }}
+                onChange={(next, select) => { commitViews(next); if (select) selectView(select); }}
+            />
             <Toolbar
                 fields={fields}
                 search={search}
-                filters={flatRules(view.filter)}
+                filter={view.filter}
                 sorts={view.sorts}
                 hidden={hiddenKeys}
                 onSearch={setSearch}
-                onFilters={(rules) => patchView({ filter: withFlatRules(view.filter, rules) })}
+                onFilter={(filter) => patchView({ filter })}
                 onSorts={(s) => patchView({ sorts: s })}
                 onHidden={(h) => patchView({ columns: view.columns.map((c) => { const { hidden: _drop, ...rest } = c; void _drop; return h.includes(c.key) ? { ...rest, hidden: true } : rest; }) })}
             />
@@ -299,6 +399,12 @@ export function RecordView<T>({
             {selectable && liveSelected.length > 0 && (
                 <div className="flex items-center gap-2 px-2 py-1 border-b border-line bg-panel2 shrink-0" data-rv-selbar>
                     <span className="text-[12px] text-text">{liveSelected.length}개 선택</span>
+                    {visibleFields.some((f) => canEditCell(f)) && (
+                        <button type="button" data-rv-bulk onClick={(e) => setBulk({ rect: e.currentTarget.getBoundingClientRect(), key: visibleFields.find((f) => canEditCell(f))!.key })}
+                            className="h-row px-2 rounded text-[12px] text-text hover:bg-text/[0.06] inline-flex items-center gap-1">
+                            <Icon name="edit" size={13} />칸 바꾸기
+                        </button>
+                    )}
                     <button type="button" data-rv-delete onClick={deleteSelected} className="h-row px-2 rounded text-[12px] text-bad hover:bg-bad/10 inline-flex items-center gap-1">
                         <Icon name="trash" size={13} />삭제
                     </button>
@@ -307,24 +413,24 @@ export function RecordView<T>({
             )}
 
             {/* 표 — 가로·세로 스크롤은 이 칸이 쥔다(좁은 화면은 가로 스크롤) */}
-            <div ref={gridRef} tabIndex={-1} data-rv-grid onPaste={onGridPaste} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
+            <div ref={gridRef} tabIndex={-1} data-rv-grid onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
                 <div style={{ minWidth: totalWidth }} className="text-text">
                     {/* 머리줄 */}
                     <div className="flex sticky top-0 z-10 bg-panel2 border-b border-line select-none h-header">
-                        {reorderable && <div className="shrink-0" style={{ width: 16 }} />}
+                        {reorderable && <div className="shrink-0 bg-panel2" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }} />}
                         {selectable && (
-                            <div className="shrink-0 grid place-items-center" style={{ width: SEL_W }}>
+                            <div className="shrink-0 grid place-items-center bg-panel2" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
                                 <button type="button" role="checkbox" aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
                                     className={`grid place-items-center w-4 h-4 rounded-[3px] border ${allChecked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                     {allChecked && <Icon name="check" size={12} />}
                                 </button>
                             </div>
                         )}
-                        {visibleFields.map((f) => {
+                        {visibleFields.map((f, fi) => {
                             const dir = sortDirOf(f.key);
                             const def = fieldTypes.get(f.type);
                             return (
-                                <div key={f.key} className="relative shrink-0 flex items-center gap-1 px-2 border-r border-line" style={{ width: widthOf(f) }} data-rv-head={f.key}
+                                <div key={f.key} className={`relative shrink-0 flex items-center gap-1 px-2 border-r border-line ${fi < frozen ? 'bg-panel2' : ''}`} style={{ width: widthOf(f), ...frozenStyle(fi) }} data-rv-head={f.key}
                                     onDragOver={(e) => { if (dragCol.current) e.preventDefault(); }}
                                     onDrop={(e) => onColDrop(e, f.key)}>
                                     {/* 끌어서 칸 순서 — 이름 부분이 손잡이(폭 손잡이·메뉴 단추와 안 겹치게) */}
@@ -362,7 +468,7 @@ export function RecordView<T>({
                     </div>
 
                     {/* 본문 */}
-                    {displayRows.map(({ row: r, depth, hasChildren }) => {
+                    {displayRows.map(({ row: r, depth, hasChildren }, ri) => {
                         const id = getId(r);
                         const checked = selected.has(id);
                         const hovered = coarse || hoverRow === id;
@@ -378,7 +484,7 @@ export function RecordView<T>({
                                     // 행 포커스에서 Tab=들여쓰기 · Shift+Tab=내어쓰기. 셀 편집 중(입력칸)엔 안 가로챈다.
                                     if (e.key !== 'Tab') return;
                                     const t = e.target as HTMLElement;
-                                    if (t !== e.currentTarget && t.closest('input,textarea,select,[data-rv-editing]')) return;
+                                    if (t !== e.currentTarget) return;   // 셀 안(셀 이동·편집)이면 표가 받는다
                                     e.preventDefault();
                                     if (e.shiftKey) tree.onOutdent(id); else tree.onIndent(id);
                                 } : undefined}
@@ -389,7 +495,7 @@ export function RecordView<T>({
                                 className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${dropId === id ? 'border-t-2 border-t-accent' : ''}`}
                             >
                                 {reorderable && (
-                                    <div className="shrink-0 grid place-items-center" style={{ width: 16 }}
+                                    <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
                                         draggable data-rv-row-drag={id}
                                         onDragStart={(e) => { dragRow.current = id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', id); } catch { /* 사파리 */ } }}
                                         onDragEnd={() => { dragRow.current = null; setDropId(null); }}>
@@ -397,7 +503,7 @@ export function RecordView<T>({
                                     </div>
                                 )}
                                 {selectable && (
-                                    <div className="shrink-0 grid place-items-center" style={{ width: SEL_W }}>
+                                    <div className="shrink-0 grid place-items-center bg-bg" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
                                         <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => toggleOne(id)}
                                             className={`grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                             {checked && <Icon name="check" size={12} />}
@@ -405,7 +511,14 @@ export function RecordView<T>({
                                     </div>
                                 )}
                                 {visibleFields.map((f, fi) => (
-                                    <div key={f.key} className="shrink-0 border-r border-line overflow-hidden flex items-center" style={{ width: widthOf(f) }}>
+                                    <div key={f.key} data-rv-pos={`${ri}:${fi}`} tabIndex={-1} data-rv-sel={inRange(ri, fi) ? '' : undefined}
+                                        onMouseDown={(e) => {
+                                            if ((e.target as HTMLElement).closest('input,textarea,select')) return;
+                                            if (e.shiftKey && cur) { if (!anchor) setAnchor(cur); setCur({ r: ri, c: fi }); e.preventDefault(); return; }
+                                            setAnchor(null); setCur({ r: ri, c: fi });
+                                        }}
+                                        className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wrapOf(f.key) ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(ri, fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
+                                        style={{ width: widthOf(f), ...frozenStyle(fi) }}>
                                         {fi === 0 && treeOn && (
                                             <div className="shrink-0 flex items-center" style={{ paddingLeft: depth * INDENT_PX }}>
                                                 {hasChildren ? (
@@ -467,6 +580,24 @@ export function RecordView<T>({
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
                     )}
+
+                    {/* 계산 행 — 칸마다 함수 하나(보기에 저장) · 필터 뒤 보이는 행으로 잰다 */}
+                    <div className="flex border-t border-line h-row select-none" data-rv-calc-row>
+                        <div className="shrink-0" style={{ width: lead }} />
+                        {visibleFields.map((f) => {
+                            const fnId = view.calc?.[f.key];
+                            const label = fnId ? calcFnsFor(f).find((c) => c.id === fnId)?.label : undefined;
+                            const val = label ? runCalc(fnId, rows.map((r) => rawValue(r, f.key) as RecordCellValue | undefined), f) : '';
+                            return (
+                                <button key={f.key} type="button" data-rv-calc={f.key}
+                                    onClick={(e) => setCalcMenu({ key: f.key, rect: e.currentTarget.getBoundingClientRect() })}
+                                    className={`shrink-0 flex items-center justify-end gap-1 px-2 text-[12px] hover:bg-text/[0.04] ${label ? 'text-text' : 'text-transparent hover:text-muted'}`}
+                                    style={{ width: widthOf(f) }}>
+                                    {label ? <><span className="text-muted">{label}</span><span className="tabular-nums" data-rv-calc-val>{val}</span></> : '계산'}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
@@ -505,6 +636,18 @@ export function RecordView<T>({
                                     <Icon name="eyeOff" size={14} />칸 숨기기
                                 </button>
                             )}
+                            {(() => {
+                                const idx = visibleFields.findIndex((x) => x.key === f.key);
+                                const on = idx >= 0 && frozen === idx + 1;
+                                return idx >= 0 && (
+                                    <button type="button" data-rv-freeze onClick={() => { patchView({ frozen: on ? 0 : idx + 1 }); setHeadMenu(null); }} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
+                                        <Icon name="pin" size={14} />{on ? '고정 풀기' : '여기까지 칸 고정'}
+                                    </button>
+                                );
+                            })()}
+                            <button type="button" data-rv-wrap onClick={() => { setColumn(f.key, { wrap: !wrapOf(f.key) }); setHeadMenu(null); }} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
+                                <Icon name="text" size={14} />{wrapOf(f.key) ? '줄바꿈 끄기' : '줄바꿈'}
+                            </button>
                             {fieldsEditable && (
                                 <>
                                     <div className="my-1 h-px bg-line" />
@@ -524,6 +667,44 @@ export function RecordView<T>({
                                     )}
                                 </>
                             )}
+                        </div>
+                    </Popover>
+                );
+            })()}
+
+            {/* 계산 함수 고르기 */}
+            {calcMenu && (() => {
+                const f = byKey.get(calcMenu.key);
+                if (!f) return null;
+                return (
+                    <Popover anchor={calcMenu.rect} width={180} onClose={() => setCalcMenu(null)}>
+                        <div className="flex flex-col gap-0.5 max-h-[320px] overflow-auto" data-rv-calc-menu>
+                            <button type="button" data-rv-calc-fn="" onClick={() => setCalc(f.key, null)} className="h-row px-2 rounded text-[13px] text-muted hover:bg-text/[0.06] text-left">계산 안 함</button>
+                            {calcFnsFor(f).map((c) => (
+                                <button key={c.id} type="button" data-rv-calc-fn={c.id} onClick={() => setCalc(f.key, c.id)}
+                                    className={`h-row px-2 rounded text-[13px] hover:bg-text/[0.06] text-left ${view.calc?.[f.key] === c.id ? 'text-accent' : 'text-text'}`}>{c.label}</button>
+                            ))}
+                        </div>
+                    </Popover>
+                );
+            })()}
+
+            {/* 일괄 편집 — 칸 하나 고르고 값을 넣으면 고른 행 전부에 한 묶음으로 */}
+            {bulk && (() => {
+                const f = byKey.get(bulk.key);
+                if (!f) return null;
+                return (
+                    <Popover anchor={bulk.rect} width={260} onClose={() => setBulk(null)}>
+                        <div className="flex flex-col gap-1.5" data-rv-bulk-panel>
+                            <select data-rv-bulk-field value={bulk.key} onChange={(e) => setBulk({ ...bulk, key: e.target.value })}
+                                className="h-row rounded border border-line bg-bg text-text text-[12px] px-1">
+                                {visibleFields.filter((x) => canEditCell(x)).map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+                            </select>
+                            <div className="h-[32px] rounded border border-line" data-rv-bulk-cell>
+                                <Cell key={f.key} field={f} rowValue={{}} editable
+                                    onChange={(val) => { changeCells(liveSelected.map((id) => ({ id, key: f.key, value: val }))); setBulk(null); }} />
+                            </div>
+                            <div className="text-[11px] text-muted">고른 {liveSelected.length}행에 같은 값이 들어갑니다.</div>
                         </div>
                     </Popover>
                 );

@@ -4,7 +4,7 @@
  */
 import type { FieldOption, FieldTypeDef, FilterOpDef, RecordCellValue, RecordField } from '../contracts/record-view';
 import { CheckCell, DateCell, EmailCell, MultiCell, NumberCell, PhoneCell, ReadonlyCell, SelectCell, TextCell, UrlCell } from './cells';
-import { dateText, parseDateText, toDateValue } from './dates';
+import { RELATIVE_DATES, dateText, inRelative, parseDateText, toDateValue } from './dates';
 import { isValidLink, type LinkKind } from './links';
 import { toNum, universalOps } from './ops';
 
@@ -87,6 +87,8 @@ const dateType = withOps({
     op('eq', '같음', (v, a) => dateStart(v) !== '' && dateStart(v).slice(0, 10) === String(a ?? '').slice(0, 10)),
     op('before', '이전', (v, a) => dateStart(v) !== '' && dateStart(v) < String(a ?? '')),
     op('after', '이후', (v, a) => dateStart(v) !== '' && dateStart(v) > String(a ?? '')),
+    // 상대 날짜 — 값 없이 「오늘 기준」으로 매번 다시 잰다
+    ...RELATIVE_DATES.map(([id, label]) => op(id, label, (v) => inRelative(v, id), false)),
     u.empty, u.notEmpty,
 ]);
 
