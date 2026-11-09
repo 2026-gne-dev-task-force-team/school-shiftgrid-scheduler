@@ -5,14 +5,14 @@
  *   손 편집은 전부 model.ts 순수 함수로 돌린 뒤 저장(applyEdit) · 특별 적용·일정은 schedule.ts.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { DateField, Icon, IconPicker, TitleField } from '../../../pane-ui-system';
+import { DateField, Icon, IconPicker, TitleField, undoKey } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — table 약속(값은 host.modules.use('table')).
 import type { TableApi } from '../../table-editor/contracts/table';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,
-    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash, renameNode, sheetIconOf, setSheetIcon,
+    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash, renameNode, sheetIconOf, setSheetIcon, stepEdit,
 } from '../nodes';
 import { StartScreen } from './StartScreen';
 import {
@@ -60,7 +60,9 @@ export function GridTab({ host }: { host?: PluginHost }) {
         return { text: c?.text ?? '', rowSpan, colSpan, merged: rowSpan > 1 || colSpan > 1 };
     }
 
+    // ⌘Z — 손 편집은 전부 applyEdit 를 지나며 시간표마다 더미에 쌓인다(nodes.ts).
     const edit = (fn: Parameters<typeof applyEdit>[1]) => applyEdit(activeId, fn);
+    const step = (which: 'undo' | 'redo') => stepEdit(activeId, which);
 
     // ── 병합/해제 가능 여부 ──
     const mergeOk = !!sel && canMerge(data, sel).ok;
@@ -74,7 +76,8 @@ export function GridTab({ host }: { host?: PluginHost }) {
     const btn = 'flex items-center gap-1 h-btn px-2 rounded border border-line text-[12px] text-muted hover:text-text hover:bg-text/[0.04] disabled:opacity-40 disabled:hover:bg-transparent';
 
     return (
-        <div className="h-full flex flex-col overflow-hidden select-none">
+        <div className="h-full flex flex-col overflow-hidden select-none"
+            onKeyDown={(e) => { const u = undoKey(e.nativeEvent); if (u && !e.defaultPrevented) { e.preventDefault(); step(u); } }}>
             {/* 머리줄 — 이름 + 종류 */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
                 <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
@@ -140,7 +143,7 @@ export function GridTab({ host }: { host?: PluginHost }) {
             {/* 표 자리 */}
             <div className="flex-1 overflow-auto">
                 {tableApi ? (
-                    <TableGrid api={tableApi} data={data} rowTimeEdit={rowTimeEdit} edit={edit} />
+                    <TableGrid api={tableApi} data={data} rowTimeEdit={rowTimeEdit} edit={edit} onUndo={() => step('undo')} onRedo={() => step('redo')} />
                 ) : (
                 <SimpleGrid
                     columns={columns}

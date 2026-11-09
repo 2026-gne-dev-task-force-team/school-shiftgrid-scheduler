@@ -25,3 +25,26 @@ describe('시간표 ↔ 표 편집기 다리', () => {
         expect(d2.rows[0].range.end).toBe(d1.rows[0].range.end + 10);
     });
 });
+
+import { initGridNodes, applyEdit, stepEdit, dataOf } from './nodes';
+import { setCellText } from './model';
+import type { NodesApi } from '../project-explorer/contracts/nodes';
+
+describe('시간표 ⌘Z — 손 편집 한 번 = 되돌리기 한 칸', () => {
+    it('고치고 되돌리고 다시하기', () => {
+        let data: unknown;
+        const fake = {
+            get: (id: string) => (id === 's' ? { id: 's', type: 'timetable-grid.sheet', name: '표', data } : undefined),
+            setData: (_id: string, d: unknown) => { data = d; },
+            byType: () => [], subscribe: () => ({ dispose() {} }),
+        } as unknown as NodesApi;
+        initGridNodes(fake);
+        applyEdit('s', (d) => setCellText(d, 0, 0, '가'));
+        applyEdit('s', (d) => setCellText(d, 0, 0, '나'));
+        stepEdit('s', 'undo');
+        expect(getCell(dataOf('s'), 0, 0)?.text).toBe('가');
+        stepEdit('s', 'redo');
+        expect(getCell(dataOf('s'), 0, 0)?.text).toBe('나');
+        initGridNodes(null);
+    });
+});

@@ -141,8 +141,10 @@ export function gridToTable(data: TimetableData, rowTimeEdit: boolean): { column
 }
 
 /** 표 편집기 판 그리드 — 칸 이동·복사 붙여넣기·병합·행/열 넣고 빼기·열 폭·행 높이 끌기를 표 편집기가 쥔다. */
-export function TableGrid({ api, data, rowTimeEdit, edit }: {
+export function TableGrid({ api, data, rowTimeEdit, edit, onUndo, onRedo }: {
     api: TableApi;
+    onUndo?: () => void;
+    onRedo?: () => void;
     data: TimetableData;
     rowTimeEdit: boolean;
     edit: (fn: (d: TimetableData) => TimetableData) => void;
@@ -158,6 +160,8 @@ export function TableGrid({ api, data, rowTimeEdit, edit }: {
                 headerCol
                 features={features}
                 onCommit={(tx) => edit((d) => applyGridTx(d, tx))}
+                onUndo={onUndo}
+                onRedo={onRedo}
                 emptyHint="빈 표 — 행·열을 더해 쓴다"
             />
         </div>

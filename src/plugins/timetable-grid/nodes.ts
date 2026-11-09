@@ -12,6 +12,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
 import type { TimetableData, SpecialData, ScheduleEntry } from '../contract-week-grid/types';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { emptyHistory, record as pushHistory, undo, redo, type History } from '../../pane-ui-system';
 import { blankTimetable } from './model';
 import { scheduleRange, type SpecialInput } from './schedule';
 import { setActiveSheet } from './store';
@@ -184,8 +185,22 @@ export function dataOf(id: string): TimetableData {
 /** 데이터 한 장을 순수 함수로 바꿔 저장한다 — 손 편집 전부 이 길. */
 export function applyEdit(id: string, edit: (data: TimetableData) => TimetableData): void {
     if (!api) return;
-    const next = edit(dataOf(id));
+    const prev = dataOf(id);
+    const next = edit(prev);
+    if (next === prev) return;
+    histories.set(id, pushHistory(histories.get(id) ?? emptyHistory<TimetableData>(), prev));
     api.setData(id, next);
+}
+
+// ⌘Z 더미 — 시간표마다 따로(값 스냅샷 · 창틀 공용 history). 저장 안 함(새로고침하면 비워진다).
+const histories = new Map<string, History<TimetableData>>();
+/** 되돌리기/다시하기 한 칸 — 더미가 비면 아무것도 안 한다. */
+export function stepEdit(id: string, which: 'undo' | 'redo'): void {
+    const h = histories.get(id);
+    const r = h && (which === 'undo' ? undo : redo)(h, dataOf(id));
+    if (!r || !api) return;
+    histories.set(id, r.history);
+    api.setData(id, r.value);
 }
 
 /** 특별 시간표 머리(모드·우선순위)만 바꾼다. */
