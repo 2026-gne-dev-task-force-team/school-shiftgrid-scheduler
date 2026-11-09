@@ -11,7 +11,9 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
 import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
-import { SimpleTable, type TableColumn, type TableRow } from './table-slot';
+import { TableSlot, type TableColumn, type TableRow } from './table-slot';
+import type { TableApi } from '../../table-editor/contracts/table';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
 const COLUMNS: TableColumn[] = [
@@ -19,7 +21,9 @@ const COLUMNS: TableColumn[] = [
     { key: 'memo', title: '메모' },
 ];
 
-export function ListTab() {
+export function ListTab({ host }: { host?: PluginHost }) {
+    // 표 편집기가 켜져 있으면 그 표로(supports: table) — 없으면 간이 표
+    const table = host?.modules.use<TableApi>('table') ?? null;
     const activeId = useActiveList();
     // 노드가 바뀔 때만 다시 그린다(명단 이름·사람 줄). 스냅샷은 recompute 때만 새 배열이 된다.
     const listNodes = useSyncExternalStore(subscribeNodes, getListNodes, getListNodes);
@@ -47,7 +51,8 @@ export function ListTab() {
                 <span className="font-medium text-text truncate">{list.name}</span>
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}명</span>
             </div>
-            <SimpleTable
+            <TableSlot
+                table={table}
                 columns={COLUMNS}
                 rows={rows}
                 onCellChange={(rowId, key, value) => {

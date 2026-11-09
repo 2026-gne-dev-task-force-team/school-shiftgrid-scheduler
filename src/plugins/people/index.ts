@@ -26,6 +26,8 @@ export const peoplePlugin = definePlugin({
         provides: { people: '0.1.0' },
         // 🔴 명단·사람은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 표 편집기가 있으면 그 표로 그린다(없으면 간이 표) — 있으면 쓰는 것이라 supports
+        supports: { table: '^0.1' },
         contributes: {
             // 🔴 people 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 사람 명단 꾸러미가 약속·provides·화면을 한 폴더에.
             interfaces: [{ name: 'people', version: '0.1.0', label: '사람 명단', desc: '이름을 담는 명단' }],
@@ -51,7 +53,7 @@ export const peoplePlugin = definePlugin({
     panes: { PersonProps },
     components: {
         // 명단 화면 — 보고 있는 명단(store)의 사람들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: () => createElement(ListTab),
+        Sheet: ({ host }) => createElement(ListTab, { host }),
     },
     commands: {
         // 리본 「사람 명단 열기」 — 보고 있는 명단은 그대로 두고 화면만 연다(없으면 안내가 뜬다).

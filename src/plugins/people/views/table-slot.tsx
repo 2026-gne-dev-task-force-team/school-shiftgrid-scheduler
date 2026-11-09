@@ -23,6 +23,8 @@
  * ───────────────────────────────────────────────────────────────────────────
  */
 import { Icon } from '../../../pane-ui-system';
+// 🔴 import type 만 — 표 약속 타입은 표 편집기 꾸러미 contracts 에서(값은 host.modules.use).
+import type { TableApi, TableTx, HeaderMenuEntry } from '../../table-editor/contracts/table';
 
 export interface TableColumn {
     key: string;
@@ -45,6 +47,9 @@ export interface TableSlotProps {
     onDeleteRow(rowId: string): void;
     onMoveRow(rowId: string, dir: -1 | 1): void;
     /** 탭·줄바꿈 텍스트 한 덩어리 — 파싱·생성은 받는 쪽이 한다. */
+    /** (선택) 중첩 — 방 목록만 쓴다. */
+    onIndentRow?(rowId: string): void;
+    onOutdentRow?(rowId: string): void;
     onPaste(text: string): void;
     emptyHint?: string;
 }
@@ -114,6 +119,59 @@ export function SimpleTable({ columns, rows, onCellChange, onAddRow, onDeleteRow
                     <Icon name="plus" size={13} /> 줄 추가
                 </button>
             </div>
+        </div>
+    );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 🔴 표 편집기로 갈아 끼우기(2026-11-09) — host.modules.use('table') 이 있으면 그 표를, 없으면 위 간이 표를 그린다.
+//    표 편집기의 열·행 모양이 이 파일의 TableColumn·TableRow 와 같다(이 「요구서」대로 만들어졌다).
+//    표가 내는 묶음 변경(TableTx)을 이 자리의 콜백으로 푼다 — 저장·휴지통은 여전히 다리(nodes.ts)가 쥔다.
+// ───────────────────────────────────────────────────────────────────────────
+
+// 열 두 개(고정)라 열 고치기·병합은 안 켠다. 되돌리기는 간이 표와 같이 없다 — 노드 저장과 엇갈리지 않게.
+const FEATURES = ['rows', 'col-resize', 'sticky-headers', 'paste-policy:append'];
+
+/** 표 편집기의 묶음 변경 → 표 자리 콜백. 순수 함수(시험이 바로 부른다). */
+export function applyTableTx(tx: TableTx, props: TableSlotProps, toTsv: (cells: string[][]) => string): void {
+    for (const c of tx.cells) props.onCellChange(c.rowId, c.key, c.value);
+    for (const add of tx.rows?.add ?? []) {
+        const cells = add.cells ?? [];
+        const filled = cells.filter((r) => Object.values(r).some((v) => v !== ''));
+        // shortcut: 「위·아래에 줄 넣기」도 끝에 붙는다(다리에 자리 지정 추가가 없다) — 자리 넣기가 필요해지면 onInsertRow 를 늘린다.
+        if (filled.length > 0) props.onPaste(toTsv(filled.map((r) => props.columns.map((col) => r[col.key] ?? ''))));
+        else for (let i = 0; i < Math.max(1, add.count); i++) props.onAddRow();
+    }
+    for (const id of tx.rows?.remove ?? []) props.onDeleteRow(id);
+    for (const mv of tx.rows?.move ?? []) {
+        const from = props.rows.findIndex((r) => r.id === mv.id);
+        if (from < 0) continue;
+        const dir: -1 | 1 = mv.to < from ? -1 : 1;
+        for (let i = 0; i < Math.abs(mv.to - from); i++) props.onMoveRow(mv.id, dir);
+    }
+}
+
+/** 표 자리 — 표 편집기가 있으면 그걸로, 없으면 간이 표로. */
+export function TableSlot({ table, ...props }: TableSlotProps & { table: TableApi | null }) {
+    if (!table) return <SimpleTable {...props} />;
+    const { Table } = table;
+    const headerMenu = (kind: 'row' | 'col', id: string): HeaderMenuEntry[] => {
+        if (kind !== 'row') return [];
+        const out: HeaderMenuEntry[] = [];
+        if (props.onIndentRow) out.push({ label: '한 칸 안으로', onSelect: () => props.onIndentRow?.(id) });
+        if (props.onOutdentRow) out.push({ label: '한 칸 밖으로', onSelect: () => props.onOutdentRow?.(id) });
+        return out;
+    };
+    return (
+        <div className="flex-1 min-h-0 p-2">
+            <Table
+                columns={props.columns}
+                rows={props.rows}
+                features={FEATURES}
+                onCommit={(tx) => applyTableTx(tx, props, table.toTsv)}
+                headerMenu={headerMenu}
+                emptyHint={props.emptyHint}
+            />
         </div>
     );
 }
