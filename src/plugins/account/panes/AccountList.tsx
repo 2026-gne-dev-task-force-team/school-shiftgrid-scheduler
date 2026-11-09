@@ -11,44 +11,52 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../record-view/contracts/record-view';
 import {
     can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
-    setUserName, setRoleName, setRoleLevel, reorderAccount,
+    setUserName, setRoleName, setRoleLevel, reorderAccount, setUserRoles, setUserDirect, setRolePermissions,
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
-import { useAccountVersion } from './useAccount';
+import { useAccountVersion, allPermissions } from './useAccount';
 import { UserEditor } from './UserEditor';
 import { RoleEditor } from './RoleEditor';
 
-type Row = { id: string } & Record<string, RecordCellValue | string>;
+type Row = { id: string } & Record<string, RecordCellValue>;
+
+/** 고르기 후보 — 권한은 켜진 플러그인이 선언한 낱말(이름 옆에 id), 역할은 지금 있는 역할. 값은 id 라 이름을 바꿔도 안 끊긴다. */
+const permOptions = () => allPermissions().map((p) => ({ value: p.id, label: p.title }));
+const roleOptions = () => listRoles().map((r) => ({ value: r.id, label: r.data.name }));
+const asList = (v: RecordCellValue): string[] => (Array.isArray(v) ? v.map(String) : typeof v === 'string' && v ? [v] : []);
 
 function usersModel() {
-    const roleName = new Map(listRoles().map((r) => [r.id, r.data.name]));
     const rows: Row[] = listUsers().map((u) => ({
         id: u.id,
         name: u.data.displayName,
-        roles: u.data.roleIds.map((id) => roleName.get(id) ?? '').filter(Boolean).join(', '),
-        direct: u.data.directPermissions.length,
+        roles: [...u.data.roleIds],
+        direct: [...u.data.directPermissions],
     }));
     const edit = can('account.users.edit');
     const fields: RecordField[] = [
         { key: 'name', label: '이름', type: 'text', readOnly: !edit },
-        { key: 'roles', label: '역할', type: 'text', readOnly: true },
-        { key: 'direct', label: '직접 권한 수', type: 'number', readOnly: true },
+        { key: 'roles', label: '역할', type: 'multi', readOnly: !edit, options: roleOptions() },
+        { key: 'direct', label: '직접 권한', type: 'multi', readOnly: !edit, options: permOptions() },
     ];
     return {
         rows, fields, noun: '사용자',
         canAdd: can('account.users.create'), canDelete: can('account.users.delete'), canEdit: edit,
         add: () => createUser('새 사용자'), remove: deleteUser,
-        set: (id: string, key: string, v: RecordCellValue) => { if (key === 'name' && typeof v === 'string' && v.trim()) setUserName(id, v.trim()); },
+        set: (id: string, key: string, v: RecordCellValue) => {
+            if (key === 'name' && typeof v === 'string' && v.trim()) setUserName(id, v.trim());
+            else if (key === 'roles') setUserRoles(id, asList(v));
+            else if (key === 'direct') setUserDirect(id, asList(v));
+        },
     };
 }
 
 function rolesModel() {
-    const rows: Row[] = listRoles().map((r) => ({ id: r.id, name: r.data.name, level: r.data.level, perms: r.data.permissions.length }));
+    const rows: Row[] = listRoles().map((r) => ({ id: r.id, name: r.data.name, level: r.data.level, perms: [...r.data.permissions] }));
     const edit = can('account.roles.edit');
     const fields: RecordField[] = [
         { key: 'name', label: '이름', type: 'text', readOnly: !edit },
         { key: 'level', label: '수준', type: 'number', readOnly: !edit },
-        { key: 'perms', label: '권한 수', type: 'number', readOnly: true },
+        { key: 'perms', label: '권한', type: 'multi', readOnly: !edit, options: permOptions() },
     ];
     return {
         rows, fields, noun: '역할',
@@ -57,6 +65,7 @@ function rolesModel() {
         set: (id: string, key: string, v: RecordCellValue) => {
             if (key === 'name' && typeof v === 'string' && v.trim()) setRoleName(id, v.trim());
             else if (key === 'level' && typeof v === 'number' && Number.isFinite(v)) setRoleLevel(id, v);
+            else if (key === 'perms') setRolePermissions(id, asList(v));
         },
     };
 }
