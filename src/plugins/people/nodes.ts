@@ -263,3 +263,11 @@ export function setListIcon(listId: string, icon: string | undefined): void {
     if (icon) cur.icon = icon; else delete cur.icon;
     api.setData(listId, cur);
 }
+
+// ── 줄 문서(노션 줄 열기) — 줄 노드 data.body(불투명 · 페이지 편집기 page-doc 이 읽고 쓴다) ──
+export function bodyOf(id: string): unknown { return (api?.get(id)?.data as { body?: unknown } | undefined)?.body; }
+export function setBody(id: string, body: unknown): void {
+    if (!api) return;
+    const cur = (api.get(id)?.data ?? {}) as Record<string, unknown>;
+    api.setData(id, { ...cur, body });
+}

@@ -27,7 +27,7 @@ export const roomsPlugin = definePlugin({
         // 🔴 목록·방은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 레코드 뷰가 있으면 그 목록 화면으로 그린다(없으면 간이 표) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2' },
+        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
         contributes: {
             // 🔴 rooms 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 방 목록 꾸러미가 약속·provides·화면을 한 폴더에.
             interfaces: [{ name: 'rooms', version: '0.1.0', label: '방 목록', desc: '방·공간을 담는 목록' }],
@@ -53,7 +53,7 @@ export const roomsPlugin = definePlugin({
     panes: { RoomProps },
     components: {
         // 방 목록 화면 — 보고 있는 목록(store)의 방들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: ({ host }) => createElement(ListTab, { host }),
+        Sheet: ({ host, peek }) => createElement(ListTab, { host, peek }),
     },
     commands: {
         // 리본 「방 목록 열기」 — 보고 있는 목록은 그대로 두고 화면만 연다(없으면 안내가 뜬다).

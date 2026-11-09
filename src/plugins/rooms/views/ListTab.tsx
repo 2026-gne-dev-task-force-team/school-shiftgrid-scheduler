@@ -8,7 +8,8 @@
  *    부모 방을 지우면 자식은 최상위로 올라온다(effectiveParentId 가 최상위로 돌린다).
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Icon, IconPicker, TitleField } from '../../../pane-ui-system';
+import { Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+import { RowPeek } from './RowPeek';
 import { useActiveList, setActiveList } from '../store';
 import {
     subscribeNodes, getListNodes, inTrash, roomsIn,
@@ -25,7 +26,7 @@ const COLUMNS: TableColumn[] = [
     { key: 'memo', title: '메모' },
 ];
 
-export function ListTab({ host }: { host?: PluginHost }) {
+export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
     // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: record-view) — 없으면 간이 표
     const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     const activeId = useActiveList();
@@ -82,6 +83,7 @@ export function ListTab({ host }: { host?: PluginHost }) {
                 onOutdentRow={(rowId) => outdentRoom(rowId)}
                 parentOf={(rowId) => roomOf(rowId)?.parentId ?? null}
                 onPaste={(text) => pasteRooms(activeId, text)}
+                onOpenRow={host && peek ? (id) => peek.show(<RowPeek host={host} id={id} />, { wideMin: 480 }) : undefined}
                 onFieldsChange={(fields) => setListFields(activeId, fields.filter((f) => f.key !== 'name' && f.key !== 'memo'))}
                 emptyHint="아직 아무 방도 없다. 「줄 추가」로 더하거나 엑셀·한글 표를 붙여 넣는다(첫 칸 이름·둘째 칸 메모). → 로 방 안에 방."
             />

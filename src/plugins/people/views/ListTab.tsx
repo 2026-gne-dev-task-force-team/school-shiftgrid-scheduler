@@ -8,7 +8,8 @@
  *    아직 그 약속이 없어 분기를 안 만든다(간이 표 하나) — table-slot.tsx 머리의 「요구서」가 그 세션에 건넬 꼴이다.
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Icon, IconPicker, TitleField } from '../../../pane-ui-system';
+import { Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+import { RowPeek } from './RowPeek';
 import { useActiveList, setActiveList } from '../store';
 import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields, listIconOf, setListIcon, getNodesApi } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
@@ -21,7 +22,7 @@ const COLUMNS: TableColumn[] = [
     { key: 'memo', title: '메모' },
 ];
 
-export function ListTab({ host }: { host?: PluginHost }) {
+export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
     // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: record-view) — 없으면 간이 표
     const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     const activeId = useActiveList();
@@ -69,6 +70,7 @@ export function ListTab({ host }: { host?: PluginHost }) {
                 onDeleteRow={(rowId) => removePerson(rowId)}
                 onMoveRow={(rowId, dir) => nudgePerson(rowId, dir)}
                 onPaste={(text) => pastePeople(activeId, text)}
+                onOpenRow={host && peek ? (id) => peek.show(<RowPeek host={host} id={id} />, { wideMin: 480 }) : undefined}
                 onFieldsChange={(fields) => setListFields(activeId, fields.filter((f) => f.key !== 'name' && f.key !== 'memo'))}
                 emptyHint="아직 아무도 없다. 「줄 추가」로 더하거나 엑셀·한글 표를 붙여 넣는다(첫 칸 이름·둘째 칸 메모)."
             />

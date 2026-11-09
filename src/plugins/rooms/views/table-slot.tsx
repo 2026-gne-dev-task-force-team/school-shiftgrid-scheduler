@@ -61,6 +61,8 @@ export interface TableSlotProps {
     onOutdentRow?(rowId: string): void;
     /** (선택) 그 행의 부모 행 id(뿌리면 null) — 주면 레코드 뷰가 트리(방 안에 방)로 그린다. */
     parentOf?(rowId: string): string | null;
+    /** (선택) 줄 열기(→) — 레코드 뷰가 미리보기로 연다. */
+    onOpenRow?(rowId: string): void;
     emptyHint?: string;
 }
 
@@ -203,6 +205,7 @@ export function TableSlot({ rv, viewKey, ...props }: TableSlotProps & { rv: Reco
                     if (s) for (let i = 0; i < s.n; i++) props.onMoveRow(id, s.dir);
                 }}
                 tree={tree}
+                onOpenRecord={props.onOpenRow}
                 className="flex-1 min-h-0"
             />
         </div>
