@@ -1,0 +1,49 @@
+/**
+ * 사용자·역할 레코드 페이지 — 칸(PropertyList) + 받은 권한 설명 + 문서(page-doc). 줄 미리보기와 편집 탭이 같이 쓴다.
+ *   🔴 컬렉션 항목 미리보기(ItemPeek)와 같은 꼴 — 칸 그리기를 새로 짜지 않는다(표와 같은 Cell).
+ *   🙋 7 A(쥔님 2026-11-09): 레코드는 이 페이지에서만 고친다 — 오른쪽 속성 패널엔 칸을 안 낸다.
+ */
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+// 🔴 import type 만 — 약속 타입은 각 꾸러미 contracts 에서(값은 host.modules.use).
+import type { RecordViewApi } from '../../collection/contracts/collection';
+import type { PageDocApi } from '../../page/contracts/page-doc';
+import { getRecord, nodeKindOf, setRecordValue, renameRecord, accountBodyOf, setAccountBody, getNodesApi } from '../core';
+import { useAccountVersion, allPermissions } from './useAccount';
+import { accountFields, canEdit } from './fields';
+
+export function RecordPage({ id, host }: { id: string; host?: PluginHost }) {
+    useAccountVersion();
+    const rec = getRecord(id);
+    const rv = host?.modules.use<RecordViewApi>('collection');
+    if (!rec) return <p className="text-small text-muted">이 줄이 없어졌습니다.</p>;
+    if (!host || !rv) return <p className="text-small text-muted">컬렉션 꾸러미가 꺼져 있어 칸을 그릴 수 없습니다.</p>;
+    const kind = nodeKindOf(id) === 'user' ? 'users' : 'roles';
+    const edit = canEdit(kind);
+    const pd = host.modules.use<PageDocApi>('page-doc');
+    // 받은 권한 설명(쥔님 2026-11-09 「권한 자세한 설명이 없다」) — 고르기 칸은 이름만 보여 주니 설명은 아래에 읽기 전용으로
+    const held = rec.values[kind === 'users' ? 'direct' : 'perms'];
+    const perms = allPermissions().filter((p) => p.desc && Array.isArray(held) && held.includes(p.id));
+    return (
+        <div className="flex flex-col gap-3">
+            <rv.PropertyList fields={accountFields(kind)} values={{ ...rec.values, name: rec.name }}
+                onChange={edit ? (key, v) => setRecordValue(id, key, v) : undefined} />
+            {perms.length > 0 && (
+                <dl className="flex flex-col gap-1 px-2">
+                    {perms.map((p) => (
+                        <div key={p.id}>
+                            <dt className="text-small text-text">{p.title}</dt>
+                            <dd className="text-note text-muted leading-relaxed">{p.desc}</dd>
+                        </div>
+                    ))}
+                </dl>
+            )}
+            {pd && (
+                <div className="border-t border-line -mx-4">
+                    <pd.PageDoc host={host} docKey={id} value={accountBodyOf(id)} onChange={(v) => setAccountBody(id, v)}
+                        icon={getNodesApi()?.get(id)?.icon} onSetIcon={(i) => getNodesApi()?.setIcon(id, i)}
+                        title={rec.name} onRename={(n) => renameRecord(id, n)} />
+                </div>
+            )}
+        </div>
+    );
+}

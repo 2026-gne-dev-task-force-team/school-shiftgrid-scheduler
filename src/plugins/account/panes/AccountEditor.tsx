@@ -7,8 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { getActiveAccountNode, subscribeActiveNode } from '../nodes';
 import { nodeKindOf } from '../core';
 import { useAccountVersion } from './useAccount';
-import { UserEditor } from './UserEditor';
-import { RoleEditor } from './RoleEditor';
+import { RecordPage } from './RecordPage';
 import { PolicyEditor } from './PolicyEditor';
 import { AccountList } from './AccountList';
 import { Icon } from '../../../pane-ui-system';
@@ -33,7 +32,6 @@ export function AccountEditor({ host, peek }: { host?: PluginHost; peek?: PeekHa
             <Icon name="left" size={12} /> {kind === 'user' ? '사용자 목록' : '역할 목록'}
         </button>
     );
-    if (kind === 'user') return <div className="flex flex-col">{back}<UserEditor userId={id} /></div>;
-    if (kind === 'role') return <div className="flex flex-col">{back}<RoleEditor roleId={id} /></div>;
+    if (kind === 'user' || kind === 'role') return <div className="flex flex-col">{back}<div className="p-4 max-w-[640px]"><RecordPage id={id} host={host} /></div></div>;
     return <PolicyEditor />;
 }

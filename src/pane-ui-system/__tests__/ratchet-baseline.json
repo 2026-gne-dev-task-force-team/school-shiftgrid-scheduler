@@ -1,7 +1,7 @@
 {
   "plugins/account": {
-    "bareButton": 7,
-    "arbPx": 63,
+    "bareButton": 4,
+    "arbPx": 37,
     "cmdIdString": 0
   },
   "plugins/calendar": {

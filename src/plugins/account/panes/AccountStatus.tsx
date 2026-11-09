@@ -113,7 +113,7 @@ export function AccountStatus({ host }: { host: PluginHost }) {
                                     : (
                                         <div className="flex flex-col gap-1 max-h-[40vh] overflow-auto">
                                             {users.map((u) => (
-                                                <MenuBtn key={u.id} onClick={() => pickUser(u.id)}>{u.data.displayName}</MenuBtn>
+                                                <MenuBtn key={u.id} onClick={() => pickUser(u.id)}>{u.name}</MenuBtn>
                                             ))}
                                         </div>
                                     )}

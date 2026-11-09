@@ -14,6 +14,7 @@
 import type { NodeTypeContribution, PluginHost } from '../../pane-ui-system/plugin';
 import type { NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { Hashed } from './hash';
+import type { RecordCellValue } from '../collection/contracts/collection';
 import * as core from './core';
 
 export const ROOT_TYPE = 'account.root';            // 싱글턴 — 계정 전체의 뿌리(보이는 노드)
@@ -31,20 +32,13 @@ const USERS_ID = 'account.users';
 const ROLES_ID = 'account.roles';
 const PERMS_ID = 'account.perms';
 
-/** 사용자 노드 data — 🔴 그 타입을 등록한 계정 플러그인만 읽고 쓴다(불투명 칸). */
-export interface UserData {
-    displayName: string;
-    directPermissions: string[];   // 길① 직접 붙인 권한 낱말
-    roleIds: string[];             // 길③ 경유할 역할 id
-    fields: Record<string, unknown>;   // 다른 플러그인이 꽂은 칸('<pluginId>.<name>')
-}
-
-/** 역할 노드 data — 이용자가 만들고 지우는 바구니(이름·담은 권한·수준·부수 옵션). */
-export interface RoleData {
-    name: string;
-    permissions: string[];   // 길③ 이 역할이 담은 권한 낱말
-    level: number;           // 길② 수준(문턱 판정용)
-    fields: Record<string, unknown>;   // 플러그인이 꽂은 역할 칸
+/**
+ * 사용자·역할 노드 data — 🔴 컬렉션 레코드와 같은 모양(P4c · 명단·방과 같은 결): 제목 = 노드 이름 · 칸 값은 values 하나.
+ *   사용자 기본 칸: roles(길③ 경유할 역할 id) · direct(길① 직접 붙인 권한 낱말) · 역할 기본 칸: level(길② 수준) · perms(길③ 담은 권한).
+ *   다른 플러그인이 꽂은 칸('<pluginId>.<name>')과 사람이 폴더에 더한 칸도 같은 values 에 산다.
+ */
+export interface RecordData {
+    values?: Record<string, RecordCellValue>;
 }
 
 /** 붙이는 길 셋의 켬/끔 + 길② 문턱 + 증명 요구 역할. 🔴 처음 상태는 전부 비어 있다(권한 0 · 바닥 정책 0). */
@@ -102,18 +96,18 @@ export const accountNodeTypeImpl = {
         can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.policy.view'),
     } satisfies NodeTypeImplFns,
-    // 사용자 — 누르면 편집 탭 · 만들기/고치기/지우기 각각 권한으로 가림 · 보기 권한 없으면 숨김. 탐색기로 만들면 빈 UserData 로.
+    // 사용자 — 누르면 편집 탭 · 만들기/고치기/지우기 각각 권한으로 가림 · 보기 권한 없으면 숨김. 탐색기로 만들면 빈 값으로.
     user: {
         open: openEditor,
-        createInit: () => ({ data: { displayName: '사용자', directPermissions: [], roleIds: [], fields: {} } satisfies UserData }),
+        createInit: () => ({ data: { values: {} } satisfies RecordData }),
         canCreate: () => core.can('account.users.create'),
         can: () => ({ rename: core.can('account.users.edit'), move: core.can('account.users.edit'), delete: core.can('account.users.delete') }),
         hidden: () => !core.can('account.users.view'),
     } satisfies NodeTypeImplFns,
-    // 역할 — 사용자와 같은 결(만들기/고치기/지우기/보기). 탐색기로 만들면 빈 RoleData 로.
+    // 역할 — 사용자와 같은 결(만들기/고치기/지우기/보기). 탐색기로 만들면 빈 값으로.
     role: {
         open: openEditor,
-        createInit: () => ({ data: { name: '역할', permissions: [], level: 0, fields: {} } satisfies RoleData }),
+        createInit: () => ({ data: { values: {} } satisfies RecordData }),
         canCreate: () => core.can('account.roles.create'),
         can: () => ({ rename: core.can('account.roles.edit'), move: core.can('account.roles.edit'), delete: core.can('account.roles.delete') }),
         hidden: () => !core.can('account.roles.view'),
@@ -138,9 +132,9 @@ export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'ro
         slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, PERMS_FOLDER_TYPE, POLICY_TYPE],
         impl: 'root',
     },
-    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, openable: true, impl: 'usersFolder' },
-    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, openable: true, impl: 'rolesFolder' },
-    { type: PERMS_FOLDER_TYPE, label: '권한', icon: 'shieldCheck', openable: true, impl: 'permsFolder' },
+    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, body: 'collection', openable: true, impl: 'usersFolder' },
+    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, body: 'collection', openable: true, impl: 'rolesFolder' },
+    { type: PERMS_FOLDER_TYPE, label: '권한', icon: 'shieldCheck', body: 'collection', openable: true, impl: 'permsFolder' },
     // 🔴 사용자·역할은 나무에 안 띄운다(record · 쥔님 2026-11-09 *"하위노드로 띄우지 말고 레코드 뷰로"*) — 폴더를 열면 목록에 한 줄씩, 만들기도 목록에서.
     { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, record: true, impl: 'user' },
     { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, record: true, impl: 'role' },

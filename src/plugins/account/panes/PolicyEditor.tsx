@@ -53,7 +53,7 @@ export function PolicyEditor() {
                                 <button key={r.id} type="button"
                                     onClick={() => setPolicy({ verifyRoles: on ? pol.verifyRoles.filter((x) => x !== r.id) : [...pol.verifyRoles, r.id] })}
                                     className={`text-[12px] px-2 py-0.5 rounded border ${on ? 'border-accent text-accent' : 'border-line text-muted'}`}>
-                                    {r.data.name}
+                                    {r.name}
                                 </button>
                             );
                         })}

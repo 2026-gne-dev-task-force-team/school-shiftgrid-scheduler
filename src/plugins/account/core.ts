@@ -16,8 +16,9 @@ import type { Hashed } from './hash';
 import {
     ROOT_TYPE, USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, PERMS_FOLDER_TYPE,
     USER_TYPE, ROLE_TYPE, POLICY_TYPE, SECRET_TYPE,
-    type UserData, type RoleData, type PolicyData, type SecretData,
+    type RecordData, type PolicyData, type SecretData,
 } from './nodes';
+import type { RecordCellValue, RecordField } from '../collection/contracts/collection';
 
 // ── 전역 상태 ──
 let nodesApi: NodesApi | null = null;
@@ -37,23 +38,22 @@ const SESSION_KEY = 'session';   // host.storage(기기별)
 // ── 세션 꼴 ──
 function master(): CurrentUser { return { kind: 'master', displayName: '마스터', verified: true, roles: [] }; }
 function guest(): CurrentUser { return { kind: 'guest', displayName: '손님', verified: false, roles: [] }; }
-function userSession(id: string, u: UserData, verified: boolean): CurrentUser {
-    // 🔴 표시 이름은 노드 이름을 먼저 본다 — 탐색기 F2 로 이름을 바꿔도 반영된다(data.displayName 은 보조).
-    const name = nodesApi?.get(id)?.name ?? u.displayName;
-    return { kind: 'user', id, displayName: name, verified, roles: [...(u.roleIds ?? [])], fields: { ...(u.fields ?? {}) } };
+function userSession(id: string, verified: boolean): CurrentUser {
+    // 표시 이름 = 노드 이름(제목 칸) · fields = 다른 플러그인이 꽂은 칸('<pluginId>.<name>' — 점이 든 key)만
+    const v = valuesOf(id, USER_TYPE) ?? {};
+    const fields = Object.fromEntries(Object.entries(v).filter(([k]) => k.includes('.')));
+    return { kind: 'user', id, displayName: nodesApi?.get(id)?.name ?? '', verified, roles: listOf(v.roles), fields };
 }
 
 // ── 노드 읽기 ──
 function secretNode(): PublicNode | undefined { return nodesApi?.byType(SECRET_TYPE)[0]; }
 function hasSecret(): boolean { return !!secretNode(); }
-function readUser(id: string): UserData | null {
+/** 사용자·역할 레코드의 칸 값(그 타입이 아니면 null) — 컬렉션 레코드와 같은 data.values. */
+function valuesOf(id: string, type: string): Record<string, RecordCellValue> | null {
     const n = nodesApi?.get(id);
-    return n && n.type === USER_TYPE ? (n.data as UserData) : null;
+    return n && n.type === type ? { ...((n.data as RecordData | undefined)?.values ?? {}) } : null;
 }
-function readRole(id: string): RoleData | null {
-    const n = nodesApi?.get(id);
-    return n && n.type === ROLE_TYPE ? (n.data as RoleData) : null;
-}
+const listOf = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 function policyData(): PolicyData {
     const n = nodesApi?.byType(POLICY_TYPE)[0];
     const d = (n?.data ?? {}) as Partial<PolicyData>;
@@ -70,8 +70,7 @@ function initialState(): CurrentUser { return hasSecret() ? guest() : master(); 
 function deriveInitial(): CurrentUser {
     if (!hasSecret()) return master();
     const saved = hostRef?.storage.get<{ kind?: string; id?: string } | null>(SESSION_KEY, null) ?? null;
-    const u = saved?.kind === 'user' && saved.id ? readUser(saved.id) : null;
-    return u && saved?.id ? userSession(saved.id, u, false) : guest();
+    return saved?.kind === 'user' && saved.id && valuesOf(saved.id, USER_TYPE) ? userSession(saved.id, false) : guest();
 }
 
 // ── 알림 ──
@@ -204,13 +203,12 @@ export function can(permission: string): boolean {
     const pol = policyData();
     // 길① 사용자에 직접 붙인 권한
     if (pol.paths.direct && session.kind === 'user' && session.id) {
-        const u = readUser(session.id);
-        if (u?.directPermissions.includes(permission)) return true;
+        if (listOf(valuesOf(session.id, USER_TYPE)?.direct).includes(permission)) return true;
     }
     // 길③ 역할이 담은 권한
     if (pol.paths.role) {
         for (const rid of session.roles) {
-            if (readRole(rid)?.permissions.includes(permission)) return true;
+            if (listOf(valuesOf(rid, ROLE_TYPE)?.perms).includes(permission)) return true;
         }
     }
     // 길② 역할 수준이 권한 문턱 이상
@@ -218,8 +216,8 @@ export function can(permission: string): boolean {
         const need = pol.thresholds[permission];
         if (need != null) {
             for (const rid of session.roles) {
-                const r = readRole(rid);
-                if (r && r.level >= need) return true;
+                const level = valuesOf(rid, ROLE_TYPE)?.level;
+                if (typeof level === 'number' && level >= need) return true;
             }
         }
     }
@@ -242,7 +240,7 @@ function policyRequiresVerify(roleIds: string[]): boolean {
  *   돌려주는 값: 세션이 그 사용자로 바뀌었나.
  */
 export async function login(userId: string): Promise<boolean> {
-    const u = readUser(userId);
+    const u = valuesOf(userId, USER_TYPE);
     if (!u || !nodesApi) return false;
 
     if (session.kind === 'master') {
@@ -252,19 +250,19 @@ export async function login(userId: string): Promise<boolean> {
         if (!m) return false;
         const ok = await cred.challenge(m.id, userId);
         if (!ok) return false;                   // 실패 → 마스터 그대로
-        setSession(userSession(userId, u, true));
+        setSession(userSession(userId, true));
         return true;
     }
 
     let verified = false;
-    if (policyRequiresVerify(u.roleIds)) {
+    if (policyRequiresVerify(listOf(u.roles))) {
         const cred = credentialProvider();
         if (cred) {
             const m = cred.methods()[0];
             if (m) verified = await cred.challenge(m.id, userId);
         }
     }
-    setSession(userSession(userId, u, verified));
+    setSession(userSession(userId, verified));
     return true;
 }
 
@@ -303,26 +301,21 @@ export async function setProjectPassword(oldPw: string, newPw: string): Promise<
 export function hasProjectPassword(): boolean { return hasSecret(); }
 
 // ── 관리 조작(역할·사용자·정책) — 정책 편집 화면이 부른다. can()·마스터 게이트는 화면이 건다 ──
-export function createUser(displayName: string, opts?: Partial<Omit<UserData, 'displayName'>>): string {
+/** 빈 값(빈 글·빈 목록·null)은 칸에서 뺀다 — 컬렉션 setValue 와 같은 규칙. */
+const isEmpty = (v: unknown): boolean => v == null || v === '' || (Array.isArray(v) && v.length === 0);
+const cleanValues = (values: Record<string, RecordCellValue>): Record<string, RecordCellValue> =>
+    Object.fromEntries(Object.entries(values).filter(([, v]) => !isEmpty(v)));
+
+export function createUser(name: string, opts?: { roleIds?: string[]; directPermissions?: string[] }): string {
     const folder = usersFolderId();
     if (!nodesApi || !folder) return '';
-    const data: UserData = {
-        displayName,
-        directPermissions: opts?.directPermissions ?? [],
-        roleIds: opts?.roleIds ?? [],
-        fields: opts?.fields ?? {},
-    };
-    return nodesApi.create(folder, { type: USER_TYPE, name: displayName, data });
+    const data: RecordData = { values: cleanValues({ roles: opts?.roleIds ?? [], direct: opts?.directPermissions ?? [] }) };
+    return nodesApi.create(folder, { type: USER_TYPE, name, data });
 }
-export function createRole(name: string, opts?: Partial<Omit<RoleData, 'name'>>): string {
+export function createRole(name: string, opts?: { permissions?: string[]; level?: number }): string {
     const folder = rolesFolderId();
     if (!nodesApi || !folder) return '';
-    const data: RoleData = {
-        name,
-        permissions: opts?.permissions ?? [],
-        level: opts?.level ?? 0,
-        fields: opts?.fields ?? {},
-    };
+    const data: RecordData = { values: cleanValues({ level: opts?.level ?? 0, perms: opts?.permissions ?? [] }) };
     return nodesApi.create(folder, { type: ROLE_TYPE, name, data });
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
@@ -338,18 +331,6 @@ export function reorderAccount(id: string, beforeId: string | null): void {
 /** 부모 노드 id — 편집기의 「← 목록」이 쓴다(사용자·역할은 나무에 안 보인다). */
 export function parentOf(id: string): string | null { return nodesApi?.parent(id) ?? null; }
 
-// 🔴 노드 data 원본 — 문서(body)·아이콘처럼 UserData/RoleData 밖 짐을 고치기 때 안 잃게 같이 싣는다.
-const rawOf = (id: string): Record<string, unknown> => ({ ...((nodesApi?.get(id)?.data ?? {}) as Record<string, unknown>) });
-function patchUser(userId: string, patch: Partial<UserData>): void {
-    const u = readUser(userId);
-    if (!u || !nodesApi) return;
-    nodesApi.setData(userId, { ...rawOf(userId), ...u, ...patch });
-}
-function patchRole(roleId: string, patch: Partial<RoleData>): void {
-    const r = readRole(roleId);
-    if (!r || !nodesApi) return;
-    nodesApi.setData(roleId, { ...rawOf(roleId), ...r, ...patch });
-}
 /** 사용자·역할 문서(page-doc 값) — 노드 공통 body 칸(노션처럼 레코드마다 문서). */
 export function accountBodyOf(id: string): unknown { return nodesApi?.get(id)?.body; }
 export function setAccountBody(id: string, body: unknown): void { nodesApi?.setBody(id, body); }
@@ -360,26 +341,39 @@ export function accountFolderId(kind: 'users' | 'roles' | 'perms'): string | nul
     if (!r) return null;
     return childOfType(r, kind === 'users' ? USERS_FOLDER_TYPE : kind === 'roles' ? ROLES_FOLDER_TYPE : PERMS_FOLDER_TYPE);
 }
-export function renameNode(id: string, name: string): void { nodesApi?.rename(id, name); }
 export function nodeNameOf(id: string): string { return nodesApi?.get(id)?.name ?? ''; }
-export function setUserRoles(userId: string, roleIds: string[]): void { patchUser(userId, { roleIds: [...roleIds] }); }
-export function setUserDirect(userId: string, permissions: string[]): void { patchUser(userId, { directPermissions: [...permissions] }); }
-export function setRolePermissions(roleId: string, permissions: string[]): void { patchRole(roleId, { permissions: [...permissions] }); }
-export function setRoleLevel(roleId: string, level: number): void { patchRole(roleId, { level }); }
 
-/** 사용자 이름 바꾸기 — 노드 이름(탐색기 표시)과 data.displayName(신분 표시)을 같이 맞춘다. */
-export function setUserName(userId: string, name: string): void {
+/** 사용자·역할 이름 = 노드 이름(제목 칸). 빈 이름은 무시. */
+export function renameRecord(id: string, name: string): void {
     const t = name.trim();
-    if (!t || !nodesApi) return;
-    nodesApi.rename(userId, t);
-    patchUser(userId, { displayName: t });
+    if (t && nodesApi) nodesApi.rename(id, t);
 }
-/** 역할 이름 바꾸기 — 노드 이름과 data.name 을 같이 맞춘다. */
-export function setRoleName(roleId: string, name: string): void {
-    const t = name.trim();
-    if (!t || !nodesApi) return;
-    nodesApi.rename(roleId, t);
-    patchRole(roleId, { name: t });
+/**
+ * 사용자·역할 칸 하나 쓰기 — 컬렉션 setValue 와 같은 규칙(제목 칸 'name' 은 이름 바꾸기 · 빈 값은 지움 · 글은 trim).
+ *   🔴 data 의 다른 짐(values 밖)은 그대로 싣는다.
+ */
+export function setRecordValue(id: string, key: string, value: RecordCellValue): void {
+    const n = nodesApi?.get(id);
+    if (!nodesApi || !n || (n.type !== USER_TYPE && n.type !== ROLE_TYPE)) return;
+    if (key === 'name') { renameRecord(id, String(value ?? '')); return; }
+    const cur = { ...((n.data ?? {}) as Record<string, unknown>) };
+    const values = { ...((cur.values ?? {}) as Record<string, RecordCellValue>) };
+    const v = typeof value === 'string' ? value.trim() : value;
+    if (isEmpty(v)) delete values[key]; else values[key] = v;
+    nodesApi.setData(id, { ...cur, values });
+}
+export const setUserRoles = (userId: string, roleIds: string[]): void => setRecordValue(userId, 'roles', [...roleIds]);
+
+/** 폴더(사용자·역할)에 사람이 더한 칸 정의 — 컬렉션 목록 노드와 같은 data.fields. */
+export function folderFieldsOf(kind: 'users' | 'roles'): RecordField[] {
+    const fid = accountFolderId(kind);
+    const d = (fid ? nodesApi?.get(fid)?.data : null) as { fields?: unknown } | null | undefined;
+    return Array.isArray(d?.fields) ? (d.fields as RecordField[]) : [];
+}
+export function setFolderFields(kind: 'users' | 'roles', fields: RecordField[]): void {
+    const fid = accountFolderId(kind);
+    if (!nodesApi || !fid) return;
+    nodesApi.setData(fid, { ...((nodesApi.get(fid)?.data ?? {}) as Record<string, unknown>), fields });
 }
 
 /** 정책을 고친다 — 없으면 만든다. 길 켬/끔·문턱·증명 요구 역할을 부분 갱신. */
@@ -402,16 +396,16 @@ export function setPolicy(patch: Partial<PolicyData>): void {
 
 // ── 화면이 읽는 조회(설정 패널용) ──
 export function getPolicy(): PolicyData { return policyData(); }
-export function listUsers(): { id: string; data: UserData }[] {
-    return (nodesApi?.byType(USER_TYPE) ?? []).map((n) => ({ id: n.id, data: n.data as UserData }));
+/** 사용자·역할 레코드 한 줄 — 제목(노드 이름) + 칸 값. */
+export interface AccountRecord { id: string; name: string; values: Record<string, RecordCellValue> }
+const toRecord = (n: PublicNode): AccountRecord => ({ id: n.id, name: n.name, values: { ...((n.data as RecordData | undefined)?.values ?? {}) } });
+export function listUsers(): AccountRecord[] { return (nodesApi?.byType(USER_TYPE) ?? []).map(toRecord); }
+export function listRoles(): AccountRecord[] { return (nodesApi?.byType(ROLE_TYPE) ?? []).map(toRecord); }
+/** 사용자·역할 하나(없거나 다른 타입이면 null). */
+export function getRecord(id: string): AccountRecord | null {
+    const n = nodesApi?.get(id);
+    return n && (n.type === USER_TYPE || n.type === ROLE_TYPE) ? toRecord(n) : null;
 }
-export function listRoles(): { id: string; data: RoleData }[] {
-    return (nodesApi?.byType(ROLE_TYPE) ?? []).map((n) => ({ id: n.id, data: n.data as RoleData }));
-}
-/** 편집 탭이 읽는 사용자 하나(없으면 null). */
-export function getUser(userId: string): UserData | null { return readUser(userId); }
-/** 편집 탭이 읽는 역할 하나(없으면 null). */
-export function getRole(roleId: string): RoleData | null { return readRole(roleId); }
 /** 그 노드가 사용자/역할/정책 중 무엇인가(편집 탭이 어느 편집기를 그릴지 고른다). 그 외/없음은 null. */
 export function nodeKindOf(id: string): 'user' | 'role' | 'policy' | 'users' | 'roles' | null {
     const n = nodesApi?.get(id);
