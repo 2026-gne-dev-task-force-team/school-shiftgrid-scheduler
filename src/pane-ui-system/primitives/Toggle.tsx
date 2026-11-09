@@ -19,13 +19,13 @@ export function Toggle({ on, onToggle, disabled = false, label }: {
             aria-label={label}
             disabled={disabled}
             onClick={() => onToggle(!on)}
-            className={`relative shrink-0 w-10 h-6 rounded-full transition-colors
+            className={`relative shrink-0 w-10 h-6 rounded-full transition-colors duration-fast active:brightness-90
                 ${FOCUS_RING}
                 disabled:opacity-40 disabled:cursor-not-allowed
                 ${on ? 'bg-accent' : 'bg-text/[0.18]'}`}
         >
             <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-bg shadow transition-transform
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-bg shadow transition-transform duration-fast
                     ${on ? 'translate-x-4' : ''}`}
             />
         </button>

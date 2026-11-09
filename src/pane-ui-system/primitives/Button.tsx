@@ -8,11 +8,14 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { FOCUS_RING } from './focus';
 
+/** 모든 변형 공통 disabled 모양 — 흐리게 · 금지 커서 · hover/active 배경 변화 없음 */
+export const DISABLED = 'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:active:bg-transparent';
+
 const VARIANT = {
-    ghost: 'border-line text-muted hover:text-text hover:bg-text/[0.04]',
-    accent: 'border-accent text-text bg-text/[0.06] hover:bg-text/[0.1]',
+    ghost: `border-line text-muted hover:text-text hover:bg-text/[0.04] active:bg-text/[0.1] ${DISABLED}`,
+    accent: `border-accent text-text bg-text/[0.06] hover:bg-text/[0.1] active:bg-text/[0.14] ${DISABLED}`,
     // 도구 막대용 — 테두리 없이 글자만(표 도구 막대 등)
-    plain: 'border-transparent text-text hover:bg-text/[0.06] disabled:opacity-40 disabled:hover:bg-transparent select-none',
+    plain: `border-transparent text-text hover:bg-text/[0.06] active:bg-text/[0.1] select-none ${DISABLED}`,
 } as const;
 
 const SIZE = {
@@ -35,7 +38,7 @@ export function Button({
     return (
         <button
             type={type}
-            className={`h-btn inline-flex items-center justify-center gap-1 whitespace-nowrap shrink-0 ${SIZE[size]} rounded border ${VARIANT[variant]} transition-colors ${FOCUS_RING} ${className}`}
+            className={`h-btn inline-flex items-center justify-center gap-1 whitespace-nowrap shrink-0 ${SIZE[size]} rounded border ${VARIANT[variant]} transition-colors duration-fast ${FOCUS_RING} ${className}`}
             {...rest}
         >
             {children}

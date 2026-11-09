@@ -7,6 +7,9 @@ import type { InputHTMLAttributes, KeyboardEvent } from 'react';
 import { FOCUS_RING } from './focus';
 import { isImeEnter } from './ime';
 
+/** 입력류 공통 disabled — 흐리게 · 금지 커서 · hover 테두리 변화 없음 */
+export const INPUT_DISABLED = 'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-line';
+
 export function TextInput({ className = '', onEnter, onEscape, onKeyDown, ...rest }: InputHTMLAttributes<HTMLInputElement> & {
     /** Enter 확정(조합 중 Enter 는 무시) — 지금 입력칸 값을 넘긴다 */
     onEnter?: (value: string, e: KeyboardEvent<HTMLInputElement>) => void;
@@ -15,7 +18,7 @@ export function TextInput({ className = '', onEnter, onEscape, onKeyDown, ...res
 }) {
     return (
         <input
-            className={`h-btn px-2 rounded border border-line bg-bg text-text text-body ${FOCUS_RING} ${className}`}
+            className={`h-btn px-2 rounded border border-line bg-bg text-text text-body transition-colors duration-fast hover:border-muted ${INPUT_DISABLED} ${FOCUS_RING} ${className}`}
             onKeyDown={(e) => {
                 onKeyDown?.(e);
                 if (e.defaultPrevented) return;
