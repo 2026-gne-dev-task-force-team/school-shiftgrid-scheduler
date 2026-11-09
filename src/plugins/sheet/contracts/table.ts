@@ -190,6 +190,8 @@ export interface TableProps {
     hideColHeader?: boolean;
     /** M5d — 표 위 도구 막대(되돌리기·복사·행/열 넣기·지우기·합치기·표 메뉴). 표 노드 화면이 켠다. */
     toolbar?: boolean;
+    /** 툴바를 그릴 자리 — 창틀 Frame 의 toolbar 자리 요소. 주면 단추를 거기에 그린다(본문 스크롤 밖 고정). 없으면 표 위에 인라인. */
+    toolbarHost?: HTMLElement | null;
     /** S1 — 열 머리(A·B·C…) 탭을 포커스 없이도 늘 보인다. 소유자가 쥔다. */
     colTabs?: boolean;
     /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */

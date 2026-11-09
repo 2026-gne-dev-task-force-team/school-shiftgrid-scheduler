@@ -3,6 +3,7 @@
  *   열: 날짜 · 시간(종일이면 「종일」) · 제목 · 저장소. 머리에 검색 상자(제목·메모) + 「새 일정」(오늘 종일).
  *   줄을 누르면 그 날로 anchor 를 옮기고 인라인 카드를 연다. 정렬·검색은 events.ts 순수 함수.
  */
+import { CalBar } from './CalBar';
 import { useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
@@ -87,7 +88,8 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
     return (
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 검색 + 「새 일정」 + 전환 단추(trailing) */}
-            <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
+            <CalBar end={<>{trailing}
+                </>}>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="flex items-center gap-1 rounded border border-line px-2 h-btn min-w-0 flex-1 max-w-xs">
                         <Icon name="search" size={13} className="text-muted shrink-0" />
@@ -107,8 +109,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                         <Icon name="plus" size={13} /> 새 일정
                     </button>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">{trailing}</div>
-            </header>
+            </CalBar>
 
             {/* 🔴 레코드 뷰가 있으면 그 목록 화면으로(쥔님 2026-11-09) — 줄 열기(→)는 일정 카드 미리보기 · 검색은 위 상자가 거른다 */}
             {rv ? (

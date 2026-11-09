@@ -3,126 +3,147 @@
     "bareButton": 4,
     "arbPx": 36,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/calendar": {
     "bareButton": 12,
     "arbPx": 42,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/collection": {
     "bareButton": 42,
     "arbPx": 69,
     "cmdIdString": 2,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-absence": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-clock": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-export": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-roster": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-timetable": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/contract-week-grid": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/explorer": {
     "bareButton": 7,
     "arbPx": 20,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/page": {
     "bareButton": 2,
     "arbPx": 8,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/pane-test": {
     "bareButton": 1,
     "arbPx": 12,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/people": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/properties": {
     "bareButton": 0,
     "arbPx": 2,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/rooms": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/selection": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/settings": {
     "bareButton": 20,
     "arbPx": 119,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "plugins/sheet": {
     "bareButton": 4,
-    "arbPx": 22,
+    "arbPx": 21,
     "cmdIdString": 0,
-    "ctxDirect": 5
+    "ctxDirect": 5,
+    "roleToolbar": 0
   },
   "plugins/timetable-grid": {
     "bareButton": 2,
     "arbPx": 9,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "app": {
     "bareButton": 0,
     "arbPx": 1,
     "cmdIdString": 0,
-    "ctxDirect": 0
+    "ctxDirect": 0,
+    "roleToolbar": 0
   },
   "pane-ui-system": {
     "bareButton": 26,
     "arbPx": 67,
     "cmdIdString": 0,
-    "ctxDirect": 6
+    "ctxDirect": 6,
+    "roleToolbar": 0
   }
 }

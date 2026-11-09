@@ -7,6 +7,7 @@
  *
  *   trailing: 머리줄 오른쪽 끝 — 메인이 전환 단추를 꽂는다.
  */
+import { CalBar } from './CalBar';
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton, isoOf, monthLabel } from '../../../pane-ui-system';
 import { shouldShowMonth } from './time-grid';
@@ -139,9 +140,7 @@ export function GanttView({ value, onChange, trailing, selection, onSelect }: { 
     // 전역 선택 차단(구조 검사 ⑬)을 안 뚫는다 — 간트엔 고를 글자가 없어 선택 허용 클래스를 안 단다
     return (
         <div className="h-full flex flex-col bg-bg">
-            <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
-                <div className="text-base font-semibold text-text truncate">{label}</div>
-                <div className="flex items-center gap-1 shrink-0">
+            <CalBar end={<>
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button
                         type="button"
@@ -152,8 +151,9 @@ export function GanttView({ value, onChange, trailing, selection, onSelect }: { 
                     </button>
                     <IconButton icon="right" label="다음" onClick={() => go(1)} />
                     {trailing}
-                </div>
-            </header>
+                </>}>
+                <div className="text-base font-semibold text-text truncate">{label}</div>
+            </CalBar>
 
             {/* 두 축 스크롤러 — 가로는 날, 세로는 행. 열 머리 sticky top · 행 이름 칸 sticky left */}
             <div
