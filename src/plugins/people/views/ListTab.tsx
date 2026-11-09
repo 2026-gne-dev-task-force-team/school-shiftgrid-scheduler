@@ -12,7 +12,7 @@ import { Icon } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
 import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
-import type { TableApi } from '../../table-editor/contracts/table';
+import type { RecordViewApi } from '../../record-view/contracts/record-view';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
@@ -22,8 +22,8 @@ const COLUMNS: TableColumn[] = [
 ];
 
 export function ListTab({ host }: { host?: PluginHost }) {
-    // 표 편집기가 켜져 있으면 그 표로(supports: table) — 없으면 간이 표
-    const table = host?.modules.use<TableApi>('table') ?? null;
+    // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: record-view) — 없으면 간이 표
+    const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     const activeId = useActiveList();
     // 노드가 바뀔 때만 다시 그린다(명단 이름·사람 줄). 스냅샷은 recompute 때만 새 배열이 된다.
     const listNodes = useSyncExternalStore(subscribeNodes, getListNodes, getListNodes);
@@ -52,7 +52,8 @@ export function ListTab({ host }: { host?: PluginHost }) {
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}명</span>
             </div>
             <TableSlot
-                table={table}
+                rv={rv}
+                viewKey="people.list"
                 columns={COLUMNS}
                 rows={rows}
                 onCellChange={(rowId, key, value) => {

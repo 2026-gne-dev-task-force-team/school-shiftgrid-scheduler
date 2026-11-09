@@ -20,8 +20,9 @@
  * ───────────────────────────────────────────────────────────────────────────
  */
 import { Icon } from '../../../pane-ui-system';
-// 🔴 import type 만 — 표 약속 타입은 표 편집기 꾸러미 contracts 에서(값은 host.modules.use).
-import type { TableApi, TableTx, HeaderMenuEntry } from '../../table-editor/contracts/table';
+import { useState } from 'react';
+// 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
+import type { RecordViewApi, RecordField, RecordTree, PasteRequest } from '../../record-view/contracts/record-view';
 
 export interface TableColumn {
     key: string;
@@ -51,6 +52,8 @@ export interface TableSlotProps {
     onIndentRow?(rowId: string): void;
     /** (선택) 중첩 한 칸 얕게 — 주면 ← 단추가 뜬다. */
     onOutdentRow?(rowId: string): void;
+    /** (선택) 그 행의 부모 행 id(뿌리면 null) — 주면 레코드 뷰가 트리(방 안에 방)로 그린다. */
+    parentOf?(rowId: string): string | null;
     emptyHint?: string;
 }
 
@@ -139,53 +142,60 @@ export function SimpleTable({ columns, rows, onCellChange, onAddRow, onDeleteRow
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// 🔴 표 편집기로 갈아 끼우기(2026-11-09) — host.modules.use('table') 이 있으면 그 표를, 없으면 위 간이 표를 그린다.
-//    표 편집기의 열·행 모양이 이 파일의 TableColumn·TableRow 와 같다(이 「요구서」대로 만들어졌다).
-//    표가 내는 묶음 변경(TableTx)을 이 자리의 콜백으로 푼다 — 저장·휴지통은 여전히 다리(nodes.ts)가 쥔다.
+// 🔴 레코드 뷰로 갈아 끼우기(쥔님 2026-11-09 「명단은 레코드 뷰야」) — host.modules.use('record-view') 이 있으면 그 목록 화면을,
+//    없으면 위 간이 표를 그린다. 레코드 뷰의 콜백을 이 자리의 콜백으로 푼다 — 저장·휴지통은 여전히 다리(nodes.ts)가 쥔다.
 // ───────────────────────────────────────────────────────────────────────────
 
-// 열 두 개(고정)라 열 고치기·병합은 안 켠다. 되돌리기는 간이 표와 같이 없다 — 노드 저장과 엇갈리지 않게.
-const FEATURES = ['rows', 'col-resize', 'sticky-headers', 'paste-policy:append'];
-
-/** 표 편집기의 묶음 변경 → 표 자리 콜백. 순수 함수(시험이 바로 부른다). */
-export function applyTableTx(tx: TableTx, props: TableSlotProps, toTsv: (cells: string[][]) => string): void {
-    for (const c of tx.cells) props.onCellChange(c.rowId, c.key, c.value);
-    for (const add of tx.rows?.add ?? []) {
-        const cells = add.cells ?? [];
-        const filled = cells.filter((r) => Object.values(r).some((v) => v !== ''));
-        // shortcut: 「위·아래에 줄 넣기」도 끝에 붙는다(다리에 자리 지정 추가가 없다) — 자리 넣기가 필요해지면 onInsertRow 를 늘린다.
-        if (filled.length > 0) props.onPaste(toTsv(filled.map((r) => props.columns.map((col) => r[col.key] ?? ''))));
-        else for (let i = 0; i < Math.max(1, add.count); i++) props.onAddRow();
-    }
-    for (const id of tx.rows?.remove ?? []) props.onDeleteRow(id);
-    for (const mv of tx.rows?.move ?? []) {
-        const from = props.rows.findIndex((r) => r.id === mv.id);
-        if (from < 0) continue;
-        const dir: -1 | 1 = mv.to < from ? -1 : 1;
-        for (let i = 0; i < Math.abs(mv.to - from); i++) props.onMoveRow(mv.id, dir);
-    }
+/** 레코드 뷰 붙여넣기(보이는 칸 key 순서 + 글자) → 이 자리 열 순서의 TSV 한 덩어리. 순수 함수. */
+export function pasteToTsv(req: PasteRequest, columns: TableColumn[]): string {
+    return req.rows.map((r) => columns.map((col) => { const i = req.keys.indexOf(col.key); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
 }
 
-/** 표 자리 — 표 편집기가 있으면 그걸로, 없으면 간이 표로. */
-export function TableSlot({ table, ...props }: TableSlotProps & { table: TableApi | null }) {
-    if (!table) return <SimpleTable {...props} />;
-    const { Table } = table;
-    const headerMenu = (kind: 'row' | 'col', id: string): HeaderMenuEntry[] => {
-        if (kind !== 'row') return [];
-        const out: HeaderMenuEntry[] = [];
-        if (props.onIndentRow) out.push({ label: '한 칸 안으로', onSelect: () => props.onIndentRow?.(id) });
-        if (props.onOutdentRow) out.push({ label: '한 칸 밖으로', onSelect: () => props.onOutdentRow?.(id) });
-        return out;
-    };
+/** 「beforeId 앞으로」(null 이면 끝) → 한 칸씩 옮기기 몇 번. 순수 함수. */
+export function reorderSteps(ids: string[], id: string, beforeId: string | null): { dir: -1 | 1; n: number } | null {
+    const from = ids.indexOf(id);
+    if (from < 0) return null;
+    const target = beforeId ? ids.indexOf(beforeId) : ids.length;
+    if (target < 0) return null;
+    const to = target > from ? target - 1 : target;
+    return to === from ? null : { dir: to < from ? -1 : 1, n: Math.abs(to - from) };
+}
+
+type Rec = { id: string } & Record<string, string>;
+
+/** 표 자리 — 레코드 뷰가 있으면 그걸로, 없으면 간이 표로. */
+export function TableSlot({ rv, viewKey, ...props }: TableSlotProps & { rv: RecordViewApi | null; viewKey: string }) {
+    const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+    if (!rv) return <SimpleTable {...props} />;
+    const { RecordView } = rv;
+    const fields: RecordField[] = props.columns.map((c) => ({ key: c.key, label: c.title, type: 'text', width: c.width }));
+    const records: Rec[] = props.rows.map((r) => ({ ...r.cells, id: r.id }));
+    const parentOf = props.parentOf;
+    const tree: RecordTree<Rec> | undefined = parentOf && props.onIndentRow && props.onOutdentRow ? {
+        parentOf: (r) => parentOf(r.id),
+        collapsed: (id) => collapsed.has(id),
+        onToggleCollapse: (id) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }),
+        onIndent: props.onIndentRow,
+        onOutdent: props.onOutdentRow,
+    } : undefined;
     return (
-        <div className="flex-1 min-h-0 p-2">
-            <Table
-                columns={props.columns}
-                rows={props.rows}
-                features={FEATURES}
-                onCommit={(tx) => applyTableTx(tx, props, table.toTsv)}
-                headerMenu={headerMenu}
-                emptyHint={props.emptyHint}
+        <div className="flex-1 min-h-0 flex flex-col">
+            <RecordView<Rec>
+                fields={fields}
+                records={records}
+                getId={(r) => r.id}
+                viewKey={viewKey}
+                titleKey={props.columns[0]?.key}
+                onCellChange={(id, key, value) => props.onCellChange(id, key, value == null ? '' : String(value))}
+                onAddRecord={props.onAddRow}
+                onDeleteRecords={(ids) => ids.forEach(props.onDeleteRow)}
+                onPaste={(req) => props.onPaste(pasteToTsv(req, props.columns))}
+                onReorder={(id, beforeId) => {
+                    const s = reorderSteps(props.rows.map((r) => r.id), id, beforeId);
+                    if (s) for (let i = 0; i < s.n; i++) props.onMoveRow(id, s.dir);
+                }}
+                tree={tree}
+                className="flex-1 min-h-0"
             />
         </div>
     );

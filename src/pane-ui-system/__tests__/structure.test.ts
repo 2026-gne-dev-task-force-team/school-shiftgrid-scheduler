@@ -312,7 +312,7 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
  *   (설계 「여기서 죽는다」: 탐색기가 calendar.event 를 알게 되는 유혹과 같은 결). isRecordType(대문자 R)은 통과.
  */
 describe('⑯ plugins/**/views 에 소문자 record 비교 0 (레코드 판정은 isRecordType 콜백으로만)', () => {
-    const NEEDLE = /\brecord\b/;   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
+    const NEEDLE = /\brecord\b(?!-view)/;   // 꾸러미 이름 record-view(약속 import·modules.use)는 레코드성 판정이 아니라 뺀다 ·   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
     const files = walk(join(ROOT, 'plugins')).filter((f) => f.includes(`${sep}views${sep}`));
 
     it('스캔할 뷰 파일이 실제로 있다', () => {
