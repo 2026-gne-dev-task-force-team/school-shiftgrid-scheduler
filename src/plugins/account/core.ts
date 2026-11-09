@@ -14,7 +14,7 @@ import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
 import { makeHash, verifyHash } from './hash';
 import type { Hashed } from './hash';
 import {
-    ROOT_TYPE, USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE,
+    ROOT_TYPE, USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, PERMS_FOLDER_TYPE,
     USER_TYPE, ROLE_TYPE, POLICY_TYPE, SECRET_TYPE,
     type UserData, type RoleData, type PolicyData, type SecretData,
 } from './nodes';
@@ -169,6 +169,7 @@ function ensureStructure(): string | null {
     if (!rootId) return null;   // canCreate(마스터만)에 막히면 '' → null
     if (!childOfType(rootId, USERS_FOLDER_TYPE)) nodesApi.create(rootId, { type: USERS_FOLDER_TYPE, name: '사용자' });
     if (!childOfType(rootId, ROLES_FOLDER_TYPE)) nodesApi.create(rootId, { type: ROLES_FOLDER_TYPE, name: '역할' });
+    if (!childOfType(rootId, PERMS_FOLDER_TYPE)) nodesApi.create(rootId, { type: PERMS_FOLDER_TYPE, name: '권한' });
     // 🔴 정책은 트리에 하나도 없을 때만 만든다(싱글턴) — 옛 평면 정책이 있으면 이사(tryMigrate)가 그걸 루트 밑으로 옮긴다(중복 방지).
     if (nodesApi.byType(POLICY_TYPE).length === 0) nodesApi.create(rootId, { type: POLICY_TYPE, name: '정책', data: emptyPolicy() });
     return rootId;
@@ -337,16 +338,35 @@ export function reorderAccount(id: string, beforeId: string | null): void {
 /** 부모 노드 id — 편집기의 「← 목록」이 쓴다(사용자·역할은 나무에 안 보인다). */
 export function parentOf(id: string): string | null { return nodesApi?.parent(id) ?? null; }
 
+// 🔴 노드 data 원본 — 문서(body)·아이콘처럼 UserData/RoleData 밖 짐을 고치기 때 안 잃게 같이 싣는다.
+const rawOf = (id: string): Record<string, unknown> => ({ ...((nodesApi?.get(id)?.data ?? {}) as Record<string, unknown>) });
 function patchUser(userId: string, patch: Partial<UserData>): void {
     const u = readUser(userId);
     if (!u || !nodesApi) return;
-    nodesApi.setData(userId, { ...u, ...patch });
+    nodesApi.setData(userId, { ...rawOf(userId), ...u, ...patch });
 }
 function patchRole(roleId: string, patch: Partial<RoleData>): void {
     const r = readRole(roleId);
     if (!r || !nodesApi) return;
-    nodesApi.setData(roleId, { ...r, ...patch });
+    nodesApi.setData(roleId, { ...rawOf(roleId), ...r, ...patch });
 }
+/** 사용자·역할 문서(page-doc 값) — 노드 data.body(노션처럼 레코드마다 문서). */
+export function accountBodyOf(id: string): unknown { return rawOf(id).body; }
+export function setAccountBody(id: string, body: unknown): void { nodesApi?.setData(id, { ...rawOf(id), body }); }
+/** 목록 탭의 폴더(사용자·역할·권한) — 탭 머리 아이콘·이름이 고친다. 없으면 null(만들지 않는다). */
+export function accountFolderId(kind: 'users' | 'roles' | 'perms'): string | null {
+    const r = accountRootId();
+    if (!r) return null;
+    return childOfType(r, kind === 'users' ? USERS_FOLDER_TYPE : kind === 'roles' ? ROLES_FOLDER_TYPE : PERMS_FOLDER_TYPE);
+}
+export function folderIconOf(id: string): string | undefined { const i = rawOf(id).icon; return typeof i === 'string' && i ? i : undefined; }
+export function setFolderIcon(id: string, icon: string | undefined): void {
+    const cur = rawOf(id);
+    if (icon) cur.icon = icon; else delete cur.icon;
+    nodesApi?.setData(id, cur);
+}
+export function renameNode(id: string, name: string): void { nodesApi?.rename(id, name); }
+export function nodeNameOf(id: string): string { return nodesApi?.get(id)?.name ?? ''; }
 export function setUserRoles(userId: string, roleIds: string[]): void { patchUser(userId, { roleIds: [...roleIds] }); }
 export function setUserDirect(userId: string, permissions: string[]): void { patchUser(userId, { directPermissions: [...permissions] }); }
 export function setRolePermissions(roleId: string, permissions: string[]): void { patchRole(roleId, { permissions: [...permissions] }); }

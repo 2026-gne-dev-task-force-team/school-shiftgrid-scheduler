@@ -134,6 +134,17 @@ describe('계정 — 9가지 검산', () => {
         expect(typeof accountNodeTypeImpl.rolesFolder.open).toBe('function');
     });
 
+    it('권한 폴더가 서고 · 사용자 문서(body)는 이름·역할을 고쳐도 남는다', () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const uid = core.createUser('김');
+        expect(core.accountFolderId('perms')).not.toBeNull();
+        core.setAccountBody(uid, { blocks: ['메모'] });
+        core.setUserName(uid, '이');
+        core.setUserRoles(uid, []);
+        expect(core.accountBodyOf(uid)).toEqual({ blocks: ['메모'] });
+    });
+
     it('1) 암호 없음 → 마스터로 시작 · can 항상 true', () => {
         const nodes = makeNodes();
         const cons = makeConsumer();

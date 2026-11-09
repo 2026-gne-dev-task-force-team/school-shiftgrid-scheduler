@@ -5,13 +5,16 @@
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다 — 저장은 core 의 기존 함수 그대로.
  */
 import { useEffect } from 'react';
-import { Button, type PeekHandle } from '../../../pane-ui-system';
+import { Button, Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+// 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
+import type { PageDocApi } from '../../page-editor/contracts/page-doc';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../record-view/contracts/record-view';
 import {
     can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
     setUserName, setRoleName, setRoleLevel, reorderAccount, setUserRoles, setUserDirect, setRolePermissions,
+    accountBodyOf, setAccountBody, accountFolderId, folderIconOf, setFolderIcon, renameNode, nodeNameOf, getUser, getRole,
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion, allPermissions } from './useAccount';
@@ -70,13 +73,71 @@ function rolesModel() {
     };
 }
 
-export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles'; host?: PluginHost; peek?: PeekHandle }) {
+/**
+ * 권한 목록(쥔님 2026-11-09 「권한 없어 · 여러 스타일로 보게」) — 켜진 플러그인이 낸 권한 낱말 전부.
+ *   한 줄 = 권한 하나: 이름·설명·그 권한을 담은 역할·직접 받은 사용자. 읽기 전용(주고 빼기는 역할·사용자 쪽에서) — 보기 스타일은 레코드 뷰가 쥔다.
+ */
+function permsModel() {
+    const roles = listRoles(), users = listUsers();
+    const rows: Row[] = allPermissions().map((p) => ({
+        id: p.id, name: p.title, desc: p.desc ?? '', word: p.id,
+        roles: roles.filter((r) => r.data.permissions.includes(p.id)).map((r) => r.id),
+        users: users.filter((u) => u.data.directPermissions.includes(p.id)).map((u) => u.id),
+    }));
+    const fields: RecordField[] = [
+        { key: 'name', label: '권한', type: 'text', readOnly: true },
+        { key: 'desc', label: '설명', type: 'text', readOnly: true },
+        { key: 'roles', label: '담은 역할', type: 'multi', readOnly: true, options: roleOptions() },
+        { key: 'users', label: '직접 받은 사용자', type: 'multi', readOnly: true, options: users.map((u) => ({ value: u.id, label: u.data.displayName })) },
+        { key: 'word', label: '낱말', type: 'text', readOnly: true },
+    ];
+    return {
+        rows, fields, noun: '권한',
+        canAdd: false, canDelete: false, canEdit: false,
+        add: () => '', remove: (_id: string) => {},
+        set: (_id: string, _key: string, _v: RecordCellValue) => {},
+    };
+}
+
+/** 줄 미리보기 — 편집기 + 그 사용자·역할의 문서(page-doc 이 있으면 · 노션처럼). */
+function RecordPeek({ kind, id, host }: { kind: 'users' | 'roles'; id: string; host?: PluginHost }) {
+    useAccountVersion();
+    const pd = host?.modules.use<PageDocApi>('page-doc');
+    const name = kind === 'users' ? getUser(id)?.displayName : getRole(id)?.name;
+    return (
+        <div className="h-full overflow-auto">
+            {kind === 'users' ? <UserEditor userId={id} /> : <RoleEditor roleId={id} />}
+            {host && pd && name != null && (
+                <div className="border-t border-line">
+                    <pd.PageDoc host={host} docKey={id} value={accountBodyOf(id)} onChange={(v) => setAccountBody(id, v)}
+                        title={name} onRename={(n) => (kind === 'users' ? setUserName(id, n) : setRoleName(id, n))} />
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** 탭 머리 — 폴더 노드의 아이콘·이름을 탭 안에서 바로 바꾼다(페이지 편집기와 같은 결). */
+function ListHeader({ kind }: { kind: 'users' | 'roles' | 'perms' }) {
+    const fid = accountFolderId(kind);
+    if (!fid) return null;
+    const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={18} className="text-muted" />;
+    return (
+        <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
+            <IconPicker icon={folderIconOf(fid)} onSetIcon={(i) => setFolderIcon(fid, i)} fallback={fallback} />
+            <TitleField value={nodeNameOf(fid)} onRename={(n) => renameNode(fid, n)} className="text-[18px] font-semibold flex-1" />
+        </div>
+    );
+}
+
+export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles' | 'perms'; host?: PluginHost; peek?: PeekHandle }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
-    const m = kind === 'users' ? usersModel() : rolesModel();
+    const m = kind === 'users' ? usersModel() : kind === 'roles' ? rolesModel() : permsModel();
     // 🔴 줄 열기(→)는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 편집기를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
     const open = (id: string) => {
+        if (kind === 'perms') return;
         if (!peek) { setActiveAccountNode(id); return; }
-        peek.show(<div className="h-full overflow-auto">{kind === 'users' ? <UserEditor userId={id} /> : <RoleEditor roleId={id} />}</div>, { wideMin: 420 });
+        peek.show(<RecordPeek kind={kind} id={id} host={host} />, { wideMin: 420 });
     };
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
@@ -86,6 +147,7 @@ export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles'; hos
         const { RecordView } = rv;
         return (
             <div className="h-full flex flex-col">
+                <ListHeader kind={kind} />
                 <RecordView<Row>
                     fields={m.fields}
                     records={m.rows}
@@ -95,7 +157,7 @@ export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles'; hos
                     onCellChange={m.set}
                     onAddRecord={m.canAdd ? () => { m.add(); } : undefined}
                     onDeleteRecords={m.canDelete ? (ids) => ids.forEach(m.remove) : undefined}
-                    onOpenRecord={open}
+                    onOpenRecord={kind === 'perms' ? undefined : open}
                     onReorder={m.canEdit ? reorderAccount : undefined}
                     className="flex-1 min-h-0"
                 />

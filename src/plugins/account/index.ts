@@ -51,7 +51,7 @@ export const accountPlugin = definePlugin({
         provides: { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' },
         requires: { nodes: '^0.1' },
         // 사용자·역할 목록은 레코드 뷰를 빌린다(없으면 간이 목록) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2' },
+        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
         contributes: {
             // 🔴 약속 셋을 들고 온다(꾸러미 매니페스트). 켜진 account 가 호스트 약속 목록에 identity·credential·permit 를 올린다.
             interfaces: [
@@ -97,6 +97,12 @@ export const accountPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 360, squeeze: 'scroll' },
                 component: 'Roles',
+            }, {
+                // 권한 목록 — 「권한」 폴더를 누르면 열린다(권한 낱말 전부 · 설명 · 누가 가졌나 · 보기 스타일은 레코드 뷰)
+                id: 'perms', title: '권한', icon: 'shieldCheck', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Perms',
             }],
             // 프로젝트 암호만 설정에 남긴다(마스터용) — 사용자·역할·정책은 노드로 옮겨 설정에서 걷었다.
             settings: {
@@ -115,6 +121,7 @@ export const accountPlugin = definePlugin({
         Editor: ({ host, peek }) => createElement(AccountEditor, { host, peek }),
         Users: ({ host, peek }) => createElement(AccountList, { kind: 'users', host, peek }),
         Roles: ({ host, peek }) => createElement(AccountList, { kind: 'roles', host, peek }),
+        Perms: ({ host, peek }) => createElement(AccountList, { kind: 'perms', host, peek }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──

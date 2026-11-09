@@ -19,6 +19,7 @@ import * as core from './core';
 export const ROOT_TYPE = 'account.root';            // 싱글턴 — 계정 전체의 뿌리(보이는 노드)
 export const USERS_FOLDER_TYPE = 'account.users';   // 자동 슬롯 — 사용자들이 사는 폴더
 export const ROLES_FOLDER_TYPE = 'account.roles';   // 자동 슬롯 — 역할들이 사는 폴더
+export const PERMS_FOLDER_TYPE = 'account.perms';   // 자동 슬롯 — 권한 목록(켜진 플러그인이 낸 권한 낱말 전부 · 누가 가졌나)
 export const USER_TYPE = 'account.user';
 export const ROLE_TYPE = 'account.role';
 export const POLICY_TYPE = 'account.policy';   // 싱글턴
@@ -28,6 +29,8 @@ export const SECRET_TYPE = 'account.secret';   // 싱글턴 — 프로젝트 암
 const EDITOR_ID = 'account.editor';
 const USERS_ID = 'account.users';
 const ROLES_ID = 'account.roles';
+const PERMS_ID = 'account.perms';
+const folderEmoji = (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; };
 
 /** 사용자 노드 data — 🔴 그 타입을 등록한 계정 플러그인만 읽고 쓴다(불투명 칸). */
 export interface UserData {
@@ -85,13 +88,23 @@ export const accountNodeTypeImpl = {
     // 사용자·역할 폴더 — 구조물이라 이름/옮기기/지우기 모두 막고, 보기 권한 없으면 숨긴다.
     usersFolder: {
         open: (host: PluginHost) => { host.workspace.open(USERS_ID, { where: 'center' }); },   // 누르면 「사용자」 탭(레코드 뷰 목록)
-        can: () => ({ rename: false, move: false, delete: false }),
+        emoji: folderEmoji,
+        // 이름은 바꿔도 된다(폴더는 타입으로 찾는다) — 탭 머리에서 바로(쥔님 2026-11-09)
+        can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.users.view'),
     } satisfies NodeTypeImplFns,
     rolesFolder: {
         open: (host: PluginHost) => { host.workspace.open(ROLES_ID, { where: 'center' }); },   // 누르면 「역할」 탭(레코드 뷰 목록)
-        can: () => ({ rename: false, move: false, delete: false }),
+        emoji: folderEmoji,
+        can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.roles.view'),
+    } satisfies NodeTypeImplFns,
+    // 권한 목록 폴더 — 누르면 「권한」 탭(권한 낱말 전부 · 설명 · 그 권한을 담은 역할·직접 받은 사용자). 정책 보기 권한으로 숨긴다.
+    permsFolder: {
+        open: (host: PluginHost) => { host.workspace.open(PERMS_ID, { where: 'center' }); },
+        emoji: folderEmoji,
+        can: () => ({ rename: core.isMaster(), move: false, delete: false }),
+        hidden: () => !core.can('account.policy.view'),
     } satisfies NodeTypeImplFns,
     // 사용자 — 누르면 편집 탭 · 만들기/고치기/지우기 각각 권한으로 가림 · 보기 권한 없으면 숨김. 탐색기로 만들면 빈 UserData 로.
     user: {
@@ -121,16 +134,17 @@ export const accountNodeTypeImpl = {
  * 보이는 노드 타입 — 루트(싱글턴) → 자동 슬롯(사용자 폴더·역할 폴더·정책). 사용자·역할은 폴더 밑에 「새로 만들기」로.
  *   🔴 record 아님(탐색기에 보인다) · 아래 '숨김' 넷만 record: true(프로젝트 암호·증명 비밀은 어떤 경우에도 안 보인다).
  */
-export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'rolesFolder' | 'user' | 'role' | 'policy'>[] = [
+export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'rolesFolder' | 'permsFolder' | 'user' | 'role' | 'policy'>[] = [
     {
         type: ROOT_TYPE, label: '계정', icon: 'key',
-        container: { accepts: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE] },
+        container: { accepts: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, PERMS_FOLDER_TYPE, POLICY_TYPE] },
         create: { label: '계정' }, unique: 'tree',
-        slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE],
+        slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, PERMS_FOLDER_TYPE, POLICY_TYPE],
         impl: 'root',
     },
     { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, openable: true, impl: 'usersFolder' },
     { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, openable: true, impl: 'rolesFolder' },
+    { type: PERMS_FOLDER_TYPE, label: '권한', icon: 'shieldCheck', openable: true, impl: 'permsFolder' },
     // 🔴 사용자·역할은 나무에 안 띄운다(record · 쥔님 2026-11-09 *"하위노드로 띄우지 말고 레코드 뷰로"*) — 폴더를 열면 목록에 한 줄씩, 만들기도 목록에서.
     { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, record: true, impl: 'user' },
     { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, record: true, impl: 'role' },
