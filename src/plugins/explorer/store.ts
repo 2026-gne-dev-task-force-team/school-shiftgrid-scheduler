@@ -398,6 +398,13 @@ function doRemove(ids: string[]): void {
     hostRef?.notify({ title: `${what}를 휴지통으로 옮겼습니다`, action: { label: '되돌리기', commandId: 'explorer.undo' }, key: 'explorer.trashed', timeout: 8000 });
 }
 
+/** 노드 틀(⋯ 메뉴)의 「휴지통으로」 — 선택과 무관하게 이 노드만. can.delete 는 여기서 한 번 더 거른다(경고 문구는 틀이 먼저 물었다). */
+export function trashNode(id: string): void {
+    const n = state.tree.nodes[id];
+    if (!n || id === state.tree.root || id === state.tree.trash || !canDo(n.type, id, 'delete')) return;
+    doRemove([id]);
+}
+
 /** 인라인 「지울까요?」 확정 — confirmDelete 경고를 받아들여 지운다. */
 export function confirmRemove(): void {
     const c = state.deleteConfirm;

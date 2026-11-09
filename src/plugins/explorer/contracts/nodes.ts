@@ -176,18 +176,48 @@ export interface NodeHeaderProps {
     nodeId: string;
     /** 이 머리가 놓인 탭(leaf) — 주면 노드 이름이 바뀔 때 탭 제목도 같이 고친다. */
     leafId?: string;
-    /** 머리 모양 — bar(탭 머리줄 · 기본 · 시간표 머리가 기준) / page(큰 얼굴 · 아이콘이 위 줄, 제목·속성·본문이 한 왼쪽 선). */
-    variant?: 'bar' | 'page';
-    /** 아이콘 글자 크기(토큰 클래스) — variant 기본값을 덮는다. */
-    iconSizeClass?: string;
-    /** 제목 입력 클래스 — variant 기본값을 덮는다. */
-    titleClass?: string;
     /** 아이콘이 없을 때 보일 것 — 기본은 그 타입의 기본 아이콘. */
     fallback?: ReactNode;
     /** 제목 입력칸 접근성 이름 · 빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
     titleAriaLabel?: string;
     titlePlaceholder?: string;
     onTitleEnter?: () => void;
+    /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행의 제목 칸)의 이름 바꾸기 길 — 없으면 노드 이름만 고친다. */
+    onRename?: (name: string) => void;
+}
+
+/**
+ * nodes.Frame 속성 — 모든 노드 화면(탭)과 옆으로 열기(피크)의 겉틀 하나(Q5 R1).
+ *   🔑 구조: 상단 줄(‹ 위로·경로 + 액션바 + ⋯ 메뉴) → 큰 머리(nodes.Header page 꼴) → 툴바 자리 → 본문.
+ *   ⛔ 화면이 제 머리·윗줄을 따로 짜지 않는다 — 이 틀 하나만 쓴다. 상단 줄은 모든 노드가 같은 꼴, 툴바는 본문 종류마다.
+ */
+export interface NodeFrameProps {
+    nodeId: string;
+    /** 이 틀이 놓인 탭(leaf) — 주면 이름이 바뀔 때 탭 제목도 창틀 setTitle 로 같이 고친다(피크는 안 준다). */
+    leafId?: string;
+    /** ‹ 단추 — 주면 상단 줄 왼쪽에 「‹ 라벨」이 선다(시작 화면·목록으로 돌아가기). 경로는 이 뒤에 이어진다. */
+    onBack?: () => void;
+    backLabel?: string;
+    /** 액션바 — 노드 수준 토글(있으면). ⋯ 메뉴 왼쪽에 선다. 본문 편집 동작은 여기 말고 toolbar. */
+    actions?: ReactNode;
+    /** ⋯ 메뉴 맨 위에 보탤 항목(공통 항목·타입 menu 앞) — 본문이 아는 노드 수준 동작(예: 마크다운 복사·실행 취소). */
+    menu?: MenuEntry[];
+    /** 툴바 — 본문 바로 위(본문 종류마다: 컬렉션 보기 탭·시트 서식·달력 오늘/이동). 페이지 전체 동작은 ⋯ 로. */
+    toolbar?: ReactNode;
+    /** 큰 머리 오른쪽 곁 — 개수·상태 글자 같은 것(단추 아님). */
+    headerExtra?: ReactNode;
+    /** 본문 폭 — full(칸 전체 · 컬렉션·시간표·달력) / page(읽기 폭 · 문서) / wide(조금 더 넓은 읽기 폭 · 시트). 머리·툴바도 같은 폭에 선다. */
+    width?: 'full' | 'page' | 'wide';
+    /** 머리부터 본문까지 한 덩이로 스크롤(문서·시트) — 아니면 머리·툴바는 고정, 본문 칸이 남은 높이를 채운다. */
+    scroll?: boolean;
+    /** 아이콘이 없을 때 보일 것 · 제목 입력 접근성 이름·빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
+    fallback?: ReactNode;
+    titleAriaLabel?: string;
+    titlePlaceholder?: string;
+    onTitleEnter?: () => void;
+    onRename?: (name: string) => void;
+    /** 본문. 함수면 큰 머리를 틀이 안 그리고 넘겨 준다 — 본문 안(같은 왼쪽 선·같이 스크롤)에 직접 놓을 때(페이지 편집기). */
+    children: ReactNode | ((header: ReactNode) => ReactNode);
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
@@ -223,6 +253,8 @@ export interface NodesApi {
     setBody(id: string, body: unknown): void;
     /** 🔑 노드 공통 머리 부품 — 아이콘 고르기 + 제목 입력(탐색기·탭 제목에 같이 반영). 뷰가 제 머리줄 안에 끼운다. */
     Header: ComponentType<NodeHeaderProps>;
+    /** 🔑 노드 화면 겉틀 — 상단 줄(경로·액션바·⋯) + 큰 머리 + 툴바 자리 + 본문. 모든 노드 화면과 옆으로 열기가 이것 하나만 쓴다(Q5). */
+    Frame: ComponentType<NodeFrameProps>;
     /** 🔑 끼워 넣기 부품 — 그 타입의 embed 모습(없으면 링크 줄). 지워진 노드면 안내 줄. */
     Embed: ComponentType<EmbedProps>;
     move(id: string, parentId: string, index?: number): void;

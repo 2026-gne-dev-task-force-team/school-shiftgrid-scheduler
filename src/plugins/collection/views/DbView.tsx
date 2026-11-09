@@ -8,7 +8,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Icon, undoKey } from '../../../pane-ui-system';
+import { Button, Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
@@ -28,7 +28,7 @@ function useDbSnapshot() {
 
 export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
-    const Header = getNodesApi()?.Header;
+    const Frame = getNodesApi()?.Frame;
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
@@ -44,6 +44,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         return <StartScreen />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
+    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
 
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });
@@ -61,17 +62,13 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
 
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
-            <div className="shrink-0 px-6 pt-6 pb-2 flex items-end gap-3">
-                {Header && <Header nodeId={id} leafId={leaf.id} variant="page"
-                    fallback={<Icon name="table" size={26} className="text-muted" />} />}
-                {snap.trashedRows > 0 && (
-                    <button type="button" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}
-                        className="shrink-0 h-row px-2 rounded border border-line text-[12px] text-muted hover:text-text inline-flex items-center gap-1">
-                        <Icon name="undo" size={13} />휴지통의 행 {snap.trashedRows}개 복원
-                    </button>
-                )}
-            </div>
-            <div className="flex-1 min-h-0">
+            <Frame nodeId={id} leafId={leaf.id}
+                headerExtra={snap.trashedRows > 0 && (
+                    <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}>
+                        <Icon name="undo" size={13} /> 휴지통의 행 {snap.trashedRows}개 복원
+                    </Button>
+                )}>
+            <div className="h-full">
                 <RecordView
                     fields={doc.fields}
                     records={records}
@@ -101,6 +98,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                     }}
                 />
             </div>
+            </Frame>
         </div>
     );
 }

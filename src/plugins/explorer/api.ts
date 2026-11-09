@@ -18,6 +18,7 @@ import { parentOf } from './model/tree';
 import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import { NodeHeader } from './views/NodeHeader';
+import { NodeFrame } from './views/NodeFrame';
 import { NodeEmbed } from './views/NodeEmbed';
 import { createElement } from 'react';
 import {
@@ -143,6 +144,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         setIcon(id, icon) { apiSetField(id, 'icon', icon); },
         setBody(id, body) { apiSetField(id, 'body', body); },
         Header: NodeHeader,
+        Frame: NodeFrame,
         Embed: NodeEmbed,
         move(id, parentId, index) { apiMove(id, parentId, index); },
         remove(id) { apiRemove(id); },

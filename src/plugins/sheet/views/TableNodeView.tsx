@@ -24,7 +24,8 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
     if (!activeId || !node || inTrash(activeId)) return <StartScreen />;
 
     const doc = docOf(activeId);
-    const Header = getNodesApi()?.Header;
+    const Frame = getNodesApi()?.Frame;
+    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
 
     const decorate = (rowId: string, key: string): CellDecoration | undefined => {
         const tone = doc.rowTones?.[rowId] ?? doc.colTones?.[key];
@@ -38,23 +39,9 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
     };
 
     return (
-        // 노션 페이지처럼 — 가운데 정렬된 읽기 폭(≈900px) · 큰 제목 · 넉넉한 여백. 표가 더 넓으면 표 자체가 가로 스크롤.
-        <div className="h-full overflow-auto">
-            <div className="mx-auto w-full max-w-[900px] px-8 pt-6 pb-16">
-                {/* 표 목록으로 돌아가기 — 시작 화면(새로 만들기 + 목록)으로. */}
-                <button
-                    type="button"
-                    onClick={() => setActiveTable(null)}
-                    className="mb-4 flex items-center gap-1 h-btn px-2 -ml-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.04] select-none"
-                >
-                    <Icon name="left" size={12} /> 목록
-                </button>
-                <div className="mb-6 flex">
-                    {Header
-                        ? <Header nodeId={activeId} leafId={leafId} variant="page"
-                            fallback={<Icon name="table" size={30} className="text-muted" />} />
-                        : <h1 className="text-[32px] font-bold leading-tight tracking-tight text-text truncate select-none">{node.name}</h1>}
-                </div>
+        // 노션 페이지처럼 — 가운데 정렬된 읽기 폭 · 큰 머리 · 넉넉한 여백(틀이 쥔다). 표가 더 넓으면 표 자체가 가로 스크롤.
+        <Frame nodeId={activeId} leafId={leafId} onBack={() => setActiveTable(null)} backLabel="목록" width="wide" scroll
+            fallback={<Icon name="table" size={30} className="text-muted" />}>
                 <Table
                     columns={doc.cols}
                     rows={doc.rows}
@@ -75,7 +62,6 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     onColor={setTone}
                     onCommit={(tx) => writeDoc(activeId, applyTx(docOf(activeId), tx))}
                 />
-            </div>
-        </div>
+        </Frame>
     );
 }

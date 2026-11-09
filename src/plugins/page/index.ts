@@ -26,7 +26,7 @@ const EDITOR_ID = 'page.editor';
 const pageDocApi: PageDocApi = {
     version: 1,
     PageDoc: (p) => createElement(PageEditor, {
-        host: p.host, docKey: p.docKey, title: p.title, onRename: p.onRename, icon: p.icon, onSetIcon: p.onSetIcon, properties: p.properties,
+        host: p.host, docKey: p.docKey, onRename: p.onRename, properties: p.properties,
         load: () => { const v = p.value as Page | undefined; return v && Array.isArray(v.blocks) && v.blocks.length > 0 ? v : emptyPage(); },
         save: (pg) => p.onChange(pg),
     }),

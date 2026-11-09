@@ -6,6 +6,7 @@
 import type { RecordViewApi } from './contracts/collection';
 import { RecordView } from './RecordView';
 import { PropertyList } from './views/PropertyList';
+import { RecordPage } from './views/RecordPage';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { normalizeRelation, relationToText } from './schema';
@@ -15,6 +16,7 @@ export const recordViewApi: RecordViewApi = {
     version: 2,
     RecordView,
     PropertyList,
+    RecordPage,
     fieldTypes,
     schema: { planConvert, normalizeRelation, relationToText },
     defineCollection,

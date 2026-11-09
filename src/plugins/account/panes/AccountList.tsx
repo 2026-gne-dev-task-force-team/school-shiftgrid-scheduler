@@ -52,19 +52,6 @@ function permsModel() {
     return { rows, fields, canAdd: false, canDelete: false, canEdit: false, add: () => '', remove: (_id: string) => {} };
 }
 
-/** 탭 머리 — 폴더 노드의 아이콘·이름을 탭 안에서 바로 바꾼다(페이지 편집기와 같은 결). */
-function ListHeader({ kind, leafId }: { kind: AccountKind | 'perms'; leafId?: string }) {
-    const fid = accountFolderId(kind);
-    const Header = getNodesApi()?.Header;
-    if (!fid || !Header) return null;
-    const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={18} className="text-muted" />;
-    return (
-        <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
-            <Header nodeId={fid} leafId={leafId} fallback={fallback} />
-        </div>
-    );
-}
-
 export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 'perms'; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
@@ -79,9 +66,11 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
         peek.show(<RecordPage id={id} host={host} />, { wideMin: 480 });
     };
     const { RecordView } = rv;
-    return (
+    const fid = accountFolderId(kind);
+    const Frame = getNodesApi()?.Frame;
+    const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={30} className="text-muted" />;
+    const table = (
         <div className="h-full flex flex-col">
-            <ListHeader kind={kind} leafId={leafId} />
             <RecordView<Row>
                 fields={m.fields}
                 records={m.rows}
@@ -99,4 +88,5 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
             />
         </div>
     );
+    return fid && Frame ? <Frame nodeId={fid} leafId={leafId} fallback={fallback}>{table}</Frame> : table;
 }
