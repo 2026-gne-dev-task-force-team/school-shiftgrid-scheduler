@@ -5,11 +5,14 @@
  *   손 편집은 전부 model.ts 순수 함수로 돌린 뒤 저장(applyEdit) · 특별 적용·일정은 schedule.ts.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { DateField, Icon } from '../../../pane-ui-system';
+import { DateField, Icon, IconPicker, TitleField } from '../../../pane-ui-system';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+// 🔴 import type 만 — table 약속(값은 host.modules.use('table')).
+import type { TableApi } from '../../table-editor/contracts/table';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,
-    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash,
+    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash, renameNode, sheetIconOf, setSheetIcon,
 } from '../nodes';
 import { StartScreen } from './StartScreen';
 import {
@@ -17,9 +20,10 @@ import {
     addRow, removeRow, addColumn, removeColumn, renameRow, renameColumn, setRowTime, setCellText,
     toggleColumnKind, toggleRangeKind, setRangeSpec,
 } from '../model';
-import { SimpleGrid, type GridColumn, type GridRowHead, type GridCellView, type GridSelection } from './grid-slot';
+import { SimpleGrid, TableGrid, type GridColumn, type GridRowHead, type GridCellView, type GridSelection } from './grid-slot';
 
-export function GridTab() {
+export function GridTab({ host }: { host?: PluginHost }) {
+    const tableApi = host?.modules.use<TableApi>('table') ?? null;
     const activeId = useActiveSheet();
     // 노드가 바뀔 때만 다시 그린다(둘 다 같은 recompute 로 갱신 — 편집도 여기로 전파된다).
     const sheetNodes = useSyncExternalStore(subscribeNodes, getSheetNodes, getSheetNodes);
@@ -76,8 +80,9 @@ export function GridTab() {
                 <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />
-                <span className="font-medium text-text truncate">{node?.name ?? '시간표'}</span>
+                <IconPicker icon={sheetIconOf(activeId)} onSetIcon={(i) => setSheetIcon(activeId, i)} sizeClass="text-[18px]"
+                    fallback={<Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />} />
+                <TitleField value={node?.name ?? '시간표'} onRename={(n) => renameNode(activeId, n)} className="font-medium flex-1" />
                 {kind === 'special' && <span className="text-[11px] text-accent">특별 시간표</span>}
                 {kind === 'special' && (
                     <button type="button" className={btn} onClick={() => { const p = parentSheetOf(activeId); if (p) getNodesApi()?.open(p); }}>
@@ -92,9 +97,11 @@ export function GridTab() {
                 <button type="button" className={btn} disabled={nRows <= 1} onClick={() => { edit((d) => removeRow(d, selRow)); setSel(null); }}><Icon name="trash" size={12} /> 행</button>
                 <button type="button" className={btn} onClick={() => { edit((d) => addColumn(d)); }}><Icon name="plus" size={12} /> 열</button>
                 <button type="button" className={btn} disabled={nCols <= 1} onClick={() => { edit((d) => removeColumn(d, selCol)); setSel(null); }}><Icon name="trash" size={12} /> 열</button>
+                {!tableApi && <>
                 <span className="w-px h-4 bg-line mx-1" />
                 <button type="button" className={btn} disabled={!mergeOk} onClick={() => { if (sel) { edit((d) => mergeCells(d, sel)); } }}><Icon name="layers" size={12} /> 병합</button>
                 <button type="button" className={btn} disabled={!unmergeOk} onClick={() => { if (sel) { edit((d) => unmergeCells(d, sel.col0, sel.row0)); } }}><Icon name="x" size={12} /> 병합 해제</button>
+                </>}
                 <span className="w-px h-4 bg-line mx-1" />
                 <button type="button" className={btn} onClick={() => { edit((d) => toggleColumnKind(d)); setSel(null); }}>
                     열 꼴: {data.columns.kind === 'weekday' ? '요일' : '일차'}
@@ -132,6 +139,9 @@ export function GridTab() {
 
             {/* 표 자리 */}
             <div className="flex-1 overflow-auto">
+                {tableApi ? (
+                    <TableGrid api={tableApi} data={data} rowTimeEdit={rowTimeEdit} edit={edit} />
+                ) : (
                 <SimpleGrid
                     columns={columns}
                     rows={rows}
@@ -145,6 +155,7 @@ export function GridTab() {
                     rowTimeEdit={rowTimeEdit}
                     emptyHint="빈 표 — 행·열을 더해 쓴다"
                 />
+                )}
             </div>
 
             {/* 특별 시간표 패널(시간표일 때만) */}

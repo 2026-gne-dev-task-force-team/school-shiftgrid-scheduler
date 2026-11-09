@@ -26,6 +26,8 @@ export const timetableGridPlugin = definePlugin({
         ...manifest,
         // 🔴 시간표·특별은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 표 편집기가 있으면 그리드를 그걸로 그린다(없으면 간이 표).
+        supports: { table: '^0.1' },
         contributes: {
             // 그리드 화면(싱글턴·가운데·안 가름 — 달력·명단과 같은 placement).
             views: [{
@@ -46,7 +48,7 @@ export const timetableGridPlugin = definePlugin({
 
     components: {
         // 그리드 화면 — 보고 있는 시간표(store)를 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Grid: () => createElement(GridTab),
+        Grid: ({ host }: { host: PluginHost }) => createElement(GridTab, { host }),
     },
     commands: {
         // 리본 「시간표 열기」 — 보고 있는 시간표는 그대로 두고 화면만 연다(없으면 시작 화면 — 새 시간표·목록).

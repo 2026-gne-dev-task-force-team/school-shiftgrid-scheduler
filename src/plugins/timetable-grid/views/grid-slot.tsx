@@ -22,6 +22,13 @@
  */
 import { useRef } from 'react';
 import { Icon } from '../../../pane-ui-system';
+// 🔴 import type 만 — table 약속은 표 편집기 꾸러미 contracts 에서(값은 host.modules.use('table')).
+import type { TableApi, TableColumn, TableRow, TableTx, MergeRegion } from '../../table-editor/contracts/table';
+import type { TimetableData } from '../model';
+import {
+    columnCount, colName, getCell, isCovered, setCellText, renameRow, renameColumn, setRowTime,
+    addRow, removeRow, addColumn, removeColumn, mergeCells, unmergeCells, canMerge,
+} from '../model';
 
 export interface GridColumn { key: string; title: string; }
 export interface GridRowHead { key: string; title: string; start: number; end: number; }
@@ -66,6 +73,95 @@ function inSel(sel: GridSelection | null, col: number, row: number): boolean {
     const c0 = Math.min(sel.col0, sel.col1), c1 = Math.max(sel.col0, sel.col1);
     const r0 = Math.min(sel.row0, sel.row1), r1 = Math.max(sel.row0, sel.row1);
     return col >= c0 && col <= c1 && row >= r0 && row <= r1;
+}
+
+// ── 표 편집기 판(2026-11-09 쥔님 「시간표는 표 편집기로 안 들어갔다」) ──────────────────────────
+//   행 머리 = 첫 칸 '_name'(머리 열) · 행 시각 = 둘째 칸 '_time'(「09:00~09:50」) · 나머지 c0…cN 이 시간표 열.
+//   행 높이 = 시간(분 × PX_PER_MIN) — 경계 끌기(row-weight)가 끝 시각을 민다. 한 트랜잭션 = applyEdit 한 번.
+const NAME = '_name';
+const TIME = '_time';
+const colIdx = (key: string): number => (/^c\d+$/.test(key) ? Number(key.slice(1)) : -1);
+
+/** 표 트랜잭션 → 시간표 데이터(순수). shortcut: 열 넣기는 늘 끝에 붙고 행 옮기기는 무시한다(모델에 그 연산이 없다). */
+export function applyGridTx(data: TimetableData, tx: TableTx): TimetableData {
+    let d = data;
+    const rowAt = (id: string): number => d.rows.findIndex((r) => r.id === id);
+    for (const ch of tx.cells) {
+        const ri = rowAt(ch.rowId);
+        if (ri < 0) continue;
+        if (ch.key === NAME) d = renameRow(d, ri, ch.value);
+        else if (ch.key === TIME) {
+            const m = /^\s*(\d{1,2}:\d{2})\s*[~-]\s*(\d{1,2}:\d{2})\s*$/.exec(ch.value);
+            const s = m ? parseMin(m[1]) : null, e = m ? parseMin(m[2]) : null;
+            if (s !== null && e !== null && e > s) d = setRowTime(d, ri, s, e);
+        } else if (colIdx(ch.key) >= 0) d = setCellText(d, colIdx(ch.key), ri, ch.value);
+    }
+    for (const a of tx.rows?.add ?? []) for (let i = 0; i < a.count; i++) d = addRow(d, a.at + i);
+    for (const id of tx.rows?.remove ?? []) { const ri = rowAt(id); if (ri >= 0 && d.rows.length > 1) d = removeRow(d, ri); }
+    for (const _ of tx.cols?.add ?? []) d = addColumn(d);
+    const rm = (tx.cols?.remove ?? []).map(colIdx).filter((c) => c >= 0).sort((a, b) => b - a);
+    for (const c of rm) if (columnCount(d.columns) > 1) d = removeColumn(d, c);
+    for (const r of tx.cols?.rename ?? []) if (colIdx(r.key) >= 0) d = renameColumn(d, colIdx(r.key), r.title);
+    for (const w of tx.axis?.rowWeight ?? []) {
+        const ri = rowAt(w.id); if (ri < 0) continue;
+        const { start, end } = d.rows[ri].range;
+        const dm = Math.round(w.delta / PX_PER_MIN / 5) * 5;
+        d = setRowTime(d, ri, start, Math.max(start + 5, end + dm));
+    }
+    for (const c of tx.merge?.clear ?? []) { const ri = rowAt(c.rowId); if (ri >= 0 && colIdx(c.key) >= 0) d = unmergeCells(d, colIdx(c.key), ri); }
+    for (const m of tx.merge?.set ?? []) {
+        const ri = rowAt(m.rowId), ci = colIdx(m.key);
+        if (ri < 0 || ci < 0) continue;
+        const sel = { col0: ci, row0: ri, col1: ci + m.colSpan - 1, row1: ri + m.rowSpan - 1 };
+        if (canMerge(d, sel).ok) d = mergeCells(d, sel);
+    }
+    return d;
+}
+
+/** 시간표 데이터 → 표 편집기 모양(순수). */
+export function gridToTable(data: TimetableData, rowTimeEdit: boolean): { columns: TableColumn[]; rows: TableRow[]; merges: MergeRegion[] } {
+    const n = columnCount(data.columns);
+    const columns: TableColumn[] = [
+        { key: NAME, title: '행', width: 72 },
+        ...(rowTimeEdit ? [{ key: TIME, title: '시각', width: 104, align: 'center' as const }] : []),
+        ...Array.from({ length: n }, (_, c) => ({ key: `c${c}`, title: colName(data, c), width: 112 })),
+    ];
+    const merges: MergeRegion[] = [];
+    const rows: TableRow[] = data.rows.map((r, ri) => {
+        const cells: Record<string, string> = { [NAME]: r.name, [TIME]: `${fmt(r.range.start)}~${fmt(r.range.end)}` };
+        for (let c = 0; c < n; c++) {
+            if (isCovered(data, c, ri)) { cells[`c${c}`] = ''; continue; }
+            const cell = getCell(data, c, ri);
+            cells[`c${c}`] = cell?.text ?? '';
+            if ((cell?.rowSpan ?? 1) > 1 || (cell?.colSpan ?? 1) > 1) merges.push({ rowId: r.id, key: `c${c}`, rowSpan: cell?.rowSpan ?? 1, colSpan: cell?.colSpan ?? 1 });
+        }
+        return { id: r.id, cells, weight: rowTimeEdit ? Math.max(MIN_ROW_PX, Math.round((r.range.end - r.range.start) * PX_PER_MIN)) : undefined };
+    });
+    return { columns, rows, merges };
+}
+
+/** 표 편집기 판 그리드 — 칸 이동·복사 붙여넣기·병합·행/열 넣고 빼기·열 폭·행 높이 끌기를 표 편집기가 쥔다. */
+export function TableGrid({ api, data, rowTimeEdit, edit }: {
+    api: TableApi;
+    data: TimetableData;
+    rowTimeEdit: boolean;
+    edit: (fn: (d: TimetableData) => TimetableData) => void;
+}) {
+    const { columns, rows, merges } = gridToTable(data, rowTimeEdit);
+    const features = ['rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:clip', 'fill', ...(rowTimeEdit ? ['row-weight'] : [])];
+    return (
+        <div className="p-2">
+            <api.Table
+                columns={columns}
+                rows={rows}
+                merges={merges}
+                headerCol
+                features={features}
+                onCommit={(tx) => edit((d) => applyGridTx(d, tx))}
+                emptyHint="빈 표 — 행·열을 더해 쓴다"
+            />
+        </div>
+    );
 }
 
 export function SimpleGrid(props: GridSlotProps) {
