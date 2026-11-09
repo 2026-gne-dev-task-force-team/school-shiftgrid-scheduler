@@ -161,3 +161,31 @@ describe('newNode — accepts 안 받는 부모를 피해 루트에', () => {
         expect(getState().tree.nodes[id1].children).toEqual([]);
     });
 });
+
+describe('만들기 → 열림(노션 방식) — 이름 정하기가 끝나면 그 노드를 연다', () => {
+    function reg(opened: string[]) {
+        registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
+        registerType({ type: 'pg', label: '페이지', icon: 'file', openable: true, open: (id: string) => { opened.push(id); }, create: { label: '페이지' } });
+    }
+    it('이름 확정(Enter) 뒤에 열린다 — 만드는 순간엔 아직 안 열린다', async () => {
+        const { commitRename } = await import('./store');
+        const opened: string[] = [];
+        reg(opened);
+        newNode('pg');
+        const id = getState().selectedId!;
+        expect(opened).toEqual([]);
+        commitRename('내 페이지');
+        expect(opened).toEqual([id]);
+    });
+    it('이름 취소(Esc)여도 열린다 · 두 번 열리지 않는다', async () => {
+        const { cancelRename, commitRename } = await import('./store');
+        const opened: string[] = [];
+        reg(opened);
+        newNode('pg');
+        const id = getState().selectedId!;
+        cancelRename();
+        expect(opened).toEqual([id]);
+        commitRename('x');
+        expect(opened).toEqual([id]);
+    });
+});

@@ -237,10 +237,20 @@ export function startInput(id: string, kind: string, initial: string, placeholde
     emit();
 }
 
+/** 🔑 방금 만든 노드 — 이름 정하기가 끝나면(확정·취소 모두) 활성 칸에 연다(노션 방식). createInput 타입은 해당 없음. */
+let pendingOpenId: string | null = null;
+function openIfPending(id: string): void {
+    if (pendingOpenId !== id) return;
+    pendingOpenId = null;
+    openById(id);
+}
+
 export function cancelRename(): void {
     if (state.renamingId == null) return;
+    const rid = state.renamingId;
     state = { ...state, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null };
     emit();
+    openIfPending(rid);
 }
 
 /**
@@ -254,6 +264,7 @@ export function commitRename(value: string): void {
     const kind = state.renameKind;
     if (kind === 'name') {
         apply((t) => rename(t, id, value, permitRename), { patch: { renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null } });
+        openIfPending(id);
         return;
     }
     // 값 입력 — 입력을 먼저 닫고(재진입 방지) 타입에게 넘긴다.
@@ -339,6 +350,7 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const inputPatch = ci
         ? { renameKind: 'create', renameInitial: '', renamePlaceholder: ci.placeholder ?? null }
         : { renameKind: 'name', renameInitial: null, renamePlaceholder: null };
+    pendingOpenId = ci ? null : id;
     apply(
         (t) => {
             const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf, permitCreate);
