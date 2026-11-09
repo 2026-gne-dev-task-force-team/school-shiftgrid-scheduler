@@ -4,7 +4,7 @@
  *   읽기 전용 표로 버티는지(최소 대체)를 본다. 깊은 contentEditable 조작은 jsdom 이 약하니
  *   「됐다」의 뼈대(모델·키·마크다운)는 core 테스트가 박고, 여기선 뷰가 뜨는지를 본다.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { PageView } from './views/PageView';
@@ -121,5 +121,45 @@ describe('PageView 통합', () => {
         expect(bodyIds()).toEqual(['b', 'c']);
         key(container.querySelector('[role="textbox"]')!, 'z', { metaKey: true });
         expect(bodyIds()).toEqual(['a', 'b', 'c']);
+    });
+
+    // ── R5-7 — 고른 블록 상태의 키: 공통 undoKey · ⌘X 는 클립보드 쓰기가 끝난 뒤에만 지운다 ──
+    it('고른 뒤 ⌘Z 로 되돌리고 Ctrl+Y 로 다시 한다(공통 undoKey) · 조합 중엔 안 받는다', () => {
+        open3();
+        key(rows()[0].querySelector('[role="textbox"]')!, 'Escape');
+        key(container.querySelector('[tabindex="-1"]')!, 'Backspace');
+        expect(bodyIds()).toEqual(['b', 'c']);
+        const tb = () => container.querySelector('[role="textbox"]')!;
+        key(tb(), 'z', { metaKey: true, isComposing: true });
+        expect(bodyIds()).toEqual(['b', 'c']);
+        key(tb(), 'z', { metaKey: true });
+        expect(bodyIds()).toEqual(['a', 'b', 'c']);
+        key(tb(), 'y', { ctrlKey: true });
+        expect(bodyIds()).toEqual(['b', 'c']);
+    });
+
+    it('⌘X — 클립보드 쓰기가 끝나기 전엔 지우지 않고, 끝나면 지운다 · 쓰기가 막히면 지우지 않는다', async () => {
+        const orig = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+        let done!: () => void;
+        const write = vi.fn(() => new Promise<void>((res) => { done = res; }));
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: write }, configurable: true });
+        try {
+            open3();
+            key(rows()[1].querySelector('[role="textbox"]')!, 'Escape');
+            key(container.querySelector('[tabindex="-1"]')!, 'x', { metaKey: true });
+            expect(write).toHaveBeenCalledTimes(1);
+            expect(bodyIds()).toEqual(['a', 'b', 'c']);   // 아직 안 지운다
+            await act(async () => { done(); await Promise.resolve(); });
+            expect(bodyIds()).toEqual(['a', 'c']);
+
+            // 쓰기 실패 → 글이 남는다
+            write.mockImplementationOnce(() => Promise.reject(new Error('denied')));
+            key(rows()[0].querySelector('[role="textbox"]')!, 'Escape');
+            key(container.querySelector('[tabindex="-1"]')!, 'x', { metaKey: true });
+            await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+            expect(bodyIds()).toEqual(['a', 'c']);
+        } finally {
+            if (orig) Object.defineProperty(navigator, 'clipboard', orig); else delete (navigator as unknown as Record<string, unknown>).clipboard;
+        }
     });
 });
