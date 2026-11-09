@@ -39,6 +39,8 @@ export interface DragLeafState {
 export interface UseDragLeafOpts {
     /** 좁은 화면 등에서 드래그·길게누르기를 통째로 끈다(쥔님: 모바일은 스플릿 안 함) */
     enabled: boolean;
+    /** 끌기가 꺼져도(enabled=false) 우클릭 메뉴는 살린다 */
+    contextAlways?: boolean;
     /** 가로 탭 줄이면 'x'(기본) · 세로 아이콘 띠면 'y'. 판정 문턱은 등방이라 이건 미리보기 방향용 */
     axis?: DragAxis;
     /** 우클릭(마우스) · 길게 눌러 안 움직이고 뗌(손가락) → 그 탭/줄의 메뉴. el 로 어느 탭인지 더듬는다 */
@@ -74,7 +76,7 @@ function freshState(): Internal {
 }
 
 export function useDragLeaf(opts: UseDragLeafOpts) {
-    const { enabled, onContext, onDrop, axis = 'x' } = opts;
+    const { enabled, contextAlways, onContext, onDrop, axis = 'x' } = opts;
     const [drag, setDrag] = useState<DragLeafState | null>(null);
     const st = useRef<Internal>(freshState());
 
@@ -112,12 +114,12 @@ export function useDragLeaf(opts: UseDragLeafOpts) {
     }, [reset, clearTimer, detachWindow, axis]);
 
     const onContextMenu = useCallback((e: React.MouseEvent) => {
-        if (!enabled) return;
+        if (!enabled && !contextAlways) return;
         e.preventDefault();
         const el = e.target as HTMLElement;
         reset();
         onContext(e.clientX, e.clientY, el);
-    }, [enabled, onContext, reset]);
+    }, [enabled, contextAlways, onContext, reset]);
 
     const onPointerDown = useCallback((e: React.PointerEvent) => {
         if (!enabled) return;

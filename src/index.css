@@ -140,6 +140,9 @@
  *  SVG·이미지는 브라우저가 「이미지 끌기」로 떼 가므로 -webkit-user-drag 로 막고, 파이어폭스는 draggable 속성으로.
  */
 @layer base {
+  /* #48 전역 포커스 링 — primitives(FOCUS_RING)와 같은 2px accent. 키보드 포커스에만(마우스 클릭엔 :focus-visible 이 안 켜진다) */
+  :focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 0; }
+
   html {
     user-select: none;
     -webkit-user-select: none;
