@@ -28,7 +28,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { ContextMenu, IconButton, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
+import { ContextMenu, IconButton, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -710,6 +710,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 value={renaming.text}
                                                 onChange={(e) => setRenaming({ key: col.key, text: e.target.value })}
                                                 onKeyDown={(e) => {
+                                                    if (isImeEnter(e)) return;   // 한글 조합 중 Enter 는 글자 확정일 뿐 이름 확정이 아니다
                                                     if (e.key === 'Enter') { renameCol(col.key, renaming.text); setRenaming(null); }
                                                     else if (e.key === 'Escape') setRenaming(null);
                                                 }}
@@ -944,7 +945,7 @@ function renderEditor(
             inputMode={col.type === 'number' ? 'numeric' : undefined}
             onChange={(e) => core.setEditText(e.target.value)}
             onKeyDown={(e) => {
-                if (e.nativeEvent.isComposing) return;
+                if (e.nativeEvent.isComposing || isImeEnter(e)) return;   // 🔴 조합 중(사파리 keyCode 229 Enter 포함)엔 확정·이동 키를 안 받는다
                 const k = e.key;
                 if (k === 'Escape') { e.preventDefault(); core.cancelEdit(); return; }
                 if (k === 'Enter') {

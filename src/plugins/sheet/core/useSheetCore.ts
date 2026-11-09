@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
-import { undoKey, parseClipboard, toTsv } from '../../../pane-ui-system';
+import { undoKey, isImeEnter, parseClipboard, toTsv } from '../../../pane-ui-system';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';
@@ -264,6 +264,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (k === 'ArrowRight') { e.preventDefault(); impl.current.moveTo(act.r, act.c + 1, e.shiftKey); return; }
             if (k === 'Tab') { e.preventDefault(); impl.current.moveTo(act.r, act.c + (e.shiftKey ? -1 : 1)); return; }
             if (k === 'Enter') {
+                if (isImeEnter(e)) return;   // 🔴 조합 중 Enter 는 칸 이동을 일으키지 않는다(편집창이 이어받는다)
                 e.preventDefault();
                 // 엑셀식 — Enter 확정+아래, Shift+Enter 위(편집창 밖에서는 이동만). toggle 칸은 편집 시작.
                 if (a.cellKind(act.r, act.c) === 'toggle') impl.current.beginEdit(act.r, act.c);
