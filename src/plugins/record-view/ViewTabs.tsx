@@ -4,7 +4,7 @@
  */
 import { useRef, useState } from 'react';
 import { Icon } from '../../pane-ui-system';
-import { Popover } from './Popover';
+import { Popover } from '../../pane-ui-system';
 import { isImeEnter } from './fields/ime';
 import { defaultView, uid } from './view-state';
 import type { RecordField, ViewDef } from './contracts/record-view';

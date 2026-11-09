@@ -3,8 +3,7 @@
  *   🔴 데이터는 안 쥔다 — 보기 상태만 바꾸는 콜백을 받는다. 색·치수는 토큰 클래스로만.
  */
 import { useRef, useState } from 'react';
-import { Icon, IconButton } from '../../pane-ui-system';
-import { Popover } from './Popover';
+import { DateField, Icon, IconButton, Popover } from '../../pane-ui-system';
 import { isRule, opDefsFor, opNeedsValue, opsFor } from './logic';
 import { fieldTypes } from './fields/registry';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/record-view';
@@ -32,7 +31,7 @@ function ValueEditor({ field, rule, onChange }: { field: RecordField; rule: Filt
         return <input type="number" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} />;
     }
     if (input === 'date') {
-        return <input type="date" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)} />;
+        return <DateField className={`${selCls} flex-1`} value={String(val)} onChange={(v) => onChange(v)} />;
     }
     return <input type="text" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)} placeholder="값" />;
 }

@@ -5,7 +5,7 @@
  *   손 편집은 전부 model.ts 순수 함수로 돌린 뒤 저장(applyEdit) · 특별 적용·일정은 schedule.ts.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { DateField, Icon } from '../../../pane-ui-system';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,
@@ -115,12 +115,12 @@ export function GridTab() {
                 </button>
                 {data.range.kind === 'period' ? (
                     <>
-                        <input type="date" value={data.range.start}
-                            onChange={(e) => { const end = data.range.kind === 'period' ? data.range.end : ''; edit((d) => setRangeSpec(d, { kind: 'period', start: e.target.value, end })); }}
+                        <DateField value={data.range.start}
+                            onChange={(v) => { const end = data.range.kind === 'period' ? data.range.end : ''; edit((d) => setRangeSpec(d, { kind: 'period', start: v, end })); }}
                             className="bg-bg border border-line rounded px-1 py-0.5 text-text outline-none focus:border-accent" />
                         <span>~</span>
-                        <input type="date" value={data.range.end}
-                            onChange={(e) => { const start = data.range.kind === 'period' ? data.range.start : ''; edit((d) => setRangeSpec(d, { kind: 'period', start, end: e.target.value })); }}
+                        <DateField value={data.range.end}
+                            onChange={(v) => { const start = data.range.kind === 'period' ? data.range.start : ''; edit((d) => setRangeSpec(d, { kind: 'period', start, end: v })); }}
                             className="bg-bg border border-line rounded px-1 py-0.5 text-text outline-none focus:border-accent" />
                     </>
                 ) : (

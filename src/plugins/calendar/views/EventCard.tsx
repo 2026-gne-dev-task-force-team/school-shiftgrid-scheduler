@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Icon, Toggle } from '../../../pane-ui-system';
+import { DateField, Icon, Toggle } from '../../../pane-ui-system';
 import { isoMinuteOf, parseLocal, type CalEvent, type StoreInfo, type EventData } from '../events';
 import { renameEvent, updateEventData, moveEvent, removeEvent, collectEventForExport } from '../nodes';
 import { writeIcs } from '../ics';
@@ -98,9 +98,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
             <label className="flex flex-col gap-0.5">
                 <span className={LABEL}>시작</span>
                 {event.allDay ? (
-                    <input type="date" value={toDate(event.startMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
+                    <DateField value={toDate(event.startMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
                 ) : (
-                    <input type="datetime-local" value={toDateTime(event.startMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
+                    <DateField time value={toDateTime(event.startMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
                 )}
             </label>
 
@@ -108,9 +108,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
                 <span className={LABEL}>끝</span>
                 {event.allDay ? (
                     // 종일 끝은 「포함하는 마지막 날」로 보이고(끝−1), 저장은 그 다음날 자정(반열린)
-                    <input type="date" value={toDate(event.endMs - 60_000)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setEnd(d.getTime() + DAY); }} className={INPUT} />
+                    <DateField value={toDate(event.endMs - 60_000)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setEnd(d.getTime() + DAY); }} className={INPUT} />
                 ) : (
-                    <input type="datetime-local" value={toDateTime(event.endMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setEnd(d.getTime()); }} className={INPUT} />
+                    <DateField time value={toDateTime(event.endMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setEnd(d.getTime()); }} className={INPUT} />
                 )}
             </label>
 

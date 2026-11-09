@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { Icon, IconButton } from '../../pane-ui-system';
-import { Popover } from './Popover';
+import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
