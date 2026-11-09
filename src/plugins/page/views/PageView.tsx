@@ -41,7 +41,7 @@ interface SlashState { blockId: string; query: string; index: number; }
 export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }) {
     const activeId = useActivePage();
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
-    if (!activeId || inTrash(activeId)) return <StartScreen />;
+    if (!activeId || inTrash(activeId)) return <StartScreen leafId={leafId} />;
     return (
         <PageEditor
             host={host}
@@ -570,11 +570,11 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                     <div
                         ref={rootRef}
                         tabIndex={-1}
-                        className="max-w-3xl mx-auto px-6 py-8 select-text outline-none"
+                        className="max-w-3xl mx-auto px-6 pt-3 pb-16 select-text outline-none"
                         onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); setSelected([]); } }}
                         onKeyDown={onRootKeyDown}
                     >
-                        <div className="mb-1 flex" key={activeId}>{header}</div>
+                        <div className="flex" key={activeId}>{header}</div>
                         {properties && <div className="mb-3">{properties}</div>}
                         {page.blocks.map((b, i) => (
                             <BlockRow

@@ -63,8 +63,8 @@
     "roleToolbar": 0
   },
   "plugins/explorer": {
-    "bareButton": 7,
-    "arbPx": 20,
+    "bareButton": 5,
+    "arbPx": 17,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0
@@ -92,7 +92,7 @@
   },
   "plugins/properties": {
     "bareButton": 0,
-    "arbPx": 2,
+    "arbPx": 1,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0
@@ -126,8 +126,8 @@
     "roleToolbar": 0
   },
   "plugins/timetable-grid": {
-    "bareButton": 2,
-    "arbPx": 9,
+    "bareButton": 0,
+    "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0
@@ -141,7 +141,7 @@
   },
   "pane-ui-system": {
     "bareButton": 26,
-    "arbPx": 61,
+    "arbPx": 60,
     "cmdIdString": 0,
     "ctxDirect": 6,
     "roleToolbar": 0

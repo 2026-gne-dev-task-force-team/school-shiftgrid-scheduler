@@ -42,6 +42,7 @@ export {
     type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
     type WorkspaceBridge,
 } from './store';
+export { useLauncherTab, LAUNCHER_GLYPH } from './launcher';
 export { resolveRibbonEntries, ribbonBase, type RibbonEntry } from './ribbon';
 export {
     reportStorageError, clearStorageErrors, useStorageErrors, listStorageErrors, classifyStorageError,

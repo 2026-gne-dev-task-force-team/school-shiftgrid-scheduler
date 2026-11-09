@@ -82,7 +82,7 @@ describe('nodes.Frame', () => {
         expect(document.activeElement).toBe(container.querySelector('input[aria-label="제목"]'));
 
         click(container.querySelector('button[aria-label="더보기"]'));
-        click(menuItem('휴지통으로'));
+        click(menuItem('삭제'));
         expect(getState().tree.nodes[getState().tree.trash].children).toContain(childId);
     });
 

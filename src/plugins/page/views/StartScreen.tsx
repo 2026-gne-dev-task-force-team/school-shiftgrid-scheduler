@@ -5,12 +5,14 @@
  */
 import { useSyncExternalStore } from 'react';
 import { StartScreen as StartScreenBase } from '../../../pane-ui-system';
+import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import { subscribePageNodes, getPageRev, livePages, createPage, parentNameOf, getNodesApi } from '../nodes';
 
-export function StartScreen() {
+export function StartScreen({ leafId }: { leafId?: string }) {
+    useLauncherTab(leafId, '새 페이지');
     // 노드가 바뀌면 다시 읽는다(rev 스냅샷).
     useSyncExternalStore(subscribePageNodes, getPageRev, getPageRev);
-    const items = livePages().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id) }));
+    const items = livePages().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id), emoji: n.icon || undefined }));
 
     const open = (id: string) => { getNodesApi()?.open(id); };
     const make = () => { const id = createPage(); if (id) open(id); };
@@ -19,7 +21,7 @@ export function StartScreen() {
         <StartScreenBase
             icon="fileText"
             title="페이지"
-            description="새로 만들거나, 만들어 둔 페이지를 고른다."
+            noun="페이지"
             newLabel="새 페이지"
             newHint="빈 페이지가 바로 열린다"
             items={items}

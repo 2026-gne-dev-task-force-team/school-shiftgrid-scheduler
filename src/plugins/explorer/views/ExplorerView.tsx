@@ -13,11 +13,13 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
-import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf, undoKey } from '../../../pane-ui-system';
+import { Icon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
-import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
+import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
+import { nodeMenu } from './node-menu';
+import { TrashConfirm } from './TrashConfirm';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
@@ -112,7 +114,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
 }
 
 export function ExplorerView({ host }: { host: PluginHost }) {
-    const { tree, selectedIds, selectedId, renamingId, renameInitial, renamePlaceholder, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
+    const { tree, selectedIds, selectedId, renamingId, renameKind, renameInitial, renamePlaceholder, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
 
     const [query, setQuery] = useState('');
     // create: 헤더 + 단추가 연 「새로 만들기」 메뉴(우클릭과 같은 후보 · 모바일엔 우클릭이 없다 — 쥔님 2026-11-09)
@@ -356,19 +358,21 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         }
         // 「새로 만들기」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용.
         // 🔴 우클릭 = 「이 노드에서」(via 'context') — 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(+ 단추는 형제로).
-        const items: MenuEntry[] = createItems('context');
+        // 🔑 선택한 노드가 있으면 노드 틀 ⋯ 와 같은 한 목록(node-menu) — 열기 · 이름 바꾸기 · 하위 새로 만들기 · 위로/아래로 · 타입 menu · 삭제.
+        //    🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
         if (selNode && !inTrash) {
-            // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
             const multi = selectedIds.length > 1;
-            items.push({ label: '이름 바꾸기', icon: 'edit', commandId: 'explorer.rename', disabled: multi || !canDo(selNode.type, selectedId!, 'rename') });
-            items.push({ label: multi ? `삭제 (${selectedIds.length}개)` : '삭제', icon: 'trash', danger: true, commandId: 'explorer.remove', disabled: !canDo(selNode.type, selectedId!, 'delete') });
-            if (narrow) {
-                items.push({ label: '위로', icon: 'up', commandId: 'explorer.move-up' });
-                items.push({ label: '아래로', icon: 'down', commandId: 'explorer.move-down' });
-            }
-            const extra = typeMenu(selNode, selNode.id);
-            if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
+            return nodeMenu(selectedId!, {
+                viaCommands: true,
+                open: !multi && canOpenType(selNode.type),
+                create: multi ? [] : createItems('context'),
+                move: !multi,
+                renameBlocked: multi,
+                rename: { run: () => run('explorer.rename'), commandId: 'explorer.rename' },
+                remove: { run: () => run('explorer.remove'), commandId: 'explorer.remove', label: multi ? `삭제 (${selectedIds.length}개)` : '삭제' },
+            });
         }
+        const items: MenuEntry[] = createItems('context');
         if (items.length === 0) items.push(...folderFallback('context', selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder')));
         return items;
     };
@@ -418,15 +422,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
             </div>
 
-            {/* 🔑 인라인 「지울까요?」 — 노드 타입이 confirmDelete 로 요청한 경고(⛔ window.confirm 안 씀) */}
-            {deleteConfirm && (
-                <div className="flex items-center gap-2 px-pad py-1.5 border-b border-line shrink-0 bg-bad/5">
-                    <Icon name="trash" size={13} className="text-bad shrink-0" />
-                    <span className="flex-1 min-w-0 text-[12px] text-text">{deleteConfirm.msg}</span>
-                    <button type="button" onClick={() => run('explorer.confirm-remove')} className="px-1.5 py-0.5 rounded text-[11px] text-bad hover:bg-bad/10">지우기</button>
-                    <button type="button" onClick={() => run('explorer.cancel-remove')} className="px-1.5 py-0.5 rounded text-[11px] text-muted hover:bg-text/[0.06]">취소</button>
-                </div>
-            )}
+            {/* 🔑 「휴지통으로 옮길까요?」 — 노드 틀과 같은 확인 창(노드 타입이 confirmDelete 로 요청한 경고 · ⛔ window.confirm 안 씀) */}
+            {deleteConfirm && <TrashConfirm msg={deleteConfirm.msg} onConfirm={() => run('explorer.confirm-remove')} onCancel={() => run('explorer.cancel-remove')} />}
 
             <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
                 {rows.length === 0 && (
@@ -511,27 +508,18 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                 : <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />}
 
                             {isRenaming ? (
-                                <input
-                                    autoFocus
-                                    key={`${row.id}:${renameInitial ?? ''}`}
-                                    defaultValue={renameInitial ?? row.node.name}
-                                    placeholder={renamePlaceholder ?? undefined}
-                                    onFocus={(e) => e.currentTarget.select()}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onDoubleClick={(e) => e.stopPropagation()}
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onBlur={(e) => commitRename(e.currentTarget.value)}
-                                    onKeyDown={(e) => {
-                                        e.stopPropagation();
-                                        if (e.key === 'Enter') {
-                                            if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-                                            commitRename(e.currentTarget.value);
-                                        } else if (e.key === 'Escape') {
-                                            cancelRename();
-                                        }
-                                    }}
-                                    className="flex-1 min-w-0 text-[13px] leading-none bg-bg text-text border border-accent rounded px-1 py-0.5 outline-none"
-                                />
+                                // 🔑 공통 InlineRename(Enter·Esc·blur·한글 조합 Enter 무시) — 줄의 드래그·두 번 누르기는 감싼 칸에서 막는다
+                                <span className="flex-1 min-w-0 flex" onDoubleClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                                    <InlineRename
+                                        key={`${row.id}:${renameInitial ?? ''}`}
+                                        value={renameInitial ?? row.node.name}
+                                        placeholder={renamePlaceholder ?? undefined}
+                                        raw={renameKind !== 'name'}
+                                        className="flex-1 !h-auto text-[13px] leading-none py-0.5"
+                                        onCommit={commitRename}
+                                        onCancel={cancelRename}
+                                    />
+                                </span>
                             ) : (
                                 <span className={`flex-1 min-w-0 truncate text-[13px] leading-none ${known ? 'text-text' : 'text-muted'}`}>
                                     {row.node.name}

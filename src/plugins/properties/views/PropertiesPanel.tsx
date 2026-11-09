@@ -3,7 +3,7 @@
  *   🔴 이 패널은 대상의 뜻을 모른다 — 칸은 그 대상을 가진 플러그인이 contributes.properties 로 낸다.
  */
 import { useSyncExternalStore } from 'react';
-import { SectionHeader } from '../../../pane-ui-system';
+import { EmptyState, SectionHeader } from '../../../pane-ui-system';
 import { listPropertiesPanes, useContribVersion, type PluginHost, type PropertiesTarget } from '../../../pane-ui-system/plugin';
 import type { SelectionApi } from '../../selection/contracts/selection';
 
@@ -26,7 +26,7 @@ export function PropertiesBody({ target }: { target: PropertiesTarget | null }) 
 }
 
 function Empty({ text }: { text: string }) {
-    return <p className="px-pad py-3 text-[12px] text-muted select-none">{text}</p>;
+    return <EmptyState compact icon="info" title={text} />;
 }
 
 const noSub = () => () => {};

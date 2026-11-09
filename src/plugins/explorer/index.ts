@@ -12,6 +12,7 @@ import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { onTypeRegistered, createTypes, createIconOf, type NodeTypeDef } from './model/types';
 import { makeNodesApi } from './api';
+import { followActivatedLeaf } from './leaf-follow';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
 import {
@@ -81,6 +82,8 @@ export function registerTypeCommands(host: PluginHost): Disposable {
 function onActivate(host: PluginHost): void {
     void initStore(host);
     registerTypeCommands(host);
+    // 🔑 탭이 바뀌면 탐색기 강조·속성 패널이 그 탭의 노드를 따라간다(노드 아닌 화면이면 풀림) — leaf-follow.ts
+    host.workspace.on('activate', followActivatedLeaf);
 }
 
 /**

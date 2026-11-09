@@ -42,7 +42,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     }, [host]);
 
     if (!snap) {
-        return <StartScreen />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
+        return <StartScreen leafId={leaf.id} />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
     if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;

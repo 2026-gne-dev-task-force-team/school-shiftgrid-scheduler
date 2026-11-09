@@ -211,7 +211,7 @@ export interface NodeFrameProps {
     width?: 'full' | 'page' | 'wide';
     /** 머리부터 본문까지 한 덩이로 스크롤(문서·시트) — 아니면 머리·툴바는 고정, 본문 칸이 남은 높이를 채운다. */
     scroll?: boolean;
-    /** 아이콘이 없을 때 보일 것 · 제목 입력 접근성 이름·빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
+    /** (옛 칸 — 이제 무시한다: 머리 아이콘은 틀이 그 타입 자신의 것으로 그린다) · 제목 입력 접근성 이름·빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
     fallback?: ReactNode;
     titleAriaLabel?: string;
     titlePlaceholder?: string;

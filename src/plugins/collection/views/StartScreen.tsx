@@ -5,17 +5,19 @@
  */
 import { useSyncExternalStore } from 'react';
 import { StartScreen as StartScreenBase } from '../../../pane-ui-system';
+import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import { subscribeDb, getDbRev, liveDbs, createDb, setActiveDb, getNodesApi } from '../nodes';
 
-export function StartScreen() {
+export function StartScreen({ leafId }: { leafId?: string }) {
+    useLauncherTab(leafId, '새 컬렉션');
     useSyncExternalStore(subscribeDb, getDbRev, getDbRev);
     const items = liveDbs();
     const make = () => { const id = createDb(); if (id) setActiveDb(id); };
     return (
         <StartScreenBase
-            icon="table"
+            icon="database"
             title="컬렉션"
-            description="새로 만들거나, 만들어 둔 컬렉션를 고른다."
+            noun="컬렉션"
             newLabel="새 컬렉션"
             newHint="빈 컬렉션가 바로 열린다"
             items={items}

@@ -6,16 +6,27 @@
  */
 import type { IconName } from './Icon';
 import { Icon } from './Icon';
+import { EmptyState } from './EmptyState';
+import { josa } from './josa';
 
 /** 목록 한 줄 — id(열 때 넘길 키)·name(보일 이름)·folder(든 폴더 이름, 맨 위면 없음). */
-export interface StartItem { id: string; name: string; folder?: string | null }
+export interface StartItem {
+    id: string; name: string; folder?: string | null;
+    /** 그 노드의 사용자 이모지 — 있으면 아이콘 대신 그린다 */
+    emoji?: string;
+    /** 그 노드 타입 자신의 아이콘 — 없으면 화면 아이콘 */
+    icon?: IconName;
+}
 
 export function StartScreen({
-    icon, title, description, newLabel, newHint, items, onNew, onOpen, disabled = false,
+    icon, title, noun, description, newLabel, newHint, items, onNew, onOpen, disabled = false,
 }: {
     icon: IconName;
     title: string;
-    description: string;
+    /** 이름씨(「페이지」「컬렉션」) — 안내·빈 상태 문구를 받침에 맞는 조사로 만든다(「컬렉션를」 금지). */
+    noun: string;
+    /** 안내 문구를 직접 쓸 때(없으면 noun 으로 만든다) */
+    description?: string;
     newLabel: string;
     newHint?: string;
     items: StartItem[];
@@ -32,7 +43,7 @@ export function StartScreen({
                         <Icon name={icon} size={18} className="text-muted" />
                         <span className="text-[16px] font-medium">{title}</span>
                     </div>
-                    <div className="text-[12px] text-muted">{description}</div>
+                    <div className="text-[12px] text-muted">{description ?? `새로 만들거나, 만들어 둔 ${josa(noun, '을/를')} 고른다.`}</div>
                 </div>
 
                 <button
@@ -53,7 +64,7 @@ export function StartScreen({
                 <div className="flex flex-col gap-1">
                     <div className="text-[11px] text-muted px-1">만들어 둔 것 · {items.length}</div>
                     {items.length === 0 ? (
-                        <div className="px-1 py-3 text-[12px] text-muted">아직 없다.</div>
+                        <div className="rounded-lg border border-line"><EmptyState compact icon={icon} title={`만들어 둔 ${noun}${josa(noun, '이/가').slice(noun.length)} 없다`} description={`위의 「${newLabel}」로 시작한다.`} /></div>
                     ) : (
                         <ul className="flex flex-col rounded-lg border border-line overflow-hidden">
                             {items.map((it) => (
@@ -63,7 +74,9 @@ export function StartScreen({
                                         onClick={() => onOpen(it.id)}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-text/[0.04]"
                                     >
-                                        <Icon name={icon} size={14} className="text-muted shrink-0" />
+                                        {it.emoji
+                                            ? <span className="w-4 text-center text-small leading-none shrink-0">{it.emoji}</span>
+                                            : <Icon name={it.icon ?? icon} size={14} className="text-muted shrink-0" />}
                                         <span className="text-[13px] text-text truncate">{it.name}</span>
                                         <span className="flex-1" />
                                         {it.folder && (
