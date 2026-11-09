@@ -14,6 +14,7 @@ import { clearDerived } from '../model/derive';
 import { NodeFrame } from './NodeFrame';
 import { Table } from '../../sheet/Table';
 import { CalBar, CalBarHost } from '../../calendar/views/CalBar';
+import { RecordView } from '../../collection/RecordView';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -138,5 +139,36 @@ describe('nodes.Frame', () => {
         expect(container.querySelectorAll('[role="toolbar"]').length).toBe(1);
         render(<CalBar><b>제자리</b></CalBar>);
         expect(container.querySelector('[role="toolbar"]')?.textContent).toBe('제자리');
+    });
+
+    // 🔑 Q12 — 컬렉션 정리 막대도 같은 자리: Frame 툴바 자리 안 · 스크롤 본문 밖 · 창틀 Toolbar 한 벌.
+    const FIELDS = [{ key: 't', label: '제목', type: 'text' as const }];
+    const REC = [{ id: 'a', t: '가' }];
+    const rv = (toolbarHost?: HTMLElement | null) => (
+        <RecordView fields={FIELDS} records={REC} getId={(r: { id: string }) => r.id} viewKey="q12.test" titleKey="t" toolbarHost={toolbarHost} />
+    );
+
+    it('Q12: 컬렉션 툴바(role=toolbar)가 Frame 툴바 자리 안에 있고 스크롤 본문 밖이다', () => {
+        function Coll() {
+            const [h, setH] = useState<HTMLElement | null>(null);
+            return <NodeFrame nodeId={childId} toolbar={<div ref={setH} />}>{rv(h)}</NodeFrame>;
+        }
+        render(<Coll />);
+        const bars = container.querySelectorAll('[role="toolbar"]');
+        expect(bars.length).toBe(1);
+        const slot = container.querySelector('[data-slot="toolbar"]')!;
+        expect(slot.contains(bars[0])).toBe(true);
+        expect(bars[0].closest('[data-rv-grid]')).toBeNull();
+        expect(slot.querySelector('[data-rv-search]')).not.toBeNull();
+        for (const a of ['filter', 'sort', 'hide']) expect(slot.querySelector(`[data-rv-${a}-btn]`)).not.toBeNull();
+        expect(container.querySelector('[data-rv-root] [role="toolbar"]')).toBeNull();   // 본문(보기) 안에는 없다
+    });
+
+    it('Q12: Frame 이 없으면 보기 맨 위에 창틀 Toolbar 로 · 자리가 아직 없으면(null) 안 그린다', () => {
+        render(rv());
+        expect(container.querySelectorAll('[role="toolbar"]').length).toBe(1);
+        expect(container.querySelector('[data-rv-root] [role="toolbar"]')).not.toBeNull();
+        render(rv(null));
+        expect(container.querySelectorAll('[role="toolbar"]').length).toBe(0);
     });
 });

@@ -290,6 +290,9 @@ export interface RecordViewProps<T> {
     onReorder?: (id: string, beforeId: string | null) => void;
     /** 하위 항목(행 밑에 행) — 넘기면 「수동 순서」일 때 트리로 그린다. 안 넘기면 평평한 표. */
     tree?: RecordTree<T>;
+    /** 🔑 정리 막대(검색·필터·정렬·칸)를 꽂을 자리 — Frame 의 toolbar 자리 div(머리 아래 · 본문 스크롤 밖).
+     *  안 주면(undefined) 보기 맨 위에 제자리로 그린다 · null 이면 자리가 아직 안 생긴 것(아무것도 안 그린다). */
+    toolbarHost?: HTMLElement | null;
     className?: string;
 }
 

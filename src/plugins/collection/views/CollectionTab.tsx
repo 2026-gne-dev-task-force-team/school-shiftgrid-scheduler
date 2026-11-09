@@ -44,6 +44,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     const rev = useSyncExternalStore(kit.subscribe, kit.rev, kit.rev);
     const activeId = kit.active();
     const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
     const titleKey = cfg.baseFields[0].key;
     const baseKeys = useMemo(() => cfg.baseFields.map((f) => f.key), [cfg]);
 
@@ -72,9 +73,10 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
 
     return (
         <div className="h-full select-none">
-            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" headerExtra={`${records.length}${cfg.unit}`}>
+            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" toolbar={<div ref={setBarHost} />} headerExtra={`${records.length}${cfg.unit}`}>
             <div className="h-full flex flex-col">
                 <RecordView<Rec>
+                    toolbarHost={barHost}
                     fields={fields}
                     records={records}
                     getId={(r) => r.id}

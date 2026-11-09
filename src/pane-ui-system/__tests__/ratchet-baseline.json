@@ -1,7 +1,7 @@
 {
   "plugins/account": {
-    "bareButton": 4,
-    "arbPx": 36,
+    "bareButton": 3,
+    "arbPx": 26,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0
@@ -14,8 +14,8 @@
     "roleToolbar": 0
   },
   "plugins/collection": {
-    "bareButton": 42,
-    "arbPx": 69,
+    "bareButton": 39,
+    "arbPx": 68,
     "cmdIdString": 2,
     "ctxDirect": 0,
     "roleToolbar": 0

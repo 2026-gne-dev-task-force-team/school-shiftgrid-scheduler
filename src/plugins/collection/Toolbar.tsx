@@ -1,9 +1,12 @@
 /**
  * 정리 막대 — 노션처럼 표 위에 선다: 검색 · 필터(그리고·또는, 2단) · 정렬(여러 개) · 칸 숨기기.
  *   🔴 데이터는 안 쥔다 — 보기 상태만 바꾸는 콜백을 받는다. 색·치수는 토큰 클래스로만.
+ *   줄 자체는 창틀 Toolbar 한 벌(Q12) — `host` 가 HTMLElement 면 Frame 의 toolbar 자리에 포털로 꽂고(머리 아래 · 본문 스크롤 밖),
+ *   undefined 면(Frame 이 없는 자리) 제자리에 그린다. null 이면 Frame 자리가 아직 안 생긴 것 — 아무것도 안 그린다(깜빡임 방지).
  */
-import { useRef, useState } from 'react';
-import { DateField, Icon, IconButton, Popover } from '../../pane-ui-system';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Button, DateField, Icon, IconButton, Popover, Toolbar as FrameToolbar } from '../../pane-ui-system';
 import { isRule, opDefsFor, opNeedsValue, opsFor } from './logic';
 import { fieldTypes } from './fields/registry';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
@@ -113,6 +116,7 @@ export function Toolbar({
     onFilter,
     onSorts,
     onHidden,
+    host,
 }: {
     fields: RecordField[];
     search: string;
@@ -123,16 +127,14 @@ export function Toolbar({
     onFilter: (f: FilterNode) => void;
     onSorts: (s: SortRule[]) => void;
     onHidden: (h: string[]) => void;
+    host?: HTMLElement | null;
 }) {
     const [open, setOpen] = useState<null | 'filter' | 'sort' | 'hide'>(null);
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
-    const filterBtn = useRef<HTMLButtonElement>(null);
-    const sortBtn = useRef<HTMLButtonElement>(null);
-    const hideBtn = useRef<HTMLButtonElement>(null);
 
-    const toggle = (which: 'filter' | 'sort' | 'hide', ref: React.RefObject<HTMLButtonElement | null>) => {
+    const toggle = (which: 'filter' | 'sort' | 'hide', btn: HTMLElement) => {
         if (open === which) { setOpen(null); return; }
-        if (ref.current) setAnchor(ref.current.getBoundingClientRect());
+        setAnchor(btn.getBoundingClientRect());
         setOpen(which);
     };
 
@@ -146,11 +148,29 @@ export function Toolbar({
         onSorts([...sorts, { key: f.key, dir: 'asc' }]);
     };
 
-    const chip = (active: boolean) =>
-        `h-row inline-flex items-center gap-1 px-2 rounded border text-[12px] transition-colors ${active ? 'border-accent text-text bg-text/[0.05]' : 'border-line text-muted hover:text-text'}`;
+    const chipProps = (active: boolean) => ({ variant: active ? ('accent' as const) : ('ghost' as const), size: 'sm' as const, className: 'shrink-0 inline-flex items-center gap-1 whitespace-nowrap' });
 
-    return (
-        <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-line shrink-0 flex-wrap">
+    const bar = (
+        <FrameToolbar
+            label="컬렉션 도구"
+            scroll
+            end={(
+                <>
+                    {/* 필터 */}
+                    <Button {...chipProps(ruleCount > 0)} data-rv-filter-btn onClick={(e) => toggle('filter', e.currentTarget)}>
+                        <Icon name="filter" size={14} />필터{ruleCount > 0 ? ` ${ruleCount}` : ''}
+                    </Button>
+                    {/* 정렬 */}
+                    <Button {...chipProps(sorts.length > 0)} data-rv-sort-btn onClick={(e) => toggle('sort', e.currentTarget)}>
+                        <Icon name="sort" size={14} />정렬{sorts.length > 0 ? ` ${sorts.length}` : ''}
+                    </Button>
+                    {/* 칸 숨기기 */}
+                    <Button {...chipProps(hidden.length > 0)} data-rv-hide-btn onClick={(e) => toggle('hide', e.currentTarget)}>
+                        <Icon name="eye" size={14} />칸{hidden.length > 0 ? ` ${hidden.length} 숨김` : ''}
+                    </Button>
+                </>
+            )}
+        >
             {/* 검색 */}
             <div className="flex items-center gap-1 h-row px-2 rounded border border-line bg-bg min-w-[120px]">
                 <Icon name="search" size={14} className="text-muted shrink-0" />
@@ -159,25 +179,15 @@ export function Toolbar({
                     value={search}
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="검색"
+                    aria-label="검색"
                     className="flex-1 min-w-0 bg-transparent text-[13px] text-text outline-none"
                 />
             </div>
+        </FrameToolbar>
+    );
 
-            <div className="flex-1" />
-
-            {/* 필터 */}
-            <button ref={filterBtn} type="button" data-rv-filter-btn className={chip(ruleCount > 0)} onClick={() => toggle('filter', filterBtn)}>
-                <Icon name="filter" size={14} />필터{ruleCount > 0 ? ` ${ruleCount}` : ''}
-            </button>
-            {/* 정렬 */}
-            <button ref={sortBtn} type="button" data-rv-sort-btn className={chip(sorts.length > 0)} onClick={() => toggle('sort', sortBtn)}>
-                <Icon name="sort" size={14} />정렬{sorts.length > 0 ? ` ${sorts.length}` : ''}
-            </button>
-            {/* 칸 숨기기 */}
-            <button ref={hideBtn} type="button" data-rv-hide-btn className={chip(hidden.length > 0)} onClick={() => toggle('hide', hideBtn)}>
-                <Icon name="eye" size={14} />칸{hidden.length > 0 ? ` ${hidden.length} 숨김` : ''}
-            </button>
-
+    const popovers = (
+        <>
             {open === 'filter' && anchor && (
                 <Popover anchor={anchor} align="right" width={340} onClose={() => setOpen(null)}>
                     <div className="flex flex-col gap-1.5" data-rv-filter-panel>
@@ -236,6 +246,9 @@ export function Toolbar({
                     </div>
                 </Popover>
             )}
-        </div>
+        </>
     );
+
+    if (host === null) return null;
+    return host ? <>{createPortal(bar, host)}{popovers}</> : <>{bar}{popovers}</>;
 }

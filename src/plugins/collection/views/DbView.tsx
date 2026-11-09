@@ -4,7 +4,7 @@
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -29,6 +29,7 @@ function useDbSnapshot() {
 export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
     const Frame = getNodesApi()?.Frame;
+    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
@@ -62,7 +63,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
 
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
-            <Frame nodeId={id} leafId={leaf.id}
+            <Frame nodeId={id} leafId={leaf.id} toolbar={<div ref={setBarHost} />}
                 headerExtra={snap.trashedRows > 0 && (
                     <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}>
                         <Icon name="undo" size={13} /> 휴지통의 행 {snap.trashedRows}개 복원
@@ -70,6 +71,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                 )}>
             <div className="h-full">
                 <RecordView
+                    toolbarHost={barHost}
                     fields={doc.fields}
                     records={records}
                     getId={(r) => r.id}
