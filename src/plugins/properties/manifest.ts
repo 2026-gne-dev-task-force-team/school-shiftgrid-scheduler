@@ -10,6 +10,7 @@ export const manifest: PluginManifest = {
     name: '속성',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'platform',
     description: '고른 것의 속성을 옆 패널에 보여 줍니다.',
     about: {
         what: '무언가를 고르면 그것의 속성을 옆 패널에 보여 줍니다. 무엇이 보일지는 그것을 만든 기능이 정합니다.',

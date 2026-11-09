@@ -10,6 +10,7 @@ export const manifest: PluginManifest = {
     name: '설정',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'platform',
     core: true,
     description: '앱의 설정을 모아 둔 화면입니다.',
     about: {

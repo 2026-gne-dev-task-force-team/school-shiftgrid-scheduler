@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     name: '시간표 그리드',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'domain',
     description: '시간표 한 장을 표로 그리는 편집기입니다.',
     about: {
         what: '시간표를 표로 그리고 고칩니다. 가로줄·세로줄을 요일이나 날짜로 두고, 칸에 글자를 적거나 여러 칸을 하나로 합칠 수 있습니다. 수업 시간표뿐 아니라 교대 근무표·당직표처럼 칸이 있는 표라면 무엇이든 만들 수 있습니다.',
