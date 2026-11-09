@@ -7,6 +7,7 @@
  * (tree.ts 는 순수하게 둔다 — localStorage 를 아는 건 이 파일뿐이다)
  */
 import { storageKey } from '../storage';
+import { reportSettingsSaveFail } from './save-fail';
 import {
     type Workspace, type Node, type Leaf,
     normalize, emptyWorkspace, emptyTabs,
@@ -104,5 +105,5 @@ export function saveWorkspace(ws: Workspace): void {
         // 🔴 피크(floating)는 「임시」다 — 저장하지 않는다(쥔님 2026-11-01: 다시 켜면 피크는 비어 있어야 한다, W9).
         //    floating 만 빈 배열로 덮어 넣는다(독·탭·비율은 그대로 보관).
         localStorage.setItem(workspaceKey(), JSON.stringify({ ...ws, floating: [] }));
-    } catch { /* 조용히 */ }
+    } catch (e) { reportSettingsSaveFail('작업 공간 배치', e); }
 }

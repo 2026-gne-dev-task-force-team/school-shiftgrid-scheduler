@@ -11,6 +11,7 @@
  * (출처: 옛 v2 `src/v2/panels.ts` — leftSplit 을 빼고 pinned 를 더했다.)
  */
 import { storageKey } from '../storage';
+import { reportSettingsSaveFail } from './save-fail';
 import { clampWidthTo } from './clamp';
 
 export const MIN_PANEL = 150;
@@ -86,7 +87,7 @@ export function savePanels(s: PanelState): void {
     try {
         if (typeof localStorage === 'undefined') return;
         localStorage.setItem(layoutKey(), JSON.stringify(s));
-    } catch { /* 조용히 */ }
+    } catch (e) { reportSettingsSaveFail('패널 배치', e); }
 }
 
 /**

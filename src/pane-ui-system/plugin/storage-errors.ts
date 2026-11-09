@@ -71,6 +71,11 @@ export function reportStorageError(e: StorageError): void {
     notify('frame', { level: 'error', title: '저장 실패', body: storageReasonText(e.reason), key: id });
 }
 
+/** 한 자리(scope,key)의 실패만 지운다 — 재시도가 성공했을 때 */
+export function clearStorageError(scope: string, key: string): void {
+    if (errors.delete(`${scope}\u0000${key}`)) emit();
+}
+
 /** 전부 지운다(상태바의 「지우기」) */
 export function clearStorageErrors(): void {
     if (errors.size === 0) return;

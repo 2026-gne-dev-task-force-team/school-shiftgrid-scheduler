@@ -155,6 +155,35 @@ export function saveTree(host: PluginHost, tree: Tree, changedIds: string[] | 'a
  *   🔴 한 트랜잭션(nodesWrite)에 put·del·__meta 를 묶는다. 성공해야 집합을 비운다 — 실패면 유지(다음에 다시).
  */
 export async function flushTree(): Promise<void> {
+    // 중복 호출 안전 — 쓰는 중이면 그 쓰기를 기다린 뒤, 그 사이 쌓인 게 있을 때만 한 번 더.
+    if (flushing) {
+        await flushing;
+        if (pendingHost && pendingTree && (dirty.size > 0 || fullRewrite)) return flushTree();
+        return;
+    }
+    const run = flushOnce();
+    flushing = run;
+    try { await run; } finally { if (flushing === run) flushing = null; }
+}
+
+let flushing: Promise<void> | null = null;
+
+/** 실패 재시도 — 지수 백오프(1s·2s·4s… 최대 30s). 성공하면 되돌린다. */
+const RETRY_BASE_MS = 1000;
+const RETRY_MAX_MS = 30000;
+let retryMs = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleRetry(): void {
+    if (retryTimer) return;
+    retryMs = retryMs ? Math.min(retryMs * 2, RETRY_MAX_MS) : RETRY_BASE_MS;
+    retryTimer = setTimeout(() => { retryTimer = null; void flushTree(); }, retryMs);
+}
+function resetRetry(): void {
+    retryMs = 0;
+    if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+}
+
+async function flushOnce(): Promise<void> {
     if (timer) { clearTimeout(timer); timer = null; }
     const host = pendingHost;
     const tree = pendingTree;
@@ -163,7 +192,8 @@ export async function flushTree(): Promise<void> {
     // 「전부 다시」 — 첫 쓰기·이사 재시도.
     if (fullRewrite) {
         const ok = await migrateToNodes(tree);
-        if (ok) { fullRewrite = false; dirty.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; }
+        if (ok) { fullRewrite = false; dirty.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; resetRetry(); }
+        else scheduleRetry();
         return;   // 실패면 fullRewrite·pending 유지 → 다음에 다시
     }
 
@@ -174,11 +204,11 @@ export async function flushTree(): Promise<void> {
         if (n) put.push(n); else del.push(id);     // 있으면 put, 없어졌으면 del
     }
     if (tree.rev !== lastRev) put.push(metaOf(tree));   // 머리는 rev 가 바뀌었을 때만
-    if (put.length === 0 && del.length === 0) { pendingHost = null; pendingTree = null; return; }
+    if (put.length === 0 && del.length === 0) { pendingHost = null; pendingTree = null; resetRetry(); return; }
 
     const ok = await nodesWrite({ put, del });
-    if (ok) { dirty.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; }
-    // 실패면 dirty·pending 유지 — 다음 saveTree/flush 가 다시 시도한다(실패 보고는 nodesWrite 가 했다).
+    if (ok) { dirty.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; resetRetry(); }
+    else scheduleRetry();   // 실패면 dirty·pending 유지 — 백오프로 자동 재시도(실패 보고는 nodesWrite 가 했다).
 }
 
 // 🔴 디바운스 중 탭을 닫으면 그 300ms 가 유실된다 — beforeunload·visibilitychange(hidden)에서 즉시 flush.
@@ -190,6 +220,7 @@ function bindFlush(): void {
     flushBound = true;
     const flush = () => { void flushTree(); };
     window.addEventListener('beforeunload', flush);
+    window.addEventListener('pagehide', flush);
     if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') flush();
@@ -205,5 +236,7 @@ export function __resetPersistForTest(): void {
     fullRewrite = false;
     lastRev = 0;
     if (timer) { clearTimeout(timer); timer = null; }
+    resetRetry();
+    flushing = null;
     flushBound = false;
 }
