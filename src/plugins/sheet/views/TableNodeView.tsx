@@ -4,7 +4,7 @@
  *   표(Table)는 데이터를 안 들고 있다(controlled) — onCommit(tx) 를 받아 이 화면이 문서에 적용하고 setData 한다.
  *   그래서 다시 열어도 남고, 같은 표를 두 탭에 열면 한쪽 편집이 다른 쪽에 비친다.
  */
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
@@ -16,6 +16,8 @@ import { StartScreen } from './StartScreen';
 
 export function TableNodeView({ leafId }: { leafId?: string }) {
     const activeId = useActiveTable();
+    // 툴바 자리 — Frame 의 toolbar 자리에 놓은 빈 요소. Table 이 단추를 거기에 그린다(본문 스크롤 밖 고정).
+    const [barHost, setBarHost] = useState<HTMLElement | null>(null);
     // 노드가 바뀔 때만 다시 읽는다(rev 스냅샷).
     useSyncExternalStore(subscribeTableNodes, getTableRev, getTableRev);
 
@@ -40,7 +42,8 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
 
     return (
         // 노션 페이지처럼 — 가운데 정렬된 읽기 폭 · 큰 머리 · 넉넉한 여백(틀이 쥔다). 표가 더 넓으면 표 자체가 가로 스크롤.
-        <Frame nodeId={activeId} leafId={leafId} onBack={() => setActiveTable(null)} backLabel="목록" width="wide" scroll
+        <Frame nodeId={activeId} leafId={leafId} onBack={() => setActiveTable(null)} backLabel="목록" scroll
+            toolbar={<div ref={setBarHost} />}
             fallback={<Icon name="table" size={22} className="text-muted" />}>
                 <Table
                     columns={doc.cols}
@@ -49,6 +52,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     features={DEFAULT_FEATURES}
                     hideColHeader
                     toolbar
+                    toolbarHost={barHost}
                     colTabs={doc.colTabs}
                     headerRow={doc.headerRow}
                     headerCol={doc.headerCol}

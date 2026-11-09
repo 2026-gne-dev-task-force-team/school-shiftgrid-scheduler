@@ -14,6 +14,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
 import { Icon, type PeekHandle } from '../../../pane-ui-system';
 import { getNodesApi } from '../nodes';
+import { CalBarHost } from './CalBar';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
@@ -32,6 +33,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     const [anchor, setAnchor] = useState<Date>(() => new Date());
     // 🔴 「범위 선택」의 단일 진실 — 모드를 바꿔도 남는다(쥔님 2026-11-02 *"선택할 수 있게 해줘 … 모든 뷰다"*). ⛔ 저장 안 함.
     const [selection, setSelection] = useState<CalSelection>(null);
+    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(저장소 범위일 때만 쓴다)
     const scope = useScope();
     const { stores } = useCalendarData();
     const scopeStore = scope ? stores.get(scope) : null;
@@ -112,9 +114,9 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     // 저장소를 열었으면 다른 노드 화면과 같은 틀(경로·큰 머리) + 「전체」로 되돌리기(쥔님 2026-11-02 범위 · 2026-11-09 얼굴 통일 · Q5 R1).
     if (!scopeStore || !Frame) return view;
     return (
-        <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체"
+        <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체" toolbar={<div ref={setBarHost} />}
             fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
-            <div className="h-full">{view}</div>
+            <CalBarHost.Provider value={barHost}><div className="h-full">{view}</div></CalBarHost.Provider>
         </Frame>
     );
 }

@@ -6,7 +6,7 @@
  *   · time 을 월·년·간트·일정 표에선 그 날들(startMs 날 ~ endMs-1 의 날)을 days 처럼 칠한다 → dayInSelection
  *   · days 를 시간 그리드에선 그 날들의 열 전체를 칠한다 → timeSliceForDay 가 종일 구간으로 돌려준다
  */
-import { hhmm, parseLocal } from './events';
+import { hhmm, isoMinuteOf, parseLocal } from './events';
 
 export type CalSelection =
     | { kind: 'days'; from: string; to: string }          // ISO 'YYYY-MM-DD' 양끝 포함, from <= to
@@ -127,4 +127,28 @@ export function selectionLabel(sel: CalSelection): string {
         return `${mdw(start)} ${hhmm(sel.startMs)}–${endTime} · ${dur}`;
     }
     return `${mdw(start)} ${hhmm(sel.startMs)} ~ ${mdw(endDay)} ${endTime} · ${dur}`;
+}
+
+/**
+ * 고른 범위를 쥔 채 우클릭 「새 일정」 — 클릭한 칸이 범위 안이면 범위 전체가 한 일정(W7 · 쥔님 *"여러 날짜 선택해서 우클릭해서 일정 생성하면 하루로만"*).
+ *   · days 범위 · 또는 월 보기(hitMs 없음)에서 time 범위가 걸친 날들 → 종일 [from 00:00, 끝날 다음 00:00)
+ *   · time 범위 + 시간 칸(hitMs)이 [start,end) 안 → 그 시각 구간 그대로
+ *   범위 밖을 눌렀거나 범위가 없으면 null — 부른 쪽이 옛 동작(눌린 칸 하나)으로 간다.
+ */
+export function eventFromSelection(sel: CalSelection, hitIso: string | null, hitMs: number | null = null): { start: string; end: string; allDay: boolean } | null {
+    if (!sel) return null;
+    if (sel.kind === 'time' && hitMs != null) {
+        if (hitMs < sel.startMs || hitMs >= sel.endMs) return null;
+        return { start: isoMinuteOf(new Date(sel.startMs)), end: isoMinuteOf(new Date(sel.endMs)), allDay: false };
+    }
+    if (!hitIso || !dayInSelection(sel, hitIso)) return null;
+    let from: Date, to: Date;
+    if (sel.kind === 'days') { from = parseLocal(sel.from); to = parseLocal(sel.to); }
+    else {
+        const a = new Date(sel.startMs), b = new Date(sel.endMs - 1);
+        from = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+        to = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    }
+    const end = new Date(to.getFullYear(), to.getMonth(), to.getDate() + 1);
+    return { start: isoMinuteOf(from), end: isoMinuteOf(end), allDay: true };
 }

@@ -11,6 +11,7 @@
  *
  *   trailing: 머리줄 오른쪽 끝에 그대로 그린다 — 메인이 전환 단추를 여기 꽂는다.
  */
+import { CalBar } from './CalBar';
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { ContextMenu, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
@@ -23,7 +24,7 @@ import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
-import { timeSelection, timeSliceForDay, floorToSnap, type CalSelection } from '../selection';
+import { timeSelection, timeSliceForDay, floorToSnap, eventFromSelection, type CalSelection } from '../selection';
 
 const SNAP_MIN = 30;   // 시간 칸 스냅 — 더블클릭 생성(onGridDouble)과 같은 30분 단위
 
@@ -198,9 +199,9 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         const t = ev.target as HTMLElement;
         const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
         if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
-        else if (t.closest('[data-day-offset]')) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAt(t, y) }] });
+        else if (t.closest('[data-day-offset]')) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAt(t, y, true) }] });
     });
-    function newAt(target: HTMLElement, clientY: number) {
+    function newAt(target: HTMLElement, clientY: number, useSelection = false) {
         const colEl = target.closest('[data-day-offset]') as HTMLElement | null;
         if (!colEl) return;
         const offset = Number(colEl.getAttribute('data-day-offset'));
@@ -208,6 +209,10 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         const raw = Math.floor(((clientY - rect.top) / HOUR_H) * 60);
         const min = Math.max(0, Math.min(23 * 60, Math.round(raw / 30) * 30));   // 30분 눈금 · 끝 1시간 여유
         const base = dayAt(offset);
+        if (useSelection) {   // 우클릭 「새 일정」 — 고른 범위 안을 눌렀으면 범위 전체(W7)
+            const span = eventFromSelection(selection, isoOf(base.getFullYear(), base.getMonth() + 1, base.getDate()), base.getTime() + min * 60_000);
+            if (span) { const sid = createEvent(span, ''); if (sid) card.open(sid); return; }
+        }
         const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
         const end = new Date(start.getTime() + 3_600_000);
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
@@ -250,15 +255,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
     return (
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
-            <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
-                <div className="min-w-0">
-                    <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
-                    {/* 「분기 뷰」(days=14)만 — 보고 있는 맨 왼쪽 날 기준 분기 한 줄(명목). 다른 폭엔 안 뜬다. */}
-                    {days === DENSE_DAYS && cols.length > 0 && (
-                        <div className="text-[11px] text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>
-                    )}
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
+            <CalBar end={<>
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button
                         type="button"
@@ -269,8 +266,15 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                     </button>
                     <IconButton icon="right" label="다음" onClick={() => go(1)} />
                     {trailing}
+                </>}>
+                <div className="min-w-0">
+                    <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
+                    {/* 「분기 뷰」(days=14)만 — 보고 있는 맨 왼쪽 날 기준 분기 한 줄(명목). 다른 폭엔 안 뜬다. */}
+                    {days === DENSE_DAYS && cols.length > 0 && (
+                        <div className="text-[11px] text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>
+                    )}
                 </div>
-            </header>
+            </CalBar>
 
             {/* 두 축 스크롤러 — 가로는 날, 세로는 시간 */}
             <div

@@ -14,6 +14,7 @@
  *   얼개: 기준 주(ANCHOR = 오늘이 든 주의 첫날)에서 앞뒤로 offset 주를 깐다. 처음엔 ±2년, 끝에 가까워지면 반년씩 더 깐다
  *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「(보이는 높이 − 요일 머리) ÷ 6」 — 한 화면에 늘 6주.
  */
+import { CalBar } from './CalBar';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
@@ -29,7 +30,7 @@ import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
-import { daysSelection, dayInSelection, type CalSelection } from '../selection';
+import { daysSelection, dayInSelection, eventFromSelection, type CalSelection } from '../selection';
 import { layoutWeek, overflowOf, type WeekBar } from './week-bars';
 
 const DAY_MS = 86_400_000;
@@ -165,7 +166,10 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
         if (id) card.open(id);
     };
-    const newAllDay = (iso: string) => {
+    const newAllDay = (iso: string, useSelection = false) => {
+        // 우클릭 「새 일정」 — 고른 범위 안을 눌렀으면 범위 전체(W7)
+        const span = useSelection ? eventFromSelection(selection, iso) : null;
+        if (span) { const sid = createEvent(span, ''); if (sid) card.open(sid); return; }
         const start = parseLocal(iso);
         if (Number.isNaN(start.getTime())) return;
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
@@ -184,7 +188,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
         const iso = t.closest('[data-day]')?.getAttribute('data-day');
         if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
-        else if (iso) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAllDay(iso) }] });
+        else if (iso) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAllDay(iso, true) }] });
     });
 
     // 범위 선택 — 빈 칸을 죽 끌어 날짜 범위를 고른다(일정 생성 아님). anchor 는 여기서 쥐고 Shift 확장 때 그대로 쓴다.
@@ -373,7 +377,18 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     return (
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
-            <header className="flex items-center justify-between px-pad py-2 shrink-0">
+            <CalBar end={<>
+                    <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
+                    <button
+                        type="button"
+                        onClick={goToday}
+                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                    >
+                        오늘
+                    </button>
+                    <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
+                    {trailing}
+                </>}>
                 <div ref={jumpRef} className="relative">
                     <button
                         type="button"
@@ -417,19 +432,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                         </Surface>
                     )}
                 </div>
-                <div className="flex items-center gap-1">
-                    <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
-                    <button
-                        type="button"
-                        onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
-                    >
-                        오늘
-                    </button>
-                    <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
-                    {trailing}
-                </div>
-            </header>
+            </CalBar>
 
             {/* 본문 — 주 줄이 끝없이 이어지는 세로 스크롤. 요일 머리는 이 안에 sticky(스크롤바 폭을 같이 먹어 단차가 없다) */}
             <div

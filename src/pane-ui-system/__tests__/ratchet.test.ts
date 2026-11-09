@@ -5,6 +5,8 @@
  *     arbPx      : 임의 크기 -[Npx] 수(text-[12px]·w-[340px] …) — 글자는 단계 토큰(text-small …), 치수는 토큰·표준 클래스
  *     cmdIdString: 다른 꾸러미의 명령 id 를 글자로 부른 수 — 약속 파일의 상수로
  *     ctxDirect  : onContextMenu 를 직접 처리한 수 — 우클릭은 창틀 ContextMenu(useContextTrigger) 하나로만, 꾸러미는 메뉴 항목만 낸다(Q1·X2)
+ *     roleToolbar: `role="toolbar"` 직접 쓰기 수 — 툴바는 Frame 의 toolbar 자리 + 창틀 Toolbar(primitives/Toolbar.tsx 한 곳만 0 예외)로만 그린다(Q10 W6).
+ *       ⚠️ 컬렉션(collection/Toolbar.tsx)은 role 없이 제 줄을 그린다 — 이 세기가 못 본다. Q12 가 창틀 Toolbar 로 옮기면 끝(기준값은 이미 0 이라 허용 수 1 을 둘 일이 없었다).
  *   줄었으면 기준을 내린다:  RATCHET_UPDATE=1 npx vitest run src/pane-ui-system/__tests__/ratchet.test.ts
  *   ⛔ 기준을 올리는 건 규칙을 어기는 일이다 — 올려야 하면 이유를 커밋에 적는다(새 꾸러미는 0 에서 시작한다).
  *
@@ -18,7 +20,7 @@ import { join, resolve } from 'node:path';
 const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
 
-type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect';
+type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect' | 'roleToolbar';
 type Counts = Record<Metric, number>;
 
 function walk(dir: string): string[] {
@@ -47,7 +49,10 @@ const SCOPES: Record<string, string> = {
     'pane-ui-system': join(ROOT, 'pane-ui-system'),
 };
 
+/** 창틀 Toolbar 단 하나 — role="toolbar" 세기의 유일한 예외 */
+const TOOLBAR_PRIMITIVE = join(ROOT, 'pane-ui-system', 'primitives', 'Toolbar.tsx');
 const files = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).map((f) => readFileSync(f, 'utf-8'))]));
+const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));
 
 /** 명령 id 선언 → 주인 범위. 매니페스트 contributes 의 `{ id: 'x.y', title: … }` 꼴 */
 const COMMAND_DEF = /\{\s*id:\s*'([a-z][a-z0-9-]*\.[A-Za-z0-9.]+)'\s*,\s*title:/g;
@@ -58,7 +63,8 @@ for (const [scope, texts] of Object.entries(files)) {
 
 function measure(scope: string): Counts {
     const texts = files[scope];
-    let bareButton = 0, arbPx = 0, cmdIdString = 0, ctxDirect = 0;
+    let bareButton = 0, arbPx = 0, cmdIdString = 0, ctxDirect = 0, roleToolbar = 0;
+    for (const t of roleToolbarTexts[scope]) roleToolbar += count(t, /role\s*[=:]\s*\{?\s*["']toolbar["']/g);
     for (const t of texts) {
         bareButton += count(t, /<button\b/g);
         arbPx += count(t, /-\[\d+(?:\.\d+)?px\]/g);
@@ -69,7 +75,7 @@ function measure(scope: string): Counts {
             cmdIdString += t.split(`"${id}"`).length - 1;
         }
     }
-    return { bareButton, arbPx, cmdIdString, ctxDirect };
+    return { bareButton, arbPx, cmdIdString, ctxDirect, roleToolbar };
 }
 
 const current: Record<string, Counts> = Object.fromEntries(Object.keys(SCOPES).map((s) => [s, measure(s)]));
@@ -79,12 +85,13 @@ if (process.env.RATCHET_UPDATE) {
 }
 
 const baseline: Record<string, Counts> = JSON.parse(readFileSync(BASELINE_FILE, 'utf-8'));
-const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect'];
+const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect', 'roleToolbar'];
 const HOW: Record<Metric, string> = {
     bareButton: '공통 Button·IconButton·Dialog 를 써라',
     arbPx: '글자는 단계 토큰(text-micro·note·small·body·lead), 치수는 토큰·표준 클래스로',
     cmdIdString: '다른 꾸러미 명령은 그 꾸러미 약속 파일의 상수로 불러라',
     ctxDirect: '우클릭은 창틀 useContextTrigger + ContextMenu 로 — 꾸러미는 메뉴 항목만 낸다',
+    roleToolbar: '툴바는 Frame 의 toolbar 자리에 창틀 Toolbar 로 — role="toolbar" 를 직접 쓰지 마라',
 };
 
 describe('톱니 검사 — 직접 짠 것이 늘지 않는다', () => {

@@ -11,6 +11,7 @@
  *   머리줄은 월 보기와 같은 꼴: 왼쪽 「2026년」 · 오른쪽 「◀ 올해 ▶」. 오른쪽 끝의 trailing 은 메인이 뷰 전환 단추를 꽂는 자리다.
  *   본문은 표 하나로 탭을 꽉 채운다: 31행이 1fr 로 늘고, 탭이 너무 낮으면(행 18px 밑) 세로 스크롤 · 폭 560px 밑이면 가로 스크롤.
  */
+import { CalBar } from './CalBar';
 import { useMemo, useRef, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품과 한 벌이다(배럴로만) · 연간표 펴기는 옆 순수 함수(year-table)
 import { IconButton } from '../../../pane-ui-system';
@@ -59,9 +60,7 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
     return (
         <div className="h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 연도 · 오른쪽 이동(◀ 올해 ▶) + 뷰 전환(trailing). 월 보기와 같은 높이·여백 */}
-            <header className="flex items-center justify-between px-pad py-2 shrink-0">
-                <span className="text-base font-semibold text-text tabular-nums">{yearLabel(year)}</span>
-                <div className="flex items-center gap-1">
+            <CalBar end={<>
                     <IconButton icon="left" label="지난 해" onClick={() => goYear(year - 1)} />
                     <button
                         type="button"
@@ -72,8 +71,9 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
                     </button>
                     <IconButton icon="right" label="다음 해" onClick={() => goYear(year + 1)} />
                     {trailing}
-                </div>
-            </header>
+                </>}>
+                <span className="text-base font-semibold text-text tabular-nums">{yearLabel(year)}</span>
+            </CalBar>
 
             {/* 본문 — 표 하나. 가로·세로 둘 다 필요하면 스크롤(폭 560px·행 18px 바닥) */}
             <div className="flex-1 min-h-0 overflow-auto overscroll-contain" {...range.bind}>

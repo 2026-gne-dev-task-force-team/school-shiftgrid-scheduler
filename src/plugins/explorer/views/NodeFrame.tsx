@@ -109,21 +109,33 @@ export function NodeFrame({
     let body: ReactNode;
     if (typeof children === 'function') {
         body = <div className="flex-1 min-h-0">{children(header)}</div>;
-    } else if (scroll) {
+    } else if (scroll && !toolbar) {
         body = (
             <div className="flex-1 min-h-0 overflow-auto">
                 <div className={`${col} px-6 pt-3 pb-16`}>
                     <div className="mb-2">{header}</div>
-                    {toolbar}
                     {children}
                 </div>
             </div>
+        );
+    } else if (scroll) {
+        // 툴바는 스크롤 밖(머리 바로 아래 고정) — 본문만 스크롤된다(W6).
+        body = (
+            <>
+                <div className="shrink-0 px-6 pt-3 pb-2">
+                    <div className={col}>{header}</div>
+                </div>
+                {toolbar && <div data-slot="toolbar" className={`shrink-0 ${col}`}>{toolbar}</div>}
+                <div className="flex-1 min-h-0 overflow-auto">
+                    <div className={`${col} px-6 pt-3 pb-16`}>{children}</div>
+                </div>
+            </>
         );
     } else {
         body = (
             <>
                 <div className={`shrink-0 ${col} px-6 pt-3 pb-1`}>{header}</div>
-                {toolbar && <div className={`shrink-0 ${col}`}>{toolbar}</div>}
+                {toolbar && <div data-slot="toolbar" className={`shrink-0 ${col}`}>{toolbar}</div>}
                 <div className="flex-1 min-h-0">{children}</div>
             </>
         );

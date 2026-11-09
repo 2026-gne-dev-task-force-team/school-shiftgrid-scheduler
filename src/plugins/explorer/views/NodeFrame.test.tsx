@@ -3,7 +3,7 @@
  * nodes.Frame — 모든 노드 화면의 겉틀(Q5): 상단 줄(‹ 위로 · 경로 · ⋯ 메뉴) + 큰 머리 + 본문 · 탭 제목 동기화(R2) · 피크 머리줄 자리 공유.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { act, type ReactNode } from 'react';
+import { act, useState, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { setWorkspaceBridge } from '../../../pane-ui-system/plugin';
@@ -12,6 +12,8 @@ import { initStore, getState, apiCreate, apiRename } from '../store';
 import { registerType, clearTypes } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { NodeFrame } from './NodeFrame';
+import { Table } from '../../sheet/Table';
+import { CalBar, CalBarHost } from '../../calendar/views/CalBar';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -101,5 +103,40 @@ describe('nodes.Frame', () => {
         expect(slotEl!.querySelector('button[aria-label="더보기"]')).not.toBeNull();       // ⋯ 가 피크 머리줄 자리에
         expect(container.querySelectorAll('button[aria-label="더보기"]').length).toBe(1);   // 틀 안에 또 있지 않다
         expect(container.querySelector('[data-claimed]')!.getAttribute('data-claimed')).toBe('true');   // 피크는 「미리보기」 글자를 감춘다
+    });
+
+    // 🔑 Q10 W6 — 툴바는 Frame 의 toolbar 자리(머리 아래 · 본문 스크롤 밖)에 창틀 Toolbar 로만 선다.
+    it('W6: 시트 툴바(role=toolbar)가 Frame 툴바 자리 안에 있고 스크롤 본문 밖이다', () => {
+        function Sheet() {
+            const [host, setHost] = useState<HTMLElement | null>(null);
+            return (
+                <NodeFrame nodeId={childId} scroll toolbar={<div ref={setHost} />}>
+                    <Table columns={[{ key: 'a', title: 'A' }]} rows={[{ id: 'r1', cells: { a: 'x' } }]} onCommit={() => {}} toolbar toolbarHost={host} />
+                </NodeFrame>
+            );
+        }
+        render(<Sheet />);
+        const bars = container.querySelectorAll('[role="toolbar"]');
+        expect(bars.length).toBe(1);
+        const slot = container.querySelector('[data-slot="toolbar"]')!;
+        expect(slot.contains(bars[0])).toBe(true);
+        expect(bars[0].closest('.overflow-auto')).toBeNull();                       // 본문과 함께 스크롤되지 않는다
+        expect(container.querySelector('[data-testid="tool-undo"]')).not.toBeNull(); // 단추는 꾸러미가 넘긴다
+    });
+
+    it('W6: 달력 툴바도 같은 자리 — Frame 안이면 툴바 자리, 밖이면 제자리에서 창틀 Toolbar', () => {
+        function Cal() {
+            const [host, setHost] = useState<HTMLElement | null>(null);
+            return (
+                <NodeFrame nodeId={childId} toolbar={<div ref={setHost} />}>
+                    <CalBarHost.Provider value={host}><CalBar end={<i>끝</i>}><b>2026년 11월</b></CalBar></CalBarHost.Provider>
+                </NodeFrame>
+            );
+        }
+        render(<Cal />);
+        expect(container.querySelector('[data-slot="toolbar"] [role="toolbar"]')?.textContent).toContain('2026년 11월');
+        expect(container.querySelectorAll('[role="toolbar"]').length).toBe(1);
+        render(<CalBar><b>제자리</b></CalBar>);
+        expect(container.querySelector('[role="toolbar"]')?.textContent).toBe('제자리');
     });
 });

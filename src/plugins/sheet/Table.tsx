@@ -11,6 +11,7 @@
  *     · 범위를 고르면 파란 테두리 + 떠있는 「칸 합치기」 · 우클릭 메뉴로도 합치기/풀기/내용 지우기.
  *     · 머리 행/열 켜기(옅은 바탕)·색은 첫 손잡이 메뉴에서. 엔진·기능 모듈(엑셀식 키·IME·붙여넣기·병합)은 그대로.
  */
+import { createPortal } from 'react-dom';
 import {
     forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
 } from 'react';
@@ -28,7 +29,7 @@ import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
 import { Menu, type MenuItem } from './Menu';
-import { Button } from '../../pane-ui-system';
+import { Button, Toolbar } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -58,7 +59,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, colTabs,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -592,23 +593,24 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         { id: 'table', label: '표 ▾', title: '표 스타일·머리 행/열·꼬리 행', on: true, run: (e) => openTableMenu(e) },
     ] : [];
 
+    const toolbarBar = (
+        <Toolbar label="표 도구" scroll>
+            {tools.map((t, i) => t === '|'
+                ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
+                : (
+                    <Button key={t.id} variant="plain" size="sm" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
+                        // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => t.run(e)}>
+                        {t.label}
+                    </Button>
+                ))}
+        </Toolbar>
+    );
+
     return (
         <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
-            {toolbar && (
-                <div data-testid="table-toolbar" role="toolbar" aria-label="표 도구"
-                    className="sticky top-0 z-30 mb-2 flex flex-wrap items-center gap-0.5 border-b border-line bg-bg py-1 text-[12px]">
-                    {tools.map((t, i) => t === '|'
-                        ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
-                        : (
-                            <Button key={t.id} variant="plain" size="sm" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
-                                // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={(e) => t.run(e)}>
-                                {t.label}
-                            </Button>
-                        ))}
-                </div>
-            )}
+            {toolbar && (toolbarHost ? createPortal(toolbarBar, toolbarHost) : toolbarBar)}
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}

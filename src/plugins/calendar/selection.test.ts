@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     daysSelection, timeSelection, floorToSnap,
-    dayInSelection, timeSliceForDay, selectionLabel,
+    dayInSelection, timeSliceForDay, selectionLabel, eventFromSelection,
     type CalSelection,
 } from './selection';
 
@@ -133,5 +133,23 @@ describe('Shift 확장 — anchor 유지(daysSelection/timeSelection 재호출�
     it('time anchor 14:00 슬롯에서 16:30 슬롯으로 확장', () => {
         const anchor = t(3, 14, 0);
         expect(timeSelection(anchor, t(3, 16, 30), 30)).toEqual({ kind: 'time', startMs: t(3, 14, 0), endMs: t(3, 17, 0) });
+    });
+});
+
+describe('W7 — 고른 범위를 쥔 채 우클릭 「새 일정」 = 범위 전체', () => {
+    it('3일 범위(11/3~11/5) 안을 누르면 시작 11/3 · 끝 11/6 00:00(끝 날 포함) 종일 일정', () => {
+        const sel = daysSelection('2026-11-03', '2026-11-05');
+        expect(eventFromSelection(sel, '2026-11-04')).toEqual({ start: '2026-11-03T00:00', end: '2026-11-06T00:00', allDay: true });
+        expect(eventFromSelection(sel, '2026-11-03')).toEqual({ start: '2026-11-03T00:00', end: '2026-11-06T00:00', allDay: true });
+    });
+    it('범위 밖 칸을 누르면 null(옛 동작 — 눌린 칸 하나)', () => {
+        expect(eventFromSelection(daysSelection('2026-11-03', '2026-11-05'), '2026-11-09')).toBeNull();
+        expect(eventFromSelection(null, '2026-11-03')).toBeNull();
+    });
+    it('시간 범위: 시간 칸이 범위 안이면 그 시각 구간 그대로 · 월 보기(hitMs 없음)는 걸친 날들 종일', () => {
+        const sel = timeSelection(t(3, 14, 0), t(4, 10, 0), 30);   // 11/3 14:00 ~ 11/4 10:30
+        expect(eventFromSelection(sel, '2026-11-03', t(3, 15, 0))).toEqual({ start: '2026-11-03T14:00', end: '2026-11-04T10:30', allDay: false });
+        expect(eventFromSelection(sel, '2026-11-03', t(5, 9, 0))).toBeNull();
+        expect(eventFromSelection(sel, '2026-11-04')).toEqual({ start: '2026-11-03T00:00', end: '2026-11-05T00:00', allDay: true });
     });
 });
