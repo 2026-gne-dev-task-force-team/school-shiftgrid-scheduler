@@ -22,6 +22,8 @@ const fakeNodes = {
     setBody: (id: string, body: unknown) => { const n = store.get(id); if (n) n.body = body; },
     subscribe: () => ({ dispose() {} }),
     parent: () => null,   // 휴지통 판정(inTrash)이 묻는다 — 이 테스트의 페이지는 루트에 있다
+    children: () => [],   // Q8: 본문의 하위 페이지 줄을 맞추느라 자식을 묻는다 — 이 테스트의 페이지엔 자식이 없다
+    batch: (fn: () => void) => fn(),
 } as unknown as NodesApi;
 const host = frameHost(fakeNodes);
 

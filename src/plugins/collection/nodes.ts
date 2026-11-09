@@ -320,6 +320,18 @@ export function indentRow(rowId: string): void {
     });
 }
 
+/** 끌어서 하위로(Q8) — 행을 다른 행의 마지막 자식으로. 자기 자신·자기 자손 밑은 막는다(순환). */
+export function moveRowUnder(rowId: string, parentRowId: string): void {
+    if (!api || rowId === parentRowId) return;
+    const a = api;
+    a.batch(() => {
+        const pn = a.get(parentRowId);
+        if (!pn || pn.type !== ROW_TYPE || a.get(rowId)?.type !== ROW_TYPE) return;
+        for (let cur: string | null = parentRowId, n = 0; cur && n < 10000; cur = a.parent(cur), n++) if (cur === rowId) return;
+        a.move(rowId, parentRowId);
+    });
+}
+
 /** 내어쓰기 — 부모 행의 바로 다음 형제로. 이미 뿌리(db 직속)면 아무 일 없음. */
 export function outdentRow(rowId: string): void {
     if (!api) return;

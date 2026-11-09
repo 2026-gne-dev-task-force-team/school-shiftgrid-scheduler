@@ -25,6 +25,8 @@ const fakeNodes = {
     // 시작 화면(StartScreen)이 쓰는 최소 표면 — 타입별 목록·부모·루트.
     byType: (type: string) => [...store.values()].filter((n) => n.type === type) as unknown as PublicNode[],
     parent: () => null,
+    children: () => [],   // Q8: 본문의 하위 페이지 줄을 맞추느라 자식을 묻는다 — 이 테스트의 페이지엔 자식이 없다
+    batch: (fn: () => void) => fn(),
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 

@@ -238,6 +238,8 @@ export interface RecordTree<T> {
     onOutdent: (id: string) => void;
     /** 이 행 밑에 새 하위 행을 만든다 — 행 hover 의 「하위 항목 추가」. 없으면 단추를 안 그린다 */
     onAddChild?: (id: string) => void;
+    /** 행을 다른 행 **위로 끌어 놓으면** 그 행의 하위로(Q8 · 노션 꼴 — 행 가운데 = 하위, 위·아래 가장자리 = 순서). 없으면 끌어서 하위로 못 넣는다 */
+    onMoveUnder?: (id: string, parentId: string) => void;
 }
 
 /** 셀 하나의 바뀐 값 — onCellsChange 묶음의 한 줄 */

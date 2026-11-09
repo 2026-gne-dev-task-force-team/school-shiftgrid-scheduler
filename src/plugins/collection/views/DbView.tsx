@@ -16,7 +16,7 @@ import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordFiel
 import { buildPaste } from '../paste';
 import { blankDb } from '../schema';
 import {
-    commit, getActiveDb, getDbRev, getNodesApi, indentRow, outdentRow, reorderRow, restoreTrashedRows,
+    commit, getActiveDb, getDbRev, getNodesApi, indentRow, moveRowUnder, outdentRow, reorderRow, restoreTrashedRows,
     snapshotOf, subscribeDb, toggleRowCollapse,
 } from '../nodes';
 
@@ -94,6 +94,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                         onToggleCollapse: toggleRowCollapse,
                         onIndent: indentRow,
                         onOutdent: outdentRow,
+                        onMoveUnder: moveRowUnder,
                         onAddChild: (rowId) => { commit(id, { addRows: [{}], addUnder: rowId }); },
                     }}
                 />

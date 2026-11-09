@@ -4,13 +4,13 @@
  *   여기선 캐럿(DOM)과 상태만 챙긴다.
  *   🔴 데이터는 노드 다리(nodes.ts)로만 — 페이지도 노드고 저장·휴지통은 노드 시스템이 쥔다.
  */
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ContextMenu, Icon, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { ContextMenu, Icon, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
-import { pageDataOf, savePage, inTrash } from '../nodes';
+import { pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
@@ -30,6 +30,8 @@ import {
 import { SlashMenu, filterSlash } from './SlashMenu';
 import { TableBlock } from './TableBlock';
 import { NodeBlock } from './NodeBlock';
+import { ChildPageBlock } from './ChildPageBlock';
+import { syncChildBlocks } from '../core/children';
 
 /** 캐럿을 둘 자리(resync 신호) — end 가 있으면 범위를 고른다(토글 결과). */
 interface FocusIntent { id: string; offset: number; end?: number; }
@@ -45,8 +47,10 @@ export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }
             host={host}
             docKey={activeId}
             leafId={leafId}
-            load={() => pageDataOf(activeId)}
+            load={() => pageViewOf(activeId)}
             save={(p) => savePage(activeId, p)}
+            syncBlocks={(p) => syncChildBlocks(p, childPageIds(activeId))}
+            reviveBlocks={(p) => reviveChildren(activeId, p)}
             onBack={() => setActivePage(null)}
             titleAriaLabel="페이지 제목"
             titlePlaceholder="제목 없음"
@@ -66,6 +70,10 @@ export interface PageEditorProps {
     save: (p: Page) => void;
     /** 이 문서가 놓인 탭 — 주면 이름이 바뀔 때 탭 제목도 같이 고친다(피크는 안 준다). */
     leafId?: string;
+    /** 본문을 노드 트리와 맞춘다(Q8 하위 페이지 줄) — 열 때·노드가 바뀔 때·되돌리기 뒤에 불린다. 안 주면 안 맞춘다. */
+    syncBlocks?: (p: Page) => Page;
+    /** 되돌리기로 본문에 돌아온 줄이 가리키는 휴지통의 페이지를 살린다(syncBlocks 가 줄을 걷기 전에 불린다). */
+    reviveBlocks?: (p: Page) => void;
     /** 주면 상단 줄에 「‹ 목록」 */
     onBack?: () => void;
     /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행)의 이름 바꾸기 길 — 없으면 노드 이름만. */
@@ -76,7 +84,7 @@ export interface PageEditorProps {
     properties?: ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack, onRename, titleAriaLabel, titlePlaceholder, properties }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, reviveBlocks, leafId, onBack, onRename, titleAriaLabel, titlePlaceholder, properties }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -104,6 +112,14 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
         setSlash(null);
         typingRunRef.current = null;
     }, [activeId]);
+
+    // 노드 트리가 바뀌면(탐색기에서 자식 만들기·옮기기·휴지통) 본문의 하위 페이지 줄을 맞춘다 — 저장은 안 한다(트리가 진실 · 루프 없음).
+    const nodesRev = useSyncExternalStore(subscribePageNodes, getPageRev, getPageRev);
+    useEffect(() => {
+        if (!syncBlocks) return;
+        setHist((h) => { const n = syncBlocks(h.present); return n === h.present ? h : { ...h, present: n }; });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [nodesRev]);
 
     // 캐럿 둘 자리 — resync 신호가 오면 그 블록의 DOM 을 맞추고 캐럿을 소스 오프셋으로 놓는다.
     //   🔴 글자 블록 DOM 은 Editable 의 레이아웃 효과(자식)가 먼저 다시 그린다 → 여기선(부모) 캐럿만 놓는다.
@@ -299,7 +315,7 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
     const navBlock = (id: string, dir: -1 | 1, column: number) => {
         const blocks = pageRef.current.blocks;
         let j = blocks.findIndex((b) => b.id === id) + dir;
-        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table' || blocks[j].type === 'node')) j += dir;
+        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table' || blocks[j].type === 'node' || blocks[j].type === 'childpage')) j += dir;
         if (j < 0 || j >= blocks.length) return;
         const t = blocks[j];
         setActiveBlockId(t.id);
@@ -319,12 +335,20 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
     const doUndo = () => {
         const nh = undo(histRef.current);
         if (nh === histRef.current) return;
-        setHist(nh); persist(nh.present); timeTravelFocus(nh.present);
+        travel(nh);
     };
     const doRedo = () => {
         const nh = redo(histRef.current);
         if (nh === histRef.current) return;
-        setHist(nh); persist(nh.present); timeTravelFocus(nh.present);
+        travel(nh);
+    };
+    // 🔑 되돌리기·다시 — 지운 하위 페이지 줄이 돌아오면 그 페이지를 먼저 살리고, 트리와 다시 맞춘 본문을 저장한다
+    //   (옛 본문에 없던 자식이 이 저장으로 휴지통에 가는 일이 없게).
+    const travel = (nh: History<Page>) => {
+        reviveBlocks?.(nh.present);
+        const present = syncBlocks ? syncBlocks(nh.present) : nh.present;
+        const th = present === nh.present ? nh : { ...nh, present };
+        setHist(th); persist(present); timeTravelFocus(present);
     };
     const timeTravelFocus = (p: Page) => {
         typingRunRef.current = null;
@@ -360,6 +384,51 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
         if (!dragId) return;
         const next = moveBlock(pageRef.current, dragId, toIndex);
         commitPage(next);
+    };
+
+    // 🔑 V3 터치 끌기 — 손잡이를 길게 눌렀다가(350ms) 끌면 순서가 바뀐다. 판정은 공용 훅 한 곳(useDragLeaf)에서 오고,
+    //   마우스는 이 훅에 안 넣는다(마우스는 위 HTML5 끌기가 이미 맡는다). 스크롤과 안 싸운다: 손잡이만 touch-none, 그 밖은 평소 스크롤.
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const touchDragged = useRef(false);
+    const slotAt = (y: number): number => {
+        const rows = [...(rootRef.current?.querySelectorAll<HTMLElement>('[data-block-row]') ?? [])];
+        for (let i = 0; i < rows.length; i++) { const r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return i; }
+        return rows.length;
+    };
+    const touch = useDragLeaf({
+        enabled: true,
+        axis: 'y',
+        onContext: () => { /* 안 움직이고 떼면 손잡이 click 이 메뉴를 연다 */ },
+        onDrop: (id, _x, y) => {
+            touchDragged.current = true;
+            const d = pageRef.current.blocks.findIndex((b) => b.id === id);
+            const slot = slotAt(y);
+            const to = slot > d ? slot - 1 : slot;
+            if (d >= 0 && to !== d) commitPage(moveBlock(pageRef.current, id, to));
+        },
+    });
+    const dragging = !!touch.drag;
+    const dragYRef = useRef<number | undefined>(undefined); dragYRef.current = touch.drag?.y;
+    // 끄는 동안 스크롤은 막혀 있다(body.is-dragging) — 위·아래 가장자리에 닿으면 우리가 밀어 준다
+    useEffect(() => {
+        if (!dragging) return;
+        const t = window.setInterval(() => {
+            const box = scrollRef.current; const y = dragYRef.current;
+            if (!box || y == null) return;
+            const r = box.getBoundingClientRect();
+            if (y < r.top + 56) box.scrollTop -= 12; else if (y > r.bottom - 56) box.scrollTop += 12;
+        }, 16);
+        return () => window.clearInterval(t);
+    }, [dragging]);
+    // 놓을 자리 선 — 끄는 중에만 · 제자리(안 움직이는 자리)는 안 그린다
+    const dragFrom = touch.drag ? page.blocks.findIndex((b) => b.id === touch.drag!.leafId) : -1;
+    const dropSlot = touch.drag && dragFrom >= 0 ? slotAt(touch.drag.y) : -1;
+    const touchLineOf = (i: number): 'before' | 'after' | null => {
+        if (dropSlot < 0 || dropSlot === dragFrom || dropSlot === dragFrom + 1) return null;
+        if (dropSlot === i) return 'before';
+        if (dropSlot === page.blocks.length && i === page.blocks.length - 1) return 'after';
+        return null;
     };
 
     const onFocusBlock = (id: string, offset: number) => {
@@ -412,8 +481,9 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
             titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={titleEnterToBody}
             fallback={<Icon name="fileText" size={32} className="text-muted" />}>
             {(header) => (
-                <div className="h-full overflow-auto">
+                <div className="h-full overflow-auto" ref={scrollRef}>
                     <div
+                        ref={rootRef}
                         className="max-w-3xl mx-auto px-6 py-8 select-text"
                         onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                     >
@@ -446,6 +516,9 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
                                 onChangeType={onChangeTypeMenu}
                                 onDragStartBlock={(id) => { dragIdRef.current = id; }}
                                 onDropBlock={onDrop}
+                                touchBind={touch.bind}
+                                touchDraggedRef={touchDragged}
+                                touchLine={touchLineOf(i)}
                             />
                         ))}
                     </div>
@@ -484,6 +557,10 @@ interface RowProps {
     onChangeType: (id: string, type: BlockType) => void;
     onDragStartBlock: (id: string) => void;
     onDropBlock: (index: number) => void;
+    /** V3 터치 끌기 — 손잡이에만 얹는다(useDragLeaf) · 끌기 직후 따라오는 click 하나 삼키기 · 놓을 자리 선 */
+    touchBind: DragBind;
+    touchDraggedRef: { current: boolean };
+    touchLine: 'before' | 'after' | null;
 }
 
 const HEADING_CLASS: Record<string, string> = {
@@ -498,7 +575,14 @@ function BlockRow(props: RowProps) {
     const menuOpen = !!menu;
     // 글을 쓰는 줄(contenteditable)·입력칸은 브라우저 기본 메뉴(맞춤법·붙여넣기)를 그대로 둔다 — 손잡이·빈 곳·표/노드 블록은 우리 메뉴
     const trigger = useContextTrigger((x, y) => setMenu({ x, y }), (t) => !!t.closest('input, textarea, [contenteditable="true"], [contenteditable=""]'));
-    const blockItems: MenuEntry[] = [
+    const isChild = block.type === 'childpage';
+    const blockItems: MenuEntry[] = isChild ? [
+        // 하위 페이지 줄은 종류를 못 바꾸고 복제도 못 한다 — 줄 하나 = 페이지 하나. 지우면 그 페이지도 휴지통(되돌리면 돌아옴)
+        { label: '위로', icon: 'up', disabled: index === 0, onClick: () => props.onMoveBy(block.id, -1) },
+        { label: '아래로', icon: 'down', disabled: props.last, onClick: () => props.onMoveBy(block.id, 1) },
+        { sep: true },
+        { label: '삭제 (페이지도 휴지통으로)', icon: 'trash', danger: true, onClick: () => props.onDelete(block.id) },
+    ] : [
         ...([['글로', 'paragraph'], ['제목 1', 'heading1'], ['글머리표', 'bulleted'], ['체크 목록', 'todo'], ['표', 'table'], ['노드 끼워 넣기', 'node']] as const)
             .map(([label, type]) => ({ label, onClick: () => props.onChangeType(block.id, type) })),
         { sep: true },
@@ -517,7 +601,7 @@ function BlockRow(props: RowProps) {
     return (
         // 🔑 R4: 줄 왼쪽 선 = 머리·속성 왼쪽 선. 손잡이는 선 바깥 여백(-left-6, 컬럼 px-6 안)에 절대 배치 — 줄을 밀어내지 않는다.
         <div
-            className={`relative ${dropHere ? 'border-t-2 border-accent -mt-0.5' : ''}`}
+            className={`relative ${dropHere || props.touchLine === 'before' ? 'border-t-2 border-accent -mt-0.5' : ''} ${props.touchLine === 'after' ? 'border-b-2 border-accent' : ''}`}
             data-block-row={block.id}
             {...trigger}
             onMouseEnter={() => setHover(true)}
@@ -531,14 +615,19 @@ function BlockRow(props: RowProps) {
                 <button
                     type="button"
                     draggable
+                    data-row-id={block.id}
+                    onPointerDown={(e) => { if (e.pointerType === 'mouse') return; props.touchDraggedRef.current = false; e.stopPropagation(); props.touchBind.onPointerDown(e); }}
+                    onPointerMove={(e) => { if (e.pointerType !== 'mouse') props.touchBind.onPointerMove(e); }}
+                    onPointerUp={(e) => { if (e.pointerType !== 'mouse') props.touchBind.onPointerUp(e); }}
+                    onPointerCancel={(e) => { if (e.pointerType !== 'mouse') props.touchBind.onPointerCancel(); }}
                     onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move';
                         e.dataTransfer.setData('text/plain', block.id);   // 일부 브라우저는 데이터가 있어야 끌기를 시작한다
                         props.onDragStartBlock(block.id);
                     }}
-                    onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ x: r.right + 4, y: r.top }); }}
+                    onClick={(e) => { if (props.touchDraggedRef.current) { props.touchDraggedRef.current = false; return; } const r = e.currentTarget.getBoundingClientRect(); setMenu({ x: r.right + 4, y: r.top }); }}
                     aria-label="블록 손잡이"
-                    className="cursor-grab rounded py-0.5 text-text/60 hover:text-text hover:bg-text/[0.06]"
+                    className="cursor-grab touch-none rounded py-0.5 text-text/60 hover:text-text hover:bg-text/[0.06]"
                 >
                     <Icon name="grip" size={20} />
                 </button>
@@ -573,6 +662,9 @@ function renderContent(props: RowProps): ReactElement {
     }
     if (block.type === 'node') {
         return <NodeBlock nodeId={block.nodeId} selfId={props.selfId} onPick={(nid) => props.onNodePick(block.id, nid)} />;
+    }
+    if (block.type === 'childpage') {
+        return <ChildPageBlock nodeId={block.nodeId} />;
     }
     if (block.type === 'code') {
         return <CodeBlock {...props} />;

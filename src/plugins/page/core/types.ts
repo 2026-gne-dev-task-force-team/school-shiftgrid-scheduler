@@ -9,7 +9,9 @@ export type BlockType =
     | 'paragraph'
     | 'heading1' | 'heading2' | 'heading3'
     | 'bulleted' | 'numbered' | 'todo'
-    | 'quote' | 'code' | 'divider' | 'table' | 'node';
+    | 'quote' | 'code' | 'divider' | 'table' | 'node'
+    /** 하위 페이지(Q8) — 이 페이지 밑 페이지 하나를 가리키는 줄. 사람이 만들지 않는다: 자식 페이지가 생기면 따라 생기고(core/children.ts), 지우면 그 페이지가 휴지통으로 간다. */
+    | 'childpage';
 
 /** 목록 종류(들여쓰기·같은 종류 이어짐 규칙이 붙는다). */
 export const LIST_TYPES: BlockType[] = ['bulleted', 'numbered', 'todo'];
@@ -31,7 +33,7 @@ export interface Block {
     indent?: number;
     /** 표 블록 전용. */
     table?: TableBlockData;
-    /** 끼워 넣기 블록 전용(P5) — 끼운 노드 id(없으면 아직 고르는 중) · 그 타입이 알아듣는 보기 이름. */
+    /** 끼워 넣기(P5)·하위 페이지(Q8) 블록 전용 — 가리키는 노드 id(끼워 넣기는 없으면 아직 고르는 중) · 그 타입이 알아듣는 보기 이름. */
     nodeId?: string;
     view?: string;
 }
