@@ -15,7 +15,8 @@ import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { tableApi } from './api';
 import { TableNodeView } from './views/TableNodeView';
-import { tableNodeTypes, tableNodeTypeImpl, initTableNodes } from './nodes';
+import { TableProps } from './views/TableProps';
+import { tableNodeTypes, tableNodeTypeImpl, initTableNodes, TABLE_TYPE } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'table-editor.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로.
 const SHEET_ID = 'table-editor.sheet';
@@ -66,8 +67,11 @@ export const tableEditorPlugin = definePlugin({
             ribbon: [{ commandId: 'table-editor.open', icon: 'table', order: 6 }],
             // 🔴 노드 타입 하나(표) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: tableNodeTypes,
+            // 오른쪽 「속성」 패널의 표 칸 — 스타일·머리 행/열·꼬리 행(넘버스의 표 서식 자리).
+            properties: [{ target: TABLE_TYPE, id: 'table', title: '표', pane: 'TableProps' }],
         },
     },
+    panes: { TableProps },
 
     components: {
         // 표 화면 — 보고 있는 표 노드(store)를 그린다. host 는 안 쓴다(다리가 쥔다).
