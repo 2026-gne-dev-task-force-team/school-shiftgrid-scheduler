@@ -21,7 +21,7 @@ vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWr
 
 import {
     initStore, getState, newNode, select,
-    removeSelected, restoreSelected, undoAction,
+    removeSelected, undoAction,
     apiCreate, apiMove,
 } from './store';
 import { __resetPersistForTest } from './persist';
@@ -114,19 +114,12 @@ describe('apiCreate / apiMove — 같은 관문', () => {
 
 // ─────────────────────────── 복원 관문 ───────────────────────────
 
-describe('restoreSelected — 충돌하면 복원 거절(휴지통에 남는다)', () => {
-    it("'tree' — 밖에 같은 게 있으면 복원 안 되고, 치우면 복원된다", () => {
+describe('싱글톤(tree) — 탐색기에서 못 지운다(쥔님 2026-11-09 「실수로 지운다」)', () => {
+    it("'tree' 노드는 지우기가 거절돼 휴지통에 안 간다", () => {
         const i1 = makeAtRoot('app.info');
-        select(i1); removeSelected();                      // i1 휴지통
-        const i2 = makeAtRoot('app.info');                 // 밖에 새로
-        const trashKid = getState().tree.nodes[getState().tree.trash].children[0];
-        select(trashKid); restoreSelected();               // 거부
-        expect(isDescendant(getState().tree, i1, getState().tree.trash)).toBe(true);
-
-        select(i2); removeSelected();                      // 밖의 것 치우고
-        select(getState().tree.nodes[getState().tree.trash].children.find((c) => c === i1)!);
-        restoreSelected();                                 // 이제 복원
+        select(i1); removeSelected();
         expect(isDescendant(getState().tree, i1, getState().tree.trash)).toBe(false);
+        expect(getState().tree.nodes[i1]).toBeDefined();
     });
 });
 

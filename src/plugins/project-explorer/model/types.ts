@@ -183,6 +183,9 @@ export function slotsOf(type: string): string[] {
  *   can 은 고정 객체일 수도, 함수 `(nodeId) => CanFlags` 일 수도 있다 — 함수면 그 노드·현재 상황으로 답한다(모르는 타입은 전부 허용).
  */
 export function canDo(type: string, nodeId: string, what: 'rename' | 'move' | 'delete'): boolean {
+    // 🔴 싱글톤(나무에 하나 · unique:'tree')은 탐색기에서 지우기·옮기기를 아예 막는다 — 막아도 실수로 지우는 일이 잦았다(쥔님 2026-11-09).
+    //    맨 위 고정 구역에 따로 뜬다(ExplorerView). 이름 바꾸기는 각 타입의 can 을 따른다.
+    if (what !== 'rename' && registry.get(type)?.unique === 'tree') return false;
     const can = registry.get(type)?.can;
     if (can == null) return true;
     const flags = typeof can === 'function' ? can(nodeId) : can;

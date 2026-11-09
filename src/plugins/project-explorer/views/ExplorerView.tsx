@@ -10,7 +10,7 @@
  *    모델 move 가 마지막 관문. 좁은 화면(narrow)에선 드래그를 끄고 메뉴의 「위로·아래로」로.
  * ⭐ 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder 느린 재클릭 · 유지) · 두 번 누르기는 그 예약만 취소(열기는 한 번 누르기가 이미 했다).
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf, undoKey } from '../../../pane-ui-system';
@@ -151,7 +151,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const q = query.trim().toLowerCase();
     // 🔴 루트 줄은 걷었다(쥔님 2026-11-01 22:17 정정: *"그 루트는 제일 바깥 공간 아무데나 누르면 루트 선택되게"*).
     //    루트는 줄로 그리지 않고, 「바깥 빈 공간 클릭 = 선택 해제(미선택=루트)」로 고른다(VS Code 식 · 아래 onListClick).
-    const rows: ExplorerRow[] = q
+    const allRows: ExplorerRow[] = q
         ? flatten(tree, tree.root, isContainerType, {
             expandAll: true,
             hidden: nodeHidden,
@@ -159,6 +159,18 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             keep: (() => { const k = filterIds(tree, tree.root, (n) => !nodeHidden(n) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
         : buildMainRows(tree, tree.root, undefined, nodeHidden);
+    // 🔴 고정 구역 — 맨 위 싱글톤(계정 등)과 그 자손은 휴지통처럼 따로, 나무 위에 떼어 그린다(쥔님 2026-11-09 「너무 평범해 · 실수로 지운다」).
+    //    줄은 깊이 우선 순서라 depth 0 줄부터 다음 depth 0 줄 전까지가 한 덩어리다. 키보드 순서는 고정 → 나무.
+    const pinnedRows: ExplorerRow[] = [];
+    const mainRows: ExplorerRow[] = [];
+    {
+        let pin = false;
+        for (const r of allRows) {
+            if (r.depth === 0) pin = r.kind === 'node' && uniqueOf(r.node.type) === 'tree';
+            (pin ? pinnedRows : mainRows).push(r);
+        }
+    }
+    const rows: ExplorerRow[] = [...pinnedRows, ...mainRows];
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
     const rowsOrder = rows.map((r) => r.id);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
 
@@ -420,7 +432,10 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                         {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
                     </p>
                 )}
-                {rows.map((row) => {
+                {[pinnedRows, mainRows].map((list, li) => (<Fragment key={li}>
+                {li === 0 && list.length > 0 && <div className="px-pad pt-1 pb-0.5 text-[11px] text-muted select-none">고정</div>}
+                {li === 1 && pinnedRows.length > 0 && <div className="mx-pad my-1 border-t border-line" />}
+                {list.map((row) => {
                     const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
                     const isFocus = selectedId === row.id && selectedIds.length > 1;   // 키보드 커서 — 여럿일 때만 포커스 링
                     const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
@@ -539,6 +554,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                         </div>
                     );
                 })}
+                </Fragment>))}
             </div>
 
             {/* 🗑 휴지통 — 맨 아래 접이식. 안의 줄은 회색. 영구삭제·비우기는 인라인 확인(⛔ window.confirm 안 씀) */}
