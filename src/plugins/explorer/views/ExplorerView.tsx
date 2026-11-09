@@ -198,7 +198,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         setMenu({ x, y });
     }, [selectedIds]);
 
-    const { bind, drag } = useDragLeaf({ enabled: !narrow, axis: 'y', onContext, onDrop });
+    const { bind, drag } = useDragLeaf({ enabled: !narrow, contextAlways: true, axis: 'y', onContext, onDrop });  // #59 좁아서 끌기가 꺼져도 우클릭 메뉴는 산다
     const preview = drag ? resolveDrop(listRef.current, drag.x, drag.y, drag.leafId, dragSetOf(drag.leafId), tree) : null;
 
     // ── 줄 하나 누르기(옵시디언식 · 쥔님 2026-11-02) — 고르기 + openable 이면 바로 열기 · 컨테이너만이면 펴기/접기. ──

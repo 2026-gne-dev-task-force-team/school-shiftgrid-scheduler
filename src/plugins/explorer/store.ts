@@ -6,7 +6,7 @@
  * ⭐ 명령의 대상 노드는 여기 「고른 노드」에서 읽는다(🙋 5 — 창틀 CommandContext 는 안 넓힌다).
  */
 import { useSyncExternalStore } from 'react';
-import { josa } from '../../pane-ui-system';
+import { josa, focusWhenReady } from '../../pane-ui-system';
 import { CMD } from './contracts/commands';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
@@ -239,10 +239,19 @@ export function startInput(id: string, kind: string, initial: string, placeholde
 
 /** 🔑 방금 만든 노드 — 이름 정하기가 끝나면(확정·취소 모두) 활성 칸에 연다(노션 방식). createInput 타입은 해당 없음. */
 let pendingOpenId: string | null = null;
+/** 새로 만든 노드가 열릴 때 초점 줄 칸 — 페이지는 제목(전체 선택), 시트는 A1 격자. */
+export const FOCUS_ON_OPEN: Record<string, { selector: string; select: boolean }> = {
+    'page.page': { selector: 'input[aria-label="페이지 제목"]', select: true },
+    'sheet.sheet': { selector: '[data-testid="table-grid"]', select: false },
+};
 function openIfPending(id: string): void {
     if (pendingOpenId !== id) return;
     pendingOpenId = null;
+    const type = state.tree.nodes[id]?.type;
     openById(id);
+    // #49 — 새로 만든 페이지·시트도 열릴 때 초점이 BODY 에 남지 않게(시작 화면 경로와 같은 칸)
+    const sel = type && FOCUS_ON_OPEN[type];
+    if (sel) focusWhenReady(sel.selector, sel.select);
 }
 
 export function cancelRename(): void {

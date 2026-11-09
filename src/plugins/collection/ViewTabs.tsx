@@ -45,8 +45,23 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
         const next = views.filter((v) => v.id !== id);
         onChange(next, id === activeId ? next[0].id : undefined);
     };
+    // #48 롤빙 tabindex — 활성 탭만 Tab 정차, ←/→(·Home/End)로 탭 사이 이동. Alt+←/→ 는 순서 바꾸기(reorder)가 맡는다
+    const onTabsKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        const k = e.key;
+        if (!e.altKey && (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'Home' || k === 'End')) {
+            const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[data-rv-view-tab]'));
+            const i = tabs.indexOf(document.activeElement as HTMLElement);
+            if (i >= 0) {
+                e.preventDefault();
+                const n = k === 'Home' ? 0 : k === 'End' ? tabs.length - 1 : (i + (k === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+                tabs[n].focus();
+                return;
+            }
+        }
+        reorder.onKeyDown(e);
+    };
     return (
-        <div ref={reorder.containerRef} {...reorder.bind} onKeyDown={reorder.onKeyDown}
+        <div ref={reorder.containerRef} {...reorder.bind} onKeyDown={onTabsKey}
             onPointerDownCapture={() => { reorder.draggedRef.current = false; }}
             className="flex items-center gap-0.5 px-2 pt-1 border-b border-line shrink-0 overflow-x-auto overflow-y-hidden" data-rv-view-tabs>
             {views.map((v) => {
@@ -57,7 +72,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                             onCommit={(name) => rename(v.id, name)} onCancel={() => setRenaming(null)} />
                     </span>
                 ) : (
-                    <button key={v.id} type="button" data-rv-view-tab={v.id} data-row-id={v.id} title={v.name} aria-selected={on} role="tab"
+                    <button key={v.id} type="button" data-rv-view-tab={v.id} data-row-id={v.id} title={v.name} aria-selected={on} role="tab" tabIndex={on ? 0 : -1}
                         onClick={(e) => {
                             if (reorder.draggedRef.current) { reorder.draggedRef.current = false; return; }   // 끌기 끝에 따라오는 클릭은 삼킨다
                             if (on) setMenu({ id: v.id, rect: e.currentTarget.getBoundingClientRect() }); else onSelect(v.id);

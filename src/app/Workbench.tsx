@@ -409,6 +409,7 @@ export function Workbench() {
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
+            <SkipLink />
             {/* 🔴 상단 타이틀바 — 전체 폭 한 줄(리본·사이드바·가운데 위). 앱 이름·액션은 앱이 넘긴다 */}
             {showTitleBar && <TitleBar title="시간표 짜기" actions={titleActions} />}
 
@@ -440,7 +441,7 @@ export function Workbench() {
             </SidePanel>
 
             {/* 가운데 — 패널 트리. 🔴 넓은 화면에서 접힌 사이드바는 폭 0 이라, 다시 펴는 ◧/◨ 가 가운데 양 끝에 온다(W6) */}
-            <main className="flex-1 min-w-0 flex flex-col">
+            <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 flex flex-col outline-none">
                 <WorkspaceView
                     node={ws.center}
                     narrow={narrow}
@@ -516,5 +517,22 @@ export function Workbench() {
             {/* 🔔 토스트 — 알림이 잠깐 뜨는 자리(host.notify). 스스로 fixed 로 뜬다 */}
             <Toasts />
         </div>
+    );
+}
+
+/** #47 건너뛰기 링크 — 앱 맨 앞. 초점 받을 때만 보인다. 누르면 활성 본문(제목 입력칸이 있으면 그 칸, 없으면 본문 영역)에 초점. */
+export function SkipLink() {
+    return (
+        <a href="#main-content" data-skip-link
+            className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-toast focus:px-3 focus:py-1.5 focus:rounded focus:bg-bg focus:text-text focus:text-small focus:shadow focus:outline focus:outline-2 focus:outline-accent"
+            onClick={(e) => {
+                e.preventDefault();
+                const main = document.getElementById('main-content');
+                if (!main) return;
+                const t = main.querySelector<HTMLElement>('input[aria-label="페이지 제목"], [data-testid="table-grid"], [role="tabpanel"] button, h1');
+                (t ?? main).focus();
+            }}>
+            본문으로 건너뛰기
+        </a>
     );
 }
