@@ -664,7 +664,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     y={menu.y}
                     items={buildMenu()}
                     onClose={closeMenu}
-                    onCommand={(id) => host.commands.run(id)}
+                    onCommand={(id, arg) => host.commands.run(id, arg)}
                 />
             )}
         </div>

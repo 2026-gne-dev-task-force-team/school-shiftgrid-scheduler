@@ -147,7 +147,7 @@ export function NodeFrame({
                 ? createPortal(bar, slot)
                 : <div className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">{bar}</div>}
             {body}
-            {pop && <ContextMenu x={pop.x} y={pop.y} items={pop.items} onClose={() => setPop(null)} onCommand={(id) => { runCommand(id); }} />}
+            {pop && <ContextMenu x={pop.x} y={pop.y} items={pop.items} onClose={() => setPop(null)} onCommand={(id, arg) => { runCommand(id, arg); }} />}
             {ask && (
                 <ConfirmDialog title="휴지통으로 옮길까요?" danger confirmLabel="휴지통으로" onCancel={() => setAsk(null)}
                     onConfirm={() => { setAsk(null); trashNode(nodeId); }}>
