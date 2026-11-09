@@ -25,13 +25,15 @@ import {
 import {
     setWorkspaceBridge, makeHost, resetFirstRunFlags, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
-    useStorageErrors, useDurability,
+    useStorageErrors, useDurability, useNotifications,
     type WorkspaceEvent, type PluginHost, type IconName,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
 import { canPlace, canSplit, isSingleton, leafTitle } from '../pane-ui-system/view-registry';   // 자리 제한·제목 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
+import './notify-view';   // 알림 패널 뷰(app.notify)
 const BLANK_VIEW_ID = 'app.blank';
+const NOTIFY_VIEW_ID = 'app.notify';
 
 /** 이 leaf 가 든 탭 묶음의 id — 가르기 명령이 팔레트에서 불릴 때(맥락 없이) 활성 탭의 묶음을 찾는다. */
 function tabsIdOfLeaf(ws: Workspace, leafId: string): string | null {
@@ -274,6 +276,9 @@ export function Workbench() {
             add(FRAME_COMMAND.moveRight, '오른쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'right'); }, 'panelRight'),
             add(FRAME_COMMAND.newTab, '새 탭', (c) => { if (c?.tabsId) H().onAddToTabs(c.tabsId); else H().onAddGlobal(); }, 'plus'),
             add(FRAME_COMMAND.openSettings, '설정 열기', () => { openView('settings.main'); }, 'gear', 'Mod+,'),
+            add(FRAME_COMMAND.openNotify, '알림 패널 열기', () => { openView(NOTIFY_VIEW_ID); }, 'bell'),
+            // 🔔 리본에도 선다 — 명령을 가리키는 동작(host.ribbon.add 와 같은 길)
+            fh.declare({ kind: 'ribbon', commandId: FRAME_COMMAND.openNotify, icon: 'bell' }),
             add(FRAME_COMMAND.toggleLeft, '왼쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('left', !p.state.leftOpen); }, 'panelLeft', 'Mod+B'),
             add(FRAME_COMMAND.toggleRight, '오른쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('right', !p.state.rightOpen); }, 'panelRight', 'Mod+Alt+B'),
             // ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 디스패처가 preventDefault 로 가로챈다
@@ -332,8 +337,10 @@ export function Workbench() {
     };
 
     // 좁은 화면 하단 바·탭 전환이 쓰는 값 — 가운데의 펴진 leaf 목록 + 앱이 바에 꽂는 항목(설정)
+    const notifyUnread = useNotifications().unread;
     const centerLeaves = flatten(ws.center);
     const barItems: BarItem[] = [
+        { id: 'notify', icon: 'bell', label: '알림', badge: notifyUnread || undefined, onClick: () => openView(NOTIFY_VIEW_ID) },
         { id: 'settings', icon: 'gear', label: '설정', onClick: openSettings },
     ];
 

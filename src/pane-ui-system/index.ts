@@ -82,6 +82,7 @@ export { StatusBar, type StatusItem } from './shell/shared/StatusBar';
 export { StorageErrorStatus } from './shell/shared/StorageErrorStatus';
 export { Toasts } from './shell/shared/Toasts';
 export { NotifyStatus } from './shell/shared/NotifyStatus';
+export { NotifyPanel } from './shell/shared/NotifyPanel';
 export { storageStatusKind, type StorageStatusKind } from './shell/shared/storage-status';
 export { CommandPalette } from './shell/shared/CommandPalette';
 // 넓은 화면 전용(desktop)
