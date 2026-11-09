@@ -123,7 +123,7 @@ export {
     type Workspace, type Node, type Leaf, type TabsNode, type SplitNode, type AreaKey, type MovePos,
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, areaOfLeaf, renameLeaf,
+    closeOthers, closeToRight, areaOfLeaf, renameLeaf, withLeafGlyph,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';

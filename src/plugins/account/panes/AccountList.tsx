@@ -68,7 +68,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     const { RecordView } = rv;
     const fid = accountFolderId(kind);
     const Frame = getNodesApi()?.Frame;
-    const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={30} className="text-muted" />;
+    const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={22} className="text-muted" />;
     const table = (
         <div className="h-full flex flex-col">
             <RecordView<Row>

@@ -40,7 +40,7 @@ export const THEMES: ThemePreset[] = [
         id: 'notion-light', name: '노션 밝게', base: 'light', pairId: 'notion-dark',
         palette: {
             bg: '255 255 255', panel: '247 247 245', panel2: '241 241 239', line: '223 223 220',
-            text: '55 53 47', muted: '145 145 142', accent: '35 131 226', accenth: '24 115 204',
+            text: '55 53 47', muted: '120 119 115', accent: '35 131 226', accenth: '24 115 204',
             ok: '31 138 76', bad: '197 48 48', warn: '183 121 31',
             side: '236 236 233', side2: '229 229 226', edge: '206 206 202',
         },
@@ -49,7 +49,7 @@ export const THEMES: ThemePreset[] = [
         id: 'notion-dark', name: '노션 어둡게', base: 'dark', pairId: 'notion-light',
         palette: {
             bg: '25 25 25', panel: '32 32 32', panel2: '37 37 37', line: '60 60 60',
-            text: '235 235 235', muted: '155 155 155', accent: '45 140 240', accenth: '80 160 245',
+            text: '235 235 235', muted: '172 172 172', accent: '45 140 240', accenth: '80 160 245',
             ok: '47 158 91', bad: '214 69 69', warn: '217 164 65',
             side: '20 20 20', side2: '28 28 28', edge: '78 78 78',
         },

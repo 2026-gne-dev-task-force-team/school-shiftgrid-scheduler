@@ -23,6 +23,8 @@ export interface Leaf {
      *    ⛔ 옛 워크스페이스엔 이 값이 없다 → 생략 = 미변경으로 읽혀 레지스트리 title 이 이긴다(호환).
      */
     renamed?: boolean;
+    /** 탭 앞에 그릴 글자 아이콘(노드 머리에서 고른 이모지) — 있으면 뷰 등록소의 기본 아이콘을 덮는다. 없으면 생략. */
+    glyph?: string;
     params?: Record<string, unknown>;
 }
 
@@ -300,6 +302,21 @@ export function renameLeaf(ws: Workspace, id: string, title: string): Workspace 
     const base = applyAreas(ws, (node) =>
         mapTree(node, (n) => (n.kind === 'tabs' ? { ...n, children: n.children.map(ren) } : n)));
     return { ...base, floating: base.floating.map(ren) };
+}
+
+/** leaf 탭 글자 아이콘 바꾸기(없애려면 undefined) — 같은 값이면 ws 를 그대로 돌려 불필요한 저장·그림을 막는다 */
+export function withLeafGlyph(ws: Workspace, id: string, glyph: string | undefined): Workspace {
+    const g = glyph?.trim() || undefined;
+    let changed = false;
+    const set = (l: Leaf): Leaf => {
+        if (l.id !== id || l.glyph === g) return l;
+        changed = true;
+        return { ...l, glyph: g };
+    };
+    const base = applyAreas(ws, (node) =>
+        mapTree(node, (n) => (n.kind === 'tabs' ? { ...n, children: n.children.map(set) } : n)));
+    const floating = base.floating.map(set);
+    return changed ? { ...base, floating } : ws;
 }
 
 /** leaf 가 어느 자리에 사나 — 우클릭 메뉴가 「지금 자리」 항목을 비활성할 때 쓴다 */

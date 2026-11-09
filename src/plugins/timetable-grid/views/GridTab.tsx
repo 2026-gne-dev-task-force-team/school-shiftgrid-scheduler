@@ -27,7 +27,7 @@ export function GridTab({ leafId }: { leafId?: string }) {
         <div className="h-full flex flex-col overflow-hidden select-none"
             onKeyDown={(e) => { const u = undoKey(e.nativeEvent); if (u && !e.defaultPrevented) { e.preventDefault(); stepEdit(activeId, u); } }}>
             <Frame nodeId={activeId} leafId={leafId} onBack={() => { setActiveSheet(null); }} backLabel="목록"
-                fallback={<Icon name="schedule" size={30} className="text-muted" />}>
+                fallback={<Icon name="schedule" size={22} className="text-muted" />}>
                 <TimeGrid data={data} edit={(fn) => applyEdit(activeId, fn)} />
             </Frame>
         </div>

@@ -41,7 +41,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
     return (
         // 노션 페이지처럼 — 가운데 정렬된 읽기 폭 · 큰 머리 · 넉넉한 여백(틀이 쥔다). 표가 더 넓으면 표 자체가 가로 스크롤.
         <Frame nodeId={activeId} leafId={leafId} onBack={() => setActiveTable(null)} backLabel="목록" width="wide" scroll
-            fallback={<Icon name="table" size={30} className="text-muted" />}>
+            fallback={<Icon name="table" size={22} className="text-muted" />}>
                 <Table
                     columns={doc.cols}
                     rows={doc.rows}

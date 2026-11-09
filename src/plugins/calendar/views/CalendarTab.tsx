@@ -113,7 +113,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     if (!scopeStore || !Frame) return view;
     return (
         <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체"
-            fallback={<Icon name="folder" size={30} className="shrink-0 text-accent" />}>
+            fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
             <div className="h-full">{view}</div>
         </Frame>
     );

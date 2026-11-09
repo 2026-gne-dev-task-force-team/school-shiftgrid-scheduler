@@ -27,7 +27,8 @@ function coerceLeaf(raw: unknown): Leaf | null {
     const params = isObj(raw.params) ? (raw.params as Record<string, unknown>) : undefined;
     // 🔴 사용자가 직접 바꾼 제목만 되살린다 — 옛 저장값엔 이 칸이 없어(생략) 레지스트리 title 이 이긴다(leafTitle, 호환).
     const renamed = raw.renamed === true ? true : undefined;
-    return { kind: 'leaf', id: raw.id, viewId: raw.viewId, title, renamed, params };
+    const glyph = typeof raw.glyph === 'string' && raw.glyph ? raw.glyph : undefined;
+    return { kind: 'leaf', id: raw.id, viewId: raw.viewId, title, renamed, glyph, params };
 }
 
 /** 저장된 날것 노드를 성한 Node 로 — 모르는 모양은 버린다(normalize 가 뒤처리) */

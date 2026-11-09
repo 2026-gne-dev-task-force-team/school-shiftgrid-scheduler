@@ -19,7 +19,7 @@ import {
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, areaOfLeaf,
+    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
     type MovePos,
 } from '../pane-ui-system';
 import {
@@ -158,6 +158,7 @@ export function Workbench() {
             open: (viewId: string, o?: WorkspaceOpenOptions) => openView(viewId, o),
             close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
             setTitle: (leafId: string, title: string) => setWs((w) => renameLeaf(w, leafId, title)),
+            setGlyph: (leafId: string, glyph: string | undefined) => setWs((w) => withLeafGlyph(w, leafId, glyph)),
         });
         return () => setWorkspaceBridge(null);
     }, [openView]);
@@ -468,7 +469,7 @@ export function Workbench() {
                     <TabSwitcher
                         open={tabSwitcher}
                         onClose={() => setTabSwitcher(false)}
-                        tabs={centerLeaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: appHost.views.get(l.viewId)?.icon }))}
+                        tabs={centerLeaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: appHost.views.get(l.viewId)?.icon, glyph: l.glyph }))}
                         activeId={centerLeaves.some((l) => l.id === focus) ? focus : (centerLeaves[0]?.id ?? null)}
                         onSelect={handlers.onActivate}
                         onCloseTab={handlers.onClose}
