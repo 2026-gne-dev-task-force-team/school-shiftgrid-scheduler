@@ -5,12 +5,14 @@
  */
 import { useSyncExternalStore } from 'react';
 import { StartScreen as StartScreenBase } from '../../../pane-ui-system';
+import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import { subscribeTableNodes, getTableRev, liveTables, createTable, parentNameOf, getNodesApi } from '../nodes';
 
-export function StartScreen() {
+export function StartScreen({ leafId }: { leafId?: string }) {
+    useLauncherTab(leafId, '새 시트');
     // 노드가 바뀌면 다시 읽는다(rev 스냅샷).
     useSyncExternalStore(subscribeTableNodes, getTableRev, getTableRev);
-    const items = liveTables().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id) }));
+    const items = liveTables().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id), emoji: n.icon || undefined }));
 
     const open = (id: string) => { getNodesApi()?.open(id); };
     const make = () => { const id = createTable(); if (id) open(id); };
@@ -19,7 +21,7 @@ export function StartScreen() {
         <StartScreenBase
             icon="table"
             title="시트"
-            description="새로 만들거나, 만들어 둔 시트를 고른다."
+            noun="시트"
             newLabel="새 시트"
             newHint="빈 시트(3×3)가 바로 열린다"
             items={items}

@@ -41,7 +41,7 @@ interface SlashState { blockId: string; query: string; index: number; }
 export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }) {
     const activeId = useActivePage();
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
-    if (!activeId || inTrash(activeId)) return <StartScreen />;
+    if (!activeId || inTrash(activeId)) return <StartScreen leafId={leafId} />;
     return (
         <PageEditor
             host={host}

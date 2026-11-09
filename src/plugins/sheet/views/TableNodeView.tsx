@@ -23,7 +23,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
 
     const node = tableNodeOf(activeId);
     // 보고 있는 표가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
-    if (!activeId || !node || inTrash(activeId)) return <StartScreen />;
+    if (!activeId || !node || inTrash(activeId)) return <StartScreen leafId={leafId} />;
 
     const doc = docOf(activeId);
     const Frame = getNodesApi()?.Frame;

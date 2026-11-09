@@ -20,7 +20,7 @@ export function GridTab({ leafId }: { leafId?: string }) {
     const data = useMemo(() => (activeId && isSheet(activeId) ? sheetDataOf(activeId) : null), [activeId, sheetNodes]);
 
     // 보고 있는 시간표가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
-    if (!activeId || !data || inTrash(activeId)) return <StartScreen />;
+    if (!activeId || !data || inTrash(activeId)) return <StartScreen leafId={leafId} />;
     if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
 
     return (

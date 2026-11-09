@@ -6,6 +6,7 @@
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { StartScreen as StartScreenBase, type PeekHandle } from '../../../pane-ui-system';
+import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
@@ -20,14 +21,16 @@ export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
     return req.rows.map((r) => keys.map((k) => { const i = req.keys.indexOf(k); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
 }
 
-function CollectionStart({ kit }: { kit: Bridge }) {
+function CollectionStart({ kit, leafId }: { kit: Bridge; leafId?: string }) {
     const { config: cfg } = kit;
+    useLauncherTab(leafId, `새 ${cfg.listLabel}`);
     const items = kit.lists().map((l) => ({ id: l.id, name: l.name, folder: kit.parentNameOf(l.id) }));
     const open = (id: string) => { kit.nodes()?.open(id); };
     return (
         <StartScreenBase
             icon={cfg.listIcon}
             title={cfg.listLabel}
+            noun={cfg.listLabel}
             description={cfg.text.startDescription}
             newLabel={`새 ${cfg.listLabel}`}
             newHint={cfg.text.startHint}
@@ -56,7 +59,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [rev, activeId]);
 
-    if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} />;
+    if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} leafId={leafId} />;
 
     const Frame = kit.nodes()?.Frame;
     if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
