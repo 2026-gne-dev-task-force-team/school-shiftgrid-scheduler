@@ -497,7 +497,7 @@ export function RecordView<T>({
             )}
 
             {uniqueMsg && (
-                <div role="alert" data-rv-unique-msg className="flex items-center gap-2 px-2 py-1 border-b border-line bg-warn/10 text-[12px] text-text shrink-0">
+                <div role="alert" data-rv-unique-msg className="flex items-center gap-2 px-2 py-1 border-b border-line bg-warn/10 text-small text-text shrink-0">
                     <Icon name="warn" size={13} className="text-warn shrink-0" />
                     <span className="flex-1 min-w-0">{uniqueMsg}</span>
                     <IconButton icon="x" label="닫기" size={12} onClick={() => setUniqueMsg(null)} />
@@ -759,10 +759,10 @@ export function RecordView<T>({
                                         ))}
                                     </div>
                                     {!f.locked && (
-                                        <button type="button" data-rv-unique aria-pressed={!!f.unique} onClick={() => toggleUnique(f.key)}
-                                            className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
+                                        <Button variant="plain" data-rv-unique aria-pressed={!!f.unique} onClick={() => toggleUnique(f.key)}
+                                            className="flex items-center gap-2 !px-2 text-left">
                                             <Icon name={f.unique ? 'check' : 'key'} size={14} />{f.unique ? '유일 끄기' : '유일(같은 값 막기)'}
-                                        </button>
+                                        </Button>
                                     )}
                                     {!locked && (
                                         <button type="button" data-rv-del-field onClick={() => deleteField(f.key)} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-bad hover:bg-bad/10 text-left">
