@@ -5,16 +5,19 @@
  *   🔑 피크 안이면 상단 줄을 피크 머리줄 자리(usePeekBar)에 그린다 — 줄이 둘이 안 된다.
  *   ⋯ 메뉴 = 본문이 보탠 항목 + 공통(이름 바꾸기·탐색기에서 보기·휴지통으로) + 그 타입의 menu. 우클릭 메뉴(Q6)도 같은 항목을 쓴다.
  */
-import { Fragment, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, ConfirmDialog, ContextMenu, Icon, IconButton, usePeekBar, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { Button, ContextMenu, Icon, IconButton, usePeekBar, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import { runCommand } from '../../../pane-ui-system/plugin';
 import type { NodeFrameProps } from '../contracts/nodes';
 import { parentOf } from '../model/tree';
 import type { Node } from '../model/tree';
-import { canDo, canOpenType, confirmDeleteMsg, iconOf, typeMenu } from '../model/types';
+import { canOpenType, confirmDeleteMsg, iconOf } from '../model/types';
 import { getState, openById, select as selectNode, subscribeState, trashNode } from '../store';
 import { NodeHeader } from './NodeHeader';
+import { nodeMenu } from './node-menu';
+import { bindLeafNode } from '../leaf-follow';
+import { TrashConfirm } from './TrashConfirm';
 
 const COLUMN = { full: 'w-full', page: 'mx-auto w-full max-w-3xl', wide: 'mx-auto w-full max-w-4xl' } as const;
 
@@ -31,25 +34,21 @@ function ancestorsOf(tree: ReturnType<typeof getState>['tree'], id: string): Nod
     return out;
 }
 
-/** ⋯ 메뉴 항목 — 본문이 보탠 것 · 공통 · 타입 menu. 누를 때 짓는다(타입 menu 가 부르는 순간 대상을 잡아 두기 때문). */
+/** ⋯ 메뉴 항목 — 본문이 보탠 것 + 탐색기 우클릭과 같은 한 목록(node-menu). 누를 때 짓는다(타입 menu 가 부르는 순간 대상을 잡아 두기 때문). */
 export function frameMenu(nodeId: string, extra: MenuEntry[] | undefined, ops: { rename: () => void; ask: () => void }): MenuEntry[] {
-    const node = getState().tree.nodes[nodeId];
-    if (!node) return [];
-    const out: MenuEntry[] = [];
-    if (extra?.length) out.push(...extra, { sep: true });
-    out.push({ label: '이름 바꾸기', icon: 'edit', disabled: !canDo(node.type, nodeId, 'rename'), onClick: ops.rename });
-    out.push({ label: '탐색기에서 보기', icon: 'folder', onClick: () => selectNode(nodeId) });
-    const typed = typeMenu(node, nodeId);
-    if (typed.length) out.push({ sep: true }, ...typed);
-    out.push({ sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, disabled: !canDo(node.type, nodeId, 'delete'), onClick: ops.ask });
-    return out;
+    return nodeMenu(nodeId, {
+        extra, move: true,
+        rename: { run: ops.rename },
+        reveal: () => selectNode(nodeId),
+        remove: { run: ops.ask },
+    });
 }
 
 const EDITABLE = 'input, textarea, [contenteditable="true"], [contenteditable=""]';
 
 export function NodeFrame({
     nodeId, leafId, onBack, backLabel = '목록', actions, menu, toolbar, headerExtra, width = 'full', scroll = false,
-    fallback, titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
+    titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
 }: NodeFrameProps) {
     const tree = useSyncExternalStore(subscribeState, () => getState().tree);
     const slot = usePeekBar();
@@ -61,6 +60,8 @@ export function NodeFrame({
     const trigger = useContextTrigger((x, y) => {
         setPop({ x, y, items: frameMenu(nodeId, menu, { rename: focusTitle, ask: askTrash }) });
     }, (t) => !!t.closest(EDITABLE));
+    // 🔑 이 탭이 이 노드를 보고 있다고 적고 고른다 — 탐색기 강조·속성 패널이 따라온다(피크는 leafId 가 없어 안 건드린다)
+    useEffect(() => bindLeafNode(leafId, nodeId), [leafId, nodeId]);
     if (!node) return null;
 
     const focusTitle = () => {
@@ -97,23 +98,27 @@ export function NodeFrame({
             <IconButton icon="dots" label="더보기" onClick={openMenu} />
         </>
     );
+    // 🔑 머리는 모든 노드가 한 꼴 — 아이콘(그 타입 자신의 것 22px)+제목 한 줄. 높이(h-10)·아래 여백(pb-2)을 여기서만 정한다.
+    //    ⛔ 호출자가 fallback 아이콘을 따로 주던 길은 닫았다(꾸러미마다 크기·모양이 달라 머리가 들쭉날쭉했다) — 탐색기와 같은 아이콘.
     const header: ReactNode = (
-        <div className="flex items-center gap-3 min-w-0">
-            <NodeHeader nodeId={nodeId} leafId={leafId} fallback={fallback ?? <Icon name={iconOf(node)} size={22} className="text-muted" />}
+        <div data-nf-header className="flex items-center gap-3 w-full min-w-0 pb-2">
+            <NodeHeader nodeId={nodeId} leafId={leafId} fallback={<Icon name={iconOf(node)} size={22} className="text-muted" />}
                 titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={onTitleEnter} onRename={onRename} />
             {headerExtra && <div className="shrink-0 text-small text-muted tabular-nums">{headerExtra}</div>}
         </div>
     );
 
     const col = COLUMN[width];
+    // 머리 자리(위 여백 pt-3 · 옆 px-6 · 폭 col) — 고정이든 스크롤 안이든 같은 상자를 쓴다.
+    const headBox = `${col} px-6 pt-3`;
     let body: ReactNode;
     if (typeof children === 'function') {
         body = <div className="flex-1 min-h-0">{children(header)}</div>;
     } else if (scroll && !toolbar) {
         body = (
             <div className="flex-1 min-h-0 overflow-auto">
-                <div className={`${col} px-6 pt-3 pb-16`}>
-                    <div className="mb-2">{header}</div>
+                <div className={`${headBox} pb-16`}>
+                    {header}
                     {children}
                 </div>
             </div>
@@ -122,10 +127,8 @@ export function NodeFrame({
         // 툴바는 스크롤 밖(머리 바로 아래 고정) — 본문만 스크롤된다(W6).
         body = (
             <>
-                <div className="shrink-0 px-6 pt-3 pb-2">
-                    <div className={col}>{header}</div>
-                </div>
-                {toolbar && <div data-slot="toolbar" className={`shrink-0 ${col}`}>{toolbar}</div>}
+                <div data-slot="head" className={`shrink-0 ${headBox}`}>{header}</div>
+                <div data-slot="toolbar" className={`shrink-0 ${col}`}>{toolbar}</div>
                 <div className="flex-1 min-h-0 overflow-auto">
                     <div className={`${col} px-6 pt-3 pb-16`}>{children}</div>
                 </div>
@@ -134,7 +137,7 @@ export function NodeFrame({
     } else {
         body = (
             <>
-                <div className={`shrink-0 ${col} px-6 pt-3 pb-1`}>{header}</div>
+                <div data-slot="head" className={`shrink-0 ${headBox}`}>{header}</div>
                 {toolbar && <div data-slot="toolbar" className={`shrink-0 ${col}`}>{toolbar}</div>}
                 <div className="flex-1 min-h-0">{children}</div>
             </>
@@ -148,12 +151,7 @@ export function NodeFrame({
                 : <div className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">{bar}</div>}
             {body}
             {pop && <ContextMenu x={pop.x} y={pop.y} items={pop.items} onClose={() => setPop(null)} onCommand={(id, arg) => { runCommand(id, arg); }} />}
-            {ask && (
-                <ConfirmDialog title="휴지통으로 옮길까요?" danger confirmLabel="휴지통으로" onCancel={() => setAsk(null)}
-                    onConfirm={() => { setAsk(null); trashNode(nodeId); }}>
-                    {ask}
-                </ConfirmDialog>
-            )}
+            {ask && <TrashConfirm msg={ask} onCancel={() => setAsk(null)} onConfirm={() => { setAsk(null); trashNode(nodeId); }} />}
         </div>
     );
 }

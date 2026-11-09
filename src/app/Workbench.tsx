@@ -124,7 +124,11 @@ export function Workbench() {
         if (!focus || focus === prevFocus.current) return;
         prevFocus.current = focus;
         const l = findLeaf(ws, focus);
-        if (l) fireWorkspace('activate' as WorkspaceEvent, { id: l.id, viewId: l.viewId, params: l.params });
+        if (l) {
+            // 어느 자리 탭인가도 싣는다 — 사이드 패널(탐색기·속성) 포커스는 「탭 바뀜」이 아니라서 듣는 쪽이 가른다(R3).
+            const area = (['left', 'center', 'right'] as const).find((a) => { const n = ws[a]; return !!n && flatten(n).some((x) => x.id === l.id); }) ?? (ws.floating.some((x) => x.id === l.id) ? 'floating' : undefined);
+            fireWorkspace('activate' as WorkspaceEvent, { id: l.id, viewId: l.viewId, params: l.params, area });
+        }
     }, [focus, ws]);
 
     // 🔴 ⭐ 뷰 열기 — 리본·플러그인(workspace.open)·설정·빈 사이드바 고르기가 **전부 이 한 함수**를 거친다.

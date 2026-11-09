@@ -1,14 +1,14 @@
 /**
  * InlineRename — 제자리 이름 고치기 칸(탐색기 줄·탭·제목 등). 뜨면 초점 + 전체 선택.
  *   Enter·blur → 확정(onCommit) · Esc → 취소(onCancel) · 🔴 한글 조합 중 Enter 는 무시(isImeEnter).
- *   값이 비었거나(공백만) 처음 값과 같으면 확정 대신 취소다 — 이름이 빈칸이 되는 일이 없다.
+ *   값이 비었거나(공백만) 처음 값과 같으면 확정 대신 취소다 — 이름이 빈칸이 되는 일이 없다(raw 면 그대로 확정).
  *   한 번 끝나면(확정·취소) 다시 안 부른다 — Enter 뒤 언마운트로 오는 blur 가 두 번 확정하지 않게.
  */
 import { useEffect, useRef, useState } from 'react';
 import { isImeEnter } from './ime';
 import { FOCUS_RING } from './focus';
 
-export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, ariaLabel }: {
+export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, ariaLabel, raw = false }: {
     value: string;
     /** 다듬은(trim) 새 이름 */
     onCommit: (next: string) => void;
@@ -16,6 +16,8 @@ export function InlineRename({ value, onCommit, onCancel, className = '', placeh
     className?: string;
     placeholder?: string;
     ariaLabel?: string;
+    /** 참이면 빈 값·처음과 같은 값도 그대로 확정한다(이름이 아니라 「값 입력」 — 링크 칸처럼 빈 값·그대로 두기도 뜻이 있다). Esc 만 취소. */
+    raw?: boolean;
 }) {
     const [draft, setDraft] = useState(value);
     const ref = useRef<HTMLInputElement>(null);
@@ -32,7 +34,7 @@ export function InlineRename({ value, onCommit, onCancel, className = '', placeh
         if (done.current) return;
         done.current = true;
         const next = (ref.current?.value ?? draft).trim();
-        if (commit && next && next !== value) onCommit(next);
+        if (commit && (raw || (next && next !== value))) onCommit(raw ? (ref.current?.value ?? draft) : next);
         else onCancel();
     };
 

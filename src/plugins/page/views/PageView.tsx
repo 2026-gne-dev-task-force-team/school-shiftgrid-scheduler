@@ -570,11 +570,11 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                     <div
                         ref={rootRef}
                         tabIndex={-1}
-                        className="max-w-3xl mx-auto px-6 py-8 select-text outline-none"
+                        className="max-w-3xl mx-auto px-6 pt-3 pb-16 select-text outline-none"
                         onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); setSelected([]); } }}
                         onKeyDown={onRootKeyDown}
                     >
-                        <div className="mb-1 flex" key={activeId}>{header}</div>
+                        <div className="flex" key={activeId}>{header}</div>
                         {properties && <div className="mb-3">{properties}</div>}
                         {page.blocks.map((b, i) => (
                             <BlockRow
