@@ -55,6 +55,8 @@ export const calendarPlugin = definePlugin({
         // 🔴 M0 — 일정은 노드다(달력은 저장을 모른다). nodes 인터페이스가 없으면 달력이 의미가 없으니 requires.
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 일정 표 모드는 레코드 뷰를 빌린다(없으면 옛 표) — 있으면 쓰는 것이라 supports
+        supports: { 'record-view': '^0.2' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
@@ -104,7 +106,7 @@ export const calendarPlugin = definePlugin({
     // ── 이름 붙인 구현 — 호스트가 contributes 의 이름으로 찾아 꽂는다(p.host 로 호스트가 끼워져 온다) ──
     components: {
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
-        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek }),
+        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek, host: p.host }),
     },
     panes: { SubLink: SubLinkPane, EventProps },
     commands: {
