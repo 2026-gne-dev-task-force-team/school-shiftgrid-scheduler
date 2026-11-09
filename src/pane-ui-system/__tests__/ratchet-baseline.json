@@ -4,146 +4,251 @@
     "arbPx": 20,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 3,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 1
   },
   "plugins/calendar": {
     "bareButton": 12,
     "arbPx": 41,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 4,
+    "divClick": 3,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/collection": {
     "bareButton": 24,
     "arbPx": 56,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 6,
+    "bareInput": 12,
+    "divClick": 5,
+    "ownTrash": 4,
+    "enterNoIme": 0
   },
   "plugins/contract-absence": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/contract-clock": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/contract-export": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/contract-roster": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/contract-timetable": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/contract-week-grid": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/explorer": {
     "bareButton": 5,
     "arbPx": 17,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 1,
+    "bareInput": 1,
+    "divClick": 4,
+    "ownTrash": 40,
+    "enterNoIme": 0
   },
   "plugins/page": {
     "bareButton": 2,
     "arbPx": 8,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 2,
+    "divClick": 0,
+    "ownTrash": 2,
+    "enterNoIme": 0
   },
   "plugins/pane-test": {
     "bareButton": 1,
     "arbPx": 12,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 1,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/people": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/properties": {
     "bareButton": 0,
     "arbPx": 1,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/rooms": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/selection": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/settings": {
-    "bareButton": 20,
-    "arbPx": 119,
+    "bareButton": 8,
+    "arbPx": 9,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 1,
+    "bareInput": 4,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/sheet": {
     "bareButton": 3,
     "arbPx": 18,
     "cmdIdString": 0,
     "ctxDirect": 5,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 3,
+    "divClick": 3,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "plugins/timetable-grid": {
     "bareButton": 0,
     "arbPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 1,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "app": {
     "bareButton": 0,
     "arbPx": 1,
     "cmdIdString": 0,
     "ctxDirect": 0,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0
   },
   "pane-ui-system": {
     "bareButton": 26,
     "arbPx": 60,
     "cmdIdString": 0,
     "ctxDirect": 6,
-    "roleToolbar": 0
+    "roleToolbar": 0,
+    "zRaw": 7,
+    "bareInput": 1,
+    "divClick": 2,
+    "ownTrash": 0,
+    "enterNoIme": 2
   }
 }
