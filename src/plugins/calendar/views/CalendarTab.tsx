@@ -120,7 +120,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     if (scopeStore && Frame) {
         return (
             <div className={`h-full ${padBottom}`}>
-                <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체" toolbar={bar.slot}
+                <Frame nodeId={scopeStore.id} toolbar={bar.slot}
                     fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
                     {body}
                 </Frame>
@@ -129,6 +129,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     }
     return (
         <div className={`h-full flex flex-col min-h-0 ${padBottom}`}>
+            <div data-nf-bar className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none" />
             <div data-slot="head" className="shrink-0 w-full px-6 pt-3">
                 <div data-nf-header className="flex items-center gap-3 w-full min-w-0 pb-2">
                     <div className="flex-1 min-w-0 flex items-center gap-1.5 h-10">

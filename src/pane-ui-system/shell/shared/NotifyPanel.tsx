@@ -32,7 +32,7 @@ function Entry({ it }: { it: NotifyItem }) {
                     <span className="whitespace-nowrap">{timeText(it.at)}</span>
                     {who && <span className="whitespace-nowrap">{who}</span>}
                     {it.action && (
-                        <Button size="sm" className="whitespace-nowrap shrink-0 disabled:opacity-40 disabled:pointer-events-none" disabled={act.kind !== 'ready'} title={act.kind === 'stale' ? act.reason : undefined} onClick={() => runNotifyAction(it.id)}>
+                        <Button size="sm" className="disabled:opacity-40 disabled:pointer-events-none" disabled={act.kind !== 'ready'} title={act.kind === 'stale' ? act.reason : undefined} onClick={() => runNotifyAction(it.id)}>
                             {it.action.label}
                         </Button>
                     )}

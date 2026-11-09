@@ -46,13 +46,11 @@ const click = (el: Element | null | undefined) => act(() => { (el as HTMLElement
 const menuItem = (label: string) => [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
 
 describe('nodes.Frame', () => {
-    it('상단 줄에 조상 경로와 ‹ 단추, 그 밑에 큰 머리·본문이 선다', () => {
-        let back = 0;
-        render(<NodeFrame nodeId={childId} onBack={() => { back += 1; }} backLabel="목록"><p>본문</p></NodeFrame>);
+    it('상단 줄에 조상 경로(뒤로 단추 없음), 그 밑에 큰 머리·본문이 선다', () => {
+        render(<NodeFrame nodeId={childId}><p>본문</p></NodeFrame>);
         const nav = container.querySelector('nav[aria-label="경로"]')!;
         expect(nav.textContent).toBe('윗 폴더');                                   // 자신은 큰 머리에 — 경로엔 조상만
-        click([...container.querySelectorAll('button')].find((b) => b.textContent?.includes('목록')));
-        expect(back).toBe(1);
+        expect([...container.querySelectorAll('button')].some((b) => b.textContent?.includes('목록'))).toBe(false);
         expect((container.querySelector('input[aria-label="제목"]') as HTMLInputElement).value).toBe('아래 폴더');
         expect(container.textContent).toContain('본문');
     });
@@ -94,7 +92,7 @@ describe('nodes.Frame', () => {
                 <div>
                     <div data-slot ref={(e) => { bar.setSlot(e); slotEl = e; }} />
                     <PeekBarProvider slot={bar.slot} claim={bar.claim}>
-                        <NodeFrame nodeId={childId} onBack={() => {}}><p>피크 본문</p></NodeFrame>
+                        <NodeFrame nodeId={childId}><p>피크 본문</p></NodeFrame>
                     </PeekBarProvider>
                     <i data-claimed={String(bar.claimed)} />
                 </div>

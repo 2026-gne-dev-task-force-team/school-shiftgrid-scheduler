@@ -1,6 +1,6 @@
 /**
  * nodes.Frame — 모든 노드 화면(탭)과 옆으로 열기(피크)의 겉틀 하나(Q5 R1·R3).
- *   구조: 상단 줄(‹ 위로 · 조상 경로 · 액션바 · ⋯ 메뉴) → 큰 머리(nodes.Header page 꼴 — 머리 모양은 이것 하나) → 툴바 자리 → 본문.
+ *   구조: 상단 줄(조상 경로 · 액션바 · ⋯ 메뉴) → 큰 머리(nodes.Header page 꼴 — 머리 모양은 이것 하나) → 툴바 자리 → 본문.
  *   🔑 상단 줄은 모든 노드가 같은 꼴이고, 툴바는 본문 종류마다 다르다 — 같은 동작은 한 줄에만(페이지 전체 동작은 ⋯ 로).
  *   🔑 피크 안이면 상단 줄을 피크 머리줄 자리(usePeekBar)에 그린다 — 줄이 둘이 안 된다.
  *   ⋯ 메뉴 = 본문이 보탠 항목 + 공통(이름 바꾸기·탐색기에서 보기·휴지통으로) + 그 타입의 menu. 우클릭 메뉴(Q6)도 같은 항목을 쓴다.
@@ -47,7 +47,7 @@ export function frameMenu(nodeId: string, extra: MenuEntry[] | undefined, ops: {
 const EDITABLE = 'input, textarea, [contenteditable="true"], [contenteditable=""]';
 
 export function NodeFrame({
-    nodeId, leafId, onBack, backLabel = '목록', actions, menu, toolbar, headerExtra, width = 'full', scroll = false,
+    nodeId, leafId, actions, menu, toolbar, headerExtra, width = 'full', scroll = false,
     titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
 }: NodeFrameProps) {
     const tree = useSyncExternalStore(subscribeState, () => getState().tree);
@@ -81,11 +81,6 @@ export function NodeFrame({
 
     const bar = (
         <>
-            {onBack && (
-                <Button size="sm" variant="plain" className="shrink-0 whitespace-nowrap inline-flex items-center gap-1" title={backLabel} onClick={onBack}>
-                    <Icon name="left" size={12} /> {backLabel}
-                </Button>
-            )}
             <nav aria-label="경로" className="min-w-0 flex-1 flex items-center gap-0.5 overflow-hidden text-small text-muted">
                 {anc.map((a, i) => (
                     <Fragment key={a.id}>
