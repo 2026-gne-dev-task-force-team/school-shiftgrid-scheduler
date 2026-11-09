@@ -44,6 +44,15 @@ export default {
         statusbar: 'var(--s-statusbar)',
         rail: 'var(--s-rail)',          // 리본을 상단에 눕혔을 때의 줄 높이(= 세로일 때의 폭)
       },
+      // 글자 크기 단계 — 값은 index.css 의 --fs-* 한 곳. 화면 코드는 text-small 처럼 이름만 쓴다(text-[12px] 같은 임의 크기는 톱니 검사가 늘림을 막는다).
+      //   타일윈드 기본 이름(xs·sm·base)과 안 겹치게 따로 지었다 — 기존 text-xs/sm 의 뜻을 안 바꾼다.
+      fontSize: {
+        micro: 'var(--fs-micro)',   // 10px — 배지·꼬리표
+        note: 'var(--fs-note)',     // 11px — 보조 설명·상태바
+        small: 'var(--fs-small)',   // 12px — 부가 줄·작은 단추
+        body: 'var(--fs-body)',     // 13px — 본문(기본)
+        lead: 'var(--fs-lead)',     // 14px — 머리글·강조
+      },
       width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
       spacing: { pad: 'var(--s-pad)' },
     },

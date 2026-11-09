@@ -1,5 +1,5 @@
 import type { FieldOption, RecordCellValue, RecordField } from './contracts/record-view';
-import { PILL_COLORS } from './colors';
+import { PILL_COLORS } from '../../pane-ui-system';
 import { fieldTypes } from './fields/registry';
 import { newField } from './schema';
 

@@ -8,7 +8,7 @@
  *   「깎임」= 옛 글자가 있는데 새 값의 글자가 그것과 다르다 — `12a` → 숫자(빈 값) · 무엇이든 → 체크(✓ 하나) · 여러 개 → 하나.
  */
 import type { ConvertPlan, FieldOption, RecordCellValue, RecordField } from './contracts/record-view';
-import { PILL_COLORS } from './colors';
+import { PILL_COLORS } from '../../pane-ui-system';
 import { fieldTypes } from './fields/registry';
 
 export function planConvert(

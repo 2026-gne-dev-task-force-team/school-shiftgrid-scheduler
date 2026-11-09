@@ -43,6 +43,14 @@ export { Popover } from './primitives/Popover';
 export { PropertyField } from './primitives/PropertyField';
 export { IconPicker, TitleField, COMMON_EMOJI } from './primitives/IconPicker';
 export { Toggle } from './primitives/Toggle';
+export { Dialog } from './primitives/Dialog';
+export { ConfirmDialog } from './primitives/ConfirmDialog';
+export { Toolbar } from './primitives/Toolbar';
+export { ViewHeader } from './primitives/ViewHeader';
+export { TextInput } from './primitives/TextInput';
+export { Select } from './primitives/Select';
+export { Pill } from './primitives/Pill';
+export { PILL_COLORS, pillStyle, type PillColor } from './primitives/pill-colors';
 
 // 상호작용 — 🔴 드래그·길게누르기·포인터 제스처·전역 가드·재배열 훅이 사는 자리(쥔님: *"인터렉티브 폴더 따로"*).
 //   ⛔ layout/ · primitives/ 는 포인터 핸들러를 직접 안 든다 — 전부 여길 거친다(구조 검사가 지킨다).

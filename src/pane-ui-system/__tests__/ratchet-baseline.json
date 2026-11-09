@@ -1,0 +1,107 @@
+{
+  "plugins/account": {
+    "bareButton": 7,
+    "arbPx": 63,
+    "cmdIdString": 0
+  },
+  "plugins/calendar": {
+    "bareButton": 14,
+    "arbPx": 55,
+    "cmdIdString": 0
+  },
+  "plugins/contract-absence": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/contract-clock": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/contract-export": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/contract-roster": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/contract-timetable": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/contract-week-grid": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/page-editor": {
+    "bareButton": 11,
+    "arbPx": 16,
+    "cmdIdString": 0
+  },
+  "plugins/pane-test": {
+    "bareButton": 1,
+    "arbPx": 12,
+    "cmdIdString": 0
+  },
+  "plugins/people": {
+    "bareButton": 5,
+    "arbPx": 7,
+    "cmdIdString": 0
+  },
+  "plugins/project-explorer": {
+    "bareButton": 7,
+    "arbPx": 20,
+    "cmdIdString": 0
+  },
+  "plugins/properties": {
+    "bareButton": 0,
+    "arbPx": 2,
+    "cmdIdString": 0
+  },
+  "plugins/record-view": {
+    "bareButton": 45,
+    "arbPx": 74,
+    "cmdIdString": 2
+  },
+  "plugins/rooms": {
+    "bareButton": 7,
+    "arbPx": 7,
+    "cmdIdString": 0
+  },
+  "plugins/selection": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "cmdIdString": 0
+  },
+  "plugins/settings": {
+    "bareButton": 20,
+    "arbPx": 119,
+    "cmdIdString": 0
+  },
+  "plugins/table-editor": {
+    "bareButton": 5,
+    "arbPx": 25,
+    "cmdIdString": 0
+  },
+  "plugins/timetable-grid": {
+    "bareButton": 16,
+    "arbPx": 24,
+    "cmdIdString": 0
+  },
+  "app": {
+    "bareButton": 0,
+    "arbPx": 1,
+    "cmdIdString": 0
+  },
+  "pane-ui-system": {
+    "bareButton": 28,
+    "arbPx": 68,
+    "cmdIdString": 0
+  }
+}

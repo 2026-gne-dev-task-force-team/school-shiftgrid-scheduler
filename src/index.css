@@ -54,6 +54,12 @@
   /* 🔴 틀 두 줄(판 A, 2026-11-01) — 전체 폭 상단 타이틀바·하단 상태바. 치수 토큰과 같은 층(코드는 h-titlebar 이름만) */
   --s-titlebar:  max(var(--f-titlebar,  0px), calc(32px * var(--density)));  /* 상단 타이틀바(앱 이름 + 액션) */
   --s-statusbar: max(var(--f-statusbar, 0px), calc(22px * var(--density))); /* 하단 상태바(정보 줄) */
+  /* 글자 크기 단계 — 화면 코드는 text-micro·note·small·body·lead 이름만 쓴다(tailwind.config.js fontSize) */
+  --fs-micro: 10px;
+  --fs-note: 11px;
+  --fs-small: 12px;
+  --fs-body: 13px;
+  --fs-lead: 14px;
 }
 
 /*

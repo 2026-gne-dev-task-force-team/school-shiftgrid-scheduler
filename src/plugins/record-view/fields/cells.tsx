@@ -7,9 +7,7 @@
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
 import { useEffect, useRef, useState } from 'react';
-import { DatePicker, Icon } from '../../../pane-ui-system';
-import { Popover } from '../../../pane-ui-system';
-import { PILL_COLORS, pillStyle } from '../colors';
+import { DatePicker, Icon, Popover, Pill, PILL_COLORS, pillStyle } from '../../../pane-ui-system';
 import { isImeEnter } from './ime';
 import { formatNumber } from './format';
 import { dateText, toDateValue, type DateConfig } from './dates';
@@ -17,14 +15,9 @@ import { hrefOf, isValidLink, type LinkKind } from './links';
 import type { DateValue, FieldCellProps, FieldOption, RecordField } from '../contracts/record-view';
 
 /** 색 알약 한 개 */
-function Pill({ option }: { option: FieldOption }) {
+function OptionPill({ option }: { option: FieldOption }) {
     return (
-        <span
-            className="inline-flex items-center px-1.5 h-[18px] rounded-[3px] text-[12px] leading-none max-w-full truncate"
-            style={pillStyle(option.color)}
-        >
-            {option.label}
-        </span>
+        <Pill color={option.color}>{option.label}</Pill>
     );
 }
 
@@ -207,7 +200,7 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                                         {on && <Icon name="check" size={12} />}
                                     </span>
                                 )}
-                                <Pill option={o} />
+                                <OptionPill option={o} />
                             </button>
                             {onOptionsChange && (
                                 <button type="button" data-rv-opt-edit={o.value} aria-label="선택지 편집"
@@ -251,7 +244,7 @@ export function SelectCell({ field, value, editable, onChange, onOptionsChange }
                 onClick={(e) => editable && setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())}
                 className={`w-full h-full flex items-center gap-1 px-2 truncate ${editable ? 'cursor-pointer' : 'cursor-default'}`}
             >
-                {cur !== null ? <Pill option={optOf(field, cur)} /> : <span className="text-[12px] text-muted">—</span>}
+                {cur !== null ? <OptionPill option={optOf(field, cur)} /> : <span className="text-[12px] text-muted">—</span>}
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>
@@ -278,7 +271,7 @@ export function MultiCell({ field, value, editable, onChange, onOptionsChange }:
                 onClick={(e) => editable && setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())}
                 className={`w-full h-full flex items-center gap-1 px-2 overflow-hidden ${editable ? 'cursor-pointer' : 'cursor-default'}`}
             >
-                {arr.length > 0 ? arr.map((v) => <Pill key={v} option={optOf(field, v)} />) : <span className="text-[12px] text-muted">—</span>}
+                {arr.length > 0 ? arr.map((v) => <OptionPill key={v} option={optOf(field, v)} />) : <span className="text-[12px] text-muted">—</span>}
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>

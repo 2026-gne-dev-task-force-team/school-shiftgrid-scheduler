@@ -22,9 +22,9 @@ function Entry({ it }: { it: NotifyItem }) {
         <li className={`flex items-start gap-2 px-2 py-1.5 border-b border-line last:border-b-0 ${it.read ? 'opacity-70' : ''}`}>
             <Icon name={st.icon} size={14} className={`mt-0.5 shrink-0 ${st.text}`} />
             <div className="flex-1 min-w-0">
-                <div className="text-[13px] text-text break-words">{it.title}</div>
-                {it.body && <div className="text-[12px] text-muted break-words">{it.body}</div>}
-                <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted">
+                <div className="text-body text-text break-words">{it.title}</div>
+                {it.body && <div className="text-small text-muted break-words">{it.body}</div>}
+                <div className="mt-0.5 flex items-center gap-2 text-note text-muted">
                     <span>{timeText(it.at)}</span>{who && <span>{who}</span>}
                     {it.action && (
                         <button
@@ -62,7 +62,7 @@ export function NotifyStatus() {
             </button>
             {anchor && (
                 <Popover anchor={anchor} align="right" width={340} onClose={() => setAnchor(null)}>
-                    <div className="flex items-center justify-between px-2 pb-1 text-[12px] text-muted">
+                    <div className="flex items-center justify-between px-2 pb-1 text-small text-muted">
                         <span>알림 {items.length}건</span>
                         {items.length > 0 && (
                             <button type="button" onClick={clearNotifications} className={`rounded px-1 hover:text-text ${FOCUS_RING}`}>
@@ -71,7 +71,7 @@ export function NotifyStatus() {
                         )}
                     </div>
                     {items.length === 0
-                        ? <div className="px-2 py-3 text-[12px] text-muted">알림이 없습니다.</div>
+                        ? <div className="px-2 py-3 text-small text-muted">알림이 없습니다.</div>
                         : <ul className="max-h-[60vh] overflow-y-auto">{[...items].reverse().map((it) => <Entry key={it.id} it={it} />)}</ul>}
                 </Popover>
             )}
