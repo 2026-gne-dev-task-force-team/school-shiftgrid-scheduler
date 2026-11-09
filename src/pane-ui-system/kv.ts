@@ -12,6 +12,8 @@
  * 🔴 ⛔ 앱 이름을 코드에 박지 않는다(구조 검사 ⑤) — DB 이름은 storageKey 에서 파생한다(localStorage 키와 같은 자리).
  */
 import { storageKey } from './storage';
+import { notify } from './plugin/notify';
+import { announceWrite, watchOtherTabs } from './cross-tab';
 import { reportStorageError, classifyStorageError, setDurability } from './plugin/storage-errors';
 
 const STORE = 'kv';
@@ -70,7 +72,16 @@ function openDb(): Promise<IDBDatabase | null> {
                 if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
                 if (!db.objectStoreNames.contains(NODES)) db.createObjectStore(NODES, { keyPath: 'id' });
             };
-            req.onsuccess = () => resolve(req.result);
+            req.onsuccess = () => {
+                const db = req.result;
+                // 🔴 새 버전 탭이 열리면 옛 탭은 연결을 닫아 판올림을 막지 않는다 + 새로고침 안내.
+                db.onversionchange = () => {
+                    db.close();
+                    notify('app', { level: 'warn', key: 'db-versionchange', timeout: 0, title: '새 버전이 다른 탭에서 열렸습니다 — 새로고침' });
+                };
+                watchOtherTabs(dbName());
+                resolve(db);
+            };
             req.onerror = () => resolve(null);     // 열기 거부 — 없는 것으로
             req.onblocked = () => {
                 blocked = true;
@@ -131,7 +142,7 @@ export async function kvSet(key: string, value: unknown): Promise<boolean> {
         try {
             const tx = db.transaction(STORE, 'readwrite');
             tx.objectStore(STORE).put(value, key);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
-            tx.oncomplete = () => done(true);
+            tx.oncomplete = () => { announceWrite(dbName()); done(true); };
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {
@@ -213,7 +224,7 @@ export async function nodesWrite(batch: { put?: object[]; del?: string[]; clear?
             if (batch.clear) os.clear();                      // 먼저 비운다(전부 다시 쓰기)
             if (batch.put) for (const v of batch.put) os.put(v);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
             if (batch.del) for (const id of batch.del) os.delete(id);
-            tx.oncomplete = () => done(true);
+            tx.oncomplete = () => { announceWrite(dbName()); done(true); };
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {
