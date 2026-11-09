@@ -38,6 +38,6 @@ export const PLUGINS: PluginModule[] = [
     timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
     roomsPlugin,             // 방 목록 꾸러미 — rooms 약속을 들고 와 채운다 · nodes 를 requires
     pageEditorPlugin,        // 페이지 편집기 꾸러미 — 노션식 블록 페이지 노드 · nodes 를 requires
-    recordViewPlugin,        // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채운다(provides) + 「레코드 뷰 연습장」 뷰
+    recordViewPlugin,        // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채운다(provides) + 레코드 뷰 노드 화면
     // 📌 2026-11-09 쥔님 *"구독을 달력 플러그인 안으로 들여라"* — 옛 calendarSubscribePlugin 은 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 등록을 걷었다.
 ];

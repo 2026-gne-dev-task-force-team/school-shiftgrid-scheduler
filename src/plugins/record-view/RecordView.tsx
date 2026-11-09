@@ -30,8 +30,8 @@ import type {
     CellChange, ConvertPlan, FieldOption, RecordCellValue, RecordField, RecordViewProps, SortRule, ViewDef,
 } from './contracts/record-view';
 
-// 🔴 연습장 뷰(views/)는 구조 검사 ⑯(소문자 record 비교 0) 때문에 'record-view' 가 든 경로를 못 쓴다 —
-//    그래서 연습장·노드 화면이 쓰는 공개 타입을 대문자 경로(./RecordView)로 다시 내보낸다(바깥 손님은 contracts/record-view 로).
+// 🔴 노드 화면(views/)은 구조 검사 ⑯(소문자 record 비교 0) 때문에 'record-view' 가 든 경로를 못 쓴다 —
+//    그래서 노드 화면이 쓰는 공개 타입을 대문자 경로(./RecordView)로 다시 내보낸다(바깥 손님은 contracts/record-view 로).
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/record-view';
 
 const SEL_W = 34;   // 선택 체크 칸 폭

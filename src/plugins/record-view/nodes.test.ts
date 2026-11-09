@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
-import { DB_TYPE, ROW_TYPE, commit, indentRow, initRecordNodes, outdentRow, reorderRow, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
+import { DB_TYPE, ROW_TYPE, commit, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 
 interface N { id: string; type: string; name: string; children: string[]; data?: unknown; trashedFrom?: string }
@@ -239,5 +239,21 @@ describe('P2 — 하위 행만 휴지통에 보내도 복원 단추가 잡는다
         expect(trashedRows(dbId).map((n) => n.id)).toEqual([b]);   // db 자손이라 잡힌다
         expect(restoreTrashedRows(dbId)).toBe(1);
         expect(snapshotOf(dbId)!.records.some((r) => r.id === b)).toBe(true);
+    });
+});
+
+describe('리본 「레코드 뷰 열기」 — 첫 화면 고르기', () => {
+    it('보던 게 없으면 휴지통 밖 첫 레코드 뷰 · 보던 게 있으면 그대로', () => {
+        const folder = env.api.create('root', { type: 'folder', name: '폴더' });
+        const inner = env.api.create(folder, { type: DB_TYPE, name: '안쪽', data: blankDb() });
+        env.api.remove(dbId);   // 첫 레코드 뷰를 휴지통으로
+        env.api.move(folder, 'trash');   // 휴지통 속 폴더 안의 레코드 뷰도 제외
+        const live = env.api.create('root', { type: DB_TYPE, name: '산 것', data: blankDb() });
+        setActiveDb(null);
+        pickFirstDbIfNone();
+        expect(getActiveDb()).toBe(live);
+        setActiveDb(inner);
+        pickFirstDbIfNone();
+        expect(getActiveDb()).toBe(inner);
     });
 });
