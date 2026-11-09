@@ -719,7 +719,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                     onClick={(e) => { e.stopPropagation(); selectLine('row', r); }}
                                                     onContextMenu={(e) => openRowMenu(e, row.id, r)}
                                                     title="눌러서 행 고르기 · 끌어서 옮기기 · 우클릭 메뉴"
-                                                    className={`grid place-items-center w-6 min-h-5 rounded-l-sm cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                    className={`grid place-items-center w-6 min-h-9 rounded-l-sm cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
                                                         ${tabsOn ? 'opacity-100' : 'opacity-0'}
                                                         ${sel.r1 <= r && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= columns.length - 1
                                                             ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
@@ -760,7 +760,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         // 🔴 선택 테두리는 칸이 아니라 바깥 상자(selRect) 한 겹으로 그린다 — 칸엔 안쪽 옅은 바탕만(이중선·어긋남 방지).
                                         //    편집 중인 칸은 input 자신의 테두리만 보이게 바탕을 빼지 않는다(input 이 흰 바탕으로 덮는다).
                                         const cls = [
-                                            'relative border px-2.5 py-2 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
+                                            'relative border px-2.5 py-2 h-10 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
                                             // 머리 칸은 바탕이 옅은 회색(panel2)이라 line 경계가 묻힌다 — 한 단 진한 edge 로 본문 칸과 같은 또렷함을 준다(세로 칸선이 보이게).
                                             isHeadCell ? 'border-edge' : 'border-line',
                                             preset === 'lined' ? 'border-x-transparent' : '',
