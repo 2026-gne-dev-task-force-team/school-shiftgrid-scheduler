@@ -51,6 +51,8 @@ function recompute(): void {
  */
 export const roomsNodeTypeImpl = {
     list: {
+        // 탭 머리에서 고른 아이콘(data.icon)을 탐색기에도 — 없으면 기본 아이콘
+        emoji: (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; },
         open: (host: PluginHost, id: string) => {
             setActiveList(id);
             host.workspace.open(SHEET_ID, { where: 'center' });
@@ -307,4 +309,16 @@ export function setCol(id: string, key: string, value: unknown): void {
     const cols = colsOf(id);
     if (value == null || value === '') delete cols[key]; else cols[key] = value;
     api.setData(id, { ...cur, cols });
+}
+
+// ── 목록 아이콘(탭 머리에서 고른다 · 탐색기에도 이모지로) — 목록 노드 data.icon ──
+export function listIconOf(listId: string): string | undefined {
+    const i = (api?.get(listId)?.data as { icon?: unknown } | undefined)?.icon;
+    return typeof i === 'string' && i ? i : undefined;
+}
+export function setListIcon(listId: string, icon: string | undefined): void {
+    if (!api) return;
+    const cur = { ...((api.get(listId)?.data ?? {}) as Record<string, unknown>) };
+    if (icon) cur.icon = icon; else delete cur.icon;
+    api.setData(listId, cur);
 }

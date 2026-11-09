@@ -8,11 +8,11 @@
  *    부모 방을 지우면 자식은 최상위로 올라온다(effectiveParentId 가 최상위로 돌린다).
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { Icon, IconPicker, TitleField } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
 import {
     subscribeNodes, getListNodes, inTrash, roomsIn,
-    addRoom, updateRoom, removeRoom, nudgeRoom, indentRoom, outdentRoom, pasteRooms, roomOf, colsOf, setCol, listFieldsOf, setListFields,
+    addRoom, updateRoom, removeRoom, nudgeRoom, indentRoom, outdentRoom, pasteRooms, roomOf, colsOf, setCol, listFieldsOf, setListFields, listIconOf, setListIcon, getNodesApi,
 } from '../nodes';
 import { buildRoomTree } from '../tree';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
@@ -60,8 +60,9 @@ export function ListTab({ host }: { host?: PluginHost }) {
                 <button type="button" className={btn} title="방 목록" onClick={() => { setActiveList(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <Icon name="door" size={15} className="text-muted" />
-                <span className="font-medium text-text truncate">{list.name}</span>
+                {/* 아이콘·제목 — 탭 안에서 바로 바꾼다(페이지와 같은 결 · 쥔님 2026-11-09) */}
+                <IconPicker icon={listIconOf(activeId)} onSetIcon={(i) => setListIcon(activeId, i)} fallback={<Icon name="door" size={15} className="text-muted" />} sizeClass="text-[16px]" />
+                <TitleField value={list.name} onRename={(n) => getNodesApi()?.rename(activeId, n)} className="font-medium text-[14px] flex-1 max-w-xs" />
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}개</span>
             </div>
             <TableSlot

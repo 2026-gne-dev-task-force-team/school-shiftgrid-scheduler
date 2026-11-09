@@ -39,6 +39,7 @@ export { DatePicker } from './primitives/DatePicker';
 export { DateField } from './primitives/DateField';
 export { Popover } from './primitives/Popover';
 export { PropertyField } from './primitives/PropertyField';
+export { IconPicker, TitleField, COMMON_EMOJI } from './primitives/IconPicker';
 export { Toggle } from './primitives/Toggle';
 
 // 상호작용 — 🔴 드래그·길게누르기·포인터 제스처·전역 가드·재배열 훅이 사는 자리(쥔님: *"인터렉티브 폴더 따로"*).

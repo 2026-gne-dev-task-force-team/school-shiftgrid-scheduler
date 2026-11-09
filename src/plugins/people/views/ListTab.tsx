@@ -8,9 +8,9 @@
  *    아직 그 약속이 없어 분기를 안 만든다(간이 표 하나) — table-slot.tsx 머리의 「요구서」가 그 세션에 건넬 꼴이다.
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { Icon, IconPicker, TitleField } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
-import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields } from '../nodes';
+import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields, listIconOf, setListIcon, getNodesApi } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
 import type { RecordViewApi, RecordField } from '../../record-view/contracts/record-view';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -50,8 +50,9 @@ export function ListTab({ host }: { host?: PluginHost }) {
                 <button type="button" className={btn} title="명단 목록" onClick={() => { setActiveList(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <Icon name="users" size={15} className="text-muted" />
-                <span className="font-medium text-text truncate">{list.name}</span>
+                {/* 아이콘·제목 — 탭 안에서 바로 바꾼다(페이지와 같은 결 · 쥔님 2026-11-09) */}
+                <IconPicker icon={listIconOf(activeId)} onSetIcon={(i) => setListIcon(activeId, i)} fallback={<Icon name="users" size={15} className="text-muted" />} sizeClass="text-[16px]" />
+                <TitleField value={list.name} onRename={(n) => getNodesApi()?.rename(activeId, n)} className="font-medium text-[14px] flex-1 max-w-xs" />
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}명</span>
             </div>
             <TableSlot

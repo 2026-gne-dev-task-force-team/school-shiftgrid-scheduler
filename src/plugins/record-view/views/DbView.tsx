@@ -8,7 +8,7 @@ import { useCallback, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Icon, undoKey } from '../../../pane-ui-system';
+import { Icon, IconPicker, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
@@ -17,7 +17,7 @@ import { buildPaste } from '../paste';
 import { isImeEnter } from '../fields/ime';
 import { blankDb } from '../schema';
 import {
-    commit, getActiveDb, getDbRev, indentRow, outdentRow, renameDb, reorderRow, restoreTrashedRows,
+    commit, getActiveDb, getDbRev, indentRow, outdentRow, renameDb, reorderRow, restoreTrashedRows, setDbIcon,
     snapshotOf, subscribeDb, toggleRowCollapse,
 } from '../nodes';
 
@@ -79,6 +79,8 @@ export function DbView({ host, peek }: ViewProps & { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <div className="shrink-0 px-6 pt-6 pb-2 flex items-end gap-3">
+                {/* 아이콘 — 탭 안에서 바로(페이지와 같은 결) */}
+                <IconPicker icon={doc.icon} onSetIcon={(i) => setDbIcon(id, i)} fallback={<Icon name="table" size={26} className="text-muted" />} sizeClass="text-[28px]" />
                 <div className="flex-1 min-w-0"><TitleInput id={id} name={snap.name} /></div>
                 {snap.trashedRows > 0 && (
                     <button type="button" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}

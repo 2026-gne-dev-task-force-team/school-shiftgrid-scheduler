@@ -182,6 +182,8 @@ export interface DbDoc {
     views: ViewDef[];
     /** ID 칸 자동 번호의 다음 값(P2) */
     seq: number;
+    /** 탭 머리에서 고른 아이콘(이모지) — 탐색기에도 */
+    icon?: string;
 }
 
 /** 행 노드(`record-view.row`)의 data */

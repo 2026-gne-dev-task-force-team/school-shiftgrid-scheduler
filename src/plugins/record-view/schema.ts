@@ -83,7 +83,9 @@ export function normalizeDb(raw: unknown): DbDoc {
     fields = fields.map((f) => { const c = { ...f }; for (const k of Object.keys(c) as (keyof RecordField)[]) if (c[k] === undefined) delete c[k]; return c; });
     const views = normalizeViews(o.views).map((v) => reconcileColumns(v, fields));
     const seq = typeof o.seq === 'number' && o.seq >= 1 ? Math.floor(o.seq) : 1;
-    return { v: 1, fields, titleKey, views, seq };
+    const doc: DbDoc = { v: 1, fields, titleKey, views, seq };
+    if (typeof o.icon === 'string' && o.icon) doc.icon = o.icon;
+    return doc;
 }
 
 function normalizeValue(v: unknown): RecordCellValue | undefined {
