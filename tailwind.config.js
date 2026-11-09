@@ -55,6 +55,7 @@ export default {
       },
       width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
       spacing: { pad: 'var(--s-pad)' },
+      // 겹 단계(z-modal·z-popover …)·움직임(duration-fast …) 유틸은 index.css 의 @layer utilities 에 산다(값과 한 곳).
     },
   },
   plugins: [],

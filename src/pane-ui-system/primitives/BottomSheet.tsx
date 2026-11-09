@@ -66,7 +66,7 @@ export function BottomSheet({
         ...(heightVh != null ? { height: `${heightVh}vh` } : {}),
     };
     return (
-        <div className="fixed inset-0 z-[160] flex flex-col justify-end select-none">
+        <div className="fixed inset-0 z-sheet flex flex-col justify-end select-none">
             <button
                 className={`absolute inset-0 bg-black/40 ${scrimAnim}`}
                 onClick={dismissOnScrim ? onClose : undefined}
