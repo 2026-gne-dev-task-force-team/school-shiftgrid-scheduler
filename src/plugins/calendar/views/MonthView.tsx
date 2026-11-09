@@ -52,6 +52,15 @@ function monthStartOffset(y: number, m: number): number {
     return weeksBetween(ANCHOR, startOfWeek(new Date(y, m - 1, 1), WEEK_START));
 }
 
+/**
+ * 보던 달을 다른 뷰(주·일 …)에 넘길 날 — 그 달이 오늘의 달이면 오늘(주 보기가 오늘이 든 주로 열린다 · R6-S4), 아니면 그 달 1일.
+ */
+export function anchorForMonth(y: number, m: number, today: Date): Date {
+    return y === today.getFullYear() && m === today.getMonth() + 1
+        ? new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        : new Date(y, m - 1, 1);
+}
+
 /** 어느 날이 든 주의 offset — 첫 배치에서 value(보던 날)의 주로 스크롤을 잡을 때 쓴다 */
 function weekOffsetOf(d: Date): number {
     return weeksBetween(ANCHOR, startOfWeek(d, WEEK_START));
@@ -328,7 +337,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     const reportedHead = useRef(true);
     useEffect(() => {
         if (reportedHead.current) { reportedHead.current = false; return; }
-        onChangeRef.current(new Date(head.y, head.m - 1, 1));
+        onChangeRef.current(anchorForMonth(head.y, head.m, new Date()));
     }, [head.y, head.m]);
 
     /** y년 m월 1일이 든 주로 부드럽게 간다 — 범위 밖이면 먼저 깔고 간다 */
