@@ -18,7 +18,7 @@ import { recordViewApi } from './api';
 import { DbView } from './views/DbView';
 import { RowProps } from './RowProps';
 import { ROW_TYPE } from './schema';
-import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, getMenuTarget, restoreTrashedRows, pickFirstDbIfNone } from './nodes';
+import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, getMenuTarget, restoreTrashedRows } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'record-view.' 를 붙인다). contributes 엔 접두사 없는 'db' 로.
 const DB_ID = 'record-view.db';
@@ -30,7 +30,6 @@ function LegacyPlaygroundRedirect({ host, leaf }: ViewProps & { host: PluginHost
         let tries = 0;
         let timer = 0;
         const attempt = (): void => {
-            pickFirstDbIfNone();
             const opened = host.workspace.open(DB_ID, { where: 'center' });
             if (opened == null && tries < 40) { tries += 1; timer = window.setTimeout(attempt, 50); return; }
             host.workspace.close(leaf.id);
@@ -83,7 +82,8 @@ export const recordViewPlugin = definePlugin({
     },
     commands: {
         // 리본 「레코드 뷰 열기」 — 보던 레코드 뷰가 없으면 첫 레코드 뷰를 잡고 연다(하나도 없으면 안내).
-        'record-view.open': (host: PluginHost) => { pickFirstDbIfNone(); host.workspace.open(DB_ID, { where: 'center' }); },
+        // 보던 게 없으면 시작 화면이 뜬다(새로 만들기 + 목록) — 다른 목록 꾸러미와 같은 결(옛 「첫 것 자동 고르기」 걷음)
+        'record-view.open': (host: PluginHost) => { host.workspace.open(DB_ID, { where: 'center' }); },
         // 탐색기 우클릭 「휴지통의 행 N개 복원」 — 메뉴가 가리킨 레코드 뷰의 휴지통 행을 되살린다.
         'record-view.restoreTrashed': () => { const id = getMenuTarget(); if (id) restoreTrashedRows(id); },
     },
