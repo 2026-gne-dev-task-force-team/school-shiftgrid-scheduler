@@ -11,6 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IconName } from './Icon';
 import { MenuList, MenuItem, MenuSeparator } from './Menu';
+import { useExitClose } from './presence';
 import { pushEscapeLayer, useLayerToken } from './layers';
 
 /** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음/노드 + 데이터). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다.
@@ -36,7 +37,7 @@ export type MenuEntry =
 
 const GAP = 6;
 
-export function ContextMenu({ x, y, items, onClose, onCommand }: {
+export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
     x: number;
     y: number;
     items: MenuEntry[];
@@ -45,6 +46,7 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
     onCommand?: (id: string, arg?: MenuCommandArg) => void;
 }) {
     const ref = useRef<HTMLDivElement>(null);
+    const { closing, close: onClose } = useExitClose(onCloseProp);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
     const layer = useLayerToken();
@@ -88,7 +90,7 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
     return createPortal(
         <div
             ref={ref}
-            className="fixed z-popover min-w-[180px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none ui-pop-in"
+            className={`fixed z-popover min-w-[180px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
             style={{ left: pos.x, top: pos.y }}
         >
             <MenuList autoFocus>

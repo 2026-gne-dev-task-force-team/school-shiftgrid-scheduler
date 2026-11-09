@@ -5,6 +5,7 @@
  *   ⭐ R2(S7): 사람 이름만 — 영문 내부 id 는 안 보이고 안 걸린다(오른쪽엔 보낸 꾸러미 이름) · palette:false(「삭제 확인」 같은
  *      다른 화면 안의 내부 단계)·지금 안 되는(enabled=false) 명령은 뺀다 · 막 z-modal + 어두운 배경 · 열림 ui-pop-in · 한글 조합 Enter 무시.
  */
+import { usePresence } from '../../primitives/presence';
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../primitives/Icon';
@@ -35,7 +36,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
     const names = new Map(listPlugins().map((p) => [p.id, p.name]));
     const ownerName = (o: string) => names.get(o) ?? '';
-    const filtered = open ? paletteCommands(listCommands(), q, ownerName) : [];
+    const { mounted, closing } = usePresence(open);
+    const filtered = mounted ? paletteCommands(listCommands(), q, ownerName) : [];
 
     // 열릴 때 초기화 + 입력에 포커스(키보드만으로 완결) · Esc 는 창틀 Esc 층으로(맨 위 하나만 닫힌다)
     useEffect(() => {
@@ -52,7 +54,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         el?.scrollIntoView({ block: 'nearest' });
     }, [sel]);
 
-    if (!open) return null;
+    if (!mounted) return null;
 
     const run = (id: string) => { onClose(); runCommand(id); };
     const onKey = (e: React.KeyboardEvent) => {
@@ -63,9 +65,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-modal flex items-start justify-center pt-[12vh]" role="dialog" aria-modal="true" aria-label="명령 팔레트">
-            <div className="absolute inset-0 bg-text/30 ui-fade-in" onClick={onClose} aria-hidden="true" />
-            <div className="relative w-[min(560px,92vw)] max-h-[70vh] flex flex-col rounded-lg border border-line bg-panel shadow-xl overflow-hidden ui-pop-in">
+        <div className={`fixed inset-0 z-modal flex items-start justify-center pt-[12vh] ${closing ? 'pointer-events-none' : ''}`} role="dialog" aria-modal="true" aria-label="명령 팔레트">
+            <div className={`absolute inset-0 bg-text/30 ${closing ? 'ui-fade-out' : 'ui-fade-in'}`} onClick={onClose} aria-hidden="true" />
+            <div className={`relative w-[min(560px,92vw)] max-h-[70vh] flex flex-col rounded-lg border border-line bg-panel shadow-xl overflow-hidden ${closing ? 'ui-pop-out' : 'ui-pop-in'}`}>
                 <input
                     ref={inputRef}
                     value={q}
