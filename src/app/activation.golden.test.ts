@@ -13,7 +13,7 @@
  * ⚠️ node 라 localStorage 가 없다 — first-run.test 와 같은 메모리 스텁(깨끗한 프로파일 = 첫 실행).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { activateAll, listPlugins } from '../pane-ui-system/plugin';
+import { activateAll, listPlugins, listPropertiesPanes } from '../pane-ui-system/plugin';
 import { setWorkspaceBridge } from '../pane-ui-system/plugin';
 import { PLUGINS } from './plugins';
 
@@ -94,5 +94,16 @@ describe('선언한 약속마다 사람 이름(label)이 비어 있지 않다', 
                 expect(it.label?.trim(), `${p.id} 의 약속 ‘${it.name}’ 에 사람 이름(label)이 없다`).toBeTruthy();
             }
         }
+    });
+});
+
+describe('속성 칸 — 노드 타입마다 주인이 칸을 낸다', () => {
+    it('사람·방·일정·페이지·레코드 행·사용자·역할·구독에 속성 칸이 있고, 비밀엔 없다', () => {
+        activateAll(PLUGINS);
+        for (const type of ['people.person', 'rooms.room', 'calendar.event', 'page-editor.page', 'record-view.row', 'account.user', 'account.role', 'calendar-subscribe.subscription']) {
+            expect(listPropertiesPanes(type).length, `${type} 에 속성 칸이 없다`).toBeGreaterThan(0);
+        }
+        expect(listPropertiesPanes('account.secret')).toEqual([]);
+        expect(listPropertiesPanes('account.cred-secret')).toEqual([]);
     });
 });

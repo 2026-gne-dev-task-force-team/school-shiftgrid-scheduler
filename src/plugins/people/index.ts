@@ -12,8 +12,9 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { ListTab } from './views/ListTab';
-import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget } from './nodes';
+import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget, PERSON_TYPE } from './nodes';
 import { peopleApi } from './api';
+import { PersonProps } from './views/PersonProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'people.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로 적는다.
 const SHEET_ID = 'people.sheet';
@@ -42,9 +43,12 @@ export const peoplePlugin = definePlugin({
             ribbon: [{ commandId: 'people.open', icon: 'users', order: 3 }],
             // 🔴 노드 타입 둘(명단·사람) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: peopleNodeTypes,
+            // 🔴 속성 칸 — 탐색기에서 사람을 고르면 오른쪽 「속성」 패널에 이름·메모가 뜬다.
+            properties: [{ target: PERSON_TYPE, id: 'basic', title: '사람', pane: 'PersonProps' }],
         },
     },
 
+    panes: { PersonProps },
     components: {
         // 명단 화면 — 보고 있는 명단(store)의 사람들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
         Sheet: () => createElement(ListTab),

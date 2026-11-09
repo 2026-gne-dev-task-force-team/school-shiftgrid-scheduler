@@ -12,8 +12,9 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { ListTab } from './views/ListTab';
-import { roomsNodeTypes, roomsNodeTypeImpl, initRoomsNodes, getNodesApi, getMenuTarget } from './nodes';
+import { roomsNodeTypes, roomsNodeTypeImpl, initRoomsNodes, getNodesApi, getMenuTarget, ROOM_TYPE } from './nodes';
 import { roomsApi } from './api';
+import { RoomProps } from './views/RoomProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'rooms.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로 적는다.
 const SHEET_ID = 'rooms.sheet';
@@ -42,9 +43,12 @@ export const roomsPlugin = definePlugin({
             ribbon: [{ commandId: 'rooms.open', icon: 'door', order: 4 }],
             // 🔴 노드 타입 둘(목록·방) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: roomsNodeTypes,
+            // 🔴 속성 칸 — 탐색기에서 방을 고르면 오른쪽 「속성」 패널에 이름·메모가 뜬다.
+            properties: [{ target: ROOM_TYPE, id: 'basic', title: '방', pane: 'RoomProps' }],
         },
     },
 
+    panes: { RoomProps },
     components: {
         // 방 목록 화면 — 보고 있는 목록(store)의 방들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
         Sheet: () => createElement(ListTab),

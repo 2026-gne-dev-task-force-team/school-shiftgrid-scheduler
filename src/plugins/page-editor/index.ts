@@ -11,7 +11,8 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { PageView } from './views/PageView';
-import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, getMenuTarget } from './nodes';
+import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, getMenuTarget, PAGE_TYPE } from './nodes';
+import { PageProps } from './views/PageProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'page-editor.' 를 붙인다). contributes 엔 접두사 없는 'editor' 로.
 const EDITOR_ID = 'page-editor.editor';
@@ -35,9 +36,12 @@ export const pageEditorPlugin = definePlugin({
             ],
             ribbon: [{ commandId: 'page-editor.open', icon: 'fileText', order: 7 }],
             nodeTypes: pageNodeTypes,
+            // 🔴 속성 칸 — 탐색기에서 페이지를 고르면 제목·아이콘·위치가 뜬다
+            properties: [{ target: PAGE_TYPE, id: 'page', title: '페이지', pane: 'PageProps' }],
         },
     },
 
+    panes: { PageProps },
     components: {
         // 편집 화면 — 보고 있는 페이지(store)를 그린다. host 는 표 약속을 받는 데 쓴다.
         Editor: (p) => createElement(PageView, { host: p.host }),

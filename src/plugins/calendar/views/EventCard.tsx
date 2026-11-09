@@ -24,7 +24,7 @@ const startOfDay = (ms: number) => { const d = new Date(ms); return new Date(d.g
 const INPUT = 'w-full rounded border border-line bg-bg px-2 py-1 text-[12px] text-text focus:border-accent outline-none';
 const LABEL = 'text-[11px] text-muted';
 
-export function EventCard({ event, stores, onClose }: { event: CalEvent; stores: StoreInfo[]; onClose: () => void }) {
+export function EventCard({ event, stores, onClose }: { event: CalEvent; stores: StoreInfo[]; onClose?: () => void }) {
     const [title, setTitle] = useState(event.name);
     const [memo, setMemo] = useState(event.memo);
     const titleRef = useRef<HTMLInputElement>(null);
@@ -45,7 +45,7 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
         if (e.nativeEvent.isComposing || e.keyCode === 229) return;   // 🔴 한글 조합 중 Enter 무시
         e.preventDefault();
         commitTitle();
-        onClose();
+        onClose?.();
     };
 
     const setAllDay = (on: boolean) => {
@@ -65,7 +65,7 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
         write({ end: isoMinuteOf(new Date(end)) });
     };
 
-    const trash = () => { removeEvent(event.id); onClose(); };
+    const trash = () => { removeEvent(event.id); onClose?.(); };
 
     // 이 일정 하나만 .ics 로 내려받기(노드 「내보내기」의 일정 단위 — 파일 이름은 제목).
     const exportIcs = () => {
@@ -85,9 +85,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
                     onKeyDown={onTitleKey}
                     className={`flex-1 rounded border border-line bg-bg px-2 py-1 text-[13px] font-medium text-text focus:border-accent outline-none`}
                 />
-                <button type="button" aria-label="닫기" onClick={onClose} className="shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
+                {onClose && (<button type="button" aria-label="닫기" onClick={onClose} className="shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
                     <Icon name="x" size={14} />
-                </button>
+                </button>)}
             </div>
 
             <label className="flex items-center justify-between">
