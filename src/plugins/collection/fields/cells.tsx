@@ -204,7 +204,7 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                             {onOptionsChange && (
                                 <button type="button" data-rv-opt-edit={o.value} aria-label="선택지 편집"
                                     onClick={() => setEditing(editing === o.value ? null : o.value)}
-                                    className="shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
+                                    className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
                                     <Icon name="dots" size={14} />
                                 </button>
                             )}

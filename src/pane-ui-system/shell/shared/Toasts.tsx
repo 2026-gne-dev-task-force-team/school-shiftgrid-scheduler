@@ -103,7 +103,7 @@ export function Toasts() {
                             type="button"
                             aria-label="알림 닫기"
                             onClick={() => dismiss(t.id)}
-                            className={`shrink-0 rounded text-muted hover:text-text ${FOCUS_RING}`}
+                            className={`hit-44 relative shrink-0 rounded text-muted hover:text-text ${FOCUS_RING}`}
                         >
                             <Icon name="x" size={14} />
                         </button>

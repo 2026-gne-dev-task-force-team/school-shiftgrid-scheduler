@@ -4,6 +4,9 @@
  */
 export const FOCUS_RING = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent';
 
+/** 눌리는 칸 공통 상태 — hover 배경 · disabled 흐림(IconButton·Button 과 같은 값). 포커스는 FOCUS_RING 을 따로 붙인다 */
+export const PRESS_STATE = 'transition-colors duration-fast hover:bg-text/[0.06] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent';
+
 /** 여러 줄짜리 카드·목록 줄을 「눌리는 칸」으로 — 고정 높이 Button 이 안 맞을 때. Enter·Space 로도 눌린다. */
 export function pressProps(fn: () => void) {
     return {

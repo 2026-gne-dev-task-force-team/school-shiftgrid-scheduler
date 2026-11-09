@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { DatePicker } from './DatePicker';
 import { Popover } from './Popover';
+import { FOCUS_RING, PRESS_STATE } from './focus';
 
 export function DateField({
     value,
@@ -15,6 +16,7 @@ export function DateField({
     placeholder = '날짜',
     className = '',
     ariaLabel,
+    disabled = false,
 }: {
     value: string;
     onChange: (iso: string) => void;
@@ -22,6 +24,7 @@ export function DateField({
     placeholder?: string;
     className?: string;
     ariaLabel?: string;
+    disabled?: boolean;
 }) {
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
     const label = value ? (time ? value.replace('T', ' ') : value.slice(0, 10)) : '';
@@ -31,8 +34,9 @@ export function DateField({
                 type="button"
                 aria-label={ariaLabel}
                 aria-haspopup="dialog"
+                disabled={disabled}
                 onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
-                className={`text-left tabular-nums ${label ? 'text-text' : 'text-muted'} ${className}`}
+                className={`text-left tabular-nums rounded ${PRESS_STATE} ${FOCUS_RING} ${label ? 'text-text' : 'text-muted'} ${className}`}
             >
                 {label || placeholder}
             </button>
