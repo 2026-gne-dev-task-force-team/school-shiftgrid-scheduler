@@ -14,9 +14,9 @@
     "roleToolbar": 0
   },
   "plugins/collection": {
-    "bareButton": 39,
-    "arbPx": 68,
-    "cmdIdString": 2,
+    "bareButton": 24,
+    "arbPx": 56,
+    "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0
   },
