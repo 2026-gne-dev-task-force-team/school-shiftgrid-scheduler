@@ -16,6 +16,7 @@ import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl, USER_TYPE, ROLE_TYPE } from './nodes';
 import { AccountProps } from './panes/AccountProps';
+import { AccountList } from './panes/AccountList';
 import * as core from './core';
 // 🔴 증명(credential)은 account 꾸러미 안 내부 모듈 — 별도 플러그인이 아니다(2026-11-08 「플러그인은 꾸러미다」).
 import { credentialModule, credentialLocalNodeTypes, initCredentialLocal } from './credential';
@@ -85,6 +86,17 @@ export const accountPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 360, squeeze: 'scroll' },
                 component: 'Editor',
+            }, {
+                // 🔴 사용자·역할 목록은 각자 탭(쥔님 2026-11-09 「한 탭에서 왔다 갔다 하노」) — 폴더를 누르면 그 탭이 열린다
+                id: 'users', title: '사용자', icon: 'users', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Users',
+            }, {
+                id: 'roles', title: '역할', icon: 'shield', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Roles',
             }],
             // 프로젝트 암호만 설정에 남긴다(마스터용) — 사용자·역할·정책은 노드로 옮겨 설정에서 걷었다.
             settings: {
@@ -101,6 +113,8 @@ export const accountPlugin = definePlugin({
     // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
     components: {
         Editor: ({ host, peek }) => createElement(AccountEditor, { host, peek }),
+        Users: ({ host, peek }) => createElement(AccountList, { kind: 'users', host, peek }),
+        Roles: ({ host, peek }) => createElement(AccountList, { kind: 'roles', host, peek }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──

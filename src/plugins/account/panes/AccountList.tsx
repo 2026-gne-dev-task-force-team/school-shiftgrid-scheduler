@@ -11,7 +11,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../record-view/contracts/record-view';
 import {
     can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
-    setUserName, setRoleName, setRoleLevel,
+    setUserName, setRoleName, setRoleLevel, reorderAccount,
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion } from './useAccount';
@@ -36,7 +36,7 @@ function usersModel() {
     ];
     return {
         rows, fields, noun: '사용자',
-        canAdd: can('account.users.create'), canDelete: can('account.users.delete'),
+        canAdd: can('account.users.create'), canDelete: can('account.users.delete'), canEdit: edit,
         add: () => createUser('새 사용자'), remove: deleteUser,
         set: (id: string, key: string, v: RecordCellValue) => { if (key === 'name' && typeof v === 'string' && v.trim()) setUserName(id, v.trim()); },
     };
@@ -52,7 +52,7 @@ function rolesModel() {
     ];
     return {
         rows, fields, noun: '역할',
-        canAdd: can('account.roles.create'), canDelete: can('account.roles.delete'),
+        canAdd: can('account.roles.create'), canDelete: can('account.roles.delete'), canEdit: edit,
         add: () => createRole('새 역할'), remove: deleteRole,
         set: (id: string, key: string, v: RecordCellValue) => {
             if (key === 'name' && typeof v === 'string' && v.trim()) setRoleName(id, v.trim());
@@ -87,6 +87,7 @@ export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles'; hos
                     onAddRecord={m.canAdd ? () => { m.add(); } : undefined}
                     onDeleteRecords={m.canDelete ? (ids) => ids.forEach(m.remove) : undefined}
                     onOpenRecord={open}
+                    onReorder={m.canEdit ? reorderAccount : undefined}
                     className="flex-1 min-h-0"
                 />
             </div>

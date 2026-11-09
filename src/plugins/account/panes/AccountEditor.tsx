@@ -25,7 +25,7 @@ export function AccountEditor({ host, peek }: { host?: PluginHost; peek?: PeekHa
     if (!id || !kind) {
         return <p className="text-[12px] text-muted p-4">탐색기에서 사용자·역할·정책을 누르면 여기서 편집합니다.</p>;
     }
-    if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} peek={peek} />;
+    if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} peek={peek} />;   // 옛 열기 경로 대비
     // 사용자·역할 편집기 위에 「← 목록」 — 나무에 안 보이니 목록으로 돌아갈 길을 여기 둔다
     const back = (
         <button type="button" onClick={() => { const p = parentOf(id); if (p) setActiveAccountNode(p); }}

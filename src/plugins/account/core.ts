@@ -326,6 +326,14 @@ export function createRole(name: string, opts?: Partial<Omit<RoleData, 'name'>>)
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
 export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
+/** 사용자·역할 목록의 순서 바꾸기 — beforeId 앞으로(null 이면 끝). 같은 폴더 안에서만. */
+export function reorderAccount(id: string, beforeId: string | null): void {
+    const parent = nodesApi?.parent(id);
+    if (!nodesApi || !parent) return;
+    const sibs = nodesApi.children(parent).map((n) => n.id).filter((x) => x !== id);
+    const at = beforeId ? sibs.indexOf(beforeId) : sibs.length;
+    nodesApi.move(id, parent, at < 0 ? sibs.length : at);
+}
 /** 부모 노드 id — 편집기의 「← 목록」이 쓴다(사용자·역할은 나무에 안 보인다). */
 export function parentOf(id: string): string | null { return nodesApi?.parent(id) ?? null; }
 
