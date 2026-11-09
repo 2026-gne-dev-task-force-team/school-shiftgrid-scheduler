@@ -69,6 +69,7 @@ export function RecordView<T>({
     onCellsChange,
     onAddRecord,
     onDeleteRecords,
+    onDestructive,
     onOpenRecord,
     iconOf,
     onFieldsChange,
@@ -305,15 +306,23 @@ export function RecordView<T>({
     };
     const setFieldIcon = (key: string, icon: string | undefined) =>
         onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, icon } : f)));
-    const setOptions = (key: string, options: FieldOption[]) =>
-        onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, options } : f)));
+    const setOptions = (key: string, options: FieldOption[]) => {
+        const apply = () => onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, options } : f)));
+        const old = byKey.get(key)?.options ?? [];
+        if (onDestructive && options.length < old.length) onDestructive(`선택지 ${old.length - options.length}개를 지웠습니다`, apply);
+        else apply();
+    };
     const deleteField = (key: string) => {
-        onFieldsChange?.(fields.filter((f) => f.key !== key));
-        patchView({
-            sorts: view.sorts.filter((s) => s.key !== key),
-            filter: pruneFilter(view.filter, key),
-            columns: view.columns.filter((c) => c.key !== key),
-        });
+        const label = byKey.get(key)?.label ?? key;
+        const apply = () => {
+            onFieldsChange?.(fields.filter((f) => f.key !== key));
+            patchView({
+                sorts: view.sorts.filter((s) => s.key !== key),
+                filter: pruneFilter(view.filter, key),
+                columns: view.columns.filter((c) => c.key !== key),
+            });
+        };
+        if (onDestructive) onDestructive(`칸 「${label}」을 지웠습니다`, apply); else apply();
         setHeadMenu(null);
     };
     /** 「유일」 켜기/끄기 — 이미 겹친 값이 있으면 켜지 않고 이유를 보인다. */
@@ -506,7 +515,10 @@ export function RecordView<T>({
                 activeId={view.id}
                 fields={fields}
                 onSelect={(id) => { selectView(id); setCur(null); setAnchor(null); }}
-                onChange={(next, select) => { commitViews(next); if (select) selectView(select); }}
+                onChange={(next, select) => {
+                    const apply = () => { commitViews(next); if (select) selectView(select); };
+                    if (onDestructive && next.length < views.length) onDestructive('보기 1개를 지웠습니다', apply); else apply();
+                }}
             />
             <Toolbar
                 host={toolbarHost}

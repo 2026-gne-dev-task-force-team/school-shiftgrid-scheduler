@@ -276,6 +276,8 @@ export interface RecordViewProps<T> {
     onAddRecord?: () => void;
     /** 고른 행들을 지우라고 부른다(일괄 삭제 막대). 안 넘기면 선택·삭제 UI 가 안 뜬다. */
     onDeleteRecords?: (ids: string[]) => void;
+    /** 칸·선택지·보기를 지우는 일을 감싼다 — 한 묶음으로 실행하고 「되돌리기」 알림을 띄운다. 없으면 그냥 실행. */
+    onDestructive?: (title: string, run: () => void) => void;
     /** 행의 「열기」 단추(제목 칸 hover)를 누르면. 안 넘기면 그 단추가 안 뜬다. */
     onOpenRecord?: (id: string) => void;
     /** 넘기면 제목 칸 앞에 행 아이콘이 뜬다(없는 행은 기본 문서 아이콘) — 레코드 = 페이지. */

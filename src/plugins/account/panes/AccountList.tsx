@@ -5,7 +5,7 @@
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다.
  */
 import { useEffect, useState } from 'react';
-import { EmptyState, Icon, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
+import { ConfirmDialog, EmptyState, Icon, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 컬렉션 약속 타입은 컬렉션 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../collection/contracts/collection';
@@ -70,6 +70,10 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     };
     // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」는 노드 시스템 정식 되돌리기(nodes.cmd.undo)
     const remove = (ids: string[]) => { if (host) removeAndNotify(host, kind, ids); else removeAccountRecords(ids); };
+    // 🔴 역할 삭제는 확인창부터 — 그 역할을 가진 사용자는 권한을 잃는다(#28)
+    const [pendingRoles, setPendingRoles] = useState<string[] | null>(null);
+    const rolesAffected = pendingRoles ? listUsers().filter((u) => { const r = u.values.roles; return Array.isArray(r) && pendingRoles.some((id) => r.map(String).includes(id)); }).length : 0;
+    const askRemove = (ids: string[]) => { if (kind === 'roles') setPendingRoles(ids); else remove(ids); };
     const { RecordView } = rv;
     const fid = accountFolderId(kind);
     const Frame = getNodesApi()?.Frame;
@@ -88,11 +92,17 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
                 onFieldsChange={kind !== 'perms' && m.canEdit ? (next) => setFolderFields(kind, next.filter((f) => !f.locked)) : undefined}
                 // 사용자는 폼(이름·아이디·종류·초기 비번·활성)으로 · 역할은 바로 한 줄
                 onAddRecord={m.canAdd ? () => { if (kind === 'users') setAdding(true); else m.add(); } : undefined}
-                onDeleteRecords={m.canDelete ? remove : undefined}
+                onDeleteRecords={m.canDelete ? askRemove : undefined}
                 onOpenRecord={kind === 'perms' ? undefined : open}
                 onReorder={m.canEdit ? reorderAccount : undefined}
                 className="flex-1 min-h-0"
             />
+            {pendingRoles && (
+                <ConfirmDialog title="역할을 지울까요?" danger confirmLabel="지우기"
+                    onConfirm={() => { remove(pendingRoles); setPendingRoles(null); }} onCancel={() => setPendingRoles(null)}>
+                    <p className="text-small text-text">역할 {pendingRoles.length}개를 휴지통으로 옮깁니다. 이 역할을 가진 사용자 {rolesAffected}명이 권한을 잃습니다.</p>
+                </ConfirmDialog>
+            )}
             {adding && <NewUserDialog onClose={() => setAdding(false)} onCreated={(_id, name) => {
                 setAdding(false);
                 host?.notify({ title: `「${name}」 사용자를 만들었습니다`, key: 'account.created' });
