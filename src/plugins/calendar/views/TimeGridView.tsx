@@ -34,7 +34,8 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const HOURS = 24;                     // 0시~24시
 const HOUR_H = 48;                    // 한 시간 = 48px(상수)
 const GUTTER = 56;                    // 왼쪽 시간 눈금 열 폭(px)
-const HDR_H = 52;                     // 열 머리 높이(px) — 요일 + 날짜 두 줄
+const ALLDAY_BAND = 22;               // 종일 일정 띠 — 열 머리 아래 고정(세로로 스크롤해도 안 가려진다 · R6-8)
+const HDR_H = 52 + ALLDAY_BAND;       // 열 머리 높이(px) — 요일 + 날짜 두 줄 + 종일 띠
 const MONTH_BAND = 18;                // 「분기 뷰」 전용 — 열 머리 위에 얹는 달 띠(간트와 같은 꼴, 쥔님 2026-11-01 22:51)
 const START_HOUR = 7;                 // 처음 열 때 맨 위에 오는 시각 — 오전 7시
 const DENSE_DAYS = 14;                // 「분기 뷰」 폭(2주). 이 폭일 때만 머리줄에 분기 표시 한 줄(쥔님 2026-11-01 22:17)
@@ -55,8 +56,8 @@ function alignFor(days: number): (d: Date) => Date {
 /** 열 머리 한 칸 — 요일 + 날짜(오늘은 accent 동그라미) · 1일은 「n월 1일」.
  *   분기 뷰(dense)면 위에 달 띠 한 줄을 더 얹고(showMonth 열에만 달 이름), 달·분기 경계 열은 왼쪽 선을 굵게/진하게. */
 const DayHeader = memo(function DayHeader(
-    { offset, left, width, todayIso, dense, showMonth, boundary, height }:
-    { offset: number; left: number; width: number; todayIso: string; dense: boolean; showMonth: boolean; boundary: ColBoundary; height: number },
+    { offset, left, width, todayIso, dense, showMonth, boundary, height, allDay }:
+    { offset: number; left: number; width: number; todayIso: string; dense: boolean; showMonth: boolean; boundary: ColBoundary; height: number; allDay: CalEvent[] },
 ) {
     const d = dayAt(offset);
     const iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
@@ -77,13 +78,22 @@ const DayHeader = memo(function DayHeader(
                     )}
                 </div>
             )}
-            <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
+            <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5">
                 <span className="text-[11px] text-muted">{WEEKDAYS[d.getDay()]}</span>
                 {isToday ? (
                     <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums whitespace-nowrap">{label}</span>
                 ) : (
                     <span className="leading-6 text-[13px] text-text tabular-nums">{label}</span>
                 )}
+            </div>
+            {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
+            <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
+                {allDay.slice(0, 1).map((e) => (
+                    <div key={e.id} data-event-id={e.id} className={`min-w-0 flex-1 truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
+                        {e.name || '새 일정'}
+                    </div>
+                ))}
+                {allDay.length > 1 && <span className="shrink-0 text-[10px] text-muted tabular-nums">+{allDay.length - 1}</span>}
             </div>
         </div>
     );
@@ -117,7 +127,6 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
     const isToday = iso === todayIso;
     const dayStartMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const dayEvents = dayIndex.get(iso) ?? [];
-    const allDay = dayEvents.filter((e) => e.allDay);
     const timed = dayEvents.filter((e) => !e.allDay);
     // 고른 범위를 이 열에 자른 구간 — 알약 카드 아래 z(맨 앞 자식이라 뒤 형제들이 위에 그려진다) · 포인터 안 먹음
     const slice = timeSliceForDay(selection, dayStartMs, iso);
@@ -132,15 +141,6 @@ const DayColumn = memo(function DayColumn({ offset, left, width, todayIso, nowMi
             {HOUR_LINES.map((h) => (
                 <div key={h} className="absolute left-0 right-0 border-t border-line" style={{ top: h * HOUR_H }} />
             ))}
-            {/* 종일 — 맨 위에 쌓인 가는 막대들(시간축 밖이라 상단에 겹쳐 놓는다) */}
-            {allDay.map((e, i) => {
-                const pal = paletteAt(e.colorIdx);
-                return (
-                    <div key={e.id} data-event-id={e.id} className={`absolute left-0.5 right-0.5 z-30 truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${pal.bar}`} style={{ top: 1 + i * 17 }}>
-                        {e.name || '새 일정'}
-                    </div>
-                );
-            })}
             {timed.map((e) => <TimedCard key={e.id} e={e} dayStartMs={dayStartMs} />)}
             {isToday && (
                 <div className="absolute left-0 right-0 z-10 pointer-events-none" style={{ top: nowMin * (HOUR_H / 60) }}>
@@ -182,6 +182,10 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
     // 🔴 분기 뷰(14일)만 — 열 머리 위에 달 띠 한 줄(hdrH 가 그만큼 커진다) · 달·분기 경계 열 세로선 굵게
     const dense = days === DENSE_DAYS;
     const hdrH = dense ? HDR_H + MONTH_BAND : HDR_H;
+    const allDayOf = (o: number): CalEvent[] => {
+        const d = dayAt(o);
+        return (dayIndex.get(isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate())) ?? []).filter((e) => e.allDay);
+    };
 
     // 일정 — 열마다 카드로 그리고(dayIndex), 시간 칸 더블클릭 → 1시간 생성, 카드 클릭 → 미리보기 편집.
     const { events } = useCalendarData();
@@ -285,12 +289,12 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
             >
                 <div className="relative" style={{ width: s.contentW, height: hdrH + HOURS * HOUR_H }}>
                     {/* 열 머리 줄(sticky top) — 모서리는 sticky left */}
-                    <div className="sticky top-0 z-20 bg-bg border-b border-line" style={{ height: hdrH, width: s.contentW }}>
+                    <div className="sticky top-0 z-20 bg-bg border-b border-line" style={{ height: hdrH, width: s.contentW }} onClick={onGridClick} {...ctxTrigger}>
                         <div className="sticky left-0 z-30 bg-bg" style={{ width: GUTTER, height: hdrH }} aria-hidden="true" />
                         {s.offsets.map((o, i) => (
                             <DayHeader
                                 key={o} offset={o} left={s.leftOf(o)} width={s.colW} todayIso={todayIso}
-                                dense={dense} height={hdrH}
+                                dense={dense} height={hdrH} allDay={allDayOf(o)}
                                 showMonth={dense && shouldShowMonth(dayAt(o).getDate(), i)}
                                 boundary={dense ? columnBoundary(dayAt(o).getMonth() + 1, dayAt(o).getDate()) : 'none'}
                             />
