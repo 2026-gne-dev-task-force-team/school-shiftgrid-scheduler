@@ -30,7 +30,7 @@ const registrar: PluginModule = {
         nodes: {
             registerContributed: () => ({ dispose() { /* 테스트 */ } }),
             subscribe: () => ({ dispose() { /* 테스트 */ } }),
-            byType: () => [],
+            byType: () => [], liveByType: () => [],
         },
     },
 };

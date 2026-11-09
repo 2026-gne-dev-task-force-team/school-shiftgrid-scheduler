@@ -7,7 +7,7 @@
  *   shortcut: 칸 범위 복사·채우기는 없다(칸 하나의 글자 복사만) — 시트 엔진을 안 쓰는 대가. 쓸 일이 생기면 그때 붙인다.
  */
 import { useRef, useState } from 'react';
-import { Button, ContextMenu, Icon, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { Button, ContextMenu, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells, addRow, removeRow,
     addColumn, removeColumn, renameRow, renameColumn, setCellText, setRowTime, setColWidth, colWidth, viewRange,
@@ -38,7 +38,7 @@ function CommitField({ value, onCommit, className, label, placeholder, multiline
     };
     const onKey = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (e.key === 'Escape') { skip.current = true; e.currentTarget.blur(); }
-        else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.blur(); }
+        else if (e.key === 'Enter' && !e.shiftKey && !isImeEnter(e)) { e.preventDefault(); e.currentTarget.blur(); }
     };
     return multiline
         ? <textarea {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />

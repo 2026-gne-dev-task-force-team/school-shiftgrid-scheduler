@@ -27,11 +27,6 @@ let api: NodesApi | null = null;
 let sheetNodes: PublicNode[] = [];
 const subs = new Set<() => void>();
 
-// ── 우클릭 메뉴가 가리킨 노드 — 탐색기가 메뉴를 그릴 때 잡아 둔다(ContextMenu 는 인자를 안 싣는다). ──
-let menuTargetId: string | null = null;
-export function setMenuTarget(id: string): void { menuTargetId = id; }
-export function getMenuTarget(): string | null { return menuTargetId; }
-
 function recompute(): void {
     sheetNodes = api ? api.byType(SHEET_TYPE) : [];
     for (const s of subs) s();
@@ -61,10 +56,11 @@ export const gridNodeTypes: NodeTypeContribution<'sheet'>[] = [
 ];
 
 export function sheetMenu(nodeId: string): MenuEntry[] {
-    setMenuTarget(nodeId);
+    // 🔴 대상은 항목의 commandArg.nodeId 로 명령에 실린다(CommandContext.nodeId) — 모듈 전역에 안 쥔다.
+    const commandArg = { nodeId };
     return [
-        { label: '시간표 열기', icon: 'schedule', commandId: 'timetable-grid.openSheet' },
-        { label: '표 복사(통째)', icon: 'copy', commandId: 'timetable-grid.duplicate' },
+        { label: '시간표 열기', icon: 'schedule', commandId: 'timetable-grid.openSheet', commandArg },
+        { label: '표 복사(통째)', icon: 'copy', commandId: 'timetable-grid.duplicate', commandArg },
     ];
 }
 
@@ -102,20 +98,8 @@ export function parentNameOf(id: string): string | null {
     return api.get(p)?.name ?? null;
 }
 
-/** 조상에 휴지통이 있나(달력·명단과 같은 규칙). */
-export function inTrash(id: string): boolean {
-    if (!api) return false;
-    const trash = api.roots.trash;
-    let cur: string | null = api.parent(id);
-    let guard = 0;
-    while (cur && guard < 1000) {
-        if (cur === trash) return true;
-        if (cur === api.roots.main) return false;
-        cur = api.parent(cur);
-        guard++;
-    }
-    return false;
-}
+/** 휴지통 안인가 — 노드 시스템의 정식 판정(nodes.isTrashed). */
+export function inTrash(id: string): boolean { return api?.isTrashed(id) ?? false; }
 
 // ── 데이터 읽기 ──
 

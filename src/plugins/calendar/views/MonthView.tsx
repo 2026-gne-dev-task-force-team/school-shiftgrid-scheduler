@@ -15,6 +15,7 @@
  *   (앞으로 늘릴 땐 scrollTop 을 그만큼 밀어 화면이 안 튄다). 줄 높이는 「(보이는 높이 − 요일 머리) ÷ 6」 — 한 화면에 늘 6주.
  */
 import { CalBar } from './CalBar';
+import { DayLabel } from './DayLabel';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
@@ -52,6 +53,15 @@ function monthStartOffset(y: number, m: number): number {
     return weeksBetween(ANCHOR, startOfWeek(new Date(y, m - 1, 1), WEEK_START));
 }
 
+/**
+ * 보던 달을 다른 뷰(주·일 …)에 넘길 날 — 그 달이 오늘의 달이면 오늘(주 보기가 오늘이 든 주로 열린다 · R6-S4), 아니면 그 달 1일.
+ */
+export function anchorForMonth(y: number, m: number, today: Date): Date {
+    return y === today.getFullYear() && m === today.getMonth() + 1
+        ? new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        : new Date(y, m - 1, 1);
+}
+
 /** 어느 날이 든 주의 offset — 첫 배치에서 value(보던 날)의 주로 스크롤을 잡을 때 쓴다 */
 function weekOffsetOf(d: Date): number {
     return weeksBetween(ANCHOR, startOfWeek(d, WEEK_START));
@@ -84,7 +94,7 @@ function EventChip({ b }: { b: WeekBar }) {
 /** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게. 일정은 주 줄이 겹쳐 그린다(WeekRow). */
 function DayBox({ c, isToday, inHead, selected }: { c: DayCell; isToday: boolean; inHead: boolean; selected: boolean }) {
     const first = c.d === 1;
-    const label = first ? `${c.m}월 ${c.d}일` : c.d;
+    const label = <DayLabel month={c.m} day={c.d} />;
     // 고른 칸 — 연한 accent 바탕 + 안쪽 테두리(토큰만, 구조 검사 ①). 아니면 본래 바탕(머리달/바깥달).
     const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : inHead ? 'bg-bg' : 'bg-panel2';
     return (
@@ -328,7 +338,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     const reportedHead = useRef(true);
     useEffect(() => {
         if (reportedHead.current) { reportedHead.current = false; return; }
-        onChangeRef.current(new Date(head.y, head.m - 1, 1));
+        onChangeRef.current(anchorForMonth(head.y, head.m, new Date()));
     }, [head.y, head.m]);
 
     /** y년 m월 1일이 든 주로 부드럽게 간다 — 범위 밖이면 먼저 깔고 간다 */

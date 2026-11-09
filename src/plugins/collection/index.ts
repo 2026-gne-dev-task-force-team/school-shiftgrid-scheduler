@@ -9,14 +9,14 @@
  */
 import { useEffect } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { recordViewApi } from './api';
 import { DbView } from './views/DbView';
-import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, getMenuTarget, restoreTrashedRows } from './nodes';
+import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, restoreTrashedRows } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'collection.' 를 붙인다). contributes 엔 접두사 없는 'db' 로.
 const DB_ID = 'collection.db';
@@ -82,7 +82,7 @@ export const collectionPlugin = definePlugin({
         // 보던 게 없으면 시작 화면이 뜬다(새로 만들기 + 목록) — 다른 목록 꾸러미와 같은 결(옛 「첫 것 자동 고르기」 걷음)
         'collection.open': (host: PluginHost) => { host.workspace.open(DB_ID, { where: 'center' }); },
         // 탐색기 우클릭 「휴지통의 행 N개 복원」 — 메뉴가 가리킨 레코드 뷰의 휴지통 행을 되살린다.
-        'collection.restoreTrashed': (host: PluginHost) => { const id = getMenuTarget(); if (id) restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' })); },
+        'collection.restoreTrashed': (host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' })); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'db' 가 가리킨다(열기·새로 만들기 초기값·메뉴).
     nodeTypes: recordNodeTypeImpl,

@@ -1,7 +1,7 @@
 /**
  * 저장소 우클릭 메뉴 + 「새 일정」(C2 보강) — 쥔님 2026-11-02 *"하위 가능하고 그런건 다 어디갔노"*.
  *   저장소가 타입 표의 menu 칸을 안 써 우클릭에 「달력에서 열기」「새 일정」이 없던 것을 메꿨다.
- *   ① storeMenu 는 항목 둘(commandId)을 내고, 그릴 때 그 저장소를 명령 대상으로 잡아 둔다(getMenuTarget)
+ *   ① storeMenu 는 항목 둘(commandId)을 내고, 항목마다 commandArg.nodeId 로 대상을 싣는다(전역 menuTarget 없음)
  *   ② newEventInStore 는 그 저장소에 「오늘 종일」 일정을 만들고 「열 카드」로 담는다(requestOpenCard)
  *   ③ 담으면 구독자(월 보기)가 깨어나고, 꺼내 비울 수 있다
  */
@@ -28,7 +28,7 @@ import { registerType, clearTypes, getType } from '../explorer/model/types';
 import { clearDerived } from '../explorer/model/derive';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, getEventNodes,
-    storeMenu, getMenuTarget, newEventInStore, getPendingCard, clearPendingCard, subscribeCardOpen,
+    storeMenu, newEventInStore, getPendingCard, clearPendingCard, subscribeCardOpen,
     STORE_TYPE,
 } from './nodes';
 
@@ -61,11 +61,12 @@ describe('저장소 우클릭 메뉴', () => {
             .toEqual(['calendar.openStore', 'calendar.newEventIn', 'calendar.importIcs', 'calendar.exportIcs']);
     });
 
-    it('① 메뉴를 그리면 그 저장소를 명령 대상으로 잡아 둔다', () => {
-        storeMenu('store-A');
-        expect(getMenuTarget()).toBe('store-A');
-        storeMenu('store-B');
-        expect(getMenuTarget()).toBe('store-B');
+    it('① 모든 항목이 자기 저장소를 commandArg.nodeId 로 싣는다 — 다른 메뉴를 뒤에 열어도 앞 메뉴의 대상이 안 바뀐다', () => {
+        const a = storeMenu('store-A');
+        const b = storeMenu('store-B');
+        const ids = (items: ReturnType<typeof storeMenu>) => items.map((i) => ('commandArg' in i ? i.commandArg?.nodeId : undefined));
+        expect(ids(a).every((x) => x === 'store-A')).toBe(true);
+        expect(ids(b).every((x) => x === 'store-B')).toBe(true);
     });
 });
 

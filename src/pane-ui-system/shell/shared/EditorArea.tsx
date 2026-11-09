@@ -15,7 +15,7 @@ import { effectiveViewLayout, usePaneSettings } from '../../layout/pane-settings
 import { isCollapsed } from '../../layout/clamp';
 import { ViewPlaceholder } from '../../plugin/Placeholder';
 import { usePluginRegistry } from '../../plugin/registry';
-import { PeekLayer } from './PeekLayer';
+import { PeekLayer, PEEK_PUSH_MIN } from './PeekLayer';
 import { ViewErrorBoundary } from './ErrorBoundary';
 /** 미리보기 닫힘 애니메이션 길이(ms) — index.css 의 peek-to-*·peek-shrink(.16s)와 맞춘다. */
 const PEEK_CLOSE_MS = 160;
@@ -112,7 +112,7 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     //    쥔님 19:08 *"탐색의 흐름은 끊기면 안 돼"*), 좁을 땐 본문 상자 위에 absolute 로 **아래에서 덮는다**.
     //    넓음/좁음은 **이 칸 폭**(size.width) 으로 가른다 — 창 폭도, 밀려 좁아진 본문 폭도 아니다(되먹임 방지).
     //    본문 상자 안쪽 층이 스크롤을 쥔다 · 탭 줄 아래 「내용」 영역에서만 논다(탭 줄·머리줄과 높이를 안 맞춘다).
-    const peekWide = size.width >= (peek?.wideMin ?? PEEK_WIDE_MIN_DEFAULT);
+    const peekWide = size.width >= Math.max(PEEK_PUSH_MIN, peek?.wideMin ?? PEEK_WIDE_MIN_DEFAULT);   // 🐛 본문 최소 폭을 남긴다(PEEK_BODY_MIN)
     const bodyW = bodySize.width || size.width;
     return (
         <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`relative flex-1 min-h-0 flex ${surface}`}>

@@ -7,7 +7,7 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
 import { manifest } from './manifest';
 import { roomsNodeTypes, roomsNodeTypeImpl, initRooms, getKit } from './nodes';
@@ -53,7 +53,7 @@ export const roomsPlugin = definePlugin({
         // 리본 「방 목록 열기」 — 보고 있는 목록은 그대로 두고 화면만 연다(없으면 안내가 뜬다).
         'rooms.open': (host: PluginHost) => { host.workspace.open(SHEET_ID, { where: 'center' }); },
         // 목록 우클릭 「목록 열기」 — 대상은 kit 의 「메뉴가 가리킨 목록」(open 이 보고 있는 목록 정하기 + 화면 열기).
-        'rooms.openList': () => { getKit()?.openMenuTarget(); },
+        'rooms.openList': (_host: PluginHost, ctx?: CommandContext) => { getKit()?.openList(ctx?.nodeId); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'list' 가 가리킨다(목록 open·menu). 방은 순수 데이터라 없다.
     nodeTypes: roomsNodeTypeImpl,

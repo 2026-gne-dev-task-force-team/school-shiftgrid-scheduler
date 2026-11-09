@@ -8,7 +8,7 @@
   },
   "plugins/calendar": {
     "bareButton": 12,
-    "arbPx": 42,
+    "arbPx": 41,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0

@@ -17,7 +17,11 @@ import { PeekBarProvider, usePeekBarState } from './peek-bar';
 const DEFAULT_W = 640;   // 문서급 기본 폭(쥔님: 480→640 이상)
 const MIN_W = 320;
 const MIN_H = 200;
-const EDGE_GAP = 48;     // 칸 가장자리와 최소 간격(피크가 칸을 꽉 덮지 않게)
+const EDGE_GAP = 48;     // 칸 가장자리와 최소 간격(피크가 칸을 꽉 덮지 않게 — 덮기 쪽)
+/** 밀기일 때 본문이 남겨야 하는 최소 폭 — 이보다 좁아지면(옛 EDGE_GAP 48 → 본문 ~60px 찌그러짐) 밀지 않고 덮는다. */
+export const PEEK_BODY_MIN = 480;
+/** 칸이 이 폭 이상이어야 「밀기」가 선다(피크 최소 폭 + 본문 최소 폭). */
+export const PEEK_PUSH_MIN = MIN_W + PEEK_BODY_MIN;
 
 const WKEY = 'peek.width';
 const HKEY = 'peek.height';
@@ -66,7 +70,7 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
         if (!layer) return;
         const move = (ev: PointerEvent) => {
             if (wide) {
-                const next = Math.max(MIN_W, Math.min(layer.width - EDGE_GAP, layer.right - ev.clientX));
+                const next = Math.max(MIN_W, Math.min(layer.width - PEEK_BODY_MIN, layer.right - ev.clientX));
                 setW(next);
             } else {
                 const next = Math.max(MIN_H, Math.min(layer.height - EDGE_GAP, layer.bottom - ev.clientY));
@@ -91,7 +95,7 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
     const rootClass = wide
         ? `relative h-full shrink-0 z-30 pointer-events-auto overflow-hidden ${closing ? 'peek-shrink' : 'peek-grow'}`
         : 'absolute inset-0 z-30 pointer-events-none';
-    const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${EDGE_GAP}px))` } : undefined;
+    const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${PEEK_BODY_MIN}px))` } : undefined;
     const panelStyle = wide ? undefined : { height: h > 0 ? `min(${h}px, calc(100% - ${EDGE_GAP}px))` : '62%' };
 
     return (

@@ -6,7 +6,7 @@
 import { CalBar } from './CalBar';
 import { useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
+import { EmptyState, Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent, renameEvent, removeEvent } from '../nodes';
@@ -131,7 +131,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
             /* 표 — 날짜·시간·제목·저장소(레코드 뷰가 꺼져 있을 때) */
             <div className="flex-1 min-h-0 overflow-auto border-t border-line" {...range.bind}>
                 {rows.length === 0 ? (
-                    <div className="grid place-items-center h-full text-[12px] text-muted">{query ? '찾는 일정이 없다' : '일정이 없다 — 「새 일정」이나 달력 칸 더블클릭으로'}</div>
+                    <EmptyState compact icon="calendar" title={query ? '찾는 일정이 없다' : '일정이 없다'} description={query ? undefined : '「새 일정」이나 달력 칸 더블클릭으로'} />
                 ) : (
                     <table className="w-full text-[12px] text-text border-collapse">
                         <thead className="sticky top-0 bg-bg">

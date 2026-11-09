@@ -117,6 +117,15 @@ describe('메뉴 — 새로고침·파일로 갱신·내보내기·링크 바꾸
             'calendar-subscribe.toggle',
         ]);
     });
+    it('모든 항목이 자기 구독을 commandArg.nodeId 로 싣는다(다른 메뉴를 뒤에 열어도 안 바뀐다)', () => {
+        const a = addSub('가', 'https://x/a.ics');
+        const b = addSub('나', 'https://x/b.ics');
+        const ea = getType(SUB_TYPE)!.menu!(a);
+        const eb = getType(SUB_TYPE)!.menu!(b);
+        const ids = (es: typeof ea) => es.map((e) => (e as { commandArg?: { nodeId?: string } }).commandArg?.nodeId);
+        expect(ids(ea).every((x) => x === a)).toBe(true);
+        expect(ids(eb).every((x) => x === b)).toBe(true);
+    });
     it('토글 라벨은 켜짐 여부를 비춘다(끄기 ↔ 켜기)', () => {
         const id = addSub('공휴일', 'https://x/y.ics');
         expect((getType(SUB_TYPE)!.menu!(id)[4] as { label: string }).label).toBe('끄기');

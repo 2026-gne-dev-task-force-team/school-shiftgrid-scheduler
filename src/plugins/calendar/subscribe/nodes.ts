@@ -17,12 +17,6 @@ import { fetchIcs, type FetchResult } from './fetch';
 
 export { SUB_TYPE };
 
-// ── 우클릭 메뉴가 가리킨 구독 — menu(host,id) 가 그릴 때 잡아 둔다(달력 nodes.ts setMenuTarget 과 같은 결). ──
-//    🔴 ContextMenu 는 commandId 만 넘기고 인자를 안 싣는다 → 명령(새로고침·끄기·링크 바꾸기·파일로 갱신)이 이 대상을 쓴다.
-let menuTargetId: string | null = null;
-export function setMenuTarget(id: string): void { menuTargetId = id; }
-export function getMenuTarget(): string | null { return menuTargetId; }
-
 /** 링크에서 기본 이름을 뽑는다(호스트명) — 못 뽑으면 '구독 캘린더'. 생성 때 한 번 쓰고, 이후엔 노드 이름바꾸기가 쥔다. */
 function deriveLabel(url: string): string {
     try { return new URL(url).hostname || '구독 캘린더'; } catch { return '구독 캘린더'; }
@@ -45,14 +39,14 @@ export function applyLink(id: string, kind: string, value: string, fetcher: (url
 
 /** 구독 노드 우클릭 메뉴 — 새로고침·파일로 갱신·내보내기·링크 바꾸기·켜기/끄기. 지우기는 노드 시스템 휴지통 그대로(탐색기가 붙인다). */
 function subMenu(id: string): MenuEntry[] {
-    setMenuTarget(id);
+    const commandArg = { nodeId: id };   // 🔴 대상은 항목이 싣는다(CommandContext.nodeId) — 전역 menuTarget 없음
     const enabled = getSubById(id)?.data.enabled ?? true;
     return [
-        { label: '새로고침', icon: 'redo', commandId: 'calendar-subscribe.refresh' },
-        { label: '파일로 갱신(.ics)', icon: 'upload', commandId: 'calendar-subscribe.from-file' },
-        { label: '내보내기(.ics)', icon: 'download', commandId: 'calendar-subscribe.export' },
-        { label: '링크 바꾸기', icon: 'edit', commandId: 'calendar-subscribe.change-link' },
-        { label: enabled ? '끄기' : '켜기', icon: enabled ? 'eyeOff' : 'eye', commandId: 'calendar-subscribe.toggle' },
+        { label: '새로고침', icon: 'redo', commandId: 'calendar-subscribe.refresh', commandArg },
+        { label: '파일로 갱신(.ics)', icon: 'upload', commandId: 'calendar-subscribe.from-file', commandArg },
+        { label: '내보내기(.ics)', icon: 'download', commandId: 'calendar-subscribe.export', commandArg },
+        { label: '링크 바꾸기', icon: 'edit', commandId: 'calendar-subscribe.change-link', commandArg },
+        { label: enabled ? '끄기' : '켜기', icon: enabled ? 'eyeOff' : 'eye', commandId: 'calendar-subscribe.toggle', commandArg },
     ];
 }
 

@@ -20,10 +20,6 @@ let api: NodesApi | null = null;
 const subs = new Set<() => void>();
 let rev = 0;   // 노드가 바뀔 때마다 는다 — 시작 화면 목록 useSyncExternalStore 의 스냅샷
 
-let menuTargetId: string | null = null;
-export function setMenuTarget(id: string): void { menuTargetId = id; }
-export function getMenuTarget(): string | null { return menuTargetId; }
-
 function notify(): void { rev++; for (const s of subs) s(); }
 export function getPageRev(): number { return rev; }
 
@@ -51,9 +47,8 @@ export const pageNodeTypes: NodeTypeContribution<'page'>[] = [
 ];
 
 export function pageMenu(nodeId: string): MenuEntry[] {
-    setMenuTarget(nodeId);
     return [
-        { label: '페이지 열기', icon: 'fileText', commandId: 'page.openPage' },
+        { label: '페이지 열기', icon: 'fileText', commandId: 'page.openPage', commandArg: { nodeId } },
     ];
 }
 
