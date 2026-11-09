@@ -11,12 +11,12 @@ import { registerView, unregisterView } from '../view-registry';
 import type { ViewProps } from '../view-registry';
 import {
     track, addCommand, addRibbonAction, getCommand,
-    addSettingsSection, addSettingsItem, addStatusItem, setNewTab, touchContrib,
+    addSettingsSection, addSettingsItem, addStatusItem, setNewTab, touchContrib, addPropertiesPane,
     recordContribution,
 } from './store';
 import type {
     PluginHost, PluginImpl, DeclareInput, Contributes, Disposable, NodeTypeRegistrar,
-    ContributionRecord,
+    ContributionRecord, PropertiesTarget, PropertiesPaneProps,
 } from './types';
 
 /**
@@ -49,6 +49,7 @@ function ledgerRecord(owner: string, item: DeclareInput, origin: ContributionRec
         case 'settingsSection': return { kind: 'settingsSection', id: item.id, title: item.title, origin };
         case 'settingsItem': return { kind: 'settingsItem', id: item.id, title: item.title, origin };
         case 'statusBar': return { kind: 'statusBar', id: item.id, origin };
+        case 'properties': return { kind: 'properties', id: item.id, title: item.title, origin };
     }
 }
 
@@ -109,13 +110,19 @@ function registerOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Di
             const Impl = impl.panes?.[item.pane];
             if (!Impl) throw new Error(`[plugin] "${owner}" 설정 항목 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
             const { kind, pane, ...rest } = item;
-            const Pane: ComponentType = (p) => createElement(Impl, { ...p, host });
+            const Pane: ComponentType = (p) => createElement(Impl as ComponentType<{ host: PluginHost }>, { ...p, host });
             return track(owner, addSettingsItem(owner, { ...rest, Pane }));
         }
         case 'statusBar': {
             const fn = impl.renders?.[item.render];
             if (!fn) throw new Error(`[plugin] "${owner}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
             return track(owner, addStatusItem(owner, { id: item.id, side: item.side, render: () => fn(host) }));
+        }
+        case 'properties': {
+            const Impl = impl.panes?.[item.pane];
+            if (!Impl) throw new Error(`[plugin] "${owner}" 인스펙터 칸 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
+            const Pane: ComponentType<{ target: PropertiesTarget }> = (p) => createElement(Impl as ComponentType<PropertiesPaneProps>, { ...p, host });
+            return track(owner, addPropertiesPane(owner, { target: item.target, id: item.id, title: item.title, order: item.order ?? 0, Pane }));
         }
     }
 }
@@ -134,6 +141,7 @@ export function applyContributes(c: Contributes | undefined, impl: PluginImpl, h
     for (const s of c.settings?.sections ?? []) declareOne({ kind: 'settingsSection', ...s }, impl, host, 'manifest');
     for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host, 'manifest');
     for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host, 'manifest');
+    for (const pp of c.properties ?? []) declareOne({ kind: 'properties', ...pp }, impl, host, 'manifest');
 
     // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). nodes 인터페이스 모듈(host.modules.use)에 항목·impl·host 를
     //    통째로 넘겨 꽂는다. 없으면 던져서 「활성 실패」로 올린다 — 명세 「조용히 안 넘어간다」. 이 플러그인은

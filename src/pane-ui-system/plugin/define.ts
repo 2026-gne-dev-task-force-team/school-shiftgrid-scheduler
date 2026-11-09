@@ -25,7 +25,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { ViewProps } from '../view-registry';
 import type {
-    PluginManifest, PluginModule, PluginHost, PluginLifecycle, Contributes, CommandContext,
+    PluginManifest, PluginModule, PluginHost, PropertiesPaneProps, PluginLifecycle, Contributes, CommandContext,
 } from './types';
 
 // 🔴 기본값은 「빈 객체」여야 한다 — keyof {} = never(이름 없음). ⛔ Record<string, never> 는 keyof 가 string 이라
@@ -36,7 +36,7 @@ type EmptyRec = {};
 export function definePlugin<
     C extends Record<string, ComponentType<ViewProps & { host: PluginHost }>> = EmptyRec,
     Cmd extends Record<string, (host: PluginHost, ctx?: CommandContext, args?: unknown) => void> = EmptyRec,
-    P extends Record<string, ComponentType<{ host: PluginHost }>> = EmptyRec,
+    P extends Record<string, ComponentType<{ host: PluginHost }> | ComponentType<PropertiesPaneProps>> = EmptyRec,
     R extends Record<string, (host: PluginHost) => ReactNode> = EmptyRec,
     // 🔴 노드 타입 함수 묶음 레코드 — 값의 꼴은 창틀이 모른다(도메인). 키(impl 이름)만 contributes 가 파생해 쓴다.
     NT extends Record<string, unknown> = EmptyRec,
