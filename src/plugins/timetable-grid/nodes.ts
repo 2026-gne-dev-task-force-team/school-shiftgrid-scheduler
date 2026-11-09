@@ -65,8 +65,8 @@ export function sheetMenu(nodeId: string): MenuEntry[] {
 }
 
 /** 활성(index.ts)이 한 번 — NodesApi 를 쥐고 구독을 건다. */
-export function initGridNodes(nodes: NodesApi | null): Disposable | null {
-    api = nodes;
+export function initGridNodes(nodes: NodesApi | null, host?: PluginHost): Disposable | null {
+    api = nodes; hostRef = host ?? null;
     recompute();
     if (!nodes) return null;
     return nodes.subscribe(() => recompute());
@@ -121,8 +121,24 @@ export function applyEdit(id: string, edit: (data: TimetableData) => TimetableDa
     const next = edit(prev);
     if (next === prev) return;
     histories.set(id, pushHistory(histories.get(id) ?? emptyHistory<TimetableData>(), prev));
+    editSeq++;
     api.setData(id, next);
 }
+
+// ── 행·열 지우기·병합 해제 되돌리기 알림 — 기존 ⌘Z 더미(stepEdit)로 되돌린다. 뒤에 편집이 쌓이면(editSeq 가 달라짐) 회색.
+let hostRef: PluginHost | null = null;
+let editSeq = 0;
+let removal: { id: string; seq: number } | null = null;
+export function notifyRemoved(id: string, title: string): void {
+    removal = { id, seq: editSeq };
+    hostRef?.notify({
+        title,
+        action: { label: '되돌리기', commandId: 'timetable-grid.undoRemoved', unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
+        key: 'timetable-grid.removed', timeout: 8000,
+    });
+}
+export function removedUndoable(): boolean { return !!removal && removal.seq === editSeq; }
+export function undoRemoved(): void { if (removal && removedUndoable()) stepEdit(removal.id, 'undo'); }
 
 // ⌘Z 더미 — 시간표마다 따로(값 스냅샷 · 창틀 공용 history). 저장 안 함(새로고침하면 비워진다).
 const histories = new Map<string, History<TimetableData>>();
@@ -131,6 +147,7 @@ export function stepEdit(id: string, which: 'undo' | 'redo'): void {
     const h = histories.get(id);
     const r = h && (which === 'undo' ? undo : redo)(h, sheetDataOf(id));
     if (!r || !api) return;
+    editSeq++;
     histories.set(id, r.history);
     api.setData(id, r.value);
 }

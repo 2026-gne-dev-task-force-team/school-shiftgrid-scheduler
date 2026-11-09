@@ -17,7 +17,7 @@ import { tableApi } from './api';
 import { TableNodeView } from './views/TableNodeView';
 import { TableProps } from './views/TableProps';
 import { QuickCalcStatus } from './views/QuickCalcStatus';
-import { tableNodeTypes, tableNodeTypeImpl, initTableNodes, TABLE_TYPE } from './nodes';
+import { tableNodeTypes, tableNodeTypeImpl, initTableNodes, TABLE_TYPE, undoRemoved, removedUndoable } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'sheet.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로.
 const SHEET_ID = 'sheet.sheet';
@@ -64,7 +64,7 @@ export const sheetPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 component: 'LegacyPlayground',
             }],
-            commands: [{ id: 'sheet.open', title: '시트 열기', icon: 'table' }],
+            commands: [{ id: 'sheet.open', title: '시트 열기', icon: 'table' }, { id: 'sheet.undoRemoved', title: '지운 행·열 되돌리기', icon: 'undo', palette: false }],
             ribbon: [{ commandId: 'sheet.open', icon: 'table', order: 6 }],
             // 🔴 노드 타입 하나(표) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: tableNodeTypes,
@@ -86,7 +86,9 @@ export const sheetPlugin = definePlugin({
     commands: {
         // 리본 「표 열기」 — 보고 있는 표는 그대로 두고 화면만 연다(없으면 안내가 뜬다).
         'sheet.open': (host: PluginHost) => { host.workspace.open(SHEET_ID, { where: 'center' }); },
+        'sheet.undoRemoved': () => { undoRemoved(); },
     },
+    enabled: { 'sheet.undoRemoved': () => removedUndoable() },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'table' 이 가리킨다(표 open·createInit).
     nodeTypes: tableNodeTypeImpl,
     // 🔴 table 인터페이스를 채우는 모듈(provides 와 짝). host.modules.use<TableApi>('table') 가 이걸 받는다.
@@ -96,7 +98,7 @@ export const sheetPlugin = definePlugin({
         // 선언 안 되는 것만 — 노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
         onActivate(host: PluginHost) {
             const nodes = host.modules.use<NodesApi>('nodes');
-            initTableNodes(nodes ?? null);
+            initTableNodes(nodes ?? null, host);
         },
     },
 });

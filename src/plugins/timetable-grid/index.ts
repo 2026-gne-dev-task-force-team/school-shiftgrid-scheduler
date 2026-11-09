@@ -16,7 +16,7 @@ import { manifest } from './manifest';
 import { GridTab } from './views/GridTab';
 import { TimetableProps } from './views/TimetableProps';
 import {
-    SHEET_TYPE, gridNodeTypes, gridNodeTypeImpl, initGridNodes, getNodesApi, duplicateSheet,
+    SHEET_TYPE, gridNodeTypes, gridNodeTypeImpl, initGridNodes, getNodesApi, undoRemoved, removedUndoable, duplicateSheet,
 } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'timetable-grid.' 를 붙인다). contributes 엔 접두사 없는 'grid' 로 적는다.
@@ -39,6 +39,7 @@ export const timetableGridPlugin = definePlugin({
                 { id: 'timetable-grid.open', title: '시간표 열기', icon: 'schedule', keys: 'Mod+Alt+T' },
                 { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'schedule', palette: false },
                 { id: 'timetable-grid.duplicate', title: '표 복사(통째)', icon: 'copy' },
+                { id: 'timetable-grid.undoRemoved', title: '지운 행·열 되돌리기', icon: 'undo', palette: false },
             ],
             ribbon: [{ commandId: 'timetable-grid.open', icon: 'schedule', order: 4 }],
             nodeTypes: gridNodeTypes,
@@ -59,7 +60,9 @@ export const timetableGridPlugin = definePlugin({
         'timetable-grid.openSheet': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getNodesApi()?.open(id); },
         // 시간표 우클릭 「표 복사」 — 노드를 통째 복제.
         'timetable-grid.duplicate': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) duplicateSheet(id); },
+        'timetable-grid.undoRemoved': () => { undoRemoved(); },
     },
+    enabled: { 'timetable-grid.undoRemoved': () => removedUndoable() },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'sheet' 가 가리킨다(open·menu).
     nodeTypes: gridNodeTypeImpl,
 
@@ -67,7 +70,7 @@ export const timetableGridPlugin = definePlugin({
         // 선언 안 되는 것만 — 노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
         onActivate(host: PluginHost) {
             const nodes = host.modules.use<NodesApi>('nodes');
-            initGridNodes(nodes ?? null);
+            initGridNodes(nodes ?? null, host);
         },
     },
 });
