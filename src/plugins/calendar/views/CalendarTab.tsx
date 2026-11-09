@@ -10,7 +10,7 @@
  *      ① 월 보기가 초기 scrollTop 을 안 잡아 맨 위(104주 전=2024년)로 가 있던 것 ② 뷰를 바꾸면 각자 오늘로 리셋되던 것.
  *      각 뷰는 제 날짜 useState 를 버리고 value 를 쓰고, 스크롤·단추로 옮기면 onChange 로 올린다(한쪽만 흐른다 — 루프 방지).
  */
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { setLeafGlyph, setLeafTitle, type PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
 import { Icon, useFrameToolbar, useNarrow, type PeekHandle } from '../../../pane-ui-system';
 import { getNodesApi } from '../nodes';
@@ -27,7 +27,7 @@ import { selectionLabel, type CalSelection } from '../selection';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
-export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHost }) {
+export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: PluginHost; leafId?: string }) {
     const [mode, setMode] = useState<Mode>('month');
     // 🔴 「보고 있는 날짜」의 단일 진실 — 초기값은 오늘. 각 뷰에 value 로 내리고 onChange 로 받는다(뷰를 바꿔도 유지된다).
     const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -38,6 +38,8 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     const scope = useScope();
     const { stores } = useCalendarData();
     const scopeStore = scope ? stores.get(scope) : null;
+    // 저장소를 보다가 「전체」로 오면 노드 머리가 써 둔 탭 이름·아이콘(저장소 것)을 걷는다 — 전체 달력은 노드가 아니다
+    useEffect(() => { if (leafId && !scopeStore) { setLeafTitle(leafId, '달력'); setLeafGlyph(leafId, undefined); } }, [leafId, scopeStore]);
 
     // 순서 배열 하나(ALL_MODES)로 고정하고, 지금 보일 것만 거른다 — 끝에 push 하면 순서가 틀어졌다(쥔님 22:17).
     //    🔴 2026-11-09 쥔님 *"시험보기도 그냥 없애"* — 「시험 기능 보기」 설정을 걷었다. 시험 모드(분기·3일·하루·간트)는
@@ -120,7 +122,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     if (scopeStore && Frame) {
         return (
             <div className={`h-full ${padBottom}`}>
-                <Frame nodeId={scopeStore.id} toolbar={bar.slot}
+                <Frame nodeId={scopeStore.id} leafId={leafId} toolbar={bar.slot}
                     fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
                     {body}
                 </Frame>
