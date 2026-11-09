@@ -8,7 +8,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey, josa } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, listContributions, listPlugins, usePluginRegistry, HOST_VERSION,
@@ -27,7 +27,7 @@ const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center
 const KIND_LABEL: Record<ContributionKind, string> = {
     view: '뷰', command: '명령', ribbon: '리본',
     settingsSection: '설정 섹션', settingsItem: '설정 항목',
-    statusBar: '상태바', nodeType: '노드 타입', properties: '속성 칸',
+    statusBar: '상태바', nodeType: '항목 종류', properties: '속성 칸',
 };
 
 /**
@@ -259,7 +259,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                             <RelGroup title="꼭 있어야 하는 것" note="없으면 이 플러그인이 꺼집니다.">
                                 {requires.map(([n, r]) => {
                                     const prov = providerOf(n);
-                                    return <RelRow key={n} left={nameOf(n)} note={prov ? `${prov.name}가 내주는 중 ✓` : '내주는 플러그인 없음'} right={`${n} ${r}`} />;
+                                    return <RelRow key={n} left={nameOf(n)} note={prov ? `${prov.name}${josa(prov.name, '이/가')} 내주는 중 ✓` : '내주는 플러그인 없음'} right={`${n} ${r}`} />;
                                 })}
                             </RelGroup>
                         )}

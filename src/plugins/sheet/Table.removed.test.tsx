@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** 시트 행·열 지우기 → 「n개를 지웠습니다」 알림 + 되돌리기 → 원상. 뒤에 다른 작업이 쌓이면 회색(isTop=false). */
+/** 시트 행·열 지우기 → 「n개를 삭제했습니다」 알림 + 되돌리기 → 원상. 뒤에 다른 작업이 쌓이면 회색(isTop=false). */
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -28,7 +28,7 @@ function H({ notify }: { notify: (isTop: () => boolean) => void }) {
     latest = st;
     return <Table columns={st.cols} rows={st.rows} features={['rows', 'axis-edit', 'history']}
         onCommit={(tx) => setSt((s) => apply(s, tx))}
-        onRemoved={(kind, n, undo, isTop) => { notify(isTop); notifyRemoved(`${kind} ${n}개를 지웠습니다`, undo, isTop); }} />;
+        onRemoved={(kind, n, undo, isTop) => { notify(isTop); notifyRemoved(`${kind} ${n}개를 삭제했습니다`, undo, isTop); }} />;
 }
 const ctx = (el: Element) => act(() => { el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
 const clickText = (t: string) => {
@@ -46,9 +46,9 @@ function mount() {
 describe('시트 행·열 지우기 알림', () => {
     it('행 지우기 → 알림 → 되돌리기 → 원상', () => {
         const s = mount();
-        ctx(document.querySelectorAll('[data-testid="row-handle"]')[0]); clickText('줄 지우기');
+        ctx(document.querySelectorAll('[data-testid="row-handle"]')[0]); clickText('행 삭제');
         expect(latest.rows.map((r) => r.id)).toEqual(['r2', 'r3']);
-        expect(s.title.mock.calls.at(-1)![0].title).toBe('행 1개를 지웠습니다');
+        expect(s.title.mock.calls.at(-1)![0].title).toBe('행 1개를 삭제했습니다');
         expect(s.title.mock.calls.at(-1)![0].action.commandId).toBe('sheet.undoRemoved');
         expect(removedUndoable()).toBe(true);
         act(() => { undoRemoved(); });
@@ -56,16 +56,16 @@ describe('시트 행·열 지우기 알림', () => {
     });
     it('열 지우기 → 알림 → 되돌리기 → 원상 · 뒤에 다른 작업이 쌓이면 회색', () => {
         const s = mount();
-        ctx(document.querySelectorAll('[data-testid="col-handle"]')[0]); clickText('이 칸 지우기');
+        ctx(document.querySelectorAll('[data-testid="col-handle"]')[0]); clickText('이 열 삭제');
         expect(latest.cols.map((c) => c.key)).toEqual(['b']);
-        expect(s.title.mock.calls.at(-1)![0].title).toBe('열 1개를 지웠습니다');
+        expect(s.title.mock.calls.at(-1)![0].title).toBe('열 1개를 삭제했습니다');
         act(() => { undoRemoved(); });
         expect(latest.cols.map((c) => c.key)).toEqual(['a', 'b']);
         // 회색: 지운 뒤 행을 하나 더 지우면 첫 알림은 무효
-        ctx(document.querySelectorAll('[data-testid="col-handle"]')[0]); clickText('이 칸 지우기');
+        ctx(document.querySelectorAll('[data-testid="col-handle"]')[0]); clickText('이 열 삭제');
         const firstTop = s.notify.mock.calls.at(-1)![0] as () => boolean;
         expect(firstTop()).toBe(true);
-        ctx(document.querySelectorAll('[data-testid="row-handle"]')[0]); clickText('줄 지우기');
+        ctx(document.querySelectorAll('[data-testid="row-handle"]')[0]); clickText('행 삭제');
         expect(firstTop()).toBe(false);   // 뒤에 다른 작업이 쌓였다 → 옛 알림은 회색
     });
 });

@@ -71,7 +71,7 @@ describe('하위 페이지 줄 (V5)', () => {
         open();
         act(() => { (container.querySelector('[aria-label="블록 손잡이"]') as HTMLElement).click(); });
         const items = [...document.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent);
-        expect(items).toEqual(['위로', '아래로', '삭제 (페이지도 휴지통으로)']);
+        expect(items).toEqual(['위로', '아래로', '삭제']);
     });
     it('줄을 지우면 그 페이지도 휴지통으로 — 다른 자식은 그대로', () => {
         seed({ blocks: [{ id: 'k1', type: 'childpage', text: '', nodeId: 'c1' }, { id: 'k2', type: 'childpage', text: '', nodeId: 'c2' }] }, ['c1', 'c2']);
@@ -89,7 +89,7 @@ describe('하위 페이지 줄 (V5)', () => {
         act(() => { (container.querySelector('[data-block-row="k1"] [aria-label="블록 손잡이"]') as HTMLElement).click(); });
         act(() => { ([...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent?.startsWith('삭제')) as HTMLElement).click(); });
         expect(notices).toHaveLength(1);
-        expect(notices[0].title).toContain('지웠습니다');
+        expect(notices[0].title).toContain('삭제했습니다');
         expect(notices[0].action?.commandId).toBe('page.undoRemoved');
         expect(blocksRemovedUndoable()).toBe(true);
         act(() => { undoBlocksRemoved(); });

@@ -122,7 +122,7 @@ describe('제목 칸 보호', () => {
     it('제목 칸 메뉴에는 칸 삭제가 없고 타입 단추가 모두 비활성', () => {
         mount(<Harness init={[]} spy={spies()} />);
         click(q('[data-rv-head-menu="f_t"]'));
-        expect(mi('칸 삭제')).toBeUndefined();
+        expect(mi('속성 삭제')).toBeUndefined();
         const types = qa('[data-rv-type]');
         expect(types.length).toBe(13);
         expect(types.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
@@ -131,8 +131,8 @@ describe('제목 칸 보호', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-head-menu="f_x"]'));
-        expect(mi('칸 삭제')).toBeTruthy();
-        click(mi('칸 삭제') ?? null);
+        expect(mi('속성 삭제')).toBeTruthy();
+        click(mi('속성 삭제') ?? null);
         expect((spy.fields.mock.calls[0][0] as RecordField[]).map((f) => f.key)).toEqual(['f_t', 'f_s']);
     });
 });
@@ -461,16 +461,16 @@ describe('R4 — 빈 상태 · 제목 없음 · 새 행', () => {
         const [views, setViews] = useState<ViewDef[]>(FILT);
         return <RecordView<Rec> fields={START} records={rows} getId={(r) => r.id} viewKey="t.empty" titleKey="f_t" views={views} onViewsChange={setViews} onCellChange={() => {}} />;
     }
-    it('필터 때문에 0개면 「조건에 맞는 항목 없음」 + 「필터 지우기」가 행을 되살린다', () => {
+    it('필터 때문에 0개면 「조건에 맞는 항목 없음」 + 「필터 삭제」가 행을 되살린다', () => {
         mount(<FilterHarness rows={[{ id: 'r1', f_t: '가', f_x: 'a' }]} />);
         expect(q('[data-rv-empty="filtered"]')!.textContent).toContain('조건에 맞는 항목 없음');
         expect(q('[data-rv-row="r1"]')).toBeNull();
-        const btn = qa('[data-rv-empty="filtered"] button').find((b) => b.textContent!.includes('필터 지우기'))!;
+        const btn = qa('[data-rv-empty="filtered"] button').find((b) => b.textContent!.includes('필터 삭제'))!;
         click(btn);
         expect(q('[data-rv-empty="filtered"]')).toBeNull();
         expect(q('[data-rv-row="r1"]')).toBeTruthy();
     });
-    it('데이터가 아예 없으면 필터 지우기 단추가 없다(그냥 빈 표)', () => {
+    it('데이터가 아예 없으면 필터 삭제 단추가 없다(그냥 빈 표)', () => {
         mount(<Harness init={[]} spy={spies()} />);
         expect(q('[data-rv-empty]')).toBeTruthy();
         expect(q('[data-rv-empty="filtered"]')).toBeNull();

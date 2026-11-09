@@ -14,7 +14,7 @@ export function NodeEmbed({ nodeId, view }: EmbedProps) {
     const tree = useSyncExternalStore(subscribeState, () => getState().tree);
     const node = tree.nodes[nodeId];
     if (!node || isDescendant(tree, nodeId, tree.trash)) {
-        return <div className="my-1 px-2 py-1.5 rounded border border-dashed border-line text-small text-muted">지워졌거나 휴지통에 있는 항목이에요.</div>;
+        return <div className="my-1 px-2 py-1.5 rounded border border-dashed border-line text-small text-muted">삭제됐거나 휴지통에 있는 항목입니다.</div>;
     }
     const Custom = getType(node.type)?.embed;
     if (Custom) return <Custom nodeId={nodeId} view={view} />;

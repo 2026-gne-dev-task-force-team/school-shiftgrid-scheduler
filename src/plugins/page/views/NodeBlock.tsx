@@ -9,19 +9,19 @@ import { getNodesApi, inTrash } from '../nodes';
 export function NodeBlock({ nodeId, selfId, onPick }: { nodeId?: string; selfId: string; onPick: (nodeId: string) => void }) {
     const api = getNodesApi();
     const [q, setQ] = useState('');
-    if (!api) return <div className="my-1 text-small text-muted">노드 시스템이 꺼져 있어요.</div>;
+    if (!api) return <div className="my-1 text-small text-muted">항목 시스템이 꺼져 있습니다.</div>;
     if (nodeId) { const Embed = api.Embed; return <Embed nodeId={nodeId} />; }
     // 자기 자신은 뺀다 — 페이지가 자기를 끼우면 카드가 제자리를 도는 꼴이다.
     const items = api.find((n) => n.id !== selfId && !inTrash(n.id) && n.name.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 8);
     return (
         <div className="my-1 rounded border border-line p-2">
             <input
-                autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="끼워 넣을 노드 이름…"
-                aria-label="끼워 넣을 노드 찾기"
+                autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="끼워 넣을 항목 이름…"
+                aria-label="끼워 넣을 항목 찾기"
                 className="w-full bg-transparent outline-none text-body text-text border-b border-line pb-1 mb-1"
             />
             {items.length === 0
-                ? <div className="text-small text-muted py-1">맞는 항목이 없어요.</div>
+                ? <div className="text-small text-muted py-1">맞는 항목이 없습니다.</div>
                 : items.map((n) => (
                     <div key={n.id} {...pressProps(() => onPick(n.id))}
                         className="w-full flex items-center gap-2 px-1 py-1 text-left text-body text-muted hover:text-text hover:bg-text/[0.05] rounded">

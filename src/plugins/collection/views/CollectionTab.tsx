@@ -1,6 +1,6 @@
 /**
  * 컬렉션 화면 — 한 줄 = 한 항목, 칸 = 기본 칸 + 목록의 사용자 칸. 표는 레코드 뷰(RecordView)가 그린다(제어형).
- *   🔴 데이터는 kit(노드 다리)에서만 — 목록·항목은 노드고 저장·휴지통·되돌리기는 노드 시스템이 쥔다.
+ *   🔴 데이터는 kit(노드 다리)에서만 — 목록·항목은 노드고 저장·휴지통·되돌리기는 항목 시스템이 쥔다.
  *   보고 있는 목록이 없으면(리본으로 처음 열기 · 보던 목록이 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
  *   ⛔ 뽑기·조 나누기·예약 같은 쓰임새는 없다 — 위층이 증축한다.
  */
@@ -62,7 +62,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} leafId={leafId} />;
 
     const Frame = kit.nodes()?.Frame;
-    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="노드 시스템이 꺼져 있습니다." />;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 시스템이 꺼져 있습니다." />;
     const fields: RecordField[] = [...cfg.baseFields, ...kit.userFieldsOf(activeId)];
     const tree: RecordTree<Rec> | undefined = cfg.tree ? {
         parentOf: (r) => (r.__parent as string | null) ?? null,

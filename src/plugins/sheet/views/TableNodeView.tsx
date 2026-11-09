@@ -1,6 +1,6 @@
 /**
  * 표 노드 화면 — 노션 「페이지 안 표」처럼: 제목(노드 이름) + 표 하나. 설명문 ⛔.
- *   🔴 데이터는 노드 다리(nodes.ts)에서만 — 표도 노드고 저장·휴지통은 노드 시스템이 쥔다.
+ *   🔴 데이터는 노드 다리(nodes.ts)에서만 — 표도 노드고 저장·휴지통은 항목 시스템이 쥔다.
  *   표(Table)는 데이터를 안 들고 있다(controlled) — onCommit(tx) 를 받아 이 화면이 문서에 적용하고 setData 한다.
  *   그래서 다시 열어도 남고, 같은 표를 두 탭에 열면 한쪽 편집이 다른 쪽에 비친다.
  */
@@ -27,7 +27,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
 
     const doc = docOf(activeId);
     const Frame = getNodesApi()?.Frame;
-    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
+    if (!Frame) return <p className="p-4 text-small text-muted">항목 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
 
     const decorate = (rowId: string, key: string): CellDecoration | undefined => {
         const tone = doc.rowTones?.[rowId] ?? doc.colTones?.[key];
@@ -64,7 +64,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     tableStyle={doc.style}
                     onSetTableStyle={(st) => writeDoc(activeId, { ...doc, style: st })}
                     onColor={setTone}
-                    onRemoved={(kind, n, undo, isTop) => notifyRemoved(`${kind} ${n}개를 지웠습니다`, undo, isTop)}
+                    onRemoved={(kind, n, undo, isTop) => notifyRemoved(`${kind} ${n}개를 삭제했습니다`, undo, isTop)}
                     onCommit={(tx) => writeDoc(activeId, applyTx(docOf(activeId), tx))}
                 />
         </Frame>

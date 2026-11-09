@@ -98,7 +98,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
                 className="flex-1 min-h-0"
             />
             {pendingRoles && (
-                <ConfirmDialog title="역할을 지울까요?" danger confirmLabel="지우기"
+                <ConfirmDialog title="역할을 삭제할까요?" danger confirmLabel="삭제"
                     onConfirm={() => { remove(pendingRoles); setPendingRoles(null); }} onCancel={() => setPendingRoles(null)}>
                     <p className="text-small text-text">역할 {pendingRoles.length}개를 휴지통으로 옮깁니다. 이 역할을 가진 사용자 {rolesAffected}명이 권한을 잃습니다.</p>
                 </ConfirmDialog>

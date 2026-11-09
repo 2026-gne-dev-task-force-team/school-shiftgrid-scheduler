@@ -358,7 +358,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const selectedMarkdown = () => exportMarkdown({ ...pageRef.current, blocks: pageRef.current.blocks.filter((b) => selRef.current.includes(b.id)) });
     /** 메뉴·선택 삭제 뒤 「되돌리기」 알림 — 편집기 더미를 되돌린다. 뒤에 다른 편집이 쌓이면 회색. */
     const announceRemoved = (r: EditResult, count: number, hasPage: boolean) => {
-        notifyBlocksRemoved(host, hasPage ? `블록 ${count}개를 지웠습니다 (하위 페이지는 휴지통으로)` : `블록 ${count}개를 지웠습니다`,
+        notifyBlocksRemoved(host, hasPage ? `블록 ${count}개를 삭제했습니다 (하위 페이지는 휴지통으로 옮겼습니다)` : `블록 ${count}개를 삭제했습니다`,
             () => doUndo(), () => histRef.current.present === r.page);
     };
     const hasChildPage = (ids: string[]) => pageRef.current.blocks.some((b) => ids.includes(b.id) && b.type === 'node');
@@ -588,7 +588,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     }
 
     const Frame = host.modules.use<NodesApi>('nodes')?.Frame;
-    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 문서를 그릴 수 없습니다.</p>;
+    if (!Frame) return <p className="p-4 text-small text-muted">항목 시스템이 꺼져 있어 문서를 그릴 수 없습니다.</p>;
     // 페이지 전체 동작은 상단 줄 ⋯ 메뉴로(R3) — 되돌리기·다시는 단추 없이 ⌘Z·메뉴
     const menu: MenuEntry[] = [
         { label: '실행 취소', icon: 'undo', disabled: !canUndo(hist), onClick: doUndo },
@@ -715,9 +715,9 @@ function BlockRow(props: RowProps) {
         { label: '위로', icon: 'up', disabled: index === 0, onClick: () => props.onMoveBy(block.id, -1) },
         { label: '아래로', icon: 'down', disabled: props.last, onClick: () => props.onMoveBy(block.id, 1) },
         { sep: true },
-        { label: '삭제 (페이지도 휴지통으로)', icon: 'trash', danger: true, onClick: () => props.onDelete(block.id) },
+        { label: '삭제', icon: 'trash', danger: true, onClick: () => props.onDelete(block.id) },
     ] : [
-        ...([['글로', 'paragraph'], ['제목 1', 'heading1'], ['글머리표', 'bulleted'], ['체크 목록', 'todo'], ['표', 'table'], ['노드 끼워 넣기', 'node']] as const)
+        ...([['글로', 'paragraph'], ['제목 1', 'heading1'], ['글머리표', 'bulleted'], ['체크 목록', 'todo'], ['표', 'table'], ['항목 끼워 넣기', 'node']] as const)
             .map(([label, type]) => ({ label, onClick: () => props.onChangeType(block.id, type) })),
         { sep: true },
         { label: '복제', icon: 'copy', onClick: () => props.onDuplicate(block.id) },
