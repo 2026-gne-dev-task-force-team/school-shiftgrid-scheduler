@@ -12,7 +12,7 @@
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { pushEscapeLayer } from './layers';
+import { pushEscapeLayer, useLayerToken, LayerContext } from './layers';
 
 const TABBABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable="true"]';
 const FIELD = 'input:not([disabled]):not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),textarea:not([disabled]),select:not([disabled]),[contenteditable="true"]';
@@ -29,18 +29,22 @@ export function Dialog({ open = true, title, onClose, children, footer, width = 
     const ref = useRef<HTMLDivElement>(null);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
+    const layer = useLayerToken();
+    // 연 자리 — 렌더에서 잡는다. 자식 autoFocus 는 효과보다 먼저(커밋 중) 초점을 옮기므로 효과에선 이미 늦다.
+    const opener = useRef<HTMLElement | null>(null);
+    const wasOpen = useRef(false);
+    if (open && !wasOpen.current && typeof document !== 'undefined') opener.current = document.activeElement as HTMLElement | null;
+    wasOpen.current = open;
 
     useEffect(() => {
         if (!open) return;
-        // 연 자리 — 자식 autoFocus 가 먼저 돌았으면 activeElement 는 이미 안쪽이다. 그땐 relatedTarget 대신 기록해 둔 걸 쓴다.
         const panel = ref.current;
-        const active = document.activeElement as HTMLElement | null;
-        const opener = panel && active && panel.contains(active) ? lastOutside : active;
+        const back = opener.current;
         if (panel && !panel.contains(document.activeElement)) {
             const first = panel.querySelector<HTMLElement>('[autofocus]') ?? panel.querySelector<HTMLElement>(FIELD);
             (first ?? panel).focus();
         }
-        const popEsc = pushEscapeLayer(() => closeRef.current());
+        const popEsc = pushEscapeLayer(() => closeRef.current(), layer);
         const onKey = (e: KeyboardEvent) => {
             if (e.key !== 'Tab' || !ref.current) return;
             const items = [...ref.current.querySelectorAll<HTMLElement>(TABBABLE)];
@@ -57,9 +61,9 @@ export function Dialog({ open = true, title, onClose, children, footer, width = 
             popEsc();
             window.removeEventListener('keydown', onKey, true);
             // 연 자리가 아직 화면에 있으면 거기로 돌려준다
-            if (opener && opener !== document.body && opener.isConnected) opener.focus?.();
+            if (back && back !== document.body && back.isConnected) back.focus?.({ preventScroll: true });
         };
-    }, [open]);
+    }, [open, layer]);
 
     if (!open) return null;
     return createPortal(
@@ -77,7 +81,7 @@ export function Dialog({ open = true, title, onClose, children, footer, width = 
                 className="flex flex-col gap-3 rounded-lg border border-line bg-panel shadow-lg p-4 text-text outline-none ui-pop-in"
             >
                 <h3 className="text-lead font-semibold">{title}</h3>
-                {children && <div className="text-body">{children}</div>}
+                {children && <div className="text-body"><LayerContext.Provider value={layer}>{children}</LayerContext.Provider></div>}
                 {footer && <div className="flex items-center justify-end gap-2">{footer}</div>}
             </div>
         </div>,
@@ -85,14 +89,3 @@ export function Dialog({ open = true, title, onClose, children, footer, width = 
     );
 }
 
-/*
- * 자식 autoFocus 는 Dialog 효과보다 먼저 초점을 옮긴다 — 그러면 효과에서 「연 자리」를 못 읽는다.
- * 그래서 문서의 focusin 을 지켜 「대화창 바깥에서 마지막으로 초점을 가졌던 칸」을 기억해 둔다(리스너 하나, 첫 import 때).
- */
-let lastOutside: HTMLElement | null = null;
-if (typeof document !== 'undefined') {
-    document.addEventListener('focusout', (e) => {
-        const t = e.target as HTMLElement | null;
-        if (t && !t.closest?.('[role="dialog"]')) lastOutside = t;
-    }, true);
-}

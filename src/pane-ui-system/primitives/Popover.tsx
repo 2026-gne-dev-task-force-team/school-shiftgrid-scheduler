@@ -9,7 +9,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { pushEscapeLayer } from './layers';
+import { pushEscapeLayer, useLayerToken, LayerContext } from './layers';
 
 const GAP = 6;
 
@@ -23,13 +23,14 @@ export function Popover({
     /** 기준 요소의 화면 사각형(getBoundingClientRect) */
     anchor: DOMRect;
     onClose: () => void;
-    children: ReactNode;
+    children?: ReactNode;
     width?: number;
     align?: 'left' | 'right';
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
+    const layer = useLayerToken();
     const [pos, setPos] = useState<{ x: number; y: number }>(() => ({
         x: align === 'right' ? anchor.right - width : anchor.left,
         y: anchor.bottom + 4,
@@ -65,7 +66,7 @@ export function Popover({
             if (t instanceof Node && (ref.current?.contains(t) || (t instanceof Element && t.closest('[data-popover]')))) return;
             closeRef.current();
         };
-        const popEsc = pushEscapeLayer(() => closeRef.current());
+        const popEsc = pushEscapeLayer(() => closeRef.current(), layer);
         document.addEventListener('pointerdown', onDown, true);
         window.addEventListener('scroll', onScroll, true);
         return () => {
@@ -73,7 +74,7 @@ export function Popover({
             document.removeEventListener('pointerdown', onDown, true);
             window.removeEventListener('scroll', onScroll, true);
         };
-    }, []);
+    }, [layer]);
 
     return createPortal(
         <div
@@ -82,7 +83,7 @@ export function Popover({
             className="fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none ui-pop-in"
             style={{ left: pos.x, top: pos.y, width }}
         >
-            {children}
+            <LayerContext.Provider value={layer}>{children}</LayerContext.Provider>
         </div>,
         document.body,
     );

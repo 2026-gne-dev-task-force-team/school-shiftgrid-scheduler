@@ -10,7 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IconName } from './Icon';
 import { MenuList, MenuItem, MenuSeparator } from './Menu';
-import { pushEscapeLayer } from './layers';
+import { pushEscapeLayer, useLayerToken } from './layers';
 
 /** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다. */
 export interface MenuCommandArg { leafId?: string; tabsId?: string }
@@ -45,6 +45,9 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
     const ref = useRef<HTMLDivElement>(null);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
+    const layer = useLayerToken();
+    // 연 자리 — 렌더에서 잡는다(첫 항목 autoFocus 가 효과보다 먼저 초점을 옮긴다)
+    const [opener] = useState(() => (typeof document !== 'undefined' ? document.activeElement as HTMLElement | null : null));
     const [pos, setPos] = useState({ x, y });
 
     // 화면 밖으로 넘치면 안으로 민다 — 뜬 뒤 크기를 재서 자리를 고친다
@@ -61,14 +64,13 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
 
     // 바깥 클릭·Esc·바깥 스크롤·크기변경에 닫는다 · 닫히면 연 자리로 초점을 돌려준다
     useEffect(() => {
-        const opener = document.activeElement as HTMLElement | null;
         const close = () => closeRef.current();
         const onDown = (e: PointerEvent) => {
             if (!ref.current?.contains(e.target as Node)) close();
         };
         // 스크롤은 capture 로 — 안쪽 어느 영역이 스크롤돼도 메뉴 자리가 어긋나기 전에 닫는다(메뉴 안쪽 스크롤은 빼고)
         const onScroll = (e: Event) => { if (!(e.target instanceof Node && ref.current?.contains(e.target))) close(); };
-        const popEsc = pushEscapeLayer(close);
+        const popEsc = pushEscapeLayer(close, layer);
         document.addEventListener('pointerdown', onDown, true);
         window.addEventListener('scroll', onScroll, true);
         window.addEventListener('resize', close);
@@ -79,7 +81,7 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
             window.removeEventListener('resize', close);
             if (opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
         };
-    }, []);
+    }, [layer, opener]);
 
     return createPortal(
         <div

@@ -34,7 +34,7 @@ export function handleMenuKey(e: KeyboardEvent<HTMLElement> | globalThis.Keyboar
 }
 
 export function MenuList({ children, autoFocus = false, className = '', label }: {
-    children: ReactNode;
+    children?: ReactNode;
     /** 뜨자마자 첫 항목에 초점(키보드로 바로 고르게) */
     autoFocus?: boolean;
     className?: string;
