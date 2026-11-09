@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, DateField, Icon, IconButton, Popover, Toolbar as FrameToolbar } from '../../pane-ui-system';
+import { Button, DateField, Icon, IconButton, MenuItem, MenuList, Popover, Toolbar as FrameToolbar } from '../../pane-ui-system';
 import { isRule, opDefsFor, opNeedsValue, opsFor } from './logic';
 import { fieldTypes } from './fields/registry';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
@@ -227,22 +227,16 @@ export function Toolbar({
 
             {open === 'hide' && anchor && (
                 <Popover anchor={anchor} align="right" width={220} onClose={() => setOpen(null)}>
-                    <div className="flex flex-col gap-0.5" data-rv-hide-panel>
-                        {fields.map((f) => {
-                            const shown = !hidden.includes(f.key);
-                            return (
-                                <button
-                                    key={f.key}
-                                    type="button"
-                                    data-rv-hide-row={f.key}
-                                    onClick={() => onHidden(shown ? [...hidden, f.key] : hidden.filter((k) => k !== f.key))}
-                                    className="flex items-center gap-2 h-row px-2 rounded hover:bg-text/[0.06] text-left"
-                                >
-                                    <Icon name={shown ? 'eye' : 'eyeOff'} size={14} className={shown ? 'text-text' : 'text-muted'} />
-                                    <span className={`flex-1 text-[13px] truncate ${shown ? 'text-text' : 'text-muted'}`}>{f.label}</span>
-                                </button>
-                            );
-                        })}
+                    <div data-rv-hide-panel>
+                        <MenuList autoFocus label="보일 칸">
+                            {fields.map((f) => {
+                                const shown = !hidden.includes(f.key);
+                                return (
+                                    <MenuItem key={f.key} label={f.label} icon={shown ? 'eye' : 'eyeOff'}
+                                        onSelect={() => onHidden(shown ? [...hidden, f.key] : hidden.filter((k) => k !== f.key))} />
+                                );
+                            })}
+                        </MenuList>
                     </div>
                 </Popover>
             )}

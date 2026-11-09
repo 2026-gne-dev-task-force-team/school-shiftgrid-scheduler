@@ -7,7 +7,7 @@
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
 import { useEffect, useRef, useState } from 'react';
-import { DatePicker, Icon, Popover, Pill, PILL_COLORS, isImeEnter, pillStyle, useReorder } from '../../../pane-ui-system';
+import { DatePicker, Icon, Popover, Pill, PILL_COLORS, MenuItem, MenuList, isImeEnter, pillStyle, useReorder } from '../../../pane-ui-system';
 import { ReorderOverlay } from '../ReorderOverlay';
 import { formatNumber } from './format';
 import { dateText, toDateValue, type DateConfig } from './dates';
@@ -243,8 +243,7 @@ export function SelectCell({ field, value, editable, onChange, onOptionsChange }
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>
-                    <button type="button" onClick={() => { onChange(null); setAnchor(null); }}
-                        className="flex items-center w-full h-row px-2 rounded text-[12px] text-muted hover:bg-text/[0.06] text-left">비우기</button>
+                    <MenuList label="셀 비우기"><MenuItem label="비우기" icon="x" onSelect={() => { onChange(null); setAnchor(null); }} /></MenuList>
                     <OptionList
                         field={field} picked={cur === null ? [] : [cur]} multi={false}
                         onPick={(v) => { onChange(v); setAnchor(null); }}
@@ -316,8 +315,7 @@ export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
                         </div>
                     )}
                     {dv && (
-                        <button type="button" onClick={() => { onChange(null); setAnchor(null); }}
-                            className="mt-1 w-full h-row rounded text-[12px] text-muted hover:bg-text/[0.06]">비우기</button>
+                        <div className="mt-1"><MenuList label="셀 비우기"><MenuItem label="비우기" icon="x" onSelect={() => { onChange(null); setAnchor(null); }} /></MenuList></div>
                     )}
                 </Popover>
             )}
