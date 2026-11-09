@@ -15,6 +15,7 @@
 // 🔴 Node 타입은 약속(이 꾸러미 contracts/nodes)이 쥔다 — project-explorer 는 「제공자」로서 그걸 import 해 구현한다(3판 부채 끊기).
 //    ⭐ 여기서 재export 하는 건 이 폴더의 많은 파일이 `import type { Node } from './tree'` 로 받던 길을 안 깨려는 것뿐이다.
 import type { Node } from '../contracts/nodes';
+import { emptyHistory as emptySnap, type History as SnapHistory } from '../../../pane-ui-system';
 export type { Node } from '../contracts/nodes';
 
 export interface Tree {
@@ -499,27 +500,8 @@ export function filterIds(tree: Tree, fromId: string, pred: (n: Node) => boolean
  *   🔴 순수 함수라 store 밖에서 통째로 검산된다(tree.test.ts). store 는 이 넷만 쓰고 스냅샷은 apply 가 찍는다.
  *   ⛔ 구조 연산만 record 한다 — toggleCollapse 는 안 쌓고(접힘은 되돌릴 값 아님), purge 는 스택을 비운다(못 되돌림).
  */
-export interface History { past: Tree[]; future: Tree[] }
-
-export function emptyHistory(): History {
-    return { past: [], future: [] };
-}
-
-/** 바꾸기 직전 상태(prev)를 과거에 쌓고 미래를 비운다(최대 limit). */
-export function record(h: History, prev: Tree, limit = 100): History {
-    return { past: [...h.past, prev].slice(-limit), future: [] };
-}
-
-/** 되돌리기 — 과거의 맨 뒤를 꺼내고 지금(current)을 미래에. 과거가 비면 null. */
-export function undo(h: History, current: Tree): { tree: Tree; history: History } | null {
-    if (h.past.length === 0) return null;
-    const tree = h.past[h.past.length - 1];
-    return { tree, history: { past: h.past.slice(0, -1), future: [current, ...h.future] } };
-}
-
-/** 다시하기 — 미래의 맨 앞을 꺼내고 지금(current)을 과거에. 미래가 비면 null. */
-export function redo(h: History, current: Tree): { tree: Tree; history: History } | null {
-    if (h.future.length === 0) return null;
-    const tree = h.future[0];
-    return { tree, history: { past: [...h.past, current], future: h.future.slice(1) } };
-}
+export type History = SnapHistory<Tree>;
+// 더미 자체는 창틀 공용(pane-ui-system/history) — undo/redo 는 { value, history } 를 돌려준다.
+export { record, undo, redo } from '../../../pane-ui-system';
+/** 나무 전용으로 좁혀 둔다 — 그냥 다시 내보내면 `emptyHistory()` 가 History<unknown> 으로 추론된다. */
+export const emptyHistory: () => History = emptySnap;

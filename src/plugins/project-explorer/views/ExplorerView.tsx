@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
-import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
+import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf, undoKey } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
 import { isContainerType, nodeHidden, iconOf, createIconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
@@ -232,9 +232,10 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         const tgt = e.target as HTMLElement;
         if (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA') return;   // 검색칸·이름칸은 브라우저 undo 에 양보
         // 🔴 Ctrl/⌘+Z 되돌리기 · Ctrl/⌘+Shift+Z 다시하기 — 뷰에 포커스 있을 때만(전역 가로채기 금지)
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        const u = undoKey(e);
+        if (u) {
             e.preventDefault();
-            run(e.shiftKey ? 'project-explorer.redo' : 'project-explorer.undo');
+            run(u === 'redo' ? 'project-explorer.redo' : 'project-explorer.undo');
             return;
         }
         // 🔴 Ctrl/⌘+A — 보이는 줄 전부 고르기(이름칸·검색칸 안에선 위 INPUT 가드가 이미 브라우저에 양보한다)

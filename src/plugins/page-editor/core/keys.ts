@@ -2,6 +2,7 @@
  * 🔴 키 입력을 「무엇을 하나」로 옮기는 순수 판정(명세 요구 6·11). 뷰는 이 답만 보고 움직인다.
  *   ⭐ 한글 IME: 조합 중(isComposing)엔 무조건 default — 가로채면 글자가 깨진다(명세 요구 11).
  */
+import { undoKey } from '../../../pane-ui-system';
 
 export type KeyAction =
     | 'default'        // 브라우저에 맡긴다(글자 입력·줄 안 이동 등)
@@ -47,9 +48,9 @@ export function decideKey(i: KeyInput): KeyAction {
 
     const mod = i.metaKey || i.ctrlKey;
     if (mod) {
+        const u = undoKey(i);
+        if (u) return u;
         const k = i.key.toLowerCase();
-        if (k === 'z') return i.shiftKey ? 'redo' : 'undo';
-        if (k === 'y') return 'redo';
         if (k === 'b') return 'bold';
         if (k === 'i') return 'italic';
         if (k === 'e') return 'code';            // ⌘E — 코드 서식(명세 요구 4 확장)

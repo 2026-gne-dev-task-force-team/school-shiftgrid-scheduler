@@ -262,12 +262,12 @@ describe('되돌리기 더미(순수)', () => {
         h = record(h, t0);
         h = record(h, t1);
         const u = undo(h, t2)!;
-        expect(u.tree).toBe(t1);
-        const u2 = undo(u.history, u.tree)!;
-        expect(u2.tree).toBe(t0);
-        expect(undo(u2.history, u2.tree)).toBeNull();   // 과거가 비면 null
-        const r = redo(u2.history, u2.tree)!;
-        expect(r.tree).toBe(t1);
+        expect(u.value).toBe(t1);
+        const u2 = undo(u.history, u.value)!;
+        expect(u2.value).toBe(t0);
+        expect(undo(u2.history, u2.value)).toBeNull();   // 과거가 비면 null
+        const r = redo(u2.history, u2.value)!;
+        expect(r.value).toBe(t1);
     });
     it('record 는 미래를 비운다(새 분기)', () => {
         let h = { past: [t0], future: [t1] };
