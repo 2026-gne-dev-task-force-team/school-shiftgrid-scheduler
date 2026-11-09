@@ -14,7 +14,7 @@ import {
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind,
-    installContextMenuGuard,
+    installContextMenuGuard, installKeybindings,
     FRAME_COMMAND,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
@@ -257,24 +257,27 @@ export function Workbench() {
         //    (함수 직접 받기 금지는 지킨다 — impl 객체를 거친다). fh 의 impl.commands(runs)를 declare 전에 채운다.
         const runs: Record<string, (host: PluginHost, ctx?: CommandContext) => void> = {};
         const fh = makeHost('app', { commands: runs });
-        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: IconName) => {
+        // keys = 기본 단축키(사용자가 설정 「단축키」에서 덮어쓴다 — keybindings.ts)
+        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: IconName, keys?: string) => {
             runs[id] = (_host, ctx) => run(ctx);
-            return fh.declare({ kind: 'command', id, title, icon });
+            return fh.declare({ kind: 'command', id, title, icon, keys });
         };
 
         const disp: Disposable[] = [
             add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x'),
             add(FRAME_COMMAND.closeOthers, '다른 탭 모두 닫기', (c) => { const id = target(c); if (id) H().onCloseOthers(id); }),
             add(FRAME_COMMAND.closeRight, '오른쪽 탭 닫기', (c) => { const id = target(c); if (id) H().onCloseRight(id); }),
-            add(FRAME_COMMAND.splitRow, '오른쪽으로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'row', id); }, 'split'),
+            add(FRAME_COMMAND.splitRow, '오른쪽으로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'row', id); }, 'split', 'Mod+\\'),
             add(FRAME_COMMAND.splitCol, '아래로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'col', id); }, 'splitH'),
             add(FRAME_COMMAND.moveLeft, '왼쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'left'); }, 'panelLeft'),
             add(FRAME_COMMAND.moveCenter, '가운데로', (c) => { const id = target(c); if (id) H().onMove(id, 'center'); }),
             add(FRAME_COMMAND.moveRight, '오른쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'right'); }, 'panelRight'),
             add(FRAME_COMMAND.newTab, '새 탭', (c) => { if (c?.tabsId) H().onAddToTabs(c.tabsId); else H().onAddGlobal(); }, 'plus'),
-            add(FRAME_COMMAND.openSettings, '설정 열기', () => { openView('settings.main'); }, 'gear'),
-            add(FRAME_COMMAND.toggleLeft, '왼쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('left', !p.state.leftOpen); }, 'panelLeft'),
-            add(FRAME_COMMAND.toggleRight, '오른쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('right', !p.state.rightOpen); }, 'panelRight'),
+            add(FRAME_COMMAND.openSettings, '설정 열기', () => { openView('settings.main'); }, 'gear', 'Mod+,'),
+            add(FRAME_COMMAND.toggleLeft, '왼쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('left', !p.state.leftOpen); }, 'panelLeft', 'Mod+B'),
+            add(FRAME_COMMAND.toggleRight, '오른쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('right', !p.state.rightOpen); }, 'panelRight', 'Mod+Alt+B'),
+            // ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 디스패처가 preventDefault 로 가로챈다
+            add(FRAME_COMMAND.palette, '명령 팔레트', () => setPalette((v) => !v), 'search', 'Mod+P'),
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);
@@ -283,17 +286,8 @@ export function Workbench() {
     //    기본 컨텍스트 메뉴를 막는다(가드가 쥔 예외 셀렉터 기준). 글자 선택 차단은 index.css(html user-select:none).
     useEffect(() => installContextMenuGuard(), []);
 
-    // 🔴 명령 팔레트 열기 — Ctrl/⌘+P. ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 preventDefault 로 가로챈다(보고 항목).
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'p' || e.key === 'P')) {
-                e.preventDefault();
-                setPalette((v) => !v);
-            }
-        };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, []);
+    // 🔴 단축키 디스패처 — 명령의 keys(+사용자 재지정)를 runCommand 로 잇는다. 팔레트 Ctrl/⌘+P 도 이 길이다.
+    useEffect(() => installKeybindings(), []);
 
     // 🔴 사이드바 최소/최대 폭 — 설정 기본값에 그 안 뷰의 minWidth 를 얹는다(무한정 못 줄인다, W4)
     const pane = usePaneSettings();

@@ -18,6 +18,11 @@ export { kvGet, kvSet, kvDel, kvEstimate, kvAvailable } from './kv';
 export { FRAME_COMMAND, type FrameCommandId } from './frame-commands';
 // 되돌리기 공용 더미 + ⌘Z 판정 — 범위(더미)는 쓰는 쪽마다 따로 든다
 export { emptyHistory, record, undo, redo, canUndo, canRedo, undoKey, type History } from './history';
+// 단축키 — 명령의 keys + 사용자 재지정 → 전역 디스패처 하나
+export {
+    installKeybindings, handleKeydown, eventToKey, normalizeKey, formatKey, effectiveKey, keyMap,
+    getKeyOverrides, setKeyOverride, resetKeyOverride, resetAllKeyOverrides, useKeyOverrides, type KeyOverrides,
+} from './keybindings';
 
 export { FOCUS_RING } from './primitives/focus';
 export { Button } from './primitives/Button';
