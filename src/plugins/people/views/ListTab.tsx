@@ -10,9 +10,9 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
-import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople } from '../nodes';
+import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
-import type { RecordViewApi } from '../../record-view/contracts/record-view';
+import type { RecordViewApi, RecordField } from '../../record-view/contracts/record-view';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
@@ -31,10 +31,13 @@ export function ListTab({ host }: { host?: PluginHost }) {
     const list = useMemo(() => listNodes.find((n) => n.id === activeId) ?? null, [listNodes, activeId]);
     const rows = useMemo<TableRow[]>(() => {
         if (!activeId) return [];
-        return peopleIn(activeId).map((p) => ({ id: p.id, cells: { name: p.name, memo: p.memo ?? '' } }));
+        return peopleIn(activeId).map((p) => ({ id: p.id, cells: { name: p.name, memo: p.memo ?? '' }, values: colsOf(p.id) }));
         // peopleIn 은 매 호출 새로 읽지만, 이 useMemo 는 listNodes(= 노드 스냅샷)·activeId 가 바뀔 때만 돈다.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listNodes, activeId]);
+
+    // 열 = 고정(이름·메모) + 사용자 열(명단 노드 data.fields)
+    const columns: TableColumn[] = activeId ? [...COLUMNS, ...(listFieldsOf(activeId) as RecordField[]).map((f) => ({ key: f.key, title: f.label, field: f }))] : COLUMNS;
 
     // 보고 있는 명단이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
@@ -54,16 +57,18 @@ export function ListTab({ host }: { host?: PluginHost }) {
             <TableSlot
                 rv={rv}
                 viewKey="people.list"
-                columns={COLUMNS}
+                columns={columns}
                 rows={rows}
                 onCellChange={(rowId, key, value) => {
-                    if (key === 'name') updatePerson(rowId, { name: value });
-                    else if (key === 'memo') updatePerson(rowId, { memo: value });
+                    if (key === 'name') updatePerson(rowId, { name: String(value ?? '') });
+                    else if (key === 'memo') updatePerson(rowId, { memo: String(value ?? '') });
+                    else setCol(rowId, key, value);
                 }}
                 onAddRow={() => addPerson(activeId, { name: '' })}
                 onDeleteRow={(rowId) => removePerson(rowId)}
                 onMoveRow={(rowId, dir) => nudgePerson(rowId, dir)}
                 onPaste={(text) => pastePeople(activeId, text)}
+                onFieldsChange={(fields) => setListFields(activeId, fields.filter((f) => f.key !== 'name' && f.key !== 'memo'))}
                 emptyHint="아직 아무도 없다. 「줄 추가」로 더하거나 엑셀·한글 표를 붙여 넣는다(첫 칸 이름·둘째 칸 메모)."
             />
         </div>

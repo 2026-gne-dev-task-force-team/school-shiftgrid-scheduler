@@ -29,12 +29,16 @@ export interface TableColumn {
     title: string;
     /** 선택 — 간이 표는 안 쓴다(표 편집기가 쓸 수 있게 자리만). */
     width?: number;
+    /** (선택) 사용자 열의 레코드 뷰 칸 정의 그대로(타입·고르기 값) — 없으면 글 칸. */
+    field?: RecordField;
 }
 
 export interface TableRow {
     id: string;
     /** 열 key → 문자열 값. 표는 전부 문자열로 다룬다. */
     cells: Record<string, string>;
+    /** (선택) 사용자 열 값 — 레코드 뷰 값 그대로(간이 표는 안 그린다). */
+    values?: Record<string, unknown>;
     /** 선택 — 첫 칸을 이만큼 들여쓴다(0 = 안 들여씀). 표는 이게 무슨 뜻인지 모른다. */
     indent?: number;
 }
@@ -42,7 +46,10 @@ export interface TableRow {
 export interface TableSlotProps {
     columns: TableColumn[];
     rows: TableRow[];
-    onCellChange(rowId: string, key: string, value: string): void;
+    /** 고정 열은 글자, 사용자 열은 레코드 뷰 값 그대로(숫자·날짜·고르기…)가 온다. */
+    onCellChange(rowId: string, key: string, value: unknown): void;
+    /** (선택) 열 정의가 바뀌었다(레코드 뷰의 열 추가·이름 바꾸기·지우기) — 주면 레코드 뷰에서 열을 고칠 수 있다. */
+    onFieldsChange?(fields: RecordField[]): void;
     onAddRow(): void;
     onDeleteRow(rowId: string): void;
     onMoveRow(rowId: string, dir: -1 | 1): void;
@@ -168,8 +175,8 @@ export function TableSlot({ rv, viewKey, ...props }: TableSlotProps & { rv: Reco
     const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
     if (!rv) return <SimpleTable {...props} />;
     const { RecordView } = rv;
-    const fields: RecordField[] = props.columns.map((c) => ({ key: c.key, label: c.title, type: 'text', width: c.width }));
-    const records: Rec[] = props.rows.map((r) => ({ ...r.cells, id: r.id }));
+    const fields: RecordField[] = props.columns.map((c) => c.field ?? { key: c.key, label: c.title, type: 'text', width: c.width });
+    const records: Rec[] = props.rows.map((r) => ({ ...r.cells, ...(r.values ?? {}), id: r.id }) as Rec);
     const parentOf = props.parentOf;
     const tree: RecordTree<Rec> | undefined = parentOf && props.onIndentRow && props.onOutdentRow ? {
         parentOf: (r) => parentOf(r.id),
@@ -186,7 +193,8 @@ export function TableSlot({ rv, viewKey, ...props }: TableSlotProps & { rv: Reco
                 getId={(r) => r.id}
                 viewKey={viewKey}
                 titleKey={props.columns[0]?.key}
-                onCellChange={(id, key, value) => props.onCellChange(id, key, value == null ? '' : String(value))}
+                onCellChange={(id, key, value) => props.onCellChange(id, key, value)}
+                onFieldsChange={props.onFieldsChange}
                 onAddRecord={props.onAddRow}
                 onDeleteRecords={(ids) => ids.forEach(props.onDeleteRow)}
                 onPaste={(req) => props.onPaste(pasteToTsv(req, props.columns))}
