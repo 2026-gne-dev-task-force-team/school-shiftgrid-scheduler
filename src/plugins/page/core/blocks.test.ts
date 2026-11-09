@@ -93,10 +93,15 @@ describe('Tab/⇧Tab — 목록 들여쓰기(요구 6)', () => {
         p = indentBlock(p, 'a', 'out');
         expect(p.blocks[0].indent).toBe(0);
     });
-    it('문단은 들여쓰기가 안 먹는다(그대로)', () => {
-        const p = page({ id: 'a', type: 'paragraph', text: '글' });
-        const r = indentBlock(p, 'a', 'in');
-        expect(r.blocks[0].indent).toBeUndefined();
+    it('문단도 Tab=indent+1, Shift+Tab=0, 상한 8', () => {
+        let p = page({ id: 'a', type: 'paragraph', text: '글' });
+        p = indentBlock(p, 'a', 'in');
+        expect(p.blocks[0].indent).toBe(1);
+        p = indentBlock(p, 'a', 'out');
+        expect(p.blocks[0].indent).toBe(0);
+        expect(indentBlock(p, 'a', 'out')).toBe(p);
+        for (let n = 0; n < 12; n++) p = indentBlock(p, 'a', 'in');
+        expect(p.blocks[0].indent).toBe(8);
     });
 });
 
