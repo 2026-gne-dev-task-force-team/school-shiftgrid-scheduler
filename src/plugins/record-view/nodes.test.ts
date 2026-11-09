@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
-import { DB_TYPE, ROW_TYPE, commit, indentRow, initRecordNodes, outdentRow, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
+import { DB_TYPE, ROW_TYPE, commit, indentRow, initRecordNodes, outdentRow, reorderRow, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 
 interface N { id: string; type: string; name: string; children: string[]; data?: unknown; trashedFrom?: string }
@@ -29,7 +29,7 @@ function fakeApi() {
         create: (pid, spec) => { write(); const id = `n${++seq}`; nodes.set(id, { id, type: spec.type, name: spec.name, children: [], data: spec.data }); nodes.get(pid)!.children.push(id); return id; },
         rename: (id, name) => { write(); if (name.trim()) nodes.get(id)!.name = name; },
         setData: (id, data) => { write(); nodes.get(id)!.data = data; },
-        move: (id, pid) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(pid)!.children.push(id); delete nodes.get(id)!.trashedFrom; },
+        move: (id, pid, index) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); const kids = nodes.get(pid)!.children; if (index == null || index >= kids.length) kids.push(id); else kids.splice(Math.max(0, index), 0, id); delete nodes.get(id)!.trashedFrom; },
         remove: (id) => { write(); const from = parentOf(id)!; nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(id)!.trashedFrom = from; nodes.get('trash')!.children.push(id); },
         batch: (fn) => { log.batches++; depth++; try { fn(); } finally { depth--; for (const l of listeners) l([]); } },
         invalidate: () => {}, select: () => {}, open: () => {}, promptInput: () => {},
@@ -184,5 +184,60 @@ describe('snapshotOf', () => {
         expect(rec.f_z).toBe(7);
         expect(typeof rec.id).toBe('string');
         expect(rec[titleKey]).toBe('');
+    });
+});
+
+describe('P2 — ID 자동 번호·자동 계산 칸', () => {
+    it('새 행마다 seq 1씩 · 삭제해도 번호 안 되돌림(건너뜀) · created/updated/id 스냅샷 주입', () => {
+        const fields = [
+            { key: titleKey, label: '제목', type: 'text' },
+            { key: 'f_id', label: 'ID', type: 'id', config: { prefix: '' } },
+            { key: 'f_c', label: '생성', type: 'created' },
+            { key: 'f_u', label: '편집', type: 'updated' },
+        ];
+        const [a, b] = commit(dbId, { fields, addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }] });
+        const recs1 = snapshotOf(dbId)!.records;
+        expect(recs1.find((r) => r.id === a)!.f_id).toBe(1);
+        expect(recs1.find((r) => r.id === b)!.f_id).toBe(2);
+        expect(typeof recs1.find((r) => r.id === a)!.f_c).toBe('string');   // created 주입
+        expect(recs1.find((r) => r.id === a)!.f_u).toBe(recs1.find((r) => r.id === a)!.f_c);
+        commit(dbId, { removeRows: [a] });
+        const [c] = commit(dbId, { addRows: [{ [titleKey]: 'c' }] });
+        expect(snapshotOf(dbId)!.records.find((r) => r.id === c)!.f_id).toBe(3);   // 2 를 건너뛰지 않고 3(삭제분 미복구)
+    });
+    it('id 는 불변 — 다른 셀을 고쳐도 그대로', () => {
+        const [a] = commit(dbId, { addRows: [{ [titleKey]: 'a' }] });
+        const before = snapshotOf(dbId)!.records[0].seq;
+        commit(dbId, { cells: [{ id: a, key: titleKey, value: '바뀜' }] });
+        expect(snapshotOf(dbId)!.records[0].seq).toBe(before);
+    });
+});
+
+describe('P2 — 수동 순서(reorderRow)', () => {
+    it('id 를 beforeId 바로 앞으로 · null 이면 맨 끝 · 배치 한 칸', () => {
+        const [a, b, c] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }, { [titleKey]: 'c' }] });
+        env.log.batches = 0;
+        reorderRow(dbId, c, a);   // c 를 a 앞으로 → c, a, b
+        expect(env.log.batches).toBe(1);
+        expect(snapshotOf(dbId)!.records.map((r) => r.id)).toEqual([c, a, b]);
+        reorderRow(dbId, c, null); // c 를 맨 끝으로 → a, b, c
+        expect(snapshotOf(dbId)!.records.map((r) => r.id)).toEqual([a, b, c]);
+    });
+    it('트리 모드 — beforeId 의 부모로 재부모화', () => {
+        const [a, b, d] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }, { [titleKey]: 'd' }] });
+        indentRow(b);                 // b 는 a 의 자식
+        reorderRow(dbId, d, b);       // d 를 b 앞으로 → d 도 a 의 자식
+        expect(snapshotOf(dbId)!.records.find((r) => r.id === d)!.__parent).toBe(a);
+    });
+});
+
+describe('P2 — 하위 행만 휴지통에 보내도 복원 단추가 잡는다', () => {
+    it('부모는 살아 있고 자식만 지우면 trashedFrom=부모지만 db 자손으로 포착', () => {
+        const [, b] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }] });
+        indentRow(b);                       // b 는 a 의 자식(부모=a 행)
+        commit(dbId, { removeRows: [b] });  // 자식만 지운다 → trashedFrom = a(부모 행)
+        expect(trashedRows(dbId).map((n) => n.id)).toEqual([b]);   // db 자손이라 잡힌다
+        expect(restoreTrashedRows(dbId)).toBe(1);
+        expect(snapshotOf(dbId)!.records.some((r) => r.id === b)).toBe(true);
     });
 });

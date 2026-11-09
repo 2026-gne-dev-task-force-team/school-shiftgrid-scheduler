@@ -358,3 +358,66 @@ describe('하위 항목(sub-items) — 트리 UI', () => {
         expect(q('[data-rv-row="b"]')).toBeTruthy();    // 모든 행이 평평하게 보인다
     });
 });
+
+describe('P2 — url/email/phone 셀', () => {
+    const LF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }, { key: 'f_u', label: '링크', type: 'url' }];
+    it('형식 맞으면 열기 링크(href) · 틀리면 ⚠', () => {
+        mount(
+            <RecordView<Rec>
+                fields={LF}
+                records={[{ id: 'r1', f_t: 't', f_u: 'example.com' }, { id: 'r2', f_t: 't2', f_u: 'notaurl' }]}
+                getId={(r) => r.id} viewKey="t.link" titleKey="f_t"
+                onCellChange={() => {}}
+            />,
+        );
+        const link = q('[data-rv-row="r1"] [data-rv-link]') as HTMLAnchorElement | null;
+        expect(link).toBeTruthy();
+        expect(link!.getAttribute('href')).toBe('https://example.com');
+        expect(q('[data-rv-row="r2"] [data-rv-invalid]')).toBeTruthy();
+        expect(q('[data-rv-row="r2"] [data-rv-link]')).toBeNull();
+    });
+});
+
+describe('P2 — 날짜 시각·범위 팝오버', () => {
+    const DF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }, { key: 'f_d', label: '기간', type: 'date', config: { time: true, range: true } }];
+    it('셀을 누르면 시작·종료 달력 + 시각 입력', () => {
+        mount(
+            <RecordView<Rec>
+                fields={DF}
+                records={[{ id: 'r1', f_t: 't', f_d: { start: '2026-11-08' } }]}
+                getId={(r) => r.id} viewKey="t.date" titleKey="f_t"
+                onCellChange={() => {}}
+            />,
+        );
+        click(q('[data-rv-row="r1"] [data-rv-cell="f_d"]'));
+        expect(q('[data-rv-date-start]')).toBeTruthy();
+        expect(q('[data-rv-date-end]')).toBeTruthy();
+        expect(qa('[data-dp-time]').length).toBeGreaterThanOrEqual(2);   // 시작·종료 각각
+    });
+});
+
+describe('P2 — 행 포커스에서 Tab 들여쓰기 / Shift+Tab 내어쓰기', () => {
+    const TF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }];
+    function treeRV(onIndent: () => void, onOutdent: () => void) {
+        return (
+            <RecordView<Rec>
+                fields={TF}
+                records={[{ id: 'a', f_t: 'a', __parent: null }, { id: 'b', f_t: 'b', __parent: null }]}
+                getId={(r) => r.id} viewKey="t.tab" titleKey="f_t"
+                onCellChange={() => {}}
+                tree={{
+                    parentOf: (r) => (r as Rec).__parent as string | null,
+                    collapsed: () => false, onToggleCollapse: () => {}, onIndent, onOutdent,
+                }}
+            />
+        );
+    }
+    it('Tab=들여쓰기 · Shift+Tab=내어쓰기 (셀 편집 아님)', () => {
+        const indent = vi.fn(); const outdent = vi.fn();
+        mount(treeRV(indent, outdent));
+        key(q('[data-rv-row="b"]')!, 'Tab');
+        expect(indent).toHaveBeenCalledTimes(1);
+        key(q('[data-rv-row="b"]')!, 'Tab', { shiftKey: true });
+        expect(outdent).toHaveBeenCalledTimes(1);
+    });
+});

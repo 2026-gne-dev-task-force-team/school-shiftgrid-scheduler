@@ -360,7 +360,9 @@ function makeLinkCell(kind: LinkKind) {
             >
                 <span className="flex-1 min-w-0 truncate">{s || '—'}</span>
                 {s !== '' && !valid && (
-                    <Icon name="warn" size={13} data-rv-invalid={field.key} className="shrink-0 text-bad" aria-label="형식이 올바르지 않습니다" />
+                    <span data-rv-invalid={field.key} title="형식이 올바르지 않습니다" className="shrink-0 grid place-items-center text-bad">
+                        <Icon name="warn" size={13} />
+                    </span>
                 )}
                 {valid && (
                     <a href={hrefOf(kind, s)} target="_blank" rel="noreferrer noopener"
