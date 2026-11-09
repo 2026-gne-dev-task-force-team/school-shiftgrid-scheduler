@@ -14,7 +14,7 @@
 import { storageKey } from './storage';
 import { notify } from './plugin/notify';
 import { announceWrite, watchOtherTabs } from './cross-tab';
-import { reportStorageError, classifyStorageError, setDurability } from './plugin/storage-errors';
+import { reportStorageError, clearStorageError, classifyStorageError, setDurability } from './plugin/storage-errors';
 
 const STORE = 'kv';
 const SCOPE = 'kv';
@@ -224,7 +224,7 @@ export async function nodesWrite(batch: { put?: object[]; del?: string[]; clear?
             if (batch.clear) os.clear();                      // 먼저 비운다(전부 다시 쓰기)
             if (batch.put) for (const v of batch.put) os.put(v);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
             if (batch.del) for (const id of batch.del) os.delete(id);
-            tx.oncomplete = () => { announceWrite(dbName()); done(true); };
+            tx.oncomplete = () => { clearStorageError(NODES_SCOPE, '__batch'); announceWrite(dbName()); done(true); };
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {

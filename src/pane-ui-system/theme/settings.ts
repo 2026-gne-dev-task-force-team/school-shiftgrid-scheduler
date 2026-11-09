@@ -12,6 +12,7 @@ import {
     type ColorToken, type DensityId,
 } from './tokens';
 import { storageKey } from '../storage';
+import { reportSettingsSaveFail } from '../layout/save-fail';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -81,5 +82,5 @@ export function saveThemeSettings(s: ThemeSettings): void {
     try {
         if (typeof localStorage === 'undefined') return;
         localStorage.setItem(themeKey(), JSON.stringify(s));
-    } catch { /* 조용히 */ }
+    } catch (e) { reportSettingsSaveFail('테마 설정', e); }
 }

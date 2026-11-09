@@ -290,3 +290,48 @@ describe('flush — 디바운스 중 탭 닫힘(visibilitychange·beforeunload)�
         expect(kv.store.has('B')).toBe(true);
     });
 });
+
+// ───────────────────────────── 저장 실패 자동 재시도(백오프) ─────────────────────────────
+
+describe('저장 실패 → 지수 백오프(1s·2s·4s…)로 자동 재시도, 성공하면 멈춘다', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('쓰기가 계속 실패하면 1s·2s·4s 간격으로 다시 시도하고, 복구되면 저장 후 더 안 부른다', async () => {
+        const { host } = makeHost();
+        const tree = await loadTree(host);
+        kv.nodesWrite.mockClear();
+        kv.flags.writeOk = false;
+        saveTree(host, createNode(tree, 'root', { id: 'R', type: 'folder', name: 'R' }), ['R']);
+
+        await vi.advanceTimersByTimeAsync(300);     // 디바운스 → 첫 시도(실패)
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(999);
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(1);       // +1s
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(2000);    // +2s
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(3);
+
+        kv.flags.writeOk = true;
+        await vi.advanceTimersByTimeAsync(4000);    // +4s — 성공
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(4);
+        expect(kv.store.get('R')).toBeTruthy();
+        await vi.advanceTimersByTimeAsync(60000);   // 성공 뒤엔 더 안 부른다
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(4);
+    });
+
+    it('간격은 30s 에서 멈춘다', async () => {
+        const { host } = makeHost();
+        const tree = await loadTree(host);
+        kv.flags.writeOk = false;
+        saveTree(host, createNode(tree, 'root', { id: 'R', type: 'folder', name: 'R' }), ['R']);
+        await vi.advanceTimersByTimeAsync(300);
+        for (const ms of [1000, 2000, 4000, 8000, 16000, 30000, 30000]) await vi.advanceTimersByTimeAsync(ms);
+        kv.nodesWrite.mockClear();
+        await vi.advanceTimersByTimeAsync(29999);
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(0);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(kv.nodesWrite).toHaveBeenCalledTimes(1);
+    });
+});

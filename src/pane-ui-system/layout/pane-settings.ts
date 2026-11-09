@@ -10,6 +10,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
+import { reportSettingsSaveFail } from './save-fail';
 import { getView } from '../view-registry';
 import { mergeLayout, type ViewLayout, type Squeeze } from './clamp';
 
@@ -216,7 +217,7 @@ function loadPaneSettings(): PaneSettings {
     } catch { return defaultPaneSettings(); }
 }
 function savePaneSettings(s: PaneSettings): void {
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem(paneKey(), JSON.stringify(s)); } catch { /* 조용히 */ }
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(paneKey(), JSON.stringify(s)); } catch (e) { reportSettingsSaveFail('화면 설정', e); }
 }
 function loadViewOverrides(): ViewOverrides {
     try {
@@ -226,7 +227,7 @@ function loadViewOverrides(): ViewOverrides {
     } catch { return {}; }
 }
 function saveViewOverrides(o: ViewOverrides): void {
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem(viewOverrideKey(), JSON.stringify(o)); } catch { /* 조용히 */ }
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(viewOverrideKey(), JSON.stringify(o)); } catch (e) { reportSettingsSaveFail('뷰 설정', e); }
 }
 function loadRibbon(): Ribbon {
     try {
@@ -236,7 +237,7 @@ function loadRibbon(): Ribbon {
     } catch { return defaultRibbon(); }
 }
 function saveRibbon(r: Ribbon): void {
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem(ribbonKey(), JSON.stringify(r)); } catch { /* 조용히 */ }
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(ribbonKey(), JSON.stringify(r)); } catch (e) { reportSettingsSaveFail('리본 설정', e); }
 }
 
 // ─────────────────────────── 외부 스토어 ───────────────────────────
