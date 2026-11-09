@@ -7,9 +7,11 @@ import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../primitives/Icon';
 import { listCommands, runCommand, useContribVersion } from '../../plugin';
+import { useKeyOverrides, effectiveKey, formatKey } from '../../keybindings';
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
     const [q, setQ] = useState('');
+    const ko = useKeyOverrides();   // 줄마다 지금 키를 보인다(설정에서 바꾸면 바로)
     const [sel, setSel] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
@@ -71,6 +73,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                             >
                                 <span className="w-4 shrink-0 grid place-items-center">{c.icon && <Icon name={c.icon} size={14} />}</span>
                                 <span className="flex-1 min-w-0 truncate">{c.title}</span>
+                                {effectiveKey(c.id, c.keys, ko) && <kbd className="shrink-0 text-[11px] text-muted">{formatKey(effectiveKey(c.id, c.keys, ko))}</kbd>}
                                 <span className="shrink-0 text-[11px] text-muted truncate max-w-[45%]">{c.id}</span>
                             </button>
                         ))}
