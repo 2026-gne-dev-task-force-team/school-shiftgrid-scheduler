@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * 알림 스토어 — 토스트 수명(기본 5초 · 오류는 닫을 때까지) · key 덮어쓰기 · 보관 개수 · 새로고침 복원 · 단추=명령 · 주인 꼬리표.
+ * 알림 스토어 — 토스트 수명(기본 5초 · 오류는 닫을 때까지) · key 는 토스트만 덮음 · 보관 개수 · 새로고침 복원 · 단추=명령 · 주인 꼬리표.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -57,12 +57,12 @@ describe('토스트 수명', () => {
     });
 });
 
-describe('key 덮어쓰기', () => {
-    it('같은 보낸이·같은 key 는 한 건으로 덮인다(최신이 남는다)', () => {
+describe('key 는 토스트만 덮는다', () => {
+    it('같은 보낸이·같은 key — 떠 있는 토스트는 최신 하나, 기록엔 둘 다 쌓인다', () => {
         notify('a', { title: '1', key: 'k' });
         notify('a', { title: '2', key: 'k' });
-        expect(getNotifications().items.map((i) => i.title)).toEqual(['2']);
-        expect(getNotifications().toasts).toHaveLength(1);
+        expect(getNotifications().items.map((i) => i.title)).toEqual(['1', '2']);
+        expect(getNotifications().toasts.map((i) => i.title)).toEqual(['2']);
     });
     it('보낸이가 다르면 같은 key 라도 따로다', () => {
         notify('a', { title: '1', key: 'k' });
@@ -90,6 +90,13 @@ describe('읽음 · 비우기 · 단추', () => {
         expect(run).toHaveBeenCalledWith('x.undo');
         expect(getNotifications().toasts).toHaveLength(0);
         expect(getNotifications().items[0].read).toBe(true);
+    });
+    it('단추는 한 번만 — 두 번째 누름은 명령을 안 부르고 actionUsed 가 선다', () => {
+        const id = notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo' }, timeout: 0 });
+        runNotifyAction(id);
+        runNotifyAction(id);
+        expect(run).toHaveBeenCalledTimes(1);
+        expect(getNotifications().items[0].actionUsed).toBe(true);
     });
     it('단추 없는 알림에 runNotifyAction 은 아무 일도 안 한다', () => {
         const id = notify('a', { title: '그냥' });
@@ -145,13 +152,14 @@ describe('주인 꼬리표 · 저장 실패 연결', () => {
         h.notify.dismiss(id);
         expect(getNotifications().toasts).toHaveLength(0);
     });
-    it('🔴 저장 실패는 오류 알림으로도 나가고, 같은 자리 반복 실패는 한 건에 덮인다', () => {
+    it('🔴 저장 실패는 오류 알림으로도 나가고, 같은 자리 반복 실패는 토스트 한 건에 덮인다(기록엔 쌓인다)', () => {
         clearStorageErrors();
         const e = { scope: 'local', key: 'k', reason: 'quota' as const, at: 1 };
         reportStorageError(e);
         reportStorageError({ ...e, at: 2 });
-        const items = getNotifications().items;
-        expect(items).toHaveLength(1);
+        const { items, toasts } = getNotifications();
+        expect(toasts).toHaveLength(1);
+        expect(items).toHaveLength(2);
         expect(items[0]).toMatchObject({ level: 'error', title: '저장 실패', owner: 'frame' });
         clearStorageErrors();
     });

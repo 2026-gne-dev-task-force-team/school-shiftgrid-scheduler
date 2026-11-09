@@ -15,7 +15,7 @@ import {
     TitleBar, type TitleAction,
     StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind, Toasts, NotifyStatus,
     installContextMenuGuard, installKeybindings,
-    FRAME_COMMAND,
+    FRAME_COMMAND, viewOpenCommandId, isSidePanelView,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
@@ -24,7 +24,7 @@ import {
 } from '../pane-ui-system';
 import {
     setWorkspaceBridge, makeHost, resetFirstRunFlags, type WorkspaceOpenOptions, type CommandContext, type Disposable,
-    useStatusItems, useContribVersion, getNewTab, listTabMenu, fireWorkspace, ownerOfView,
+    useStatusItems, useContribVersion, getNewTab, getCommand, listTabMenu, fireWorkspace, ownerOfView,
     useStorageErrors, useDurability, useNotifications,
     type WorkspaceEvent, type PluginHost, type IconName,
 } from '../pane-ui-system/plugin';
@@ -287,6 +287,26 @@ export function Workbench() {
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);
+
+    // 🔴 닫은 옆 패널을 다시 열 길(Q1·X7, 쥔님 11-09 *"속성 패널을 닫으면 다시 열 길이 없다"*) — 옆 패널 뷰마다 「<이름> 열기」 명령 하나.
+    //    명령 팔레트에 뜨고, 꾸러미가 viewOpenCommandId 로 리본에 꽂을 수도 있다. 알림 패널은 제 명령(openNotify)이 있어 뺀다.
+    //    ⚠️ 의존은 뷰 id 목록 글자(sideSig) — declare 가 기여 버전을 올려서 그걸 의존으로 걸면 무한 반복한다.
+    //    뷰 목록은 플러그인을 켜고 끌 때 바뀌고, 그때 위 useContribVersion 이 다시 그려 sideSig 가 다시 계산된다.
+    //    ⭐ 꾸러미가 제 `<꾸러미id>.open` 명령을 냈으면 그걸 쓴다(같은 명령이 팔레트에 둘 뜨지 않게).
+    const needsOpenCmd = (v: { id: string }) => v.id !== NOTIFY_VIEW_ID && !getCommand(`${ownerOfView(v.id) ?? ''}.open`);
+    const sideViews = appHost.views.list().filter(isSidePanelView).filter(needsOpenCmd);
+    const sideSig = sideViews.map((v) => `${v.id}:${v.title}`).join('|');
+    useEffect(() => {
+        const runs: Record<string, (host: PluginHost, ctx?: CommandContext) => void> = {};
+        const fh = makeHost('app', { commands: runs });
+        const disp: Disposable[] = [];
+        for (const v of appHost.views.list().filter(isSidePanelView).filter(needsOpenCmd)) {
+            const id = viewOpenCommandId(v.id);
+            runs[id] = () => { openView(v.id, { where: v.defaultArea }); };
+            disp.push(fh.declare({ kind: 'command', id, title: `${v.title} 열기`, icon: v.icon }));
+        }
+        return () => { for (const d of disp) d.dispose(); };
+    }, [openView, sideSig]);
 
     // 🔴 ⭐ 전역 우클릭 통제(항목 A, 쥔님 두 번 지시) — 입력칸·본문(옵트인 클래스) 밖에서는 브라우저
     //    기본 컨텍스트 메뉴를 막는다(가드가 쥔 예외 셀렉터 기준). 글자 선택 차단은 index.css(html user-select:none).

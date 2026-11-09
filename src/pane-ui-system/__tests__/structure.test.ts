@@ -260,10 +260,11 @@ describe('⑫ layout/ 은 포인터 이벤트 핸들러를 직접 들지 않는�
  */
 describe('⑬ .select-text 는 예외 목록(ALLOW)에서만 쓴다', () => {
     const NEEDLE = 'select' + '-text';   // 이 파일 자신이 금지 문자열을 품지 않게 조각으로
-    // 예외 목록 = 옵트인 자리: 셸 본문 칸·피크 본문 · 그 셀렉터를 정의하는 가드 · 플러그인 뷰 본문(글 내용)
+    // 예외 목록 = 옵트인 자리: 그 셀렉터를 정의하는 가드 · 알림 글(복사해 갈 오류 문구) · 플러그인 뷰 본문(글 내용)
+    //   🔴 Q1·X1: 뷰 본문 칸(EditorArea)·피크·달력 세 뷰는 뺐다 — 통째로 select-text 면 칸·머리·단추 글자가 끌려 선택되고 기본 우클릭이 뜬다.
     const ALLOW = new Set([
-        'EditorArea.tsx', 'PeekLayer.tsx', 'guards.ts',
-        'MonthView.tsx', 'YearView.tsx', 'TimeGridView.tsx', 'SampleView.tsx', 'TestConsole.tsx', 'NodeSampleView.tsx',
+        'NotifyPanel.tsx', 'guards.ts', 'PageView.tsx',   // 페이지 본문은 글 내용 — 안 켜진 블록(일반 div)도 끌어 고른다
+        'SampleView.tsx', 'TestConsole.tsx', 'NodeSampleView.tsx',
         'Table.tsx',   // 표 편집기 편집창 — 칸 글자를 끌어 고른다(옵트인)
     ]);
     const files = walk(ROOT);

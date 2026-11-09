@@ -44,17 +44,17 @@ export function Toasts() {
                         <div className="flex-1 min-w-0">
                             <div className="font-medium break-words">{t.title}</div>
                             {t.body && <div className="mt-0.5 text-small text-muted break-words">{t.body}</div>}
-                            <div className="mt-1 flex items-center gap-2">
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                 {t.action && (
                                     <button
                                         type="button"
                                         onClick={() => runNotifyAction(t.id)}
-                                        className={`h-6 px-2 rounded border border-line text-small hover:bg-text/[0.06] ${FOCUS_RING}`}
+                                        className={`h-6 px-2 rounded border border-line text-small whitespace-nowrap shrink-0 hover:bg-text/[0.06] ${FOCUS_RING}`}
                                     >
                                         {t.action.label}
                                     </button>
                                 )}
-                                {who && <span className="text-note text-muted">{who}</span>}
+                                {who && <span className="text-note text-muted whitespace-nowrap">{who}</span>}
                             </div>
                         </div>
                         <button

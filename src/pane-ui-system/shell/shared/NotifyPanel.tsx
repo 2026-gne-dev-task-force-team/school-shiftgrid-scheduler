@@ -23,11 +23,16 @@ function Entry({ it }: { it: NotifyItem }) {
         <li className={`flex items-start gap-2 px-pad py-2 border-b border-line ${it.read ? 'opacity-70' : ''}`}>
             <Icon name={st.icon} size={14} className={`mt-0.5 shrink-0 ${st.text}`} />
             <div className="flex-1 min-w-0">
-                <div className="text-body text-text break-words">{it.title}</div>
-                {it.body && <div className="text-small text-muted break-words">{it.body}</div>}
-                <div className="mt-1 flex items-center gap-2 text-note text-muted">
-                    <span>{timeText(it.at)}</span>{who && <span>{who}</span>}
-                    {it.action && <Button size="sm" onClick={() => runNotifyAction(it.id)}>{it.action.label}</Button>}
+                <div className="text-body text-text break-words select-text">{it.title}</div>
+                {it.body && <div className="text-small text-muted break-words select-text">{it.body}</div>}
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-note text-muted">
+                    <span className="whitespace-nowrap">{timeText(it.at)}</span>
+                    {who && <span className="whitespace-nowrap">{who}</span>}
+                    {it.action && (
+                        <Button size="sm" className="whitespace-nowrap shrink-0 disabled:opacity-40 disabled:pointer-events-none" disabled={it.actionUsed} onClick={() => runNotifyAction(it.id)}>
+                            {it.action.label}
+                        </Button>
+                    )}
                 </div>
             </div>
         </li>

@@ -16,6 +16,7 @@ import {
     type ContributionKind, type ContributionRecord,
 } from '../../../pane-ui-system/plugin';
 import { useSettingsChrome } from '../chrome-context';
+import { Section, RelRow, DetailTitle, Badge } from './plugin-parts';
 import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
 import { explainBlock, disableImpact, type ImpactItem } from '../plugin-graph';
 
@@ -63,19 +64,6 @@ function RelGroup({ title, note, children }: { title: string; note: string; chil
     );
 }
 
-/** 관계 카드 한 줄 — 왼쪽: 사람 이름 + 지금 상태 · 오른쪽 끝: 작은 회색 원래 id·버전(영어 식별자는 여기만). */
-function RelRow({ left, note, right }: { left: string; note?: string; right?: string }) {
-    return (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-line last:border-b-0">
-            <div className="min-w-0 flex-1">
-                <span className="text-[12px] text-text">{left}</span>
-                {note && <span className="text-[11px] text-muted ml-2">{note}</span>}
-            </div>
-            {right && <span className="text-[10px] text-muted/70 font-mono shrink-0">{right}</span>}
-        </div>
-    );
-}
-
 /** ④ 끄기 영향 한 묶음 — 「같이 꺼짐(requires)」·「기능만 빠짐(supports)」 각각. 어느 약속을 통해 매였나 꼬리표. */
 function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'muted'; items: ImpactItem[] }) {
     return (
@@ -91,17 +79,6 @@ function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'mut
                 ))}
             </ul>
         </div>
-    );
-}
-
-function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
-    return (
-        <section className="flex flex-col gap-1.5">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">
-                {title}{count != null && <span className="ml-1 text-muted/70">{count}</span>}
-            </h4>
-            {children}
-        </section>
     );
 }
 
@@ -200,15 +177,10 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
         <div className="flex flex-col gap-4">
             {/* 머리 — 이름·판·상태 + 토글 */}
             <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[15px] font-semibold text-text">{p.name}</span>
-                        <span className="text-[11px] text-muted">v{p.version}</span>
-                        {p.core && <span className="text-[11px] px-1.5 rounded bg-accent/15 text-accent">코어</span>}
-                        {p.failed && <span className="flex items-center gap-1 text-[11px] text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
-                    </div>
-                    <span className="text-[11px] text-muted font-mono">{p.id}</span>
-                </div>
+                <DetailTitle name={p.name} version={p.version} id={p.id} badges={<>
+                    {p.core && <Badge>코어</Badge>}
+                    {p.failed && <span className="flex items-center gap-1 text-[11px] text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
+                </>} />
                 {/* 🔴 ④ 코어는 끄기 단추 자체가 없다(쥔님) — 잠김 표시만. 비코어는 끄기/켜기 단추. */}
                 <div className="shrink-0">
                     {p.core

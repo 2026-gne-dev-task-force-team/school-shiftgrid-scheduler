@@ -105,7 +105,7 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     const collapsed = isCollapsed(layout, size.width);
     // squeeze='scroll' 인 뷰(표)는 좁아지면 스크롤 · 그 외는 넘침을 숨긴다
     const overflow = layout.squeeze === 'scroll' ? 'overflow-auto' : 'overflow-hidden';
-    // 🔴 뷰 본문은 글자 선택이 돼야 한다(select-text) — 창틀 크롬만 드래그·선택을 막는다(항목 9 예외)
+    // 🔴 뷰 본문도 기본은 선택·기본 우클릭 불가(Q1·X1/X2) — 글 내용·입력칸만 옵트인으로 되살린다(interactive/guards.ts)(달력 칸·머리·단추는 막힘)
     // 🔴 ③ 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉, 쥔님 2026-11-01). ⚠️ 입력칸에서 깜빡이면 뺀다.
     //    키가 바뀌면 그 뷰가 다시 마운트되며 .view-fade 가 한 번 돈다(움직임 줄이기면 즉시).
     // 🔴 겉은 flex 가로줄 — [본문 상자 | (넓으면) 미리보기]. 미리보기가 넓을 땐 **옆에 서서 본문을 민다**(요구명세 갈림 2 ·
@@ -117,7 +117,7 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     return (
         <div ref={ref} data-pane-w={size.width} data-pane-collapsed={String(collapsed)} className={`relative flex-1 min-h-0 flex ${surface}`}>
             <div ref={bodyRef} className="relative flex-1 min-w-0 min-h-0">
-                <div className={`absolute inset-0 ${overflow} select-text`}>
+                <div className={`absolute inset-0 ${overflow}`}>
                     <div key={leaf.id} className="view-fade h-full min-h-0">
                         <ViewErrorBoundary resetKey={`${leaf.id}:${leaf.viewId}`} surface={surface}>
                             <Body leaf={leaf} width={bodyW} height={size.height} collapsed={collapsed} peek={peekHandle} />

@@ -420,7 +420,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
 
             <div className="flex-1 overflow-auto">
                 <div
-                    className="max-w-3xl mx-auto px-6 py-8"
+                    className="max-w-3xl mx-auto px-6 py-8 select-text"
                     onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                 >
                     {renderHeader ? <div className="mb-1 flex items-center gap-2" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader

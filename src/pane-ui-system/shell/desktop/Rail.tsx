@@ -20,6 +20,8 @@ import {
     usePaneSettings, setRibbonOrder, toggleRibbonHidden, resetRibbon,
 } from '../../layout/pane-settings';
 import { resolveRibbonEntries, useContribVersion } from '../../plugin';
+import { listViews } from '../../view-registry';
+import { isSidePanelView } from '../../frame-commands';
 
 export function Rail({
     onOpenView, onOpenSettings, orientation = 'vertical',
@@ -56,10 +58,17 @@ export function Rail({
         } else {
             items.push({ label: '숨긴 아이콘 없음', disabled: true });
         }
+        // 🔴 닫은 옆 패널을 여기서도 다시 연다(Q1·X7) — 이미 떠 있으면 그리로 간다(openView 가 판정)
+        const side = listViews().filter(isSidePanelView);
+        if (side.length > 0) {
+            items.push({ sep: true });
+            items.push({ label: '옆 패널 열기', disabled: true });
+            for (const v of side) items.push({ label: v.title, icon: v.icon ?? 'dot', onClick: () => onOpenView(v.id) });
+        }
         items.push({ sep: true });
         items.push({ label: '기본 순서로', icon: 'undo', onClick: () => resetRibbon() });
         setMenu({ x, y, items });
-    }, [hidden]);
+    }, [hidden, onOpenView]);
 
     // 🔴 순서 바꾸기는 공용 훅 하나 — 리본·설정·탭이 같은 interactive/useReorder 를 쓴다(쥔님 ⑨)
     const { containerRef, bind, drag, indicator, draggedRef, onKeyDown } = useReorder({
