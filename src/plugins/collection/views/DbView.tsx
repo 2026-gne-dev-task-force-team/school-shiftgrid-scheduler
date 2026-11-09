@@ -8,7 +8,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Button, Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
+import { Button, EmptyState, Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
@@ -47,7 +47,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         return <StartScreen leafId={leaf.id} />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
-    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="노드 시스템이 꺼져 있습니다." />;
 
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });

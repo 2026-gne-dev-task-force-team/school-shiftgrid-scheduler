@@ -5,7 +5,7 @@
  *   ⛔ 뽑기·조 나누기·예약 같은 쓰임새는 없다 — 위층이 증축한다.
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
+import { EmptyState, StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
 import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
@@ -62,7 +62,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} leafId={leafId} />;
 
     const Frame = kit.nodes()?.Frame;
-    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="노드 시스템이 꺼져 있습니다." />;
     const fields: RecordField[] = [...cfg.baseFields, ...kit.userFieldsOf(activeId)];
     const tree: RecordTree<Rec> | undefined = cfg.tree ? {
         parentOf: (r) => (r.__parent as string | null) ?? null,

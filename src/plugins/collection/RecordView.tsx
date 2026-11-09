@@ -10,14 +10,14 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Button, ContextMenu, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useReorder, type MenuEntry } from '../../pane-ui-system';
+import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useReorder, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
-import { deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
+import { EMPTY_FILTER, deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
@@ -643,11 +643,18 @@ export function RecordView<T>({
                         );
                     })}
 
-                    {rows.length === 0 && (
-                        <div className="px-3 py-6 text-[13px] text-muted select-none" data-rv-empty>
-                            표시할 행이 없습니다.{onPaste ? ' 엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : ''}
+                    {rows.length === 0 && (records.length > 0 && !manualOrder ? (
+                        // 걸린 조건 때문에 0개 — 데이터가 없는 게 아니다. 조건을 지우는 길을 바로 준다
+                        <div data-rv-empty="filtered">
+                            <EmptyState compact icon="filter" title="조건에 맞는 항목 없음"
+                                action={{ label: '필터 지우기', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
                         </div>
-                    )}
+                    ) : (
+                        <div data-rv-empty>
+                            <EmptyState compact icon="table" title="표시할 행이 없습니다"
+                                description={onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined} />
+                        </div>
+                    ))}
 
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
