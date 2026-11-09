@@ -568,3 +568,21 @@ describe('칸 편집 키 — Enter·Shift+Enter·Tab·Esc·행 추가 단추', (
         expect(editingAt()).toBe('2:0');
     });
 });
+
+describe('#42 칸 껍데기 클릭·더블클릭 = 글 칸 편집 시작', () => {
+    const dbl = (el: Element) => act(() => { el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); });
+    const up = (el: Element) => act(() => { el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); });
+    it('칸 여백(껍데기) 클릭·더블클릭이 입력칸을 연다', () => {
+        mount(<Harness init={[{ id: 'r1', f_t: '', f_x: 'a', f_s: 'a' }]} spy={spies()} />);
+        up(q('[data-rv-row="r1"] [data-rv-pos="0:1"]')!);
+        expect(q('[data-rv-editing]')).not.toBeNull();
+        act(() => { key(q('[data-rv-editing]')!, 'Escape'); });
+        dbl(q('[data-rv-row="r1"] [data-rv-pos="0:1"]')!);
+        expect(q('[data-rv-editing]')).not.toBeNull();
+    });
+    it('선택 칸 껍데기는 편집을 열지 않는다', () => {
+        mount(<Harness init={[{ id: 'r1', f_t: '', f_x: 'a', f_s: 'a' }]} spy={spies()} />);
+        up(q('[data-rv-row="r1"] [data-rv-pos="0:2"]')!); dbl(q('[data-rv-row="r1"] [data-rv-pos="0:2"]')!);
+        expect(q('[data-rv-editing]')).toBeNull();
+    });
+});

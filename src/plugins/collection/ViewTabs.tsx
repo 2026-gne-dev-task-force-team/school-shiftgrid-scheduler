@@ -69,7 +69,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                 );
             })}
             <button type="button" data-rv-view-add aria-label="보기 추가" onClick={add}
-                className="shrink-0 grid place-items-center w-6 h-6 mb-0.5 rounded text-muted hover:text-text hover:bg-text/[0.06]">
+                className="hit-44 relative shrink-0 grid place-items-center w-6 h-6 mb-0.5 rounded text-muted hover:text-text hover:bg-text/[0.06]">
                 <Icon name="plus" size={14} />
             </button>
             {menu && (

@@ -45,7 +45,7 @@ export function IconButton({
             disabled={disabled}
             onMouseDown={onMouseDown}
             onClick={onClick}
-            className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
+            className={`hit-44 relative grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
                 duration-fast hover:bg-text/[0.06] active:bg-text/[0.12] ${FOCUS_RING} disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none
                 ${active ? 'text-text bg-text/[0.06]' : 'text-muted hover:text-text'} ${className}`}
         >
