@@ -192,6 +192,8 @@ export interface TableProps {
     toolbar?: boolean;
     /** 툴바를 그릴 자리 — 창틀 Frame 의 toolbar 자리 요소. 주면 단추를 거기에 그린다(본문 스크롤 밖 고정). 없으면 표 위에 인라인. */
     toolbarHost?: HTMLElement | null;
+    /** 행·열을 손으로 지웠다(내장 되돌리기 소유일 때) — undo 는 그 지우기를 되돌리고, isTop 은 뒤에 다른 작업이 안 쌓였나. 알림 「되돌리기」용. */
+    onRemoved?: (kind: '행' | '열', n: number, undo: () => void, isTop: () => boolean) => void;
     /** S1 — 열 머리(A·B·C…) 탭을 포커스 없이도 늘 보인다. 소유자가 쥔다. */
     colTabs?: boolean;
     /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */

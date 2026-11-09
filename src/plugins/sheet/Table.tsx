@@ -58,7 +58,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, onRemoved,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -101,8 +101,11 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         let out = tx;
         for (const w of config.commitWrappers) out = w(out);
         if (historyOwned && !fromHistory && txHasEffect(out)) {
-            undoStack.current.push(inverseTx(out, rowsRef.current, colsRef.current, mergesRef.current));
+            const entry = inverseTx(out, rowsRef.current, colsRef.current, mergesRef.current);
+            undoStack.current.push(entry);
             redoStack.current = [];
+            const nr = out.rows?.remove?.length ?? 0, nc = out.cols?.remove?.length ?? 0;
+            if (onRemoved && (nr || nc)) onRemoved(nr ? '행' : '열', nr || nc, internalUndo, () => undoStack.current.at(-1) === entry);
         }
         onCommit(out);
     };

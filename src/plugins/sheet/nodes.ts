@@ -116,8 +116,8 @@ export const tableNodeTypes: NodeTypeContribution<'table'>[] = [
 ];
 
 /** 활성(index.ts)이 한 번 — NodesApi 를 쥐고 구독을 건다(없으면 조용히 빈 상태). 돌려준 Disposable 은 호스트가 회수. */
-export function initTableNodes(nodes: NodesApi | null): Disposable | null {
-    api = nodes;
+export function initTableNodes(nodes: NodesApi | null, host?: PluginHost): Disposable | null {
+    api = nodes; hostRef = host ?? null;
     bump();
     if (!nodes) return null;
     return nodes.subscribe(() => bump());
@@ -126,6 +126,20 @@ export function initTableNodes(nodes: NodesApi | null): Disposable | null {
 function bump(): void { rev++; for (const s of subs) s(); }
 
 export function getNodesApi(): NodesApi | null { return api; }
+
+// ── 행·열 지우기 되돌리기 알림 — 표 내장 되돌리기 더미(Table.internalUndo)를 되돌린다. 뒤에 다른 작업이 쌓이면(isTop=false) 회색.
+let hostRef: PluginHost | null = null;
+let removal: { run: () => void; isTop: () => boolean } | null = null;
+export function notifyRemoved(title: string, run: () => void, isTop: () => boolean): void {
+    removal = { run, isTop };
+    hostRef?.notify({
+        title,
+        action: { label: '되돌리기', commandId: 'sheet.undoRemoved', unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
+        key: 'sheet.removed', timeout: 8000,
+    });
+}
+export function removedUndoable(): boolean { return !!removal?.isTop(); }
+export function undoRemoved(): void { if (removal?.isTop()) removal.run(); }
 
 // ── React 구독 창구(useSyncExternalStore) — rev 가 바뀌면 다시 읽는다 ──
 export function subscribeTableNodes(fn: () => void): () => void { subs.add(fn); return () => { subs.delete(fn); }; }

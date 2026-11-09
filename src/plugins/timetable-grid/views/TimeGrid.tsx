@@ -47,7 +47,7 @@ function CommitField({ value, onCommit, className, label, placeholder, multiline
 
 type Live = { kind: 'row'; row: number; edge: 'start' | 'end'; value: number } | { kind: 'col'; col: number; width: number } | null;
 
-export function TimeGrid({ data, edit }: { data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void }) {
+export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void }) {
     const nCols = columnCount(data.columns);
     const nRows = rowCount(data);
     const view = viewRange(data);
@@ -108,7 +108,7 @@ export function TimeGrid({ data, edit }: { data: TimetableData; edit: (fn: (d: T
             const anchor = cur.col0 === cur.col1 && cur.row0 === cur.row1 ? getCell(data, cur.col0, cur.row0) : undefined;
             items.push(
                 { label: '칸 병합', icon: 'layers', disabled: !canMerge(data, cur).ok, onClick: () => edit((d) => mergeCells(d, cur!)) },
-                { label: '병합 해제', icon: 'x', disabled: !anchor || ((anchor.rowSpan ?? 1) <= 1 && (anchor.colSpan ?? 1) <= 1), onClick: () => edit((d) => unmergeCells(d, cur!.col0, cur!.row0)) },
+                { label: '병합 해제', icon: 'x', disabled: !anchor || ((anchor.rowSpan ?? 1) <= 1 && (anchor.colSpan ?? 1) <= 1), onClick: () => { edit((d) => unmergeCells(d, cur!.col0, cur!.row0)); onRemoved?.('병합을 풀었습니다'); } },
                 { sep: true },
             );
         }
@@ -116,14 +116,14 @@ export function TimeGrid({ data, edit }: { data: TimetableData; edit: (fn: (d: T
             items.push(
                 { label: '위에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r)) },
                 { label: '아래에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r + 1)) },
-                { label: '이 행 지우기', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); } },
+                { label: '이 행 지우기', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); onRemoved?.('행 1개를 지웠습니다'); } },
             );
         }
         if (c !== null) {
             if (r !== null) items.push({ sep: true });
             items.push(
                 { label: '열 넣기(맨 끝)', icon: 'plus', disabled: addColumn(data) === data, onClick: () => edit((d) => addColumn(d)) },
-                { label: '이 열 지우기', icon: 'trash', danger: true, disabled: nCols <= 1, onClick: () => { edit((d) => removeColumn(d, c)); setSel(null); } },
+                { label: '이 열 지우기', icon: 'trash', danger: true, disabled: nCols <= 1, onClick: () => { edit((d) => removeColumn(d, c)); setSel(null); onRemoved?.('열 1개를 지웠습니다'); } },
             );
         }
         if (items.length) setMenu({ x, y, items });
