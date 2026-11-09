@@ -12,6 +12,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { storageKey } from '../../storage';
 import { FOCUS_RING } from '../../primitives/focus';
 import { Icon } from '../../primitives/Icon';
+import { ConfirmDialog } from '../../primitives/ConfirmDialog';
 import { resetPaneSettings } from '../../layout/pane-settings';
 import { workspaceKey } from '../../layout/workspace-store';
 import { layoutKey } from '../../layout/panels';
@@ -90,10 +91,11 @@ export class ViewErrorBoundary extends Component<ViewBoundaryProps, ViewBoundary
 interface RootBoundaryState {
     error: Error | null;
     autoHealed: boolean;
+    confirmReset: boolean;
 }
 
 export class RootErrorBoundary extends Component<{ children: ReactNode }, RootBoundaryState> {
-    state: RootBoundaryState = { error: null, autoHealed: false };
+    state: RootBoundaryState = { error: null, autoHealed: false, confirmReset: false };
 
     static getDerivedStateFromError(error: Error): Partial<RootBoundaryState> {
         return { error };
@@ -139,12 +141,19 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, RootBo
                     </p>
                     <button
                         type="button"
-                        onClick={() => { void this.handleManualReset(); }}
+                        onClick={() => this.setState({ confirmReset: true })}
                         className={`h-btn px-4 rounded border border-accent text-[13px] text-text bg-text/[0.06]
                             hover:bg-text/[0.12] transition-colors ${FOCUS_RING}`}
                     >
                         화면 배치 초기화 후 다시 열기
                     </button>
+                    {this.state.confirmReset && (
+                        <ConfirmDialog title="화면 배치를 초기화할까요?" confirmLabel="초기화" danger
+                            onConfirm={() => { this.setState({ confirmReset: false }); void this.handleManualReset(); }}
+                            onCancel={() => this.setState({ confirmReset: false })}>
+                            화면 배치·캐시가 초기화되고 다시 열립니다. 저장된 자료는 유지됩니다.
+                        </ConfirmDialog>
+                    )}
                 </div>
             </div>
         );

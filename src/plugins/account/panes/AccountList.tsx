@@ -92,6 +92,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
                 onFieldsChange={kind !== 'perms' && m.canEdit ? (next) => setFolderFields(kind, next.filter((f) => !f.locked)) : undefined}
                 // 사용자는 폼(이름·아이디·종류·초기 비번·활성)으로 · 역할은 바로 한 줄
                 onAddRecord={m.canAdd ? () => { if (kind === 'users') setAdding(true); else m.add(); } : undefined}
+                emptyHint={kind === 'perms' ? '권한은 직접 만들지 않고, 권한을 내놓는 기능 꾸러미가 켜져 있으면 여기에 나타납니다.' : kind === 'users' ? '아래 「새로 만들기」를 눌러 첫 사용자를 만드세요.' : '아래 「새로 만들기」를 눌러 첫 역할을 만드세요.'}
                 onDeleteRecords={m.canDelete ? askRemove : undefined}
                 onOpenRecord={kind === 'perms' ? undefined : open}
                 onReorder={m.canEdit ? reorderAccount : undefined}

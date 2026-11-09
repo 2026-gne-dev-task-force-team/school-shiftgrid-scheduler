@@ -141,6 +141,18 @@ export interface DbSnapshot {
 }
 
 let snapCache: { rev: number; id: string; snap: DbSnapshot | null } | null = null;
+/** 이전 스냅샷의 레코드 객체 — 행 노드 data·이름·부모·칸 정의가 그대로면 같은 객체를 돌려준다(행 컴포넌트 메모가 먹도록, #50) */
+/** 칸·보기 정의는 행을 더할 때마다 새로 정규화돼 새 배열이 되지만 내용은 같다 — 내용이 같으면 앞 배열을 그대로 돌려줘 화면 메모(행·칸 머리)가 안 깨진다 */
+const defMemo = new Map<string, { fields: DbDoc['fields']; fj: string; views: DbDoc['views']; vj: string }>();
+function stableDoc(id: string, doc: DbDoc): DbDoc {
+    const fj = JSON.stringify(doc.fields), vj = JSON.stringify(doc.views);
+    const prev = defMemo.get(id);
+    const fields = prev && prev.fj === fj ? prev.fields : doc.fields;
+    const views = prev && prev.vj === vj ? prev.views : doc.views;
+    defMemo.set(id, { fields, fj, views, vj });
+    return fields === doc.fields && views === doc.views ? doc : { ...doc, fields, views };
+}
+const recMemo = new Map<string, { rec: { id: string } & Record<string, unknown>; data: unknown; name: string; parent: string | null; fields: DbDoc['fields']; titleKey: string }>();
 
 export function snapshotOf(id: string | null): DbSnapshot | null {
     if (!api || !id) return null;
@@ -148,13 +160,21 @@ export function snapshotOf(id: string | null): DbSnapshot | null {
     const n = api.get(id);
     let snap: DbSnapshot | null = null;
     if (n && n.type === DB_TYPE) {
-        const doc = docOfNode(n);
+        const doc = stableDoc(id, docOfNode(n));
         // 🔴 행이 행을 품는다(하위 항목) — db 아래 모든 자손 행을 훑어 __parent(부모 행 id · db 직속이면 null)와 __collapsed 를 싣는다.
         const a = api;
         const records: ({ id: string } & Record<string, unknown>)[] = [];
+        const nextMemo = new Map<string, NonNullable<ReturnType<typeof recMemo.get>>>();
         const walk = (parentNodeId: string, parentRowId: string | null) => {
             for (const c of a.children(parentNodeId)) {
                 if (c.type !== ROW_TYPE) continue;
+                const hit = recMemo.get(c.id);
+                if (hit && hit.data === c.data && hit.name === c.name && hit.parent === parentRowId && hit.fields === doc.fields && hit.titleKey === doc.titleKey) {
+                    records.push(hit.rec);
+                    nextMemo.set(c.id, hit);
+                    walk(c.id, c.id);
+                    continue;
+                }
                 const row = rowOfNode(c);
                 const rec: { id: string } & Record<string, unknown> = { ...row.values, id: c.id, __parent: parentRowId, __collapsed: row.collapsed === true };
                 // 자동 계산 칸은 값이 행 노드에 있다(values 가 아님) — 칸 key 로 꽂아 준다.
@@ -165,10 +185,13 @@ export function snapshotOf(id: string | null): DbSnapshot | null {
                 }
                 if (rec[doc.titleKey] === undefined || rec[doc.titleKey] === null) rec[doc.titleKey] = c.name;
                 records.push(rec);
+                nextMemo.set(c.id, { rec, data: c.data, name: c.name, parent: parentRowId, fields: doc.fields, titleKey: doc.titleKey });
                 walk(c.id, c.id);
             }
         };
         walk(id, null);
+        recMemo.clear();
+        for (const [k, v] of nextMemo) recMemo.set(k, v);
         snap = { id, name: n.name, doc, records, trashedRows: trashedRows(id).length };
     }
     snapCache = { rev, id, snap };

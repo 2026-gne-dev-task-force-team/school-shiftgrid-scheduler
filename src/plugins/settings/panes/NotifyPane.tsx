@@ -3,12 +3,15 @@
  *   기본 200 · 0 = 이 세션 메모리에만(새로고침하면 비움). 줄이면 넘치는 옛 기록은 바로 잘린다.
  *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
-import { usePaneSettings, setPaneSettings, Button, TextInput } from '../../../pane-ui-system';
+import { useState } from 'react';
+import { usePaneSettings, setPaneSettings, Button, ConfirmDialog, TextInput } from '../../../pane-ui-system';
 import { applyNotifyRetain, clearNotifications, useNotifications } from '../../../pane-ui-system/plugin';
 
 export function NotifyPane() {
     const { settings } = usePaneSettings();
     const { items } = useNotifications();
+    const [confirmClear, setConfirmClear] = useState(false);
+    const errorCount = items.filter((i) => i.level === 'error').length;
     return (
         <div className="flex flex-col gap-4 max-w-[560px]">
             <div className="flex items-center justify-between gap-4">
@@ -34,7 +37,13 @@ export function NotifyPane() {
             </div>
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-line">
                 <div className="text-small text-muted">지금 {items.length}건 보관 중</div>
-                <Button onClick={clearNotifications} disabled={items.length === 0}>모두 지우기</Button>
+                <Button onClick={() => (errorCount > 0 ? setConfirmClear(true) : clearNotifications())} disabled={items.length === 0}>모두 지우기</Button>
+                {confirmClear && (
+                    <ConfirmDialog title="오류 알림도 지울까요?" confirmLabel="모두 지우기" danger
+                        onConfirm={() => { setConfirmClear(false); clearNotifications(); }} onCancel={() => setConfirmClear(false)}>
+                        오류 알림 {errorCount}건이 들어 있습니다. 지우면 되돌릴 수 없습니다.
+                    </ConfirmDialog>
+                )}
             </div>
         </div>
     );
