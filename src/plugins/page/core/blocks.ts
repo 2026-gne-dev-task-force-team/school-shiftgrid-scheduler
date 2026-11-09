@@ -138,8 +138,20 @@ export function mergeBackspace(page: Page, id: string): EditResult {
         blocks.splice(idx - 1, 1);
         return { page: { ...page, blocks }, focusId: cur.id, offset: 0 };
     }
-    // 앞이 표 → 합치지 않는다(그대로)
-    if (prev.type === 'table' || prev.type === 'node' || prev.type === 'childpage') return { page, focusId: cur.id, offset: 0 };
+    // 앞이 표·노드·하위 페이지 → 합치지 않는다. 단 이 블록이 비었으면 이 빈 블록을 지우고 앞쪽 글자 블록 끝으로(노션 꼴)
+    if (prev.type === 'table' || prev.type === 'node' || prev.type === 'childpage') {
+        if (cur.text === '') {
+            for (let j = idx - 2; j >= 0; j--) {
+                const t = page.blocks[j];
+                if (isTextual(t.type)) {
+                    const blocks = page.blocks.slice();
+                    blocks.splice(idx, 1);
+                    return { page: { ...page, blocks }, focusId: t.id, offset: t.text.length };
+                }
+            }
+        }
+        return { page, focusId: cur.id, offset: 0 };
+    }
 
     // 앞 글자 블록과 합친다
     const mergeOffset = prev.text.length;
@@ -147,6 +159,47 @@ export function mergeBackspace(page: Page, id: string): EditResult {
     const blocks = page.blocks.slice();
     blocks.splice(idx - 1, 2, mergedPrev);
     return { page: { ...page, blocks }, focusId: prev.id, offset: mergeOffset };
+}
+
+function isTextual(type: BlockType): boolean {
+    return type !== 'divider' && type !== 'table' && type !== 'node' && type !== 'childpage';
+}
+
+/** 골라진 블록들을 한 번에 지운다(여러 개 고르기) — 다 지우면 빈 문단 하나. 캐럿은 첫 삭제 자리 앞의 글자 블록 끝. */
+export function removeBlocks(page: Page, ids: string[]): EditResult {
+    const set = new Set(ids);
+    const first = page.blocks.findIndex((b) => set.has(b.id));
+    if (first < 0) return { page, focusId: page.blocks[0]?.id ?? '', offset: 0 };
+    const blocks = page.blocks.filter((b) => !set.has(b.id));
+    if (blocks.length === 0) {
+        const b = emptyBlock();
+        return { page: { ...page, blocks: [b] }, focusId: b.id, offset: 0 };
+    }
+    for (let j = Math.min(first, blocks.length) - 1; j >= 0; j--) {
+        if (isTextual(blocks[j].type)) return { page: { ...page, blocks }, focusId: blocks[j].id, offset: blocks[j].text.length };
+    }
+    const t = blocks.find((b) => isTextual(b.type)) ?? blocks[0];
+    return { page: { ...page, blocks }, focusId: t.id, offset: 0 };
+}
+
+/** 골라진 블록들을 묶어 옮긴다 — slot = 옮기기 전 목록에서 「이 번호 블록 앞」(길이면 맨 끝). 순서는 그대로. */
+export function moveBlocks(page: Page, ids: string[], slot: number): Page {
+    const set = new Set(ids);
+    const moved = page.blocks.filter((b) => set.has(b.id));
+    if (moved.length === 0) return page;
+    const before = page.blocks.slice(0, Math.max(0, Math.min(slot, page.blocks.length))).filter((b) => set.has(b.id)).length;
+    const rest = page.blocks.filter((b) => !set.has(b.id));
+    const at = Math.max(0, Math.min(slot, page.blocks.length)) - before;
+    const blocks = [...rest.slice(0, at), ...moved, ...rest.slice(at)];
+    if (blocks.every((b, i) => b === page.blocks[i])) return page;
+    return { ...page, blocks };
+}
+
+/** 두 블록 사이(양끝 포함) 전부의 id — 앵커·끝점 순서 무관. Shift+클릭용. */
+export function rangeIds(page: Page, a: string, b: string): string[] {
+    const i = indexOf(page, a); const j = indexOf(page, b);
+    if (i < 0 || j < 0) return [];
+    return page.blocks.slice(Math.min(i, j), Math.max(i, j) + 1).map((x) => x.id);
 }
 
 /** Tab/⇧Tab — 목록만 들여쓰기(명세 요구 6). 목록 아니면 그대로. */

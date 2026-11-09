@@ -11,6 +11,7 @@ export type KeyAction =
     | 'merge-prev'     // Backspace(맨 앞) → 합치기/풀기
     | 'indent'         // Tab
     | 'outdent'        // ⇧Tab
+    | 'select-block'   // Esc → 이 블록을 골라진 상태로
     | 'nav-prev'       // ↑(맨 앞) → 앞 블록으로
     | 'nav-next'       // ↓(맨 끝) → 뒤 블록으로
     | 'bold'           // ⌘B
@@ -66,6 +67,7 @@ export function decideKey(i: KeyInput): KeyAction {
     if (i.key === 'Backspace') {
         return i.atStart ? 'merge-prev' : 'default';
     }
+    if (i.key === 'Escape') return 'select-block';
     if (i.key === 'Tab') {
         return i.shiftKey ? 'outdent' : 'indent';
     }

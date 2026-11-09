@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     splitBlock, outdentOrParagraph, mergeBackspace, indentBlock, moveBlock, removeBlock,
-    changeType, setChecked, applyTableTx, setNodeRef,
+    changeType, setChecked, applyTableTx, setNodeRef, removeBlocks, moveBlocks, rangeIds,
 } from './blocks';
 import type { Page } from './types';
 import type { TableTx } from '../../sheet/contracts/table';
@@ -150,4 +150,58 @@ describe('표 트랜잭션 적용(요구 7)', () => {
 });
 
 describe('편집해도 아이콘이 남는다(요구 13)', () => {
+});
+
+describe('W2 노션 꼴 Backspace', () => {
+    it('빈 문단 앞이 표면 빈 블록을 지우고 표 앞 글자 블록 끝으로', () => {
+        const p = page(
+            { id: 'a', type: 'paragraph', text: '앞글' },
+            { id: 't', type: 'table', text: '' },
+            { id: 'e', type: 'paragraph', text: '' },
+        );
+        const r = mergeBackspace(p, 'e');
+        expect(r.page.blocks.map((b) => b.id)).toEqual(['a', 't']);
+        expect(r.focusId).toBe('a');
+        expect(r.offset).toBe(2);
+    });
+    it('빈 문단 앞이 글 블록이면 지우고 그 끝으로', () => {
+        const p = page({ id: 'a', type: 'paragraph', text: '앞글' }, { id: 'e', type: 'paragraph', text: '' });
+        const r = mergeBackspace(p, 'e');
+        expect(r.page.blocks.map((b) => b.id)).toEqual(['a']);
+        expect(r.offset).toBe(2);
+    });
+    it('글 있는 문단 앞이 표면 그대로(합치지 않는다)', () => {
+        const p = page({ id: 't', type: 'table', text: '' }, { id: 'e', type: 'paragraph', text: '글' });
+        expect(mergeBackspace(p, 'e').page).toBe(p);
+    });
+});
+
+describe('W3 여러 블록 고르기', () => {
+    const p = page(
+        { id: 'a', type: 'paragraph', text: 'A' },
+        { id: 'b', type: 'paragraph', text: 'B' },
+        { id: 'c', type: 'paragraph', text: 'C' },
+        { id: 'd', type: 'paragraph', text: 'D' },
+    );
+    it('rangeIds — 순서 무관 양끝 포함', () => {
+        expect(rangeIds(p, 'c', 'a')).toEqual(['a', 'b', 'c']);
+        expect(rangeIds(p, 'x', 'a')).toEqual([]);
+    });
+    it('removeBlocks — 묶어 지우고 앞 블록 끝으로', () => {
+        const r = removeBlocks(p, ['b', 'c']);
+        expect(r.page.blocks.map((b) => b.id)).toEqual(['a', 'd']);
+        expect(r.focusId).toBe('a');
+        expect(r.offset).toBe(1);
+    });
+    it('removeBlocks — 전부 지우면 빈 문단 하나', () => {
+        const r = removeBlocks(p, ['a', 'b', 'c', 'd']);
+        expect(r.page.blocks).toHaveLength(1);
+        expect(r.page.blocks[0].text).toBe('');
+    });
+    it('moveBlocks — 묶음이 순서 그대로 slot 앞으로', () => {
+        expect(moveBlocks(p, ['a', 'b'], 4).blocks.map((b) => b.id)).toEqual(['c', 'd', 'a', 'b']);
+        expect(moveBlocks(p, ['c', 'd'], 0).blocks.map((b) => b.id)).toEqual(['c', 'd', 'a', 'b']);
+        expect(moveBlocks(p, ['b', 'c'], 3).blocks.map((b) => b.id)).toEqual(['a', 'b', 'c', 'd']);   // 제자리 → 같은 page
+        expect(moveBlocks(p, ['b', 'c'], 3)).toBe(p);
+    });
 });
