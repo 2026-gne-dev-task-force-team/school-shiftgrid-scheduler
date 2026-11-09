@@ -8,7 +8,7 @@ import { useCallback, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Icon } from '../../../pane-ui-system';
+import { Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import type { ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
@@ -47,9 +47,10 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
         if (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA') return;   // 입력칸은 브라우저 되돌리기에 양보
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        const u = undoKey(e);
+        if (u) {
             e.preventDefault();
-            host.commands.run(e.shiftKey ? 'project-explorer.redo' : 'project-explorer.undo');
+            host.commands.run(u === 'redo' ? 'project-explorer.redo' : 'project-explorer.undo');
         }
     }, [host]);
 

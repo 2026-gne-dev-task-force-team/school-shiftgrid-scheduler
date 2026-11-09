@@ -523,7 +523,7 @@ export function undoAction(): void {
     const r = undoHist(state.history, state.tree);
     if (!r) return;
     const prev = state.tree;
-    const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
+    const bumped: Tree = { ...r.value, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
     // 🔴 양방향 diffIds — 되돌리면 되살아난(prev 에 없고 bumped 에 있는) 노드도 센다 → put 된다.
     if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
@@ -626,7 +626,7 @@ export function redoAction(): void {
     const r = redoHist(state.history, state.tree);
     if (!r) return;
     const prev = state.tree;
-    const bumped: Tree = { ...r.tree, rev: state.tree.rev + 1 };
+    const bumped: Tree = { ...r.value, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };
     if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
     emit();
