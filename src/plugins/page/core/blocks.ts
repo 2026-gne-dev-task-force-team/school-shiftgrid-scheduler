@@ -220,12 +220,12 @@ export function rangeIds(page: Page, a: string, b: string): string[] {
     return page.blocks.slice(Math.min(i, j), Math.max(i, j) + 1).map((x) => x.id);
 }
 
-/** Tab/⇧Tab — 목록만 들여쓰기(명세 요구 6). 목록 아니면 그대로. */
+/** Tab/⇧Tab — 모든 블록 종류 들여쓰기(상한 8, 0 아래 없음). 표·구분선·노드는 제외. */
 export function indentBlock(page: Page, id: string, dir: 'in' | 'out'): Page {
     const idx = indexOf(page, id);
     if (idx < 0) return page;
     const cur = page.blocks[idx];
-    if (!isList(cur.type)) return page;
+    if (cur.type === 'table' || cur.type === 'divider' || cur.type === 'node') return page;
     const level = cur.indent ?? 0;
     const next = dir === 'in' ? Math.min(level + 1, 8) : Math.max(level - 1, 0);
     if (next === level) return page;

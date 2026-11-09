@@ -711,7 +711,7 @@ function BlockRow(props: RowProps) {
     const [dropHere, setDropHere] = useState(false); // 끌고 와서 이 줄 위에 있다 — 위쪽 파란 선
     const shown = hover || active || menuOpen;
 
-    const indentPad = isList(block.type) ? { paddingLeft: `${(block.indent ?? 0) * 1.5}rem` } : undefined;
+    const indentPad = block.indent ? { paddingLeft: `${block.indent * 1.5}rem` } : undefined;
 
     return (
         // 🔑 R4: 줄 왼쪽 선 = 머리·속성 왼쪽 선. 손잡이는 선 바깥 여백(-left-6, 컬럼 px-6 안)에 절대 배치 — 줄을 밀어내지 않는다.
