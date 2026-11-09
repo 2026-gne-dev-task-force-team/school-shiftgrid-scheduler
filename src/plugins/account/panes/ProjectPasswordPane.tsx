@@ -3,7 +3,7 @@
  *   색은 토큰 클래스로만(구조 검사 ①).
  */
 import { useState } from 'react';
-import { Button, Select } from '../../../pane-ui-system';
+import { Button, ConfirmDialog, Select } from '../../../pane-ui-system';
 import { getCurrent, hasProjectPassword, setProjectPassword, getKeepMinutes, setKeepMinutes } from '../core';
 import { useAccountVersion } from './useAccount';
 
@@ -22,7 +22,9 @@ export function ProjectPasswordPane() {
         setMsg(ok ? (newPw === '' ? '암호를 해제했습니다.' : '암호를 저장했습니다.') : '실패 — 현재 암호가 맞는지 확인하세요.');
         if (ok) { setOldPw(''); setNewPw(''); }
     };
+    const [confirmOff, setConfirmOff] = useState(false);
     const remove = async () => {
+        setConfirmOff(false);
         const ok = await setProjectPassword(oldPw, '');
         setMsg(ok ? '암호를 해제했습니다.' : '실패 — 현재 암호가 맞는지 확인하세요.');
         if (ok) { setOldPw(''); setNewPw(''); }
@@ -70,8 +72,13 @@ export function ProjectPasswordPane() {
 
             <div className="flex items-center gap-2">
                 <Button variant="accent" size="md" onClick={apply}>{has ? '암호 바꾸기' : '암호 걸기'}</Button>
-                {has && <Button variant="ghost" size="md" onClick={remove}>암호 해제</Button>}
+                {has && <Button variant="ghost" size="md" onClick={() => setConfirmOff(true)}>암호 해제</Button>}
             </div>
+            {confirmOff && (
+                <ConfirmDialog title="프로젝트 암호를 해제할까요?" danger confirmLabel="해제" onConfirm={remove} onCancel={() => setConfirmOff(false)}>
+                    <p className="text-small text-text">암호를 풀면 누구나 마스터로 들어올 수 있습니다.</p>
+                </ConfirmDialog>
+            )}
             {msg && <p className="text-[12px] text-text">{msg}</p>}
         </div>
     );
