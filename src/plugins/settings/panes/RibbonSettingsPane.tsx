@@ -103,7 +103,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
 
             {/* 드래그 미리보기 선 — 포털로 뷰포트에 그린다(스크롤 칸 안에서도 자리가 맞게) */}
             {drag && indicator && createPortal(
-                <div className="ui-chrome-nodrag fixed inset-0 z-[60] pointer-events-none">
+                <div className="ui-chrome-nodrag fixed inset-0 z-popover pointer-events-none">
                     <div
                         className="absolute bg-accent rounded-full"
                         style={{ left: indicator.cross + 2, top: indicator.line - 1.5, width: indicator.size - 4, height: 3 }}
