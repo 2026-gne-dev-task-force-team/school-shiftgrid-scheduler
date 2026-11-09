@@ -55,6 +55,7 @@ function permsModel() {
 
 export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 'perms'; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
+    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
     const [adding, setAdding] = useState(false);   // 「새 사용자」 폼(사용자 목록만)
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
@@ -84,6 +85,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
             <RecordView<Row>
                 fields={m.fields}
                 records={m.rows}
+                toolbarHost={fid && Frame ? barHost : undefined}
                 getId={(r) => r.id}
                 viewKey={`account.${kind}`}
                 titleKey="name"
@@ -103,5 +105,5 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
             }} />}
         </div>
     );
-    return fid && Frame ? <Frame nodeId={fid} leafId={leafId} fallback={fallback}>{table}</Frame> : table;
+    return fid && Frame ? <Frame nodeId={fid} leafId={leafId} toolbar={<div ref={setBarHost} />} fallback={fallback}>{table}</Frame> : table;
 }

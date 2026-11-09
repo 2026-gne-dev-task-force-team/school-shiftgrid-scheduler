@@ -89,6 +89,7 @@ export function RecordView<T>({
     onPaste,
     onReorder,
     tree,
+    toolbarHost,
     className = '',
 }: RecordViewProps<T>) {
     // ── 보기 정의 — 제어형(views)이면 바깥이 저장 · 아니면 localStorage ────────────────
@@ -468,6 +469,7 @@ export function RecordView<T>({
                 onChange={(next, select) => { commitViews(next); if (select) selectView(select); }}
             />
             <Toolbar
+                host={toolbarHost}
                 fields={fields}
                 search={search}
                 filter={view.filter}
