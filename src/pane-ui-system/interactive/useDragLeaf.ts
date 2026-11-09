@@ -18,6 +18,7 @@
  * ⛔ 이 판정을 다른 데로 복사하지 말 것(useContextTrigger 와 같은 규칙) — 각 리스트는 이 훅 하나만 얹는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LONG_PRESS_MS } from './timing';
 
 /** 세로/가로 리스트 방향 — 드롭 미리보기 선 방향을 쓰는 쪽이 고를 때 쓴다 */
 export type DragAxis = 'x' | 'y';
@@ -47,7 +48,7 @@ export interface UseDragLeafOpts {
 }
 
 const MOUSE_START = 8;    // 마우스: 8px 움직이면 드래그 시작
-const TOUCH_HOLD = 350;   // 손가락: 350ms 길게 눌러야 무장
+const TOUCH_HOLD = LONG_PRESS_MS;   // 손가락: 길게 눌러야 무장
 const TOUCH_CANCEL = 10;  // 손가락: 무장 전 10px 넘게 움직이면 스크롤 — 포기
 
 type Phase = 'idle' | 'pending' | 'armed' | 'dragging';

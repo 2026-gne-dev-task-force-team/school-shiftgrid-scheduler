@@ -40,6 +40,7 @@ export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { DatePicker } from './primitives/DatePicker';
 export { DateField } from './primitives/DateField';
 export { Popover } from './primitives/Popover';
+export { Tooltip } from './primitives/Tooltip';
 export { PropertyField } from './primitives/PropertyField';
 export { IconPicker, TitleField, COMMON_EMOJI } from './primitives/IconPicker';
 export { Toggle } from './primitives/Toggle';

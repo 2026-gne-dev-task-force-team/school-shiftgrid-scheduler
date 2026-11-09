@@ -65,6 +65,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
         onToggleCollapse: (id) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }),
         onIndent: kit.indent,
         onOutdent: kit.outdent,
+        onAddChild: (pid) => { const nid = kit.addItem(activeId); if (nid) kit.setParent(nid, pid); },
     } : undefined;
 
     return (

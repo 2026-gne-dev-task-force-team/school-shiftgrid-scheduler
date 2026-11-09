@@ -51,18 +51,18 @@ export const collectionPlugin = definePlugin({
             interfaces: [{ name: 'collection', version: '0.2.0', label: '목록 화면', desc: '목록을 보고 고치는 공통 화면' }],
             views: [{
                 // 레코드 뷰 노드 화면 — 가운데 싱글턴(한 장만). 보고 있는 레코드 뷰 노드를 그린다.
-                id: 'db', title: '레코드 뷰', icon: 'table', defaultArea: 'center',
+                id: 'db', title: '컬렉션', icon: 'database', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Db',
             }, {
                 // 옛 「레코드 뷰 연습장」 잔재 탭 — 들어오면 바로 닫고 레코드 뷰 화면으로 잇는다(위 LegacyPlaygroundRedirect).
-                id: 'playground', title: '레코드 뷰 연습장', icon: 'layers', defaultArea: 'center',
+                id: 'playground', title: '컬렉션 연습장', icon: 'layers', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 component: 'LegacyPlayground',
             }],
             commands: [
-                { id: 'collection.open', title: '레코드 뷰 열기', icon: 'layers' },
+                { id: 'collection.open', title: '컬렉션 열기', icon: 'layers' },
                 { id: 'collection.restoreTrashed', title: '휴지통의 행 복원', icon: 'undo' },
             ],
             ribbon: [{ commandId: 'collection.open', icon: 'layers', order: 20 }],

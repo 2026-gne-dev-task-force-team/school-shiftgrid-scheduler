@@ -20,6 +20,6 @@ export const HOST_SERVICES: Record<keyof PluginHost, HostService> = {
     store: { label: '큰 자료 저장', desc: '브라우저 IndexedDB 에 큰 자료를 플러그인별로 저장합니다(5MB 천장 없음).', example: '탐색기 나무' },
     notify: { label: '알림', desc: '토스트로 잠깐 띄우고 알림 패널에 기록합니다. 단추는 명령 id 로만 답니다.', example: '저장 실패·휴지통 이동' },
     onFirstRun: { label: '첫 실행 훅', desc: '플러그인이 처음 켜질 때 딱 한 번 기본 배치를 만듭니다.', example: '처음 켠 달력이 빈 저장소를 만듦' },
-    modules: { label: '약속(모듈) 쓰기', desc: '이름만 대고 다른 플러그인의 기능을 받습니다. 선언한 약속만 쓸 수 있습니다.', example: '명단이 레코드 뷰 약속을 빌림' },
+    modules: { label: '약속(모듈) 쓰기', desc: '이름만 대고 다른 플러그인의 기능을 받습니다. 선언한 약속만 쓸 수 있습니다.', example: '명단이 컬렉션 약속을 빌림' },
     declare: { label: '동적 선언', desc: '실행 중에 뷰·명령 같은 기여를 하나 더 꽂습니다(매니페스트와 같은 검증).', example: '급조용 — 평소엔 매니페스트로' },
 };

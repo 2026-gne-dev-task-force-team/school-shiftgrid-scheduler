@@ -97,6 +97,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                         onToggleCollapse: toggleRowCollapse,
                         onIndent: indentRow,
                         onOutdent: outdentRow,
+                        onAddChild: (rowId) => { commit(id, { addRows: [{}], addUnder: rowId }); },
                     }}
                 />
             </div>
