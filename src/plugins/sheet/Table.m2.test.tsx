@@ -147,20 +147,20 @@ describe('Table M2 — 행열 편집(axis-edit)', () => {
         act(() => { addCol.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect(ref.current!.st().cols).toHaveLength(4);
     });
-    it('열 손잡이 메뉴에서 「이 칸 지우기」 로 열을 뺀다', () => {
+    it('열 손잡이 메뉴에서 「이 열 삭제」 로 열을 뺀다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows', 'axis-edit']} />);
         const handle = document.querySelectorAll('[data-testid="col-handle"]')[0];   // A 열 손잡이
         act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
-        clickText('이 칸 지우기');
+        clickText('이 열 삭제');
         expect(ref.current!.st().cols.map((c) => c.key)).toEqual(['b', 'c']);
     });
-    it('행 손잡이 메뉴 「줄 지우기」 로 행을 지운다', () => {
+    it('행 손잡이 메뉴 「행 삭제」 로 행을 지운다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['rows']} />);
         const handle = document.querySelectorAll('[data-testid="row-handle"]')[0];
         act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
-        clickText('줄 지우기');
+        clickText('행 삭제');
         expect(ref.current!.st().rows.map((r) => r.id)).toEqual(['r1', 'r2']);
     });
 });
@@ -242,7 +242,7 @@ describe('Table M2 — 구조 되돌리기(history + 행/열)', () => {
         const h = () => ref.current!.h();
         const handle = document.querySelectorAll('[data-testid="row-handle"]')[0];
         act(() => { handle.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })); });
-        clickText('줄 지우기');
+        clickText('행 삭제');
         expect(ref.current!.st().rows.map((r) => r.id)).toEqual(['r1', 'r2']);
         act(() => h().focus());
         act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true })); });

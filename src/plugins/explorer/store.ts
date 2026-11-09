@@ -344,7 +344,7 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const def = getType(type);
     const init = def?.create?.init?.(parent) ?? {};
     const id = uid();
-    const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 노드');
+    const name = typeof init.name === 'string' ? init.name : (def?.create?.label ?? def?.label ?? '새 항목');
     // 🔑 createInput 타입이면 이름칸 자리에 「값 입력」(kind:'create')을 띄운다 — 커밋은 onInput 으로(이름이 아니라 링크 등).
     const ci = def?.createInput;
     const inputPatch = ci

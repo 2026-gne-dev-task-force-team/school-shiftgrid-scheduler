@@ -131,7 +131,7 @@ export function getNodesApi(): NodesApi | null { return api; }
 let hostRef: PluginHost | null = null;
 let removal: { run: () => void; isTop: () => boolean } | null = null;
 /** 알림 제목 — 행·열은 지웠고 병합은 풀었다. */
-export function removedTitle(kind: '행' | '열' | '병합', n: number): string { return kind === '병합' ? `병합 ${n}곳을 풀었습니다` : `${kind} ${n}개를 지웠습니다`; }
+export function removedTitle(kind: '행' | '열' | '병합', n: number): string { return kind === '병합' ? `병합 ${n}곳을 풀었습니다` : `${kind} ${n}개를 삭제했습니다`; }
 export function notifyRemoved(title: string, run: () => void, isTop: () => boolean): void {
     removal = { run, isTop };
     hostRef?.notify({

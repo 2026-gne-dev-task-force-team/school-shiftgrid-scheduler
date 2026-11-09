@@ -565,7 +565,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     >
                         <Icon name="right" size={11} className={`shrink-0 transition-transform ${trashOpen ? 'rotate-90' : ''}`} />
                         <Icon name="trash" size={13} className="shrink-0" />
-                        <span className="truncate">휴지통 ({trashRows.length})</span>
+                        <span className="truncate">휴지통 ({trashRows.filter((r) => r.depth === 0).length})</span>
                     </button>
                     {trashRows.length > 0 && (
                         purgeAllConfirm ? (
@@ -620,7 +620,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                         : <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />}
                                     {confirming ? (
                                         <span className="flex items-center gap-1 flex-1 min-w-0 text-[11px]">
-                                            <span className="text-muted truncate">정말 지울까요?</span>
+                                            <span className="text-muted truncate">정말 삭제할까요?</span>
                                             <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.purge'); }} className="px-1 rounded text-bad hover:bg-bad/10">지우기</button>
                                             <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.cancel-purge'); }} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
                                         </span>

@@ -39,7 +39,7 @@ export const timetableGridPlugin = definePlugin({
                 { id: 'timetable-grid.open', title: '시간표 열기', icon: 'schedule', keys: 'Mod+Alt+T' },
                 { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'schedule', palette: false },
                 { id: 'timetable-grid.duplicate', title: '표 복사(통째)', icon: 'copy' },
-                { id: 'timetable-grid.undoRemoved', title: '지운 행·열 되돌리기', icon: 'undo', palette: false },
+                { id: 'timetable-grid.undoRemoved', title: '삭제한 행·열 되돌리기', icon: 'undo', palette: false },
             ],
             ribbon: [{ commandId: 'timetable-grid.open', icon: 'schedule', order: 4 }],
             nodeTypes: gridNodeTypes,

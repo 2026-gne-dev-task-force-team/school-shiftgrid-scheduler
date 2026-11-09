@@ -66,22 +66,22 @@ const click = (el: HTMLElement | null) => { act(() => { el!.dispatchEvent(new Mo
 const lastNote = (s: ReturnType<typeof setup>) => s.notify.mock.calls.at(-1)![0];
 
 describe('컬렉션 삭제 안전망', () => {
-    it('행 삭제 → 알림 「행 2개를 지웠습니다」 + 되돌리기 → 같은 자리로 돌아온다', () => {
+    it('행 삭제 → 알림 「행 2개를 휴지통으로 옮겼습니다」 + 되돌리기 → 같은 자리로 돌아온다', () => {
         const s = setup(); mount(s);
         click(q('[data-rv-check="r1"]')); click(q('[data-rv-check="r3"]')); click(q('[data-rv-delete]'));
         expect(s.nodes.get('db1')!.kids).toEqual(['r2']);
-        expect(lastNote(s).title).toBe('행 2개를 지웠습니다');
+        expect(lastNote(s).title).toBe('행 2개를 휴지통으로 옮겼습니다');
         s.undo(lastNote(s));
         expect(s.nodes.get('db1')!.kids).toEqual(['r1', 'r2', 'r3']);
     });
     it('칸 삭제 → 알림 + 되돌리기 → 칸·정렬·열이 함께 돌아온다', () => {
         const s = setup(); mount(s);
         click(q(`[data-rv-head-menu="${s.sel.key}"]`));
-        const item = [...document.querySelectorAll('[role="menuitem"], button')].find((e) => e.textContent === '칸 삭제') as HTMLElement;
+        const item = [...document.querySelectorAll('[role="menuitem"], button')].find((e) => e.textContent === '속성 삭제') as HTMLElement;
         click(item);
         const after = s.nodes.get('db1')!.data as { fields: unknown[]; views: { sorts: unknown[]; columns: unknown[] }[] };
         expect(after.fields).toHaveLength(1); expect(after.views[0].sorts).toHaveLength(0);
-        expect(lastNote(s).title).toContain('칸 「상태」을 지웠습니다');
+        expect(lastNote(s).title).toContain('속성 「상태」을 삭제했습니다');
         s.undo(lastNote(s));
         const back = s.nodes.get('db1')!.data as typeof after;
         expect(back.fields).toHaveLength(2); expect(back.views[0].sorts).toHaveLength(1);

@@ -52,7 +52,7 @@ export const pagePlugin = definePlugin({
             commands: [
                 { id: 'page.open', title: '페이지 열기', icon: 'fileText' },
                 { id: 'page.openPage', title: '페이지 열기(탐색기)', icon: 'fileText', palette: false },
-                { id: 'page.undoRemoved', title: '지운 블록 되돌리기', icon: 'undo', palette: false },
+                { id: 'page.undoRemoved', title: '삭제한 블록 되돌리기', icon: 'undo', palette: false },
             ],
             ribbon: [{ commandId: 'page.open', icon: 'fileText', order: 7 }],
             nodeTypes: pageNodeTypes,

@@ -1,6 +1,6 @@
 /**
  * 레코드 뷰 노드 화면 — 노션 「데이터베이스 페이지」처럼: 제목(노드 이름) + 표 하나. 설명문 ⛔.
- *   🔴 데이터는 노드 다리(nodes.ts)에서만 — 레코드 뷰도 그 행도 노드고, 저장·휴지통·되돌리기는 노드 시스템이 쥔다.
+ *   🔴 데이터는 노드 다리(nodes.ts)에서만 — 레코드 뷰도 그 행도 노드고, 저장·휴지통·되돌리기는 항목 시스템이 쥔다.
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
@@ -60,7 +60,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         return <StartScreen leafId={leaf.id} />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
-    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="노드 시스템이 꺼져 있습니다." />;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 시스템이 꺼져 있습니다." />;
 
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });
@@ -99,7 +99,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                     onAddRecord={() => { commit(id, { addRows: [{}] }); }}
                     onDeleteRecords={(ids) => {
                         commit(id, { removeRows: ids });
-                        notifyUndo(host, `행 ${ids.length}개를 지웠습니다`);
+                        notifyUndo(host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`);
                     }}
                     onDestructive={(title, run) => {
                         getNodesApi()?.batch(run);

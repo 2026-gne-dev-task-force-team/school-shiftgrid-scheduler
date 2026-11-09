@@ -44,9 +44,9 @@ describe('시간표 지우기 알림', () => {
     it('행 지우기 → 알림 → 되돌리기 → 원상', () => {
         const s = setup(); mount(s);
         const n0 = s.get().rows.length;
-        menu('[data-r="1"]', '이 행 지우기');
+        menu('[data-r="1"]', '이 행 삭제');
         expect(s.get().rows.length).toBe(n0 - 1);
-        expect(s.notify.mock.calls.at(-1)![0].title).toBe('행 1개를 지웠습니다');
+        expect(s.notify.mock.calls.at(-1)![0].title).toBe('행 1개를 삭제했습니다');
         expect(removedUndoable()).toBe(true);
         act(() => { undoRemoved(); });
         expect(s.get().rows.length).toBe(n0);
@@ -54,13 +54,13 @@ describe('시간표 지우기 알림', () => {
     it('열 지우기 → 알림 → 되돌리기 → 원상 · 뒤에 편집이 쌓이면 회색', () => {
         const s = setup(); mount(s);
         const n0 = columnCount(s.get().columns);
-        menu('[data-c="1"]', '이 열 지우기');
+        menu('[data-c="1"]', '이 열 삭제');
         expect(columnCount(s.get().columns)).toBe(n0 - 1);
-        expect(s.notify.mock.calls.at(-1)![0].title).toBe('열 1개를 지웠습니다');
+        expect(s.notify.mock.calls.at(-1)![0].title).toBe('열 1개를 삭제했습니다');
         expect(removedUndoable()).toBe(true);
         act(() => { undoRemoved(); });
         expect(columnCount(s.get().columns)).toBe(n0);
-        menu('[data-c="1"]', '이 열 지우기');
+        menu('[data-c="1"]', '이 열 삭제');
         act(() => { applyEdit('s1', (d) => mergeCells(d, { col0: 0, row0: 0, col1: 0, row1: 1 })); });
         expect(removedUndoable()).toBe(false);
     });

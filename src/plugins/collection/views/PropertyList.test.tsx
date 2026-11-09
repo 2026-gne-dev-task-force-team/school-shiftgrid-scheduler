@@ -95,12 +95,12 @@ describe('locked 기본 칸 — 머리 메뉴가 지우기·타입 바꾸기를 
     };
     it('locked 칸: 칸 삭제 단추 없음 · 타입 단추 전부 비활성', () => {
         open('base');
-        expect(mi('칸 삭제')).toBeUndefined();
+        expect(mi('속성 삭제')).toBeUndefined();
         expect(document.querySelectorAll('[data-rv-type]:not([disabled])').length).toBe(0);
     });
     it('보통 칸: 칸 삭제 단추 있음 · 타입 단추 활성(대조)', () => {
         open('free');
-        expect(mi('칸 삭제')).toBeTruthy();
+        expect(mi('속성 삭제')).toBeTruthy();
         expect(document.querySelectorAll('[data-rv-type]:not([disabled])').length).toBeGreaterThan(0);
     });
 });

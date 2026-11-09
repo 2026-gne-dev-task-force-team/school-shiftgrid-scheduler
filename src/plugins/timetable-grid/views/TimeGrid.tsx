@@ -116,14 +116,14 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
             items.push(
                 { label: '위에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r)) },
                 { label: '아래에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r + 1)) },
-                { label: '이 행 지우기', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); onRemoved?.('행 1개를 지웠습니다'); } },
+                { label: '이 행 삭제', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); onRemoved?.('행 1개를 삭제했습니다'); } },
             );
         }
         if (c !== null) {
             if (r !== null) items.push({ sep: true });
             items.push(
                 { label: '열 넣기(맨 끝)', icon: 'plus', disabled: addColumn(data) === data, onClick: () => edit((d) => addColumn(d)) },
-                { label: '이 열 지우기', icon: 'trash', danger: true, disabled: nCols <= 1, onClick: () => { edit((d) => removeColumn(d, c)); setSel(null); onRemoved?.('열 1개를 지웠습니다'); } },
+                { label: '이 열 삭제', icon: 'trash', danger: true, disabled: nCols <= 1, onClick: () => { edit((d) => removeColumn(d, c)); setSel(null); onRemoved?.('열 1개를 삭제했습니다'); } },
             );
         }
         if (items.length) setMenu({ x, y, items });

@@ -20,7 +20,7 @@ import {
 /** 친근한 이름(없는 토큰은 id 그대로) — 판 A 가 더하는 토큰도 id 로 저절로 뜬다 */
 const LABELS: Partial<Record<ColorToken, string>> = {
     bg: '배경', panel: '패널', panel2: '패널 2', line: '선', text: '글자', muted: '흐린 글자',
-    accent: '강조', accenth: '강조(호버)', ok: '성공', bad: '위험', warn: '주의',
+    accent: '강조', accenth: '강조 hover', ok: '성공', bad: '위험', warn: '주의',
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -112,7 +112,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                     className={`w-28 h-7 px-2 rounded border border-line bg-bg text-text text-small
                                         ${FOCUS_RING}`}
                                 />
-                                <span className="text-note text-muted w-10 shrink-0">{t}</span>
+                                <span className="text-note text-muted w-16 shrink-0 truncate">{t}</span>
                                 <button
                                     type="button"
                                     onClick={() => revertToken(t)}

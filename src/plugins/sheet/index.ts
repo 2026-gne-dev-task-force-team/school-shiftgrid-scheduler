@@ -64,7 +64,7 @@ export const sheetPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 component: 'LegacyPlayground',
             }],
-            commands: [{ id: 'sheet.open', title: '시트 열기', icon: 'table' }, { id: 'sheet.undoRemoved', title: '지운 행·열 되돌리기', icon: 'undo', palette: false }],
+            commands: [{ id: 'sheet.open', title: '시트 열기', icon: 'table' }, { id: 'sheet.undoRemoved', title: '삭제한 행·열 되돌리기', icon: 'undo', palette: false }],
             ribbon: [{ commandId: 'sheet.open', icon: 'table', order: 6 }],
             // 🔴 노드 타입 하나(표) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: tableNodeTypes,

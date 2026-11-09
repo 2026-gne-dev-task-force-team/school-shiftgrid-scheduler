@@ -34,7 +34,7 @@ export function NotifyPane() {
             </div>
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-line">
                 <div className="text-small text-muted">지금 {items.length}건 보관 중</div>
-                <Button onClick={clearNotifications} disabled={items.length === 0}>기록 비우기</Button>
+                <Button onClick={clearNotifications} disabled={items.length === 0}>모두 지우기</Button>
             </div>
         </div>
     );

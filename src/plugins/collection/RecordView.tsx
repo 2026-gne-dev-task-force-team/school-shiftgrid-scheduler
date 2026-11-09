@@ -309,7 +309,7 @@ export function RecordView<T>({
     const setOptions = (key: string, options: FieldOption[]) => {
         const apply = () => onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, options } : f)));
         const old = byKey.get(key)?.options ?? [];
-        if (onDestructive && options.length < old.length) onDestructive(`선택지 ${old.length - options.length}개를 지웠습니다`, apply);
+        if (onDestructive && options.length < old.length) onDestructive(`선택지 ${old.length - options.length}개를 삭제했습니다`, apply);
         else apply();
     };
     const deleteField = (key: string) => {
@@ -322,7 +322,7 @@ export function RecordView<T>({
                 columns: view.columns.filter((c) => c.key !== key),
             });
         };
-        if (onDestructive) onDestructive(`칸 「${label}」을 지웠습니다`, apply); else apply();
+        if (onDestructive) onDestructive(`속성 「${label}」을 삭제했습니다`, apply); else apply();
         setHeadMenu(null);
     };
     /** 「유일」 켜기/끄기 — 이미 겹친 값이 있으면 켜지 않고 이유를 보인다. */
@@ -524,7 +524,7 @@ export function RecordView<T>({
                 onSelect={(id) => { selectView(id); setCur(null); setAnchor(null); }}
                 onChange={(next, select) => {
                     const apply = () => { commitViews(next); if (select) selectView(select); };
-                    if (onDestructive && next.length < views.length) onDestructive('보기 1개를 지웠습니다', apply); else apply();
+                    if (onDestructive && next.length < views.length) onDestructive('보기 1개를 삭제했습니다', apply); else apply();
                 }}
             />
             <Toolbar
@@ -547,7 +547,7 @@ export function RecordView<T>({
                     {visibleFields.some((f) => canEditCell(f)) && (
                         <button type="button" data-rv-bulk onClick={(e) => setBulk({ rect: e.currentTarget.getBoundingClientRect(), key: visibleFields.find((f) => canEditCell(f))!.key })}
                             className="h-row px-2 rounded text-[12px] text-text hover:bg-text/[0.06] inline-flex items-center gap-1">
-                            <Icon name="edit" size={13} />칸 바꾸기
+                            <Icon name="edit" size={13} />속성 바꾸기
                         </button>
                     )}
                     <button type="button" data-rv-delete onClick={deleteSelected} className="h-row px-2 rounded text-[12px] text-bad hover:bg-bad/10 inline-flex items-center gap-1">
@@ -727,7 +727,7 @@ export function RecordView<T>({
                         // 걸린 조건 때문에 0개 — 데이터가 없는 게 아니다. 조건을 지우는 길을 바로 준다
                         <div data-rv-empty="filtered">
                             <EmptyState compact icon="filter" title="조건에 맞는 항목 없음"
-                                action={{ label: '필터 지우기', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
+                                action={{ label: '필터 삭제', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
                         </div>
                     ) : (
                         <div data-rv-empty>
@@ -828,7 +828,7 @@ export function RecordView<T>({
                                         ))}
                                     </div>
                                     {!f.locked && <MenuItem label={f.unique ? '유일 끄기' : '유일(같은 값 막기)'} icon={f.unique ? 'check' : 'key'} onSelect={() => toggleUnique(f.key)} />}
-                                    {!locked && <MenuItem label="칸 삭제" icon="trash" danger onSelect={() => deleteField(f.key)} />}
+                                    {!locked && <MenuItem label="속성 삭제" icon="trash" danger onSelect={() => deleteField(f.key)} />}
                                 </>
                             )}
                         </MenuList>

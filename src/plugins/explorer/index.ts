@@ -118,7 +118,7 @@ export const explorerPlugin = definePlugin({
             commands: [
                 { id: 'explorer.open-panel', title: '탐색기 열기', icon: 'folder', keys: 'Mod+Shift+E' },
                 { id: 'explorer.rename', title: '이름 바꾸기', icon: 'edit' },
-                { id: 'explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
+                { id: 'explorer.remove', title: '삭제', icon: 'trash' },
                 { id: 'explorer.confirm-remove', title: '삭제 확인', icon: 'trash', palette: false },
                 { id: 'explorer.cancel-remove', title: '삭제 취소', icon: 'x', palette: false },
                 { id: 'explorer.open', title: '고른 것 열기', icon: 'arrowRight' },
