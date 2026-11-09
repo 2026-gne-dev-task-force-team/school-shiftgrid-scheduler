@@ -50,7 +50,7 @@ export function FeedEventCard({ event, onClose }: { event: CalEvent; onClose: ()
                         <span className="shrink-0">· 읽기 전용</span>
                     </div>
                 </div>
-                <button type="button" aria-label="닫기" onClick={onClose} className="shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
+                <button type="button" aria-label="닫기" onClick={onClose} className="hit-44 relative shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
                     <Icon name="x" size={14} />
                 </button>
             </div>

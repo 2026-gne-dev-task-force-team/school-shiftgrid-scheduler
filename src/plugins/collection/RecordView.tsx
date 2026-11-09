@@ -402,6 +402,13 @@ export function RecordView<T>({
         setCur({ r: nr, c: nc });
         cellEl(nr, nc)?.focus();
     };
+    // 칸 껍데기(여백·아이콘·줄바꿈 칸 위아래)를 눌러도 안쪽 글/숫자 칸 편집이 열린다 — 안쪽 칸만 클릭을 받던 탓에 빈 자리 클릭·더블클릭이 헛돌았다.
+    // 선택·체크·관계 칸(BUTTON)·이미 편집 중인 칸은 건드리지 않는다.
+    const openEditFromWrapper = (e: React.MouseEvent<HTMLElement>) => {
+        if (e.target !== e.currentTarget) return;
+        const inner = e.currentTarget.querySelector<HTMLElement>('[data-rv-cell]');
+        if (inner && inner.tagName !== 'BUTTON' && !inner.hasAttribute('data-rv-editing')) inner.click();
+    };
     const fillDown = () => {
         if (!range) return;
         // 한 줄만 골랐으면 바로 위 행 값을, 여러 줄이면 맨 윗줄 값을 아래로(엑셀·노션 ⌘D)
@@ -666,6 +673,8 @@ export function RecordView<T>({
                                             if (e.shiftKey && cur) { if (!anchor) setAnchor(cur); setCur({ r: ri, c: fi }); e.preventDefault(); return; }
                                             setAnchor(null); setCur({ r: ri, c: fi });
                                         }}
+                                        onMouseUp={openEditFromWrapper}
+                                        onDoubleClick={openEditFromWrapper}
                                         className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wrapOf(f.key) ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(ri, fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                                         style={{ width: widthOf(f), ...frozenStyle(fi) }}>
                                         {fi === 0 && treeOn && (
