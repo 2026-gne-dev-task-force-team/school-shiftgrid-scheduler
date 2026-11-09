@@ -7,8 +7,8 @@
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
 import { useEffect, useRef, useState } from 'react';
-import { DatePicker, Icon, Popover, Pill, PILL_COLORS, pillStyle } from '../../../pane-ui-system';
-import { isImeEnter } from './ime';
+import { DatePicker, Icon, Popover, Pill, PILL_COLORS, isImeEnter, pillStyle, useReorder } from '../../../pane-ui-system';
+import { ReorderOverlay } from '../ReorderOverlay';
 import { formatNumber } from './format';
 import { dateText, toDateValue, type DateConfig } from './dates';
 import { hrefOf, isValidLink, type LinkKind } from './links';
@@ -156,7 +156,6 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
 }) {
     const options = field.options ?? [];
     const [editing, setEditing] = useState<string | null>(null);
-    const [dragKey, setDragKey] = useState<string | null>(null);
     const [draft, setDraft] = useState('');
     const addDraft = () => {
         const t = draft.trim();
@@ -165,34 +164,29 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
         onOptionsChange([...options, { value: uniqueValue(options, t), label: t, color }]);
         setDraft('');
     };
-    const move = (from: string, to: string) => {
-        if (!onOptionsChange || from === to) return;
-        const next = options.filter((o) => o.value !== from);
-        const at = next.findIndex((o) => o.value === to);
-        const item = options.find((o) => o.value === from);
-        if (!item) return;
-        next.splice(Math.max(0, at), 0, item);
-        onOptionsChange(next);
-    };
+    // 🔴 순서는 공용 훅 하나(보기 탭·칸 머리와 같은 것) — 손잡이(⋮⋮)를 끌거나 Alt+↑/↓
+    const reorder = useReorder<HTMLDivElement>({
+        ids: options.map((o) => o.value),
+        axis: 'y',
+        enabled: !!onOptionsChange,
+        onReorder: (ids) => onOptionsChange?.(ids.map((id) => options.find((o) => o.value === id)!)),
+    });
     return (
-        <div className="flex flex-col gap-0.5 max-h-[320px] overflow-auto" data-rv-options={field.key}>
+        <div ref={reorder.containerRef} {...reorder.bind} onKeyDown={reorder.onKeyDown}
+            onPointerDownCapture={() => { reorder.draggedRef.current = false; }}
+            className="flex flex-col gap-0.5 max-h-[320px] overflow-auto" data-rv-options={field.key}>
             {options.map((o) => {
                 const on = picked.includes(o.value);
                 return (
                     <div key={o.value} className="flex flex-col">
                         <div
                             className={`flex items-center gap-1 rounded hover:bg-text/[0.06] ${on ? 'bg-text/[0.04]' : ''}`}
-                            draggable={!!onOptionsChange}
-                            data-rv-opt-row={o.value}
-                            onDragStart={() => setDragKey(o.value)}
-                            onDragOver={(e) => { if (dragKey) e.preventDefault(); }}
-                            onDrop={(e) => { e.preventDefault(); if (dragKey) move(dragKey, o.value); setDragKey(null); }}
-                            onDragEnd={() => setDragKey(null)}
+                            data-rv-opt-row={o.value} data-row-id={o.value} title={o.label}
                         >
-                            {onOptionsChange && <Icon name="grip" size={12} className="text-muted shrink-0 cursor-grab" />}
+                            {onOptionsChange && <span data-rv-opt-grip={o.value} tabIndex={0} aria-label="순서 바꾸기(Alt+↑↓)" className="grid place-items-center shrink-0 cursor-grab outline-none text-muted"><Icon name="grip" size={12} /></span>}
                             <button
                                 type="button" data-rv-opt={o.value} aria-pressed={on}
-                                onClick={() => onPick(o.value)}
+                                onClick={() => { if (reorder.draggedRef.current) { reorder.draggedRef.current = false; return; } onPick(o.value); }}
                                 className="flex-1 min-w-0 flex items-center gap-2 h-row px-1 text-left"
                             >
                                 {multi && (
@@ -230,6 +224,7 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                     className="mt-1 h-row px-2 rounded border border-line bg-bg text-[13px] text-text outline-none"
                 />
             )}
+            <ReorderOverlay drag={reorder.drag} indicator={reorder.indicator} axis="y" />
         </div>
     );
 }

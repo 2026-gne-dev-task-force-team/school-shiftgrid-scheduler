@@ -284,7 +284,7 @@ describe('선택지 편집', () => {
         click(q('[data-rv-opt-delete]'));
         expect((spy.fields.mock.calls.at(-1)![0] as RecordField[])[2].options).toEqual([]);
     });
-    it('끌어서 순서 — 배열 순서가 바뀐다', () => {
+    it('순서(손잡이 Alt+↑) — 배열 순서가 바뀐다', () => {
         const spy = spies();
         const Two = () => {
             const [fields, setFields] = useState<RecordField[]>([
@@ -295,10 +295,8 @@ describe('선택지 편집', () => {
         };
         mount(<Two />);
         click(q('[data-rv-row="r1"] [data-rv-cell="f_s"]'));
-        const mk = (type: string) => { const ev = new Event(type, { bubbles: true, cancelable: true }) as Event & { dataTransfer: unknown }; ev.dataTransfer = {}; return ev; };
-        act(() => { q('[data-rv-opt-row="b"]')!.dispatchEvent(mk('dragstart')); });
-        act(() => { q('[data-rv-opt-row="a"]')!.dispatchEvent(mk('dragover')); });
-        act(() => { q('[data-rv-opt-row="a"]')!.dispatchEvent(mk('drop')); });
+        // useReorder 키보드 대안(Alt+↑) — 손잡이에서 한 칸 위로
+        key(q('[data-rv-opt-grip="b"]')!, 'ArrowUp', { altKey: true });
         expect((spy.fields.mock.calls.at(-1)![0] as RecordField[])[1].options!.map((o) => o.value)).toEqual(['b', 'a']);
     });
 });

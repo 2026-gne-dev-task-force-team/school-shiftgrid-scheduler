@@ -9,7 +9,7 @@ import type { ReorderIndicator } from '../../pane-ui-system/interactive/useReord
 export function ReorderOverlay({ drag, indicator, axis }: { drag: DragLeafState | null; indicator: ReorderIndicator | null; axis: 'x' | 'y' }) {
     if (!drag) return null;
     return createPortal(
-        <div className="ui-chrome-nodrag fixed inset-0 z-[60] pointer-events-none" data-rv-reorder-overlay>
+        <div className="ui-chrome-nodrag fixed inset-0 z-tooltip pointer-events-none" data-rv-reorder-overlay>
             {indicator && (
                 <div
                     className="absolute bg-accent rounded-full"
