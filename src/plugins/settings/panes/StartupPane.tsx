@@ -1,0 +1,52 @@
+/**
+ * 「창틀 > 시작 화면」 설정 Pane — 앱을 켤 때마다 띄워 둘 뷰를 고른다(쥔님 2026-11-09).
+ *   켜 둔 뷰는 닫아 뒀어도 다음 시작에 다시 열린다. 이미 떠 있으면 그대로 둔다(Workbench 가 연다).
+ *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
+ */
+import { usePaneSettings, setPaneSettings, Icon, FOCUS_RING } from '../../../pane-ui-system';
+import { useContribVersion } from '../../../pane-ui-system/plugin';
+import type { SettingsPaneProps } from '../registry';
+
+export function StartupPane({ host }: SettingsPaneProps) {
+    const { settings } = usePaneSettings();
+    useContribVersion();
+    // 빈 탭(app.*)은 고를 거리가 아니다 — 플러그인 뷰만
+    const views = host.views.list().filter((v) => !v.id.startsWith('app.'));
+    const on = new Set(settings.startupViews);
+    const toggle = (id: string) => setPaneSettings({
+        startupViews: on.has(id) ? settings.startupViews.filter((x) => x !== id) : [...settings.startupViews, id],
+    });
+    const AREA = { left: '왼쪽', center: '가운데', right: '오른쪽' } as const;
+
+    return (
+        <div className="flex flex-col gap-3 max-w-[560px]">
+            <p className="text-[12px] text-muted">
+                켜 둔 화면은 프로그램을 열 때마다 띄웁니다. 닫아 뒀어도 다음에 켜면 다시 열립니다. 저장은 이 기기에만 남습니다.
+            </p>
+            <div className="flex flex-col rounded border border-line overflow-hidden">
+                {views.map((v) => {
+                    const checked = on.has(v.id);
+                    return (
+                        <div key={v.id} className={`flex items-center gap-2 px-3 h-row border-b border-line last:border-b-0
+                            ${checked ? 'text-text' : 'text-muted'}`}>
+                            <Icon name={v.icon ?? 'dot'} size={16} className="shrink-0" />
+                            <span className="flex-1 min-w-0 truncate text-[13px]">{v.title}</span>
+                            <span className="text-[12px] text-muted">{AREA[v.defaultArea ?? 'center']}</span>
+                            <button
+                                type="button"
+                                aria-pressed={checked}
+                                aria-label={`${v.title} 시작할 때 띄우기`}
+                                onClick={() => toggle(v.id)}
+                                className={`h-7 px-2 rounded border text-[12px] transition-colors
+                                    ${FOCUS_RING}
+                                    ${checked ? 'border-accent text-text bg-text/[0.06]' : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
+                            >
+                                {checked ? '띄움' : '안 띄움'}
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

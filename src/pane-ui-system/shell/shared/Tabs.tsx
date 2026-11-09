@@ -140,6 +140,13 @@ export function Tabs({
                 data-tabbar={tabsId}
                 className="flex-1 min-w-0 flex items-stretch overflow-x-auto overflow-y-hidden tab-scroll select-none touch-pan-x"
                 {...interaction}
+                // 🔴 가운데 클릭 = 탭 닫기(브라우저 관례). mousedown 막기는 윈도우 자동 스크롤 커서를 끈다
+                onMouseDown={(e) => { if (e.button === 1 && (e.target as HTMLElement).closest('[data-row-id]')) e.preventDefault(); }}
+                onAuxClick={(e) => {
+                    if (e.button !== 1) return;
+                    const id = (e.target as HTMLElement).closest('[data-row-id]')?.getAttribute('data-row-id');
+                    if (id && tabs.some((t) => t.id === id)) { e.preventDefault(); onClose(id); }
+                }}
                 onKeyDown={(e) => {
                     if (!onKeyMove || !e.altKey) return;
                     const delta = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;

@@ -90,7 +90,7 @@ export {
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
     defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
-    setRibbonOrder, toggleRibbonHidden, resetRibbon, getRibbon,
+    setRibbonOrder, toggleRibbonHidden, resetRibbon, getRibbon, getPaneSettings,
     type PaneSettings, type ViewOverrides, type Ribbon,
 } from './layout/pane-settings';
 

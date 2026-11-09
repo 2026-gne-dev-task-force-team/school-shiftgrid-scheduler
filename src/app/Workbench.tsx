@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, CommandPalette,
-    usePaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
+    usePaneSettings, getPaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind,
@@ -58,7 +58,10 @@ function pruneOrphanLeaves(ws: Workspace): Workspace {
         if (!n) continue;
         for (const l of flatten(n)) {
             if (l.viewId.startsWith('app.')) continue;
-            if (ownerOfView(l.viewId) === null) out = closeLeaf(out, l.id);
+            const owner = ownerOfView(l.viewId);
+            // 켜진 플러그인이 더는 내지 않는 뷰도 닫는다(2026-11-09 작은 달력 비활성화 — 남은 calendar.mini 자리표시)
+            const dropped = owner && owner.enabled && !owner.blocked && !appHost.views.get(l.viewId);
+            if (owner === null || dropped) out = closeLeaf(out, l.id);
         }
     }
     return out;
@@ -154,6 +157,18 @@ export function Workbench() {
             close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
         });
         return () => setWorkspaceBridge(null);
+    }, [openView]);
+
+    // 🔴 시작 화면(설정 「창틀 > 시작 화면」, 쥔님 2026-11-09) — 켤 때 한 번, 고른 뷰가 안 떠 있으면 연다.
+    //    이미 떠 있으면 손대지 않는다(활성 탭도 안 바꾼다). 꺼진 플러그인 뷰는 openView 가 null 로 건너뛴다.
+    //    ref 로 한 번만 — StrictMode 의 두 번째 실행 땐 wsRef 가 아직 옛 배치라 겹쳐 연다.
+    const startupDone = useRef(false);
+    useEffect(() => {
+        if (startupDone.current) return;
+        startupDone.current = true;
+        for (const id of getPaneSettings().startupViews) {
+            if (!findLeafByView(wsRef.current, id)) openView(id);
+        }
     }, [openView]);
 
     // 🔴 「+」가 여는 것 — 기본은 **빈 탭**(app.blank · 쥔님 13:15 *"그냥 빈 새 탭이 떠야 되는데"*).
