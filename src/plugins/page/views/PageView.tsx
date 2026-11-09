@@ -6,17 +6,17 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Icon, type MenuEntry } from '../../../pane-ui-system';
+import { ContextMenu, Icon, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import { pageDataOf, savePage, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
-import { emptyBlock, emptyPage, isList } from '../core/types';
+import { emptyBlock, emptyPage, isList, newId } from '../core/types';
 import {
     setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
-    indentBlock, moveBlock, removeBlock, changeType, type EditResult,
+    indentBlock, moveBlock, removeBlock, changeType, insertAfter, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
 import {
@@ -340,6 +340,14 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
     const onTableChange = (id: string, table: TableBlockData) => { const next = setTable(pageRef.current, id, table); commitPage(next); };
     const onNodePick = (id: string, nodeId: string) => { commitPage(setNodeRef(pageRef.current, id, nodeId)); };
     const onDelete = (id: string) => { const r = removeBlock(pageRef.current, id); commitResult(r); };
+    const onDuplicate = (id: string) => {
+        const b = pageRef.current.blocks.find((x) => x.id === id);
+        if (b) commitResult(insertAfter(pageRef.current, id, structuredClone({ ...b, id: newId() })));
+    };
+    const onMoveBy = (id: string, delta: number) => {
+        const i = pageRef.current.blocks.findIndex((x) => x.id === id);
+        if (i >= 0) commitPage(moveBlock(pageRef.current, id, i + delta));
+    };
     const onChangeTypeMenu = (id: string, type: BlockType) => {
         const next = changeType(pageRef.current, id, type);
         commitPage(next);
@@ -432,6 +440,9 @@ export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack,
                                 selfId={activeId}
                                 onPickSlash={pickSlash}
                                 onDelete={onDelete}
+                                onDuplicate={onDuplicate}
+                                onMoveBy={onMoveBy}
+                                last={i === page.blocks.length - 1}
                                 onChangeType={onChangeTypeMenu}
                                 onDragStartBlock={(id) => { dragIdRef.current = id; }}
                                 onDropBlock={onDrop}
@@ -467,6 +478,9 @@ interface RowProps {
     selfId: string;
     onPickSlash: (id: string, type: BlockType) => void;
     onDelete: (id: string) => void;
+    onDuplicate: (id: string) => void;
+    onMoveBy: (id: string, delta: number) => void;
+    last: boolean;
     onChangeType: (id: string, type: BlockType) => void;
     onDragStartBlock: (id: string) => void;
     onDropBlock: (index: number) => void;
@@ -480,7 +494,20 @@ const HEADING_CLASS: Record<string, string> = {
 
 function BlockRow(props: RowProps) {
     const { block, index, slash, active } = props;
-    const [menuOpen, setMenuOpen] = useState(false);
+    const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);   // 손잡이 클릭·줄 우클릭이 같은 메뉴(R6)
+    const menuOpen = !!menu;
+    // 글을 쓰는 줄(contenteditable)·입력칸은 브라우저 기본 메뉴(맞춤법·붙여넣기)를 그대로 둔다 — 손잡이·빈 곳·표/노드 블록은 우리 메뉴
+    const trigger = useContextTrigger((x, y) => setMenu({ x, y }), (t) => !!t.closest('input, textarea, [contenteditable="true"], [contenteditable=""]'));
+    const blockItems: MenuEntry[] = [
+        ...([['글로', 'paragraph'], ['제목 1', 'heading1'], ['글머리표', 'bulleted'], ['체크 목록', 'todo'], ['표', 'table'], ['노드 끼워 넣기', 'node']] as const)
+            .map(([label, type]) => ({ label, onClick: () => props.onChangeType(block.id, type) })),
+        { sep: true },
+        { label: '복제', icon: 'copy', onClick: () => props.onDuplicate(block.id) },
+        { label: '위로', icon: 'up', disabled: index === 0, onClick: () => props.onMoveBy(block.id, -1) },
+        { label: '아래로', icon: 'down', disabled: props.last, onClick: () => props.onMoveBy(block.id, 1) },
+        { sep: true },
+        { label: '삭제', icon: 'trash', danger: true, onClick: () => props.onDelete(block.id) },
+    ];
     const [hover, setHover] = useState(false);       // 호버-숨김은 Row 조각 한 곳에만(구조 검사 ③) → 여기선 상태로
     const [dropHere, setDropHere] = useState(false); // 끌고 와서 이 줄 위에 있다 — 위쪽 파란 선
     const shown = hover || active || menuOpen;
@@ -491,6 +518,8 @@ function BlockRow(props: RowProps) {
         // 🔑 R4: 줄 왼쪽 선 = 머리·속성 왼쪽 선. 손잡이는 선 바깥 여백(-left-6, 컬럼 px-6 안)에 절대 배치 — 줄을 밀어내지 않는다.
         <div
             className={`relative ${dropHere ? 'border-t-2 border-accent -mt-0.5' : ''}`}
+            data-block-row={block.id}
+            {...trigger}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (!dropHere) setDropHere(true); }}
@@ -507,24 +536,13 @@ function BlockRow(props: RowProps) {
                         e.dataTransfer.setData('text/plain', block.id);   // 일부 브라우저는 데이터가 있어야 끌기를 시작한다
                         props.onDragStartBlock(block.id);
                     }}
-                    onClick={() => setMenuOpen((v) => !v)}
+                    onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ x: r.right + 4, y: r.top }); }}
                     aria-label="블록 손잡이"
                     className="cursor-grab rounded py-0.5 text-text/60 hover:text-text hover:bg-text/[0.06]"
                 >
                     <Icon name="grip" size={20} />
                 </button>
-                {menuOpen && (
-                    <div className="absolute z-20 left-6 top-6 w-40 rounded-md border border-line bg-panel shadow-lg py-1 text-small">
-                        <HandleMenuItem label="글로" onPick={() => { props.onChangeType(block.id, 'paragraph'); setMenuOpen(false); }} />
-                        <HandleMenuItem label="제목 1" onPick={() => { props.onChangeType(block.id, 'heading1'); setMenuOpen(false); }} />
-                        <HandleMenuItem label="글머리표" onPick={() => { props.onChangeType(block.id, 'bulleted'); setMenuOpen(false); }} />
-                        <HandleMenuItem label="체크 목록" onPick={() => { props.onChangeType(block.id, 'todo'); setMenuOpen(false); }} />
-                        <HandleMenuItem label="표" onPick={() => { props.onChangeType(block.id, 'table'); setMenuOpen(false); }} />
-                        <HandleMenuItem label="노드 끼워 넣기" onPick={() => { props.onChangeType(block.id, 'node'); setMenuOpen(false); }} />
-                        <div className="my-1 border-t border-line" />
-                        <HandleMenuItem label="삭제" onPick={() => { props.onDelete(block.id); setMenuOpen(false); }} />
-                    </div>
-                )}
+                {menu && <ContextMenu x={menu.x} y={menu.y} items={blockItems} onClose={() => setMenu(null)} />}
             </div>
 
             {/* 내용 */}
@@ -535,14 +553,6 @@ function BlockRow(props: RowProps) {
                 )}
             </div>
         </div>
-    );
-}
-
-function HandleMenuItem({ label, onPick }: { label: string; onPick: () => void }) {
-    return (
-        <button type="button" onClick={onPick} className="w-full text-left px-3 py-1.5 text-muted hover:text-text hover:bg-text/[0.05]">
-            {label}
-        </button>
     );
 }
 

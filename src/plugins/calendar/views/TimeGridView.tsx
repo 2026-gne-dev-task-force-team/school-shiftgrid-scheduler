@@ -13,14 +13,15 @@
  */
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
-import { IconButton, isoOf, startOfWeek, monthLabel, type PeekHandle } from '../../../pane-ui-system';
+import { ContextMenu, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 import { useCalendarData } from '../useEvents';
-import { createEvent } from '../nodes';
+import { createEvent, removeEvent } from '../nodes';
 import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { timeSelection, timeSliceForDay, floorToSnap, type CalSelection } from '../selection';
 
@@ -190,19 +191,28 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
         if (id) card.open(id);
     };
-    const onGridDouble = (e: ReactMouseEvent) => {
-        const colEl = (e.target as HTMLElement).closest('[data-day-offset]') as HTMLElement | null;
+    const onGridDouble = (e: ReactMouseEvent) => newAt(e.target as HTMLElement, e.clientY);
+    // R6 우클릭: 일정 → 열기·휴지통 · 시간 칸 → 새 일정(그 시각부터 1시간)
+    const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const ctxTrigger = useContextTrigger((x, y, ev) => {
+        const t = ev.target as HTMLElement;
+        const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
+        if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
+        else if (t.closest('[data-day-offset]')) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAt(t, y) }] });
+    });
+    function newAt(target: HTMLElement, clientY: number) {
+        const colEl = target.closest('[data-day-offset]') as HTMLElement | null;
         if (!colEl) return;
         const offset = Number(colEl.getAttribute('data-day-offset'));
         const rect = colEl.getBoundingClientRect();
-        const raw = Math.floor(((e.clientY - rect.top) / HOUR_H) * 60);
+        const raw = Math.floor(((clientY - rect.top) / HOUR_H) * 60);
         const min = Math.max(0, Math.min(23 * 60, Math.round(raw / 30) * 30));   // 30분 눈금 · 끝 1시간 여유
         const base = dayAt(offset);
         const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
         const end = new Date(start.getTime() + 3_600_000);
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
         if (id) card.open(id);
-    };
+    }
 
     // 범위 선택 — 빈 시간 칸을 죽 끌어 [start,end) 를 고른다(일정 생성 아님). anchor 는 슬롯 시작 ms.
     const selAnchor = useRef<number | null>(null);
@@ -282,7 +292,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                         ))}
                     </div>
                     {/* 본문 — 시간 눈금(sticky left) + 날 열들. 시간 칸 더블클릭 → 1시간 일정(data-day-offset 위임) */}
-                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble} {...range.bind}>
+                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble} {...mergeBind(range.bind, ctxTrigger)}>
                         <div className="sticky left-0 z-10 bg-bg border-r border-line" style={{ width: GUTTER, height: HOURS * HOUR_H }}>
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span
@@ -304,6 +314,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                     </div>
                 </div>
             </div>
+            {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
         </div>
     );
 }
