@@ -43,6 +43,8 @@ describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 project-expl
     // 🔴 꾸러미 밖으로 나가는 relative import 만 본다(자기 폴더 안의 ../useEvents 등은 통과). 꾸러미 밖이면
     //    창틀(pane-ui-system)이거나 노드 약속 입구(project-explorer/contracts/nodes)뿐 — 그 밖은 빨강.
     const NODES_PROMISE = resolve(PLUGINS_DIR, 'project-explorer', 'contracts', 'nodes');   // .ts 없이
+    // 레코드 뷰 약속 — 일정 표 모드가 supports 로 빌린다(2026-11-09 · import type 만, 값은 host.modules.use)
+    const RECORD_VIEW_PROMISE = resolve(PLUGINS_DIR, 'record-view', 'contracts', 'record-view');
     for (const f of files) {
         it(`남의 약속 import 없음: ${f.slice(DIR.length + 1)}`, () => {
             const src = read(f);
@@ -53,6 +55,7 @@ describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 project-expl
                 if (!relative(DIR, abs).startsWith('..')) continue;     // 달력 폴더 안이면 자유
                 if (!relative(PANE_UI, abs).startsWith('..')) continue; // 창틀(호스트)은 허용
                 if (abs === NODES_PROMISE) continue;                    // 노드 약속 입구만 허용
+                if (abs === RECORD_VIEW_PROMISE) continue;              // supports 로 선언한 레코드 뷰 약속
                 bad.push(spec);
             }
             expect(bad, `달력이 남의 약속/코드를 끈다(입구는 자기 contracts·노드 약속뿐): ${bad.join(', ')}`).toEqual([]);
