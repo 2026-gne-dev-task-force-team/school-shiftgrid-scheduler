@@ -205,3 +205,21 @@ describe('W3 여러 블록 고르기', () => {
         expect(moveBlocks(p, ['b', 'c'], 3)).toBe(p);
     });
 });
+
+import { softBreak as _sb, duplicateBlock as _dup } from './blocks';
+describe('softBreak · duplicateBlock', () => {
+    const pg = { blocks: [{ id: 'a', type: 'paragraph', text: 'abcd' }, { id: 'b', type: 'todo', text: 'x', checked: true }] } as any;
+    it('softBreak: 블록 수 그대로, 줄바꿈 삽입, 캐럿 +1', () => {
+        const r = _sb(pg, 'a', 2);
+        expect(r.page.blocks).toHaveLength(2);
+        expect(r.page.blocks[0].text).toBe('ab\ncd');
+        expect(r.offset).toBe(3);
+    });
+    it('duplicateBlock: 바로 아래 새 id 복제', () => {
+        const r = _dup(pg, 'b');
+        expect(r.page.blocks).toHaveLength(3);
+        expect(r.page.blocks[2]).toMatchObject({ type: 'todo', text: 'x', checked: true });
+        expect(r.page.blocks[2].id).not.toBe('b');
+        expect(r.focusId).toBe(r.page.blocks[2].id);
+    });
+});

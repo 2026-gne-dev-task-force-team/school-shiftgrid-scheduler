@@ -83,3 +83,17 @@ describe('Esc — 블록 고르기(W3)', () => {
         expect(decideKey(k({ key: 'Escape', isComposing: true }))).toBe('default');
     });
 });
+
+describe('Shift+Enter · ⌘D', () => {
+    it('⇧Enter → soft-break (Enter 는 그대로 split)', () => {
+        expect(decideKey(k({ key: 'Enter', shiftKey: true }))).toBe('soft-break');
+        expect(decideKey(k({ key: 'Enter' }))).toBe('split');
+    });
+    it('조합 중 ⇧Enter 는 default', () => {
+        expect(decideKey(k({ key: 'Enter', shiftKey: true, isComposing: true }))).toBe('default');
+    });
+    it('⌘D → duplicate · ⌘⇧D 는 아님', () => {
+        expect(decideKey(k({ key: 'd', metaKey: true }))).toBe('duplicate');
+        expect(decideKey(k({ key: 'd', metaKey: true, shiftKey: true }))).toBe('default');
+    });
+});
