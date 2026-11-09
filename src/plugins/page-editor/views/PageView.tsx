@@ -164,7 +164,7 @@ export function PageView({ host }: { host: PluginHost }) {
             const para = emptyBlock();
             const blocks = p.blocks.slice();
             blocks.splice(idx, 1, divider, para);
-            commitPage({ blocks });
+            commitPage({ ...p, blocks });
             setActiveBlockId(para.id);
             setFocusIntent({ id: para.id, offset: 0 });
             return;
@@ -174,7 +174,7 @@ export function PageView({ host }: { host: PluginHost }) {
         if (isList(sc.type)) nb.indent = 0;
         const blocks = p.blocks.slice();
         blocks[idx] = nb;
-        commitPage({ blocks });
+        commitPage({ ...p, blocks });
         setFocusIntent({ id: cur.id, offset: sc.rest.length });
     };
 
