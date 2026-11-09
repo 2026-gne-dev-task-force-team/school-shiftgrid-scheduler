@@ -223,6 +223,17 @@ describe('붙여넣기 — 엑셀 TSV', () => {
         pasteInto(q('[data-rv-editing]')!, 'a\tb\nc\td');
         expect(spy.paste).not.toHaveBeenCalled();
     });
+    it('#22 편집 중 입력칸에 탭·줄바꿈 글 → 그 칸에만(공백으로) 들어가고 행은 안 는다 · 확정하면 한 칸 값', () => {
+        const spy = spies();
+        mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }]} spy={spy} />);
+        click(q('[data-rv-row="r1"] [data-rv-cell="f_t"]'));
+        const input = q('[data-rv-editing]') as HTMLInputElement;
+        const ev = pasteInto(input, 'a\tb\nc\td\n');
+        expect(ev.defaultPrevented).toBe(true);
+        expect(input.value).toBe('a b\nc d');   // 글 칸(textarea)은 줄바꿈 보존 · 탭은 공백
+        expect(spy.paste).not.toHaveBeenCalled();
+        expect(spy.add).not.toHaveBeenCalled();
+    });
     it('열이 보이는 칸보다 많으면 모자란 열의 key 는 null(칸을 만들 신호)', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
