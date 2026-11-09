@@ -67,11 +67,12 @@ describe('하위 항목 (X5)', () => {
     });
     const view = (t: RecordTree<R>) => mount(<RecordView<R> fields={[FIELDS[0]]} records={rows} getId={(r) => r.id} viewKey="t.q3b" titleKey="t" tree={t} />);
 
-    it('깊이만큼 안내선이 그려진다(눈에 보이는 들여쓰기)', () => {
+    it('깊이만큼 칸선 없는 여백으로 들여쓴다(Q8 — 세로 칸선이 겹겹이 생기지 않는다)', () => {
         view(tree());
-        expect(qa('[data-rv-row="a"] [data-rv-guide]')).toHaveLength(0);
-        expect(qa('[data-rv-row="b"] [data-rv-guide]')).toHaveLength(1);
-        expect(qa('[data-rv-row="c"] [data-rv-guide]')).toHaveLength(2);
+        expect(q('[data-rv-row="a"] [data-rv-pad]')).toBeNull();
+        expect(q('[data-rv-row="b"] [data-rv-pad]')!.style.width).toBe('20px');
+        expect(q('[data-rv-row="c"] [data-rv-pad]')!.style.width).toBe('40px');
+        expect(qa('[data-rv-pad].border-r, [data-rv-guide]')).toHaveLength(0);
     });
     it('행 hover 에 「하위 항목 추가」가 뜨고 누르면 그 행 id 로 onAddChild', () => {
         const t = tree();

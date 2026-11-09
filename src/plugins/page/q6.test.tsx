@@ -22,6 +22,8 @@ const fakeNodes = {
     subscribe: () => ({ dispose() {} }),
     byType: () => [],
     parent: () => null,
+    children: () => [],   // Q8: 본문의 하위 페이지 줄을 맞추느라 자식을 묻는다 — 이 테스트의 페이지엔 자식이 없다
+    batch: (fn: () => void) => fn(),
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 

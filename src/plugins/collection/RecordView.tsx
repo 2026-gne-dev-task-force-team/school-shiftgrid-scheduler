@@ -35,8 +35,7 @@ import type {
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/collection';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
-const TREE_COL_W = 68;   // 오른쪽 하위 항목 단추 열(추가·내어쓰기·들여쓰기)
-const INDENT_PX = 18;   // 하위 항목 한 단 들여쓰기 폭
+const INDENT_PX = 20;   // 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8)
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
 function useCoarsePointer(): boolean {
@@ -218,15 +217,50 @@ export function RecordView<T>({
         setLiveW(null);
     };
 
-    // ── 행 끌어 순서 바꾸기(수동 순서일 때만) — from 을 toId 바로 앞으로(toId=null 이면 맨 끝) ──
+    // ── 행 끌어 순서 바꾸기·하위로 넣기(수동 순서일 때만) ──
+    //   행 위 가장자리 = 그 앞으로 · 아래 가장자리 = 그 뒤로 · 가운데 = 그 행의 하위로(트리일 때만 · 노션 꼴 · Q8)
     const reorderable = !!onReorder && manualOrder;
     const dragRow = useRef<string | null>(null);
-    const [dropId, setDropId] = useState<string | null>(null);
-    const onRowDrop = (toId: string | null) => {
+    type DropMark = { id: string; zone: 'before' | 'into' | 'after' } | '__end__';
+    const [dropMark, setDropMark] = useState<DropMark | null>(null);
+    const parentMap = useMemo(() => new Map(records.map((r) => [getId(r), tree?.parentOf(r) ?? null])), [records, getId, tree]);
+    /** 끌고 있는 행 자신이거나 그 자손이면 거기엔 못 놓는다(자기 안으로 들어가는 순환) */
+    const inOwnSubtree = (dragId: string, targetId: string) => {
+        for (let cur: string | null | undefined = targetId, n = 0; cur && n < 10000; cur = parentMap.get(cur), n++) if (cur === dragId) return true;
+        return false;
+    };
+    const zoneOf = (e: ReactDragEvent, canNest: boolean): 'before' | 'into' | 'after' => {
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const f = r.height > 0 ? (e.clientY - r.top) / r.height : 0.5;
+        if (!canNest) return f < 0.5 ? 'before' : 'after';
+        return f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'into';
+    };
+    const onRowDragOver = (e: ReactDragEvent, id: string) => {
+        const from = dragRow.current;
+        if (!from || inOwnSubtree(from, id)) { setDropMark(null); return; }
+        e.preventDefault();
+        const zone = zoneOf(e, treeOn && !!tree?.onMoveUnder);
+        setDropMark((m) => (m && m !== '__end__' && m.id === id && m.zone === zone ? m : { id, zone }));
+    };
+    const onRowDrop = (toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
         const from = dragRow.current;
         dragRow.current = null;
-        setDropId(null);
+        setDropMark(null);
         if (!from || !onReorder || from === toId) return;
+        if (toId && inOwnSubtree(from, toId)) return;
+        if (toId && zone === 'into' && tree?.onMoveUnder) {
+            tree.onMoveUnder(from, toId);
+            if (tree.collapsed(toId)) tree.onToggleCollapse(toId);   // 접혀 있으면 넣은 행이 안 보이니 펼친다
+            return;
+        }
+        if (toId && zone === 'after') {
+            // 이 행 바로 뒤 = 화면에서 다음 줄 앞(펼친 자식이 있으면 그 첫 자식 앞 = 노션과 같다). 마지막 줄이면 맨 끝
+            const at = rowIds.indexOf(toId);
+            const next = rowIds[at + 1];
+            // shortcut: 맨 끝으로 가면 뿌리 끝이 된다(안쪽 마지막 줄 뒤에 놓아도) — 필요하면 onMoveAfter 를 계약에 더한다
+            onReorder(from, next === from ? (rowIds[at + 2] ?? null) : (next ?? null));
+            return;
+        }
         onReorder(from, toId);
     };
 
@@ -393,7 +427,7 @@ export function RecordView<T>({
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
 
-    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? TREE_COL_W : 0) + (fieldsEditable ? 40 : 0);
+    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (fieldsEditable ? 40 : 0);
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
@@ -480,7 +514,6 @@ export function RecordView<T>({
                                 </div>
                             );
                         })}
-                        {treeOn && <div className="shrink-0" style={{ width: TREE_COL_W }} />}
                         {fieldsEditable && (
                             <button type="button" data-rv-add-field onClick={(e) => setAddMenu((e.currentTarget as HTMLElement).getBoundingClientRect())} className="shrink-0 grid place-items-center text-muted hover:text-text hover:bg-text/[0.06]" style={{ width: 40 }} aria-label="칸 추가">
                                 <Icon name="plus" size={15} />
@@ -496,6 +529,7 @@ export function RecordView<T>({
                         const showOpen = onOpenRecord && hovered;
                         const showTree = treeOn && tree && hovered;
                         const collapsed = treeOn && tree ? tree.collapsed(id) : false;
+                        const mark = dropMark && dropMark !== '__end__' && dropMark.id === id ? dropMark : null;
                         return (
                             <div
                                 key={id}
@@ -511,15 +545,15 @@ export function RecordView<T>({
                                 } : undefined}
                                 onMouseEnter={() => setHoverRow(id)}
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
-                                onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropId(id); } } : undefined}
-                                onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id); } : undefined}
-                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${dropId === id ? 'border-t-2 border-t-accent' : ''}`}
+                                onDragOver={reorderable ? (e) => onRowDragOver(e, id) : undefined}
+                                onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id, mark?.zone); } : undefined}
+                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
                             >
                                 {reorderable && (
                                     <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
                                         draggable data-rv-row-drag={id}
                                         onDragStart={(e) => { dragRow.current = id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', id); } catch { /* 사파리 */ } }}
-                                        onDragEnd={() => { dragRow.current = null; setDropId(null); }}>
+                                        onDragEnd={() => { dragRow.current = null; setDropMark(null); }}>
                                         <Icon name="grip" size={12} className={`text-muted cursor-grab ${hovered ? '' : 'opacity-0'}`} />
                                     </div>
                                 )}
@@ -542,9 +576,7 @@ export function RecordView<T>({
                                         style={{ width: widthOf(f), ...frozenStyle(fi) }}>
                                         {fi === 0 && treeOn && (
                                             <div className="shrink-0 flex items-center self-stretch">
-                                                {Array.from({ length: depth }, (_, d) => (
-                                                    <span key={d} data-rv-guide className="shrink-0 self-stretch border-r border-line" style={{ width: INDENT_PX }} />
-                                                ))}
+                                                {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
                                                 {hasChildren ? (
                                                     <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
                                                         onClick={() => tree?.onToggleCollapse(id)}
@@ -568,29 +600,17 @@ export function RecordView<T>({
                                                 onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
                                             />
                                         </div>
+                                        {isTitle(f.key) && showTree && tree?.onAddChild && (
+                                            <Tooltip text="하위 항목 추가">
+                                                <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
+                                                    onClick={() => { if (collapsed) tree.onToggleCollapse(id); tree.onAddChild!(id); }} />
+                                            </Tooltip>
+                                        )}
                                         {isTitle(f.key) && showOpen && (
                                             <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id} onClick={() => onOpenRecord?.(id)}>열기</Button>
                                         )}
                                     </div>
                                 ))}
-                                {treeOn && (
-                                    <div className="shrink-0 flex items-center justify-center gap-0.5" style={{ width: TREE_COL_W }}>
-                                        {showTree && (
-                                            <>
-                                                {tree?.onAddChild && (
-                                                    <Tooltip text="하위 항목 추가">
-                                                        <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
-                                                            onClick={() => { if (collapsed) tree.onToggleCollapse(id); tree.onAddChild!(id); }} />
-                                                    </Tooltip>
-                                                )}
-                                                <button type="button" data-rv-outdent={id} aria-label="내어쓰기" onClick={() => tree?.onOutdent(id)}
-                                                    className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="left" size={13} /></button>
-                                                <button type="button" data-rv-indent={id} aria-label="들여쓰기" onClick={() => tree?.onIndent(id)}
-                                                    className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="right" size={13} /></button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
                                 {fieldsEditable && <div className="shrink-0" style={{ width: 40 }} />}
                             </div>
                         );
@@ -605,9 +625,9 @@ export function RecordView<T>({
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
                         <button type="button" data-rv-add onClick={onAddRecord}
-                            onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropId('__end__'); } } : undefined}
+                            onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropMark('__end__'); } } : undefined}
                             onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(null); } : undefined}
-                            className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropId === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
+                            className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
                     )}

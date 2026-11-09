@@ -139,7 +139,7 @@ export function mergeBackspace(page: Page, id: string): EditResult {
         return { page: { ...page, blocks }, focusId: cur.id, offset: 0 };
     }
     // 앞이 표 → 합치지 않는다(그대로)
-    if (prev.type === 'table' || prev.type === 'node') return { page, focusId: cur.id, offset: 0 };
+    if (prev.type === 'table' || prev.type === 'node' || prev.type === 'childpage') return { page, focusId: cur.id, offset: 0 };
 
     // 앞 글자 블록과 합친다
     const mergeOffset = prev.text.length;

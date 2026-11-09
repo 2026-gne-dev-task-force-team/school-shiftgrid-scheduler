@@ -7,6 +7,7 @@ import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '..
 import { uniqueName } from '../../pane-ui-system';
 import type { Page } from './core/types';
 import { emptyPage } from './core/types';
+import { childBlockIds, syncChildBlocks } from './core/children';
 import { setActivePage } from './store';
 import { PageCard } from './views/PageCard';
 
@@ -80,9 +81,40 @@ export function pageDataOf(id: string): Page {
     return emptyPage();
 }
 
-/** 페이지 본문 저장 — 노드 공통 body 칸으로(저장·휴지통 주인은 노드 시스템). */
+/** 이 페이지 바로 밑 페이지들(트리 순서) — 본문의 「하위 페이지」 줄이 이것과 맞춰진다. */
+export function childPageIds(id: string): string[] {
+    return api?.children(id).filter((n) => n.type === PAGE_TYPE).map((n) => n.id) ?? [];
+}
+
+/** 화면에 보일 본문 — 저장된 본문을 트리와 맞춘 것(Q8: 자식 페이지 = 본문의 하위 페이지 줄). */
+export function pageViewOf(id: string): Page {
+    return syncChildBlocks(pageDataOf(id), childPageIds(id));
+}
+
+/**
+ * 페이지 본문 저장 — 노드 공통 body 칸으로(저장·휴지통 주인은 노드 시스템).
+ *   🔑 Q8: 화면이 보여 주던 하위 페이지 줄이 사라졌으면 그 페이지도 휴지통으로(노션 꼴 · 되살리면 줄도 돌아온다).
+ *   한 묶음 = 되돌리기 한 칸. 줄 지우기를 되돌려 줄이 돌아오면 휴지통의 그 페이지도 이 페이지 밑으로 돌아온다.
+ */
 export function savePage(id: string, page: Page): void {
-    api?.setBody(id, page);
+    if (!api) return;
+    const a = api;
+    const before = childBlockIds(pageViewOf(id));
+    const after = new Set(childBlockIds(page));
+    a.batch(() => {
+        a.setBody(id, page);
+        for (const c of before) if (!after.has(c) && a.parent(c) === id) a.remove(c);
+        reviveChildren(id, page);
+    });
+}
+
+/** 본문에 줄이 있는데 그 페이지가 (이 페이지에서 나가) 휴지통에 있으면 돌려 놓는다. */
+export function reviveChildren(id: string, page: Page): void {
+    if (!api) return;
+    for (const c of childBlockIds(page)) {
+        const n = api.get(c);
+        if (n && n.trashedFrom === id && api.parent(c) === api.roots.trash) api.move(c, id);
+    }
 }
 
 /** 조상에 휴지통이 있나 — 부모 사슬을 직접 탄다(달력·명단과 같은 규칙). */
