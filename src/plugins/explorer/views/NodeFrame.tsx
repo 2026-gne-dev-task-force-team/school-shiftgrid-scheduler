@@ -143,7 +143,7 @@ export function NodeFrame({
         <div ref={root} className="h-full flex flex-col min-h-0" data-nf={nodeId} {...trigger}>
             {slot
                 ? createPortal(bar, slot)
-                : <div className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">{bar}</div>}
+                : <div data-nf-bar className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">{bar}</div>}
             {body}
             {pop && <ContextMenu x={pop.x} y={pop.y} items={pop.items} onClose={() => setPop(null)} onCommand={(id, arg) => { runCommand(id, arg); }} />}
             {ask && <TrashConfirm msg={ask} onCancel={() => setAsk(null)} onConfirm={() => { setAsk(null); trashNode(nodeId); }} />}

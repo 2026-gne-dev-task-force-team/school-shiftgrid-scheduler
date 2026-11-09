@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { setWorkspaceBridge } from '../../../pane-ui-system/plugin';
+import { setWorkspaceBridge, useLauncherTab, LAUNCHER_GLYPH } from '../../../pane-ui-system/plugin';
 import { initStore, getState, newFolder, apiRename } from '../store';
 import { registerType, clearTypes } from '../model/types';
 import { clearDerived } from '../model/derive';
@@ -49,6 +49,15 @@ describe('nodes.Header', () => {
         act(() => { setVal.call(input, '입력으로'); input.dispatchEvent(new Event('input', { bubbles: true })); });
         act(() => { input.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); input.blur(); });
         expect(getState().tree.nodes[id].name).toBe('입력으로');
+    });
+
+    it('시작 화면이 노드 머리 다음에 서면 탭 제목은 시작 화면 이름이 이긴다(휴지통으로 보낸 뒤)', () => {
+        const id = getState().selectedId!;
+        act(() => { root.render(<NodeHeader nodeId={id} leafId="leaf1" />); });
+        function Start() { useLauncherTab('leaf1', '새 폴더'); return null; }
+        act(() => { root.render(<Start />); });   // 머리가 내려가고 시작 화면이 선다
+        expect(titles.at(-1)).toEqual(['leaf1', '새 폴더']);
+        expect(glyphs.at(-1)).toEqual(['leaf1', LAUNCHER_GLYPH]);
     });
 
     it('아이콘을 고르면 node.icon 에 저장된다', () => {
