@@ -418,10 +418,10 @@ export interface CollectionKit {
     setActive(id: string | null): void;
     /** 목록을 열면 「보고 있는 목록」으로 두고 화면을 연다 */
     open(host: PluginHost, listId: string): void;
-    /** 목록 우클릭 메뉴 — 부르는 순간 그 목록을 명령 대상으로 잡는다 */
-    menu(listId: string): { label: string; icon: IconName; commandId: string }[];
-    /** 우클릭 「열기」 명령 본체 — 메뉴가 가리킨 목록을 연다 */
-    openMenuTarget(): void;
+    /** 목록 우클릭 메뉴 — 항목이 commandArg.nodeId 로 대상 목록을 싣는다 */
+    menu(listId: string): { label: string; icon: IconName; commandId: string; commandArg: { nodeId: string } }[];
+    /** 우클릭 「열기」 명령 본체 — 항목이 실어 보낸 목록을 연다 */
+    openList(listId: string | undefined): void;
     /** 목록 화면(가운데 탭) — 시작 화면 포함 */
     Tab(props: { host?: PluginHost; peek?: PeekHandle; leafId?: string }): ReactElement | null;
     /** 항목 노드의 속성 칸(오른쪽 패널) */

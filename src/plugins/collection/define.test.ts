@@ -199,10 +199,10 @@ describe.each([['평평한 컬렉션', FLAT], ['트리 컬렉션', TREE]])('%s �
     it('목록 우클릭 메뉴 — 명령만 싣고, 부른 목록을 명령 대상으로 잡는다', () => {
         const { api, kit } = wire(cfg); current = kit;
         const lid = api.create(api.roots.main, { type: cfg.listType, name: '묶음' });
-        expect(kit.menu(lid)).toEqual([{ label: '묶음 열기', icon: 'users', commandId: 'demo.openList' }]);
+        expect(kit.menu(lid)).toEqual([{ label: '묶음 열기', icon: 'users', commandId: 'demo.openList', commandArg: { nodeId: lid } }]);
         const opened: string[] = [];
         (api as unknown as { open: (id: string) => void }).open = (id) => { opened.push(id); };
-        kit.openMenuTarget();
+        kit.openList(lid);
         expect(opened).toEqual([lid]);
     });
 });

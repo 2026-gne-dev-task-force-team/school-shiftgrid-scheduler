@@ -54,10 +54,6 @@ export function createDb(): string | null {
     return a.create(a.roots.main, { type: DB_TYPE, name, data: blankDb() }) || null;
 }
 
-// ── 우클릭 메뉴가 가리킨 레코드 뷰 — 메뉴 항목은 commandId 만 싣는다(달력 저장소와 같은 결) ──
-let menuTargetId: string | null = null;
-export function getMenuTarget(): string | null { return menuTargetId; }
-
 /** 노드 타입 함수 묶음(선언형) — contributes.nodeTypes 의 impl 이름('db')이 가리킨다. */
 export const recordNodeTypeImpl = {
     db: {
@@ -67,9 +63,8 @@ export const recordNodeTypeImpl = {
         },
         createInit: () => ({ data: blankDb() }),
         menu: (_host: PluginHost, id: string): MenuEntry[] => {
-            menuTargetId = id;
             const n = trashedRows(id).length;
-            return n > 0 ? [{ label: `휴지통의 행 ${n}개 복원`, icon: 'undo', commandId: 'collection.restoreTrashed' }] : [];
+            return n > 0 ? [{ label: `휴지통의 행 ${n}개 복원`, icon: 'undo', commandId: 'collection.restoreTrashed', commandArg: { nodeId: id } }] : [];
         },
     } satisfies NodeTypeImplFns,
 };

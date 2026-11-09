@@ -6,12 +6,12 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인 contracts 에서(값은 host.modules.use('nodes')).
 import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { PageView } from './views/PageView';
-import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, getMenuTarget, PAGE_TYPE } from './nodes';
+import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, PAGE_TYPE } from './nodes';
 import { PageProps } from './views/PageProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'page.' 를 붙인다). contributes 엔 접두사 없는 'editor' 로.
@@ -66,7 +66,7 @@ export const pagePlugin = definePlugin({
     },
     commands: {
         'page.open': (host: PluginHost) => { host.workspace.open(EDITOR_ID, { where: 'center' }); },
-        'page.openPage': () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },
+        'page.openPage': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getNodesApi()?.open(id); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'page' 가 가리킨다(open·menu).
     nodeTypes: pageNodeTypeImpl,

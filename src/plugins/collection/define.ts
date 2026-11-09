@@ -33,7 +33,6 @@ export function defineCollection(cfg: CollectionConfig): CollectionKit {
     let api: NodesApi | null = null;
     let listNodes: PublicNode[] = [];
     let activeId: string | null = null;
-    let menuTarget: string | null = null;
     let rev = 0;
     const subs = new Set<() => void>();
 
@@ -207,10 +206,10 @@ export function defineCollection(cfg: CollectionConfig): CollectionKit {
             host.workspace.open(cfg.viewId, { where: 'center' });
         },
         menu(listId) {
-            menuTarget = listId;
-            return [{ label: `${cfg.listLabel} 열기`, icon: cfg.listIcon, commandId: cfg.openCommandId }];
+            // 🔴 대상은 항목이 싣는다(CommandContext.nodeId) — 전역 menuTarget 없음
+            return [{ label: `${cfg.listLabel} 열기`, icon: cfg.listIcon, commandId: cfg.openCommandId, commandArg: { nodeId: listId } }];
         },
-        openMenuTarget() { if (menuTarget) api?.open(menuTarget); },
+        openList(listId) { if (listId) api?.open(listId); },
     };
 
     // 화면 — 컴포넌트 정체는 kit 마다 한 번(렌더마다 새로 만들면 React 가 매번 갈아 끼운다)
