@@ -94,6 +94,24 @@ export function splitBlock(page: Page, id: string, offset: number): EditResult {
     return { page: { ...page, blocks }, focusId: newBlock.id, offset: 0 };
 }
 
+/** ⇧Enter — 캐럿 자리에 줄바꿈 문자를 넣는다(블록은 그대로). */
+export function softBreak(page: Page, id: string, offset: number): EditResult {
+    const idx = indexOf(page, id);
+    if (idx < 0) return { page, focusId: id, offset };
+    const cur = page.blocks[idx];
+    const text = cur.text.slice(0, offset) + '\n' + cur.text.slice(offset);
+    return { page: { ...page, blocks: replaceAt(page.blocks, idx, { ...cur, text }) }, focusId: id, offset: offset + 1 };
+}
+
+/** ⌘D — 블록을 바로 아래에 복제(새 id · 캐럿은 복제본 맨 끝). 체크는 그대로 따라간다. */
+export function duplicateBlock(page: Page, id: string): EditResult {
+    const idx = indexOf(page, id);
+    if (idx < 0) return { page, focusId: id, offset: 0 };
+    const copy: Block = structuredClone({ ...page.blocks[idx], id: newId() });
+    const r = insertAfter(page, id, copy);
+    return { ...r, offset: copy.text.length };
+}
+
 /**
  * 빈 목록 블록에서 Enter — 들여쓰여 있으면 한 단 풀고, 아니면 문단으로(명세 요구 6).
  */

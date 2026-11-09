@@ -6,6 +6,8 @@ import { undoKey } from '../../../pane-ui-system';
 
 export type KeyAction =
     | 'default'        // 브라우저에 맡긴다(글자 입력·줄 안 이동 등)
+    | 'soft-break'     // ⇧Enter → 블록 안 줄바꿈
+    | 'duplicate'      // ⌘D → 블록 복제
     | 'split'          // Enter → 캐럿에서 가르기
     | 'list-break'     // 빈 목록 Enter → 들여쓰기 풀기/문단
     | 'merge-prev'     // Backspace(맨 앞) → 합치기/풀기
@@ -54,6 +56,7 @@ export function decideKey(i: KeyInput): KeyAction {
         const k = i.key.toLowerCase();
         if (k === 'b') return 'bold';
         if (k === 'i') return 'italic';
+        if (k === 'd' && !i.shiftKey) return 'duplicate';  // ⌘D — 지금 블록 복제
         if (k === 'e') return 'code';            // ⌘E — 코드 서식(명세 요구 4 확장)
         if (k === 's' && i.shiftKey) return 'strike';  // ⌘⇧S — 취소선
         return 'default';
@@ -61,6 +64,7 @@ export function decideKey(i: KeyInput): KeyAction {
 
     if (i.key === 'Enter') {
         if (i.isCodeBlock) return 'default';     // 코드 블록은 줄바꿈
+        if (i.shiftKey) return 'soft-break';     // ⇧Enter — 블록 안 줄바꿈(노션)
         if (i.isListBlock && i.isEmpty) return 'list-break';
         return 'split';
     }

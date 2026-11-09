@@ -16,7 +16,7 @@ import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
 import {
     setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
-    indentBlock, moveBlock, removeBlock, changeType, insertAfter, removeBlocks, moveBlocks, rangeIds, type EditResult,
+    indentBlock, softBreak, duplicateBlock, moveBlock, removeBlock, changeType, insertAfter, removeBlocks, moveBlocks, rangeIds, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
 import {
@@ -288,6 +288,18 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         switch (action) {
             case 'default': return;
             case 'split': { e.preventDefault(); const r = splitBlock(base(), block.id, offset); commitResult(r); break; }
+            case 'soft-break': {
+                e.preventDefault();
+                const r = softBreak(base(), block.id, offset);
+                commitResult(r);
+                break;
+            }
+            case 'duplicate': {
+                e.preventDefault();
+                const r = duplicateBlock(base(), block.id);
+                commitResult(r);
+                break;
+            }
             case 'list-break': { e.preventDefault(); const r = outdentOrParagraph(base(), block.id); commitResult(r); break; }
             case 'merge-prev': {
                 e.preventDefault();
