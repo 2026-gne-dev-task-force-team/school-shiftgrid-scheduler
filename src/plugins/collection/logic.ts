@@ -199,3 +199,10 @@ export function deriveRows<T>(records: readonly T[], fields: readonly RecordFiel
     }
     return applySorts(rows, byKey, input.sorts);
 }
+
+/** 새로 들어온 행 id — 첫 렌더(prev 없음)·한꺼번에 많이 바뀜(보기 갈아끼움)이면 비운다(전부 튀면 산만하다). 필터·정렬은 records 를 안 바꾸니 여기 안 걸린다 */
+export function freshIds(prev: ReadonlySet<string> | null, ids: readonly string[], max = 20): Set<string> {
+    if (!prev) return new Set();
+    const added = ids.filter((id) => !prev.has(id));
+    return added.length > max ? new Set() : new Set(added);
+}

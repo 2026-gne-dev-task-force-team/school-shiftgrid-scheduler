@@ -17,7 +17,7 @@ import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
-import { EMPTY_FILTER, deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
+import { EMPTY_FILTER, deriveRows, freshIds, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
@@ -157,6 +157,10 @@ export function RecordView<T>({
         [treeOn, tree, records, getId, flat],
     );
     const rows = useMemo(() => displayRows.map((d) => d.row), [displayRows]);
+    // S15': 새로 추가된 행만 .ui-pop-in(첫 렌더·필터 변경·보기 갈아끼움엔 안 켠다) — 렌더 뒤에 「본 id」를 갱신해 다음 렌더가 차이를 잡는다
+    const seenIds = useRef<Set<string> | null>(null);
+    const fresh = useMemo(() => freshIds(seenIds.current, records.map((r) => getId(r))), [records, getId]);
+    useEffect(() => { seenIds.current = new Set(records.map((r) => getId(r))); }, [records, getId]);
 
     // 🔴 폭 끌기 중에는 임시 폭만 그린다 — 손을 뗄 때 한 번만 보기 정의에 쓴다(안 그러면 포인터 한 칸마다 되돌리기 한 단계가 쌓인다)
     const [liveW, setLiveW] = useState<{ key: string; w: number } | null>(null);
@@ -574,7 +578,7 @@ export function RecordView<T>({
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
                                 onDragOver={reorderable ? (e) => onRowDragOver(e, id) : undefined}
                                 onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id, mark?.zone); } : undefined}
-                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
+                                className={`flex border-b border-line min-h-[32px] ${fresh.has(id) ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
                             >
                                 {reorderable && (
                                     <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
@@ -618,7 +622,11 @@ export function RecordView<T>({
                                                 {iconOf(id) ?? <Icon name="fileText" size={14} className="text-muted" />}
                                             </span>
                                         )}
-                                        <div className="flex-1 min-w-0 h-full">
+                                        <div className="relative flex-1 min-w-0 h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
+                                            {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
+                                            {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
+                                                <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
+                                            )}
                                             <Cell
                                                 field={f}
                                                 rowValue={r}

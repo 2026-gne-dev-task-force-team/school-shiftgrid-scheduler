@@ -454,3 +454,44 @@ describe('Q11 W10 — 칸 옵션 「유일」', () => {
         expect(q('[data-rv-unique-msg]')!.textContent).toContain('2칸');
     });
 });
+
+describe('R4 — 빈 상태 · 제목 없음 · 새 행', () => {
+    const FILT: ViewDef[] = (() => { const v = normalizeViews(undefined); return [{ ...v[0], filter: { and: [{ key: 'f_x', op: 'contains', value: 'zzz' }] } }]; })();
+    function FilterHarness({ rows }: { rows: Rec[] }) {
+        const [views, setViews] = useState<ViewDef[]>(FILT);
+        return <RecordView<Rec> fields={START} records={rows} getId={(r) => r.id} viewKey="t.empty" titleKey="f_t" views={views} onViewsChange={setViews} onCellChange={() => {}} />;
+    }
+    it('필터 때문에 0개면 「조건에 맞는 항목 없음」 + 「필터 지우기」가 행을 되살린다', () => {
+        mount(<FilterHarness rows={[{ id: 'r1', f_t: '가', f_x: 'a' }]} />);
+        expect(q('[data-rv-empty="filtered"]')!.textContent).toContain('조건에 맞는 항목 없음');
+        expect(q('[data-rv-row="r1"]')).toBeNull();
+        const btn = qa('[data-rv-empty="filtered"] button').find((b) => b.textContent!.includes('필터 지우기'))!;
+        click(btn);
+        expect(q('[data-rv-empty="filtered"]')).toBeNull();
+        expect(q('[data-rv-row="r1"]')).toBeTruthy();
+    });
+    it('데이터가 아예 없으면 필터 지우기 단추가 없다(그냥 빈 표)', () => {
+        mount(<Harness init={[]} spy={spies()} />);
+        expect(q('[data-rv-empty]')).toBeTruthy();
+        expect(q('[data-rv-empty="filtered"]')).toBeNull();
+    });
+    it('S15: 제목이 비면 흐린 「제목 없음」 · 제목이 있으면 안 보인다 · 다른 칸이 비어도 안 보인다', () => {
+        mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }, { id: 'r2', f_t: '있음', f_x: '' }]} spy={spies()} />);
+        expect(qa('[data-rv-row="r1"] [data-rv-untitled]')).toHaveLength(1);
+        expect(qa('[data-rv-row="r2"] [data-rv-untitled]')).toHaveLength(0);
+        expect(qa('[data-rv-row="r1"] [data-rv-untitled]')[0].textContent).toBe('제목 없음');
+    });
+    it('새 행 전환: 새로 추가된 행만 .ui-pop-in — 첫 렌더 행엔 없다', () => {
+        let add: () => void = () => {};
+        function AddHarness() {
+            const [rows, setRows] = useState<Rec[]>([{ id: 'a', f_t: 'a' }]);
+            add = () => setRows((rs) => [...rs, { id: 'b', f_t: 'b' }]);
+            return <RecordView<Rec> fields={START} records={rows} getId={(r) => r.id} viewKey="t.pop" titleKey="f_t" onCellChange={() => {}} />;
+        }
+        mount(<AddHarness />);
+        expect(q('[data-rv-row="a"]')!.className).not.toContain('ui-pop-in');
+        act(() => add());
+        expect(q('[data-rv-row="b"]')!.className).toContain('ui-pop-in');
+        expect(q('[data-rv-row="a"]')!.className).not.toContain('ui-pop-in');
+    });
+});
