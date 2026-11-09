@@ -32,7 +32,7 @@ const find = (id: string) => listPlugins().find((p) => p.id === id);
 // ── 인메모리 nodes 제공자(nodes 약속을 들고 오고 채운다 — 탐색기 꾸러미 흉내) ──
 //    opts.deferred: true 면 「로드 전」 상태로 시작한다 — 읽기(get·byType·find·children)가 빈 값을 주다가
 //    load() 를 부르면 그제야 보이고 subscribe 를 깨운다(explorer 의 loadTree 비동기 로드 흉내).
-function makeNodes(opts?: { deferred?: boolean }) {
+function makeNodes(opts?: { deferred?: boolean; trash?: boolean }) {
     const map = new Map<string, Node>();
     const subs = new Set<(ids: string[]) => void>();
     const ROOT = 'root-main';
@@ -40,6 +40,7 @@ function makeNodes(opts?: { deferred?: boolean }) {
     map.set(ROOT, { id: ROOT, type: 'folder', name: 'root', children: [] });
     map.set(TRASH, { id: TRASH, type: 'folder', name: 'trash', children: [] });
     let seq = 0;
+    let batches = 0;
     let loaded = !opts?.deferred;   // 지연 모드면 로드 전
     const notify = (ids: string[]) => { for (const s of [...subs]) s(ids); };
     const api: NodesApi = {
@@ -71,8 +72,12 @@ function makeNodes(opts?: { deferred?: boolean }) {
             const p = map.get(parentId); if (p) { if (index == null) p.children.push(id); else p.children.splice(index, 0, id); }
             notify([id]);
         },
-        remove: (id) => { for (const n of map.values()) { const i = n.children.indexOf(id); if (i >= 0) n.children.splice(i, 1); } map.delete(id); notify([id]); },
-        batch: (fn) => { fn(); },
+        remove: (id) => {
+            for (const n of map.values()) { const i = n.children.indexOf(id); if (i >= 0) n.children.splice(i, 1); }
+            if (opts?.trash) map.get(TRASH)!.children.push(id); else map.delete(id);   // trash 모드 = 실물처럼 휴지통으로
+            notify([id]);
+        },
+        batch: (fn) => { batches += 1; fn(); },
         invalidate: () => { /* 테스트 */ },
         select: () => { /* 테스트 */ },
         open: () => { /* 테스트 */ },
@@ -91,7 +96,7 @@ function makeNodes(opts?: { deferred?: boolean }) {
     } as PluginModule;
     /** 지연 로드 완료 — 읽기를 열고 subscribe 를 깨운다(loadTree 완료 때 「빈 나무→실나무 diff」 알림 흉내). */
     const load = () => { loaded = true; notify([...map.keys()]); };
-    return { plugin, api, allData: () => [...map.values()].map((n) => n.data), load };
+    return { plugin, api, allData: () => [...map.values()].map((n) => n.data), load, get batches() { return batches; } };
 }
 
 // ── identity·permit 를 받아 쓰는 가짜 소비자(onChange 를 센다) ──
@@ -157,7 +162,7 @@ describe('계정 — 9가지 검산', () => {
         const rid = core.createRole('편집', { permissions: ['doc.edit'], level: 2 });
         const uid = core.createUser('김', { roleIds: [rid] });
         // 저장 모양 — 옛 displayName·roleIds·fields 칸이 없고 values 하나 · 빈 목록(direct)은 안 싣는다
-        expect(nodes.api.get(uid)!.data).toEqual({ values: { roles: [rid] } });
+        expect(nodes.api.get(uid)!.data).toEqual({ values: { active: true, roles: [rid] } });   // Q11 W12 — 새 사용자는 활성 저장
         expect(nodes.api.get(rid)!.data).toEqual({ values: { level: 2, perms: ['doc.edit'] } });
         // 칸 쓰기 — 제목 칸은 이름 바꾸기 · 빈 값은 지움 · 글은 trim · values 밖 짐은 그대로
         nodes.api.setData(uid, { ...(nodes.api.get(uid)!.data as object), keep: 1 });
@@ -166,7 +171,7 @@ describe('계정 — 9가지 검산', () => {
         core.setRecordValue(uid, 'roles', []);
         core.setRecordValue(uid, 'plug.badge', 'A');
         expect(nodes.api.get(uid)!.name).toBe('이');
-        expect(nodes.api.get(uid)!.data).toEqual({ keep: 1, values: { f_team: '행정', 'plug.badge': 'A' } });
+        expect(nodes.api.get(uid)!.data).toEqual({ keep: 1, values: { active: true, f_team: '행정', 'plug.badge': 'A' } });
         core.setRecordValue(uid, 'name', '  ');                       // 빈 이름은 무시
         expect(nodes.api.get(uid)!.name).toBe('이');
         // 폴더 칸(사람이 더한 칸) — 사용자 폴더 data.fields
@@ -541,5 +546,118 @@ describe('P4d — 새로고침해도 로그인 유지 · 자격증명 슬롯', (
         expect(credCore.hasSecret(a)).toBe(false);
         await core.loginMaster('pw');
         expect(await core.login(a)).toBe(false);                  // 비밀이 없으면 마스터 → 그 사람 전환 불가
+    });
+});
+
+// ─────────────────────────── Q11 — 로그아웃 명령(W8) · 휴지통(W9) · 활성(W12) · 아이디 로그인(W14) · 아이디 유일(W10) ───────────────────────────
+describe('Q11 — 계정 손질', () => {
+    const notes: { title: string; body?: string; action?: { commandId: string } }[] = [];
+    const fakeHost = { notify: (n: (typeof notes)[number]) => { notes.push(n); return 'x'; } } as unknown as PluginHost;
+    const cmd = (id: string) => (accountPlugin as unknown as { commands: Record<string, (h: PluginHost) => void> }).commands[id](fakeHost);
+    beforeEach(() => { notes.length = 0; });
+
+    it('W8) 암호 없는 마스터는 로그아웃 못 함(설명 알림) · 암호 건 뒤 사용자는 로그아웃 → 손님 · 손님은 못 함', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        expect(core.canLogout()).toBe(false);
+        cmd('account.logout');
+        expect(notes.at(-1)?.body).toMatch(/프로젝트 암호를 걸면/);
+        expect(core.getCurrent().kind).toBe('master');
+
+        const r = await core.createUserWithLogin({ name: '김', loginId: 'kim', credMethod: credCore.METHOD.id, password: 'pw1', active: true });
+        await core.setProjectPassword('', 'master-pw');
+        expect(await core.loginWithPassword((r as { id: string }).id, 'pw1')).toBe('ok');
+        expect(core.canLogout()).toBe(true);
+        cmd('account.logout');
+        expect(core.getCurrent().kind).toBe('guest');
+        expect(notes.at(-1)?.title).toBe('로그아웃했습니다');
+        cmd('account.logout');
+        expect(notes.at(-1)?.body).toMatch(/손님/);
+    });
+
+    it('W9) 지운 사용자는 목록에서 빠지고(휴지통 제외) 한 묶음 · 되돌리기로 제자리', () => {
+        const nodes = makeNodes({ trash: true });
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const a = core.createUser('가'), b = core.createUser('나'), c = core.createUser('다');
+        const before = nodes.batches;
+        expect(core.removeAccountRecords([a, c])).toBe(2);
+        expect(nodes.batches).toBe(before + 1);
+        expect(nodes.api.parent(a)).toBe(nodes.api.roots.trash);
+        expect(core.listUsers().map((u) => u.name)).toEqual(['나']);
+        cmd('account.restoreRemoved');
+        expect(core.listUsers().map((u) => u.id)).toEqual([a, b, c]);
+        expect(notes.at(-1)?.title).toMatch(/2개를 되살렸습니다/);
+        cmd('account.restoreRemoved');
+        expect(notes.at(-1)?.title).toBe('되살릴 것이 없습니다');
+    });
+
+    it('W12) 비활성 사용자는 아이디 확인·비밀번호·이름 로그인 모두 거부 · 들어와 있던 사람은 비활성되면 쫓겨난다', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const r = await core.createUserWithLogin({ name: '이', loginId: 'lee', credMethod: credCore.METHOD.id, password: 'pw', active: true });
+        const id = (r as { id: string }).id;
+        await core.setProjectPassword('', 'master-pw');
+        expect(await core.loginWithPassword(id, 'pw')).toBe('ok');
+        await core.loginMaster('master-pw');
+        core.setRecordValue(id, core.ACTIVE_KEY, false);
+        expect(core.checkLoginId('lee').kind).toBe('inactive');
+        expect(await core.loginWithPassword(id, 'pw')).toBe('inactive');
+        expect(await core.login(id)).toBe(false);
+        core.setRecordValue(id, core.ACTIVE_KEY, true);
+        expect(await core.loginWithPassword(id, 'pw')).toBe('ok');
+        await core.loginMaster('master-pw');
+        // 다른 경로: 이 사람이 들어와 있는 동안 비활성 → 쫓겨남
+        expect(await core.loginWithPassword(id, 'pw')).toBe('ok');
+        nodes.api.setData(id, { values: { ...(nodes.api.get(id)!.data as { values: object }).values, [core.ACTIVE_KEY]: false } });
+        await Promise.resolve();   // 쫓아내기는 마이크로태스크로 돈다
+        expect(core.getCurrent().kind).not.toBe('user');
+    });
+
+    it('W14) 아이디 흐름 — 빈칸·없음·설정(빈칸·불일치·이미 설정)·비밀번호(틀림·맞음) · 대소문자·공백 무시', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const r = await core.createUserWithLogin({ name: '박', loginId: 'Park', credMethod: credCore.METHOD.id, active: true });
+        const id = (r as { id: string }).id;
+        expect(core.credStateOf(id)).toBe('설정 대기');
+        expect(core.checkLoginId('  ').kind).toBe('empty');
+        expect(core.checkLoginId('nobody').kind).toBe('unknown');
+        expect(core.checkLoginId(' park ')).toEqual({ kind: 'setup', userId: id, name: '박' });
+        expect(await core.setupAndLogin(id, credCore.METHOD.id, '', '')).toBe('empty');
+        expect(await core.setupAndLogin(id, credCore.METHOD.id, 'a1', 'a2')).toBe('mismatch');
+        expect(await core.setupAndLogin(id, 'nope', 'a1', 'a1')).toBe('method');
+        expect(await core.setupAndLogin(id, credCore.METHOD.id, 'a1', 'a1')).toBe('ok');
+        expect(core.getCurrent()).toMatchObject({ kind: 'user', id, verified: true });
+        expect(core.credStateOf(id)).toBe('설정됨');
+        expect(await core.setupAndLogin(id, credCore.METHOD.id, 'x', 'x')).toBe('already');   // 가로채기 막힘
+        expect(core.checkLoginId('PARK').kind).toBe('password');
+        expect(await core.loginWithPassword(id, 'wrong')).toBe('wrong');
+        expect(await core.loginWithPassword(id, 'a1')).toBe('ok');
+    });
+
+    it('W10) 아이디는 유일 — 만들기·고치기 모두 겹치면 거부(대소문자·공백 무시) · 빈 아이디 거부', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const m = credCore.METHOD.id;
+        const a = await core.createUserWithLogin({ name: '가', loginId: 'same', credMethod: m, active: true });
+        expect(a.ok).toBe(true);
+        expect(await core.createUserWithLogin({ name: '나', loginId: ' SAME ', credMethod: m, active: true })).toEqual({ ok: false, reason: 'taken' });
+        expect(await core.createUserWithLogin({ name: '나', loginId: '  ', credMethod: m, active: true })).toEqual({ ok: false, reason: 'loginId' });
+        expect(await core.createUserWithLogin({ name: ' ', loginId: 'x', credMethod: m, active: true })).toEqual({ ok: false, reason: 'name' });
+        const b = await core.createUserWithLogin({ name: '나', loginId: 'other', credMethod: m, active: true });
+        expect(core.setRecordValue((b as { id: string }).id, core.LOGIN_ID_KEY, 'Same')).toBe(false);
+        expect(core.listUsers().find((u) => u.name === '나')?.values[core.LOGIN_ID_KEY]).toBe('other');
+    });
+
+    it('🔴 평문 비밀번호는 노드 칸 값·알림 어디에도 안 남는다', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const r = await core.createUserWithLogin({ name: '최', loginId: 'choi', credMethod: credCore.METHOD.id, password: 'PlainSecret-77', active: true });
+        await core.setupAndLogin((r as { id: string }).id, credCore.METHOD.id, 'x', 'x');   // already — 아무것도 안 바뀐다
+        await core.setProjectPassword('', 'MasterPlain-99');
+        await core.loginWithPassword((r as { id: string }).id, 'PlainSecret-77');
+        cmd('account.logout');
+        const dump = JSON.stringify(nodes.allData()) + JSON.stringify(notes);
+        expect(dump).not.toContain('PlainSecret-77');
+        expect(dump).not.toContain('MasterPlain-99');
     });
 });

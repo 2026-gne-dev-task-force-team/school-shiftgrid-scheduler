@@ -16,12 +16,21 @@ let nodesApi: NodesApi | null = null;
 let nodesUnsub: Disposable | null = null;
 let promptImpl: (methodId: string, userId: string) => Promise<string | null> = requestSecret;
 
+/** 🔴 W9(Q11) — 탐색기 byType 은 휴지통 노드도 준다. 휴지통 아래(조상 어디든)의 비밀은 「없는 것」으로 친다. */
+function inTrash(id: string): boolean {
+    if (!nodesApi) return false;
+    const trash = nodesApi.roots.trash;
+    for (let p = nodesApi.parent(id), guard = 0; p && guard < 1000; p = nodesApi.parent(p), guard++) if (p === trash) return true;
+    return false;
+}
+function liveByType(type: string): PublicNode[] { return (nodesApi?.byType(type) ?? []).filter((n) => !inTrash(n.id)); }
+
 /** 옛 'credential-local.secret' 노드가 남아 있으면 'account.cred-secret' 로 자동 이사하고 옛 노드를 치운다. */
 function migrateLegacySecrets(): void {
     if (!nodesApi) return;
-    const legacy = nodesApi.byType(LEGACY_SECRET_TYPE);
+    const legacy = liveByType(LEGACY_SECRET_TYPE);
     if (legacy.length === 0) return;
-    const current = nodesApi.byType(SECRET_TYPE);
+    const current = liveByType(SECRET_TYPE);
     for (const oldNode of legacy) {
         const data = oldNode.data as LocalSecret | undefined;
         if (data && typeof data.userId === 'string') {
@@ -48,8 +57,8 @@ export function methods(): CredentialMethod[] { return [METHOD]; }
 
 function secretOf(userId: string): LocalSecret | null {
     const n: PublicNode | undefined =
-        nodesApi?.byType(SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId)
-        ?? nodesApi?.byType(LEGACY_SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId);
+        liveByType(SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId)
+        ?? liveByType(LEGACY_SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId);
     return n ? (n.data as LocalSecret) : null;
 }
 
@@ -63,12 +72,21 @@ export async function challenge(methodId: string, userId: string): Promise<boole
     return verifyHash(entered, sec);
 }
 
+/**
+ * 받은 비밀번호가 맞나 — 아이디 로그인 화면(W14)이 쓴다. 🔴 평문은 이 함수 안에서만 해시와 비교되고 어디에도 남지 않는다.
+ *   약속(credential)으로는 안 내보낸다(꾸러미 안 core 끼리만).
+ */
+export async function verifySecret(userId: string, password: string): Promise<boolean> {
+    const sec = secretOf(userId);
+    return sec ? verifyHash(password, sec) : false;
+}
+
 /** 그 사용자의 비밀을 걸거나 바꾼다(해시로 저장 · userId 당 한 노드). 평문 0. */
 export async function setSecret(userId: string, password: string): Promise<void> {
     if (!nodesApi) return;
     const hashed = await makeHash(password);
     const data: LocalSecret = { userId, ...hashed };
-    const existing = nodesApi.byType(SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId);
+    const existing = liveByType(SECRET_TYPE).find((x) => (x.data as LocalSecret)?.userId === userId);
     if (existing) nodesApi.setData(existing.id, data);
     else nodesApi.create(nodesApi.roots.main, { type: SECRET_TYPE, name: '비밀', data });
 }
@@ -76,7 +94,7 @@ export function hasSecret(userId: string): boolean { return !!secretOf(userId); 
 /** 그 사용자의 비밀을 뺀다(새 이름·옛 이름 노드 모두) — 빼면 그 사람으로의 전환·증명이 막힌다. */
 export function clearSecret(userId: string): void {
     if (!nodesApi) return;
-    for (const n of [...nodesApi.byType(SECRET_TYPE), ...nodesApi.byType(LEGACY_SECRET_TYPE)]) {
+    for (const n of [...liveByType(SECRET_TYPE), ...liveByType(LEGACY_SECRET_TYPE)]) {
         if ((n.data as LocalSecret | undefined)?.userId === userId) nodesApi.remove(n.id);
     }
 }

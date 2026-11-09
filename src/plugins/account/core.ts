@@ -19,6 +19,15 @@ import {
     type RecordData, type PolicyData, type SecretData,
 } from './nodes';
 import type { RecordCellValue, RecordField } from '../collection/contracts/collection';
+// 🔴 증명 부품은 꾸러미 안 내부 모듈 — 아이디 로그인(W14)은 평문을 그 안에서만 비교·해시한다(verifySecret·setSecret).
+import { hasSecret as hasUserSecret, verifySecret, setSecret, methods as credMethods } from './credential/core';
+
+/** 사용자 칸 key — 아이디(유일)·자격증명 종류·활성(Q11 W10~W13). 값은 data.values 에 산다(컬렉션 레코드와 같은 꼴). */
+export const LOGIN_ID_KEY = 'loginId';
+export const CRED_METHOD_KEY = 'credMethod';
+export const ACTIVE_KEY = 'active';
+/** 계산 칸(저장 안 함) — 자격증명 상태 「설정됨 / 설정 대기」. */
+export const CRED_STATE_KEY = 'credState';
 
 // ── 전역 상태 ──
 let nodesApi: NodesApi | null = null;
@@ -50,16 +59,27 @@ function userSession(id: string, verified: boolean): CurrentUser {
 }
 
 // ── 노드 읽기 ──
-function secretNode(): PublicNode | undefined { return nodesApi?.byType(SECRET_TYPE)[0]; }
+/**
+ * 🔴 W9(Q11) — 탐색기 byType 은 휴지통 노드도 돌려준다. 계정은 휴지통 아래(조상 어디든)를 뺀 「산」 노드만 읽는다.
+ *   (지운 사용자가 목록에 남고 · 지운 암호가 「걸려 있음」으로 남고 · 지운 계정 루트를 계속 찾던 버그)
+ */
+function inTrash(id: string): boolean {
+    if (!nodesApi) return false;
+    const trash = nodesApi.roots.trash;
+    for (let p = nodesApi.parent(id), guard = 0; p && guard < 1000; p = nodesApi.parent(p), guard++) if (p === trash) return true;
+    return false;
+}
+function liveByType(type: string): PublicNode[] { return (nodesApi?.byType(type) ?? []).filter((n) => !inTrash(n.id)); }
+function secretNode(): PublicNode | undefined { return liveByType(SECRET_TYPE)[0]; }
 function hasSecret(): boolean { return !!secretNode(); }
 /** 사용자·역할 레코드의 칸 값(그 타입이 아니면 null) — 컬렉션 레코드와 같은 data.values. */
 function valuesOf(id: string, type: string): Record<string, RecordCellValue> | null {
     const n = nodesApi?.get(id);
-    return n && n.type === type ? { ...((n.data as RecordData | undefined)?.values ?? {}) } : null;
+    return n && n.type === type && !inTrash(id) ? { ...((n.data as RecordData | undefined)?.values ?? {}) } : null;
 }
 const listOf = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 function policyData(): PolicyData {
-    const n = nodesApi?.byType(POLICY_TYPE)[0];
+    const n = liveByType(POLICY_TYPE)[0];
     const d = (n?.data ?? {}) as Partial<PolicyData>;
     return {
         paths: { direct: !!d.paths?.direct, level: !!d.paths?.level, role: !!d.paths?.role },
@@ -70,6 +90,8 @@ function policyData(): PolicyData {
 
 // ── 시작 상태(열 때) — 암호 없으면 마스터, 있으면 손님(기기 저장의 세션을 되살릴 수 있으면 그 사람) ──
 function initialState(): CurrentUser { return hasSecret() ? guest() : master(); }
+/** 활성인가 — 칸이 없으면 활성(옛 사용자 유지) · false 일 때만 꺼짐(W12). 레코드가 없으면(지움·휴지통) 거짓. */
+function isActiveValues(v: Record<string, RecordCellValue> | null): boolean { return !!v && v[ACTIVE_KEY] !== false; }
 function secretSeal(): string | undefined { return (secretNode()?.data as SecretData | undefined)?.salt; }
 /**
  * 열 때의 초기 세션을 센다 — 암호 유무가 정한다. 암호가 있으면 기기 저장의 세션을 되살린다(P4d A2):
@@ -81,7 +103,7 @@ function deriveInitial(): CurrentUser {
     const saved = hostRef?.storage.get<SavedSession | null>(SESSION_KEY, null) ?? null;
     const live = typeof saved?.until === 'number' && saved.until > Date.now();
     if (saved?.kind === 'master' && live && saved.seal === secretSeal()) return master();
-    return saved?.kind === 'user' && saved.id && valuesOf(saved.id, USER_TYPE) ? userSession(saved.id, live && !!saved.verified) : guest();
+    return saved?.kind === 'user' && saved.id && isActiveValues(valuesOf(saved.id, USER_TYPE)) ? userSession(saved.id, live && !!saved.verified) : guest();
 }
 
 /** 로그인 유지 기한(분) — 기기별. 0 = 새로고침하면 풀림. */
@@ -169,8 +191,21 @@ export function initAccount(host: PluginHost, nodes: NodesApi | null): void {
             tryMigrate();   // 🔴 비동기 로드 완료 뒤에도 한 번 이사 확인(노드가 그제야 보인다)
         }
         firePermit();   // 역할·정책·사용자가 바뀌면 판정이 바뀐다
+        // 🔴 W8/W12 — 로그인한 사용자가 지워졌거나(휴지통 포함) 비활성이 되면 로그아웃한다.
+        //    알림 처리기 안에서 세션을 바꾸면 다른 구독자 차례와 엉키니 마이크로태스크로 미룬다.
+        if (session.kind === 'user') queueMicrotask(kickIfGone);
     }) : null;
     tryMigrate();   // 동기 저장소(암호 없음 → 마스터)면 지금 바로 이사한다
+}
+
+/** 지금 사용자가 사라졌거나 비활성이면 로그아웃(+알림). 로드 전(노드가 아직 안 보임)엔 손대지 않는다. */
+function kickIfGone(): void {
+    if (session.kind !== 'user' || !session.id || !nodesApi || awaitingFirstLoad) return;
+    const v = valuesOf(session.id, USER_TYPE);
+    if (isActiveValues(v)) return;
+    const why = v ? '비활성으로 바뀌어' : '지워져';
+    setSession(initialState());
+    hostRef?.notify({ level: 'warn', title: `로그인한 사용자가 ${why} 로그아웃했습니다.`, key: 'account.kicked' });
 }
 
 // ── 약속으로 받는 읽기 창구(index.ts 의 per-caller 모듈이 부른다) ──
@@ -181,7 +216,7 @@ export function isMaster(): boolean { return session.kind === 'master'; }
 
 // ── 계정 노드 구조(루트 → 사용자/역할 폴더 + 정책) ──
 /** 계정 루트 노드 id(없으면 null). */
-export function accountRootId(): string | null { return nodesApi?.byType(ROOT_TYPE)[0]?.id ?? null; }
+export function accountRootId(): string | null { return liveByType(ROOT_TYPE)[0]?.id ?? null; }
 
 function childOfType(parentId: string, type: string): string | null {
     const hit = (nodesApi?.children(parentId) ?? []).find((n) => n.type === type);
@@ -205,7 +240,7 @@ function ensureStructure(): string | null {
     if (!childOfType(rootId, ROLES_FOLDER_TYPE)) nodesApi.create(rootId, { type: ROLES_FOLDER_TYPE, name: '역할' });
     if (!childOfType(rootId, PERMS_FOLDER_TYPE)) nodesApi.create(rootId, { type: PERMS_FOLDER_TYPE, name: '권한' });
     // 🔴 정책은 트리에 하나도 없을 때만 만든다(싱글턴) — 옛 평면 정책이 있으면 이사(tryMigrate)가 그걸 루트 밑으로 옮긴다(중복 방지).
-    if (nodesApi.byType(POLICY_TYPE).length === 0) nodesApi.create(rootId, { type: POLICY_TYPE, name: '정책', data: emptyPolicy() });
+    if (liveByType(POLICY_TYPE).length === 0) nodesApi.create(rootId, { type: POLICY_TYPE, name: '정책', data: emptyPolicy() });
     return rootId;
 }
 function usersFolderId(): string | null { const r = ensureStructure(); return r ? childOfType(r, USERS_FOLDER_TYPE) : null; }
@@ -218,9 +253,10 @@ function rolesFolderId(): string | null { const r = ensureStructure(); return r 
  */
 function tryMigrate(): void {
     if (!nodesApi || !isMaster()) return;
-    const users = nodesApi.byType(USER_TYPE);
-    const roles = nodesApi.byType(ROLE_TYPE);
-    const policies = nodesApi.byType(POLICY_TYPE);
+    // 🔴 휴지통에 있는 옛 노드는 이사하지 않는다(휴지통에서 끌어내면 지운 게 되살아난다)
+    const users = liveByType(USER_TYPE);
+    const roles = liveByType(ROLE_TYPE);
+    const policies = liveByType(POLICY_TYPE);
     // 루트도 없고 옛 노드도 없으면 할 일 없음(새 프로젝트는 마스터가 「새로 만들기」로 루트를 세운다).
     if (!accountRootId() && users.length === 0 && roles.length === 0 && policies.length === 0) return;
     const rootId = ensureStructure();
@@ -276,7 +312,7 @@ function policyRequiresVerify(roleIds: string[]): boolean {
  */
 export async function login(userId: string): Promise<boolean> {
     const u = valuesOf(userId, USER_TYPE);
-    if (!u || !nodesApi) return false;
+    if (!u || !nodesApi || !isActiveValues(u)) return false;   // 🔴 W12 — 비활성 사용자는 어느 길로도 못 들어온다
 
     if (session.kind === 'master') {
         const cred = credentialProvider();
@@ -290,7 +326,13 @@ export async function login(userId: string): Promise<boolean> {
     }
 
     let verified = false;
-    if (policyRequiresVerify(listOf(u.roles))) {
+    if (hasUserSecret(userId)) {
+        // 🔴 W14 — 자격증명이 걸린 사람은 이름만으로 못 들어온다(늘 비밀번호를 묻는다). 틀림·취소면 그대로.
+        const cred = credentialProvider();
+        const m = cred?.methods()[0];
+        if (!cred || !m || !(await cred.challenge(m.id, userId))) return false;
+        verified = true;
+    } else if (policyRequiresVerify(listOf(u.roles))) {
         const cred = credentialProvider();
         if (cred) {
             const m = cred.methods()[0];
@@ -314,6 +356,69 @@ export async function loginMaster(password: string): Promise<boolean> {
 
 /** 로그아웃 — 그 프로젝트의 시작 상태로(암호 없으면 마스터, 있으면 손님). */
 export function logout(): void { setSession(initialState()); }
+/**
+ * 로그아웃해도 뜻이 있나(W8) — 마스터인데 프로젝트 암호가 없으면 로그아웃해도 다시 마스터로 열린다(아무 일 없음).
+ *   손님은 나갈 데가 없다. 그 밖(사용자 · 암호 걸린 마스터)은 true.
+ */
+export function canLogout(): boolean {
+    if (session.kind === 'guest') return false;
+    return !(session.kind === 'master' && !hasSecret());
+}
+
+// ── 아이디로 들어가기(W14) — 아이디 입력 → (자격증명 미설정이면 설정) → 로그인 ──
+const normId = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '');
+/** 아이디로 산 사용자 찾기(앞뒤 공백·대소문자 무시) — 없으면 null. */
+function userByLoginId(loginId: string): PublicNode | null {
+    const k = normId(loginId);
+    if (!k) return null;
+    return liveByType(USER_TYPE).find((n) => normId((n.data as RecordData | undefined)?.values?.[LOGIN_ID_KEY]) === k) ?? null;
+}
+/** 아이디 확인 결과 — 없음 · 비활성 · 자격증명 설정 필요 · 비밀번호 필요. 🔴 비밀번호는 여기 안 실린다. */
+export type LoginCheck =
+    | { kind: 'empty' }
+    | { kind: 'unknown' }
+    | { kind: 'inactive'; name: string }
+    | { kind: 'setup'; userId: string; name: string }
+    | { kind: 'password'; userId: string; name: string };
+export function checkLoginId(loginId: string): LoginCheck {
+    if (!loginId.trim()) return { kind: 'empty' };
+    const n = userByLoginId(loginId);
+    if (!n) return { kind: 'unknown' };
+    if (!isActiveValues(valuesOf(n.id, USER_TYPE))) return { kind: 'inactive', name: n.name };
+    return hasUserSecret(n.id) ? { kind: 'password', userId: n.id, name: n.name } : { kind: 'setup', userId: n.id, name: n.name };
+}
+/** 비밀번호로 들어가기 — 맞으면 그 사용자(증명됨). 🔴 평문은 증명 부품 안에서만 비교된다. */
+export async function loginWithPassword(userId: string, password: string): Promise<'ok' | 'wrong' | 'inactive' | 'unknown' | 'setup'> {
+    const v = valuesOf(userId, USER_TYPE);
+    if (!v) return 'unknown';
+    if (!isActiveValues(v)) return 'inactive';
+    if (!hasUserSecret(userId)) return 'setup';
+    if (!(await verifySecret(userId, password))) return 'wrong';
+    setSession(userSession(userId, true));
+    return 'ok';
+}
+/**
+ * 첫 로그인 — 자격증명 종류를 고르고 비밀번호를 두 번 넣어 설정한 뒤 바로 들어간다(증명됨).
+ *   🔴 이미 설정된 사람은 이 길로 못 바꾼다('already' — 남의 아이디로 비번을 새로 걸어 가로채기 방지).
+ */
+export async function setupAndLogin(userId: string, methodId: string, password: string, confirm: string):
+    Promise<'ok' | 'empty' | 'mismatch' | 'method' | 'already' | 'inactive' | 'unknown'> {
+    const v = valuesOf(userId, USER_TYPE);
+    if (!v || !nodesApi) return 'unknown';
+    if (!isActiveValues(v)) return 'inactive';
+    if (hasUserSecret(userId)) return 'already';
+    if (!credMethods().some((m) => m.id === methodId)) return 'method';
+    if (password === '') return 'empty';
+    if (password !== confirm) return 'mismatch';
+    await setSecret(userId, password);
+    setRecordValue(userId, CRED_METHOD_KEY, methodId);
+    setSession(userSession(userId, true));
+    return 'ok';
+}
+/** 고를 수 있는 자격증명 종류(설정 화면·사용자 추가 폼이 쓴다). */
+export const credentialMethods = (): { id: string; title: string }[] => credMethods();
+/** 자격증명 상태 글(계산 칸 · W13) — 값은 안 보인다. */
+export function credStateOf(userId: string): '설정됨' | '설정 대기' { return hasUserSecret(userId) ? '설정됨' : '설정 대기'; }
 
 // ── 프로젝트 암호(마스터만) ──
 /**
@@ -350,11 +455,29 @@ const isEmpty = (v: unknown): boolean => v == null || v === '' || (Array.isArray
 const cleanValues = (values: Record<string, RecordCellValue>): Record<string, RecordCellValue> =>
     Object.fromEntries(Object.entries(values).filter(([, v]) => !isEmpty(v)));
 
-export function createUser(name: string, opts?: { roleIds?: string[]; directPermissions?: string[] }): string {
+export function createUser(name: string, opts?: { roleIds?: string[]; directPermissions?: string[]; loginId?: string; active?: boolean; credMethod?: string }): string {
     const folder = usersFolderId();
     if (!nodesApi || !folder) return '';
-    const data: RecordData = { values: cleanValues({ roles: opts?.roleIds ?? [], direct: opts?.directPermissions ?? [] }) };
+    const loginId = opts?.loginId?.trim() ?? '';
+    if (loginId && userByLoginId(loginId)) return '';   // 🔴 아이디는 유일(W10)
+    const data: RecordData = { values: cleanValues({
+        [LOGIN_ID_KEY]: loginId, [CRED_METHOD_KEY]: opts?.credMethod ?? '',
+        [ACTIVE_KEY]: opts?.active ?? true,   // 🔴 W12 — 새 사용자는 활성으로 저장(옛 사용자는 칸이 없어도 활성)
+        roles: opts?.roleIds ?? [], direct: opts?.directPermissions ?? [],
+    }) };
     return nodesApi.create(folder, { type: USER_TYPE, name, data });
+}
+/** 「사용자 추가」 폼(W14) — 이름·아이디·자격증명 종류·초기 비밀번호(선택)·활성. 초기 비번이 있으면 설정됨, 비면 설정 대기. */
+export async function createUserWithLogin(input: { name: string; loginId: string; credMethod: string; password?: string; active: boolean }):
+    Promise<{ ok: true; id: string } | { ok: false; reason: 'name' | 'loginId' | 'taken' | 'denied' }> {
+    const name = input.name.trim();
+    if (!name) return { ok: false, reason: 'name' };
+    if (!input.loginId.trim()) return { ok: false, reason: 'loginId' };
+    if (userByLoginId(input.loginId)) return { ok: false, reason: 'taken' };
+    const id = createUser(name, { loginId: input.loginId, active: input.active, credMethod: input.credMethod });
+    if (!id) return { ok: false, reason: 'denied' };
+    if (input.password) await setSecret(id, input.password);
+    return { ok: true, id };
 }
 export function createRole(name: string, opts?: { permissions?: string[]; level?: number }): string {
     const folder = rolesFolderId();
@@ -364,6 +487,32 @@ export function createRole(name: string, opts?: { permissions?: string[]; level?
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
 export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
+
+// ── 목록에서 지우기 + 되돌리기(W9) — 여러 줄을 한 묶음(batch)으로 휴지통에 보내고, 마지막 묶음을 제자리로 되살린다 ──
+let lastRemoved: { id: string; parent: string; index: number }[] = [];
+/** 사용자·역할 여러 개를 한 번에 휴지통으로 — 지운 개수를 돌려준다(되돌리기는 restoreLastRemoved). */
+export function removeAccountRecords(ids: string[]): number {
+    const api = nodesApi;
+    if (!api || ids.length === 0) return 0;
+    const taken = ids.flatMap((id) => {
+        const parent = api.parent(id);
+        if (!parent) return [];
+        return [{ id, parent, index: api.children(parent).findIndex((c) => c.id === id) }];
+    });
+    api.batch(() => { for (const t of taken) api.remove(t.id); });
+    lastRemoved = taken;
+    return taken.length;
+}
+/** 마지막으로 지운 묶음을 원래 폴더·자리로 되살린다 — 아직 휴지통에 있는 것만. 되살린 개수. */
+export function restoreLastRemoved(): number {
+    const api = nodesApi;
+    if (!api) return 0;
+    const back = lastRemoved.filter((t) => api.get(t.id) && api.get(t.parent) && api.parent(t.id) !== t.parent);
+    if (back.length === 0) return 0;
+    api.batch(() => { for (const t of [...back].sort((a, b) => a.index - b.index)) api.move(t.id, t.parent, Math.max(0, t.index)); });
+    lastRemoved = [];
+    return back.length;
+}
 /** 사용자·역할 목록의 순서 바꾸기 — beforeId 앞으로(null 이면 끝). 같은 폴더 안에서만. */
 export function reorderAccount(id: string, beforeId: string | null): void {
     const parent = nodesApi?.parent(id);
@@ -396,17 +545,24 @@ export function renameRecord(id: string, name: string): void {
  * 사용자·역할 칸 하나 쓰기 — 컬렉션 setValue 와 같은 규칙(제목 칸 'name' 은 이름 바꾸기 · 빈 값은 지움 · 글은 trim).
  *   🔴 data 의 다른 짐(values 밖)은 그대로 싣는다.
  */
-export function setRecordValue(id: string, key: string, value: RecordCellValue): void {
+export function setRecordValue(id: string, key: string, value: RecordCellValue): boolean {
     const n = nodesApi?.get(id);
-    if (!nodesApi || !n || (n.type !== USER_TYPE && n.type !== ROLE_TYPE)) return;
-    if (key === 'name') { renameRecord(id, String(value ?? '')); return; }
+    if (!nodesApi || !n || (n.type !== USER_TYPE && n.type !== ROLE_TYPE)) return false;
+    if (key === 'name') { renameRecord(id, String(value ?? '')); return true; }
+    if (key === CRED_STATE_KEY) return false;   // 계산 칸 — 저장하지 않는다
+    if (n.type === USER_TYPE && key === LOGIN_ID_KEY) {
+        // 🔴 아이디는 유일(W10) — 표·페이지 검사를 건너뛴 길(붙여넣기·다른 플러그인)도 여기서 막는다
+        const other = typeof value === 'string' ? userByLoginId(value) : null;
+        if (other && other.id !== id) return false;
+    }
     const cur = { ...((n.data ?? {}) as Record<string, unknown>) };
     const values = { ...((cur.values ?? {}) as Record<string, RecordCellValue>) };
     const v = typeof value === 'string' ? value.trim() : value;
     if (isEmpty(v)) delete values[key]; else values[key] = v;
     nodesApi.setData(id, { ...cur, values });
+    return true;
 }
-export const setUserRoles = (userId: string, roleIds: string[]): void => setRecordValue(userId, 'roles', [...roleIds]);
+export const setUserRoles = (userId: string, roleIds: string[]): void => { setRecordValue(userId, 'roles', [...roleIds]); };
 
 /** 폴더(사용자·역할)에 사람이 더한 칸 정의 — 컬렉션 목록 노드와 같은 data.fields. */
 export function folderFieldsOf(kind: 'users' | 'roles'): RecordField[] {
@@ -429,7 +585,7 @@ export function setPolicy(patch: Partial<PolicyData>): void {
         thresholds: { ...cur.thresholds, ...(patch.thresholds ?? {}) },
         verifyRoles: patch.verifyRoles ?? cur.verifyRoles,
     };
-    const existing = nodesApi.byType(POLICY_TYPE)[0];
+    const existing = liveByType(POLICY_TYPE)[0];
     if (existing) nodesApi.setData(existing.id, next);
     else {
         // 정책은 계정 루트 밑에 산다(자동 슬롯이 보통 미리 세우지만, 없으면 루트를 세우며 만든다).
@@ -443,12 +599,12 @@ export function getPolicy(): PolicyData { return policyData(); }
 /** 사용자·역할 레코드 한 줄 — 제목(노드 이름) + 칸 값. */
 export interface AccountRecord { id: string; name: string; values: Record<string, RecordCellValue> }
 const toRecord = (n: PublicNode): AccountRecord => ({ id: n.id, name: n.name, values: { ...((n.data as RecordData | undefined)?.values ?? {}) } });
-export function listUsers(): AccountRecord[] { return (nodesApi?.byType(USER_TYPE) ?? []).map(toRecord); }
-export function listRoles(): AccountRecord[] { return (nodesApi?.byType(ROLE_TYPE) ?? []).map(toRecord); }
+export function listUsers(): AccountRecord[] { return liveByType(USER_TYPE).map(toRecord); }
+export function listRoles(): AccountRecord[] { return liveByType(ROLE_TYPE).map(toRecord); }
 /** 사용자·역할 하나(없거나 다른 타입이면 null). */
 export function getRecord(id: string): AccountRecord | null {
     const n = nodesApi?.get(id);
-    return n && (n.type === USER_TYPE || n.type === ROLE_TYPE) ? toRecord(n) : null;
+    return n && (n.type === USER_TYPE || n.type === ROLE_TYPE) && !inTrash(id) ? toRecord(n) : null;
 }
 /** 그 노드가 사용자/역할/정책 중 무엇인가(편집 탭이 어느 편집기를 그릴지 고른다). 그 외/없음은 null. */
 export function nodeKindOf(id: string): 'user' | 'role' | 'policy' | 'users' | 'roles' | null {

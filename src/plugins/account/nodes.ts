@@ -99,7 +99,7 @@ export const accountNodeTypeImpl = {
     // 사용자 — 누르면 편집 탭 · 만들기/고치기/지우기 각각 권한으로 가림 · 보기 권한 없으면 숨김. 탐색기로 만들면 빈 값으로.
     user: {
         open: openEditor,
-        createInit: () => ({ data: { values: {} } satisfies RecordData }),
+        createInit: () => ({ data: { values: { active: true } } satisfies RecordData }),   // 🔴 W12 — 새 사용자는 활성
         canCreate: () => core.can('account.users.create'),
         can: () => ({ rename: core.can('account.users.edit'), move: core.can('account.users.edit'), delete: core.can('account.users.delete') }),
         hidden: () => !core.can('account.users.view'),
