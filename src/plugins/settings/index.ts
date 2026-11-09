@@ -15,6 +15,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
+import { undoReset, resetUndoable } from './reset-undo';
 import { SettingsScreen } from './SettingsScreen';
 import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
@@ -54,6 +55,7 @@ export const settingsPlugin = definePlugin({
                     { section: 'about', id: 'about', title: '이 프로그램', icon: 'info', pane: 'About' },
                 ],
             },
+            commands: [{ id: 'settings.undoReset', title: '초기화 되돌리기', icon: 'undo', palette: false }],
             // ── 설정 화면 뷰 — 딱 한 장(singleton) · 가운데 탭에만 · 안 가른다 ──
             //    🔴 설정은 가운데 탭에만 산다 — 사이드바·가르기 금지(쥔님 13:43: "설정이 사이드바로 들어가기엔 무리").
             //    singleton 은 placement 의 한 축이다 — 이미 떠 있으면 새로 안 열고 그리로 간다.
@@ -66,6 +68,8 @@ export const settingsPlugin = definePlugin({
             }],
         },
     },
+    commands: { 'settings.undoReset': (_host, ctx) => { undoReset(ctx); } },
+    enabled: { 'settings.undoReset': (_host, ctx) => resetUndoable(ctx) },
     // 뷰 컴포넌트 — SettingsScreen 에 collapsed·peek 만 넘긴다(host 는 안 쓴다).
     components: {
         Main: (p: ViewProps) => createElement(SettingsScreen, { collapsed: p.collapsed, peek: p.peek }),

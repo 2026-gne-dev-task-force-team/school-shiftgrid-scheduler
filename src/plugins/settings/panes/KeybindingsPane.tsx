@@ -8,12 +8,13 @@
 import { useEffect, useState } from 'react';
 import {
     useKeyOverrides, effectiveKey, keyMap, formatKey, eventToKey, normalizeKey,
-    setKeyOverride, resetKeyOverride, resetAllKeyOverrides, Button, FOCUS_RING,
+    setKeyOverride, resetKeyOverride, resetAllKeyOverrides, getKeyOverrides, restoreKeyOverrides, Button, FOCUS_RING,
 } from '../../../pane-ui-system';
 import { listCommands, useContribVersion } from '../../../pane-ui-system/plugin';
 import type { SettingsPaneProps } from '../registry';
+import { notifyReset } from '../reset-undo';
 
-export function KeybindingsPane(_: SettingsPaneProps) {
+export function KeybindingsPane({ host }: SettingsPaneProps) {
     useContribVersion();
     const o = useKeyOverrides();
     const [rec, setRec] = useState<string | null>(null);   // 키를 받는 중인 명령 id
@@ -72,7 +73,7 @@ export function KeybindingsPane(_: SettingsPaneProps) {
                 {cmds.length === 0 && <p className="px-3 py-2 text-small text-muted">맞는 명령이 없습니다.</p>}
             </div>
             <div>
-                <Button variant="ghost" size="md" onClick={resetAllKeyOverrides}>전부 기본값으로</Button>
+                <Button variant="ghost" size="md" onClick={() => { const prev = getKeyOverrides(); resetAllKeyOverrides(); notifyReset(host, '단축키를 전부 기본값으로 되돌렸습니다', () => restoreKeyOverrides(prev)); }}>전부 기본값으로</Button>
             </div>
         </div>
     );

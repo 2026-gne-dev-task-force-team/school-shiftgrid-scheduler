@@ -13,6 +13,7 @@ import { manifest } from './manifest';
 import { PageView } from './views/PageView';
 import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, PAGE_TYPE } from './nodes';
 import { PageProps } from './views/PageProps';
+import { blocksRemovedUndoable, undoBlocksRemoved } from './removed';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'page.' 를 붙인다). contributes 엔 접두사 없는 'editor' 로.
 import { PageEditor } from './views/PageView';
@@ -51,6 +52,7 @@ export const pagePlugin = definePlugin({
             commands: [
                 { id: 'page.open', title: '페이지 열기', icon: 'fileText' },
                 { id: 'page.openPage', title: '페이지 열기(탐색기)', icon: 'fileText', palette: false },
+                { id: 'page.undoRemoved', title: '지운 블록 되돌리기', icon: 'undo', palette: false },
             ],
             ribbon: [{ commandId: 'page.open', icon: 'fileText', order: 7 }],
             nodeTypes: pageNodeTypes,
@@ -67,7 +69,9 @@ export const pagePlugin = definePlugin({
     commands: {
         'page.open': (host: PluginHost) => { host.workspace.open(EDITOR_ID, { where: 'center' }); },
         'page.openPage': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getNodesApi()?.open(id); },
+        'page.undoRemoved': () => { undoBlocksRemoved(); },
     },
+    enabled: { 'page.undoRemoved': () => blocksRemovedUndoable() },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'page' 가 가리킨다(open·menu).
     nodeTypes: pageNodeTypeImpl,
     modules: { 'page-doc': pageDocApi },

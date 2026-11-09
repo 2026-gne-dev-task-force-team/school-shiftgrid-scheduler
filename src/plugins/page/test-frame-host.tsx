@@ -7,7 +7,11 @@ import { TitleField } from '../../pane-ui-system';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodeFrameProps, NodesApi } from '../explorer/contracts/nodes';
 
+/** host.notify 로 들어온 알림 — 테스트가 읽는다(frameHost 가 호출될 때마다 비운다) */
+export const notices: Array<{ title: string; action?: { commandId: string } }> = [];
+
 export function frameHost(nodes: NodesApi): PluginHost {
+    notices.length = 0;
     const Frame = ({ nodeId, children, titleAriaLabel, titlePlaceholder, onTitleEnter, onRename }: NodeFrameProps) => {
         const n = nodes.get(nodeId);
         const header: ReactNode = (
@@ -17,5 +21,5 @@ export function frameHost(nodes: NodesApi): PluginHost {
         return <>{typeof children === 'function' ? children(header) : children}</>;
     };
     const withFrame = { ...nodes, Frame } as NodesApi;
-    return { modules: { use: (name: string) => (name === 'nodes' ? withFrame : null) } } as unknown as PluginHost;
+    return { notify: (i: { title: string; action?: { commandId: string } }) => { notices.push(i); }, modules: { use: (name: string) => (name === 'nodes' ? withFrame : null) } } as unknown as PluginHost;
 }

@@ -11,6 +11,8 @@ import { THEMES, type DensityId } from '../../../pane-ui-system';
 import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
 import { ThemeEditor } from './ThemeEditor';
+import type { SettingsPaneProps } from '../registry';
+import { notifyReset } from '../reset-undo';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (
@@ -63,10 +65,15 @@ const DENSITIES: { id: DensityId; name: string }[] = [
     { id: 'cozy', name: '편안' },
 ];
 
-export function AppearancePane() {
+export function AppearancePane({ host }: SettingsPaneProps) {
     // 🔴 테마는 이 Pane 이 유일한 소비자다 — 여기서 쥔다(두 곳에서 useTheme 하면 상태가 둘로 갈린다).
     const theme = useTheme();
-    const { settings, setSettings, reset } = theme;
+    const { settings, setSettings, reset: resetTheme } = theme;
+    const reset = () => {
+        const prev = settings;
+        resetTheme();
+        notifyReset(host, '모양을 기본값으로 되돌렸습니다', () => setSettings(prev));
+    };
 
     return (
         <div className="flex flex-col gap-6 max-w-[560px]">
@@ -131,7 +138,7 @@ export function AppearancePane() {
                 </Button>
             </div>
 
-            <ThemeEditor theme={theme} />
+            <ThemeEditor theme={theme} host={host} />
         </div>
     );
 }

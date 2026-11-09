@@ -23,7 +23,7 @@ export { emptyHistory, record, undo, redo, canUndo, canRedo, undoKey, type Histo
 // 단축키 — 명령의 keys + 사용자 재지정 → 전역 디스패처 하나
 export {
     installKeybindings, handleKeydown, eventToKey, normalizeKey, formatKey, effectiveKey, keyMap,
-    getKeyOverrides, setKeyOverride, resetKeyOverride, resetAllKeyOverrides, useKeyOverrides, type KeyOverrides,
+    getKeyOverrides, setKeyOverride, resetKeyOverride, resetAllKeyOverrides, restoreKeyOverrides, useKeyOverrides, type KeyOverrides,
 } from './keybindings';
 
 export { FOCUS_RING, pressProps } from './primitives/focus';
@@ -116,7 +116,7 @@ export {
 
 // 창틀 설정 — 사이드바·탭·좁은 화면 기준폭 + 뷰별 덮어쓰기. 기기별 보관 + 외부 스토어
 export {
-    usePaneSettings, setPaneSettings, setViewOverride, resetPaneSettings, resetViewOverrides,
+    usePaneSettings, setPaneSettings, snapshotPaneStore, restorePaneStore, setViewOverride, resetPaneSettings, resetViewOverrides,
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
     defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,

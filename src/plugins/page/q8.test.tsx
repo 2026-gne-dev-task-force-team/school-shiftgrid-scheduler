@@ -10,7 +10,8 @@ import { PageView } from './views/PageView';
 import { setActivePage } from './store';
 import { initPageNodes, savePage } from './nodes';
 import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
-import { frameHost } from './test-frame-host';
+import { frameHost, notices } from './test-frame-host';
+import { undoBlocksRemoved, blocksRemovedUndoable } from './removed';
 import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -81,6 +82,19 @@ describe('하위 페이지 줄 (V5)', () => {
         expect(store.get('c1')!.parent).toBe('trash');
         expect(container.querySelector('[data-child-page="c1"]')).toBeNull();
         expect(container.querySelector('[data-child-page="c2"]')).toBeTruthy();
+    });
+    it('줄 메뉴로 지우면 「되돌리기」 알림이 뜨고, 눌러 되돌리면 줄과 페이지가 돌아온다 · 뒤에 다른 편집이 쌓이면 회색', () => {
+        seed({ blocks: [{ id: 'k1', type: 'childpage', text: '', nodeId: 'c1' }, { id: 'a', type: 'paragraph', text: '글' }] }, ['c1']);
+        open();
+        act(() => { (container.querySelector('[data-block-row="k1"] [aria-label="블록 손잡이"]') as HTMLElement).click(); });
+        act(() => { ([...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent?.startsWith('삭제')) as HTMLElement).click(); });
+        expect(notices).toHaveLength(1);
+        expect(notices[0].title).toContain('지웠습니다');
+        expect(notices[0].action?.commandId).toBe('page.undoRemoved');
+        expect(blocksRemovedUndoable()).toBe(true);
+        act(() => { undoBlocksRemoved(); });
+        expect(container.querySelector('[data-child-page="c1"]')).toBeTruthy();
+        expect(store.get('c1')!.parent).toBe('p1');
     });
     it('저장된 본문에 줄이 있는 채 그 페이지가 다른 곳으로 옮겨 가 있으면 줄은 안 보이고, 저장해도 그 페이지를 지우지 않는다', () => {
         seed({ blocks: [{ id: 'a', type: 'paragraph', text: '글' }, { id: 'k', type: 'childpage', text: '', nodeId: 'moved' }] }, []);

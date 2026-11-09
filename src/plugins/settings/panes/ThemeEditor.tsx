@@ -7,6 +7,8 @@
  * 🔴 ⛔ 토큰 이름을 코드에 나열하지 않는다 — COLOR_TOKENS 를 돌며 그린다(판 A 가 색 토큰을 더해도 저절로 뜬다).
  *    친근한 이름이 없는 토큰은 id 를 그대로 보여 준다.
  */
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { notifyReset } from '../reset-undo';
 import { useRef, useState, type ReactNode } from 'react';
 import {
     COLOR_TOKENS, effectiveColors, rgbToHex, hexToRgb, isTriplet,
@@ -30,7 +32,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
     );
 }
 
-export function ThemeEditor({ theme }: { theme: ThemeControls }) {
+export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: PluginHost }) {
     const { settings, setSettings } = theme;
     const userThemes = useUserThemes();
     const fileRef = useRef<HTMLInputElement>(null);
@@ -48,7 +50,11 @@ export function ThemeEditor({ theme }: { theme: ThemeControls }) {
         delete next[t];
         setSettings({ custom: next });
     };
-    const revertAll = () => setSettings({ custom: undefined });
+    const revertAll = () => {
+        const prev = settings.custom;
+        setSettings({ custom: undefined });
+        notifyReset(host, '바꾼 색을 전부 되돌렸습니다', () => setSettings({ custom: prev }));
+    };
 
     const saveAsUserTheme = () => {
         const name = newName.trim();
