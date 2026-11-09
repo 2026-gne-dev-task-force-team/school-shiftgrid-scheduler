@@ -15,6 +15,7 @@ import {
     attachmentsOf, consumersOf,
     type ContributionKind, type ContributionRecord,
 } from '../../../pane-ui-system/plugin';
+import { notifyReset } from '../reset-undo';
 import { useSettingsChrome } from '../chrome-context';
 import { Section, RelRow, DetailTitle, Badge } from './plugin-parts';
 import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
@@ -366,7 +367,11 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => views.forEach((v) => setViewOverride(v.id, null))}
+                                        onClick={() => {
+                                            const prev = views.map((v) => [v.id, getViewOverride(v.id)] as const);
+                                            views.forEach((v) => setViewOverride(v.id, null));
+                                            notifyReset(host, '뷰 설정을 전부 되돌렸습니다', () => prev.forEach(([id, o]) => { if (o) setViewOverride(id, o); }));
+                                        }}
                                         className="shrink-0 whitespace-nowrap"
                                     >
                                         전부 되돌리기

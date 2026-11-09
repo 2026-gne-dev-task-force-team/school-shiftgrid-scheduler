@@ -286,6 +286,16 @@ export function resetViewOverrides(): void {
     emit();
 }
 
+/** 초기화 전 값 통째 — 알림 「되돌리기」가 restorePaneStore 로 되돌린다 */
+export function snapshotPaneStore(): Store { return ensure(); }
+export function restorePaneStore(s: Store): void {
+    store = s;
+    savePaneSettings(s.settings);
+    saveViewOverrides(s.overrides);
+    saveRibbon(s.ribbon);
+    emit();
+}
+
 export function resetPaneSettings(): void {
     store = { settings: defaultPaneSettings(), overrides: {}, ribbon: defaultRibbon() };
     savePaneSettings(store.settings);

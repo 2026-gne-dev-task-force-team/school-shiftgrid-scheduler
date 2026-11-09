@@ -10,6 +10,7 @@ import { ContextMenu, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBi
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
+import { notifyBlocksRemoved } from '../removed';
 import { pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
@@ -355,7 +356,20 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         selectOnly(rangeIds(pageRef.current, anchor, id), anchor);
     };
     const selectedMarkdown = () => exportMarkdown({ ...pageRef.current, blocks: pageRef.current.blocks.filter((b) => selRef.current.includes(b.id)) });
-    const deleteSelected = () => { if (selRef.current.length) commitResult(removeBlocks(pageRef.current, selRef.current)); };
+    /** 메뉴·선택 삭제 뒤 「되돌리기」 알림 — 편집기 더미를 되돌린다. 뒤에 다른 편집이 쌓이면 회색. */
+    const announceRemoved = (r: EditResult, count: number, hasPage: boolean) => {
+        notifyBlocksRemoved(host, hasPage ? `블록 ${count}개를 지웠습니다 (하위 페이지는 휴지통으로)` : `블록 ${count}개를 지웠습니다`,
+            () => doUndo(), () => histRef.current.present === r.page);
+    };
+    const hasChildPage = (ids: string[]) => pageRef.current.blocks.some((b) => ids.includes(b.id) && b.type === 'node');
+    const deleteSelected = () => {
+        const ids = [...selRef.current];
+        if (!ids.length) return;
+        const hp = hasChildPage(ids);
+        const r = removeBlocks(pageRef.current, ids);
+        commitResult(r);
+        announceRemoved(r, ids.length, hp);
+    };
     const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
         if (e.target !== e.currentTarget || selRef.current.length === 0) return;
         const mod = e.metaKey || e.ctrlKey;
@@ -420,7 +434,12 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const onChecked = (id: string, checked: boolean) => { const next = setChecked(pageRef.current, id, checked); commitPage(next); };
     const onTableChange = (id: string, table: TableBlockData) => { const next = setTable(pageRef.current, id, table); commitPage(next); };
     const onNodePick = (id: string, nodeId: string) => { commitPage(setNodeRef(pageRef.current, id, nodeId)); };
-    const onDelete = (id: string) => { const r = removeBlock(pageRef.current, id); commitResult(r); };
+    const onDelete = (id: string) => {
+        const hp = hasChildPage([id]);
+        const r = removeBlock(pageRef.current, id);
+        commitResult(r);
+        announceRemoved(r, 1, hp);
+    };
     const onDuplicate = (id: string) => {
         const b = pageRef.current.blocks.find((x) => x.id === id);
         if (b) commitResult(insertAfter(pageRef.current, id, structuredClone({ ...b, id: newId() })));

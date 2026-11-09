@@ -76,6 +76,8 @@ function save(o: KeyOverrides): void {
 }
 /** 명령 하나의 키를 바꾼다. '' = 끈다. */
 export function setKeyOverride(id: string, key: string): void { save({ ...getKeyOverrides(), [id]: normalizeKey(key) }); }
+/** 통째로 되돌려 놓는다 — 전부 기본값 알림의 「되돌리기」. */
+export function restoreKeyOverrides(o: KeyOverrides): void { save({ ...o }); }
 /** 기본 키로 되돌린다. */
 export function resetKeyOverride(id: string): void { const o = { ...getKeyOverrides() }; delete o[id]; save(o); }
 export function resetAllKeyOverrides(): void { save({}); }

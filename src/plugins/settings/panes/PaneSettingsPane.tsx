@@ -7,7 +7,9 @@
  *    값만 저장해 두고(창구) 다음 단계에서 각 자리에 물린다 — 창구를 먼저 빼 두라는 지시(쥔님)대로.
  */
 import type { ReactNode } from 'react';
-import { usePaneSettings, setPaneSettings, resetPaneSettings, Button, TextInput } from '../../../pane-ui-system';
+import type { SettingsPaneProps } from '../registry';
+import { notifyReset } from '../reset-undo';
+import { usePaneSettings, setPaneSettings, resetPaneSettings, snapshotPaneStore, restorePaneStore, Button, TextInput } from '../../../pane-ui-system';
 import type { PaneSettings } from '../../../pane-ui-system';
 import { Toggle } from '../../../pane-ui-system';
 
@@ -34,7 +36,7 @@ function NumberInput({ value, onChange }: { value: number; onChange: (n: number)
     );
 }
 
-export function PaneSettingsPane() {
+export function PaneSettingsPane({ host }: SettingsPaneProps) {
     const { settings } = usePaneSettings();
     const set = (patch: Partial<PaneSettings>) => setPaneSettings(patch);
 
@@ -88,7 +90,7 @@ export function PaneSettingsPane() {
             </div>
 
             <div className="pt-2 border-t border-line">
-                <Button variant="ghost" size="md" onClick={resetPaneSettings}>
+                <Button variant="ghost" size="md" onClick={() => { const prev = snapshotPaneStore(); resetPaneSettings(); notifyReset(host, '창틀 설정을 기본값으로 되돌렸습니다', () => restorePaneStore(prev)); }}>
                     기본값으로 되돌리기
                 </Button>
             </div>
