@@ -53,8 +53,8 @@ export function createDb(): string | null {
     const a = api;
     if (!a) return null;
     const names = new Set(a.byType(DB_TYPE).map((n) => n.name));
-    let name = '레코드 뷰';
-    for (let i = 2; names.has(name); i++) name = `레코드 뷰 ${i}`;
+    let name = '컬렉션';
+    for (let i = 2; names.has(name); i++) name = `컬렉션 ${i}`;
     return a.create(a.roots.main, { type: DB_TYPE, name, data: blankDb() }) || null;
 }
 
@@ -85,9 +85,9 @@ export const recordNodeTypeImpl = {
  */
 export const recordNodeTypes: NodeTypeContribution<'db'>[] = [
     {
-        type: DB_TYPE, body: 'collection', label: '레코드 뷰', icon: 'table',
+        type: DB_TYPE, body: 'collection', label: '컬렉션', icon: 'database',
         openable: true, container: { accepts: [ROW_TYPE] },
-        create: { label: '레코드 뷰', under: ['folder'] },
+        create: { label: '컬렉션', under: ['folder'] },
         impl: 'db',
     },
     // 🔴 행도 행을 자식으로 받는다 — 하위 항목(행 밑에 행)은 노드 중첩이다. 휴지통·복원·되돌리기는 서브트리째 공짜.
@@ -223,6 +223,8 @@ export interface DbTx {
     cells?: { id: string; key: string; value: RecordCellValue }[];
     /** 새 행들 — 칸 key → 값. 제목 칸 값은 노드 이름이 된다 */
     addRows?: Record<string, RecordCellValue>[];
+    /** 새 행을 db 가 아니라 이 행(노드) 밑에 만든다 — 「하위 항목 추가」 */
+    addUnder?: string;
     removeRows?: string[];
     restoreRows?: string[];
     /** 줄 문서(불투명) 바꾸기 — 페이지 문서가 쓴다. 레코드 뷰는 속을 안 읽는다 */
@@ -264,7 +266,7 @@ export function commit(dbId: string, tx: DbTx): string[] {
             const data = blankRow(values);
             data.seq = seq;
             seq += 1;
-            const id = a.create(dbId, { type: ROW_TYPE, name: titleText(values[doc.titleKey]), data });
+            const id = a.create(tx.addUnder ?? dbId, { type: ROW_TYPE, name: titleText(values[doc.titleKey]), data });
             if (id) created.push(id);
         }
         if (tx.fields || tx.views || addRows.length > 0) {

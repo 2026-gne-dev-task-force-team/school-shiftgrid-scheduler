@@ -4,8 +4,9 @@
  *   onChange 가 없으면 보기 전용 · readOnly 칸(created·updated·id · field.readOnly)은 늘 보기만.
  *   쓰는 곳: 레코드를 옆으로 열었을 때의 페이지(머리 밑) · 속성 패널.
  */
-import { Icon } from '../../../pane-ui-system';
+import { Tooltip } from '../../../pane-ui-system';
 import { Cell } from '../Cell';
+import { FieldGlyph } from '../FieldGlyph';
 import { fieldTypes } from '../fields/registry';
 import type { PropertyListProps, RecordCellValue } from '../contracts/collection';
 
@@ -22,8 +23,10 @@ export function PropertyList({ fields, values, onChange, onOptionsChange }: Prop
                 return (
                     <div key={f.key} data-rv-prop={f.key} className="flex items-start gap-2 rounded hover:bg-text/[0.04]">
                         <div className="shrink-0 w-32 h-row flex items-center gap-1.5 px-1 text-small text-muted">
-                            {def && <Icon name={def.icon} size={13} className="shrink-0" />}
-                            <span className="truncate">{f.label}</span>
+                            <Tooltip text={f.description} className="flex min-w-0 items-center gap-1.5">
+                                <FieldGlyph field={f} />
+                                <span className="truncate">{f.label}</span>
+                            </Tooltip>
                         </div>
                         <div className="relative flex-1 min-w-0 h-row">
                             <Cell

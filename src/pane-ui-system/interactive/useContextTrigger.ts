@@ -6,6 +6,7 @@
  *   onOpen 에 화면좌표와 원본 이벤트를 준다(쓰는 쪽은 e.target 으로 어느 항목을 눌렀는지 더듬는다).
  */
 import { useEffect, useRef } from 'react';
+import { LONG_PRESS_MS } from './timing';
 
 export function useContextTrigger(onOpen: (x: number, y: number, e: Event) => void) {
     const timer = useRef<number | null>(null);
@@ -29,7 +30,7 @@ export function useContextTrigger(onOpen: (x: number, y: number, e: Event) => vo
             const x = e.clientX;
             const y = e.clientY;
             start.current = { x, y };
-            timer.current = window.setTimeout(() => { onOpen(x, y, nat); clear(); }, 350);
+            timer.current = window.setTimeout(() => { onOpen(x, y, nat); clear(); }, LONG_PRESS_MS);
         },
         onPointerMove: (e: React.PointerEvent) => {
             const s = start.current;

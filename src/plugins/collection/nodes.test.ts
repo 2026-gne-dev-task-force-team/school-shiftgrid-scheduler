@@ -67,6 +67,14 @@ describe('commit — 한 tx = 한 묶음', () => {
         expect(env.log.writesOutside).toBe(0);   // 쓰기는 전부 묶음 안
     });
 
+    it('addUnder — 새 행이 db 가 아니라 그 행 밑에 한 묶음으로 생긴다(하위 항목 추가)', () => {
+        const [parent] = commit(dbId, { addRows: [{ [titleKey]: '부모' }] });
+        env.log.batches = 0;
+        const [child] = commit(dbId, { addRows: [{}], addUnder: parent });
+        expect(env.api.parent(child)).toBe(parent);
+        expect(env.log.batches).toBe(1);
+    });
+
     it('붙여넣기 3행 + 칸 2개 = 묶음 한 번(되돌리기 한 번)', () => {
         const doc = snapshotOf(dbId)!.doc;
         commit(dbId, {

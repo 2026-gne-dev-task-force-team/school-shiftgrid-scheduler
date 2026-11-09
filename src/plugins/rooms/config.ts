@@ -19,8 +19,8 @@ export const ROOM_CONFIG: CollectionConfig = {
     listIcon: 'door',
     // 기본 칸 — 지우기·타입 바꾸기 금지(locked). 첫 칸이 제목(노드 이름).
     baseFields: [
-        { key: 'name', label: '이름', type: 'text', locked: true },
-        { key: 'memo', label: '메모', type: 'text', locked: true },
+        { key: 'name', label: '이름', type: 'text', locked: true, description: '이 방을 가리키는 이름입니다. 탐색기 줄 이름과 같습니다.' },
+        { key: 'memo', label: '메모', type: 'text', locked: true, description: '이 방에 대한 자유 메모입니다.' },
     ],
     unit: '개',
     text: { startDescription: '새로 만들거나, 만들어 둔 방 목록을 고른다.', startHint: '빈 목록이 바로 열린다' },

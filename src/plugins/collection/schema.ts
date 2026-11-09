@@ -51,6 +51,8 @@ export function normalizeField(raw: unknown): RecordField | null {
     if (typeof o.width === 'number' && o.width > 0) f.width = o.width;
     if (o.readOnly === true) f.readOnly = true;
     if (o.locked === true) f.locked = true;
+    if (typeof o.icon === 'string' && o.icon !== '') f.icon = o.icon;
+    if (typeof o.description === 'string' && o.description !== '') f.description = o.description;
     return f;
 }
 

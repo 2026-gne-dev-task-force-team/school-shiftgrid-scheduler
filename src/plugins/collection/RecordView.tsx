@@ -10,9 +10,10 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Button, Icon, parseClipboard } from '../../pane-ui-system';
+import { Button, Icon, IconButton, IconPicker, Tooltip, parseClipboard } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
+import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
@@ -34,6 +35,7 @@ import type {
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/collection';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
+const TREE_COL_W = 68;   // 오른쪽 하위 항목 단추 열(추가·내어쓰기·들여쓰기)
 const INDENT_PX = 18;   // 하위 항목 한 단 들여쓰기 폭
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
@@ -233,6 +235,8 @@ export function RecordView<T>({
         if (!cur || cur.label === label) return;
         onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, label } : f)));
     };
+    const setFieldIcon = (key: string, icon: string | undefined) =>
+        onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, icon } : f)));
     const setOptions = (key: string, options: FieldOption[]) =>
         onFieldsChange?.(fields.map((f) => (f.key === key ? { ...f, options } : f)));
     const deleteField = (key: string) => {
@@ -371,7 +375,7 @@ export function RecordView<T>({
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
 
-    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? 44 : 0) + (fieldsEditable ? 40 : 0);
+    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? TREE_COL_W : 0) + (fieldsEditable ? 40 : 0);
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
@@ -427,7 +431,6 @@ export function RecordView<T>({
                         )}
                         {visibleFields.map((f, fi) => {
                             const dir = sortDirOf(f.key);
-                            const def = fieldTypes.get(f.type);
                             return (
                                 <div key={f.key} className={`relative shrink-0 flex items-center gap-1 px-2 border-r border-line ${fi < frozen ? 'bg-panel2' : ''}`} style={{ width: widthOf(f), ...frozenStyle(fi) }} data-rv-head={f.key}
                                     onDragOver={(e) => { if (dragCol.current) e.preventDefault(); }}
@@ -437,8 +440,10 @@ export function RecordView<T>({
                                         onDragStart={(e) => { dragCol.current = f.key; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', f.key); } catch { /* 사파리 */ } }}
                                         onDragEnd={() => { dragCol.current = null; }}
                                         className="flex-1 min-w-0 flex items-center gap-1 cursor-grab">
-                                        <Icon name={def?.icon ?? 'help'} size={13} className="text-muted shrink-0" />
-                                        <span className="flex-1 min-w-0 truncate text-[12px] font-medium">{f.label}</span>
+                                        <Tooltip text={f.description} className="flex flex-1 min-w-0 items-center gap-1">
+                                            <FieldGlyph field={f} />
+                                            <span className="flex-1 min-w-0 truncate text-[12px] font-medium">{f.label}</span>
+                                        </Tooltip>
                                     </div>
                                     {dir && <Icon name="sort" size={12} className={`text-accent shrink-0 ${dir === 'asc' ? 'rotate-180' : ''}`} />}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
@@ -457,7 +462,7 @@ export function RecordView<T>({
                                 </div>
                             );
                         })}
-                        {treeOn && <div className="shrink-0" style={{ width: 44 }} />}
+                        {treeOn && <div className="shrink-0" style={{ width: TREE_COL_W }} />}
                         {fieldsEditable && (
                             <button type="button" data-rv-add-field onClick={(e) => setAddMenu((e.currentTarget as HTMLElement).getBoundingClientRect())} className="shrink-0 grid place-items-center text-muted hover:text-text hover:bg-text/[0.06]" style={{ width: 40 }} aria-label="칸 추가">
                                 <Icon name="plus" size={15} />
@@ -518,7 +523,10 @@ export function RecordView<T>({
                                         className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wrapOf(f.key) ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(ri, fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                                         style={{ width: widthOf(f), ...frozenStyle(fi) }}>
                                         {fi === 0 && treeOn && (
-                                            <div className="shrink-0 flex items-center" style={{ paddingLeft: depth * INDENT_PX }}>
+                                            <div className="shrink-0 flex items-center self-stretch">
+                                                {Array.from({ length: depth }, (_, d) => (
+                                                    <span key={d} data-rv-guide className="shrink-0 self-stretch border-r border-line" style={{ width: INDENT_PX }} />
+                                                ))}
                                                 {hasChildren ? (
                                                     <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
                                                         onClick={() => tree?.onToggleCollapse(id)}
@@ -548,9 +556,15 @@ export function RecordView<T>({
                                     </div>
                                 ))}
                                 {treeOn && (
-                                    <div className="shrink-0 flex items-center justify-center gap-0.5" style={{ width: 44 }}>
+                                    <div className="shrink-0 flex items-center justify-center gap-0.5" style={{ width: TREE_COL_W }}>
                                         {showTree && (
                                             <>
+                                                {tree?.onAddChild && (
+                                                    <Tooltip text="하위 항목 추가">
+                                                        <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
+                                                            onClick={() => { if (collapsed) tree.onToggleCollapse(id); tree.onAddChild!(id); }} />
+                                                    </Tooltip>
+                                                )}
                                                 <button type="button" data-rv-outdent={id} aria-label="내어쓰기" onClick={() => tree?.onOutdent(id)}
                                                     className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="left" size={13} /></button>
                                                 <button type="button" data-rv-indent={id} aria-label="들여쓰기" onClick={() => tree?.onIndent(id)}
@@ -625,6 +639,13 @@ export function RecordView<T>({
                     <Popover anchor={headMenu.rect} width={220} onClose={() => setHeadMenu(null)}>
                         <div className="flex flex-col gap-0.5">
                             {fieldsEditable && <RenameInput field={f} onCommit={(label) => { renameField(f.key, label); }} />}
+                            {fieldsEditable && (
+                                <div className="flex items-center gap-2 h-row px-2 text-body text-text" data-rv-field-icon>
+                                    <IconPicker icon={f.icon} onSetIcon={(ic) => setFieldIcon(f.key, ic)} sizeClass="text-body"
+                                        fallback={<Icon name={fieldTypes.get(f.type)?.icon ?? 'help'} size={14} className="text-muted" />} />
+                                    칸 아이콘
+                                </div>
+                            )}
                             <button type="button" data-rv-sort-asc onClick={() => setSortSingle(f.key, 'asc')} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
                                 <Icon name="sort" size={14} className="rotate-180" />오름차순 정렬
                             </button>

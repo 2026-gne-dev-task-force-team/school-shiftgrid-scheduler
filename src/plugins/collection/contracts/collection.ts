@@ -47,6 +47,10 @@ export interface RecordField {
     readOnly?: boolean;
     /** 참이면 「기본 칸」 — 지우기·타입 바꾸기 금지(이름표는 바꿀 수 있다). 제목 칸(titleKey)도 같은 취급 */
     locked?: boolean;
+    /** 칸 아이콘(이모지 한 글자) — 없으면 타입 아이콘. 칸 머리 메뉴에서 고르고 속성 줄도 같이 쓴다 */
+    icon?: string;
+    /** 칸 설명 — 칸 머리·속성 줄 이름표에 올리면 툴팁으로 뜬다(기본 칸은 `defineCollection` 이 채운다) */
+    description?: string;
 }
 
 /** 날짜 값 — P2 에서 string 에서 올라온다. time 이면 start 에 `…THH:MM`, range 면 end 가 붙는다. */
@@ -232,6 +236,8 @@ export interface RecordTree<T> {
     onIndent: (id: string) => void;
     /** 내어쓰기 — 부모의 바로 다음 형제로. 뿌리는 아무 일 없음(막는다). */
     onOutdent: (id: string) => void;
+    /** 이 행 밑에 새 하위 행을 만든다 — 행 hover 의 「하위 항목 추가」. 없으면 단추를 안 그린다 */
+    onAddChild?: (id: string) => void;
 }
 
 /** 셀 하나의 바뀐 값 — onCellsChange 묶음의 한 줄 */

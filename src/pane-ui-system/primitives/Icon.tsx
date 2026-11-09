@@ -10,11 +10,13 @@ export type IconName =
     | 'calendar' | 'calendarMini' | 'flask' | 'grip'
     | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff'
     | 'users' | 'user' | 'door' | 'schedule' | 'fileText' | 'calendarEvent'
-    | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down';
+    | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down' | 'database';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
     table: 'M3 4h18v16H3zM3 9h18M3 14h18M9 4v16M15 4v16',
+    // 컬렉션(데이터베이스) — 원통 + 가운데 띠. 「표」(table)와 가른다(쥔님 2026-11-09 N1)
+    database: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
     // 달력 — 상자 + 머리줄 + 고리 둘(쥔님 2026-11-01 16:55 *"캘린더 아이콘이 캘린더 스럽지 않아"* — table 격자를 쓰던 것을 바꿈)
     calendar: 'M4 6h16v15H4zM4 10h16M8 3v5M16 3v5',
     // 작은 달력(사이드 패널용) — 「창틀 왼쪽 패널에 든 작은 달력」: 창(panelLeft 꼴) + 왼쪽 칸 안에 고리 둘 달린 작은 달력.
