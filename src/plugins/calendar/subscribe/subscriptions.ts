@@ -15,22 +15,8 @@ let api: NodesApi | null = null;
 let subNodes: PublicNode[] = [];
 const subs = new Set<() => void>();
 
-/** 조상에 휴지통이 있나 — byType 은 휴지통 노드도 담으니(달력과 같은 결) 지운 구독을 거른다. */
-function inTrash(id: string): boolean {
-    if (!api) return false;
-    let cur: string | null = api.parent(id);
-    let guard = 0;
-    while (cur && guard < 1000) {
-        if (cur === api.roots.trash) return true;
-        if (cur === api.roots.main) return false;
-        cur = api.parent(cur);
-        guard++;
-    }
-    return false;
-}
-
 function recompute(): void {
-    subNodes = api ? api.byType(SUB_TYPE).filter((n) => !inTrash(n.id)) : [];
+    subNodes = api ? api.liveByType(SUB_TYPE) : [];
     for (const s of subs) s();
 }
 

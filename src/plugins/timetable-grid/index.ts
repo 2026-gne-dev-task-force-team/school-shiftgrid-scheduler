@@ -9,14 +9,14 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { GridTab } from './views/GridTab';
 import { TimetableProps } from './views/TimetableProps';
 import {
-    SHEET_TYPE, gridNodeTypes, gridNodeTypeImpl, initGridNodes, getNodesApi, getMenuTarget, duplicateSheet,
+    SHEET_TYPE, gridNodeTypes, gridNodeTypeImpl, initGridNodes, getNodesApi, duplicateSheet,
 } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'timetable-grid.' 를 붙인다). contributes 엔 접두사 없는 'grid' 로 적는다.
@@ -55,10 +55,10 @@ export const timetableGridPlugin = definePlugin({
     commands: {
         // 리본 「시간표 열기」 — 보고 있는 시간표는 그대로 두고 화면만 연다(없으면 시작 화면 — 새 시간표·목록).
         'timetable-grid.open': (host: PluginHost) => { host.workspace.open(GRID_ID, { where: 'center' }); },
-        // 시간표 우클릭 「열기」 — 대상은 nodes.ts 의 「메뉴가 가리킨 노드」(open 이 setActive + 화면 열기).
-        'timetable-grid.openSheet': () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },
+        // 시간표 우클릭 「열기」 — 대상은 CommandContext.nodeId(open 이 setActive + 화면 열기).
+        'timetable-grid.openSheet': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getNodesApi()?.open(id); },
         // 시간표 우클릭 「표 복사」 — 노드를 통째 복제.
-        'timetable-grid.duplicate': () => { const id = getMenuTarget(); if (id) duplicateSheet(id); },
+        'timetable-grid.duplicate': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) duplicateSheet(id); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'sheet' 가 가리킨다(open·menu).
     nodeTypes: gridNodeTypeImpl,

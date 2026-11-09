@@ -12,7 +12,7 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
+import type { PluginHost, ViewProps, Disposable, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../explorer/contracts/nodes';
 import type { RecordViewApi } from '../collection/contracts/collection';
@@ -28,7 +28,7 @@ import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, setCalendarHost,
-    getMenuTarget, setDefaultStore, newEventInStore,
+    setDefaultStore, newEventInStore,
     importItemsToStore, collectForExport, storeName, initCalendarKit, getKit,
 } from './nodes';
 // 🔴 구독 캘린더 — 2026-11-09 쥔님 *"달력 플러그인 안으로 들여라"* 로 별도 꾸러미에서 달력 안(subscribe/)으로 들였다.
@@ -36,7 +36,7 @@ import {
 //    🔴 저장 노드 타입 이름(calendar-subscribe.subscription)·명령 id(calendar-subscribe.*)는 **안 바꿨다** — 이미 깔린
 //       구독 노드가 그 타입으로 저장돼 있어, 이름을 바꾸면 byType 매치가 끊겨 데이터가 사라진다(유실 0 원칙).
 import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
-import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget, SUB_TYPE } from './subscribe/nodes';
+import { subscribeNodeTypes, subscribeNodeTypeImpl, SUB_TYPE } from './subscribe/nodes';
 import { SubLinkPane } from './subscribe/SubLinkPane';
 import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
 import { pickIcsText } from './subscribe/file-pick';
@@ -124,18 +124,18 @@ export const calendarPlugin = definePlugin({
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
         'calendar.open': (host: PluginHost) => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },
         // 저장소 우클릭 「달력에서 열기」 — 대상은 nodes.ts 의 「메뉴가 가리킨 저장소」(ContextMenu 는 인자를 안 싣는다).
-        'calendar.openStore': () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },
+        'calendar.openStore': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getNodesApi()?.open(id); },
         // 저장소 우클릭 「새 일정」 — 오늘 종일 일정 + 「열 카드」로 담고 월 보기를 연다.
-        'calendar.newEventIn': (host: PluginHost) => {
-            const id = getMenuTarget();
+        'calendar.newEventIn': (host: PluginHost, ctx?: CommandContext) => {
+            const id = ctx?.nodeId;
             if (!id) return;
             setDefaultStore(id);
             if (!newEventInStore(id)) return;                      // 오늘 종일 일정 + 「열 카드」로 담기
             host.workspace.open(MONTH_ID, { where: 'center' });    // 월 보기(마운트/구독 때 카드를 연다)
         },
         // 저장소 우클릭 「ICS 가져오기」 — .ics 파일을 골라 그 저장소에 내 일정으로 복사(UID 중복 제외). 끝나면 그 저장소 달력을 연다.
-        'calendar.importIcs': (host: PluginHost) => {
-            const storeId = getMenuTarget();
+        'calendar.importIcs': (host: PluginHost, ctx?: CommandContext) => {
+            const storeId = ctx?.nodeId;
             if (!storeId) return;
             pickIcsFile((text) => {
                 importItemsToStore(storeId, parseIcs(text));   // {created, skipped} — 중복은 UID 로 거른다
@@ -144,42 +144,42 @@ export const calendarPlugin = definePlugin({
             });
         },
         // 저장소 우클릭 「ICS 내보내기」 — 그 저장소(+자손) 내 일정을 .ics 파일로 내려받는다.
-        'calendar.exportIcs': () => {
-            const storeId = getMenuTarget();
+        'calendar.exportIcs': (_host: PluginHost, ctx?: CommandContext) => {
+            const storeId = ctx?.nodeId;
             if (!storeId) return;
             downloadText(`${storeName(storeId)}.ics`, writeIcs(collectForExport(storeId)));
         },
         // 「일정 전체 ICS 내보내기」(설정 판 단추·팔레트) — 모든 저장소 내 일정을 한 파일로.
         'calendar.exportAll': () => { downloadText('달력 전체.ics', writeIcs(collectForExport(null))); },
         // 저장소 우클릭 「표로 보기」 — 그 저장소를 컬렉션 표로(보고 있는 목록 = 그 저장소).
-        'calendar.openTable': (host: PluginHost) => { const id = getMenuTarget(); if (id) getKit()?.open(host, id); },
-        // ── 구독 노드 우클릭 명령 넷(대상은 subscribe/nodes 의 getSubMenuTarget) ──
+        'calendar.openTable': (host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) getKit()?.open(host, id); },
+        // ── 구독 노드 우클릭 명령 넷(대상은 CommandContext.nodeId) ──
         // 새로고침 — 그 구독을 다시 받는다(브라우저 네트워크에서만 실제로 돈다).
-        'calendar-subscribe.refresh': () => { const id = getSubMenuTarget(); if (id) void refreshSub(id); },
+        'calendar-subscribe.refresh': (_host: PluginHost, ctx?: CommandContext) => { const id = ctx?.nodeId; if (id) void refreshSub(id); },
         // 파일로 갱신 — .ics 파일을 골라 lastIcs 로 넣는다(CORS 로 링크가 안 받힐 때).
-        'calendar-subscribe.from-file': () => {
-            const id = getSubMenuTarget();
+        'calendar-subscribe.from-file': (_host: PluginHost, ctx?: CommandContext) => {
+            const id = ctx?.nodeId;
             if (!id) return;
             pickIcsText((text) => updateSub(id, { lastIcs: text, lastFetched: Date.now(), lastError: undefined }));
         },
         // 내보내기 — 그 구독이 받아 둔 일정(lastIcs)을 우리 작성기 꼴 .ics 로 내려받는다(파일 이름은 노드 이름).
-        'calendar-subscribe.export': () => {
-            const id = getSubMenuTarget();
+        'calendar-subscribe.export': (_host: PluginHost, ctx?: CommandContext) => {
+            const id = ctx?.nodeId;
             const sub = id ? getSubById(id) : undefined;
             if (!sub) return;
             const items = parseIcs(sub.data.lastIcs ?? '');
             downloadText(`${sub.name || '구독'}.ics`, writeIcs(items.map(itemToIcs)));
         },
         // 링크 바꾸기 — 탐색기 인라인 입력(현재 링크를 미리 채운다) · 커밋은 subscribe/nodes.onInput(kind:'link')으로.
-        'calendar-subscribe.change-link': () => {
-            const id = getSubMenuTarget();
+        'calendar-subscribe.change-link': (_host: PluginHost, ctx?: CommandContext) => {
+            const id = ctx?.nodeId;
             const api = getSubsApi();
             if (!id || !api) return;
             api.promptInput(id, { kind: 'link', initial: getSubById(id)?.data.url ?? '', placeholder: '달력 링크(.ics)' });
         },
         // 켜기/끄기 — 끄면 달력에서 그 구독이 빠진다(reconcile 가 다시 그린다). 내 일정은 그대로.
-        'calendar-subscribe.toggle': () => {
-            const id = getSubMenuTarget();
+        'calendar-subscribe.toggle': (_host: PluginHost, ctx?: CommandContext) => {
+            const id = ctx?.nodeId;
             if (!id) return;
             updateSub(id, { enabled: !(getSubById(id)?.data.enabled ?? true) });
         },

@@ -36,13 +36,6 @@ let eventNodes: PublicNode[] = [];
 let storeNodes: PublicNode[] = [];
 const subs = new Set<() => void>();
 
-// ── 우클릭 메뉴가 가리킨 저장소 — 탐색기가 storeMenu(nodeId) 를 그릴 때 잡아 둔다. ──
-//    🔴 ContextMenu 는 commandId 만 넘기고 인자를 안 싣는다(탐색기 onCommand=run(id)) → 명령 대상을 여기서 쥔다
-//       (탐색기 명령이 스토어의 「고른 노드」를 쓰는 것과 같은 결).
-let menuTargetId: string | null = null;
-export function setMenuTarget(id: string): void { menuTargetId = id; }
-export function getMenuTarget(): string | null { return menuTargetId; }
-
 // ── 「열 카드」 한 칸 — 탐색기 메뉴(뷰 밖)에서 새 일정을 만들면 여기 담고, 월 보기가 마운트/구독 때 열고 비운다. ──
 //    🔴 useCardPeek(뷰 안)은 뷰에 포커스가 있을 때만 돈다 — 탐색기 메뉴는 뷰 밖이라 이 한 칸을 거쳐 뷰에 넘긴다.
 let pendingCardId: string | null = null;
@@ -98,17 +91,17 @@ export const calendarNodeTypes: NodeTypeContribution<'store'>[] = [
 
 /**
  * 저장소 우클릭 메뉴(타입이 꽂는 항목) — 탐색기가 메뉴를 그릴 때 부른다.
- *   🔴 부르는 그 순간 이 저장소를 명령 대상으로 잡아 둔다(setMenuTarget) — 명령 둘(calendar.openStore·newEventIn)이 그걸 쓴다.
+ *   🔴 대상은 항목마다 commandArg.nodeId 로 싣는다(명령이 ctx.nodeId 로 받는다) — 모듈 전역에 잡아 두지 않는다.
  *   ⛔ 「새로 만들기」는 createCandidates 가 짠다(저장소는 일정만 받고 일정은 record 라 후보 0) — 여긴 동작만.
  */
 export function storeMenu(nodeId: string): MenuEntry[] {
-    setMenuTarget(nodeId);
+    const commandArg = { nodeId };
     return [
-        { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore' },
-        { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn' },
-        { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs' },
-        { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs' },
-        ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable' }] : []),
+        { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore', commandArg },
+        { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
+        { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs', commandArg },
+        { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs', commandArg },
+        ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable', commandArg }] : []),
     ];
 }
 
@@ -151,20 +144,8 @@ export function subscribeNodes(fn: () => void): () => void { subs.add(fn); retur
 export function getEventNodes(): PublicNode[] { return eventNodes; }
 export function getStoreNodes(): PublicNode[] { return storeNodes; }
 
-/** 조상에 휴지통이 있나 — 🔴 nodes.path 는 휴지통 sentinel 을 안 담으니(거기서 멈춘다) 부모 사슬을 직접 탄다. */
-export function inTrash(id: string): boolean {
-    if (!api) return false;
-    const trash = api.roots.trash;
-    let cur: string | null = api.parent(id);
-    let guard = 0;
-    while (cur && guard < 1000) {
-        if (cur === trash) return true;
-        if (cur === api.roots.main) return false;
-        cur = api.parent(cur);
-        guard++;
-    }
-    return false;
-}
+/** 휴지통 안인가 — 노드 시스템의 정식 판정(nodes.isTrashed). 부모 사슬을 손으로 타지 않는다. */
+export function inTrash(id: string): boolean { return api?.isTrashed(id) ?? false; }
 
 // ── 기본 저장소 ──
 export function setDefaultStore(id: string): void { defaultStoreId = id; }
