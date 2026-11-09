@@ -1,19 +1,19 @@
 {
   "plugins/account": {
-    "bareButton": 7,
-    "arbPx": 63,
+    "bareButton": 4,
+    "arbPx": 36,
     "cmdIdString": 0,
     "ctxDirect": 0
   },
   "plugins/calendar": {
-    "bareButton": 14,
-    "arbPx": 52,
+    "bareButton": 13,
+    "arbPx": 50,
     "cmdIdString": 0,
     "ctxDirect": 0
   },
   "plugins/collection": {
     "bareButton": 45,
-    "arbPx": 74,
+    "arbPx": 71,
     "cmdIdString": 2,
     "ctxDirect": 0
   },
@@ -109,7 +109,7 @@
   },
   "plugins/timetable-grid": {
     "bareButton": 16,
-    "arbPx": 24,
+    "arbPx": 23,
     "cmdIdString": 0,
     "ctxDirect": 0
   },

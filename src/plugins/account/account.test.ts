@@ -144,9 +144,39 @@ describe('계정 — 9가지 검산', () => {
         const uid = core.createUser('김');
         expect(core.accountFolderId('perms')).not.toBeNull();
         core.setAccountBody(uid, { blocks: ['메모'] });
-        core.setUserName(uid, '이');
+        core.renameRecord(uid, '이');
         core.setUserRoles(uid, []);
         expect(core.accountBodyOf(uid)).toEqual({ blocks: ['메모'] });
+    });
+
+    it('P4c) 사용자·역할 = 컬렉션 레코드 모양(제목 = 노드 이름 · 칸 = data.values) · 빈 값은 지움 · 폴더 칸 · 꽂힌 칸만 identity.fields', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const rid = core.createRole('편집', { permissions: ['doc.edit'], level: 2 });
+        const uid = core.createUser('김', { roleIds: [rid] });
+        // 저장 모양 — 옛 displayName·roleIds·fields 칸이 없고 values 하나 · 빈 목록(direct)은 안 싣는다
+        expect(nodes.api.get(uid)!.data).toEqual({ values: { roles: [rid] } });
+        expect(nodes.api.get(rid)!.data).toEqual({ values: { level: 2, perms: ['doc.edit'] } });
+        // 칸 쓰기 — 제목 칸은 이름 바꾸기 · 빈 값은 지움 · 글은 trim · values 밖 짐은 그대로
+        nodes.api.setData(uid, { ...(nodes.api.get(uid)!.data as object), keep: 1 });
+        core.setRecordValue(uid, 'name', ' 이 ');
+        core.setRecordValue(uid, 'f_team', ' 행정 ');
+        core.setRecordValue(uid, 'roles', []);
+        core.setRecordValue(uid, 'plug.badge', 'A');
+        expect(nodes.api.get(uid)!.name).toBe('이');
+        expect(nodes.api.get(uid)!.data).toEqual({ keep: 1, values: { f_team: '행정', 'plug.badge': 'A' } });
+        core.setRecordValue(uid, 'name', '  ');                       // 빈 이름은 무시
+        expect(nodes.api.get(uid)!.name).toBe('이');
+        // 폴더 칸(사람이 더한 칸) — 사용자 폴더 data.fields
+        core.setFolderFields('users', [{ key: 'f_team', label: '부서', type: 'text' }]);
+        expect(core.folderFieldsOf('users').map((f) => f.key)).toEqual(['f_team']);
+        expect(core.folderFieldsOf('roles')).toEqual([]);
+        // identity.fields 는 꽂힌 칸('<plugin>.<name>')만 — 사람이 더한 칸은 안 샌다
+        await core.setProjectPassword('', 'pw');
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        await core.login(uid);
+        expect(core.getCurrent()).toMatchObject({ kind: 'user', displayName: '이', fields: { 'plug.badge': 'A' } });
+        expect(core.getCurrent().fields).not.toHaveProperty('f_team');
     });
 
     it('1) 암호 없음 → 마스터로 시작 · can 항상 true', () => {
