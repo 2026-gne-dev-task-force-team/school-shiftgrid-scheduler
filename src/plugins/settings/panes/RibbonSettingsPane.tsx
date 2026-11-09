@@ -72,7 +72,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 title="위로"
                                 disabled={i === 0}
                                 onClick={() => setRibbonOrder(nudgeId(ids, v.id, -1))}
-                                className={`grid place-items-center w-7 h-7 rounded border border-line text-muted
+                                className={`hit-44 relative grid place-items-center w-7 h-7 rounded border border-line text-muted
                                     enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
                                     ${FOCUS_RING}`}
                             >
@@ -84,7 +84,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 title="아래로"
                                 disabled={i === ordered.length - 1}
                                 onClick={() => setRibbonOrder(nudgeId(ids, v.id, 1))}
-                                className={`grid place-items-center w-7 h-7 rounded border border-line text-muted
+                                className={`hit-44 relative grid place-items-center w-7 h-7 rounded border border-line text-muted
                                     enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
                                     ${FOCUS_RING}`}
                             >

@@ -82,7 +82,7 @@ export function Popover({
         <div
             ref={ref}
             data-popover
-            className={`fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
+            className={`fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none outline-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
             style={{ left: pos.x, top: pos.y, width }}
         >
             <LayerContext.Provider value={layer}>{children}</LayerContext.Provider>

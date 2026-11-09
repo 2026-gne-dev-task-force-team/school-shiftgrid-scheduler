@@ -40,7 +40,7 @@ export const THEMES: ThemePreset[] = [
         id: 'notion-light', name: '노션 밝게', base: 'light', pairId: 'notion-dark',
         palette: {
             bg: '255 255 255', panel: '247 247 245', panel2: '241 241 239', line: '223 223 220',
-            text: '55 53 47', muted: '120 119 115', accent: '35 131 226', accenth: '24 115 204',
+            text: '55 53 47', muted: '117 116 112', accent: '35 131 226', accenth: '24 115 204',
             ok: '31 138 76', bad: '197 48 48', warn: '183 121 31',
             side: '236 236 233', side2: '229 229 226', edge: '206 206 202',
         },

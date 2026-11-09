@@ -405,7 +405,8 @@ export function RecordView<T>({
     // 칸 껍데기(여백·아이콘·줄바꿈 칸 위아래)를 눌러도 안쪽 글/숫자 칸 편집이 열린다 — 안쪽 칸만 클릭을 받던 탓에 빈 자리 클릭·더블클릭이 헛돌았다.
     // 선택·체크·관계 칸(BUTTON)·이미 편집 중인 칸은 건드리지 않는다.
     const openEditFromWrapper = (e: React.MouseEvent<HTMLElement>) => {
-        if (e.target !== e.currentTarget) return;
+        // 껍데기·칸 상자 같은 빈 영역만 — 입력·단추·칸 자체(자기 click 이 연다)는 건드리지 않는다
+        if ((e.target as HTMLElement).closest('input,textarea,select,button,[data-rv-cell],[data-rv-open],[data-rv-add-child]')) return;
         const inner = e.currentTarget.querySelector<HTMLElement>('[data-rv-cell]');
         if (inner && inner.tagName !== 'BUTTON' && !inner.hasAttribute('data-rv-editing')) inner.click();
     };
@@ -576,7 +577,7 @@ export function RecordView<T>({
                         {selectable && (
                             <div className="shrink-0 grid place-items-center bg-panel2" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
                                 <button type="button" role="checkbox" aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
-                                    className={`grid place-items-center w-4 h-4 rounded-[3px] border ${allChecked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
+                                    className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${allChecked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                     {allChecked && <Icon name="check" size={12} />}
                                 </button>
                             </div>
@@ -596,7 +597,7 @@ export function RecordView<T>({
                                     {dir && <Icon name="sort" size={12} className={`text-accent shrink-0 ${dir === 'asc' ? 'rotate-180' : ''}`} />}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
                                         onClick={(e) => setHeadMenu({ key: f.key, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                                        className="shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
+                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
                                         <Icon name="dots" size={14} />
                                     </button>
                                     {/* 폭 끌기 손잡이 */}
@@ -661,7 +662,7 @@ export function RecordView<T>({
                                 {selectable && (
                                     <div className="shrink-0 grid place-items-center bg-bg" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
                                         <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => toggleOne(id)}
-                                            className={`grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
+                                            className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                             {checked && <Icon name="check" size={12} />}
                                         </button>
                                     </div>
@@ -683,7 +684,7 @@ export function RecordView<T>({
                                                 {hasChildren ? (
                                                     <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
                                                         onClick={() => tree?.onToggleCollapse(id)}
-                                                        className="grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
+                                                        className="hit-44 relative grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
                                                         <Icon name="chevronDown" size={13} className={collapsed ? '-rotate-90' : ''} />
                                                     </button>
                                                 ) : <span className="inline-block w-4" />}
@@ -694,7 +695,7 @@ export function RecordView<T>({
                                                 {iconOf(id) ?? <Icon name="fileText" size={14} className="text-muted" />}
                                             </span>
                                         )}
-                                        <div className="relative flex-1 min-w-0 h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
+                                        <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
                                             {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
                                             {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
                                                 <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
