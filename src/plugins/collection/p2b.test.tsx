@@ -48,6 +48,8 @@ function Harness() {
 
 const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 const qa = (sel: string) => [...document.querySelectorAll(sel)] as HTMLElement[];
+/** 메뉴 항목을 글자로 찾는다 — MenuItem 은 data 속성을 안 받는다 */
+const mi = (label: string) => qa('[role="menuitem"]').find((x) => x.textContent === label) as HTMLButtonElement | undefined;
 const click = (el: Element | null) => act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 const down = (el: Element | null, init: MouseEventInit = {}) => act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ...init })); });
 const key = (el: Element, k: string, init: KeyboardEventInit = {}) =>
@@ -152,22 +154,22 @@ describe('보기 탭', () => {
     it('추가 → 새 탭 활성(활성은 localStorage) · 복제 · 이름 · 마지막 하나는 못 지움', () => {
         expect(qa('[data-rv-view-tab]')).toHaveLength(1);
         click(q('[data-rv-view-tab]'));   // 활성 탭 누르면 메뉴
-        expect((q('[data-rv-view-act="delete"]') as HTMLButtonElement).disabled).toBe(true);
+        expect(mi('삭제')!.disabled).toBe(true);
         click(q('[data-rv-view-add]'));
         expect(lastViews).toHaveLength(2);
         const newId = lastViews[1].id;
         expect(q(`[data-rv-view-tab="${newId}"]`)!.getAttribute('aria-selected')).toBe('true');
         expect(Object.values({ ...localStorage }).includes(newId)).toBe(true);
         click(q(`[data-rv-view-tab="${newId}"]`));
-        click(q('[data-rv-view-act="duplicate"]'));
+        click(mi('복제')!);
         expect(lastViews).toHaveLength(3);
         act(() => { q(`[data-rv-view-tab="${lastViews[2].id}"]`)!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); });
-        const inp = q('[data-rv-view-rename]') as HTMLInputElement;
+        const inp = q('[data-rv-view-rename] input') as HTMLInputElement;
         setInput(inp, '주간');
         key(inp, 'Enter');
         expect(lastViews[2].name).toBe('주간');
         click(q(`[data-rv-view-tab="${lastViews[2].id}"]`));
-        click(q('[data-rv-view-act="delete"]'));
+        click(mi('삭제')!);
         expect(lastViews).toHaveLength(2);
     });
 });
