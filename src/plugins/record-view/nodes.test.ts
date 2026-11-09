@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
-import { DB_TYPE, ROW_TYPE, commit, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
+import { DB_TYPE, ROW_TYPE, commit, liveDbs, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 
 interface N { id: string; type: string; name: string; children: string[]; data?: unknown; trashedFrom?: string }
@@ -255,5 +255,23 @@ describe('리본 「레코드 뷰 열기」 — 첫 화면 고르기', () => {
         setActiveDb(inner);
         pickFirstDbIfNone();
         expect(getActiveDb()).toBe(inner);
+    });
+});
+
+describe('줄 문서(body) · 시작 화면 목록', () => {
+    it('commit(body) 는 줄 노드 data.body 에 쓰고 칸 값은 그대로 둔다', () => {
+        const [rowId] = commit(dbId, { addRows: [{}] });
+        commit(dbId, { body: [{ id: rowId, body: { blocks: [{ id: 'b1' }] } }] });
+        const d = env.api.get(rowId)?.data as { body?: unknown; values?: unknown };
+        expect(d.body).toEqual({ blocks: [{ id: 'b1' }] });
+        expect(d.values).toBeDefined();
+    });
+    it('createDb 는 이름이 겹치면 번호를 붙이고, liveDbs 는 휴지통을 뺀다', () => {
+        const a = createDb()!, b = createDb()!;
+        const names = liveDbs().map((x) => x.name);
+        expect(names).toContain(env.api.get(a)!.name);
+        expect(env.api.get(a)!.name).not.toBe(env.api.get(b)!.name);
+        env.api.remove(b);
+        expect(liveDbs().some((x) => x.id === b)).toBe(false);
     });
 });

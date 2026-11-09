@@ -11,6 +11,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
+import { RowDoc } from '../RowDoc';
 import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
 import { isImeEnter } from '../fields/ime';
@@ -43,7 +44,7 @@ function TitleInput({ id, name }: { id: string; name: string }) {
     );
 }
 
-export function DbView({ host }: ViewProps & { host: PluginHost }) {
+export function DbView({ host, peek }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
@@ -103,6 +104,8 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
                     onConvertField={onConvertField}
                     onPaste={onPaste}
                     onReorder={(rowId, beforeId) => reorderRow(id, rowId, beforeId)}
+                    // 줄 열기(→) — 미리보기에 그 줄의 칸들 + 페이지 문서(노션 줄 열기)
+                    onOpenRecord={(rowId) => peek.show(<RowDoc host={host} dbId={id} rowId={rowId} />, { wideMin: 480 })}
                     tree={{
                         parentOf: (r) => (r.__parent as string | null) ?? null,
                         collapsed: (rowId) => records.find((r) => r.id === rowId)?.__collapsed === true,

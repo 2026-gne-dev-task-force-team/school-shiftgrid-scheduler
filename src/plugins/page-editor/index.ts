@@ -15,7 +15,22 @@ import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, getMenuTar
 import { PageProps } from './views/PageProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'page-editor.' 를 붙인다). contributes 엔 접두사 없는 'editor' 로.
+import { PageEditor } from './views/PageView';
+import type { PageDocApi } from './contracts/page-doc';
+import type { Page } from './core/types';
+import { emptyPage } from './core/types';
 const EDITOR_ID = 'page-editor.editor';
+
+
+// 🔴 page-doc 모듈 — 저장은 손님 몫(value/onChange). 모르는 꼴·빈 값이면 빈 문서로 시작한다.
+const pageDocApi: PageDocApi = {
+    version: 1,
+    PageDoc: (p) => createElement(PageEditor, {
+        host: p.host, docKey: p.docKey, title: p.title, onRename: p.onRename,
+        load: () => { const v = p.value as Page | undefined; return v && Array.isArray(v.blocks) && v.blocks.length > 0 ? v : emptyPage(); },
+        save: (pg) => p.onChange(pg),
+    }),
+};
 
 export const pageEditorPlugin = definePlugin({
     manifest: {
@@ -23,7 +38,10 @@ export const pageEditorPlugin = definePlugin({
         // 🔴 페이지는 노드다 — nodes 없으면 의미가 없으니 requires. 표는 있으면 쓰고 없으면 읽기 전용 → supports.
         requires: { nodes: '^0.1' },
         supports: { table: '^0.1' },
+        // 🔴 page-doc — 다른 꾸러미가 자기 자료(레코드 줄 등)에 문서를 붙여 쓰는 편집기(모듈 값은 아래 modules['page-doc'])
+        provides: { 'page-doc': '0.1.0' },
         contributes: {
+            interfaces: [{ name: 'page-doc', version: '0.1.0', label: '페이지 문서', desc: '다른 화면의 줄·항목에 붙여 쓰는 문서 편집기' }],
             views: [{
                 id: 'editor', title: '페이지', icon: 'fileText', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
@@ -52,6 +70,7 @@ export const pageEditorPlugin = definePlugin({
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'page' 가 가리킨다(open·menu).
     nodeTypes: pageNodeTypeImpl,
+    modules: { 'page-doc': pageDocApi },
 
     lifecycle: {
         onActivate(host: PluginHost) {

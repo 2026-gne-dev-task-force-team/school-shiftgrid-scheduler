@@ -46,6 +46,8 @@ export const recordViewPlugin = definePlugin({
         provides: { 'record-view': '0.2.0' },
         // 🔴 레코드 뷰도 노드다 — nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 줄 문서 — 페이지 편집기가 있으면 줄마다 문서를 붙인다(없으면 칸만)
+        supports: { 'page-doc': '^0.1' },
         contributes: {
             // 🔴 record-view 약속을 들고 온다(꾸러미 매니페스트) — 켜진 record-view 가 호스트 약속 목록에 record-view 를 올린다.
             interfaces: [{ name: 'record-view', version: '0.2.0', label: '목록 화면', desc: '목록을 보고 고치는 공통 화면' }],

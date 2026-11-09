@@ -225,6 +225,8 @@ export interface DbTx {
     addRows?: Record<string, RecordCellValue>[];
     removeRows?: string[];
     restoreRows?: string[];
+    /** 줄 문서(불투명) 바꾸기 — 페이지 문서가 쓴다. 레코드 뷰는 속을 안 읽는다 */
+    body?: { id: string; body: unknown }[];
 }
 
 const titleText = (v: RecordCellValue | undefined): string => (v === null || v === undefined ? '' : String(v));
@@ -267,6 +269,11 @@ export function commit(dbId: string, tx: DbTx): string[] {
         }
         if (tx.fields || tx.views || addRows.length > 0) {
             a.setData(dbId, { ...doc, fields: tx.fields ?? doc.fields, views: tx.views ?? doc.views, seq });
+        }
+        for (const b of tx.body ?? []) {
+            const rn = a.get(b.id);
+            if (!rn || rn.type !== ROW_TYPE) continue;
+            a.setData(b.id, { ...rowOfNode(rn), body: b.body, updated: now });
         }
         for (const id of tx.removeRows ?? []) a.remove(id);
         for (const id of tx.restoreRows ?? []) a.move(id, dbId);

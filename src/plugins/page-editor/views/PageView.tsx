@@ -36,6 +36,38 @@ interface SlashState { blockId: string; query: string; index: number; }
 
 export function PageView({ host }: { host: PluginHost }) {
     const activeId = useActivePage();
+    // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
+    if (!activeId || inTrash(activeId)) return <StartScreen />;
+    const node = getNodesApi()?.get(activeId);
+    return (
+        <PageEditor
+            host={host}
+            docKey={activeId}
+            load={() => pageDataOf(activeId)}
+            save={(p) => savePage(activeId, p)}
+            title={node?.name ?? ''}
+            onRename={(name) => { getNodesApi()?.rename(activeId, name); }}
+            onBack={() => setActivePage(null)}
+        />
+    );
+}
+
+/**
+ * 🔴 본문 편집기 — 제목·아이콘·블록·되돌리기. 저장 자리는 모른다(load·save 를 받는다).
+ *   페이지 노드(PageView)도, 다른 꾸러미의 「줄 문서」(모듈 page-doc)도 이걸 쓴다. docKey 가 바뀌면 새 문서로 다시 시작한다.
+ */
+export interface PageEditorProps {
+    host: PluginHost;
+    docKey: string;
+    load: () => Page;
+    save: (p: Page) => void;
+    title: string;
+    onRename: (name: string) => void;
+    /** 주면 머리줄에 「← 목록」 */
+    onBack?: () => void;
+}
+
+export function PageEditor({ host, docKey: activeId, load, save, title, onRename, onBack }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -57,7 +89,7 @@ export function PageView({ host }: { host: PluginHost }) {
     // 페이지가 바뀌면(열기) 그 데이터로 새로 시작한다.
     useEffect(() => {
         if (!activeId) return;
-        const p = pageDataOf(activeId);
+        const p = load();
         setHist(initHistory(p));
         setActiveBlockId(null);
         setSlash(null);
@@ -88,7 +120,7 @@ export function PageView({ host }: { host: PluginHost }) {
     }, [focusIntent]);
 
     // ── 저장·커밋 도우미 ──
-    const persist = (p: Page) => { if (activeId) savePage(activeId, p); };
+    const persist = (p: Page) => { save(p); };
 
     const commitResult = (r: EditResult) => {
         setHist((h) => commit(h, r.page));
@@ -326,15 +358,11 @@ export function PageView({ host }: { host: PluginHost }) {
     };
 
     // ── 그리기 ──
-    // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
-    if (!activeId || inTrash(activeId)) return <StartScreen />;
-
-    const node = getNodesApi()?.get(activeId);
     const copyMarkdown = () => { void navigator.clipboard?.writeText(exportMarkdown(pageRef.current)); };
 
     // ── 제목·아이콘(요구 12·13) ──
     // 제목 = 노드 이름(한 곳에만 산다). 고치면 그 자리에서 노드 rename(빈 값은 모델이 무시 → 옛 이름 유지).
-    const renameTitle = (name: string) => { getNodesApi()?.rename(activeId, name); };
+    const renameTitle = onRename;
     // 제목에서 Enter → 본문 첫 블록으로(본문이 비어 있으면 빈 문단 하나 만들고 거기로).
     const titleEnterToBody = () => {
         const p = pageRef.current;
@@ -362,13 +390,15 @@ export function PageView({ host }: { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
-                <button type="button" className={btn} title="페이지 목록" onClick={() => setActivePage(null)}>
-                    <Icon name="left" size={12} /> 목록
-                </button>
+                {onBack && (
+                    <button type="button" className={btn} title="목록" onClick={onBack}>
+                        <Icon name="left" size={12} /> 목록
+                    </button>
+                )}
                 {page.icon
                     ? <span className="text-[15px] leading-none select-none">{page.icon}</span>
                     : <Icon name="fileText" size={15} className="text-muted" />}
-                <span className="font-medium text-text truncate">{node?.name ?? '페이지'}</span>
+                <span className="font-medium text-text truncate">{title || '페이지'}</span>
                 <div className="ml-auto flex items-center gap-1.5">
                     <button type="button" className={btn} disabled={!canUndo(hist)} onMouseDown={(e) => { e.preventDefault(); doUndo(); }}><Icon name="undo" size={12} /> 되돌리기</button>
                     <button type="button" className={btn} disabled={!canRedo(hist)} onMouseDown={(e) => { e.preventDefault(); doRedo(); }}><Icon name="redo" size={12} /> 다시</button>
@@ -383,7 +413,7 @@ export function PageView({ host }: { host: PluginHost }) {
                 >
                     <PageHeader
                         key={activeId}
-                        initialName={node?.name ?? ''}
+                        initialName={title}
                         icon={page.icon}
                         onRename={renameTitle}
                         onEnter={titleEnterToBody}
