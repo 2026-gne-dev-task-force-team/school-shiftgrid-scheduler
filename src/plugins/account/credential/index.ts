@@ -9,7 +9,7 @@ import * as core from './core';
 
 export { credentialLocalNodeTypes } from './nodes';
 export { CredentialDialog } from './CredentialDialog';
-export { initCredentialLocal } from './core';
+export { initCredentialLocal, setSecret, clearSecret, hasSecret as hasUserSecret, METHOD as PASSWORD_METHOD } from './core';
 
 /** credential 약속을 채우는 모듈 — account.modules.credential 와 짝. 소비자(account 자신)가 host.modules.use('credential') 로 받는다. */
 export const credentialModule: Credential = {

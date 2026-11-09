@@ -13,14 +13,17 @@ interface Pending {
 }
 
 let pending: Pending | null = null;
+// 🔴 useSyncExternalStore 스냅숏은 같은 상태면 같은 참조여야 한다 — 매번 새 객체를 주면 무한 다시 그리기로 앱이 죽는다(P4d)
+let snapshot: { methodId: string; userId: string } | null = null;
 const subs = new Set<() => void>();
 
-function notify(): void { for (const s of subs) s(); }
+function notify(): void {
+    snapshot = pending ? { methodId: pending.methodId, userId: pending.userId } : null;
+    for (const s of subs) s();
+}
 
 export function subscribeDialog(fn: () => void): () => void { subs.add(fn); return () => { subs.delete(fn); }; }
-export function getPending(): { methodId: string; userId: string } | null {
-    return pending ? { methodId: pending.methodId, userId: pending.userId } : null;
-}
+export function getPending(): { methodId: string; userId: string } | null { return snapshot; }
 
 /** 비밀번호를 물어보는 Promise 를 연다 — 화면이 submit/cancel 로 닫는다(없으면 영영 대기하지 않게 호스트가 다이얼로그를 띄워야 한다). */
 export function requestSecret(methodId: string, userId: string): Promise<string | null> {

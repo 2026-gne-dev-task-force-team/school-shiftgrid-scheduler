@@ -611,6 +611,8 @@ export function apiSetField(id: string, key: 'icon' | 'body', value: unknown): v
 /** 유도 자식 다시 계산 — 그 노드 캐시만 버리고 다시 그리게 한다(나무는 안 바뀐다). */
 export function apiInvalidate(id: string): void {
     invalidateDerived(id);
+    // 🔴 새 state 참조 — 같은 참조로 emit 하면 useSyncExternalStore 가 다시 그리기를 건너뛴다(로그인 뒤 숨김·만들기 판정이 굳던 원인 · P4d A1)
+    state = { ...state };
     emit();
 }
 

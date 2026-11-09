@@ -10,7 +10,7 @@ import { makeHash, verifyHash } from './hash';
 import { SECRET_TYPE, LEGACY_SECRET_TYPE, type LocalSecret } from './nodes';
 import { requestSecret } from './dialog';
 
-export const METHOD: CredentialMethod = { id: 'credential-local.password', title: '이름+암호' };
+export const METHOD: CredentialMethod = { id: 'credential-local.password', title: '비밀번호' };
 
 let nodesApi: NodesApi | null = null;
 let nodesUnsub: Disposable | null = null;
@@ -73,3 +73,10 @@ export async function setSecret(userId: string, password: string): Promise<void>
     else nodesApi.create(nodesApi.roots.main, { type: SECRET_TYPE, name: '비밀', data });
 }
 export function hasSecret(userId: string): boolean { return !!secretOf(userId); }
+/** 그 사용자의 비밀을 뺀다(새 이름·옛 이름 노드 모두) — 빼면 그 사람으로의 전환·증명이 막힌다. */
+export function clearSecret(userId: string): void {
+    if (!nodesApi) return;
+    for (const n of [...nodesApi.byType(SECRET_TYPE), ...nodesApi.byType(LEGACY_SECRET_TYPE)]) {
+        if ((n.data as LocalSecret | undefined)?.userId === userId) nodesApi.remove(n.id);
+    }
+}

@@ -34,6 +34,10 @@ const identityListeners = new Set<() => void>();
 const permitListeners = new Set<() => void>();
 
 const SESSION_KEY = 'session';   // host.storage(기기별)
+const KEEP_KEY = 'keepMinutes';  // host.storage(기기별) — 로그인 유지 기한(분). 0 = 새로고침하면 풀림
+export const KEEP_DEFAULT = 480; // 8시간 — 하루 근무
+/** 기기에 저장한 세션 꼴 — 🔴 비밀번호·해시는 안 싣는다. seal = 프로젝트 암호 솔트(암호를 바꾸거나 풀면 마스터 유지가 깨진다). */
+interface SavedSession { kind?: string; id?: string; verified?: boolean; until?: number; seal?: string }
 
 // ── 세션 꼴 ──
 function master(): CurrentUser { return { kind: 'master', displayName: '마스터', verified: true, roles: [] }; }
@@ -64,13 +68,35 @@ function policyData(): PolicyData {
     };
 }
 
-// ── 시작 상태(열 때) — 암호 없으면 마스터, 있으면 손님(기기 저장의 'user' 를 되살릴 수 있으면 그 사람) ──
+// ── 시작 상태(열 때) — 암호 없으면 마스터, 있으면 손님(기기 저장의 세션을 되살릴 수 있으면 그 사람) ──
 function initialState(): CurrentUser { return hasSecret() ? guest() : master(); }
-/** 열 때의 초기 세션을 센다 — 암호 유무가 정하고, 암호가 있으면 기기 저장의 'user'(증명 안 됨)를 되살린다. */
+function secretSeal(): string | undefined { return (secretNode()?.data as SecretData | undefined)?.salt; }
+/**
+ * 열 때의 초기 세션을 센다 — 암호 유무가 정한다. 암호가 있으면 기기 저장의 세션을 되살린다(P4d A2):
+ *   · 마스터 — 유지 기한 안 + 봉인(암호 솔트)이 같을 때만 · 사용자 — 늘 되살리되 「증명됨」은 기한 안일 때만.
+ *   shortcut: 기한은 열 때만 본다(열어 둔 채 기한이 지나도 안 풀린다) — 자동 잠금이 필요해지면 타이머를 단다.
+ */
 function deriveInitial(): CurrentUser {
     if (!hasSecret()) return master();
-    const saved = hostRef?.storage.get<{ kind?: string; id?: string } | null>(SESSION_KEY, null) ?? null;
-    return saved?.kind === 'user' && saved.id && valuesOf(saved.id, USER_TYPE) ? userSession(saved.id, false) : guest();
+    const saved = hostRef?.storage.get<SavedSession | null>(SESSION_KEY, null) ?? null;
+    const live = typeof saved?.until === 'number' && saved.until > Date.now();
+    if (saved?.kind === 'master' && live && saved.seal === secretSeal()) return master();
+    return saved?.kind === 'user' && saved.id && valuesOf(saved.id, USER_TYPE) ? userSession(saved.id, live && !!saved.verified) : guest();
+}
+
+/** 로그인 유지 기한(분) — 기기별. 0 = 새로고침하면 풀림. */
+export function getKeepMinutes(): number {
+    const v = hostRef?.storage.get<number>(KEEP_KEY, KEEP_DEFAULT);
+    return typeof v === 'number' && v >= 0 ? v : KEEP_DEFAULT;
+}
+/** 기한을 바꾸면 지금 세션도 그 기한으로 다시 적는다. */
+export function setKeepMinutes(min: number): void {
+    hostRef?.storage.set(KEEP_KEY, Math.max(0, Math.floor(min)));
+    refreshSaved();
+}
+/** 이미 저장된 세션이 있을 때만 다시 적는다 — 🔴 마스터 유지는 암호로 「들어온」 세션만(암호를 처음 건 마스터는 다음에 손님으로 연다). */
+function refreshSaved(): void {
+    if (hostRef?.storage.get<SavedSession | null>(SESSION_KEY, null)) persistSession();
 }
 
 // ── 알림 ──
@@ -79,10 +105,10 @@ function firePermit(): void { for (const f of [...permitListeners]) f(); }
 export function onIdentityChange(fn: () => void): Disposable { identityListeners.add(fn); return { dispose() { identityListeners.delete(fn); } }; }
 export function onPermitChange(fn: () => void): Disposable { permitListeners.add(fn); return { dispose() { permitListeners.delete(fn); } }; }
 
-function setSession(next: CurrentUser): void {
+function setSession(next: CurrentUser, byPassword = false): void {
     awaitingFirstLoad = false;   // 🔴 사용자가 명시적으로 바꿨으면 늦은 재초기화를 끈다(로드 알림이 와도 덮지 않는다)
     session = next;
-    persistSession();
+    persistSession(byPassword);
     tryMigrate();     // 마스터가 되면(암호 로그인) 옛 평면 노드를 새 구조로 이사한다(idempotent)
     nudgeExplorer();  // 🔴 세션이 바뀌면 탐색기가 hidden/can 을 다시 세게 깨운다(노드는 안 바뀌어도 가림 판정이 바뀐다)
     fireIdentity();   // 세션이 바뀌면 누구·판정 둘 다 울린다
@@ -98,11 +124,21 @@ function nudgeExplorer(): void {
     nodesApi.invalidate(nodesApi.roots.main);
 }
 
-/** 세션을 기기별 저장에 비춘다 — 🔴 'user'(이름만 댄 사람)만 싣는다. 마스터·손님은 열 때 암호 유무로 다시 정해진다. */
-function persistSession(): void {
+/**
+ * 세션을 기기별 저장에 비춘다 — 사용자는 늘(증명됨은 기한과 함께) · 마스터는 암호로 들어왔고 기한이 0이 아닐 때만(봉인 = 암호 솔트).
+ *   손님·암호 없는 마스터는 지운다(열 때 암호 유무로 다시 정해진다). 기한은 「지금부터」 다시 센다.
+ */
+function persistSession(masterLogin = false): void {
     if (!hostRef) return;
-    if (session.kind === 'user' && session.id) hostRef.storage.set(SESSION_KEY, { kind: 'user', id: session.id });
-    else hostRef.storage.remove(SESSION_KEY);
+    // 마스터는 암호로 들어왔을 때(masterLogin) 또는 이미 그렇게 저장돼 있을 때만 싣는다
+    const savedMaster = hostRef.storage.get<SavedSession | null>(SESSION_KEY, null)?.kind === 'master';
+    const keep = getKeepMinutes();
+    const until = Date.now() + keep * 60_000;
+    if (session.kind === 'user' && session.id) {
+        hostRef.storage.set(SESSION_KEY, { kind: 'user', id: session.id, verified: keep > 0 && session.verified, until } satisfies SavedSession);
+    } else if (session.kind === 'master' && keep > 0 && hasSecret() && (masterLogin || savedMaster)) {
+        hostRef.storage.set(SESSION_KEY, { kind: 'master', until, seal: secretSeal() } satisfies SavedSession);
+    } else hostRef.storage.remove(SESSION_KEY);
 }
 
 /**
@@ -117,7 +153,7 @@ export function initAccount(host: PluginHost, nodes: NodesApi | null): void {
     identityListeners.clear();
     permitListeners.clear();
 
-    // 시작 상태 — 암호 유무가 정한다(마스터는 절대 되살리지 않는다). 🔴 비동기 저장소면 지금은 노드가 비어 있을 수 있다.
+    // 시작 상태 — 암호 유무 + 기기 저장 세션(기한·봉인)이 정한다. 🔴 비동기 저장소면 지금은 노드가 비어 있을 수 있다.
     session = deriveInitial();
     awaitingFirstLoad = true;
     nodesUnsub = nodes ? nodes.subscribe(() => {
@@ -126,9 +162,8 @@ export function initAccount(host: PluginHost, nodes: NodesApi | null): void {
         if (awaitingFirstLoad) {
             awaitingFirstLoad = false;
             const next = deriveInitial();
-            if (next.kind !== session.kind || next.id !== session.id) {
-                session = next;
-                persistSession();
+            if (next.kind !== session.kind || next.id !== session.id || next.verified !== session.verified) {
+                session = next;   // 🔴 기기 저장은 안 고친다 — 되살린 세션의 기한을 열 때마다 늘리면 안 된다(P4d A2)
                 fireIdentity();
             }
             tryMigrate();   // 🔴 비동기 로드 완료 뒤에도 한 번 이사 확인(노드가 그제야 보인다)
@@ -271,7 +306,7 @@ export async function loginMaster(password: string): Promise<boolean> {
     const sn = secretNode();
     if (!sn) return false;
     if (await verifyHash(password, sn.data as SecretData)) {
-        setSession(master());
+        setSession(master(), true);
         return true;
     }
     return false;
@@ -296,9 +331,18 @@ export async function setProjectPassword(oldPw: string, newPw: string): Promise<
         if (sn) nodesApi.setData(sn.id, hashed);
         else nodesApi.create(nodesApi.roots.main, { type: SECRET_TYPE, name: '프로젝트 암호', data: hashed });
     }
+    refreshSaved();   // 봉인(솔트)이 바뀌었으니 암호로 들어온 마스터 세션을 새 봉인으로 다시 적는다
     return true;
 }
 export function hasProjectPassword(): boolean { return hasSecret(); }
+
+/**
+ * 그 사용자의 자격증명(비밀번호 등)을 걸고 빼도 되나 — 🔴 마스터, 또는 **증명된** 본인만(P4d A3).
+ *   이름만 댄 본인(verified: false)은 안 된다 — 남의 이름을 대고 비밀번호를 바꿔 가로채는 길을 막는다.
+ */
+export function canManageCredential(userId: string): boolean {
+    return session.kind === 'master' || (session.kind === 'user' && session.id === userId && session.verified);
+}
 
 // ── 관리 조작(역할·사용자·정책) — 정책 편집 화면이 부른다. can()·마스터 게이트는 화면이 건다 ──
 /** 빈 값(빈 글·빈 목록·null)은 칸에서 뺀다 — 컬렉션 setValue 와 같은 규칙. */
