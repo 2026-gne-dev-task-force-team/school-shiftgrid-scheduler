@@ -31,17 +31,19 @@ import { propertiesPlugin } from '../plugins/properties';
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
 // 📌 2026-11-01 21:47 쥔님: Pane UI Test 는 런타임 등록 해지(paneTestPlugin 을 뺐다 · 코드·폴더는 그대로).
 export const PLUGINS: PluginModule[] = [
+    // ── 플랫폼 층(manifest.layer 'platform') — 노드·본문·속성·설정의 바닥. 위 코어 둘은 끌 수 없다
     settingsPlugin,
     explorerPlugin,   // 탐색기 꾸러미 — 코어(끌 수 없다). nodes 약속을 들고 와 채운다(provides) + 탐색기 패널(N1)
-    calendarPlugin,          // 달력 꾸러미 — calendar 약속을 들고 와 채운다 · nodes 를 requires
-    accountPlugin,           // 계정 꾸러미 — identity·credential·permit 를 들고 와 채운다(증명은 꾸러미 안 내부 모듈) · nodes 를 requires
-    peoplePlugin,            // 사람 명단 꾸러미 — people 약속을 들고 와 채운다 · nodes 를 requires
-    sheetPlugin,       // 표 편집기 꾸러미 — table 약속을 들고 와 채운다(헤드리스)
-    timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
-    roomsPlugin,             // 방 목록 꾸러미 — rooms 약속을 들고 와 채운다 · nodes 를 requires
-    pagePlugin,        // 페이지 편집기 꾸러미 — 노션식 블록 페이지 노드 · nodes 를 requires
-    collectionPlugin,        // 레코드 뷰 꾸러미 — collection 약속을 들고 와 채운다(provides) + 레코드 뷰 노드 화면
-    selectionPlugin,         // 선택 알림 꾸러미 — selection 약속을 들고 와 채운다(화면 없음) · 탐색기가 알리고 속성이 듣는다
-    propertiesPlugin,        // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다 · selection 을 supports
-    // 📌 2026-11-09 쥔님 *"구독을 달력 플러그인 안으로 들여라"* — 옛 calendarSubscribePlugin 은 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 등록을 걷었다.
+    selectionPlugin,         // 선택 알림 꾸러미 — selection 약속(화면 없음) · 탐색기가 알리고 속성이 듣는다
+    propertiesPlugin,        // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다
+    pagePlugin,              // 페이지 꾸러미 — 노션식 블록 페이지(문서 본문)
+    collectionPlugin,        // 컬렉션 꾸러미 — collection 약속 + 컬렉션 노드 화면(속성 레지스트리)
+    sheetPlugin,             // 시트 꾸러미 — 격자 엔진(table 약속) + 시트 노드
+    // ── 범용 앱 층('app') — 끌 수 있다
+    calendarPlugin,          // 달력 꾸러미 — calendar 약속 · 구독은 달력 안(calendar/subscribe/)
+    accountPlugin,           // 계정 꾸러미 — identity·credential·permit
+    // ── 학교 도메인 층('domain') — 끌 수 있다
+    peoplePlugin,            // 사람 명단 꾸러미
+    roomsPlugin,             // 방 목록 꾸러미
+    timetableGridPlugin,     // 시간표 그리드 꾸러미(시트 확장)
 ];

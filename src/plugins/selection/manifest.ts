@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     name: '선택 알림',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'platform',
     description: '지금 고른 것을 다른 기능에 알려 줍니다.',
     about: {
         what: '탐색기 등에서 무언가를 고르면, 그것이 무엇인지 다른 기능(속성 패널 등)에 알려 줍니다. 화면은 없습니다.',

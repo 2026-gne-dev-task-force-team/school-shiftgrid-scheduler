@@ -21,7 +21,8 @@ export type {
     // 🔴 M0 모듈·의존성 — 약속(인터페이스) 기여 선언 · supports 훅
     InterfaceContribution, InterfaceHook,
 } from './types';
-export { HOST_VERSION } from './types';
+export { HOST_VERSION, PLUGIN_LAYERS } from './types';
+export type { PluginLayer } from './types';
 export { HOST_SERVICES, type HostService } from './host-services';
 
 export { definePlugin } from './define';

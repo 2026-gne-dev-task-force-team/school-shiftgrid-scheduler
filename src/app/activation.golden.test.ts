@@ -44,25 +44,22 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
-            // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶었다.
-            //    코어(settings·explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
-            'settings', 'explorer', 'calendar', 'account', 'people', 'sheet', 'timetable-grid', 'rooms', 'page',
-            // 레코드 뷰 꾸러미 — collection 약속을 들고 와 채우지만(provides) 아무도 requires 하지 않아 목록 맨 끝에 선다(onFirstRun 자동 열기 없음).
-            // 📌 2026-11-09: 구독 캘린더는 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 꾸러미가 사라졌다 — 목록에서 뺐다.
-            'collection',
-            // 2026-11-09: 선택 알림(탐색기가 알리고) → 속성(오른쪽 패널이 듣는다).
-            'selection', 'properties',
+            // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
+            'settings', 'explorer', 'selection', 'properties', 'page', 'collection', 'sheet',
+            'calendar', 'account',
+            'people', 'rooms', 'timetable-grid',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
     });
 
-    it('onFirstRun 이 다리가 선 뒤 여는 순서: 탐색기 트리 → 달력 월 → 작은 달력', () => {
+    it('onFirstRun 이 다리가 선 뒤 여는 순서: 탐색기 트리 → 속성 → 달력 월', () => {
         activateAll(PLUGINS);
         const opened: string[] = [];
         setWorkspaceBridge(bridgeCollecting(opened));
-        expect(opened).toEqual(['explorer.tree', 'calendar.month', 'properties.panel']);
+        // 자리가 left·right·center 로 달라 순서 바뀜은 화면에 영향 없다
+        expect(opened).toEqual(['explorer.tree', 'properties.panel', 'calendar.month']);
     });
 });
 

@@ -10,6 +10,7 @@ export const manifest = {
     name: '시트',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'platform',
     description: '엑셀·한글처럼 표를 그리는 공용 도구입니다.',
     about: {
         what: '엑셀·한글처럼 칸에 값을 적고, 줄을 넣고 빼고, 칸을 합치는 표 도구입니다. 시간표 같은 다른 기능이 표를 그릴 때 이 도구를 속에서 씁니다. ‘표 연습장’ 화면에서 직접 표를 만져 볼 수도 있습니다.',

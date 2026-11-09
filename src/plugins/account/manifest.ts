@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     name: '계정',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'app',
     description: '프로젝트에 암호를 걸고 사용자·역할을 관리합니다.',
     about: {
         what: '프로젝트에 암호를 걸고, 사용자와 역할(권한 묶음)을 만들어 관리합니다. 역할에 따라 화면에서 보이고 숨겨지는 것이 달라집니다. 지금 누가 들어와 있는지는 오른쪽 아래에 보이고, 거기서 들어가기·나가기·사용자 바꾸기를 합니다.',

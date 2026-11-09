@@ -10,6 +10,7 @@ export const manifest = {
     name: '페이지 편집기',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    layer: 'platform',
     description: '노션처럼 마크다운을 치면 블록으로 바뀌는 페이지를 만들고, 그 안에 표를 넣어 쓸 수 있어요.',
     about: {
         what: '글을 쓰는 페이지를 만듭니다. 「# 」로 제목, 「- 」로 목록처럼 치는 대로 모양이 바뀌고, 페이지 안에 표를 넣을 수 있습니다.',

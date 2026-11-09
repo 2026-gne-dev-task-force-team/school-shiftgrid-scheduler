@@ -56,12 +56,18 @@ export interface PluginAbout {
     with?: string;
 }
 
+/** 꾸러미 층 — 위에서 아래로 PLUGINS 에 늘어선다(app/plugins.test.ts 가 지킨다). */
+export type PluginLayer = 'platform' | 'app' | 'domain';
+export const PLUGIN_LAYERS: readonly PluginLayer[] = ['platform', 'app', 'domain'];
+
 /** 매니페스트 — id 가 저장 키·viewId 접두사·doc.plugins 키의 단일 원본이다(name 은 표시용). contributes 로 「무엇을 내나」를 적는다. */
 export interface PluginManifest {
     id: string;              // 'scheduler' · 'settings' — 영문 소문자·하이픈
     name: string;            // 사람에게 보이는 이름
     version: string;         // '0.1.0'
     minHostVersion: string;  // 모자라면 활성 안 함(P2)
+    /** 층 — PLUGINS 줄 세우기의 기준(core 플랫폼 → app 범용 → domain 업무 도메인). 활성 순서는 requires 가 정한다. */
+    layer?: PluginLayer;
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
     description?: string;     // 목록 줄에 보이는 한 줄 요약(쉬운 말)
     /** 🔴 상세에 보이는 사람용 설명 — 무엇을/이럴 때/끄면/같이(위 PluginAbout). 개발 낱말 금지. */
