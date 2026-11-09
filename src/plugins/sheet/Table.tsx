@@ -28,7 +28,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { ContextMenu, IconButton, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
+import { ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -705,18 +705,12 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         onDoubleClick={hasAxisEdit ? () => setRenaming({ key: col.key, text: col.title }) : undefined}
                                     >
                                         {renaming?.key === col.key ? (
-                                            <input
-                                                autoFocus
-                                                value={renaming.text}
-                                                onChange={(e) => setRenaming({ key: col.key, text: e.target.value })}
-                                                onKeyDown={(e) => {
-                                                    if (isImeEnter(e)) return;   // 한글 조합 중 Enter 는 글자 확정일 뿐 이름 확정이 아니다
-                                                    if (e.key === 'Enter') { renameCol(col.key, renaming.text); setRenaming(null); }
-                                                    else if (e.key === 'Escape') setRenaming(null);
-                                                }}
-                                                onBlur={() => { renameCol(col.key, renaming.text); setRenaming(null); }}
-                                                aria-label="칸 이름"
-                                                className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
+                                            <InlineRename
+                                                value={col.title}
+                                                onCommit={(n) => { renameCol(col.key, n); setRenaming(null); }}
+                                                onCancel={() => setRenaming(null)}
+                                                ariaLabel="칸 이름"
+                                                className="w-full bg-bg text-text px-1 select-text"
                                             />
                                         ) : col.title}
                                         {hasColResize && !showColHandles && (
