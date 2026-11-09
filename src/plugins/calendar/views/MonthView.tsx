@@ -29,6 +29,7 @@ import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { daysSelection, dayInSelection, type CalSelection } from '../selection';
+import { layoutWeek, overflowOf, type WeekBar } from './week-bars';
 
 const DAY_MS = 86_400_000;
 
@@ -54,77 +55,90 @@ function weekOffsetOf(d: Date): number {
     return weeksBetween(ANCHOR, startOfWeek(d, WEEK_START));
 }
 
-/** 일정 한 줄 — 종일은 채운 막대, 시간은 「점 + HH:MM 제목」. data-event-id 로 칸 바깥 위임 클릭을 받는다(C2). */
-function EventChip({ e }: { e: CalEvent }) {
+/**
+ * 일정 하나 — 종일·여러 날은 채운 막대, 하루 안 시간 일정은 「점 + HH:MM 제목」. data-event-id 로 칸 바깥 위임 클릭을 받는다(C2).
+ *   여러 날 막대는 주 줄 안에서 이어진다(F7) — 앞 주에서 이어 오면 왼쪽, 다음 주로 이어지면 오른쪽 모서리를 각지게.
+ */
+function EventChip({ b }: { b: WeekBar }) {
+    const { e } = b;
     const pal = paletteAt(e.colorIdx);
     const title = e.name || '새 일정';
-    if (e.allDay) {
+    if (e.allDay || b.multi) {
+        const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
-            <div data-event-id={e.id} className={`truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${pal.bar}`}>
-                {title}
+            <div data-event-id={e.id} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar}`}>
+                {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
     }
     return (
-        <div data-event-id={e.id} className="flex items-center gap-1 px-1 text-[10px] leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
+        <div data-event-id={e.id} className="flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
             <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
             <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
         </div>
     );
 }
 
-/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게 · 아래로 일정들 */
-function DayBox({ c, isToday, inHead, selected, height, events }: { c: DayCell; isToday: boolean; inHead: boolean; selected: boolean; height: number; events: CalEvent[] }) {
+/** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게. 일정은 주 줄이 겹쳐 그린다(WeekRow). */
+function DayBox({ c, isToday, inHead, selected }: { c: DayCell; isToday: boolean; inHead: boolean; selected: boolean }) {
     const first = c.d === 1;
     const label = first ? `${c.m}월 ${c.d}일` : c.d;
-    // 날짜 머리(약 22px) 아래로 한 줄 16px — 넘치면 마지막 자리에 「+N」
-    const room = Math.max(0, Math.floor((height - 22) / 16));
-    const over = events.length > room;
-    const shown = over ? events.slice(0, Math.max(0, room - 1)) : events;
-    const hidden = events.length - shown.length;
     // 고른 칸 — 연한 accent 바탕 + 안쪽 테두리(토큰만, 구조 검사 ①). 아니면 본래 바탕(머리달/바깥달).
     const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : inHead ? 'bg-bg' : 'bg-panel2';
     return (
-        <div data-day={c.iso} className={`min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col gap-0.5 ${bg}`}>
+        <div data-day={c.iso} className={`min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col ${bg}`}>
             <div className="flex shrink-0">
                 {isToday ? (
-                    <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-[11px] font-semibold">
+                    <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-note font-semibold">
                         {label}
                     </span>
                 ) : (
-                    <span className={`px-1 text-[11px] leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
+                    <span className={`px-1 text-note leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
                         {label}
                     </span>
                 )}
             </div>
-            {shown.map((e) => <EventChip key={e.id} e={e} />)}
-            {over && hidden > 0 && (
-                <div className="px-1 text-[10px] leading-4 text-muted">+{hidden}</div>
-            )}
         </div>
     );
 }
+
+// 일정 줄이 시작하는 높이(칸 안쪽 여백 4 + 날짜 머리 20 + 틈 2) · 한 줄 높이
+const EV_TOP = 26;
+const LANE_H = 16;
+const pct = (n: number) => `${(n / 7) * 100}%`;
 
 /** 한 주 줄 — memo: 스크롤마다 머리줄만 다시 그리고 줄들은 그대로 둔다(머리줄의 달·일정 색인·선택이 바뀔 때만 다시 그린다) */
 const WeekRow = memo(function WeekRow({ offset, height, todayIso, headY, headM, dayIndex, selection }: {
     offset: number; height: number; todayIso: string; headY: number; headM: number; dayIndex: Map<string, CalEvent[]>; selection: CalSelection;
 }) {
     const cells = weekRow(addDays(ANCHOR, offset * 7));
+    const { bars, lanes } = layoutWeek(cells.map((c) => c.iso), dayIndex);
+    // 날짜 머리 아래로 한 줄 16px — 넘치면 마지막 줄 자리에 칸마다 「+N」
+    const room = Math.max(0, Math.floor((height - EV_TOP - 2) / LANE_H));
+    const { cutoff, hidden } = overflowOf(bars, lanes, room);
     return (
-        <div className="grid grid-cols-7" style={{ height }}>
+        <div className="relative grid grid-cols-7" style={{ height }}>
             {cells.map((c) => (
-                <DayBox
-                    key={c.iso} c={c} isToday={c.iso === todayIso} inHead={c.y === headY && c.m === headM}
-                    selected={dayInSelection(selection, c.iso)}
-                    height={height} events={dayIndex.get(c.iso) ?? EMPTY}
-                />
+                <DayBox key={c.iso} c={c} isToday={c.iso === todayIso} inHead={c.y === headY && c.m === headM} selected={dayInSelection(selection, c.iso)} />
             ))}
+            {/* 일정 층 — 빈 곳은 아래 칸(data-day)으로 눌림이 빠진다(더블클릭 만들기·범위 끌기) */}
+            <div className="pointer-events-none absolute inset-x-0" style={{ top: EV_TOP }}>
+                {bars.filter((b) => b.lane < cutoff).map((b) => (
+                    <div key={b.e.id} className="pointer-events-auto absolute" style={{
+                        top: b.lane * LANE_H, height: LANE_H,
+                        left: b.contL ? pct(b.col) : `calc(${pct(b.col)} + 3px)`,
+                        width: `calc(${pct(b.span)} - ${(b.contL ? 0 : 3) + (b.contR ? 1 : 4)}px)`,
+                    }}>
+                        <EventChip b={b} />
+                    </div>
+                ))}
+                {hidden.map((n, col) => n > 0 && (
+                    <div key={col} className="absolute px-1 text-micro leading-4 text-muted" style={{ top: cutoff * LANE_H, left: `calc(${pct(col)} + 3px)` }}>+{n}</div>
+                ))}
+            </div>
         </div>
     );
 });
-
-/** 빈 칸 공유 참조 — DayBox memo 가 매번 새 배열을 안 받게 */
-const EMPTY: CalEvent[] = [];
 
 export function MonthView({ value, onChange, trailing, peek, selection, onSelect }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void }) {
     const now = new Date();

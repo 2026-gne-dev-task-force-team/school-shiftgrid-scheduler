@@ -13,13 +13,16 @@ import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contract
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
+import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
+import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
+import { EVENT_CONFIG } from './config';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
 import type { IcsWriteEvent } from './ics';
 import { eventToIcs, planImport } from './io';
 
-export const STORE_TYPE = 'calendar.store';
-export const EVENT_TYPE = 'calendar.event';
+export { STORE_TYPE, EVENT_TYPE } from './config';
+import { STORE_TYPE, EVENT_TYPE } from './config';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다). 저장소 open 이 여는 월 보기.
 const MONTH_ID = 'calendar.month';
@@ -105,6 +108,7 @@ export function storeMenu(nodeId: string): MenuEntry[] {
         { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn' },
         { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs' },
         { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs' },
+        ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable' }] : []),
     ];
 }
 
@@ -127,6 +131,18 @@ export function initCalendarNodes(nodes: NodesApi | null): Disposable | null {
     if (!nodes) return null;
     return nodes.subscribe(() => recompute());
 }
+
+// ── 컬렉션 kit(P4b) — 저장소 = 컬렉션 목록 · 일정 = 레코드. 사용자 칸·「표로 보기」 화면을 컬렉션 바닥이 낸다.
+//    🔴 collection 은 supports 라 없을 수 있다 — 없으면 kit null(달력 보기는 그대로 돈다 · 표·사용자 칸만 없다).
+//    🔴 꾸러미 사이 값 import 금지(구조 검사 ⑨) — defineCollection 은 host.modules.use('collection') 로 받는다.
+let kit: CollectionKit | null = null;
+export function getKit(): CollectionKit | null { return kit; }
+export function initCalendarKit(rv: RecordViewApi | null, nodes: NodesApi | null): Disposable | null {
+    kit = rv ? rv.defineCollection(EVENT_CONFIG) : null;
+    return kit?.init(nodes) ?? null;
+}
+/** 일정의 사용자 칸 하나 쓰기(기본 칸 — 제목·언제·메모 — 는 patchEvent 로). */
+export function setEventValue(id: string, key: string, value: RecordCellValue): void { kit?.setValue(id, key, value); }
 
 export function getNodesApi(): NodesApi | null { return api; }
 
@@ -186,19 +202,17 @@ export function createEvent(data: EventData, name = '', storeId?: string): strin
     if (!api) return '';
     const target = storeId ?? liveScopeStore() ?? ensureStore();
     if (!target) return '';
-    return api.create(target, { type: EVENT_TYPE, name, data });
+    return api.create(target, { type: EVENT_TYPE, name, data: eventToStored(data) });
 }
 
-// 일정 문서(body)는 노드 공통 body 칸에 산다 — 카드 편집(updateEventData)이 data 를 덮어도 안 잃는다.
-export function updateEventData(id: string, data: EventData): void { api?.setData(id, data); }
-/** 속성 목록(인스펙터)이 바꾼 일정 한 건을 쓴다 — 이름과 data 를 한 묶음(되돌리기 한 칸)으로. 옛 data 의 uid 는 남긴다. */
+/** 속성 목록이 바꾼 일정 한 건을 쓴다 — 이름과 data 를 한 묶음(되돌리기 한 칸)으로. 사용자 칸 값·uid 는 남긴다. */
 export function patchEvent(id: string, f: { name: string; start: string; end: string; allDay: boolean; memo: string }): void {
     if (!api) return;
     const a = api;
     a.batch(() => {
         if (a.get(id)?.name !== f.name) a.rename(id, f.name);
-        const cur = (a.get(id)?.data ?? {}) as Record<string, unknown>;
-        a.setData(id, { ...cur, start: f.start, end: f.end, allDay: f.allDay, memo: f.memo });
+        const cur = (a.get(id)?.data ?? {}) as Partial<StoredEvent>;
+        a.setData(id, { ...cur, values: eventToStored(f, cur.values ?? {}).values });
     });
 }
 /** 일정 문서(page-doc 값) — 노드 공통 body 칸. */
@@ -228,12 +242,12 @@ export function importItemsToStore(storeId: string, items: readonly CalendarItem
     if (!api) return { created: 0, skipped: 0 };
     const existing = api.children(storeId)
         .filter((n) => n.type === EVENT_TYPE)
-        .map((n) => ((n.data ?? {}) as EventData).uid)
+        .map((n) => ((n.data ?? {}) as StoredEvent).uid)
         .filter((u): u is string => !!u);
     const { specs, skipped } = planImport(existing, items);
     let created = 0;
     for (const s of specs) {
-        if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data: s.data })) created++;
+        if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data: eventToStored(s.data) })) created++;
     }
     return { created, skipped };
 }
@@ -248,7 +262,8 @@ export function collectForExport(storeId: string | null): IcsWriteEvent[] {
     for (const n of eventNodes) {
         if (inTrash(n.id)) continue;
         if (storeId && !api.path(n.id).includes(storeId)) continue;   // 그 저장소 subtree 밖은 건너뜀
-        out.push(eventToIcs({ id: n.id, name: n.name, data: (n.data ?? {}) as EventData }));
+        const data = storedToEvent(n.data);
+        if (data) out.push(eventToIcs({ id: n.id, name: n.name, data }));
     }
     return out;
 }
@@ -256,6 +271,6 @@ export function collectForExport(storeId: string | null): IcsWriteEvent[] {
 /** 일정 하나(record 노드)를 .ics 작성기 입력으로 — 일정 카드 「내보내기」가 쓴다. 일정 노드가 아니면 null. */
 export function collectEventForExport(eventId: string): IcsWriteEvent | null {
     const n = api?.get(eventId);
-    if (!n || n.type !== EVENT_TYPE) return null;
-    return eventToIcs({ id: n.id, name: n.name, data: (n.data ?? {}) as EventData });
+    const data = n && n.type === EVENT_TYPE ? storedToEvent(n.data) : null;
+    return n && data ? eventToIcs({ id: n.id, name: n.name, data }) : null;
 }

@@ -59,8 +59,10 @@ describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집�
             .sort();
         expect(cmds).toEqual([
             'calendar.exportAll', 'calendar.exportIcs', 'calendar.importIcs',
-            'calendar.newEventIn', 'calendar.open', 'calendar.openStore',
+            'calendar.newEventIn', 'calendar.open', 'calendar.openStore', 'calendar.openTable',
         ]);
+        // 「표로 보기」 화면(P4b — 저장소 = 컬렉션)
+        expect(getView('calendar.table')?.placement).toEqual({ areas: ['center'], singleton: true });
         expect(getCommand('calendar.open')?.title).toBe('달력 열기');
         expect(getCommand('calendar.openStore')?.title).toBe('달력에서 열기');
         expect(getCommand('calendar.newEventIn')?.title).toBe('새 일정');

@@ -11,7 +11,8 @@ import { subscribeFeeds, getFeedsVersion, listFeedSources } from './feed';
 import { mapFeedEvents, FEED_FROM, FEED_TO } from './feed-events';
 import { useScope } from './store';
 import { PALETTE_LEN } from './palette';
-import { eventsInScope, type CalEvent, type StoreInfo, type EventData } from './events';
+import { eventsInScope, type CalEvent, type StoreInfo } from './events';
+import { storedToEvent } from './event-fields';
 
 function toMs(s: unknown): number {
     if (typeof s !== 'string') return NaN;
@@ -53,7 +54,8 @@ export function useCalendarData(): CalendarData {
         for (const n of eventNodes) {
             if (inTrash(n.id)) continue;               // 🔴 조상 휴지통 제외
             const storeId = api?.parent(n.id) ?? '';
-            const d = (n.data ?? {}) as Partial<EventData>;
+            const d = storedToEvent(n.data);           // 노드 data(컬렉션 레코드 꼴) → 일정 — 「언제」가 없으면 안 그린다
+            if (!d) continue;
             const startMs = toMs(d.start);
             const endMs = toMs(d.end);
             if (Number.isNaN(startMs) || Number.isNaN(endMs)) continue;
@@ -61,12 +63,12 @@ export function useCalendarData(): CalendarData {
                 id: n.id,
                 storeId,
                 name: n.name,
-                start: typeof d.start === 'string' ? d.start : '',
-                end: typeof d.end === 'string' ? d.end : '',
+                start: d.start,
+                end: d.end,
                 startMs,
                 endMs,
-                allDay: d.allDay === true,
-                memo: typeof d.memo === 'string' ? d.memo : '',
+                allDay: d.allDay,
+                memo: d.memo ?? '',
                 colorIdx: stores.get(storeId)?.colorIdx ?? 0,
             });
         }
