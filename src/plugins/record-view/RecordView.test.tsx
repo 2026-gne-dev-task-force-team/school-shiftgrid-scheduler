@@ -308,3 +308,50 @@ describe('선택지 편집', () => {
         expect((spy.fields.mock.calls.at(-1)![0] as RecordField[])[1].options!.map((o) => o.value)).toEqual(['b', 'a']);
     });
 });
+
+describe('하위 항목(sub-items) — 트리 UI', () => {
+    type TR = { id: string } & Record<string, unknown>;
+    function TreeHarness() {
+        const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+        const recs: TR[] = [
+            { id: 'a', f_t: '부모', __parent: null },
+            { id: 'b', f_t: '자식', __parent: 'a' },
+            { id: 'c', f_t: '끝', __parent: null },
+        ];
+        return (
+            <RecordView<TR>
+                fields={START} records={recs} getId={(r) => r.id} viewKey="t.tree" titleKey="f_t"
+                onCellChange={() => {}}
+                tree={{
+                    parentOf: (r) => (r.__parent as string | null) ?? null,
+                    collapsed: (id) => !!collapsed[id],
+                    onToggleCollapse: (id) => setCollapsed((cs) => ({ ...cs, [id]: !cs[id] })),
+                    onIndent: () => {}, onOutdent: () => {},
+                }}
+            />
+        );
+    }
+    it('부모만 접기 삼각형을 갖는다 · 잎(자식 없음)은 없다', () => {
+        mount(<TreeHarness />);
+        expect(q('[data-rv-fold="a"]')).toBeTruthy();
+        expect(q('[data-rv-fold="c"]')).toBeNull();
+        expect(q('[data-rv-fold="b"]')).toBeNull();
+    });
+    it('접으면 자손이 사라지고, 다시 펼치면 돌아온다(형제는 그대로)', () => {
+        mount(<TreeHarness />);
+        expect(q('[data-rv-row="b"]')).toBeTruthy();
+        click(q('[data-rv-fold="a"]'));
+        expect(q('[data-rv-row="b"]')).toBeNull();
+        expect(q('[data-rv-row="c"]')).toBeTruthy();
+        click(q('[data-rv-fold="a"]'));
+        expect(q('[data-rv-row="b"]')).toBeTruthy();
+    });
+    it('정렬이 걸리면 트리를 접고 평평해진다 — 자식도 접기 삼각형 없이 다 보인다', () => {
+        mount(<TreeHarness />);
+        // 제목 칸 머리 메뉴로 정렬을 건다
+        click(q('[data-rv-head-menu="f_t"]'));
+        click(q('[data-rv-sort-asc]'));
+        expect(q('[data-rv-fold="a"]')).toBeNull();     // 평평 → 접기 없음
+        expect(q('[data-rv-row="b"]')).toBeTruthy();    // 모든 행이 평평하게 보인다
+    });
+});

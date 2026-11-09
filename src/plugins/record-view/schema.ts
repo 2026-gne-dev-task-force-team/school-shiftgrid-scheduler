@@ -109,6 +109,7 @@ export function normalizeRow(raw: unknown): RowDoc {
         created: typeof o.created === 'string' ? o.created : now,
         updated: typeof o.updated === 'string' ? o.updated : now,
     };
+    if (o.collapsed === true) row.collapsed = true;
     if (o.body !== undefined) row.body = o.body;
     return row;
 }

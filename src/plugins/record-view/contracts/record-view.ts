@@ -180,6 +180,8 @@ export interface RowDoc {
     values: Record<string, RecordCellValue>;
     created: string;
     updated: string;
+    /** 하위 항목을 접었나(자손 숨김). 노드 collapsed 는 탐색기 전용이라 레코드성 행은 여기 둔다. */
+    collapsed?: boolean;
     /** P4 본문 — 불투명. 레코드 뷰는 안 읽는다 */
     body?: unknown;
 }
@@ -200,6 +202,23 @@ export interface PasteRequest {
     /** 붙여넣기 칸 순서에 대응하는 보이는 칸 key (칸 수보다 열이 많으면 모자란 만큼 null) */
     keys: (string | null)[];
     rows: string[][];
+}
+
+/**
+ * 하위 항목(행 밑에 행 · 노션 sub-items) — 넘기면 「수동 순서」일 때 트리로 그린다(들여쓰기·접기·Tab/단추로 들여·내어쓰기).
+ *   🔴 정렬·필터·검색이 하나라도 걸리면 평평해진다(노션과 같다). 저장은 손님 몫 — 노드 얼굴은 nodes.ts 가 채운다.
+ *   ⭐ 방 목록의 「방 안에 방」(indent·onIndentRow·onOutdentRow)이 이 꼴로 제어형 레코드 뷰에 갈아탄다.
+ */
+export interface RecordTree<T> {
+    /** 이 행의 부모 행 id(뿌리면 null). records 는 트리 순서가 아니어도 된다 — 내부에서 편다. */
+    parentOf: (r: T) => string | null;
+    /** 이 행이 접혀 자손을 숨기고 있나 */
+    collapsed: (id: string) => boolean;
+    onToggleCollapse: (id: string) => void;
+    /** 들여쓰기 — 바로 위 형제의 마지막 자식으로. 첫 형제는 아무 일 없음(막는다). */
+    onIndent: (id: string) => void;
+    /** 내어쓰기 — 부모의 바로 다음 형제로. 뿌리는 아무 일 없음(막는다). */
+    onOutdent: (id: string) => void;
 }
 
 /**
@@ -233,6 +252,10 @@ export interface RecordViewProps<T> {
     onConvertField?: (plan: ConvertPlan) => void;
     /** 표에서 붙여넣으면 부른다(엑셀 TSV). 안 넘기면 붙여넣기를 안 가로챈다. */
     onPaste?: (req: PasteRequest) => void;
+    /** 수동 순서 — 정렬이 하나도 없을 때만 행 손잡이가 뜬다. id 를 beforeId 바로 앞으로(맨 끝이면 beforeId=null). */
+    onReorder?: (id: string, beforeId: string | null) => void;
+    /** 하위 항목(행 밑에 행) — 넘기면 「수동 순서」일 때 트리로 그린다. 안 넘기면 평평한 표. */
+    tree?: RecordTree<T>;
     className?: string;
 }
 

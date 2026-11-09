@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
-import { DB_TYPE, ROW_TYPE, commit, initRecordNodes, restoreTrashedRows, snapshotOf, trashedRows } from './nodes';
+import { DB_TYPE, ROW_TYPE, commit, indentRow, initRecordNodes, outdentRow, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 
 interface N { id: string; type: string; name: string; children: string[]; data?: unknown; trashedFrom?: string }
@@ -123,6 +123,49 @@ describe('휴지통 — 레코드성 행은 탐색기 구역에 안 보이니 �
         commit(other, { removeRows: [r] });
         expect(trashedRows(dbId)).toHaveLength(0);
         expect(trashedRows(other)).toHaveLength(1);
+    });
+});
+
+describe('하위 항목 — 행 밑에 행(노드 중첩)', () => {
+    const parentOf = (rowId: string) => snapshotOf(dbId)!.records.find((r) => r.id === rowId)?.__parent ?? null;
+
+    it('들여쓰기 — 둘째 형제가 첫째의 자식이 된다 · 첫째 형제는 들여쓸 수 없다', () => {
+        const [a, b] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }] });
+        indentRow(a);                       // 첫 형제 → 아무 일 없음
+        expect(parentOf(a)).toBeNull();
+        indentRow(b);                       // 둘째 → a 의 자식
+        expect(parentOf(b)).toBe(a);
+        expect(snapshotOf(dbId)!.records).toHaveLength(2);   // 여전히 둘(중첩이지 삭제 아님)
+    });
+
+    it('내어쓰기 — 자식이 다시 뿌리로 · 뿌리는 내어쓸 수 없다', () => {
+        const [a, b] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }] });
+        indentRow(b);
+        expect(parentOf(b)).toBe(a);
+        outdentRow(b);
+        expect(parentOf(b)).toBeNull();
+        outdentRow(a);                      // 이미 뿌리 → 아무 일 없음
+        expect(parentOf(a)).toBeNull();
+    });
+
+    it('접기 토글 — RowDoc.collapsed 가 뒤집힌다', () => {
+        const [a] = commit(dbId, { addRows: [{ [titleKey]: 'a' }] });
+        expect(snapshotOf(dbId)!.records[0].__collapsed).toBe(false);
+        toggleRowCollapse(a);
+        expect(snapshotOf(dbId)!.records.find((r) => r.id === a)!.__collapsed).toBe(true);
+        toggleRowCollapse(a);
+        expect(snapshotOf(dbId)!.records.find((r) => r.id === a)!.__collapsed).toBe(false);
+    });
+
+    it('부모를 휴지통에 보내면 자식도 같이 · 복원하면 같이 돌아온다', () => {
+        const [a, b] = commit(dbId, { addRows: [{ [titleKey]: 'a' }, { [titleKey]: 'b' }] });
+        indentRow(b);                       // b 는 a 의 자식
+        commit(dbId, { removeRows: [a] });  // 부모만 지운다
+        expect(snapshotOf(dbId)!.records).toHaveLength(0);   // 자식도 함께 사라진다(서브트리)
+        commit(dbId, { restoreRows: [a] });
+        const recs = snapshotOf(dbId)!.records;
+        expect(recs).toHaveLength(2);       // 부모·자식 함께 복원
+        expect(recs.find((r) => r.id === b)!.__parent).toBe(a);   // 중첩도 그대로
     });
 });
 
