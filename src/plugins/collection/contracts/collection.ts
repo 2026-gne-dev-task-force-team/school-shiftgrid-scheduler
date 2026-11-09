@@ -14,7 +14,8 @@
  *   모듈 표면에 fieldTypes·schema 추가 · version 2.
  */
 import type { ComponentType, ReactElement } from 'react';
-import type { Disposable, IconName } from '../../../pane-ui-system/plugin';
+import type { Disposable, IconName, PluginHost, PeekHandle, PropertiesPaneProps } from '../../../pane-ui-system/plugin';
+import type { NodesApi } from '../../explorer/contracts/nodes';
 
 /** 내장 칸 종류 — 여섯. 🔴 칸 type 자체는 string(꽂힌 타입은 `<pluginId>.<name>`)이고 이 이름들은 내장 등록의 키일 뿐이다. */
 export type BuiltinFieldType = 'text' | 'number' | 'select' | 'multi' | 'date' | 'check';
@@ -306,6 +307,93 @@ export interface PropertyListProps {
  * 🔴 host.modules 로 받는 collection 모듈 — 손님이 쓰는 전부. provides 와 짝(모듈 값 recordViewApi).
  *   host.modules.use<RecordViewApi>('collection') 가 돌려준다.
  */
+/**
+ * 🔑 컬렉션 설정 — 「목록 노드 + 그 안의 레코드 노드」 한 벌을 만드는 데 필요한 전부(P4a · 각 목록 꾸러미가 이 한 장씩만 쓴다).
+ *   특화 기능은 칸 정의(baseFields)와 tree 뿐이다 — 그 밖의 다리·화면·속성 패널은 defineCollection 이 한 벌로 낸다.
+ */
+export interface CollectionConfig {
+    /** 노드 타입 id — 목록(컨테이너) · 항목(레코드). 예: 'people.list' · 'people.person' */
+    listType: string;
+    itemType: string;
+    /** 목록을 열면 여는 화면 viewId(예: 'people.sheet') · 목록 우클릭 「열기」가 부르는 명령 id */
+    viewId: string;
+    openCommandId: string;
+    /** 보기 정의 저장 키(RecordView viewKey) */
+    viewKey: string;
+    /** 목록 이름표·아이콘 — 시작 화면·우클릭 메뉴·인스펙터 「목록」 칸이 쓴다 */
+    listLabel: string;
+    listIcon: IconName;
+    /** 기본 칸 — 첫 칸이 제목(노드 이름)이다. 전부 locked 로 취급(지우기·타입 바꾸기 금지) */
+    baseFields: RecordField[];
+    /** 개수 단위(「3개」) · 안내 문구들 */
+    unit: string;
+    text: { startDescription: string; startHint: string };
+    /** 참이면 항목이 같은 목록 안의 다른 항목을 부모로 가진다(항목 안에 항목) — 인스펙터 부모 칸 이름표 */
+    tree?: { parentLabel: string };
+}
+
+/** 항목 하나 — 제목(노드 이름) + 칸 값들. parentId 는 tree 일 때만. ext 는 위층 꽂는 자리(이 꾸러미는 안 건드린다). */
+export interface CollectionItem {
+    id: string;
+    /** 이 항목이 든 목록 id(노드 부모) */
+    listId: string;
+    name: string;
+    values: Record<string, RecordCellValue>;
+    parentId?: string;
+    ext?: Record<string, unknown>;
+}
+
+/** 컬렉션 한 벌의 손잡이 — defineCollection 이 설정 한 장으로 낸다(저장·휴지통·되돌리기는 노드 시스템이 쥔다). */
+export interface CollectionKit {
+    config: CollectionConfig;
+    // ── 다리 ──
+    /** 활성 때 한 번 — NodesApi 를 쥐고 구독한다. 돌려준 Disposable 은 호스트가 회수. */
+    init(nodes: NodesApi | null): Disposable | null;
+    nodes(): NodesApi | null;
+    /** 변경 구독(약속 onChange 뒤) */
+    onChange(fn: () => void): Disposable;
+    // ── 읽기 ──
+    /** 살아 있는(휴지통 아닌) 목록 전부(트리 순서) */
+    lists(): { id: string; name: string }[];
+    /** 그 목록의 살아 있는 항목들(노드 순서) */
+    itemsIn(listId: string): CollectionItem[];
+    itemOf(id: string): CollectionItem | undefined;
+    inTrash(id: string): boolean;
+    // ── 쓰기(전부 NodesApi 로) ──
+    createList(): string | null;
+    /** 항목 하나 더하기(끝에, 최상위). 제목 칸 값은 노드 이름이 된다. 빈 문자열이면 못 만든 것 */
+    addItem(listId: string, values?: Record<string, RecordCellValue>): string;
+    /** 칸 하나 쓰기 — 제목 칸은 이름 바꾸기(빈 이름 무시) · 빈 값이면 지운다 · 문자열은 trim */
+    setValue(id: string, key: string, value: RecordCellValue): void;
+    removeItem(id: string): void;
+    moveItem(id: string, listId: string, index?: number): void;
+    /** 수동 순서 — id 를 beforeId 바로 앞으로(null 이면 맨 끝). tree 면 beforeId 의 부모로 재부모화. 한 묶음 = 되돌리기 한 칸 */
+    reorderItem(id: string, beforeId: string | null): void;
+    /** 탭·줄바꿈 텍스트 → 항목 여럿(열 i = baseFields[i] · 첫 칸(제목)이 빈 줄·빈 줄은 무시). 만든 id 들 */
+    pasteItems(listId: string, text: string): string[];
+    /** 목록의 사용자 칸 정의 읽기·쓰기(목록 노드 data.fields) */
+    userFieldsOf(listId: string): RecordField[];
+    setUserFields(listId: string, fields: RecordField[]): void;
+    // ── tree 일 때만(설정에 tree 가 없으면 아무 일 없음) ──
+    setParent(id: string, parentId: string | null): void;
+    indent(id: string): void;
+    outdent(id: string): void;
+    // ── 보고 있는 목록 · 노드 타입 함수 · 화면 ──
+    /** 「지금 보고 있는 목록」 — 🔴 저장 안 함(기기에 안 남긴다). 목록을 열면 그 id, 목록으로 돌아가면 null */
+    active(): string | null;
+    setActive(id: string | null): void;
+    /** 목록을 열면 「보고 있는 목록」으로 두고 화면을 연다 */
+    open(host: PluginHost, listId: string): void;
+    /** 목록 우클릭 메뉴 — 부르는 순간 그 목록을 명령 대상으로 잡는다 */
+    menu(listId: string): { label: string; icon: IconName; commandId: string }[];
+    /** 우클릭 「열기」 명령 본체 — 메뉴가 가리킨 목록을 연다 */
+    openMenuTarget(): void;
+    /** 목록 화면(가운데 탭) — 시작 화면 포함 */
+    Tab(props: { host?: PluginHost; peek?: PeekHandle; leafId?: string }): ReactElement | null;
+    /** 항목 노드의 속성 칸(오른쪽 패널) */
+    Props(props: PropertiesPaneProps): ReactElement | null;
+}
+
 export interface RecordViewApi {
     version: 2;
     /** 제어형 목록 화면. T 는 행 하나의 타입(객체). */
@@ -315,4 +403,6 @@ export interface RecordViewApi {
     /** 칸 타입 레지스트리 — 내장 여섯이 같은 꼴로 올라 있고 꽂힌 타입은 `<pluginId>.<name>` 접두사 */
     fieldTypes: FieldTypeRegistry;
     schema: RecordSchemaApi;
+    /** 🔑 컬렉션 한 벌(목록 노드 + 레코드 노드 + 화면 + 속성 칸) — 설정 한 장으로. 활성 때 만든다(꾸러미 사이 값 import 금지라 모듈로 건넨다). */
+    defineCollection(config: CollectionConfig): CollectionKit;
 }

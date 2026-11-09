@@ -60,8 +60,8 @@
     "cmdIdString": 0
   },
   "plugins/people": {
-    "bareButton": 5,
-    "arbPx": 6,
+    "bareButton": 0,
+    "arbPx": 0,
     "cmdIdString": 0
   },
   "plugins/properties": {
@@ -70,8 +70,8 @@
     "cmdIdString": 0
   },
   "plugins/rooms": {
-    "bareButton": 7,
-    "arbPx": 6,
+    "bareButton": 0,
+    "arbPx": 0,
     "cmdIdString": 0
   },
   "plugins/selection": {
