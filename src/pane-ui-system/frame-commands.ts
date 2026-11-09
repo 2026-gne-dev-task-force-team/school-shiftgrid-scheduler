@@ -15,6 +15,7 @@ export const FRAME_COMMAND = {
     moveRight: 'frame.move.right',
     newTab: 'frame.tab.new',
     openSettings: 'frame.view.settings',
+    openNotify: 'frame.view.notify',
     toggleLeft: 'frame.sidebar.toggle-left',
     toggleRight: 'frame.sidebar.toggle-right',
     palette: 'frame.palette',
