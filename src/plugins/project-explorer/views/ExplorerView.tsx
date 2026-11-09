@@ -15,7 +15,7 @@ import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
 import { Icon, SectionHeader, IconButton, ContextMenu, useDragLeaf } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
-import { isContainerType, nodeHidden, iconOf, createIconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
+import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenu, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../store';
@@ -471,7 +471,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                 <span className="shrink-0 w-4" />
                             )}
 
-                            <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />
+                            {emojiOf(row.node)
+                                ? <span className="shrink-0 w-[15px] text-center text-[13px] leading-none select-none">{emojiOf(row.node)}</span>
+                                : <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />}
 
                             {isRenaming ? (
                                 <input
@@ -589,7 +591,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                     ) : (
                                         <span className="shrink-0 w-4" />
                                     )}
-                                    <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />
+                                    {emojiOf(row.node)
+                                        ? <span className="shrink-0 w-[15px] text-center text-[13px] leading-none select-none opacity-60">{emojiOf(row.node)}</span>
+                                        : <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />}
                                     {confirming ? (
                                         <span className="flex items-center gap-1 flex-1 min-w-0 text-[11px]">
                                             <span className="text-muted truncate">정말 지울까요?</span>

@@ -8,7 +8,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Node } from './model/tree';
 import { makeNodesApi } from './api';
 import { initStore } from './store';
-import { getType, isKnownType, iconOf, clearTypes } from './model/types';
+import { getType, isKnownType, iconOf, emojiOf, clearTypes } from './model/types';
 import { getDerived, invalidateDerived, clearDerived } from './model/derive';
 
 /** 메모리 저장만 가진 가짜 호스트 — 스토어가 load/save 에 쓰는 것만 채운다.
@@ -116,6 +116,22 @@ describe('④ 타입 등록이 빠지면(플러그인 끄기) 노드는 남아 �
         const n = api.get(id)!;
         expect(iconOf(n as Node)).toBe('file');   // 모르는 타입 → file
         expect(api.get(id)).toBeTruthy();         // 노드 자체는 남는다
+    });
+});
+
+describe('④-2 노드별 이모지', () => {
+    it('emoji 가 값을 주면 그 값 · 빈값/없음/모르는 타입은 undefined', () => {
+        const api = makeNodesApi('pt');
+        const d = api.types.register({ type: 'pt.e', label: 'E', icon: 'file', emoji: (n) => (n.data as { icon?: string } | undefined)?.icon });
+        const id = api.create(api.roots.main, { type: 'pt.e', name: '노드' });
+        expect(emojiOf(api.get(id) as Node)).toBeUndefined();
+        api.setData(id, { icon: '🚀' });
+        expect(emojiOf(api.get(id) as Node)).toBe('🚀');
+        api.setData(id, { icon: '' });
+        expect(emojiOf(api.get(id) as Node)).toBeUndefined();
+        api.setData(id, { icon: '🚀' });
+        d.dispose();
+        expect(emojiOf(api.get(id) as Node)).toBeUndefined();
     });
 });
 

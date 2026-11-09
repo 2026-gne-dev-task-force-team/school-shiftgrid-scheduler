@@ -33,6 +33,7 @@ export const pageNodeTypeImpl = {
     page: {
         open: (host: PluginHost, id: string) => { setActivePage(id); host.workspace.open(EDITOR_ID, { where: 'center' }); },
         menu: (_host: PluginHost, id: string) => pageMenu(id),
+        emoji: (node) => (node.data as Page | undefined)?.icon,
     } satisfies NodeTypeImplFns,
 };
 
