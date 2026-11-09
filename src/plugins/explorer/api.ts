@@ -18,6 +18,8 @@ import { parentOf } from './model/tree';
 import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import { NodeHeader } from './views/NodeHeader';
+import { NodeEmbed } from './views/NodeEmbed';
+import { createElement } from 'react';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData, apiSetField,
     apiInvalidate, apiBatch, openById, subscribeChanges, startInput,
@@ -85,6 +87,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 canCreate: fns?.canCreate,          // 🔑 「만들기」 가림 — 함수뿐이라 impl 에서만 온다(매니페스트엔 함수 못 넣음)
                 confirmDelete: fns?.confirmDelete,  // 🔑 지울 때 경고(함수 꼴) — impl 에서
                 hidden: fns?.hidden,                // 🔑 조건부 숨김 — impl 에서
+                embed: fns?.embed ? (p) => createElement(fns.embed!, { ...p, host }) : undefined,
                 unique: item.unique,
                 slots: item.slots,
                 record: item.record,
@@ -140,6 +143,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         setIcon(id, icon) { apiSetField(id, 'icon', icon); },
         setBody(id, body) { apiSetField(id, 'body', body); },
         Header: NodeHeader,
+        Embed: NodeEmbed,
         move(id, parentId, index) { apiMove(id, parentId, index); },
         remove(id) { apiRemove(id); },
         batch(fn) { apiBatch(fn); },

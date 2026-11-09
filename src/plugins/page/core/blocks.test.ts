@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     splitBlock, outdentOrParagraph, mergeBackspace, indentBlock, moveBlock, removeBlock,
-    changeType, setChecked, applyTableTx,
+    changeType, setChecked, applyTableTx, setNodeRef,
 } from './blocks';
 import type { Page } from './types';
 import type { TableTx } from '../../sheet/contracts/table';
@@ -122,6 +122,11 @@ describe('순서·삭제·종류(요구 8)', () => {
         expect(r.blocks[0].type).toBe('table');
         expect(r.blocks[0].table?.columns.length).toBeGreaterThan(0);
         expect(r.blocks[0].text).toBe('');
+    });
+    it('끼워 넣기 블록 — 종류 바꾸면 글자 비고, 노드를 고르면 nodeId 가 든다', () => {
+        const p = page({ id: 'a', type: 'paragraph', text: '글' });
+        const r = setNodeRef(changeType(p, 'a', 'node'), 'a', 'n1');
+        expect(r.blocks[0]).toMatchObject({ type: 'node', text: '', nodeId: 'n1' });
     });
     it('체크 토글', () => {
         const p = page({ id: 'a', type: 'todo', text: '할 일', checked: false });

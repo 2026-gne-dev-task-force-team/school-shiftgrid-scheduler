@@ -8,6 +8,7 @@ import { uniqueName } from '../../pane-ui-system';
 import type { Page } from './core/types';
 import { emptyPage } from './core/types';
 import { setActivePage } from './store';
+import { PageCard } from './views/PageCard';
 
 export const PAGE_TYPE = 'page.page';
 
@@ -33,6 +34,7 @@ export const pageNodeTypeImpl = {
     page: {
         open: (host: PluginHost, id: string) => { setActivePage(id); host.workspace.open(EDITOR_ID, { where: 'center' }); },
         menu: (_host: PluginHost, id: string) => pageMenu(id),
+        embed: PageCard,
     } satisfies NodeTypeImplFns,
 };
 

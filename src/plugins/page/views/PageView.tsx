@@ -14,7 +14,7 @@ import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList } from '../core/types';
 import {
-    setText, setChecked, setTable, splitBlock, outdentOrParagraph, mergeBackspace,
+    setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
     indentBlock, moveBlock, removeBlock, changeType, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
@@ -28,6 +28,7 @@ import {
 } from './caret';
 import { SlashMenu, filterSlash } from './SlashMenu';
 import { TableBlock } from './TableBlock';
+import { NodeBlock } from './NodeBlock';
 
 /** 캐럿을 둘 자리(resync 신호) — end 가 있으면 범위를 고른다(토글 결과). */
 interface FocusIntent { id: string; offset: number; end?: number; }
@@ -230,7 +231,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
         const cleared = setText(pageRef.current, id, '');
         const next = changeType(cleared, id, type);
         commitPage(next);
-        if (type === 'table') { setActiveBlockId(null); }
+        if (type === 'table' || type === 'node') { setActiveBlockId(null); }
         else { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
     };
 
@@ -303,7 +304,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
     const navBlock = (id: string, dir: -1 | 1, column: number) => {
         const blocks = pageRef.current.blocks;
         let j = blocks.findIndex((b) => b.id === id) + dir;
-        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table')) j += dir;
+        while (j >= 0 && j < blocks.length && (blocks[j].type === 'divider' || blocks[j].type === 'table' || blocks[j].type === 'node')) j += dir;
         if (j < 0 || j >= blocks.length) return;
         const t = blocks[j];
         setActiveBlockId(t.id);
@@ -342,11 +343,12 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
     // ── 블록 조작(손잡이) ──
     const onChecked = (id: string, checked: boolean) => { const next = setChecked(pageRef.current, id, checked); commitPage(next); };
     const onTableChange = (id: string, table: TableBlockData) => { const next = setTable(pageRef.current, id, table); commitPage(next); };
+    const onNodePick = (id: string, nodeId: string) => { commitPage(setNodeRef(pageRef.current, id, nodeId)); };
     const onDelete = (id: string) => { const r = removeBlock(pageRef.current, id); commitResult(r); };
     const onChangeTypeMenu = (id: string, type: BlockType) => {
         const next = changeType(pageRef.current, id, type);
         commitPage(next);
-        if (type !== 'table' && type !== 'divider') { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
+        if (type !== 'table' && type !== 'divider' && type !== 'node') { setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); }
         else setActiveBlockId(null);
     };
     const onDrop = (toIndex: number) => {
@@ -446,6 +448,8 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                             onFocusActive={onFocusActive}
                             onChecked={onChecked}
                             onTableChange={onTableChange}
+                            onNodePick={onNodePick}
+                            selfId={activeId}
                             onPickSlash={pickSlash}
                             onDelete={onDelete}
                             onChangeType={onChangeTypeMenu}
@@ -561,6 +565,8 @@ interface RowProps {
     onFocusActive: (id: string) => void;
     onChecked: (id: string, checked: boolean) => void;
     onTableChange: (id: string, table: TableBlockData) => void;
+    onNodePick: (id: string, nodeId: string) => void;
+    selfId: string;
     onPickSlash: (id: string, type: BlockType) => void;
     onDelete: (id: string) => void;
     onChangeType: (id: string, type: BlockType) => void;
@@ -606,6 +612,7 @@ function BlockRow(props: RowProps) {
                         <HandleMenuItem label="글머리표" onPick={() => { props.onChangeType(block.id, 'bulleted'); setMenuOpen(false); }} />
                         <HandleMenuItem label="체크 목록" onPick={() => { props.onChangeType(block.id, 'todo'); setMenuOpen(false); }} />
                         <HandleMenuItem label="표" onPick={() => { props.onChangeType(block.id, 'table'); setMenuOpen(false); }} />
+                        <HandleMenuItem label="노드 끼워 넣기" onPick={() => { props.onChangeType(block.id, 'node'); setMenuOpen(false); }} />
                         <div className="my-1 border-t border-line" />
                         <HandleMenuItem label="삭제" onPick={() => { props.onDelete(block.id); setMenuOpen(false); }} />
                     </div>
@@ -645,6 +652,9 @@ function renderContent(props: RowProps): ReactElement {
                 onChange={(t) => props.onTableChange(block.id, t)}
             />
         );
+    }
+    if (block.type === 'node') {
+        return <NodeBlock nodeId={block.nodeId} selfId={props.selfId} onPick={(nid) => props.onNodePick(block.id, nid)} />;
     }
     if (block.type === 'code') {
         return <CodeBlock {...props} />;

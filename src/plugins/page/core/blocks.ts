@@ -38,6 +38,13 @@ export function setChecked(page: Page, id: string, checked: boolean): Page {
     return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], checked }) };
 }
 
+/** 끼워 넣을 노드 고르기(끼워 넣기 블록). */
+export function setNodeRef(page: Page, id: string, nodeId: string): Page {
+    const idx = indexOf(page, id);
+    if (idx < 0) return page;
+    return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], nodeId }) };
+}
+
 /** 표 데이터 바꾸기. */
 export function setTable(page: Page, id: string, table: TableBlockData): Page {
     const idx = indexOf(page, id);
@@ -57,6 +64,7 @@ export function changeType(page: Page, id: string, type: BlockType): Page {
     if (type === 'todo') next.checked = cur.checked ?? false;
     if (isList(type)) next.indent = cur.indent ?? 0;
     if (type === 'table') { next.text = ''; next.table = cur.table ?? emptyTable(); }
+    if (type === 'node') { next.text = ''; next.nodeId = cur.nodeId; next.view = cur.view; }
     if (type === 'divider') next.text = '';
     return { ...page, blocks: replaceAt(page.blocks, idx, next) };
 }
@@ -131,7 +139,7 @@ export function mergeBackspace(page: Page, id: string): EditResult {
         return { page: { ...page, blocks }, focusId: cur.id, offset: 0 };
     }
     // 앞이 표 → 합치지 않는다(그대로)
-    if (prev.type === 'table') return { page, focusId: cur.id, offset: 0 };
+    if (prev.type === 'table' || prev.type === 'node') return { page, focusId: cur.id, offset: 0 };
 
     // 앞 글자 블록과 합친다
     const mergeOffset = prev.text.length;
