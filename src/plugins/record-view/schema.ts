@@ -90,6 +90,13 @@ function normalizeValue(v: unknown): RecordCellValue | undefined {
     if (v === null) return null;
     if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
     if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string');
+    // 날짜 값 {start, end?} — 유일한 객체 셀값. start 가 글자면 지킨다(그 밖의 객체는 버린다).
+    if (typeof v === 'object') {
+        const o = v as Record<string, unknown>;
+        if (typeof o.start === 'string') {
+            return typeof o.end === 'string' ? { start: o.start, end: o.end } : { start: o.start };
+        }
+    }
     return undefined;
 }
 
@@ -109,6 +116,7 @@ export function normalizeRow(raw: unknown): RowDoc {
         created: typeof o.created === 'string' ? o.created : now,
         updated: typeof o.updated === 'string' ? o.updated : now,
     };
+    if (typeof o.seq === 'number' && o.seq >= 0) row.seq = Math.floor(o.seq);
     if (o.collapsed === true) row.collapsed = true;
     if (o.body !== undefined) row.body = o.body;
     return row;

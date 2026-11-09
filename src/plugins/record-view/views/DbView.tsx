@@ -15,7 +15,7 @@ import { buildPaste } from '../paste';
 import { isImeEnter } from '../fields/ime';
 import { blankDb } from '../schema';
 import {
-    commit, getActiveDb, getDbRev, indentRow, outdentRow, renameDb, restoreTrashedRows,
+    commit, getActiveDb, getDbRev, indentRow, outdentRow, renameDb, reorderRow, restoreTrashedRows,
     snapshotOf, subscribeDb, toggleRowCollapse,
 } from '../nodes';
 
@@ -102,6 +102,7 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
                     onFieldsChange={onFieldsChange}
                     onConvertField={onConvertField}
                     onPaste={onPaste}
+                    onReorder={(rowId, beforeId) => reorderRow(id, rowId, beforeId)}
                     tree={{
                         parentOf: (r) => (r.__parent as string | null) ?? null,
                         collapsed: (rowId) => records.find((r) => r.id === rowId)?.__collapsed === true,

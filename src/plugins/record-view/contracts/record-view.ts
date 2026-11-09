@@ -46,8 +46,14 @@ export interface RecordField {
     readOnly?: boolean;
 }
 
-/** 셀 하나가 가질 수 있는 값 — 종류별로 다르다. text/select/date=string · number=number · check=boolean · multi·relation=string[]. */
-export type RecordCellValue = string | number | boolean | string[] | null;
+/** 날짜 값 — P2 에서 string 에서 올라온다. time 이면 start 에 `…THH:MM`, range 면 end 가 붙는다. */
+export interface DateValue {
+    start: string;
+    end?: string;
+}
+
+/** 셀 하나가 가질 수 있는 값 — 종류별로 다르다. text/select=string · number/id=number · check=boolean · multi·relation=string[] · date={start,end?}. */
+export type RecordCellValue = string | number | boolean | string[] | DateValue | null;
 
 /** 필터 연산자 id — 칸 종류마다 쓸 수 있는 집합이 다르다(FieldTypeDef.ops). 내장: contains·eq·gt·before·has·empty·isTrue… */
 export type FilterOp = string;
@@ -134,6 +140,10 @@ export interface FieldTypeDef {
     defaultConfig?: unknown;
     /** 선택지를 갖는 타입(select·multi) — 변환·편집 UI 가 이걸 본다 */
     hasOptions?: boolean;
+    /** 칸을 처음 만들 때 넣는 선택지(status 의 기본 세 그룹처럼) — 없으면 빈 목록 */
+    defaultOptions?: FieldOption[];
+    /** 참이면 이 타입 칸은 값을 못 고친다(created·updated·id — 자동 계산 칸) */
+    readOnly?: boolean;
     /** 필터 값 입력칸 종류 */
     filterInput?: 'text' | 'number' | 'date' | 'option';
     Cell: ComponentType<FieldCellProps>;
@@ -180,6 +190,8 @@ export interface RowDoc {
     values: Record<string, RecordCellValue>;
     created: string;
     updated: string;
+    /** ID 칸 자동 번호 — 행을 만들 때 DbDoc.seq 에서 한 번 받고 불변(삭제돼도 안 되돌림) */
+    seq?: number;
     /** 하위 항목을 접었나(자손 숨김). 노드 collapsed 는 탐색기 전용이라 레코드성 행은 여기 둔다. */
     collapsed?: boolean;
     /** P4 본문 — 불투명. 레코드 뷰는 안 읽는다 */

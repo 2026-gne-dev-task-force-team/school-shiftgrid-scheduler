@@ -11,7 +11,10 @@ import { DatePicker, Icon } from '../../../pane-ui-system';
 import { Popover } from '../Popover';
 import { PILL_COLORS, pillStyle } from '../colors';
 import { isImeEnter } from './ime';
-import type { FieldCellProps, FieldOption, RecordField } from '../contracts/record-view';
+import { formatNumber } from './format';
+import { dateText, toDateValue, type DateConfig } from './dates';
+import { hrefOf, isValidLink, type LinkKind } from './links';
+import type { DateValue, FieldCellProps, FieldOption, RecordField } from '../contracts/record-view';
 
 /** 색 알약 한 개 */
 function Pill({ option }: { option: FieldOption }) {
@@ -91,7 +94,9 @@ function makeInlineCell(numeric: boolean) {
                 />
             );
         }
-        const text = value === null || value === undefined ? '' : String(value);
+        const text = numeric
+            ? formatNumber(value, field.config)
+            : value === null || value === undefined ? '' : String(value);
         return (
             <div
                 data-rv-cell={field.key}
@@ -290,25 +295,96 @@ export function MultiCell({ field, value, editable, onChange, onOptionsChange }:
 
 export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
-    const iso = typeof value === 'string' && value !== '' ? value : null;
+    const cfg = (field.config && typeof field.config === 'object' ? field.config : {}) as DateConfig;
+    const dv = toDateValue(value);
+    const label = dateText(value);
+    // 시작을 고치면 끝은(있으면·range 면) 지킨다. range 가 아니면 하나 고르고 닫는다.
+    const setStart = (s: string) => {
+        const next: DateValue = { start: s };
+        if (cfg.range && dv?.end) next.end = dv.end;
+        onChange(next);
+        if (!cfg.range) setAnchor(null);
+    };
+    const setEnd = (e: string) => onChange({ start: dv?.start ?? e, end: e });
     return (
         <>
             <div
                 data-rv-cell={field.key}
-                onClick={(e) => editable && setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())}
-                className={`w-full h-full flex items-center px-2 text-[13px] truncate ${editable ? 'cursor-pointer' : 'cursor-default'} ${iso ? 'text-text' : 'text-muted'}`}
+                onClick={(ev) => editable && setAnchor((ev.currentTarget as HTMLElement).getBoundingClientRect())}
+                className={`w-full h-full flex items-center px-2 text-[13px] truncate ${editable ? 'cursor-pointer' : 'cursor-default'} ${label ? 'text-text' : 'text-muted'}`}
             >
-                {iso ?? '—'}
+                {label || '—'}
             </div>
             {anchor && (
-                <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>
-                    <DatePicker value={iso} onChange={(d) => { onChange(d); setAnchor(null); }} />
-                    {iso && (
+                <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
+                    <div data-rv-date-start>
+                        {cfg.range && <div className="px-1 pb-0.5 text-[11px] text-muted">시작</div>}
+                        <DatePicker value={dv?.start ?? null} time={cfg.time} onChange={setStart} />
+                    </div>
+                    {cfg.range && (
+                        <div data-rv-date-end className="mt-2 pt-2 border-t border-line">
+                            <div className="px-1 pb-0.5 text-[11px] text-muted">종료</div>
+                            <DatePicker value={dv?.end ?? null} time={cfg.time} onChange={setEnd} />
+                        </div>
+                    )}
+                    {dv && (
                         <button type="button" onClick={() => { onChange(null); setAnchor(null); }}
                             className="mt-1 w-full h-row rounded text-[12px] text-muted hover:bg-text/[0.06]">비우기</button>
                     )}
                 </Popover>
             )}
         </>
+    );
+}
+
+/** url·email·phone — 글자 셀처럼 눌러 고치되, 형식이 맞으면 열기 단추, 틀리면 ⚠. */
+function makeLinkCell(kind: LinkKind) {
+    return function LinkCell({ field, value, editable, onChange }: FieldCellProps) {
+        const [editing, setEditing] = useState(false);
+        const s = value === null || value === undefined ? '' : String(value);
+        if (editing && editable) {
+            return (
+                <InlineInput
+                    initial={s} numeric={false} dataKey={field.key}
+                    onCommit={(t) => { setEditing(false); onChange(t); }}
+                    onCancel={() => setEditing(false)}
+                />
+            );
+        }
+        const valid = isValidLink(kind, s);
+        return (
+            <div
+                data-rv-cell={field.key}
+                onClick={() => editable && setEditing(true)}
+                className={`w-full h-full flex items-center gap-1 px-2 text-[13px] ${editable ? 'cursor-text' : 'cursor-default'} ${s === '' ? 'text-muted' : 'text-text'}`}
+            >
+                <span className="flex-1 min-w-0 truncate">{s || '—'}</span>
+                {s !== '' && !valid && (
+                    <Icon name="warn" size={13} data-rv-invalid={field.key} className="shrink-0 text-bad" aria-label="형식이 올바르지 않습니다" />
+                )}
+                {valid && (
+                    <a href={hrefOf(kind, s)} target="_blank" rel="noreferrer noopener"
+                        data-rv-link={field.key} aria-label="열기" onClick={(e) => e.stopPropagation()}
+                        className="shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-accent hover:bg-text/[0.08]">
+                        <Icon name="arrowRight" size={13} />
+                    </a>
+                )}
+            </div>
+        );
+    };
+}
+export const UrlCell = makeLinkCell('url');
+export const EmailCell = makeLinkCell('email');
+export const PhoneCell = makeLinkCell('phone');
+
+/** 자동 계산 칸(created·updated·id) — 읽기 전용. 보이는 글자는 타입이 toText 로 정한다. */
+export function ReadonlyCell({ field, value, config }: FieldCellProps) {
+    const t = field.type === 'id'
+        ? (typeof value === 'number' ? `${(config as { prefix?: string })?.prefix ?? ''}${value}` : '')
+        : (typeof value === 'string' ? value.replace('T', ' ') : '');
+    return (
+        <div data-rv-cell={field.key} className={`w-full h-full flex items-center px-2 text-[13px] truncate ${t ? 'text-muted' : 'text-muted/60'}`}>
+            {t || '—'}
+        </div>
     );
 }

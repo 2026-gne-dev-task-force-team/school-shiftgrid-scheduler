@@ -11,12 +11,18 @@ import { IconButton } from './IconButton';
 import { FOCUS_RING } from './focus';
 import { monthGrid, monthLabel, shiftMonth, isoOf, type DayCell } from './date-grid';
 
-/** 'YYYY-MM-DD' → {y,m,d} 또는 못 읽으면 null */
+/** 'YYYY-MM-DD'(뒤에 'THH:MM' 이 붙어도 됨) → {y,m,d} 또는 못 읽으면 null */
 function parseIso(s: string | null | undefined): { y: number; m: number; d: number } | null {
     if (!s) return null;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
     if (!m) return null;
     return { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) };
+}
+
+/** 값의 시각 부분(없으면 '00:00') */
+function timeOf(s: string | null | undefined): string {
+    const m = s ? /T(\d{2}:\d{2})/.exec(s) : null;
+    return m ? m[1] : '00:00';
 }
 
 // 요일 머리 — 한국어 고정(로케일 선택 안 만든다). 짧은 꼴과 aria 용 긴 꼴.
@@ -27,13 +33,16 @@ export function DatePicker({
     value,
     onChange,
     weekStart = 0,
+    time = false,
     className = '',
 }: {
-    /** 고른 날 'YYYY-MM-DD' (없으면 null) */
+    /** 고른 날 'YYYY-MM-DD' (time 이면 'YYYY-MM-DDTHH:MM' · 없으면 null) */
     value: string | null;
     onChange: (iso: string) => void;
     /** 0=일요일 시작(기본) · 1=월요일 시작 */
     weekStart?: number;
+    /** 참이면 날짜 아래 시각(HH:MM) 입력을 붙이고 'YYYY-MM-DDTHH:MM' 을 돌려준다 */
+    time?: boolean;
     className?: string;
 }) {
     const today = useMemo(() => new Date(), []);
@@ -45,6 +54,10 @@ export function DatePicker({
     // 보고 있는 달(내부 state) · 포커스된 칸(iso) — 키보드 이동이 여기를 민다
     const [view, setView] = useState<{ y: number; m: number }>({ y: start.y, m: start.m });
     const [focused, setFocused] = useState<string>(isoOf(start.y, start.m, start.d));
+    const [clock, setClock] = useState<string>(timeOf(value));
+    useEffect(() => { setClock(timeOf(value)); }, [value]);
+    // time 이면 날짜에 시각을 붙여 돌려준다(없으면 날짜만)
+    const emit = (dateIso: string) => onChange(time ? `${dateIso}T${clock}` : dateIso);
 
     // 🔴 value 가 바뀌면 그 달로 따라간다(쓰는 쪽이 값을 되돌려줄 때 · 바깥에서 날을 바꿀 때)
     useEffect(() => {
@@ -89,7 +102,7 @@ export function DatePicker({
     const pick = (cell: DayCell) => {
         setView({ y: cell.y, m: cell.m });   // 이웃 달 칸을 누르면 그 달로 넘어간다
         setFocused(cell.iso);
-        onChange(cell.iso);
+        emit(cell.iso);
     };
 
     const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -104,7 +117,7 @@ export function DatePicker({
             case ' ': {
                 e.preventDefault();
                 const p = parseIso(focused);
-                if (p) onChange(focused);
+                if (p) emit(focused);
                 break;
             }
             default: break;
@@ -140,7 +153,7 @@ export function DatePicker({
                 className="grid grid-cols-7"
             >
                 {cells.map((cell) => {
-                    const selected = cell.iso === value;
+                    const selected = cell.iso === (value ? value.slice(0, 10) : null);
                     const wd = new Date(cell.y, cell.m - 1, cell.d).getDay();
                     // 선택 칸은 accent 바탕 · 오늘은(선택 아닐 때) accent 테두리 · 이웃 달은 흐리게
                     const tone = selected
@@ -167,6 +180,23 @@ export function DatePicker({
                     );
                 })}
             </div>
+
+            {time && (
+                <div className="flex items-center gap-1.5 px-1 pt-2 mt-1 border-t border-line">
+                    <span className="text-[11px] text-muted">시각</span>
+                    <input
+                        type="time"
+                        data-dp-time
+                        value={clock}
+                        onChange={(e) => {
+                            const t = e.target.value || '00:00';
+                            setClock(t);
+                            if (value) onChange(`${value.slice(0, 10)}T${t}`);
+                        }}
+                        className="flex-1 h-row px-2 rounded border border-line bg-bg text-[12px] text-text outline-none"
+                    />
+                </div>
+            )}
         </div>
     );
 }

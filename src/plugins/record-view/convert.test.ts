@@ -35,9 +35,9 @@ describe('text →', () => {
         expect(valuesOf(p, 3)).toEqual([true, undefined, true]);   // 빈 칸은 그대로 둔다
         expect(p.lost).toBe(2);
     });
-    it('date — 날짜 꼴만 남기고 나머지는 빈 값(깎임)', () => {
+    it('date — 날짜 꼴만 {start} 로 올리고 나머지는 빈 값(깎임)', () => {
         const p = planConvert(rows('2026-11-08', '내일'), field('text'), 'date');
-        expect(valuesOf(p, 2)).toEqual([undefined, '']);   // 첫 행은 값이 그대로라 변경 없음
+        expect(valuesOf(p, 2)).toEqual([{ start: '2026-11-08' }, null]);   // 글자가 {start} 객체로 오른다
         expect(p.lost).toBe(1);
     });
 });

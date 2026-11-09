@@ -236,7 +236,9 @@ export function RecordView<T>({
         if (!def) return;
         const f = newField(type);
         if (def.defaultConfig !== undefined) f.config = def.defaultConfig;
-        if (def.hasOptions) f.options = [];
+        if (def.defaultOptions) f.options = def.defaultOptions.map((o) => ({ ...o }));
+        else if (def.hasOptions) f.options = [];
+        if (def.readOnly) f.readOnly = true;
         onFieldsChange?.([...fields, f]);
         setAddMenu(null);
     };
@@ -371,6 +373,15 @@ export function RecordView<T>({
                             <div
                                 key={id}
                                 data-rv-row={id}
+                                tabIndex={treeOn ? 0 : undefined}
+                                onKeyDown={treeOn && tree ? (e) => {
+                                    // 행 포커스에서 Tab=들여쓰기 · Shift+Tab=내어쓰기. 셀 편집 중(입력칸)엔 안 가로챈다.
+                                    if (e.key !== 'Tab') return;
+                                    const t = e.target as HTMLElement;
+                                    if (t !== e.currentTarget && t.closest('input,textarea,select,[data-rv-editing]')) return;
+                                    e.preventDefault();
+                                    if (e.shiftKey) tree.onOutdent(id); else tree.onIndent(id);
+                                } : undefined}
                                 onMouseEnter={() => setHoverRow(id)}
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
                                 onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropId(id); } } : undefined}
