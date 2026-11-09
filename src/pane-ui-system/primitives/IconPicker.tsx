@@ -85,6 +85,7 @@ export function TitleField({ value, onRename, className = '', ariaLabel = '제�
             aria-label={ariaLabel}
             placeholder={placeholder}
             onChange={(e) => setText(e.target.value)}
+            onFocus={(e) => { if (/^페이지( \d+)?$/.test(value)) e.currentTarget.select(); }}   // 새로 만든 기본 이름이면 전체 선택 — 입력이 뒤에 안 붙는다
             onBlur={done}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { (e.target as HTMLInputElement).blur(); onEnter?.(); } if (e.key === 'Escape') { setText(value); (e.target as HTMLInputElement).blur(); } }}
             className={`min-w-0 bg-transparent outline-none text-text rounded px-1 hover:bg-text/[0.04] focus:bg-text/[0.04] ${className}`}

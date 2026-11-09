@@ -3,6 +3,7 @@
 import { act, createElement as h } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TitleField } from './IconPicker';
 import { InlineRename } from './InlineRename';
 import { TextInput } from './TextInput';
 import { EmptyState } from './EmptyState';
@@ -136,5 +137,19 @@ describe('useFrameToolbar', () => {
         const tool = document.getElementById('tool')!;
         expect(tool.closest('#frame-head')).not.toBeNull();
         expect(seen).toBe(tool.parentElement);
+    });
+});
+
+describe('TitleField — 기본 이름 전체 선택', () => {
+    it('「페이지 2」 같은 기본 이름이면 포커스에 전체 선택, 직접 지은 이름이면 아니다', () => {
+        mount(h(TitleField, { value: '페이지 2', onRename: () => {} }));
+        const el = input(); const spy = vi.spyOn(el, 'select');
+        act(() => { el.dispatchEvent(new FocusEvent('focusin', { bubbles: true })); });
+        expect(spy).toHaveBeenCalled();
+        document.body.innerHTML = '';
+        mount(h(TitleField, { value: '내 글', onRename: () => {} }));
+        const e2 = input(); const s2 = vi.spyOn(e2, 'select');
+        act(() => { e2.dispatchEvent(new FocusEvent('focusin', { bubbles: true })); });
+        expect(s2).not.toHaveBeenCalled();
     });
 });

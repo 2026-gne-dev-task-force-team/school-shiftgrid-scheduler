@@ -392,7 +392,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>
@@ -405,7 +405,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                         onClick={openJump}
                         aria-expanded={jumpOpen}
                         aria-label="년·월 고르기"
-                        className="flex items-center gap-1 -ml-1 px-1 rounded text-base font-semibold text-text hover:bg-text/[0.06] transition-colors"
+                        className="flex items-center gap-1 -ml-1 px-1 rounded text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         {monthLabel(head.y, head.m)}
                         <Icon name="right" size={14} className={`text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />

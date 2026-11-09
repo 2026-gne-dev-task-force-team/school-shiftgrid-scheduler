@@ -14,15 +14,16 @@ export function ProjectPasswordPane() {
     const [oldPw, setOldPw] = useState('');
     const [newPw, setNewPw] = useState('');
     const [msg, setMsg] = useState('');
+    const [confirmOff, setConfirmOff] = useState(false);
 
     const isMaster = cur.kind === 'master';
 
     const apply = async () => {
+        if (has && newPw === '') { setConfirmOff(true); return; }   // 빈 칸 저장 = 해제 — 「암호 해제」와 같은 확인창을 탄다
         const ok = await setProjectPassword(oldPw, newPw);
         setMsg(ok ? (newPw === '' ? '암호를 해제했습니다.' : '암호를 저장했습니다.') : '실패 — 현재 암호가 맞는지 확인하세요.');
         if (ok) { setOldPw(''); setNewPw(''); }
     };
-    const [confirmOff, setConfirmOff] = useState(false);
     const remove = async () => {
         setConfirmOff(false);
         const ok = await setProjectPassword(oldPw, '');

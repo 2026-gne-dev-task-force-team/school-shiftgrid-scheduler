@@ -145,7 +145,7 @@ export function GanttView({ value, onChange, trailing, selection, onSelect }: { 
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>
