@@ -225,7 +225,9 @@ export function getDeletedEvents(): PublicNode[] {
     // 휴지통 안이면서 부모가 저장소·폴더가 아닌 것 = 일정 자신이 직접 버려진 것(저장소째면 저장소를 되살린다)
     return eventNodes.filter((n) => {
         if (!api!.isTrashed(n.id)) return false;
-        const pt = api!.get(api!.parent(n.id) ?? '')?.type;
+        const pid = api!.parent(n.id) ?? '';
+        if (api!.parent(pid) === null) return true;   // 부모가 뿌리(= 휴지통 자신, type 이 'folder' 라 아래 검사에 걸린다)면 직접 버려진 것
+        const pt = api!.get(pid)?.type;
         return pt !== STORE_TYPE && pt !== 'folder';
     });
 }
