@@ -175,6 +175,10 @@ export interface NodeHeaderProps {
     titleClass?: string;
     /** 아이콘이 없을 때 보일 것 — 기본은 그 타입의 기본 아이콘. */
     fallback?: ReactNode;
+    /** 제목 입력칸 접근성 이름 · 빈칸 안내 · Enter 확정 뒤 콜백(페이지: 본문 첫 블록으로). */
+    titleAriaLabel?: string;
+    titlePlaceholder?: string;
+    onTitleEnter?: () => void;
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */

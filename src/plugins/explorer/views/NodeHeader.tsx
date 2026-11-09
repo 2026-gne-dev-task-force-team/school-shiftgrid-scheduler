@@ -10,7 +10,7 @@ import type { NodeHeaderProps } from '../contracts/nodes';
 import { canDo, iconOf } from '../model/types';
 import { apiRename, apiSetField, getState, subscribeState } from '../store';
 
-export function NodeHeader({ nodeId, leafId, iconSizeClass = 'text-lead', titleClass = 'font-medium flex-1 min-w-0', fallback }: NodeHeaderProps) {
+export function NodeHeader({ nodeId, leafId, iconSizeClass = 'text-lead', titleClass = 'font-medium flex-1 min-w-0', fallback, titleAriaLabel, titlePlaceholder, onTitleEnter }: NodeHeaderProps) {
     const node = useSyncExternalStore(subscribeState, () => getState().tree.nodes[nodeId]);
     const name = node?.name;
     useEffect(() => { if (leafId && name) setLeafTitle(leafId, name); }, [leafId, name]);
@@ -25,7 +25,8 @@ export function NodeHeader({ nodeId, leafId, iconSizeClass = 'text-lead', titleC
                 sizeClass={iconSizeClass}
             />
             {ok
-                ? <TitleField value={node.name} onRename={(n) => apiRename(nodeId, n)} className={titleClass} />
+                ? <TitleField value={node.name} onRename={(n) => apiRename(nodeId, n)} className={titleClass}
+                    ariaLabel={titleAriaLabel} placeholder={titlePlaceholder} onEnter={onTitleEnter} />
                 : <span className={`px-1 truncate text-text ${titleClass}`}>{node.name}</span>}
         </>
     );

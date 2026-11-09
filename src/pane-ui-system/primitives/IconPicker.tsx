@@ -66,11 +66,14 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
 }
 
 /** 탭 머리 제목 칸 — 고치고 Enter·포커스 빠질 때 한 번 넘긴다(빈 값은 무시). 밖에서 이름이 바뀌면 따라간다. */
-export function TitleField({ value, onRename, className = '', ariaLabel = '제목' }: {
+export function TitleField({ value, onRename, className = '', ariaLabel = '제목', placeholder, onEnter }: {
     value: string;
     onRename: (name: string) => void;
     className?: string;
     ariaLabel?: string;
+    placeholder?: string;
+    /** Enter 로 확정한 뒤 불린다(본문으로 캐럿 넘기기 등). IME 조합 중 Enter 는 안 불린다. */
+    onEnter?: () => void;
 }) {
     const [text, setText] = useState(value);
     const [seen, setSeen] = useState(value);
@@ -80,9 +83,10 @@ export function TitleField({ value, onRename, className = '', ariaLabel = '제�
         <input
             value={text}
             aria-label={ariaLabel}
+            placeholder={placeholder}
             onChange={(e) => setText(e.target.value)}
             onBlur={done}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setText(value); (e.target as HTMLInputElement).blur(); } }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { (e.target as HTMLInputElement).blur(); onEnter?.(); } if (e.key === 'Escape') { setText(value); (e.target as HTMLInputElement).blur(); } }}
             className={`min-w-0 bg-transparent outline-none text-text rounded px-1 hover:bg-text/[0.04] focus:bg-text/[0.04] ${className}`}
         />
     );

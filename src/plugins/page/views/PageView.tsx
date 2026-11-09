@@ -5,7 +5,7 @@
  *   🔴 데이터는 노드 다리(nodes.ts)로만 — 페이지도 노드고 저장·휴지통은 노드 시스템이 쥔다.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactElement, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
@@ -34,11 +34,12 @@ interface FocusIntent { id: string; offset: number; end?: number; }
 /** `/` 메뉴 상태 — 어느 블록에서 무엇으로 걸렀나. */
 interface SlashState { blockId: string; query: string; index: number; }
 
-export function PageView({ host }: { host: PluginHost }) {
+export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }) {
     const activeId = useActivePage();
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || inTrash(activeId)) return <StartScreen />;
     const node = getNodesApi()?.get(activeId);
+    const Header = getNodesApi()?.Header;
     return (
         <PageEditor
             host={host}
@@ -50,6 +51,11 @@ export function PageView({ host }: { host: PluginHost }) {
             icon={node?.icon}
             onSetIcon={(i) => getNodesApi()?.setIcon(activeId, i)}
             onBack={() => setActivePage(null)}
+            renderHeader={Header && ((onEnter) => (
+                <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-4xl"
+                    titleClass="flex-1 text-3xl font-bold" titleAriaLabel="페이지 제목" titlePlaceholder="제목 없음"
+                    onTitleEnter={onEnter} fallback={<Icon name="fileText" size={32} className="text-muted" />} />
+            ))}
         />
     );
 }
@@ -70,9 +76,11 @@ export interface PageEditorProps {
     onSetIcon?: (icon: string | undefined) => void;
     /** 주면 머리줄에 「← 목록」 */
     onBack?: () => void;
+    /** 주면 큰 제목 자리를 이걸로(노드 공통 머리 nodes.Header) — 없으면 내장 PageHeader. onEnter = 본문 첫 블록으로. */
+    renderHeader?: (onEnter: () => void) => ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack, renderHeader }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -413,14 +421,14 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                     className="max-w-3xl mx-auto px-6 py-8"
                     onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                 >
-                    <PageHeader
+                    {renderHeader ? <div className="mb-1 flex items-center gap-2" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader
                         key={activeId}
                         initialName={title}
                         icon={icon}
                         onRename={renameTitle}
                         onEnter={titleEnterToBody}
                         onSetIcon={onSetIcon}
-                    />
+                    />}
                     {page.blocks.map((b, i) => (
                         <BlockRow
                             key={b.id}
