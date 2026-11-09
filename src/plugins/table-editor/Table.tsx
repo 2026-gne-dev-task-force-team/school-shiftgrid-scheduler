@@ -526,29 +526,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         });
     }, [sel.r1, sel.c1, sel.r2, sel.c2, rows, columns, merges, liveResize, liveWeight, core.containerRef]);
 
-    // ── 떠있는 「칸 합치기」 알약 — 고른 범위 바로 위(넘치면 아래)에 떠서 아무것도 안 가린다 ──
-    //    🔴 스크롤러 바깥(바깥 래퍼 기준)에 둔다 — 표 맨 윗줄을 골라도 잘리지 않고 표 위 여백에 뜬다(열 손잡이와 안 겹침).
-    const canMergeSel = hasMerge && regionFromSelection(sel, rows, columns) != null;
-    const canUnmerge = hasMerge && anchorCovering(merges, core.active.r, core.active.c, rows, columns) != null;
-    const [pill, setPill] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-    useLayoutEffect(() => {
-        if (!canMergeSel && !canUnmerge) return;
-        const cont = core.containerRef.current; const outer = outerRef.current; if (!cont || !outer) return;
-        const top = cont.querySelector<HTMLElement>(`[data-rc="${sel.r1}:${sel.c1}"]`);
-        const bot = cont.querySelector<HTMLElement>(`[data-rc="${sel.r2}:${sel.c1}"]`) ?? top;
-        if (!top) return;
-        const or = outer.getBoundingClientRect();
-        const tr = top.getBoundingClientRect();
-        const br = bot!.getBoundingClientRect();
-        const left = tr.left - or.left;
-        // 기본은 선택 바로 위 — 래퍼 바깥이라 안 잘리고, 표 윗줄을 골라도 제목·표 사이 여백으로 떠오른다(음수 top 허용).
-        //    위가 창 밖으로 나갈 때(표가 화면 맨 위)만 선택 아래로 뒤집는다.
-        const above = tr.top - or.top - 30;
-        const below = br.bottom - or.top + 6;
-        const topPos = or.top + above < 4 ? below : above;
-        setPill({ top: topPos, left });
-    }, [canMergeSel, canUnmerge, sel.r1, sel.c1, sel.r2, sel.c2, core.containerRef]);
-
     const invalidCount = hasValidate && validate
         ? rows.reduce((n, row) => n + columns.filter((col) => validate(row.id, col.key, row.cells[col.key] ?? '')).length, 0)
         : 0;
@@ -567,7 +544,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             }
             const q = quickCalc(texts);
             calcText = q
-                ? (q.nums ? `합계 ${fmtNum(q.sum)} · 평균 ${fmtNum(q.avg)} · 최솟값 ${fmtNum(q.min)} · 최댓값 ${fmtNum(q.max)} · 개수 ${q.count}` : `개수 ${q.count}`)
+                ? (q.nums ? `합계 ${fmtNum(q.sum)}   평균 ${fmtNum(q.avg)}   최솟값 ${fmtNum(q.min)}   최댓값 ${fmtNum(q.max)}   개수 ${q.count}` : `개수 ${q.count}`)
                 : '';
         } else {
             calcText = rows[core.active.r]?.cells[columns[core.active.c]?.key ?? ''] ?? '';
@@ -581,7 +558,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const tabsOn = focused || reorder != null;
 
     return (
-        <div ref={outerRef} className={`relative text-[14px] ${className ?? ''}`}>
+        <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
@@ -612,7 +589,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         onClick={(e) => { e.stopPropagation(); selectAll(); }}
                                         onContextMenu={openTableMenu}
                                         title="눌러서 표 전체 고르기 · 우클릭 표 메뉴(스타일·머리·꼬리)"
-                                        className={`ml-auto mr-px h-5 w-5 rounded-sm grid place-items-center cursor-pointer select-none transition-opacity
+                                        className={`ml-auto h-5 w-6 grid place-items-center cursor-pointer select-none transition-opacity
                                             ${tabsOn ? 'opacity-100' : 'opacity-0'} bg-panel2 hover:bg-accent/20 text-muted`}
                                     >
                                         <span className="block h-2 w-2 rounded-[1px] border border-current" />
@@ -635,7 +612,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 onMouseEnter={() => setHoverTab(idx)}
                                                 onMouseLeave={() => setHoverTab(null)}
                                                 title="눌러서 열 고르기 · 끌어서 옮기기 · ▾ 메뉴"
-                                                className={`relative mx-px h-5 grid place-items-center rounded-t-sm cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                className={`relative h-5 grid place-items-center border-r border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
                                                     ${tabsOn ? 'opacity-100' : 'opacity-0'}
                                                     ${lineSel ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
                                             >
@@ -712,14 +689,14 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                     {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
                                     <td className="relative w-7 p-0 border-0 align-middle">
                                         {hasRows && (
-                                            <div className="h-full flex items-stretch justify-end py-px">
+                                            <div className="h-full flex items-stretch justify-end">
                                                 <div
                                                     data-testid="row-handle"
                                                     onMouseDown={(e) => beginReorder(e, 'row', r)}
                                                     onClick={(e) => { e.stopPropagation(); selectLine('row', r); }}
                                                     onContextMenu={(e) => openRowMenu(e, row.id, r)}
                                                     title="눌러서 행 고르기 · 끌어서 옮기기 · 우클릭 메뉴"
-                                                    className={`grid place-items-center w-6 min-h-9 rounded-l-sm cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                    className={`grid place-items-center w-6 min-h-6 border-b border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
                                                         ${tabsOn ? 'opacity-100' : 'opacity-0'}
                                                         ${sel.r1 <= r && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= columns.length - 1
                                                             ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
@@ -760,18 +737,20 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         // 🔴 선택 테두리는 칸이 아니라 바깥 상자(selRect) 한 겹으로 그린다 — 칸엔 안쪽 옅은 바탕만(이중선·어긋남 방지).
                                         //    편집 중인 칸은 input 자신의 테두리만 보이게 바탕을 빼지 않는다(input 이 흰 바탕으로 덮는다).
                                         const cls = [
-                                            'relative border px-2.5 py-2 h-10 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
+                                            'relative border px-1.5 py-0.5 h-6 align-middle text-text whitespace-pre-wrap leading-5 min-w-[96px]',
                                             // 머리 칸은 바탕이 옅은 회색(panel2)이라 line 경계가 묻힌다 — 한 단 진한 edge 로 본문 칸과 같은 또렷함을 준다(세로 칸선이 보이게).
                                             isHeadCell ? 'border-edge' : 'border-line',
                                             preset === 'lined' ? 'border-x-transparent' : '',
                                             isFoot ? 'border-t-2' : '',
                                             col.readOnly ? 'text-muted' : '',
-                                            headTone ? 'bg-accent/15 font-semibold' : isHeadCell ? 'bg-panel2 font-medium' : '',
+                                            headTone ? 'bg-accent/15 font-semibold' : isHeadCell ? 'bg-panel2 font-semibold' : '',
+                                            isHeadRow(r) ? 'border-b-2 border-b-edge' : '',
+                                            headerCol && c === 0 && !isHeadRow(r) ? 'border-r-2 border-r-edge' : '',
                                             striped ? 'bg-text/[0.03]' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
                                             selected || inFill ? 'bg-accent/10' : '',
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
-                                            col.align === 'right' || col.type === 'number' ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
+                                            col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
                                         ].filter(Boolean).join(' ');
                                         const title = vErr?.message ?? deco?.title;
                                         return (
@@ -879,28 +858,11 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             </div>
             {/* 넘버스 하단 합계 바 — 범위면 합·평균·최소·최대·개수, 칸 하나면 원래 값. */}
             {calcText != null && (
-                <div data-testid="quick-calc" className="mt-1 ml-7 h-6 px-2 flex items-center rounded border border-line bg-panel text-[12px] text-muted tabular-nums truncate select-none">
+                <div data-testid="quick-calc" className="mt-2 ml-6 h-6 px-2 flex items-center border-t border-line text-[12px] text-muted tabular-nums truncate select-none">
                     {calcText || ' '}
                 </div>
             )}
 
-            {/* 떠있는 합치기 알약 — 스크롤러 바깥(래퍼 기준)에 둬 표 윗줄에서도 안 잘린다. 그림자 있는 작은 떠있는 메뉴. */}
-            {(canMergeSel || canUnmerge) && (
-                <div className="absolute z-30 flex gap-1" style={{ top: pill.top, left: pill.left }}>
-                    {canMergeSel && (
-                        <button type="button" onClick={mergeSelection}
-                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
-                            ⊞ {lb.mergeCells}
-                        </button>
-                    )}
-                    {canUnmerge && (
-                        <button type="button" onClick={unmergeAtActive}
-                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
-                            ⊟ {lb.unmergeCells}
-                        </button>
-                    )}
-                </div>
-            )}
             {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
     );

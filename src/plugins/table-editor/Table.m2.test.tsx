@@ -89,6 +89,12 @@ function clickText(label: string) {
     act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 }
 
+/** 넘버스엔 떠있는 합치기 알약이 없다 — 칸 우클릭 메뉴로 합친다. */
+function openCellMenuAt(r: number, c: number) {
+    const td = document.querySelector(`[data-rc="${r}:${c}"]`)!;
+    act(() => { td.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })); });
+}
+
 describe('Table M2 — 병합', () => {
     it('범위를 골라 「칸 합치기」 하면 merge.set tx 가 나가고 덮인 칸이 안 그려진다', () => {
         const ref = createRef<CtrlRef>();
@@ -96,6 +102,7 @@ describe('Table M2 — 병합', () => {
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['merge']} onTx={onTx} />);
         const before = document.querySelectorAll('[data-testid="table-grid"] td').length;
         act(() => ref.current!.h().select(0, 0, 1, 1));   // 2×2
+        openCellMenuAt(0, 0);
         clickText('칸 합치기');
         const tx = onTx.mock.calls.at(-1)![0] as TableTx;
         expect(tx.merge?.set?.[0]).toEqual({ rowId: 'r0', key: 'a', rowSpan: 2, colSpan: 2 });
@@ -108,6 +115,7 @@ describe('Table M2 — 병합', () => {
         const ref = createRef<CtrlRef>();
         mount(<Controlled ref={ref} initRows={rows3()} initCols={cols3()} features={['merge']} />);
         act(() => ref.current!.h().select(0, 0, 1, 1));
+        openCellMenuAt(0, 0);
         clickText('칸 합치기');
         const spanned = [...document.querySelectorAll('td')].find((td) => td.getAttribute('rowspan') === '2');
         expect(spanned).toBeTruthy();
