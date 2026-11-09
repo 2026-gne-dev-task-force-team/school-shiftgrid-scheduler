@@ -113,7 +113,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const { tree, selectedIds, selectedId, renamingId, renameInitial, renamePlaceholder, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
 
     const [query, setQuery] = useState('');
-    const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+    // create: 헤더 + 단추가 연 「새로 만들기」 메뉴(우클릭과 같은 후보 · 모바일엔 우클릭이 없다 — 쥔님 2026-11-09)
+    const [menu, setMenu] = useState<{ x: number; y: number; create?: boolean } | null>(null);
     const [narrow, setNarrow] = useState<boolean>(() => host.screen.narrow());
     const [trashOpen, setTrashOpen] = useState(false);
     // 🔴 휴지통 높이 — 기기별 저장값에서 읽어 와 끌어서 조절한다(TrashResizeHandle). 끝에 host.storage 로 남긴다.
@@ -289,7 +290,35 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     };
 
     // ── 우클릭 메뉴 — 등록 표에서 「새로 만들기」를 짜고(⛔ 타입 비교 없음), 나머지 동작을 붙인다 ──
+    // 「새 <타입>」 줄들 — 우클릭(via 'context')과 + 단추(via 'selection')가 같은 표를 쓴다. 생길 자리의 타입이 받는 것만.
+    const createItems = (via: 'selection' | 'context'): MenuEntry[] => {
+        const parent = newFolderParent(tree, selectedId, isContainerType, via);
+        const baseType = via === 'context'
+            ? (selectedId ? tree.nodes[selectedId]?.type : undefined) ?? tree.nodes[tree.root]?.type ?? 'folder'
+            : tree.nodes[parent]?.type ?? 'folder';
+        const out: MenuEntry[] = [];
+        // 🔑 싱글톤이 이미 있으면 숨기지 말고 회색(비활성) + 이유를 라벨에 보인다(설계) — 생길 자리에서 판정.
+        for (const def of createCandidates(baseType)) {
+            const dup = violatesUnique(tree, def.type, parent, null, uniqueOf);
+            const blocked = !canCreateType(def.type, parent);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
+            const icon = createIconOf(def);   // 「plus」만 줄지어 있으면 무엇을 만드는지 안 보인다 — 타입 자신의 아이콘
+            out.push(
+                dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
+                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
+                        : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via, targetId: selectedId ?? undefined }) });
+        }
+        return out;
+    };
+    // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
+    const folderFallback = (via: 'selection' | 'context', baseType: string): MenuEntry[] =>
+        acceptsChild(baseType, 'folder') ? [{ label: '새 폴더', icon: 'folder', onClick: () => newNode('folder', { via, targetId: selectedId ?? undefined }) }] : [];
+
     const buildMenu = (): MenuEntry[] => {
+        if (menu?.create) {
+            const c = createItems('selection');
+            if (c.length === 0) c.push(...folderFallback('selection', tree.nodes[newFolderParent(tree, selectedId, isContainerType, 'selection')]?.type ?? 'folder'));
+            return c.length ? c : [{ label: '여기에 만들 수 있는 것이 없습니다', disabled: true }];
+        }
         const selNode = selectedId ? tree.nodes[selectedId] : null;
         const inTrash = !!selectedId && isDescendant(tree, selectedId, tree.trash);
         // 휴지통 안 노드는 복원·영구삭제만(영구삭제는 인라인 확인으로 — ask-purge 가 줄을 바꾼다)
@@ -310,23 +339,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             if (vitems.length === 0) vitems.push({ label: selRow.failed ? '유도 실패' : '유도 항목', disabled: true });
             return vitems;
         }
-        // 「새로 만들기 ▸」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용
-        const baseType = selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder');
-        const items: MenuEntry[] = [];
-        // ContextMenu 는 하위 메뉴가 없다 → 「새 <label>」 로 평평하게(지금은 폴더 하나).
-        // 🔴 우클릭 = 「이 노드에서」(via 'context') — 명령(선택 기준) 대신 onClick 으로 직접 부른다(targetId=우클릭한 노드).
-        //    그래야 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(헤더 단추는 형제로 — 두 경로가 갈린다).
-        // 🔑 싱글톤이 이미 있으면 숨기지 말고 회색(비활성) + 이유를 라벨에 보인다(설계) — 생길 자리(via:'context')에서 판정.
-        const ctxParent = newFolderParent(tree, selectedId, isContainerType, 'context');
-        for (const def of createCandidates(baseType)) {
-            const dup = violatesUnique(tree, def.type, ctxParent, null, uniqueOf);
-            const blocked = !canCreateType(def.type, ctxParent);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
-            const icon = createIconOf(def);   // 「plus」만 줄지어 있으면 무엇을 만드는지 안 보인다 — 타입 자신의 아이콘
-            items.push(
-                dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
-                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
-                        : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via: 'context', targetId: selectedId ?? undefined }) });
-        }
+        // 「새로 만들기」 후보: 우클릭한 노드(없으면 보이는 루트)의 타입이 받는 것 ∩ create.under 허용.
+        // 🔴 우클릭 = 「이 노드에서」(via 'context') — 폴더를 우클릭한 「새 폴더」가 그 폴더 **안**에 생긴다(+ 단추는 형제로).
+        const items: MenuEntry[] = createItems('context');
         if (selNode && !inTrash) {
             // 🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
             const multi = selectedIds.length > 1;
@@ -339,8 +354,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             const extra = typeMenu(selNode, selNode.id);
             if (extra.length) { items.push({ sep: true }); for (const it of extra) items.push(it); }
         }
-        // 메뉴가 비면 「새 폴더」 폴백 — 단 그 부모가 폴더를 받을 때만(달력 저장소처럼 폴더를 안 받는 컨테이너엔 「새 폴더」가 뜨면 안 된다).
-        if (items.length === 0 && acceptsChild(baseType, 'folder')) items.push({ label: '새 폴더', icon: 'folder', onClick: () => newNode('folder', { via: 'context', targetId: selectedId ?? undefined }) });
+        if (items.length === 0) items.push(...folderFallback('context', selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder')));
         return items;
     };
 
@@ -370,7 +384,10 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             <SectionHeader
                 title="탐색기"
                 end={(
-                    <IconButton icon="plus" label="새 폴더" onClick={() => host.commands.run('project-explorer.new-folder')} />
+                    <IconButton icon="plus" label="새로 만들기" onClick={(e) => {
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenu({ x: r.left, y: r.bottom, create: true });
+                    }} />
                 )}
             />
 
