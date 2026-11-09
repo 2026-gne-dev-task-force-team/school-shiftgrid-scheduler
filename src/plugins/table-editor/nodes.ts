@@ -13,7 +13,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
 import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
-import type { CellTone, MergeRegion, TableTx } from './contracts/table';
+import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
 
 export const TABLE_TYPE = 'table-editor.table';
@@ -28,6 +28,9 @@ export interface TableDoc {
     merges: MergeRegion[];
     headerRow?: boolean;
     headerCol?: boolean;
+    /** M5 넘버스 — 꼬리 행 · 표 스타일 프리셋. */
+    footerRow?: boolean;
+    style?: TableStylePreset;
     rowTones?: Record<string, CellTone>;
     colTones?: Record<string, CellTone>;
 }

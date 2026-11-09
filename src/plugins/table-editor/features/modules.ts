@@ -84,6 +84,20 @@ export const mergeFeature: TableFeature = {
     install: (ctx) => { ctx.capabilities.enable('merge'); },
 };
 
+// ── M5 넘버스 ─────────────────────────────────────────────────────────────
+
+/** 하단 합계 바 — 고른 범위의 합·평균·최소·최대·개수(머리·꼬리 행은 뺀다). */
+export const quickCalcFeature: TableFeature = {
+    id: 'quick-calc', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('quick-calc'); },
+};
+
+/** 표 스타일 프리셋(기본·가로선·줄무늬·머리 강조) — 표 손잡이 메뉴에서 고른다. */
+export const tableStyleFeature: TableFeature = {
+    id: 'table-style', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('table-style'); },
+};
+
 /** 내장 모듈 표 — 조립기가 문자열 id 를 이걸로 푼다. */
 export const BUILTIN: Record<string, TableFeature> = {
     [rowsFeature.id]: rowsFeature,
@@ -98,11 +112,16 @@ export const BUILTIN: Record<string, TableFeature> = {
     [colTypesFeature.id]: colTypesFeature,
     [validateFeature.id]: validateFeature,
     [mergeFeature.id]: mergeFeature,
+    [quickCalcFeature.id]: quickCalcFeature,
+    [tableStyleFeature.id]: tableStyleFeature,
 };
 
 /**
  * 기본 묶음 — 아무것도 안 적으면 이게 끼워진다(「설정 몰라도 바로」).
- *   ⭐ v3: 노션 「단순 표 블록」에 있는 것만 — 행·열 늘리고 줄이기(axis-edit)·열 폭·칸 합치기·머리 고정.
- *   ⛔ 체크칸(col-types)·검증(validate)·행 높이(row-weight)·채우기 핸들(fill)은 **빼 둔다** — 손님(시간표 등)이 켠다.
+ *   ⭐ M5(2026-11-09 쥔님 「노션 취소 → 넘버스」): 넘버스 새 표가 주는 것 — 행·열 늘리기·열 폭·합치기·머리 고정
+ *     + 채우기(노란 점)·합계 바·표 스타일. ⛔ 체크칸·검증·행 높이는 손님이 켠다.
  */
-export const DEFAULT_FEATURES: string[] = ['rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:append', 'history'];
+export const DEFAULT_FEATURES: string[] = [
+    'rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:append', 'history',
+    'fill', 'quick-calc', 'table-style',
+];

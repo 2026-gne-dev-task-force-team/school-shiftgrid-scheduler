@@ -127,7 +127,14 @@ export type PasteOverflow = 'append' | 'clip';
  */
 export type TableCapability =
     | 'rows' | 'fill' | 'history'
-    | 'col-resize' | 'sticky-headers' | 'row-weight' | 'axis-edit' | 'col-types' | 'validate' | 'merge';
+    | 'col-resize' | 'sticky-headers' | 'row-weight' | 'axis-edit' | 'col-types' | 'validate' | 'merge'
+    | 'quick-calc' | 'table-style';
+
+/**
+ * M5(넘버스) 표 스타일 — 프리셋 넷. 색은 토큰 조합의 이름일 뿐(하드코딩 색 0).
+ *   basic 칸선 전부 · lined 가로선만 · striped 칸선 + 교대 행 · headed 머리 강조 + 교대 행.
+ */
+export type TableStylePreset = 'basic' | 'lined' | 'striped' | 'headed';
 
 /**
  * 🔴 기능이 엔진에 손대는 창구 전부 — 이 밖은 없다(0.1). cell/header 렌더 주입·clipboard 파서는 M2 에서 넓힌다.
@@ -186,6 +193,12 @@ export interface TableProps {
     onSetHeaderCol?(v: boolean): void;
     /** v3 색 — 손잡이 메뉴에서 행·열 바탕 틴트를 고른다(소유자가 저장 → decorate 로 되비친다). undefined 는 색 없음. */
     onColor?(kind: 'row' | 'col', id: string, tone?: CellTone): void;
+    /** M5 넘버스 — 마지막 줄을 꼬리 행으로(머리처럼 칠하고 합계 바·채우기에서 뺀다). 소유자가 쥔다. */
+    footerRow?: boolean;
+    onSetFooterRow?(v: boolean): void;
+    /** M5 넘버스 — 표 스타일 프리셋(table-style 기능). 소유자가 쥔다. 없으면 basic. */
+    tableStyle?: TableStylePreset;
+    onSetTableStyle?(s: TableStylePreset): void;
     labels?: Partial<TableLabels>;
     emptyHint?: string;
     className?: string;
