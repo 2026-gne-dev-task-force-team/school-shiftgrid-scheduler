@@ -19,6 +19,7 @@ function fakeApi() {
     const listeners = new Set<(ids: string[]) => void>();
     const write = () => { log.writes++; if (depth === 0) log.writesOutside++; };
     const parentOf = (id: string) => [...nodes.values()].find((n) => n.children.includes(id))?.id ?? null;
+    const isTrashed = (id: string): boolean => { for (let p = parentOf(id); p; p = parentOf(p)) if (p === 'trash') return true; return false; };
     const api: NodesApi = {
         version: 1,
         types: { register: () => ({ dispose() {} }) },
@@ -40,7 +41,9 @@ function fakeApi() {
         invalidate: () => {}, select: () => {}, open: () => {}, promptInput: () => {},
         subscribe: (fn) => { listeners.add(fn); return { dispose() { listeners.delete(fn); } }; },
         roots: { main: 'root', trash: 'trash' },
-        isTrashed: () => false, liveByType: () => [], cmd: {} as NodesApi['cmd'],   // R2 새 칸 — 이 테스트는 안 쓴다
+        isTrashed,
+        liveByType: (t) => [...nodes.values()].filter((n) => n.type === t && !isTrashed(n.id)) as unknown as PublicNode[],
+        cmd: { undo: 'explorer.undo', redo: 'explorer.redo' } as unknown as NodesApi['cmd'],
     };
     return { api, nodes, log };
 }

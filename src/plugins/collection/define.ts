@@ -43,17 +43,7 @@ export function defineCollection(cfg: CollectionConfig): CollectionKit {
         bump();
     };
 
-    /** 조상에 휴지통이 있나 — 🔴 nodes.path 는 휴지통 sentinel 을 안 담으니 부모 사슬을 직접 탄다. */
-    const inTrash = (id: string): boolean => {
-        if (!api) return false;
-        let cur: string | null = api.parent(id);
-        for (let guard = 0; cur && guard < 1000; guard++) {
-            if (cur === api.roots.trash) return true;
-            if (cur === api.roots.main) return false;
-            cur = api.parent(cur);
-        }
-        return false;
-    };
+    const inTrash = (id: string): boolean => api?.isTrashed(id) ?? false;
 
     const dataOf = (id: string): Record<string, unknown> => (api?.get(id)?.data ?? {}) as Record<string, unknown>;
 

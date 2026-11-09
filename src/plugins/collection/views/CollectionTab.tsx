@@ -5,7 +5,7 @@
  *   ⛔ 뽑기·조 나누기·예약 같은 쓰임새는 없다 — 위층이 증축한다.
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { StartScreen as StartScreenBase, type PeekHandle } from '../../../pane-ui-system';
+import { StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
 import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
@@ -47,7 +47,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     const rev = useSyncExternalStore(kit.subscribe, kit.rev, kit.rev);
     const activeId = kit.active();
     const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
+    const bar = useFrameToolbar();   // Frame 툴바 자리(Q12)
     const titleKey = cfg.baseFields[0].key;
     const baseKeys = useMemo(() => cfg.baseFields.map((f) => f.key), [cfg]);
 
@@ -76,10 +76,10 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
 
     return (
         <div className="h-full select-none">
-            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" toolbar={<div ref={setBarHost} />} headerExtra={`${records.length}${cfg.unit}`}>
+            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" toolbar={bar.slot} headerExtra={`${records.length}${cfg.unit}`}>
             <div className="h-full flex flex-col">
                 <RecordView<Rec>
-                    toolbarHost={barHost}
+                    toolbarHost={bar.host}
                     fields={fields}
                     records={records}
                     getId={(r) => r.id}

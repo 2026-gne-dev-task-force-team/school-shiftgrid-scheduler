@@ -30,11 +30,7 @@ export function getActiveDb(): string | null { return activeDbId; }
 export function pickFirstDbIfNone(): void {
     const a = api;
     if (activeDbId || !a) return;
-    const inTrash = (id: string): boolean => {
-        for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true;
-        return false;
-    };
-    const first = a.byType(DB_TYPE).find((n) => !inTrash(n.id));
+    const first = a.liveByType(DB_TYPE)[0];
     if (first) setActiveDb(first.id);
 }
 
@@ -42,8 +38,7 @@ export function pickFirstDbIfNone(): void {
 export function liveDbs(): { id: string; name: string; folder: string | null }[] {
     const a = api;
     if (!a) return [];
-    const inTrash = (id: string): boolean => { for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true; return false; };
-    return a.byType(DB_TYPE).filter((n) => !inTrash(n.id)).map((n) => {
+    return a.liveByType(DB_TYPE).map((n) => {
         const p = a.parent(n.id);
         return { id: n.id, name: n.name, folder: p && p !== a.roots.main ? (a.get(p)?.name ?? null) : null };
     });
@@ -52,7 +47,7 @@ export function liveDbs(): { id: string; name: string; folder: string | null }[]
 export function createDb(): string | null {
     const a = api;
     if (!a) return null;
-    const names = new Set(a.byType(DB_TYPE).map((n) => n.name));
+    const names = new Set(a.liveByType(DB_TYPE).map((n) => n.name));
     let name = '컬렉션';
     for (let i = 2; names.has(name); i++) name = `컬렉션 ${i}`;
     return a.create(a.roots.main, { type: DB_TYPE, name, data: blankDb() }) || null;
