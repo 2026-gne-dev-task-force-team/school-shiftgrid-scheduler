@@ -26,7 +26,7 @@ export {
     getKeyOverrides, setKeyOverride, resetKeyOverride, resetAllKeyOverrides, restoreKeyOverrides, useKeyOverrides, type KeyOverrides,
 } from './keybindings';
 
-export { FOCUS_RING, pressProps } from './primitives/focus';
+export { FOCUS_RING, pressProps, focusWhenReady } from './primitives/focus';
 export { Button } from './primitives/Button';
 export { Surface } from './primitives/Surface';
 export { IconButton } from './primitives/IconButton';

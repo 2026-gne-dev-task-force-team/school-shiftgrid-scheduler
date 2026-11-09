@@ -4,7 +4,7 @@
  */
 import { act, createElement as h, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Dialog } from './Dialog';
 import { Popover } from './Popover';
 import { ContextMenu, type MenuEntry } from './ContextMenu';
@@ -13,6 +13,9 @@ import { MenuList, MenuItem } from './Menu';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let roots: Root[] = [];
+// 닫힘 퇴장 전환(presence)은 움직임 줄이기면 즉시 — 이 파일은 「닫힘 호출」을 재므로 즉시 모드로 돌린다
+beforeEach(() => { vi.stubGlobal('matchMedia', () => ({ matches: true })); });
+afterEach(() => { vi.unstubAllGlobals(); });
 afterEach(() => { act(() => roots.forEach((r) => r.unmount())); roots = []; document.body.innerHTML = ''; });
 
 function mount(node: React.ReactNode) {

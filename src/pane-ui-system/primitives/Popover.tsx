@@ -9,13 +9,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useExitClose } from './presence';
 import { pushEscapeLayer, useLayerToken, LayerContext } from './layers';
 
 const GAP = 6;
 
 export function Popover({
     anchor,
-    onClose,
+    onClose: onCloseProp,
     children,
     width = 280,
     align = 'left',
@@ -28,6 +29,7 @@ export function Popover({
     align?: 'left' | 'right';
 }) {
     const ref = useRef<HTMLDivElement>(null);
+    const { closing, close: onClose } = useExitClose(onCloseProp);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
     const layer = useLayerToken();
@@ -80,7 +82,7 @@ export function Popover({
         <div
             ref={ref}
             data-popover
-            className="fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none ui-pop-in"
+            className={`fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
             style={{ left: pos.x, top: pos.y, width }}
         >
             <LayerContext.Provider value={layer}>{children}</LayerContext.Provider>

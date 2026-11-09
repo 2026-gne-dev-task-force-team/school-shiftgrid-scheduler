@@ -4,7 +4,7 @@
  *   데이터·동작은 노드 다리(nodes.ts)로만 — 만들기는 createPage, 열기는 NodesApi.open(= 탐색기 두 번 누르기).
  */
 import { useSyncExternalStore } from 'react';
-import { StartScreen as StartScreenBase } from '../../../pane-ui-system';
+import { StartScreen as StartScreenBase, focusWhenReady } from '../../../pane-ui-system';
 import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import { subscribePageNodes, getPageRev, livePages, createPage, parentNameOf, getNodesApi } from '../nodes';
 
@@ -15,7 +15,7 @@ export function StartScreen({ leafId }: { leafId?: string }) {
     const items = livePages().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id), emoji: n.icon || undefined }));
 
     const open = (id: string) => { getNodesApi()?.open(id); };
-    const make = () => { const id = createPage(); if (id) open(id); };
+    const make = () => { const id = createPage(); if (id) { open(id); focusWhenReady('input[aria-label="페이지 제목"]', true); } };
 
     return (
         <StartScreenBase

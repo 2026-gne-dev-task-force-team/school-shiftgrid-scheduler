@@ -210,6 +210,18 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         editing: !!core.edit, rowCount, colCount: columns.length,
     };
     useImperativeHandle(ref, () => core.handle, [core.handle]);
+    // #44 칸 편집이 끝나면(Enter·Tab·Esc) 편집 입력이 사라지며 초점이 BODY/바깥 DIV 로 빠진다 → 표 컨테이너로 돌려준다.
+    //     ⚠️ 다른 입력칸으로 옮겨 간 경우(클릭 등)엔 건드리지 않는다.
+    const wasEditing = useRef(false);
+    useEffect(() => {
+        const now = !!core.edit;
+        if (wasEditing.current && !now) {
+            const box = core.containerRef.current;
+            const a = document.activeElement;
+            if (box && a !== box && (!a || a === document.body || a.contains(box))) box.focus({ preventScroll: true });
+        }
+        wasEditing.current = now;
+    }, [core.edit, core.containerRef]);
 
     const lb = {
         addRow: labels?.addRow ?? '줄 추가',

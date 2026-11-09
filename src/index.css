@@ -306,8 +306,10 @@
 /* 토스트 퇴장 — 짧게 작아지며 투명(--motion-fast, --ease-in). 끝나면 부모가 지운다(forwards 로 마지막 모습 유지) */
 @keyframes ui-pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.97); } }
 .ui-pop-out { animation: ui-pop-out var(--motion-fast) var(--ease-in) forwards; transform-origin: bottom right; }
+@keyframes ui-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.ui-fade-out { animation: ui-fade-out var(--motion-fast) var(--ease-in) forwards; }
 @media (prefers-reduced-motion: reduce) {
-  .ui-pop-in, .ui-fade-in, .ui-pop-out { animation: none; }
+  .ui-pop-in, .ui-fade-in, .ui-pop-out, .ui-fade-out { animation: none; }
 }
 
 /* 피크(미리보기) — 그 탭 안에서 뜬다. 넓으면 오른쪽에서 떠서, 좁으면 아래에서 올라온다(EditorArea 가 wide 로 가른다) */

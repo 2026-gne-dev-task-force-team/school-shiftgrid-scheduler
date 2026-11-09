@@ -69,6 +69,17 @@ function pruneOrphanLeaves(ws: Workspace): Workspace {
     return out;
 }
 
+/**
+ * 🔴 저장된 배치의 빈 「새 탭」은 되살리지 않는다(#43 — 시작 화면에 빈 새 탭 6개가 쌓여 가르기 칸 8개가 생겼다).
+ *    ⚠️ 다른 탭이 하나도 없으면 빈 새 탭 하나만 남긴다(통째로 비면 첫 실행 복구가 돈다).
+ */
+export function pruneBlankLeaves(ws: Workspace): Workspace {
+    const all = (['left', 'center', 'right'] as const).flatMap((a) => (ws[a] ? flatten(ws[a]!) : []));
+    const blanks = all.filter((l) => l.viewId === BLANK_VIEW_ID);
+    const drop = all.length === blanks.length ? blanks.slice(1) : blanks;
+    return drop.reduce((w, l) => closeLeaf(w, l.id), ws);
+}
+
 export function Workbench() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
@@ -79,7 +90,7 @@ export function Workbench() {
     //             🔴 단, 저장된 배치가 깨졌거나 고아 뷰 정리(pruneOrphanLeaves)로 왼쪽·가운데·오른쪽이 모두 텅 비었는데
     //                옛 '__first-run' 플래그만 남아 있으면 영영 빈 창에 갇히므로, 첫 실행 플래그를 풀어 기본 배치를 복구한다.
     const [ws, setWs] = useState<Workspace>(() => {
-        const loaded = pruneOrphanLeaves(loadWorkspace());
+        const loaded = pruneBlankLeaves(pruneOrphanLeaves(loadWorkspace()));
         if (!loaded.left && !loaded.right && flatten(loaded.center).length === 0) {
             resetFirstRunFlags();
         }
