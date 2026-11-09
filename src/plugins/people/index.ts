@@ -36,7 +36,7 @@ export const peoplePlugin = definePlugin({
                 component: 'Sheet',
             }],
             commands: [
-                { id: 'people.open', title: '사람 명단 열기', icon: 'users' },
+                { id: 'people.open', title: '사람 명단 열기', icon: 'users', keys: 'Mod+Alt+P' },
                 { id: 'people.openList', title: '명단 열기', icon: 'users' },
             ],
             ribbon: [{ commandId: 'people.open', icon: 'users', order: 3 }],

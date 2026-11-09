@@ -4,7 +4,7 @@
  *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { usePaneSettings, setPaneSettings, Icon, FOCUS_RING } from '../../../pane-ui-system';
-import { useContribVersion } from '../../../pane-ui-system/plugin';
+import { useContribVersion, listPlugins } from '../../../pane-ui-system/plugin';
 import type { SettingsPaneProps } from '../registry';
 
 export function StartupPane({ host }: SettingsPaneProps) {
@@ -13,6 +13,9 @@ export function StartupPane({ host }: SettingsPaneProps) {
     // 빈 탭(app.*)은 고를 거리가 아니다 — 플러그인 뷰만
     const views = host.views.list().filter((v) => !v.id.startsWith('app.'));
     const on = new Set(settings.startupViews);
+    // 뷰 id 앞머리(`<플러그인id>.`)가 주인이다 — 어느 플러그인 화면인지 같이 보여 준다
+    const owners = new Map(listPlugins().map((p) => [p.id, p.name]));
+    const ownerOf = (id: string) => owners.get(id.split('.')[0]);
     const toggle = (id: string) => setPaneSettings({
         startupViews: on.has(id) ? settings.startupViews.filter((x) => x !== id) : [...settings.startupViews, id],
     });
@@ -30,7 +33,7 @@ export function StartupPane({ host }: SettingsPaneProps) {
                         <div key={v.id} className={`flex items-center gap-2 px-3 h-row border-b border-line last:border-b-0
                             ${checked ? 'text-text' : 'text-muted'}`}>
                             <Icon name={v.icon ?? 'dot'} size={16} className="shrink-0" />
-                            <span className="flex-1 min-w-0 truncate text-[13px]">{v.title}</span>
+                            <span className="flex-1 min-w-0 truncate text-[13px]">{v.title}{ownerOf(v.id) && <span className="ml-1.5 text-[11px] text-muted">{ownerOf(v.id)}</span>}</span>
                             <span className="text-[12px] text-muted">{AREA[v.defaultArea ?? 'center']}</span>
                             <button
                                 type="button"

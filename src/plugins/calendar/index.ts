@@ -71,7 +71,7 @@ export const calendarPlugin = definePlugin({
                 },
             ],
             commands: [
-                { id: 'calendar.open', title: '달력 열기', icon: 'calendar' },
+                { id: 'calendar.open', title: '달력 열기', icon: 'calendar', keys: 'Mod+Alt+C' },
                 { id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar' },
                 { id: 'calendar.newEventIn', title: '새 일정', icon: 'plus' },
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },

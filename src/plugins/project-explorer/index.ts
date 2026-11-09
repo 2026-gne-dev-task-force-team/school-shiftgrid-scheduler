@@ -113,7 +113,7 @@ export const projectExplorerPlugin = definePlugin({
             }],
             // 명령 14 — 대상 노드는 스토어의 「고른 노드」에서 읽는다. 🔴 new-folder 는 여기 없다(registerTypeCommands 가 folder 타입에서 자동).
             commands: [
-                { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder' },
+                { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder', keys: 'Mod+Shift+E' },
                 { id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit' },
                 { id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
                 { id: 'project-explorer.confirm-remove', title: '삭제 확인', icon: 'trash' },
