@@ -20,6 +20,7 @@ import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
 import { PluginsPane } from './panes/PluginsPane';
+import { StartupPane } from './panes/StartupPane';
 import { AboutPane } from './panes/AboutPane';
 
 export const settingsPlugin = definePlugin({
@@ -38,6 +39,7 @@ export const settingsPlugin = definePlugin({
                     { section: 'appearance', id: 'theme', title: '테마·밀도', icon: 'sun', pane: 'Appearance' },
                     { section: 'frame', id: 'pane', title: '패널', icon: 'panelLeft', pane: 'PaneSettings' },
                     { section: 'frame', id: 'ribbon', title: '리본', icon: 'menu', pane: 'Ribbon' },
+                    { section: 'frame', id: 'startup', title: '시작 화면', icon: 'panelLeft', pane: 'Startup' },
                     // 📌 「뷰 › 등록된 뷰」 판은 2026-11-01 19:06 폐기 — 뷰 설정은 그 플러그인 상세(PluginDetail) 안으로 들어갔다(쥔님).
                     // 플러그인 관리 — 설치 목록·켜기/끄기(코어는 잠김) · 줄의 「자세히」로 상세가 피크로. 설정 기여점으로 수명주기를 조종한다
                     //   📌 2026-11-08 쥔님: 「약속(인터페이스)」 별도 항목을 없앴다 — 사용자가 따로 볼 이유가 없어, 그 정보(채우는/필요한/
@@ -68,6 +70,7 @@ export const settingsPlugin = definePlugin({
         Appearance: AppearancePane,
         PaneSettings: PaneSettingsPane,
         Ribbon: RibbonSettingsPane,
+        Startup: StartupPane,
         Plugins: PluginsPane,
         About: AboutPane,
     },

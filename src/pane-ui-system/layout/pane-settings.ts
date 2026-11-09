@@ -40,6 +40,8 @@ export interface PaneSettings {
      *    쥔님 2026-11-01 13:39: *"엑셀 쓰는 사람들은 아이콘이 상단 앱바에 있는 게 익숙할 수도 — 옵션으로"*
      */
     ribbonPosition: 'left' | 'top';
+    /** 🔴 앱을 켤 때마다 띄워 둘 뷰 id(쥔님 2026-11-09). 닫아 뒀어도 다음 시작에 다시 연다 · 빈 배열 = 저장된 배치 그대로 */
+    startupViews: string[];
 }
 
 /** 뷰별 레이아웃 덮어쓰기 — 키는 viewId(뜻은 모름), 값은 ViewLayout 의 일부 */
@@ -71,10 +73,11 @@ const DEFAULTS: PaneSettings = {
     showStatusBar: true,
     statusBarNarrow: false,
     ribbonPosition: 'left',
+    startupViews: [],
 };
 
 export function defaultPaneSettings(): PaneSettings {
-    return { ...DEFAULTS };
+    return { ...DEFAULTS, startupViews: [] };
 }
 
 export const paneKey = () => storageKey('pane');
@@ -107,6 +110,7 @@ export function normalizePaneSettings(raw: unknown): PaneSettings {
         showStatusBar: typeof o.showStatusBar === 'boolean' ? o.showStatusBar : d.showStatusBar,
         statusBarNarrow: typeof o.statusBarNarrow === 'boolean' ? o.statusBarNarrow : d.statusBarNarrow,
         ribbonPosition: o.ribbonPosition === 'top' || o.ribbonPosition === 'left' ? o.ribbonPosition : d.ribbonPosition,
+        startupViews: Array.isArray(o.startupViews) ? [...new Set(o.startupViews.filter((x): x is string => typeof x === 'string'))] : d.startupViews,
     };
 }
 
@@ -312,6 +316,11 @@ export function toggleRibbonHidden(id: string, hide: boolean): void {
 /** 기본(등록 순서·전부 보임)으로 되돌린다 */
 export function resetRibbon(): void {
     setRibbon(defaultRibbon());
+}
+
+/** 지금 설정값 — React 밖(시작 때 한 번 읽기 등)에서 */
+export function getPaneSettings(): PaneSettings {
+    return ensure().settings;
 }
 
 export function getRibbon(): Ribbon {
