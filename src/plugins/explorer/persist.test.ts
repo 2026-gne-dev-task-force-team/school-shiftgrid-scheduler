@@ -27,7 +27,7 @@ const kv = vi.hoisted(() => {
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
 import { loadTree, saveTree, flushTree, __resetPersistForTest } from './persist';
-import { initStore, getState, newFolder, apiRename, undoAction, redoAction, select, removeSelected, askPurge, purgeConfirmed } from './store';
+import { initStore, getState, newFolder, apiRename, apiSetField, undoAction, redoAction, select, removeSelected, askPurge, purgeConfirmed } from './store';
 import { registerType, clearTypes } from './model/types';
 import { clearDerived } from './model/derive';
 
@@ -179,6 +179,29 @@ describe('B 노드당 레코드 — 바뀐 노드만 쓴다(diffIds 를 store �
         expect(b.put).toHaveLength(2);                       // 🔴 노드 1 + __meta
         expect(b.put!.some((r) => r.id === id)).toBe(true);
         expect(b.put!.some((r) => r.id === '__meta')).toBe(true);
+    });
+
+    it('🔑 공통 머리 칸(icon·body) — 쓰면 그 노드만 저장되고 · 지우면 칸이 빠지고 · 되돌리면 돌아오고 · 다시 불러도 산다', async () => {
+        newFolder();
+        const id = getState().selectedId!;
+        await flushTree();
+        kv.nodesWrite.mockClear();
+
+        apiSetField(id, 'icon', '🚀');
+        apiSetField(id, 'body', { blocks: [{ id: 'b' }] });
+        await flushTree();
+        const rec = () => kv.store.get(id) as { icon?: string; body?: unknown };
+        expect(rec().icon).toBe('🚀');                       // 🔴 diffIds 가 icon·body 를 「바뀜」으로 본다(안 그러면 저장이 안 된다)
+        expect(rec().body).toEqual({ blocks: [{ id: 'b' }] });
+
+        const reloaded = await loadTree(makeHost().host);    // 저장값을 coerce 가 받아들인다
+        expect(reloaded.nodes[id].icon).toBe('🚀');
+        expect(reloaded.nodes[id].body).toEqual({ blocks: [{ id: 'b' }] });
+
+        apiSetField(id, 'icon', undefined);                  // 지우기 — 칸 자체가 빠진다
+        expect(getState().tree.nodes[id]).not.toHaveProperty('icon');
+        undoAction();
+        expect(getState().tree.nodes[id].icon).toBe('🚀');   // 사람 글이라 되돌리기 더미에 쌓인다
     });
 
     it('purge 가지(노드 5) → del 5건', async () => {

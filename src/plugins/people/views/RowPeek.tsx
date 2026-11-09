@@ -20,6 +20,7 @@ export function RowPeek({ host, id }: { host: PluginHost; id: string }) {
             {pd && (
                 <div className="border-t border-line -mx-4">
                     <pd.PageDoc host={host} docKey={id} value={bodyOf(id)} onChange={(v) => setBody(id, v)}
+                        icon={node.icon} onSetIcon={(i) => getNodesApi()?.setIcon(id, i)}
                         title={node.name} onRename={(n) => getNodesApi()?.rename(id, n)} />
                 </div>
             )}

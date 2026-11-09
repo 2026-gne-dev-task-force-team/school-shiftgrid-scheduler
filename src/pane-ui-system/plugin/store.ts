@@ -291,6 +291,7 @@ export function listStatusItems(): StatusEntry[] {
 export interface WorkspaceBridge {
     open(viewId: string, o?: WorkspaceOpenOptions): string | null;
     close(leafId: string): void;
+    setTitle(leafId: string, title: string): void;
 }
 let bridge: WorkspaceBridge | null = null;
 // 🔴 다리가 서기를 기다리는 일감. activateAll 은 React 렌더보다 먼저 돈다(main.tsx) — 그때는 다리가 없고,
@@ -306,6 +307,8 @@ export function setWorkspaceBridge(b: WorkspaceBridge | null): void {
     }
 }
 export function getWorkspaceBridge(): WorkspaceBridge | null { return bridge; }
+/** 탭 제목 바꾸기 — host.workspace.setTitle 과 노드 머리(nodes.Header)가 같이 쓴다. 다리가 없으면 조용히 건너뛴다. */
+export function setLeafTitle(leafId: string, title: string): void { bridge?.setTitle(leafId, title); }
 /** 다리가 이미 서 있으면 지금, 아니면 설 때 한 번 돌린다. */
 export function whenWorkspaceReady(fn: () => void): void {
     if (bridge) { fn(); return; }

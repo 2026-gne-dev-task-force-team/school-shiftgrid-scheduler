@@ -33,7 +33,6 @@ export const pageNodeTypeImpl = {
     page: {
         open: (host: PluginHost, id: string) => { setActivePage(id); host.workspace.open(EDITOR_ID, { where: 'center' }); },
         menu: (_host: PluginHost, id: string) => pageMenu(id),
-        emoji: (node) => (node.data as Page | undefined)?.icon,
     } satisfies NodeTypeImplFns,
 };
 
@@ -74,15 +73,14 @@ export function pageNodeOf(id: string): PublicNode | undefined {
 
 /** 페이지 데이터 — 없으면 빈 페이지(결정적). */
 export function pageDataOf(id: string): Page {
-    const n = api?.get(id);
-    const data = n?.data as Page | undefined;
-    if (data && Array.isArray(data.blocks) && data.blocks.length > 0) return data;
+    const body = api?.get(id)?.body as Page | undefined;
+    if (body && Array.isArray(body.blocks) && body.blocks.length > 0) return body;
     return emptyPage();
 }
 
-/** 페이지 데이터 저장 — 노드 data 로(저장·휴지통 주인은 노드 시스템). */
+/** 페이지 본문 저장 — 노드 공통 body 칸으로(저장·휴지통 주인은 노드 시스템). */
 export function savePage(id: string, page: Page): void {
-    api?.setData(id, page);
+    api?.setBody(id, page);
 }
 
 /** 조상에 휴지통이 있나 — 부모 사슬을 직접 탄다(달력·명단과 같은 규칙). */

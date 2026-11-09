@@ -53,7 +53,7 @@ export const roomsPlugin = definePlugin({
     panes: { RoomProps },
     components: {
         // 방 목록 화면 — 보고 있는 목록(store)의 방들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: ({ host, peek }) => createElement(ListTab, { host, peek }),
+        Sheet: ({ host, peek, leaf }) => createElement(ListTab, { host, peek, leafId: leaf.id }),
     },
     commands: {
         // 리본 「방 목록 열기」 — 보고 있는 목록은 그대로 두고 화면만 연다(없으면 안내가 뜬다).

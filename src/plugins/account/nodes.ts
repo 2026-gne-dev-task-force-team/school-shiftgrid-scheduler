@@ -30,7 +30,6 @@ const EDITOR_ID = 'account.editor';
 const USERS_ID = 'account.users';
 const ROLES_ID = 'account.roles';
 const PERMS_ID = 'account.perms';
-const folderEmoji = (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; };
 
 /** 사용자 노드 data — 🔴 그 타입을 등록한 계정 플러그인만 읽고 쓴다(불투명 칸). */
 export interface UserData {
@@ -88,21 +87,18 @@ export const accountNodeTypeImpl = {
     // 사용자·역할 폴더 — 구조물이라 이름/옮기기/지우기 모두 막고, 보기 권한 없으면 숨긴다.
     usersFolder: {
         open: (host: PluginHost) => { host.workspace.open(USERS_ID, { where: 'center' }); },   // 누르면 「사용자」 탭(레코드 뷰 목록)
-        emoji: folderEmoji,
         // 이름은 바꿔도 된다(폴더는 타입으로 찾는다) — 탭 머리에서 바로(쥔님 2026-11-09)
         can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.users.view'),
     } satisfies NodeTypeImplFns,
     rolesFolder: {
         open: (host: PluginHost) => { host.workspace.open(ROLES_ID, { where: 'center' }); },   // 누르면 「역할」 탭(레코드 뷰 목록)
-        emoji: folderEmoji,
         can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.roles.view'),
     } satisfies NodeTypeImplFns,
     // 권한 목록 폴더 — 누르면 「권한」 탭(권한 낱말 전부 · 설명 · 그 권한을 담은 역할·직접 받은 사용자). 정책 보기 권한으로 숨긴다.
     permsFolder: {
         open: (host: PluginHost) => { host.workspace.open(PERMS_ID, { where: 'center' }); },
-        emoji: folderEmoji,
         can: () => ({ rename: core.isMaster(), move: false, delete: false }),
         hidden: () => !core.can('account.policy.view'),
     } satisfies NodeTypeImplFns,

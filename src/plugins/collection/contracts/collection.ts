@@ -182,8 +182,6 @@ export interface DbDoc {
     views: ViewDef[];
     /** ID 칸 자동 번호의 다음 값(P2) */
     seq: number;
-    /** 탭 머리에서 고른 아이콘(이모지) — 탐색기에도 */
-    icon?: string;
 }
 
 /** 행 노드(`collection.row`)의 data */
@@ -196,8 +194,6 @@ export interface RowDoc {
     seq?: number;
     /** 하위 항목을 접었나(자손 숨김). 노드 collapsed 는 탐색기 전용이라 레코드성 행은 여기 둔다. */
     collapsed?: boolean;
-    /** P4 본문 — 불투명. 레코드 뷰는 안 읽는다 */
-    body?: unknown;
 }
 
 /** 타입 변환 계획 — 순수 계산 결과. 깎이는 행이 있으면(lost>0) 화면이 확인을 받고 나서 적용한다. */

@@ -122,16 +122,16 @@ describe('④ 타입 등록이 빠지면(플러그인 끄기) 노드는 남아 �
 describe('④-2 노드별 이모지', () => {
     it('emoji 가 값을 주면 그 값 · 빈값/없음/모르는 타입은 undefined', () => {
         const api = makeNodesApi('pt');
-        const d = api.types.register({ type: 'pt.e', label: 'E', icon: 'file', emoji: (n) => (n.data as { icon?: string } | undefined)?.icon });
+        const d = api.types.register({ type: 'pt.e', label: 'E', icon: 'file' });
         const id = api.create(api.roots.main, { type: 'pt.e', name: '노드' });
         expect(emojiOf(api.get(id) as Node)).toBeUndefined();
-        api.setData(id, { icon: '🚀' });
+        api.setIcon(id, '🚀');
         expect(emojiOf(api.get(id) as Node)).toBe('🚀');
-        api.setData(id, { icon: '' });
+        api.setIcon(id, '');
         expect(emojiOf(api.get(id) as Node)).toBeUndefined();
-        api.setData(id, { icon: '🚀' });
+        api.setIcon(id, '🚀');
         d.dispose();
-        expect(emojiOf(api.get(id) as Node)).toBeUndefined();
+        expect(emojiOf(api.get(id) as Node)).toBe('🚀');   // 노드 공통 칸 — 타입을 등록한 꾸러미가 꺼져도 남는다
     });
 });
 

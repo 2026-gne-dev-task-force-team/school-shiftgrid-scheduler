@@ -16,11 +16,11 @@ import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const store = new Map<string, { id: string; type: string; name: string; children: string[]; data?: unknown }>();
+const store = new Map<string, { id: string; type: string; name: string; children: string[]; body?: unknown }>();
 const fakeNodes = {
     version: 1,
     get: (id: string) => store.get(id) as unknown as PublicNode | undefined,
-    setData: (id: string, data: unknown) => { const n = store.get(id); if (n) n.data = data; },
+    setBody: (id: string, body: unknown) => { const n = store.get(id); if (n) n.body = body; },
     subscribe: () => ({ dispose() {} }),
     // 시작 화면(StartScreen)이 쓰는 최소 표면 — 타입별 목록·부모·루트.
     byType: (type: string) => [...store.values()].filter((n) => n.type === type) as unknown as PublicNode[],
@@ -59,7 +59,7 @@ describe('PageView 통합', () => {
                 },
             ],
         };
-        store.set('p1', { id: 'p1', type: 'page.page', name: '테스트 페이지', children: [], data: page });
+        store.set('p1', { id: 'p1', type: 'page.page', name: '테스트 페이지', children: [], body: page });
         initPageNodes(fakeNodes);
         act(() => { setActivePage('p1'); });
         render();

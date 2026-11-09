@@ -15,11 +15,12 @@ import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const store = new Map<string, { id: string; type: string; name: string; children: string[]; data?: unknown }>();
+const store = new Map<string, { id: string; type: string; name: string; children: string[]; icon?: string; body?: unknown }>();
 const fakeNodes = {
     version: 1,
     get: (id: string) => store.get(id) as unknown as PublicNode | undefined,
-    setData: (id: string, data: unknown) => { const n = store.get(id); if (n) n.data = data; },
+    setIcon: (id: string, icon: string | undefined) => { const n = store.get(id); if (n) n.icon = icon; },
+    setBody: (id: string, body: unknown) => { const n = store.get(id); if (n) n.body = body; },
     // 모델 rename 과 같은 결 — 양끝 공백 trim, 비면 옛 이름 유지(무시).
     rename: (id: string, name: string) => { const n = store.get(id); const t = name.trim(); if (n && t) n.name = t; },
     subscribe: () => ({ dispose() {} }),
@@ -31,8 +32,8 @@ const host = { modules: { use: () => null } } as unknown as PluginHost;
 let root: Root; let container: HTMLDivElement;
 afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); });
 
-function setup(page: Page, name = '테스트 페이지') {
-    store.set('p1', { id: 'p1', type: 'page.page', name, children: [], data: page });
+function setup(page: Page, name = '테스트 페이지', icon?: string) {
+    store.set('p1', { id: 'p1', type: 'page.page', name, children: [], body: page, icon });
     initPageNodes(fakeNodes);
     act(() => { setActivePage('p1'); });
     container = document.createElement('div');
@@ -87,7 +88,7 @@ describe('제목(요구 12)', () => {
 });
 
 describe('아이콘(요구 13)', () => {
-    it('아이콘이 없으면 「아이콘 추가」, 고르면 페이지 데이터에 저장된다(저장 왕복 — 저장)', () => {
+    it('아이콘이 없으면 「아이콘 추가」, 고르면 노드 icon 칸에 저장된다(저장 왕복 — 저장)', () => {
         setup({ blocks: [{ id: 'b', type: 'paragraph', text: '본문' }] });
         expect(container.textContent).toContain('아이콘 추가');
 
@@ -97,11 +98,11 @@ describe('아이콘(요구 13)', () => {
         const emojiBtn = [...container.querySelectorAll('button')].find((b) => b.textContent === '📌')!;
         act(() => { emojiBtn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 
-        expect((store.get('p1')!.data as Page).icon).toBe('📌');
+        expect(store.get('p1')!.icon).toBe('📌');
     });
 
     it('아이콘이 있는 페이지는 그 아이콘을 보여 준다(저장 왕복 — 로드)', () => {
-        setup({ blocks: [{ id: 'b', type: 'paragraph', text: '본문' }], icon: '🚀' });
+        setup({ blocks: [{ id: 'b', type: 'paragraph', text: '본문' }], }, '테스트 페이지', '🚀');
         expect(container.textContent).toContain('🚀');
         expect(container.textContent).not.toContain('아이콘 추가');   // 있으면 추가 단추 대신 아이콘
     });

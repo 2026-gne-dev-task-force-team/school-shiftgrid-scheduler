@@ -43,6 +43,7 @@ function bridgeCollecting(into: string[]) {
     return {
         open: (viewId: string) => { into.push(viewId); return viewId; },
         close: () => { },
+        setTitle: () => { },
     };
 }
 

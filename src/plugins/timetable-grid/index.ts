@@ -48,7 +48,7 @@ export const timetableGridPlugin = definePlugin({
 
     components: {
         // 그리드 화면 — 보고 있는 시간표(store)를 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Grid: ({ host }: { host: PluginHost }) => createElement(GridTab, { host }),
+        Grid: ({ host, leaf }) => createElement(GridTab, { host, leafId: leaf.id }),
     },
     commands: {
         // 리본 「시간표 열기」 — 보고 있는 시간표는 그대로 두고 화면만 연다(없으면 시작 화면 — 새 시간표·목록).

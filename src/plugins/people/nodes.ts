@@ -47,8 +47,6 @@ function recompute(): void {
  */
 export const peopleNodeTypeImpl = {
     list: {
-        // 탭 머리에서 고른 아이콘(data.icon)을 탐색기에도 — 없으면 기본 아이콘
-        emoji: (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; },
         open: (host: PluginHost, id: string) => {
             setActiveList(id);
             host.workspace.open(SHEET_ID, { where: 'center' });
@@ -252,22 +250,7 @@ export function setCol(id: string, key: string, value: unknown): void {
     api.setData(id, { ...cur, cols });
 }
 
-// ── 목록 아이콘(탭 머리에서 고른다 · 탐색기에도 이모지로) — 목록 노드 data.icon ──
-export function listIconOf(listId: string): string | undefined {
-    const i = (api?.get(listId)?.data as { icon?: unknown } | undefined)?.icon;
-    return typeof i === 'string' && i ? i : undefined;
-}
-export function setListIcon(listId: string, icon: string | undefined): void {
-    if (!api) return;
-    const cur = { ...((api.get(listId)?.data ?? {}) as Record<string, unknown>) };
-    if (icon) cur.icon = icon; else delete cur.icon;
-    api.setData(listId, cur);
-}
 
-// ── 줄 문서(노션 줄 열기) — 줄 노드 data.body(불투명 · 페이지 편집기 page-doc 이 읽고 쓴다) ──
-export function bodyOf(id: string): unknown { return (api?.get(id)?.data as { body?: unknown } | undefined)?.body; }
-export function setBody(id: string, body: unknown): void {
-    if (!api) return;
-    const cur = (api.get(id)?.data ?? {}) as Record<string, unknown>;
-    api.setData(id, { ...cur, body });
-}
+// ── 줄 문서(노션 줄 열기) — 노드 공통 body 칸(불투명 · 페이지 편집기 page-doc 이 읽고 쓴다) ──
+export function bodyOf(id: string): unknown { return api?.get(id)?.body; }
+export function setBody(id: string, body: unknown): void { api?.setBody(id, body); }

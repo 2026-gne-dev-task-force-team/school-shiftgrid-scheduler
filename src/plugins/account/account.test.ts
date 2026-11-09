@@ -60,6 +60,9 @@ function makeNodes(opts?: { deferred?: boolean }) {
         },
         rename: (id, name) => { const n = map.get(id); if (n) { n.name = name; notify([id]); } },
         setData: (id, data) => { const n = map.get(id); if (n) { n.data = data; notify([id]); } },
+        setIcon: (id, icon) => { const n = map.get(id); if (n) { if (icon) n.icon = icon; else delete n.icon; notify([id]); } },
+        setBody: (id, body) => { const n = map.get(id); if (n) { n.body = body; notify([id]); } },
+        Header: () => null,
         move: (id, parentId, index) => {
             for (const n of map.values()) { const i = n.children.indexOf(id); if (i >= 0) n.children.splice(i, 1); }
             const p = map.get(parentId); if (p) { if (index == null) p.children.push(id); else p.children.splice(index, 0, id); }

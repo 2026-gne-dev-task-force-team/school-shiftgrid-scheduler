@@ -5,7 +5,7 @@
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다 — 저장은 core 의 기존 함수 그대로.
  */
 import { useEffect } from 'react';
-import { Button, Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+import { Button, Icon, type PeekHandle } from '../../../pane-ui-system';
 // 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
 import type { PageDocApi } from '../../page/contracts/page-doc';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -14,7 +14,7 @@ import type { RecordViewApi, RecordField, RecordCellValue } from '../../collecti
 import {
     can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
     setUserName, setRoleName, setRoleLevel, reorderAccount, setUserRoles, setUserDirect, setRolePermissions,
-    accountBodyOf, setAccountBody, accountFolderId, folderIconOf, setFolderIcon, renameNode, nodeNameOf, getUser, getRole,
+    accountBodyOf, setAccountBody, accountFolderId, getNodesApi, getUser, getRole,
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion, allPermissions } from './useAccount';
@@ -110,6 +110,7 @@ function RecordPeek({ kind, id, host }: { kind: 'users' | 'roles'; id: string; h
             {host && pd && name != null && (
                 <div className="border-t border-line">
                     <pd.PageDoc host={host} docKey={id} value={accountBodyOf(id)} onChange={(v) => setAccountBody(id, v)}
+                        icon={getNodesApi()?.get(id)?.icon} onSetIcon={(i) => getNodesApi()?.setIcon(id, i)}
                         title={name} onRename={(n) => (kind === 'users' ? setUserName(id, n) : setRoleName(id, n))} />
                 </div>
             )}
@@ -118,19 +119,19 @@ function RecordPeek({ kind, id, host }: { kind: 'users' | 'roles'; id: string; h
 }
 
 /** 탭 머리 — 폴더 노드의 아이콘·이름을 탭 안에서 바로 바꾼다(페이지 편집기와 같은 결). */
-function ListHeader({ kind }: { kind: 'users' | 'roles' | 'perms' }) {
+function ListHeader({ kind, leafId }: { kind: 'users' | 'roles' | 'perms'; leafId?: string }) {
     const fid = accountFolderId(kind);
-    if (!fid) return null;
+    const Header = getNodesApi()?.Header;
+    if (!fid || !Header) return null;
     const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={18} className="text-muted" />;
     return (
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
-            <IconPicker icon={folderIconOf(fid)} onSetIcon={(i) => setFolderIcon(fid, i)} fallback={fallback} />
-            <TitleField value={nodeNameOf(fid)} onRename={(n) => renameNode(fid, n)} className="text-[18px] font-semibold flex-1" />
+            <Header nodeId={fid} leafId={leafId} fallback={fallback} titleClass="text-[18px] font-semibold flex-1 min-w-0" />
         </div>
     );
 }
 
-export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles' | 'perms'; host?: PluginHost; peek?: PeekHandle }) {
+export function AccountList({ kind, host, peek, leafId }: { kind: 'users' | 'roles' | 'perms'; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
     const m = kind === 'users' ? usersModel() : kind === 'roles' ? rolesModel() : permsModel();
     // 🔴 줄 열기(→)는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 편집기를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
@@ -147,7 +148,7 @@ export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles' | 'p
         const { RecordView } = rv;
         return (
             <div className="h-full flex flex-col">
-                <ListHeader kind={kind} />
+                <ListHeader kind={kind} leafId={leafId} />
                 <RecordView<Row>
                     fields={m.fields}
                     records={m.rows}

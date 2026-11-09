@@ -427,6 +427,8 @@ export interface PluginHost {
     workspace: {
         open(viewId: string, o?: WorkspaceOpenOptions): string | null;   // leafId
         close(leafId: string): void;
+        /** 탭 제목 바꾸기 — 노드 이름이 바뀌면 그 탭도 따라가게(사용자가 직접 바꾼 것과 같은 길). */
+        setTitle(leafId: string, title: string): void;
         on(ev: WorkspaceEvent, fn: (leaf: WorkspaceLeafInfo) => void): Disposable;
     };
     /** 화면 폭 구독 창구 — narrow() 지금값 · on 변화 */

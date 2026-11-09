@@ -6,17 +6,16 @@
 import { useSyncExternalStore } from 'react';
 import { PropertyField } from '../../../pane-ui-system';
 import type { PropertiesPaneProps } from '../../../pane-ui-system/plugin';
-import { getNodesApi, getPageRev, pageDataOf, pageNodeOf, parentNameOf, subscribePageNodes } from '../nodes';
+import { getNodesApi, getPageRev, pageNodeOf, parentNameOf, subscribePageNodes } from '../nodes';
 
 export function PageProps({ target }: PropertiesPaneProps) {
     useSyncExternalStore(subscribePageNodes, getPageRev);
     const node = pageNodeOf(target.id);
     if (!node) return null;
-    const page = pageDataOf(target.id);
     return (
         <div className="flex flex-col gap-2">
             <PropertyField label="제목" value={node.name} onCommit={(v) => { if (v.trim()) getNodesApi()?.rename(target.id, v.trim()); }} />
-            <PropertyField label="아이콘" value={page.icon ?? ''} />
+            <PropertyField label="아이콘" value={node.icon ?? ''} />
             <PropertyField label="위치" value={parentNameOf(target.id) ?? ''} />
         </div>
     );

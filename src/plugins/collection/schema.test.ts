@@ -65,9 +65,6 @@ describe('normalizeRow', () => {
     it('엉뚱한 값은 빈 행', () => {
         expect(normalizeRow(null).values).toEqual({});
     });
-    it('body 는 불투명하게 통과', () => {
-        expect(normalizeRow({ values: {}, body: { any: 'thing' } }).body).toEqual({ any: 'thing' });
-    });
 });
 
 describe('관계 칸 모델 — UI 는 P3, 값·정규화·글자만', () => {

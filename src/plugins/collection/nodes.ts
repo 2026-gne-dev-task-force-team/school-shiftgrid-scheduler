@@ -65,8 +65,6 @@ export function getMenuTarget(): string | null { return menuTargetId; }
 /** 노드 타입 함수 묶음(선언형) — contributes.nodeTypes 의 impl 이름('db')이 가리킨다. */
 export const recordNodeTypeImpl = {
     db: {
-        // 탭 머리에서 고른 아이콘(data.icon)을 탐색기에도 — 없으면 기본 아이콘
-        emoji: (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; },
         open: (host: PluginHost, id: string) => {
             setActiveDb(id);
             host.workspace.open(DB_VIEW_ID, { where: 'center' });
@@ -275,21 +273,13 @@ export function commit(dbId: string, tx: DbTx): string[] {
         for (const b of tx.body ?? []) {
             const rn = a.get(b.id);
             if (!rn || rn.type !== ROW_TYPE) continue;
-            a.setData(b.id, { ...rowOfNode(rn), body: b.body, updated: now });
+            a.setBody(b.id, b.body);   // 본문은 노드 공통 body 칸 — 행 data 는 수정 시각만
+            a.setData(b.id, { ...rowOfNode(rn), updated: now });
         }
         for (const id of tx.removeRows ?? []) a.remove(id);
         for (const id of tx.restoreRows ?? []) a.move(id, dbId);
     });
     return created;
-}
-
-/** 레코드 뷰 아이콘 — 탭 머리에서 고른다(없애면 기본 아이콘). */
-export function setDbIcon(id: string, icon: string | undefined): void {
-    const n = api?.get(id);
-    if (!api || !n || n.type !== DB_TYPE) return;
-    const doc = { ...docOfNode(n) };
-    if (icon) doc.icon = icon; else delete doc.icon;
-    api.setData(id, doc);
 }
 
 /** 휴지통의 행을 전부 되살린다 — 메뉴·화면 단추가 같이 쓴다. */
@@ -298,11 +288,6 @@ export function restoreTrashedRows(dbId: string): number {
     if (rows.length === 0) return 0;
     commit(dbId, { restoreRows: rows.map((r) => r.id) });
     return rows.length;
-}
-
-export function renameDb(id: string, name: string): void {
-    const t = name.trim();
-    if (t) api?.rename(id, t);
 }
 
 // ── 하위 항목(행 밑에 행) 구조 조작 — 전부 노드 move/setData 한 번(되돌리기 한 칸) ──

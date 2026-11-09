@@ -81,7 +81,7 @@ export function iconOf(node: Node): IconName {
 
 /** 이 노드의 사용자 이모지 — 있으면 뷰가 iconOf 대신 그린다(빈 문자열은 없음으로). */
 export function emojiOf(node: Node): string | undefined {
-    return registry.get(node.type)?.emoji?.(node) || undefined;
+    return node.icon || undefined;
 }
 
 /** 「새로 만들기」 줄에 그릴 아이콘 — 그 타입 자신의 아이콘(어느 것을 만드는지 한눈에).

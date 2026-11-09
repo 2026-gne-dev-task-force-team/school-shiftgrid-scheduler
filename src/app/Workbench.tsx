@@ -157,6 +157,7 @@ export function Workbench() {
         setWorkspaceBridge({
             open: (viewId: string, o?: WorkspaceOpenOptions) => openView(viewId, o),
             close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
+            setTitle: (leafId: string, title: string) => setWs((w) => renameLeaf(w, leafId, title)),
         });
         return () => setWorkspaceBridge(null);
     }, [openView]);

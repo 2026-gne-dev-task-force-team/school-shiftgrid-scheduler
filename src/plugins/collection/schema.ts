@@ -84,7 +84,6 @@ export function normalizeDb(raw: unknown): DbDoc {
     const views = normalizeViews(o.views).map((v) => reconcileColumns(v, fields));
     const seq = typeof o.seq === 'number' && o.seq >= 1 ? Math.floor(o.seq) : 1;
     const doc: DbDoc = { v: 1, fields, titleKey, views, seq };
-    if (typeof o.icon === 'string' && o.icon) doc.icon = o.icon;
     return doc;
 }
 
@@ -120,7 +119,6 @@ export function normalizeRow(raw: unknown): RowDoc {
     };
     if (typeof o.seq === 'number' && o.seq >= 0) row.seq = Math.floor(o.seq);
     if (o.collapsed === true) row.collapsed = true;
-    if (o.body !== undefined) row.body = o.body;
     return row;
 }
 

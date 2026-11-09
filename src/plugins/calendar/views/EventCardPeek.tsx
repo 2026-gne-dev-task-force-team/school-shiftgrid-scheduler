@@ -11,7 +11,7 @@ import { EventCard } from './EventCard';
 import { FeedEventCard } from './FeedEventCard';
 // 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
 import type { PageDocApi } from '../../page/contracts/page-doc';
-import { getCalendarHost, eventBodyOf, setEventBody, renameEvent } from '../nodes';
+import { getCalendarHost, getNodesApi, eventBodyOf, setEventBody, renameEvent } from '../nodes';
 
 export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: () => void }) {
     const { events, storeList } = useCalendarData();
@@ -30,6 +30,7 @@ export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: 
             {host && pd && (
                 <div className="border-t border-line">
                     <pd.PageDoc host={host} docKey={event.id} value={eventBodyOf(event.id)} onChange={(v) => setEventBody(event.id, v)}
+                        icon={getNodesApi()?.get(event.id)?.icon} onSetIcon={(i) => getNodesApi()?.setIcon(event.id, i)}
                         title={event.name} onRename={(n) => renameEvent(event.id, n)} />
                 </div>
             )}

@@ -12,8 +12,8 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
-import { Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
-import { renameStore, storeIconOf, setStoreIcon } from '../nodes';
+import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { getNodesApi } from '../nodes';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
@@ -62,14 +62,14 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
 
     // 전환 단추. (작은 달력 여는 단추는 23:27 쥔님 *"요 버튼은 이제 없어져도 될듯"* — 리본에 있고 기본 오른쪽이라 걷었다)
     //   범위 저장소가 있으면 왼쪽에 「📁 <이름> · 전체」 칩을 붙인다(쥔님 2026-11-02: 저장소를 열면 그 저장소 것만 · 「전체」로 되돌림).
+    const Header = getNodesApi()?.Header;
     const switcher = (
         <div className="flex items-center gap-1 ml-1">
             {scopeStore && (
                 <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-line text-[12px]" title={`「${scopeStore.name}」 저장소 범위`}>
                     {/* 탭 안에서 바로 아이콘·이름 바꾸기(쥔님 2026-11-09 「페이지 플러그인처럼」) */}
-                    <IconPicker icon={storeIconOf(scopeStore.id)} onSetIcon={(i) => setStoreIcon(scopeStore.id, i)} sizeClass="text-[13px]"
-                        fallback={<Icon name="folder" size={12} className="shrink-0 text-accent" />} />
-                    <TitleField value={scopeStore.name} onRename={(n) => renameStore(scopeStore.id, n)} className="w-[9rem] text-[12px]" ariaLabel="저장소 이름" />
+                    {Header && <Header nodeId={scopeStore.id} iconSizeClass="text-body" titleClass="w-[9rem] text-[12px]"
+                        fallback={<Icon name="folder" size={12} className="shrink-0 text-accent" />} />}
                     <button
                         type="button"
                         onClick={() => setScope(null)}

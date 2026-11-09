@@ -6,6 +6,7 @@
  *   ⛔ 값(const·function) 0 — 런타임 실체(makeNodesApi·레지스트리)는 제공자 플러그인 안에 산다.
  *   소비자는 이 타입을 host.modules 로 받는다(약속 이름 nodes).
  */
+import type { ComponentType, ReactNode } from 'react';
 import type {
     Disposable, PluginHost, PluginImpl, NodeTypeContribution, IconName, MenuEntry,
 } from '../../../pane-ui-system/plugin';
@@ -21,6 +22,10 @@ export interface Node {
     children: string[];         // 저장된 자식 id, 순서 있음
     collapsed?: boolean;        // 접힘 — 나무에 산다(기기별 아님)
     data?: unknown;             // 🔴 그 타입의 플러그인만 읽고 쓰는 불투명 칸
+    /** 🔑 이모지 아이콘 — 모든 노드 공통 칸(P2). 탐색기·탭 머리가 이것 하나만 읽는다. 없으면 타입 기본 아이콘. */
+    icon?: string;
+    /** 🔑 본문 — 모든 노드 공통 칸(P2). 속은 page-doc 주인(페이지 편집기)만 안다 — 노드 바닥은 저장만. */
+    body?: unknown;
     /** 휴지통에 있는 동안만: 지우기 전 원래 부모 id(복원 자리). */
     trashedFrom?: string;
 }
@@ -64,8 +69,6 @@ export interface NodeTypeDef {
     type: string;
     label: string;
     icon: IconName | ((node: Node) => IconName);
-    /** 노드별 이모지(사용자가 고른 것) — 값이 있으면 탐색기가 icon 대신 이걸 그린다. 없으면 icon. */
-    emoji?: (node: Node) => string | undefined;
     /** 폴더 역할 — 자식을 받나(true), 어떤 타입만 받나({ accepts }). */
     container?: boolean | { accepts: string[] };
     /** 파일 역할 — 두 번 누르기·Enter 로 열리나. */
@@ -143,7 +146,6 @@ export interface NodeTypeDef {
  */
 export interface NodeTypeImplFns {
     icon?: (node: Node) => IconName;
-    emoji?: (node: Node) => string | undefined;
     open?: (host: PluginHost, nodeId: string) => void;
     derive?: (node: Node) => VirtualNode[];
     menu?: (host: PluginHost, nodeId: string) => MenuEntry[];
@@ -160,6 +162,19 @@ export interface NodeTypeImplFns {
     hidden?: (nodeId: string) => boolean;
     /** 🔑 인라인 입력 커밋 핸들러 — createInput 생성 입력·promptInput 의 커밋값(host 를 받는다 · open·menu 와 같은 결). */
     onInput?: (host: PluginHost, nodeId: string, kind: string, value: string) => void;
+}
+
+/** nodes.Header 속성 — 뷰는 노드 id 만 주면 아이콘·제목이 알아서 그려지고 고쳐진다. */
+export interface NodeHeaderProps {
+    nodeId: string;
+    /** 이 머리가 놓인 탭(leaf) — 주면 노드 이름이 바뀔 때 탭 제목도 같이 고친다. */
+    leafId?: string;
+    /** 아이콘 글자 크기(토큰 클래스) — 기본 text-lead(14px). */
+    iconSizeClass?: string;
+    /** 제목 입력 클래스 */
+    titleClass?: string;
+    /** 아이콘이 없을 때 보일 것 — 기본은 그 타입의 기본 아이콘. */
+    fallback?: ReactNode;
 }
 
 /** 공개 노드 — 「얼린 복사본」. children 도 새 배열이라 남이 나무를 못 만진다. */
@@ -190,6 +205,11 @@ export interface NodesApi {
     create(parentId: string, spec: { type: string; name: string; data?: unknown; index?: number }): string;
     rename(id: string, name: string): void;
     setData(id: string, data: unknown): void;           // 🔴 그 타입을 등록한 플러그인만
+    /** 🔑 공통 머리 — 아이콘(이모지, undefined 면 지움)·본문. 누구나 쓴다(사람 글 · 되돌리기 더미에 쌓인다). ⛔ 본문 속을 직접 뜯지 말 것 — page-doc 창구로만. */
+    setIcon(id: string, icon: string | undefined): void;
+    setBody(id: string, body: unknown): void;
+    /** 🔑 노드 공통 머리 부품 — 아이콘 고르기 + 제목 입력(탐색기·탭 제목에 같이 반영). 뷰가 제 머리줄 안에 끼운다. */
+    Header: ComponentType<NodeHeaderProps>;
     move(id: string, parentId: string, index?: number): void;
     remove(id: string): void;                           // 🔴 휴지통으로(영구 아님)
     /** 🔑 묶음 — fn 안의 쓰기 전부가 되돌리기 한 칸·저장 한 번·알림 한 번이 된다(붙여넣기·일괄 편집). 중첩은 바깥에 합쳐진다. */

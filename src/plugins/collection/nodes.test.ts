@@ -7,7 +7,7 @@ import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
 import { DB_TYPE, ROW_TYPE, commit, liveDbs, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 
-interface N { id: string; type: string; name: string; children: string[]; data?: unknown; trashedFrom?: string }
+interface N { id: string; type: string; name: string; children: string[]; data?: unknown; icon?: string; body?: unknown; trashedFrom?: string }
 
 function fakeApi() {
     const nodes = new Map<string, N>();
@@ -29,6 +29,9 @@ function fakeApi() {
         create: (pid, spec) => { write(); const id = `n${++seq}`; nodes.set(id, { id, type: spec.type, name: spec.name, children: [], data: spec.data }); nodes.get(pid)!.children.push(id); return id; },
         rename: (id, name) => { write(); if (name.trim()) nodes.get(id)!.name = name; },
         setData: (id, data) => { write(); nodes.get(id)!.data = data; },
+        setIcon: (id, icon) => { write(); nodes.get(id)!.icon = icon; },
+        setBody: (id, body) => { write(); nodes.get(id)!.body = body; },
+        Header: () => null,
         move: (id, pid, index) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); const kids = nodes.get(pid)!.children; if (index == null || index >= kids.length) kids.push(id); else kids.splice(Math.max(0, index), 0, id); delete nodes.get(id)!.trashedFrom; },
         remove: (id) => { write(); const from = parentOf(id)!; nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(id)!.trashedFrom = from; nodes.get('trash')!.children.push(id); },
         batch: (fn) => { log.batches++; depth++; try { fn(); } finally { depth--; for (const l of listeners) l([]); } },
@@ -259,12 +262,11 @@ describe('리본 「레코드 뷰 열기」 — 첫 화면 고르기', () => {
 });
 
 describe('줄 문서(body) · 시작 화면 목록', () => {
-    it('commit(body) 는 줄 노드 data.body 에 쓰고 칸 값은 그대로 둔다', () => {
+    it('commit(body) 는 줄 노드 공통 body 칸에 쓰고 칸 값은 그대로 둔다', () => {
         const [rowId] = commit(dbId, { addRows: [{}] });
         commit(dbId, { body: [{ id: rowId, body: { blocks: [{ id: 'b1' }] } }] });
-        const d = env.api.get(rowId)?.data as { body?: unknown; values?: unknown };
-        expect(d.body).toEqual({ blocks: [{ id: 'b1' }] });
-        expect(d.values).toBeDefined();
+        expect(env.api.get(rowId)?.body).toEqual({ blocks: [{ id: 'b1' }] });
+        expect((env.api.get(rowId)?.data as { values?: unknown }).values).toBeDefined();
     });
     it('createDb 는 이름이 겹치면 번호를 붙이고, liveDbs 는 휴지통을 뺀다', () => {
         const a = createDb()!, b = createDb()!;
