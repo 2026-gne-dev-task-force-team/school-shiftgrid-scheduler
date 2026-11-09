@@ -16,7 +16,7 @@ import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
 import {
     setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
-    indentBlock, moveBlock, removeBlock, changeType, insertAfter, type EditResult,
+    indentBlock, moveBlock, removeBlock, changeType, insertAfter, removeBlocks, moveBlocks, rangeIds, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
 import {
@@ -89,6 +89,11 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
     const [slash, setSlash] = useState<SlashState | null>(null);
+    // 🔑 W3 여러 블록 고르기 — 고른 블록 id 들(문서 순서). 글 편집(활성 블록)과 배타: 고르면 활성은 꺼진다.
+    const [selected, setSelected] = useState<string[]>([]);
+    const selRef = useRef(selected); selRef.current = selected;
+    const anchorRef = useRef<string | null>(null);
+    const [band, setBand] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 
     const page = hist.present;
     const pageRef = useRef(page); pageRef.current = page;
@@ -110,6 +115,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         setHist(initHistory(p));
         setActiveBlockId(null);
         setSlash(null);
+        setSelected([]);
         typingRunRef.current = null;
     }, [activeId]);
 
@@ -150,6 +156,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const commitResult = (r: EditResult) => {
         setHist((h) => commit(h, r.page));
         typingRunRef.current = null;
+        setSelected([]);
         persist(r.page);
         setActiveBlockId(r.focusId);
         setFocusIntent({ id: r.focusId, offset: r.offset });
@@ -158,6 +165,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const commitPage = (next: Page, focus?: FocusIntent) => {
         setHist((h) => commit(h, next));
         typingRunRef.current = null;
+        setSelected([]);
         persist(next);
         if (focus) setFocusIntent(focus);
     };
@@ -300,6 +308,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                 commitPage(next, { id: block.id, offset });
                 break;
             }
+            case 'select-block': { e.preventDefault(); selectOnly([block.id], block.id); break; }
             case 'nav-prev': { e.preventDefault(); navBlock(block.id, -1, offset); break; }
             case 'nav-next': { e.preventDefault(); navBlock(block.id, 1, offset); break; }
             case 'bold': { e.preventDefault(); doMark(el, block.id, '**'); break; }
@@ -320,6 +329,38 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         const t = blocks[j];
         setActiveBlockId(t.id);
         setFocusIntent({ id: t.id, offset: Math.min(column, t.text.length) });
+    };
+
+    // ── W3 여러 블록 고르기 ──
+    /** 블록들을 골라진 상태로 — 글 편집을 끄고 포커스를 본문 틀로(키 처리는 틀이 쥔다). */
+    const selectOnly = (ids: string[], anchor?: string) => {
+        setSlash(null);
+        setActiveBlockId(null);
+        setSelected(ids);
+        if (anchor) anchorRef.current = anchor;
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        rootRef.current?.focus();
+    };
+    const onShiftSelect = (id: string) => {
+        const anchor = anchorRef.current ?? activeBlockRef.current ?? selRef.current[0] ?? id;
+        selectOnly(rangeIds(pageRef.current, anchor, id), anchor);
+    };
+    const selectedMarkdown = () => exportMarkdown({ ...pageRef.current, blocks: pageRef.current.blocks.filter((b) => selRef.current.includes(b.id)) });
+    const deleteSelected = () => { if (selRef.current.length) commitResult(removeBlocks(pageRef.current, selRef.current)); };
+    const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (e.target !== e.currentTarget || selRef.current.length === 0) return;
+        const mod = e.metaKey || e.ctrlKey;
+        const k = e.key.toLowerCase();
+        if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); deleteSelected(); return; }
+        if (e.key === 'Escape') { e.preventDefault(); setSelected([]); return; }
+        if (e.key === 'Enter') { e.preventDefault(); const id = selRef.current[0]; setSelected([]); setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); return; }
+        if (mod && (k === 'c' || k === 'x')) {
+            e.preventDefault();
+            void navigator.clipboard?.writeText(selectedMarkdown());
+            if (k === 'x') deleteSelected();
+            return;
+        }
+        if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); }
     };
 
     const doMark = (el: HTMLElement, id: string, marker: string) => {
@@ -382,6 +423,12 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         const dragId = dragIdRef.current;
         dragIdRef.current = null;
         if (!dragId) return;
+        const sel = selRef.current;
+        if (sel.length > 1 && sel.includes(dragId)) {
+            commitPage(moveBlocks(pageRef.current, sel, toIndex));
+            setSelected(sel);
+            return;
+        }
         const next = moveBlock(pageRef.current, dragId, toIndex);
         commitPage(next);
     };
@@ -404,6 +451,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
             touchDragged.current = true;
             const d = pageRef.current.blocks.findIndex((b) => b.id === id);
             const slot = slotAt(y);
+            const sel = selRef.current;
+            if (sel.length > 1 && sel.includes(id)) { commitPage(moveBlocks(pageRef.current, sel, slot)); setSelected(sel); return; }
             const to = slot > d ? slot - 1 : slot;
             if (d >= 0 && to !== d) commitPage(moveBlock(pageRef.current, id, to));
         },
@@ -431,6 +480,40 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         return null;
     };
 
+    // 사각 선택 — 블록 바깥(여백)에서 끌면 닿은 줄이 골라진다. 판정은 줄 상자와 사각의 겹침.
+    const onBandStart = (e: { button: number; target: EventTarget | null; clientX: number; clientY: number }) => {
+        const box = scrollRef.current;
+        if (e.button !== 0 || !box || (e.target !== box && e.target !== box.parentElement && e.target !== rootRef.current)) return;
+        const x1 = e.clientX; const y1 = e.clientY;
+        let moved = false;
+        const move = (ev: MouseEvent) => {
+            if (!moved && Math.hypot(ev.clientX - x1, ev.clientY - y1) < 4) return;
+            if (!moved) { moved = true; selectOnly([]); }
+            ev.preventDefault();
+            const r = { x1, y1, x2: ev.clientX, y2: ev.clientY };
+            setBand(r);
+            const top = Math.min(r.y1, r.y2); const bot = Math.max(r.y1, r.y2);
+            const ids = [...(rootRef.current?.querySelectorAll<HTMLElement>('[data-block-row]') ?? [])]
+                .filter((row) => { const b = row.getBoundingClientRect(); return b.bottom >= top && b.top <= bot; })
+                .map((row) => row.dataset.blockRow!);
+            setSelected(ids);
+            anchorRef.current = ids[0] ?? null;
+        };
+        const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); setBand(null); };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+    };
+
+    // 틀의 본문 칸(스크롤 상자의 부모)까지 여백이라 거기서도 시작하게 부모에 건다 — 최신 onBandStart 를 ref 로
+    const bandStartRef = useRef(onBandStart); bandStartRef.current = onBandStart;
+    useEffect(() => {
+        const host = scrollRef.current?.parentElement;
+        if (!host) return;
+        const h = (e: MouseEvent) => bandStartRef.current(e);
+        host.addEventListener('mousedown', h);
+        return () => host.removeEventListener('mousedown', h);
+    });
+
     const onFocusBlock = (id: string, offset: number) => {
         setSlash(null);
         setActiveBlockId(id);
@@ -439,6 +522,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
 
     // 🔴 클릭·탭으로 블록에 포커스가 가면 활성만 바꾼다(캐럿은 브라우저가 클릭 자리에 이미 놓았다 → 건드리지 않는다).
     const onFocusActive = (id: string) => {
+        anchorRef.current = id;
+        setSelected([]);
         if (activeBlockRef.current === id) return;
         setActiveBlockId(id);
         setSlash(null);
@@ -484,8 +569,10 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                 <div className="h-full overflow-auto" ref={scrollRef}>
                     <div
                         ref={rootRef}
-                        className="max-w-3xl mx-auto px-6 py-8 select-text"
-                        onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
+                        tabIndex={-1}
+                        className="max-w-3xl mx-auto px-6 py-8 select-text outline-none"
+                        onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); setSelected([]); } }}
+                        onKeyDown={onRootKeyDown}
                     >
                         <div className="mb-1 flex" key={activeId}>{header}</div>
                         {properties && <div className="mb-3">{properties}</div>}
@@ -496,6 +583,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                                 index={i}
                                 host={host}
                                 active={activeBlockId === b.id}
+                                selected={selected.includes(b.id)}
+                                onShiftSelect={onShiftSelect}
                                 ordinal={ordinals[b.id]}
                                 slash={slash && slash.blockId === b.id ? { query: slash.query, index: slash.index } : null}
                                 setEl={setEl}
@@ -522,6 +611,13 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                             />
                         ))}
                     </div>
+                    {band && (
+                        <div
+                            data-testid="page-band"
+                            className="fixed z-30 pointer-events-none border border-accent bg-accent/10"
+                            style={{ left: Math.min(band.x1, band.x2), top: Math.min(band.y1, band.y2), width: Math.abs(band.x2 - band.x1), height: Math.abs(band.y2 - band.y1) }}
+                        />
+                    )}
                 </div>
             )}
         </Frame>
@@ -537,6 +633,9 @@ interface RowProps {
     index: number;
     host: PluginHost;
     active: boolean;
+    /** W3 — 여러 블록 고르기로 골라진 줄 */
+    selected: boolean;
+    onShiftSelect: (id: string) => void;
     ordinal?: number;
     slash: { query: string; index: number } | null;
     setEl: (id: string, el: HTMLElement | null) => void;
@@ -601,7 +700,9 @@ function BlockRow(props: RowProps) {
     return (
         // 🔑 R4: 줄 왼쪽 선 = 머리·속성 왼쪽 선. 손잡이는 선 바깥 여백(-left-6, 컬럼 px-6 안)에 절대 배치 — 줄을 밀어내지 않는다.
         <div
-            className={`relative ${dropHere || props.touchLine === 'before' ? 'border-t-2 border-accent -mt-0.5' : ''} ${props.touchLine === 'after' ? 'border-b-2 border-accent' : ''}`}
+            aria-selected={props.selected || undefined}
+            onMouseDownCapture={(e) => { if (e.shiftKey && e.button === 0 && !(e.target as HTMLElement).closest('[data-row-id]')) { e.preventDefault(); e.stopPropagation(); props.onShiftSelect(block.id); } }}
+            className={`relative ${props.selected ? 'bg-accent/15 rounded' : ''} ${dropHere || props.touchLine === 'before' ? 'border-t-2 border-accent -mt-0.5' : ''} ${props.touchLine === 'after' ? 'border-b-2 border-accent' : ''}`}
             data-block-row={block.id}
             {...trigger}
             onMouseEnter={() => setHover(true)}
@@ -627,7 +728,7 @@ function BlockRow(props: RowProps) {
                     }}
                     onClick={(e) => { if (props.touchDraggedRef.current) { props.touchDraggedRef.current = false; return; } const r = e.currentTarget.getBoundingClientRect(); setMenu({ x: r.right + 4, y: r.top }); }}
                     aria-label="블록 손잡이"
-                    className="cursor-grab touch-none rounded py-0.5 text-text/60 hover:text-text hover:bg-text/[0.06]"
+                    className="cursor-grab touch-none rounded py-0.5 text-text/80 hover:text-text hover:bg-text/[0.08]"
                 >
                     <Icon name="grip" size={20} />
                 </button>

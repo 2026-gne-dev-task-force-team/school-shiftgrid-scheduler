@@ -73,4 +73,51 @@ describe('PageView 통합', () => {
         expect(container.textContent).toContain('값하나');         // 표 칸(읽기 전용 대체)
         expect(container.querySelector('table')).not.toBeNull();   // 읽기 전용 HTML 표
     });
+
+    // ── Q9 W3 — 여러 블록 고르기 ──
+    const open3 = () => {
+        const page: Page = { blocks: [
+            { id: 'a', type: 'paragraph', text: '가' },
+            { id: 'b', type: 'paragraph', text: '나' },
+            { id: 'c', type: 'paragraph', text: '다' },
+        ] };
+        store.set('p3', { id: 'p3', type: 'page.page', name: 'P', children: [], body: page });
+        initPageNodes(fakeNodes);
+        act(() => { setActivePage('p3'); });
+        render();
+    };
+    const rows = () => [...container.querySelectorAll<HTMLElement>('[data-block-row]')];
+    const key = (el: Element, k: string, init: KeyboardEventInit = {}) => act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, ...init })); });
+    const bodyIds = () => ((store.get('p3')!.body as Page).blocks.map((b) => b.id));
+
+    it('Esc 로 블록을 고르고 Backspace 로 지운다 · 저장된다', () => {
+        open3();
+        const tb = rows()[1].querySelector('[role="textbox"]')!;
+        key(tb, 'Escape');
+        expect(rows().map((r) => r.getAttribute('aria-selected'))).toEqual([null, 'true', null]);
+        key(container.querySelector('[tabindex="-1"]')!, 'Backspace');
+        expect(rows()).toHaveLength(2);
+        expect(bodyIds()).toEqual(['a', 'c']);
+    });
+
+    it('Shift+클릭으로 범위를 고르고 Esc 로 풀린다', () => {
+        open3();
+        act(() => { rows()[0].querySelector('[role="textbox"]')!.dispatchEvent(new FocusEvent('focusin', { bubbles: true })); });
+        const tb0 = rows()[0].querySelector<HTMLElement>('[role="textbox"]')!;
+        act(() => { tb0.focus(); });
+        act(() => { rows()[2].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, shiftKey: true, button: 0 })); });
+        expect(rows().map((r) => r.getAttribute('aria-selected'))).toEqual(['true', 'true', 'true']);
+        key(container.querySelector('[tabindex="-1"]')!, 'Escape');
+        expect(rows().map((r) => r.getAttribute('aria-selected'))).toEqual([null, null, null]);
+    });
+
+    it('고른 뒤 ⌘Z 로 되돌린다(기존 더미)', () => {
+        open3();
+        key(rows()[0].querySelector('[role="textbox"]')!, 'Escape');
+        const root = container.querySelector('[tabindex="-1"]')!;
+        key(root, 'Backspace');
+        expect(bodyIds()).toEqual(['b', 'c']);
+        key(container.querySelector('[role="textbox"]')!, 'z', { metaKey: true });
+        expect(bodyIds()).toEqual(['a', 'b', 'c']);
+    });
 });

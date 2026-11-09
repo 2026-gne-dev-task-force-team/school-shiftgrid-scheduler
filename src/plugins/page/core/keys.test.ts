@@ -76,3 +76,10 @@ describe('⌘ 단축', () => {
         expect(decideKey(k({ key: 'z', ctrlKey: true }))).toBe('undo');
     });
 });
+
+describe('Esc — 블록 고르기(W3)', () => {
+    it('Esc → select-block · 조합 중엔 default', () => {
+        expect(decideKey(k({ key: 'Escape' }))).toBe('select-block');
+        expect(decideKey(k({ key: 'Escape', isComposing: true }))).toBe('default');
+    });
+});
