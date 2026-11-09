@@ -54,7 +54,7 @@ export const sheetPlugin = definePlugin({
             interfaces: [{ name: 'table', version: '0.1.0', label: '표', desc: '값을 담는 표' }],
             // 표 노드 화면 — 가운데 싱글턴(한 장만). 보고 있는 표 노드를 그린다.
             views: [{
-                id: 'sheet', title: '표', icon: 'table', defaultArea: 'center',
+                id: 'sheet', title: '시트', icon: 'table', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Sheet',
@@ -64,12 +64,12 @@ export const sheetPlugin = definePlugin({
                 placement: { areas: ['center'], singleton: true },
                 component: 'LegacyPlayground',
             }],
-            commands: [{ id: 'sheet.open', title: '표 열기', icon: 'table' }],
+            commands: [{ id: 'sheet.open', title: '시트 열기', icon: 'table' }],
             ribbon: [{ commandId: 'sheet.open', icon: 'table', order: 6 }],
             // 🔴 노드 타입 하나(표) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: tableNodeTypes,
             // 오른쪽 「속성」 패널의 표 칸 — 스타일·머리 행/열·꼬리 행(넘버스의 표 서식 자리).
-            properties: [{ target: TABLE_TYPE, id: 'table', title: '표', pane: 'TableProps' }],
+            properties: [{ target: TABLE_TYPE, id: 'table', title: '시트', pane: 'TableProps' }],
             // 넘버스 합계 바 — 표 밑이 아니라 앱 아래 상태바에(쥔님 2026-11-09).
             statusBar: [{ id: 'quick-calc', side: 'left', render: 'QuickCalc' }],
         },

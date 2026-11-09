@@ -7,15 +7,12 @@
 import { useSyncExternalStore } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import {
-    subscribeNodes, getSheetNodes, getSpecialNodes, inTrash, createSheet, parentNameOf, parentSheetOf, getNodesApi,
+    subscribeNodes, getSheetNodes, inTrash, createSheet, parentNameOf, getNodesApi,
 } from '../nodes';
 
 export function StartScreen() {
     const sheetNodes = useSyncExternalStore(subscribeNodes, getSheetNodes, getSheetNodes);
-    const specialNodes = useSyncExternalStore(subscribeNodes, getSpecialNodes, getSpecialNodes);
     const sheets = sheetNodes.filter((n) => !inTrash(n.id));
-    const specialCount = (sheetId: string) =>
-        specialNodes.filter((s) => !inTrash(s.id) && parentSheetOf(s.id) === sheetId).length;
 
     const open = (id: string) => { getNodesApi()?.open(id); };
     const make = () => { const id = createSheet(); if (id) open(id); };
@@ -54,7 +51,6 @@ export function StartScreen() {
                         <ul className="flex flex-col rounded-lg border border-line overflow-hidden">
                             {sheets.map((n) => {
                                 const folder = parentNameOf(n.id);
-                                const sp = specialCount(n.id);
                                 return (
                                     <li key={n.id} className="border-b border-line last:border-b-0">
                                         <button
@@ -64,11 +60,6 @@ export function StartScreen() {
                                         >
                                             <Icon name="schedule" size={14} className="text-muted shrink-0" />
                                             <span className="text-[13px] text-text truncate">{n.name}</span>
-                                            {sp > 0 && (
-                                                <span className="flex items-center gap-0.5 text-[11px] text-accent shrink-0">
-                                                    <Icon name="sparkles" size={11} /> {sp}
-                                                </span>
-                                            )}
                                             <span className="flex-1" />
                                             {folder && (
                                                 <span className="flex items-center gap-1 text-[11px] text-muted truncate max-w-[40%]">

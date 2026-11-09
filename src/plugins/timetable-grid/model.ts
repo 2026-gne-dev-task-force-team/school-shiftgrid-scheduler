@@ -5,14 +5,13 @@
  *   ⛔ 학교 낱말(교시·반·과목·담임·급식) 0 — 칸은 글자일 뿐이고 뜻은 그리드가 모른다(명세).
  *   타입은 약속(contract-week-grid)에서 import type 으로만 받는다(구조 검사 ⑱ d·g).
  *
- *   특별 시간표 적용·일정 목록 계산은 schedule.ts(같은 폴더)에 산다 — 이 파일은 「한 장의 모양과 손 편집」만.
+ *   일정 목록 계산은 schedule.ts(같은 폴더)에 산다 — 이 파일은 「한 장의 모양과 손 편집」만.
  */
 import type {
-    TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay,
-    SpecialData, SpecialMode, ScheduleEntry,
+    TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay, ScheduleEntry,
 } from '../contract-week-grid/types';
 
-export type { TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay, SpecialData, SpecialMode, ScheduleEntry };
+export type { TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay, ScheduleEntry };
 
 // ── 작은 유틸 ──
 
@@ -328,10 +327,18 @@ export function removeColumn(data: TimetableData, col: number): TimetableData {
             colNames[String(i > col ? i - 1 : i)] = v;
         }
     }
+    let colWidths: Record<string, number> | undefined;
+    if (data.colWidths) {
+        colWidths = {};
+        for (const [k, v] of Object.entries(data.colWidths)) {
+            const i = Number(k);
+            if (i !== col) colWidths[String(i > col ? i - 1 : i)] = v;
+        }
+    }
     let columns: ColumnSpec;
     if (data.columns.kind === 'weekday') columns = { kind: 'weekday', days: data.columns.days.filter((_, i) => i !== col) };
     else columns = { kind: 'cycle', count: data.columns.count - 1 };
-    return { ...data, columns, cells, ...(colNames ? { colNames } : {}) };
+    return { ...data, columns, cells, ...(colNames ? { colNames } : {}), colWidths };
 }
 
 // ── 머리 이름·행 시각 ──
@@ -391,4 +398,40 @@ export function setRangeSpec(data: TimetableData, spec: RangeSpec): TimetableDat
 export function toggleRangeKind(data: TimetableData): TimetableData {
     if (data.range.kind === 'period') return setRangeSpec(data, { kind: 'repeat', count: 1 });
     return setRangeSpec(data, { kind: 'period', start: '', end: '' });
+}
+
+// ── 열 너비·보이는 시각(T2·T4·T5) ──
+
+/** 열 기본 너비(px) · 줄일 수 있는 하한. */
+export const COL_W = 120;
+export const COL_MIN_W = 56;
+
+/** 그 열의 너비(px) — 끌어서 조절한 값이 있으면 그것. */
+export function colWidth(data: TimetableData, col: number): number {
+    return data.colWidths?.[String(col)] ?? COL_W;
+}
+
+/** 열 너비 바꾸기 — 하한 아래로는 안 내려간다. 기본값이면 덮어쓰기를 걷는다. */
+export function setColWidth(data: TimetableData, col: number, width: number): TimetableData {
+    const w = Math.max(COL_MIN_W, Math.round(width));
+    const colWidths = { ...(data.colWidths ?? {}) };
+    if (w === COL_W) delete colWidths[String(col)]; else colWidths[String(col)] = w;
+    return { ...data, colWidths: Object.keys(colWidths).length ? colWidths : undefined };
+}
+
+/** 그리드에 보일 시각 범위(분) — 정한 값이 있으면 그것, 없으면 행 시각을 정시로 감싼 값(행이 없으면 09~15시). */
+export function viewRange(data: TimetableData): { start: number; end: number } {
+    if (data.view && data.view.end > data.view.start) return data.view;
+    if (data.rows.length === 0) return { start: 9 * 60, end: 15 * 60 };
+    const lo = Math.min(...data.rows.map((r) => r.range.start));
+    const hi = Math.max(...data.rows.map((r) => r.range.end));
+    return { start: Math.floor(lo / 60) * 60, end: Math.max(Math.ceil(hi / 60) * 60, Math.floor(lo / 60) * 60 + 60) };
+}
+
+/** 보일 시각 범위 정하기 — null 이면 자동으로 되돌린다. 끝은 시작보다 15분 이상 뒤여야 한다. */
+export function setView(data: TimetableData, view: { start: number; end: number } | null): TimetableData {
+    if (!view) return { ...data, view: undefined };
+    const start = Math.max(0, Math.min(view.start, 24 * 60 - 15));
+    const end = Math.min(24 * 60, Math.max(view.end, start + 15));
+    return { ...data, view: { start, end } };
 }

@@ -58,7 +58,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, colTabs,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -561,6 +561,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         return s;
     };
     const tabsOn = focused || reorder != null;
+    const colTabsOn = tabsOn || !!colTabs;   // S1 — 「열 머리(A·B·C…) 늘 보이기」 옵션이 켜지면 포커스 없이도 보인다
 
     // ── 도구 막대(M5d) — 메뉴와 같은 함수를 부른다(같은 tx). 고른 범위 기준. ──
     type Tool = { id: string; label: string; title: string; on: boolean; run: (e: React.MouseEvent) => void } | '|';
@@ -639,7 +640,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         onContextMenu={openTableMenu}
                                         title="눌러서 표 전체 고르기 · 우클릭 표 메뉴(스타일·머리·꼬리)"
                                         className={`ml-auto h-5 w-6 grid place-items-center cursor-pointer select-none transition-opacity
-                                            ${tabsOn ? 'opacity-100' : 'opacity-0'} bg-panel2 hover:bg-accent/20 text-muted`}
+                                            ${colTabsOn ? 'opacity-100' : 'opacity-0'} bg-panel2 hover:bg-accent/20 text-muted`}
                                     >
                                         <span className="block h-2 w-2 rounded-[1px] border border-current" />
                                     </div>
@@ -662,7 +663,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 onMouseLeave={() => setHoverTab(null)}
                                                 title="눌러서 열 고르기 · 끌어서 옮기기 · ▾ 메뉴"
                                                 className={`relative h-5 grid place-items-center border-r border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
-                                                    ${tabsOn ? 'opacity-100' : 'opacity-0'}
+                                                    ${colTabsOn ? 'opacity-100' : 'opacity-0'}
                                                     ${lineSel ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
                                             >
                                                 {colLetter(idx)}

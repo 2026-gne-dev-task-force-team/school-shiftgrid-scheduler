@@ -7,7 +7,7 @@ import type { PluginManifest } from '../../pane-ui-system/plugin';
 // satisfies 로 둬서 contributes 키가 추론 타입에 안 생긴다(provides·contributes 는 index 에서 더한다).
 export const manifest = {
     id: 'sheet',
-    name: '표 편집기',
+    name: '시트',
     version: '0.1.0',
     minHostVersion: '0.1.0',
     description: '엑셀·한글처럼 표를 그리는 공용 도구입니다.',

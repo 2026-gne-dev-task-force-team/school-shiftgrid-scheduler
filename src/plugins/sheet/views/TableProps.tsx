@@ -34,6 +34,7 @@ export function TableProps({ target }: PropertiesPaneProps) {
             </div>
             {row('머리 행', !!doc.headerRow, (v) => set({ headerRow: v }))}
             {row('머리 열', !!doc.headerCol, (v) => set({ headerCol: v }))}
+            {row('열 머리(A·B·C…) 늘 보이기', !!doc.colTabs, (v) => set({ colTabs: v }))}
             {row('꼬리 행', !!doc.footerRow, (v) => set({ footerRow: v }))}
             <p className="text-[12px] text-muted select-none">행 {doc.rows.length} · 열 {doc.cols.length}</p>
         </div>
