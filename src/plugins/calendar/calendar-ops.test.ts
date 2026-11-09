@@ -18,14 +18,14 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, restoreSelected } from '../explorer/store';
+import { initStore, select, restoreSelected, undoAction, undoAllowed } from '../explorer/store';
 import { __resetPersistForTest } from '../explorer/persist';
 import { makeNodesApi } from '../explorer/api';
 import { registerType, clearTypes } from '../explorer/model/types';
 import { clearDerived } from '../explorer/model/derive';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, getEventNodes, getStoreNodes,
-    inTrash, createEvent, ensureStore, moveEvent, removeEvent, STORE_TYPE, EVENT_TYPE,
+    inTrash, createEvent, ensureStore, moveEvent, removeEvent, setCalendarHost, STORE_TYPE, EVENT_TYPE,
 } from './nodes';
 
 function host(): PluginHost {
@@ -82,6 +82,24 @@ describe('C2 — 만들기·휴지통·복원·기본 저장소·저장소 바�
         select(id); restoreSelected();
         expect(inTrash(id)).toBe(false);
         expect(liveEventIds()).toEqual([id]);                        // 돌아왔다
+    });
+
+    it('휴지통으로 보내면 「되돌리기」 알림(토큰 포함)이 뜨고, 그 알림으로 되돌리면 달력에 돌아온다', () => {
+        const notify = vi.fn();
+        setCalendarHost({ ...host(), notify } as unknown as PluginHost);
+        const id = createEvent({ start: '2026-11-10T09:00', end: '2026-11-10T10:00', allDay: false }, '회의');
+        removeEvent(id);
+        setCalendarHost(null);
+        expect(notify).toHaveBeenCalledTimes(1);
+        const n = notify.mock.calls[0][0];
+        expect(n.title).toContain('회의');
+        expect(n.title).toContain('휴지통으로 옮겼습니다');
+        expect(n.action.label).toBe('되돌리기');
+        expect(typeof n.action.args.undoTop).toBe('number');
+        expect(undoAllowed(n.action.args)).toBe(true);
+        expect(inTrash(id)).toBe(true);
+        undoAction();
+        expect(liveEventIds()).toEqual([id]);
     });
 
     it('저장소를 휴지통에 넣으면 그 안 일정도 달력에서 사라진다(캐스케이딩)', () => {

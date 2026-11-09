@@ -598,7 +598,7 @@ export function RecordView<T>({
                                             if (e.key === 'ArrowUp' && at > 0) moveRow(id, rowIds[at - 1], 'before');
                                             else if (e.key === 'ArrowDown' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
                                         }}>
-                                        <Icon name="grip" size={12} className={`text-muted cursor-grab ${hovered ? '' : 'opacity-0'}`} />
+                                        <Icon name="grip" size={16} className={`text-text/80 hover:text-text cursor-grab ${hovered ? '' : 'opacity-0'}`} />
                                     </div>
                                 )}
                                 {selectable && (

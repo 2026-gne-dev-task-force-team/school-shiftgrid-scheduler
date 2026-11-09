@@ -72,7 +72,7 @@ const withTime = (s: string, hhmm: string) => (s.includes('T') ? s : `${s}T${hhm
 export function valuesToEvent(v: Record<string, RecordCellValue>): EventForm | null {
     const when = v.when as DateValue | null | undefined;
     if (!when || typeof when !== 'object' || Array.isArray(when) || !when.start) return null;
-    const name = String(v.name ?? '').trim() || '새 일정';
+    const name = String(v.name ?? '').trim();
     const memo = String(v.memo ?? '');
     const first = when.start.slice(0, 10);
     if (v.allDay === true) {

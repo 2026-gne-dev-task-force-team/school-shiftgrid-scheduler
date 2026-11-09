@@ -116,11 +116,11 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                 <div className="flex-1 min-h-0 flex flex-col border-t border-line">
                     <rv.RecordView<RvRow>
                         fields={RV_FIELDS}
-                        records={rows.map((e) => ({ id: e.id, date: { start: dayIso(e.startMs) }, time: timeLabel(e), title: e.name || '새 일정', store: stores.get(e.storeId)?.name ?? e.foreign?.sourceLabel ?? '' }))}
+                        records={rows.map((e) => ({ id: e.id, date: { start: dayIso(e.startMs) }, time: timeLabel(e), title: e.name || '', store: stores.get(e.storeId)?.name ?? e.foreign?.sourceLabel ?? '' }))}
                         getId={(r) => r.id}
                         viewKey="calendar.list"
                         titleKey="title"
-                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(id, String(v ?? '').trim() || '새 일정'); }}
+                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(id, String(v ?? '').trim()); }}
                         onAddRecord={newEvent}
                         onDeleteRecords={(ids) => ids.forEach((id) => { if (!rows.find((x) => x.id === id)?.foreign) removeEvent(id); })}
                         onOpenRecord={(id) => { const ev = rows.find((x) => x.id === id); if (ev) openRow(ev); }}
@@ -151,7 +151,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                                     <tr key={e.id} data-day={iso} onClick={() => openRow(e)} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
-                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.name || '새 일정'}</td>
+                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.name || <span className="opacity-60">제목 없음</span>}</td>
                                         <td className="px-3 py-1.5 border-b border-line">
                                             <span className="flex items-center gap-1.5 min-w-0">
                                                 <span className={`shrink-0 w-2 h-2 rounded-full ${paletteAt(e.colorIdx).dot}`} />

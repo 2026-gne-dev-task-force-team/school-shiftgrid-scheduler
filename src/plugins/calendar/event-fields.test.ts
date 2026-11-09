@@ -28,8 +28,8 @@ describe('일정 어댑터 — 칸 하나가 바뀔 때', () => {
         const next = applyEventValue(TIMED, 'when', { start: '2026-11-10T14:30', end: '2026-11-10T13:00' });
         expect(next).toMatchObject({ start: '2026-11-10T14:30', end: '2026-11-10T15:30' });
     });
-    it('제목을 비우면 「새 일정」 · 「언제」를 비우면 무시(null)', () => {
-        expect(applyEventValue(TIMED, 'name', '  ')?.name).toBe('새 일정');
+    it('제목을 비우면 빈 제목 · 「언제」를 비우면 무시(null)', () => {
+        expect(applyEventValue(TIMED, 'name', '  ')?.name).toBe('');
         expect(applyEventValue(TIMED, 'when', null)).toBeNull();
     });
 });

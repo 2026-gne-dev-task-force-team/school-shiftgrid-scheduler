@@ -206,7 +206,18 @@ export function setCalendarHost(h: PluginHost | null): void { hostRef = h; }
 export function getCalendarHost(): PluginHost | null { return hostRef; }
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
 export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
-export function removeEvent(id: string): void { api?.remove(id); }
+/** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. */
+export function removeEvent(id: string): void {
+    if (!api) return;
+    const name = api.get(id)?.name || '제목 없음';
+    api.remove(id);
+    const token = api.undoToken();
+    hostRef?.notify({
+        title: `일정 「${name}」을 휴지통으로 옮겼습니다`,
+        action: token !== null ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' } : undefined,
+        key: 'calendar.removed', timeout: 8000,
+    });
+}
 
 // ── 가져오기·내보내기(.ics) — 2·3번. 순수 변환은 io.ts, 여기선 노드를 읽고 쓴다. ──
 

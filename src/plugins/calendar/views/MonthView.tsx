@@ -74,7 +74,7 @@ function weekOffsetOf(d: Date): number {
 function EventChip({ b }: { b: WeekBar }) {
     const { e } = b;
     const pal = paletteAt(e.colorIdx);
-    const title = e.name || '새 일정';
+    const title = e.name || <span className="opacity-60">제목 없음</span>;
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
@@ -301,10 +301,10 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         if (!el) return;
         if (!didInit.current) {
             didInit.current = true;
-            // 🔴 처음엔 value(보던 날)가 든 주를 맨 위에. `- range.from` 을 지켜야 과거(2024년) 맨 위로 안 튄다(scroll-math).
+            // 🔴 처음엔 value(보던 날)가 속한 달의 1일이 든 주(그 달 첫 주)를 맨 위에(오늘 강조는 칸 쪽 그대로).  `- range.from` 을 지켜야 과거(2024년) 맨 위로 안 튄다(scroll-math).
             //    🔴 ⭐ rowH(클로저)가 아니라 rowHRef.current(이미 측정된 높이)로 센다 — 측정 effect 의 setRowH re-render 전엔
             //       이 effect 가 옛 rowH 를 들고 있어 틀린 자리로 간다(useDayScroller 와 같은 수정).
-            el.scrollTop = offsetToScroll(weekOffsetOf(initValue.current), rangeRef.current.from, rowHRef.current);
+            el.scrollTop = offsetToScroll(weekOffsetOf(new Date(initValue.current.getFullYear(), initValue.current.getMonth(), 1)), rangeRef.current.from, rowHRef.current);
         } else if (keepTopIdx.current !== null) {
             el.scrollTop = keepTopIdx.current * rowH;
             keepTopIdx.current = null;
