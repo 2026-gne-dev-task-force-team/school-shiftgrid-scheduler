@@ -212,16 +212,17 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         grid.forEach((line, dr) => {
             line.forEach((raw, dc) => {
                 const c = baseC + dc;
-                if (c >= a.colCount) return;
-                if (!a.editable(baseR + dr, c)) return;
+                if (c >= a.colCount && !a.growCols) return;   // 열 늘림 능력이 없으면 초과 열은 자른다
+                if (c < a.colCount && !a.editable(baseR + dr, c)) return;
                 changes.push({ r: baseR + dr, c, text: raw });
             });
         });
         if (changes.length) a.commit(changes, 'paste');
         const lastR = baseR + grid.length - 1;
-        const lastC = Math.min(a.colCount - 1, baseC + Math.max(...grid.map((l) => l.length)) - 1);
+        const wantC = baseC + Math.max(...grid.map((l) => l.length)) - 1;
+        const lastC = a.growCols ? wantC : Math.min(a.colCount - 1, wantC);
         setAnchorState({ r: baseR, c: baseC });
-        setActiveState(clamp(lastR, lastC));
+        setActiveState(a.growCols ? { r: clamp(lastR, 0).r, c: lastC } : clamp(lastR, lastC));
     }, [clamp]);
 
     // ── 문서 레벨 키·복붙 (격자에 포커스가 있을 때만) ─────────
@@ -266,14 +267,9 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (k === 'Enter') {
                 if (isImeEnter(e)) return;   // 🔴 조합 중 Enter 는 칸 이동을 일으키지 않는다(편집창이 이어받는다)
                 e.preventDefault();
-                // 엑셀식 — Enter 확정+아래, Shift+Enter 위(편집창 밖에서는 이동만). toggle 칸은 편집 시작.
-                if (a.cellKind(act.r, act.c) === 'toggle') impl.current.beginEdit(act.r, act.c);
-                else if (!e.shiftKey && a.insert && act.r === a.dataRowCount - 1) {
-                    // 넘버스 — 맨 아랫줄에서 Enter 면 행을 더하고 내려간다. flushSync 로 새 행이 그려진 뒤 이동(clamp 가 새 줄 수를 본다).
-                    flushSync(() => a.insert!('row', a.dataRowCount));
-                    impl.current.moveTo(act.r + 1, act.c);
-                }
-                else impl.current.moveTo(act.r + (e.shiftKey ? -1 : 1), act.c);
+                // 스프레드시트 관례 — 선택 상태 Enter = 편집 시작(편집 중 Enter = 저장+아래는 commitEdit). Shift+Enter 는 위로.
+                if (e.shiftKey) impl.current.moveTo(act.r - 1, act.c);
+                else impl.current.beginEdit(act.r, act.c);
                 return;
             }
             if (k === 'F2') { e.preventDefault(); impl.current.beginEdit(act.r, act.c); return; }

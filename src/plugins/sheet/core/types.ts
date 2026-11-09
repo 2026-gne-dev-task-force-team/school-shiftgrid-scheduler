@@ -41,6 +41,8 @@ export interface SheetCoreAdapter {
     onRedo?: () => void;
     /** M5 넘버스 키 — Alt+화살표(행·열 넣기) · 맨 아랫줄 Enter(행 추가). 없으면 그 키는 껍데기로 흘린다. */
     insert?: (axis: 'row' | 'col', at: number) => void;
+    /** 붙여넣기가 열 수를 넘으면 열을 늘려 받는다(axis-edit 능력이 있을 때). */
+    growCols?: boolean;
 }
 
 /** 테스트·호스트가 쓰는 명령형 손잡이. */
