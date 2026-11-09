@@ -5,6 +5,7 @@
  */
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { PropertiesPaneProps } from '../../../pane-ui-system/plugin';
+import { isImeEnter } from '../../../pane-ui-system';
 import { getSubById, getSubsSnapshot, subscribeSubs } from './subscriptions';
 import { applyLink } from './nodes';
 
@@ -26,7 +27,7 @@ export function SubLinkPane({ target }: PropertiesPaneProps) {
                     onChange={(e) => setDraft(e.target.value)}
                     onBlur={commit}
                     // 한글 조합 중 Enter 는 커밋 아님
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) commit(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !isImeEnter(e)) commit(); }}
                     className="rounded border border-line bg-side text-text px-2 py-1 text-[13px]"
                 />
             </label>

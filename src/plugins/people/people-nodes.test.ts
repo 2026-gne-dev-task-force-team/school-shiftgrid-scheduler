@@ -94,7 +94,7 @@ describe('타입 둘 — 명단은 보이고 사람(record)은 탐색기 0줄', 
     it('우클릭 메뉴(impl)는 kit 를 거친다 — 「명단 열기」 명령 하나', () => {
         const api = wire();
         const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
-        expect(peopleNodeTypeImpl.list.menu(host(), lid)).toEqual([{ label: '명단 열기', icon: 'users', commandId: 'people.openList' }]);
+        expect(peopleNodeTypeImpl.list.menu(host(), lid)).toEqual([{ label: '명단 열기', icon: 'users', commandId: 'people.openList', commandArg: { nodeId: lid } }]);
     });
 });
 

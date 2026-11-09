@@ -94,7 +94,7 @@ describe('타입 둘 — 목록은 보이고 방(record)은 탐색기 0줄', () 
     it('우클릭 메뉴(impl)는 kit 를 거친다 — 「방 목록 열기」 명령 하나', () => {
         const api = wire();
         const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '목록' });
-        expect(roomsNodeTypeImpl.list.menu(host(), lid)).toEqual([{ label: '방 목록 열기', icon: 'door', commandId: 'rooms.openList' }]);
+        expect(roomsNodeTypeImpl.list.menu(host(), lid)).toEqual([{ label: '방 목록 열기', icon: 'door', commandId: 'rooms.openList', commandArg: { nodeId: lid } }]);
     });
 });
 
