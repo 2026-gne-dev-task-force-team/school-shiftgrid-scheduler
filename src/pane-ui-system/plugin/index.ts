@@ -14,6 +14,7 @@ export type {
     TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, WorkspaceOpenOptions,
     // 🔴 선언형 기여(2026-11-02 선언형 전환) — 매니페스트 contributes · 모듈 구현 칸 · 동적 선언
     Contributes, ViewContribution, CommandContribution, SettingsContributes, StatusBarContribution,
+    PropertiesContribution, PropertiesTarget, PropertiesPaneProps,
     NodeTypeContribution, NodeTypeRegistrar,
     PluginImpl, PerCallerApi, PluginLifecycle, DeclareInput,
     ContributionKind, ContributionRecord,
@@ -34,7 +35,8 @@ export {
     setWorkspaceBridge, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems, listStatusItems,
     listSettings, listCommands, getCommand, runCommand, listTabMenu, getNewTab, fireWorkspace,
-    listContributions,
+    listContributions, listPropertiesPanes,
+    type PropertiesEntry,
     type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
     type WorkspaceBridge,
 } from './store';

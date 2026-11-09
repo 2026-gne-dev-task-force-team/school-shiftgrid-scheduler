@@ -210,6 +210,24 @@ export interface SettingsContributes<PaneName extends string = string> {
     items?: { section: string; id: string; title: string; icon: IconName; pane: PaneName }[];
 }
 
+/**
+ * 🔴 인스펙터 칸 기여 — 「이 종류(target)의 대상이 골라지면 인스펙터 패널에 이 화면을 그린다」(쥔님 2026-11-09).
+ *   ⭐ 인스펙터 패널은 자리만 쥔다 — 무엇을 그릴지는 그 대상을 가진 플러그인이 pane 으로 낸다.
+ *   target 은 대상 종류 문자열(예: 노드 타입 'calendar.event') — 창틀은 뜻을 모르고 같은지만 본다.
+ *   한 종류에 여러 플러그인이 칸을 내면 order(작은 것 먼저)·등록 순으로 위에서 아래로 쌓인다.
+ */
+export interface PropertiesContribution<PaneName extends string = string> {
+    target: string;
+    id: string;
+    title: string;
+    pane: PaneName;
+    order?: number;
+}
+
+/** 인스펙터 칸 pane 이 받는 것 — host 는 꽂을 때 끼워진다. target 은 「지금 고른 대상」(종류 + id). */
+export interface PropertiesTarget { type: string; id: string }
+export interface PropertiesPaneProps { host: PluginHost; target: PropertiesTarget }
+
 /** 상태바 기여 — render 함수를 빼고 render(모듈 renders 의 키)로 가리킨다. */
 export interface StatusBarContribution<RenderName extends string = string> {
     id: string;
@@ -271,6 +289,8 @@ export interface Contributes<
     ribbon?: RibbonAddInput[];
     settings?: SettingsContributes<PaneName>;
     statusBar?: StatusBarContribution<RenderName>[];
+    /** 🔴 인스펙터 칸 — 인스펙터 패널이 「고른 대상」의 종류로 모아 그린다(위 PropertiesContribution). pane 은 모듈 panes 의 키. */
+    properties?: PropertiesContribution<PaneName>[];
     /** 노드 타입 — applyContributes 가 노드 레지스트라(host.modules.use('nodes'))에 통째로 넘긴다(위 NodeTypeContribution). */
     nodeTypes?: NodeTypeContribution<NTName>[];
     /**
@@ -306,7 +326,8 @@ export interface PluginImpl {
     components?: Record<string, ComponentType<ViewProps & { host: PluginHost }>>;
     /** 🔴 첫 인자 host(안드로이드 Context) · ctx(우클릭 맥락) · args(선언이 붙인 데이터 — declare 의 args·contributes 명령의 args). */
     commands?: Record<string, (host: PluginHost, ctx?: CommandContext, args?: unknown) => void>;
-    panes?: Record<string, ComponentType<{ host: PluginHost }>>;
+    /** 설정 항목 pane 은 { host } · 인스펙터 칸 pane 은 { host, target }(PropertiesPaneProps) */
+    panes?: Record<string, ComponentType<{ host: PluginHost }> | ComponentType<PropertiesPaneProps>>;
     renders?: Record<string, (host: PluginHost) => ReactNode>;
     /**
      * 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이름이 이 키를 가리킨다.
@@ -346,7 +367,8 @@ export type DeclareInput =
     | ({ kind: 'ribbon' } & RibbonAddInput)
     | { kind: 'settingsSection'; id: string; title: string; icon?: IconName }
     | { kind: 'settingsItem'; section: string; id: string; title: string; icon: IconName; pane: string }
-    | ({ kind: 'statusBar' } & StatusBarContribution);
+    | ({ kind: 'statusBar' } & StatusBarContribution)
+    | ({ kind: 'properties' } & PropertiesContribution);
 
 /**
  * 🔴 기여 장부 한 줄 — 「이 플러그인이 호스트에 지금 무엇을 꽂아 두었나」의 읽기 전용 거울(2026-11-02 D7).

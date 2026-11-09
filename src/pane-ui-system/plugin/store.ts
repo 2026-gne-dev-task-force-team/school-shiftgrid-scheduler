@@ -16,7 +16,7 @@ import type { IconName } from '../primitives/Icon';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import type {
     Disposable, RibbonAction, WorkspaceOpenOptions, CommandDef, CommandContext,
-    StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, ContributionRecord,
+    StatusContribution, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, ContributionRecord, PropertiesTarget,
 } from './types';
 
 // ── ① 주인별 Disposable ──
@@ -208,6 +208,23 @@ export function listSettings(): { id: string; title: string; icon?: IconName; ow
     return sections
         .map((s) => ({ id: s.id, title: s.title, icon: s.icon, owner: s.owner, items: items.filter((it) => it.section === s.id) }))
         .filter((s) => s.items.length > 0);
+}
+
+// ── 인스펙터 칸 스토어 — 인스펙터 패널이 「고른 대상」의 종류로 모아 그린다 ──
+export interface PropertiesEntry { target: string; id: string; title: string; order: number; Pane: ComponentType<{ target: PropertiesTarget }>; owner: string; seq: number }
+let propSeq = 0;
+const propEntries: PropertiesEntry[] = [];
+
+export function addPropertiesPane(owner: string, p: Omit<PropertiesEntry, 'owner' | 'seq'>): Disposable {
+    const entry: PropertiesEntry = { ...p, owner, seq: propSeq++ };
+    propEntries.push(entry);
+    emitContrib();
+    return { dispose() { const k = propEntries.indexOf(entry); if (k >= 0) { propEntries.splice(k, 1); emitContrib(); } } };
+}
+
+/** 이 종류에 꽂힌 인스펙터 칸 — order 작은 것 먼저, 같으면 등록 순. */
+export function listPropertiesPanes(target: string): PropertiesEntry[] {
+    return propEntries.filter((e) => e.target === target).sort((a, b) => a.order - b.order || a.seq - b.seq);
 }
 
 // ── 탭 메뉴 기여(모든 탭의 우클릭 메뉴에 붙는다) ──
