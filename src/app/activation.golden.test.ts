@@ -50,6 +50,8 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채우지만(provides) 아무도 requires 하지 않아 목록 맨 끝에 선다(onFirstRun 자동 열기 없음).
             // 📌 2026-11-09: 구독 캘린더는 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 꾸러미가 사라졌다 — 목록에서 뺐다.
             'record-view',
+            // 2026-11-09: 선택 알림(탐색기가 알리고) → 속성(오른쪽 패널이 듣는다).
+            'selection', 'properties',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
@@ -60,7 +62,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const opened: string[] = [];
         setWorkspaceBridge(bridgeCollecting(opened));
-        expect(opened).toEqual(['project-explorer.tree', 'calendar.month']);
+        expect(opened).toEqual(['project-explorer.tree', 'calendar.month', 'properties.panel']);
     });
 });
 

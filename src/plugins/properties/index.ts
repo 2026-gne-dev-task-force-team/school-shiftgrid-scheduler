@@ -2,6 +2,7 @@
  * 속성 플러그인 — 오른쪽 패널에 「속성」 뷰 하나. 칸은 남이 낸다(contributes.properties → listPropertiesPanes).
  */
 import { createElement } from 'react';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { PropertiesView } from './views/PropertiesPanel';
@@ -9,6 +10,7 @@ import { PropertiesView } from './views/PropertiesPanel';
 export const propertiesPlugin = definePlugin({
     manifest: {
         ...manifest,
+        supports: { selection: '^0.1' },   // 고른 것을 여기서 듣는다
         contributes: {
             views: [{
                 id: 'panel', title: '속성', icon: 'info', defaultArea: 'right',
@@ -19,8 +21,10 @@ export const propertiesPlugin = definePlugin({
             }],
         },
     },
+    // 첫 실행 때 오른쪽에 한 번 연다(기기별 한 번 — 닫으면 그대로 닫혀 있다).
+    lifecycle: { onFirstRun: (host) => { host.workspace.open('properties.panel', { where: 'right' }); } },
     components: {
-        Panel: () => createElement(PropertiesView),
+        Panel: (p: { host: PluginHost }) => createElement(PropertiesView, { host: p.host }),
     },
 });
 

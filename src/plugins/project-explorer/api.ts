@@ -36,6 +36,9 @@ function realNodes(): Node[] {
     return Object.values(t.nodes).filter((n) => n.id !== t.root && n.id !== t.trash);
 }
 
+/** 선언형(contributes.nodeTypes)으로 꽂힌 타입 → 선언한 플러그인 id. */
+const contributedOwner = new Map<string, string>();
+
 /**
  * 호출자별 NodesApi 하나를 짓는다.
  *   callerId — host.modules.use 를 부른 플러그인 id(접두사·주인 검사의 기준). 모르면 1차는 접두사 검사만.
@@ -91,7 +94,10 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
             // 🔴 선언형 노드 타입은 raw registerType — 접두사 검사를 안 탄다. 내장 'folder' 는 접두사 없는 예외고,
             //    선언형 기여는 in-tree·tsc 검사된 1차 자료라 런타임 types.register 의 접두사 가드가 불필요하다.
             //    (런타임 동적 등록은 여전히 types.register 가 접두사를 강제한다 — 창구가 다르다.)
-            return keep(registerType(def));
+            // 선언한 플러그인 = 주인(setData 검사). 접두사와 다를 수 있다 — 달력이 옛 이름 calendar-subscribe.* 를 그대로 낸다(유실 0).
+            contributedOwner.set(item.type, host.id);
+            const reg = registerType(def);
+            return keep({ dispose() { if (contributedOwner.get(item.type) === host.id) contributedOwner.delete(item.type); reg.dispose(); } });
         },
 
         get(id) { const n = getState().tree.nodes[id]; return n ? freeze(n) : undefined; },
@@ -118,8 +124,8 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         setData(id, data) {
             const n = getState().tree.nodes[id];
             if (!n) return;
-            // 🔴 주인 검사 — 그 노드의 타입 접두사(= 등록한 플러그인)와 호출자가 같아야 쓴다.
-            const owner = n.type.includes('.') ? n.type.slice(0, n.type.indexOf('.')) : null;
+            // 🔴 주인 검사 — 그 타입을 선언한 플러그인(없으면 타입 접두사)과 호출자가 같아야 쓴다.
+            const owner = contributedOwner.get(n.type) ?? (n.type.includes('.') ? n.type.slice(0, n.type.indexOf('.')) : null);
             if (!owner) {
                 console.warn(`[project-explorer] setData 거부 — 타입 "${n.type}" 에 주인(접두사)이 없다(내장 노드엔 data 를 안 쓴다)`);
                 return;

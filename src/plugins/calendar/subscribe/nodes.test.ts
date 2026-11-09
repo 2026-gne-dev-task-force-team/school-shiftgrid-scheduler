@@ -54,9 +54,10 @@ beforeEach(async () => {
     clearTypes(); clearDerived(); __resetPersistForTest(); __resetFeeds();
     await initStore(host());
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
-    const api = makeNodesApi('calendar-subscribe');
-    // real 구독 노드 타입(record:false · createInput · open · menu · onInput)을 그대로 꽂는다.
-    api.registerContributed(subscribeNodeTypes[0], { nodeTypes: subscribeNodeTypeImpl } as PluginImpl, host());
+    // 🔴 실제 호출자는 달력(calendar) — 타입 이름 접두사(calendar-subscribe)와 다르다. 옛 시험은 'calendar-subscribe' 로 불러
+    //    실앱의 setData 거부(주인≠호출자)를 못 잡았다(2026-11-09 실화면에서 발견). 선언한 플러그인이 주인이다.
+    const api = makeNodesApi('calendar');
+    api.registerContributed(subscribeNodeTypes[0], { nodeTypes: subscribeNodeTypeImpl } as PluginImpl, { ...host(), id: 'calendar' } as PluginHost);
     bridge = initSubs(api);
     setCalendar(calendarModule);
 });
@@ -79,6 +80,18 @@ describe('새로 만들기 — 이름은 이름, 링크는 속성 패널(쥔님 
         const node = s.tree.nodes[s.renamingId!];
         expect(node.type).toBe(SUB_TYPE);
         expect((node.data as { url: string }).url).toBe('');
+    });
+});
+
+describe('주인 — 선언한 플러그인만 data 를 쓴다', () => {
+    it('달력(선언자)은 쓰고, 남은 거부된다', () => {
+        const id = addSub('공휴일', 'https://x/y.ics');
+        updateSub(id, { url: 'https://z/w.ics' });
+        expect(getSubById(id)!.data.url).toBe('https://z/w.ics');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        makeNodesApi('people').setData(id, { url: 'nope' });
+        expect(getSubById(id)!.data.url).toBe('https://z/w.ics');
+        warn.mockRestore();
     });
 });
 

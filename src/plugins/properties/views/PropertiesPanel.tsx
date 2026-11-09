@@ -2,8 +2,10 @@
  * 속성 패널 — 「지금 고른 대상」의 종류(type)에 꽂힌 속성 칸을 위에서 아래로 쌓는다.
  *   🔴 이 패널은 대상의 뜻을 모른다 — 칸은 그 대상을 가진 플러그인이 contributes.properties 로 낸다.
  */
+import { useSyncExternalStore } from 'react';
 import { SectionHeader } from '../../../pane-ui-system';
-import { listPropertiesPanes, useContribVersion, type PropertiesTarget } from '../../../pane-ui-system/plugin';
+import { listPropertiesPanes, useContribVersion, type PluginHost, type PropertiesTarget } from '../../../pane-ui-system/plugin';
+import type { SelectionApi } from '../../selection/contracts/selection';
 
 /** 고른 대상 하나를 받아 그린다 — 대상이 어디서 오는지는 PropertiesView 몫(시험은 이걸 바로 그린다). */
 export function PropertiesBody({ target }: { target: PropertiesTarget | null }) {
@@ -27,9 +29,13 @@ function Empty({ text }: { text: string }) {
     return <p className="px-pad py-3 text-[12px] text-muted select-none">{text}</p>;
 }
 
-export function PropertiesView() {
-    // shortcut: 「고른 대상」 알림은 아직 없다(별도 세션이 선택 알림 플러그인을 만든다) — 그게 오면 여기서 구독해 target 을 받는다.
-    const target: PropertiesTarget | null = null;
+const noSub = () => () => {};
+const none = () => null;
+
+export function PropertiesView({ host }: { host: PluginHost }) {
+    useContribVersion();   // 선택 알림이 켜지고/꺼지면 다시 그려 sel 을 새로 받는다
+    const sel = host.modules.use<SelectionApi>('selection');   // supports — 없으면 null(늘 「고른 것이 없습니다」)
+    const target: PropertiesTarget | null = useSyncExternalStore(sel?.subscribe ?? noSub, sel?.get ?? none);
     return (
         <div className="h-full flex flex-col bg-side">
             <SectionHeader title="속성" />
