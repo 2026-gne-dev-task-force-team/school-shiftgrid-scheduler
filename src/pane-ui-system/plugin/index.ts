@@ -10,7 +10,7 @@ export type { MenuEntry } from '../primitives/ContextMenu';
 
 export type {
     PluginManifest, PluginAbout, PluginModule, PluginHost, Disposable,
-    RibbonAction, RibbonAddInput, CommandDef, CommandContext, SettingsContribution, StatusContribution,
+    RibbonAction, RibbonAddInput, CommandDef, CommandContext, JsonValue, SettingsContribution, StatusContribution,
     TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo, WorkspaceOpenOptions,
     // 🔴 선언형 기여(2026-11-02 선언형 전환) — 매니페스트 contributes · 모듈 구현 칸 · 동적 선언
     Contributes, ViewContribution, CommandContribution, SettingsContributes, StatusBarContribution,
@@ -36,7 +36,7 @@ export { ViewPlaceholder } from './Placeholder';
 export {
     setWorkspaceBridge, setLeafTitle, setLeafGlyph, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems, listStatusItems,
-    listSettings, listCommands, getCommand, runCommand, listTabMenu, getNewTab, fireWorkspace,
+    listSettings, listCommands, getCommand, runCommand, commandEnabled, listTabMenu, getNewTab, fireWorkspace,
     listContributions, listPropertiesPanes,
     type PropertiesEntry,
     type SettingsSectionEntry, type SettingsItemEntry, type StatusEntry, type NewTabContribution,
@@ -49,7 +49,7 @@ export {
     type StorageError, type StorageErrorReason, type StorageDurability,
 } from './storage-errors';
 export {
-    notify, dismiss as dismissNotify, runNotifyAction, markAllRead, clearNotifications, applyNotifyRetain,
+    notify, dismiss as dismissNotify, runNotifyAction, actionState, markAllRead, clearNotifications, applyNotifyRetain,
     useNotifications, getNotifications,
-    type NotifyInput, type NotifyItem, type NotifyLevel, type NotifyAction, type NotifySnapshot,
+    type NotifyInput, type NotifyItem, type NotifyLevel, type NotifyAction, type NotifyActionState, type NotifySnapshot,
 } from './notify';

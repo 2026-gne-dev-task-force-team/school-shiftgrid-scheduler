@@ -14,7 +14,8 @@ import type {
     Disposable, PluginHost, PluginImpl, NodeTypeContribution,
 } from '../../pane-ui-system/plugin';
 import type { Node } from './model/tree';
-import { parentOf } from './model/tree';
+import { parentOf, isDescendant } from './model/tree';
+import { CMD } from './contracts/commands';
 import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
 import { NodeHeader } from './views/NodeHeader';
@@ -38,6 +39,13 @@ const freeze = (n: Node): PublicNode => Object.freeze({ ...n, children: Object.f
 function realNodes(): Node[] {
     const t = getState().tree;
     return Object.values(t.nodes).filter((n) => n.id !== t.root && n.id !== t.trash);
+}
+
+/** 휴지통 안(휴지통 자신·그 자손)인가 — 없는 id 는 false. */
+function isTrashed(id: string): boolean {
+    const t = getState().tree;
+    if (!t.nodes[id]) return false;
+    return id === t.trash || isDescendant(t, id, t.trash);
 }
 
 /** 선언형(contributes.nodeTypes)으로 꽂힌 타입 → 선언한 플러그인 id. */
@@ -123,6 +131,8 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         },
         find(pred) { return realNodes().map(freeze).filter(pred); },
         byType(type) { return realNodes().filter((n) => n.type === type).map(freeze); },
+        isTrashed(id) { return isTrashed(id); },
+        liveByType(type) { return realNodes().filter((n) => n.type === type && !isTrashed(n.id)).map(freeze); },
 
         create(parentId, spec) { return apiCreate(parentId, spec); },
         rename(id, name) { apiRename(id, name); },
@@ -157,5 +167,6 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
 
         subscribe(fn) { return keep({ dispose: subscribeChanges(fn) }); },
         get roots() { const t = getState().tree; return { main: t.root, trash: t.trash }; },
+        cmd: CMD,
     };
 }

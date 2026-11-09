@@ -152,3 +152,29 @@ describe('⑤ 공개 표면이 안 내주는 것 + 얼린 복사본', () => {
         expect(api.get(id)?.name).toBe('원래');
     });
 });
+
+describe('⑥ 휴지통 API(R2) — isTrashed · liveByType · cmd', () => {
+    it('지운 노드는 isTrashed · liveByType 에서 빠진다(byType 엔 남는다) · 휴지통 자신도 isTrashed · 없는 id 는 false', () => {
+        const api = makeNodesApi('pt');
+        api.types.register({ type: 'pt.doc', label: '문서', icon: 'file', container: true });
+        const a = api.create(api.roots.main, { type: 'pt.doc', name: '가' });
+        const b = api.create(api.roots.main, { type: 'pt.doc', name: '나' });
+        const child = api.create(a, { type: 'pt.doc', name: '가의 자식' });
+        api.remove(a);
+        expect(api.isTrashed(a)).toBe(true);
+        expect(api.isTrashed(child)).toBe(true);    // 자손도 휴지통 안
+        expect(api.isTrashed(b)).toBe(false);
+        expect(api.isTrashed(api.roots.trash)).toBe(true);
+        expect(api.isTrashed('없음')).toBe(false);
+        expect(api.byType('pt.doc').map((n) => n.id).sort()).toEqual([a, b, child].sort());
+        expect(api.liveByType('pt.doc').map((n) => n.id)).toEqual([b]);
+    });
+
+    it('cmd 는 명령 id 상수 — 매니페스트에 선언된 id 와 한 벌이다', async () => {
+        const { CMD } = await import('./contracts/commands');
+        const mod = (await import('./index')).default as unknown as { manifest: { contributes: { commands: { id: string }[] } } };
+        const declared = new Set(mod.manifest.contributes.commands.map((c) => c.id));
+        expect(makeNodesApi('pt').cmd).toBe(CMD);
+        for (const id of Object.values(CMD)) expect(declared.has(id), id).toBe(true);
+    });
+});

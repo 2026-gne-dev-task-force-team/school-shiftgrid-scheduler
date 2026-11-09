@@ -18,7 +18,7 @@ import {
     initStore, getState, newNode, renameSelected, removeSelected, confirmRemove, cancelRemove,
     nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
-    undoAction, redoAction, subscribeState,
+    undoAction, undoAllowed, redoAction, subscribeState,
 } from './store';
 import type { SelectionApi } from '../selection/contracts/selection';
 
@@ -116,17 +116,17 @@ export const explorerPlugin = definePlugin({
                 { id: 'explorer.open-panel', title: '탐색기', icon: 'folder', keys: 'Mod+Shift+E' },
                 { id: 'explorer.rename', title: '이름 바꾸기', icon: 'edit' },
                 { id: 'explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
-                { id: 'explorer.confirm-remove', title: '삭제 확인', icon: 'trash' },
-                { id: 'explorer.cancel-remove', title: '삭제 취소', icon: 'x' },
+                { id: 'explorer.confirm-remove', title: '삭제 확인', icon: 'trash', palette: false },
+                { id: 'explorer.cancel-remove', title: '삭제 취소', icon: 'x', palette: false },
                 { id: 'explorer.open', title: '열기', icon: 'arrowRight' },
-                { id: 'explorer.move-up', title: '위로', icon: 'left' },
-                { id: 'explorer.move-down', title: '아래로', icon: 'left' },
+                { id: 'explorer.move-up', title: '위로 옮기기', icon: 'up' },
+                { id: 'explorer.move-down', title: '아래로 옮기기', icon: 'down' },
                 { id: 'explorer.restore', title: '복원', icon: 'undo' },
                 { id: 'explorer.ask-purge', title: '영구 삭제', icon: 'trash' },
                 { id: 'explorer.ask-purge-all', title: '휴지통 비우기', icon: 'trash' },
-                { id: 'explorer.purge', title: '영구 삭제 확정', icon: 'trash' },
-                { id: 'explorer.purge-all', title: '휴지통 비우기 확정', icon: 'trash' },
-                { id: 'explorer.cancel-purge', title: '삭제 취소', icon: 'x' },
+                { id: 'explorer.purge', title: '영구 삭제 확정', icon: 'trash', palette: false },
+                { id: 'explorer.purge-all', title: '휴지통 비우기 확정', icon: 'trash', palette: false },
+                { id: 'explorer.cancel-purge', title: '영구 삭제 취소', icon: 'x', palette: false },
                 { id: 'explorer.undo', title: '되돌리기', icon: 'undo' },
                 { id: 'explorer.redo', title: '다시 하기', icon: 'redo' },
             ],
@@ -164,6 +164,10 @@ export const explorerPlugin = definePlugin({
         // 🔴 동적 new-<type> 명령의 구현 하나 — registerTypeCommands 가 타입마다 id 'new-<type>' + args{type} 로 declare 한다.
         //    id 가 런타임값이라 contributes 에 못 적는 명령이 「이름 하나 + 데이터」로 선언형에 들어오는 본보기(명세 「구현하며 바뀐 것 둘」 ②).
         newNode: (_host, _ctx, args) => { const { type } = args as { type: string }; newNode(type, { via: 'selection' }); },
+    },
+    // 🔴 「지금 되나」 판정 — explorer.undo 는 args.undoTop(알림이 실은 토큰)이 더미 맨 위와 맞을 때만(C1). args 없으면 늘 된다.
+    enabled: {
+        'explorer.undo': (_host, ctx) => undoAllowed(ctx?.args),
     },
     // 상태바 그림 — 스토어를 스스로 구독해 나무가 바뀔 때 다시 그린다(host 는 안 쓴다).
     renders: {

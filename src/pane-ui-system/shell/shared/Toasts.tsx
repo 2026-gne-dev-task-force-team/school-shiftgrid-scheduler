@@ -3,7 +3,7 @@
  * 🔴 ⛔ 색은 토큰으로만(구조 검사 ①) · 도메인 낱말 0(⑤). 오류는 role=alert 로 읽어 준다.
  */
 import { useNarrow } from '../../layout/useScreen';
-import { useNotifications, dismiss, runNotifyAction, type NotifyLevel } from '../../plugin/notify';
+import { useNotifications, dismiss, runNotifyAction, actionState, type NotifyLevel } from '../../plugin/notify';
 import { listPlugins } from '../../plugin/registry';
 import { FOCUS_RING } from '../../primitives/focus';
 import { Icon, type IconName } from '../../primitives/Icon';
@@ -27,13 +27,14 @@ export function Toasts() {
     return (
         <div
             aria-live="polite"
-            className={`fixed z-[250] flex flex-col gap-2 pointer-events-none ${narrow ? 'top-2 inset-x-2' : 'right-3 w-[340px]'}`}
+            className={`fixed z-toast flex flex-col gap-2 pointer-events-none ${narrow ? 'top-2 inset-x-2' : 'right-3 w-[340px]'}`}
             // 상태바 높이는 토큰 변수 — 숨겨 있어도 한 줄 여유라 겹치지 않는다
             style={narrow ? undefined : { bottom: 'calc(var(--s-statusbar) + 0.75rem)' }}
         >
             {toasts.map((t) => {
                 const st = LEVEL_STYLE[t.level];
                 const who = ownerName(t.owner);
+                const act = actionState(t);
                 return (
                     <div
                         key={t.id}
@@ -48,12 +49,15 @@ export function Toasts() {
                                 {t.action && (
                                     <button
                                         type="button"
+                                        disabled={act.kind !== 'ready'}
+                                        title={act.kind === 'stale' ? act.reason : undefined}
                                         onClick={() => runNotifyAction(t.id)}
-                                        className={`h-6 px-2 rounded border border-line text-small whitespace-nowrap shrink-0 hover:bg-text/[0.06] ${FOCUS_RING}`}
+                                        className={`h-6 px-2 rounded border border-line text-small whitespace-nowrap shrink-0 hover:bg-text/[0.06] disabled:opacity-40 disabled:pointer-events-none ${FOCUS_RING}`}
                                     >
                                         {t.action.label}
                                     </button>
                                 )}
+                                {act.kind === 'stale' && <span className="text-note text-muted">{act.reason}</span>}
                                 {who && <span className="text-note text-muted whitespace-nowrap">{who}</span>}
                             </div>
                         </div>

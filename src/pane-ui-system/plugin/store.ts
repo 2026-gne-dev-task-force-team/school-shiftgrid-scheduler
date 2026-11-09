@@ -153,6 +153,12 @@ export function addCommand(owner: string, c: CommandDef): Disposable {
 
 export function getCommand(id: string): (CommandDef & { owner: string }) | undefined { return commands.get(id); }
 export function listCommands(): (CommandDef & { owner: string })[] { return [...commands.values()]; }
+/** 지금 이 맥락으로 부를 수 있나 — 없는 명령은 false · enabled 가 없으면 true · 판정이 던지면 false. */
+export function commandEnabled(id: string, ctx?: CommandContext): boolean {
+    const c = commands.get(id);
+    if (!c) return false;
+    try { return c.enabled ? c.enabled(ctx) : true; } catch { return false; }
+}
 
 /**
  * 🔴 ⭐ 명령 실행 — 「모든 동작은 명령」(쥔님). 단추·메뉴·팔레트가 전부 이 한 길로 동작을 부른다.
@@ -162,6 +168,7 @@ export function listCommands(): (CommandDef & { owner: string })[] { return [...
 export function runCommand(id: string, ctx?: CommandContext): boolean {
     const c = commands.get(id);
     if (!c) { console.warn(`[plugin] 없는 명령을 부름: ${id}`); return false; }
+    if (!commandEnabled(id, ctx)) return false;   // 🔴 낡은 맥락(지난 되돌리기 토큰 등) — 안 부른다
     try { c.run(ctx); } catch (e) { console.error(`[plugin] 명령 "${id}" 실행 실패`, e); }
     return true;
 }

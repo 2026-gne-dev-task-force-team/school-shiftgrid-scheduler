@@ -77,7 +77,8 @@ function registerOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Di
             const fn = impl.commands?.[key];
             if (!fn) throw new Error(`[plugin] "${owner}" 명령 "${item.id}" 의 구현("${key}")이 commands 에 없다`);
             const { kind, impl: _impl, args, ...rest } = item;
-            return track(owner, addCommand(owner, { ...rest, run: (ctx) => fn(host, ctx, args) }));
+            const can = impl.enabled?.[key];
+            return track(owner, addCommand(owner, { ...rest, run: (ctx) => fn(host, ctx, args), enabled: can ? (ctx) => can(host, ctx) : undefined }));
         }
         case 'view': {
             const Impl = impl.components?.[item.component];

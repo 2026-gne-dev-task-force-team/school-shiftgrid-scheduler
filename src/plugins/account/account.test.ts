@@ -84,6 +84,7 @@ function makeNodes(opts?: { deferred?: boolean; trash?: boolean }) {
         promptInput: () => { /* 테스트 */ },
         subscribe: (fn) => { subs.add(fn); return { dispose() { subs.delete(fn); } }; },
         roots: { main: ROOT, trash: TRASH },
+        isTrashed: () => false, liveByType: () => [], cmd: {} as NodesApi['cmd'],   // R2 새 칸 — 이 테스트는 안 쓴다
     };
     const plugin: PluginModule = {
         manifest: {
