@@ -144,7 +144,7 @@ describe('계산 행', () => {
     });
     it('칸 아래 「계산」에서 합계를 고르면 보기에 저장되고 값이 뜬다', () => {
         click(q('[data-rv-calc="f_n"]'));
-        click(q('[data-rv-calc-fn="sum"]'));
+        click(mi('합계') ?? null);
         expect(lastViews[0].calc).toEqual({ f_n: 'sum' });
         expect(q('[data-rv-calc="f_n"] [data-rv-calc-val]')!.textContent).toBe('3');
     });
@@ -177,13 +177,13 @@ describe('보기 탭', () => {
 describe('칸 고정 · 줄바꿈', () => {
     it('frozen:1 → 첫 칸 sticky · wrap → 칸에 표시', () => {
         click(q('[data-rv-head-menu="f_t"]'));
-        click(q('[data-rv-freeze]'));
+        click(mi('여기까지 칸 고정') ?? null);
         expect(lastViews[0].frozen).toBe(1);
         expect(q('[data-rv-head="f_t"]')!.style.position).toBe('sticky');
         expect(pos(0, 0).style.position).toBe('sticky');
         expect(q('[data-rv-head="f_x"]')!.style.position).toBe('');
         click(q('[data-rv-head-menu="f_x"]'));
-        click(q('[data-rv-wrap]'));
+        click(mi('줄바꿈') ?? null);
         expect(lastViews[0].columns.find((c) => c.key === 'f_x')?.wrap).toBe(true);
         expect(pos(0, 1).className).toContain('whitespace-normal');
     });

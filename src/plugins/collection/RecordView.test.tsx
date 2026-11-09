@@ -58,6 +58,7 @@ function mount(ui: React.ReactElement) {
 }
 const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 const qa = (sel: string) => [...document.querySelectorAll(sel)] as HTMLElement[];
+const mi = (label: string) => [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent === label) as HTMLButtonElement | undefined;
 function click(el: Element | null) { act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })); }); }
 function setInput(el: HTMLInputElement, value: string) {
     const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
@@ -94,7 +95,7 @@ describe('🔴 IME 가드 — 조합 중 Enter 는 확정이 아니다', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-head-menu="f_x"]'));
-        const input = q('[data-rv-rename="f_x"]') as HTMLInputElement;
+        const input = q('[data-rv-rename="f_x"] input') as HTMLInputElement;
         setInput(input, '새 이름');
         key(input, 'Enter', { isComposing: true });
         expect(spy.fields).not.toHaveBeenCalled();
@@ -121,7 +122,7 @@ describe('제목 칸 보호', () => {
     it('제목 칸 메뉴에는 칸 삭제가 없고 타입 단추가 모두 비활성', () => {
         mount(<Harness init={[]} spy={spies()} />);
         click(q('[data-rv-head-menu="f_t"]'));
-        expect(q('[data-rv-del-field]')).toBeNull();
+        expect(mi('칸 삭제')).toBeUndefined();
         const types = qa('[data-rv-type]');
         expect(types.length).toBe(13);
         expect(types.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
@@ -130,8 +131,8 @@ describe('제목 칸 보호', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-head-menu="f_x"]'));
-        expect(q('[data-rv-del-field]')).not.toBeNull();
-        click(q('[data-rv-del-field]'));
+        expect(mi('칸 삭제')).toBeTruthy();
+        click(mi('칸 삭제') ?? null);
         expect((spy.fields.mock.calls[0][0] as RecordField[]).map((f) => f.key)).toEqual(['f_t', 'f_s']);
     });
 });
@@ -141,11 +142,8 @@ describe('칸 추가 — 타입 고르기', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-add-field]'));
-        expect(qa('[data-rv-add-type]').map((b) => b.dataset.rvAddType)).toEqual([
-            'text', 'number', 'select', 'multi', 'date', 'check',
-            'status', 'url', 'email', 'phone', 'created', 'updated', 'id',
-        ]);
-        click(q('[data-rv-add-type="number"]'));
+        expect(qa('[role="menuitem"]')).toHaveLength(13);
+        click(mi('숫자') ?? null);
         const next = spy.fields.mock.calls[0][0] as RecordField[];
         expect(next).toHaveLength(4);
         const made = next[3];
@@ -238,7 +236,7 @@ describe('보기 정의 저장 자리', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: 'a' }]} spy={spy} withViews />);
         click(q('[data-rv-head-menu="f_x"]'));
-        click(q('[data-rv-sort-desc]'));
+        click(mi('내림차순 정렬') ?? null);
         expect(spy.views).toHaveBeenCalled();
         const last = spy.views.mock.calls.at(-1)![0] as ViewDef[];
         expect(last[0].sorts).toEqual([{ key: 'f_x', dir: 'desc' }]);
@@ -249,7 +247,7 @@ describe('보기 정의 저장 자리', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: 'a' }]} spy={spy} />);
         click(q('[data-rv-head-menu="f_x"]'));
-        click(q('[data-rv-sort-asc]'));
+        click(mi('오름차순 정렬') ?? null);
         const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)!);
         expect(keys.some((k) => k.includes('collection.t.harness'))).toBe(true);
     });
@@ -257,7 +255,7 @@ describe('보기 정의 저장 자리', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} withViews />);
         click(q('[data-rv-head-menu="f_x"]'));
-        click(q('[data-rv-hide-col]'));
+        click(mi('칸 숨기기') ?? null);
         const last = spy.views.mock.calls.at(-1)![0] as ViewDef[];
         expect(last[0].columns.find((c) => c.key === 'f_x')).toEqual({ key: 'f_x', hidden: true });
         expect(q('[data-rv-head="f_x"]')).toBeNull();
@@ -268,15 +266,8 @@ describe('칸 순서 끌기', () => {
     it('머리 칸을 끌어 옮기면 활성 보기 columns 순서가 바뀐다', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} withViews />);
-        const drag = (el: Element, type: string, dt: unknown) => {
-            const ev = new Event(type, { bubbles: true, cancelable: true }) as Event & { dataTransfer: unknown };
-            ev.dataTransfer = dt;
-            act(() => { el.dispatchEvent(ev); });
-        };
-        const dt = { setData() {}, effectAllowed: '' };
-        drag(q('[data-rv-drag="f_s"]')!, 'dragstart', dt);
-        drag(q('[data-rv-head="f_t"]')!, 'dragover', dt);
-        drag(q('[data-rv-head="f_t"]')!, 'drop', dt);
+        // useReorder 의 키보드 대안(Alt+←) — HTML5 끌기는 걷었다
+        for (let i = 0; i < 2; i++) key(q('[data-rv-drag="f_s"]')!, 'ArrowLeft', { altKey: true });
         const last = spy.views.mock.calls.at(-1)![0] as ViewDef[];
         expect(last[0].columns.map((c) => c.key)).toEqual(['f_s', 'f_t', 'f_x']);
     });
@@ -353,7 +344,7 @@ describe('하위 항목(sub-items) — 트리 UI', () => {
         mount(<TreeHarness />);
         // 제목 칸 머리 메뉴로 정렬을 건다
         click(q('[data-rv-head-menu="f_t"]'));
-        click(q('[data-rv-sort-asc]'));
+        click(mi('오름차순 정렬') ?? null);
         expect(q('[data-rv-fold="a"]')).toBeNull();     // 평평 → 접기 없음
         expect(q('[data-rv-row="b"]')).toBeTruthy();    // 모든 행이 평평하게 보인다
     });
@@ -428,7 +419,7 @@ describe('Q11 W10 — 칸 옵션 「유일」', () => {
         ev.clipboardData = { getData: (t: string) => (t === 'text/plain' ? text : '') };
         act(() => { el.dispatchEvent(ev); });
     }
-    const turnOn = () => { click(q('[data-rv-head-menu="f_x"]')); click(q('[data-rv-unique]')); };
+    const turnOn = () => { click(q('[data-rv-head-menu="f_x"]')); click(mi('유일(같은 값 막기)') ?? null); };
 
     it('칸 메뉴로 켜고 · 겹치는 값 편집은 거부 + 경고 줄 · 다른 값은 통하고 경고가 사라진다', () => {
         const spy = spies();
