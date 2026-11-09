@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton } from '../../primitives/IconButton';
 import { storageKey } from '../../storage';
+import { PeekBarProvider, usePeekBarState } from './peek-bar';
 
 const DEFAULT_W = 640;   // 문서급 기본 폭(쥔님: 480→640 이상)
 const MIN_W = 320;
@@ -39,6 +40,7 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
     const [w, setW] = useState(() => loadNum(WKEY, DEFAULT_W));
     const [h, setH] = useState(() => loadNum(HKEY, 0));   // 0 = 아직 없음 → 마운트 때 62% 로
     const [dragging, setDragging] = useState(false);
+    const bar = usePeekBarState();
 
     // Esc 로 닫는다(✕ 와 함께 유일한 닫기 길 — 바깥 클릭은 안 닫는다)
     useEffect(() => {
@@ -117,11 +119,16 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
                         : 'left-0 right-0 top-1/2 -translate-y-1/2 h-px'}`} />
                 </div>
 
-                <div className="shrink-0 flex items-center justify-between h-header px-pad border-b border-line select-none">
-                    <span className="text-[12px] font-semibold text-muted">미리보기</span>
+                <div className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">
+                    {/* 노드 틀(nodes.Frame)이 경로·액션바를 이 자리에 그린다 — 틀이 없는 내용이면 옛 「미리보기」 글자 */}
+                    <div ref={bar.setSlot} className="flex-1 min-w-0 flex items-center gap-1">
+                        {!bar.claimed && <span className="text-small font-semibold text-muted">미리보기</span>}
+                    </div>
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
-                <div className="flex-1 min-h-0 overflow-auto p-4">{children}</div>
+                <PeekBarProvider slot={bar.slot} claim={bar.claim}>
+                    <div className="flex-1 min-h-0 overflow-auto p-4">{children}</div>
+                </PeekBarProvider>
             </div>
         </div>
     );

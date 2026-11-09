@@ -13,12 +13,9 @@ export interface PageDocProps {
     /** 저장된 문서(불투명) — 없거나 모르는 꼴이면 빈 문서로 시작한다. */
     value: unknown;
     onChange(value: unknown): void;
-    /** 머리 제목(손님이 이름을 쥔다) */
-    title: string;
-    onRename(name: string): void;
-    /** 노드 공통 아이콘(손님이 쥔다) — onSetIcon 이 없으면 아이콘 고르기를 안 그린다. */
-    icon?: string;
-    onSetIcon?(icon: string | undefined): void;
+    /** 🔑 docKey 는 그 문서의 **노드 id** 여야 한다 — 머리(아이콘·제목)·경로·⋯ 메뉴는 노드 틀(nodes.Frame)이 그린다(Q5 R1). */
+    /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행의 제목 칸)의 이름 바꾸기 길 — 없으면 노드 이름만 고친다. */
+    onRename?(name: string): void;
     /** 머리 밑·본문 위에 놓을 것(레코드의 속성 목록) — 노션 행 열기: 머리 · 속성 · 본문. */
     properties?: ReactNode;
 }

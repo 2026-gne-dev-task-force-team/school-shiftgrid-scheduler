@@ -5,14 +5,14 @@
  *   손 편집은 전부 model.ts 순수 함수로 돌린 뒤 저장(applyEdit) — ⌘Z 는 시간표마다 더미에 쌓인다.
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Button, Icon, undoKey } from '../../../pane-ui-system';
+import { Icon, undoKey } from '../../../pane-ui-system';
 import { useActiveSheet, setActiveSheet } from '../store';
 import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, getNodesApi, inTrash, stepEdit } from '../nodes';
 import { StartScreen } from './StartScreen';
 import { TimeGrid } from './TimeGrid';
 
 export function GridTab({ leafId }: { leafId?: string }) {
-    const Header = getNodesApi()?.Header;
+    const Frame = getNodesApi()?.Frame;
     const activeId = useActiveSheet();
     // 노드가 바뀔 때만 다시 그린다(편집도 같은 recompute 로 전파된다).
     const sheetNodes = useSyncExternalStore(subscribeNodes, getSheetNodes, getSheetNodes);
@@ -21,17 +21,15 @@ export function GridTab({ leafId }: { leafId?: string }) {
 
     // 보고 있는 시간표가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || !data || inTrash(activeId)) return <StartScreen />;
+    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
 
     return (
         <div className="h-full flex flex-col overflow-hidden select-none"
             onKeyDown={(e) => { const u = undoKey(e.nativeEvent); if (u && !e.defaultPrevented) { e.preventDefault(); stepEdit(activeId, u); } }}>
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
-                <Button size="sm" className="whitespace-nowrap" title="시간표 목록" onClick={() => { setActiveSheet(null); }}><Icon name="left" size={12} /> 목록</Button>
-                {Header && <Header nodeId={activeId} leafId={leafId} fallback={<Icon name="schedule" size={15} className="text-muted" />} />}
-            </div>
-            <div className="flex-1 min-h-0">
+            <Frame nodeId={activeId} leafId={leafId} onBack={() => { setActiveSheet(null); }} backLabel="목록"
+                fallback={<Icon name="schedule" size={30} className="text-muted" />}>
                 <TimeGrid data={data} edit={(fn) => applyEdit(activeId, fn)} />
-            </div>
+            </Frame>
         </div>
     );
 }

@@ -5,7 +5,7 @@
  *   ⛔ 뽑기·조 나누기·예약 같은 쓰임새는 없다 — 위층이 증축한다.
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { Button, Icon, StartScreen as StartScreenBase, type PeekHandle } from '../../../pane-ui-system';
+import { StartScreen as StartScreenBase, type PeekHandle } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
@@ -57,7 +57,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
 
     if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} />;
 
-    const Header = kit.nodes()?.Header;
+    const Frame = kit.nodes()?.Frame;
+    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
     const fields: RecordField[] = [...cfg.baseFields, ...kit.userFieldsOf(activeId)];
     const tree: RecordTree<Rec> | undefined = cfg.tree ? {
         parentOf: (r) => (r.__parent as string | null) ?? null,
@@ -69,15 +70,9 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     } : undefined;
 
     return (
-        <div className="h-full flex flex-col overflow-auto select-none">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-line">
-                <Button size="sm" variant="plain" className="shrink-0 whitespace-nowrap" title={`${cfg.listLabel} 목록`} onClick={() => kit.setActive(null)}>
-                    <Icon name="left" size={12} /> 목록
-                </Button>
-                {Header && <Header nodeId={activeId} leafId={leafId} />}
-                <span className="text-small text-muted tabular-nums">· {records.length}{cfg.unit}</span>
-            </div>
-            <div className="flex-1 min-h-0 flex flex-col">
+        <div className="h-full select-none">
+            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" headerExtra={`${records.length}${cfg.unit}`}>
+            <div className="h-full flex flex-col">
                 <RecordView<Rec>
                     fields={fields}
                     records={records}
@@ -96,6 +91,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     className="flex-1 min-h-0"
                 />
             </div>
+            </Frame>
         </div>
     );
 }

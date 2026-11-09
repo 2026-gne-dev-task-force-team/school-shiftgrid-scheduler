@@ -11,7 +11,7 @@ import { PageView } from './views/PageView';
 import { setActivePage } from './store';
 import { initPageNodes } from './nodes';
 import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import { frameHost } from './test-frame-host';
 import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -28,7 +28,7 @@ const fakeNodes = {
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 
-const host = { modules: { use: () => null } } as unknown as PluginHost;   // table 약속 없음 → 읽기 전용 표
+const host = frameHost(fakeNodes);   // table 약속 없음 → 읽기 전용 표
 
 let root: Root; let container: HTMLDivElement;
 afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); });
@@ -64,7 +64,7 @@ describe('PageView 통합', () => {
         act(() => { setActivePage('p1'); });
         render();
 
-        expect(container.textContent).toContain('테스트 페이지');   // 제목줄(노드 이름)
+        expect((container.querySelector('input[aria-label="페이지 제목"]') as HTMLInputElement).value).toBe('테스트 페이지');   // 제목줄(노드 이름 = 틀 머리의 제목 칸)
         expect(container.textContent).toContain('안녕하세요');
         expect(container.textContent).toContain('첫 문단');
         expect(container.textContent).toContain('이름');           // 표 머리

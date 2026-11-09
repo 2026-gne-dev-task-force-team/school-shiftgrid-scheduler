@@ -12,8 +12,8 @@
     "ctxDirect": 0
   },
   "plugins/collection": {
-    "bareButton": 45,
-    "arbPx": 71,
+    "bareButton": 44,
+    "arbPx": 69,
     "cmdIdString": 2,
     "ctxDirect": 0
   },
@@ -60,8 +60,8 @@
     "ctxDirect": 0
   },
   "plugins/page": {
-    "bareButton": 11,
-    "arbPx": 16,
+    "bareButton": 3,
+    "arbPx": 8,
     "cmdIdString": 0,
     "ctxDirect": 0
   },
@@ -102,8 +102,8 @@
     "ctxDirect": 0
   },
   "plugins/sheet": {
-    "bareButton": 5,
-    "arbPx": 25,
+    "bareButton": 4,
+    "arbPx": 22,
     "cmdIdString": 0,
     "ctxDirect": 5
   },
@@ -121,7 +121,7 @@
   },
   "pane-ui-system": {
     "bareButton": 26,
-    "arbPx": 68,
+    "arbPx": 67,
     "cmdIdString": 0,
     "ctxDirect": 7
   }

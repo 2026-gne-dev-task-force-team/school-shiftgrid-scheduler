@@ -47,6 +47,7 @@ export { Toggle } from './primitives/Toggle';
 export { Dialog } from './primitives/Dialog';
 export { ConfirmDialog } from './primitives/ConfirmDialog';
 export { Toolbar } from './primitives/Toolbar';
+export { usePeekBar } from './shell/shared/peek-bar';
 export { ViewHeader } from './primitives/ViewHeader';
 export { TextInput } from './primitives/TextInput';
 export { Select } from './primitives/Select';

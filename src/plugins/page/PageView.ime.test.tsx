@@ -10,7 +10,7 @@ import { PageView } from './views/PageView';
 import { setActivePage } from './store';
 import { initPageNodes } from './nodes';
 import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import { frameHost } from './test-frame-host';
 import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -23,7 +23,7 @@ const fakeNodes = {
     subscribe: () => ({ dispose() {} }),
     parent: () => null,   // 휴지통 판정(inTrash)이 묻는다 — 이 테스트의 페이지는 루트에 있다
 } as unknown as NodesApi;
-const host = { modules: { use: () => null } } as unknown as PluginHost;
+const host = frameHost(fakeNodes);
 
 let root: Root; let container: HTMLDivElement;
 afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); });

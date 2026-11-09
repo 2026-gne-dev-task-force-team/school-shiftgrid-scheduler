@@ -64,6 +64,7 @@ function makeNodes(opts?: { deferred?: boolean }) {
         setIcon: (id, icon) => { const n = map.get(id); if (n) { if (icon) n.icon = icon; else delete n.icon; notify([id]); } },
         setBody: (id, body) => { const n = map.get(id); if (n) { n.body = body; notify([id]); } },
         Header: () => null,
+        Frame: () => null,
         Embed: () => null,
         move: (id, parentId, index) => {
             for (const n of map.values()) { const i = n.children.indexOf(id); if (i >= 0) n.children.splice(i, 1); }

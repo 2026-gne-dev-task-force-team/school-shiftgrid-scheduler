@@ -13,7 +13,7 @@
  *   RecordViewState → ViewDef 로 흡수(검색어만 잠시 상태) · props views·onViewsChange·onPaste·onConvertField·titleKey 추가 ·
  *   모듈 표면에 fieldTypes·schema 추가 · version 2.
  */
-import type { ComponentType, ReactElement } from 'react';
+import type { ComponentType, ReactElement, ReactNode } from 'react';
 import type { Disposable, IconName, PluginHost, PeekHandle, PropertiesPaneProps } from '../../../pane-ui-system/plugin';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 
@@ -312,6 +312,25 @@ export interface PropertyListProps {
 }
 
 /**
+ * 레코드 열기 페이지 한 벌(Q5 R5) — 노드 틀(nodes.Frame: 경로·⋯·큰 머리) + 속성 목록 + 본문(page-doc). 컬렉션·달력·계정·레코드 뷰 행이 전부 이것 하나를 쓴다.
+ *   id 는 레코드 **노드 id**(머리·본문이 노드의 icon·name·body 를 읽고 쓴다). 칸은 PropertyList 와 같은 모양으로 받는다.
+ */
+export interface RecordPageProps {
+    host: PluginHost;
+    id: string;
+    fields: RecordField[];
+    values: Record<string, RecordCellValue>;
+    onChange?: (key: string, v: RecordCellValue) => void;
+    onOptionsChange?: (key: string, options: FieldOption[]) => void;
+    /** 속성 밑·본문 위에 얹을 것(자격증명 슬롯·받은 권한 설명·동작 줄 …) — 속성이 아니라 이 종류 레코드만의 줄. */
+    after?: ReactNode;
+    /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행의 제목 칸)의 이름 바꾸기 길. */
+    onRename?: (name: string) => void;
+    /** 본문 저장 길 — 없으면 노드 공통 body 칸(nodes.setBody). */
+    onBody?: (body: unknown) => void;
+}
+
+/**
  * 🔴 host.modules 로 받는 collection 모듈 — 손님이 쓰는 전부. provides 와 짝(모듈 값 recordViewApi).
  *   host.modules.use<RecordViewApi>('collection') 가 돌려준다.
  */
@@ -408,6 +427,8 @@ export interface RecordViewApi {
     RecordView<T>(props: RecordViewProps<T>): ReactElement | null;
     /** 속성 목록 — 레코드 한 줄의 칸들을 표 칸과 같은 Cell 로 세로로 그린다(인스펙터용). */
     PropertyList(props: PropertyListProps): ReactElement | null;
+    /** 🔑 레코드 열기 페이지 한 벌 — 노드 틀 + 속성 목록 + 본문. 레코드를 옆으로 열 때 이것만 쓴다(Q5 R5). */
+    RecordPage(props: RecordPageProps): ReactElement | null;
     /** 칸 타입 레지스트리 — 내장 여섯이 같은 꼴로 올라 있고 꽂힌 타입은 `<pluginId>.<name>` 접두사 */
     fieldTypes: FieldTypeRegistry;
     schema: RecordSchemaApi;

@@ -6,10 +6,11 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { Icon, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
-import { pageDataOf, savePage, getNodesApi, inTrash } from '../nodes';
+import type { NodesApi } from '../../explorer/contracts/nodes';
+import { pageDataOf, savePage, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList } from '../core/types';
@@ -39,24 +40,16 @@ export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }
     const activeId = useActivePage();
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || inTrash(activeId)) return <StartScreen />;
-    const node = getNodesApi()?.get(activeId);
-    const Header = getNodesApi()?.Header;
     return (
         <PageEditor
             host={host}
             docKey={activeId}
+            leafId={leafId}
             load={() => pageDataOf(activeId)}
             save={(p) => savePage(activeId, p)}
-            title={node?.name ?? ''}
-            onRename={(name) => { getNodesApi()?.rename(activeId, name); }}
-            icon={node?.icon}
-            onSetIcon={(i) => getNodesApi()?.setIcon(activeId, i)}
             onBack={() => setActivePage(null)}
-            renderHeader={Header && ((onEnter) => (
-                <Header nodeId={activeId} leafId={leafId} variant="page"
-                    titleAriaLabel="페이지 제목" titlePlaceholder="제목 없음"
-                    onTitleEnter={onEnter} fallback={<Icon name="fileText" size={32} className="text-muted" />} />
-            ))}
+            titleAriaLabel="페이지 제목"
+            titlePlaceholder="제목 없음"
         />
     );
 }
@@ -67,23 +60,23 @@ export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }
  */
 export interface PageEditorProps {
     host: PluginHost;
+    /** 문서 하나를 가리키는 안정 키 = 그 문서의 노드 id — 머리(아이콘·제목)·경로·⋯ 메뉴는 노드 틀(nodes.Frame)이 그린다. */
     docKey: string;
     load: () => Page;
     save: (p: Page) => void;
-    title: string;
-    onRename: (name: string) => void;
-    /** 노드 공통 아이콘(손님이 쥔다) — onSetIcon 이 없으면 아이콘 고르기를 안 그린다. */
-    icon?: string;
-    onSetIcon?: (icon: string | undefined) => void;
-    /** 주면 머리줄에 「← 목록」 */
+    /** 이 문서가 놓인 탭 — 주면 이름이 바뀔 때 탭 제목도 같이 고친다(피크는 안 준다). */
+    leafId?: string;
+    /** 주면 상단 줄에 「‹ 목록」 */
     onBack?: () => void;
-    /** 주면 큰 제목 자리를 이걸로(노드 공통 머리 nodes.Header) — 없으면 내장 PageHeader. onEnter = 본문 첫 블록으로. */
-    renderHeader?: (onEnter: () => void) => ReactNode;
+    /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행)의 이름 바꾸기 길 — 없으면 노드 이름만. */
+    onRename?: (name: string) => void;
+    titleAriaLabel?: string;
+    titlePlaceholder?: string;
     /** 머리 밑·본문 위에 놓을 것(레코드 열기 페이지의 속성 목록) — 제목·속성·본문이 한 왼쪽 선. */
     properties?: ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack, renderHeader, properties }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, leafId, onBack, onRename, titleAriaLabel, titlePlaceholder, properties }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -377,9 +370,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
     // ── 그리기 ──
     const copyMarkdown = () => { void navigator.clipboard?.writeText(exportMarkdown(pageRef.current)); };
 
-    // ── 제목·아이콘(요구 12·13) ──
-    // 제목 = 노드 이름(한 곳에만 산다). 고치면 그 자리에서 노드 rename(빈 값은 모델이 무시 → 옛 이름 유지).
-    const renameTitle = onRename;
+    // ── 제목·아이콘(요구 12·13) — 노드 틀(nodes.Frame)의 머리가 쥔다(제목 = 노드 이름 한 곳) ──
     // 제목에서 Enter → 본문 첫 블록으로(본문이 비어 있으면 빈 문단 하나 만들고 거기로).
     const titleEnterToBody = () => {
         const p = pageRef.current;
@@ -399,153 +390,57 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
         if (b.type === 'numbered') { run += 1; ordinals[b.id] = run; } else { run = 0; }
     }
 
-    const btn = 'flex items-center gap-1 h-btn px-2 rounded border border-line text-[12px] text-muted hover:text-text hover:bg-text/[0.04] disabled:opacity-40';
+    const Frame = host.modules.use<NodesApi>('nodes')?.Frame;
+    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 문서를 그릴 수 없습니다.</p>;
+    // 페이지 전체 동작은 상단 줄 ⋯ 메뉴로(R3) — 되돌리기·다시는 단추 없이 ⌘Z·메뉴
+    const menu: MenuEntry[] = [
+        { label: '실행 취소', icon: 'undo', disabled: !canUndo(hist), onClick: doUndo },
+        { label: '다시 실행', icon: 'redo', disabled: !canRedo(hist), onClick: doRedo },
+        { label: '마크다운 복사', icon: 'copy', onClick: copyMarkdown },
+    ];
 
     return (
-        <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
-                {onBack && (
-                    <button type="button" className={btn} title="목록" onClick={onBack}>
-                        <Icon name="left" size={12} /> 목록
-                    </button>
-                )}
-                {icon
-                    ? <span className="text-[15px] leading-none select-none">{icon}</span>
-                    : <Icon name="fileText" size={15} className="text-muted" />}
-                <span className="font-medium text-text truncate">{title || '페이지'}</span>
-                <div className="ml-auto flex items-center gap-1.5">
-                    <button type="button" className={btn} disabled={!canUndo(hist)} onMouseDown={(e) => { e.preventDefault(); doUndo(); }}><Icon name="undo" size={12} /> 되돌리기</button>
-                    <button type="button" className={btn} disabled={!canRedo(hist)} onMouseDown={(e) => { e.preventDefault(); doRedo(); }}><Icon name="redo" size={12} /> 다시</button>
-                    <button type="button" className={btn} onMouseDown={(e) => { e.preventDefault(); copyMarkdown(); }}><Icon name="copy" size={12} /> 마크다운 복사</button>
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-auto">
-                <div
-                    className="max-w-3xl mx-auto px-6 py-8 select-text"
-                    onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
-                >
-                    {renderHeader ? <div className="mb-1 flex" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader
-                        key={activeId}
-                        initialName={title}
-                        icon={icon}
-                        onRename={renameTitle}
-                        onEnter={titleEnterToBody}
-                        onSetIcon={onSetIcon}
-                    />}
-                    {properties && <div className="mb-3">{properties}</div>}
-                    {page.blocks.map((b, i) => (
-                        <BlockRow
-                            key={b.id}
-                            block={b}
-                            index={i}
-                            host={host}
-                            active={activeBlockId === b.id}
-                            ordinal={ordinals[b.id]}
-                            slash={slash && slash.blockId === b.id ? { query: slash.query, index: slash.index } : null}
-                            setEl={setEl}
-                            onInput={onInput}
-                            onKeyDown={onKeyDown}
-                            composingRef={composingRef}
-                            onFocusBlock={onFocusBlock}
-                            onFocusActive={onFocusActive}
-                            onChecked={onChecked}
-                            onTableChange={onTableChange}
-                            onNodePick={onNodePick}
-                            selfId={activeId}
-                            onPickSlash={pickSlash}
-                            onDelete={onDelete}
-                            onChangeType={onChangeTypeMenu}
-                            onDragStartBlock={(id) => { dragIdRef.current = id; }}
-                            onDropBlock={onDrop}
-                        />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// 제목·아이콘(요구 12·13)
-// ──────────────────────────────────────────────────────────────────────────
-
-/** 자주 쓰는 이모지(하드코딩) — ⛔ 이모지 라이브러리 안 들인다(명세). 직접 입력칸이 나머지를 받는다. */
-const COMMON_EMOJI = [
-    '📄', '📝', '📌', '✅', '⭐', '🔥', '💡', '📊',
-    '📅', '📁', '🎯', '🚀', '❤️', '⚠️', '❓', '🔖',
-    '📎', '🗂️', '📈', '🧩', '🛠️', '🔑', '🏷️', '💬',
-    '🧠', '📍', '🎨', '🔍', '✏️', '📦',
-];
-
-/**
- * 페이지 머리 — 큰 제목(= 노드 이름) + 그 위 아이콘. 상태(제목 글자·팝업)는 여기 로컬이고,
- *   부모는 key={activeId} 로 페이지가 바뀔 때 통째로 갈아끼운다(제목 글자가 새 페이지로 안 샌다).
- */
-function PageHeader(props: {
-    initialName: string;
-    icon?: string;
-    onRename: (name: string) => void;
-    onEnter: () => void;
-    onSetIcon?: (icon: string | undefined) => void;
-}) {
-    const { icon, onRename, onEnter, onSetIcon } = props;
-    const [name, setName] = useState(props.initialName);
-    const [pickerOpen, setPickerOpen] = useState(false);
-    const [custom, setCustom] = useState('');
-    const [hover, setHover] = useState(false);   // 호버-숨김은 Row 조각 한 곳에만(구조 검사) → 여기선 상태로
-
-    const choose = (emoji: string) => { onSetIcon?.(emoji); setPickerOpen(false); setCustom(''); };
-
-    const btn = 'flex items-center gap-1 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05]';
-
-    return (
-        <div className="mb-1" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-            {/* 아이콘 줄 — 없으면 hover 때 「아이콘 추가」, 있으면 눌러서 바꾸기/지우기 팝업 */}
-            <div className="relative mb-1">
-                {icon
-                    ? <button type="button" aria-label="아이콘 바꾸기" onClick={() => setPickerOpen((v) => !v)}
-                        className="text-[44px] leading-none rounded px-1 hover:bg-text/[0.05]">{icon}</button>
-                    : <button type="button" onClick={() => setPickerOpen((v) => !v)}
-                        className={`${btn} transition-opacity ${hover || pickerOpen ? 'opacity-100' : 'opacity-0'}`}>
-                        <Icon name="plus" size={12} /> 아이콘 추가
-                    </button>}
-                {pickerOpen && (
-                    <div className="absolute z-30 mt-1 w-64 rounded-md border border-line bg-panel shadow-lg p-2">
-                        <div className="grid grid-cols-8 gap-0.5 mb-2">
-                            {COMMON_EMOJI.map((e) => (
-                                <button key={e} type="button" onClick={() => choose(e)}
-                                    className="text-[18px] rounded py-0.5 hover:bg-text/[0.1]">{e}</button>
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <input
-                                value={custom}
-                                onChange={(e) => setCustom(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && custom.trim()) { e.preventDefault(); choose(custom.trim()); } }}
-                                placeholder="직접 입력"
-                                maxLength={8}
-                                className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-[13px] text-text outline-none"
+        <Frame nodeId={activeId} leafId={leafId} onBack={onBack} menu={menu} onRename={onRename}
+            titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={titleEnterToBody}
+            fallback={<Icon name="fileText" size={32} className="text-muted" />}>
+            {(header) => (
+                <div className="h-full overflow-auto">
+                    <div
+                        className="max-w-3xl mx-auto px-6 py-8 select-text"
+                        onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
+                    >
+                        <div className="mb-1 flex" key={activeId}>{header}</div>
+                        {properties && <div className="mb-3">{properties}</div>}
+                        {page.blocks.map((b, i) => (
+                            <BlockRow
+                                key={b.id}
+                                block={b}
+                                index={i}
+                                host={host}
+                                active={activeBlockId === b.id}
+                                ordinal={ordinals[b.id]}
+                                slash={slash && slash.blockId === b.id ? { query: slash.query, index: slash.index } : null}
+                                setEl={setEl}
+                                onInput={onInput}
+                                onKeyDown={onKeyDown}
+                                composingRef={composingRef}
+                                onFocusBlock={onFocusBlock}
+                                onFocusActive={onFocusActive}
+                                onChecked={onChecked}
+                                onTableChange={onTableChange}
+                                onNodePick={onNodePick}
+                                selfId={activeId}
+                                onPickSlash={pickSlash}
+                                onDelete={onDelete}
+                                onChangeType={onChangeTypeMenu}
+                                onDragStartBlock={(id) => { dragIdRef.current = id; }}
+                                onDropBlock={onDrop}
                             />
-                            {icon && (
-                                <button type="button" onClick={() => { onSetIcon?.(undefined); setPickerOpen(false); }}
-                                    className={btn}><Icon name="trash" size={12} /> 지우기</button>
-                            )}
-                        </div>
+                        ))}
                     </div>
-                )}
-            </div>
-
-            {/* 제목 — 노드 이름과 한 몸. 빈칸이면 「제목 없음」 흐린 글씨. Enter 는 본문 첫 블록으로(조합 중엔 무시). */}
-            <input
-                value={name}
-                onChange={(e) => { setName(e.target.value); onRename(e.target.value); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); onEnter(); } }}
-                placeholder="제목 없음"
-                aria-label="페이지 제목"
-                className="w-full bg-transparent outline-none text-[32px] font-bold text-text placeholder:text-muted/50 placeholder:font-bold"
-            />
-        </div>
+                </div>
+            )}
+        </Frame>
     );
 }
 
@@ -584,32 +479,42 @@ const HEADING_CLASS: Record<string, string> = {
 };
 
 function BlockRow(props: RowProps) {
-    const { block, index, slash } = props;
+    const { block, index, slash, active } = props;
     const [menuOpen, setMenuOpen] = useState(false);
+    const [hover, setHover] = useState(false);       // 호버-숨김은 Row 조각 한 곳에만(구조 검사 ③) → 여기선 상태로
+    const [dropHere, setDropHere] = useState(false); // 끌고 와서 이 줄 위에 있다 — 위쪽 파란 선
+    const shown = hover || active || menuOpen;
 
     const indentPad = isList(block.type) ? { paddingLeft: `${(block.indent ?? 0) * 1.5}rem` } : undefined;
 
     return (
+        // 🔑 R4: 줄 왼쪽 선 = 머리·속성 왼쪽 선. 손잡이는 선 바깥 여백(-left-6, 컬럼 px-6 안)에 절대 배치 — 줄을 밀어내지 않는다.
         <div
-            className="flex items-start gap-1 -ml-7 pl-7 relative"
-            onDragOver={(e) => { e.preventDefault(); }}
-            onDrop={(e) => { e.preventDefault(); props.onDropBlock(index); }}
+            className={`relative ${dropHere ? 'border-t-2 border-accent -mt-0.5' : ''}`}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (!dropHere) setDropHere(true); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropHere(false); }}
+            onDrop={(e) => { e.preventDefault(); setDropHere(false); props.onDropBlock(index); }}
         >
-            {/* 손잡이 — 끌어서 순서, 눌러서 메뉴 */}
-            <div className="w-6 shrink-0 flex justify-center pt-1">
+            {/* 손잡이 — 끌어서 순서, 눌러서 메뉴. 마우스를 올리거나 활성 블록일 때만 보인다(터치는 활성 블록에서) */}
+            <div className={`absolute -left-6 top-0.5 w-6 flex justify-center transition-opacity ${shown ? 'opacity-100' : 'opacity-0'}`}>
                 <button
                     type="button"
                     draggable
-                    onDragStart={() => props.onDragStartBlock(block.id)}
-                    onMouseDown={(e) => { e.preventDefault(); }}
+                    onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', block.id);   // 일부 브라우저는 데이터가 있어야 끌기를 시작한다
+                        props.onDragStartBlock(block.id);
+                    }}
                     onClick={() => setMenuOpen((v) => !v)}
                     aria-label="블록 손잡이"
-                    className="cursor-grab text-line hover:text-muted"
+                    className="cursor-grab rounded py-0.5 text-text/60 hover:text-text hover:bg-text/[0.06]"
                 >
-                    <Icon name="grip" size={14} />
+                    <Icon name="grip" size={20} />
                 </button>
                 {menuOpen && (
-                    <div className="absolute z-20 left-6 top-6 w-40 rounded-md border border-line bg-panel shadow-lg py-1 text-[12px]">
+                    <div className="absolute z-20 left-6 top-6 w-40 rounded-md border border-line bg-panel shadow-lg py-1 text-small">
                         <HandleMenuItem label="글로" onPick={() => { props.onChangeType(block.id, 'paragraph'); setMenuOpen(false); }} />
                         <HandleMenuItem label="제목 1" onPick={() => { props.onChangeType(block.id, 'heading1'); setMenuOpen(false); }} />
                         <HandleMenuItem label="글머리표" onPick={() => { props.onChangeType(block.id, 'bulleted'); setMenuOpen(false); }} />
@@ -623,7 +528,7 @@ function BlockRow(props: RowProps) {
             </div>
 
             {/* 내용 */}
-            <div className="flex-1 min-w-0 py-0.5" style={indentPad}>
+            <div className="min-w-0 py-0.5" style={indentPad}>
                 {renderContent(props)}
                 {slash && (
                     <SlashMenu items={filterSlash(slash.query)} active={slash.index} onPick={(type) => props.onPickSlash(block.id, type)} />

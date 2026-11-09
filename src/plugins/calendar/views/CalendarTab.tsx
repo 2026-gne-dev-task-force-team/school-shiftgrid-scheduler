@@ -12,7 +12,7 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
-import { Button, Icon, type PeekHandle } from '../../../pane-ui-system';
+import { Icon, type PeekHandle } from '../../../pane-ui-system';
 import { getNodesApi } from '../nodes';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
@@ -62,7 +62,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
 
     // 전환 단추. (작은 달력 여는 단추는 23:27 쥔님 *"요 버튼은 이제 없어져도 될듯"* — 리본에 있고 기본 오른쪽이라 걷었다)
     //   범위 저장소가 있으면 왼쪽에 「📁 <이름> · 전체」 칩을 붙인다(쥔님 2026-11-02: 저장소를 열면 그 저장소 것만 · 「전체」로 되돌림).
-    const Header = getNodesApi()?.Header;
+    const Frame = getNodesApi()?.Frame;
     const switcher = (
         <div className="flex items-center gap-1 ml-1">
             {selection && (
@@ -109,15 +109,12 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
         case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} {...sel} />;
         default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
     } })();
-    // 저장소를 열었으면 맨 위에 다른 노드 화면과 같은 머리줄(아이콘·제목) + 「전체」로 되돌리기(쥔님 2026-11-02 범위 · 2026-11-09 얼굴 통일).
-    if (!scopeStore || !Header) return view;
+    // 저장소를 열었으면 다른 노드 화면과 같은 틀(경로·큰 머리) + 「전체」로 되돌리기(쥔님 2026-11-02 범위 · 2026-11-09 얼굴 통일 · Q5 R1).
+    if (!scopeStore || !Frame) return view;
     return (
-        <div className="h-full flex flex-col min-h-0">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
-                <Header nodeId={scopeStore.id} fallback={<Icon name="folder" size={15} className="shrink-0 text-accent" />} />
-                <Button size="sm" variant="plain" className="shrink-0 whitespace-nowrap" title="전체 저장소 보기" onClick={() => setScope(null)}>전체</Button>
-            </div>
-            <div className="flex-1 min-h-0">{view}</div>
-        </div>
+        <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체"
+            fallback={<Icon name="folder" size={30} className="shrink-0 text-accent" />}>
+            <div className="h-full">{view}</div>
+        </Frame>
     );
 }
