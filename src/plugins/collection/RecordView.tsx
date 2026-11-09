@@ -9,15 +9,15 @@
  * 🔑 보기 종류(kind)는 지금 'table' 하나지만 ViewDef.kind 로 갈라 둬 보드·목록·갤러리를 꽂을 자리를 열어 뒀다.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useReorder, type MenuEntry } from '../../pane-ui-system';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
-import { EMPTY_FILTER, deriveRows, freshIds, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
+import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
@@ -226,33 +226,41 @@ export function RecordView<T>({
     // ── 행 끌어 순서 바꾸기·하위로 넣기(수동 순서일 때만) ──
     //   행 위 가장자리 = 그 앞으로 · 아래 가장자리 = 그 뒤로 · 가운데 = 그 행의 하위로(트리일 때만 · 노션 꼴 · Q8)
     const reorderable = !!onReorder && manualOrder;
-    const dragRow = useRef<string | null>(null);
     type DropMark = { id: string; zone: 'before' | 'into' | 'after' } | '__end__';
-    const [dropMark, setDropMark] = useState<DropMark | null>(null);
     const parentMap = useMemo(() => new Map(records.map((r) => [getId(r), tree?.parentOf(r) ?? null])), [records, getId, tree]);
     /** 끌고 있는 행 자신이거나 그 자손이면 거기엔 못 놓는다(자기 안으로 들어가는 순환) */
     const inOwnSubtree = (dragId: string, targetId: string) => {
         for (let cur: string | null | undefined = targetId, n = 0; cur && n < 10000; cur = parentMap.get(cur), n++) if (cur === dragId) return true;
         return false;
     };
-    const zoneOf = (e: ReactDragEvent, canNest: boolean): 'before' | 'into' | 'after' => {
-        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const f = r.height > 0 ? (e.clientY - r.top) / r.height : 0.5;
-        if (!canNest) return f < 0.5 ? 'before' : 'after';
-        return f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'into';
+    /** 포인터 y 가 놓일 자리 — 행 사각형을 훑어 번역한다(맨 아래 너머 = 맨 끝). 자기 하위·자기 자신 위는 null */
+    const dropTargetAt = (from: string, y: number): DropMark | null => {
+        const els = [...(gridRef.current?.querySelectorAll<HTMLElement>('[data-rv-row]') ?? [])];
+        if (els.length === 0) return null;
+        const canNest = treeOn && !!tree?.onMoveUnder;
+        for (let i = 0; i < els.length; i++) {
+            const r = els[i].getBoundingClientRect();
+            if (y > r.bottom && i < els.length - 1) continue;
+            if (y > r.bottom) return '__end__';
+            const id = els[i].getAttribute('data-rv-row')!;
+            if (inOwnSubtree(from, id)) return null;
+            return { id, zone: rowDropZone(y, r.top, r.height, canNest) };
+        }
+        return null;
     };
-    const onRowDragOver = (e: ReactDragEvent, id: string) => {
-        const from = dragRow.current;
-        if (!from || inOwnSubtree(from, id)) { setDropMark(null); return; }
-        e.preventDefault();
-        const zone = zoneOf(e, treeOn && !!tree?.onMoveUnder);
-        setDropMark((m) => (m && m !== '__end__' && m.id === id && m.zone === zone ? m : { id, zone }));
-    };
-    const onRowDrop = (toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
-        const from = dragRow.current;
-        dragRow.current = null;
-        setDropMark(null);
-        if (!from || !onReorder || from === toId) return;
+    const rowDrag = useDragLeaf({
+        enabled: reorderable,
+        axis: 'y',
+        onContext: () => { /* 행 손잡이엔 메뉴 없음 */ },
+        onDrop: (from, _x, y) => {
+            const t = dropTargetAt(from, y);
+            if (t === '__end__') moveRow(from, null);
+            else if (t) moveRow(from, t.id, t.zone);
+        },
+    });
+    const dropMark: DropMark | null = rowDrag.drag ? dropTargetAt(rowDrag.drag.leafId, rowDrag.drag.y) : null;
+    const moveRow = (from: string, toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
+        if (!onReorder || from === toId) return;
         if (toId && inOwnSubtree(from, toId)) return;
         if (toId && zone === 'into' && tree?.onMoveUnder) {
             tree.onMoveUnder(from, toId);
@@ -576,15 +584,20 @@ export function RecordView<T>({
                                 } : undefined}
                                 onMouseEnter={() => setHoverRow(id)}
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
-                                onDragOver={reorderable ? (e) => onRowDragOver(e, id) : undefined}
-                                onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id, mark?.zone); } : undefined}
                                 className={`flex border-b border-line min-h-[32px] ${fresh.has(id) ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
                             >
                                 {reorderable && (
                                     <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
-                                        draggable data-rv-row-drag={id}
-                                        onDragStart={(e) => { dragRow.current = id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', id); } catch { /* 사파리 */ } }}
-                                        onDragEnd={() => { dragRow.current = null; setDropMark(null); }}>
+                                        data-rv-row-drag={id} data-row-id={id} title={String(rawValue(r, titleKey ?? '') ?? '') || '제목 없음'}
+                                        tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...rowDrag.bind}
+                                        onKeyDown={(e) => {
+                                            // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
+                                            if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+                                            e.preventDefault(); e.stopPropagation();
+                                            const at = rowIds.indexOf(id);
+                                            if (e.key === 'ArrowUp' && at > 0) moveRow(id, rowIds[at - 1], 'before');
+                                            else if (e.key === 'ArrowDown' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
+                                        }}>
                                         <Icon name="grip" size={12} className={`text-muted cursor-grab ${hovered ? '' : 'opacity-0'}`} />
                                     </div>
                                 )}
@@ -667,8 +680,6 @@ export function RecordView<T>({
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
                         <button type="button" data-rv-add onClick={onAddRecord}
-                            onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropMark('__end__'); } } : undefined}
-                            onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(null); } : undefined}
                             className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
@@ -695,6 +706,7 @@ export function RecordView<T>({
             </div>
 
             <ReorderOverlay drag={colReorder.drag} indicator={colReorder.indicator} axis="x" />
+            <ReorderOverlay drag={rowDrag.drag} indicator={null} axis="y" />
 
             {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
 
