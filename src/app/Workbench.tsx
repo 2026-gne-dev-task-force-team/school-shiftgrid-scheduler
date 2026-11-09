@@ -468,7 +468,7 @@ export function Workbench() {
                         onOpenRight={() => panels.toggle('right', true)}
                         onOpenTabs={() => setTabSwitcher(true)}
                         onOpenRibbon={() => setRibbonSheet(true)}
-                        aboveStatusBar={showStatus}
+                        aboveStatusBar={showStatus || frameAlert}
                     />
                     <TabSwitcher
                         open={tabSwitcher}
@@ -491,7 +491,10 @@ export function Workbench() {
 
             {/* 🔴 하단 상태바 — 전체 폭 한 줄. 좁은 화면은 기본 숨김(showStatus 가 가른다).
                 ⭐ 저장 실패가 있으면 숨김 설정이어도 켠다 — 실패를 가리면 조용한 유실이 된다 */}
-            {(showStatus || frameAlert) && <StatusBar items={[...frameStatus, ...statusItems]} />}
+            {(showStatus || frameAlert) && (
+                // 🔴 좁은 화면에서 상태줄이 설정으로 꺼져 있는데 경고만 켜진 경우 — 경고 칸만 한 줄(독은 aboveStatusBar 로 그 위에 뜬다)
+                <StatusBar items={narrow && !showStatus ? frameStatus.filter((i) => i.id === 'frame:storage-error') : [...frameStatus, ...statusItems]} />
+            )}
 
             {/* 🔴 명령 팔레트 — Ctrl/⌘+P. 스스로 portal 로 뜬다(위치 무관) */}
             <CommandPalette open={palette} onClose={() => setPalette(false)} />
