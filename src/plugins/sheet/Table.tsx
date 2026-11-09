@@ -130,8 +130,17 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         }
         const cells: TxCellChange[] = [];
         const overflow = new Map<number, Record<string, string>>();
+        // 붙여넣기가 열 수를 넘으면 새 열(끝에 덧붙임)을 만든다 — 같은 tx 라 ⌘Z 한 번에 되돌아간다.
+        const newCols = new Map<number, { key: string; title: string }>();
+        const colAt = (c: number) => {
+            const col = colOf(c);
+            if (col || source !== 'paste' || !hasAxisEdit || c < columns.length) return col;
+            let nc = newCols.get(c);
+            if (!nc) { nc = { key: genColKey(), title: lb.addCol }; newCols.set(c, nc); }
+            return nc;
+        };
         for (const ch of changes) {
-            const col = colOf(ch.c);
+            const col = colAt(ch.c);
             if (!col) continue;
             const id = idByView(ch.r);
             if (id != null) cells.push({ rowId: id, key: col.key, value: ch.text });
@@ -150,8 +159,11 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             for (let k = 0; k < count; k++) cellsArr.push(overflow.get(k) ?? {});
             rowsTx = { add: [{ at: rows.length, count, cells: cellsArr, ids: genIds(count) }] };
         }
-        if (!cells.length && !rowsTx) return;
-        emit({ cells, source, ...(rowsTx ? { rows: rowsTx } : {}) }, applyingHistory.current);
+        const colsTx: TableTx['cols'] = newCols.size
+            ? { add: [...newCols.entries()].sort((a, b) => a[0] - b[0]).map(([c, nc]) => ({ at: c, key: nc.key, title: nc.title })) }
+            : undefined;
+        if (!cells.length && !rowsTx && !colsTx) return;
+        emit({ cells, source, ...(rowsTx ? { rows: rowsTx } : {}), ...(colsTx ? { cols: colsTx } : {}) }, applyingHistory.current);
     };
 
     /** bool 칸 뒤집기(col-types · 키보드 space/enter·체크박스 클릭). */
@@ -179,6 +191,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         toggle: toggleCell,
         onUndo: onUndo ?? (historyOwned ? internalUndo : undefined),
         onRedo: onRedo ?? (historyOwned ? internalRedo : undefined),
+        growCols: hasAxisEdit,
         insert: hasRows ? (axis, at) => {
             if (axis === 'row') insertRow(at);
             else if (hasAxisEdit) addColAt(at);
@@ -804,6 +817,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             <td
                                                 key={col.key}
                                                 data-rc={`${r}:${c}`}
+                                                aria-selected={selected}
+                                                data-active={core.active.r === r && core.active.c === c ? 'true' : undefined}
                                                 className={cls}
                                                 style={{ width: widthOf(col.key, col.width), minWidth: widthOf(col.key, col.width) }}
                                                 rowSpan={span?.rowSpan}

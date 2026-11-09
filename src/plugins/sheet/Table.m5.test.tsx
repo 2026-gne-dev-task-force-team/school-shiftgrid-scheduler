@@ -151,13 +151,30 @@ describe('Table M5 — 넘버스 얼굴', () => {
         expect(ref.current!.doc().cols[0].width).toBeUndefined();      // 0 이 아니라 「없음」
     });
 
-    it('맨 아랫줄에서 Enter 면 행이 붙고 커서가 그리로 내려간다', () => {
+    it('맨 아랫줄에서 Enter 는 행을 붙이지 않고 편집을 시작한다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
         act(() => ref.current!.h().click(3, 1));
         key('Enter');
-        expect(ref.current!.doc().rows).toHaveLength(5);
-        expect(ref.current!.h().state().active).toEqual({ r: 4, c: 1 });
+        expect(ref.current!.doc().rows).toHaveLength(4);
+        expect(ref.current!.h().state().editing).toBe(true);
+    });
+
+    it('#4 30열 붙여넣기 → 열이 30개로 늘어 전부 들어가고 ⌘Z 한 번에 원상복귀', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false, headerRow: false })} features={['rows', 'axis-edit', 'paste-policy:append', 'history']} />);
+        act(() => ref.current!.h().click(0, 0));
+        const line = Array.from({ length: 30 }, (_, i) => `v${i}`).join('\t');
+        const paste = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
+        Object.defineProperty(paste, 'clipboardData', { value: { getData: () => `${line}\n${line}` } });
+        act(() => { document.dispatchEvent(paste); });
+        const d = ref.current!.doc();
+        expect(d.cols).toHaveLength(30);
+        expect(d.rows[0].cells[d.cols[29].key]).toBe('v29');
+        expect(d.rows[1].cells[d.cols[29].key]).toBe('v29');
+        key('z', { metaKey: true });
+        expect(ref.current!.doc().cols).toHaveLength(2);
+        expect(ref.current!.doc().rows[0].cells.a).toBe('100');
     });
 
     it('⌘V keydown 은 막지 않는다(막으면 브라우저가 paste 이벤트를 안 쏜다) · paste 이벤트로 칸이 채워진다', () => {

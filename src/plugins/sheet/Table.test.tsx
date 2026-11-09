@@ -77,8 +77,35 @@ describe('Table — controlled 편집·키보드', () => {
         key('ArrowDown'); expect(h().state().active).toEqual({ r: 1, c: 0 });
         key('ArrowRight'); expect(h().state().active).toEqual({ r: 1, c: 1 });
         key('Tab', { shiftKey: true }); expect(h().state().active).toEqual({ r: 1, c: 0 });
-        key('Enter'); expect(h().state().active).toEqual({ r: 2, c: 0 });       // 확정+아래
+        key('Enter'); expect(h().state().editing).toBe(true);                   // 선택 상태 Enter = 편집 시작
+        act(() => h().commit()); expect(h().state().active).toEqual({ r: 2, c: 0 });   // 편집 중 Enter = 저장+아래
         key('Enter', { shiftKey: true }); expect(h().state().active).toEqual({ r: 1, c: 0 });  // 위
+    });
+
+    it('클릭 = 선택 표시(aria-selected·data-active) + 격자 초점 · Esc 는 편집만 취소하고 선택·초점 유지', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: { a: 'x' } }, { id: 'r2', cells: {} }]} features={[]} />);
+        const td = document.querySelector<HTMLElement>('[data-rc="1:1"]')!;
+        act(() => { td.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); });
+        const grid = document.querySelector<HTMLElement>('[data-testid="table-grid"]')!;
+        expect(document.activeElement).toBe(grid);
+        expect(td.getAttribute('aria-selected')).toBe('true');
+        expect(td.getAttribute('data-active')).toBe('true');
+        key('Enter'); expect(ref.current!.h().state().editing).toBe(true);
+        key('Escape');   // 편집 입력창이 처리하는 Esc
+        act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+        expect(ref.current!.h().state().editing).toBe(false);
+        expect(ref.current!.h().state().active).toEqual({ r: 1, c: 1 });
+        expect(document.activeElement).toBe(grid);
+    });
+
+    it('글자 바로 치기 = 편집 시작 · Delete = 선택 칸 비우기', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: { a: 'x', b: 'y' } }]} features={[]} />);
+        act(() => ref.current!.h().focus());
+        key('가'); expect(ref.current!.h().state().editing).toBe(true);
+        act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+        key('Delete'); expect(ref.current!.rows()[0].cells.a).toBe('');
     });
 });
 
@@ -190,7 +217,7 @@ describe('R5-6 한글 IME — 조합 중 Enter 는 칸 이동·확정을 일으�
         act(() => h().focus());
         key('Enter', { isComposing: true }); expect(h().state().active).toEqual({ r: 0, c: 0 });
         key('Enter', { keyCode: 229 }); expect(h().state().active).toEqual({ r: 0, c: 0 });
-        key('Enter'); expect(h().state().active).toEqual({ r: 1, c: 0 });
+        key('Enter'); expect(h().state().editing).toBe(true);   // 조합 아닌 Enter = 편집 시작
     });
 
     it('편집 입력칸: keyCode 229 Enter(사파리)는 확정하지 않는다', () => {
