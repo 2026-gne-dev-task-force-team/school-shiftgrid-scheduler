@@ -62,16 +62,16 @@ export const accountPlugin = definePlugin({
             // 🔴 ⭐ 권한의 첫 본보기 — account 가 자기 노드 조작을 가릴 권한 낱말을 선언한다(보기·만들기·고치기·지우기 각각).
             //    호스트는 모으기만(장부 표시) · 누가 가지나는 사람이 「정책」에서 조립한다(바닥 정책 0 · ⛔ 역할 기본값 없음).
             permissions: [
-                { id: 'account.users.view', title: '사용자 보기' },
-                { id: 'account.users.create', title: '사용자 만들기' },
-                { id: 'account.users.edit', title: '사용자 고치기' },
-                { id: 'account.users.delete', title: '사용자 지우기' },
-                { id: 'account.roles.view', title: '역할 보기' },
-                { id: 'account.roles.create', title: '역할 만들기' },
-                { id: 'account.roles.edit', title: '역할 고치기' },
-                { id: 'account.roles.delete', title: '역할 지우기' },
-                { id: 'account.policy.view', title: '정책 보기' },
-                { id: 'account.policy.edit', title: '정책 고치기' },
+                { id: 'account.users.view', title: '사용자 보기', desc: '탐색기에 「사용자」 폴더가 보이고, 사용자 목록 탭을 열어 누가 있는지 볼 수 있습니다.' },
+                { id: 'account.users.create', title: '사용자 만들기', desc: '사용자 목록에서 새 사용자를 만들 수 있습니다.' },
+                { id: 'account.users.edit', title: '사용자 고치기', desc: '사용자의 이름·역할·직접 준 권한을 바꾸고, 목록의 순서를 바꿀 수 있습니다.' },
+                { id: 'account.users.delete', title: '사용자 지우기', desc: '사용자를 지울 수 있습니다(휴지통으로 가서 되살릴 수 있습니다).' },
+                { id: 'account.roles.view', title: '역할 보기', desc: '탐색기에 「역할」 폴더가 보이고, 역할 목록 탭을 열어 어떤 역할이 있는지 볼 수 있습니다.' },
+                { id: 'account.roles.create', title: '역할 만들기', desc: '역할 목록에서 새 역할을 만들 수 있습니다.' },
+                { id: 'account.roles.edit', title: '역할 고치기', desc: '역할의 이름·수준·담은 권한을 바꾸고, 목록의 순서를 바꿀 수 있습니다.' },
+                { id: 'account.roles.delete', title: '역할 지우기', desc: '역할을 지울 수 있습니다. 그 역할을 가진 사용자는 역할에서 받던 권한을 잃습니다.' },
+                { id: 'account.policy.view', title: '정책 보기', desc: '「정책」을 열어 권한을 어떤 길로 주는지(직접·수준·역할) 볼 수 있습니다.' },
+                { id: 'account.policy.edit', title: '정책 고치기', desc: '「정책」에서 권한을 주는 길을 켜고 끄고, 권한별 요구 수준을 바꿀 수 있습니다.' },
             ],
             // 🔴 계정은 보이는 노드다 — 루트(싱글턴)·사용자 폴더·역할 폴더·사용자·역할·정책. 숨김 둘(프로젝트 암호·증명 비밀)은 record.
             nodeTypes: [...accountNodeTypes, ...accountSecretNodeTypes, ...credentialLocalNodeTypes],

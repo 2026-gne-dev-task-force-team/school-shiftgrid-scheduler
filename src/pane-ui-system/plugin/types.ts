@@ -303,7 +303,8 @@ export interface Contributes<
      *   호스트는 **모으기만** 한다(장부에 표시) — 진짜 판정은 permit 제공자·서버 몫(client can() 은 화면 가림).
      *   ⛔ default(역할 기본값)를 넣지 않는다 — 그게 정책이고, 정책은 편집 화면에서 사람이 건다(쥔님 2026-11-08 14:54).
      */
-    permissions?: { id: string; title: string }[];
+    /** desc: 이 권한이 있으면 무엇을 할 수 있게 되나 — 보통 사용자 말로 한 줄(역할·사용자 편집기와 설정 상세가 보여 준다). */
+    permissions?: { id: string; title: string; desc?: string }[];
     /**
      * 🔴 사용자 칸 꽂기 — 다른 플러그인이 「사용자에 이런 칸을 끼운다」를 선언한다(노드 data 와 같은 결).
      *   값은 꽂은 플러그인만 고친다 · editor 가 있으면 계정 화면이 그 pane 을 끼워 그리고, 없으면 값을 표시만.

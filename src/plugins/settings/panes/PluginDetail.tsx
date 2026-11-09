@@ -323,7 +323,9 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                     {permissions.length > 0 && (
                                         <>
                                             <dt className="text-muted">권한 낱말</dt>
-                                            <dd className="text-text">{permissions.map((pm) => `${pm.title}(${pm.id})`).join(' · ')}</dd>
+                                            <dd className="text-text flex flex-col gap-0.5">{permissions.map((pm) => (
+                                                <span key={pm.id}>{pm.title} <span className="text-muted font-mono text-[10px]">{pm.id}</span>{pm.desc && <span className="block text-[11px] text-muted leading-snug">{pm.desc}</span>}</span>
+                                            ))}</dd>
                                         </>
                                     )}
                                     {userFields.length > 0 && (

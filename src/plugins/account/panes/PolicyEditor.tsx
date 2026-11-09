@@ -27,7 +27,10 @@ export function PolicyEditor() {
                     <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">길② 권한별 요구 수준</h4>
                     {perms.map((p) => (
                         <label key={p.id} className="flex items-center justify-between gap-2 text-[12px]">
-                            <span className="text-text truncate" title={p.id}>{p.title}</span>
+                            <span className="min-w-0 flex flex-col" title={p.id}>
+                                <span className="text-text truncate">{p.title}</span>
+                                {p.desc && <span className="text-[11px] text-muted leading-snug">{p.desc}</span>}
+                            </span>
                             <input
                                 type="number"
                                 value={pol.thresholds[p.id] ?? 0}

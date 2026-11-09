@@ -432,7 +432,7 @@ export interface PluginStatus {
     /** 🔴 선언한 약속(contributes.interfaces) — 약속 플러그인은 이것만 있다(장부 「선언한 약속」). label·desc 는 사람 이름(쥔님 2026-11-08 21:27). */
     interfaces: { name: string; version: string; uses: string[]; label?: string; desc?: string }[];
     /** 🔴 선언한 권한 낱말(contributes.permissions) — 호스트는 모으기만, 장부가 표시(페이블 8). 정책 편집 화면도 이걸 모은다. */
-    permissions: { id: string; title: string }[];
+    permissions: { id: string; title: string; desc?: string }[];
     /** 🔴 선언한 사용자 칸(contributes.userFields) — 계정 화면이 모아 그린다. */
     userFields: { id: string; title: string; editor?: string }[];
     /** 🔴 선언한 역할 칸(contributes.roleFields). */

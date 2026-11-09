@@ -8,6 +8,7 @@ import { Button } from '../../../pane-ui-system';
 import {
     getUser, listRoles, setUserName, setUserRoles, setUserDirect,
 } from '../core';
+import { PermRow } from './PermRow';
 import { useAccountVersion, allPermissions, allUserFields } from './useAccount';
 
 export function UserEditor({ userId }: { userId: string }) {
@@ -64,16 +65,8 @@ export function UserEditor({ userId }: { userId: string }) {
             {perms.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">직접 준 권한</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                        {perms.map((p) => {
-                            const has = user.directPermissions.includes(p.id);
-                            return (
-                                <button key={p.id} type="button" title={p.id} onClick={() => togglePerm(p.id, has)}
-                                    className={`text-[12px] px-2 py-0.5 rounded border ${has ? 'border-accent text-accent' : 'border-line text-muted'}`}>
-                                    {p.title}
-                                </button>
-                            );
-                        })}
+                    <div className="flex flex-col gap-1">
+                        {perms.map((p) => <PermRow key={p.id} p={p} has={user.directPermissions.includes(p.id)} onToggle={togglePerm} />)}
                     </div>
                 </section>
             )}

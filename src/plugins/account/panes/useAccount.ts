@@ -19,7 +19,7 @@ export function useAccountVersion(): number {
 }
 
 /** 켜진 플러그인들이 선언한 권한 낱말 모음(고정 목록 없음). */
-export function allPermissions(): { id: string; title: string }[] {
+export function allPermissions(): { id: string; title: string; desc?: string }[] {
     return listPlugins().filter((p) => p.enabled && !p.blocked).flatMap((p) => p.permissions);
 }
 /** 켜진 플러그인들이 꽂은 사용자 칸 모음. */

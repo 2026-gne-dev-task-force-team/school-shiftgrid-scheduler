@@ -8,6 +8,7 @@ import { Button } from '../../../pane-ui-system';
 import {
     getRole, setRoleName, setRolePermissions, setRoleLevel,
 } from '../core';
+import { PermRow } from './PermRow';
 import { useAccountVersion, allPermissions, allRoleFields } from './useAccount';
 
 export function RoleEditor({ roleId }: { roleId: string }) {
@@ -54,16 +55,8 @@ export function RoleEditor({ roleId }: { roleId: string }) {
                 {perms.length === 0
                     ? <p className="text-[12px] text-muted">아직 권한을 선언한 기능이 없습니다.</p>
                     : (
-                        <div className="flex flex-wrap gap-1.5">
-                            {perms.map((p) => {
-                                const has = role.permissions.includes(p.id);
-                                return (
-                                    <button key={p.id} type="button" title={p.id} onClick={() => togglePerm(p.id, has)}
-                                        className={`text-[12px] px-2 py-0.5 rounded border ${has ? 'border-accent text-accent' : 'border-line text-muted'}`}>
-                                        {p.title}
-                                    </button>
-                                );
-                            })}
+                        <div className="flex flex-col gap-1">
+                            {perms.map((p) => <PermRow key={p.id} p={p} has={role.permissions.includes(p.id)} onToggle={togglePerm} />)}
                         </div>
                     )}
             </section>
