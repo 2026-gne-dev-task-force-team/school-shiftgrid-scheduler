@@ -140,7 +140,7 @@ describe('⑥ plugins 는 pane-ui-system 속(shell·layout·primitives)을 직�
  * ⑨ 플러그인끼리 직접 의존 금지 — 한 plugins/<a>/ 가 다른 plugins/<b>/ 를 import 하면 빨강.
  *   「다른 플러그인 API 는 자리만」(요구명세 4번) — 플러그인은 host 하나로만 바깥과 말한다.
  *
- * 🙋 4 예외(N4) — 「import type 만」은 통과한다: `import type { NodesApi } from '../project-explorer/api'`.
+ * 🙋 4 예외(N4) — 「import type 만」은 통과한다: `import type { NodesApi } from '../explorer/api'`.
  *   사유: 공개 API 의 타입은 컴파일 때만 쓰이고(런타임 코드 0), tsc 가 번들에서 지운다 — 플러그인끼리
  *   「값」을 끌어오는 결합이 아니다. 값/기본/재export import 는 그대로 빨강(런타임 결합이 생긴다).
  *   ⚠️ 가름선은 「import type」 구문 하나다. 같은 파일에 값 import 가 또 있으면 그건 따로 걸린다.
@@ -312,7 +312,7 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
  *   (설계 「여기서 죽는다」: 탐색기가 calendar.event 를 알게 되는 유혹과 같은 결). isRecordType(대문자 R)은 통과.
  */
 describe('⑯ plugins/**/views 에 소문자 record 비교 0 (레코드 판정은 isRecordType 콜백으로만)', () => {
-    const NEEDLE = /\brecord\b(?!-view)/;   // 꾸러미 이름 record-view(약속 import·modules.use)는 레코드성 판정이 아니라 뺀다 ·   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
+    const NEEDLE = /\brecord\b(?!-view)/;   // 꾸러미 이름 collection(약속 import·modules.use)는 레코드성 판정이 아니라 뺀다 ·   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
     const files = walk(join(ROOT, 'plugins')).filter((f) => f.includes(`${sep}views${sep}`));
 
     it('스캔할 뷰 파일이 실제로 있다', () => {
@@ -353,9 +353,9 @@ describe('⑮ kv.ts 쓰기 트랜잭션 안에 await 가 없다 (openDb 직후�
 
 describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로만 (노드 스토어만 persist.ts 예외)', () => {
     // kvGet/kvSet/kvDel 은 전부 금지(네임스페이스 없는 키를 막는다).
-    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 project-explorer/persist.ts 하나만 예외.
+    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 explorer/persist.ts 하나만 예외.
     const BANNED = /\b(?:kv(?:Get|Set|Del)|nodesGetAll|nodesWrite)\s*\(/;
-    const PERSIST = join('project-explorer', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
+    const PERSIST = join('explorer', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
     const files = walk(join(ROOT, 'plugins'));
 
     it('스캔할 플러그인 파일이 실제로 있다', () => {
@@ -403,7 +403,7 @@ describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contribu
 /*
  * ⑱ 모듈·의존성(M0 · 4판 「플러그인은 꾸러미다」 2026-11-08) — 플러그인이 모듈을 받는 길은 host.modules.use(약속 이름)
  *   하나뿐이고, 쓰는 약속은 매니페스트에 선언한다. 🔴 약속(타입)은 **그 약속을 들고 온 꾸러미** 안에 산다 — 꾸러미의
- *   `contracts/` 하위(예: project-explorer/contracts/nodes), 또는 아직 미편입인 약속 폴더(contract-* 폴더). 일곱을 지킨다:
+ *   `contracts/` 하위(예: explorer/contracts/nodes), 또는 아직 미편입인 약속 폴더(contract-* 폴더). 일곱을 지킨다:
  *     (a) src/plugins 에 host.plugins.get( 0건(설탕 없음 — modules.use 로만)
  *     (b) modules.use('x') 인데 x 가 그 플러그인 requires/supports/provides 에 없음 0건(선언 안 된 의존)
  *     (c) onInterface.x(= onInterface: { x: … }) 인데 x 가 supports 에 없음 0건(짝 없는 훅)

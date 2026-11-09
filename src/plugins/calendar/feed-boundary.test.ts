@@ -1,7 +1,7 @@
 /**
  * ⑦ 달력 경계 — 달력은 남의 분야를 모른다(쥔님 2026-11-08: *"달력은 다른 플러그인을 알 필요도 없고 의존해서도 안 된다"*).
  *   · 달력 폴더(src/plugins/calendar/**)에 분야 낱말 0 — 부재·보결·시간표 등 남의 도메인 어휘가 들어오면 빨강.
- *   · 달력이 import 하는 약속은 자기 꾸러미 입구(calendar/contracts)와 노드(project-explorer/contracts/nodes)뿐 — 남의 약속은 끌지 않는다.
+ *   · 달력이 import 하는 약속은 자기 꾸러미 입구(calendar/contracts)와 노드(explorer/contracts/nodes)뿐 — 남의 약속은 끌지 않는다.
  *   (구조 검사 ⑱(d·g) 가 「import type 만·꾸러미 contracts 에서만」을 이미 보강한다 — 여긴 「어느 약속인가」까지 좁힌다.)
  *   🔴 이 검사 파일 자신이 금지 낱말을 품으니 .test.ts 는 스캔에서 뺀다.
  */
@@ -39,14 +39,14 @@ describe('⑦ 달력 폴더에 분야 낱말 0', () => {
     }
 });
 
-describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 project-explorer/contracts/nodes 뿐', () => {
+describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 explorer/contracts/nodes 뿐', () => {
     // 🔴 꾸러미 밖으로 나가는 relative import 만 본다(자기 폴더 안의 ../useEvents 등은 통과). 꾸러미 밖이면
-    //    창틀(pane-ui-system)이거나 노드 약속 입구(project-explorer/contracts/nodes)뿐 — 그 밖은 빨강.
-    const NODES_PROMISE = resolve(PLUGINS_DIR, 'project-explorer', 'contracts', 'nodes');   // .ts 없이
+    //    창틀(pane-ui-system)이거나 노드 약속 입구(explorer/contracts/nodes)뿐 — 그 밖은 빨강.
+    const NODES_PROMISE = resolve(PLUGINS_DIR, 'explorer', 'contracts', 'nodes');   // .ts 없이
     // 레코드 뷰 약속 — 일정 표 모드가 supports 로 빌린다(2026-11-09 · import type 만, 값은 host.modules.use)
-    const RECORD_VIEW_PROMISE = resolve(PLUGINS_DIR, 'record-view', 'contracts', 'record-view');
+    const RECORD_VIEW_PROMISE = resolve(PLUGINS_DIR, 'collection', 'contracts', 'collection');
     // 페이지 문서 약속 — 일정 미리보기 아래 문서(2026-11-09 · import type 만, 값은 host.modules.use)
-    const PAGE_DOC_PROMISE = resolve(PLUGINS_DIR, 'page-editor', 'contracts', 'page-doc');
+    const PAGE_DOC_PROMISE = resolve(PLUGINS_DIR, 'page', 'contracts', 'page-doc');
     for (const f of files) {
         it(`남의 약속 import 없음: ${f.slice(DIR.length + 1)}`, () => {
             const src = read(f);

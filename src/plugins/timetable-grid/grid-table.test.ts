@@ -28,7 +28,7 @@ describe('시간표 ↔ 표 편집기 다리', () => {
 
 import { initGridNodes, applyEdit, stepEdit, dataOf } from './nodes';
 import { setCellText } from './model';
-import type { NodesApi } from '../project-explorer/contracts/nodes';
+import type { NodesApi } from '../explorer/contracts/nodes';
 
 describe('시간표 ⌘Z — 손 편집 한 번 = 되돌리기 한 칸', () => {
     it('고치고 되돌리고 다시하기', () => {

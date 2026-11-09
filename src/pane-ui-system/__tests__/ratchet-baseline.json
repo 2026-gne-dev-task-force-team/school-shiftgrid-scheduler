@@ -39,7 +39,7 @@
     "arbPx": 0,
     "cmdIdString": 0
   },
-  "plugins/page-editor": {
+  "plugins/page": {
     "bareButton": 11,
     "arbPx": 16,
     "cmdIdString": 0
@@ -54,7 +54,7 @@
     "arbPx": 7,
     "cmdIdString": 0
   },
-  "plugins/project-explorer": {
+  "plugins/explorer": {
     "bareButton": 7,
     "arbPx": 20,
     "cmdIdString": 0
@@ -64,7 +64,7 @@
     "arbPx": 2,
     "cmdIdString": 0
   },
-  "plugins/record-view": {
+  "plugins/collection": {
     "bareButton": 45,
     "arbPx": 74,
     "cmdIdString": 2
@@ -84,7 +84,7 @@
     "arbPx": 119,
     "cmdIdString": 0
   },
-  "plugins/table-editor": {
+  "plugins/sheet": {
     "bareButton": 5,
     "arbPx": 25,
     "cmdIdString": 0

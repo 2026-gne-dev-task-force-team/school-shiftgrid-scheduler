@@ -13,7 +13,7 @@ import {
 } from './plugin/storage-errors';
 import { makeHost } from './plugin/host';
 import { disposeOwner } from './plugin/store';
-import { uid } from '../plugins/project-explorer/model/tree';
+import { uid } from '../plugins/explorer/model/tree';
 
 beforeEach(() => { clearStorageErrors(); __resetKvForTest(); });
 

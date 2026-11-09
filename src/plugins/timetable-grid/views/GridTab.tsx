@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { DateField, Icon, IconPicker, TitleField, undoKey } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — table 약속(값은 host.modules.use('table')).
-import type { TableApi } from '../../table-editor/contracts/table';
+import type { TableApi } from '../../sheet/contracts/table';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,

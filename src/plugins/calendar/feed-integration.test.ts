@@ -14,7 +14,7 @@ import type { Calendar, CalendarSource } from './contracts/calendar';
 // 🔴 calendar 는 requires.nodes — nodes 약속을 선언·제공하는 코어 가짜가 먼저 있어야 막히지 않는다(declarative 테스트와 같은 결).
 const registrar: PluginModule = {
     manifest: {
-        id: 'project-explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
+        id: 'explorer', name: 'PE', version: '0.1.0', minHostVersion: '0.1.0', core: true,
         provides: { nodes: '0.1.0' },
         contributes: { interfaces: [{ name: 'nodes', version: '0.1.0' }] },
     },
@@ -46,7 +46,7 @@ const consumer: PluginModule = {
 };
 
 afterEach(() => {
-    for (const id of ['feed-consumer', 'calendar', 'project-explorer']) disposeOwner(id);
+    for (const id of ['feed-consumer', 'calendar', 'explorer']) disposeOwner(id);
     __resetFeeds();
     reg = null;
 });

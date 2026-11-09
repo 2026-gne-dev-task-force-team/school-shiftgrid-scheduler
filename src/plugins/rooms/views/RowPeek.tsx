@@ -5,7 +5,7 @@
 import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — page-doc 약속 타입은 페이지 편집기 꾸러미 contracts 에서(값은 host.modules.use).
-import type { PageDocApi } from '../../page-editor/contracts/page-doc';
+import type { PageDocApi } from '../../page/contracts/page-doc';
 import { RoomProps } from './RoomProps';
 import { subscribeNodes, getRoomNodes, bodyOf, setBody, getNodesApi } from '../nodes';
 

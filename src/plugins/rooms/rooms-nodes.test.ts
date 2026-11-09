@@ -20,13 +20,13 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, getState } from '../project-explorer/store';
-import { __resetPersistForTest } from '../project-explorer/persist';
-import { makeNodesApi } from '../project-explorer/api';
-import { registerType, clearTypes, isRecordType, isContainerType } from '../project-explorer/model/types';
-import { clearDerived } from '../project-explorer/model/derive';
-import { flatten } from '../project-explorer/model/tree';
-import { buildMainRows } from '../project-explorer/views/rows';
+import { initStore, getState } from '../explorer/store';
+import { __resetPersistForTest } from '../explorer/persist';
+import { makeNodesApi } from '../explorer/api';
+import { registerType, clearTypes, isRecordType, isContainerType } from '../explorer/model/types';
+import { clearDerived } from '../explorer/model/derive';
+import { flatten } from '../explorer/model/tree';
+import { buildMainRows } from '../explorer/views/rows';
 import {
     roomsNodeTypes, roomsNodeTypeImpl, LIST_TYPE, ROOM_TYPE,
     initRoomsNodes, roomsIn, roomOf, addRoom, removeRoom, nudgeRoom,

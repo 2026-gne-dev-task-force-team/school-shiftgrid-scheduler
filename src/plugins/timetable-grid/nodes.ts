@@ -9,7 +9,7 @@
  *   ④ 특별 시간표 모으기(노드 순서) + 일정 목록 계산(schedule.ts)
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { TimetableData, SpecialData, ScheduleEntry } from '../contract-week-grid/types';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { emptyHistory, record as pushHistory, undo, redo, type History } from '../../pane-ui-system';

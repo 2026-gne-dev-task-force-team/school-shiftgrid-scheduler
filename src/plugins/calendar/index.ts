@@ -13,8 +13,8 @@
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
-// 🔴 import type 만 — 약속 타입은 노드 약속(project-explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../project-explorer/contracts/nodes';
+// 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 // 📌 2026-11-09 쥔님 *"작은 달력도 일단 비활성화"* — 작은 달력(views/MiniCalendarView.tsx)은 코드만 남기고 뷰·명령·리본·첫 배치에서 뺐다.
@@ -56,7 +56,7 @@ export const calendarPlugin = definePlugin({
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 일정 표 모드는 레코드 뷰를 빌린다(없으면 옛 표) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
+        supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──

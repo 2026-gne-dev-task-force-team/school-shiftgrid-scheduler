@@ -8,8 +8,8 @@
  *   ③ byType 스냅샷(일정·저장소)을 subscribe 로 갱신 — useEvents 가 useSyncExternalStore 로 읽는다
  *   ④ 만들기·고치기·휴지통·저장소 바꾸기 조작(전부 NodesApi 로)
  */
-// 🔴 import type 만 — 약속 타입은 노드 약속(project-explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
+// 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
@@ -60,7 +60,7 @@ function recompute(): void {
 /**
  * 🔴 노드 타입 함수 묶음(선언형 전환 D5) — contributes.nodeTypes 의 impl 이름('store')이 가리킨다.
  *   매니페스트엔 함수를 못 넣으니(순수 데이터) 저장소의 동작 함수(open·menu)는 여기 모아 둔다 — 노드 레지스트라
- *   (project-explorer.registerContributed)가 host 를 꽂아 NodeTypeDef 로 조립한다.
+ *   (explorer.registerContributed)가 host 를 꽂아 NodeTypeDef 로 조립한다.
  *   · open — 열면 기본 저장소 지정 + 범위를 그 저장소로 좁히고 달력 월 보기를 가운데에(옛 onOpenStore 와 같다).
  *   · menu — 저장소 우클릭 항목 둘(storeMenu). host 는 안 쓴다.
  *   일정(record)은 순수 데이터라 impl 이 없다.
@@ -86,7 +86,7 @@ export const calendarNodeTypeImpl = {
  */
 export const calendarNodeTypes: NodeTypeContribution<'store'>[] = [
     {
-        type: STORE_TYPE, label: '달력 저장소', icon: 'calendar',
+        type: STORE_TYPE, body: 'collection', label: '달력 저장소', icon: 'calendar',
         container: { accepts: [EVENT_TYPE, 'folder', STORE_TYPE] }, openable: true,
         create: { label: '달력 저장소', under: ['folder', STORE_TYPE] },
         impl: 'store',

@@ -22,7 +22,7 @@ const hostView: ComponentType<ViewProps & { host: PluginHost }> = (p) => createE
 
 const OWNER = 'lfake';
 // ④ 가 쓰는 레지스트라(코어)·소비 플러그인 주인까지 깨끗이(모듈 전역 스토어라 번지지 않게).
-const OWNERS = [OWNER, 'project-explorer', 'ntled'];
+const OWNERS = [OWNER, 'explorer', 'ntled'];
 beforeEach(() => {
     for (const o of OWNERS) disposeOwner(o);
     clearViews();

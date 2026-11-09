@@ -12,7 +12,7 @@
  *   ⚠️ 이 파일은 비-뷰라 소문자 record 리터럴을 둬도 된다(구조 검사 ⑯: 뷰에만 금지).
  */
 import type { NodeTypeContribution, PluginHost } from '../../pane-ui-system/plugin';
-import type { NodeTypeImplFns } from '../project-explorer/contracts/nodes';
+import type { NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { Hashed } from './hash';
 import * as core from './core';
 
@@ -65,7 +65,7 @@ export function setActiveAccountNode(id: string): void { activeNodeId = id; for 
 export function getActiveAccountNode(): string | null { return activeNodeId; }
 export function subscribeActiveNode(fn: () => void): () => void { activeSubs.add(fn); return () => { activeSubs.delete(fn); }; }
 
-/** 노드를 편집 탭으로 연다 — 「지금 그리는 노드」를 그걸로 두고 편집 화면을 가운데에(page-editor 와 같은 결). */
+/** 노드를 편집 탭으로 연다 — 「지금 그리는 노드」를 그걸로 두고 편집 화면을 가운데에(page 와 같은 결). */
 function openEditor(host: PluginHost, id: string): void {
     setActiveAccountNode(id);
     host.workspace.open(EDITOR_ID, { where: 'center' });

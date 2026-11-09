@@ -18,11 +18,11 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, restoreSelected } from '../project-explorer/store';
-import { __resetPersistForTest } from '../project-explorer/persist';
-import { makeNodesApi } from '../project-explorer/api';
-import { registerType, clearTypes } from '../project-explorer/model/types';
-import { clearDerived } from '../project-explorer/model/derive';
+import { initStore, select, restoreSelected } from '../explorer/store';
+import { __resetPersistForTest } from '../explorer/persist';
+import { makeNodesApi } from '../explorer/api';
+import { registerType, clearTypes } from '../explorer/model/types';
+import { clearDerived } from '../explorer/model/derive';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, getEventNodes, getStoreNodes,
     inTrash, createEvent, ensureStore, moveEvent, removeEvent, STORE_TYPE, EVENT_TYPE,

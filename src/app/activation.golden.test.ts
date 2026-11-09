@@ -6,10 +6,10 @@
  *   얹기 전에 **지금 순서 그대로** 못 박아, 리팩토링이 배치를 흔들면 여기서 빨간불이 켜진다.
  *
  * ⭐ 재는 것 둘:
- *   ① 활성 순서 — 코어(settings·project-explorer) 먼저, 그 뒤 목록 순(calendar·account·people·table-editor·timetable-grid). onActivate 가 도는 차례.
+ *   ① 활성 순서 — 코어(settings·explorer) 먼저, 그 뒤 목록 순(calendar·account·people·sheet·timetable-grid). onActivate 가 도는 차례.
  *      🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」): 약속(contract-*)을 꾸러미 안으로 묶어 별도 약속 플러그인 7개가 사라졌다 — 10꾸러미만 선다.
- *   ② onFirstRun 이 다리가 선 뒤에 여는 viewId 순서 — project-explorer.tree → calendar.month(작은 달력은 2026-11-09 비활성화).
- *      (account·people·table-editor·timetable-grid 는 onFirstRun 자동 열기가 없어 여는 순서에 안 낀다.)
+ *   ② onFirstRun 이 다리가 선 뒤에 여는 viewId 순서 — explorer.tree → calendar.month(작은 달력은 2026-11-09 비활성화).
+ *      (account·people·sheet·timetable-grid 는 onFirstRun 자동 열기가 없어 여는 순서에 안 낀다.)
  * ⚠️ node 라 localStorage 가 없다 — first-run.test 와 같은 메모리 스텁(깨끗한 프로파일 = 첫 실행).
  */
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -45,11 +45,11 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
             // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속(contract-*)을 꾸러미로 묶었다.
-            //    코어(settings·project-explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
-            'settings', 'project-explorer', 'calendar', 'account', 'people', 'table-editor', 'timetable-grid', 'rooms', 'page-editor',
-            // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채우지만(provides) 아무도 requires 하지 않아 목록 맨 끝에 선다(onFirstRun 자동 열기 없음).
+            //    코어(settings·explorer) 먼저, 그 뒤 목록 순. 각 꾸러미가 자기 약속을 들고 온다(contributes.interfaces).
+            'settings', 'explorer', 'calendar', 'account', 'people', 'sheet', 'timetable-grid', 'rooms', 'page',
+            // 레코드 뷰 꾸러미 — collection 약속을 들고 와 채우지만(provides) 아무도 requires 하지 않아 목록 맨 끝에 선다(onFirstRun 자동 열기 없음).
             // 📌 2026-11-09: 구독 캘린더는 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 꾸러미가 사라졌다 — 목록에서 뺐다.
-            'record-view',
+            'collection',
             // 2026-11-09: 선택 알림(탐색기가 알리고) → 속성(오른쪽 패널이 듣는다).
             'selection', 'properties',
         ]);
@@ -62,7 +62,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const opened: string[] = [];
         setWorkspaceBridge(bridgeCollecting(opened));
-        expect(opened).toEqual(['project-explorer.tree', 'calendar.month', 'properties.panel']);
+        expect(opened).toEqual(['explorer.tree', 'calendar.month', 'properties.panel']);
     });
 });
 
@@ -100,7 +100,7 @@ describe('선언한 약속마다 사람 이름(label)이 비어 있지 않다', 
 describe('속성 칸 — 노드 타입마다 주인이 칸을 낸다', () => {
     it('사람·방·일정·페이지·레코드 행·사용자·역할·구독에 속성 칸이 있고, 비밀엔 없다', () => {
         activateAll(PLUGINS);
-        for (const type of ['people.person', 'rooms.room', 'calendar.event', 'page-editor.page', 'record-view.row', 'account.user', 'account.role', 'calendar-subscribe.subscription']) {
+        for (const type of ['people.person', 'rooms.room', 'calendar.event', 'page.page', 'collection.row', 'account.user', 'account.role', 'calendar-subscribe.subscription']) {
             expect(listPropertiesPanes(type).length, `${type} 에 속성 칸이 없다`).toBeGreaterThan(0);
         }
         expect(listPropertiesPanes('account.secret')).toEqual([]);

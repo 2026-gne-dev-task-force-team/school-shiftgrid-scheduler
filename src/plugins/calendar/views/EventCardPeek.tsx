@@ -10,7 +10,7 @@ import { useCalendarData } from '../useEvents';
 import { EventCard } from './EventCard';
 import { FeedEventCard } from './FeedEventCard';
 // 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
-import type { PageDocApi } from '../../page-editor/contracts/page-doc';
+import type { PageDocApi } from '../../page/contracts/page-doc';
 import { getCalendarHost, eventBodyOf, setEventBody, renameEvent } from '../nodes';
 
 export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: () => void }) {

@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../project-explorer/contracts/nodes';
+import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { ListTab } from './views/ListTab';
 import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget, PERSON_TYPE } from './nodes';
@@ -27,7 +27,7 @@ export const peoplePlugin = definePlugin({
         // 🔴 명단·사람은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 레코드 뷰가 있으면 그 목록 화면으로 그린다(없으면 간이 표) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
+        supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
         contributes: {
             // 🔴 people 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 사람 명단 꾸러미가 약속·provides·화면을 한 폴더에.
             interfaces: [{ name: 'people', version: '0.1.0', label: '사람 명단', desc: '이름을 담는 명단' }],

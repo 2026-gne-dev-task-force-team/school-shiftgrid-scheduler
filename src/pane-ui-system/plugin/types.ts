@@ -254,6 +254,8 @@ export interface NodeTypeContribution<ImplName extends string = string> {
     create?: { label: string; under?: string[] };
     can?: { rename?: boolean; move?: boolean; delete?: boolean };
     record?: boolean;
+    /** 🔑 본문 종류 키(doc·sheet·collection …) — 창틀은 속뜻을 모른다, 레지스트라(explorer)가 BODY_KINDS 로 푼다. */
+    body?: string;
     /** 🔑 만들 때 인라인 입력 — 이 타입을 「새로 만들기」로 만들면 이름칸 자리에 입력을 띄우고, 커밋값을 impl.onInput(kind:'create')으로 넘긴다(레지스트라가 NodeTypeDef.createInput 로). */
     createInput?: { placeholder?: string };
     /** 🔑 싱글톤 — 'tree' 나무에 하나 · 'parent' 부모마다 하나(없으면 제한 없음). 레지스트라가 NodeTypeDef.unique 로 넘긴다. */

@@ -15,11 +15,11 @@ const kv = vi.hoisted(() => ({
 }));
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, clickSelect, getState } from '../project-explorer/store';
-import { __resetPersistForTest } from '../project-explorer/persist';
-import { makeNodesApi } from '../project-explorer/api';
-import { registerType, clearTypes } from '../project-explorer/model/types';
-import { attachSelection } from '../project-explorer';
+import { initStore, select, clickSelect, getState } from '../explorer/store';
+import { __resetPersistForTest } from '../explorer/persist';
+import { makeNodesApi } from '../explorer/api';
+import { registerType, clearTypes } from '../explorer/model/types';
+import { attachSelection } from '../explorer';
 import { PropertiesView } from '../properties/views/PropertiesPanel';
 import { selectionApi } from './index';
 

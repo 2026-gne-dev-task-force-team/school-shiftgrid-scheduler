@@ -9,7 +9,7 @@
  *    — window.prompt/confirm 없이, 한글 조합 Enter 도 탐색기 입력이 이미 가린다(isComposing||keyCode===229).
  */
 import type { NodeTypeContribution, PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
-import type { NodeTypeImplFns } from '../../project-explorer/contracts/nodes';
+import type { NodeTypeImplFns } from '../../explorer/contracts/nodes';
 import { normalizeUrl } from './model';
 import { SUB_TYPE, getSubsApi, getSubById, updateSub, removeSub } from './subscriptions';
 import { refresh } from './controller';

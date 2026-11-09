@@ -7,10 +7,10 @@
 import { useEffect } from 'react';
 import { Button, Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
 // 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
-import type { PageDocApi } from '../../page-editor/contracts/page-doc';
+import type { PageDocApi } from '../../page/contracts/page-doc';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
-import type { RecordViewApi, RecordField, RecordCellValue } from '../../record-view/contracts/record-view';
+import type { RecordViewApi, RecordField, RecordCellValue } from '../../collection/contracts/collection';
 import {
     can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
     setUserName, setRoleName, setRoleLevel, reorderAccount, setUserRoles, setUserDirect, setRolePermissions,
@@ -142,7 +142,7 @@ export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles' | 'p
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
     useEffect(() => () => hidePeek?.(), [hidePeek, kind]);
-    const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
+    const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     if (rv) {
         const { RecordView } = rv;
         return (

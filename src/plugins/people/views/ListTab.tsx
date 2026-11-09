@@ -13,7 +13,7 @@ import { RowPeek } from './RowPeek';
 import { useActiveList, setActiveList } from '../store';
 import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields, listIconOf, setListIcon, getNodesApi } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
-import type { RecordViewApi, RecordField } from '../../record-view/contracts/record-view';
+import type { RecordViewApi, RecordField } from '../../collection/contracts/collection';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
@@ -23,8 +23,8 @@ const COLUMNS: TableColumn[] = [
 ];
 
 export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
-    // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: record-view) — 없으면 간이 표
-    const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
+    // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: collection) — 없으면 간이 표
+    const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     const activeId = useActiveList();
     // 노드가 바뀔 때만 다시 그린다(명단 이름·사람 줄). 스냅샷은 recompute 때만 새 배열이 된다.
     const listNodes = useSyncExternalStore(subscribeNodes, getListNodes, getListNodes);

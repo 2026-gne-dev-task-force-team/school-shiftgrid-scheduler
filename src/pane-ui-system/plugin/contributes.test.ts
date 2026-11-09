@@ -36,7 +36,7 @@ function viewHostId(viewId: string): string | undefined {
 }
 
 /** 쓰는 주인들을 깨끗이 — 뷰 레지스트리까지 비운다(모듈 전역). */
-const OWNERS = ['cfake', 'badfake', 'dyn', 'lifefake', 'project-explorer', 'ntfake', 'ntbad'];
+const OWNERS = ['cfake', 'badfake', 'dyn', 'lifefake', 'explorer', 'ntfake', 'ntbad'];
 beforeEach(() => {
     for (const o of OWNERS) disposeOwner(o);
     clearViews();

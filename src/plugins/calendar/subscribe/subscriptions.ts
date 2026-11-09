@@ -4,7 +4,7 @@
  *      host.storage(기기별 localStorage)가 아니라 노드(프로젝트 데이터)인 이유다. 노드 타입은 record(탐색기에 안 보임).
  *   ⛔ host.store·kv 직접 안 봄 — NodesApi 하나로만(값은 host.modules.use('nodes'), 타입만 import).
  */
-import type { NodesApi, PublicNode } from '../../project-explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../explorer/contracts/nodes';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 import type { SubData, SubNode } from './model';
 import { defaultColor } from './model';

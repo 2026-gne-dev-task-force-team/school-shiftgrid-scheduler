@@ -10,7 +10,7 @@
 import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
 import type { CurrentUser } from './contracts/identity';
 import type { Credential } from './contracts/credential';
-import type { NodesApi, PublicNode } from '../project-explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
 import { makeHash, verifyHash } from './hash';
 import type { Hashed } from './hash';
 import {
@@ -24,7 +24,7 @@ let nodesApi: NodesApi | null = null;
 let hostRef: PluginHost | null = null;
 let session: CurrentUser = guest();
 let nodesUnsub: Disposable | null = null;
-// 🔴 비동기 저장소 경합 방어 — onActivate 시점엔 노드가 아직 안 왔을 수 있다(project-explorer 의 loadTree 가 await).
+// 🔴 비동기 저장소 경합 방어 — onActivate 시점엔 노드가 아직 안 왔을 수 있다(explorer 의 loadTree 가 await).
 //    그 사이 hasSecret() 가 거짓이라 암호 걸린 프로젝트도 마스터로 시작해 버린다. 로드가 끝나 「첫 알림」이 오면
 //    초기 상태를 딱 한 번 다시 센다(store 가 loadTree 완료 때 빈 나무→실나무 diff 로 subscribe 를 깨운다).
 //    사용자가 그 전에 명시적으로 로그인/로그아웃하면 끈다(setSession 이 false 로).
@@ -431,7 +431,7 @@ export function nodeKindOf(id: string): 'user' | 'role' | 'policy' | 'users' | '
  */
 export function openAccount(host: PluginHost): boolean {
     const rootId = accountRootId();
-    host.workspace.open('project-explorer.tree', { where: 'left', reuse: true });
+    host.workspace.open('explorer.tree', { where: 'left', reuse: true });
     if (!rootId) return false;
     nodesApi?.select(rootId);
     return true;

@@ -21,11 +21,11 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, restoreSelected, newNode, getState } from '../../project-explorer/store';
-import { __resetPersistForTest } from '../../project-explorer/persist';
-import { makeNodesApi } from '../../project-explorer/api';
-import { registerType, clearTypes, isRecordType, createCandidates, getType } from '../../project-explorer/model/types';
-import { clearDerived } from '../../project-explorer/model/derive';
+import { initStore, select, restoreSelected, newNode, getState } from '../../explorer/store';
+import { __resetPersistForTest } from '../../explorer/persist';
+import { makeNodesApi } from '../../explorer/api';
+import { registerType, clearTypes, isRecordType, createCandidates, getType } from '../../explorer/model/types';
+import { clearDerived } from '../../explorer/model/derive';
 import { calendarModule, listFeedSources, __resetFeeds } from '../feed';
 import { SUB_TYPE, initSubs, listSubs, addSub, updateSub, removeSub, getSubById, getSubsApi, renameSub } from './subscriptions';
 import { setCalendar, reconcile, disposeAll, refresh, registeredCount } from './controller';

@@ -2,7 +2,7 @@
  * ───────────────────────────────────────────────────────────────────────────
  * 표 자리(grid slot) — 그리드 화면이 2D 표를 **직접 그리지 않고 이 한 파일을 거쳐서만** 그린다.
  *   🔴 쥔님 2026-11-08: 표 편집(칸 이동·복사 붙여넣기·병합·행 높이 끌기)은 **다른 세션이 공통 플러그인**
- *     (contract-table + table-editor, 브랜치 v2-table)으로 만든다. 1차는 이 파일 안의 **간이 표**다.
+ *     (contract-table + sheet, 브랜치 v2-table)으로 만든다. 1차는 이 파일 안의 **간이 표**다.
  *     나중에 표 편집기 플러그인이 오면 **이 파일 하나만** 바꾼다(그리드 나머지는 무변경).
  *     ⛔ 표 편집기 약속은 이 레인이 만들지 않는다 — v2-table 세션 몫이다.
  *
@@ -23,7 +23,7 @@
 import { useRef } from 'react';
 import { Icon } from '../../../pane-ui-system';
 // 🔴 import type 만 — table 약속은 표 편집기 꾸러미 contracts 에서(값은 host.modules.use('table')).
-import type { TableApi, TableColumn, TableRow, TableTx, MergeRegion } from '../../table-editor/contracts/table';
+import type { TableApi, TableColumn, TableRow, TableTx, MergeRegion } from '../../sheet/contracts/table';
 import type { TimetableData } from '../model';
 import {
     columnCount, colName, getCell, isCovered, setCellText, renameRow, renameColumn, setRowTime,

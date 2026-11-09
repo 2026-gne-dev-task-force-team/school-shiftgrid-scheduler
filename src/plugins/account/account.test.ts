@@ -9,7 +9,7 @@ import { activateAll, disablePlugin, enablePlugin, listPlugins, disposeOwner } f
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
-import type { NodesApi, Node, PublicNode } from '../project-explorer/contracts/nodes';
+import type { NodesApi, Node, PublicNode } from '../explorer/contracts/nodes';
 
 import { accountPlugin } from './index';
 import * as core from './core';
@@ -30,7 +30,7 @@ const find = (id: string) => listPlugins().find((p) => p.id === id);
 
 // ── 인메모리 nodes 제공자(nodes 약속을 들고 오고 채운다 — 탐색기 꾸러미 흉내) ──
 //    opts.deferred: true 면 「로드 전」 상태로 시작한다 — 읽기(get·byType·find·children)가 빈 값을 주다가
-//    load() 를 부르면 그제야 보이고 subscribe 를 깨운다(project-explorer 의 loadTree 비동기 로드 흉내).
+//    load() 를 부르면 그제야 보이고 subscribe 를 깨운다(explorer 의 loadTree 비동기 로드 흉내).
 function makeNodes(opts?: { deferred?: boolean }) {
     const map = new Map<string, Node>();
     const subs = new Set<(ids: string[]) => void>();

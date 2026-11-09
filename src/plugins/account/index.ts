@@ -12,7 +12,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, Disposable, PerCallerApi } from '../../pane-ui-system/plugin';
 import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
-import type { NodesApi } from '../project-explorer/contracts/nodes';
+import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl, USER_TYPE, ROLE_TYPE } from './nodes';
 import { AccountProps } from './panes/AccountProps';
@@ -51,7 +51,7 @@ export const accountPlugin = definePlugin({
         provides: { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' },
         requires: { nodes: '^0.1' },
         // 사용자·역할 목록은 레코드 뷰를 빌린다(없으면 간이 목록) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
+        supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
         contributes: {
             // 🔴 약속 셋을 들고 온다(꾸러미 매니페스트). 켜진 account 가 호스트 약속 목록에 identity·credential·permit 를 올린다.
             interfaces: [
@@ -80,7 +80,7 @@ export const accountPlugin = definePlugin({
                 { target: USER_TYPE, id: 'user', title: '사용자', pane: 'AccountProps' },
                 { target: ROLE_TYPE, id: 'role', title: '역할', pane: 'AccountProps' },
             ],
-            // 노드를 누르면 열리는 편집 탭(가운데) — 지금 열린 노드의 종류에 맞는 편집기를 그린다(page-editor 와 같은 결).
+            // 노드를 누르면 열리는 편집 탭(가운데) — 지금 열린 노드의 종류에 맞는 편집기를 그린다(page 와 같은 결).
             views: [{
                 id: 'editor', title: '계정', icon: 'gear', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },

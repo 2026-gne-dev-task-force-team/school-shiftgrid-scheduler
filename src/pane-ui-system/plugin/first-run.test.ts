@@ -71,8 +71,8 @@ describe('onFirstRun — 다리보다 먼저 불려도 안 사라진다', () => 
         setWorkspaceBridge(bridgeCollecting(opened));
         const h = makeHost(OWNER);
 
-        h.onFirstRun(() => { h.workspace.open('project-explorer.tree', { where: 'left' }); });
-        expect(opened).toEqual(['project-explorer.tree']);
+        h.onFirstRun(() => { h.workspace.open('explorer.tree', { where: 'left' }); });
+        expect(opened).toEqual(['explorer.tree']);
     });
 
     it('두 번째 실행에는 안 돈다 — 저장된 배치를 덮지 않는다', () => {

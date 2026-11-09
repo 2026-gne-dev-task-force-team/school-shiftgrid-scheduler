@@ -25,7 +25,7 @@
 import { Icon } from '../../../pane-ui-system';
 import { useState } from 'react';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
-import type { RecordViewApi, RecordField, RecordTree, PasteRequest } from '../../record-view/contracts/record-view';
+import type { RecordViewApi, RecordField, RecordTree, PasteRequest } from '../../collection/contracts/collection';
 
 export interface TableColumn {
     key: string;
@@ -136,7 +136,7 @@ export function SimpleTable({ columns, rows, onCellChange, onAddRow, onDeleteRow
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// 🔴 레코드 뷰로 갈아 끼우기(쥔님 2026-11-09 「명단은 레코드 뷰야」) — host.modules.use('record-view') 이 있으면 그 목록 화면을,
+// 🔴 레코드 뷰로 갈아 끼우기(쥔님 2026-11-09 「명단은 레코드 뷰야」) — host.modules.use('collection') 이 있으면 그 목록 화면을,
 //    없으면 위 간이 표를 그린다. 레코드 뷰의 콜백을 이 자리의 콜백으로 푼다 — 저장·휴지통은 여전히 다리(nodes.ts)가 쥔다.
 // ───────────────────────────────────────────────────────────────────────────
 
