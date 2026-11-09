@@ -4,15 +4,16 @@
  *   🔴 P4c: 사용자·역할은 컬렉션 레코드와 같은 모양(제목 = 노드 이름 · 칸 = data.values) — 그래서 명단처럼 칸을 더할 수 있다(폴더 data.fields).
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다.
  */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon, type PeekHandle } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 컬렉션 약속 타입은 컬렉션 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../collection/contracts/collection';
 import {
-    can, listUsers, listRoles, createUser, createRole, deleteUser, deleteRole,
-    reorderAccount, setRecordValue, setFolderFields, accountFolderId, getNodesApi,
+    can, listUsers, listRoles, createUser, createRole,
+    reorderAccount, setRecordValue, setFolderFields, accountFolderId, getNodesApi, removeAccountRecords,
 } from '../core';
+import { NewUserDialog } from './NewUserDialog';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion, allPermissions } from './useAccount';
 import { accountFields, canEdit, userValues, type AccountKind } from './fields';
@@ -27,7 +28,6 @@ function recordsModel(kind: AccountKind) {
         rows, fields: accountFields(kind),
         canAdd: can(`account.${kind}.create`), canDelete: can(`account.${kind}.delete`), canEdit: canEdit(kind),
         add: () => (kind === 'users' ? createUser('새 사용자') : createRole('새 역할')),
-        remove: kind === 'users' ? deleteUser : deleteRole,
     };
 }
 
@@ -50,11 +50,12 @@ function permsModel() {
         { key: 'users', label: '직접 받은 사용자', type: 'multi', readOnly: true, options: users.map((u) => ({ value: u.id, label: u.name })) },
         { key: 'word', label: '낱말', type: 'text', readOnly: true },
     ];
-    return { rows, fields, canAdd: false, canDelete: false, canEdit: false, add: () => '', remove: (_id: string) => {} };
+    return { rows, fields, canAdd: false, canDelete: false, canEdit: false, add: () => '' };
 }
 
 export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 'perms'; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
+    const [adding, setAdding] = useState(false);   // 「새 사용자」 폼(사용자 목록만)
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
     useEffect(() => () => hidePeek?.(), [hidePeek, kind]);
@@ -65,6 +66,14 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     const open = (id: string) => {
         if (!peek) { setActiveAccountNode(id); return; }
         peek.show(<RecordPage id={id} host={host} />, { wideMin: 480 });
+    };
+    // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」가 그 묶음을 제자리로(account.restoreRemoved)
+    const remove = (ids: string[]) => {
+        const n = removeAccountRecords(ids);
+        if (n > 0) host?.notify({
+            title: `${kind === 'users' ? '사용자' : '역할'} ${n}개를 휴지통으로 옮겼습니다`,
+            action: { label: '되돌리기', commandId: 'account.restoreRemoved' }, key: 'account.removed', timeout: 8000,
+        });
     };
     const { RecordView } = rv;
     const fid = accountFolderId(kind);
@@ -81,12 +90,17 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
                 onCellChange={kind === 'perms' ? undefined : setRecordValue}
                 // 사람이 더한 칸만 폴더에 싣는다 — 기본 칸·꽂힌 칸은 locked 라 걸러진다
                 onFieldsChange={kind !== 'perms' && m.canEdit ? (next) => setFolderFields(kind, next.filter((f) => !f.locked)) : undefined}
-                onAddRecord={m.canAdd ? () => { m.add(); } : undefined}
-                onDeleteRecords={m.canDelete ? (ids) => ids.forEach(m.remove) : undefined}
+                // 사용자는 폼(이름·아이디·종류·초기 비번·활성)으로 · 역할은 바로 한 줄
+                onAddRecord={m.canAdd ? () => { if (kind === 'users') setAdding(true); else m.add(); } : undefined}
+                onDeleteRecords={m.canDelete ? remove : undefined}
                 onOpenRecord={kind === 'perms' ? undefined : open}
                 onReorder={m.canEdit ? reorderAccount : undefined}
                 className="flex-1 min-h-0"
             />
+            {adding && <NewUserDialog onClose={() => setAdding(false)} onCreated={(_id, name) => {
+                setAdding(false);
+                host?.notify({ title: `「${name}」 사용자를 만들었습니다`, key: 'account.created' });
+            }} />}
         </div>
     );
     return fid && Frame ? <Frame nodeId={fid} leafId={leafId} fallback={fallback}>{table}</Frame> : table;
