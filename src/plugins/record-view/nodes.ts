@@ -59,7 +59,8 @@ export const recordNodeTypes: NodeTypeContribution<'db'>[] = [
         create: { label: '레코드 뷰', under: ['folder'] },
         impl: 'db',
     },
-    { type: ROW_TYPE, label: '행', icon: 'file', record: true },
+    // 🔴 행도 행을 자식으로 받는다 — 하위 항목(행 밑에 행)은 노드 중첩이다. 휴지통·복원·되돌리기는 서브트리째 공짜.
+    { type: ROW_TYPE, label: '행', icon: 'file', record: true, container: { accepts: [ROW_TYPE] } },
 ];
 
 // ── 다리 상태 ──
@@ -126,24 +127,61 @@ export function snapshotOf(id: string | null): DbSnapshot | null {
     let snap: DbSnapshot | null = null;
     if (n && n.type === DB_TYPE) {
         const doc = docOfNode(n);
-        const records = api.children(id)
-            .filter((c) => c.type === ROW_TYPE)
-            .map((c) => {
+        // 🔴 행이 행을 품는다(하위 항목) — db 아래 모든 자손 행을 훑어 __parent(부모 행 id · db 직속이면 null)와 __collapsed 를 싣는다.
+        const a = api;
+        const records: ({ id: string } & Record<string, unknown>)[] = [];
+        const walk = (parentNodeId: string, parentRowId: string | null) => {
+            for (const c of a.children(parentNodeId)) {
+                if (c.type !== ROW_TYPE) continue;
                 const row = rowOfNode(c);
-                const rec: { id: string } & Record<string, unknown> = { ...row.values, id: c.id };
+                const rec: { id: string } & Record<string, unknown> = { ...row.values, id: c.id, __parent: parentRowId, __collapsed: row.collapsed === true };
+                // 자동 계산 칸은 값이 행 노드에 있다(values 가 아님) — 칸 key 로 꽂아 준다.
+                for (const f of doc.fields) {
+                    if (f.type === 'created') rec[f.key] = row.created;
+                    else if (f.type === 'updated') rec[f.key] = row.updated;
+                    else if (f.type === 'id' && typeof row.seq === 'number') rec[f.key] = row.seq;
+                }
                 if (rec[doc.titleKey] === undefined || rec[doc.titleKey] === null) rec[doc.titleKey] = c.name;
-                return rec;
-            });
+                records.push(rec);
+                walk(c.id, c.id);
+            }
+        };
+        walk(id, null);
         snap = { id, name: n.name, doc, records, trashedRows: trashedRows(id).length };
     }
     snapCache = { rev, id, snap };
     return snap;
 }
 
-/** 이 레코드 뷰에서 지워져 휴지통에 있는 행들 — 레코드성 노드는 탐색기 휴지통 구역에 안 보이니 여기서 되살린다. */
+/**
+ * 이 레코드 뷰에서 지워져 휴지통에 있는 행들 — 레코드성 노드는 탐색기 휴지통 구역에 안 보이니 여기서 되살린다.
+ *   🔴 하위 행을 하나만 지우면 trashedFrom 은 db 가 아니라 「부모 행 id」다 — db 아래 살아 있는 행에서 지운 것도 잡는다.
+ */
 export function trashedRows(dbId: string): PublicNode[] {
     if (!api) return [];
-    return api.children(api.roots.trash).filter((n) => n.type === ROW_TYPE && n.trashedFrom === dbId);
+    const a = api;
+    const inDb = new Set<string>([dbId]);
+    const walk = (p: string) => { for (const c of a.children(p)) if (c.type === ROW_TYPE) { inDb.add(c.id); walk(c.id); } };
+    walk(dbId);
+    return a.children(a.roots.trash).filter((n) => n.type === ROW_TYPE && !!n.trashedFrom && inDb.has(n.trashedFrom));
+}
+
+/**
+ * 수동 순서 — id 를 beforeId 바로 앞으로(맨 끝이면 beforeId=null). 트리 모드에선 beforeId 의 부모로 재부모화.
+ *   한 묶음(batch) = 되돌리기 한 칸. 정렬·필터가 걸리면 화면이 손잡이를 안 띄우니 여긴 호출 안 된다.
+ */
+export function reorderRow(dbId: string, id: string, beforeId: string | null): void {
+    if (!api || id === beforeId) return;
+    const a = api;
+    a.batch(() => {
+        if (!beforeId) { a.move(id, dbId); return; }   // 맨 끝 → db 직속 마지막
+        const parent = a.parent(beforeId);
+        if (!parent) return;
+        // move 는 id 를 뺀 배열 기준 index 에 꽂는다 — beforeId 의 자리가 곧 「그 앞」
+        const sibs = a.children(parent).filter((c) => c.id !== id);
+        const at = sibs.findIndex((c) => c.id === beforeId);
+        a.move(id, parent, at < 0 ? undefined : at);
+    });
 }
 
 // ── 쓰기 — 전부 commit(tx) 한 함수를 지난다 ──
@@ -169,9 +207,6 @@ export function commit(dbId: string, tx: DbTx): string[] {
         const n = a.get(dbId);
         if (!n || n.type !== DB_TYPE) return;
         const doc = docOfNode(n);
-        if (tx.fields || tx.views) {
-            a.setData(dbId, { ...doc, fields: tx.fields ?? doc.fields, views: tx.views ?? doc.views });
-        }
         const now = isoMinute();
         // 셀 — 행마다 한 번만 쓴다(같은 행의 여러 칸을 모은다)
         const byRow = new Map<string, Map<string, RecordCellValue>>();
@@ -189,9 +224,18 @@ export function commit(dbId: string, tx: DbTx): string[] {
             // 제목 칸 = 노드 이름 — 탐색기 검색·관계 알약이 이 이름을 쓴다. 비면 rename 이 무시하니 옛 이름이 남는다(값은 values 에 있다)
             if (kv.has(doc.titleKey) && titleText(kv.get(doc.titleKey)).trim() !== '') a.rename(rowId, titleText(kv.get(doc.titleKey)));
         }
-        for (const values of tx.addRows ?? []) {
-            const id = a.create(dbId, { type: ROW_TYPE, name: titleText(values[doc.titleKey]), data: blankRow(values) });
+        // ID 칸 자동 번호 — 새 행마다 doc.seq 에서 하나씩(삭제돼도 안 되돌림). 번호는 행에 박혀 불변.
+        const addRows = tx.addRows ?? [];
+        let seq = doc.seq;
+        for (const values of addRows) {
+            const data = blankRow(values);
+            data.seq = seq;
+            seq += 1;
+            const id = a.create(dbId, { type: ROW_TYPE, name: titleText(values[doc.titleKey]), data });
             if (id) created.push(id);
+        }
+        if (tx.fields || tx.views || addRows.length > 0) {
+            a.setData(dbId, { ...doc, fields: tx.fields ?? doc.fields, views: tx.views ?? doc.views, seq });
         }
         for (const id of tx.removeRows ?? []) a.remove(id);
         for (const id of tx.restoreRows ?? []) a.move(id, dbId);
@@ -210,4 +254,49 @@ export function restoreTrashedRows(dbId: string): number {
 export function renameDb(id: string, name: string): void {
     const t = name.trim();
     if (t) api?.rename(id, t);
+}
+
+// ── 하위 항목(행 밑에 행) 구조 조작 — 전부 노드 move/setData 한 번(되돌리기 한 칸) ──
+
+/** 접기/펼치기 — 레코드성 행은 노드 collapsed(탐색기 전용)를 못 쓰니 RowDoc.collapsed 로 둔다. */
+export function toggleRowCollapse(rowId: string): void {
+    if (!api) return;
+    const a = api;
+    a.batch(() => {
+        const n = a.get(rowId);
+        if (!n || n.type !== ROW_TYPE) return;
+        const row = rowOfNode(n);
+        a.setData(rowId, { ...row, collapsed: !(row.collapsed === true) });
+    });
+}
+
+/** 들여쓰기 — 바로 위 형제의 마지막 자식으로. 첫 형제(위 형제 없음)는 아무 일 없음. */
+export function indentRow(rowId: string): void {
+    if (!api) return;
+    const a = api;
+    a.batch(() => {
+        const parent = a.parent(rowId);
+        if (!parent) return;
+        const sibs = a.children(parent).filter((c) => c.type === ROW_TYPE);
+        const idx = sibs.findIndex((c) => c.id === rowId);
+        if (idx <= 0) return;
+        a.move(rowId, sibs[idx - 1].id);
+    });
+}
+
+/** 내어쓰기 — 부모 행의 바로 다음 형제로. 이미 뿌리(db 직속)면 아무 일 없음. */
+export function outdentRow(rowId: string): void {
+    if (!api) return;
+    const a = api;
+    a.batch(() => {
+        const parent = a.parent(rowId);
+        if (!parent) return;
+        const pNode = a.get(parent);
+        if (!pNode || pNode.type !== ROW_TYPE) return;   // 부모가 db 면 이미 뿌리
+        const grand = a.parent(parent);
+        if (!grand) return;
+        const gsibs = a.children(grand);
+        const pIdx = gsibs.findIndex((c) => c.id === parent);
+        a.move(rowId, grand, pIdx < 0 ? undefined : pIdx + 1);
+    });
 }

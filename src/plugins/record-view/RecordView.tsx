@@ -14,7 +14,8 @@ import { Icon, IconButton } from '../../pane-ui-system';
 import { Popover } from './Popover';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
-import { deriveRows, flatRules, pruneFilter, rawValue, withFlatRules } from './logic';
+import { deriveRows, filterIsEmpty, flatRules, pruneFilter, rawValue, withFlatRules } from './logic';
+import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { parseTsv } from './paste';
 import { fieldTypes } from './fields/registry';
@@ -33,6 +34,7 @@ export type { RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef }
 
 const SEL_W = 34;   // 선택 체크 칸 폭
 const OPEN_W = 40;  // 「열기」 칸 폭
+const INDENT_PX = 18;   // 하위 항목 한 단 들여쓰기 폭
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
 function useCoarsePointer(): boolean {
@@ -81,6 +83,8 @@ export function RecordView<T>({
     onFieldsChange,
     onConvertField,
     onPaste,
+    onReorder,
+    tree,
     className = '',
 }: RecordViewProps<T>) {
     // ── 보기 정의 — 제어형(views)이면 바깥이 저장 · 아니면 localStorage ────────────────
@@ -123,10 +127,20 @@ export function RecordView<T>({
         [view.columns, byKey],
     );
     const hiddenKeys = useMemo(() => view.columns.filter((c) => c.hidden).map((c) => c.key), [view.columns]);
-    const rows = useMemo(
+    // 🔴 「수동 순서」(정렬·필터·검색 0)일 때만 트리로 그린다 — 그 밖엔 평평(노션과 같다).
+    const manualOrder = view.sorts.length === 0 && filterIsEmpty(view.filter) && search.trim() === '';
+    const treeOn = !!tree && manualOrder;
+    const flat = useMemo(
         () => deriveRows(records, fields, { search, filter: view.filter, sorts: view.sorts }),
         [records, fields, search, view.filter, view.sorts],
     );
+    const displayRows = useMemo(
+        () => (treeOn && tree
+            ? buildTree(records, getId, tree.parentOf, tree.collapsed)
+            : flat.map((row) => ({ row, depth: 0, hasChildren: false }))),
+        [treeOn, tree, records, getId, flat],
+    );
+    const rows = useMemo(() => displayRows.map((d) => d.row), [displayRows]);
 
     // 🔴 폭 끌기 중에는 임시 폭만 그린다 — 손을 뗄 때 한 번만 보기 정의에 쓴다(안 그러면 포인터 한 칸마다 되돌리기 한 단계가 쌓인다)
     const [liveW, setLiveW] = useState<{ key: string; w: number } | null>(null);
@@ -171,6 +185,18 @@ export function RecordView<T>({
         setLiveW(null);
     };
 
+    // ── 행 끌어 순서 바꾸기(수동 순서일 때만) — from 을 toId 바로 앞으로(toId=null 이면 맨 끝) ──
+    const reorderable = !!onReorder && manualOrder;
+    const dragRow = useRef<string | null>(null);
+    const [dropId, setDropId] = useState<string | null>(null);
+    const onRowDrop = (toId: string | null) => {
+        const from = dragRow.current;
+        dragRow.current = null;
+        setDropId(null);
+        if (!from || !onReorder || from === toId) return;
+        onReorder(from, toId);
+    };
+
     // ── 칸 순서 끌기(보기마다) ────────────────────────────────────────────────
     const dragCol = useRef<string | null>(null);
     const onColDrop = (e: ReactDragEvent, to: string) => {
@@ -210,7 +236,9 @@ export function RecordView<T>({
         if (!def) return;
         const f = newField(type);
         if (def.defaultConfig !== undefined) f.config = def.defaultConfig;
-        if (def.hasOptions) f.options = [];
+        if (def.defaultOptions) f.options = def.defaultOptions.map((o) => ({ ...o }));
+        else if (def.hasOptions) f.options = [];
+        if (def.readOnly) f.readOnly = true;
         onFieldsChange?.([...fields, f]);
         setAddMenu(null);
     };
@@ -251,7 +279,7 @@ export function RecordView<T>({
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
 
-    const totalWidth = SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (onOpenRecord ? OPEN_W : 0) + (fieldsEditable ? 40 : 0);
+    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? 44 : 0) + (onOpenRecord ? OPEN_W : 0) + (fieldsEditable ? 40 : 0);
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
@@ -283,6 +311,7 @@ export function RecordView<T>({
                 <div style={{ minWidth: totalWidth }} className="text-text">
                     {/* 머리줄 */}
                     <div className="flex sticky top-0 z-10 bg-panel2 border-b border-line select-none h-header">
+                        {reorderable && <div className="shrink-0" style={{ width: 16 }} />}
                         {selectable && (
                             <div className="shrink-0 grid place-items-center" style={{ width: SEL_W }}>
                                 <button type="button" role="checkbox" aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
@@ -323,6 +352,7 @@ export function RecordView<T>({
                                 </div>
                             );
                         })}
+                        {treeOn && <div className="shrink-0" style={{ width: 44 }} />}
                         {onOpenRecord && <div className="shrink-0" style={{ width: OPEN_W }} />}
                         {fieldsEditable && (
                             <button type="button" data-rv-add-field onClick={(e) => setAddMenu((e.currentTarget as HTMLElement).getBoundingClientRect())} className="shrink-0 grid place-items-center text-muted hover:text-text hover:bg-text/[0.06]" style={{ width: 40 }} aria-label="칸 추가">
@@ -332,18 +362,40 @@ export function RecordView<T>({
                     </div>
 
                     {/* 본문 */}
-                    {rows.map((r) => {
+                    {displayRows.map(({ row: r, depth, hasChildren }) => {
                         const id = getId(r);
                         const checked = selected.has(id);
-                        const showOpen = onOpenRecord && (coarse || hoverRow === id);
+                        const hovered = coarse || hoverRow === id;
+                        const showOpen = onOpenRecord && hovered;
+                        const showTree = treeOn && tree && hovered;
+                        const collapsed = treeOn && tree ? tree.collapsed(id) : false;
                         return (
                             <div
                                 key={id}
                                 data-rv-row={id}
+                                tabIndex={treeOn ? 0 : undefined}
+                                onKeyDown={treeOn && tree ? (e) => {
+                                    // 행 포커스에서 Tab=들여쓰기 · Shift+Tab=내어쓰기. 셀 편집 중(입력칸)엔 안 가로챈다.
+                                    if (e.key !== 'Tab') return;
+                                    const t = e.target as HTMLElement;
+                                    if (t !== e.currentTarget && t.closest('input,textarea,select,[data-rv-editing]')) return;
+                                    e.preventDefault();
+                                    if (e.shiftKey) tree.onOutdent(id); else tree.onIndent(id);
+                                } : undefined}
                                 onMouseEnter={() => setHoverRow(id)}
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
-                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'}`}
+                                onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropId(id); } } : undefined}
+                                onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id); } : undefined}
+                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${dropId === id ? 'border-t-2 border-t-accent' : ''}`}
                             >
+                                {reorderable && (
+                                    <div className="shrink-0 grid place-items-center" style={{ width: 16 }}
+                                        draggable data-rv-row-drag={id}
+                                        onDragStart={(e) => { dragRow.current = id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', id); } catch { /* 사파리 */ } }}
+                                        onDragEnd={() => { dragRow.current = null; setDropId(null); }}>
+                                        <Icon name="grip" size={12} className={`text-muted cursor-grab ${hovered ? '' : 'opacity-0'}`} />
+                                    </div>
+                                )}
                                 {selectable && (
                                     <div className="shrink-0 grid place-items-center" style={{ width: SEL_W }}>
                                         <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => toggleOne(id)}
@@ -352,17 +404,42 @@ export function RecordView<T>({
                                         </button>
                                     </div>
                                 )}
-                                {visibleFields.map((f) => (
-                                    <div key={f.key} className="shrink-0 border-r border-line overflow-hidden" style={{ width: widthOf(f) }}>
-                                        <Cell
-                                            field={f}
-                                            rowValue={r}
-                                            editable={canEditCell(f)}
-                                            onChange={(val) => onCellChange?.(id, f.key, val)}
-                                            onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
-                                        />
+                                {visibleFields.map((f, fi) => (
+                                    <div key={f.key} className="shrink-0 border-r border-line overflow-hidden flex items-center" style={{ width: widthOf(f) }}>
+                                        {fi === 0 && treeOn && (
+                                            <div className="shrink-0 flex items-center" style={{ paddingLeft: depth * INDENT_PX }}>
+                                                {hasChildren ? (
+                                                    <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
+                                                        onClick={() => tree?.onToggleCollapse(id)}
+                                                        className="grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
+                                                        <Icon name="chevronDown" size={13} className={collapsed ? '-rotate-90' : ''} />
+                                                    </button>
+                                                ) : <span className="inline-block w-4" />}
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0 h-full">
+                                            <Cell
+                                                field={f}
+                                                rowValue={r}
+                                                editable={canEditCell(f)}
+                                                onChange={(val) => onCellChange?.(id, f.key, val)}
+                                                onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
+                                            />
+                                        </div>
                                     </div>
                                 ))}
+                                {treeOn && (
+                                    <div className="shrink-0 flex items-center justify-center gap-0.5" style={{ width: 44 }}>
+                                        {showTree && (
+                                            <>
+                                                <button type="button" data-rv-outdent={id} aria-label="내어쓰기" onClick={() => tree?.onOutdent(id)}
+                                                    className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="left" size={13} /></button>
+                                                <button type="button" data-rv-indent={id} aria-label="들여쓰기" onClick={() => tree?.onIndent(id)}
+                                                    className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="right" size={13} /></button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                                 {onOpenRecord && (
                                     <div className="shrink-0 grid place-items-center" style={{ width: OPEN_W }}>
                                         {showOpen && (
@@ -384,7 +461,9 @@ export function RecordView<T>({
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
                         <button type="button" data-rv-add onClick={onAddRecord}
-                            className="flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0">
+                            onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropId('__end__'); } } : undefined}
+                            onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(null); } : undefined}
+                            className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropId === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
                     )}

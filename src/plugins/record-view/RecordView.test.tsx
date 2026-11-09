@@ -123,7 +123,7 @@ describe('제목 칸 보호', () => {
         click(q('[data-rv-head-menu="f_t"]'));
         expect(q('[data-rv-del-field]')).toBeNull();
         const types = qa('[data-rv-type]');
-        expect(types.length).toBe(6);
+        expect(types.length).toBe(13);
         expect(types.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
     });
     it('다른 칸은 삭제할 수 있다', () => {
@@ -137,11 +137,14 @@ describe('제목 칸 보호', () => {
 });
 
 describe('칸 추가 — 타입 고르기', () => {
-    it('[data-rv-add-field] → 타입 팝오버(내장 6종) → 칸 +1 · key 가 f_ · 이름 「새 칸」', () => {
+    it('[data-rv-add-field] → 타입 팝오버(내장 13종) → 칸 +1 · key 가 f_ · 이름 「새 칸」', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-add-field]'));
-        expect(qa('[data-rv-add-type]').map((b) => b.dataset.rvAddType)).toEqual(['text', 'number', 'select', 'multi', 'date', 'check']);
+        expect(qa('[data-rv-add-type]').map((b) => b.dataset.rvAddType)).toEqual([
+            'text', 'number', 'select', 'multi', 'date', 'check',
+            'status', 'url', 'email', 'phone', 'created', 'updated', 'id',
+        ]);
         click(q('[data-rv-add-type="number"]'));
         const next = spy.fields.mock.calls[0][0] as RecordField[];
         expect(next).toHaveLength(4);
@@ -306,5 +309,115 @@ describe('선택지 편집', () => {
         act(() => { q('[data-rv-opt-row="a"]')!.dispatchEvent(mk('dragover')); });
         act(() => { q('[data-rv-opt-row="a"]')!.dispatchEvent(mk('drop')); });
         expect((spy.fields.mock.calls.at(-1)![0] as RecordField[])[1].options!.map((o) => o.value)).toEqual(['b', 'a']);
+    });
+});
+
+describe('하위 항목(sub-items) — 트리 UI', () => {
+    type TR = { id: string } & Record<string, unknown>;
+    function TreeHarness() {
+        const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+        const recs: TR[] = [
+            { id: 'a', f_t: '부모', __parent: null },
+            { id: 'b', f_t: '자식', __parent: 'a' },
+            { id: 'c', f_t: '끝', __parent: null },
+        ];
+        return (
+            <RecordView<TR>
+                fields={START} records={recs} getId={(r) => r.id} viewKey="t.tree" titleKey="f_t"
+                onCellChange={() => {}}
+                tree={{
+                    parentOf: (r) => (r.__parent as string | null) ?? null,
+                    collapsed: (id) => !!collapsed[id],
+                    onToggleCollapse: (id) => setCollapsed((cs) => ({ ...cs, [id]: !cs[id] })),
+                    onIndent: () => {}, onOutdent: () => {},
+                }}
+            />
+        );
+    }
+    it('부모만 접기 삼각형을 갖는다 · 잎(자식 없음)은 없다', () => {
+        mount(<TreeHarness />);
+        expect(q('[data-rv-fold="a"]')).toBeTruthy();
+        expect(q('[data-rv-fold="c"]')).toBeNull();
+        expect(q('[data-rv-fold="b"]')).toBeNull();
+    });
+    it('접으면 자손이 사라지고, 다시 펼치면 돌아온다(형제는 그대로)', () => {
+        mount(<TreeHarness />);
+        expect(q('[data-rv-row="b"]')).toBeTruthy();
+        click(q('[data-rv-fold="a"]'));
+        expect(q('[data-rv-row="b"]')).toBeNull();
+        expect(q('[data-rv-row="c"]')).toBeTruthy();
+        click(q('[data-rv-fold="a"]'));
+        expect(q('[data-rv-row="b"]')).toBeTruthy();
+    });
+    it('정렬이 걸리면 트리를 접고 평평해진다 — 자식도 접기 삼각형 없이 다 보인다', () => {
+        mount(<TreeHarness />);
+        // 제목 칸 머리 메뉴로 정렬을 건다
+        click(q('[data-rv-head-menu="f_t"]'));
+        click(q('[data-rv-sort-asc]'));
+        expect(q('[data-rv-fold="a"]')).toBeNull();     // 평평 → 접기 없음
+        expect(q('[data-rv-row="b"]')).toBeTruthy();    // 모든 행이 평평하게 보인다
+    });
+});
+
+describe('P2 — url/email/phone 셀', () => {
+    const LF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }, { key: 'f_u', label: '링크', type: 'url' }];
+    it('형식 맞으면 열기 링크(href) · 틀리면 ⚠', () => {
+        mount(
+            <RecordView<Rec>
+                fields={LF}
+                records={[{ id: 'r1', f_t: 't', f_u: 'example.com' }, { id: 'r2', f_t: 't2', f_u: 'notaurl' }]}
+                getId={(r) => r.id} viewKey="t.link" titleKey="f_t"
+                onCellChange={() => {}}
+            />,
+        );
+        const link = q('[data-rv-row="r1"] [data-rv-link]') as HTMLAnchorElement | null;
+        expect(link).toBeTruthy();
+        expect(link!.getAttribute('href')).toBe('https://example.com');
+        expect(q('[data-rv-row="r2"] [data-rv-invalid]')).toBeTruthy();
+        expect(q('[data-rv-row="r2"] [data-rv-link]')).toBeNull();
+    });
+});
+
+describe('P2 — 날짜 시각·범위 팝오버', () => {
+    const DF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }, { key: 'f_d', label: '기간', type: 'date', config: { time: true, range: true } }];
+    it('셀을 누르면 시작·종료 달력 + 시각 입력', () => {
+        mount(
+            <RecordView<Rec>
+                fields={DF}
+                records={[{ id: 'r1', f_t: 't', f_d: { start: '2026-11-08' } }]}
+                getId={(r) => r.id} viewKey="t.date" titleKey="f_t"
+                onCellChange={() => {}}
+            />,
+        );
+        click(q('[data-rv-row="r1"] [data-rv-cell="f_d"]'));
+        expect(q('[data-rv-date-start]')).toBeTruthy();
+        expect(q('[data-rv-date-end]')).toBeTruthy();
+        expect(qa('[data-dp-time]').length).toBeGreaterThanOrEqual(2);   // 시작·종료 각각
+    });
+});
+
+describe('P2 — 행 포커스에서 Tab 들여쓰기 / Shift+Tab 내어쓰기', () => {
+    const TF: RecordField[] = [{ key: 'f_t', label: '제목', type: 'text' }];
+    function treeRV(onIndent: () => void, onOutdent: () => void) {
+        return (
+            <RecordView<Rec>
+                fields={TF}
+                records={[{ id: 'a', f_t: 'a', __parent: null }, { id: 'b', f_t: 'b', __parent: null }]}
+                getId={(r) => r.id} viewKey="t.tab" titleKey="f_t"
+                onCellChange={() => {}}
+                tree={{
+                    parentOf: (r) => (r as Rec).__parent as string | null,
+                    collapsed: () => false, onToggleCollapse: () => {}, onIndent, onOutdent,
+                }}
+            />
+        );
+    }
+    it('Tab=들여쓰기 · Shift+Tab=내어쓰기 (셀 편집 아님)', () => {
+        const indent = vi.fn(); const outdent = vi.fn();
+        mount(treeRV(indent, outdent));
+        key(q('[data-rv-row="b"]')!, 'Tab');
+        expect(indent).toHaveBeenCalledTimes(1);
+        key(q('[data-rv-row="b"]')!, 'Tab', { shiftKey: true });
+        expect(outdent).toHaveBeenCalledTimes(1);
     });
 });
