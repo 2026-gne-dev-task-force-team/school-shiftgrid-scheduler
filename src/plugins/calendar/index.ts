@@ -35,7 +35,8 @@ import {
 //    🔴 저장 노드 타입 이름(calendar-subscribe.subscription)·명령 id(calendar-subscribe.*)는 **안 바꿨다** — 이미 깔린
 //       구독 노드가 그 타입으로 저장돼 있어, 이름을 바꾸면 byType 매치가 끊겨 데이터가 사라진다(유실 0 원칙).
 import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
-import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget } from './subscribe/nodes';
+import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget, SUB_TYPE } from './subscribe/nodes';
+import { SubLinkPane } from './subscribe/SubLinkPane';
 import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
 import { pickIcsText } from './subscribe/file-pick';
 
@@ -91,6 +92,8 @@ export const calendarPlugin = definePlugin({
             //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 onActivate 의 registerCalendarTypes 를 대체.
             //    🔴 구독 노드 타입(impl 'sub')도 같이 낸다 — 구독 하나 = 탐색기에 보이는 노드(subscribe/nodes).
             nodeTypes: [...calendarNodeTypes, ...subscribeNodeTypes],
+            // 구독 노드를 고르면 속성 패널에 링크 칸(쥔님 2026-11-09 — 노드 이름 자리에 링크 치던 것 대신).
+            properties: [{ target: SUB_TYPE, id: 'sub-link', title: '구독', pane: 'SubLink' }],
         },
     },
 
@@ -99,6 +102,7 @@ export const calendarPlugin = definePlugin({
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
         Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek }),
     },
+    panes: { SubLink: SubLinkPane },
     commands: {
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
         'calendar.open': (host: PluginHost) => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },

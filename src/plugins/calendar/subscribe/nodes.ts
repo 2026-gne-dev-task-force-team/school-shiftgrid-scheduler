@@ -57,7 +57,7 @@ function subMenu(id: string): MenuEntry[] {
 }
 
 /**
- * 타입 하나를 contributes.nodeTypes 로 적는다 — 보이는 노드(record 없음) · 만들 때 링크 입력(createInput) · 열면 달력 탭.
+ * 타입 하나를 contributes.nodeTypes 로 적는다 — 보이는 노드(record 없음) · 링크는 속성 패널 칸(SubLinkPane) · 열면 달력 탭.
  *   create.under: 폴더 밑(루트 포함 — 루트도 folder 타입). 달력 저장소와 같은 자리(폴더 아래 등).
  *   함수(open·menu·createInit·onInput)는 impl 'sub' 가 가리킨다.
  */
@@ -66,7 +66,7 @@ export const subscribeNodeTypes: NodeTypeContribution<'sub'>[] = [
         type: SUB_TYPE, label: '구독 캘린더', icon: 'calendar',
         openable: true,
         create: { label: '구독 캘린더', under: ['folder'] },
-        createInput: { placeholder: '구독할 달력 링크(.ics · https:// 또는 webcal://)' },
+        // 📌 createInput(이름 자리에 링크 치기) 뺐다 — 쥔님 2026-11-09 「그건 좀 아닌 것 같다」. 이름은 이름, 링크는 속성 패널(SubLinkPane).
         impl: 'sub',
     },
 ];
