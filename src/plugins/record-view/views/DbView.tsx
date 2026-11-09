@@ -10,7 +10,7 @@ import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
-import type { ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
+import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
 import { isImeEnter } from '../fields/ime';
 import { blankDb } from '../schema';
@@ -67,6 +67,7 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });
     const onCellChange = (rowId: string, key: string, value: RecordCellValue) => commit(id, { cells: [{ id: rowId, key, value }] });
+    const onCellsChange = (cells: CellChange[]) => commit(id, { cells });
     const onConvertField = (plan: ConvertPlan) =>
         commit(id, {
             fields: doc.fields.map((f) => (f.key === plan.key ? plan.field : f)),
@@ -98,6 +99,7 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
                     views={doc.views.length > 0 ? doc.views : [blankDb().views[0]]}
                     onViewsChange={onViewsChange}
                     onCellChange={onCellChange}
+                    onCellsChange={onCellsChange}
                     onAddRecord={() => { commit(id, { addRows: [{}] }); }}
                     onDeleteRecords={(ids) => commit(id, { removeRows: ids })}
                     onFieldsChange={onFieldsChange}

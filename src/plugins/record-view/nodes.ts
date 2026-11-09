@@ -26,6 +26,17 @@ export function setActiveDb(id: string | null): void {
     bump();
 }
 export function getActiveDb(): string | null { return activeDbId; }
+/** 리본 「레코드 뷰 열기」 — 보고 있는 게 없으면 나무의 첫 레코드 뷰(휴지통 안 제외)를 잡는다. 하나도 없으면 화면이 안내를 띄운다. */
+export function pickFirstDbIfNone(): void {
+    const a = api;
+    if (activeDbId || !a) return;
+    const inTrash = (id: string): boolean => {
+        for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true;
+        return false;
+    };
+    const first = a.byType(DB_TYPE).find((n) => !inTrash(n.id));
+    if (first) setActiveDb(first.id);
+}
 
 // ── 우클릭 메뉴가 가리킨 레코드 뷰 — 메뉴 항목은 commandId 만 싣는다(달력 저장소와 같은 결) ──
 let menuTargetId: string | null = null;

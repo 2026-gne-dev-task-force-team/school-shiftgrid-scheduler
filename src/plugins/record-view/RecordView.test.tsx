@@ -245,7 +245,7 @@ describe('보기 정의 저장 자리', () => {
         const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)!);
         expect(keys.filter((k) => k.includes('record-view.'))).toEqual([]);
     });
-    it('views 를 안 넘기면(연습장) localStorage 에 쓴다', () => {
+    it('views 를 안 넘기면(보기를 손님이 안 쥐면) localStorage 에 쓴다', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: 'a' }]} spy={spy} />);
         click(q('[data-rv-head-menu="f_x"]'));
