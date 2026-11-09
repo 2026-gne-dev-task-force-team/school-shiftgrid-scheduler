@@ -11,7 +11,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import { notifyBlocksRemoved } from '../removed';
-import { pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
+import { createChildPage, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
@@ -246,6 +246,14 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         setSlash(null);
         // `/` 로 시작하던 글자를 지우고 그 종류로.
         const cleared = setText(pageRef.current, id, '');
+        if (type === 'childpage') {
+            // 하위 페이지 — 이 페이지 밑에 새 페이지를 만들고 이 줄을 그 링크 블록으로 바꾼다
+            const cid = createChildPage(activeId);
+            if (!cid) { commitPage(cleared); setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); return; }
+            commitPage({ ...cleared, blocks: cleared.blocks.map((b) => b.id === id ? { id, type: 'childpage' as const, text: '', nodeId: cid } : b) });
+            setActiveBlockId(null);
+            return;
+        }
         const next = changeType(cleared, id, type);
         commitPage(next);
         if (type === 'table' || type === 'node') { setActiveBlockId(null); }
@@ -272,7 +280,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
 
         // `/` 메뉴가 떠 있으면 그 키를 먼저 쓴다.
         if (slash && slash.blockId === block.id && !isComposing) {
-            const items = filterSlash(slash.query);
+            const items = filterSlash(slash.query, !!syncBlocks);
             if (e.key === 'ArrowDown') { e.preventDefault(); setSlash({ ...slash, index: Math.min(slash.index + 1, Math.max(0, items.length - 1)) }); return; }
             if (e.key === 'ArrowUp') { e.preventDefault(); setSlash({ ...slash, index: Math.max(slash.index - 1, 0) }); return; }
             if (e.key === 'Enter') { e.preventDefault(); const it = items[slash.index]; if (it) pickSlash(block.id, it.type); return; }
@@ -633,6 +641,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                                 onNodePick={onNodePick}
                                 selfId={activeId}
                                 onPickSlash={pickSlash}
+                                canChildPage={!!syncBlocks}
                                 onDelete={onDelete}
                                 onDuplicate={onDuplicate}
                                 onMoveBy={onMoveBy}
@@ -684,6 +693,7 @@ interface RowProps {
     onNodePick: (id: string, nodeId: string) => void;
     selfId: string;
     onPickSlash: (id: string, type: BlockType) => void;
+    canChildPage: boolean;
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
     onMoveBy: (id: string, delta: number) => void;
@@ -774,7 +784,7 @@ function BlockRow(props: RowProps) {
             <div className="min-w-0 py-0.5" style={indentPad}>
                 {renderContent(props)}
                 {slash && (
-                    <SlashMenu items={filterSlash(slash.query)} active={slash.index} onPick={(type) => props.onPickSlash(block.id, type)} />
+                    <SlashMenu items={filterSlash(slash.query, props.canChildPage)} active={slash.index} onPick={(type) => props.onPickSlash(block.id, type)} />
                 )}
             </div>
         </div>

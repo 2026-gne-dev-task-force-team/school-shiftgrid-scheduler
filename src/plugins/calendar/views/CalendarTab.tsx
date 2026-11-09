@@ -13,7 +13,8 @@
 import { setLeafGlyph, setLeafTitle, type PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
 import { Icon, useFrameToolbar, useNarrow, type PeekHandle } from '../../../pane-ui-system';
-import { getNodesApi } from '../nodes';
+import { getNodesApi, getDeletedEvents, restoreEvent, subscribeNodes } from '../nodes';
+import { Button, Popover } from '../../../pane-ui-system';
 import { CalBarHost } from './CalBar';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
@@ -26,6 +27,34 @@ import { visibleModes, resolveMode, type Mode } from '../modes';
 import { selectionLabel, type CalSelection } from '../selection';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
+
+/** 「지운 일정」 — 8초 알림을 놓쳐도 여기서 되살린다(일정은 탐색기 휴지통에 안 보인다). 없으면 단추도 없다. */
+function DeletedEvents() {
+    const [, bump] = useState(0);
+    const [anchor, setAnchor] = useState<DOMRect | null>(null);
+    useEffect(() => subscribeNodes(() => bump((x) => x + 1)), []);
+    const list = getDeletedEvents();
+    if (list.length === 0) return null;
+    return (
+        <>
+            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="지운 일정 되살리기">
+                <Icon name="trash" size={13} /> 지운 일정 {list.length}
+            </Button>
+            {anchor && (
+                <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
+                    <div className="flex flex-col max-h-72 overflow-auto">
+                        {list.map((n) => (
+                            <div key={n.id} data-cal-deleted-row={n.id} className="flex items-center gap-2 px-2 h-row">
+                                <span className="flex-1 min-w-0 truncate text-small">{n.name || '제목 없음'}</span>
+                                <Button size="sm" variant="accent" data-cal-restore={n.id} onClick={() => { restoreEvent(n.id); if (list.length <= 1) setAnchor(null); }}>되살리기</Button>
+                            </div>
+                        ))}
+                    </div>
+                </Popover>
+            )}
+        </>
+    );
+}
 
 export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: PluginHost; leafId?: string }) {
     const [mode, setMode] = useState<Mode>('month');
@@ -84,6 +113,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
                     </button>
                 </span>
             )}
+            <DeletedEvents />
             <div role="tablist" aria-label="보기 전환" className="flex items-center rounded border border-line overflow-hidden">
                 {modes.map((m) => (
                     <button

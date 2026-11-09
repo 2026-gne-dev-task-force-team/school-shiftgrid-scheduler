@@ -108,7 +108,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             undoStack.current.push(entry);
             redoStack.current = [];
             const nr = out.rows?.remove?.length ?? 0, nc = out.cols?.remove?.length ?? 0;
+            const nm = out.merge?.clear?.length ?? 0;
             if (onRemoved && (nr || nc)) onRemoved(nr ? '행' : '열', nr || nc, internalUndo, () => undoStack.current.at(-1) === entry);
+            else if (onRemoved && nm && !out.merge?.set?.length) onRemoved('병합', nm, internalUndo, () => undoStack.current.at(-1) === entry);
         }
         onCommit(out);
     };
