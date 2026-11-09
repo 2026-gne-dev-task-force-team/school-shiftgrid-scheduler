@@ -4,7 +4,7 @@
  *   Enter = 만들기 · Esc = 닫기(Dialog) · 이름 칸 자동 초점 · 빈칸·아이디 중복은 칸 아래 메시지.
  *   🔴 비밀번호는 이 폼 상태에만 잠깐 있다가 엔진(증명 부품)으로 넘어간다 — 알림·칸 값에 안 남긴다.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, Dialog, Select, TextInput, Toggle } from '../../../pane-ui-system';
 import { createUserWithLogin, credentialMethods } from '../core';
@@ -18,6 +18,9 @@ export function NewUserDialog({ onClose, onCreated }: { onClose: () => void; onC
     const [active, setActive] = useState(true);
     const [msg, setMsg] = useState('');
     const [busy, setBusy] = useState(false);
+    // 🔴 Dialog 가 열릴 때 제 틀에 초점을 주므로(부모 effect 가 자식 autoFocus 뒤에 돈다) 한 박자 뒤에 이름 칸으로 옮긴다
+    const formRef = useRef<HTMLFormElement>(null);
+    useEffect(() => { const t = setTimeout(() => formRef.current?.querySelector('input')?.focus()); return () => clearTimeout(t); }, []);
 
     const submit = async (e?: FormEvent) => {
         e?.preventDefault();
@@ -43,7 +46,7 @@ export function NewUserDialog({ onClose, onCreated }: { onClose: () => void; onC
                     <Button variant="accent" size="sm" disabled={busy} onClick={() => submit()} data-acc-create>만들기</Button>
                 </>
             )}>
-            <form onSubmit={submit}
+            <form ref={formRef} onSubmit={submit}
                 // Enter = 만들기(입력 칸에서 · 한글 조합 중 Enter 는 넘긴다)
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.target instanceof HTMLInputElement) { e.preventDefault(); void submit(); } }}
                 className="flex flex-col gap-2 text-small text-text" data-acc-new-user>
