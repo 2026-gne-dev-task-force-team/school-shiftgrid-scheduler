@@ -12,7 +12,7 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
-import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { Icon, useFrameToolbar, useNarrow, type PeekHandle } from '../../../pane-ui-system';
 import { getNodesApi } from '../nodes';
 import { CalBarHost } from './CalBar';
 import { MonthView } from './MonthView';
@@ -33,7 +33,8 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     const [anchor, setAnchor] = useState<Date>(() => new Date());
     // 🔴 「범위 선택」의 단일 진실 — 모드를 바꿔도 남는다(쥔님 2026-11-02 *"선택할 수 있게 해줘 … 모든 뷰다"*). ⛔ 저장 안 함.
     const [selection, setSelection] = useState<CalSelection>(null);
-    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(저장소 범위일 때만 쓴다)
+    const bar = useFrameToolbar();   // Frame 툴바 자리 — 저장소 범위든 전체 달력이든 같은 자리
+    const narrow = useNarrow();      // 좁은 화면 — 아래 독(하단 바)이 마지막 줄을 안 가리게 본문 아래를 비운다
     const scope = useScope();
     const { stores } = useCalendarData();
     const scopeStore = scope ? stores.get(scope) : null;
@@ -112,11 +113,32 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
         default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
     } })();
     // 저장소를 열었으면 다른 노드 화면과 같은 틀(경로·큰 머리) + 「전체」로 되돌리기(쥔님 2026-11-02 범위 · 2026-11-09 얼굴 통일 · Q5 R1).
-    if (!scopeStore || !Frame) return view;
+    // 🔴 전체 달력도 같은 머리(아이콘+제목 한 줄, data-nf-header)를 단다 — 노드가 없어 Frame 은 못 쓰니 같은 꼴을 AllCalendarHead 가 낸다(R6-4).
+    //    좁은 화면은 아래 독 높이만큼(pb-16, 다른 노드 화면과 같은 값) 비운다(R6-S14).
+    const padBottom = narrow ? 'pb-16' : '';
+    const body = <CalBarHost.Provider value={bar.host}><div className="h-full">{view}</div></CalBarHost.Provider>;
+    if (scopeStore && Frame) {
+        return (
+            <div className={`h-full ${padBottom}`}>
+                <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체" toolbar={bar.slot}
+                    fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
+                    {body}
+                </Frame>
+            </div>
+        );
+    }
     return (
-        <Frame nodeId={scopeStore.id} onBack={() => setScope(null)} backLabel="전체" toolbar={<div ref={setBarHost} />}
-            fallback={<Icon name="folder" size={22} className="shrink-0 text-muted" />}>
-            <CalBarHost.Provider value={barHost}><div className="h-full">{view}</div></CalBarHost.Provider>
-        </Frame>
+        <div className={`h-full flex flex-col min-h-0 ${padBottom}`}>
+            <div data-slot="head" className="shrink-0 w-full px-6 pt-3">
+                <div data-nf-header className="flex items-center gap-3 w-full min-w-0 pb-2">
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5 h-10">
+                        <Icon name="calendar" size={22} className="shrink-0 text-muted" />
+                        <h1 className="px-1 truncate text-text text-2xl font-bold leading-tight tracking-tight">전체 달력</h1>
+                    </div>
+                </div>
+            </div>
+            <div data-slot="toolbar" className="shrink-0">{bar.slot}</div>
+            <div className="flex-1 min-h-0">{body}</div>
+        </div>
     );
 }

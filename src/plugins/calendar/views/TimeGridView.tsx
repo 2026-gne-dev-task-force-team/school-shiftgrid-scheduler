@@ -12,6 +12,7 @@
  *   trailing: 머리줄 오른쪽 끝에 그대로 그린다 — 메인이 전환 단추를 여기 꽂는다.
  */
 import { CalBar } from './CalBar';
+import { DayLabel } from './DayLabel';
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { ContextMenu, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
@@ -60,7 +61,7 @@ const DayHeader = memo(function DayHeader(
     const d = dayAt(offset);
     const iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
     const isToday = iso === todayIso;
-    const label = d.getDate() === 1 ? `${d.getMonth() + 1}월 1일` : d.getDate();
+    const label = <DayLabel month={d.getMonth() + 1} day={d.getDate()} />;
     return (
         <div
             className={`absolute top-0 flex flex-col select-none overflow-hidden ${boundaryBorderClass(boundary)}`}
@@ -79,7 +80,7 @@ const DayHeader = memo(function DayHeader(
             <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
                 <span className="text-[11px] text-muted">{WEEKDAYS[d.getDay()]}</span>
                 {isToday ? (
-                    <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums">{label}</span>
+                    <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums whitespace-nowrap">{label}</span>
                 ) : (
                     <span className="leading-6 text-[13px] text-text tabular-nums">{label}</span>
                 )}
