@@ -5,7 +5,7 @@
  *   ⭐ W8 — 「로그아웃」은 명령 account.logout 하나를 부른다(명령 팔레트와 같은 길). 손님엔 숨김.
  *   Enter = 제출 · Esc = 닫기(팝오버) · 입력 칸은 열리면 바로 초점.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Button, Popover, Select, TextInput } from '../../../pane-ui-system';
@@ -30,6 +30,12 @@ export function AccountStatus({ host }: { host: PluginHost }) {
     const [target, setTarget] = useState<{ userId: string; name: string } | null>(null);
     const [msg, setMsg] = useState('');
     const [busy, setBusy] = useState(false);
+
+    // 🔴 화면(메뉴→아이디→설정)·메시지로 팝오버 키가 바뀌면 자리를 다시 잰다 — 상태바 단추 위로 접혀 화면 밖으로 안 나가게
+    //    (Popover 는 anchor 가 바뀔 때만 다시 재므로 새 사각형을 건넨다 · anchor 를 deps 에 안 넣어 되먹임이 없다)
+    useEffect(() => {
+        setAnchor((a) => (a && btnRef.current ? btnRef.current.getBoundingClientRect() : a));
+    }, [view, msg]);
 
     const cur = getCurrent();
     const isMaster = cur.kind === 'master';
