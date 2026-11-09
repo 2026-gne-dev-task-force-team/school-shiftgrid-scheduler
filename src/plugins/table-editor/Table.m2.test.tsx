@@ -36,7 +36,7 @@ function applyTx(
     if (tx.cols?.remove) cols = cols.filter((c) => !tx.cols!.remove!.includes(c.key));
     for (const rn of tx.cols?.rename ?? []) { const col = cols.find((c) => c.key === rn.key); if (col) col.title = rn.title; }
     for (const rz of tx.cols?.resize ?? []) { const col = cols.find((c) => c.key === rz.key); if (col) col.width = rz.width; }
-    for (const w of tx.axis?.rowWeight ?? []) { const row = rows.find((r) => r.id === w.id); if (row) row.weight = (row.weight ?? 28) + w.delta; }
+    for (const w of tx.axis?.rowWeight ?? []) { const row = rows.find((r) => r.id === w.id); if (row) row.weight = (row.weight ?? 24) + w.delta; }
     for (const s of tx.merge?.set ?? []) { merges = merges.filter((m) => !(m.rowId === s.rowId && m.key === s.key)); merges.push({ ...s }); }
     for (const cl of tx.merge?.clear ?? []) merges = merges.filter((m) => !(m.rowId === cl.rowId && m.key === cl.key));
 

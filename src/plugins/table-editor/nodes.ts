@@ -23,8 +23,9 @@ const SHEET_ID = 'table-editor.sheet';
 
 /** 표 노드에 저장되는 문서 — 열·줄·병합 + 노션식 머리·색. */
 export interface TableDoc {
-    cols: { key: string; title: string }[];
-    rows: { id: string; cells: Record<string, string> }[];
+    cols: { key: string; title: string; width?: number }[];
+    /** weight = 행 높이(px) — 없으면 기본 높이(ROW_H). */
+    rows: { id: string; cells: Record<string, string>; weight?: number }[];
     merges: MergeRegion[];
     headerRow?: boolean;
     headerCol?: boolean;
@@ -34,6 +35,9 @@ export interface TableDoc {
     rowTones?: Record<string, CellTone>;
     colTones?: Record<string, CellTone>;
 }
+
+/** 칸 기본 높이(px) — Table 의 h-6 과 같다. 행 높이 끌기는 여기서부터 더한다. */
+export const ROW_H = 24;
 
 let docSeq = 0;
 function nid(prefix: string): string { return `${prefix}${Date.now().toString(36)}${docSeq++}`; }
@@ -69,6 +73,8 @@ export function applyTx(doc: TableDoc, tx: TableTx): TableDoc {
         const i = cols.findIndex((c) => c.key === m.key);
         if (i >= 0) { const [col] = cols.splice(i, 1); cols.splice(Math.min(m.to, cols.length), 0, col); }
     }
+    for (const rz of tx.cols?.resize ?? []) { const col = cols.find((c) => c.key === rz.key); if (col) col.width = rz.width || undefined; }   // 0 = 되돌리기가 「원래 없음」으로 돌려준 값
+    for (const w of tx.axis?.rowWeight ?? []) { const row = rows.find((r) => r.id === w.id); if (row) row.weight = (row.weight ?? ROW_H) + w.delta; }
     for (const s of tx.merge?.set ?? []) { merges = merges.filter((m) => !(m.rowId === s.rowId && m.key === s.key)); merges.push({ ...s }); }
     for (const cl of tx.merge?.clear ?? []) merges = merges.filter((m) => !(m.rowId === cl.rowId && m.key === cl.key));
 

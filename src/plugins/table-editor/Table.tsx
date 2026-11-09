@@ -708,7 +708,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         {hasRowWeight && (
                                             <span
                                                 data-testid="row-weight"
-                                                onMouseDown={(e) => beginWeight(e, row.id, heightOf(row) ?? 28)}
+                                                onMouseDown={(e) => beginWeight(e, row.id, heightOf(row) ?? 24)}
                                                 title="끌어서 줄 높이 조절"
                                                 className="absolute left-0 bottom-0 w-full h-1 cursor-row-resize hover:bg-accent/40"
                                             />

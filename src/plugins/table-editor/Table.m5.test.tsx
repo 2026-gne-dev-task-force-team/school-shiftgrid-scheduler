@@ -130,6 +130,25 @@ describe('Table M5 — 넘버스 얼굴', () => {
         expect(ref.current!.doc().cols).toHaveLength(3);
     });
 
+    it('M5c — 끌어 바꾼 열 너비·행 높이가 문서에 남고, ⌘Z 로 원래(없음)로 돌아간다', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4()} features={['rows', 'axis-edit', 'col-resize', 'row-weight', 'history']} />);
+        const drag = (el: Element, from: MouseEventInit, to: MouseEventInit) => {
+            act(() => { el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ...from })); });
+            act(() => { window.dispatchEvent(new MouseEvent('mousemove', to)); });
+            act(() => { window.dispatchEvent(new MouseEvent('mouseup', to)); });
+        };
+        drag(q('col-resize')!, { clientX: 100 }, { clientX: 160 });
+        expect(ref.current!.doc().cols[0].width).toBe(180);            // 120 + 60
+        drag(q('row-weight')!, { clientY: 100 }, { clientY: 121 });
+        expect(ref.current!.doc().rows[0].weight).toBe(45);            // 24 + 21 → 5 단위 스냅
+        act(() => ref.current!.h().focus());
+        key('z', { metaKey: true });
+        key('z', { metaKey: true });
+        expect(ref.current!.doc().rows[0].weight).toBe(24);
+        expect(ref.current!.doc().cols[0].width).toBeUndefined();      // 0 이 아니라 「없음」
+    });
+
     it('맨 아랫줄에서 Enter 면 행이 붙고 커서가 그리로 내려간다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);

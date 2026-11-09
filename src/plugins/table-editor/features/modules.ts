@@ -119,9 +119,9 @@ export const BUILTIN: Record<string, TableFeature> = {
 /**
  * 기본 묶음 — 아무것도 안 적으면 이게 끼워진다(「설정 몰라도 바로」).
  *   ⭐ M5(2026-11-09 쥔님 「노션 취소 → 넘버스」): 넘버스 새 표가 주는 것 — 행·열 늘리기·열 폭·합치기·머리 고정
- *     + 채우기(노란 점)·합계 바·표 스타일. ⛔ 체크칸·검증·행 높이는 손님이 켠다.
+ *     + 채우기(노란 점)·합계 바·표 스타일. ⛔ 체크칸·검증은 손님이 켠다. 행 높이는 M5c(쥔님 「행크기 열크기 유지 안돼」)에 기본으로 올렸다.
  */
 export const DEFAULT_FEATURES: string[] = [
     'rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:append', 'history',
-    'fill', 'quick-calc', 'table-style',
+    'fill', 'quick-calc', 'table-style', 'row-weight',
 ];
