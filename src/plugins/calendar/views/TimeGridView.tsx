@@ -81,7 +81,7 @@ const DayHeader = memo(function DayHeader(
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5">
                 <span className="text-[11px] text-muted">{WEEKDAYS[d.getDay()]}</span>
                 {isToday ? (
-                    <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-[13px] font-semibold tabular-nums whitespace-nowrap">{label}</span>
+                    <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-body font-semibold tabular-nums whitespace-nowrap">{label}</span>
                 ) : (
                     <span className="leading-6 text-[13px] text-text tabular-nums">{label}</span>
                 )}
@@ -89,11 +89,11 @@ const DayHeader = memo(function DayHeader(
             {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
-                    <div key={e.id} data-event-id={e.id} className={`min-w-0 flex-1 truncate rounded px-1 text-[10px] leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
+                    <div key={e.id} data-event-id={e.id} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
                         {e.name || '새 일정'}
                     </div>
                 ))}
-                {allDay.length > 1 && <span className="shrink-0 text-[10px] text-muted tabular-nums">+{allDay.length - 1}</span>}
+                {allDay.length > 1 && <span className="shrink-0 text-micro text-muted tabular-nums">+{allDay.length - 1}</span>}
             </div>
         </div>
     );
