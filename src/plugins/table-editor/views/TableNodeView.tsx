@@ -7,13 +7,12 @@
 import { useSyncExternalStore } from 'react';
 import { Icon } from '../../../pane-ui-system';
 import { Table } from '../Table';
+import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
 import { useActiveTable, setActiveTable } from '../store';
 import { subscribeTableNodes, getTableRev, tableNodeOf, docOf, writeDoc, applyTx, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 
-// 노션 단순 표 묶음 — 행·열 늘리고 줄이기·열 폭·칸 합치기·머리 고정. (체크칸·검증·행 높이는 뺀다.)
-const FEATURES = ['rows', 'axis-edit', 'col-resize', 'merge', 'sticky-headers', 'paste-policy:append', 'history'];
 
 export function TableNodeView() {
     const activeId = useActiveTable();
@@ -54,13 +53,17 @@ export function TableNodeView() {
                     columns={doc.cols}
                     rows={doc.rows}
                     merges={doc.merges}
-                    features={FEATURES}
+                    features={DEFAULT_FEATURES}
                     hideColHeader
                     headerRow={doc.headerRow}
                     headerCol={doc.headerCol}
                     decorate={decorate}
                     onSetHeaderRow={(v) => writeDoc(activeId, { ...doc, headerRow: v })}
                     onSetHeaderCol={(v) => writeDoc(activeId, { ...doc, headerCol: v })}
+                    footerRow={doc.footerRow}
+                    onSetFooterRow={(v) => writeDoc(activeId, { ...doc, footerRow: v })}
+                    tableStyle={doc.style}
+                    onSetTableStyle={(st) => writeDoc(activeId, { ...doc, style: st })}
                     onColor={setTone}
                     onCommit={(tx) => writeDoc(activeId, applyTx(docOf(activeId), tx))}
                 />

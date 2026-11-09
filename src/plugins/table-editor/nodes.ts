@@ -13,7 +13,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../project-explorer/contracts/nodes';
 import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
-import type { CellTone, MergeRegion, TableTx } from './contracts/table';
+import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
 
 export const TABLE_TYPE = 'table-editor.table';
@@ -28,6 +28,9 @@ export interface TableDoc {
     merges: MergeRegion[];
     headerRow?: boolean;
     headerCol?: boolean;
+    /** M5 넘버스 — 꼬리 행 · 표 스타일 프리셋. */
+    footerRow?: boolean;
+    style?: TableStylePreset;
     rowTones?: Record<string, CellTone>;
     colTones?: Record<string, CellTone>;
 }
@@ -35,11 +38,11 @@ export interface TableDoc {
 let docSeq = 0;
 function nid(prefix: string): string { return `${prefix}${Date.now().toString(36)}${docSeq++}`; }
 
-/** 빈 표 — 3×3, 머리 행 켬(노션 단순 표의 처음 꼴). */
+/** 빈 표 — 3×3, 머리 행·머리 열 켬(넘버스 기본 표). */
 export function blankTable(): TableDoc {
     const cols = [0, 1, 2].map((i) => ({ key: nid('c'), title: `칸 ${i + 1}` }));
     const rows = [0, 1, 2].map(() => ({ id: nid('r'), cells: {} as Record<string, string> }));
-    return { cols, rows, merges: [], headerRow: true };
+    return { cols, rows, merges: [], headerRow: true, headerCol: true };   // 넘버스 기본 표 = 머리 행 + 머리 열
 }
 
 /** 트랜잭션을 문서에 적용(순수) — 소유자(이 다리)가 할 일. 편집기는 데이터를 안 들고 있다. */

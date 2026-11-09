@@ -36,6 +36,7 @@ export interface SheetCore {
     beginDrag: (r: number, c: number, e: { button: number; shiftKey: boolean }) => void;
     onCellEnter: (r: number, c: number) => void;
     startFill: () => void;
+    beginExtend: () => void;
     handle: SheetCoreHandle;
 }
 
@@ -245,6 +246,15 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (meta && (k === 'v' || k === 'V')) { e.preventDefault(); e.stopPropagation(); return; } // paste 이벤트가 처리
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); impl.current.fillDown(selRef.current.r2); return; }
             if (meta && (k === 'a' || k === 'A')) { e.preventDefault(); e.stopPropagation(); setAnchorState({ r: 0, c: 0 }); setActiveState({ r: Math.max(0, a.dataRowCount - 1), c: a.colCount - 1 }); return; }
+            // M5 넘버스 — Alt+↑/↓ 위·아래에 행, Alt+←/→ 왼·오른쪽에 열을 넣는다.
+            if (e.altKey && !meta && a.insert && k.startsWith('Arrow')) {
+                e.preventDefault(); e.stopPropagation();
+                if (k === 'ArrowUp') a.insert('row', act.r);
+                else if (k === 'ArrowDown') a.insert('row', act.r + 1);
+                else if (k === 'ArrowLeft') a.insert('col', act.c);
+                else if (k === 'ArrowRight') a.insert('col', act.c + 1);
+                return;
+            }
             // 격자가 안 쓰는 단축키(Ctrl+S 등)는 껍데기로 흘려보낸다
             if (meta || e.altKey || (/^F\d+$/.test(k) && k !== 'F2')) return;
             e.stopPropagation();
@@ -257,6 +267,11 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 e.preventDefault();
                 // 엑셀식 — Enter 확정+아래, Shift+Enter 위(편집창 밖에서는 이동만). toggle 칸은 편집 시작.
                 if (a.cellKind(act.r, act.c) === 'toggle') impl.current.beginEdit(act.r, act.c);
+                else if (!e.shiftKey && a.insert && act.r === a.dataRowCount - 1) {
+                    // 넘버스 — 맨 아랫줄에서 Enter 면 행을 더하고 내려간다. flushSync 로 새 행이 그려진 뒤 이동(clamp 가 새 줄 수를 본다).
+                    flushSync(() => a.insert!('row', a.dataRowCount));
+                    impl.current.moveTo(act.r + 1, act.c);
+                }
                 else impl.current.moveTo(act.r + (e.shiftKey ? -1 : 1), act.c);
                 return;
             }
@@ -311,6 +326,15 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         else if (dragRef.current) setActiveState({ r, c });
     }, []);
 
+    /** M5 넘버스 흰 점 — 지금 범위의 왼쪽 위를 닻으로 두고, 끄는 대로 오른쪽 아래(active)를 늘린다. */
+    const beginExtend = useCallback(() => {
+        const s = selRef.current;
+        focusedRef.current = true;
+        setAnchorState({ r: s.r1, c: s.c1 });
+        setActiveState({ r: s.r2, c: s.c2 });
+        dragRef.current = true;
+    }, []);
+
     const startFill = useCallback(() => {
         fillRef.current = true;
         setFillTo(selRef.current.r2);
@@ -361,6 +385,6 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
     return {
         active, anchor, sel, edit, fillTo, fillActiveRef: fillRef, containerRef,
         inSel, setEditText, beginEdit, commitEdit, cancelEdit, moveTo, setActive, setAnchor,
-        focusGrid, markFocused, onFocus, onBlur, beginDrag, onCellEnter, startFill, handle,
+        focusGrid, markFocused, onFocus, onBlur, beginDrag, onCellEnter, startFill, beginExtend, handle,
     };
 }

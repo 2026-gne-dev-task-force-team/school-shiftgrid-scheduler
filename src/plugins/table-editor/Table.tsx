@@ -18,7 +18,9 @@ import { useSheetCore } from './core/useSheetCore';
 import type { CellChange, CommitSource, SheetCoreAdapter, SheetCoreHandle } from './core/types';
 import type {
     CellChange as TxCellChange, CellTone, HeaderMenuEntry, TableCapability, TableColumn, TableProps, TableRow, TableState, TableTx,
+    TableStylePreset,
 } from './contracts/table';
+import { quickCalc, fmtNum } from './core/quickcalc';
 import { buildConfig } from './features/install';
 import { DEFAULT_FEATURES } from './features/modules';
 import { lookupFeature } from './features/registry';
@@ -54,6 +56,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -69,7 +72,12 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const hasColTypes = has('col-types');
     const hasValidate = has('validate');
     const hasMerge = has('merge');
+    const hasQuickCalc = has('quick-calc');
+    const preset: TableStylePreset = has('table-style') ? tableStyle ?? 'basic' : 'basic';
     const historyOwned = !onUndo && has('history');
+    // 머리 행·꼬리 행(넘버스) — 채우기 씨앗·합계 바에서 뺀다. 꼬리는 줄이 둘 이상일 때만.
+    const isHeadRow = (r: number): boolean => !!headerRow && r === 0;
+    const isFootRow = (r: number): boolean => !!footerRow && rows.length > 1 && r === rows.length - 1;
 
     // 내장 되돌리기 스택(역트랜잭션) — 소유자가 undo 를 안 쥘 때만 선다.
     const undoStack = useRef<TableTx[]>([]);
@@ -111,7 +119,13 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
 
     /** 엔진의 (r,c) 커밋 → TableTx. 넘치는 행은 붙여넣기 정책/rows 능력에 따라 행 추가 또는 버림. */
-    const handleCommit = (changes: CellChange[], source: CommitSource): void => {
+    const handleCommit = (input: CellChange[], source: CommitSource): void => {
+        let changes = input;
+        if (source === 'fill') {
+            // 넘버스 — 머리·꼬리 칸은 채우기 씨앗이 못 되고 채워지지도 않는다.
+            if (isHeadRow(core.sel.r1) || isFootRow(core.sel.r1)) return;
+            changes = changes.filter((ch) => !isHeadRow(ch.r) && !isFootRow(ch.r));
+        }
         const cells: TxCellChange[] = [];
         const overflow = new Map<number, Record<string, string>>();
         for (const ch of changes) {
@@ -163,6 +177,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         toggle: toggleCell,
         onUndo: onUndo ?? (historyOwned ? internalUndo : undefined),
         onRedo: onRedo ?? (historyOwned ? internalRedo : undefined),
+        insert: hasRows ? (axis, at) => {
+            if (axis === 'row') insertRow(at);
+            else if (hasAxisEdit) addColAt(at);
+        } : undefined,
     };
 
     const core = useSheetCore(adapter);
@@ -191,7 +209,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const mergeMap = buildMergeMap(merges, rows, columns);
 
     // ── 행·열 조작 ────────────────────────────────────────────
-    const addRowAtEnd = (): void => emit({ cells: [], rows: { add: [{ at: rows.length, count: 1, cells: [{}], ids: genIds(1) }] }, source: 'menu' }, false);
     const insertRow = (at: number): void => emit({ cells: [], rows: { add: [{ at, count: 1, cells: [{}], ids: genIds(1) }] }, source: 'menu' }, false);
     const removeRow = (id: string): void => emit({ cells: [], rows: { remove: [id] }, source: 'menu' }, false);
     const moveRow = (id: string, to: number): void => emit({ cells: [], rows: { move: [{ id, to }] }, source: 'drag' }, false);
@@ -352,9 +369,54 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
     // ── 손잡이·+막대 띄우기(표에 마우스가 올라왔을 때) ────────
     const [hoverTable, setHoverTable] = useState(false);
-    // 지금 마우스가 올라와 있는 칸(r,c) — 손잡이는 그 줄/칸에만 뜬다(노션식 · 덩어리 막대 ⛔).
-    const [hoverRC, setHoverRC] = useState<{ r: number; c: number } | null>(null);
-    const leaveTable = (): void => { setHoverTable(false); setHoverRC(null); };
+    const leaveTable = (): void => { setHoverTable(false); };
+    // 넘버스 — 참조 탭(A,B,C · 1,2,3)·표 손잡이는 표에 포커스가 있을 때만 뜬다.
+    const [focused, setFocused] = useState(false);
+    const [hoverTab, setHoverTab] = useState<number | null>(null);   // ▾ 는 마우스가 올라온 열 탭에만
+
+    // ── 둥근 추가 단추 — 누르면 1개, 끌면 끈 만큼 여러 개(한 tx = undo 1) ──
+    const ROW_STEP = 36, COL_STEP = 120;
+    const [addDrag, setAddDrag] = useState<{ axis: 'row' | 'col'; start: number; n: number } | null>(null);
+    const addDragRef = useRef(addDrag); addDragRef.current = addDrag;
+    const draggedAdd = useRef(false);   // 끌어서 이미 더했으면 뒤따르는 click 을 삼킨다
+    const addMany = (axis: 'row' | 'col', n: number): void => {
+        if (axis === 'row') {
+            emit({ cells: [], rows: { add: [{ at: rows.length, count: n, cells: Array.from({ length: n }, () => ({})), ids: genIds(n) }] }, source: 'drag' }, false);
+        } else {
+            const add = Array.from({ length: n }, (_, i) => ({ at: columns.length + i, key: genColKey(), title: lb.addCol }));
+            emit({ cells: [], cols: { add }, source: 'drag' }, false);
+        }
+    };
+    const beginAddDrag = (e: React.MouseEvent, axis: 'row' | 'col'): void => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        draggedAdd.current = false;
+        setAddDrag({ axis, start: axis === 'row' ? e.clientY : e.clientX, n: 1 });
+    };
+    useEffect(() => {
+        if (!addDrag) return;
+        const move = (e: MouseEvent): void => {
+            const d = addDragRef.current; if (!d) return;
+            const delta = (d.axis === 'row' ? e.clientY : e.clientX) - d.start;
+            const n = Math.max(1, 1 + Math.floor(delta / (d.axis === 'row' ? ROW_STEP : COL_STEP)));
+            if (n !== d.n) setAddDrag({ ...d, n });
+        };
+        const up = (e: MouseEvent): void => {
+            const d = addDragRef.current;
+            setAddDrag(null);
+            if (!d) return;
+            const moved = Math.abs((d.axis === 'row' ? e.clientY : e.clientX) - d.start) > 4;
+            if (moved) { draggedAdd.current = true; addMany(d.axis, d.n); }
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [addDrag?.axis]);
+    const clickAdd = (axis: 'row' | 'col'): void => {
+        if (draggedAdd.current) { draggedAdd.current = false; return; }
+        addMany(axis, 1);
+    };
 
     // ── 머리 메뉴(손잡이) + 셀 우클릭 메뉴 ────────────────────
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
@@ -377,6 +439,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 { label: lb.dupCol, onClick: () => duplicateCol(idx) },
             );
             if (!hideColHeader) items.push({ label: lb.renameCol, onClick: () => setRenaming({ key, text: columns[idx]?.title ?? '' }) });
+            if (hasColResize) items.push({ label: '너비를 내용에 맞춤', onClick: () => autoFitCol(key) });
             items.push({ label: lb.clearCol, onClick: () => clearCol(key) });
             if (idx === 0 && onSetHeaderCol) items.push({ label: headerCol ? lb.headerColOff : lb.headerColOn, onClick: () => onSetHeaderCol(!headerCol) });
             items.push(...colorItems('col', key));
@@ -404,6 +467,23 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         items.push(...domainEntries('row', id));
         if (items.length) setMenu({ x: e.clientX, y: e.clientY, items });
     };
+    /** 표 손잡이(왼쪽 위) 메뉴 — 표 스타일 · 머리 행/열 · 꼬리 행(넘버스 「표」 탭의 작은 판). */
+    const STYLE_LABEL: Record<TableStylePreset, string> = { basic: '기본', lined: '가로선', striped: '줄무늬', headed: '머리 강조' };
+    const openTableMenu = (e: React.MouseEvent): void => {
+        e.preventDefault(); e.stopPropagation();
+        const items: MenuItem[] = [];
+        if (has('table-style') && onSetTableStyle) {
+            for (const p of Object.keys(STYLE_LABEL) as TableStylePreset[]) {
+                items.push({ label: `${p === preset ? '✓ ' : '　'}스타일: ${STYLE_LABEL[p]}`, onClick: () => onSetTableStyle(p) });
+            }
+        }
+        if (onSetHeaderRow) items.push({ label: headerRow ? lb.headerRowOff : lb.headerRowOn, onClick: () => onSetHeaderRow(!headerRow) });
+        if (onSetHeaderCol) items.push({ label: headerCol ? lb.headerColOff : lb.headerColOn, onClick: () => onSetHeaderCol(!headerCol) });
+        if (onSetFooterRow) items.push({ label: footerRow ? '꼬리 행 끄기' : '꼬리 행 켜기', onClick: () => onSetFooterRow(!footerRow) });
+        if (items.length) setMenu({ x: e.clientX, y: e.clientY, items });
+    };
+    const selectAll = (): void => core.handle.select(0, 0, Math.max(0, rows.length - 1), Math.max(0, columns.length - 1));
+
     const openCellMenu = (e: React.MouseEvent, r: number, c: number): void => {
         if (r >= rows.length) return;
         // 우클릭한 칸이 선택 밖이면 그 칸을 고른다(노션식).
@@ -446,37 +526,39 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         });
     }, [sel.r1, sel.c1, sel.r2, sel.c2, rows, columns, merges, liveResize, liveWeight, core.containerRef]);
 
-    // ── 떠있는 「칸 합치기」 알약 — 고른 범위 바로 위(넘치면 아래)에 떠서 아무것도 안 가린다 ──
-    //    🔴 스크롤러 바깥(바깥 래퍼 기준)에 둔다 — 표 맨 윗줄을 골라도 잘리지 않고 표 위 여백에 뜬다(열 손잡이와 안 겹침).
-    const canMergeSel = hasMerge && regionFromSelection(sel, rows, columns) != null;
-    const canUnmerge = hasMerge && anchorCovering(merges, core.active.r, core.active.c, rows, columns) != null;
-    const [pill, setPill] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-    useLayoutEffect(() => {
-        if (!canMergeSel && !canUnmerge) return;
-        const cont = core.containerRef.current; const outer = outerRef.current; if (!cont || !outer) return;
-        const top = cont.querySelector<HTMLElement>(`[data-rc="${sel.r1}:${sel.c1}"]`);
-        const bot = cont.querySelector<HTMLElement>(`[data-rc="${sel.r2}:${sel.c1}"]`) ?? top;
-        if (!top) return;
-        const or = outer.getBoundingClientRect();
-        const tr = top.getBoundingClientRect();
-        const br = bot!.getBoundingClientRect();
-        const left = tr.left - or.left;
-        // 기본은 선택 바로 위 — 래퍼 바깥이라 안 잘리고, 표 윗줄을 골라도 제목·표 사이 여백으로 떠오른다(음수 top 허용).
-        //    위가 창 밖으로 나갈 때(표가 화면 맨 위)만 선택 아래로 뒤집는다.
-        const above = tr.top - or.top - 30;
-        const below = br.bottom - or.top + 6;
-        const topPos = or.top + above < 4 ? below : above;
-        setPill({ top: topPos, left });
-    }, [canMergeSel, canUnmerge, sel.r1, sel.c1, sel.r2, sel.c2, core.containerRef]);
-
     const invalidCount = hasValidate && validate
         ? rows.reduce((n, row) => n + columns.filter((col) => validate(row.id, col.key, row.cells[col.key] ?? '')).length, 0)
         : 0;
 
     const showColTitles = !hideColHeader;
 
+    // ── 하단 합계 바(quick-calc) — 범위면 합·평균·최소·최대·개수, 칸 하나면 그 칸 원래 값 ──
+    const multi = sel.r1 !== sel.r2 || sel.c1 !== sel.c2;
+    let calcText: string | null = null;
+    if (hasQuickCalc && focused && rows.length && columns.length) {
+        if (multi) {
+            const texts: string[] = [];
+            for (let r = sel.r1; r <= Math.min(sel.r2, rows.length - 1); r++) {
+                if (isHeadRow(r) || isFootRow(r)) continue;
+                for (let c = sel.c1; c <= sel.c2; c++) texts.push(rows[r].cells[columns[c]?.key ?? ''] ?? '');
+            }
+            const q = quickCalc(texts);
+            calcText = q
+                ? (q.nums ? `합계 ${fmtNum(q.sum)}   평균 ${fmtNum(q.avg)}   최솟값 ${fmtNum(q.min)}   최댓값 ${fmtNum(q.max)}   개수 ${q.count}` : `개수 ${q.count}`)
+                : '';
+        } else {
+            calcText = rows[core.active.r]?.cells[columns[core.active.c]?.key ?? ''] ?? '';
+        }
+    }
+    const colLetter = (i: number): string => {
+        let s = ''; let n = i + 1;
+        while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+        return s;
+    };
+    const tabsOn = focused || reorder != null;
+
     return (
-        <div ref={outerRef} className={`relative text-[14px] ${className ?? ''}`}>
+        <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
@@ -491,56 +573,78 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 ref={core.containerRef}
                 tabIndex={0}
                 data-testid="table-grid"
-                onFocus={core.onFocus}
-                onBlur={core.onBlur}
+                onFocus={() => { core.onFocus(); setFocused(true); }}
+                onBlur={(e) => { core.onBlur(e); if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false); }}
                 className="relative overflow-auto outline-none max-h-full w-max max-w-full"
             >
                 <table className="border-collapse">
                     <thead>
-                        {/* 열 손잡이 줄 — 표에 마우스가 오면 뜬다(노션식 위 손잡이). */}
+                        {/* 넘버스 참조 탭 줄 — 포커스가 있을 때만 A,B,C… 가 뜬다. 왼쪽 위 모서리는 표 손잡이(누르면 표 전체). */}
                         {showColHandles && (
                             <tr>
-                                <td className="w-5 p-0 border-0" />
-                                {columns.map((col, idx) => (
-                                    <th
-                                        key={col.key}
-                                        data-col-idx={idx}
-                                        className={`relative p-0 h-3 border-0 align-bottom ${stickyColHandleCls}`}
-                                        style={{ width: widthOf(col.key, col.width), minWidth: widthOf(col.key, col.width) }}
+                                <td className={`w-7 p-0 border-0 ${stickyColHandleCls}`}>
+                                    <div
+                                        data-testid="table-handle"
+                                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                        onClick={(e) => { e.stopPropagation(); selectAll(); }}
+                                        onContextMenu={openTableMenu}
+                                        title="눌러서 표 전체 고르기 · 우클릭 표 메뉴(스타일·머리·꼬리)"
+                                        className={`ml-auto h-5 w-6 grid place-items-center cursor-pointer select-none transition-opacity
+                                            ${tabsOn ? 'opacity-100' : 'opacity-0'} bg-panel2 hover:bg-accent/20 text-muted`}
                                     >
-                                        <div
-                                            data-testid="col-handle"
-                                            onMouseDown={(e) => beginReorder(e, 'col', idx)}
-                                            onClick={(e) => { e.stopPropagation(); selectLine('col', idx); }}
-                                            onContextMenu={(e) => openColMenu(e, col.key, idx)}
-                                            title="눌러서 열 고르기 · 끌어서 순서 · 우클릭 메뉴"
-                                            className={`mx-auto grid place-items-center h-3 w-5 rounded cursor-grab leading-none select-none transition-opacity
-                                                ${(hoverRC?.c === idx) || reorder?.kind === 'col' ? 'opacity-100' : 'opacity-0'}
-                                                ${core.inSel(0, idx) && sel.r1 === 0 && sel.r2 >= rows.length - 1
-                                                    ? 'bg-accent/15 text-accent' : 'text-muted/50 hover:bg-text/[0.06] hover:text-muted'}`}
+                                        <span className="block h-2 w-2 rounded-[1px] border border-current" />
+                                    </div>
+                                </td>
+                                {columns.map((col, idx) => {
+                                    const lineSel = sel.c1 <= idx && idx <= sel.c2 && sel.r1 === 0 && sel.r2 >= rows.length - 1;
+                                    return (
+                                        <th
+                                            key={col.key}
+                                            data-col-idx={idx}
+                                            className={`relative p-0 h-5 border-0 align-bottom ${stickyColHandleCls}`}
+                                            style={{ width: widthOf(col.key, col.width), minWidth: widthOf(col.key, col.width) }}
                                         >
-                                            <span className="text-[9px] tracking-[0.1em] -mt-px">⋯</span>
-                                        </div>
-                                        {reorder?.kind === 'col' && reorder.over === idx && (
-                                            <span className="absolute left-0 top-0 h-3 w-0.5 bg-accent" />
-                                        )}
-                                        {hasColResize && (
-                                            <span
-                                                data-testid="col-resize"
-                                                onMouseDown={(e) => beginResize(e, col.key)}
-                                                onDoubleClick={(e) => { e.stopPropagation(); autoFitCol(col.key); }}
-                                                title="끌어서 폭 조절 · 더블클릭 자동 맞춤"
-                                                className={`absolute top-0 right-0 h-3 w-1 cursor-col-resize hover:bg-accent/40 ${liveResize?.key === col.key ? 'bg-accent' : ''}`}
-                                            />
-                                        )}
-                                    </th>
-                                ))}
+                                            <div
+                                                data-testid="col-handle"
+                                                onMouseDown={(e) => beginReorder(e, 'col', idx)}
+                                                onClick={(e) => { e.stopPropagation(); selectLine('col', idx); }}
+                                                onContextMenu={(e) => openColMenu(e, col.key, idx)}
+                                                onMouseEnter={() => setHoverTab(idx)}
+                                                onMouseLeave={() => setHoverTab(null)}
+                                                title="눌러서 열 고르기 · 끌어서 옮기기 · ▾ 메뉴"
+                                                className={`relative h-5 grid place-items-center border-r border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                    ${tabsOn ? 'opacity-100' : 'opacity-0'}
+                                                    ${lineSel ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
+                                            >
+                                                {colLetter(idx)}
+                                                <span
+                                                    data-testid="col-menu"
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onClick={(e) => openColMenu(e, col.key, idx)}
+                                                    className={`absolute right-1 top-0 h-5 px-0.5 grid place-items-center text-[9px] ${hoverTab === idx ? 'opacity-100' : 'opacity-0'}`}
+                                                >▾</span>
+                                            </div>
+                                            {reorder?.kind === 'col' && reorder.over === idx && (
+                                                <span className="absolute left-0 top-0 h-5 w-0.5 bg-accent" />
+                                            )}
+                                            {hasColResize && (
+                                                <span
+                                                    data-testid="col-resize"
+                                                    onMouseDown={(e) => beginResize(e, col.key)}
+                                                    onDoubleClick={(e) => { e.stopPropagation(); autoFitCol(col.key); }}
+                                                    title="끌어서 폭 조절 · 더블클릭 내용에 맞춤"
+                                                    className={`absolute top-0 right-0 h-5 w-1 cursor-col-resize hover:bg-accent/40 ${liveResize?.key === col.key ? 'bg-accent' : ''}`}
+                                                />
+                                            )}
+                                        </th>
+                                    );
+                                })}
                             </tr>
                         )}
                         {/* 열 제목 줄 — 노션 단순 표에선 감춘다(hideColHeader). 손님(명단·그리드)은 제목을 쓴다. */}
                         {showColTitles && columns.length > 0 && (
                             <tr>
-                                <td className="w-5 p-0 border-0" />
+                                <td className="w-7 p-0 border-0" />
                                 {columns.map((col, idx) => (
                                     <th
                                         key={col.key}
@@ -582,22 +686,22 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                             const h = heightOf(row);
                             return (
                                 <tr key={row.id} data-row-idx={r} style={h ? { height: h } : undefined}>
-                                    {/* 행 손잡이(왼쪽 바깥) — 표에 마우스가 오면 뜬다. */}
-                                    <td className="relative w-5 p-0 border-0 align-middle">
+                                    {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
+                                    <td className="relative w-7 p-0 border-0 align-middle">
                                         {hasRows && (
-                                            <div className="h-full flex items-center justify-end pr-0.5">
+                                            <div className="h-full flex items-stretch justify-end">
                                                 <div
                                                     data-testid="row-handle"
                                                     onMouseDown={(e) => beginReorder(e, 'row', r)}
                                                     onClick={(e) => { e.stopPropagation(); selectLine('row', r); }}
                                                     onContextMenu={(e) => openRowMenu(e, row.id, r)}
-                                                    title="눌러서 줄 고르기 · 끌어서 순서 · 우클릭 메뉴"
-                                                    className={`grid place-items-center w-4 h-5 rounded cursor-grab leading-none select-none transition-opacity
-                                                        ${(hoverRC?.r === r) || reorder?.kind === 'row' ? 'opacity-100' : 'opacity-0'}
-                                                        ${core.inSel(r, 0) && sel.c1 === 0 && sel.c2 >= columns.length - 1
-                                                            ? 'bg-accent/15 text-accent' : 'text-muted/50 hover:bg-text/[0.06] hover:text-muted'}`}
+                                                    title="눌러서 행 고르기 · 끌어서 옮기기 · 우클릭 메뉴"
+                                                    className={`grid place-items-center w-6 min-h-6 border-b border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                        ${tabsOn ? 'opacity-100' : 'opacity-0'}
+                                                        ${sel.r1 <= r && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= columns.length - 1
+                                                            ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
                                                 >
-                                                    <span className="text-[10px] tracking-tighter">⋮⋮</span>
+                                                    {r + 1}
                                                 </div>
                                             </div>
                                         )}
@@ -610,7 +714,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             />
                                         )}
                                         {reorder?.kind === 'row' && reorder.over === r && (
-                                            <span className="absolute left-5 top-0 h-0.5 w-screen max-w-[600px] bg-accent" />
+                                            <span className="absolute left-7 top-0 h-0.5 w-screen max-w-[600px] bg-accent" />
                                         )}
                                     </td>
                                     {columns.map((col, c) => {
@@ -619,25 +723,34 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         const value = row.cells[col.key] ?? '';
                                         const editing = core.edit?.r === r && core.edit?.c === c;
                                         const selected = core.inSel(r, c);
-                                        const isActive = core.active.r === r && core.active.c === c;
                                         const inFill = core.fillActiveRef.current && core.fillTo != null
                                             && c >= sel.c1 && c <= sel.c2 && r > sel.r2 && r <= core.fillTo;
                                         const deco = decorate ? decorate(row.id, col.key, value) : undefined;
                                         const vErr = hasValidate && validate ? validate(row.id, col.key, value) : undefined;
                                         const isBool = hasColTypes && col.type === 'bool';
-                                        const isHeadCell = (headerRow && r === 0) || (headerCol && c === 0);
+                                        const isFoot = isFootRow(r);
+                                        const isHeadCell = isHeadRow(r) || (headerCol && c === 0) || isFoot;
+                                        // 표 스타일(넘버스 프리셋) — 교대 행은 머리·꼬리를 건너뛴 본문 줄만 센다.
+                                        const bodyIdx = r - (headerRow ? 1 : 0);
+                                        const striped = (preset === 'striped' || preset === 'headed') && !isHeadCell && bodyIdx % 2 === 1;
+                                        const headTone = preset === 'headed' && isHeadRow(r);
                                         // 🔴 선택 테두리는 칸이 아니라 바깥 상자(selRect) 한 겹으로 그린다 — 칸엔 안쪽 옅은 바탕만(이중선·어긋남 방지).
                                         //    편집 중인 칸은 input 자신의 테두리만 보이게 바탕을 빼지 않는다(input 이 흰 바탕으로 덮는다).
                                         const cls = [
-                                            'relative border px-2.5 py-2 align-top text-text whitespace-pre-wrap leading-normal min-w-[120px]',
+                                            'relative border px-1.5 py-0.5 h-6 align-middle text-text whitespace-pre-wrap leading-5 min-w-[96px]',
                                             // 머리 칸은 바탕이 옅은 회색(panel2)이라 line 경계가 묻힌다 — 한 단 진한 edge 로 본문 칸과 같은 또렷함을 준다(세로 칸선이 보이게).
                                             isHeadCell ? 'border-edge' : 'border-line',
+                                            preset === 'lined' ? 'border-x-transparent' : '',
+                                            isFoot ? 'border-t-2' : '',
                                             col.readOnly ? 'text-muted' : '',
-                                            isHeadCell ? 'bg-panel2 font-medium' : '',
+                                            headTone ? 'bg-accent/15 font-semibold' : isHeadCell ? 'bg-panel2 font-semibold' : '',
+                                            isHeadRow(r) ? 'border-b-2 border-b-edge' : '',
+                                            headerCol && c === 0 && !isHeadRow(r) ? 'border-r-2 border-r-edge' : '',
+                                            striped ? 'bg-text/[0.03]' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
                                             selected || inFill ? 'bg-accent/10' : '',
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
-                                            col.align === 'right' || col.type === 'number' ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
+                                            col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
                                         ].filter(Boolean).join(' ');
                                         const title = vErr?.message ?? deco?.title;
                                         return (
@@ -650,7 +763,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 colSpan={span?.colSpan}
                                                 title={title}
                                                 onMouseDown={(e) => core.beginDrag(r, c, e)}
-                                                onMouseEnter={() => { core.onCellEnter(r, c); setHoverRC({ r, c }); }}
+                                                onMouseEnter={() => core.onCellEnter(r, c)}
                                                 onContextMenu={(e) => openCellMenu(e, r, c)}
                                                 onDoubleClick={() => !isBool && core.beginEdit(r, c)}
                                             >
@@ -666,14 +779,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                             <span>{value}</span>
                                                         )}
                                                         {deco?.badge && <span className="ml-1 px-1 rounded bg-accent/15 text-accent text-[11px] align-middle">{deco.badge}</span>}
-                                                        {hasFill && isActive && !col.readOnly && !isBool && (
-                                                            <span
-                                                                data-testid="fill-handle"
-                                                                onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); core.startFill(); }}
-                                                                title="끌어서 아래로 채우기"
-                                                                className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-accent cursor-crosshair"
-                                                            />
-                                                        )}
                                                     </>
                                                 )}
                                             </td>
@@ -684,7 +789,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         })}
                         {rows.length === 0 && (
                             <tr>
-                                <td className="w-5 p-0 border-0" />
+                                <td className="w-7 p-0 border-0" />
                                 <td colSpan={Math.max(1, columns.length)} className="border border-line px-2 py-6 text-center text-muted">
                                     {lb.emptyHint}
                                 </td>
@@ -698,58 +803,66 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     <div
                         className="pointer-events-none absolute z-20 rounded-[2px] border-2 border-accent"
                         style={{ top: selRect.top - 1, left: selRect.left - 1, width: selRect.width, height: selRect.height }}
-                    />
+                    >
+                        {/* 넘버스 — 흰 점(오른쪽 아래)을 끌면 범위가 늘고, 노란 점(아래 가운데)을 끌면 아래로 채운다. */}
+                        {focused && !core.edit && (
+                            <span
+                                data-testid="extend-handle"
+                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); core.beginExtend(); }}
+                                title="끌어서 범위 넓히기"
+                                className="pointer-events-auto absolute -right-[5px] -bottom-[5px] h-2.5 w-2.5 rounded-full border-2 border-accent bg-bg cursor-nwse-resize"
+                            />
+                        )}
+                        {hasFill && focused && !core.edit && !isHeadRow(sel.r1) && !isFootRow(sel.r1) && (
+                            <span
+                                data-testid="fill-handle"
+                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); core.startFill(); }}
+                                title="끌어서 아래로 채우기"
+                                className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -bottom-[5px] h-2.5 w-2.5 rounded-full border-2 border-bg bg-warn cursor-ns-resize"
+                            />
+                        )}
+                    </div>
                 )}
 
             </div>
 
-            {/* 오른쪽 가장자리 + 막대(열 추가) — 스크롤러 밖·표 오른쪽 투명 띠에 떠서 마지막 열을 안 가린다(노션식). */}
+            {/* 넘버스 둥근 추가 단추 — 오른쪽 위 = 열, 왼쪽 아래 = 행. 누르면 1개, 바깥쪽으로 끌면 끈 만큼 여러 개. */}
             {hasAxisEdit && columns.length > 0 && (
                 <button
                     type="button"
                     data-testid="add-col"
                     aria-label={lb.addCol}
-                    onClick={addColAt.bind(null, columns.length)}
-                    title={lb.addCol}
-                    className={`absolute top-0 bottom-4 right-0 w-4 flex items-center justify-center rounded transition-opacity
-                        ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
+                    onMouseDown={(e) => beginAddDrag(e, 'col')}
+                    onClick={() => clickAdd('col')}
+                    title={`${lb.addCol} · 오른쪽으로 끌면 여러 개`}
+                    className={`absolute top-6 right-0 h-4 w-4 grid place-items-center rounded-full border border-line bg-panel shadow-sm cursor-ew-resize transition-opacity
+                        ${hoverTable || focused || addDrag ? 'opacity-100' : 'opacity-0'} text-muted hover:text-accent hover:border-accent`}
                 >
-                    <span className="text-[12px] leading-none">＋</span>
+                    <span className="text-[11px] leading-none">{addDrag?.axis === 'col' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
                 </button>
             )}
-            {/* 아래 가장자리 + 막대(행 추가) — 스크롤러 밖·표 아래 투명 띠에 떠서 마지막 행을 안 가린다. */}
             {hasRows && (
                 <button
                     type="button"
                     data-testid="add-row"
                     aria-label={lb.addRow}
-                    onClick={addRowAtEnd}
-                    title={lb.addRow}
-                    className={`absolute left-5 right-4 bottom-0 h-4 flex items-center justify-center rounded transition-opacity
-                        ${hoverTable ? 'opacity-100' : 'opacity-0'} bg-text/[0.03] hover:bg-accent/15 text-muted/50 hover:text-accent`}
+                    onMouseDown={(e) => beginAddDrag(e, 'row')}
+                    onClick={() => clickAdd('row')}
+                    title={`${lb.addRow} · 아래로 끌면 여러 개`}
+                    className={`absolute left-7 bottom-0 h-4 w-4 grid place-items-center rounded-full border border-line bg-panel shadow-sm cursor-ns-resize transition-opacity
+                        ${hoverTable || focused || addDrag ? 'opacity-100' : 'opacity-0'} text-muted hover:text-accent hover:border-accent`}
                 >
-                    <span className="text-[12px] leading-none">＋</span>
+                    <span className="text-[11px] leading-none">{addDrag?.axis === 'row' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
                 </button>
             )}
             </div>
-
-            {/* 떠있는 합치기 알약 — 스크롤러 바깥(래퍼 기준)에 둬 표 윗줄에서도 안 잘린다. 그림자 있는 작은 떠있는 메뉴. */}
-            {(canMergeSel || canUnmerge) && (
-                <div className="absolute z-30 flex gap-1" style={{ top: pill.top, left: pill.left }}>
-                    {canMergeSel && (
-                        <button type="button" onClick={mergeSelection}
-                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
-                            ⊞ {lb.mergeCells}
-                        </button>
-                    )}
-                    {canUnmerge && (
-                        <button type="button" onClick={unmergeAtActive}
-                            className="h-row px-2 rounded-md border border-line bg-panel shadow-lg text-[12px] text-text hover:bg-text/[0.06]">
-                            ⊟ {lb.unmergeCells}
-                        </button>
-                    )}
+            {/* 넘버스 하단 합계 바 — 범위면 합·평균·최소·최대·개수, 칸 하나면 원래 값. */}
+            {calcText != null && (
+                <div data-testid="quick-calc" className="mt-2 ml-6 h-6 px-2 flex items-center border-t border-line text-[12px] text-muted tabular-nums truncate select-none">
+                    {calcText || ' '}
                 </div>
             )}
+
             {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
     );
