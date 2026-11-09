@@ -157,7 +157,7 @@ describe('계정 — 9가지 검산', () => {
         const rid = core.createRole('편집', { permissions: ['doc.edit'], level: 2 });
         const uid = core.createUser('김', { roleIds: [rid] });
         // 저장 모양 — 옛 displayName·roleIds·fields 칸이 없고 values 하나 · 빈 목록(direct)은 안 싣는다
-        expect(nodes.api.get(uid)!.data).toEqual({ values: { roles: [rid] } });
+        expect(nodes.api.get(uid)!.data).toEqual({ values: { active: true, roles: [rid] } });   // Q11 W12 — 새 사용자는 활성 저장
         expect(nodes.api.get(rid)!.data).toEqual({ values: { level: 2, perms: ['doc.edit'] } });
         // 칸 쓰기 — 제목 칸은 이름 바꾸기 · 빈 값은 지움 · 글은 trim · values 밖 짐은 그대로
         nodes.api.setData(uid, { ...(nodes.api.get(uid)!.data as object), keep: 1 });
@@ -166,7 +166,7 @@ describe('계정 — 9가지 검산', () => {
         core.setRecordValue(uid, 'roles', []);
         core.setRecordValue(uid, 'plug.badge', 'A');
         expect(nodes.api.get(uid)!.name).toBe('이');
-        expect(nodes.api.get(uid)!.data).toEqual({ keep: 1, values: { f_team: '행정', 'plug.badge': 'A' } });
+        expect(nodes.api.get(uid)!.data).toEqual({ keep: 1, values: { active: true, f_team: '행정', 'plug.badge': 'A' } });
         core.setRecordValue(uid, 'name', '  ');                       // 빈 이름은 무시
         expect(nodes.api.get(uid)!.name).toBe('이');
         // 폴더 칸(사람이 더한 칸) — 사용자 폴더 data.fields
