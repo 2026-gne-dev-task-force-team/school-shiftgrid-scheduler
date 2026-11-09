@@ -37,8 +37,7 @@ describe('DbView — 휴지통 컬렉션 (C2)', () => {
         setActiveDb('db1');
         hostEl = document.createElement('div'); document.body.appendChild(hostEl);
         root = createRoot(hostEl);
-        const props = { host: { commands: { run: vi.fn() } }, peek: {}, leaf: { id: 'L1' } } as never;
-        act(() => { root!.render(<DbView {...props} />); });
+        act(() => { root!.render(<DbView host={{ commands: { run: vi.fn() } } as never} peek={{} as never} leaf={{ id: 'L1' } as never} width={800} height={600} collapsed={false} />); });
         expect(hostEl.querySelector('[data-rv-db="db1"]')).not.toBeNull();
         trashed.add('db1');
         act(() => { notify(); });

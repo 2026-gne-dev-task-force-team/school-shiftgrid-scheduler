@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
 import { DB_TYPE, ROW_TYPE, commit, liveDbs, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
+import { filterUniqueChanges } from './unique';
 
 interface N { id: string; type: string; name: string; children: string[]; data?: unknown; icon?: string; body?: unknown; trashedFrom?: string }
 
@@ -289,5 +290,37 @@ describe('줄 문서(body) · 시작 화면 목록', () => {
         expect(env.api.get(a)!.name).not.toBe(env.api.get(b)!.name);
         env.api.remove(b);
         expect(liveDbs().some((x) => x.id === b)).toBe(false);
+    });
+});
+
+describe('유일 칸 — 노드 다리로 들어오는 모든 쓰기가 같은 검사를 지난다 (R4-3)', () => {
+    const withUnique = () => {
+        const doc = blankDb();
+        doc.fields = [...doc.fields, { key: 'code', label: '코드', type: 'text', unique: true }];
+        env.api.setData(dbId, doc);
+    };
+    it('commit(cells) — 겹치는 값은 안 쓰고, 묶음 안 앞선 변경과도 겹치면 뒤엣것을 뺀다', () => {
+        withUnique();
+        const [a, b, c] = commit(dbId, { addRows: [{ code: 'A' }, { code: 'B' }, {}] });
+        commit(dbId, { cells: [{ id: b, key: 'code', value: ' a ' }, { id: c, key: 'code', value: 'X' }, { id: a, key: 'code', value: 'x' }] });
+        const val = (id: string) => (env.api.get(id)?.data as { values: Record<string, unknown> }).values.code;
+        expect(val(b)).toBe('B');   // 기존 A 와 겹침
+        expect(val(c)).toBe('X');
+        expect(val(a)).toBe('A');   // 같은 묶음 앞선 X 와 겹침
+    });
+    it('휴지통에서 되살릴 줄이 살아 있는 줄과 겹치면 되살리지 않는다', () => {
+        withUnique();
+        const [a] = commit(dbId, { addRows: [{ code: 'A' }] });
+        commit(dbId, { removeRows: [a] });
+        commit(dbId, { addRows: [{ code: 'a' }] });
+        expect(restoreTrashedRows(dbId)).toBe(0);
+        expect(trashedRows(dbId)).toHaveLength(1);
+    });
+    it('칸이 많아도 변경마다 줄 전체를 다시 훑지 않는다 — 큰 묶음이 짧게 끝난다', () => {
+        const { kept, rejected } = filterUniqueChanges(
+            Array.from({ length: 3000 }, (_, i) => ({ id: `r${i}`, key: 'k', value: `v${i}` })),
+            Array.from({ length: 3000 }, (_, i) => `r${i}`), () => undefined, new Set(['k']));
+        expect(kept).toHaveLength(3000);
+        expect(rejected).toHaveLength(0);
     });
 });

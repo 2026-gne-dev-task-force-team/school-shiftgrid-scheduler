@@ -120,8 +120,9 @@ export function RecordView<T>({
     const changeCells = (changes: CellChange[]) => {
         const writable = changes.filter((c) => !byKey.get(c.key)?.readOnly);
         // 🔴 「유일」 칸 — 겹치는 값을 쓰는 변경은 뺀다(한 칸 편집·채우기·여러 줄 바꾸기·되돌린 붙여넣기 모두 이 한 곳을 지난다)
-        const { kept: live, rejected } = filterUniqueChanges(writable, records.map((r) => getId(r)),
-            (id, key) => { const r = records.find((x) => getId(x) === id); return r ? rawValue(r, key) as RecordCellValue | undefined : undefined; },
+        const byId = new Map(records.map((r) => [getId(r), r] as const));   // 🔴 변경마다 records.find 로 훑으면 O(n²) — 한 번만 만든다
+        const { kept: live, rejected } = filterUniqueChanges(writable, [...byId.keys()],
+            (id, key) => { const r = byId.get(id); return r ? rawValue(r, key) as RecordCellValue | undefined : undefined; },
             new Set(fields.filter((f) => f.unique).map((f) => f.key)));
         if (rejected.length > 0) {
             const f = byKey.get(rejected[0].key);

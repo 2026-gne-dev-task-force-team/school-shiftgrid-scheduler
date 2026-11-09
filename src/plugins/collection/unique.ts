@@ -49,19 +49,32 @@ export function filterUniqueChanges(
 ): { kept: CellChange[]; rejected: CellChange[] } {
     const kept: CellChange[] = [];
     const rejected: CellChange[] = [];
-    // 칸별 「바뀐 뒤」 값 장부 — 묶음 안 앞선 변경을 반영해 센다
-    const after = new Map<string, Map<string, RecordCellValue | undefined>>();
-    const ledger = (key: string) => {
-        let m = after.get(key);
-        if (!m) { m = new Map(ids.map((id) => [id, read(id, key)])); after.set(key, m); }
-        return m;
+    // 칸별 「바뀐 뒤」 장부 — 값→줄 id 와 줄 id→값 키 두 Map(변경마다 줄 전체를 훑지 않는다: O(n+m))
+    interface Ledger { byKey: Map<string, string>; byId: Map<string, string | null> }
+    const ledgers = new Map<string, Ledger>();
+    const ledger = (key: string): Ledger => {
+        let l = ledgers.get(key);
+        if (!l) {
+            l = { byKey: new Map(), byId: new Map() };
+            for (const id of ids) {
+                const k = uniqueKeyOf(read(id, key));
+                l.byId.set(id, k);
+                if (k !== null && !l.byKey.has(k)) l.byKey.set(k, id);
+            }
+            ledgers.set(key, l);
+        }
+        return l;
     };
     for (const c of changes) {
         if (!uniqueKeys.has(c.key)) { kept.push(c); continue; }
-        const m = ledger(c.key);
-        const others = [...m].map(([id, value]) => ({ id, value }));
-        if (findUniqueConflict(c.value, others, c.id)) { rejected.push(c); continue; }
-        m.set(c.id, c.value);
+        const l = ledger(c.key);
+        const k = uniqueKeyOf(c.value);
+        const hit = k === null ? undefined : l.byKey.get(k);
+        if (hit !== undefined && hit !== c.id) { rejected.push(c); continue; }
+        const old = l.byId.get(c.id) ?? null;
+        if (old !== null && l.byKey.get(old) === c.id) l.byKey.delete(old);
+        if (k !== null) l.byKey.set(k, c.id);
+        l.byId.set(c.id, k);
         kept.push(c);
     }
     return { kept, rejected };
