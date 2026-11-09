@@ -60,6 +60,31 @@
   --fs-small: 12px;
   --fs-body: 13px;
   --fs-lead: 14px;
+
+  /*
+   * 🔴 겹 단계(z) — 떠 있는 것들의 앞뒤는 이 이름으로만 정한다(tailwind z-sticky·z-modal …). ⛔ z-[숫자] 를 새로 쓰지 않는다.
+   *   순서: 바탕 < 붙박이 < 서랍 < 시트 < 대화창 < 팝오버·메뉴 < 툴팁 < 토스트(최상).
+   *   ⭐ 대화창 안에서 연 팝오버·메뉴·툴팁이 배경막 뒤로 숨지 않게 대화창보다 위다(R1, 2026-11-09).
+   */
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-drawer: 150;
+  --z-sheet: 160;
+  --z-modal: 260;
+  --z-popover: 270;
+  --z-tooltip: 290;
+  --z-toast: 300;
+
+  /*
+   * 움직임 — 시간 3단계 · 이징 2종. 전환·애니메이션은 이 이름으로만 쓴다(R1).
+   *   fast = 떠 있는 부품 열림·짧은 페이드 · base = 서랍·탭·피크 · slow = 바텀 시트처럼 먼 거리.
+   *   ease-out = 들어올 때(빨리 출발해 부드럽게 멎는다) · ease-in = 나갈 때.
+   */
+  --motion-fast: var(--motion-fast);
+  --motion-base: var(--motion-base);
+  --motion-slow: .2s;
+  --ease-out: cubic-bezier(.2,.8,.3,1);
+  --ease-in: cubic-bezier(.4,0,1,1);
 }
 
 /*
@@ -147,10 +172,15 @@
   }
   * { box-sizing: border-box; }
   button { font-family: inherit; }
-  /* 얇은 스크롤바 — 테마를 따른다 */
+  /* 얇은 스크롤바 — 테마를 따른다. 손잡이는 2px 투명 테두리로 가늘게 보이고, 가로·세로가 만나는 모서리는 투명
+     (🔴 corner 를 안 주면 어두운 테마에서 흰 사각이 뜬다 — R1). 파이어폭스는 표준 속성으로 같은 꼴. */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border: 2px solid transparent; background-clip: padding-box; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--c-muted) / .5); }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+  @supports (-moz-appearance: none) {
+    * { scrollbar-width: thin; scrollbar-color: rgb(var(--c-line)) transparent; }
+  }
 }
 
 /*
@@ -175,12 +205,12 @@
 @keyframes drawer-out-right { from { transform: none; } to { transform: translateX(100%);  } }
 @keyframes drawer-scrim-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drawer-scrim-out { from { opacity: 1; } to { opacity: 0; } }
-.drawer-in-left  { animation: drawer-in-left  .18s cubic-bezier(.2,.8,.3,1); }
-.drawer-in-right { animation: drawer-in-right .18s cubic-bezier(.2,.8,.3,1); }
-.drawer-out-left  { animation: drawer-out-left  .18s cubic-bezier(.4,0,1,1) forwards; }
-.drawer-out-right { animation: drawer-out-right .18s cubic-bezier(.4,0,1,1) forwards; }
-.drawer-scrim     { animation: drawer-scrim-in  .18s ease; }
-.drawer-scrim-out { animation: drawer-scrim-out .18s ease forwards; }
+.drawer-in-left  { animation: drawer-in-left  var(--motion-base) var(--ease-out); }
+.drawer-in-right { animation: drawer-in-right var(--motion-base) var(--ease-out); }
+.drawer-out-left  { animation: drawer-out-left  var(--motion-base) var(--ease-in) forwards; }
+.drawer-out-right { animation: drawer-out-right var(--motion-base) var(--ease-in) forwards; }
+.drawer-scrim     { animation: drawer-scrim-in  var(--motion-base) var(--ease-out); }
+.drawer-scrim-out { animation: drawer-scrim-out var(--motion-base) var(--ease-out) forwards; }
 @media (prefers-reduced-motion: reduce) {
   .drawer-in-left, .drawer-in-right, .drawer-out-left, .drawer-out-right, .drawer-scrim, .drawer-scrim-out { animation: none; }
 }
@@ -201,7 +231,7 @@
  * ⛔ 서랍(fixed overlay)은 위 drawer-* 가 맡는다 — 이건 「자리를 먹는」 붙박이·레일 쪽이다.
  * ⭐ 움직임 줄이기면 즉시(접근성) · 안쪽 내용은 접히는 동안 넘침을 숨겨 글자가 삐져나오지 않게(인라인 overflow-hidden).
  */
-.pane-wtrans { transition: width .18s cubic-bezier(.2,.8,.3,1); }
+.pane-wtrans { transition: width var(--motion-base) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) { .pane-wtrans { transition: none; } }
 
 /*
@@ -209,7 +239,7 @@
  * ⭐ 끄는 동안엔 class 를 안 붙여 즉각 따라오고(SidePanel), 확정·단추 여닫기 때만 붙여 미끄러진다.
  * ⛔ 움직임 줄이기면 즉시(접근성).
  */
-.pane-strans { transition: transform .18s cubic-bezier(.2,.8,.3,1), opacity .18s ease; }
+.pane-strans { transition: transform var(--motion-base) var(--ease-out), opacity var(--motion-base) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) { .pane-strans { transition: none; } }
 
 /*
@@ -217,50 +247,61 @@
  */
 @keyframes sheet-in  { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes sheet-out { from { transform: none; } to { transform: translateY(100%); } }
-.sheet-in  { animation: sheet-in  .2s cubic-bezier(.2,.8,.3,1); }
-.sheet-out { animation: sheet-out .2s cubic-bezier(.4,0,1,1) forwards; }
+.sheet-in  { animation: sheet-in  var(--motion-slow) var(--ease-out); }
+.sheet-out { animation: sheet-out var(--motion-slow) var(--ease-in) forwards; }
 @media (prefers-reduced-motion: reduce) { .sheet-in, .sheet-out { animation: none; } }
 
 /*
  * 바텀 시트 높이 미끄러짐 — snap 을 확정할 때만 높이를 미끄러뜨린다(손가락 따라가는 중엔 끈다, 즉각).
  */
-.pane-htrans { transition: height .2s cubic-bezier(.2,.8,.3,1); }
+.pane-htrans { transition: height var(--motion-slow) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) { .pane-htrans { transition: none; } }
 
 /*
  * 🔴 전환 애니메이션(쥔님 2026-11-01 ③: *"애니메이션 없이 바뀌니까 뭐가 어떤지 보이질 않아"*) — 라이브러리 없이 CSS 로.
- * ⛔ 전부 .16~.22s · 움직임 줄이기면 즉시(접근성). 「넣었다」가 아니라 「돈다」 — DropZones·서랍과 같은 결.
+ * ⛔ 전부 --motion-* 토큰(.12~.2s) · 움직임 줄이기면 즉시(접근성). 「넣었다」가 아니라 「돈다」 — DropZones·서랍과 같은 결.
  */
 /* 탭 열기 — 새 탭이 살짝 떠오르며 또렷해진다(마운트 때 한 번. 기존 탭은 리마운트가 아니라 안 튄다) */
 @keyframes tab-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.tab-in { animation: tab-in .18s cubic-bezier(.2,.8,.3,1); }
+.tab-in { animation: tab-in var(--motion-base) var(--ease-out); }
 /* 탭 닫기 — 언마운트를 미루고 폭이 줄며 사라진다(Tabs 가 나가는 탭을 이 래퍼로 감싼다 · 폭은 JS 가 잰 값에서 0 으로) */
-.tab-collapse { overflow: hidden; transition: max-width .16s cubic-bezier(.4,0,1,1), opacity .16s ease; }
+.tab-collapse { overflow: hidden; transition: max-width var(--motion-base) var(--ease-in), opacity var(--motion-base) var(--ease-out); }
 /* 스플릿 칸 비율 — 생길 때 0→비율로 자라고, 닫힐 때 줄어든다. ⛔ 스플리터로 끄는 동안엔 꺼진다(SplitView 가 class 를 뗀다) */
-.pane-btrans { transition: flex-basis .18s cubic-bezier(.2,.8,.3,1); }
+.pane-btrans { transition: flex-basis var(--motion-base) var(--ease-out); }
 /* 탭 전환 — 활성 몸통이 바뀔 때 짧은 페이드(leaf id 로 키잉) */
 @keyframes view-fade { from { opacity: 0; } to { opacity: 1; } }
-.view-fade { animation: view-fade .12s ease; }
+.view-fade { animation: view-fade var(--motion-fast) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) {
   .tab-in, .view-fade { animation: none; }
   .tab-collapse, .pane-btrans { transition: none; }
 }
 
+/*
+ * 🔴 떠 있는 부품 열림(R1 — 노션처럼 짧게) — Popover·ContextMenu·Dialog 패널·Tooltip 은 .ui-pop-in, 대화창 배경막은 .ui-fade-in.
+ *   살짝 작게·투명에서 제자리로(--motion-fast). 닫힘은 언마운트라 전환이 없다(부모가 지운다).
+ */
+@keyframes ui-pop-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+.ui-pop-in { animation: ui-pop-in var(--motion-fast) var(--ease-out); transform-origin: top left; }
+.ui-fade-in { animation: view-fade var(--motion-fast) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-pop-in, .ui-fade-in { animation: none; }
+}
+
 /* 피크(미리보기) — 그 탭 안에서 뜬다. 넓으면 오른쪽에서 떠서, 좁으면 아래에서 올라온다(EditorArea 가 wide 로 가른다) */
 @keyframes peek-from-right  { from { transform: translateX(100%); } to { transform: none; } }
 @keyframes peek-from-bottom { from { transform: translateY(100%); } to { transform: none; } }
-.peek-from-right  { animation: peek-from-right  .18s cubic-bezier(.2,.8,.3,1); }
-.peek-from-bottom { animation: peek-from-bottom .2s cubic-bezier(.2,.8,.3,1); }
+.peek-from-right  { animation: peek-from-right  var(--motion-base) var(--ease-out); }
+.peek-from-bottom { animation: peek-from-bottom var(--motion-slow) var(--ease-out); }
 /* 넓은 피크는 칸의 flex 형제라 폭이 본문을 민다 — 폭도 0 에서 자라고 0 으로 줄어야 본문이 툭 튀지 않는다 */
 @keyframes peek-grow   { from { width: 0; } }
 @keyframes peek-shrink { to { width: 0; } }
 @keyframes peek-to-right  { from { transform: none; } to { transform: translateX(100%); } }
 @keyframes peek-to-bottom { from { transform: none; } to { transform: translateY(100%); } }
-.peek-grow   { animation: peek-grow .18s cubic-bezier(.2,.8,.3,1); }
-.peek-shrink { animation: peek-shrink .16s ease-in forwards; }
-.peek-to-right  { animation: peek-to-right  .16s ease-in forwards; }
-.peek-to-bottom { animation: peek-to-bottom .16s ease-in forwards; }
-.peek-scrim { animation: view-fade .18s ease; }
+.peek-grow   { animation: peek-grow var(--motion-base) var(--ease-out); }
+.peek-shrink { animation: peek-shrink var(--motion-base) var(--ease-in) forwards; }
+.peek-to-right  { animation: peek-to-right  var(--motion-base) var(--ease-in) forwards; }
+.peek-to-bottom { animation: peek-to-bottom var(--motion-base) var(--ease-in) forwards; }
+.peek-scrim { animation: view-fade var(--motion-base) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) {
   .peek-from-right, .peek-from-bottom, .peek-scrim, .peek-grow, .peek-shrink, .peek-to-right, .peek-to-bottom { animation: none; }
 }
@@ -301,7 +342,7 @@ body.is-dragging .drawer-panel { pointer-events: auto; }
  * 패널 폭/높이 손잡이 — 🔴 평소에도 1px 선이 보인다(스플리터가 투명이라 자식 사이 경계가 사라지던 것, 항목 2).
  * 올리면 파랑으로 밝아지고, 끄는 동안 짙은 파랑. (쥔님 2026-10-31 "스플릿 자식 사이 경계선 없고")
  */
-.resize-handle .resize-bar { background: rgb(var(--c-line)); transition: background-color .12s ease; }
+.resize-handle .resize-bar { background: rgb(var(--c-line)); transition: background-color var(--motion-fast) var(--ease-out); }
 .resize-handle:hover .resize-bar { background: rgb(var(--c-accent) / .6); }
 .resize-handle .resize-bar.is-dragging { background: rgb(var(--c-accent)); }
 

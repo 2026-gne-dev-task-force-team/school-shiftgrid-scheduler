@@ -61,7 +61,7 @@ function Bubble({ rect, text }: { rect: DOMRect; text: string }) {
             ref={el}
             role="tooltip"
             data-tooltip
-            className="fixed z-[300] max-w-60 rounded-md border border-line bg-panel px-2 py-1 text-note text-text shadow-lg pointer-events-none select-none"
+            className="fixed z-tooltip ui-pop-in max-w-60 rounded-md border border-line bg-panel px-2 py-1 text-note text-text shadow-lg pointer-events-none select-none"
             style={{ left: pos?.x ?? -9999, top: pos?.y ?? -9999 }}
         >
             {text}

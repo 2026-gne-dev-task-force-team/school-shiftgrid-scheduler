@@ -55,6 +55,20 @@ export default {
       },
       width: { btn: 'var(--s-btn)', rail: 'var(--s-rail)', railbtn: 'var(--s-railbtn)' },
       spacing: { pad: 'var(--s-pad)' },
+      // 겹 단계 — 값은 index.css 의 --z-* 한 곳. 떠 있는 것의 앞뒤는 z-modal·z-popover 같은 이름으로만(⛔ z-[숫자] 새로 쓰기).
+      zIndex: {
+        base: 'var(--z-base)',
+        sticky: 'var(--z-sticky)',
+        drawer: 'var(--z-drawer)',
+        sheet: 'var(--z-sheet)',
+        modal: 'var(--z-modal)',
+        popover: 'var(--z-popover)',
+        tooltip: 'var(--z-tooltip)',
+        toast: 'var(--z-toast)',
+      },
+      // 움직임 — 값은 index.css 의 --motion-*·--ease-* (duration-fast·ease-out-ui 처럼)
+      transitionDuration: { fast: 'var(--motion-fast)', base: 'var(--motion-base)', slow: 'var(--motion-slow)' },
+      transitionTimingFunction: { 'out-ui': 'var(--ease-out)', 'in-ui': 'var(--ease-in)' },
     },
   },
   plugins: [],

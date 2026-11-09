@@ -3,10 +3,14 @@
  *
  * 🔴 ⭐ 「무엇이 우클릭인가」 판정은 useContextTrigger(옆 파일) 한 곳에만 산다 (쥔님 지시 2026-10-31).
  * 🔴 색·치수는 토큰 클래스로만. 메뉴는 portal 로 body 에 띄운다(패널 overflow 에 안 잘리게).
+ * ⭐ 키보드(R1): 뜨면 첫 항목에 초점 · ↑↓/Home/End 이동 · Enter 실행 · Esc 닫기 · 닫히면 열기 전 초점 자리로 돌아간다.
+ *    항목 꼴은 Menu.tsx(MenuItem) 한 벌 — Popover 안 메뉴와 같은 꼴이다.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Icon, type IconName } from './Icon';
+import type { IconName } from './Icon';
+import { MenuList, MenuItem, MenuSeparator } from './Menu';
+import { pushEscapeLayer } from './layers';
 
 /** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다. */
 export interface MenuCommandArg { leafId?: string; tabsId?: string }
@@ -17,6 +21,8 @@ export type MenuEntry =
         sep?: false;
         label: string;
         icon?: IconName;
+        /** 오른쪽 회색 단축키 글자(보여주기만) */
+        shortcut?: string;
         disabled?: boolean;
         danger?: boolean;
         /** 🔴 동작은 commandId 로 — ContextMenu 가 onCommand(id, arg) 로 부른다(「모든 동작은 명령」). */
@@ -37,6 +43,8 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
     onCommand?: (id: string, arg?: MenuCommandArg) => void;
 }) {
     const ref = useRef<HTMLDivElement>(null);
+    const closeRef = useRef(onClose);
+    closeRef.current = onClose;
     const [pos, setPos] = useState({ x, y });
 
     // 화면 밖으로 넘치면 안으로 민다 — 뜬 뒤 크기를 재서 자리를 고친다
@@ -51,62 +59,55 @@ export function ContextMenu({ x, y, items, onClose, onCommand }: {
         setPos({ x: Math.max(GAP, nx), y: Math.max(GAP, ny) });
     }, [x, y]);
 
-    // 바깥 클릭·Esc·스크롤·크기변경에 닫는다
+    // 바깥 클릭·Esc·바깥 스크롤·크기변경에 닫는다 · 닫히면 연 자리로 초점을 돌려준다
     useEffect(() => {
+        const opener = document.activeElement as HTMLElement | null;
+        const close = () => closeRef.current();
         const onDown = (e: PointerEvent) => {
-            if (!ref.current?.contains(e.target as Node)) onClose();
+            if (!ref.current?.contains(e.target as Node)) close();
         };
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-        // 스크롤은 capture 로 — 안쪽 어느 영역이 스크롤돼도 메뉴 자리가 어긋나기 전에 닫는다
-        const onScroll = () => onClose();
+        // 스크롤은 capture 로 — 안쪽 어느 영역이 스크롤돼도 메뉴 자리가 어긋나기 전에 닫는다(메뉴 안쪽 스크롤은 빼고)
+        const onScroll = (e: Event) => { if (!(e.target instanceof Node && ref.current?.contains(e.target))) close(); };
+        const popEsc = pushEscapeLayer(close);
         document.addEventListener('pointerdown', onDown, true);
-        window.addEventListener('keydown', onKey, true);
         window.addEventListener('scroll', onScroll, true);
-        window.addEventListener('resize', onScroll);
+        window.addEventListener('resize', close);
         return () => {
+            popEsc();
             document.removeEventListener('pointerdown', onDown, true);
-            window.removeEventListener('keydown', onKey, true);
             window.removeEventListener('scroll', onScroll, true);
-            window.removeEventListener('resize', onScroll);
+            window.removeEventListener('resize', close);
+            if (opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
         };
-    }, [onClose]);
+    }, []);
 
     return createPortal(
         <div
             ref={ref}
-            role="menu"
-            className="fixed z-[200] min-w-[180px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none"
+            className="fixed z-popover min-w-[180px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none ui-pop-in"
             style={{ left: pos.x, top: pos.y }}
         >
-            {items.map((it, i) => (
-                it.sep
-                    ? <div key={`s${i}`} className="my-1 h-px bg-line" role="separator" />
-                    : (
-                        <button
-                            key={it.label + i}
-                            type="button"
-                            role="menuitem"
-                            disabled={it.disabled}
-                            onClick={() => {
-                                if (it.disabled) return;
-                                if (it.commandId && onCommand) onCommand(it.commandId, it.commandArg);
-                                else it.onClick?.();
-                                onClose();
-                            }}
-                            className={`w-full flex items-center gap-2 h-row px-pad text-[13px] text-left transition-colors
-                                ${it.disabled
-                                    ? 'text-muted/40 cursor-default'
-                                    : it.danger
-                                        ? 'text-bad hover:bg-bad/10'
-                                        : 'text-text hover:bg-text/[0.06]'}`}
-                        >
-                            <span className="w-4 shrink-0 grid place-items-center">
-                                {it.icon && <Icon name={it.icon} size={14} />}
-                            </span>
-                            <span className="flex-1 min-w-0 truncate">{it.label}</span>
-                        </button>
-                    )
-            ))}
+            <MenuList autoFocus>
+                {items.map((it, i) => (
+                    it.sep
+                        ? <MenuSeparator key={`s${i}`} />
+                        : (
+                            <MenuItem
+                                key={it.label + i}
+                                label={it.label}
+                                icon={it.icon}
+                                shortcut={it.shortcut}
+                                danger={it.danger}
+                                disabled={it.disabled}
+                                onSelect={() => {
+                                    if (it.commandId && onCommand) onCommand(it.commandId, it.commandArg);
+                                    else it.onClick?.();
+                                    closeRef.current();
+                                }}
+                            />
+                        )
+                ))}
+            </MenuList>
         </div>,
         document.body,
     );
