@@ -28,8 +28,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { Menu, type MenuItem } from './Menu';
-import { Button, Toolbar } from '../../pane-ui-system';
+import { ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -422,10 +421,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
 
     // ── 머리 메뉴(손잡이) + 셀 우클릭 메뉴 ────────────────────
-    const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
-    const domainEntries = (kind: 'row' | 'col', id: string): MenuItem[] =>
+    const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const domainEntries = (kind: 'row' | 'col', id: string): MenuEntry[] =>
         (headerMenu?.(kind, id) ?? []).map((e: HeaderMenuEntry) => ({ label: e.label, onClick: () => e.onSelect?.() }));
-    const colorItems = (kind: 'row' | 'col', id: string): MenuItem[] =>
+    const colorItems = (kind: 'row' | 'col', id: string): MenuEntry[] =>
         onColor ? TONE_CHOICES.map((t) => ({ label: t.label, onClick: () => onColor(kind, id, t.tone) })) : [];
 
     // 열 머리 이름 고치기(인라인) — 제목 머리가 보일 때만.
@@ -434,7 +433,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const openColMenu = (e: React.MouseEvent, key: string, idx: number): void => {
         e.preventDefault(); e.stopPropagation();
         selectLine('col', idx);
-        const items: MenuItem[] = [];
+        const items: MenuEntry[] = [];
         if (hasAxisEdit) {
             items.push(
                 { label: lb.insertColLeft, onClick: () => addColAt(idx) },
@@ -455,7 +454,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         e.preventDefault(); e.stopPropagation();
         selectLine('row', viewR);
         const row = rows[viewR];
-        const items: MenuItem[] = [];
+        const items: MenuEntry[] = [];
         if (hasRows && row) {
             items.push(
                 { label: lb.insertAbove, onClick: () => insertRow(viewR) },
@@ -474,7 +473,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const STYLE_LABEL: Record<TableStylePreset, string> = { basic: '기본', lined: '가로선', striped: '줄무늬', headed: '머리 강조' };
     const openTableMenu = (e: React.MouseEvent): void => {
         e.preventDefault(); e.stopPropagation();
-        const items: MenuItem[] = [];
+        const items: MenuEntry[] = [];
         if (has('table-style') && onSetTableStyle) {
             for (const p of Object.keys(STYLE_LABEL) as TableStylePreset[]) {
                 items.push({ label: `${p === preset ? '✓ ' : '　'}스타일: ${STYLE_LABEL[p]}`, onClick: () => onSetTableStyle(p) });
@@ -491,7 +490,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         if (r >= rows.length) return;
         // 우클릭한 칸이 선택 밖이면 그 칸을 고른다(노션식).
         if (!core.inSel(r, c)) core.handle.click(r, c);
-        const items: MenuItem[] = [];
+        const items: MenuEntry[] = [];
         if (hasMerge) {
             const region = regionFromSelection(core.sel, rows, columns);
             const covered = anchorCovering(merges, core.active.r, core.active.c, rows, columns);
@@ -565,32 +564,32 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const colTabsOn = tabsOn || !!colTabs;   // S1 — 「열 머리(A·B·C…) 늘 보이기」 옵션이 켜지면 포커스 없이도 보인다
 
     // ── 도구 막대(M5d) — 메뉴와 같은 함수를 부른다(같은 tx). 고른 범위 기준. ──
-    type Tool = { id: string; label: string; title: string; on: boolean; run: (e: React.MouseEvent) => void } | '|';
+    type Tool = { id: string; icon: IconName; label: string; title: string; on: boolean; run: (e: React.MouseEvent) => void } | '|';
     const undoFn = onUndo ?? (historyOwned ? internalUndo : undefined);
     const redoFn = onRedo ?? (historyOwned ? internalRedo : undefined);
     const selRowIds = rows.slice(sel.r1, sel.r2 + 1).map((r) => r.id);
     const selColKeys = columns.slice(sel.c1, sel.c2 + 1).map((c) => c.key);
     const hasCells = rows.length > 0 && columns.length > 0;
     const tools: Tool[] = toolbar ? [
-        { id: 'undo', label: '↶', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
-        { id: 'redo', label: '↷', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
+        { id: 'undo', icon: 'undo', label: '되돌리기', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
+        { id: 'redo', icon: 'redo', label: '다시 하기', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
         '|',
-        { id: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
+        { id: 'copy', icon: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
         '|',
-        { id: 'row-above', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
-        { id: 'row-below', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
-        { id: 'row-del', label: '행 지우기', title: '고른 행 지우기', on: hasRows && selRowIds.length > 0,
+        { id: 'row-above', icon: 'rowAbove', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
+        { id: 'row-below', icon: 'rowBelow', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
+        { id: 'row-del', icon: 'rowDel', label: '행 지우기', title: '고른 행 지우기', on: hasRows && selRowIds.length > 0,
             run: () => emit({ cells: [], rows: { remove: selRowIds }, source: 'menu' }, false) },
         '|',
-        { id: 'col-left', label: '왼쪽에 열', title: '왼쪽에 열 넣기 (Alt+←)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c1) },
-        { id: 'col-right', label: '오른쪽에 열', title: '오른쪽에 열 넣기 (Alt+→)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c2 + 1) },
-        { id: 'col-del', label: '열 지우기', title: '고른 열 지우기', on: hasAxisEdit && selColKeys.length > 0,
+        { id: 'col-left', icon: 'colLeft', label: '왼쪽에 열', title: '왼쪽에 열 넣기 (Alt+←)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c1) },
+        { id: 'col-right', icon: 'colRight', label: '오른쪽에 열', title: '오른쪽에 열 넣기 (Alt+→)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c2 + 1) },
+        { id: 'col-del', icon: 'colDel', label: '열 지우기', title: '고른 열 지우기', on: hasAxisEdit && selColKeys.length > 0,
             run: () => emit({ cells: [], cols: { remove: selColKeys }, source: 'menu' }, false) },
         '|',
-        { id: 'merge', label: '합치기', title: '고른 칸 합치기', on: has('merge') && multi, run: mergeSelection },
-        { id: 'unmerge', label: '풀기', title: '합친 칸 풀기', on: has('merge') && !!anchorCovering(merges, core.active.r, core.active.c, rows, columns), run: unmergeAtActive },
+        { id: 'merge', icon: 'merge', label: '합치기', title: '고른 칸 합치기', on: has('merge') && multi, run: mergeSelection },
+        { id: 'unmerge', icon: 'unmerge', label: '풀기', title: '합친 칸 풀기', on: has('merge') && !!anchorCovering(merges, core.active.r, core.active.c, rows, columns), run: unmergeAtActive },
         '|',
-        { id: 'table', label: '표 ▾', title: '표 스타일·머리 행/열·꼬리 행', on: true, run: (e) => openTableMenu(e) },
+        { id: 'table', icon: 'table', label: '표 스타일', title: '표 스타일·머리 행/열·꼬리 행', on: true, run: (e) => openTableMenu(e) },
     ] : [];
 
     const toolbarBar = (
@@ -598,12 +597,12 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             {tools.map((t, i) => t === '|'
                 ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
                 : (
-                    <Button key={t.id} variant="plain" size="sm" className="shrink-0 whitespace-nowrap" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
-                        // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={(e) => t.run(e)}>
-                        {t.label}
-                    </Button>
+                    <Tooltip key={t.id} text={t.title}>
+                        <IconButton icon={t.icon} label={t.label} title="" data={{ 'data-testid': `tool-${t.id}` }} disabled={!t.on}
+                            // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={(e) => t.run(e)} />
+                    </Tooltip>
                 ))}
         </Toolbar>
     );
@@ -706,17 +705,12 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         onDoubleClick={hasAxisEdit ? () => setRenaming({ key: col.key, text: col.title }) : undefined}
                                     >
                                         {renaming?.key === col.key ? (
-                                            <input
-                                                autoFocus
-                                                value={renaming.text}
-                                                onChange={(e) => setRenaming({ key: col.key, text: e.target.value })}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') { renameCol(col.key, renaming.text); setRenaming(null); }
-                                                    else if (e.key === 'Escape') setRenaming(null);
-                                                }}
-                                                onBlur={() => { renameCol(col.key, renaming.text); setRenaming(null); }}
-                                                aria-label="칸 이름"
-                                                className="w-full bg-bg text-text outline-none ring-1 ring-inset ring-accent px-1 select-text"
+                                            <InlineRename
+                                                value={col.title}
+                                                onCommit={(n) => { renameCol(col.key, n); setRenaming(null); }}
+                                                onCancel={() => setRenaming(null)}
+                                                ariaLabel="칸 이름"
+                                                className="w-full bg-bg text-text px-1 select-text"
                                             />
                                         ) : col.title}
                                         {hasColResize && !showColHandles && (
@@ -910,7 +904,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             )}
             </div>
 
-            {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
+            {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
     );
 });
@@ -945,7 +939,7 @@ function renderEditor(
             inputMode={col.type === 'number' ? 'numeric' : undefined}
             onChange={(e) => core.setEditText(e.target.value)}
             onKeyDown={(e) => {
-                if (e.nativeEvent.isComposing) return;
+                if (e.nativeEvent.isComposing || isImeEnter(e)) return;   // 🔴 조합 중(사파리 keyCode 229 Enter 포함)엔 확정·이동 키를 안 받는다
                 const k = e.key;
                 if (k === 'Escape') { e.preventDefault(); core.cancelEdit(); return; }
                 if (k === 'Enter') {

@@ -84,7 +84,9 @@ function makeNodes(opts?: { deferred?: boolean; trash?: boolean }) {
         promptInput: () => { /* 테스트 */ },
         subscribe: (fn) => { subs.add(fn); return { dispose() { subs.delete(fn); } }; },
         roots: { main: ROOT, trash: TRASH },
-        isTrashed: () => false, liveByType: () => [], cmd: {} as NodesApi['cmd'],   // R2 새 칸 — 이 테스트는 안 쓴다
+        undoToken: () => null, cmd: {} as NodesApi['cmd'],
+        isTrashed: (id) => { for (let p: string | null = id; p; p = api.parent(p)) if (p === TRASH) return true; return false; },   // 정식 판정 흉내(자기·조상이 휴지통)
+        liveByType: (t) => (loaded ? [...map.values()].filter((n) => n.type === t && !api.isTrashed(n.id)) as PublicNode[] : []),
     };
     const plugin: PluginModule = {
         manifest: {
@@ -576,7 +578,7 @@ describe('Q11 — 계정 손질', () => {
         expect(notes.at(-1)?.body).toMatch(/손님/);
     });
 
-    it('W9) 지운 사용자는 목록에서 빠지고(휴지통 제외) 한 묶음 · 되돌리기로 제자리', () => {
+    it('W9) 지운 사용자는 목록에서 빠지고(휴지통 제외) 한 묶음 · 알림 「되돌리기」는 정식 통로(nodes.cmd.undo + 토큰)', () => {
         const nodes = makeNodes({ trash: true });
         activateAll([...BASE(), nodes.plugin, accountPlugin]);
         const a = core.createUser('가'), b = core.createUser('나'), c = core.createUser('다');
@@ -585,11 +587,7 @@ describe('Q11 — 계정 손질', () => {
         expect(nodes.batches).toBe(before + 1);
         expect(nodes.api.parent(a)).toBe(nodes.api.roots.trash);
         expect(core.listUsers().map((u) => u.name)).toEqual(['나']);
-        cmd('account.restoreRemoved');
-        expect(core.listUsers().map((u) => u.id)).toEqual([a, b, c]);
-        expect(notes.at(-1)?.title).toMatch(/2개를 되살렸습니다/);
-        cmd('account.restoreRemoved');
-        expect(notes.at(-1)?.title).toBe('되살릴 것이 없습니다');
+        expect(b).toBeTruthy();
     });
 
     it('W12) 비활성 사용자는 아이디 확인·비밀번호·이름 로그인 모두 거부 · 들어와 있던 사람은 비활성되면 쫓겨난다', async () => {

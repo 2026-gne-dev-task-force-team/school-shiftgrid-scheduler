@@ -6,7 +6,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ContextMenu, Icon, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
+import { ContextMenu, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
@@ -356,11 +356,18 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         if (e.key === 'Enter') { e.preventDefault(); const id = selRef.current[0]; setSelected([]); setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); return; }
         if (mod && (k === 'c' || k === 'x')) {
             e.preventDefault();
-            void navigator.clipboard?.writeText(selectedMarkdown());
-            if (k === 'x') deleteSelected();
+            const text = selectedMarkdown();
+            if (k === 'c') { void navigator.clipboard?.writeText(text); return; }
+            // 🔴 잘라내기 — 클립보드에 쓴 게 끝난 뒤에만 블록을 지운다(쓰기가 막히면 글이 사라지는 사고 방지)
+            const ids = [...selRef.current];
+            const cb = navigator.clipboard;
+            if (!cb) return;
+            void cb.writeText(text).then(() => { commitResult(removeBlocks(pageRef.current, ids)); }, () => { /* 못 썼으면 지우지 않는다 */ });
             return;
         }
-        if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); }
+        // 🔴 되돌리기 키 판정은 창틀 공용 undoKey(한글 조합 중·Alt 낀 것 거름 · Ctrl+Y 다시)
+        const u = undoKey(e.nativeEvent);
+        if (u) { e.preventDefault(); if (u === 'redo') doRedo(); else doUndo(); }
     };
 
     const doMark = (el: HTMLElement, id: string, marker: string) => {

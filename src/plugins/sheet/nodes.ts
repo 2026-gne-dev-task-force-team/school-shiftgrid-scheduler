@@ -149,24 +149,13 @@ export function docOf(id: string | null): TableDoc {
 /** 문서를 통째로 쓴다(트랜잭션 적용 결과) — setData 는 타입 주인(sheet)만 지난다. */
 export function writeDoc(id: string, doc: TableDoc): void { api?.setData(id, doc); }
 
-/** 조상에 휴지통이 있나 — 부모 사슬을 직접 탄다(달력·명단과 같은 규칙). */
-export function inTrash(id: string): boolean {
-    if (!api) return false;
-    let cur: string | null = api.parent(id);
-    let guard = 0;
-    while (cur && guard < 1000) {
-        if (cur === api.roots.trash) return true;
-        if (cur === api.roots.main) return false;
-        cur = api.parent(cur);
-        guard++;
-    }
-    return false;
-}
+/** 휴지통 안(휴지통 자신·자손)인가 — 노드 시스템의 정식 판정(nodes.isTrashed). 달력·명단·컬렉션과 같은 창구. */
+export function inTrash(id: string): boolean { return api?.isTrashed(id) ?? false; }
 
 /** 살아 있는 표 노드 전부(트리 순서) — 시작 화면 목록. */
 export function liveTables(): PublicNode[] {
     if (!api) return [];
-    return api.byType(TABLE_TYPE).filter((n) => !inTrash(n.id));
+    return api.liveByType(TABLE_TYPE);
 }
 
 /**

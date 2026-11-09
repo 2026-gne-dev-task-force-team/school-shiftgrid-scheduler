@@ -5,12 +5,12 @@
  */
 import { useSyncExternalStore } from 'react';
 import { getActiveAccountNode, subscribeActiveNode } from '../nodes';
-import { nodeKindOf } from '../core';
+import { nodeKindOf, getNodesApi } from '../core';
 import { useAccountVersion } from './useAccount';
 import { RecordPage } from './RecordPage';
 import { PolicyEditor } from './PolicyEditor';
 import { AccountList } from './AccountList';
-import { Icon } from '../../../pane-ui-system';
+import { EmptyState, Icon, Button } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { PeekHandle } from '../../../pane-ui-system';
 import { parentOf } from '../core';
@@ -22,15 +22,17 @@ export function AccountEditor({ host, peek }: { host?: PluginHost; peek?: PeekHa
     const kind = id ? nodeKindOf(id) : null;
 
     if (!id || !kind) {
-        return <p className="text-[12px] text-muted p-4">탐색기에서 사용자·역할·정책을 누르면 여기서 편집합니다.</p>;
+        // 🔴 휴지통에 든 노드는 편집을 받지 않는다(페이지·시트·컬렉션과 같은 동작) — 안내 화면으로
+        const gone = !!id && !!getNodesApi()?.isTrashed(id);
+        return <EmptyState icon={gone ? 'trash' : 'users'} title={gone ? '휴지통에 있는 항목입니다' : '편집할 계정 항목을 고르세요'}
+            description={gone ? '탐색기 휴지통에서 되살린 뒤 열 수 있습니다.' : '탐색기에서 사용자·역할·정책을 누르면 여기서 편집합니다.'} />;
     }
     if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} peek={peek} />;   // 옛 열기 경로 대비
     // 사용자·역할 편집기 위에 「← 목록」 — 나무에 안 보이니 목록으로 돌아갈 길을 여기 둔다
     const back = (
-        <button type="button" onClick={() => { const p = parentOf(id); if (p) setActiveAccountNode(p); }}
-            className="flex items-center gap-1 m-2 mb-0 px-2 h-7 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06]">
+        <Button variant="ghost" size="sm" className="self-start m-2 mb-0 inline-flex items-center gap-1" onClick={() => { const p = parentOf(id); if (p) setActiveAccountNode(p); }}>
             <Icon name="left" size={12} /> {kind === 'user' ? '사용자 목록' : '역할 목록'}
-        </button>
+        </Button>
     );
     if (kind === 'user' || kind === 'role') return <div className="flex flex-col">{back}<div className="p-4 max-w-[640px]"><RecordPage id={id} host={host} /></div></div>;
     return <PolicyEditor />;

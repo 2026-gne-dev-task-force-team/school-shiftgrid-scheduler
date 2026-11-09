@@ -180,3 +180,31 @@ describe('TableApi — TSV 왕복', () => {
         }
     });
 });
+
+describe('R5-6 한글 IME — 조합 중 Enter 는 칸 이동·확정을 일으키지 않는다', () => {
+    const rows3 = () => [{ id: 'r1', cells: {} }, { id: 'r2', cells: {} }, { id: 'r3', cells: {} }];
+    it('격자: isComposing Enter · keyCode 229 Enter 는 이동 없음 · 일반 Enter 는 이동', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={rows3()} features={[]} />);
+        const h = () => ref.current!.h();
+        act(() => h().focus());
+        key('Enter', { isComposing: true }); expect(h().state().active).toEqual({ r: 0, c: 0 });
+        key('Enter', { keyCode: 229 }); expect(h().state().active).toEqual({ r: 0, c: 0 });
+        key('Enter'); expect(h().state().active).toEqual({ r: 1, c: 0 });
+    });
+
+    it('편집 입력칸: keyCode 229 Enter(사파리)는 확정하지 않는다', () => {
+        const onTx = vi.fn();
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={rows3()} features={[]} onTx={onTx} />);
+        act(() => ref.current!.h().focus());
+        act(() => ref.current!.h().type('가', 0, 0));
+        const input = hostEl!.querySelector('input[aria-label="A"]') as HTMLInputElement;
+        expect(input).toBeTruthy();
+        act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, bubbles: true })); });
+        expect(onTx).not.toHaveBeenCalled();
+        expect(hostEl!.querySelector('input[aria-label="A"]')).toBeTruthy();   // 편집창이 그대로 열려 있다
+        act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
+        expect(onTx).toHaveBeenCalled();
+    });
+});

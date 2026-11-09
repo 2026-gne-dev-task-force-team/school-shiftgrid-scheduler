@@ -108,10 +108,9 @@ export const accountPlugin = definePlugin({
             },
             // 🔴 「지금 누구」 단추 — 상태바 오른쪽. 누르면 들어가기·나가기·사용자 바꾸기·계정 열기(AccountStatus).
             statusBar: [{ id: 'account.whoami', side: 'right', render: 'AccountStatus' }],
-            // 🔴 W8 — 명령 팔레트·「지금 누구」 메뉴가 같은 id 를 부른다. 되살리기는 목록 삭제 알림의 「되돌리기」가 부른다.
+            // 🔴 W8 — 명령 팔레트·「지금 누구」 메뉴가 같은 id 를 부른다.
             commands: [
                 { id: 'account.logout', title: '로그아웃', icon: 'door' },
-                { id: 'account.restoreRemoved', title: '방금 지운 사용자·역할 되살리기', icon: 'undo' },
             ],
         },
     },
@@ -129,10 +128,6 @@ export const accountPlugin = definePlugin({
             }
             core.logout();
             host.notify({ title: '로그아웃했습니다', key: 'account.logout' });
-        },
-        'account.restoreRemoved': (host: PluginHost) => {
-            const n = core.restoreLastRemoved();
-            host.notify({ title: n > 0 ? `${n}개를 되살렸습니다` : '되살릴 것이 없습니다', key: 'account.removed' });
         },
     },
 

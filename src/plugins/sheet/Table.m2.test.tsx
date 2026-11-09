@@ -74,7 +74,7 @@ function mount(ui: React.ReactElement) {
 afterEach(() => {
     if (root) act(() => root!.unmount());
     hostEl?.remove(); root = null; hostEl = null;
-    document.querySelectorAll('[data-table-menu]').forEach((n) => n.remove());
+    document.querySelectorAll('[role="menu"]').forEach((n) => n.remove());
 });
 
 const cols3 = (): TableColumn[] => [{ key: 'a', title: 'A' }, { key: 'b', title: 'B' }, { key: 'c', title: 'C' }];

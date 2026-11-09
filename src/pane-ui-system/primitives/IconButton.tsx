@@ -16,6 +16,8 @@ export function IconButton({
     title,
     rowId,
     data,
+    disabled = false,
+    onMouseDown,
 }: {
     icon: IconName;
     /** 스크린리더용 이름 (title 이 없으면 툴팁으로도 쓴다) */
@@ -29,6 +31,9 @@ export function IconButton({
     rowId?: string;
     /** 임의 data-* 표식 — 리본이 「뷰냐 동작이냐」를 DOM 에 심을 때(뜻은 창틀이 모른다). 키는 'data-...' 통째로 */
     data?: Record<string, string | number | undefined>;
+    disabled?: boolean;
+    /** 눌러도 입력칸·표의 초점·선택을 뺏기지 않게 preventDefault 할 때(도구 줄) */
+    onMouseDown?: (e: MouseEvent) => void;
 }) {
     return (
         <button
@@ -37,9 +42,11 @@ export function IconButton({
             title={title ?? label}
             data-row-id={rowId}
             {...data}
+            disabled={disabled}
+            onMouseDown={onMouseDown}
             onClick={onClick}
             className={`grid place-items-center w-btn h-btn rounded shrink-0 transition-colors
-                hover:bg-text/[0.06] ${FOCUS_RING}
+                hover:bg-text/[0.06] ${FOCUS_RING} disabled:opacity-40 disabled:pointer-events-none
                 ${active ? 'text-text bg-text/[0.06]' : 'text-muted hover:text-text'} ${className}`}
         >
             <Icon name={icon} size={size} />
