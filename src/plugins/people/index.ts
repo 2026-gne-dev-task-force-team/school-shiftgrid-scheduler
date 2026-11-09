@@ -37,7 +37,7 @@ export const peoplePlugin = definePlugin({
             }],
             commands: [
                 { id: 'people.open', title: '사람 명단 열기', icon: 'users', keys: 'Mod+Alt+P' },
-                { id: 'people.openList', title: '명단 열기', icon: 'users' },
+                { id: 'people.openList', title: '명단 열기', icon: 'users', palette: false },
             ],
             ribbon: [{ commandId: 'people.open', icon: 'users', order: 3 }],
             // 🔴 노드 타입 둘(명단·사람) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.

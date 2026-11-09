@@ -37,7 +37,7 @@ export const roomsPlugin = definePlugin({
             }],
             commands: [
                 { id: 'rooms.open', title: '방 목록 열기', icon: 'door' },
-                { id: 'rooms.openList', title: '목록 열기', icon: 'door' },
+                { id: 'rooms.openList', title: '목록 열기', icon: 'door', palette: false },
             ],
             ribbon: [{ commandId: 'rooms.open', icon: 'door', order: 4 }],
             // 🔴 노드 타입 둘(목록·방) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.

@@ -37,7 +37,7 @@ export const timetableGridPlugin = definePlugin({
             }],
             commands: [
                 { id: 'timetable-grid.open', title: '시간표 열기', icon: 'schedule', keys: 'Mod+Alt+T' },
-                { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'schedule' },
+                { id: 'timetable-grid.openSheet', title: '시간표 열기(탐색기)', icon: 'schedule', palette: false },
                 { id: 'timetable-grid.duplicate', title: '표 복사(통째)', icon: 'copy' },
             ],
             ribbon: [{ commandId: 'timetable-grid.open', icon: 'schedule', order: 4 }],
