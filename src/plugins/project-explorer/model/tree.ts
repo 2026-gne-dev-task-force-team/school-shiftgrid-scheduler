@@ -274,6 +274,8 @@ export function move(
     if (parentId === id) return tree;
     if (isDescendant(tree, parentId, id)) return tree;        // 제 자손 밑으로 — 사이클
     if (canMove && !canMove(node.type, id)) return tree;      // 🔑 can.move 관문 — 드래그·메뉴가 뚫는 것을 막는다(remove·restore 는 안 넘긴다)
+    // 🔴 싱글톤(unique:'tree')은 제 부모 안에서 순서만 바꾼다(고정 구역 순서 · 쥔님 2026-11-09) — 다른 부모로는 못 간다.
+    if (canMove && uniqueOf?.(node.type) === 'tree' && parentOf(tree, id) !== parentId) return tree;
     if (canAccept && !canAccept(parent.type, node.type)) return tree;   // 🔴 accepts 최종 관문
     if (uniqueOf && violatesUnique(tree, node.type, parentId, id, uniqueOf)) return tree;   // 🔑 싱글톤 최종 관문(자기 제외)
 

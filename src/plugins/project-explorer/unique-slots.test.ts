@@ -121,6 +121,15 @@ describe('싱글톤(tree) — 탐색기에서 못 지운다(쥔님 2026-11-09 �
         expect(isDescendant(getState().tree, i1, getState().tree.trash)).toBe(false);
         expect(getState().tree.nodes[i1]).toBeDefined();
     });
+
+    it("'tree' 노드는 제 부모 안 순서는 바꾸고, 다른 부모로는 못 간다", () => {
+        const f = makeAtRoot('folder');
+        const i1 = makeAtRoot('app.info');
+        apiMove(i1, root(), 0);                                   // 같은 부모(루트) 맨 앞 — 된다
+        expect(getState().tree.nodes[root()].children.indexOf(i1)).toBe(0);
+        apiMove(i1, f);                                           // 폴더 안으로 — 거절
+        expect(parentOf(getState().tree, i1)).toBe(root());
+    });
 });
 
 // ─────────────────────────── 자동 슬롯 ───────────────────────────

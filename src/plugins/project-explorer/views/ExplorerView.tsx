@@ -63,6 +63,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
             const dn = tree.nodes[did];
             return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did)
                 && canDo(dn.type, did, 'move')
+                && (uniqueOf(dn.type) !== 'tree' || parentOf(tree, did) === tree.root)
                 && acceptsChild(rootNode.type, dn.type)
                 && !violatesUnique(tree, dn.type, tree.root, did, uniqueOf);
         });
@@ -103,6 +104,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
         const dn = tree.nodes[did];
         return !!dn && destParent !== did && !isDescendant(tree, destParent, did)
             && canDo(dn.type, did, 'move')
+            && (uniqueOf(dn.type) !== 'tree' || parentOf(tree, did) === destParent)   // 싱글톤은 제 부모 안 순서만
             && acceptsChild(dp.type, dn.type)
             && !violatesUnique(tree, dn.type, destParent, did, uniqueOf);
     });
