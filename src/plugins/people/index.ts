@@ -7,14 +7,11 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost, PropertiesPaneProps } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
-import { ListTab } from './views/ListTab';
-import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget, PERSON_TYPE } from './nodes';
+import { peopleNodeTypes, peopleNodeTypeImpl, initPeople, getKit, PERSON_TYPE } from './nodes';
 import { peopleApi } from './api';
-import { PersonProps } from './views/PersonProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'people.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로 적는다.
 const SHEET_ID = 'people.sheet';
@@ -24,10 +21,10 @@ export const peoplePlugin = definePlugin({
         ...manifest,
         // 🔴 people 인터페이스를 채운다(provides) — 모듈 값은 아래 modules.people(짝). 학교 명부·계정이 이걸 읽는다.
         provides: { people: '0.1.0' },
-        // 🔴 명단·사람은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
-        requires: { nodes: '^0.1' },
-        // 레코드 뷰가 있으면 그 목록 화면으로 그린다(없으면 간이 표) — 있으면 쓰는 것이라 supports
-        supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
+        // 🔴 명단·사람은 노드다 — nodes 없으면 의미가 없으니 requires(nodeTypes 를 기여하므로 호스트 검사에서도 필수).
+        //    명단은 컬렉션 바닥(collection)으로 짠다 — 없으면 의미가 없으니 requires(옛 간이 표 갈래는 걷었다). 줄 문서는 있으면 쓰니 supports.
+        requires: { nodes: '^0.1', 'collection': '^0.2' },
+        supports: { 'page-doc': '^0.1' },
         contributes: {
             // 🔴 people 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 사람 명단 꾸러미가 약속·provides·화면을 한 폴더에.
             interfaces: [{ name: 'people', version: '0.1.0', label: '사람 명단', desc: '이름을 담는 명단' }],
@@ -50,16 +47,16 @@ export const peoplePlugin = definePlugin({
         },
     },
 
-    panes: { PersonProps },
+    // 🔴 화면·속성 칸은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(활성 전엔 빈 화면).
+    panes: { PersonProps: (props: PropertiesPaneProps) => { const k = getKit(); return k ? createElement(k.Props, props) : null; } },
     components: {
-        // 명단 화면 — 보고 있는 명단(store)의 사람들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: ({ host, peek, leaf }) => createElement(ListTab, { host, peek, leafId: leaf.id }),
+        Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
     commands: {
         // 리본 「사람 명단 열기」 — 보고 있는 명단은 그대로 두고 화면만 연다(없으면 안내가 뜬다).
         'people.open': (host: PluginHost) => { host.workspace.open(SHEET_ID, { where: 'center' }); },
-        // 명단 우클릭 「명단 열기」 — 대상은 nodes.ts 의 「메뉴가 가리킨 명단」(open 이 setActiveList + 화면 열기).
-        'people.openList': () => { const id = getMenuTarget(); if (id) getNodesApi()?.open(id); },
+        // 명단 우클릭 「명단 열기」 — 대상은 kit 의 「메뉴가 가리킨 명단」(open 이 보고 있는 명단 정하기 + 화면 열기).
+        'people.openList': () => { getKit()?.openMenuTarget(); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'list' 가 가리킨다(명단 open·menu). 사람은 순수 데이터라 없다.
     nodeTypes: peopleNodeTypeImpl,
@@ -68,13 +65,10 @@ export const peoplePlugin = definePlugin({
 
     lifecycle: {
         /**
-         * 선언 안 되는 것만 — 노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
+         * 선언 안 되는 것만 — 컬렉션 kit 만들기 + 노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
          *   🔴 ⛔ 여기서 화면을 열지 않는다 · 명단을 자동 생성하지 않는다(쥔님이 탐색기에서 만든다).
          */
-        onActivate(host: PluginHost) {
-            const nodes = host.modules.use<NodesApi>('nodes');
-            initPeopleNodes(nodes ?? null);
-        },
+        onActivate(host: PluginHost) { initPeople(host); },
     },
 });
 

@@ -9,6 +9,7 @@ import { PropertyList } from './views/PropertyList';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { normalizeRelation, relationToText } from './schema';
+import { defineCollection } from './define';
 
 export const recordViewApi: RecordViewApi = {
     version: 2,
@@ -16,4 +17,5 @@ export const recordViewApi: RecordViewApi = {
     PropertyList,
     fieldTypes,
     schema: { planConvert, normalizeRelation, relationToText },
+    defineCollection,
 };

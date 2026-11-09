@@ -24,7 +24,17 @@ const nodesProvider: PluginModule = {
     },
 } as PluginModule;
 
-afterEach(() => { for (const id of ['people', 'fake-nodes']) disposeOwner(id); });
+// 🔴 컬렉션 바닥(collection)도 requires — 그 약속을 들고 오고 채우는 가짜(레코드 뷰 꾸러미 흉내). defineCollection 은 활성 때 부르니 값은 빈 모듈이면 된다.
+const collectionProvider: PluginModule = {
+    manifest: {
+        id: 'fake-collection', name: 'RV', version: '0.1.0', minHostVersion: '0.1.0',
+        provides: { collection: '0.2.0' },
+        contributes: { interfaces: [{ name: 'collection', version: '0.2.0' }] },
+    },
+    modules: { collection: { defineCollection: () => ({ init: () => null }) } },
+} as unknown as PluginModule;
+
+afterEach(() => { for (const id of ['people', 'fake-nodes', 'fake-collection']) disposeOwner(id); });
 
 describe('people 약속 — 값 0 · 꾸러미가 들고 옴 · 활성', () => {
     it('🔴 contracts/people 는 런타임 값이 0이다(타입만 — 컴파일 뒤 사라진다)', () => {
@@ -41,7 +51,7 @@ describe('people 약속 — 값 0 · 꾸러미가 들고 옴 · 활성', () => {
     });
 
     it('켜면 막히지 않고 약속 목록에 people 이 people 꾸러미가 채운 것으로 뜬다', () => {
-        activateAll([nodesProvider, peoplePlugin]);
+        activateAll([nodesProvider, collectionProvider, peoplePlugin]);
         const p = listPlugins().find((x) => x.id === 'people')!;
         expect(p.failed).toBe(false);
         expect(p.blocked).toBe(false);

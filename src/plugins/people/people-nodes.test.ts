@@ -1,7 +1,7 @@
 /**
  * 사람 명단 노드 증명 — 「명단(people.list)은 탐색기에 보이고, 사람(people.person)은 record 라 0줄. 저장·휴지통은 노드로」.
- *   달력 calendar-nodes.test 꼴: 노드 스토어(kv)를 메모리 Map 으로 모킹하고 탐색기 스토어를 세운 뒤,
- *   people 이 꽂는 타입 둘로 명단·사람을 만들어 본다. 다리(nodes.ts) 조작(더하기·휴지통·순서·붙여 넣기)도 여기서 잰다.
+ *   다리 조작(더하기·휴지통·순서·붙여 넣기)의 본체는 컬렉션 바닥이라 collection/define.test 가 잰다 — 여기는
+ *   ① 명단이 꽂는 실제 타입 둘·impl ② people 모듈 표면(이름·메모 ↔ 칸 값) ③ 설정(config)이 바닥에 제대로 얹히는지만 본다.
  *   ⛔ 실명 금지(공개 레포) — 지어낸 이름만.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -27,10 +27,9 @@ import { registerType, clearTypes, isRecordType, isContainerType } from '../expl
 import { clearDerived } from '../explorer/model/derive';
 import { flatten } from '../explorer/model/tree';
 import { buildMainRows } from '../explorer/views/rows';
-import {
-    peopleNodeTypes, peopleNodeTypeImpl, LIST_TYPE, PERSON_TYPE,
-    initPeopleNodes, peopleIn, addPerson, removePerson, nudgePerson, pastePeople, listsOf, inTrash,
-} from './nodes';
+import { defineCollection } from '../collection/define';
+import { peopleNodeTypes, peopleNodeTypeImpl, LIST_TYPE, PERSON_TYPE, getKit, setKit } from './nodes';
+import { PERSON_CONFIG } from './config';
 import { peopleApi } from './api';
 
 function host(): PluginHost {
@@ -40,12 +39,13 @@ function host(): PluginHost {
     } as unknown as PluginHost;
 }
 
-/** 폴더 + people 타입 둘을 꽂은 NodesApi 하나 + 다리 연결. */
+/** 폴더 + people 타입 둘을 꽂은 NodesApi 하나 + 컬렉션 kit 연결(활성이 하는 일을 직접). */
 function wire() {
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
     const api = makeNodesApi('people');
     for (const nt of peopleNodeTypes) api.registerContributed(nt, { nodeTypes: peopleNodeTypeImpl }, host());
-    initPeopleNodes(api);
+    setKit(defineCollection(PERSON_CONFIG));
+    getKit()!.init(api);
     return api;
 }
 
@@ -54,7 +54,7 @@ beforeEach(async () => {
     clearTypes(); clearDerived(); __resetPersistForTest();
     await initStore(host());
 });
-afterEach(() => { initPeopleNodes(null); __resetPersistForTest(); });
+afterEach(() => { getKit()?.init(null); setKit(null); __resetPersistForTest(); });
 
 describe('타입 둘 — 명단은 보이고 사람(record)은 탐색기 0줄', () => {
     it('접두사 people. · 명단은 flatten 에 · 사람은 안 보이고 byType·children 엔 있다', () => {
@@ -64,7 +64,7 @@ describe('타입 둘 — 명단은 보이고 사람(record)은 탐색기 0줄', 
 
         const root = api.roots.main;
         const lid = api.create(root, { type: LIST_TYPE, name: '우리 반' });
-        const pid = api.create(lid, { type: PERSON_TYPE, name: '김하나', data: { memo: '반장' } });
+        const pid = api.create(lid, { type: PERSON_TYPE, name: '김하나', data: { values: { memo: '반장' } } });
         expect(lid).not.toBe('');
         expect(pid).not.toBe('');
 
@@ -74,7 +74,6 @@ describe('타입 둘 — 명단은 보이고 사람(record)은 탐색기 0줄', 
         expect(flatIds).not.toContain(pid);      // 사람은 어디에도 안 보인다
         expect(buildMainRows(tree, root, isRecordType).map((r) => r.id)).not.toContain(pid);
 
-        // API 론 보인다
         expect(api.byType(PERSON_TYPE).map((n) => n.id)).toEqual([pid]);
         expect(api.byType(LIST_TYPE).map((n) => n.id)).toEqual([lid]);
         expect(api.children(lid).map((n) => n.id)).toContain(pid);
@@ -83,81 +82,66 @@ describe('타입 둘 — 명단은 보이고 사람(record)은 탐색기 0줄', 
     it('명단 안에 명단 — 명단은 명단·폴더·사람을 받는다(달력 저장소와 같다)', () => {
         const api = wire();
         const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '전교' });
-        const sub = api.create(lid, { type: LIST_TYPE, name: '1학년' });     // 명단 안 명단
+        const sub = api.create(lid, { type: LIST_TYPE, name: '1학년' });
         const fid = api.create(api.roots.main, { type: 'folder', name: '폴더' });
-        api.move(fid, lid);                                                   // 폴더도 든다
-        const pid = api.create(lid, { type: PERSON_TYPE, name: '이둘' });      // 사람도 든다
+        api.move(fid, lid);
+        const pid = api.create(lid, { type: PERSON_TYPE, name: '이둘' });
         expect(api.parent(sub)).toBe(lid);
         expect(api.parent(fid)).toBe(lid);
         expect(api.children(lid).map((n) => n.id)).toEqual(expect.arrayContaining([sub, fid, pid]));
     });
+
+    it('우클릭 메뉴(impl)는 kit 를 거친다 — 「명단 열기」 명령 하나', () => {
+        const api = wire();
+        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
+        expect(peopleNodeTypeImpl.list.menu(host(), lid)).toEqual([{ label: '명단 열기', icon: 'users', commandId: 'people.openList' }]);
+    });
 });
 
-describe('다리 조작 — 더하기·휴지통·순서·붙여 넣기', () => {
-    it('peopleIn 은 그 명단의 살아 있는 사람만, 이름·메모를 읽는다', () => {
-        const api = wire();
-        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
-        addPerson(lid, { name: '가가', memo: '첫째' });
-        addPerson(lid, { name: '나나' });
-        const rows = peopleIn(lid);
-        expect(rows.map((p) => p.name)).toEqual(['가가', '나나']);
-        expect(rows[0].memo).toBe('첫째');
-        expect(rows[1].memo).toBeUndefined();
-        expect(rows.every((p) => p.listId === lid)).toBe(true);
-    });
-
-    it('지우기 = 휴지통 — peopleIn 에서 빠지지만 노드는 남고 inTrash 가 참', () => {
-        const api = wire();
-        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
-        const a = addPerson(lid, { name: '있다가' });
-        addPerson(lid, { name: '남을이' });
-        removePerson(a);
-        expect(peopleIn(lid).map((p) => p.name)).toEqual(['남을이']);   // 목록에서 빠진다
-        expect(api.get(a)).toBeTruthy();                                  // 노드는 영구 삭제가 아니다
-        expect(inTrash(a)).toBe(true);                                    // 휴지통에 있다
-    });
-
-    it('순서 바꾸기 — nudge 로 위·아래 한 칸', () => {
-        const api = wire();
-        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
-        const a = addPerson(lid, { name: '하나' });
-        addPerson(lid, { name: '둘' });
-        addPerson(lid, { name: '셋' });
-        nudgePerson(a, 1);                                               // 하나를 아래로
-        expect(peopleIn(lid).map((p) => p.name)).toEqual(['둘', '하나', '셋']);
-        nudgePerson(a, -1);                                              // 다시 위로
-        expect(peopleIn(lid).map((p) => p.name)).toEqual(['하나', '둘', '셋']);
-    });
-
-    it('붙여 넣기 — 탭·줄바꿈 텍스트가 사람 여럿이 되고 빈 줄은 무시', () => {
-        const api = wire();
-        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
-        const ids = pastePeople(lid, '첫째\t메모1\r\n\n둘째\t메모2\n셋째');
-        expect(ids.length).toBe(3);
-        const rows = peopleIn(lid);
-        expect(rows.map((p) => p.name)).toEqual(['첫째', '둘째', '셋째']);
-        expect(rows.map((p) => p.memo ?? '')).toEqual(['메모1', '메모2', '']);
-    });
-
-    it('같은 사람을 두 명단에 — 그냥 다른 두 줄이다(연결 없음)', () => {
-        const api = wire();
-        const l1 = api.create(api.roots.main, { type: LIST_TYPE, name: '명단A' });
-        const l2 = api.create(api.roots.main, { type: LIST_TYPE, name: '명단B' });
-        const p1 = addPerson(l1, { name: '같은이름' });
-        const p2 = addPerson(l2, { name: '같은이름' });
-        expect(p1).not.toBe(p2);                                         // 노드 id 가 다르다
-        expect(peopleIn(l1).map((p) => p.id)).toEqual([p1]);
-        expect(peopleIn(l2).map((p) => p.id)).toEqual([p2]);
-    });
-
-    it('people 모듈 표면(peopleApi) 도 다리로 같은 값을 준다', () => {
+describe('people 모듈 표면 — 이름·메모 ↔ 칸 값', () => {
+    it('addPerson·peopleIn·updatePerson·movePerson·pastePeople 가 같은 값을 준다', () => {
         const api = wire();
         const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '표면명단' });
-        peopleApi.addPerson(lid, { name: '표면이' });
+        const a = peopleApi.addPerson(lid, { name: '표면이', memo: '첫째' });
+        peopleApi.addPerson(lid, { name: '둘째' });
         expect(peopleApi.version).toBe(1);
         expect(peopleApi.lists().map((l) => l.name)).toContain('표면명단');
-        expect(peopleApi.peopleIn(lid).map((p) => p.name)).toEqual(['표면이']);
-        // listsOf 직통도 같다
-        expect(listsOf().map((l) => l.id)).toContain(lid);
+        const rows = peopleApi.peopleIn(lid);
+        expect(rows.map((p) => [p.name, p.memo])).toEqual([['표면이', '첫째'], ['둘째', undefined]]);
+        expect(rows.every((p) => p.listId === lid)).toBe(true);
+
+        peopleApi.updatePerson(a, { name: '바뀐이', memo: '' });
+        expect(peopleApi.person(a)).toEqual({ id: a, listId: lid, name: '바뀐이' });   // 빈 메모는 안 싣는다
+
+        const ids = peopleApi.pastePeople(lid, '셋째\t메모3\n\n넷째');
+        expect(ids).toHaveLength(2);
+        expect(peopleApi.peopleIn(lid).map((p) => p.name)).toEqual(['바뀐이', '둘째', '셋째', '넷째']);
+
+        const l2 = api.create(api.roots.main, { type: LIST_TYPE, name: '다른 명단' });
+        peopleApi.movePerson(a, l2);
+        expect(peopleApi.peopleIn(l2).map((p) => p.id)).toEqual([a]);
+        peopleApi.removePerson(a);
+        expect(peopleApi.peopleIn(l2)).toEqual([]);
+    });
+
+    it('onChange 는 노드 변경마다 깨우고 dispose 로 멈춘다', () => {
+        const api = wire();
+        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });
+        let n = 0;
+        const sub = peopleApi.onChange(() => { n++; });
+        peopleApi.addPerson(lid, { name: '하나' });
+        expect(n).toBeGreaterThan(0);
+        sub.dispose();
+        const before = n;
+        peopleApi.addPerson(lid, { name: '둘' });
+        expect(n).toBe(before);
+    });
+});
+
+describe('설정 — 기본 칸은 이름·메모, 트리 없음', () => {
+    it('baseFields 는 이름·메모 둘뿐이고 전부 locked(지우기·타입 바꾸기 금지)', () => {
+        expect(PERSON_CONFIG.baseFields.map((f) => f.key)).toEqual(['name', 'memo']);
+        expect(PERSON_CONFIG.baseFields.every((f) => f.locked)).toBe(true);
+        expect(PERSON_CONFIG.tree).toBeUndefined();
     });
 });
