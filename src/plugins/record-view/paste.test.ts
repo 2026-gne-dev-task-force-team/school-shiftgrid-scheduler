@@ -2,25 +2,8 @@
  * 붙여넣기 — 엑셀 TSV 파싱 · 행·칸 계획(칸이 모자라면 글자 칸을 만든다 · 모르는 선택지는 만든다).
  */
 import { describe, it, expect } from 'vitest';
-import { buildPaste, parseTsv } from './paste';
+import { buildPaste } from './paste';
 import type { RecordField } from './contracts/record-view';
-
-describe('parseTsv', () => {
-    it('탭=칸 · 줄바꿈=행 · 끝의 빈 줄 하나는 버린다 · CRLF 도 받는다', () => {
-        expect(parseTsv('a\tb\nc\td\n')).toEqual([['a', 'b'], ['c', 'd']]);
-        expect(parseTsv('a\tb\r\nc\td')).toEqual([['a', 'b'], ['c', 'd']]);
-    });
-    it('큰따옴표 칸 안의 탭·줄바꿈·"" 는 글자', () => {
-        expect(parseTsv('"a\tb"\t"줄\n바꿈"\t"그 ""말"""\n')).toEqual([['a\tb', '줄\n바꿈', '그 "말"']]);
-    });
-    it('한 칸짜리·빈 문자열', () => {
-        expect(parseTsv('x')).toEqual([['x']]);
-        expect(parseTsv('')).toEqual([]);
-    });
-    it('빈 칸이 중간에 있어도 칸 수를 지킨다', () => {
-        expect(parseTsv('a\t\tc')).toEqual([['a', '', 'c']]);
-    });
-});
 
 describe('buildPaste', () => {
     const fields: RecordField[] = [

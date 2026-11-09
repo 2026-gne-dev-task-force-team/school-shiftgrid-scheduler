@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Icon, IconButton } from '../../pane-ui-system';
+import { Icon, IconButton, parseClipboard } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
@@ -19,7 +19,6 @@ import { calcFnsFor, runCalc } from './calc';
 import { deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
-import { parseTsv } from './paste';
 import { fieldTypes } from './fields/registry';
 import { isImeEnter } from './fields/ime';
 import { newField } from './schema';
@@ -278,8 +277,8 @@ export function RecordView<T>({
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         const text = e.clipboardData.getData('text/plain');
         if (!text) return;
-        const matrix = parseTsv(text);
-        if (matrix.length === 0) return;
+        const matrix = parseClipboard(text);
+        if (matrix.every((r) => r.length === 0)) return;
         e.preventDefault();
         const width = Math.max(...matrix.map((r) => r.length));
         const keys: (string | null)[] = Array.from({ length: width }, (_, i) => visibleFields[i]?.key ?? null);

@@ -3,33 +3,7 @@ import { PILL_COLORS } from './colors';
 import { fieldTypes } from './fields/registry';
 import { newField } from './schema';
 
-/**
- * 붙여넣기 — 엑셀·시트가 클립보드에 싣는 TSV 를 행렬로(순수). 표 편집기의 규칙을 「베낀다」(값 import 는 못 한다 — 구조 검사 ⑨).
- *   규칙: 탭=칸 · 줄바꿈=행 · 큰따옴표로 감싼 칸은 안의 탭·줄바꿈·`""` 를 글자로 · 끝의 빈 줄 하나는 버린다(엑셀이 붙인다) · CRLF 도 받는다.
- */
-export function parseTsv(text: string): string[][] {
-    const src = text.replace(/\r\n?/g, '\n');
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let cur = '';
-    let quoted = false;
-    for (let i = 0; i < src.length; i++) {
-        const c = src[i];
-        if (quoted) {
-            if (c === '"') {
-                if (src[i + 1] === '"') { cur += '"'; i++; } else quoted = false;
-            } else cur += c;
-            continue;
-        }
-        if (c === '"' && cur === '') { quoted = true; continue; }
-        if (c === '\t') { row.push(cur); cur = ''; continue; }
-        if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; continue; }
-        cur += c;
-    }
-    if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row); }
-    return rows;
-}
-
+/** 붙여넣기 계획 — TSV 해석은 창틀 `parseClipboard` 가 한 벌(표 편집기와 같은 규칙). 여기는 행렬 → 새 행·칸 계획만. */
 export interface PastePlan {
     /** 붙여넣은 뒤의 칸 목록(모자란 칸을 글자 칸으로 만들고, 새 선택지를 덧붙였다) */
     fields: RecordField[];

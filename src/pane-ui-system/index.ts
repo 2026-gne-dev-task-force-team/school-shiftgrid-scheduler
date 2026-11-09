@@ -14,6 +14,8 @@
 export { setStoragePrefix, storageKey } from './storage';
 // 큰 자료용 보관 — IndexedDB(origin 당 5MB 천장 회피). 작은 설정은 host.storage(localStorage) 그대로.
 export { kvGet, kvSet, kvDel, kvEstimate, kvAvailable } from './kv';
+// 클립보드 TSV 해석·만들기 — 표 편집기·레코드 뷰가 한 벌을 쓴다(순수 함수)
+export { parseClipboard, toTsv } from './clipboard-tsv';
 // 창틀 동작의 명령 id — 창틀이 이름을 쥐고 앱이 run 을 꽂는다(「모든 동작은 명령」)
 export { FRAME_COMMAND, type FrameCommandId } from './frame-commands';
 // 되돌리기 공용 더미 + ⌘Z 판정 — 범위(더미)는 쓰는 쪽마다 따로 든다

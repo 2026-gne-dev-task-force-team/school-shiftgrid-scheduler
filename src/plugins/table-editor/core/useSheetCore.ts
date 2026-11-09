@@ -7,8 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
-import { parseClipboard, toTsv } from './tsv';
-import { undoKey } from '../../../pane-ui-system';
+import { undoKey, parseClipboard, toTsv } from '../../../pane-ui-system';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';

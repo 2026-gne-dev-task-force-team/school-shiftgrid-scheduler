@@ -2,7 +2,7 @@
  * TSV 왕복 검산 — 탭·줄바꿈 기본 + 🔴 따옴표 안 줄바꿈·탭·따옴표 보존(붙여넣기 매트릭스 M2).
  */
 import { describe, expect, it } from 'vitest';
-import { parseClipboard, toTsv } from './tsv';
+import { parseClipboard, toTsv } from './clipboard-tsv';
 
 describe('parseClipboard — 기본', () => {
     it('탭=칸, 줄바꿈=행', () => {

@@ -4,7 +4,7 @@
 import type { ComponentType } from 'react';
 import type { TableApi, TableProps } from './contracts/table';
 import { Table } from './Table';
-import { parseClipboard, toTsv } from './core/tsv';
+import { parseClipboard, toTsv } from '../../pane-ui-system';
 import { listFeatureIds, registerFeature } from './features/registry';
 
 export const tableApi: TableApi = {
