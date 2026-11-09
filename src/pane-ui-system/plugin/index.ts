@@ -22,6 +22,7 @@ export type {
     InterfaceContribution, InterfaceHook,
 } from './types';
 export { HOST_VERSION } from './types';
+export { HOST_SERVICES, type HostService } from './host-services';
 
 export { definePlugin } from './define';
 export { makeHost, resetFirstRunFlags } from './host';
