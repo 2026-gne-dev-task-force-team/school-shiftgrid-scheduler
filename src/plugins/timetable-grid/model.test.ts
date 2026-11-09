@@ -6,7 +6,7 @@ import {
     blankTimetable, cellKey, parseCellKey, columnCount, rowCount, defaultColName, colName,
     setCellText, getCell, isCovered, canMerge, mergeCells, unmergeCells,
     addRow, removeRow, addColumn, removeColumn, renameRow, renameColumn, setColumnDay, toggleColumnKind,
-    toggleRangeKind,
+    toggleRangeKind, colWidth, setColWidth, viewRange, setView, setRowTime, COL_W, COL_MIN_W,
 } from './model';
 import type { TimetableData } from './model';
 
@@ -171,5 +171,33 @@ describe('머리 이름·열 꼴', () => {
         expect(t.range.kind).toBe('repeat');
         t = toggleRangeKind(t);
         expect(t.range.kind).toBe('period');
+    });
+});
+
+describe('열 너비·보이는 시각(Q4 T2·T4·T5)', () => {
+    it('열 너비 — 기본 · 바꾸면 저장 · 기본값으로 돌리면 덮어쓰기가 걷힌다 · 하한', () => {
+        let t = blankTimetable();
+        expect(colWidth(t, 1)).toBe(COL_W);
+        t = setColWidth(t, 1, 200);
+        expect(colWidth(t, 1)).toBe(200);
+        expect(setColWidth(t, 1, 10).colWidths).toEqual({ '1': COL_MIN_W });
+        expect(setColWidth(t, 1, COL_W).colWidths).toBeUndefined();
+    });
+    it('열을 지우면 그 오른쪽 열 너비가 당겨진다', () => {
+        let t = setColWidth(setColWidth(blankTimetable(), 1, 200), 3, 300);
+        t = removeColumn(t, 1);
+        expect(t.colWidths).toEqual({ '2': 300 });
+    });
+    it('보이는 시각 — 자동은 행 시각을 정시로 감싼다 · 정하면 그것 · null 로 자동 복귀', () => {
+        let t = blankTimetable();   // 09:00 ~ 14:50
+        expect(viewRange(t)).toEqual({ start: 540, end: 900 });
+        t = setRowTime(t, 5, 840, 905);   // 끝 15:05 → 16:00 까지 감싼다
+        expect(viewRange(t).end).toBe(960);
+        t = setView(t, { start: 420, end: 1080 });
+        expect(viewRange(t)).toEqual({ start: 420, end: 1080 });
+        expect(viewRange(setView(t, null))).toEqual({ start: 540, end: 960 });
+    });
+    it('보이는 시각 — 끝이 시작보다 앞서면 15분 뒤로 민다', () => {
+        expect(setView(blankTimetable(), { start: 600, end: 500 }).view).toEqual({ start: 600, end: 615 });
     });
 });

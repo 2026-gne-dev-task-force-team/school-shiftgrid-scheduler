@@ -108,8 +108,8 @@
     "ctxDirect": 5
   },
   "plugins/timetable-grid": {
-    "bareButton": 16,
-    "arbPx": 23,
+    "bareButton": 2,
+    "arbPx": 9,
     "cmdIdString": 0,
     "ctxDirect": 0
   },

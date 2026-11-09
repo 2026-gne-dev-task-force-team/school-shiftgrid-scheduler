@@ -32,6 +32,8 @@ export interface TableDoc {
     headerCol?: boolean;
     /** M5 넘버스 — 꼬리 행 · 표 스타일 프리셋. */
     footerRow?: boolean;
+    /** S1 — 열 머리(A·B·C…) 늘 보이기. */
+    colTabs?: boolean;
     style?: TableStylePreset;
     rowTones?: Record<string, CellTone>;
     colTones?: Record<string, CellTone>;
@@ -106,9 +108,9 @@ export const tableNodeTypeImpl = {
 /** 표 노드 타입 하나 — 파일 역할(열면 표 화면). 폴더·다른 표 밑에 만들 수 있다. */
 export const tableNodeTypes: NodeTypeContribution<'table'>[] = [
     {
-        type: TABLE_TYPE, body: 'sheet', label: '표', icon: 'table',
+        type: TABLE_TYPE, body: 'sheet', label: '시트', icon: 'table',
         openable: true,
-        create: { label: '표', under: ['folder', TABLE_TYPE] },
+        create: { label: '시트', under: ['folder', TABLE_TYPE] },
         impl: 'table',
     },
 ];
@@ -173,7 +175,7 @@ export function liveTables(): PublicNode[] {
  */
 export function createTable(): string | null {
     if (!api) return null;
-    const name = uniqueName('표', api.byType(TABLE_TYPE).map((n) => n.name));
+    const name = uniqueName('시트', api.byType(TABLE_TYPE).map((n) => n.name));
     return api.create(api.roots.main, { type: TABLE_TYPE, name, data: blankTable() }) || null;
 }
 

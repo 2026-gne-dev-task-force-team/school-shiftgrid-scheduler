@@ -1,5 +1,5 @@
 /**
- * 그리드 화면이 「지금 보고 있는 시간표」 하나(시간표든 특별이든)를 쥔다 — 달력 scope·명단 active 와 같은 결.
+ * 그리드 화면이 「지금 보고 있는 시간표」 하나를 쥔다 — 달력 scope·명단 active 와 같은 결.
  *   🔴 ⛔ 저장 안 함(기기에 안 남긴다). 탐색기에서 시간표를 열면(두 번 누르기·open) 그 노드 id 가 된다.
  */
 import { useSyncExternalStore } from 'react';

@@ -18,10 +18,10 @@ export function StartScreen() {
     return (
         <StartScreenBase
             icon="table"
-            title="표"
-            description="새로 만들거나, 만들어 둔 표를 고른다."
-            newLabel="새 표"
-            newHint="빈 표(3×3)가 바로 열린다"
+            title="시트"
+            description="새로 만들거나, 만들어 둔 시트를 고른다."
+            newLabel="새 시트"
+            newHint="빈 시트(3×3)가 바로 열린다"
             items={items}
             onNew={make}
             onOpen={open}

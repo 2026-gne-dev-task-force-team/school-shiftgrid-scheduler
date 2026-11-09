@@ -62,6 +62,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     features={DEFAULT_FEATURES}
                     hideColHeader
                     toolbar
+                    colTabs={doc.colTabs}
                     headerRow={doc.headerRow}
                     headerCol={doc.headerCol}
                     decorate={decorate}

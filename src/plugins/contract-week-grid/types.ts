@@ -8,7 +8,7 @@
  *     - 칸    : 한 칸의 글자 + 셀 병합(세로 필수·가로 허용). 글자의 뜻은 그리드가 모른다(나중 플러그인이 알아본다).
  *   🔗 uses: clock — 행 시각(TimeRange·Minute)이 contract-clock 의 공용 시각 낱말을 쓴다.
  *   ⭐ 이 약속은 **타입만**(값 0) — 제공자(그리드)가 자기 시간표를 이 꼴로 노출하고, 소비자(달력 연동 등)가 읽는다.
- *      특히 `ScheduleEntry` 목록이 「날짜+시각+글자+출처」로, 나중에 달력으로 가는 재료다(달력 약속은 다른 레인 몫).
+ *      특히 `ScheduleEntry` 목록이 「날짜+시각+글자」로, 나중에 달력으로 가는 재료다(달력 약속은 다른 레인 몫).
  */
 import type { Minute, TimeRange } from '../contract-clock/types';
 
@@ -59,24 +59,13 @@ export interface TimetableData {
     cells: Record<string, Cell>;
     /** 열 머리 이름 덮어쓰기 — 열쇠는 열 인덱스 문자열. 없으면 꼴에서 뽑은 기본 이름(요일/일차)을 쓴다. */
     colNames?: Record<string, string>;
+    /** 열 너비(px) — 열쇠는 열 인덱스 문자열. 없으면 기본 너비. 끌어서 조절(T2). */
+    colWidths?: Record<string, number>;
+    /** 그리드에 보일 시각 범위(분) — 없으면 행 시각에서 자동(T4·T5). 속성 패널에서 고친다. */
+    view?: { start: Minute; end: Minute };
 }
 
-/** 특별 시간표가 아래 층(기본·다른 특별)에 얹히는 방식. */
-export type SpecialMode =
-    | 'overlay'    // 우선 적용 — 글자가 든 칸만 바뀐다
-    | 'replace';   // 덮어쓰기 — 그 범위 동안 통째로 바뀐다
-
-/**
- * 특별 시간표 — 기본 시간표와 같은 모양(열·행) 위에 범위 동안 얹힌다(1차: 모양 공유, 칸 글자만 다르다).
- *   우선순위: priority 숫자가 있으면 그게 먼저(쥔님 16:28), 없으면 노드 위치로 매긴다.
- */
-export interface SpecialData extends TimetableData {
-    mode: SpecialMode;
-    /** 사용자가 직접 매긴 우선순위(클수록 위). 없으면 노드 위치로 정한다. */
-    priority?: number;
-}
-
-/** 일정 한 줄 — 「어느 날짜·시각에 무엇이 적용되나」. 🔴 나중에 달력으로 갈 재료(날짜+시작~끝+글자+출처). */
+/** 일정 한 줄 — 「어느 날짜·시각에 무엇이 적용되나」. 🔴 나중에 달력으로 갈 재료(날짜+시작~끝+글자). */
 export interface ScheduleEntry {
     date: string;      // 'YYYY-MM-DD'
     col: number;       // 적용된 열 인덱스
@@ -84,7 +73,6 @@ export interface ScheduleEntry {
     start: Minute;     // 시작(분)
     end: Minute;       // 끝(분)
     text: string;      // 칸 글자
-    source: string;    // 출처 — 'base' 또는 특별 시간표 노드 id
 }
 
 /**
@@ -96,6 +84,6 @@ export interface WeekGrid {
     sheets(): readonly { id: string; name: string }[];
     /** 그 시간표의 데이터(없으면 null). */
     dataOf(sheetId: string): TimetableData | null;
-    /** 그 시간표가 [from,to] 날짜 구간에 내는 일정 목록(특별 시간표까지 반영). */
+    /** 그 시간표가 [from,to] 날짜 구간에 내는 일정 목록. */
     schedule(sheetId: string, from: string, to: string): readonly ScheduleEntry[];
 }
