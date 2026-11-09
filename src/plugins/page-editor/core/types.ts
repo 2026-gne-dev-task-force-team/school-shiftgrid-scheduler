@@ -36,6 +36,8 @@ export interface Block {
 /** 페이지 = 블록 배열. */
 export interface Page {
     blocks: Block[];
+    /** 페이지 아이콘(이모지 한 글자 남짓) — 없으면 아이콘 없음. 노드 data 에 그대로 저장(옛 데이터엔 없어도 그만). */
+    icon?: string;
 }
 
 let seq = 0;

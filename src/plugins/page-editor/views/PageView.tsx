@@ -332,6 +332,24 @@ export function PageView({ host }: { host: PluginHost }) {
     const node = getNodesApi()?.get(activeId);
     const copyMarkdown = () => { void navigator.clipboard?.writeText(exportMarkdown(pageRef.current)); };
 
+    // ── 제목·아이콘(요구 12·13) ──
+    // 제목 = 노드 이름(한 곳에만 산다). 고치면 그 자리에서 노드 rename(빈 값은 모델이 무시 → 옛 이름 유지).
+    const renameTitle = (name: string) => { getNodesApi()?.rename(activeId, name); };
+    // 제목에서 Enter → 본문 첫 블록으로(본문이 비어 있으면 빈 문단 하나 만들고 거기로).
+    const titleEnterToBody = () => {
+        const p = pageRef.current;
+        if (p.blocks.length === 0) {
+            const nb = emptyBlock();
+            setActiveBlockId(nb.id);
+            commitPage({ ...p, blocks: [nb] }, { id: nb.id, offset: 0 });
+            return;
+        }
+        setActiveBlockId(p.blocks[0].id);
+        setFocusIntent({ id: p.blocks[0].id, offset: 0 });
+    };
+    // 아이콘은 페이지 데이터에 — 되돌리기·저장은 블록과 같은 길(commitPage).
+    const setIcon = (icon: string | undefined) => { commitPage({ ...pageRef.current, icon }); };
+
     // 번호 목록의 보이는 숫자 — 이어진 묶음 안에서 1,2,3…
     const ordinals: Record<string, number> = {};
     let run = 0;
@@ -347,7 +365,9 @@ export function PageView({ host }: { host: PluginHost }) {
                 <button type="button" className={btn} title="페이지 목록" onClick={() => setActivePage(null)}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <Icon name="fileText" size={15} className="text-muted" />
+                {page.icon
+                    ? <span className="text-[15px] leading-none select-none">{page.icon}</span>
+                    : <Icon name="fileText" size={15} className="text-muted" />}
                 <span className="font-medium text-text truncate">{node?.name ?? '페이지'}</span>
                 <div className="ml-auto flex items-center gap-1.5">
                     <button type="button" className={btn} disabled={!canUndo(hist)} onMouseDown={(e) => { e.preventDefault(); doUndo(); }}><Icon name="undo" size={12} /> 되돌리기</button>
@@ -361,6 +381,14 @@ export function PageView({ host }: { host: PluginHost }) {
                     className="max-w-3xl mx-auto px-6 py-8"
                     onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                 >
+                    <PageHeader
+                        key={activeId}
+                        initialName={node?.name ?? ''}
+                        icon={page.icon}
+                        onRename={renameTitle}
+                        onEnter={titleEnterToBody}
+                        onSetIcon={setIcon}
+                    />
                     {page.blocks.map((b, i) => (
                         <BlockRow
                             key={b.id}
@@ -387,6 +415,89 @@ export function PageView({ host }: { host: PluginHost }) {
                     ))}
                 </div>
             </div>
+        </div>
+    );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// 제목·아이콘(요구 12·13)
+// ──────────────────────────────────────────────────────────────────────────
+
+/** 자주 쓰는 이모지(하드코딩) — ⛔ 이모지 라이브러리 안 들인다(명세). 직접 입력칸이 나머지를 받는다. */
+const COMMON_EMOJI = [
+    '📄', '📝', '📌', '✅', '⭐', '🔥', '💡', '📊',
+    '📅', '📁', '🎯', '🚀', '❤️', '⚠️', '❓', '🔖',
+    '📎', '🗂️', '📈', '🧩', '🛠️', '🔑', '🏷️', '💬',
+    '🧠', '📍', '🎨', '🔍', '✏️', '📦',
+];
+
+/**
+ * 페이지 머리 — 큰 제목(= 노드 이름) + 그 위 아이콘. 상태(제목 글자·팝업)는 여기 로컬이고,
+ *   부모는 key={activeId} 로 페이지가 바뀔 때 통째로 갈아끼운다(제목 글자가 새 페이지로 안 샌다).
+ */
+function PageHeader(props: {
+    initialName: string;
+    icon?: string;
+    onRename: (name: string) => void;
+    onEnter: () => void;
+    onSetIcon: (icon: string | undefined) => void;
+}) {
+    const { icon, onRename, onEnter, onSetIcon } = props;
+    const [name, setName] = useState(props.initialName);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [custom, setCustom] = useState('');
+    const [hover, setHover] = useState(false);   // 호버-숨김은 Row 조각 한 곳에만(구조 검사) → 여기선 상태로
+
+    const choose = (emoji: string) => { onSetIcon(emoji); setPickerOpen(false); setCustom(''); };
+
+    const btn = 'flex items-center gap-1 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05]';
+
+    return (
+        <div className="mb-1" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+            {/* 아이콘 줄 — 없으면 hover 때 「아이콘 추가」, 있으면 눌러서 바꾸기/지우기 팝업 */}
+            <div className="relative mb-1">
+                {icon
+                    ? <button type="button" aria-label="아이콘 바꾸기" onClick={() => setPickerOpen((v) => !v)}
+                        className="text-[44px] leading-none rounded px-1 hover:bg-text/[0.05]">{icon}</button>
+                    : <button type="button" onClick={() => setPickerOpen((v) => !v)}
+                        className={`${btn} transition-opacity ${hover || pickerOpen ? 'opacity-100' : 'opacity-0'}`}>
+                        <Icon name="plus" size={12} /> 아이콘 추가
+                    </button>}
+                {pickerOpen && (
+                    <div className="absolute z-30 mt-1 w-64 rounded-md border border-line bg-panel shadow-lg p-2">
+                        <div className="grid grid-cols-8 gap-0.5 mb-2">
+                            {COMMON_EMOJI.map((e) => (
+                                <button key={e} type="button" onClick={() => choose(e)}
+                                    className="text-[18px] rounded py-0.5 hover:bg-text/[0.1]">{e}</button>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <input
+                                value={custom}
+                                onChange={(e) => setCustom(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && custom.trim()) { e.preventDefault(); choose(custom.trim()); } }}
+                                placeholder="직접 입력"
+                                maxLength={8}
+                                className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-[13px] text-text outline-none"
+                            />
+                            {icon && (
+                                <button type="button" onClick={() => { onSetIcon(undefined); setPickerOpen(false); }}
+                                    className={btn}><Icon name="trash" size={12} /> 지우기</button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* 제목 — 노드 이름과 한 몸. 빈칸이면 「제목 없음」 흐린 글씨. Enter 는 본문 첫 블록으로(조합 중엔 무시). */}
+            <input
+                value={name}
+                onChange={(e) => { setName(e.target.value); onRename(e.target.value); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); onEnter(); } }}
+                placeholder="제목 없음"
+                aria-label="페이지 제목"
+                className="w-full bg-transparent outline-none text-[32px] font-bold text-text placeholder:text-muted/50 placeholder:font-bold"
+            />
         </div>
     );
 }

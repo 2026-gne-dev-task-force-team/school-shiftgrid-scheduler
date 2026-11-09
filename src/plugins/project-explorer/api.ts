@@ -68,6 +68,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 type: item.type,
                 label: item.label,
                 icon: fns?.icon ?? item.icon ?? 'file',   // 함수 아이콘(impl) → 데이터 아이콘 → 기본 'file'
+                emoji: fns?.emoji,
                 container: item.container,
                 openable: item.openable,
                 open: fns?.open ? (id) => fns.open!(host, id) : undefined,

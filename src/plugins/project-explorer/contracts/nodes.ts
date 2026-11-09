@@ -56,6 +56,8 @@ export interface NodeTypeDef {
     type: string;
     label: string;
     icon: IconName | ((node: Node) => IconName);
+    /** 노드별 이모지(사용자가 고른 것) — 값이 있으면 탐색기가 icon 대신 이걸 그린다. 없으면 icon. */
+    emoji?: (node: Node) => string | undefined;
     /** 폴더 역할 — 자식을 받나(true), 어떤 타입만 받나({ accepts }). */
     container?: boolean | { accepts: string[] };
     /** 파일 역할 — 두 번 누르기·Enter 로 열리나. */
@@ -131,6 +133,7 @@ export interface NodeTypeDef {
  */
 export interface NodeTypeImplFns {
     icon?: (node: Node) => IconName;
+    emoji?: (node: Node) => string | undefined;
     open?: (host: PluginHost, nodeId: string) => void;
     derive?: (node: Node) => VirtualNode[];
     menu?: (host: PluginHost, nodeId: string) => MenuEntry[];

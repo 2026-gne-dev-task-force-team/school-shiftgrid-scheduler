@@ -79,6 +79,11 @@ export function iconOf(node: Node): IconName {
     return typeof def.icon === 'function' ? def.icon(node) : def.icon;
 }
 
+/** 이 노드의 사용자 이모지 — 있으면 뷰가 iconOf 대신 그린다(빈 문자열은 없음으로). */
+export function emojiOf(node: Node): string | undefined {
+    return registry.get(node.type)?.emoji?.(node) || undefined;
+}
+
 /** 「새로 만들기」 줄에 그릴 아이콘 — 그 타입 자신의 아이콘(어느 것을 만드는지 한눈에).
  *  노드를 봐야 정해지는 함수 아이콘은 아직 노드가 없으니 'plus' 로 둔다. */
 export function createIconOf(def: NodeTypeDef): IconName {
