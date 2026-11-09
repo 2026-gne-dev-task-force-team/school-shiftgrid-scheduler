@@ -408,7 +408,45 @@ export function RecordView<T>({
         }
         changeCells(changes);
     };
+    // ── 칸 편집 중 키 — 입력칸이 먼저 확정/취소하고(버블로 여기 도착), 여기서 다음 칸 편집·초점 복귀를 맡는다 ──
+    const [pendingGo, setPendingGo] = useState<{ r: number; c: number; edit: boolean; minLen: number } | null>(null);
+    useEffect(() => {
+        if (!pendingGo || rows.length < pendingGo.minLen) return;
+        const g = pendingGo;
+        setPendingGo(null);
+        setCur({ r: g.r, c: g.c }); setAnchor(null);
+        const pos = cellEl(g.r, g.c);
+        if (!pos) return;
+        pos.focus({ preventScroll: true });
+        const inner = pos.querySelector<HTMLElement>('[data-rv-cell]');
+        if (g.edit && inner && inner.tagName !== 'BUTTON') inner.click();   // 편집 열기 = 클릭과 같은 길(체크 단추는 건드리지 않는다)
+    }, [pendingGo, rows.length]);   // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { if (!pendingGo) return; const h = setTimeout(() => setPendingGo(null), 1500); return () => clearTimeout(h); }, [pendingGo]);
+    const onEditKey = (e: React.KeyboardEvent): boolean => {
+        const t = e.target as HTMLElement;
+        if (!t.matches('[data-rv-editing]') || e.nativeEvent.isComposing || e.keyCode === 229) return false;
+        const m = /^(\d+):(\d+)$/.exec(t.closest<HTMLElement>('[data-rv-pos]')?.dataset.rvPos ?? '');
+        if (!m) return false;
+        const r = +m[1], c = +m[2];
+        if (e.key === 'Escape') { setPendingGo({ r, c, edit: false, minLen: 0 }); return true; }
+        if (e.key === 'Enter') {
+            if (e.shiftKey && t.tagName === 'TEXTAREA') return true;   // 글 칸 줄바꿈 — 입력칸이 받는다
+            if (r + 1 < rows.length) setPendingGo({ r: r + 1, c, edit: true, minLen: 0 });
+            else if (onAddRecord) { onAddRecord(); setPendingGo({ r: r + 1, c, edit: true, minLen: rows.length + 1 }); }
+            return true;
+        }
+        if (e.key === 'Tab') {
+            const last = visibleFields.length - 1;
+            let nr = r, nc = c + (e.shiftKey ? -1 : 1);
+            if (nc > last) { nc = 0; nr = r + 1; } else if (nc < 0) { nc = last; nr = r - 1; }
+            if (nr < 0 || nr >= rows.length) { setPendingGo({ r, c, edit: false, minLen: 0 }); return true; }
+            setPendingGo({ r: nr, c: nc, edit: canEditCell(visibleFields[nc]), minLen: 0 });
+            return true;
+        }
+        return false;
+    };
     const onGridKeyDown = (e: React.KeyboardEvent) => {
+        if (onEditKey(e)) return;
         const t = e.target as HTMLElement;
         if (!cur || e.nativeEvent.isComposing || t.closest('input,textarea,select,[contenteditable="true"],[data-rv-editing]')) return;
         const mod = e.metaKey || e.ctrlKey;
@@ -679,7 +717,8 @@ export function RecordView<T>({
 
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
-                        <button type="button" data-rv-add onClick={onAddRecord}
+                        <button type="button" data-rv-add
+                            onClick={() => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); }}
                             className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>

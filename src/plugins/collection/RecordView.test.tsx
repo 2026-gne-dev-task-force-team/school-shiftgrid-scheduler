@@ -60,8 +60,8 @@ const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 const qa = (sel: string) => [...document.querySelectorAll(sel)] as HTMLElement[];
 const mi = (label: string) => [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent === label) as HTMLButtonElement | undefined;
 function click(el: Element | null) { act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })); }); }
-function setInput(el: HTMLInputElement, value: string) {
-    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+function setInput(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const set = Object.getOwnPropertyDescriptor(el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!;
     act(() => { set.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); });
 }
 function key(el: Element, k: string, init: KeyboardEventInit = {}) {
@@ -493,5 +493,78 @@ describe('R4 — 빈 상태 · 제목 없음 · 새 행', () => {
         act(() => add());
         expect(q('[data-rv-row="b"]')!.className).toContain('ui-pop-in');
         expect(q('[data-rv-row="a"]')!.className).not.toContain('ui-pop-in');
+    });
+});
+
+describe('칸 편집 키 — Enter·Shift+Enter·Tab·Esc·행 추가 단추', () => {
+    const two = [{ id: 'r1', f_t: 'A', f_x: 'a' }, { id: 'r2', f_t: 'B', f_x: 'b' }];
+    const open = (id: string, k: string) => { click(q(`[data-rv-row="${id}"] [data-rv-cell="${k}"]`)); return q('[data-rv-editing]') as HTMLInputElement; };
+    const editingAt = () => q('[data-rv-editing]')?.closest('[data-rv-pos]')?.getAttribute('data-rv-pos');
+
+    it('Enter = 저장 + 아래 행 같은 칸 편집', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        const input = open('r1', 'f_x');
+        setInput(input, 'z');
+        key(input, 'Enter');
+        expect(spy.cell).toHaveBeenCalledWith('r1', 'f_x', 'z');
+        expect(editingAt()).toBe('1:1');
+    });
+    it('마지막 행 Enter = 새 행을 만들고 그 칸 편집', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        key(open('r2', 'f_x'), 'Enter');
+        expect(spy.add).toHaveBeenCalledTimes(1);
+    });
+    it('조합 중 Enter 는 이동도 안 한다', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        key(open('r1', 'f_x'), 'Enter', { isComposing: true });
+        expect(editingAt()).toBe('0:1');
+    });
+    it('Shift+Enter: 글 칸은 줄바꿈(textarea·저장 안 함) · 숫자 칸은 Enter 와 같다', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        const ta = open('r1', 'f_x');
+        expect(ta.tagName).toBe('TEXTAREA');
+        key(ta, 'Enter', { shiftKey: true });
+        expect(spy.cell).not.toHaveBeenCalled();
+        expect(editingAt()).toBe('0:1');
+    });
+    it('Tab = 저장 + 오른쪽 칸 편집 · Shift+Tab = 왼쪽 · 행 끝이면 다음 행 첫 칸', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        let input = open('r1', 'f_t');
+        setInput(input, 'Q');
+        key(input, 'Tab');
+        expect(spy.cell).toHaveBeenCalledWith('r1', 'f_t', 'Q');
+        expect(editingAt()).toBe('0:1');
+        key(q('[data-rv-editing]')!, 'Tab', { shiftKey: true });
+        expect(editingAt()).toBe('0:0');
+        // 다음 행 첫 칸: 셋째(고르기) 칸은 편집창이 안 열리므로 칸에 초점만 간다
+        key(q('[data-rv-editing]')!, 'Tab');
+        key(q('[data-rv-editing]')!, 'Tab');
+        expect(document.activeElement?.getAttribute('data-rv-pos')).toBe('0:2');
+    });
+    it('Esc = 취소 + 초점은 그 칸에 남는다(body 로 안 빠짐)', () => {
+        const spy = spies();
+        mount(<Harness init={two} spy={spy} />);
+        const input = open('r1', 'f_x');
+        setInput(input, 'zz');
+        key(input, 'Escape');
+        expect(spy.cell).not.toHaveBeenCalled();
+        expect(q('[data-rv-editing]')).toBeNull();
+        expect(document.activeElement?.getAttribute('data-rv-pos')).toBe('0:1');
+    });
+    it('행 추가 단추 = 새 행 첫(제목) 칸 편집으로 초점', () => {
+        const spy = spies();
+        const Grow = () => {
+            const [rows, setRows] = useState<Rec[]>(two);
+            return <RecordView<Rec> fields={START} records={rows} getId={(r) => r.id} viewKey="t.grow" titleKey="f_t"
+                onCellChange={() => {}} onAddRecord={() => { spy.add(); setRows((r) => [...r, { id: 'n' + r.length, f_t: '', f_x: '' }]); }} />;
+        };
+        mount(<Grow />);
+        click(q('[data-rv-add]'));
+        expect(editingAt()).toBe('2:0');
     });
 });

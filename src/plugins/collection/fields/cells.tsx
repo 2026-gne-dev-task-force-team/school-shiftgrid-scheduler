@@ -25,33 +25,37 @@ function optOf(field: RecordField, value: string): FieldOption {
     return field.options?.find((o) => o.value === value) ?? { value, label: value };
 }
 
-/** 인라인 입력칸 — 뜨자마자 포커스·전체선택. Enter/바깥클릭 확정 · Esc 취소. 🔴 IME 조합 중 Enter 는 확정이 아니다. */
-function InlineInput({ initial, numeric, dataKey, onCommit, onCancel }: {
-    initial: string; numeric: boolean; dataKey: string;
+/** 인라인 입력칸 — 뜨자마자 포커스·전체선택. Enter/Tab/바깥클릭 확정 · Esc 취소. 🔴 IME 조합 중 Enter 는 확정이 아니다.
+ *  multiline(글 칸)이면 textarea — Shift+Enter 가 칸 안 줄바꿈(값에 \n). 그 밖엔 Shift+Enter = Enter. */
+function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel }: {
+    initial: string; numeric: boolean; multiline?: boolean; dataKey: string;
     onCommit: (text: string) => void; onCancel: () => void;
 }) {
     const [text, setText] = useState(initial);
-    const ref = useRef<HTMLInputElement>(null);
+    const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
     const done = useRef(false);
     useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
     const commit = () => { if (done.current) return; done.current = true; onCommit(text); };
-    return (
-        <input
-            ref={ref}
-            data-rv-cell={dataKey}
-            data-rv-editing="1"
-            inputMode={numeric ? 'decimal' : 'text'}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-                if (isImeEnter(e)) return;
-                if (e.key === 'Enter') { e.preventDefault(); commit(); }
-                else if (e.key === 'Escape') { e.preventDefault(); done.current = true; onCancel(); }
-            }}
-            className={`w-full h-full px-2 bg-bg text-text text-[13px] outline-none border border-accent rounded-none ${numeric ? 'text-right tabular-nums' : ''}`}
-        />
-    );
+    const common = {
+        'data-rv-cell': dataKey,
+        'data-rv-editing': '1',
+        inputMode: numeric ? 'decimal' as const : 'text' as const,
+        onBlur: commit,
+        onKeyDown: (e: React.KeyboardEvent) => {
+            if (isImeEnter(e)) return;
+            if (e.key === 'Enter') { if (multiline && e.shiftKey) return; e.preventDefault(); commit(); }
+            else if (e.key === 'Tab') { e.preventDefault(); commit(); }
+            else if (e.key === 'Escape') { e.preventDefault(); done.current = true; onCancel(); }
+        },
+    };
+    const cls = `w-full h-full px-2 bg-bg text-text text-[13px] outline-none border border-accent rounded-none ${numeric ? 'text-right tabular-nums' : ''}`;
+    if (multiline) {
+        return (
+            <textarea ref={ref} {...common} rows={1} value={text} onChange={(e) => setText(e.target.value)}
+                className={`${cls} py-1.5 leading-snug resize-none overflow-hidden`} />
+        );
+    }
+    return <input ref={ref} {...common} value={text} onChange={(e) => setText(e.target.value)} className={cls} />;
 }
 
 export function CheckCell({ field, value, editable, onChange }: FieldCellProps) {
@@ -78,6 +82,7 @@ function makeInlineCell(numeric: boolean) {
                 <InlineInput
                     initial={value === null || value === undefined ? '' : String(value)}
                     numeric={numeric}
+                    multiline={!numeric}
                     dataKey={field.key}
                     onCommit={(text) => {
                         setEditing(false);

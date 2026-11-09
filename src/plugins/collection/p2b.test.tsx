@@ -54,8 +54,8 @@ const click = (el: Element | null) => act(() => { (el as HTMLElement).dispatchEv
 const down = (el: Element | null, init: MouseEventInit = {}) => act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, ...init })); });
 const key = (el: Element, k: string, init: KeyboardEventInit = {}) =>
     act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init })); });
-function setInput(el: HTMLInputElement, value: string) {
-    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+function setInput(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const set = Object.getOwnPropertyDescriptor(el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!;
     act(() => { set.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); });
 }
 const pos = (r: number, c: number) => q(`[data-rv-pos="${r}:${c}"]`)!;
@@ -199,7 +199,7 @@ describe('키보드 · 복사 · 채우기', () => {
         key(pos(1, 1), 'ArrowDown', { isComposing: true });
         expect(selected()).toEqual(['1:1']);
         key(pos(1, 1), 'Enter');
-        expect(q('[data-rv-pos="1:1"] input')).not.toBeNull();
+        expect(q('[data-rv-pos="1:1"] input,[data-rv-pos="1:1"] textarea')).not.toBeNull();
     });
     it('Shift 범위 → 복사는 TSV', () => {
         down(pos(0, 0));
@@ -228,7 +228,7 @@ describe('일괄 편집', () => {
         const sel = q('[data-rv-bulk-field]') as HTMLSelectElement;
         act(() => { sel.value = 'f_x'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
         click(q('[data-rv-bulk-cell] [data-rv-cell]'));
-        const inp = q('[data-rv-bulk-cell] input') as HTMLInputElement;
+        const inp = q('[data-rv-bulk-cell] input,[data-rv-bulk-cell] textarea') as HTMLInputElement;
         setInput(inp, '같음');
         key(inp, 'Enter');
         expect(cells).toHaveBeenCalledTimes(1);

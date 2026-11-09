@@ -26,8 +26,8 @@ const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 const mi = (label: string) => [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent === label) as HTMLButtonElement | undefined;
 const click = (el: Element | null) => act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 const key = (el: Element, k: string) => act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })); });
-function setInput(el: HTMLInputElement, value: string) {
-    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+function setInput(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const set = Object.getOwnPropertyDescriptor(el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!;
     act(() => { set.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); });
 }
 const typeText = (cellKey: string, text: string) => {
