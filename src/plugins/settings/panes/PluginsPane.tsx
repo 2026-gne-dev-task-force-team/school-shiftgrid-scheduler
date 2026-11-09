@@ -12,11 +12,12 @@
 import { useState } from 'react';
 import { Icon, FOCUS_RING } from '../../../pane-ui-system';
 import {
-    type PluginHost, listPlugins, enablePlugin, disablePlugin, usePluginRegistry, useContribVersion,
+    type PluginHost, listPlugins, enablePlugin, disablePlugin, usePluginRegistry, useContribVersion, HOST_VERSION,
     type PluginStatus,
 } from '../../../pane-ui-system/plugin';
-import { Toggle } from '../../../pane-ui-system';
+import { Toggle, Button } from '../../../pane-ui-system';
 import { PluginDetail } from './PluginDetail';
+import { PlatformDetail } from './PlatformDetail';
 import { useSettingsChrome } from '../chrome-context';
 import { disableImpact } from '../plugin-graph';
 
@@ -37,6 +38,12 @@ export function PluginsPane({ host }: { host: PluginHost }) {
         }
     };
 
+    const [platformOpen, setPlatformOpen] = useState(false);   // 폴백(피크 없을 때)
+    const openPlatform = () => {
+        if (chrome.peek) chrome.peek.show(<PlatformDetail />, { wideMin: 480 });
+        else setPlatformOpen((v) => !v);
+    };
+
     return (
         <div className="flex flex-col gap-3 max-w-[560px]">
             <p className="text-[12px] text-muted">
@@ -44,6 +51,22 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                 「켜기」 자리표시로 남습니다(다시 켜면 그 자리에서 돌아옵니다). 줄 오른쪽 「자세히」로 상세가 옆에 뜹니다.
             </p>
             <div className="flex flex-col rounded border border-line overflow-hidden">
+                {/* P6a — 바닥 자신도 한 줄(끌 수 없음). 플러그인이 아니라 「플러그인에게 주는 것」을 보이는 줄이다. */}
+                <div className="border-b border-line">
+                    <div className="flex items-center gap-3 px-3 py-2 min-h-row">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-body font-semibold text-text truncate">플랫폼(바닥)</span>
+                                <span className="text-note text-muted">v{HOST_VERSION}</span>
+                                <span className="text-note px-1.5 rounded bg-accent/15 text-accent">바닥</span>
+                            </div>
+                            <p className="text-small text-text/80 leading-snug">모든 플러그인이 올라서는 바닥 — 플러그인에게 주는 기능 목록과 켜진 약속을 봅니다.</p>
+                        </div>
+                        <Button onClick={openPlatform} aria-label="플랫폼 자세히" className="shrink-0">자세히 <Icon name="right" size={12} /></Button>
+                        <span className="shrink-0 pl-3 ml-1 border-l border-line flex items-center gap-1 text-note text-muted"><Icon name="pin" size={11} /> 끌 수 없음</span>
+                    </div>
+                    {platformOpen && !chrome.peek && <div className="px-3 pb-3 bg-side/40 border-t border-line"><div className="pt-2"><PlatformDetail /></div></div>}
+                </div>
                 {plugins.map((p) => {
                     const open = openId === p.id && !chrome.peek;
                     return (
