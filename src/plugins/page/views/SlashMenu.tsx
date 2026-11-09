@@ -27,14 +27,16 @@ export const SLASH_ITEMS: SlashItem[] = [
     { type: 'code', label: '코드', hint: 'code 코드', icon: 'code' },
     { type: 'divider', label: '구분선', hint: 'divider line 구분선', icon: 'divider' },
     { type: 'table', label: '표', hint: 'table 표', icon: 'table' },
+    { type: 'childpage', label: '하위 페이지', hint: 'page subpage child 하위 페이지 새 페이지', icon: 'fileText' },
     { type: 'node', label: '노드 끼워 넣기', hint: 'node embed link 노드 끼우기 링크 페이지 시트', icon: 'fileText' },
 ];
 
 /** query(/ 뒤 글자)로 거른 항목. */
-export function filterSlash(query: string): SlashItem[] {
+export function filterSlash(query: string, withChildPage = true): SlashItem[] {
     const q = query.trim().toLowerCase();
-    if (q === '') return SLASH_ITEMS;
-    return SLASH_ITEMS.filter((it) => it.label.toLowerCase().includes(q) || it.hint.toLowerCase().includes(q));
+    const base = withChildPage ? SLASH_ITEMS : SLASH_ITEMS.filter((it) => it.type !== 'childpage');   // 노드 트리와 맞추는 편집기만 하위 페이지를 만든다
+    if (q === '') return base;
+    return base.filter((it) => it.label.toLowerCase().includes(q) || it.hint.toLowerCase().includes(q));
 }
 
 export function SlashMenu({ items, active, onPick }: {

@@ -219,9 +219,15 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                     </div>
                 );
             })}
+            {options.length === 0 && (
+                <div data-rv-opt-empty className="px-2 py-1 text-note text-muted">
+                    {onOptionsChange ? '선택지가 없어요. 아래에 입력하고 Enter 를 누르면 만들어져요.' : '선택지가 없어요. 속성 편집에서 추가할 수 있어요.'}
+                </div>
+            )}
             {onOptionsChange && (
                 <input
                     data-rv-new-opt
+                    autoFocus={options.length === 0}
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => { if (isImeEnter(e)) return; if (e.key === 'Enter') { e.preventDefault(); addDraft(); } }}

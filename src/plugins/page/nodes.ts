@@ -131,6 +131,13 @@ export function createPage(): string | null {
     return api.create(api.roots.main, { type: PAGE_TYPE, name }) || null;
 }
 
+/** 슬래시 「하위 페이지」 — parentId 페이지 밑에 빈 페이지 하나를 만든다(본문 줄은 호출자가 그 id 로 놓는다). 못 만들면 null. */
+export function createChildPage(parentId: string): string | null {
+    if (!api) return null;
+    const name = uniqueName('페이지', api.children(parentId).map((n) => n.name));
+    return api.create(parentId, { type: PAGE_TYPE, name }) || null;
+}
+
 /** 노드가 든 폴더 이름(맨 위면 null) — 시작 화면 목록의 꼬리표. */
 export function parentNameOf(id: string): string | null {
     if (!api) return null;

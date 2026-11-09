@@ -10,7 +10,7 @@ import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
 import { useActiveTable } from '../store';
-import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemoved, docOf, writeDoc, applyTx, inTrash } from '../nodes';
+import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemoved, removedTitle, docOf, writeDoc, applyTx, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 
 
@@ -64,7 +64,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     tableStyle={doc.style}
                     onSetTableStyle={(st) => writeDoc(activeId, { ...doc, style: st })}
                     onColor={setTone}
-                    onRemoved={(kind, n, undo, isTop) => notifyRemoved(`${kind} ${n}개를 지웠습니다`, undo, isTop)}
+                    onRemoved={(kind, n, undo, isTop) => notifyRemoved(removedTitle(kind, n), undo, isTop)}
                     onCommit={(tx) => writeDoc(activeId, applyTx(docOf(activeId), tx))}
                 />
         </Frame>

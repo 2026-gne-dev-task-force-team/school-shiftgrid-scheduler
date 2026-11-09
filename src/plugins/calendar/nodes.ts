@@ -219,6 +219,27 @@ export function removeEvent(id: string): void {
     });
 }
 
+/** 휴지통에 직접 놓인 일정들(지운 일정) — 일정 노드는 record 라 탐색기 휴지통엔 안 뜨니 달력이 따로 보여 준다. 저장소째 지워진 것은 저장소를 되살리면 돌아온다. */
+export function getDeletedEvents(): PublicNode[] {
+    if (!api) return [];
+    // 휴지통 안이면서 부모가 저장소·폴더가 아닌 것 = 일정 자신이 직접 버려진 것(저장소째면 저장소를 되살린다)
+    return eventNodes.filter((n) => {
+        if (!api!.isTrashed(n.id)) return false;
+        const pt = api!.get(api!.parent(n.id) ?? '')?.type;
+        return pt !== STORE_TYPE && pt !== 'folder';
+    });
+}
+/** 지운 일정을 되살린다 — 기본 저장소로(원래 자리는 이 창구가 못 읽는다). 되살렸으면 true. */
+export function restoreEvent(id: string): boolean {
+    if (!api) return false;
+    const n = api.get(id);
+    if (!n || !getDeletedEvents().some((e) => e.id === id)) return false;
+    const from = getDefaultStore() ?? ensureStore();
+    if (!from) return false;
+    api.move(id, from);
+    return true;
+}
+
 // ── 가져오기·내보내기(.ics) — 2·3번. 순수 변환은 io.ts, 여기선 노드를 읽고 쓴다. ──
 
 /** 저장소 이름(없으면 '달력'). 내보내기 파일 이름에 쓴다. */
