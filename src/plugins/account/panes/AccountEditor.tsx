@@ -13,10 +13,11 @@ import { PolicyEditor } from './PolicyEditor';
 import { AccountList } from './AccountList';
 import { Icon } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
+import type { PeekHandle } from '../../../pane-ui-system';
 import { parentOf } from '../core';
 import { setActiveAccountNode } from '../nodes';
 
-export function AccountEditor({ host }: { host?: PluginHost }) {
+export function AccountEditor({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
     useAccountVersion();   // 세션·데이터가 바뀌면 다시 그린다(종류 판정이 달라질 수 있다)
     const id = useSyncExternalStore(subscribeActiveNode, getActiveAccountNode, getActiveAccountNode);
     const kind = id ? nodeKindOf(id) : null;
@@ -24,7 +25,7 @@ export function AccountEditor({ host }: { host?: PluginHost }) {
     if (!id || !kind) {
         return <p className="text-[12px] text-muted p-4">탐색기에서 사용자·역할·정책을 누르면 여기서 편집합니다.</p>;
     }
-    if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} />;
+    if (kind === 'users' || kind === 'roles') return <AccountList kind={kind} host={host} peek={peek} />;
     // 사용자·역할 편집기 위에 「← 목록」 — 나무에 안 보이니 목록으로 돌아갈 길을 여기 둔다
     const back = (
         <button type="button" onClick={() => { const p = parentOf(id); if (p) setActiveAccountNode(p); }}

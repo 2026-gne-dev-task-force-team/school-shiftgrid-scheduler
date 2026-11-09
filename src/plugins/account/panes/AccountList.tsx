@@ -4,7 +4,8 @@
  *   🔴 레코드 뷰가 켜져 있으면 그 목록 화면을 빌리고(supports), 없으면 간이 목록으로 떨어진다.
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다 — 저장은 core 의 기존 함수 그대로.
  */
-import { Button } from '../../../pane-ui-system';
+import { useEffect } from 'react';
+import { Button, type PeekHandle } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../record-view/contracts/record-view';
@@ -14,6 +15,8 @@ import {
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion } from './useAccount';
+import { UserEditor } from './UserEditor';
+import { RoleEditor } from './RoleEditor';
 
 type Row = { id: string } & Record<string, RecordCellValue | string>;
 
@@ -58,9 +61,17 @@ function rolesModel() {
     };
 }
 
-export function AccountList({ kind, host }: { kind: 'users' | 'roles'; host?: PluginHost }) {
+export function AccountList({ kind, host, peek }: { kind: 'users' | 'roles'; host?: PluginHost; peek?: PeekHandle }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
     const m = kind === 'users' ? usersModel() : rolesModel();
+    // 🔴 줄 열기(→)는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 편집기를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
+    const open = (id: string) => {
+        if (!peek) { setActiveAccountNode(id); return; }
+        peek.show(<div className="h-full overflow-auto">{kind === 'users' ? <UserEditor userId={id} /> : <RoleEditor roleId={id} />}</div>, { wideMin: 420 });
+    };
+    // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
+    const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
+    useEffect(() => () => hidePeek?.(), [hidePeek, kind]);
     const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     if (rv) {
         const { RecordView } = rv;
@@ -75,7 +86,7 @@ export function AccountList({ kind, host }: { kind: 'users' | 'roles'; host?: Pl
                     onCellChange={m.set}
                     onAddRecord={m.canAdd ? () => { m.add(); } : undefined}
                     onDeleteRecords={m.canDelete ? (ids) => ids.forEach(m.remove) : undefined}
-                    onOpenRecord={(id) => setActiveAccountNode(id)}
+                    onOpenRecord={open}
                     className="flex-1 min-h-0"
                 />
             </div>
@@ -87,7 +98,7 @@ export function AccountList({ kind, host }: { kind: 'users' | 'roles'; host?: Pl
             <div className="flex flex-col rounded border border-line overflow-hidden">
                 {m.rows.length === 0 && <p className="px-3 py-2 text-[12px] text-muted">아직 {m.noun}이(가) 없습니다.</p>}
                 {m.rows.map((r) => (
-                    <button key={r.id} type="button" onClick={() => setActiveAccountNode(r.id)}
+                    <button key={r.id} type="button" onClick={() => open(r.id)}
                         className="text-left px-3 h-row border-b border-line last:border-b-0 text-[13px] text-text hover:bg-text/[0.04]">
                         {String(r.name)}
                     </button>

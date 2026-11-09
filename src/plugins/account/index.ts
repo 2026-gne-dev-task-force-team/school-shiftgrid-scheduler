@@ -100,7 +100,7 @@ export const accountPlugin = definePlugin({
 
     // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
     components: {
-        Editor: ({ host }) => createElement(AccountEditor, { host }),
+        Editor: ({ host, peek }) => createElement(AccountEditor, { host, peek }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──
