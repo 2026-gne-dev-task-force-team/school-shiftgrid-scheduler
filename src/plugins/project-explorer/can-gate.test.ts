@@ -34,8 +34,10 @@ import { clearDerived } from './model/derive';
 import { createNode, rename, move, remove, emptyTree, type Tree, type Node } from './model/tree';
 import type { CanFlags } from './model/types';
 
+const notified: { title: string; level?: string; key?: string }[] = [];
 function host(): PluginHost {
     return {
+        notify: Object.assign((i: { title: string; level?: string; key?: string }) => { notified.push(i); return 'n'; }, { dismiss: () => {} }),
         storage: { get: <T,>(_k: string, f: T) => f, set: () => {}, remove: () => {} },
         store: { get: async <T,>(_k: string, f: T) => f, set: async () => true, del: async () => {}, available: async () => true, estimate: async () => null },
     } as unknown as PluginHost;
@@ -45,7 +47,7 @@ function host(): PluginHost {
 let allowed = true;
 
 beforeEach(async () => {
-    kv.store.clear(); kv.nodesWrite.mockClear();
+    kv.store.clear(); kv.nodesWrite.mockClear(); notified.length = 0;
     clearTypes(); clearDerived(); __resetPersistForTest();
     allowed = true;
     await initStore(host());
@@ -182,11 +184,12 @@ describe('모델 tree — 주입한 관문으로 createNode·rename·move·remov
 
 // ─────────────────────────── 3) 스토어 관문(newNode·removeSelected·confirm·API) ───────────────────────────
 describe('스토어·API — 모든 창구가 같은 관문을 지난다', () => {
-    it('newNode canCreate 막힘 → 안 만들어진다(상태바 notice)', () => {
+    it('newNode canCreate 막힘 → 안 만들어진다(알림 warn)', () => {
         allowed = false;
         newNode('acc.user', { via: 'context', targetId: root() });
         expect(nodesOfType('acc.user').length).toBe(0);
-        expect(getState().notice).toContain('만들 수 없');
+        expect(notified.at(-1)).toMatchObject({ level: 'warn', key: 'explorer.blocked' });
+        expect(notified.at(-1)?.title).toContain('만들 수 없');
     });
 
     it('newNode 허용 → 만들어진다', () => {

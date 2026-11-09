@@ -12,6 +12,7 @@
  * 📌 범위: commands·settings·statusBar·menu·workspace.on·screen·theme·onFirstRun·newTab.
  *    (문서 창구 doc 은 2026-11-01 걷어냈다 — 쓰는 플러그인이 없다.)
  */
+import type { NotifyInput } from './notify';
 import type { ComponentType, ReactNode } from 'react';
 import type { ViewDef, ViewProps } from '../view-registry';
 import type { IconName } from '../primitives/Icon';
@@ -451,6 +452,11 @@ export interface PluginHost {
         available(): Promise<boolean>;
         estimate(): Promise<{ usage: number; quota: number } | null>;
     };
+    /**
+     * 알림 — 토스트로 잠깐 띄우고 알림 패널에 기록한다. 돌려주는 id 를 notify.dismiss 에 주면 토스트를 걷는다.
+     *   단추(action)는 함수가 아니라 명령 id 로만 · 같은 key 는 덮어 쓴다 · 보낸 꾸러미는 창틀이 붙인다.
+     */
+    notify: { (input: NotifyInput): string; dismiss(id: string): void };
     /** 저장값 없이, 그 플러그인이 처음 켜질 때 한 번(첫 실행 기본 배치 등). */
     onFirstRun(fn: () => void): void;
 

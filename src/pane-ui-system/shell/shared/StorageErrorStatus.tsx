@@ -13,23 +13,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-    useStorageErrors, clearStorageErrors, useDurability,
+    useStorageErrors, clearStorageErrors, useDurability, storageReasonText,
     type StorageError,
 } from '../../plugin/storage-errors';
 import { storageStatusKind } from './storage-status';
 import { FOCUS_RING } from '../../primitives/focus';
 
 const GAP = 6;
-
-/** 실패 사유를 사람 말로 */
-function reasonText(reason: StorageError['reason']): string {
-    switch (reason) {
-        case 'quota': return '저장 공간이 찼다 — 저장되지 않았다. 새로고침하면 최근 변경이 사라진다';
-        case 'blocked': return '브라우저가 저장을 막았다(프라이빗 모드일 수 있다)';
-        case 'blocked-upgrade': return '다른 탭이 열려 있어 저장소를 올리지 못했다 — 다른 탭을 닫고 새로고침';
-        default: return '알 수 없는 이유로 저장에 실패했다';
-    }
-}
 
 /** 내구성 경고를 사람 말로 — 「지울 수 있다」(실패가 아니라 상태) */
 function durabilityText(kind: 'unavailable' | 'best-effort'): string {
@@ -114,7 +104,7 @@ function ErrorListBody({ errors, onClose }: { errors: StorageError[]; onClose: (
                             <span className="min-w-0 truncate text-text" title={e.key}>{e.key}</span>
                             <span className="shrink-0 text-muted">{timeText(e.at)}</span>
                         </div>
-                        <div className="text-muted">{reasonText(e.reason)}</div>
+                        <div className="text-muted">{storageReasonText(e.reason)}</div>
                     </li>
                 ))}
             </ul>

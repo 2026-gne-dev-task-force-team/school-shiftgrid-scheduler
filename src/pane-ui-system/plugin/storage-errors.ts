@@ -8,6 +8,7 @@
  * 🔴 ⛔ 도메인 0 · 색 0 — 여기는 「무엇이 왜 저장에 실패했나」만 쥔다(구조 검사 ⑤).
  */
 import { useSyncExternalStore } from 'react';
+import { notify } from './notify';
 
 /**
  * 왜 실패했나 — quota(공간 참) · blocked(브라우저가 막음) · unknown(그 밖)
@@ -34,6 +35,16 @@ export function classifyStorageError(err: unknown): StorageErrorReason {
     return 'unknown';
 }
 
+/** 실패 사유를 사람 말로 — 상태바 쪽지와 알림이 같은 문장을 쓴다 */
+export function storageReasonText(reason: StorageErrorReason): string {
+    switch (reason) {
+        case 'quota': return '저장 공간이 찼다 — 저장되지 않았다. 새로고침하면 최근 변경이 사라진다';
+        case 'blocked': return '브라우저가 저장을 막았다(프라이빗 모드일 수 있다)';
+        case 'blocked-upgrade': return '다른 탭이 열려 있어 저장소를 올리지 못했다 — 다른 탭을 닫고 새로고침';
+        default: return '알 수 없는 이유로 저장에 실패했다';
+    }
+}
+
 // ── 스토어 — 키별 마지막 하나만(같은 키가 반복 실패해도 안 쌓인다), 최대 20건 ──
 const MAX = 20;
 const errors = new Map<string, StorageError>();   // key: scope \0 key — 가장 오래된 것이 맨 앞
@@ -56,6 +67,8 @@ export function reportStorageError(e: StorageError): void {
         errors.delete(oldest);
     }
     emit();
+    // 🔔 알림으로도 알린다(오류는 닫을 때까지) — 같은 저장 자리의 반복 실패는 key 로 한 건에 덮인다
+    notify('frame', { level: 'error', title: '저장 실패', body: storageReasonText(e.reason), key: id });
 }
 
 /** 전부 지운다(상태바의 「지우기」) */

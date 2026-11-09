@@ -10,7 +10,7 @@ export type IconName =
     | 'calendar' | 'calendarMini' | 'flask' | 'grip'
     | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff'
     | 'users' | 'user' | 'door' | 'schedule' | 'fileText' | 'calendarEvent'
-    | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down';
+    | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down';
 
 const P: Record<IconName, string> = {
     home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -36,6 +36,7 @@ const P: Record<IconName, string> = {
     trash: 'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14',
     check: 'M4 12l5 5L20 6',
     x: 'M6 6l12 12M18 6L6 18',
+    bell: 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 20h4',
     info: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 10v7M12 7h.01',
     left: 'M15 5l-7 7 7 7',
     warn: 'M12 3l10 18H2zM12 10v5M12 18h.01',

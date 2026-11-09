@@ -42,6 +42,8 @@ export interface PaneSettings {
     ribbonPosition: 'left' | 'top';
     /** 🔴 앱을 켤 때마다 띄워 둘 뷰 id(쥔님 2026-11-09). 닫아 뒀어도 다음 시작에 다시 연다 · 빈 배열 = 저장된 배치 그대로 */
     startupViews: string[];
+    /** 🔴 알림 기록 보관 개수(기기별) — 기본 200 · 0 = 이 세션 메모리에만(새로고침하면 비움) · 상한 1000 */
+    notifyRetain: number;
 }
 
 /** 뷰별 레이아웃 덮어쓰기 — 키는 viewId(뜻은 모름), 값은 ViewLayout 의 일부 */
@@ -74,6 +76,7 @@ const DEFAULTS: PaneSettings = {
     statusBarNarrow: false,
     ribbonPosition: 'left',
     startupViews: [],
+    notifyRetain: 200,
 };
 
 export function defaultPaneSettings(): PaneSettings {
@@ -111,6 +114,7 @@ export function normalizePaneSettings(raw: unknown): PaneSettings {
         statusBarNarrow: typeof o.statusBarNarrow === 'boolean' ? o.statusBarNarrow : d.statusBarNarrow,
         ribbonPosition: o.ribbonPosition === 'top' || o.ribbonPosition === 'left' ? o.ribbonPosition : d.ribbonPosition,
         startupViews: Array.isArray(o.startupViews) ? [...new Set(o.startupViews.filter((x): x is string => typeof x === 'string'))] : d.startupViews,
+        notifyRetain: num(o.notifyRetain, d.notifyRetain, 0, 1000),
     };
 }
 

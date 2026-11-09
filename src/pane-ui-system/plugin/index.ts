@@ -46,3 +46,8 @@ export {
     setDurability, getDurability, useDurability,
     type StorageError, type StorageErrorReason, type StorageDurability,
 } from './storage-errors';
+export {
+    notify, dismiss as dismissNotify, runNotifyAction, markAllRead, clearNotifications, applyNotifyRetain,
+    useNotifications, getNotifications,
+    type NotifyInput, type NotifyItem, type NotifyLevel, type NotifyAction, type NotifySnapshot,
+} from './notify';

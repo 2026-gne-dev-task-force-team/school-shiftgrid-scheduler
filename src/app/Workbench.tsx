@@ -13,7 +13,7 @@ import {
     usePaneSettings, getPaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
     BottomBar, TabSwitcher, RibbonSheet, type BarItem,
     TitleBar, type TitleAction,
-    StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind,
+    StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind, Toasts, NotifyStatus,
     installContextMenuGuard, installKeybindings,
     FRAME_COMMAND,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
@@ -354,9 +354,11 @@ export function Workbench() {
     const storageErrors = useStorageErrors();
     const storageDurability = useDurability();
     const frameAlert = storageStatusKind(storageErrors.length, storageDurability) !== null;
-    const frameStatus: StatusItem[] = frameAlert
-        ? [{ id: 'frame:storage-error', side: 'right', node: <StorageErrorStatus /> }]
-        : [];
+    // 🔔 알림 칸은 늘 꽂는다(상태바가 보일 때) — 안 읽은 수만 비추고, 누르면 알림 패널. 토스트는 아래 <Toasts/> 가 따로 그린다.
+    const frameStatus: StatusItem[] = [
+        ...(frameAlert ? [{ id: 'frame:storage-error', side: 'right' as const, node: <StorageErrorStatus /> }] : []),
+        { id: 'frame:notify', side: 'right', node: <NotifyStatus /> },
+    ];
 
     return (
         <div className="flex flex-col h-full w-full overflow-hidden">
@@ -460,6 +462,9 @@ export function Workbench() {
 
             {/* 🔴 명령 팔레트 — Ctrl/⌘+P. 스스로 portal 로 뜬다(위치 무관) */}
             <CommandPalette open={palette} onClose={() => setPalette(false)} />
+
+            {/* 🔔 토스트 — 알림이 잠깐 뜨는 자리(host.notify). 스스로 fixed 로 뜬다 */}
+            <Toasts />
         </div>
     );
 }

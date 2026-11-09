@@ -16,6 +16,7 @@ import { loadThemeSettings } from '../theme/settings';
 import { HOST_VERSION } from './types';
 import { resolveModule } from './registry';
 import { declareOne } from './contributes';
+import type { NotifyInput } from './notify';
 import type { PluginHost, PluginImpl, PluginManifest, DeclareInput, WorkspaceOpenOptions, TabMenuContext, WorkspaceEvent, WorkspaceLeafInfo } from './types';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import {
@@ -23,6 +24,7 @@ import {
     addTabMenuItem, onWorkspace,
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
+import { notify, dismiss } from './notify';
 
 const FIRST_RUN_KEY = '__first-run';
 
@@ -154,6 +156,8 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
 
         storage,
         store,
+
+        notify: Object.assign((input: NotifyInput) => notify(pluginId, input), { dismiss }),
 
         onFirstRun(fn: () => void) {
             // 저장값 없이 그 플러그인이 처음 켜질 때 한 번 — 기기별 플래그로 가린다.

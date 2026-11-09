@@ -37,6 +37,7 @@ function makeHost() {
     const oldKv = new Map<string, unknown>();
     const calls = { localRemove: 0, kvGet: 0, kvDel: 0 };
     const host = {
+        notify: Object.assign(() => 'n', { dismiss: () => {} }),
         storage: {
             get: <T,>(k: string, f: T) => (local.has(k) ? (local.get(k) as T) : f),
             set: (k: string, v: unknown) => { local.set(k, v); },

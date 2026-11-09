@@ -16,6 +16,7 @@ import { resetPaneSettings } from '../../layout/pane-settings';
 import { workspaceKey } from '../../layout/workspace-store';
 import { layoutKey } from '../../layout/panels';
 import { resetFirstRunFlags } from '../../plugin/host';
+import { notify } from '../../plugin/notify';
 
 const AUTO_HEAL_SESSION_KEY = () => storageKey('auto-healed-once');
 
@@ -56,6 +57,7 @@ export class ViewErrorBoundary extends Component<ViewBoundaryProps, ViewBoundary
 
     componentDidCatch(error: Error, info: ErrorInfo): void {
         console.error('[pane-ui] 뷰 렌더 오류 격리:', error, info.componentStack);
+        notify('frame', { level: 'error', title: '화면 오류', body: error.message, key: 'frame.view-error' });
     }
 
     render(): ReactNode {

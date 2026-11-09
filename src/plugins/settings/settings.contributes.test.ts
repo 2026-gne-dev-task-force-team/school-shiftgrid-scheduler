@@ -17,7 +17,7 @@ import { settingsPlugin } from './index';
 // 전환 전 onActivate 가 만들던 골든 구조 — 섹션 id·제목·순서 + 섹션별 항목 id·순서.
 const EXPECTED = [
     { id: 'appearance', title: '모양', items: ['theme'] },
-    { id: 'frame', title: '창틀', items: ['pane', 'ribbon', 'startup', 'keys'] },
+    { id: 'frame', title: '창틀', items: ['pane', 'ribbon', 'startup', 'notify', 'keys'] },
     { id: 'plugins', title: '플러그인', items: ['plugins'] },
     { id: 'about', title: '정보', items: ['about'] },
 ];

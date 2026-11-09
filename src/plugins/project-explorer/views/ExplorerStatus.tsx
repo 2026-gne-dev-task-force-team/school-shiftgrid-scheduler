@@ -7,8 +7,7 @@ import { isRecordType } from '../model/types';
 import { useExplorer } from '../store';
 
 export function ExplorerStatus() {
-    const { tree, notice } = useExplorer();
-    if (notice) return <span className="text-[12px] text-bad">{notice}</span>;
+    const { tree } = useExplorer();
     // 🔴 레코드성(일정 등)은 「상위 노드의 데이터」라 세지 않는다(쥔님 2026-11-02) — flatten·휴지통 줄과 같은 규칙.
     const nodes = countUnder(tree, tree.root, isRecordType);
     const trash = countUnder(tree, tree.trash, isRecordType);

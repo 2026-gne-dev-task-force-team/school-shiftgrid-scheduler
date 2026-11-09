@@ -54,11 +54,10 @@ interface ExplorerState {
      */
     loading: boolean;
     /** 상태바에 잠깐 비추는 한 줄(ExplorerStatus) — 「어디에도 못 넣었다」처럼 조용히 실패한 것을 알린다. null 이면 평소(노드 N). */
-    notice: string | null;
 }
 
 function freshState(tree: Tree): ExplorerState {
-    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, deleteConfirm: null, loading: false, notice: null };
+    return { tree, selectedIds: [], anchorId: null, selectedId: null, renamingId: null, renameKind: 'name', renameInitial: null, renamePlaceholder: null, history: emptyHistory(), purgeConfirmId: null, purgeAllConfirm: false, deleteConfirm: null, loading: false };
 }
 
 // ─────────────────────────── 조작 가능 관문(model 에 주입) ───────────────────────────
@@ -78,13 +77,10 @@ let state: ExplorerState = freshState(emptyTree());
 let hostRef: PluginHost | null = null;
 const listeners = new Set<() => void>();
 
-/** 상태바 한 줄 — 잠깐 띄우고 스스로 지운다(겹치면 최신 하나만). */
-let noticeTimer: ReturnType<typeof setTimeout> | null = null;
+/** 막힌 조작을 알린다 — 창틀 알림(host.notify)으로. 같은 key 는 덮어 써서 연타해도 토스트가 쌓이지 않는다. */
 function flashNotice(msg: string): void {
-    if (noticeTimer) clearTimeout(noticeTimer);
-    state = { ...state, notice: msg };
-    emit();
-    noticeTimer = setTimeout(() => { noticeTimer = null; state = { ...state, notice: null }; emit(); }, 5000);
+    if (!hostRef) { console.warn(`[project-explorer] ${msg}`); return; }
+    hostRef.notify({ level: 'warn', title: msg, key: 'explorer.blocked' });
 }
 
 /** 🔑 apiBatch 중첩 깊이 — 0 이 아니면 apply 는 나무만 바꾼다(더미·저장·알림은 묶음 끝에서). */
@@ -390,11 +386,15 @@ export function removeSelected(): void {
 
 /** 실제 삭제 — can.delete 통과분을 휴지통으로(한 묶음). removeSelected 와 confirmRemove 가 공유한다. */
 function doRemove(ids: string[]): void {
+    const top = topmostOnly(state.tree, ids);
+    const what = top.length === 1 ? `「${state.tree.nodes[top[0]]?.name ?? ''}」` : `${top.length}개`;
     apply((t) => {
         let x = t;
         for (const id of topmostOnly(t, ids)) x = remove(x, id, permitDelete);
         return x;
     }, { patch: { ...singleSel(null), renamingId: null, deleteConfirm: null } });
+    // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 한 건에 덮인다
+    hostRef?.notify({ title: `${what}를 휴지통으로 옮겼습니다`, action: { label: '되돌리기', commandId: 'project-explorer.undo' }, key: 'explorer.trashed', timeout: 8000 });
 }
 
 /** 인라인 「지울까요?」 확정 — confirmDelete 경고를 받아들여 지운다. */

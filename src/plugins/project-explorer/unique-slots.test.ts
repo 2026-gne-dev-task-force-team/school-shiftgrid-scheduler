@@ -32,6 +32,7 @@ import { isContainerType } from './model/types';
 
 function host(): PluginHost {
     return {
+        notify: Object.assign(() => 'n', { dismiss: () => {} }),
         storage: { get: <T,>(_k: string, f: T) => f, set: () => {}, remove: () => {} },
         store: { get: async <T,>(_k: string, f: T) => f, set: async () => true, del: async () => {}, available: async () => true, estimate: async () => null },
     } as unknown as PluginHost;
