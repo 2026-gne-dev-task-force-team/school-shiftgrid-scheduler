@@ -79,13 +79,11 @@ describe('새 일정(newEventInStore)', () => {
         expect(getNodesApi()!.parent(id)).toBe(sid);
         expect(getEventNodes().map((n) => n.id)).toContain(id);
 
-        // 오늘 종일 — data 확인
-        const data = getNodesApi()!.get(id)!.data as { start: string; end: string; allDay: boolean };
+        // 오늘 종일 — 저장은 컬렉션 레코드 꼴(P4b): 언제 = 시각 없는 날 하나(종일·하루짜리라 end 없음)
+        const data = getNodesApi()!.get(id)!.data as { values: { when: { start: string; end?: string } } };
         const now = new Date();
         const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-        const todayMidnight = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}T00:00`;
-        expect(data.allDay).toBe(true);
-        expect(data.start).toBe(todayMidnight);
+        expect(data.values.when).toEqual({ start: `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}` });
 
         // 「열 카드」로 담겼다
         expect(getPendingCard()).toBe(id);

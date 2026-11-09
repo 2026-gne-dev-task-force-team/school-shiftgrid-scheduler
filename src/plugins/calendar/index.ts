@@ -15,6 +15,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps, Disposable } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi } from '../explorer/contracts/nodes';
+import type { RecordViewApi } from '../collection/contracts/collection';
 import { manifest } from './manifest';
 import { CalendarTab } from './views/CalendarTab';
 // 📌 2026-11-09 쥔님 *"작은 달력도 일단 비활성화"* — 작은 달력(views/MiniCalendarView.tsx)은 코드만 남기고 뷰·명령·리본·첫 배치에서 뺐다.
@@ -28,7 +29,7 @@ import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, setCalendarHost,
     getMenuTarget, setDefaultStore, newEventInStore,
-    importItemsToStore, collectForExport, storeName, EVENT_TYPE,
+    importItemsToStore, collectForExport, storeName, initCalendarKit, getKit,
 } from './nodes';
 // 🔴 구독 캘린더 — 2026-11-09 쥔님 *"달력 플러그인 안으로 들여라"* 로 별도 꾸러미에서 달력 안(subscribe/)으로 들였다.
 //    달력이 자기 약속(calendar 모듈·parseIcs·registerSource)을 스스로 쓰는 소비자다 — 남의 플러그인용 입구는 그대로 열려 있다.
@@ -37,7 +38,6 @@ import {
 import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
 import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget, SUB_TYPE } from './subscribe/nodes';
 import { SubLinkPane } from './subscribe/SubLinkPane';
-import { EventProps } from './views/EventProps';
 import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
 import { pickIcsText } from './subscribe/file-pick';
 
@@ -47,6 +47,7 @@ const MONTH_ID = 'calendar.month';
 
 // 구독 다리(노드 구독·달력 출처 등록) — deactivate 가 거둔다(옛 구독 꾸러미의 모듈 전역과 같은 결).
 let subBridge: Disposable | null = null;
+let kitBridge: Disposable | null = null;
 let offSubs: (() => void) | null = null;
 
 export const calendarPlugin = definePlugin({
@@ -55,7 +56,7 @@ export const calendarPlugin = definePlugin({
         // 🔴 M0 — 일정은 노드다(달력은 저장을 모른다). nodes 인터페이스가 없으면 달력이 의미가 없으니 requires.
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
-        // 일정 표 모드는 레코드 뷰를 빌린다(없으면 옛 표) — 있으면 쓰는 것이라 supports
+        // 저장소 = 컬렉션(P4b) — 사용자 칸·「표로 보기」·일정 표 모드가 컬렉션을 빌린다. 없으면 달력 보기만 — 있으면 쓰는 것이라 supports
         supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.1.0' },
@@ -72,6 +73,13 @@ export const calendarPlugin = definePlugin({
                     layout: { minWidth: 280, squeeze: 'scroll' },
                     component: 'Month',
                 },
+                // 「표로 보기」 — 저장소 하나의 일정을 컬렉션 표로(칸 추가·정렬·필터는 컬렉션 바닥이 낸다). 저장소 우클릭으로 연다.
+                {
+                    id: 'table', title: '일정 표', icon: 'table', defaultArea: 'center',
+                    placement: { areas: ['center'], singleton: true },
+                    layout: { minWidth: 280, squeeze: 'scroll' },
+                    component: 'Table',
+                },
             ],
             commands: [
                 { id: 'calendar.open', title: '달력 열기', icon: 'calendar', keys: 'Mod+Alt+C' },
@@ -80,6 +88,7 @@ export const calendarPlugin = definePlugin({
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
                 { id: 'calendar.exportIcs', title: 'ICS 내보내기', icon: 'download' },
                 { id: 'calendar.exportAll', title: '일정 전체 ICS 내보내기', icon: 'download' },
+                { id: 'calendar.openTable', title: '표로 보기', icon: 'table' },
                 // 구독 노드 우클릭 메뉴가 부르는 명령 넷(대상 노드는 subscribe/nodes 의 「메뉴가 가리킨 구독」에서 읽는다).
                 { id: 'calendar-subscribe.refresh', title: '구독 새로고침', icon: 'redo' },
                 { id: 'calendar-subscribe.from-file', title: '구독 파일로 갱신', icon: 'upload' },
@@ -96,9 +105,9 @@ export const calendarPlugin = definePlugin({
             //    🔴 구독 노드 타입(impl 'sub')도 같이 낸다 — 구독 하나 = 탐색기에 보이는 노드(subscribe/nodes).
             nodeTypes: [...calendarNodeTypes, ...subscribeNodeTypes],
             // 구독 노드를 고르면 속성 패널에 링크 칸(쥔님 2026-11-09 — 노드 이름 자리에 링크 치던 것 대신).
+            //    🔴 일정은 속성 패널 칸이 없다 — 🙋 7 A: 레코드는 열기 페이지(EventCardPeek) 하나에서 고친다.
             properties: [
                 { target: SUB_TYPE, id: 'sub-link', title: '구독', pane: 'SubLink' },
-                { target: EVENT_TYPE, id: 'event', title: '일정', pane: 'EventProps' },
             ],
         },
     },
@@ -107,8 +116,10 @@ export const calendarPlugin = definePlugin({
     components: {
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
         Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek, host: p.host }),
+        // 표 화면은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(collection 이 없으면 빈 화면).
+        Table: ({ host, peek, leaf }: ViewProps & { host: PluginHost }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
-    panes: { SubLink: SubLinkPane, EventProps },
+    panes: { SubLink: SubLinkPane },
     commands: {
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
         'calendar.open': (host: PluginHost) => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },
@@ -140,6 +151,8 @@ export const calendarPlugin = definePlugin({
         },
         // 「일정 전체 ICS 내보내기」(설정 판 단추·팔레트) — 모든 저장소 내 일정을 한 파일로.
         'calendar.exportAll': () => { downloadText('달력 전체.ics', writeIcs(collectForExport(null))); },
+        // 저장소 우클릭 「표로 보기」 — 그 저장소를 컬렉션 표로(보고 있는 목록 = 그 저장소).
+        'calendar.openTable': (host: PluginHost) => { const id = getMenuTarget(); if (id) getKit()?.open(host, id); },
         // ── 구독 노드 우클릭 명령 넷(대상은 subscribe/nodes 의 getSubMenuTarget) ──
         // 새로고침 — 그 구독을 다시 받는다(브라우저 네트워크에서만 실제로 돈다).
         'calendar-subscribe.refresh': () => { const id = getSubMenuTarget(); if (id) void refreshSub(id); },
@@ -191,6 +204,7 @@ export const calendarPlugin = definePlugin({
             const nodes = host.modules.use<NodesApi>('nodes');
             initCalendarNodes(nodes ?? null);
             setCalendarHost(host);
+            kitBridge = initCalendarKit(host.modules.use<RecordViewApi>('collection') ?? null, nodes ?? null);
 
             // ── 구독 다리 — 구독 노드(subscribe/)를 켜진 것만 달력 출처로 꽂는다. 달력은 자기 calendarModule 을 바로 쓴다
             //    (남의 플러그인은 host.modules.use('calendar') 로 받지만, 달력 자신은 같은 꾸러미라 모듈을 직접 건넨다).
@@ -215,6 +229,8 @@ export const calendarPlugin = definePlugin({
         offSubs = null;
         subBridge?.dispose();
         subBridge = null;
+        kitBridge?.dispose();
+        kitBridge = null;
         disposeSubs();
     },
 });

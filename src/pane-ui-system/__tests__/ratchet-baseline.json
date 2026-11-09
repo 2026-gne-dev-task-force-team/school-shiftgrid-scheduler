@@ -6,8 +6,8 @@
     "ctxDirect": 0
   },
   "plugins/calendar": {
-    "bareButton": 13,
-    "arbPx": 50,
+    "bareButton": 12,
+    "arbPx": 42,
     "cmdIdString": 0,
     "ctxDirect": 0
   },

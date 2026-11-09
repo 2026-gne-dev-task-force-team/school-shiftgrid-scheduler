@@ -1,5 +1,5 @@
 /**
- * 일정의 「속성이 아닌」 동작 — 저장소 옮기기 · .ics 내보내기 · 휴지통. 일정 카드(EventCard)와 인스펙터(EventProps)가 같이 쓴다.
+ * 일정의 「속성이 아닌」 동작 — 저장소 옮기기 · .ics 내보내기 · 휴지통. 일정 열기 페이지(EventCardPeek)가 속성 목록 밑에 단다.
  *   저장소를 바꾸면 nodes.move(다른 저장소로) · 「휴지통」은 nodes.remove(영구 아님 — 복원된다).
  */
 import { Icon } from '../../../pane-ui-system';

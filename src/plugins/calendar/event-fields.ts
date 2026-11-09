@@ -2,10 +2,36 @@
  * 일정 ↔ 속성 목록(PropertyList) 어댑터 — 순수 함수(React 0 · 노드 0). 일정은 「제목 · 종일 · 언제 · 메모」 네 칸 레코드로 보인다.
  *   · 종일: `when` = {start: 'YYYY-MM-DD', end?: 마지막 날(포함)} — 하루짜리는 end 생략. 저장은 반열린(끝 = 마지막 날 다음 자정)이라 여기서 오간다.
  *   · 시간: `when` = {start, end} 둘 다 'YYYY-MM-DDTHH:mm'.
- *   저장 모양(EventData)은 안 바꾼다 — 바꾸기는 달력을 컬렉션 위로 올리는 판(P4b) 몫.
+ *   ⭐ P4b: 저장 모양도 이 칸 꼴이다 — 일정 노드 data = 컬렉션 레코드(`values.when`·`values.memo` + 사용자 칸). 「종일」은 저장 안 한다
+ *     (`when.start` 에 시각이 없으면 종일). 노드 ↔ EventData 변환은 eventToStored·storedToEvent 두 함수뿐이다.
  */
 import type { DateValue, RecordCellValue, RecordField } from '../collection/contracts/collection';
-import { isoMinuteOf, parseLocal, type CalEvent } from './events';
+import { isoMinuteOf, parseLocal, type CalEvent, type EventData } from './events';
+
+/** 일정 노드 data — 컬렉션 레코드 꼴(칸 값은 values 하나 · 제목은 노드 이름). uid 는 칸이 아니라 .ics 가져오기 열쇠라 밖에 둔다. */
+export interface StoredEvent { values: Record<string, RecordCellValue>; uid?: string }
+
+/** EventData → 노드 data. prev(옛 values)의 사용자 칸은 그대로 두고 언제·메모만 갈아 끼운다. */
+export function eventToStored(d: EventData, prev: Record<string, RecordCellValue> = {}): StoredEvent {
+    const { when } = eventToValues({ name: '', start: d.start, end: d.end, allDay: d.allDay, memo: '' });
+    const values: Record<string, RecordCellValue> = { ...prev, when };
+    if (d.memo) values.memo = d.memo; else delete values.memo;
+    return d.uid ? { values, uid: d.uid } : { values };
+}
+
+/** 노드 data → EventData. 「언제」가 없거나 깨졌으면 null(달력에 안 그린다). */
+export function storedToEvent(data: unknown): EventData | null {
+    const d = (data ?? {}) as Partial<StoredEvent>;
+    const v = d.values && typeof d.values === 'object' ? d.values : {};
+    const when = v.when as DateValue | undefined;
+    if (!when || typeof when !== 'object' || typeof when.start !== 'string') return null;
+    const f = valuesToEvent({ when, allDay: !when.start.includes('T'), memo: v.memo ?? '' });
+    if (!f || Number.isNaN(parseLocal(f.start).getTime()) || Number.isNaN(parseLocal(f.end).getTime())) return null;
+    const out: EventData = { start: f.start, end: f.end, allDay: f.allDay };
+    if (f.memo) out.memo = f.memo;
+    if (typeof d.uid === 'string') out.uid = d.uid;
+    return out;
+}
 
 /** 폼이 다루는 일정 한 건 — 노드 이름(name) + EventData 중 속성 칸이 되는 것. */
 export type EventForm = Pick<CalEvent, 'name' | 'start' | 'end' | 'allDay' | 'memo'>;
