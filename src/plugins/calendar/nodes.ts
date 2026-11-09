@@ -191,6 +191,16 @@ export function createEvent(data: EventData, name = '', storeId?: string): strin
 
 // 일정 문서(body)는 노드 공통 body 칸에 산다 — 카드 편집(updateEventData)이 data 를 덮어도 안 잃는다.
 export function updateEventData(id: string, data: EventData): void { api?.setData(id, data); }
+/** 속성 목록(인스펙터)이 바꾼 일정 한 건을 쓴다 — 이름과 data 를 한 묶음(되돌리기 한 칸)으로. 옛 data 의 uid 는 남긴다. */
+export function patchEvent(id: string, f: { name: string; start: string; end: string; allDay: boolean; memo: string }): void {
+    if (!api) return;
+    const a = api;
+    a.batch(() => {
+        if (a.get(id)?.name !== f.name) a.rename(id, f.name);
+        const cur = (a.get(id)?.data ?? {}) as Record<string, unknown>;
+        a.setData(id, { ...cur, start: f.start, end: f.end, allDay: f.allDay, memo: f.memo });
+    });
+}
 /** 일정 문서(page-doc 값) — 노드 공통 body 칸. */
 export function eventBodyOf(id: string): unknown { return api?.get(id)?.body; }
 export function setEventBody(id: string, body: unknown): void { api?.setBody(id, body); }

@@ -6,7 +6,7 @@
   },
   "plugins/calendar": {
     "bareButton": 14,
-    "arbPx": 54,
+    "arbPx": 52,
     "cmdIdString": 0
   },
   "plugins/collection": {

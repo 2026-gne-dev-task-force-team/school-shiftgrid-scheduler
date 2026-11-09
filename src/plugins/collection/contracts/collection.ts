@@ -44,6 +44,8 @@ export interface RecordField {
     width?: number;
     /** 참이면 이 칸은 못 고친다(표시만) */
     readOnly?: boolean;
+    /** 참이면 「기본 칸」 — 지우기·타입 바꾸기 금지(이름표는 바꿀 수 있다). 제목 칸(titleKey)도 같은 취급 */
+    locked?: boolean;
 }
 
 /** 날짜 값 — P2 에서 string 에서 올라온다. time 이면 start 에 `…THH:MM`, range 면 end 가 붙는다. */
@@ -292,6 +294,14 @@ export interface RecordSchemaApi {
     relationToText(ids: readonly string[], nameOf: (id: string) => string | undefined): string;
 }
 
+/** 속성 목록 props — 이름표 | 그 타입의 Cell 한 줄씩(인스펙터가 쓴다). onChange 가 없으면 보기 전용. */
+export interface PropertyListProps {
+    fields: RecordField[];
+    values: Record<string, RecordCellValue>;
+    onChange?: (key: string, v: RecordCellValue) => void;
+    onOptionsChange?: (key: string, options: FieldOption[]) => void;
+}
+
 /**
  * 🔴 host.modules 로 받는 collection 모듈 — 손님이 쓰는 전부. provides 와 짝(모듈 값 recordViewApi).
  *   host.modules.use<RecordViewApi>('collection') 가 돌려준다.
@@ -300,6 +310,8 @@ export interface RecordViewApi {
     version: 2;
     /** 제어형 목록 화면. T 는 행 하나의 타입(객체). */
     RecordView<T>(props: RecordViewProps<T>): ReactElement | null;
+    /** 속성 목록 — 레코드 한 줄의 칸들을 표 칸과 같은 Cell 로 세로로 그린다(인스펙터용). */
+    PropertyList(props: PropertyListProps): ReactElement | null;
     /** 칸 타입 레지스트리 — 내장 여섯이 같은 꼴로 올라 있고 꽂힌 타입은 `<pluginId>.<name>` 접두사 */
     fieldTypes: FieldTypeRegistry;
     schema: RecordSchemaApi;
