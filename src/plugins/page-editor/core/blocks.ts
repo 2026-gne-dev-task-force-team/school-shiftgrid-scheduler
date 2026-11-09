@@ -28,21 +28,21 @@ function replaceAt(blocks: Block[], idx: number, next: Block): Block[] {
 export function setText(page: Page, id: string, text: string): Page {
     const idx = indexOf(page, id);
     if (idx < 0) return page;
-    return { blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], text }) };
+    return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], text }) };
 }
 
 /** 체크 토글(todo). */
 export function setChecked(page: Page, id: string, checked: boolean): Page {
     const idx = indexOf(page, id);
     if (idx < 0) return page;
-    return { blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], checked }) };
+    return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], checked }) };
 }
 
 /** 표 데이터 바꾸기. */
 export function setTable(page: Page, id: string, table: TableBlockData): Page {
     const idx = indexOf(page, id);
     if (idx < 0) return page;
-    return { blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], table }) };
+    return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], table }) };
 }
 
 /**
@@ -58,7 +58,7 @@ export function changeType(page: Page, id: string, type: BlockType): Page {
     if (isList(type)) next.indent = cur.indent ?? 0;
     if (type === 'table') { next.text = ''; next.table = cur.table ?? emptyTable(); }
     if (type === 'divider') next.text = '';
-    return { blocks: replaceAt(page.blocks, idx, next) };
+    return { ...page, blocks: replaceAt(page.blocks, idx, next) };
 }
 
 /**
@@ -83,7 +83,7 @@ export function splitBlock(page: Page, id: string, offset: number): EditResult {
     }
     const blocks = page.blocks.slice();
     blocks.splice(idx, 1, leftBlock, newBlock);
-    return { page: { blocks }, focusId: newBlock.id, offset: 0 };
+    return { page: { ...page, blocks }, focusId: newBlock.id, offset: 0 };
 }
 
 /**
@@ -95,10 +95,10 @@ export function outdentOrParagraph(page: Page, id: string): EditResult {
     const cur = page.blocks[idx];
     if (isList(cur.type) && (cur.indent ?? 0) > 0) {
         const next: Block = { ...cur, indent: (cur.indent ?? 0) - 1 };
-        return { page: { blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
+        return { page: { ...page, blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
     }
     const next: Block = { id: cur.id, type: 'paragraph', text: '' };
-    return { page: { blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
+    return { page: { ...page, blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
 }
 
 /**
@@ -113,12 +113,12 @@ export function mergeBackspace(page: Page, id: string): EditResult {
     // ① 들여쓴 목록 → 한 단 풀기
     if (isList(cur.type) && (cur.indent ?? 0) > 0) {
         const next: Block = { ...cur, indent: (cur.indent ?? 0) - 1 };
-        return { page: { blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
+        return { page: { ...page, blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
     }
     // ② 꾸민 블록(문단 아님) → 종류 풀기
     if (cur.type !== 'paragraph') {
         const next: Block = { id: cur.id, type: 'paragraph', text: cur.text };
-        return { page: { blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
+        return { page: { ...page, blocks: replaceAt(page.blocks, idx, next) }, focusId: id, offset: 0 };
     }
     // ③ 문단 — 맨 위면 그대로
     if (idx === 0) return { page, focusId: id, offset: 0 };
@@ -128,7 +128,7 @@ export function mergeBackspace(page: Page, id: string): EditResult {
     if (prev.type === 'divider') {
         const blocks = page.blocks.slice();
         blocks.splice(idx - 1, 1);
-        return { page: { blocks }, focusId: cur.id, offset: 0 };
+        return { page: { ...page, blocks }, focusId: cur.id, offset: 0 };
     }
     // 앞이 표 → 합치지 않는다(그대로)
     if (prev.type === 'table') return { page, focusId: cur.id, offset: 0 };
@@ -138,7 +138,7 @@ export function mergeBackspace(page: Page, id: string): EditResult {
     const mergedPrev: Block = { ...prev, text: prev.text + cur.text };
     const blocks = page.blocks.slice();
     blocks.splice(idx - 1, 2, mergedPrev);
-    return { page: { blocks }, focusId: prev.id, offset: mergeOffset };
+    return { page: { ...page, blocks }, focusId: prev.id, offset: mergeOffset };
 }
 
 /** Tab/⇧Tab — 목록만 들여쓰기(명세 요구 6). 목록 아니면 그대로. */
@@ -150,7 +150,7 @@ export function indentBlock(page: Page, id: string, dir: 'in' | 'out'): Page {
     const level = cur.indent ?? 0;
     const next = dir === 'in' ? Math.min(level + 1, 8) : Math.max(level - 1, 0);
     if (next === level) return page;
-    return { blocks: replaceAt(page.blocks, idx, { ...cur, indent: next }) };
+    return { ...page, blocks: replaceAt(page.blocks, idx, { ...cur, indent: next }) };
 }
 
 /** 블록 순서 바꾸기(손잡이 끌기 · 명세 요구 8). */
@@ -161,7 +161,7 @@ export function moveBlock(page: Page, id: string, toIndex: number): Page {
     const [b] = blocks.splice(idx, 1);
     const clamped = Math.max(0, Math.min(toIndex, blocks.length));
     blocks.splice(clamped, 0, b);
-    return { blocks };
+    return { ...page, blocks };
 }
 
 /** 블록 하나 지우기(손잡이 메뉴 · 명세 요구 8) — 다 지우면 빈 문단 하나를 남긴다. */
@@ -172,10 +172,10 @@ export function removeBlock(page: Page, id: string): EditResult {
     blocks.splice(idx, 1);
     if (blocks.length === 0) {
         const b = emptyBlock();
-        return { page: { blocks: [b] }, focusId: b.id, offset: 0 };
+        return { page: { ...page, blocks: [b] }, focusId: b.id, offset: 0 };
     }
     const focus = blocks[Math.max(0, idx - 1)];
-    return { page: { blocks }, focusId: focus.id, offset: focus.text.length };
+    return { page: { ...page, blocks }, focusId: focus.id, offset: focus.text.length };
 }
 
 /** 지정 블록 뒤에 새 블록을 끼운다. */
@@ -184,7 +184,7 @@ export function insertAfter(page: Page, id: string, block: Block): EditResult {
     const at = idx < 0 ? page.blocks.length : idx + 1;
     const blocks = page.blocks.slice();
     blocks.splice(at, 0, block);
-    return { page: { blocks }, focusId: block.id, offset: 0 };
+    return { page: { ...page, blocks }, focusId: block.id, offset: 0 };
 }
 
 // ──────────────────────────────────────────────────────────────────────────
