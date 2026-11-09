@@ -9,6 +9,9 @@ import { useEffect } from 'react';
 import { useCalendarData } from '../useEvents';
 import { EventCard } from './EventCard';
 import { FeedEventCard } from './FeedEventCard';
+// 🔴 import type 만 — page-doc 약속(값은 host.modules.use).
+import type { PageDocApi } from '../../page-editor/contracts/page-doc';
+import { getCalendarHost, eventBodyOf, setEventBody, renameEvent } from '../nodes';
 
 export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: () => void }) {
     const { events, storeList } = useCalendarData();
@@ -18,5 +21,18 @@ export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: 
     if (!event) return null;
     // 🔴 남의 일정이면 출처 카드(editor 있으면 그 화면, 없으면 읽기 전용)로 — 자기 일정 편집 폼(EventCard)엔 안 넘긴다.
     if (event.foreign) return <FeedEventCard event={event} onClose={onClose} />;
-    return <EventCard event={event} stores={storeList} onClose={onClose} />;
+    // 일정마다 문서(노션처럼) — 페이지 편집기가 page-doc 을 내줄 때만.
+    const host = getCalendarHost();
+    const pd = host?.modules.use<PageDocApi>('page-doc');
+    return (
+        <div className="flex flex-col gap-3">
+            <EventCard event={event} stores={storeList} onClose={onClose} />
+            {host && pd && (
+                <div className="border-t border-line">
+                    <pd.PageDoc host={host} docKey={event.id} value={eventBodyOf(event.id)} onChange={(v) => setEventBody(event.id, v)}
+                        title={event.name} onRename={(n) => renameEvent(event.id, n)} />
+                </div>
+            )}
+        </div>
+    );
 }

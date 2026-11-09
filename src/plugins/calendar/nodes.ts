@@ -67,6 +67,7 @@ function recompute(): void {
  */
 export const calendarNodeTypeImpl = {
     store: {
+        emoji: (node: { data?: unknown }) => { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; },
         open: (host: PluginHost, id: string) => {
             setDefaultStore(id);
             setScope(id);
@@ -189,10 +190,38 @@ export function createEvent(data: EventData, name = '', storeId?: string): strin
     return api.create(target, { type: EVENT_TYPE, name, data });
 }
 
-export function updateEventData(id: string, data: EventData): void { api?.setData(id, data); }
+// 🔴 일정 문서(body)는 EventData 밖 짐이라 카드 편집(updateEventData)이 덮어도 남긴다.
+export function updateEventData(id: string, data: EventData): void {
+    const body = (api?.get(id)?.data as { body?: unknown } | undefined)?.body;
+    api?.setData(id, body === undefined ? data : { ...data, body });
+}
+/** 일정 문서(page-doc 값) — 노드 data.body. */
+export function eventBodyOf(id: string): unknown { return (api?.get(id)?.data as { body?: unknown } | undefined)?.body; }
+export function setEventBody(id: string, body: unknown): void {
+    if (!api) return;
+    api.setData(id, { ...((api.get(id)?.data ?? {}) as Record<string, unknown>), body });
+}
+
+// 미리보기 카드가 page-doc 모듈을 빌리려고 host 를 쥔다(onActivate 가 꽂는다).
+let hostRef: PluginHost | null = null;
+export function setCalendarHost(h: PluginHost | null): void { hostRef = h; }
+export function getCalendarHost(): PluginHost | null { return hostRef; }
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
 export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
 export function removeEvent(id: string): void { api?.remove(id); }
+export function renameStore(id: string, name: string): void { api?.rename(id, name); }
+
+/** 저장소 아이콘(이모지) — 노드 data.icon(탭 머리에서 바로 바꾼다). */
+export function storeIconOf(id: string): string | undefined {
+    const i = (api?.get(id)?.data as { icon?: unknown } | undefined)?.icon;
+    return typeof i === 'string' && i ? i : undefined;
+}
+export function setStoreIcon(id: string, icon: string | undefined): void {
+    if (!api) return;
+    const cur = { ...((api.get(id)?.data ?? {}) as Record<string, unknown>) };
+    if (icon) cur.icon = icon; else delete cur.icon;
+    api.setData(id, cur);
+}
 
 // ── 가져오기·내보내기(.ics) — 2·3번. 순수 변환은 io.ts, 여기선 노드를 읽고 쓴다. ──
 

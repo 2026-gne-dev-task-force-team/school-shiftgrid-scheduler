@@ -26,7 +26,7 @@ import { parseIcs, writeIcs } from './ics';
 import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
 import {
-    calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
+    calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, setCalendarHost,
     getMenuTarget, setDefaultStore, newEventInStore,
     importItemsToStore, collectForExport, storeName, EVENT_TYPE,
 } from './nodes';
@@ -56,7 +56,7 @@ export const calendarPlugin = definePlugin({
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 일정 표 모드는 레코드 뷰를 빌린다(없으면 옛 표) — 있으면 쓰는 것이라 supports
-        supports: { 'record-view': '^0.2' },
+        supports: { 'record-view': '^0.2', 'page-doc': '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
@@ -190,6 +190,7 @@ export const calendarPlugin = definePlugin({
             //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
             const nodes = host.modules.use<NodesApi>('nodes');
             initCalendarNodes(nodes ?? null);
+            setCalendarHost(host);
 
             // ── 구독 다리 — 구독 노드(subscribe/)를 켜진 것만 달력 출처로 꽂는다. 달력은 자기 calendarModule 을 바로 쓴다
             //    (남의 플러그인은 host.modules.use('calendar') 로 받지만, 달력 자신은 같은 꾸러미라 모듈을 직접 건넨다).

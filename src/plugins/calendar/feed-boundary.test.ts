@@ -45,6 +45,8 @@ describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 project-expl
     const NODES_PROMISE = resolve(PLUGINS_DIR, 'project-explorer', 'contracts', 'nodes');   // .ts 없이
     // 레코드 뷰 약속 — 일정 표 모드가 supports 로 빌린다(2026-11-09 · import type 만, 값은 host.modules.use)
     const RECORD_VIEW_PROMISE = resolve(PLUGINS_DIR, 'record-view', 'contracts', 'record-view');
+    // 페이지 문서 약속 — 일정 미리보기 아래 문서(2026-11-09 · import type 만, 값은 host.modules.use)
+    const PAGE_DOC_PROMISE = resolve(PLUGINS_DIR, 'page-editor', 'contracts', 'page-doc');
     for (const f of files) {
         it(`남의 약속 import 없음: ${f.slice(DIR.length + 1)}`, () => {
             const src = read(f);
@@ -56,6 +58,7 @@ describe('달력이 끄는 약속은 자기 꾸러미 contracts 와 project-expl
                 if (!relative(PANE_UI, abs).startsWith('..')) continue; // 창틀(호스트)은 허용
                 if (abs === NODES_PROMISE) continue;                    // 노드 약속 입구만 허용
                 if (abs === RECORD_VIEW_PROMISE) continue;              // supports 로 선언한 레코드 뷰 약속
+                if (abs === PAGE_DOC_PROMISE) continue;                 // supports 로 선언한 페이지 문서 약속
                 bad.push(spec);
             }
             expect(bad, `달력이 남의 약속/코드를 끈다(입구는 자기 contracts·노드 약속뿐): ${bad.join(', ')}`).toEqual([]);

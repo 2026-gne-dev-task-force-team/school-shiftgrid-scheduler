@@ -12,7 +12,8 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
-import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+import { renameStore, storeIconOf, setStoreIcon } from '../nodes';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
 import { TimeGridView } from './TimeGridView';
@@ -65,8 +66,10 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
         <div className="flex items-center gap-1 ml-1">
             {scopeStore && (
                 <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-line text-[12px]" title={`「${scopeStore.name}」 저장소 범위`}>
-                    <Icon name="folder" size={12} className="shrink-0 text-accent" />
-                    <span className="truncate max-w-[9rem] text-text">{scopeStore.name}</span>
+                    {/* 탭 안에서 바로 아이콘·이름 바꾸기(쥔님 2026-11-09 「페이지 플러그인처럼」) */}
+                    <IconPicker icon={storeIconOf(scopeStore.id)} onSetIcon={(i) => setStoreIcon(scopeStore.id, i)} sizeClass="text-[13px]"
+                        fallback={<Icon name="folder" size={12} className="shrink-0 text-accent" />} />
+                    <TitleField value={scopeStore.name} onRename={(n) => renameStore(scopeStore.id, n)} className="w-[9rem] text-[12px]" ariaLabel="저장소 이름" />
                     <button
                         type="button"
                         onClick={() => setScope(null)}
