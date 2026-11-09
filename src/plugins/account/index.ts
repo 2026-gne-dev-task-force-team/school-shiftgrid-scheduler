@@ -14,7 +14,9 @@ import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
-import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl } from './nodes';
+import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl, USER_TYPE, ROLE_TYPE } from './nodes';
+import { AccountProps } from './panes/AccountProps';
+import { AccountList } from './panes/AccountList';
 import * as core from './core';
 // 🔴 증명(credential)은 account 꾸러미 안 내부 모듈 — 별도 플러그인이 아니다(2026-11-08 「플러그인은 꾸러미다」).
 import { credentialModule, credentialLocalNodeTypes, initCredentialLocal } from './credential';
@@ -48,6 +50,8 @@ export const accountPlugin = definePlugin({
         // 🔴 누구·판정·증명을 전부 채운다 — 증명은 꾸러미 안 내부 모듈이라 ⛔ supports 아닌 provides(늘 있다). 계정 데이터는 레코드 노드라 nodes 필요.
         provides: { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' },
         requires: { nodes: '^0.1' },
+        // 사용자·역할 목록은 레코드 뷰를 빌린다(없으면 간이 목록) — 있으면 쓰는 것이라 supports
+        supports: { 'record-view': '^0.2' },
         contributes: {
             // 🔴 약속 셋을 들고 온다(꾸러미 매니페스트). 켜진 account 가 호스트 약속 목록에 identity·credential·permit 를 올린다.
             interfaces: [
@@ -71,12 +75,28 @@ export const accountPlugin = definePlugin({
             ],
             // 🔴 계정은 보이는 노드다 — 루트(싱글턴)·사용자 폴더·역할 폴더·사용자·역할·정책. 숨김 둘(프로젝트 암호·증명 비밀)은 record.
             nodeTypes: [...accountNodeTypes, ...accountSecretNodeTypes, ...credentialLocalNodeTypes],
+            // 🔴 속성 칸 — 사용자·역할만(⛔ 비밀 노드는 값 노출이라 안 낸다)
+            properties: [
+                { target: USER_TYPE, id: 'user', title: '사용자', pane: 'AccountProps' },
+                { target: ROLE_TYPE, id: 'role', title: '역할', pane: 'AccountProps' },
+            ],
             // 노드를 누르면 열리는 편집 탭(가운데) — 지금 열린 노드의 종류에 맞는 편집기를 그린다(page-editor 와 같은 결).
             views: [{
                 id: 'editor', title: '계정', icon: 'gear', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 360, squeeze: 'scroll' },
                 component: 'Editor',
+            }, {
+                // 🔴 사용자·역할 목록은 각자 탭(쥔님 2026-11-09 「한 탭에서 왔다 갔다 하노」) — 폴더를 누르면 그 탭이 열린다
+                id: 'users', title: '사용자', icon: 'users', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Users',
+            }, {
+                id: 'roles', title: '역할', icon: 'shield', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 360, squeeze: 'scroll' },
+                component: 'Roles',
             }],
             // 프로젝트 암호만 설정에 남긴다(마스터용) — 사용자·역할·정책은 노드로 옮겨 설정에서 걷었다.
             settings: {
@@ -92,12 +112,15 @@ export const accountPlugin = definePlugin({
 
     // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
     components: {
-        Editor: () => createElement(AccountEditor),
+        Editor: ({ host, peek }) => createElement(AccountEditor, { host, peek }),
+        Users: ({ host, peek }) => createElement(AccountList, { kind: 'users', host, peek }),
+        Roles: ({ host, peek }) => createElement(AccountList, { kind: 'roles', host, peek }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──
     panes: {
         ProjectPassword: () => createElement(ProjectPasswordPane),
+        AccountProps,
     },
 
     // ── 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이름이 가리킨다(open·can·canCreate·confirmDelete·hidden) ──

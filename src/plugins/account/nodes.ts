@@ -26,6 +26,8 @@ export const SECRET_TYPE = 'account.secret';   // 싱글턴 — 프로젝트 암
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'account.' 를 붙인다). 노드를 열면 여는 편집 탭.
 const EDITOR_ID = 'account.editor';
+const USERS_ID = 'account.users';
+const ROLES_ID = 'account.roles';
 
 /** 사용자 노드 data — 🔴 그 타입을 등록한 계정 플러그인만 읽고 쓴다(불투명 칸). */
 export interface UserData {
@@ -72,18 +74,22 @@ function openEditor(host: PluginHost, id: string): void {
  *   confirmDelete 는 지울 때 경고(인라인 확인) — 계정 루트에만(통째로 사라지니까).
  */
 export const accountNodeTypeImpl = {
-    // 계정 루트 — 만들기·지우기는 마스터만(권한 체계 밖) · 지울 땐 경고 · 이름/옮기기는 막는다(싱글턴 구조물).
+    // 계정 루트 — 만들기·지우기·옮기기는 마스터만(권한 체계 밖) · 지울 땐 경고 · 이름은 막는다(싱글턴 구조물).
+    //   옮기기(순서 바꾸기 포함)는 연다 — 루트는 어디 있든 byType 으로 찾으니 자리가 바뀌어도 안 깨진다(쥔님 2026-11-09 「순서 변경 안 되냐」).
+    //   ⛔ 사용자·역할 폴더는 계속 못 옮긴다 — 루트의 자식으로 찾으니(childOfType) 밖으로 나가면 새 폴더가 생겨 갈린다.
     root: {
         canCreate: () => core.isMaster(),
-        can: () => ({ rename: false, move: false, delete: core.isMaster() }),
+        can: () => ({ rename: false, move: core.isMaster(), delete: core.isMaster() }),
         confirmDelete: () => '계정을 통째로 지웁니다 — 사용자·역할·정책이 모두 사라집니다. (프로젝트 암호는 남습니다)',
     } satisfies NodeTypeImplFns,
     // 사용자·역할 폴더 — 구조물이라 이름/옮기기/지우기 모두 막고, 보기 권한 없으면 숨긴다.
     usersFolder: {
+        open: (host: PluginHost) => { host.workspace.open(USERS_ID, { where: 'center' }); },   // 누르면 「사용자」 탭(레코드 뷰 목록)
         can: () => ({ rename: false, move: false, delete: false }),
         hidden: () => !core.can('account.users.view'),
     } satisfies NodeTypeImplFns,
     rolesFolder: {
+        open: (host: PluginHost) => { host.workspace.open(ROLES_ID, { where: 'center' }); },   // 누르면 「역할」 탭(레코드 뷰 목록)
         can: () => ({ rename: false, move: false, delete: false }),
         hidden: () => !core.can('account.roles.view'),
     } satisfies NodeTypeImplFns,
@@ -123,10 +129,11 @@ export const accountNodeTypes: NodeTypeContribution<'root' | 'usersFolder' | 'ro
         slots: [USERS_FOLDER_TYPE, ROLES_FOLDER_TYPE, POLICY_TYPE],
         impl: 'root',
     },
-    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, impl: 'usersFolder' },
-    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, impl: 'rolesFolder' },
-    { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, create: { label: '사용자', under: [USERS_FOLDER_TYPE] }, impl: 'user' },
-    { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, create: { label: '역할', under: [ROLES_FOLDER_TYPE] }, impl: 'role' },
+    { type: USERS_FOLDER_TYPE, label: '사용자', icon: 'users', container: { accepts: [USER_TYPE] }, openable: true, impl: 'usersFolder' },
+    { type: ROLES_FOLDER_TYPE, label: '역할', icon: 'shield', container: { accepts: [ROLE_TYPE] }, openable: true, impl: 'rolesFolder' },
+    // 🔴 사용자·역할은 나무에 안 띄운다(record · 쥔님 2026-11-09 *"하위노드로 띄우지 말고 레코드 뷰로"*) — 폴더를 열면 목록에 한 줄씩, 만들기도 목록에서.
+    { type: USER_TYPE, label: '사용자', icon: 'user', openable: true, record: true, impl: 'user' },
+    { type: ROLE_TYPE, label: '역할', icon: 'shield', openable: true, record: true, impl: 'role' },
     { type: POLICY_TYPE, label: '정책', icon: 'shieldCheck', openable: true, unique: 'tree', impl: 'policy' },
 ];
 

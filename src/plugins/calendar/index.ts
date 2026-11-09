@@ -28,14 +28,16 @@ import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi,
     getMenuTarget, setDefaultStore, newEventInStore,
-    importItemsToStore, collectForExport, storeName,
+    importItemsToStore, collectForExport, storeName, EVENT_TYPE,
 } from './nodes';
 // 🔴 구독 캘린더 — 2026-11-09 쥔님 *"달력 플러그인 안으로 들여라"* 로 별도 꾸러미에서 달력 안(subscribe/)으로 들였다.
 //    달력이 자기 약속(calendar 모듈·parseIcs·registerSource)을 스스로 쓰는 소비자다 — 남의 플러그인용 입구는 그대로 열려 있다.
 //    🔴 저장 노드 타입 이름(calendar-subscribe.subscription)·명령 id(calendar-subscribe.*)는 **안 바꿨다** — 이미 깔린
 //       구독 노드가 그 타입으로 저장돼 있어, 이름을 바꾸면 byType 매치가 끊겨 데이터가 사라진다(유실 0 원칙).
 import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
-import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget } from './subscribe/nodes';
+import { subscribeNodeTypes, subscribeNodeTypeImpl, getMenuTarget as getSubMenuTarget, SUB_TYPE } from './subscribe/nodes';
+import { SubLinkPane } from './subscribe/SubLinkPane';
+import { EventProps } from './views/EventProps';
 import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
 import { pickIcsText } from './subscribe/file-pick';
 
@@ -53,6 +55,8 @@ export const calendarPlugin = definePlugin({
         // 🔴 M0 — 일정은 노드다(달력은 저장을 모른다). nodes 인터페이스가 없으면 달력이 의미가 없으니 requires.
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 일정 표 모드는 레코드 뷰를 빌린다(없으면 옛 표) — 있으면 쓰는 것이라 supports
+        supports: { 'record-view': '^0.2' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.1.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
@@ -70,7 +74,7 @@ export const calendarPlugin = definePlugin({
                 },
             ],
             commands: [
-                { id: 'calendar.open', title: '달력 열기', icon: 'calendar' },
+                { id: 'calendar.open', title: '달력 열기', icon: 'calendar', keys: 'Mod+Alt+C' },
                 { id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar' },
                 { id: 'calendar.newEventIn', title: '새 일정', icon: 'plus' },
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
@@ -91,14 +95,20 @@ export const calendarPlugin = definePlugin({
             //    함수(open·menu)는 아래 nodeTypes(calendarNodeTypeImpl)에 impl 'store' 로 가리킨다 — 옛 onActivate 의 registerCalendarTypes 를 대체.
             //    🔴 구독 노드 타입(impl 'sub')도 같이 낸다 — 구독 하나 = 탐색기에 보이는 노드(subscribe/nodes).
             nodeTypes: [...calendarNodeTypes, ...subscribeNodeTypes],
+            // 구독 노드를 고르면 속성 패널에 링크 칸(쥔님 2026-11-09 — 노드 이름 자리에 링크 치던 것 대신).
+            properties: [
+                { target: SUB_TYPE, id: 'sub-link', title: '구독', pane: 'SubLink' },
+                { target: EVENT_TYPE, id: 'event', title: '일정', pane: 'EventProps' },
+            ],
         },
     },
 
     // ── 이름 붙인 구현 — 호스트가 contributes 의 이름으로 찾아 꽂는다(p.host 로 호스트가 끼워져 온다) ──
     components: {
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
-        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek }),
+        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek, host: p.host }),
     },
+    panes: { SubLink: SubLinkPane, EventProps },
     commands: {
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
         'calendar.open': (host: PluginHost) => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },

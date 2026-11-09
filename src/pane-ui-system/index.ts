@@ -18,6 +18,11 @@ export { kvGet, kvSet, kvDel, kvEstimate, kvAvailable } from './kv';
 export { FRAME_COMMAND, type FrameCommandId } from './frame-commands';
 // 되돌리기 공용 더미 + ⌘Z 판정 — 범위(더미)는 쓰는 쪽마다 따로 든다
 export { emptyHistory, record, undo, redo, canUndo, canRedo, undoKey, type History } from './history';
+// 단축키 — 명령의 keys + 사용자 재지정 → 전역 디스패처 하나
+export {
+    installKeybindings, handleKeydown, eventToKey, normalizeKey, formatKey, effectiveKey, keyMap,
+    getKeyOverrides, setKeyOverride, resetKeyOverride, resetAllKeyOverrides, useKeyOverrides, type KeyOverrides,
+} from './keybindings';
 
 export { FOCUS_RING } from './primitives/focus';
 export { Button } from './primitives/Button';
@@ -31,6 +36,9 @@ export { StartScreen, type StartItem } from './primitives/StartScreen';
 export { uniqueName } from './primitives/naming';
 export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
 export { DatePicker } from './primitives/DatePicker';
+export { DateField } from './primitives/DateField';
+export { Popover } from './primitives/Popover';
+export { PropertyField } from './primitives/PropertyField';
 export { Toggle } from './primitives/Toggle';
 
 // 상호작용 — 🔴 드래그·길게누르기·포인터 제스처·전역 가드·재배열 훅이 사는 자리(쥔님: *"인터렉티브 폴더 따로"*).

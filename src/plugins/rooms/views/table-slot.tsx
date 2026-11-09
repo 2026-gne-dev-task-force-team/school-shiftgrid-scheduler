@@ -20,18 +20,25 @@
  * ───────────────────────────────────────────────────────────────────────────
  */
 import { Icon } from '../../../pane-ui-system';
+import { useState } from 'react';
+// 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
+import type { RecordViewApi, RecordField, RecordTree, PasteRequest } from '../../record-view/contracts/record-view';
 
 export interface TableColumn {
     key: string;
     title: string;
     /** 선택 — 간이 표는 안 쓴다(표 편집기가 쓸 수 있게 자리만). */
     width?: number;
+    /** (선택) 사용자 열의 레코드 뷰 칸 정의 그대로(타입·고르기 값) — 없으면 글 칸. */
+    field?: RecordField;
 }
 
 export interface TableRow {
     id: string;
     /** 열 key → 문자열 값. 표는 전부 문자열로 다룬다. */
     cells: Record<string, string>;
+    /** (선택) 사용자 열 값 — 레코드 뷰 값 그대로(간이 표는 안 그린다). */
+    values?: Record<string, unknown>;
     /** 선택 — 첫 칸을 이만큼 들여쓴다(0 = 안 들여씀). 표는 이게 무슨 뜻인지 모른다. */
     indent?: number;
 }
@@ -39,7 +46,10 @@ export interface TableRow {
 export interface TableSlotProps {
     columns: TableColumn[];
     rows: TableRow[];
-    onCellChange(rowId: string, key: string, value: string): void;
+    /** 고정 열은 글자, 사용자 열은 레코드 뷰 값 그대로(숫자·날짜·고르기…)가 온다. */
+    onCellChange(rowId: string, key: string, value: unknown): void;
+    /** (선택) 열 정의가 바뀌었다(레코드 뷰의 열 추가·이름 바꾸기·지우기) — 주면 레코드 뷰에서 열을 고칠 수 있다. */
+    onFieldsChange?(fields: RecordField[]): void;
     onAddRow(): void;
     onDeleteRow(rowId: string): void;
     onMoveRow(rowId: string, dir: -1 | 1): void;
@@ -49,6 +59,8 @@ export interface TableSlotProps {
     onIndentRow?(rowId: string): void;
     /** (선택) 중첩 한 칸 얕게 — 주면 ← 단추가 뜬다. */
     onOutdentRow?(rowId: string): void;
+    /** (선택) 그 행의 부모 행 id(뿌리면 null) — 주면 레코드 뷰가 트리(방 안에 방)로 그린다. */
+    parentOf?(rowId: string): string | null;
     emptyHint?: string;
 }
 
@@ -132,6 +144,67 @@ export function SimpleTable({ columns, rows, onCellChange, onAddRow, onDeleteRow
                     <Icon name="plus" size={13} /> 줄 추가
                 </button>
             </div>
+        </div>
+    );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 🔴 레코드 뷰로 갈아 끼우기(쥔님 2026-11-09 「명단은 레코드 뷰야」) — host.modules.use('record-view') 이 있으면 그 목록 화면을,
+//    없으면 위 간이 표를 그린다. 레코드 뷰의 콜백을 이 자리의 콜백으로 푼다 — 저장·휴지통은 여전히 다리(nodes.ts)가 쥔다.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** 레코드 뷰 붙여넣기(보이는 칸 key 순서 + 글자) → 이 자리 열 순서의 TSV 한 덩어리. 순수 함수. */
+export function pasteToTsv(req: PasteRequest, columns: TableColumn[]): string {
+    return req.rows.map((r) => columns.map((col) => { const i = req.keys.indexOf(col.key); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
+}
+
+/** 「beforeId 앞으로」(null 이면 끝) → 한 칸씩 옮기기 몇 번. 순수 함수. */
+export function reorderSteps(ids: string[], id: string, beforeId: string | null): { dir: -1 | 1; n: number } | null {
+    const from = ids.indexOf(id);
+    if (from < 0) return null;
+    const target = beforeId ? ids.indexOf(beforeId) : ids.length;
+    if (target < 0) return null;
+    const to = target > from ? target - 1 : target;
+    return to === from ? null : { dir: to < from ? -1 : 1, n: Math.abs(to - from) };
+}
+
+type Rec = { id: string } & Record<string, string>;
+
+/** 표 자리 — 레코드 뷰가 있으면 그걸로, 없으면 간이 표로. */
+export function TableSlot({ rv, viewKey, ...props }: TableSlotProps & { rv: RecordViewApi | null; viewKey: string }) {
+    const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+    if (!rv) return <SimpleTable {...props} />;
+    const { RecordView } = rv;
+    const fields: RecordField[] = props.columns.map((c) => c.field ?? { key: c.key, label: c.title, type: 'text', width: c.width });
+    const records: Rec[] = props.rows.map((r) => ({ ...r.cells, ...(r.values ?? {}), id: r.id }) as Rec);
+    const parentOf = props.parentOf;
+    const tree: RecordTree<Rec> | undefined = parentOf && props.onIndentRow && props.onOutdentRow ? {
+        parentOf: (r) => parentOf(r.id),
+        collapsed: (id) => collapsed.has(id),
+        onToggleCollapse: (id) => setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }),
+        onIndent: props.onIndentRow,
+        onOutdent: props.onOutdentRow,
+    } : undefined;
+    return (
+        <div className="flex-1 min-h-0 flex flex-col">
+            <RecordView<Rec>
+                fields={fields}
+                records={records}
+                getId={(r) => r.id}
+                viewKey={viewKey}
+                titleKey={props.columns[0]?.key}
+                onCellChange={(id, key, value) => props.onCellChange(id, key, value)}
+                onFieldsChange={props.onFieldsChange}
+                onAddRecord={props.onAddRow}
+                onDeleteRecords={(ids) => ids.forEach(props.onDeleteRow)}
+                onPaste={(req) => props.onPaste(pasteToTsv(req, props.columns))}
+                onReorder={(id, beforeId) => {
+                    const s = reorderSteps(props.rows.map((r) => r.id), id, beforeId);
+                    if (s) for (let i = 0; i < s.n; i++) props.onMoveRow(id, s.dir);
+                }}
+                tree={tree}
+                className="flex-1 min-h-0"
+            />
         </div>
     );
 }

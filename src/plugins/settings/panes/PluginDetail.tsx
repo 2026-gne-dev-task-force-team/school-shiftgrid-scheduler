@@ -8,7 +8,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey } from '../../../pane-ui-system';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, listContributions, listPlugins, usePluginRegistry, HOST_VERSION,
@@ -157,6 +157,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
     // 줄의 끄기 스위치에서 열렸으면(startConfirming) 바로 확인 단계를 보여 준다.
     const [confirming, setConfirming] = useState(startConfirming && !p.core);
     const commands = listCommands().filter((c) => c.owner === p.id);
+    const keyO = useKeyOverrides();   // 단축키는 사용자 재지정이 이긴다 — 설정 「단축키」와 같은 값
     const views = host.views.list().filter((v) => v.id === p.id || v.id.startsWith(`${p.id}.`));
     const sections = listSettings().filter((s) => s.owner === p.id);
     const firstItemId = sections[0]?.items[0]?.id;
@@ -368,7 +369,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-[13px] text-text truncate">{c.title}</span>
-                                            {c.keys && <kbd className="text-[10px] px-1 rounded border border-line bg-side text-muted">{c.keys}</kbd>}
+                                            {effectiveKey(c.id, c.keys, keyO) && <kbd className="text-[10px] px-1 rounded border border-line bg-side text-muted">{formatKey(effectiveKey(c.id, c.keys, keyO))}</kbd>}
                                         </div>
                                         {c.description && <p className="text-[11px] text-muted leading-snug">{c.description}</p>}
                                         <span className="text-[10px] text-muted/70 font-mono">{c.id}</span>

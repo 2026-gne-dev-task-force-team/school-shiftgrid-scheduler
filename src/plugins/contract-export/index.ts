@@ -7,7 +7,7 @@ import { manifest } from './manifest';
 export const contractExportPlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'export', version: '0.1.0' }] },
+        contributes: { interfaces: [{ name: 'export', version: '0.1.0', label: '인쇄·PDF·엑셀' }] },
     },
 });
 export default contractExportPlugin;

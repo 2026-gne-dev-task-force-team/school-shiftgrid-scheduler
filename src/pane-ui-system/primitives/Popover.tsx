@@ -41,7 +41,9 @@ export function Popover({
 
     useEffect(() => {
         const onDown = (e: PointerEvent) => {
-            if (!ref.current?.contains(e.target as Node)) onClose();
+            const t = e.target as Element;
+            // 안에서 띄운 팝오버(날짜 칸 등)는 포털이라 ref 밖이다 — 그 클릭은 바깥 클릭이 아니다
+            if (!ref.current?.contains(t) && !t.closest?.('[data-popover]')) onClose();
         };
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         document.addEventListener('pointerdown', onDown, true);
@@ -55,6 +57,7 @@ export function Popover({
     return createPortal(
         <div
             ref={ref}
+            data-popover
             className="fixed z-[200] rounded-md border border-line bg-panel shadow-lg p-2 select-none"
             style={{ left: pos.x, top: pos.y, width }}
         >

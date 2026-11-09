@@ -18,10 +18,24 @@ import {
     initStore, getState, newNode, renameSelected, removeSelected, confirmRemove, cancelRemove,
     nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
-    undoAction, redoAction,
+    undoAction, redoAction, subscribeState,
 } from './store';
+import type { SelectionApi } from '../selection/contracts/selection';
 
 const TREE_VIEW_ID = 'project-explorer.tree';   // host 가 'project-explorer.' 를 붙인다(id: 'tree')
+
+let offSelection: (() => void) | null = null;
+/** 탐색기 선택 → 선택 알림. 고른 것이 바뀔 때만 set(같은 값은 selection 쪽이 거른다). */
+export function attachSelection(sel: SelectionApi): void {
+    const push = (): void => {
+        const s = getState();
+        const node = s.selectedIds.length === 1 && s.selectedId ? s.tree.nodes[s.selectedId] : undefined;
+        sel.set(node ? { type: node.type, id: node.id } : null);
+    };
+    offSelection?.();
+    offSelection = subscribeState(push);
+    push();
+}
 
 /**
  * 🔴 「새로 만들기 ▸」 명령 자동 등록 — create 가 있는 타입마다 `project-explorer.new-<type>` 명령을 켠다(N4 반쪽 메꿈).
@@ -84,6 +98,7 @@ export const projectExplorerPlugin = definePlugin({
         // 🔴 M0 — 「nodes」 인터페이스를 채운다(provides). 모듈 값은 아래 modules.nodes(짝). nodeTypes 기여가 있어도
         //    제공자라 requires.nodes 가 면제된다(호스트 검사의 「제공자 예외」).
         provides: { nodes: '0.1.0' },
+        supports: { selection: '^0.1' },
         // 🔴 선언형 기여 — 「무엇을 내나」를 데이터로 적는다. 함수·컴포넌트는 이름으로(아래 components·commands·renders).
         contributes: {
             // 🔴 nodes 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」 — 탐색기 꾸러미가 약속·제공·화면을 한 폴더에).
@@ -98,7 +113,7 @@ export const projectExplorerPlugin = definePlugin({
             }],
             // 명령 14 — 대상 노드는 스토어의 「고른 노드」에서 읽는다. 🔴 new-folder 는 여기 없다(registerTypeCommands 가 folder 타입에서 자동).
             commands: [
-                { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder' },
+                { id: 'project-explorer.open-panel', title: '탐색기', icon: 'folder', keys: 'Mod+Shift+E' },
                 { id: 'project-explorer.rename', title: '이름 바꾸기', icon: 'edit' },
                 { id: 'project-explorer.remove', title: '삭제(휴지통으로)', icon: 'trash' },
                 { id: 'project-explorer.confirm-remove', title: '삭제 확인', icon: 'trash' },
@@ -158,6 +173,11 @@ export const projectExplorerPlugin = definePlugin({
     //    「호출자별 팩토리」라 use 가 (소비자 id, scope track) 으로 부른다.
     modules: { nodes: nodesApiFactory },
     // 첫 실행 때 왼쪽에 패널 한 번(⛔ onActivate 가 아니라 여기 — 다리가 설 때까지 호스트가 미룬다).
-    lifecycle: { onActivate, onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); } },
+    lifecycle: {
+        onActivate,
+        onFirstRun: (host) => { host.workspace.open(TREE_VIEW_ID, { where: 'left' }); },
+        // 선택 알림(supports) — 하나만 골랐으면 { 노드 타입, id }, 아니면 null 을 알린다. 오면 붙고 가면 끊는다.
+        onInterface: { selection: { attach: (_h, mod) => attachSelection(mod as SelectionApi), detach: () => { offSelection?.(); offSelection = null; } } },
+    },
 });
 export default projectExplorerPlugin;

@@ -184,6 +184,12 @@ export function useExplorer(): ExplorerState {
     );
 }
 
+/** 상태가 바뀔 때마다 부른다(React 밖 — 선택 알림 다리가 쓴다). */
+export function subscribeState(fn: () => void): () => void {
+    listeners.add(fn);
+    return () => { listeners.delete(fn); };
+}
+
 export function getState(): ExplorerState {
     return state;
 }

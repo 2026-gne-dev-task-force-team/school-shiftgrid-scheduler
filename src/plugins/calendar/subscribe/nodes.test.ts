@@ -1,6 +1,6 @@
 /**
  * 구독 노드 — 「구독도 노드로」(쥔님 2026-11-08). 탐색기에 보이는 노드로서:
- *   · 보이는 타입(record 아님) + 「새로 만들기」 후보 · 만들 때 인라인 링크 입력(createInput) · 열면 달력 탭(open)
+ *   · 보이는 타입(record 아님) + 「새로 만들기」 후보 · 링크는 속성 패널 칸 · 열면 달력 탭(open)
  *   · 우클릭 메뉴(새로고침·파일로 갱신·링크 바꾸기·켜기/끄기) · 끄기→달력에서 빠짐
  *   · 휴지통→사라짐·복원→돌아옴 · 이름바꾸기→출처 라벨 · 옛 record 구독 데이터 유실 0
  * (테스트는 구조 검사 walk 가 건너뛰므로 real 탐색기 스토어·real 달력 feed 를 직접 import 해 끝단을 잰다.)
@@ -21,7 +21,7 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, restoreSelected, newNode, getState, commitRename } from '../../project-explorer/store';
+import { initStore, select, restoreSelected, newNode, getState } from '../../project-explorer/store';
 import { __resetPersistForTest } from '../../project-explorer/persist';
 import { makeNodesApi } from '../../project-explorer/api';
 import { registerType, clearTypes, isRecordType, createCandidates, getType } from '../../project-explorer/model/types';
@@ -54,9 +54,10 @@ beforeEach(async () => {
     clearTypes(); clearDerived(); __resetPersistForTest(); __resetFeeds();
     await initStore(host());
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
-    const api = makeNodesApi('calendar-subscribe');
-    // real 구독 노드 타입(record:false · createInput · open · menu · onInput)을 그대로 꽂는다.
-    api.registerContributed(subscribeNodeTypes[0], { nodeTypes: subscribeNodeTypeImpl } as PluginImpl, host());
+    // 🔴 실제 호출자는 달력(calendar) — 타입 이름 접두사(calendar-subscribe)와 다르다. 옛 시험은 'calendar-subscribe' 로 불러
+    //    실앱의 setData 거부(주인≠호출자)를 못 잡았다(2026-11-09 실화면에서 발견). 선언한 플러그인이 주인이다.
+    const api = makeNodesApi('calendar');
+    api.registerContributed(subscribeNodeTypes[0], { nodeTypes: subscribeNodeTypeImpl } as PluginImpl, { ...host(), id: 'calendar' } as PluginHost);
     bridge = initSubs(api);
     setCalendar(calendarModule);
 });
@@ -71,32 +72,26 @@ describe('보이는 노드 타입', () => {
     });
 });
 
-describe('새로 만들기 → 인라인 링크 입력(createInput)', () => {
-    it('만들면 이름칸 자리에 「값 입력」(kind:create)이 뜨고, data.url 은 아직 비어 있다', () => {
+describe('새로 만들기 — 이름은 이름, 링크는 속성 패널(쥔님 2026-11-09)', () => {
+    it('만들면 링크 입력(kind:create)이 아니라 보통 이름짓기다 · data.url 은 비어 있다', () => {
         newNode(SUB_TYPE);
         const s = getState();
-        expect(s.renamingId).toBeTruthy();
-        expect(s.renameKind).toBe('create');
+        expect(s.renameKind).not.toBe('create');
         const node = s.tree.nodes[s.renamingId!];
         expect(node.type).toBe(SUB_TYPE);
         expect((node.data as { url: string }).url).toBe('');
     });
+});
 
-    it('링크를 커밋하면 url 이 저장되고 이름이 호스트명으로 바뀐다(onInput)', () => {
-        newNode(SUB_TYPE);
-        const id = getState().renamingId!;
-        commitRename('webcal://example.com/holidays.ics');   // onInput(kind:create) → applyLink
-        const sub = getSubById(id)!;
-        expect(sub.data.url).toBe('https://example.com/holidays.ics');   // webcal→https
-        expect(sub.name).toBe('example.com');                            // 호스트명으로 이름
-        expect(getState().renamingId).toBeNull();                        // 입력 닫힘
-    });
-
-    it('빈 값으로 커밋하면 갓 만든 빈 구독을 거둔다(휴지통)', () => {
-        newNode(SUB_TYPE);
-        const id = getState().renamingId!;
-        commitRename('   ');
-        expect(listSubs().some((s) => s.id === id)).toBe(false);
+describe('주인 — 선언한 플러그인만 data 를 쓴다', () => {
+    it('달력(선언자)은 쓰고, 남은 거부된다', () => {
+        const id = addSub('공휴일', 'https://x/y.ics');
+        updateSub(id, { url: 'https://z/w.ics' });
+        expect(getSubById(id)!.data.url).toBe('https://z/w.ics');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        makeNodesApi('people').setData(id, { url: 'nope' });
+        expect(getSubById(id)!.data.url).toBe('https://z/w.ics');
+        warn.mockRestore();
     });
 });
 

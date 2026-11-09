@@ -12,10 +12,12 @@ import { Icon } from '../../../pane-ui-system';
 import { useActiveList, setActiveList } from '../store';
 import {
     subscribeNodes, getListNodes, inTrash, roomsIn,
-    addRoom, updateRoom, removeRoom, nudgeRoom, indentRoom, outdentRoom, pasteRooms,
+    addRoom, updateRoom, removeRoom, nudgeRoom, indentRoom, outdentRoom, pasteRooms, roomOf, colsOf, setCol, listFieldsOf, setListFields,
 } from '../nodes';
 import { buildRoomTree } from '../tree';
-import { SimpleTable, type TableColumn, type TableRow } from './table-slot';
+import { TableSlot, type TableColumn, type TableRow } from './table-slot';
+import type { RecordViewApi, RecordField } from '../../record-view/contracts/record-view';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
 const COLUMNS: TableColumn[] = [
@@ -23,7 +25,9 @@ const COLUMNS: TableColumn[] = [
     { key: 'memo', title: '메모' },
 ];
 
-export function ListTab() {
+export function ListTab({ host }: { host?: PluginHost }) {
+    // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: record-view) — 없으면 간이 표
+    const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     const activeId = useActiveList();
     // 노드가 바뀔 때만 다시 그린다(목록 이름·방 줄). 스냅샷은 recompute 때만 새 배열이 된다.
     const listNodes = useSyncExternalStore(subscribeNodes, getListNodes, getListNodes);
@@ -35,11 +39,15 @@ export function ListTab() {
         return buildRoomTree(roomsIn(activeId)).map(({ room, depth }) => ({
             id: room.id,
             cells: { name: room.name, memo: room.memo ?? '' },
+            values: colsOf(room.id),
             indent: depth,
         }));
         // roomsIn 은 매 호출 새로 읽지만, 이 useMemo 는 listNodes(= 노드 스냅샷)·activeId 가 바뀔 때만 돈다.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listNodes, activeId]);
+
+    // 열 = 고정(이름·메모) + 사용자 열(목록 노드 data.fields)
+    const columns: TableColumn[] = activeId ? [...COLUMNS, ...(listFieldsOf(activeId) as RecordField[]).map((f) => ({ key: f.key, title: f.label, field: f }))] : COLUMNS;
 
     // 보고 있는 목록이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
@@ -56,19 +64,24 @@ export function ListTab() {
                 <span className="font-medium text-text truncate">{list.name}</span>
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}개</span>
             </div>
-            <SimpleTable
-                columns={COLUMNS}
+            <TableSlot
+                rv={rv}
+                viewKey="rooms.list"
+                columns={columns}
                 rows={rows}
                 onCellChange={(rowId, key, value) => {
-                    if (key === 'name') updateRoom(rowId, { name: value });
-                    else if (key === 'memo') updateRoom(rowId, { memo: value });
+                    if (key === 'name') updateRoom(rowId, { name: String(value ?? '') });
+                    else if (key === 'memo') updateRoom(rowId, { memo: String(value ?? '') });
+                    else setCol(rowId, key, value);
                 }}
                 onAddRow={() => addRoom(activeId, { name: '' })}
                 onDeleteRow={(rowId) => removeRoom(rowId)}
                 onMoveRow={(rowId, dir) => nudgeRoom(rowId, dir)}
                 onIndentRow={(rowId) => indentRoom(rowId)}
                 onOutdentRow={(rowId) => outdentRoom(rowId)}
+                parentOf={(rowId) => roomOf(rowId)?.parentId ?? null}
                 onPaste={(text) => pasteRooms(activeId, text)}
+                onFieldsChange={(fields) => setListFields(activeId, fields.filter((f) => f.key !== 'name' && f.key !== 'memo'))}
                 emptyHint="아직 아무 방도 없다. 「줄 추가」로 더하거나 엑셀·한글 표를 붙여 넣는다(첫 칸 이름·둘째 칸 메모). → 로 방 안에 방."
             />
         </div>

@@ -26,6 +26,37 @@ export function setActiveDb(id: string | null): void {
     bump();
 }
 export function getActiveDb(): string | null { return activeDbId; }
+/** 리본 「레코드 뷰 열기」 — 보고 있는 게 없으면 나무의 첫 레코드 뷰(휴지통 안 제외)를 잡는다. 하나도 없으면 화면이 안내를 띄운다. */
+export function pickFirstDbIfNone(): void {
+    const a = api;
+    if (activeDbId || !a) return;
+    const inTrash = (id: string): boolean => {
+        for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true;
+        return false;
+    };
+    const first = a.byType(DB_TYPE).find((n) => !inTrash(n.id));
+    if (first) setActiveDb(first.id);
+}
+
+/** 시작 화면 목록 — 휴지통 밖 레코드 뷰 전부(나무 순서) + 든 폴더 이름(맨 위면 없음). */
+export function liveDbs(): { id: string; name: string; folder: string | null }[] {
+    const a = api;
+    if (!a) return [];
+    const inTrash = (id: string): boolean => { for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true; return false; };
+    return a.byType(DB_TYPE).filter((n) => !inTrash(n.id)).map((n) => {
+        const p = a.parent(n.id);
+        return { id: n.id, name: n.name, folder: p && p !== a.roots.main ? (a.get(p)?.name ?? null) : null };
+    });
+}
+/** 시작 화면 「새 레코드 뷰」 — 탐색기 맨 위에 빈 레코드 뷰 하나. 이름이 겹치면 「레코드 뷰 2」… 못 만들면 null. */
+export function createDb(): string | null {
+    const a = api;
+    if (!a) return null;
+    const names = new Set(a.byType(DB_TYPE).map((n) => n.name));
+    let name = '레코드 뷰';
+    for (let i = 2; names.has(name); i++) name = `레코드 뷰 ${i}`;
+    return a.create(a.roots.main, { type: DB_TYPE, name, data: blankDb() }) || null;
+}
 
 // ── 우클릭 메뉴가 가리킨 레코드 뷰 — 메뉴 항목은 commandId 만 싣는다(달력 저장소와 같은 결) ──
 let menuTargetId: string | null = null;

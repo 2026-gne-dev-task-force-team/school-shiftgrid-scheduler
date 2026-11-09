@@ -17,6 +17,7 @@ export const FRAME_COMMAND = {
     openSettings: 'frame.view.settings',
     toggleLeft: 'frame.sidebar.toggle-left',
     toggleRight: 'frame.sidebar.toggle-right',
+    palette: 'frame.palette',
 } as const;
 
 export type FrameCommandId = (typeof FRAME_COMMAND)[keyof typeof FRAME_COMMAND];

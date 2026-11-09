@@ -7,7 +7,7 @@ import { manifest } from './manifest';
 export const contractClockPlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'clock', version: '0.1.0' }] },
+        contributes: { interfaces: [{ name: 'clock', version: '0.1.0', label: '요일·교시·시각' }] },
     },
 });
 export default contractClockPlugin;

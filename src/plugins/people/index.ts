@@ -12,8 +12,9 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../project-explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { ListTab } from './views/ListTab';
-import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget } from './nodes';
+import { peopleNodeTypes, peopleNodeTypeImpl, initPeopleNodes, getNodesApi, getMenuTarget, PERSON_TYPE } from './nodes';
 import { peopleApi } from './api';
+import { PersonProps } from './views/PersonProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'people.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로 적는다.
 const SHEET_ID = 'people.sheet';
@@ -25,6 +26,8 @@ export const peoplePlugin = definePlugin({
         provides: { people: '0.1.0' },
         // 🔴 명단·사람은 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 레코드 뷰가 있으면 그 목록 화면으로 그린다(없으면 간이 표) — 있으면 쓰는 것이라 supports
+        supports: { 'record-view': '^0.2' },
         contributes: {
             // 🔴 people 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 사람 명단 꾸러미가 약속·provides·화면을 한 폴더에.
             interfaces: [{ name: 'people', version: '0.1.0', label: '사람 명단', desc: '이름을 담는 명단' }],
@@ -36,18 +39,21 @@ export const peoplePlugin = definePlugin({
                 component: 'Sheet',
             }],
             commands: [
-                { id: 'people.open', title: '사람 명단 열기', icon: 'users' },
+                { id: 'people.open', title: '사람 명단 열기', icon: 'users', keys: 'Mod+Alt+P' },
                 { id: 'people.openList', title: '명단 열기', icon: 'users' },
             ],
             ribbon: [{ commandId: 'people.open', icon: 'users', order: 3 }],
             // 🔴 노드 타입 둘(명단·사람) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: peopleNodeTypes,
+            // 🔴 속성 칸 — 탐색기에서 사람을 고르면 오른쪽 「속성」 패널에 이름·메모가 뜬다.
+            properties: [{ target: PERSON_TYPE, id: 'basic', title: '사람', pane: 'PersonProps' }],
         },
     },
 
+    panes: { PersonProps },
     components: {
         // 명단 화면 — 보고 있는 명단(store)의 사람들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: () => createElement(ListTab),
+        Sheet: ({ host }) => createElement(ListTab, { host }),
     },
     commands: {
         // 리본 「사람 명단 열기」 — 보고 있는 명단은 그대로 두고 화면만 연다(없으면 안내가 뜬다).

@@ -10,4 +10,11 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     description: '창틀(pane-ui-system)을 눈으로 시험하는 하네스 — 패널·탭·스크롤·미리보기를 한 탭 안에서 연다',
+    about: {
+        what: '화면 틀(패널·탭·스크롤·미리보기)이 제대로 움직이는지 눈으로 확인하는 시험용 화면입니다.',
+        use: [
+            '화면 배치나 탭 동작이 이상할 때 확인해 볼 때',
+        ],
+        off: '시험 화면이 사라집니다. 다른 기능에는 영향이 없습니다.',
+    },
 };

@@ -8,7 +8,10 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
-import { createEvent } from '../nodes';
+import { createEvent, renameEvent, removeEvent } from '../nodes';
+import type { PluginHost } from '../../../pane-ui-system/plugin';
+// 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
+import type { RecordViewApi, RecordField } from '../../record-view/contracts/record-view';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
@@ -30,7 +33,17 @@ function timeLabel(e: CalEvent): string {
     return e.allDay ? '종일' : `${hhmm(e.startMs)}–${hhmm(e.endMs)}`;
 }
 
-export function ListView({ value, onChange, trailing, peek, selection, onSelect }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void }) {
+// 레코드 뷰 칸 — 날짜·시간·제목·저장소. 제목만 고친다(자기 일정만) · 날짜·시간은 카드에서.
+const RV_FIELDS: RecordField[] = [
+    { key: 'date', label: '날짜', type: 'date', readOnly: true },
+    { key: 'time', label: '시간', type: 'text', readOnly: true },
+    { key: 'title', label: '제목', type: 'text' },
+    { key: 'store', label: '저장소', type: 'text', readOnly: true },
+];
+type RvRow = { id: string; date: { start: string }; time: string; title: string; store: string };
+
+export function ListView({ value, onChange, trailing, peek, selection, onSelect, host }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void; host?: PluginHost }) {
+    const rv = host?.modules.use<RecordViewApi>('record-view') ?? null;
     const { events, stores } = useCalendarData();
     const [query, setQuery] = useState('');
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
@@ -97,7 +110,24 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect 
                 <div className="flex items-center gap-1 shrink-0">{trailing}</div>
             </header>
 
-            {/* 표 — 날짜·시간·제목·저장소 */}
+            {/* 🔴 레코드 뷰가 있으면 그 목록 화면으로(쥔님 2026-11-09) — 줄 열기(→)는 일정 카드 미리보기 · 검색은 위 상자가 거른다 */}
+            {rv ? (
+                <div className="flex-1 min-h-0 flex flex-col border-t border-line">
+                    <rv.RecordView<RvRow>
+                        fields={RV_FIELDS}
+                        records={rows.map((e) => ({ id: e.id, date: { start: dayIso(e.startMs) }, time: timeLabel(e), title: e.name || '새 일정', store: stores.get(e.storeId)?.name ?? e.foreign?.sourceLabel ?? '' }))}
+                        getId={(r) => r.id}
+                        viewKey="calendar.list"
+                        titleKey="title"
+                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(id, String(v ?? '').trim() || '새 일정'); }}
+                        onAddRecord={newEvent}
+                        onDeleteRecords={(ids) => ids.forEach((id) => { if (!rows.find((x) => x.id === id)?.foreign) removeEvent(id); })}
+                        onOpenRecord={(id) => { const ev = rows.find((x) => x.id === id); if (ev) openRow(ev); }}
+                        className="flex-1 min-h-0"
+                    />
+                </div>
+            ) : (
+            /* 표 — 날짜·시간·제목·저장소(레코드 뷰가 꺼져 있을 때) */
             <div className="flex-1 min-h-0 overflow-auto border-t border-line" {...range.bind}>
                 {rows.length === 0 ? (
                     <div className="grid place-items-center h-full text-[12px] text-muted">{query ? '찾는 일정이 없다' : '일정이 없다 — 「새 일정」이나 달력 칸 더블클릭으로'}</div>
@@ -134,6 +164,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect 
                     </table>
                 )}
             </div>
+            )}
         </div>
     );
 }

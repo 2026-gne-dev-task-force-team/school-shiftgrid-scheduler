@@ -122,6 +122,18 @@ function makeConsumer() {
 }
 
 describe('계정 — 9가지 검산', () => {
+    it('사용자·역할은 나무에 안 뜨고(record) 폴더가 목록을 연다 — 폴더 종류·부모 길', () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        const uid = core.createUser('김');
+        const rid = core.createRole('보기');
+        const uf = core.parentOf(uid)!, rf = core.parentOf(rid)!;
+        expect(core.nodeKindOf(uf)).toBe('users');
+        expect(core.nodeKindOf(rf)).toBe('roles');
+        expect(typeof accountNodeTypeImpl.usersFolder.open).toBe('function');
+        expect(typeof accountNodeTypeImpl.rolesFolder.open).toBe('function');
+    });
+
     it('1) 암호 없음 → 마스터로 시작 · can 항상 true', () => {
         const nodes = makeNodes();
         const cons = makeConsumer();

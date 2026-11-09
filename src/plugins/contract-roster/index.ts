@@ -7,7 +7,7 @@ import { manifest } from './manifest';
 export const contractRosterPlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'roster', version: '0.1.0' }] },
+        contributes: { interfaces: [{ name: 'roster', version: '0.1.0', label: '사람·반·과목·특별실' }] },
     },
 });
 export default contractRosterPlugin;

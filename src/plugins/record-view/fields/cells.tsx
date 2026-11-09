@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { DatePicker, Icon } from '../../../pane-ui-system';
-import { Popover } from '../Popover';
+import { Popover } from '../../../pane-ui-system';
 import { PILL_COLORS, pillStyle } from '../colors';
 import { isImeEnter } from './ime';
 import { formatNumber } from './format';

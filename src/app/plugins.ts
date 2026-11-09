@@ -24,6 +24,8 @@ import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { roomsPlugin } from '../plugins/rooms';
 import { pageEditorPlugin } from '../plugins/page-editor';
 import { recordViewPlugin } from '../plugins/record-view';
+import { selectionPlugin } from '../plugins/selection';
+import { propertiesPlugin } from '../plugins/properties';
 
 // 🔴 코어(settings·project-explorer)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
@@ -38,6 +40,8 @@ export const PLUGINS: PluginModule[] = [
     timetableGridPlugin,     // 시간표 그리드 꾸러미 — nodes 를 requires
     roomsPlugin,             // 방 목록 꾸러미 — rooms 약속을 들고 와 채운다 · nodes 를 requires
     pageEditorPlugin,        // 페이지 편집기 꾸러미 — 노션식 블록 페이지 노드 · nodes 를 requires
-    recordViewPlugin,        // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채운다(provides) + 「레코드 뷰 연습장」 뷰
+    recordViewPlugin,        // 레코드 뷰 꾸러미 — record-view 약속을 들고 와 채운다(provides) + 레코드 뷰 노드 화면
+    selectionPlugin,         // 선택 알림 꾸러미 — selection 약속을 들고 와 채운다(화면 없음) · 탐색기가 알리고 속성이 듣는다
+    propertiesPlugin,        // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다 · selection 을 supports
     // 📌 2026-11-09 쥔님 *"구독을 달력 플러그인 안으로 들여라"* — 옛 calendarSubscribePlugin 은 달력 꾸러미 안(calendar/subscribe/)으로 들여 별도 등록을 걷었다.
 ];

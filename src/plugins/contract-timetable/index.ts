@@ -8,7 +8,7 @@ import { manifest } from './manifest';
 export const contractTimetablePlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'timetable', version: '0.1.0', uses: ['clock'] }] },
+        contributes: { interfaces: [{ name: 'timetable', version: '0.1.0', label: '확정 시간표', uses: ['clock'] }] },
     },
 });
 export default contractTimetablePlugin;

@@ -17,6 +17,8 @@ import { ViewPlaceholder } from '../../plugin/Placeholder';
 import { usePluginRegistry } from '../../plugin/registry';
 import { PeekLayer } from './PeekLayer';
 import { ViewErrorBoundary } from './ErrorBoundary';
+/** 미리보기 닫힘 애니메이션 길이(ms) — index.css 의 peek-to-*·peek-shrink(.16s)와 맞춘다. */
+const PEEK_CLOSE_MS = 160;
 
 const PEEK_WIDE_MIN_DEFAULT = 420;   // 뷰가 wideMin 을 안 주면 이 폭 이상을 「넓다」로 본다
 
@@ -62,13 +64,26 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     // 🔴 피크(미리보기) — 이 칸(leaf)에 겹쳐 뜨는 상태. 뷰가 ViewProps.peek 으로 띄운다.
     //    ⭐ 이 칸의 leaf 가 바뀌면(탭 전환) 피크는 닫는다 — 옛 leaf 의 피크가 새 leaf 에 새지 않게.
     const [peek, setPeek] = useState<{ node: ReactNode; wideMin: number } | null>(null);
+    // 닫힘 애니메이션 동안만 참 — 그동안 층을 남겨 두고(peek-to-*) 끝나면 뗀다. 움직임 줄이기면 바로 뗀다.
+    const [closing, setClosing] = useState(false);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const showPeek = useCallback((node: ReactNode, opts?: { wideMin?: number }) => {
+        if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+        setClosing(false);
         setPeek({ node, wideMin: opts?.wideMin ?? PEEK_WIDE_MIN_DEFAULT });
     }, []);
-    const hidePeek = useCallback(() => setPeek(null), []);
+    const hidePeek = useCallback(() => {
+        const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduce) { setPeek(null); return; }
+        setClosing(true);
+        if (closeTimer.current) clearTimeout(closeTimer.current);
+        closeTimer.current = setTimeout(() => { closeTimer.current = null; setClosing(false); setPeek(null); }, PEEK_CLOSE_MS);
+    }, []);
+    useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
     const leafId = leaf?.id ?? null;
-    useEffect(() => { setPeek(null); }, [leafId]);
-    const peekHandle: PeekHandle = { show: showPeek, hide: hidePeek, visible: peek != null };
+    // 탭이 바뀌면 애니메이션 없이 바로 뗀다(옛 탭의 피크가 새 탭에 비치지 않게)
+    useEffect(() => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } setClosing(false); setPeek(null); }, [leafId]);
+    const peekHandle: PeekHandle = { show: showPeek, hide: hidePeek, visible: peek != null && !closing };
 
     // 🔴 사이드바 몸통은 bg-side(에디터 bg 보다 한 단 어둡다) — 가운데(bg-bg)와 갈려야 「사이드답게」 보인다(판 A).
     const surface = sidebar ? 'bg-side' : 'bg-bg';
@@ -109,9 +124,9 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
                         </ViewErrorBoundary>
                     </div>
                 </div>
-                {peek && !peekWide && <PeekLayer wide={false} onClose={hidePeek}>{peek.node}</PeekLayer>}
+                {peek && !peekWide && <PeekLayer wide={false} closing={closing} onClose={hidePeek}>{peek.node}</PeekLayer>}
             </div>
-            {peek && peekWide && <PeekLayer wide onClose={hidePeek}>{peek.node}</PeekLayer>}
+            {peek && peekWide && <PeekLayer wide closing={closing} onClose={hidePeek}>{peek.node}</PeekLayer>}
         </div>
     );
 }

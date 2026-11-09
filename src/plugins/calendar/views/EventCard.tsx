@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Icon, Toggle } from '../../../pane-ui-system';
+import { DateField, Icon, Toggle } from '../../../pane-ui-system';
 import { isoMinuteOf, parseLocal, type CalEvent, type StoreInfo, type EventData } from '../events';
 import { renameEvent, updateEventData, moveEvent, removeEvent, collectEventForExport } from '../nodes';
 import { writeIcs } from '../ics';
@@ -24,7 +24,7 @@ const startOfDay = (ms: number) => { const d = new Date(ms); return new Date(d.g
 const INPUT = 'w-full rounded border border-line bg-bg px-2 py-1 text-[12px] text-text focus:border-accent outline-none';
 const LABEL = 'text-[11px] text-muted';
 
-export function EventCard({ event, stores, onClose }: { event: CalEvent; stores: StoreInfo[]; onClose: () => void }) {
+export function EventCard({ event, stores, onClose }: { event: CalEvent; stores: StoreInfo[]; onClose?: () => void }) {
     const [title, setTitle] = useState(event.name);
     const [memo, setMemo] = useState(event.memo);
     const titleRef = useRef<HTMLInputElement>(null);
@@ -45,7 +45,7 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
         if (e.nativeEvent.isComposing || e.keyCode === 229) return;   // 🔴 한글 조합 중 Enter 무시
         e.preventDefault();
         commitTitle();
-        onClose();
+        onClose?.();
     };
 
     const setAllDay = (on: boolean) => {
@@ -65,7 +65,7 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
         write({ end: isoMinuteOf(new Date(end)) });
     };
 
-    const trash = () => { removeEvent(event.id); onClose(); };
+    const trash = () => { removeEvent(event.id); onClose?.(); };
 
     // 이 일정 하나만 .ics 로 내려받기(노드 「내보내기」의 일정 단위 — 파일 이름은 제목).
     const exportIcs = () => {
@@ -85,9 +85,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
                     onKeyDown={onTitleKey}
                     className={`flex-1 rounded border border-line bg-bg px-2 py-1 text-[13px] font-medium text-text focus:border-accent outline-none`}
                 />
-                <button type="button" aria-label="닫기" onClick={onClose} className="shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
+                {onClose && (<button type="button" aria-label="닫기" onClick={onClose} className="shrink-0 grid place-items-center w-6 h-6 rounded text-muted hover:text-text hover:bg-text/[0.06]">
                     <Icon name="x" size={14} />
-                </button>
+                </button>)}
             </div>
 
             <label className="flex items-center justify-between">
@@ -98,9 +98,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
             <label className="flex flex-col gap-0.5">
                 <span className={LABEL}>시작</span>
                 {event.allDay ? (
-                    <input type="date" value={toDate(event.startMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
+                    <DateField value={toDate(event.startMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
                 ) : (
-                    <input type="datetime-local" value={toDateTime(event.startMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
+                    <DateField time value={toDateTime(event.startMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setStart(d.getTime()); }} className={INPUT} />
                 )}
             </label>
 
@@ -108,9 +108,9 @@ export function EventCard({ event, stores, onClose }: { event: CalEvent; stores:
                 <span className={LABEL}>끝</span>
                 {event.allDay ? (
                     // 종일 끝은 「포함하는 마지막 날」로 보이고(끝−1), 저장은 그 다음날 자정(반열린)
-                    <input type="date" value={toDate(event.endMs - 60_000)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setEnd(d.getTime() + DAY); }} className={INPUT} />
+                    <DateField value={toDate(event.endMs - 60_000)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setEnd(d.getTime() + DAY); }} className={INPUT} />
                 ) : (
-                    <input type="datetime-local" value={toDateTime(event.endMs)} onChange={(e) => { const d = parseLocal(e.target.value); if (!Number.isNaN(d.getTime())) setEnd(d.getTime()); }} className={INPUT} />
+                    <DateField time value={toDateTime(event.endMs)} onChange={(v) => { const d = parseLocal(v); if (!Number.isNaN(d.getTime())) setEnd(d.getTime()); }} className={INPUT} />
                 )}
             </label>
 

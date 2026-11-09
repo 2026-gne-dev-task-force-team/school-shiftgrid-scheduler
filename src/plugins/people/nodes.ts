@@ -223,3 +223,29 @@ export function onNodesChange(fn: () => void): Disposable {
     const off = subscribeNodes(fn);
     return { dispose: off };
 }
+
+// ── 사용자 열(쥔님 2026-11-09 「사용자 열 추가 가능하게」) — 열 정의는 목록 노드 data.fields, 값은 줄 노드 data.cols[key] ──
+//    🔴 ext(위층 플러그인 이름공간)와 따로 둔다 — ext 는 이 꾸러미가 안 건드리는 자리다. 이름·메모는 고정 열이라 여기 안 든다.
+/** 그 목록의 사용자 열 정의(레코드 뷰 칸 정의 그대로 — key·label·type…). */
+export function listFieldsOf(listId: string): unknown[] {
+    const d = (api?.get(listId)?.data ?? {}) as { fields?: unknown };
+    return Array.isArray(d.fields) ? d.fields : [];
+}
+export function setListFields(listId: string, fields: unknown[]): void {
+    if (!api) return;
+    const cur = (api.get(listId)?.data ?? {}) as Record<string, unknown>;
+    api.setData(listId, { ...cur, fields });
+}
+/** 줄 하나의 사용자 열 값들. */
+export function colsOf(id: string): Record<string, unknown> {
+    const d = (api?.get(id)?.data ?? {}) as { cols?: unknown };
+    return d.cols && typeof d.cols === 'object' ? { ...(d.cols as Record<string, unknown>) } : {};
+}
+/** 사용자 열 값 하나 쓰기 — 빈 값이면 지운다. 다른 data(메모 등)는 그대로. */
+export function setCol(id: string, key: string, value: unknown): void {
+    if (!api) return;
+    const cur = (api.get(id)?.data ?? {}) as Record<string, unknown>;
+    const cols = colsOf(id);
+    if (value == null || value === '') delete cols[key]; else cols[key] = value;
+    api.setData(id, { ...cur, cols });
+}

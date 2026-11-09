@@ -8,7 +8,7 @@ import { manifest } from './manifest';
 export const contractWeekGridPlugin = definePlugin({
     manifest: {
         ...manifest,
-        contributes: { interfaces: [{ name: 'week-grid', version: '0.1.0', uses: ['clock'] }] },
+        contributes: { interfaces: [{ name: 'week-grid', version: '0.1.0', label: '시간표 모양', uses: ['clock'] }] },
     },
 });
 export default contractWeekGridPlugin;

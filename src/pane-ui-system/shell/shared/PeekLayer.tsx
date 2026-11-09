@@ -33,7 +33,7 @@ function saveNum(key: string, n: number): void {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem(storageKey(key), String(Math.round(n))); } catch { /* 조용히 */ }
 }
 
-export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose: () => void; children: ReactNode }) {
+export function PeekLayer({ wide, closing = false, onClose, children }: { wide: boolean; closing?: boolean; onClose: () => void; children: ReactNode }) {
     const layerRef = useRef<HTMLDivElement>(null);
     // 기기별로 기억한 크기 — 폭(오른쪽 피크)·높이(아래 피크). 없으면 문서급 기본
     const [w, setW] = useState(() => loadNum(WKEY, DEFAULT_W));
@@ -87,7 +87,7 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
     //    ⛔ 가림막(딤) 없음 · 바깥 클릭을 삼키지도 닫지도 않는다 — 쥔님 2026-11-01 19:08 *"알림창이나 동작 막는 창이 아니라
     //    목록에서 세부 내용을 보는 창 · 탐색의 흐름은 끊기면 안 돼"*. 뒤의 목록은 그대로 눌리고, 미리보기는 ✕/Esc 로만 닫는다.
     const rootClass = wide
-        ? 'relative h-full shrink-0 z-30 pointer-events-auto peek-from-right'
+        ? `relative h-full shrink-0 z-30 pointer-events-auto overflow-hidden ${closing ? 'peek-shrink' : 'peek-grow'}`
         : 'absolute inset-0 z-30 pointer-events-none';
     const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${EDGE_GAP}px))` } : undefined;
     const panelStyle = wide ? undefined : { height: h > 0 ? `min(${h}px, calc(100% - ${EDGE_GAP}px))` : '62%' };
@@ -97,7 +97,7 @@ export function PeekLayer({ wide, onClose, children }: { wide: boolean; onClose:
             <div
                 className={wide
                     ? 'absolute inset-0 bg-panel border-l border-line rounded-l-xl shadow-xl flex flex-col overflow-hidden'
-                    : 'absolute left-0 right-0 bottom-0 bg-panel border-t border-line rounded-t-xl shadow-xl flex flex-col pointer-events-auto peek-from-bottom overflow-hidden'}
+                    : `absolute left-0 right-0 bottom-0 bg-panel border-t border-line rounded-t-xl shadow-xl flex flex-col pointer-events-auto overflow-hidden ${closing ? 'peek-to-bottom' : 'peek-from-bottom'}`}
                 style={panelStyle}
                 role="complementary"
                 aria-label="미리보기"

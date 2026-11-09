@@ -245,9 +245,18 @@
 @keyframes peek-from-bottom { from { transform: translateY(100%); } to { transform: none; } }
 .peek-from-right  { animation: peek-from-right  .18s cubic-bezier(.2,.8,.3,1); }
 .peek-from-bottom { animation: peek-from-bottom .2s cubic-bezier(.2,.8,.3,1); }
+/* 넓은 피크는 칸의 flex 형제라 폭이 본문을 민다 — 폭도 0 에서 자라고 0 으로 줄어야 본문이 툭 튀지 않는다 */
+@keyframes peek-grow   { from { width: 0; } }
+@keyframes peek-shrink { to { width: 0; } }
+@keyframes peek-to-right  { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes peek-to-bottom { from { transform: none; } to { transform: translateY(100%); } }
+.peek-grow   { animation: peek-grow .18s cubic-bezier(.2,.8,.3,1); }
+.peek-shrink { animation: peek-shrink .16s ease-in forwards; }
+.peek-to-right  { animation: peek-to-right  .16s ease-in forwards; }
+.peek-to-bottom { animation: peek-to-bottom .16s ease-in forwards; }
 .peek-scrim { animation: view-fade .18s ease; }
 @media (prefers-reduced-motion: reduce) {
-  .peek-from-right, .peek-from-bottom, .peek-scrim { animation: none; }
+  .peek-from-right, .peek-from-bottom, .peek-scrim, .peek-grow, .peek-shrink, .peek-to-right, .peek-to-bottom { animation: none; }
 }
 
 /*

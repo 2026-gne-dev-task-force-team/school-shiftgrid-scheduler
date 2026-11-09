@@ -10,7 +10,8 @@ import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
-import type { ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
+import { StartScreen } from './StartScreen';
+import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
 import { isImeEnter } from '../fields/ime';
 import { blankDb } from '../schema';
@@ -56,17 +57,14 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
     }, [host]);
 
     if (!snap) {
-        return (
-            <div className="h-full flex items-center justify-center p-6 text-center text-muted select-none">
-                왼쪽 탐색기에서 「새로 만들기 ▸ 레코드 뷰」로 만들고 열면 여기에 뜬다.
-            </div>
-        );
+        return <StartScreen />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
 
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });
     const onCellChange = (rowId: string, key: string, value: RecordCellValue) => commit(id, { cells: [{ id: rowId, key, value }] });
+    const onCellsChange = (cells: CellChange[]) => commit(id, { cells });
     const onConvertField = (plan: ConvertPlan) =>
         commit(id, {
             fields: doc.fields.map((f) => (f.key === plan.key ? plan.field : f)),
@@ -98,6 +96,7 @@ export function DbView({ host }: ViewProps & { host: PluginHost }) {
                     views={doc.views.length > 0 ? doc.views : [blankDb().views[0]]}
                     onViewsChange={onViewsChange}
                     onCellChange={onCellChange}
+                    onCellsChange={onCellsChange}
                     onAddRecord={() => { commit(id, { addRows: [{}] }); }}
                     onDeleteRecords={(ids) => commit(id, { removeRows: ids })}
                     onFieldsChange={onFieldsChange}
