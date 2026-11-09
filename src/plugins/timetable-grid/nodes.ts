@@ -64,13 +64,13 @@ export const gridNodeTypeImpl = {
  */
 export const gridNodeTypes: NodeTypeContribution<'sheet' | 'special'>[] = [
     {
-        type: SHEET_TYPE, label: '시간표', icon: 'schedule',
+        type: SHEET_TYPE, body: 'sheet', label: '시간표', icon: 'schedule',
         container: { accepts: [SPECIAL_TYPE, 'folder', SHEET_TYPE] }, openable: true,
         create: { label: '시간표', under: ['folder', SHEET_TYPE] },
         impl: 'sheet',
     },
     {
-        type: SPECIAL_TYPE, label: '특별 시간표', icon: 'sparkles',
+        type: SPECIAL_TYPE, body: 'sheet', label: '특별 시간표', icon: 'sparkles',
         openable: true,
         create: { label: '특별 시간표', under: [SHEET_TYPE] },
         impl: 'special',
