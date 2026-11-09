@@ -8,7 +8,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ContextMenu, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { useActivePage, setActivePage } from '../store';
+import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import { pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
@@ -51,7 +51,6 @@ export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }
             save={(p) => savePage(activeId, p)}
             syncBlocks={(p) => syncChildBlocks(p, childPageIds(activeId))}
             reviveBlocks={(p) => reviveChildren(activeId, p)}
-            onBack={() => setActivePage(null)}
             titleAriaLabel="페이지 제목"
             titlePlaceholder="제목 없음"
         />
@@ -74,8 +73,6 @@ export interface PageEditorProps {
     syncBlocks?: (p: Page) => Page;
     /** 되돌리기로 본문에 돌아온 줄이 가리키는 휴지통의 페이지를 살린다(syncBlocks 가 줄을 걷기 전에 불린다). */
     reviveBlocks?: (p: Page) => void;
-    /** 주면 상단 줄에 「‹ 목록」 */
-    onBack?: () => void;
     /** 이름을 노드 이름 말고 다른 곳에도 쥐는 손님(레코드 뷰 행)의 이름 바꾸기 길 — 없으면 노드 이름만. */
     onRename?: (name: string) => void;
     titleAriaLabel?: string;
@@ -84,7 +81,7 @@ export interface PageEditorProps {
     properties?: ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, reviveBlocks, leafId, onBack, onRename, titleAriaLabel, titlePlaceholder, properties }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, reviveBlocks, leafId, onRename, titleAriaLabel, titlePlaceholder, properties }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -569,7 +566,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     ];
 
     return (
-        <Frame nodeId={activeId} leafId={leafId} onBack={onBack} menu={menu} onRename={onRename}
+        <Frame nodeId={activeId} leafId={leafId} menu={menu} onRename={onRename}
             titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={titleEnterToBody}
             fallback={<Icon name="fileText" size={32} className="text-muted" />}>
             {(header) => (

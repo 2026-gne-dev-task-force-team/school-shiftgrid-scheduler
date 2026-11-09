@@ -76,7 +76,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
 
     return (
         <div className="h-full select-none">
-            <Frame nodeId={activeId} leafId={leafId} onBack={() => kit.setActive(null)} backLabel="목록" toolbar={bar.slot} headerExtra={`${records.length}${cfg.unit}`}>
+            <Frame nodeId={activeId} leafId={leafId} toolbar={bar.slot} headerExtra={`${records.length}${cfg.unit}`}>
             <div className="h-full flex flex-col">
                 <RecordView<Rec>
                     toolbarHost={bar.host}

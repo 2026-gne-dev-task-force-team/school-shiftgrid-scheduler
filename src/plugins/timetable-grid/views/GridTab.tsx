@@ -6,7 +6,7 @@
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import { Icon, undoKey } from '../../../pane-ui-system';
-import { useActiveSheet, setActiveSheet } from '../store';
+import { useActiveSheet } from '../store';
 import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, getNodesApi, inTrash, stepEdit } from '../nodes';
 import { StartScreen } from './StartScreen';
 import { TimeGrid } from './TimeGrid';
@@ -26,7 +26,7 @@ export function GridTab({ leafId }: { leafId?: string }) {
     return (
         <div className="h-full flex flex-col overflow-hidden select-none"
             onKeyDown={(e) => { const u = undoKey(e.nativeEvent); if (u && !e.defaultPrevented) { e.preventDefault(); stepEdit(activeId, u); } }}>
-            <Frame nodeId={activeId} leafId={leafId} onBack={() => { setActiveSheet(null); }} backLabel="목록"
+            <Frame nodeId={activeId} leafId={leafId}
                 fallback={<Icon name="schedule" size={22} className="text-muted" />}>
                 <TimeGrid data={data} edit={(fn) => applyEdit(activeId, fn)} />
             </Frame>

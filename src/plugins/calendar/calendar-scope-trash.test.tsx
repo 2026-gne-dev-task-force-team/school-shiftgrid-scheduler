@@ -20,7 +20,8 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore } from '../explorer/store';
+import { initStore, getState } from '../explorer/store';
+import { followActivatedLeaf } from '../explorer/leaf-follow';
 import { __resetPersistForTest } from '../explorer/persist';
 import { makeNodesApi } from '../explorer/api';
 import { registerType, clearTypes } from '../explorer/model/types';
@@ -73,5 +74,19 @@ describe('달력 범위 저장소 휴지통 회귀', () => {
         act(() => { api.remove(sid); });
         expect(api.isTrashed(sid)).toBe(true);
         expect(getScope()).toBeNull();
+    });
+
+    it('fix-a 6: 범위 저장소 탭은 leafId 를 틀에 넘겨 — 탭이 활성화되면 속성 패널이 그 저장소를 따라간다', () => {
+        const api = getNodesApi()!;
+        const sid = api.create(api.roots.main, { type: STORE_TYPE, name: '범위 달력' });
+        setScope(sid);
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+        root = createRoot(el);
+        const peek = { show() {}, hide() {}, visible: false } as unknown as PeekHandle;
+        act(() => { root!.render(<CalendarTab peek={peek} host={host()} leafId="LCAL" />); });
+        expect(getState().selectedId).toBe(sid);
+        act(() => { followActivatedLeaf({ id: 'LCAL', area: 'center' }); });
+        expect(getState().selectedId).toBe(sid);
     });
 });

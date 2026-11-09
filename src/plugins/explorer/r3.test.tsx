@@ -58,6 +58,17 @@ describe('R3 머리 한 꼴', () => {
         expect(a).toEqual(b);
         expect(a.inputs).toBe(1);
     });
+    it('상단 줄(data-nf-bar)도 종류와 무관하게 한 개·같은 꼴(전체 달력의 줄과 같은 클래스)', () => {
+        const bar = (id: string) => {
+            render(<NodeFrame nodeId={id}><p>x</p></NodeFrame>);
+            const b = container.querySelectorAll('[data-nf-bar]');
+            expect(b.length).toBe(1);
+            return b[0].className;
+        };
+        const a = bar(aId);
+        expect(bar(bId)).toBe(a);
+        expect(a).toBe('shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none');
+    });
 });
 
 describe('R3 활성 탭 따라가기', () => {

@@ -3,7 +3,7 @@
  *   variant ghost = 테두리만(옛 border-line·text-muted 꼴) · accent = 강조(옛 「설정 가기」 꼴).
  *   size sm = px-2 text-[12px] · md = px-3 text-[13px].
  * 🔴 색은 토큰으로만 · 포커스 링은 FOCUS_RING 하나로. 그 외 button prop 은 그대로 넘긴다.
- * ⭐ 글자는 안 꺾이고(whitespace-nowrap) 좁은 줄에서도 안 눌린다(shrink-0) — 기본값이다(R1). 꾸러미가 덧대지 말 것.
+ * ⭐ 아이콘+글자는 한 줄 가운데 정렬(inline-flex — 아이콘이 block 이라 글자가 아래로 꺾이던 것) · 글자는 안 꺾이고(whitespace-nowrap) 좁은 줄에서도 안 눌린다(shrink-0) — 기본값이다(R1). 꾸러미가 덧대지 말 것.
  */
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { FOCUS_RING } from './focus';
@@ -35,7 +35,7 @@ export function Button({
     return (
         <button
             type={type}
-            className={`h-btn whitespace-nowrap shrink-0 ${SIZE[size]} rounded border ${VARIANT[variant]} transition-colors ${FOCUS_RING} ${className}`}
+            className={`h-btn inline-flex items-center justify-center gap-1 whitespace-nowrap shrink-0 ${SIZE[size]} rounded border ${VARIANT[variant]} transition-colors ${FOCUS_RING} ${className}`}
             {...rest}
         >
             {children}

@@ -40,6 +40,14 @@ describe('PropertyList — 노션 꼴 줄', () => {
     });
 });
 
+describe('PropertyList — 비어 있음 겹침(fix-a 5)', () => {
+    it('빈 값 줄은 칸의 단독 「—」 를 감추는 클래스를 달고, 값이 있으면 안 단다', () => {
+        mount(<PropertyList fields={FIELDS} values={{ t: '가나다' }} />);
+        expect(q('[data-rv-prop="n"] [data-rv-empty]')!.parentElement!.className).toContain('only-child]:invisible');
+        expect(q('[data-rv-prop="t"] .relative')!.className).not.toContain('invisible');
+    });
+});
+
 describe('RecordView — 제목 칸 아이콘·열기', () => {
     const rows = [{ id: 'a', t: '첫 줄' }, { id: 'b', t: '둘째' }];
     it('iconOf 를 주면 제목 칸에 행 아이콘 · hover 하면 「열기」가 뜨고 누르면 그 행을 연다', () => {

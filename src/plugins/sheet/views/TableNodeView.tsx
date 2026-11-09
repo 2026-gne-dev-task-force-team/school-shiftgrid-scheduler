@@ -9,7 +9,7 @@ import { Icon } from '../../../pane-ui-system';
 import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
-import { useActiveTable, setActiveTable } from '../store';
+import { useActiveTable } from '../store';
 import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, docOf, writeDoc, applyTx, inTrash } from '../nodes';
 import { StartScreen } from './StartScreen';
 
@@ -42,7 +42,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
 
     return (
         // 노션 페이지처럼 — 가운데 정렬된 읽기 폭 · 큰 머리 · 넉넉한 여백(틀이 쥔다). 표가 더 넓으면 표 자체가 가로 스크롤.
-        <Frame nodeId={activeId} leafId={leafId} onBack={() => setActiveTable(null)} backLabel="목록" scroll
+        <Frame nodeId={activeId} leafId={leafId} scroll
             toolbar={<div ref={setBarHost} />}
             fallback={<Icon name="table" size={22} className="text-muted" />}>
                 <Table

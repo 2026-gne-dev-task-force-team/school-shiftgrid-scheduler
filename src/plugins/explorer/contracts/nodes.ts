@@ -189,16 +189,13 @@ export interface NodeHeaderProps {
 
 /**
  * nodes.Frame 속성 — 모든 노드 화면(탭)과 옆으로 열기(피크)의 겉틀 하나(Q5 R1).
- *   🔑 구조: 상단 줄(‹ 위로·경로 + 액션바 + ⋯ 메뉴) → 큰 머리(nodes.Header page 꼴) → 툴바 자리 → 본문.
+ *   🔑 구조: 상단 줄(경로 + 액션바 + ⋯ 메뉴) → 큰 머리(nodes.Header page 꼴) → 툴바 자리 → 본문.
  *   ⛔ 화면이 제 머리·윗줄을 따로 짜지 않는다 — 이 틀 하나만 쓴다. 상단 줄은 모든 노드가 같은 꼴, 툴바는 본문 종류마다.
  */
 export interface NodeFrameProps {
     nodeId: string;
     /** 이 틀이 놓인 탭(leaf) — 주면 이름이 바뀔 때 탭 제목도 창틀 setTitle 로 같이 고친다(피크는 안 준다). */
     leafId?: string;
-    /** ‹ 단추 — 주면 상단 줄 왼쪽에 「‹ 라벨」이 선다(시작 화면·목록으로 돌아가기). 경로는 이 뒤에 이어진다. */
-    onBack?: () => void;
-    backLabel?: string;
     /** 액션바 — 노드 수준 토글(있으면). ⋯ 메뉴 왼쪽에 선다. 본문 편집 동작은 여기 말고 toolbar. */
     actions?: ReactNode;
     /** ⋯ 메뉴 맨 위에 보탤 항목(공통 항목·타입 menu 앞) — 본문이 아는 노드 수준 동작(예: 마크다운 복사·실행 취소). */

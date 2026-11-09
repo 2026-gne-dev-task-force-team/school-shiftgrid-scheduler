@@ -115,7 +115,7 @@ export const calendarPlugin = definePlugin({
     // ── 이름 붙인 구현 — 호스트가 contributes 의 이름으로 찾아 꽂는다(p.host 로 호스트가 끼워져 온다) ──
     components: {
         // 탭 하나 안에서 월·연·주·3일·하루 전환(CalendarTab). 🔴 일정 카드는 창틀 미리보기(peek)에 — ViewProps.peek 을 내린다.
-        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek, host: p.host }),
+        Month: (p: ViewProps & { host: PluginHost }) => createElement(CalendarTab, { peek: p.peek, host: p.host, leafId: p.leaf?.id }),
         // 표 화면은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(collection 이 없으면 빈 화면).
         Table: ({ host, peek, leaf }: ViewProps & { host: PluginHost }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
