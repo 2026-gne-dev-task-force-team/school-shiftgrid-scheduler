@@ -75,13 +75,13 @@ export const tableEditorPlugin = definePlugin({
         },
     },
     panes: { TableProps },
+    renders: { QuickCalc: () => createElement(QuickCalcStatus) },
 
     components: {
         // 표 화면 — 보고 있는 표 노드(store)를 그린다. host 는 안 쓴다(다리가 쥔다).
         Sheet: () => createElement(TableNodeView),
         // 옛 연습장 탭 자동 정리 — host·leaf 를 받아 닫고 표로 잇는다(위 redirect).
         LegacyPlayground: LegacyPlaygroundRedirect,
-        QuickCalc: () => createElement(QuickCalcStatus),
     },
     commands: {
         // 리본 「표 열기」 — 보고 있는 표는 그대로 두고 화면만 연다(없으면 안내가 뜬다).

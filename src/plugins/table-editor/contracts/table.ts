@@ -188,6 +188,8 @@ export interface TableProps {
     headerCol?: boolean;
     /** v3 — 열 제목 줄(thead 제목)을 감춘다(노션 단순 표: 열 이름 없음). 손잡이는 그대로 뜬다. */
     hideColHeader?: boolean;
+    /** M5d — 표 위 도구 막대(되돌리기·복사·행/열 넣기·지우기·합치기·표 메뉴). 표 노드 화면이 켠다. */
+    toolbar?: boolean;
     /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */
     onSetHeaderRow?(v: boolean): void;
     onSetHeaderCol?(v: boolean): void;

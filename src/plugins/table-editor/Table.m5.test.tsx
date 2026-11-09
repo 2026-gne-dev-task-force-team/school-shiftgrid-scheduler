@@ -21,7 +21,7 @@ const Owner = forwardRef<CtrlRef, { init: TableDoc; features?: string[]; onTx?: 
         useImperativeHandle(ref, () => ({ h: () => inner.current!, doc: () => doc }), [doc]);
         return (
             <Table ref={inner} columns={doc.cols} rows={doc.rows} merges={doc.merges} features={features}
-                headerRow={doc.headerRow} footerRow={doc.footerRow} hideColHeader
+                headerRow={doc.headerRow} footerRow={doc.footerRow} hideColHeader toolbar
                 onCommit={(tx) => { onTx?.(tx); setDoc((d) => applyTx(d, tx)); }} />
         );
     });
@@ -171,5 +171,23 @@ describe('Table M5 — 넘버스 얼굴', () => {
         Object.defineProperty(paste, 'clipboardData', { value: { getData: () => '7\t8' } });
         act(() => { document.dispatchEvent(paste); });
         expect(ref.current!.doc().rows[1].cells).toEqual({ a: '7', b: '8' });
+    });
+
+    it('M5d 도구 막대 — 아래에 행 · 고른 행 지우기(tx 하나) · 합치기는 범위일 때만', () => {
+        const ref = createRef<CtrlRef>();
+        const onTx = vi.fn();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false })} onTx={onTx} />);
+        const click = (id: string) => act(() => { q(`tool-${id}`)!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        act(() => ref.current!.h().click(1, 0));
+        expect((q('tool-merge') as HTMLButtonElement).disabled).toBe(true);
+        click('row-below');
+        expect(ref.current!.doc().rows.map((r) => r.id).slice(0, 2)).toEqual(['h', 'r1']);
+        expect(ref.current!.doc().rows).toHaveLength(5);
+        act(() => ref.current!.h().select(1, 0, 2, 1));
+        expect((q('tool-merge') as HTMLButtonElement).disabled).toBe(false);
+        onTx.mockClear();
+        click('row-del');
+        expect(onTx).toHaveBeenCalledTimes(1);
+        expect(ref.current!.doc().rows.map((r) => r.id)).toEqual(['h', 'r2', 'f']);
     });
 });

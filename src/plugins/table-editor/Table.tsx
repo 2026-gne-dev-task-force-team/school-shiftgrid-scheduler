@@ -57,7 +57,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -561,8 +561,53 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
     const tabsOn = focused || reorder != null;
 
+    // ── 도구 막대(M5d) — 메뉴와 같은 함수를 부른다(같은 tx). 고른 범위 기준. ──
+    type Tool = { id: string; label: string; title: string; on: boolean; run: (e: React.MouseEvent) => void } | '|';
+    const undoFn = onUndo ?? (historyOwned ? internalUndo : undefined);
+    const redoFn = onRedo ?? (historyOwned ? internalRedo : undefined);
+    const selRowIds = rows.slice(sel.r1, sel.r2 + 1).map((r) => r.id);
+    const selColKeys = columns.slice(sel.c1, sel.c2 + 1).map((c) => c.key);
+    const hasCells = rows.length > 0 && columns.length > 0;
+    const tools: Tool[] = toolbar ? [
+        { id: 'undo', label: '↶', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
+        { id: 'redo', label: '↷', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
+        '|',
+        { id: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
+        '|',
+        { id: 'row-above', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
+        { id: 'row-below', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
+        { id: 'row-del', label: '행 지우기', title: '고른 행 지우기', on: hasRows && selRowIds.length > 0,
+            run: () => emit({ cells: [], rows: { remove: selRowIds }, source: 'menu' }, false) },
+        '|',
+        { id: 'col-left', label: '왼쪽에 열', title: '왼쪽에 열 넣기 (Alt+←)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c1) },
+        { id: 'col-right', label: '오른쪽에 열', title: '오른쪽에 열 넣기 (Alt+→)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c2 + 1) },
+        { id: 'col-del', label: '열 지우기', title: '고른 열 지우기', on: hasAxisEdit && selColKeys.length > 0,
+            run: () => emit({ cells: [], cols: { remove: selColKeys }, source: 'menu' }, false) },
+        '|',
+        { id: 'merge', label: '합치기', title: '고른 칸 합치기', on: has('merge') && multi, run: mergeSelection },
+        { id: 'unmerge', label: '풀기', title: '합친 칸 풀기', on: has('merge') && !!anchorCovering(merges, core.active.r, core.active.c, rows, columns), run: unmergeAtActive },
+        '|',
+        { id: 'table', label: '표 ▾', title: '표 스타일·머리 행/열·꼬리 행', on: true, run: (e) => openTableMenu(e) },
+    ] : [];
+
     return (
         <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
+            {toolbar && (
+                <div data-testid="table-toolbar" role="toolbar" aria-label="표 도구"
+                    className="sticky top-0 z-30 mb-2 flex flex-wrap items-center gap-0.5 border-b border-line bg-bg py-1 text-[12px]">
+                    {tools.map((t, i) => t === '|'
+                        ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
+                        : (
+                            <button key={t.id} type="button" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
+                                // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => t.run(e)}
+                                className="h-7 px-2 rounded text-text hover:bg-text/[0.06] disabled:opacity-40 disabled:hover:bg-transparent select-none">
+                                {t.label}
+                            </button>
+                        ))}
+                </div>
+            )}
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
