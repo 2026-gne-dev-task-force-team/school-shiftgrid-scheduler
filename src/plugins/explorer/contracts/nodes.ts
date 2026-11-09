@@ -176,9 +176,11 @@ export interface NodeHeaderProps {
     nodeId: string;
     /** 이 머리가 놓인 탭(leaf) — 주면 노드 이름이 바뀔 때 탭 제목도 같이 고친다. */
     leafId?: string;
-    /** 아이콘 글자 크기(토큰 클래스) — 기본 text-lead(14px). */
+    /** 머리 모양 — bar(탭 머리줄 · 기본 · 시간표 머리가 기준) / page(큰 얼굴 · 아이콘이 위 줄, 제목·속성·본문이 한 왼쪽 선). */
+    variant?: 'bar' | 'page';
+    /** 아이콘 글자 크기(토큰 클래스) — variant 기본값을 덮는다. */
     iconSizeClass?: string;
-    /** 제목 입력 클래스 */
+    /** 제목 입력 클래스 — variant 기본값을 덮는다. */
     titleClass?: string;
     /** 아이콘이 없을 때 보일 것 — 기본은 그 타입의 기본 아이콘. */
     fallback?: ReactNode;

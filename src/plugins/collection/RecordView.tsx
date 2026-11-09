@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Icon, IconButton, parseClipboard } from '../../pane-ui-system';
+import { Button, Icon, parseClipboard } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { Toolbar } from './Toolbar';
@@ -34,7 +34,6 @@ import type {
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/collection';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
-const OPEN_W = 40;  // 「열기」 칸 폭
 const INDENT_PX = 18;   // 하위 항목 한 단 들여쓰기 폭
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
@@ -82,6 +81,7 @@ export function RecordView<T>({
     onAddRecord,
     onDeleteRecords,
     onOpenRecord,
+    iconOf,
     onFieldsChange,
     onConvertField,
     onPaste,
@@ -371,7 +371,7 @@ export function RecordView<T>({
     const sortDirOf = (key: string): SortRule['dir'] | null => view.sorts.find((s) => s.key === key)?.dir ?? null;
     const isTitle = (key: string) => key === titleKey;
 
-    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? 44 : 0) + (onOpenRecord ? OPEN_W : 0) + (fieldsEditable ? 40 : 0);
+    const totalWidth = (reorderable ? 16 : 0) + SEL_W * (selectable ? 1 : 0) + visibleFields.reduce((a, f) => a + widthOf(f), 0) + (treeOn ? 44 : 0) + (fieldsEditable ? 40 : 0);
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
@@ -458,7 +458,6 @@ export function RecordView<T>({
                             );
                         })}
                         {treeOn && <div className="shrink-0" style={{ width: 44 }} />}
-                        {onOpenRecord && <div className="shrink-0" style={{ width: OPEN_W }} />}
                         {fieldsEditable && (
                             <button type="button" data-rv-add-field onClick={(e) => setAddMenu((e.currentTarget as HTMLElement).getBoundingClientRect())} className="shrink-0 grid place-items-center text-muted hover:text-text hover:bg-text/[0.06]" style={{ width: 40 }} aria-label="칸 추가">
                                 <Icon name="plus" size={15} />
@@ -529,6 +528,11 @@ export function RecordView<T>({
                                                 ) : <span className="inline-block w-4" />}
                                             </div>
                                         )}
+                                        {isTitle(f.key) && iconOf && (
+                                            <span className="shrink-0 pl-1.5 text-body leading-none select-none" data-rv-icon={id}>
+                                                {iconOf(id) ?? <Icon name="fileText" size={14} className="text-muted" />}
+                                            </span>
+                                        )}
                                         <div className="flex-1 min-w-0 h-full">
                                             <Cell
                                                 field={f}
@@ -538,6 +542,9 @@ export function RecordView<T>({
                                                 onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
                                             />
                                         </div>
+                                        {isTitle(f.key) && showOpen && (
+                                            <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id} onClick={() => onOpenRecord?.(id)}>열기</Button>
+                                        )}
                                     </div>
                                 ))}
                                 {treeOn && (
@@ -549,13 +556,6 @@ export function RecordView<T>({
                                                 <button type="button" data-rv-indent={id} aria-label="들여쓰기" onClick={() => tree?.onIndent(id)}
                                                     className="grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]"><Icon name="right" size={13} /></button>
                                             </>
-                                        )}
-                                    </div>
-                                )}
-                                {onOpenRecord && (
-                                    <div className="shrink-0 grid place-items-center" style={{ width: OPEN_W }}>
-                                        {showOpen && (
-                                            <IconButton icon="arrowRight" label="열기" size={15} onClick={() => onOpenRecord(id)} data={{ 'data-rv-open': id }} />
                                         )}
                                     </div>
                                 )}

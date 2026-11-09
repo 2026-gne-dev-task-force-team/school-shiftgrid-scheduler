@@ -126,7 +126,7 @@ function ListHeader({ kind, leafId }: { kind: 'users' | 'roles' | 'perms'; leafI
     const fallback = <Icon name={kind === 'users' ? 'users' : kind === 'roles' ? 'shield' : 'shieldCheck'} size={18} className="text-muted" />;
     return (
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-1 shrink-0">
-            <Header nodeId={fid} leafId={leafId} fallback={fallback} titleClass="text-[18px] font-semibold flex-1 min-w-0" />
+            <Header nodeId={fid} leafId={leafId} fallback={fallback} />
         </div>
     );
 }

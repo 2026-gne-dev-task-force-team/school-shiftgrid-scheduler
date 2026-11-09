@@ -73,7 +73,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                 <Button size="sm" variant="plain" className="shrink-0 whitespace-nowrap" title={`${cfg.listLabel} 목록`} onClick={() => kit.setActive(null)}>
                     <Icon name="left" size={12} /> 목록
                 </Button>
-                {Header && <Header nodeId={activeId} leafId={leafId} titleClass="font-medium text-lead flex-1 max-w-xs" />}
+                {Header && <Header nodeId={activeId} leafId={leafId} />}
                 <span className="text-small text-muted tabular-nums">· {records.length}{cfg.unit}</span>
             </div>
             <div className="flex-1 min-h-0 flex flex-col">
@@ -90,6 +90,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onPaste={(req) => kit.pasteItems(activeId, pasteToTsv(req, baseKeys))}
                     onReorder={kit.reorderItem}
                     tree={tree}
+                    iconOf={(id) => kit.nodes()?.get(id)?.icon}
                     onOpenRecord={host && peek ? (id) => peek.show(<ItemPeek kit={kit} host={host} id={id} />, { wideMin: 480 }) : undefined}
                     className="flex-1 min-h-0"
                 />

@@ -7,10 +7,10 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost, PropertiesPaneProps } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
 import { manifest } from './manifest';
-import { roomsNodeTypes, roomsNodeTypeImpl, initRooms, getKit, ROOM_TYPE } from './nodes';
+import { roomsNodeTypes, roomsNodeTypeImpl, initRooms, getKit } from './nodes';
 import { roomsApi } from './api';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'rooms.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로 적는다.
@@ -42,13 +42,10 @@ export const roomsPlugin = definePlugin({
             ribbon: [{ commandId: 'rooms.open', icon: 'door', order: 4 }],
             // 🔴 노드 타입 둘(목록·방) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: roomsNodeTypes,
-            // 🔴 속성 칸 — 탐색기에서 방을 고르면 오른쪽 「속성」 패널에 이름·메모가 뜬다.
-            properties: [{ target: ROOM_TYPE, id: 'basic', title: '방', pane: 'RoomProps' }],
         },
     },
 
-    // 🔴 화면·속성 칸은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(활성 전엔 빈 화면).
-    panes: { RoomProps: (props: PropertiesPaneProps) => { const k = getKit(); return k ? createElement(k.Props, props) : null; } },
+    // 🔴 화면은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(활성 전엔 빈 화면). 방은 속성 패널이 아니라 「열기」 페이지로 연다.
     components: {
         Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
