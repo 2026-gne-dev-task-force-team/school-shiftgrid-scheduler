@@ -28,12 +28,12 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
     });
 
     if (ordered.length === 0) {
-        return <p className="text-[12px] text-muted">리본에 올릴 아이콘이 아직 없습니다.</p>;
+        return <p className="text-small text-muted">리본에 올릴 아이콘이 아직 없습니다.</p>;
     }
 
     return (
         <div className="flex flex-col gap-3 max-w-[560px]">
-            <p className="text-[12px] text-muted">
+            <p className="text-small text-muted">
                 줄을 끌어(또는 Alt+↑/↓) 순서를 바꾸고, 켜고 끌 수 있습니다. 저장은 이 기기에만 남습니다.
             </p>
             <div
@@ -55,18 +55,16 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                         >
                             <Icon name="grip" size={16} className="shrink-0 text-muted" />
                             <Icon name={v.icon ?? 'dot'} size={16} className="shrink-0" />
-                            <span className="flex-1 min-w-0 truncate text-[13px]">{v.title}</span>
+                            <span className="flex-1 min-w-0 truncate text-body">{v.title}</span>
 
-                            <button
-                                type="button"
+                            <Button
+                                size="sm"
+                                variant={on ? 'accent' : 'ghost'}
                                 aria-pressed={on}
                                 onClick={() => toggleRibbonHidden(v.id, on)}
-                                className={`h-7 px-2 rounded border text-[12px] transition-colors
-                                    ${FOCUS_RING}
-                                    ${on ? 'border-accent text-text bg-text/[0.06]' : 'border-line text-muted hover:text-text hover:bg-text/[0.04]'}`}
                             >
                                 {on ? '켜짐' : '꺼짐'}
-                            </button>
+                            </Button>
 
                             <button
                                 type="button"
@@ -105,7 +103,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
 
             {/* 드래그 미리보기 선 — 포털로 뷰포트에 그린다(스크롤 칸 안에서도 자리가 맞게) */}
             {drag && indicator && createPortal(
-                <div className="ui-chrome-nodrag fixed inset-0 z-[60] pointer-events-none">
+                <div className="ui-chrome-nodrag fixed inset-0 z-popover pointer-events-none">
                     <div
                         className="absolute bg-accent rounded-full"
                         style={{ left: indicator.cross + 2, top: indicator.line - 1.5, width: indicator.size - 4, height: 3 }}

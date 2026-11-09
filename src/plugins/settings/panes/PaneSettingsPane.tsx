@@ -7,7 +7,7 @@
  *    값만 저장해 두고(창구) 다음 단계에서 각 자리에 물린다 — 창구를 먼저 빼 두라는 지시(쥔님)대로.
  */
 import type { ReactNode } from 'react';
-import { usePaneSettings, setPaneSettings, resetPaneSettings, Button, FOCUS_RING } from '../../../pane-ui-system';
+import { usePaneSettings, setPaneSettings, resetPaneSettings, Button, TextInput } from '../../../pane-ui-system';
 import type { PaneSettings } from '../../../pane-ui-system';
 import { Toggle } from '../../../pane-ui-system';
 
@@ -15,8 +15,8 @@ function Field({ title, hint, children }: { title: string; hint?: string; childr
     return (
         <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-                <div className="text-[13px] font-semibold text-text">{title}</div>
-                {hint && <div className="text-[12px] text-muted">{hint}</div>}
+                <div className="text-body font-semibold text-text">{title}</div>
+                {hint && <div className="text-small text-muted">{hint}</div>}
             </div>
             <div className="shrink-0">{children}</div>
         </div>
@@ -25,12 +25,11 @@ function Field({ title, hint, children }: { title: string; hint?: string; childr
 
 function NumberInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
     return (
-        <input
+        <TextInput
             type="number"
             value={value}
             onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) onChange(n); }}
-            className={`w-24 h-btn px-2 rounded border border-line bg-bg text-text text-[13px] text-right
-                ${FOCUS_RING}`}
+            className="w-24 text-right"
         />
     );
 }

@@ -13,8 +13,6 @@ import {
 import { listCommands, useContribVersion } from '../../../pane-ui-system/plugin';
 import type { SettingsPaneProps } from '../registry';
 
-const BTN = `h-7 px-2 rounded border border-line text-[12px] text-muted enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30 ${FOCUS_RING}`;
-
 export function KeybindingsPane(_: SettingsPaneProps) {
     useContribVersion();
     const o = useKeyOverrides();
@@ -43,12 +41,12 @@ export function KeybindingsPane(_: SettingsPaneProps) {
 
     return (
         <div className="flex flex-col gap-3 max-w-[640px]">
-            <p className="text-[12px] text-muted">
+            <p className="text-small text-muted">
                 「바꾸기」를 누르고 새 키를 누르세요(Esc 는 취소). 같은 키를 둘이 쥐면 ⚠️ 가 뜨고 먼저 등록된 명령이 이깁니다. 저장은 이 기기에만 남습니다.
             </p>
             <input
                 value={q} onChange={(e) => setQ(e.target.value)} placeholder="명령·키로 찾기"
-                className={`h-8 px-2 rounded border border-line bg-panel text-[13px] ${FOCUS_RING}`}
+                className={`h-8 px-2 rounded border border-line bg-panel text-body ${FOCUS_RING}`}
             />
             <div className="flex flex-col rounded border border-line overflow-hidden">
                 {cmds.map((c) => {
@@ -58,20 +56,20 @@ export function KeybindingsPane(_: SettingsPaneProps) {
                     const custom = c.id in o;
                     return (
                         <div key={c.id} className="flex items-center gap-2 px-3 h-row border-b border-line last:border-b-0">
-                            <span className="flex-1 min-w-0 truncate text-[13px]" title={`${c.id} · ${c.owner}`}>{c.title}</span>
-                            {clash && <span className="text-[12px]" title={`겹침: ${map.get(k)!.join(', ')}`}>⚠️</span>}
-                            <kbd className={`min-w-[72px] text-center text-[12px] ${custom ? 'text-text' : 'text-muted'}`}>
+                            <span className="flex-1 min-w-0 truncate text-body" title={`${c.id} · ${c.owner}`}>{c.title}</span>
+                            {clash && <span className="text-small" title={`겹침: ${map.get(k)!.join(', ')}`}>⚠️</span>}
+                            <kbd className={`min-w-[72px] text-center text-small ${custom ? 'text-text' : 'text-muted'}`}>
                                 {rec === c.id ? '키를 누르세요…' : formatKey(k) || '—'}
                             </kbd>
-                            <button type="button" className={BTN} onClick={() => setRec(rec === c.id ? null : c.id)}>
+                            <Button size="sm" onClick={() => setRec(rec === c.id ? null : c.id)}>
                                 {rec === c.id ? '취소' : '바꾸기'}
-                            </button>
-                            <button type="button" className={BTN} disabled={!k} onClick={() => setKeyOverride(c.id, '')}>지우기</button>
-                            <button type="button" className={BTN} disabled={!custom} title={def ? `기본: ${formatKey(def)}` : '기본 키 없음'} onClick={() => resetKeyOverride(c.id)}>기본값</button>
+                            </Button>
+                            <Button size="sm" className="disabled:opacity-30" disabled={!k} onClick={() => setKeyOverride(c.id, '')}>지우기</Button>
+                            <Button size="sm" className="disabled:opacity-30" disabled={!custom} title={def ? `기본: ${formatKey(def)}` : '기본 키 없음'} onClick={() => resetKeyOverride(c.id)}>기본값</Button>
                         </div>
                     );
                 })}
-                {cmds.length === 0 && <p className="px-3 py-2 text-[12px] text-muted">맞는 명령이 없습니다.</p>}
+                {cmds.length === 0 && <p className="px-3 py-2 text-small text-muted">맞는 명령이 없습니다.</p>}
             </div>
             <div>
                 <Button variant="ghost" size="md" onClick={resetAllKeyOverrides}>전부 기본값으로</Button>

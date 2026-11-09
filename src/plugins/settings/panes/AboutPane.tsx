@@ -24,12 +24,12 @@ export function AboutPane() {
             <div className="flex flex-col rounded border border-line overflow-hidden">
                 {rows.map(([k, v]) => (
                     <div key={k} className="flex items-center gap-3 px-3 min-h-row py-1.5 border-b border-line last:border-b-0">
-                        <span className="w-40 shrink-0 text-[12px] text-muted">{k}</span>
-                        <span className="text-[13px] text-text truncate">{v}</span>
+                        <span className="w-40 shrink-0 text-small text-muted">{k}</span>
+                        <span className="text-body text-text truncate">{v}</span>
                     </div>
                 ))}
             </div>
-            <p className="text-[12px] text-muted">설정·배치·테마는 이 기기에만 저장됩니다.</p>
+            <p className="text-small text-muted">설정·배치·테마는 이 기기에만 저장됩니다.</p>
         </div>
     );
 }

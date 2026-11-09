@@ -41,7 +41,7 @@ export const settingsPlugin = definePlugin({
                     { section: 'appearance', id: 'theme', title: '테마·밀도', icon: 'sun', pane: 'Appearance' },
                     { section: 'frame', id: 'pane', title: '패널', icon: 'panelLeft', pane: 'PaneSettings' },
                     { section: 'frame', id: 'ribbon', title: '리본', icon: 'menu', pane: 'Ribbon' },
-                    { section: 'frame', id: 'startup', title: '시작 화면', icon: 'panelLeft', pane: 'Startup' },
+                    { section: 'frame', id: 'startup', title: '시작 화면', icon: 'play', pane: 'Startup' },
                     { section: 'frame', id: 'notify', title: '알림', icon: 'bell', pane: 'Notify' },
                     // 단축키 — 명령마다 키 보기·바꾸기(쥔님 2026-11-09). 엔진은 창틀 keybindings.ts
                     { section: 'frame', id: 'keys', title: '단축키', icon: 'key', pane: 'Keybindings' },

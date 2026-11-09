@@ -159,7 +159,7 @@ export function TimeGrid({ data, edit }: { data: TimetableData; edit: (fn: (d: T
                 <div className="flex">
                     <div className="sticky left-0 z-10 shrink-0 border-r border-line bg-panel" style={{ width: LEFT_W, height: bodyH }}>
                         {hours.map((h) => (
-                            <span key={h} className="absolute right-1 text-micro tabular-nums text-muted" style={{ top: Math.max(0, yOf(h * 60) - 7), width: TIME_W - 6, textAlign: 'right' }}>
+                            <span key={h} className="absolute left-0 bg-panel pr-1 text-micro leading-none tabular-nums text-muted text-right" style={{ top: Math.max(0, yOf(h * 60) - 5), width: TIME_W - 2 }}>
                                 {fmt(h * 60)}
                             </span>
                         ))}

@@ -34,16 +34,16 @@ const KIND_LABEL: Record<ContributionKind, string> = {
  *   각 줄: 종류 라벨 · id · 제목(없으면 id 만).
  */
 function ContribGroup({ label, records }: { label: string; records: ContributionRecord[] }) {
-    if (records.length === 0) return <p className="text-[12px] text-muted">{label} 0건</p>;
+    if (records.length === 0) return <p className="text-small text-muted">{label} 0건</p>;
     return (
         <div className="flex flex-col gap-1">
-            <h5 className="text-[11px] font-medium text-muted">{label} <span className="text-muted/70">{records.length}건</span></h5>
+            <h5 className="text-note font-medium text-muted">{label} <span className="text-muted/70">{records.length}건</span></h5>
             <div className="flex flex-col rounded border border-line overflow-hidden">
                 {records.map((c, i) => (
                     <div key={`${c.kind}:${c.id}:${i}`} className="flex items-center gap-2 px-2.5 py-1 border-b border-line last:border-b-0">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-side text-muted shrink-0">{KIND_LABEL[c.kind]}</span>
-                        <span className="text-[11px] text-muted font-mono truncate">{c.id}</span>
-                        {c.title && <span className="text-[12px] text-text truncate ml-auto">{c.title}</span>}
+                        <span className="text-micro px-1.5 py-0.5 rounded bg-side text-muted shrink-0">{KIND_LABEL[c.kind]}</span>
+                        <span className="text-note text-muted font-mono truncate">{c.id}</span>
+                        {c.title && <span className="text-small text-text truncate ml-auto">{c.title}</span>}
                     </div>
                 ))}
             </div>
@@ -57,8 +57,8 @@ function ContribGroup({ label, records }: { label: string; records: Contribution
 function RelGroup({ title, note, children }: { title: string; note: string; children: ReactNode }) {
     return (
         <div className="flex flex-col gap-1">
-            <h5 className="text-[12px] font-medium text-text">{title}</h5>
-            <p className="text-[10px] text-muted leading-snug">{note}</p>
+            <h5 className="text-small font-medium text-text">{title}</h5>
+            <p className="text-micro text-muted leading-snug">{note}</p>
             <div className="flex flex-col rounded border border-line overflow-hidden">{children}</div>
         </div>
     );
@@ -68,13 +68,13 @@ function RelGroup({ title, note, children }: { title: string; note: string; chil
 function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'muted'; items: ImpactItem[] }) {
     return (
         <div className="flex flex-col gap-1">
-            <p className={`text-[11px] ${tone === 'warn' ? 'text-warn' : 'text-muted'}`}>{title}</p>
+            <p className={`text-note ${tone === 'warn' ? 'text-warn' : 'text-muted'}`}>{title}</p>
             <ul className="flex flex-col gap-0.5 pl-1">
                 {items.map((x) => (
-                    <li key={x.id} className="text-[12px] text-text flex items-baseline gap-1.5">
+                    <li key={x.id} className="text-small text-text flex items-baseline gap-1.5">
                         <Icon name="dot" size={10} className="text-muted shrink-0 translate-y-0.5" />
                         <span>{x.name}</span>
-                        {x.via && <span className="text-[11px] text-muted">— 약속 ‘{x.via}’</span>}
+                        {x.via && <span className="text-note text-muted">— 약속 ‘{x.via}’</span>}
                     </li>
                 ))}
             </ul>
@@ -88,16 +88,16 @@ function ImpactList({ title, tone, items }: { title: string; tone: 'warn' | 'mut
  */
 function AboutBlock({ p }: { p: PluginStatus }) {
     const about = p.about;
-    if (!about) return <p className="text-[13px] text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>;
+    if (!about) return <p className="text-body text-text leading-relaxed">{p.description ?? '설명이 없습니다.'}</p>;
     return (
         <div className="flex flex-col gap-3">
-            <p className="text-[13px] text-text leading-relaxed">{about.what}</p>
+            <p className="text-body text-text leading-relaxed">{about.what}</p>
             {about.use && about.use.length > 0 && (
                 <div className="flex flex-col gap-1">
-                    <p className="text-[11px] font-semibold text-muted">이럴 때 씁니다</p>
+                    <p className="text-note font-semibold text-muted">이럴 때 씁니다</p>
                     <ul className="flex flex-col gap-1 pl-1">
                         {about.use.map((u, i) => (
-                            <li key={i} className="text-[12px] text-text leading-snug flex items-baseline gap-1.5">
+                            <li key={i} className="text-small text-text leading-snug flex items-baseline gap-1.5">
                                 <Icon name="dot" size={10} className="text-muted shrink-0 translate-y-0.5" />
                                 <span>{u}</span>
                             </li>
@@ -107,14 +107,14 @@ function AboutBlock({ p }: { p: PluginStatus }) {
             )}
             {about.off && (
                 <div className="flex flex-col gap-0.5">
-                    <p className="text-[11px] font-semibold text-muted">끄면</p>
-                    <p className="text-[12px] text-text leading-snug">{about.off}</p>
+                    <p className="text-note font-semibold text-muted">끄면</p>
+                    <p className="text-small text-text leading-snug">{about.off}</p>
                 </div>
             )}
             {about.with && (
                 <div className="flex flex-col gap-0.5">
-                    <p className="text-[11px] font-semibold text-muted">같이 쓰는 것</p>
-                    <p className="text-[12px] text-text leading-snug">{about.with}</p>
+                    <p className="text-note font-semibold text-muted">같이 쓰는 것</p>
+                    <p className="text-small text-text leading-snug">{about.with}</p>
                 </div>
             )}
         </div>
@@ -179,12 +179,12 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             <div className="flex items-start justify-between gap-3">
                 <DetailTitle name={p.name} version={p.version} id={p.id} badges={<>
                     {p.core && <Badge>코어</Badge>}
-                    {p.failed && <span className="flex items-center gap-1 text-[11px] text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
+                    {p.failed && <span className="flex items-center gap-1 text-note text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
                 </>} />
                 {/* 🔴 ④ 코어는 끄기 단추 자체가 없다(쥔님) — 잠김 표시만. 비코어는 끄기/켜기 단추. */}
                 <div className="shrink-0">
                     {p.core
-                        ? <span className="flex items-center gap-1 text-[11px] text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={12} /> 코어 · 끌 수 없음</span>
+                        ? <span className="flex items-center gap-1 text-note text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={12} /> 코어 · 끌 수 없음</span>
                         : p.enabled
                             ? <Button variant="ghost" size="sm" onClick={() => { if (hasImpact) setConfirming(true); else disablePlugin(p.id); }}>끄기</Button>
                             : <Button variant="accent" size="sm" onClick={() => enablePlugin(p.id)}>켜기</Button>}
@@ -194,7 +194,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 🔴 ④ 끄기 확인 — 끄기 전에 「같이 꺼질 것(requires)」·「기능만 떨어질 것(supports)」을 전이까지 보여 준다 */}
             {confirming && !p.core && (
                 <div className="rounded border border-warn/40 bg-warn/5 p-3 flex flex-col gap-2">
-                    <p className="text-[12px] font-semibold text-text">‘{p.name}’ 을 끄면:</p>
+                    <p className="text-small font-semibold text-text">‘{p.name}’ 을 끄면:</p>
                     {impact.willBlock.length > 0 && (
                         <ImpactList
                             title="같이 꺼집니다 — 이 플러그인을 요구(requires)해서 함께 막힙니다"
@@ -217,13 +217,13 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 🔴 ③ 막힘 사유 — 「약속 없음」 vs 「채운 모듈 없음」을 사람 말로, 무엇을 켜면 풀리는지 한 줄 */}
             {p.blocked && causes.length > 0 && (
                 <div className="rounded border border-warn/40 bg-warn/5 p-3 flex flex-col gap-2">
-                    <p className="text-[12px] font-semibold text-warn">막힘 — 지금 켤 수 없습니다(의존이 안 찼습니다)</p>
+                    <p className="text-small font-semibold text-warn">막힘 — 지금 켤 수 없습니다(의존이 안 찼습니다)</p>
                     {causes.map((c, i) => (
                         <div key={`${c.kind}:${c.iface}:${i}`} className="flex flex-col gap-1">
-                            <p className="text-[12px] text-text leading-relaxed">{c.text}</p>
+                            <p className="text-small text-text leading-relaxed">{c.text}</p>
                             {c.fix && (c.fixId
                                 ? <Button variant="ghost" size="sm" className="self-start" onClick={() => enablePlugin(c.fixId!)}>{c.fix}</Button>
-                                : <p className="text-[11px] text-muted leading-relaxed">{c.fix}</p>)}
+                                : <p className="text-note text-muted leading-relaxed">{c.fix}</p>)}
                         </div>
                     ))}
                 </div>
@@ -232,7 +232,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 🔴 사람용 설명 — 상세 맨 위. 무엇을/이럴 때/끄면/같이(개발 낱말 없음). */}
             <AboutBlock p={p} />
 
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[12px]">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-small">
                 <dt className="text-muted">판</dt><dd className="text-text">{p.version}</dd>
                 <dt className="text-muted">요구 창틀</dt><dd className="text-text">≥ {p.minHostVersion} (지금 {HOST_VERSION})</dd>
                 <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 코어' : ''}</dd>
@@ -282,7 +282,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                     type="button"
                     onClick={() => setShowDev((v) => !v)}
                     aria-expanded={showDev}
-                    className={`self-start flex items-center gap-1 text-[11px] text-muted hover:text-text transition-colors ${FOCUS_RING}`}
+                    className={`self-start flex items-center gap-1 text-note text-muted hover:text-text transition-colors ${FOCUS_RING}`}
                 >
                     <Icon name="right" size={11} className={`transition-transform ${showDev ? 'rotate-90' : ''}`} />
                     개발자 정보 (권한·칸·기여)
@@ -291,12 +291,12 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                     <div className="flex flex-col gap-4 pl-2 border-l border-line">
                         {hasPermFields && (
                             <Section title="권한·칸">
-                                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px]">
+                                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-small">
                                     {permissions.length > 0 && (
                                         <>
                                             <dt className="text-muted">권한 낱말</dt>
                                             <dd className="text-text flex flex-col gap-0.5">{permissions.map((pm) => (
-                                                <span key={pm.id}>{pm.title} <span className="text-muted font-mono text-[10px]">{pm.id}</span>{pm.desc && <span className="block text-[11px] text-muted leading-snug">{pm.desc}</span>}</span>
+                                                <span key={pm.id}>{pm.title} <span className="text-muted font-mono text-micro">{pm.id}</span>{pm.desc && <span className="block text-note text-muted leading-snug">{pm.desc}</span>}</span>
                                             ))}</dd>
                                         </>
                                     )}
@@ -319,7 +319,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                         {/* 기여 — 호스트에 꽂은 것 전부를 선언(매니페스트)·동적(host.declare)으로 갈라 목록으로 */}
                         <Section title="기여" count={p.enabled ? contribs.length : undefined}>
                             {!p.enabled
-                                ? <p className="text-[12px] text-muted">꺼짐 — 기여 없음</p>
+                                ? <p className="text-small text-muted">꺼짐 — 기여 없음</p>
                                 : (
                                     <div className="flex flex-col gap-2">
                                         <ContribGroup label="선언" records={declared} />
@@ -334,7 +334,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 명령 — 이름 + 단축키 + 설명 */}
             <Section title="명령" count={commands.length}>
                 {commands.length === 0
-                    ? <p className="text-[12px] text-muted">등록한 명령이 없습니다.</p>
+                    ? <p className="text-small text-muted">등록한 명령이 없습니다.</p>
                     : (
                         <div className="flex flex-col rounded border border-line overflow-hidden">
                             {commands.map((c) => (
@@ -342,11 +342,11 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                     {c.icon && <Icon name={c.icon} size={14} className="mt-0.5 shrink-0 text-muted" />}
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[13px] text-text truncate">{c.title}</span>
-                                            {effectiveKey(c.id, c.keys, keyO) && <kbd className="text-[10px] px-1 rounded border border-line bg-side text-muted">{formatKey(effectiveKey(c.id, c.keys, keyO))}</kbd>}
+                                            <span className="text-body text-text truncate">{c.title}</span>
+                                            {effectiveKey(c.id, c.keys, keyO) && <kbd className="text-micro px-1 rounded border border-line bg-side text-muted">{formatKey(effectiveKey(c.id, c.keys, keyO))}</kbd>}
                                         </div>
-                                        {c.description && <p className="text-[11px] text-muted leading-snug">{c.description}</p>}
-                                        <span className="text-[10px] text-muted/70 font-mono">{c.id}</span>
+                                        {c.description && <p className="text-note text-muted leading-snug">{c.description}</p>}
+                                        <span className="text-micro text-muted/70 font-mono">{c.id}</span>
                                     </div>
                                 </div>
                             ))}
@@ -357,7 +357,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 뷰 — 이름 + 어디 놓이나 + 설명 · 줄을 누르면 그 뷰의 설정(최소 폭·좁아질 때·접힘 폭 + 자리 제한) */}
             <Section title="뷰" count={views.length}>
                 {views.length === 0
-                    ? <p className="text-[12px] text-muted">등록한 뷰가 없습니다.</p>
+                    ? <p className="text-small text-muted">등록한 뷰가 없습니다.</p>
                     : (
                         <>
                             <div className="flex items-start justify-between gap-3">
@@ -389,11 +389,11 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                                 {v.icon && <Icon name={v.icon} size={14} className="mt-0.5 shrink-0 text-muted" />}
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[13px] text-text truncate">{v.title}</span>
-                                                        <span className="text-[11px] text-muted">{AREA_LABEL[v.defaultArea ?? 'center'] ?? '가운데'}{v.placement?.singleton ? ' · 한 장만' : ''}</span>
+                                                        <span className="text-body text-text truncate">{v.title}</span>
+                                                        <span className="text-note text-muted">{AREA_LABEL[v.defaultArea ?? 'center'] ?? '가운데'}{v.placement?.singleton ? ' · 한 장만' : ''}</span>
                                                     </div>
-                                                    {v.description && <p className="text-[11px] text-muted leading-snug">{v.description}</p>}
-                                                    <span className="text-[10px] text-muted/70 font-mono">{v.id}</span>
+                                                    {v.description && <p className="text-note text-muted leading-snug">{v.description}</p>}
+                                                    <span className="text-micro text-muted/70 font-mono">{v.id}</span>
                                                 </div>
                                             </button>
                                             {open && <ViewSettingsCard view={v} />}
@@ -408,10 +408,10 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 설정 섹션 + 「설정 가기」 */}
             <Section title="설정">
                 {sections.length === 0
-                    ? <p className="text-[12px] text-muted">꽂은 설정이 없습니다.</p>
+                    ? <p className="text-small text-muted">꽂은 설정이 없습니다.</p>
                     : (
                         <div className="flex items-center justify-between gap-3">
-                            <span className="text-[12px] text-text">{sections.map((s) => `${s.title}(${s.items.length})`).join(' · ')}</span>
+                            <span className="text-small text-text">{sections.map((s) => `${s.title}(${s.items.length})`).join(' · ')}</span>
                             {firstItemId && (
                                 <Button
                                     variant="accent"

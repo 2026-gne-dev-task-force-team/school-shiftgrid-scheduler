@@ -47,7 +47,7 @@ export function PluginsPane({ host }: { host: PluginHost }) {
 
     return (
         <div className="flex flex-col gap-3 max-w-[560px]">
-            <p className="text-[12px] text-muted">
+            <p className="text-small text-muted">
                 설치된 플러그인입니다. 끄면 그 플러그인이 꽂은 뷰·리본·설정·상태바가 빠지고, 열려 있던 탭은
                 「켜기」 자리표시로 남습니다(다시 켜면 그 자리에서 돌아옵니다). 줄 오른쪽 「자세히」로 상세가 옆에 뜹니다.
             </p>
@@ -77,18 +77,18 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                             <div className="flex items-center gap-3 px-3 py-2 min-h-row">
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[13px] font-semibold text-text truncate">{p.name}</span>
-                                        <span className="text-[11px] text-muted">v{p.version}</span>
-                                        {p.core && <span className="text-[11px] px-1.5 rounded bg-accent/15 text-accent">코어</span>}
+                                        <span className="text-body font-semibold text-text truncate">{p.name}</span>
+                                        <span className="text-note text-muted">v{p.version}</span>
+                                        {p.core && <span className="text-note px-1.5 rounded bg-accent/15 text-accent">코어</span>}
                                         {p.failed && (
-                                            <span className="flex items-center gap-1 text-[11px] text-warn">
+                                            <span className="flex items-center gap-1 text-note text-warn">
                                                 <Icon name="warn" size={12} /> 활성 실패
                                             </span>
                                         )}
                                     </div>
                                     {/* 🔴 한 줄 요약(쥔님 2026-11-08 「설명이 너무 부족」) — 목록에서 뭐 하는 것인지 바로 보이게. */}
-                                    {p.description && <p className="text-[12px] text-text/80 leading-snug">{p.description}</p>}
-                                    <span className="text-[11px] text-muted font-mono">{p.id}</span>
+                                    {p.description && <p className="text-small text-text/80 leading-snug">{p.description}</p>}
+                                    <span className="text-note text-muted font-mono">{p.id}</span>
                                 </div>
                                 {/* 🔴 상세 열기 — 제목이 아니라 이 별도 단추로(오클릭 방지). 테두리 있는 작은 단추. */}
                                 <DetailButton label={`${p.name} 자세히`} onClick={() => openDetail(p)} open={open} expanded={chrome.peek ? undefined : open} />
