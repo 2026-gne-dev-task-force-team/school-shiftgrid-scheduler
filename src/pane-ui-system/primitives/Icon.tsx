@@ -11,6 +11,7 @@ export type IconName =
     | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff'
     | 'users' | 'user' | 'door' | 'schedule' | 'fileText' | 'calendarEvent'
     | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down' | 'database'
+    | 'heading1' | 'heading2' | 'heading3' | 'list' | 'listNumbered' | 'quote' | 'code' | 'divider'
     | 'rowAbove' | 'rowBelow' | 'rowDel' | 'colLeft' | 'colRight' | 'colDel' | 'merge' | 'unmerge';
 
 const P: Record<IconName, string> = {
@@ -78,6 +79,15 @@ const P: Record<IconName, string> = {
     colDel: 'M3 3h9v18H3zM3 9h9M3 15h9M15 12h6',
     merge: 'M3 5h18v14H3zM7 12h10M10 9l-3 3 3 3M14 9l3 3-3 3',
     unmerge: 'M3 5h18v14H3zM12 5v14M9 9l-3 3 3 3M15 9l3 3-3 3',
+    // 블록 종류(/ 메뉴) — 제목 1·2·3 은 H + 숫자, 목록은 점/숫자 + 줄, 인용은 따옴표, 코드는 꺾쇠+빗금, 구분선은 가로선
+    heading1: 'M4 5v14M12 5v14M4 12h8M16 9l2-1.5V18',
+    heading2: 'M4 5v14M12 5v14M4 12h8M15 9a2 2 0 014 0c0 2-4 4-4 7h4',
+    heading3: 'M4 5v14M12 5v14M4 12h8M15 8h4l-2.5 3.5a2.3 2.3 0 11-2 3.5',
+    list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
+    listNumbered: 'M10 6h10M10 12h10M10 18h10M3.5 5l1.5-1v5M3.5 14.5c0-1.2 3-1.2 3 .3S3.5 17 3.5 18h3',
+    quote: 'M4 17c0-4 1-7 4-8M4 17h4v-4H4M13 17c0-4 1-7 4-8M13 17h4v-4h-4',
+    code: 'M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
+    divider: 'M3 12h18M8 6h8M8 18h8',
     grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
     // 글자 칸(text) — 가로 글줄 세 개
     text: 'M5 7h14M5 12h14M5 17h9',

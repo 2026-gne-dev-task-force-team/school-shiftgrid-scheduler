@@ -16,16 +16,16 @@ export interface SlashItem {
 
 /** 고를 수 있는 블록 — `/표` 로 표까지(명세 요구 5). */
 export const SLASH_ITEMS: SlashItem[] = [
-    { type: 'paragraph', label: '글', hint: 'text 글 문단', icon: 'file' },
-    { type: 'heading1', label: '제목 1', hint: 'h1 제목', icon: 'file' },
-    { type: 'heading2', label: '제목 2', hint: 'h2 제목', icon: 'file' },
-    { type: 'heading3', label: '제목 3', hint: 'h3 제목', icon: 'file' },
-    { type: 'bulleted', label: '글머리표 목록', hint: 'bullet 목록 글머리', icon: 'dot' },
-    { type: 'numbered', label: '번호 목록', hint: 'number 번호 목록', icon: 'dot' },
+    { type: 'paragraph', label: '글', hint: 'text 글 문단', icon: 'text' },
+    { type: 'heading1', label: '제목 1', hint: 'h1 제목', icon: 'heading1' },
+    { type: 'heading2', label: '제목 2', hint: 'h2 제목', icon: 'heading2' },
+    { type: 'heading3', label: '제목 3', hint: 'h3 제목', icon: 'heading3' },
+    { type: 'bulleted', label: '글머리표 목록', hint: 'bullet 목록 글머리', icon: 'list' },
+    { type: 'numbered', label: '번호 목록', hint: 'number 번호 목록', icon: 'listNumbered' },
     { type: 'todo', label: '체크 목록', hint: 'todo check 체크 할일', icon: 'check' },
-    { type: 'quote', label: '인용', hint: 'quote 인용', icon: 'book' },
-    { type: 'code', label: '코드', hint: 'code 코드', icon: 'flask' },
-    { type: 'divider', label: '구분선', hint: 'divider line 구분선', icon: 'dots' },
+    { type: 'quote', label: '인용', hint: 'quote 인용', icon: 'quote' },
+    { type: 'code', label: '코드', hint: 'code 코드', icon: 'code' },
+    { type: 'divider', label: '구분선', hint: 'divider line 구분선', icon: 'divider' },
     { type: 'table', label: '표', hint: 'table 표', icon: 'table' },
     { type: 'node', label: '노드 끼워 넣기', hint: 'node embed link 노드 끼우기 링크 페이지 시트', icon: 'fileText' },
 ];
