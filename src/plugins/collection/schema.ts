@@ -50,12 +50,13 @@ export function normalizeField(raw: unknown): RecordField | null {
     if (options) f.options = options;
     if (typeof o.width === 'number' && o.width > 0) f.width = o.width;
     if (o.readOnly === true) f.readOnly = true;
+    if (o.locked === true) f.locked = true;
     return f;
 }
 
 /** 빈 레코드 뷰 — 제목(글자) 한 칸 · 보기 하나(표) */
 export function blankDb(): DbDoc {
-    const title = newField('text', '제목');
+    const title = { ...newField('text', '제목'), locked: true };
     return { v: 1, fields: [title], titleKey: title.key, views: [defaultView([title])], seq: 1 };
 }
 
@@ -78,7 +79,7 @@ export function normalizeDb(raw: unknown): DbDoc {
         if (firstText) titleKey = firstText.key;
         else { const t = newField('text', '제목'); fields = [t, ...fields]; titleKey = t.key; }
     }
-    fields = fields.map((f) => (f.key === titleKey ? { ...f, type: 'text', options: undefined, config: undefined, readOnly: undefined } : f));
+    fields = fields.map((f) => (f.key === titleKey ? { ...f, type: 'text', options: undefined, config: undefined, readOnly: undefined, locked: true } : f));
     // undefined 칸은 JSON 에서 떨어지지만 객체 비교가 헷갈리지 않게 지운다
     fields = fields.map((f) => { const c = { ...f }; for (const k of Object.keys(c) as (keyof RecordField)[]) if (c[k] === undefined) delete c[k]; return c; });
     const views = normalizeViews(o.views).map((v) => reconcileColumns(v, fields));

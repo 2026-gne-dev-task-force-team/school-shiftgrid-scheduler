@@ -264,7 +264,7 @@ export function RecordView<T>({
     };
     const requestRetype = (key: string, type: string) => {
         const f = byKey.get(key);
-        if (!f || f.type === type) return;
+        if (!f || f.locked || f.type === type) return;
         const plan = planConvert(records.map((r) => ({ id: getId(r), value: rawValue(r, key) as RecordCellValue | undefined })), f, type);
         setHeadMenu(null);
         if (plan.lost > 0) setPending(plan); else applyConvert(plan);
@@ -620,6 +620,7 @@ export function RecordView<T>({
                 const f = byKey.get(headMenu.key);
                 if (!f) return null;
                 const title = isTitle(f.key);
+                const locked = title || f.locked === true;   // 기본 칸 — 지우기·타입 바꾸기 금지(이름표만 바꾼다)
                 return (
                     <Popover anchor={headMenu.rect} width={220} onClose={() => setHeadMenu(null)}>
                         <div className="flex flex-col gap-0.5">
@@ -650,16 +651,16 @@ export function RecordView<T>({
                             {fieldsEditable && (
                                 <>
                                     <div className="my-1 h-px bg-line" />
-                                    <div className="px-2 py-0.5 text-[11px] text-muted">타입{title ? ' (제목 칸은 바꿀 수 없습니다)' : ''}</div>
+                                    <div className="px-2 py-0.5 text-[11px] text-muted">타입{locked ? ` (${title ? '제목' : '기본'} 칸은 바꿀 수 없습니다)` : ''}</div>
                                     <div className="flex flex-wrap gap-1 px-1 pb-1">
                                         {fieldTypes.list().map((d) => (
-                                            <button key={d.type} type="button" data-rv-type={d.type} disabled={title} onClick={() => requestRetype(f.key, d.type)}
+                                            <button key={d.type} type="button" data-rv-type={d.type} disabled={locked} onClick={() => requestRetype(f.key, d.type)}
                                                 className={`inline-flex items-center gap-1 h-row px-1.5 rounded border text-[12px] disabled:opacity-50 disabled:cursor-not-allowed ${f.type === d.type ? 'border-accent text-text' : 'border-line text-muted hover:text-text'}`}>
                                                 <Icon name={d.icon} size={12} />{d.label}
                                             </button>
                                         ))}
                                     </div>
-                                    {!title && (
+                                    {!locked && (
                                         <button type="button" data-rv-del-field onClick={() => deleteField(f.key)} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-bad hover:bg-bad/10 text-left">
                                             <Icon name="trash" size={14} />칸 삭제
                                         </button>

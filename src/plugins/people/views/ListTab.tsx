@@ -17,10 +17,9 @@ import type { RecordViewApi, RecordField } from '../../collection/contracts/coll
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { StartScreen } from './StartScreen';
 
-const COLUMNS: TableColumn[] = [
-    { key: 'name', title: '이름' },
-    { key: 'memo', title: '메모' },
-];
+import { PERSON_BASE_FIELDS } from '../fields';
+
+const COLUMNS: TableColumn[] = PERSON_BASE_FIELDS.map((f) => ({ key: f.key, title: f.label, field: f }));
 
 export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
     // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: collection) — 없으면 간이 표
