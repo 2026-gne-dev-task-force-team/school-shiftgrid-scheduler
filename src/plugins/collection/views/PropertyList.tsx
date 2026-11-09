@@ -28,7 +28,8 @@ export function PropertyList({ fields, values, onChange, onOptionsChange }: Prop
                                 <span className="truncate">{f.label}</span>
                             </Tooltip>
                         </div>
-                        <div className="relative flex-1 min-w-0 h-row">
+                        {/* 빈 값이면 칸이 제 자리표시 「—」 를 그리는데 「비어 있음」 이 같은 자리에 겹쳐 글자가 깨져 보였다 — 칸의 단독 「—」 는 감춘다(칸 자체는 눌린다) */}
+                        <div className={`relative flex-1 min-w-0 h-row ${empty ? '[&_[data-rv-cell]>span:only-child]:invisible' : ''}`}>
                             <Cell
                                 field={f}
                                 rowValue={values}

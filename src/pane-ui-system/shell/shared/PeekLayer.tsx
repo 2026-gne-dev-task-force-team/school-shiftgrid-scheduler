@@ -22,6 +22,14 @@ const EDGE_GAP = 48;     // 칸 가장자리와 최소 간격(피크가 칸을 �
 export const PEEK_BODY_MIN = 480;
 /** 칸이 이 폭 이상이어야 「밀기」가 선다(피크 최소 폭 + 본문 최소 폭). */
 export const PEEK_PUSH_MIN = MIN_W + PEEK_BODY_MIN;
+/** 칸이 이 폭 이상이면(밀기엔 모자라도) 오른쪽 옆에 **겹쳐** 띄운다 — 본문 폭·높이는 그대로. 이보다 좁으면(모바일 꼴) 아래 시트. */
+export const PEEK_OVERLAY_MIN = 520;
+/** 피크가 서는 방식 — push 밀기(오른쪽, 본문이 좁아짐) · overlay 겹침(오른쪽, 본문 위) · bottom 아래 시트(좁은 칸) */
+export type PeekMode = 'push' | 'overlay' | 'bottom';
+export function peekModeFor(width: number, wideMin?: number): PeekMode {
+    if (width >= Math.max(PEEK_PUSH_MIN, wideMin ?? 0)) return 'push';
+    return width >= PEEK_OVERLAY_MIN ? 'overlay' : 'bottom';
+}
 
 const WKEY = 'peek.width';
 const HKEY = 'peek.height';
@@ -38,7 +46,9 @@ function saveNum(key: string, n: number): void {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem(storageKey(key), String(Math.round(n))); } catch { /* 조용히 */ }
 }
 
-export function PeekLayer({ wide, closing = false, onClose, children }: { wide: boolean; closing?: boolean; onClose: () => void; children: ReactNode }) {
+export function PeekLayer({ mode, closing = false, onClose, children }: { mode: PeekMode; closing?: boolean; onClose: () => void; children: ReactNode }) {
+    const wide = mode !== 'bottom';   // 오른쪽에 서는가(밀기·겹침) — 좌우로 크기 조절
+    const push = mode === 'push';
     const layerRef = useRef<HTMLDivElement>(null);
     // 기기별로 기억한 크기 — 폭(오른쪽 피크)·높이(아래 피크). 없으면 문서급 기본
     const [w, setW] = useState(() => loadNum(WKEY, DEFAULT_W));
@@ -65,12 +75,12 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
         e.preventDefault();
         try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* 무시 */ }
         setDragging(true);
-        // 넓음(밀기)이면 이 층이 곧 패널이라 한계는 부모(칸) 폭으로 잰다 · 좁음(덮기)이면 층이 칸 전체다
+        // 오른쪽(밀기·겹침)이면 이 층이 곧 패널이라 한계는 부모(칸) 폭으로 잰다 · 아래 시트면 층이 칸 전체다
         const layer = (wide ? layerRef.current?.parentElement : layerRef.current)?.getBoundingClientRect();
         if (!layer) return;
         const move = (ev: PointerEvent) => {
             if (wide) {
-                const next = Math.max(MIN_W, Math.min(layer.width - PEEK_BODY_MIN, layer.right - ev.clientX));
+                const next = Math.max(MIN_W, Math.min(layer.width - (push ? PEEK_BODY_MIN : EDGE_GAP), layer.right - ev.clientX));
                 setW(next);
             } else {
                 const next = Math.max(MIN_H, Math.min(layer.height - EDGE_GAP, layer.bottom - ev.clientY));
@@ -86,16 +96,19 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
         };
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
-    }, [wide]);
+    }, [wide, push]);
 
     // 🔴 ⭐ 넓으면 **민다**, 좁으면 **덮는다** — 요구명세 갈림 2(*"사이드 피크는 민다. 모바일은 밀지 않고 덮는다"*).
     //    밀기: 이 층이 칸의 flex 형제로 서서 본문이 그만큼 좁아진다(노션 side peek). 덮기: 칸 위에 absolute 로 아래에서 올라온다.
     //    ⛔ 가림막(딤) 없음 · 바깥 클릭을 삼키지도 닫지도 않는다 — 쥔님 2026-11-01 19:08 *"알림창이나 동작 막는 창이 아니라
     //    목록에서 세부 내용을 보는 창 · 탐색의 흐름은 끊기면 안 돼"*. 뒤의 목록은 그대로 눌리고, 미리보기는 ✕/Esc 로만 닫는다.
-    const rootClass = wide
+    //    겹침(overlay): 밀기엔 칸이 모자라지만 아래 시트까지 갈 만큼 좁진 않을 때 — 본문 상자 위 오른쪽에 absolute 로 얹는다(본문 폭·높이 그대로, 달력이 시간 줄 서너 개로 눌리던 것 방지).
+    const rootClass = push
         ? `relative h-full shrink-0 z-30 pointer-events-auto overflow-hidden ${closing ? 'peek-shrink' : 'peek-grow'}`
-        : 'absolute inset-0 z-30 pointer-events-none';
-    const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${PEEK_BODY_MIN}px))` } : undefined;
+        : wide
+            ? `absolute top-0 bottom-0 right-0 z-30 pointer-events-auto overflow-hidden ${closing ? 'peek-shrink' : 'peek-grow'}`
+            : 'absolute inset-0 z-30 pointer-events-none';
+    const rootStyle = wide ? { width: `min(${w}px, calc(100% - ${push ? PEEK_BODY_MIN : EDGE_GAP}px))` } : undefined;
     const panelStyle = wide ? undefined : { height: h > 0 ? `min(${h}px, calc(100% - ${EDGE_GAP}px))` : '62%' };
 
     return (
