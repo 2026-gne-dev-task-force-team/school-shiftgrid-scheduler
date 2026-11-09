@@ -160,6 +160,25 @@ describe('Table M5 — 넘버스 얼굴', () => {
         expect(ref.current!.h().state().editing).toBe(true);
     });
 
+    it('#23 칸 선택 → Enter(편집) → 글자 입력 → Esc 를 모든 칸에서 해도 행 수는 그대로', () => {
+        for (const r of [0, 1, 2, 3]) {
+            const ref = createRef<CtrlRef>();
+            const onTx = vi.fn();
+            mount(<Owner ref={ref} init={doc4()} onTx={onTx} />);
+            act(() => ref.current!.h().click(r, 1));
+            key('Enter');
+            expect(ref.current!.h().state().editing).toBe(true);
+            const input = document.querySelector<HTMLInputElement>('input[aria-label]')!;
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+            act(() => { setter.call(input, 'x'); input.dispatchEvent(new Event('input', { bubbles: true })); });
+            act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+            expect(ref.current!.h().state().editing).toBe(false);
+            expect(ref.current!.doc().rows).toHaveLength(4);
+            expect(onTx).not.toHaveBeenCalled();
+            act(() => root!.unmount()); hostEl?.remove(); root = null; hostEl = null;
+        }
+    });
+
     it('#4 30열 붙여넣기 → 열이 30개로 늘어 전부 들어가고 ⌘Z 한 번에 원상복귀', () => {
         const ref = createRef<CtrlRef>();
         mount(<Owner ref={ref} init={doc4({ footerRow: false, headerRow: false })} features={['rows', 'axis-edit', 'paste-policy:append', 'history']} />);

@@ -41,6 +41,20 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
         'data-rv-editing': '1',
         inputMode: numeric ? 'decimal' as const : 'text' as const,
         onBlur: commit,
+        // 🔴 편집 중 입력칸에 탭·줄바꿈 글을 붙이면 그 칸에만 들어간다(탭은 공백 · 줄바꿈은 한 줄 칸에선 공백, 글 칸에선 그대로).
+        //    새 행은 칸 「선택」 상태 붙여넣기만 만든다 — 이벤트가 격자 붙여넣기로 올라가지 않게 막는다.
+        onPaste: (e: React.ClipboardEvent<HTMLInputElement & HTMLTextAreaElement>) => {
+            e.stopPropagation();
+            const raw = e.clipboardData.getData('text/plain');
+            if (!/[\r\n\t]/.test(raw)) return;       // 한 줄 글은 브라우저 기본 동작 그대로
+            e.preventDefault();
+            const body = raw.replace(/\r?\n$/, '').replace(/\r\n?/g, '\n');
+            const clean = (multiline ? body : body.replace(/\n/g, ' ')).replace(/\t/g, ' ');
+            const el = e.currentTarget;
+            const a = el.selectionStart ?? text.length;
+            const b = el.selectionEnd ?? a;
+            setText(text.slice(0, a) + clean + text.slice(b));
+        },
         onKeyDown: (e: React.KeyboardEvent) => {
             if (isImeEnter(e)) return;
             if (e.key === 'Enter') { if (multiline && e.shiftKey) return; e.preventDefault(); commit(); }
