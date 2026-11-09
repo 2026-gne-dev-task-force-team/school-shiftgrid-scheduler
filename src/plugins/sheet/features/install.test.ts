@@ -12,7 +12,7 @@ const S = (): TableState => ({ active: { r: 0, c: 0 }, anchor: { r: 0, c: 0 }, s
 describe('설치 — 기본 묶음·정책·충돌', () => {
     it('기본 묶음은 넘버스 새 표(행열·폭·합치기·머리 고정·채우기·합계 바·스타일)를 켜고 붙여넣기 넘침은 append', () => {
         const cfg = buildConfig(DEFAULT_FEATURES, lookupFeature, S);
-        expect([...cfg.caps].sort()).toEqual(['axis-edit', 'col-resize', 'fill', 'history', 'merge', 'quick-calc', 'rows', 'sticky-headers', 'table-style']);
+        expect([...cfg.caps].sort()).toEqual(['axis-edit', 'col-resize', 'fill', 'history', 'merge', 'quick-calc', 'row-weight', 'rows', 'sticky-headers', 'table-style']);
         expect(cfg.pasteOverflow).toBe('append');
     });
 

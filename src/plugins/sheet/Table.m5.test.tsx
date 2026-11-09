@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Table, type TableHandle } from './Table';
 import type { TableTx } from './contracts/table';
 import { applyTx, type TableDoc } from './nodes';
+import { QuickCalcStatus } from './views/QuickCalcStatus';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -20,7 +21,7 @@ const Owner = forwardRef<CtrlRef, { init: TableDoc; features?: string[]; onTx?: 
         useImperativeHandle(ref, () => ({ h: () => inner.current!, doc: () => doc }), [doc]);
         return (
             <Table ref={inner} columns={doc.cols} rows={doc.rows} merges={doc.merges} features={features}
-                headerRow={doc.headerRow} footerRow={doc.footerRow} hideColHeader
+                headerRow={doc.headerRow} footerRow={doc.footerRow} hideColHeader toolbar
                 onCommit={(tx) => { onTx?.(tx); setDoc((d) => applyTx(d, tx)); }} />
         );
     });
@@ -56,7 +57,8 @@ const key = (k: string, o: KeyboardEventInit = {}) =>
 describe('Table M5 — 넘버스 얼굴', () => {
     it('합계 바는 고른 범위에서 머리·꼬리 행을 빼고 합·평균을 낸다', () => {
         const ref = createRef<CtrlRef>();
-        mount(<Owner ref={ref} init={doc4()} />);
+        mount(<><Owner ref={ref} init={doc4()} /><QuickCalcStatus /></>);   // 합계는 상태바 쪽에 뜬다
+        act(() => ref.current!.h().focus());
         act(() => ref.current!.h().select(0, 0, 3, 1));   // 표 전체
         const bar = q('quick-calc')!.textContent!;
         expect(bar).toContain('합계 10');                 // 1+2+3+4 (머리 100·200, 꼬리 1000 제외)
@@ -130,6 +132,25 @@ describe('Table M5 — 넘버스 얼굴', () => {
         expect(ref.current!.doc().cols).toHaveLength(3);
     });
 
+    it('M5c — 끌어 바꾼 열 너비·행 높이가 문서에 남고, ⌘Z 로 원래(없음)로 돌아간다', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4()} features={['rows', 'axis-edit', 'col-resize', 'row-weight', 'history']} />);
+        const drag = (el: Element, from: MouseEventInit, to: MouseEventInit) => {
+            act(() => { el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ...from })); });
+            act(() => { window.dispatchEvent(new MouseEvent('mousemove', to)); });
+            act(() => { window.dispatchEvent(new MouseEvent('mouseup', to)); });
+        };
+        drag(q('col-resize')!, { clientX: 100 }, { clientX: 160 });
+        expect(ref.current!.doc().cols[0].width).toBe(180);            // 120 + 60
+        drag(q('row-weight')!, { clientY: 100 }, { clientY: 121 });
+        expect(ref.current!.doc().rows[0].weight).toBe(45);            // 24 + 21 → 5 단위 스냅
+        act(() => ref.current!.h().focus());
+        key('z', { metaKey: true });
+        key('z', { metaKey: true });
+        expect(ref.current!.doc().rows[0].weight).toBe(24);
+        expect(ref.current!.doc().cols[0].width).toBeUndefined();      // 0 이 아니라 「없음」
+    });
+
     it('맨 아랫줄에서 Enter 면 행이 붙고 커서가 그리로 내려간다', () => {
         const ref = createRef<CtrlRef>();
         mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
@@ -137,5 +158,36 @@ describe('Table M5 — 넘버스 얼굴', () => {
         key('Enter');
         expect(ref.current!.doc().rows).toHaveLength(5);
         expect(ref.current!.h().state().active).toEqual({ r: 4, c: 1 });
+    });
+
+    it('⌘V keydown 은 막지 않는다(막으면 브라우저가 paste 이벤트를 안 쏜다) · paste 이벤트로 칸이 채워진다', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
+        act(() => ref.current!.h().click(1, 0));
+        const ev = new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true });
+        act(() => { document.dispatchEvent(ev); });
+        expect(ev.defaultPrevented).toBe(false);
+        const paste = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
+        Object.defineProperty(paste, 'clipboardData', { value: { getData: () => '7\t8' } });
+        act(() => { document.dispatchEvent(paste); });
+        expect(ref.current!.doc().rows[1].cells).toEqual({ a: '7', b: '8' });
+    });
+
+    it('M5d 도구 막대 — 아래에 행 · 고른 행 지우기(tx 하나) · 합치기는 범위일 때만', () => {
+        const ref = createRef<CtrlRef>();
+        const onTx = vi.fn();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false })} onTx={onTx} />);
+        const click = (id: string) => act(() => { q(`tool-${id}`)!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        act(() => ref.current!.h().click(1, 0));
+        expect((q('tool-merge') as HTMLButtonElement).disabled).toBe(true);
+        click('row-below');
+        expect(ref.current!.doc().rows.map((r) => r.id).slice(0, 2)).toEqual(['h', 'r1']);
+        expect(ref.current!.doc().rows).toHaveLength(5);
+        act(() => ref.current!.h().select(1, 0, 2, 1));
+        expect((q('tool-merge') as HTMLButtonElement).disabled).toBe(false);
+        onTx.mockClear();
+        click('row-del');
+        expect(onTx).toHaveBeenCalledTimes(1);
+        expect(ref.current!.doc().rows.map((r) => r.id)).toEqual(['h', 'r2', 'f']);
     });
 });

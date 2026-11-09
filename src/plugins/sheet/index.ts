@@ -16,6 +16,7 @@ import { manifest } from './manifest';
 import { tableApi } from './api';
 import { TableNodeView } from './views/TableNodeView';
 import { TableProps } from './views/TableProps';
+import { QuickCalcStatus } from './views/QuickCalcStatus';
 import { tableNodeTypes, tableNodeTypeImpl, initTableNodes, TABLE_TYPE } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'sheet.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로.
@@ -69,9 +70,12 @@ export const sheetPlugin = definePlugin({
             nodeTypes: tableNodeTypes,
             // 오른쪽 「속성」 패널의 표 칸 — 스타일·머리 행/열·꼬리 행(넘버스의 표 서식 자리).
             properties: [{ target: TABLE_TYPE, id: 'table', title: '표', pane: 'TableProps' }],
+            // 넘버스 합계 바 — 표 밑이 아니라 앱 아래 상태바에(쥔님 2026-11-09).
+            statusBar: [{ id: 'quick-calc', side: 'left', render: 'QuickCalc' }],
         },
     },
     panes: { TableProps },
+    renders: { QuickCalc: () => createElement(QuickCalcStatus) },
 
     components: {
         // 표 화면 — 보고 있는 표 노드(store)를 그린다. host 는 안 쓴다(다리가 쥔다).

@@ -22,3 +22,21 @@ export function useActiveTable(): string | null {
         () => activeTableId,
     );
 }
+
+// ── 합계 바 글자 — 포커스 있는 표가 쓰고, 앱 아래 상태바(QuickCalcStatus)가 읽는다(쥔님 「밑에 상태바에 가야」). ──
+let quickCalcText: string | null = null;
+const qcListeners = new Set<() => void>();
+
+export function setQuickCalc(text: string | null): void {
+    if (quickCalcText === text) return;
+    quickCalcText = text;
+    for (const l of qcListeners) l();
+}
+
+export function useQuickCalc(): string | null {
+    return useSyncExternalStore(
+        (l) => { qcListeners.add(l); return () => { qcListeners.delete(l); }; },
+        () => quickCalcText,
+        () => quickCalcText,
+    );
+}

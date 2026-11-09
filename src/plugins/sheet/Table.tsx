@@ -28,6 +28,8 @@ import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
 import { Menu, type MenuItem } from './Menu';
+import { Button } from '../../pane-ui-system';
+import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
 
@@ -56,7 +58,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -550,6 +552,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             calcText = rows[core.active.r]?.cells[columns[core.active.c]?.key ?? ''] ?? '';
         }
     }
+    // 합계는 앱 아래 상태바에 낸다(QuickCalcStatus) — 표 밑 막대는 걷었다. 내리면(언마운트) 비운다.
+    useEffect(() => { if (hasQuickCalc) setQuickCalc(calcText); }, [calcText, hasQuickCalc]);
+    useEffect(() => () => { if (hasQuickCalc) setQuickCalc(null); }, [hasQuickCalc]);
     const colLetter = (i: number): string => {
         let s = ''; let n = i + 1;
         while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
@@ -557,8 +562,52 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
     const tabsOn = focused || reorder != null;
 
+    // ── 도구 막대(M5d) — 메뉴와 같은 함수를 부른다(같은 tx). 고른 범위 기준. ──
+    type Tool = { id: string; label: string; title: string; on: boolean; run: (e: React.MouseEvent) => void } | '|';
+    const undoFn = onUndo ?? (historyOwned ? internalUndo : undefined);
+    const redoFn = onRedo ?? (historyOwned ? internalRedo : undefined);
+    const selRowIds = rows.slice(sel.r1, sel.r2 + 1).map((r) => r.id);
+    const selColKeys = columns.slice(sel.c1, sel.c2 + 1).map((c) => c.key);
+    const hasCells = rows.length > 0 && columns.length > 0;
+    const tools: Tool[] = toolbar ? [
+        { id: 'undo', label: '↶', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
+        { id: 'redo', label: '↷', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
+        '|',
+        { id: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
+        '|',
+        { id: 'row-above', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
+        { id: 'row-below', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
+        { id: 'row-del', label: '행 지우기', title: '고른 행 지우기', on: hasRows && selRowIds.length > 0,
+            run: () => emit({ cells: [], rows: { remove: selRowIds }, source: 'menu' }, false) },
+        '|',
+        { id: 'col-left', label: '왼쪽에 열', title: '왼쪽에 열 넣기 (Alt+←)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c1) },
+        { id: 'col-right', label: '오른쪽에 열', title: '오른쪽에 열 넣기 (Alt+→)', on: hasAxisEdit && hasCells, run: () => addColAt(sel.c2 + 1) },
+        { id: 'col-del', label: '열 지우기', title: '고른 열 지우기', on: hasAxisEdit && selColKeys.length > 0,
+            run: () => emit({ cells: [], cols: { remove: selColKeys }, source: 'menu' }, false) },
+        '|',
+        { id: 'merge', label: '합치기', title: '고른 칸 합치기', on: has('merge') && multi, run: mergeSelection },
+        { id: 'unmerge', label: '풀기', title: '합친 칸 풀기', on: has('merge') && !!anchorCovering(merges, core.active.r, core.active.c, rows, columns), run: unmergeAtActive },
+        '|',
+        { id: 'table', label: '표 ▾', title: '표 스타일·머리 행/열·꼬리 행', on: true, run: (e) => openTableMenu(e) },
+    ] : [];
+
     return (
         <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
+            {toolbar && (
+                <div data-testid="table-toolbar" role="toolbar" aria-label="표 도구"
+                    className="sticky top-0 z-30 mb-2 flex flex-wrap items-center gap-0.5 border-b border-line bg-bg py-1 text-[12px]">
+                    {tools.map((t, i) => t === '|'
+                        ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
+                        : (
+                            <Button key={t.id} variant="plain" size="sm" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
+                                // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => t.run(e)}>
+                                {t.label}
+                            </Button>
+                        ))}
+                </div>
+            )}
             {hasValidate && invalidCount > 0 && (
                 <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
@@ -689,7 +738,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                     {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
                                     <td className="relative w-7 p-0 border-0 align-middle">
                                         {hasRows && (
-                                            <div className="h-full flex items-stretch justify-end">
+                                            // absolute — 표 칸 안 h-full 은 키운 행 높이를 못 따라간다(탭이 위에 몰리던 버그)
+                                            <div className="absolute inset-0 flex items-stretch justify-end">
                                                 <div
                                                     data-testid="row-handle"
                                                     onMouseDown={(e) => beginReorder(e, 'row', r)}
@@ -708,7 +758,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         {hasRowWeight && (
                                             <span
                                                 data-testid="row-weight"
-                                                onMouseDown={(e) => beginWeight(e, row.id, heightOf(row) ?? 28)}
+                                                onMouseDown={(e) => beginWeight(e, row.id, heightOf(row) ?? 24)}
                                                 title="끌어서 줄 높이 조절"
                                                 className="absolute left-0 bottom-0 w-full h-1 cursor-row-resize hover:bg-accent/40"
                                             />
@@ -856,12 +906,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 </button>
             )}
             </div>
-            {/* 넘버스 하단 합계 바 — 범위면 합·평균·최소·최대·개수, 칸 하나면 원래 값. */}
-            {calcText != null && (
-                <div data-testid="quick-calc" className="mt-2 ml-6 h-6 px-2 flex items-center border-t border-line text-[12px] text-muted tabular-nums truncate select-none">
-                    {calcText || ' '}
-                </div>
-            )}
 
             {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>

@@ -10,6 +10,8 @@ import { FOCUS_RING } from './focus';
 const VARIANT = {
     ghost: 'border-line text-muted hover:text-text hover:bg-text/[0.04]',
     accent: 'border-accent text-text bg-text/[0.06] hover:bg-text/[0.1]',
+    // 도구 막대용 — 테두리 없이 글자만(표 도구 막대 등)
+    plain: 'border-transparent text-text hover:bg-text/[0.06] disabled:opacity-40 disabled:hover:bg-transparent select-none',
 } as const;
 
 const SIZE = {
@@ -25,7 +27,7 @@ export function Button({
     children,
     ...rest
 }: {
-    variant?: 'ghost' | 'accent';
+    variant?: 'ghost' | 'accent' | 'plain';
     size?: 'sm' | 'md';
     children?: ReactNode;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {

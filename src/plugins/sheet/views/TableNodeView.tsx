@@ -55,6 +55,7 @@ export function TableNodeView() {
                     merges={doc.merges}
                     features={DEFAULT_FEATURES}
                     hideColHeader
+                    toolbar
                     headerRow={doc.headerRow}
                     headerCol={doc.headerCol}
                     decorate={decorate}
