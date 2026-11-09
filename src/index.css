@@ -80,8 +80,8 @@
    *   fast = 떠 있는 부품 열림·짧은 페이드 · base = 서랍·탭·피크 · slow = 바텀 시트처럼 먼 거리.
    *   ease-out = 들어올 때(빨리 출발해 부드럽게 멎는다) · ease-in = 나갈 때.
    */
-  --motion-fast: var(--motion-fast);
-  --motion-base: var(--motion-base);
+  --motion-fast: .12s;
+  --motion-base: .16s;
   --motion-slow: .2s;
   --ease-out: cubic-bezier(.2,.8,.3,1);
   --ease-in: cubic-bezier(.4,0,1,1);
