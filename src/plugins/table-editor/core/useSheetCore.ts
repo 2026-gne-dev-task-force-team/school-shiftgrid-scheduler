@@ -242,8 +242,9 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             const act = activeRef.current;
             const u = undoKey(e);   // ⌘Z 판정은 창틀 공용(한글 조합 중·Alt 낀 것 거름) — 더미는 역트랜잭션이라 여기 몫
             if (u) { e.preventDefault(); e.stopPropagation(); if (u === 'redo') a.onRedo?.(); else a.onUndo?.(); return; }
-            if (meta && (k === 'c' || k === 'C')) { e.preventDefault(); e.stopPropagation(); impl.current.doCopy(); return; }
-            if (meta && (k === 'v' || k === 'V')) { e.preventDefault(); e.stopPropagation(); return; } // paste 이벤트가 처리
+            if (meta && (k === 'c' || k === 'C' || e.code === 'KeyC')) { e.preventDefault(); e.stopPropagation(); impl.current.doCopy(); return; }
+            // 🔴 ⌘V 는 preventDefault 하면 안 된다 — 브라우저가 paste 이벤트를 아예 안 쏜다(붙여넣기 먹통이던 원인). paste 이벤트가 처리
+            if (meta && (k === 'v' || k === 'V' || e.code === 'KeyV')) { e.stopPropagation(); return; }
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); impl.current.fillDown(selRef.current.r2); return; }
             if (meta && (k === 'a' || k === 'A')) { e.preventDefault(); e.stopPropagation(); setAnchorState({ r: 0, c: 0 }); setActiveState({ r: Math.max(0, a.dataRowCount - 1), c: a.colCount - 1 }); return; }
             // M5 넘버스 — Alt+↑/↓ 위·아래에 행, Alt+←/→ 왼·오른쪽에 열을 넣는다.

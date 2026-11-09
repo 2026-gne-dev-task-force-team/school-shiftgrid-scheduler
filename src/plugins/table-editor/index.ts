@@ -16,6 +16,7 @@ import { manifest } from './manifest';
 import { tableApi } from './api';
 import { TableNodeView } from './views/TableNodeView';
 import { TableProps } from './views/TableProps';
+import { QuickCalcStatus } from './views/QuickCalcStatus';
 import { tableNodeTypes, tableNodeTypeImpl, initTableNodes, TABLE_TYPE } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'table-editor.' 를 붙인다). contributes 엔 접두사 없는 'sheet' 로.
@@ -69,6 +70,8 @@ export const tableEditorPlugin = definePlugin({
             nodeTypes: tableNodeTypes,
             // 오른쪽 「속성」 패널의 표 칸 — 스타일·머리 행/열·꼬리 행(넘버스의 표 서식 자리).
             properties: [{ target: TABLE_TYPE, id: 'table', title: '표', pane: 'TableProps' }],
+            // 넘버스 합계 바 — 표 밑이 아니라 앱 아래 상태바에(쥔님 2026-11-09).
+            statusBar: [{ id: 'quick-calc', side: 'left', render: 'QuickCalc' }],
         },
     },
     panes: { TableProps },
@@ -78,6 +81,7 @@ export const tableEditorPlugin = definePlugin({
         Sheet: () => createElement(TableNodeView),
         // 옛 연습장 탭 자동 정리 — host·leaf 를 받아 닫고 표로 잇는다(위 redirect).
         LegacyPlayground: LegacyPlaygroundRedirect,
+        QuickCalc: () => createElement(QuickCalcStatus),
     },
     commands: {
         // 리본 「표 열기」 — 보고 있는 표는 그대로 두고 화면만 연다(없으면 안내가 뜬다).

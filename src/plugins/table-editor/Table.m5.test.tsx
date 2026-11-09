@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Table, type TableHandle } from './Table';
 import type { TableTx } from './contracts/table';
 import { applyTx, type TableDoc } from './nodes';
+import { QuickCalcStatus } from './views/QuickCalcStatus';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -56,7 +57,8 @@ const key = (k: string, o: KeyboardEventInit = {}) =>
 describe('Table M5 — 넘버스 얼굴', () => {
     it('합계 바는 고른 범위에서 머리·꼬리 행을 빼고 합·평균을 낸다', () => {
         const ref = createRef<CtrlRef>();
-        mount(<Owner ref={ref} init={doc4()} />);
+        mount(<><Owner ref={ref} init={doc4()} /><QuickCalcStatus /></>);   // 합계는 상태바 쪽에 뜬다
+        act(() => ref.current!.h().focus());
         act(() => ref.current!.h().select(0, 0, 3, 1));   // 표 전체
         const bar = q('quick-calc')!.textContent!;
         expect(bar).toContain('합계 10');                 // 1+2+3+4 (머리 100·200, 꼬리 1000 제외)
@@ -156,5 +158,18 @@ describe('Table M5 — 넘버스 얼굴', () => {
         key('Enter');
         expect(ref.current!.doc().rows).toHaveLength(5);
         expect(ref.current!.h().state().active).toEqual({ r: 4, c: 1 });
+    });
+
+    it('⌘V keydown 은 막지 않는다(막으면 브라우저가 paste 이벤트를 안 쏜다) · paste 이벤트로 칸이 채워진다', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
+        act(() => ref.current!.h().click(1, 0));
+        const ev = new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true });
+        act(() => { document.dispatchEvent(ev); });
+        expect(ev.defaultPrevented).toBe(false);
+        const paste = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
+        Object.defineProperty(paste, 'clipboardData', { value: { getData: () => '7\t8' } });
+        act(() => { document.dispatchEvent(paste); });
+        expect(ref.current!.doc().rows[1].cells).toEqual({ a: '7', b: '8' });
     });
 });

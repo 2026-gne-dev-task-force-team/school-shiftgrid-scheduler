@@ -28,6 +28,7 @@ import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
 import { Menu, type MenuItem } from './Menu';
+import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
 
@@ -550,6 +551,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             calcText = rows[core.active.r]?.cells[columns[core.active.c]?.key ?? ''] ?? '';
         }
     }
+    // 합계는 앱 아래 상태바에 낸다(QuickCalcStatus) — 표 밑 막대는 걷었다. 내리면(언마운트) 비운다.
+    useEffect(() => { if (hasQuickCalc) setQuickCalc(calcText); }, [calcText, hasQuickCalc]);
+    useEffect(() => () => { if (hasQuickCalc) setQuickCalc(null); }, [hasQuickCalc]);
     const colLetter = (i: number): string => {
         let s = ''; let n = i + 1;
         while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
@@ -689,7 +693,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                     {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
                                     <td className="relative w-7 p-0 border-0 align-middle">
                                         {hasRows && (
-                                            <div className="h-full flex items-stretch justify-end">
+                                            // absolute — 표 칸 안 h-full 은 키운 행 높이를 못 따라간다(탭이 위에 몰리던 버그)
+                                            <div className="absolute inset-0 flex items-stretch justify-end">
                                                 <div
                                                     data-testid="row-handle"
                                                     onMouseDown={(e) => beginReorder(e, 'row', r)}
@@ -856,12 +861,6 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 </button>
             )}
             </div>
-            {/* 넘버스 하단 합계 바 — 범위면 합·평균·최소·최대·개수, 칸 하나면 원래 값. */}
-            {calcText != null && (
-                <div data-testid="quick-calc" className="mt-2 ml-6 h-6 px-2 flex items-center border-t border-line text-[12px] text-muted tabular-nums truncate select-none">
-                    {calcText || ' '}
-                </div>
-            )}
 
             {menu && <Menu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
