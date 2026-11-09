@@ -10,6 +10,7 @@ import type { PageDocApi } from '../../page/contracts/page-doc';
 import { getRecord, nodeKindOf, setRecordValue, renameRecord, accountBodyOf, setAccountBody, getNodesApi } from '../core';
 import { useAccountVersion, allPermissions } from './useAccount';
 import { accountFields, canEdit } from './fields';
+import { CredentialSlots } from './CredentialSlots';
 
 export function RecordPage({ id, host }: { id: string; host?: PluginHost }) {
     useAccountVersion();
@@ -27,6 +28,7 @@ export function RecordPage({ id, host }: { id: string; host?: PluginHost }) {
         <div className="flex flex-col gap-3">
             <rv.PropertyList fields={accountFields(kind)} values={{ ...rec.values, name: rec.name }}
                 onChange={edit ? (key, v) => setRecordValue(id, key, v) : undefined} />
+            {kind === 'users' && <CredentialSlots userId={id} />}
             {perms.length > 0 && (
                 <dl className="flex flex-col gap-1 px-2">
                     {perms.map((p) => (

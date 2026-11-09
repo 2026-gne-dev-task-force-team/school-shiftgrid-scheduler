@@ -4,7 +4,7 @@
  *   ⛔ account 를 src/app/plugins.ts 에 등록하지 않는다(머지·등록은 메인) — 여기서 목록을 직접 넘긴다.
  *   (테스트 파일은 구조 검사 walk 에서 빠지므로 형제 플러그인 core 를 값으로 import 해도 된다.)
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { activateAll, disablePlugin, enablePlugin, listPlugins, disposeOwner } from '../../pane-ui-system/plugin';
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import type { Identity } from './contracts/identity';
@@ -15,6 +15,7 @@ import { accountPlugin } from './index';
 import * as core from './core';
 import * as credCore from './credential/core';
 import { SECRET_TYPE, accountNodeTypeImpl } from './nodes';
+import * as credDialog from './credential/dialog';
 
 // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속 셋(identity·credential·permit)은 account 꾸러미가 들고 온다(contributes.interfaces).
 //    nodes 약속은 아래 가짜 nodes 제공자가 들고 온다(선언+제공). 증명(credential)은 account 꾸러미 안 내부 모듈이다(따로 안 켠다).
@@ -425,5 +426,119 @@ describe('계정 — 9가지 검산', () => {
         credCore.setPrompt(async () => 'legacy-pw');
         expect(await core.login(uid)).toBe(true);
         expect(core.getCurrent().verified).toBe(true);
+    });
+});
+
+// ─────────────────────────── P4d — 로그인 유지(A2) · 자격증명 슬롯(A3) ───────────────────────────
+//   테스트 환경은 node 라 localStorage 가 없다(host.storage 가 아무것도 안 한다) — 여기서만 메모리 localStorage 를 꽂는다.
+describe('P4d — 새로고침해도 로그인 유지 · 자격증명 슬롯', () => {
+    beforeEach(() => {
+        const m = new Map<string, string>();
+        vi.stubGlobal('localStorage', {
+            getItem: (k: string) => m.get(k) ?? null,
+            setItem: (k: string, v: string) => { m.set(k, String(v)); },
+            removeItem: (k: string) => { m.delete(k); },
+            clear: () => m.clear(),
+        });
+    });
+    afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+    const restart = (nodes: ReturnType<typeof makeNodes>) => activateAll([...BASE(), nodes.plugin, accountPlugin]);
+
+    it('A2) 암호로 들어온 마스터는 새로고침해도 마스터 · 기한이 지나면 손님', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        const nodes = makeNodes();
+        restart(nodes);
+        await core.setProjectPassword('', 'pw');
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('guest');            // 암호를 처음 건 것은 로그인이 아니다
+        expect(await core.loginMaster('pw')).toBe(true);
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('master');           // 🔴 A2 — 새로고침해도 유지
+        vi.setSystemTime(Date.now() + (core.KEEP_DEFAULT + 1) * 60_000);
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('guest');            // 기한(기본 8시간)이 지나면 손님
+    });
+
+    it('A2) 기한 0(안 함)이면 새로고침에 풀린다 · 로그아웃하면 저장이 지워진다', async () => {
+        const nodes = makeNodes();
+        restart(nodes);
+        await core.setProjectPassword('', 'pw');
+        restart(nodes);
+        core.setKeepMinutes(0);
+        await core.loginMaster('pw');
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('guest');
+        core.setKeepMinutes(60);
+        await core.loginMaster('pw');
+        core.logout();
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('guest');
+    });
+
+    it('A2) 암호가 바뀌면(봉인이 다르면) 유지된 마스터가 풀린다 · 내가 바꾼 건 새 봉인으로 유지', async () => {
+        const nodes = makeNodes();
+        restart(nodes);
+        await core.setProjectPassword('', 'pw');
+        restart(nodes);
+        await core.loginMaster('pw');
+        await core.setProjectPassword('pw', 'pw2');               // 이 기기에서 바꿈 → 다시 봉인
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('master');
+        // 다른 기기가 암호를 바꾼 상황 — 솔트가 다른 해시로 갈린다
+        const sec = nodes.api.byType(SECRET_TYPE)[0];
+        nodes.api.setData(sec.id, { salt: 'other', hash: 'x' });
+        restart(nodes);
+        expect(core.getCurrent().kind).toBe('guest');
+    });
+
+    it('A2) 증명된 사용자는 기한 안에서 증명됨까지 유지', async () => {
+        const nodes = makeNodes();
+        restart(nodes);
+        const uid = core.createUser('최');
+        await credCore.setSecret(uid, 'mypw');
+        await core.setProjectPassword('', 'pw');
+        credCore.setPrompt(async () => 'mypw');
+        expect(await core.login(uid)).toBe(true);                // 마스터 → 증명 통과
+        restart(nodes);
+        expect(core.getCurrent()).toMatchObject({ kind: 'user', id: uid, verified: true });
+    });
+
+    it('증명 입력창 스냅숏은 같은 요청이면 같은 참조(매번 새 객체면 useSyncExternalStore 무한 루프로 앱이 죽는다)', async () => {
+        expect(credDialog.getPending()).toBeNull();
+        const p = credDialog.requestSecret('m', 'u1');
+        const a = credDialog.getPending();
+        expect(a).toEqual({ methodId: 'm', userId: 'u1' });
+        expect(credDialog.getPending()).toBe(a);                 // 🔴 같은 참조
+        credDialog.submitDialog('x');
+        expect(await p).toBe('x');
+        expect(credDialog.getPending()).toBeNull();
+    });
+
+    it('A3) 비밀번호 슬롯 — 마스터·증명된 본인만 걸고 뺀다 · 빼면 전환이 막힌다', async () => {
+        const nodes = makeNodes();
+        restart(nodes);
+        const a = core.createUser('가');
+        const b = core.createUser('나');
+        expect(credCore.METHOD.title).toBe('비밀번호');            // 첫 슬롯 이름
+        expect(core.canManageCredential(a)).toBe(true);          // 마스터
+        await credCore.setSecret(a, 'apw');
+        expect(credCore.hasSecret(a)).toBe(true);
+        expect(JSON.stringify(nodes.allData()).includes('apw')).toBe(false);   // 평문 0
+
+        await core.setProjectPassword('', 'pw');
+        restart(nodes);                                           // 손님
+        await core.login(a);                                      // 이름만 → 증명 안 됨
+        expect(core.canManageCredential(a)).toBe(false);          // 🔴 이름만 댄 본인은 못 바꾼다(가로채기 방지)
+        await core.loginMaster('pw');
+        credCore.setPrompt(async () => 'apw');
+        await core.login(a);                                      // 마스터 → 증명 통과
+        expect(core.canManageCredential(a)).toBe(true);           // 증명된 본인
+        expect(core.canManageCredential(b)).toBe(false);          // 남은 안 된다
+
+        credCore.clearSecret(a);
+        expect(credCore.hasSecret(a)).toBe(false);
+        await core.loginMaster('pw');
+        expect(await core.login(a)).toBe(false);                  // 비밀이 없으면 마스터 → 그 사람 전환 불가
     });
 });

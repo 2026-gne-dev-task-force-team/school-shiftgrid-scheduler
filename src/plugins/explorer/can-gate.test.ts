@@ -23,7 +23,7 @@ vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWr
 import {
     initStore, getState, newNode, select,
     removeSelected, confirmRemove, cancelRemove,
-    apiCreate, apiMove, apiRemove,
+    apiCreate, apiMove, apiRemove, apiInvalidate, subscribeState,
 } from './store';
 import { __resetPersistForTest } from './persist';
 import {
@@ -269,5 +269,21 @@ describe('스토어·API — 모든 창구가 같은 관문을 지난다', () =>
         const id = apiCreate(root(), { type: 'acc.user', name: '박' });
         expect(id).toBe('');
         expect(nodesOfType('acc.user').length).toBe(0);
+    });
+});
+
+// ─────────────────────────── 4) 판정이 바뀌면 다시 그린다(P4d A1) ───────────────────────────
+describe('invalidate — 나무는 그대로여도 가림 판정이 바뀌면 화면이 다시 센다', () => {
+    it('apiInvalidate 는 새 state 참조로 알린다(같은 참조면 useSyncExternalStore 가 다시 그리기를 건너뛴다)', () => {
+        // 로그인으로 권한이 바뀐 상황 — 노드는 안 바뀌고 계정 꾸러미가 nodes.invalidate 만 부른다
+        const before = getState();
+        let calls = 0;
+        const off = subscribeState(() => { calls += 1; });
+        allowed = false;
+        apiInvalidate(root());
+        off();
+        expect(calls).toBe(1);
+        expect(getState()).not.toBe(before);          // 🔴 새 참조여야 탐색기가 hidden/can 을 다시 센다
+        expect(getState().tree).toBe(before.tree);    // 나무는 그대로(저장·되돌리기 churn 0)
     });
 });

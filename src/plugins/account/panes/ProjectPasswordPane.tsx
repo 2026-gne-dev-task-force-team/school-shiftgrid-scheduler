@@ -3,8 +3,8 @@
  *   색은 토큰 클래스로만(구조 검사 ①).
  */
 import { useState } from 'react';
-import { Button } from '../../../pane-ui-system';
-import { getCurrent, hasProjectPassword, setProjectPassword } from '../core';
+import { Button, Select } from '../../../pane-ui-system';
+import { getCurrent, hasProjectPassword, setProjectPassword, getKeepMinutes, setKeepMinutes } from '../core';
 import { useAccountVersion } from './useAccount';
 
 export function ProjectPasswordPane() {
@@ -28,14 +28,30 @@ export function ProjectPasswordPane() {
         if (ok) { setOldPw(''); setNewPw(''); }
     };
 
+    // 로그인 유지(P4d A2) — 기기별이라 누구나 고른다. 기한이 지나면 다음에 열 때 손님으로 시작한다.
+    const [keep, setKeep] = useState(() => String(getKeepMinutes()));
+    const keepRow = (
+        <label className="flex items-center gap-2 text-small text-muted">
+            로그인 유지
+            <Select value={keep} options={KEEP_OPTIONS}
+                onChange={(e) => { setKeep(e.target.value); setKeepMinutes(Number(e.target.value)); }} />
+        </label>
+    );
+
     if (!isMaster) {
-        return <p className="text-[12px] text-muted">프로젝트 암호는 마스터만 바꿀 수 있습니다.</p>;
+        return (
+            <div className="flex flex-col gap-3">
+                {keepRow}
+                <p className="text-[12px] text-muted">프로젝트 암호는 마스터만 바꿀 수 있습니다.</p>
+            </div>
+        );
     }
 
     return (
         <div className="flex flex-col gap-3">
+            {keepRow}
             <p className="text-[12px] text-muted leading-relaxed">
-                {has ? '프로젝트 암호가 걸려 있습니다.' : '프로젝트 암호가 없습니다 — 걸면 다음부터 열 때 손님으로 시작하고, 이 암호로 마스터에 들어옵니다.'}
+                {has ? '프로젝트 암호가 걸려 있습니다.' : '프로젝트 암호가 없습니다 — 걸면 로그인 유지 기한이 지난 뒤 열 때 손님으로 시작하고, 이 암호로 마스터에 들어옵니다.'}
             </p>
             <p className="text-[12px] text-warn leading-relaxed">⚠️ 암호를 잊으면 되돌릴 방법이 없습니다(복구 수단 없음).</p>
 
@@ -60,3 +76,12 @@ export function ProjectPasswordPane() {
         </div>
     );
 }
+
+/** 로그인 유지 기한 고르기(분) — 0 은 새로고침하면 풀림. */
+const KEEP_OPTIONS = [
+    { value: '0', label: '안 함(새로고침하면 풀림)' },
+    { value: '60', label: '1시간' },
+    { value: '480', label: '8시간' },
+    { value: '1440', label: '하루' },
+    { value: '10080', label: '7일' },
+];
