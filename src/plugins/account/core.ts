@@ -350,20 +350,15 @@ function patchRole(roleId: string, patch: Partial<RoleData>): void {
     if (!r || !nodesApi) return;
     nodesApi.setData(roleId, { ...rawOf(roleId), ...r, ...patch });
 }
-/** 사용자·역할 문서(page-doc 값) — 노드 data.body(노션처럼 레코드마다 문서). */
-export function accountBodyOf(id: string): unknown { return rawOf(id).body; }
-export function setAccountBody(id: string, body: unknown): void { nodesApi?.setData(id, { ...rawOf(id), body }); }
+/** 사용자·역할 문서(page-doc 값) — 노드 공통 body 칸(노션처럼 레코드마다 문서). */
+export function accountBodyOf(id: string): unknown { return nodesApi?.get(id)?.body; }
+export function setAccountBody(id: string, body: unknown): void { nodesApi?.setBody(id, body); }
+export function getNodesApi(): NodesApi | null { return nodesApi; }
 /** 목록 탭의 폴더(사용자·역할·권한) — 탭 머리 아이콘·이름이 고친다. 없으면 null(만들지 않는다). */
 export function accountFolderId(kind: 'users' | 'roles' | 'perms'): string | null {
     const r = accountRootId();
     if (!r) return null;
     return childOfType(r, kind === 'users' ? USERS_FOLDER_TYPE : kind === 'roles' ? ROLES_FOLDER_TYPE : PERMS_FOLDER_TYPE);
-}
-export function folderIconOf(id: string): string | undefined { const i = rawOf(id).icon; return typeof i === 'string' && i ? i : undefined; }
-export function setFolderIcon(id: string, icon: string | undefined): void {
-    const cur = rawOf(id);
-    if (icon) cur.icon = icon; else delete cur.icon;
-    nodesApi?.setData(id, cur);
 }
 export function renameNode(id: string, name: string): void { nodesApi?.rename(id, name); }
 export function nodeNameOf(id: string): string { return nodesApi?.get(id)?.name ?? ''; }

@@ -16,6 +16,9 @@ export interface PageDocProps {
     /** 머리 제목(손님이 이름을 쥔다) */
     title: string;
     onRename(name: string): void;
+    /** 노드 공통 아이콘(손님이 쥔다) — onSetIcon 이 없으면 아이콘 고르기를 안 그린다. */
+    icon?: string;
+    onSetIcon?(icon: string | undefined): void;
 }
 
 export interface PageDocApi {

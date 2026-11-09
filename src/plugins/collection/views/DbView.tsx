@@ -4,20 +4,19 @@
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Icon, IconPicker, undoKey } from '../../../pane-ui-system';
+import { Icon, undoKey } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
 import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
-import { isImeEnter } from '../fields/ime';
 import { blankDb } from '../schema';
 import {
-    commit, getActiveDb, getDbRev, indentRow, outdentRow, renameDb, reorderRow, restoreTrashedRows, setDbIcon,
+    commit, getActiveDb, getDbRev, getNodesApi, indentRow, outdentRow, reorderRow, restoreTrashedRows,
     snapshotOf, subscribeDb, toggleRowCollapse,
 } from '../nodes';
 
@@ -27,25 +26,9 @@ function useDbSnapshot() {
     return snapshotOf(getActiveDb());
 }
 
-function TitleInput({ id, name }: { id: string; name: string }) {
-    const [text, setText] = useState(name);
-    const [seen, setSeen] = useState(name);
-    if (seen !== name) { setSeen(name); setText(name); }   // 밖(탐색기)에서 이름이 바뀌면 따라간다
-    const done = () => { if (text.trim() !== name) renameDb(id, text); };
-    return (
-        <input
-            data-rv-db-title
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onBlur={done}
-            onKeyDown={(e) => { if (isImeEnter(e)) return; if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            className="w-full bg-transparent text-[28px] font-bold leading-tight tracking-tight text-text outline-none"
-        />
-    );
-}
-
-export function DbView({ host, peek }: ViewProps & { host: PluginHost }) {
+export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
+    const Header = getNodesApi()?.Header;
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
@@ -79,9 +62,8 @@ export function DbView({ host, peek }: ViewProps & { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <div className="shrink-0 px-6 pt-6 pb-2 flex items-end gap-3">
-                {/* 아이콘 — 탭 안에서 바로(페이지와 같은 결) */}
-                <IconPicker icon={doc.icon} onSetIcon={(i) => setDbIcon(id, i)} fallback={<Icon name="table" size={26} className="text-muted" />} sizeClass="text-[28px]" />
-                <div className="flex-1 min-w-0"><TitleInput id={id} name={snap.name} /></div>
+                {Header && <Header nodeId={id} leafId={leaf.id} iconSizeClass="text-[28px]" titleClass="flex-1 text-[28px] font-bold leading-tight tracking-tight"
+                    fallback={<Icon name="table" size={26} className="text-muted" />} />}
                 {snap.trashedRows > 0 && (
                     <button type="button" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}
                         className="shrink-0 h-row px-2 rounded border border-line text-[12px] text-muted hover:text-text inline-flex items-center gap-1">

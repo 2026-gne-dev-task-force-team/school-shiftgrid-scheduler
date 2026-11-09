@@ -145,14 +145,4 @@ describe('표 트랜잭션 적용(요구 7)', () => {
 });
 
 describe('편집해도 아이콘이 남는다(요구 13)', () => {
-    it('모든 블록 조작이 icon 을 지우지 않는다', () => {
-        const p: Page = { icon: '📘', blocks: [{ id: 'a', type: 'paragraph', text: 'ab' }] };
-        expect(changeType(p, 'a', 'heading1').icon).toBe('📘');
-        expect(setChecked(p, 'a', true).icon).toBe('📘');
-        expect(indentBlock(p, 'a', 'in').icon).toBe('📘');
-        expect(moveBlock(p, 'a', 0).icon).toBe('📘');
-        expect(splitBlock(p, 'a', 1).page.icon).toBe('📘');
-        expect(mergeBackspace(p, 'a').page.icon).toBe('📘');
-        expect(removeBlock(p, 'a').page.icon).toBe('📘');
-    });
 });

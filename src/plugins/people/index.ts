@@ -53,7 +53,7 @@ export const peoplePlugin = definePlugin({
     panes: { PersonProps },
     components: {
         // 명단 화면 — 보고 있는 명단(store)의 사람들을 표 자리로 그린다. host 는 안 쓴다(다리가 쥔다).
-        Sheet: ({ host, peek }) => createElement(ListTab, { host, peek }),
+        Sheet: ({ host, peek, leaf }) => createElement(ListTab, { host, peek, leafId: leaf.id }),
     },
     commands: {
         // 리본 「사람 명단 열기」 — 보고 있는 명단은 그대로 두고 화면만 연다(없으면 안내가 뜬다).

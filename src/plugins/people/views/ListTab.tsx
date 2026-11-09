@@ -8,10 +8,10 @@
  *    아직 그 약속이 없어 분기를 안 만든다(간이 표 하나) — table-slot.tsx 머리의 「요구서」가 그 세션에 건넬 꼴이다.
  */
 import { useMemo, useSyncExternalStore } from 'react';
-import { Icon, IconPicker, TitleField, type PeekHandle } from '../../../pane-ui-system';
+import { Icon, type PeekHandle } from '../../../pane-ui-system';
 import { RowPeek } from './RowPeek';
 import { useActiveList, setActiveList } from '../store';
-import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields, listIconOf, setListIcon, getNodesApi } from '../nodes';
+import { subscribeNodes, getListNodes, inTrash, peopleIn, addPerson, updatePerson, removePerson, nudgePerson, pastePeople, colsOf, setCol, listFieldsOf, setListFields, getNodesApi } from '../nodes';
 import { TableSlot, type TableColumn, type TableRow } from './table-slot';
 import type { RecordViewApi, RecordField } from '../../collection/contracts/collection';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -22,7 +22,7 @@ const COLUMNS: TableColumn[] = [
     { key: 'memo', title: '메모' },
 ];
 
-export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }) {
+export function ListTab({ host, peek, leafId }: { host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     // 레코드 뷰가 켜져 있으면 그 목록 화면으로(supports: collection) — 없으면 간이 표
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     const activeId = useActiveList();
@@ -43,6 +43,7 @@ export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }
     // 보고 있는 명단이 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || !list || inTrash(activeId)) return <StartScreen />;
 
+    const Header = getNodesApi()?.Header;
     const btn = 'flex items-center gap-1 h-btn px-2 rounded border border-line text-[12px] text-muted hover:text-text hover:bg-text/[0.04] disabled:opacity-40 disabled:hover:bg-transparent';
 
     return (
@@ -51,9 +52,7 @@ export function ListTab({ host, peek }: { host?: PluginHost; peek?: PeekHandle }
                 <button type="button" className={btn} title="명단 목록" onClick={() => { setActiveList(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                {/* 아이콘·제목 — 탭 안에서 바로 바꾼다(페이지와 같은 결 · 쥔님 2026-11-09) */}
-                <IconPicker icon={listIconOf(activeId)} onSetIcon={(i) => setListIcon(activeId, i)} fallback={<Icon name="users" size={15} className="text-muted" />} sizeClass="text-[16px]" />
-                <TitleField value={list.name} onRename={(n) => getNodesApi()?.rename(activeId, n)} className="font-medium text-[14px] flex-1 max-w-xs" />
+                {Header && <Header nodeId={activeId} leafId={leafId} titleClass="font-medium text-[14px] flex-1 max-w-xs" />}
                 <span className="text-[12px] text-muted tabular-nums">· {rows.length}명</span>
             </div>
             <TableSlot

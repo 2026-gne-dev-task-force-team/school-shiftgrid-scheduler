@@ -17,8 +17,9 @@ import type { Node } from './model/tree';
 import { parentOf } from './model/tree';
 import type { NodeTypeDef } from './model/types';
 import { registerType } from './model/types';
+import { NodeHeader } from './views/NodeHeader';
 import {
-    getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData,
+    getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData, apiSetField,
     apiInvalidate, apiBatch, openById, subscribeChanges, startInput,
 } from './store';
 
@@ -71,7 +72,6 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 type: item.type,
                 label: item.label,
                 icon: fns?.icon ?? item.icon ?? 'file',   // 함수 아이콘(impl) → 데이터 아이콘 → 기본 'file'
-                emoji: fns?.emoji,
                 container: item.container,
                 openable: item.openable,
                 open: fns?.open ? (id) => fns.open!(host, id) : undefined,
@@ -137,6 +137,9 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
             }
             apiSetData(id, data);
         },
+        setIcon(id, icon) { apiSetField(id, 'icon', icon); },
+        setBody(id, body) { apiSetField(id, 'body', body); },
+        Header: NodeHeader,
         move(id, parentId, index) { apiMove(id, parentId, index); },
         remove(id) { apiRemove(id); },
         batch(fn) { apiBatch(fn); },

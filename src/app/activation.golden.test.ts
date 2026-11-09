@@ -34,7 +34,7 @@ if (typeof globalThis.localStorage === 'undefined') {
 }
 
 function bridgeCollecting(into: string[]) {
-    return { open: (viewId: string) => { into.push(viewId); return viewId; }, close: () => { } };
+    return { open: (viewId: string) => { into.push(viewId); return viewId; }, close: () => { }, setTitle: () => { } };
 }
 
 beforeEach(() => { setWorkspaceBridge(null); mem.clear(); });

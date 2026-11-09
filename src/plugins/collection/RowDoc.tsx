@@ -1,7 +1,7 @@
 /**
  * 레코드 줄 문서 — 줄을 열면(→) 미리보기에 그 줄의 칸들 + 페이지 문서(노션 줄 열기와 같은 결 · 쥔님 2026-11-09).
  *   🔴 문서 편집기는 페이지 편집기 꾸러미가 page-doc 약속으로 내준다(supports) — 없으면 칸만 보인다.
- *   문서는 줄 노드 data.body 에 산다(레코드 뷰는 속을 안 읽는다 — 저장만 commit(body) 로).
+ *   문서는 줄 노드 공통 body 칸에 산다(레코드 뷰는 속을 안 읽는다 — 저장만 commit(body) 로).
  */
 import { useSyncExternalStore } from 'react';
 import type { PluginHost } from '../../pane-ui-system/plugin';
@@ -16,7 +16,6 @@ export function RowDoc({ host, dbId, rowId }: { host: PluginHost; dbId: string; 
     const node = getNodesApi()?.get(rowId);
     if (!snap || !node) return <p className="text-[12px] text-muted">이 줄이 없어졌습니다.</p>;
     const pd = host.modules.use<PageDocApi>('page-doc');
-    const body = (node.data as { body?: unknown } | undefined)?.body;
     return (
         <div className="flex flex-col gap-3">
             <RowProps host={host} target={{ type: node.type, id: rowId }} />
@@ -25,7 +24,9 @@ export function RowDoc({ host, dbId, rowId }: { host: PluginHost; dbId: string; 
                     <pd.PageDoc
                         host={host}
                         docKey={rowId}
-                        value={body}
+                        value={node.body}
+                        icon={node.icon}
+                        onSetIcon={(i) => getNodesApi()?.setIcon(rowId, i)}
                         onChange={(v) => commit(dbId, { body: [{ id: rowId, body: v }] })}
                         title={node.name}
                         onRename={(name) => commit(dbId, { cells: [{ id: rowId, key: snap.doc.titleKey, value: name }] })}

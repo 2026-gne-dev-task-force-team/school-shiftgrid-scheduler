@@ -41,6 +41,8 @@ function coerce(raw: unknown): Tree {
             children: Array.isArray(n.children) ? n.children.filter((c): c is string => typeof c === 'string') : [],
             collapsed: n.collapsed === true ? true : undefined,
             data: n.data,
+            icon: typeof n.icon === 'string' && n.icon ? n.icon : undefined,
+            body: n.body,
         };
     }
     const tree: Tree = {

@@ -15,11 +15,11 @@ import type { Page } from './core/types';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const store = new Map<string, { id: string; type: string; name: string; children: string[]; data?: unknown }>();
+const store = new Map<string, { id: string; type: string; name: string; children: string[]; body?: unknown }>();
 const fakeNodes = {
     version: 1,
     get: (id: string) => store.get(id) as unknown as PublicNode | undefined,
-    setData: (id: string, data: unknown) => { const n = store.get(id); if (n) n.data = data; },
+    setBody: (id: string, body: unknown) => { const n = store.get(id); if (n) n.body = body; },
     subscribe: () => ({ dispose() {} }),
     parent: () => null,   // 휴지통 판정(inTrash)이 묻는다 — 이 테스트의 페이지는 루트에 있다
 } as unknown as NodesApi;
@@ -29,7 +29,7 @@ let root: Root; let container: HTMLDivElement;
 afterEach(() => { act(() => root.unmount()); container.remove(); setActivePage(null); store.clear(); });
 
 function setup(page: Page) {
-    store.set('p1', { id: 'p1', type: 'page.page', name: '테스트', children: [], data: page });
+    store.set('p1', { id: 'p1', type: 'page.page', name: '테스트', children: [], body: page });
     initPageNodes(fakeNodes);
     act(() => { setActivePage('p1'); });
     container = document.createElement('div');

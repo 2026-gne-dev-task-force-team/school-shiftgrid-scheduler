@@ -47,12 +47,10 @@ function recompute(): void {
  */
 export const gridNodeTypeImpl = {
     sheet: {
-        emoji: emojiOf,
         open: (host: PluginHost, id: string) => { setActiveSheet(id); host.workspace.open(GRID_ID, { where: 'center' }); },
         menu: (_host: PluginHost, id: string) => sheetMenu(id),
     } satisfies NodeTypeImplFns,
     special: {
-        emoji: emojiOf,
         open: (host: PluginHost, id: string) => { setActiveSheet(id); host.workspace.open(GRID_ID, { where: 'center' }); },
         menu: (_host: PluginHost, id: string) => specialMenu(id),
     } satisfies NodeTypeImplFns,
@@ -213,20 +211,6 @@ export function applySpecialMeta(id: string, patch: { mode?: SpecialData['mode']
     api.setData(id, next);
 }
 
-export function renameNode(id: string, name: string): void { api?.rename(id, name); }
-
-/** 탭 머리 아이콘(이모지) — 노드 data.icon. 표 데이터 옆에 얹는다(model 함수들은 ...data 로 남긴다). */
-export function sheetIconOf(id: string): string | undefined {
-    const i = (api?.get(id)?.data as { icon?: unknown } | undefined)?.icon;
-    return typeof i === 'string' && i ? i : undefined;
-}
-export function setSheetIcon(id: string, icon: string | undefined): void {
-    if (!api) return;
-    const cur = { ...(dataOf(id) as unknown as Record<string, unknown>) };
-    if (icon) cur.icon = icon; else delete cur.icon;
-    api.setData(id, cur);
-}
-function emojiOf(node: { data?: unknown }): string | undefined { const i = (node.data as { icon?: unknown } | undefined)?.icon; return typeof i === 'string' && i ? i : undefined; }
 
 /** 그 시간표 밑에 특별 시간표 하나 만들기 — 모양은 부모를 본뜬다(specialDataOf 가 읽기 때 채운다). */
 export function createSpecial(sheetId: string): string {

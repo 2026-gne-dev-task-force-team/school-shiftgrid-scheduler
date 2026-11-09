@@ -126,6 +126,7 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
                 return b.open(viewId, o) ?? null;
             },
             close(leafId: string) { getWorkspaceBridge()?.close(leafId); },
+            setTitle(leafId: string, title: string) { getWorkspaceBridge()?.setTitle(leafId, title); },
             on(ev: WorkspaceEvent, fn: (leaf: WorkspaceLeafInfo) => void) {
                 return track(pluginId, onWorkspace(pluginId, ev, fn));
             },

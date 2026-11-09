@@ -6,8 +6,13 @@
   },
   "plugins/calendar": {
     "bareButton": 14,
-    "arbPx": 55,
+    "arbPx": 54,
     "cmdIdString": 0
+  },
+  "plugins/collection": {
+    "bareButton": 45,
+    "arbPx": 74,
+    "cmdIdString": 2
   },
   "plugins/contract-absence": {
     "bareButton": 0,
@@ -39,6 +44,11 @@
     "arbPx": 0,
     "cmdIdString": 0
   },
+  "plugins/explorer": {
+    "bareButton": 7,
+    "arbPx": 20,
+    "cmdIdString": 0
+  },
   "plugins/page": {
     "bareButton": 11,
     "arbPx": 16,
@@ -51,12 +61,7 @@
   },
   "plugins/people": {
     "bareButton": 5,
-    "arbPx": 7,
-    "cmdIdString": 0
-  },
-  "plugins/explorer": {
-    "bareButton": 7,
-    "arbPx": 20,
+    "arbPx": 6,
     "cmdIdString": 0
   },
   "plugins/properties": {
@@ -64,14 +69,9 @@
     "arbPx": 2,
     "cmdIdString": 0
   },
-  "plugins/collection": {
-    "bareButton": 45,
-    "arbPx": 74,
-    "cmdIdString": 2
-  },
   "plugins/rooms": {
     "bareButton": 7,
-    "arbPx": 7,
+    "arbPx": 6,
     "cmdIdString": 0
   },
   "plugins/selection": {

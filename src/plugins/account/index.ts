@@ -119,9 +119,9 @@ export const accountPlugin = definePlugin({
     // ── 편집 탭(가운데 뷰 · 이름으로 가리킴) ──
     components: {
         Editor: ({ host, peek }) => createElement(AccountEditor, { host, peek }),
-        Users: ({ host, peek }) => createElement(AccountList, { kind: 'users', host, peek }),
-        Roles: ({ host, peek }) => createElement(AccountList, { kind: 'roles', host, peek }),
-        Perms: ({ host, peek }) => createElement(AccountList, { kind: 'perms', host, peek }),
+        Users: ({ host, peek, leaf }) => createElement(AccountList, { kind: 'users', host, peek, leafId: leaf.id }),
+        Roles: ({ host, peek, leaf }) => createElement(AccountList, { kind: 'roles', host, peek, leafId: leaf.id }),
+        Perms: ({ host, peek, leaf }) => createElement(AccountList, { kind: 'perms', host, peek, leafId: leaf.id }),
     },
 
     // ── 설정 패널 구현(이름으로 가리킴) — 프로젝트 암호만 ──

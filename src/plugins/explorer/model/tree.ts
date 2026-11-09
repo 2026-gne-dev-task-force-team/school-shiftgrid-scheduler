@@ -415,6 +415,17 @@ export function setData(tree: Tree, id: string, data: unknown): Tree {
     return normalize({ ...tree, nodes: { ...tree.nodes, [id]: { ...n, data } } });
 }
 
+/** 공통 머리 칸(icon·body) 쓰기 — undefined 면 칸을 지운다(저장 모양이 깨끗하게). */
+export function setField(tree: Tree, id: string, key: 'icon' | 'body', value: unknown): Tree {
+    const n = tree.nodes[id];
+    if (!n) return tree;
+    const next: Node = { ...n };
+    if (value === undefined || value === '') delete next[key];
+    else if (key === 'icon') next.icon = String(value);
+    else next.body = value;
+    return normalize({ ...tree, nodes: { ...tree.nodes, [id]: next } });
+}
+
 // ─────────────────────────── flatten ───────────────────────────
 
 export interface FlatRow {

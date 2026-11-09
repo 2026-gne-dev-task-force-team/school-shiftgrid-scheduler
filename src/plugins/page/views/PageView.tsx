@@ -47,6 +47,8 @@ export function PageView({ host }: { host: PluginHost }) {
             save={(p) => savePage(activeId, p)}
             title={node?.name ?? ''}
             onRename={(name) => { getNodesApi()?.rename(activeId, name); }}
+            icon={node?.icon}
+            onSetIcon={(i) => getNodesApi()?.setIcon(activeId, i)}
             onBack={() => setActivePage(null)}
         />
     );
@@ -63,11 +65,14 @@ export interface PageEditorProps {
     save: (p: Page) => void;
     title: string;
     onRename: (name: string) => void;
+    /** 노드 공통 아이콘(손님이 쥔다) — onSetIcon 이 없으면 아이콘 고르기를 안 그린다. */
+    icon?: string;
+    onSetIcon?: (icon: string | undefined) => void;
     /** 주면 머리줄에 「← 목록」 */
     onBack?: () => void;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, title, onRename, onBack }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -375,9 +380,6 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
         setActiveBlockId(p.blocks[0].id);
         setFocusIntent({ id: p.blocks[0].id, offset: 0 });
     };
-    // 아이콘은 페이지 데이터에 — 되돌리기·저장은 블록과 같은 길(commitPage).
-    const setIcon = (icon: string | undefined) => { commitPage({ ...pageRef.current, icon }); };
-
     // 번호 목록의 보이는 숫자 — 이어진 묶음 안에서 1,2,3…
     const ordinals: Record<string, number> = {};
     let run = 0;
@@ -395,8 +397,8 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                         <Icon name="left" size={12} /> 목록
                     </button>
                 )}
-                {page.icon
-                    ? <span className="text-[15px] leading-none select-none">{page.icon}</span>
+                {icon
+                    ? <span className="text-[15px] leading-none select-none">{icon}</span>
                     : <Icon name="fileText" size={15} className="text-muted" />}
                 <span className="font-medium text-text truncate">{title || '페이지'}</span>
                 <div className="ml-auto flex items-center gap-1.5">
@@ -414,10 +416,10 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                     <PageHeader
                         key={activeId}
                         initialName={title}
-                        icon={page.icon}
+                        icon={icon}
                         onRename={renameTitle}
                         onEnter={titleEnterToBody}
-                        onSetIcon={setIcon}
+                        onSetIcon={onSetIcon}
                     />
                     {page.blocks.map((b, i) => (
                         <BlockRow
@@ -470,7 +472,7 @@ function PageHeader(props: {
     icon?: string;
     onRename: (name: string) => void;
     onEnter: () => void;
-    onSetIcon: (icon: string | undefined) => void;
+    onSetIcon?: (icon: string | undefined) => void;
 }) {
     const { icon, onRename, onEnter, onSetIcon } = props;
     const [name, setName] = useState(props.initialName);
@@ -478,7 +480,7 @@ function PageHeader(props: {
     const [custom, setCustom] = useState('');
     const [hover, setHover] = useState(false);   // 호버-숨김은 Row 조각 한 곳에만(구조 검사) → 여기선 상태로
 
-    const choose = (emoji: string) => { onSetIcon(emoji); setPickerOpen(false); setCustom(''); };
+    const choose = (emoji: string) => { onSetIcon?.(emoji); setPickerOpen(false); setCustom(''); };
 
     const btn = 'flex items-center gap-1 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05]';
 
@@ -511,7 +513,7 @@ function PageHeader(props: {
                                 className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-[13px] text-text outline-none"
                             />
                             {icon && (
-                                <button type="button" onClick={() => { onSetIcon(undefined); setPickerOpen(false); }}
+                                <button type="button" onClick={() => { onSetIcon?.(undefined); setPickerOpen(false); }}
                                     className={btn}><Icon name="trash" size={12} /> 지우기</button>
                             )}
                         </div>

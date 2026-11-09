@@ -5,14 +5,14 @@
  *   손 편집은 전부 model.ts 순수 함수로 돌린 뒤 저장(applyEdit) · 특별 적용·일정은 schedule.ts.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { DateField, Icon, IconPicker, TitleField, undoKey } from '../../../pane-ui-system';
+import { DateField, Icon, undoKey } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — table 약속(값은 host.modules.use('table')).
 import type { TableApi } from '../../sheet/contracts/table';
 import { useActiveSheet, setActiveSheet } from '../store';
 import {
     subscribeNodes, getSheetNodes, getSpecialNodes, dataOf, typeOf, applyEdit, applySpecialMeta,
-    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash, renameNode, sheetIconOf, setSheetIcon, stepEdit,
+    createSpecial, duplicateSheet, specialsOf, parentSheetOf, getNodesApi, inTrash, stepEdit,
 } from '../nodes';
 import { StartScreen } from './StartScreen';
 import {
@@ -22,7 +22,8 @@ import {
 } from '../model';
 import { SimpleGrid, TableGrid, type GridColumn, type GridRowHead, type GridCellView, type GridSelection } from './grid-slot';
 
-export function GridTab({ host }: { host?: PluginHost }) {
+export function GridTab({ host, leafId }: { host?: PluginHost; leafId?: string }) {
+    const Header = getNodesApi()?.Header;
     const tableApi = host?.modules.use<TableApi>('table') ?? null;
     const activeId = useActiveSheet();
     // 노드가 바뀔 때만 다시 그린다(둘 다 같은 recompute 로 갱신 — 편집도 여기로 전파된다).
@@ -46,7 +47,6 @@ export function GridTab({ host }: { host?: PluginHost }) {
 
     const nCols = columnCount(data.columns);
     const nRows = rowCount(data);
-    const node = getNodesApi()?.get(activeId);
 
     const columns: GridColumn[] = Array.from({ length: nCols }, (_, c) => ({ key: `c${c}`, title: colName(data, c) }));
     const rows: GridRowHead[] = data.rows.map((r) => ({ key: r.id, title: r.name, start: r.range.start, end: r.range.end }));
@@ -83,9 +83,8 @@ export function GridTab({ host }: { host?: PluginHost }) {
                 <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <IconPicker icon={sheetIconOf(activeId)} onSetIcon={(i) => setSheetIcon(activeId, i)} sizeClass="text-[18px]"
-                    fallback={<Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />} />
-                <TitleField value={node?.name ?? '시간표'} onRename={(n) => renameNode(activeId, n)} className="font-medium flex-1" />
+                {Header && <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-[18px]"
+                    fallback={<Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />} />}
                 {kind === 'special' && <span className="text-[11px] text-accent">특별 시간표</span>}
                 {kind === 'special' && (
                     <button type="button" className={btn} onClick={() => { const p = parentSheetOf(activeId); if (p) getNodesApi()?.open(p); }}>

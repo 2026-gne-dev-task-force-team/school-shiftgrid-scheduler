@@ -10,7 +10,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, restoreDest, purge, purgeAll, toggleCollapse, parentOf,
-    isDescendant, setData as setDataTree, newFolderParent, topmostOnly, violatesUnique,
+    isDescendant, setData as setDataTree, setField, newFolderParent, topmostOnly, violatesUnique,
 } from './model/tree';
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from './model/selection';
 import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from './model/types';
@@ -102,7 +102,8 @@ function nodeEqual(a: Node | undefined, b: Node | undefined): boolean {
     if (a === b) return true;
     if (!a || !b) return false;
     if (a.id !== b.id || a.type !== b.type || a.name !== b.name
-        || a.collapsed !== b.collapsed || a.trashedFrom !== b.trashedFrom || a.data !== b.data) return false;
+        || a.collapsed !== b.collapsed || a.trashedFrom !== b.trashedFrom || a.data !== b.data
+        || a.icon !== b.icon || a.body !== b.body) return false;
     if (a.children.length !== b.children.length) return false;
     for (let i = 0; i < a.children.length; i++) if (a.children[i] !== b.children[i]) return false;
     return true;
@@ -599,6 +600,12 @@ export function apiRemove(id: string): void {
 export function apiSetData(id: string, data: unknown): void {
     if (!state.tree.nodes[id]) return;
     apply((t) => setDataTree(t, id, data));
+}
+
+/** 공통 머리 칸 쓰기 — 주인 검사 없음(사람 글 · 되돌리기 더미에 쌓인다). 본문 속은 page-doc 주인만 안다. */
+export function apiSetField(id: string, key: 'icon' | 'body', value: unknown): void {
+    if (!state.tree.nodes[id]) return;
+    apply((t) => setField(t, id, key, value));
 }
 
 /** 유도 자식 다시 계산 — 그 노드 캐시만 버리고 다시 그리게 한다(나무는 안 바뀐다). */
