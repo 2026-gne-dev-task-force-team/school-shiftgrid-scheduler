@@ -7,7 +7,7 @@
  */
 import { Fragment, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, ConfirmDialog, ContextMenu, Icon, IconButton, usePeekBar, type MenuEntry } from '../../../pane-ui-system';
+import { Button, ConfirmDialog, ContextMenu, Icon, IconButton, usePeekBar, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import { runCommand } from '../../../pane-ui-system/plugin';
 import type { NodeFrameProps } from '../contracts/nodes';
 import { parentOf } from '../model/tree';
@@ -45,6 +45,8 @@ export function frameMenu(nodeId: string, extra: MenuEntry[] | undefined, ops: {
     return out;
 }
 
+const EDITABLE = 'input, textarea, [contenteditable="true"], [contenteditable=""]';
+
 export function NodeFrame({
     nodeId, leafId, onBack, backLabel = '목록', actions, menu, toolbar, headerExtra, width = 'full', scroll = false,
     fallback, titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
@@ -55,6 +57,10 @@ export function NodeFrame({
     const [ask, setAsk] = useState<string | null>(null);
     const root = useRef<HTMLDivElement>(null);
     const node = tree.nodes[nodeId];
+    // R6: 틀의 빈 곳 우클릭 = ⋯ 메뉴와 같은 항목(안쪽 화면이 제 메뉴를 먼저 열었으면 그쪽이 이긴다)
+    const trigger = useContextTrigger((x, y) => {
+        setPop({ x, y, items: frameMenu(nodeId, menu, { rename: focusTitle, ask: askTrash }) });
+    }, (t) => !!t.closest(EDITABLE));
     if (!node) return null;
 
     const focusTitle = () => {
@@ -124,7 +130,7 @@ export function NodeFrame({
     }
 
     return (
-        <div ref={root} className="h-full flex flex-col min-h-0" data-nf={nodeId}>
+        <div ref={root} className="h-full flex flex-col min-h-0" data-nf={nodeId} {...trigger}>
             {slot
                 ? createPortal(bar, slot)
                 : <div className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">{bar}</div>}

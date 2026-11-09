@@ -18,15 +18,16 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
-    Icon, IconButton, Surface,
+    ContextMenu, Icon, IconButton, Surface, useContextTrigger, type MenuEntry,
     monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell, type PeekHandle,
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
 import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
-import { createEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
+import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { daysSelection, dayInSelection, type CalSelection } from '../selection';
 import { layoutWeek, overflowOf, type WeekBar } from './week-bars';
@@ -164,16 +165,27 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
         if (id) card.open(id);
     };
-    const onCellDouble = (e: ReactMouseEvent) => {
-        const t = e.target as HTMLElement;
-        if (t.closest('[data-event-id]')) return;              // 일정 위 더블클릭은 생성이 아니다
-        const iso = t.closest('[data-day]')?.getAttribute('data-day');
-        if (!iso) return;
+    const newAllDay = (iso: string) => {
         const start = parseLocal(iso);
         if (Number.isNaN(start.getTime())) return;
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
         if (id) card.open(id);
     };
+    const onCellDouble = (e: ReactMouseEvent) => {
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-event-id]')) return;              // 일정 위 더블클릭은 생성이 아니다
+        const iso = t.closest('[data-day]')?.getAttribute('data-day');
+        if (iso) newAllDay(iso);
+    };
+    // R6 우클릭: 일정 → 열기·휴지통 · 날 칸 → 새 일정
+    const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const ctxTrigger = useContextTrigger((x, y, ev) => {
+        const t = ev.target as HTMLElement;
+        const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
+        const iso = t.closest('[data-day]')?.getAttribute('data-day');
+        if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
+        else if (iso) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAllDay(iso) }] });
+    });
 
     // 범위 선택 — 빈 칸을 죽 끌어 날짜 범위를 고른다(일정 생성 아님). anchor 는 여기서 쥐고 Shift 확장 때 그대로 쓴다.
     const selAnchor = useRef<string | null>(null);
@@ -425,7 +437,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                 onScroll={onScroll}
                 onClick={onCellClick}
                 onDoubleClick={onCellDouble}
-                {...rangeSel.bind}
+                {...mergeBind(rangeSel.bind, ctxTrigger)}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
             >
                 <div
@@ -445,6 +457,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                 ))}
                 <div style={{ height: Math.max(0, total - vis.end) * rowH }} />
             </div>
+            {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
         </div>
     );
 }

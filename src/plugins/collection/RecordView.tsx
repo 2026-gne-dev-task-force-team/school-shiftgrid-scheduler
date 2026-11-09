@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Button, Icon, IconButton, IconPicker, Tooltip, parseClipboard } from '../../pane-ui-system';
+import { Button, ContextMenu, Icon, IconButton, IconPicker, Tooltip, parseClipboard, useContextTrigger, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
@@ -178,6 +178,24 @@ export function RecordView<T>({
         onDeleteRecords(liveSelected);
         setSelected(new Set());
     };
+
+    // R6 우클릭: 줄·칸 → 줄 메뉴 · 칸 머리 → 칸 메뉴(머리 ⋯ 와 같은 것) · 빈 곳 → 새로 만들기. 입력칸 안은 기본 메뉴
+    const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const ctxTrigger = useContextTrigger((x, y, ev) => {
+        const t = ev.target as HTMLElement;
+        const headKey = t.closest('[data-rv-head]')?.getAttribute('data-rv-head');
+        if (headKey) { setHeadMenu({ key: headKey, rect: new DOMRect(x, y, 0, 0) }); return; }
+        const rowId = t.closest('[data-rv-row]')?.getAttribute('data-rv-row');
+        const items: MenuEntry[] = [];
+        if (rowId) {
+            if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => onOpenRecord(rowId) });
+            if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
+            if (treeOn && tree) items.push({ label: '들여쓰기', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기', onClick: () => tree.onOutdent(rowId) });
+            if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
+        }
+        if (!rowId && onAddRecord) items.push({ label: '새로 만들기', icon: 'plus', onClick: onAddRecord });
+        if (items.length) setCtx({ x, y, items });
+    }, (t) => !!t.closest('input, textarea, select'));
 
     // ── 칸 폭 끌기 ───────────────────────────────────────────────────────────
     const drag = useRef<{ key: string; startX: number; startW: number } | null>(null);
@@ -416,7 +434,7 @@ export function RecordView<T>({
             )}
 
             {/* 표 — 가로·세로 스크롤은 이 칸이 쥔다(좁은 화면은 가로 스크롤) */}
-            <div ref={gridRef} tabIndex={-1} data-rv-grid onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
+            <div ref={gridRef} tabIndex={-1} data-rv-grid {...ctxTrigger} onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
                 <div style={{ minWidth: totalWidth }} className="text-text">
                     {/* 머리줄 */}
                     <div className="flex sticky top-0 z-10 bg-panel2 border-b border-line select-none h-header">
@@ -613,6 +631,8 @@ export function RecordView<T>({
                     </div>
                 </div>
             </div>
+
+            {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
 
             {/* 칸 추가 — 타입 고르기 */}
             {addMenu && (

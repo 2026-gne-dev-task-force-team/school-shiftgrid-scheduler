@@ -60,7 +60,7 @@
     "ctxDirect": 0
   },
   "plugins/page": {
-    "bareButton": 3,
+    "bareButton": 2,
     "arbPx": 8,
     "cmdIdString": 0,
     "ctxDirect": 0
@@ -123,6 +123,6 @@
     "bareButton": 26,
     "arbPx": 67,
     "cmdIdString": 0,
-    "ctxDirect": 7
+    "ctxDirect": 6
   }
 }

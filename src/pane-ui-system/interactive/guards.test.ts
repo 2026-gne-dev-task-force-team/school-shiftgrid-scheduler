@@ -21,11 +21,21 @@ describe('installContextMenuGuard', () => {
         document.body.innerHTML = '<div id="cell"><span id="x">19</span></div>';
         expect(rightClick(document.getElementById('x')!)).toBe(true);
     });
-    it('입력칸·본문 글(select-text)은 기본 메뉴를 그대로 둔다', () => {
+    it('입력칸 안은 기본 메뉴를 그대로 둔다', () => {
         off = installContextMenuGuard();
-        document.body.innerHTML = '<input id="i"><div class="select-text"><p id="p">글</p></div>';
+        document.body.innerHTML = '<input id="i"><div contenteditable="true"><p id="p">글</p></div>';
         expect(rightClick(document.getElementById('i')!)).toBe(false);
         expect(rightClick(document.getElementById('p')!)).toBe(false);
+    });
+    it('본문 글(select-text)은 글자를 고른 때만 기본 메뉴 — 안 고르면 막는다(Q6)', () => {
+        off = installContextMenuGuard();
+        document.body.innerHTML = '<div class="select-text"><p id="p">글자 내용</p></div>';
+        const p = document.getElementById('p')!;
+        expect(rightClick(p)).toBe(true);
+        const r = document.createRange(); r.selectNodeContents(p);
+        document.getSelection()!.removeAllRanges(); document.getSelection()!.addRange(r);
+        expect(rightClick(p)).toBe(false);
+        document.getSelection()!.removeAllRanges();
     });
     it('걷으면(dispose) 더는 막지 않는다', () => {
         installContextMenuGuard()();

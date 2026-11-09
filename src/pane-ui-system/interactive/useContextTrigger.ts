@@ -8,7 +8,15 @@
 import { useEffect, useRef } from 'react';
 import { LONG_PRESS_MS } from './timing';
 
-export function useContextTrigger(onOpen: (x: number, y: number, e: Event) => void) {
+// 🔑 겹친 자리(틀 안의 표 안의 칸)에서 안쪽이 먼저 열었으면 바깥은 안 연다 — 이벤트 하나에 메뉴 하나(Q6).
+const handled = new WeakSet<Event>();
+/** 메뉴 자신(포털이지만 React 이벤트는 부모로 올라온다)에서 한 우클릭·길게 누르기는 새 메뉴를 열지 않는다 */
+const inMenu = (t: Element | null) => !!t?.closest?.('[role="menu"]');
+
+/**
+ * @param skip 이 자리(예: 입력칸·글 쓰는 줄)에서는 우클릭을 가로채지 않는다 — 브라우저 기본 메뉴(맞춤법·붙여넣기)가 그대로 뜬다
+ */
+export function useContextTrigger(onOpen: (x: number, y: number, e: Event) => void, skip?: (target: Element) => boolean) {
     const timer = useRef<number | null>(null);
     const start = useRef<{ x: number; y: number } | null>(null);
 
@@ -20,17 +28,21 @@ export function useContextTrigger(onOpen: (x: number, y: number, e: Event) => vo
 
     return {
         onContextMenu: (e: React.MouseEvent) => {
+            if (e.defaultPrevented || handled.has(e.nativeEvent) || inMenu(e.target as Element)) return;
+            if (skip && skip(e.target as Element)) return;
             e.preventDefault();
+            handled.add(e.nativeEvent);
             clear();
             onOpen(e.clientX, e.clientY, e.nativeEvent);
         },
         onPointerDown: (e: React.PointerEvent) => {
-            if (e.pointerType === 'mouse') return;   // 마우스는 onContextMenu 가 맡는다
+            if (e.pointerType === 'mouse') return;   // 마우스는 contextmenu 가 맡는다
+            if (inMenu(e.target as Element) || (skip && skip(e.target as Element))) return;
             const nat = e.nativeEvent;
             const x = e.clientX;
             const y = e.clientY;
             start.current = { x, y };
-            timer.current = window.setTimeout(() => { onOpen(x, y, nat); clear(); }, LONG_PRESS_MS);
+            timer.current = window.setTimeout(() => { if (!handled.has(nat)) { handled.add(nat); onOpen(x, y, nat); } clear(); }, LONG_PRESS_MS);
         },
         onPointerMove: (e: React.PointerEvent) => {
             const s = start.current;

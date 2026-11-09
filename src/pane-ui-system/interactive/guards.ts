@@ -18,6 +18,9 @@
 export const SELECTABLE_SELECTOR =
     'input, textarea, [contenteditable="true"], [contenteditable=""], .select-text, .view-body';
 
+/** 글을 쓰는 자리 — 우클릭 기본 메뉴를 늘 살리는 곳(Q6: 입력칸 안 · 글자를 고른 상태에서만 기본 메뉴, 나머지는 창틀 메뉴) */
+const EDITABLE_SELECTOR = 'input, textarea, [contenteditable="true"], [contenteditable=""]';
+
 /**
  * 전역 contextmenu 를 막는다 — 위 예외 자리 안에서는 기본 메뉴를 그대로 둔다(붙여넣기).
  *   🔴 우리 우클릭 메뉴(useContextTrigger·useDragLeaf)는 제 자리에서 이미 preventDefault 하고 뜬다 —
@@ -27,7 +30,8 @@ export const SELECTABLE_SELECTOR =
 export function installContextMenuGuard(doc: Document = document): () => void {
     const onContextMenu = (e: MouseEvent) => {
         const t = e.target as Element | null;
-        if (t && t.closest(SELECTABLE_SELECTOR)) return;   // 입력칸·본문 — 기본 메뉴 허용
+        if (t && t.closest(EDITABLE_SELECTOR)) return;                     // 입력칸 안 — 기본 메뉴(맞춤법·붙여넣기)
+        if (t && t.closest(SELECTABLE_SELECTOR) && !(doc.getSelection()?.isCollapsed ?? true)) return;   // 글자를 고른 상태 — 복사
         e.preventDefault();
     };
     doc.addEventListener('contextmenu', onContextMenu);
