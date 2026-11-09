@@ -49,9 +49,9 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                 >
                     <Icon name="left" size={12} /> 목록
                 </button>
-                <div className="mb-6 flex items-center gap-2">
+                <div className="mb-6 flex">
                     {Header
-                        ? <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-3xl" titleClass="flex-1 text-3xl font-bold leading-tight tracking-tight"
+                        ? <Header nodeId={activeId} leafId={leafId} variant="page"
                             fallback={<Icon name="table" size={30} className="text-muted" />} />
                         : <h1 className="text-[32px] font-bold leading-tight tracking-tight text-text truncate select-none">{node.name}</h1>}
                 </div>

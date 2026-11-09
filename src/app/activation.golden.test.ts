@@ -98,11 +98,12 @@ describe('선언한 약속마다 사람 이름(label)이 비어 있지 않다', 
 });
 
 describe('속성 칸 — 노드 타입마다 주인이 칸을 낸다', () => {
-    it('사람·방·일정·페이지·레코드 행·사용자·역할·구독에 속성 칸이 있고, 비밀엔 없다', () => {
+    it('일정·페이지·사용자·역할·구독에 속성 칸이 있고, 비밀엔 없다 — 사람·방·레코드 행은 「열기」 페이지로 연다(속성 패널 없음)', () => {
         activateAll(PLUGINS);
-        for (const type of ['people.person', 'rooms.room', 'calendar.event', 'page.page', 'collection.row', 'account.user', 'account.role', 'calendar-subscribe.subscription']) {
+        for (const type of ['calendar.event', 'page.page', 'account.user', 'account.role', 'calendar-subscribe.subscription']) {
             expect(listPropertiesPanes(type).length, `${type} 에 속성 칸이 없다`).toBeGreaterThan(0);
         }
+        for (const type of ['people.person', 'rooms.room', 'collection.row']) expect(listPropertiesPanes(type), `${type} 은 열기 페이지로 — 속성 패널 칸 없음`).toEqual([]);
         expect(listPropertiesPanes('account.secret')).toEqual([]);
         expect(listPropertiesPanes('account.cred-secret')).toEqual([]);
     });

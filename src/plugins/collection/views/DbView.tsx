@@ -62,7 +62,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <div className="shrink-0 px-6 pt-6 pb-2 flex items-end gap-3">
-                {Header && <Header nodeId={id} leafId={leaf.id} iconSizeClass="text-[28px]" titleClass="flex-1 text-[28px] font-bold leading-tight tracking-tight"
+                {Header && <Header nodeId={id} leafId={leaf.id} variant="page"
                     fallback={<Icon name="table" size={26} className="text-muted" />} />}
                 {snap.trashedRows > 0 && (
                     <button type="button" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}
@@ -89,6 +89,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                     onPaste={onPaste}
                     onReorder={(rowId, beforeId) => reorderRow(id, rowId, beforeId)}
                     // 줄 열기(→) — 미리보기에 그 줄의 칸들 + 페이지 문서(노션 줄 열기)
+                    iconOf={(rowId) => getNodesApi()?.get(rowId)?.icon}
                     onOpenRecord={(rowId) => peek.show(<RowDoc host={host} dbId={id} rowId={rowId} />, { wideMin: 480 })}
                     tree={{
                         parentOf: (r) => (r.__parent as string | null) ?? null,

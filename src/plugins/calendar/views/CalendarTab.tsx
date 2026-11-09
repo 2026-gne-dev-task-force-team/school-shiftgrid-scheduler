@@ -12,7 +12,7 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useEffect, useState } from 'react';
-import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { Button, Icon, type PeekHandle } from '../../../pane-ui-system';
 import { getNodesApi } from '../nodes';
 import { MonthView } from './MonthView';
 import { YearView } from './YearView';
@@ -65,21 +65,6 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
     const Header = getNodesApi()?.Header;
     const switcher = (
         <div className="flex items-center gap-1 ml-1">
-            {scopeStore && (
-                <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-line text-[12px]" title={`「${scopeStore.name}」 저장소 범위`}>
-                    {/* 탭 안에서 바로 아이콘·이름 바꾸기(쥔님 2026-11-09 「페이지 플러그인처럼」) */}
-                    {Header && <Header nodeId={scopeStore.id} iconSizeClass="text-body" titleClass="w-[9rem] text-[12px]"
-                        fallback={<Icon name="folder" size={12} className="shrink-0 text-accent" />} />}
-                    <button
-                        type="button"
-                        onClick={() => setScope(null)}
-                        className="ml-0.5 px-1 rounded text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
-                        title="전체 저장소 보기"
-                    >
-                        전체
-                    </button>
-                </span>
-            )}
             {selection && (
                 <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-accent/60 bg-accent/[0.08] text-[12px]" title="고른 범위">
                     <span className="truncate max-w-[18rem] text-text tabular-nums">{selectionLabel(selection)}</span>
@@ -114,7 +99,7 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
 
     // 🔴 peek 을 쓰는 뷰(월·시간축·일정)만 받는다 — 년·간트는 일정 카드가 없다. 범위 선택(selection·onSelect)은 모두 받는다.
     const sel = { selection, onSelect: setSelection };
-    switch (mode) {
+    const view = (() => { switch (mode) {
         case 'year': return <YearView value={anchor} onChange={setAnchor} trailing={switcher} {...sel} />;
         case 'week': return <TimeGridView days={7} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
         case '3day': return <TimeGridView days={3} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
@@ -123,5 +108,16 @@ export function CalendarTab({ peek, host }: { peek: PeekHandle; host?: PluginHos
         case 'dense': return <TimeGridView days={DENSE_DAYS} value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
         case 'gantt': return <GanttView value={anchor} onChange={setAnchor} trailing={switcher} {...sel} />;
         default: return <MonthView value={anchor} onChange={setAnchor} trailing={switcher} peek={peek} {...sel} />;
-    }
+    } })();
+    // 저장소를 열었으면 맨 위에 다른 노드 화면과 같은 머리줄(아이콘·제목) + 「전체」로 되돌리기(쥔님 2026-11-02 범위 · 2026-11-09 얼굴 통일).
+    if (!scopeStore || !Header) return view;
+    return (
+        <div className="h-full flex flex-col min-h-0">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-line shrink-0">
+                <Header nodeId={scopeStore.id} fallback={<Icon name="folder" size={15} className="shrink-0 text-accent" />} />
+                <Button size="sm" variant="plain" className="shrink-0 whitespace-nowrap" title="전체 저장소 보기" onClick={() => setScope(null)}>전체</Button>
+            </div>
+            <div className="flex-1 min-h-0">{view}</div>
+        </div>
+    );
 }

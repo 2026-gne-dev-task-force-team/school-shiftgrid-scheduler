@@ -53,8 +53,8 @@ export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }
             onSetIcon={(i) => getNodesApi()?.setIcon(activeId, i)}
             onBack={() => setActivePage(null)}
             renderHeader={Header && ((onEnter) => (
-                <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-4xl"
-                    titleClass="flex-1 text-3xl font-bold" titleAriaLabel="페이지 제목" titlePlaceholder="제목 없음"
+                <Header nodeId={activeId} leafId={leafId} variant="page"
+                    titleAriaLabel="페이지 제목" titlePlaceholder="제목 없음"
                     onTitleEnter={onEnter} fallback={<Icon name="fileText" size={32} className="text-muted" />} />
             ))}
         />
@@ -79,9 +79,11 @@ export interface PageEditorProps {
     onBack?: () => void;
     /** 주면 큰 제목 자리를 이걸로(노드 공통 머리 nodes.Header) — 없으면 내장 PageHeader. onEnter = 본문 첫 블록으로. */
     renderHeader?: (onEnter: () => void) => ReactNode;
+    /** 머리 밑·본문 위에 놓을 것(레코드 열기 페이지의 속성 목록) — 제목·속성·본문이 한 왼쪽 선. */
+    properties?: ReactNode;
 }
 
-export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack, renderHeader }: PageEditorProps) {
+export function PageEditor({ host, docKey: activeId, load, save, title, onRename, icon, onSetIcon, onBack, renderHeader, properties }: PageEditorProps) {
     const [hist, setHist] = useState<History<Page>>(() => initHistory(emptyPage()));
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [focusIntent, setFocusIntent] = useState<FocusIntent | null>(null);
@@ -423,7 +425,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                     className="max-w-3xl mx-auto px-6 py-8"
                     onMouseDown={(e) => { if (e.target === e.currentTarget) { setActiveBlockId(null); setSlash(null); } }}
                 >
-                    {renderHeader ? <div className="mb-1 flex items-center gap-2" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader
+                    {renderHeader ? <div className="mb-1 flex" key={activeId}>{renderHeader(titleEnterToBody)}</div> : <PageHeader
                         key={activeId}
                         initialName={title}
                         icon={icon}
@@ -431,6 +433,7 @@ export function PageEditor({ host, docKey: activeId, load, save, title, onRename
                         onEnter={titleEnterToBody}
                         onSetIcon={onSetIcon}
                     />}
+                    {properties && <div className="mb-3">{properties}</div>}
                     {page.blocks.map((b, i) => (
                         <BlockRow
                             key={b.id}

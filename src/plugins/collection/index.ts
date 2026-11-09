@@ -16,8 +16,6 @@ import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { recordViewApi } from './api';
 import { DbView } from './views/DbView';
-import { RowProps } from './RowProps';
-import { ROW_TYPE } from './schema';
 import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, getMenuTarget, restoreTrashedRows } from './nodes';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'collection.' 를 붙인다). contributes 엔 접두사 없는 'db' 로.
@@ -70,12 +68,9 @@ export const collectionPlugin = definePlugin({
             ribbon: [{ commandId: 'collection.open', icon: 'layers', order: 20 }],
             // 🔴 노드 타입 둘(레코드 뷰·행) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: recordNodeTypes,
-            // 🔴 속성 칸 — 탐색기에서 행을 고르면 그 행의 칸들이 뜬다(노션 행 열기 결)
-            properties: [{ target: ROW_TYPE, id: 'row', title: '행', pane: 'RowProps' }],
         },
     },
 
-    panes: { RowProps },
     components: {
         // 옛 연습장 탭 자동 정리 — host·leaf 를 받아 닫고 레코드 뷰로 잇는다(위 redirect).
         LegacyPlayground: LegacyPlaygroundRedirect,

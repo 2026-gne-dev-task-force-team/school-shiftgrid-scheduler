@@ -3,7 +3,7 @@
  *   저장은 손님 몫 — value(불투명)를 주고 onChange 로 돌려받는다. 편집기는 그 값의 속을 손님에게 안 보인다.
  *   ⛔ 손님은 이 타입만 import type 한다(값은 host.modules.use('page-doc')).
  */
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 
 export interface PageDocProps {
@@ -19,6 +19,8 @@ export interface PageDocProps {
     /** 노드 공통 아이콘(손님이 쥔다) — onSetIcon 이 없으면 아이콘 고르기를 안 그린다. */
     icon?: string;
     onSetIcon?(icon: string | undefined): void;
+    /** 머리 밑·본문 위에 놓을 것(레코드의 속성 목록) — 노션 행 열기: 머리 · 속성 · 본문. */
+    properties?: ReactNode;
 }
 
 export interface PageDocApi {

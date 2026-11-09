@@ -83,7 +83,7 @@ export function GridTab({ host, leafId }: { host?: PluginHost; leafId?: string }
                 <button type="button" className={btn} title="시간표 목록" onClick={() => { setActiveSheet(null); }}>
                     <Icon name="left" size={12} /> 목록
                 </button>
-                {Header && <Header nodeId={activeId} leafId={leafId} iconSizeClass="text-[18px]"
+                {Header && <Header nodeId={activeId} leafId={leafId}
                     fallback={<Icon name={kind === 'special' ? 'sparkles' : 'schedule'} size={15} className="text-muted" />} />}
                 {kind === 'special' && <span className="text-[11px] text-accent">특별 시간표</span>}
                 {kind === 'special' && (
