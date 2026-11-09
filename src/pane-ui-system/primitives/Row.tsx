@@ -14,6 +14,7 @@ import { Icon, type IconName } from './Icon';
 
 export function Row({
     icon,
+    glyph,
     label,
     active = false,
     onClick,
@@ -26,6 +27,8 @@ export function Row({
     rowId,
 }: {
     icon?: IconName;
+    /** 글자 아이콘(이모지) — 있으면 icon 대신 그린다 */
+    glyph?: string;
     label: ReactNode;
     active?: boolean;
     onClick?: (e: MouseEvent) => void;
@@ -86,7 +89,9 @@ export function Row({
                 }
             }}
         >
-            {icon && <Icon name={icon} size={15} className="shrink-0" />}
+            {glyph
+                ? <span className="shrink-0 w-4 text-center text-small leading-none" aria-hidden="true">{glyph}</span>
+                : icon && <Icon name={icon} size={15} className="shrink-0" />}
             <span className="flex-1 min-w-0 truncate text-[13px] leading-none">{label}</span>
             {end && (
                 <span

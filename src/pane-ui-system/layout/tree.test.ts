@@ -12,7 +12,7 @@ import {
     type Workspace, type Node,
     leaf, tabs, split, emptyWorkspace, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, areaOfLeaf,
+    closeOthers, closeToRight, areaOfLeaf, withLeafGlyph,
     findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
 } from './tree';
 
@@ -227,6 +227,16 @@ describe('activateLeaf', () => {
     it('그 leaf 가 든 tabs 의 활성을 바꾼다', () => {
         const ws = activateLeaf(wsThree(), 'c');
         if (ws.center.kind === 'tabs') expect(ws.center.activeId).toBe('c');
+        expect(violations(ws)).toEqual([]);
+    });
+});
+
+describe('withLeafGlyph (탭 아이콘 · V2)', () => {
+    it('고르면 그 leaf 만 glyph 가 붙고, 지우면 빠지고, 같은 값이면 ws 를 그대로 돌려 준다', () => {
+        const ws = withLeafGlyph(wsThree(), 'b', '📌');
+        expect(flatten(ws.center).map((l) => l.glyph)).toEqual([undefined, '📌', undefined]);
+        expect(withLeafGlyph(ws, 'b', '📌')).toBe(ws);
+        expect(flatten(withLeafGlyph(ws, 'b', undefined).center).map((l) => l.glyph)).toEqual([undefined, undefined, undefined]);
         expect(violations(ws)).toEqual([]);
     });
 });

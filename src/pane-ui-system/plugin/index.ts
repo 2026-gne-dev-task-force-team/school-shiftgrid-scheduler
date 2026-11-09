@@ -33,7 +33,7 @@ export {
 } from './registry';
 export { ViewPlaceholder } from './Placeholder';
 export {
-    setWorkspaceBridge, setLeafTitle, disposeOwner, listRibbonActions,
+    setWorkspaceBridge, setLeafTitle, setLeafGlyph, disposeOwner, listRibbonActions,
     useContribVersion, useStatusItems, listStatusItems,
     listSettings, listCommands, getCommand, runCommand, listTabMenu, getNewTab, fireWorkspace,
     listContributions, listPropertiesPanes,

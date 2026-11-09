@@ -21,10 +21,11 @@ const host = {
 
 let root: Root; let container: HTMLDivElement;
 const titles: [string, string][] = [];
+const glyphs: [string, string | undefined][] = [];
 
 beforeEach(async () => {
-    clearTypes(); clearDerived(); titles.length = 0;
-    setWorkspaceBridge({ open: () => null, close: () => {}, setTitle: (l, t) => { titles.push([l, t]); } });
+    clearTypes(); clearDerived(); titles.length = 0; glyphs.length = 0;
+    setWorkspaceBridge({ open: () => null, close: () => {}, setTitle: (l, t) => { titles.push([l, t]); }, setGlyph: (l, g) => { glyphs.push([l, g]); } });
     await initStore(host);
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
     newFolder();
@@ -57,6 +58,14 @@ describe('nodes.Header', () => {
         const pick = [...document.body.querySelectorAll('button')].find((b) => b.textContent === '📌')!;
         act(() => { pick.click(); });
         expect(getState().tree.nodes[id].icon).toBe('📌');
+    });
+
+    it('V2: 아이콘을 고르면 그 탭 아이콘(setGlyph)도 바뀐다', () => {
+        const id = getState().selectedId!;
+        act(() => { root.render(<NodeHeader nodeId={id} leafId="leaf1" />); });
+        act(() => { (container.querySelector('button[aria-label="아이콘 고르기"]') as HTMLElement).click(); });
+        act(() => { [...document.body.querySelectorAll('button')].find((b) => b.textContent === '📌')!.click(); });
+        expect(glyphs.at(-1)).toEqual(['leaf1', '📌']);
     });
 
     it('제목에서 Enter 면 이름을 확정하고 onTitleEnter 를 부른다(IME 조합 중엔 안 부른다)', () => {

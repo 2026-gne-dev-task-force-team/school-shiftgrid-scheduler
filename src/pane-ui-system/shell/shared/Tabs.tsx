@@ -18,6 +18,8 @@ export interface TabItem {
     title: string;
     /** 탭 앞 아이콘 — 뷰 등록소가 준다. 없으면 기본 네모 */
     icon?: IconName;
+    /** 글자 아이콘(노드 머리에서 고른 이모지) — 있으면 icon 대신 그린다 */
+    glyph?: string;
 }
 
 /** 나가는 탭(③) — 모델에선 이미 빠졌지만 폭이 줄며 사라질 때까지 DOM 에 남겨 둔다 */
@@ -163,7 +165,7 @@ export function Tabs({
                     if (t.exiting) {
                         return (
                             <CollapsingTab key={t.id}>
-                                <Row icon={t.icon ?? 'table'} label={t.title} active={false} variant={variant} className={baseCls} title={t.title} />
+                                <Row icon={t.icon ?? 'table'} glyph={t.glyph} label={t.title} active={false} variant={variant} className={baseCls} title={t.title} />
                             </CollapsingTab>
                         );
                     }
@@ -176,6 +178,7 @@ export function Tabs({
                             key={t.id}
                             rowId={t.id}
                             icon={t.icon ?? 'table'}
+                            glyph={t.glyph}
                             label={t.title}
                             active={isActive}
                             sep={sep}

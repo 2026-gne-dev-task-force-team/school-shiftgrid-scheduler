@@ -98,10 +98,10 @@ export function NodeFrame({
         </>
     );
     const header: ReactNode = (
-        <div className="flex items-end gap-3 min-w-0">
-            <NodeHeader nodeId={nodeId} leafId={leafId} fallback={fallback ?? <Icon name={iconOf(node)} size={30} className="text-muted" />}
+        <div className="flex items-center gap-3 min-w-0">
+            <NodeHeader nodeId={nodeId} leafId={leafId} fallback={fallback ?? <Icon name={iconOf(node)} size={22} className="text-muted" />}
                 titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={onTitleEnter} onRename={onRename} />
-            {headerExtra && <div className="shrink-0 pb-1 text-small text-muted tabular-nums">{headerExtra}</div>}
+            {headerExtra && <div className="shrink-0 text-small text-muted tabular-nums">{headerExtra}</div>}
         </div>
     );
 
@@ -112,8 +112,8 @@ export function NodeFrame({
     } else if (scroll) {
         body = (
             <div className="flex-1 min-h-0 overflow-auto">
-                <div className={`${col} px-6 pt-6 pb-16`}>
-                    <div className="mb-4">{header}</div>
+                <div className={`${col} px-6 pt-3 pb-16`}>
+                    <div className="mb-2">{header}</div>
                     {toolbar}
                     {children}
                 </div>
@@ -122,7 +122,7 @@ export function NodeFrame({
     } else {
         body = (
             <>
-                <div className={`shrink-0 ${col} px-6 pt-4 pb-2`}>{header}</div>
+                <div className={`shrink-0 ${col} px-6 pt-3 pb-1`}>{header}</div>
                 {toolbar && <div className={`shrink-0 ${col}`}>{toolbar}</div>}
                 <div className="flex-1 min-h-0">{children}</div>
             </>

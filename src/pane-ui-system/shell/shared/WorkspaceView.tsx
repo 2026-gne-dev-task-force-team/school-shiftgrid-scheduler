@@ -104,7 +104,7 @@ interface Edges {
 
 function toItems(leaves: Leaf[]): TabItem[] {
     // 🔴 제목은 leafTitle 로 — 사용자가 안 바꿨으면 뷰 등록소의 현재 이름(옛 저장값이 안 남는다)
-    return leaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: getView(l.viewId)?.icon }));
+    return leaves.map((l) => ({ id: l.id, title: leafTitle(l), icon: getView(l.viewId)?.icon, glyph: l.glyph }));
 }
 
 export function WorkspaceView({
