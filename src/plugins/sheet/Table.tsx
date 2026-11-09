@@ -598,7 +598,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             {tools.map((t, i) => t === '|'
                 ? <span key={`sep${i}`} className="mx-1 h-4 w-px bg-line" />
                 : (
-                    <Button key={t.id} variant="plain" size="sm" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
+                    <Button key={t.id} variant="plain" size="sm" className="shrink-0 whitespace-nowrap" data-testid={`tool-${t.id}`} title={t.title} disabled={!t.on}
                         // 누를 때 표 포커스·선택을 뺏지 않는다(고른 범위 기준으로 동작해야 한다)
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={(e) => t.run(e)}>
