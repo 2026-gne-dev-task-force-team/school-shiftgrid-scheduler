@@ -7,7 +7,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { RecordViewApi } from '../../collection/contracts/collection';
 import { getRecord, nodeKindOf, setRecordValue, renameRecord, setAccountBody } from '../core';
 import { useAccountVersion, allPermissions } from './useAccount';
-import { accountFields, canEdit } from './fields';
+import { accountFields, canEdit, userValues } from './fields';
 import { CredentialSlots } from './CredentialSlots';
 
 export function RecordPage({ id, host }: { id: string; host?: PluginHost }) {
@@ -26,7 +26,7 @@ export function RecordPage({ id, host }: { id: string; host?: PluginHost }) {
             host={host}
             id={id}
             fields={accountFields(kind)}
-            values={{ ...rec.values, name: rec.name }}
+            values={{ ...(kind === 'users' ? userValues(id, rec.values) : rec.values), name: rec.name }}
             onChange={edit ? (key, v) => setRecordValue(id, key, v) : undefined}
             onRename={(n) => renameRecord(id, n)}
             onBody={(v) => setAccountBody(id, v)}

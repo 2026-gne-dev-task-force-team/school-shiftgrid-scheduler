@@ -15,13 +15,14 @@ import {
 } from '../core';
 import { setActiveAccountNode } from '../nodes';
 import { useAccountVersion, allPermissions } from './useAccount';
-import { accountFields, canEdit, type AccountKind } from './fields';
+import { accountFields, canEdit, userValues, type AccountKind } from './fields';
 import { RecordPage } from './RecordPage';
 
 type Row = { id: string } & Record<string, RecordCellValue>;
 
 function recordsModel(kind: AccountKind) {
-    const rows: Row[] = (kind === 'users' ? listUsers() : listRoles()).map((r) => ({ ...r.values, name: r.name, id: r.id }));
+    const rows: Row[] = (kind === 'users' ? listUsers() : listRoles())
+        .map((r) => ({ ...(kind === 'users' ? userValues(r.id, r.values) : r.values), name: r.name, id: r.id }));
     return {
         rows, fields: accountFields(kind),
         canAdd: can(`account.${kind}.create`), canDelete: can(`account.${kind}.delete`), canEdit: canEdit(kind),
