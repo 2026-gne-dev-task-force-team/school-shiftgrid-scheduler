@@ -415,6 +415,8 @@ export async function setupAndLogin(userId: string, methodId: string, password: 
     setSession(userSession(userId, true));
     return 'ok';
 }
+/** 고를 수 있는 자격증명 종류(설정 화면·사용자 추가 폼이 쓴다). */
+export const credentialMethods = (): { id: string; title: string }[] => credMethods();
 /** 자격증명 상태 글(계산 칸 · W13) — 값은 안 보인다. */
 export function credStateOf(userId: string): '설정됨' | '설정 대기' { return hasUserSecret(userId) ? '설정됨' : '설정 대기'; }
 
@@ -485,6 +487,32 @@ export function createRole(name: string, opts?: { permissions?: string[]; level?
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
 export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
+
+// ── 목록에서 지우기 + 되돌리기(W9) — 여러 줄을 한 묶음(batch)으로 휴지통에 보내고, 마지막 묶음을 제자리로 되살린다 ──
+let lastRemoved: { id: string; parent: string; index: number }[] = [];
+/** 사용자·역할 여러 개를 한 번에 휴지통으로 — 지운 개수를 돌려준다(되돌리기는 restoreLastRemoved). */
+export function removeAccountRecords(ids: string[]): number {
+    const api = nodesApi;
+    if (!api || ids.length === 0) return 0;
+    const taken = ids.flatMap((id) => {
+        const parent = api.parent(id);
+        if (!parent) return [];
+        return [{ id, parent, index: api.children(parent).findIndex((c) => c.id === id) }];
+    });
+    api.batch(() => { for (const t of taken) api.remove(t.id); });
+    lastRemoved = taken;
+    return taken.length;
+}
+/** 마지막으로 지운 묶음을 원래 폴더·자리로 되살린다 — 아직 휴지통에 있는 것만. 되살린 개수. */
+export function restoreLastRemoved(): number {
+    const api = nodesApi;
+    if (!api) return 0;
+    const back = lastRemoved.filter((t) => api.get(t.id) && api.get(t.parent) && api.parent(t.id) !== t.parent);
+    if (back.length === 0) return 0;
+    api.batch(() => { for (const t of [...back].sort((a, b) => a.index - b.index)) api.move(t.id, t.parent, Math.max(0, t.index)); });
+    lastRemoved = [];
+    return back.length;
+}
 /** 사용자·역할 목록의 순서 바꾸기 — beforeId 앞으로(null 이면 끝). 같은 폴더 안에서만. */
 export function reorderAccount(id: string, beforeId: string | null): void {
     const parent = nodesApi?.parent(id);
