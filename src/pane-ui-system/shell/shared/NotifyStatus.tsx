@@ -12,7 +12,7 @@ import {
 import { LEVEL_STYLE, ownerName } from './Toasts';
 
 function timeText(at: number): string {
-    try { return new Date(at).toLocaleString(); } catch { return ''; }
+    try { return new Date(at).toLocaleString('ko-KR'); } catch { return ''; }
 }
 
 function Entry({ it }: { it: NotifyItem }) {

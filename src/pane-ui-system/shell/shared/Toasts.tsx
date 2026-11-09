@@ -9,10 +9,10 @@ import { FOCUS_RING } from '../../primitives/focus';
 import { Icon, type IconName } from '../../primitives/Icon';
 
 export const LEVEL_STYLE: Record<NotifyLevel, { icon: IconName; bar: string; text: string }> = {
-    info: { icon: 'info', bar: 'border-accent', text: 'text-accent' },
-    success: { icon: 'check', bar: 'border-ok', text: 'text-ok' },
-    warn: { icon: 'warn', bar: 'border-warn', text: 'text-warn' },
-    error: { icon: 'warn', bar: 'border-bad', text: 'text-bad' },
+    info: { icon: 'info', bar: 'border-l-accent', text: 'text-accent' },
+    success: { icon: 'check', bar: 'border-l-ok', text: 'text-ok' },
+    warn: { icon: 'warn', bar: 'border-l-warn', text: 'text-warn' },
+    error: { icon: 'warn', bar: 'border-l-bad', text: 'text-bad' },
 };
 
 /** 보낸 꾸러미의 사람 이름 — 모르면 비운다 */
