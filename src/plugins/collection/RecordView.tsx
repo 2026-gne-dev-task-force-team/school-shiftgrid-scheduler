@@ -23,6 +23,7 @@ import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { isImeEnter } from './fields/ime';
 import { newField } from './schema';
+import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
     DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews,
 } from './view-state';
@@ -116,7 +117,17 @@ export function RecordView<T>({
     }, [controlled, onViewsChange, viewKey]);
     /** 여러 셀을 한 묶음으로(되돌리기 한 칸) — onCellsChange 가 없으면 한 칸씩 흉내 */
     const changeCells = (changes: CellChange[]) => {
-        const live = changes.filter((c) => !byKey.get(c.key)?.readOnly);
+        const writable = changes.filter((c) => !byKey.get(c.key)?.readOnly);
+        // 🔴 「유일」 칸 — 겹치는 값을 쓰는 변경은 뺀다(한 칸 편집·채우기·여러 줄 바꾸기·되돌린 붙여넣기 모두 이 한 곳을 지난다)
+        const { kept: live, rejected } = filterUniqueChanges(writable, records.map((r) => getId(r)),
+            (id, key) => { const r = records.find((x) => getId(x) === id); return r ? rawValue(r, key) as RecordCellValue | undefined : undefined; },
+            new Set(fields.filter((f) => f.unique).map((f) => f.key)));
+        if (rejected.length > 0) {
+            const f = byKey.get(rejected[0].key);
+            setUniqueMsg(rejected.length === 1 && writable.length === 1
+                ? `「${f?.label ?? ''}」 칸은 유일해야 합니다 — 「${String(rejected[0].value ?? '')}」 값은 이미 다른 줄에 있습니다.`
+                : `「${f?.label ?? ''}」 칸은 유일해야 합니다 — 겹치는 ${rejected.length}칸은 건너뛰었습니다.`);
+        } else if (writable.length > 0) setUniqueMsg(null);
         if (live.length === 0) return;
         if (onCellsChange) onCellsChange(live);
         else for (const c of live) onCellChange?.(c.id, c.key, c.value);
@@ -127,6 +138,8 @@ export function RecordView<T>({
     }, [views, view, fields, commitViews]);
 
     const [search, setSearch] = useState('');
+    // 「유일」 칸에 막힌 편집의 이유 — 표 위 경고 줄(다음 편집이 통하면 지운다)
+    const [uniqueMsg, setUniqueMsg] = useState<string | null>(null);
     const coarse = useCoarsePointer();
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [hoverRow, setHoverRow] = useState<string | null>(null);
@@ -300,6 +313,18 @@ export function RecordView<T>({
         });
         setHeadMenu(null);
     };
+    /** 「유일」 켜기/끄기 — 이미 겹친 값이 있으면 켜지 않고 이유를 보인다. */
+    const toggleUnique = (key: string) => {
+        const f = byKey.get(key);
+        if (!f) return;
+        setHeadMenu(null);
+        if (!f.unique) {
+            const dup = firstDuplicate(records.map((r) => rawValue(r, key) as RecordCellValue | undefined));
+            if (dup !== null) { setUniqueMsg(`「${f.label}」 칸에 같은 값(「${dup}」)이 이미 여러 줄에 있어 유일을 켤 수 없습니다 — 먼저 겹친 값을 고치세요.`); return; }
+        }
+        setUniqueMsg(null);
+        onFieldsChange?.(fields.map((x) => (x.key === key ? (x.unique ? (({ unique: _u, ...rest }) => { void _u; return rest; })(x) : { ...x, unique: true }) : x)));
+    };
     const addField = (type: string) => {
         const def = fieldTypes.get(type);
         if (!def) return;
@@ -338,7 +363,11 @@ export function RecordView<T>({
         e.preventDefault();
         const width = Math.max(...matrix.map((r) => r.length));
         const keys: (string | null)[] = Array.from({ length: width }, (_, i) => visibleFields[i]?.key ?? null);
-        onPaste({ keys, rows: matrix });
+        // 🔴 「유일」 칸 — 기존 값·앞서 붙인 줄과 겹치는 칸은 비우고(그 칸만 건너뜀) 몇 칸 건너뛰었는지 알린다
+        const uniq = filterUniquePaste(keys, matrix, (k) => records.map((r) => rawValue(r, k) as RecordCellValue | undefined),
+            new Set(fields.filter((f) => f.unique).map((f) => f.key)));
+        setUniqueMsg(uniq.skipped > 0 ? `유일 칸에서 이미 있는 값과 겹친 ${uniq.skipped}칸은 비워 두고 붙여넣었습니다.` : null);
+        onPaste({ keys, rows: uniq.rows });
     };
     const focusGrid = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('input,textarea,select,button,[data-rv-cell]')) return;
@@ -464,6 +493,14 @@ export function RecordView<T>({
                         <Icon name="trash" size={13} />삭제
                     </button>
                     <button type="button" onClick={() => setSelected(new Set())} className="h-row px-2 rounded text-[12px] text-muted hover:text-text">해제</button>
+                </div>
+            )}
+
+            {uniqueMsg && (
+                <div role="alert" data-rv-unique-msg className="flex items-center gap-2 px-2 py-1 border-b border-line bg-warn/10 text-[12px] text-text shrink-0">
+                    <Icon name="warn" size={13} className="text-warn shrink-0" />
+                    <span className="flex-1 min-w-0">{uniqueMsg}</span>
+                    <IconButton icon="x" label="닫기" size={12} onClick={() => setUniqueMsg(null)} />
                 </div>
             )}
 
@@ -596,7 +633,7 @@ export function RecordView<T>({
                                                 field={f}
                                                 rowValue={r}
                                                 editable={canEditCell(f)}
-                                                onChange={(val) => onCellChange?.(id, f.key, val)}
+                                                onChange={(val) => changeCells([{ id, key: f.key, value: val }])}
                                                 onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => setOptions(f.key, o) : undefined}
                                             />
                                         </div>
@@ -721,6 +758,12 @@ export function RecordView<T>({
                                             </button>
                                         ))}
                                     </div>
+                                    {!f.locked && (
+                                        <button type="button" data-rv-unique aria-pressed={!!f.unique} onClick={() => toggleUnique(f.key)}
+                                            className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
+                                            <Icon name={f.unique ? 'check' : 'key'} size={14} />{f.unique ? '유일 끄기' : '유일(같은 값 막기)'}
+                                        </button>
+                                    )}
                                     {!locked && (
                                         <button type="button" data-rv-del-field onClick={() => deleteField(f.key)} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-bad hover:bg-bad/10 text-left">
                                             <Icon name="trash" size={14} />칸 삭제

@@ -47,6 +47,8 @@ export interface RecordField {
     readOnly?: boolean;
     /** 참이면 「기본 칸」 — 지우기·타입 바꾸기 금지(이름표는 바꿀 수 있다). 제목 칸(titleKey)도 같은 취급 */
     locked?: boolean;
+    /** 참이면 「유일」 — 같은 칸에 같은 값(앞뒤 공백·대소문자 무시)이 두 줄에 못 들어간다. 빈 값은 겹침으로 안 센다(Q11 W10) */
+    unique?: boolean;
     /** 칸 아이콘(이모지 한 글자) — 없으면 타입 아이콘. 칸 머리 메뉴에서 고르고 속성 줄도 같이 쓴다 */
     icon?: string;
     /** 칸 설명 — 칸 머리·속성 줄 이름표에 올리면 툴팁으로 뜬다(기본 칸은 `defineCollection` 이 채운다) */

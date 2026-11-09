@@ -421,3 +421,47 @@ describe('P2 — 행 포커스에서 Tab 들여쓰기 / Shift+Tab 내어쓰기',
         expect(outdent).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('Q11 W10 — 칸 옵션 「유일」', () => {
+    function pasteInto(el: Element, text: string) {
+        const ev = new Event('paste', { bubbles: true, cancelable: true }) as Event & { clipboardData: unknown };
+        ev.clipboardData = { getData: (t: string) => (t === 'text/plain' ? text : '') };
+        act(() => { el.dispatchEvent(ev); });
+    }
+    const turnOn = () => { click(q('[data-rv-head-menu="f_x"]')); click(q('[data-rv-unique]')); };
+
+    it('칸 메뉴로 켜고 · 겹치는 값 편집은 거부 + 경고 줄 · 다른 값은 통하고 경고가 사라진다', () => {
+        const spy = spies();
+        mount(<Harness init={[{ id: 'r1', f_t: 'a', f_x: 'Kim' }, { id: 'r2', f_t: 'b', f_x: '' }]} spy={spy} />);
+        turnOn();
+        expect((spy.fields.mock.calls[0][0] as RecordField[]).find((f) => f.key === 'f_x')!.unique).toBe(true);
+        click(q('[data-rv-row="r2"] [data-rv-cell="f_x"]'));
+        setInput(q('[data-rv-editing]') as HTMLInputElement, ' kim ');   // 공백·대소문자 무시
+        key(q('[data-rv-editing]')!, 'Enter');
+        expect(spy.cell).not.toHaveBeenCalled();
+        expect(q('[role="alert"][data-rv-unique-msg]')!.textContent).toContain('이미 다른 줄에 있습니다');
+        click(q('[data-rv-row="r2"] [data-rv-cell="f_x"]'));
+        setInput(q('[data-rv-editing]') as HTMLInputElement, 'Lee');
+        key(q('[data-rv-editing]')!, 'Enter');
+        expect(spy.cell).toHaveBeenCalledWith('r2', 'f_x', 'Lee');
+        expect(q('[data-rv-unique-msg]')).toBeNull();
+    });
+
+    it('이미 겹친 값이 있으면 켜지 않고 이유를 보인다', () => {
+        const spy = spies();
+        mount(<Harness init={[{ id: 'r1', f_t: 'a', f_x: 'x' }, { id: 'r2', f_t: 'b', f_x: 'X' }]} spy={spy} />);
+        turnOn();
+        expect(spy.fields).not.toHaveBeenCalled();
+        expect(q('[data-rv-unique-msg]')!.textContent).toContain('유일을 켤 수 없습니다');
+    });
+
+    it('🔴 붙여넣기도 같은 검사 — 기존 값·앞 줄과 겹치는 칸만 비우고 몇 칸인지 알린다', () => {
+        const spy = spies();
+        mount(<Harness init={[{ id: 'r1', f_t: 'a', f_x: 'kim' }]} spy={spy} />);
+        turnOn();
+        pasteInto(q('[data-rv-grid]')!, '가\tKIM\n나\tlee\n다\tLee\n라\tpark');
+        const req = spy.paste.mock.calls[0][0] as PasteRequest;
+        expect(req.rows).toEqual([['가', ''], ['나', 'lee'], ['다', ''], ['라', 'park']]);
+        expect(q('[data-rv-unique-msg]')!.textContent).toContain('2칸');
+    });
+});
