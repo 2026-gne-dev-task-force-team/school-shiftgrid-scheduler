@@ -27,4 +27,15 @@ describe('프로젝트 암호 해제 확인창', () => {
         expect(setPw).toHaveBeenCalledWith('', '');
         act(() => { root.unmount(); });
     });
+
+    it('새 암호를 비운 채 「암호 바꾸기」도 같은 확인창을 탄다', async () => {
+        setPw.mockClear();
+        const el = document.createElement('div'); document.body.appendChild(el);
+        const root = createRoot(el);
+        act(() => { root.render(<ProjectPasswordPane />); });
+        await act(async () => { btn('암호 바꾸기').click(); });
+        expect(setPw).not.toHaveBeenCalled();
+        expect(document.body.textContent).toContain('프로젝트 암호를 해제할까요?');
+        act(() => { root.unmount(); });
+    });
 });

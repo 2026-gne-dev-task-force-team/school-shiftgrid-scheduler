@@ -91,7 +91,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
     // 편집기가 매기는 새 id(행·열) — 내장 되돌리기가 add↔remove 를 짝 맞추려면 안정된 id 가 필요하다.
     const idSeq = useRef(0);
-    const genIds = (n: number): string[] => Array.from({ length: n }, () => `tbl_${idSeq.current++}`);
+    const genIds = (n: number): string[] => {
+        const used = new Set(rowsRef.current.map((r) => r.id));   // 다시 열린 표엔 옛 tbl_N 이 남아 있다 — 겹치면 건너뛴다
+        return Array.from({ length: n }, () => { let id: string; do { id = `tbl_${idSeq.current++}`; } while (used.has(id)); used.add(id); return id; });
+    };
     const genColKey = (): string => `col_${idSeq.current++}`;
 
     const colOf = (c: number) => columns[c];
