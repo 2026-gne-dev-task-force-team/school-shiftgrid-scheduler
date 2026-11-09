@@ -5,13 +5,13 @@
  *   만들기·고치기·지우기는 각 권한(can)으로 가린다.
  */
 import { useEffect, useState } from 'react';
-import { Icon, type PeekHandle } from '../../../pane-ui-system';
+import { EmptyState, Icon, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 컬렉션 약속 타입은 컬렉션 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField, RecordCellValue } from '../../collection/contracts/collection';
 import {
     can, listUsers, listRoles, createUser, createRole,
-    reorderAccount, setRecordValue, setFolderFields, accountFolderId, getNodesApi, removeAccountRecords,
+    reorderAccount, setRecordValue, setFolderFields, accountFolderId, getNodesApi, removeAccountRecords, removeAndNotify,
 } from '../core';
 import { NewUserDialog } from './NewUserDialog';
 import { setActiveAccountNode } from '../nodes';
@@ -55,27 +55,21 @@ function permsModel() {
 
 export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 'perms'; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     useAccountVersion();   // 사용자·역할이 바뀌면 다시 그린다
-    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
+    const bar = useFrameToolbar();   // Frame 툴바 자리(Q12)
     const [adding, setAdding] = useState(false);   // 「새 사용자」 폼(사용자 목록만)
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
     useEffect(() => () => hidePeek?.(), [hidePeek, kind]);
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
-    if (!rv) return <p className="p-4 text-small text-muted">컬렉션 꾸러미가 꺼져 있어 목록을 그릴 수 없습니다.</p>;
+    if (!rv) return <EmptyState icon="warn" title="목록을 그릴 수 없습니다" description="컬렉션 꾸러미가 꺼져 있습니다." />;
     const m = kind === 'perms' ? permsModel() : recordsModel(kind);
     // 🔴 줄 열기는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 레코드 페이지를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
     const open = (id: string) => {
         if (!peek) { setActiveAccountNode(id); return; }
         peek.show(<RecordPage id={id} host={host} />, { wideMin: 480 });
     };
-    // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」가 그 묶음을 제자리로(account.restoreRemoved)
-    const remove = (ids: string[]) => {
-        const n = removeAccountRecords(ids);
-        if (n > 0) host?.notify({
-            title: `${kind === 'users' ? '사용자' : '역할'} ${n}개를 휴지통으로 옮겼습니다`,
-            action: { label: '되돌리기', commandId: 'account.restoreRemoved' }, key: 'account.removed', timeout: 8000,
-        });
-    };
+    // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」는 노드 시스템 정식 되돌리기(nodes.cmd.undo)
+    const remove = (ids: string[]) => { if (host) removeAndNotify(host, kind, ids); else removeAccountRecords(ids); };
     const { RecordView } = rv;
     const fid = accountFolderId(kind);
     const Frame = getNodesApi()?.Frame;
@@ -85,7 +79,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
             <RecordView<Row>
                 fields={m.fields}
                 records={m.rows}
-                toolbarHost={fid && Frame ? barHost : undefined}
+                toolbarHost={fid && Frame ? bar.host : undefined}
                 getId={(r) => r.id}
                 viewKey={`account.${kind}`}
                 titleKey="name"
@@ -105,5 +99,5 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
             }} />}
         </div>
     );
-    return fid && Frame ? <Frame nodeId={fid} leafId={leafId} toolbar={<div ref={setBarHost} />} fallback={fallback}>{table}</Frame> : table;
+    return fid && Frame ? <Frame nodeId={fid} leafId={leafId} toolbar={bar.slot} fallback={fallback}>{table}</Frame> : table;
 }

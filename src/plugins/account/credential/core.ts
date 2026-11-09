@@ -17,13 +17,7 @@ let nodesUnsub: Disposable | null = null;
 let promptImpl: (methodId: string, userId: string) => Promise<string | null> = requestSecret;
 
 /** 🔴 W9(Q11) — 탐색기 byType 은 휴지통 노드도 준다. 휴지통 아래(조상 어디든)의 비밀은 「없는 것」으로 친다. */
-function inTrash(id: string): boolean {
-    if (!nodesApi) return false;
-    const trash = nodesApi.roots.trash;
-    for (let p = nodesApi.parent(id), guard = 0; p && guard < 1000; p = nodesApi.parent(p), guard++) if (p === trash) return true;
-    return false;
-}
-function liveByType(type: string): PublicNode[] { return (nodesApi?.byType(type) ?? []).filter((n) => !inTrash(n.id)); }
+function liveByType(type: string): PublicNode[] { return nodesApi?.liveByType(type) ?? []; }
 
 /** 옛 'credential-local.secret' 노드가 남아 있으면 'account.cred-secret' 로 자동 이사하고 옛 노드를 치운다. */
 function migrateLegacySecrets(): void {

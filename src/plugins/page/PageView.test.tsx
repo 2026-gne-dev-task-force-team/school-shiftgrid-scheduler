@@ -27,6 +27,8 @@ const fakeNodes = {
     parent: () => null,
     children: () => [],   // Q8: 본문의 하위 페이지 줄을 맞추느라 자식을 묻는다 — 이 테스트의 페이지엔 자식이 없다
     batch: (fn: () => void) => fn(),
+    isTrashed: () => false,   // R5-8 정식 휴지통 판정 — 이 테스트의 페이지는 휴지통 밖
+    liveByType: (type: string) => [...store.values()].filter((n) => n.type === type) as unknown as PublicNode[],
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 

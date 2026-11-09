@@ -30,6 +30,8 @@ const fakeNodes = {
     batch: (fn: () => void) => fn(),
     subscribe: () => ({ dispose() {} }),
     byType: () => [],
+    liveByType: () => [],
+    isTrashed: (id: string) => { for (let p: string | null | undefined = id; p; p = store.get(p)?.parent) if (p === 'trash') return true; return false; },   // 정식 판정 흉내(자기·조상이 휴지통)
     roots: { main: 'main', trash: 'trash' },
 } as unknown as NodesApi;
 

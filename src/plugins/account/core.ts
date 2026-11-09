@@ -63,13 +63,8 @@ function userSession(id: string, verified: boolean): CurrentUser {
  * 🔴 W9(Q11) — 탐색기 byType 은 휴지통 노드도 돌려준다. 계정은 휴지통 아래(조상 어디든)를 뺀 「산」 노드만 읽는다.
  *   (지운 사용자가 목록에 남고 · 지운 암호가 「걸려 있음」으로 남고 · 지운 계정 루트를 계속 찾던 버그)
  */
-function inTrash(id: string): boolean {
-    if (!nodesApi) return false;
-    const trash = nodesApi.roots.trash;
-    for (let p = nodesApi.parent(id), guard = 0; p && guard < 1000; p = nodesApi.parent(p), guard++) if (p === trash) return true;
-    return false;
-}
-function liveByType(type: string): PublicNode[] { return (nodesApi?.byType(type) ?? []).filter((n) => !inTrash(n.id)); }
+const inTrash = (id: string): boolean => nodesApi?.isTrashed(id) ?? false;   // 정식 창구(R5-8) — 부모 사슬을 손으로 타지 않는다
+function liveByType(type: string): PublicNode[] { return nodesApi?.liveByType(type) ?? []; }
 function secretNode(): PublicNode | undefined { return liveByType(SECRET_TYPE)[0]; }
 function hasSecret(): boolean { return !!secretNode(); }
 /** 사용자·역할 레코드의 칸 값(그 타입이 아니면 null) — 컬렉션 레코드와 같은 data.values. */
@@ -488,30 +483,31 @@ export function createRole(name: string, opts?: { permissions?: string[]; level?
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
 export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
 
-// ── 목록에서 지우기 + 되돌리기(W9) — 여러 줄을 한 묶음(batch)으로 휴지통에 보내고, 마지막 묶음을 제자리로 되살린다 ──
-let lastRemoved: { id: string; parent: string; index: number }[] = [];
-/** 사용자·역할 여러 개를 한 번에 휴지통으로 — 지운 개수를 돌려준다(되돌리기는 restoreLastRemoved). */
+// ── 목록에서 지우기 + 되돌리기(W9) — 여러 줄을 한 묶음(batch = 되돌리기 한 칸)으로 휴지통에 보낸다 ──
+//    🔴 되돌리기는 자체 통로가 아니라 노드 시스템의 정식 되돌리기(nodes.cmd.undo)다 — 알림 단추가 대상 토큰(undoTop)을 싣는다(C1).
+/** 사용자·역할 여러 개를 한 번에 휴지통으로 — 지운 개수를 돌려준다. */
 export function removeAccountRecords(ids: string[]): number {
     const api = nodesApi;
     if (!api || ids.length === 0) return 0;
-    const taken = ids.flatMap((id) => {
-        const parent = api.parent(id);
-        if (!parent) return [];
-        return [{ id, parent, index: api.children(parent).findIndex((c) => c.id === id) }];
-    });
-    api.batch(() => { for (const t of taken) api.remove(t.id); });
-    lastRemoved = taken;
-    return taken.length;
+    const live = ids.filter((id) => api.parent(id));
+    if (live.length === 0) return 0;
+    api.batch(() => { for (const id of live) api.remove(id); });
+    return live.length;
 }
-/** 마지막으로 지운 묶음을 원래 폴더·자리로 되살린다 — 아직 휴지통에 있는 것만. 되살린 개수. */
-export function restoreLastRemoved(): number {
+/** 지우고 「되돌리기」 알림까지 — 알림 단추는 nodes.cmd.undo + 방금 쌓인 더미 칸 토큰. 지운 개수. */
+export function removeAndNotify(host: PluginHost, kind: 'users' | 'roles' | 'perms', ids: string[]): number {
+    const n = removeAccountRecords(ids);
+    if (n === 0) return 0;
     const api = nodesApi;
-    if (!api) return 0;
-    const back = lastRemoved.filter((t) => api.get(t.id) && api.get(t.parent) && api.parent(t.id) !== t.parent);
-    if (back.length === 0) return 0;
-    api.batch(() => { for (const t of [...back].sort((a, b) => a.index - b.index)) api.move(t.id, t.parent, Math.max(0, t.index)); });
-    lastRemoved = [];
-    return back.length;
+    const token = api?.undoToken() ?? null;
+    host.notify({
+        title: `${kind === 'users' ? '사용자' : '역할'} ${n}개를 휴지통으로 옮겼습니다`,
+        action: api && token !== null
+            ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }
+            : undefined,
+        key: 'account.removed', timeout: 8000,
+    });
+    return n;
 }
 /** 사용자·역할 목록의 순서 바꾸기 — beforeId 앞으로(null 이면 끝). 같은 폴더 안에서만. */
 export function reorderAccount(id: string, beforeId: string | null): void {

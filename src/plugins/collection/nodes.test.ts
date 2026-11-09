@@ -43,6 +43,7 @@ function fakeApi() {
         subscribe: (fn) => { listeners.add(fn); return { dispose() { listeners.delete(fn); } }; },
         roots: { main: 'root', trash: 'trash' },
         isTrashed,
+        undoToken: () => null,
         liveByType: (t) => [...nodes.values()].filter((n) => n.type === t && !isTrashed(n.id)) as unknown as PublicNode[],
         cmd: { undo: 'explorer.undo', redo: 'explorer.redo' } as unknown as NodesApi['cmd'],
     };

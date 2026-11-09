@@ -5,10 +5,10 @@
  *   ⭐ W8 — 「로그아웃」은 명령 account.logout 하나를 부른다(명령 팔레트와 같은 길). 손님엔 숨김.
  *   Enter = 제출 · Esc = 닫기(팝오버) · 입력 칸은 열리면 바로 초점.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Button, Popover, Select, TextInput } from '../../../pane-ui-system';
+import { Button, Popover, Select, TextInput, isImeEnter } from '../../../pane-ui-system';
 import {
     getCurrent, loginMaster, openAccount, checkLoginId, loginWithPassword, setupAndLogin, credentialMethods,
 } from '../core';
@@ -30,12 +30,6 @@ export function AccountStatus({ host }: { host: PluginHost }) {
     const [target, setTarget] = useState<{ userId: string; name: string } | null>(null);
     const [msg, setMsg] = useState('');
     const [busy, setBusy] = useState(false);
-
-    // 🔴 화면(메뉴→아이디→설정)·메시지로 팝오버 키가 바뀌면 자리를 다시 잰다 — 상태바 단추 위로 접혀 화면 밖으로 안 나가게
-    //    (Popover 는 anchor 가 바뀔 때만 다시 재므로 새 사각형을 건넨다 · anchor 를 deps 에 안 넣어 되먹임이 없다)
-    useEffect(() => {
-        setAnchor((a) => (a && btnRef.current ? btnRef.current.getBoundingClientRect() : a));
-    }, [view, msg]);
 
     const cur = getCurrent();
     const isMaster = cur.kind === 'master';
@@ -106,9 +100,9 @@ export function AccountStatus({ host }: { host: PluginHost }) {
     };
     const doLogout = () => { close(); host.commands.run(LOGOUT_CMD); };
 
-    /** Enter 제출 — 한글 조합 중 Enter 는 넘긴다. Esc 는 Popover 가 닫는다. */
+    /** Enter 제출 — 한글 조합 중 Enter 는 넘긴다. Esc 는 Popover 가 닫는다. 화면이 바뀌어 키가 달라지면 Popover 의 ResizeObserver 가 자리를 다시 잰다(위로 뒤집힘 포함). */
     const onEnter = (fn: () => void) => (e: KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); fn(); }
+        if (e.key === 'Enter' && !isImeEnter(e)) { e.preventDefault(); fn(); }
     };
     const back = (v: View) => <Button variant="ghost" size="sm" onClick={() => go(v)}>뒤로</Button>;
     const msgEl = msg ? <p role="alert" data-acc-msg className="text-note text-warn">{msg}</p> : null;
