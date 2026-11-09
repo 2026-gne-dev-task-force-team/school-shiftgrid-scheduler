@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RecordView } from '../RecordView';
 import type { RecordField, RecordTree } from '../contracts/collection';
+import { rowDropZone } from '../logic';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -33,26 +34,29 @@ function setup(treeOver: Partial<RecordTree<R>> = {}) {
     return { tree, onReorder };
 }
 
-/** 끌기 이벤트 — jsdom 엔 DragEvent 가 없어 평범한 Event 에 좌표·dataTransfer 를 달아 보낸다 */
-function drag(el: Element, type: string, clientY = 0) {
-    const e = new Event(type, { bubbles: true, cancelable: true });
-    Object.defineProperty(e, 'clientY', { value: clientY });
-    Object.defineProperty(e, 'dataTransfer', { value: { setData() { /* */ }, effectAllowed: '', dropEffect: '' } });
+/** 포인터 이벤트 — useDragLeaf(마우스 경로)가 먹는 것. jsdom 엔 PointerEvent 가 없어 MouseEvent 에 pointerId·pointerType 을 단다 */
+function ptr(el: Element, type: string, y: number) {
+    const e = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: 0, clientY: y, button: 0 });
+    Object.defineProperty(e, 'pointerId', { value: 1 });
+    Object.defineProperty(e, 'pointerType', { value: 'mouse' });
     act(() => { el.dispatchEvent(e); });
-    return e;
 }
+let handle: Element | null = null;
 /** 행의 세로 범위를 0~100 으로 고정 — 위 25 · 가운데 · 아래 75 판정이 좌표로 서게 */
-const box = (id: string) => { const row = q(`[data-rv-row="${id}"]`)!; row.getBoundingClientRect = () => ({ top: 0, height: 100, bottom: 100, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON() { return {}; } }); return row; };
-const grab = (id: string) => drag(q(`[data-rv-row-drag="${id}"]`)!, 'dragstart');
+const box = (id: string, top = 0) => { const row = q(`[data-rv-row="${id}"]`)!; row.getBoundingClientRect = () => ({ top, height: 100, bottom: top + 100, left: 0, right: 100, width: 100, x: 0, y: top, toJSON() { return {}; } }); return row; };
+/** 행 손잡이를 잡고 8px 넘게 움직여 끌기를 시작한다 */
+const grab = (id: string) => { handle = q(`[data-rv-row-drag="${id}"]`)!; ptr(handle, 'pointerdown', 0); ptr(handle, 'pointermove', 20); };
+const over = (y: number) => ptr(handle!, 'pointermove', y);
+const drop = (y: number) => ptr(handle!, 'pointerup', y);
 
 describe('하위로 끌어 넣기 (V4)', () => {
     it('행 가운데에 놓으면 그 행의 하위로 — onMoveUnder(끈 행, 대상 행)', () => {
         const { tree, onReorder } = setup();
         grab('d');
         const c = box('c');
-        drag(c, 'dragover', 50);
+        over(50);
         expect(c.className).toContain('ring-accent');   // 가운데 = 행 전체가 파랗게
-        drag(c, 'drop', 50);
+        drop(50);
         expect(tree.onMoveUnder).toHaveBeenCalledWith('d', 'c');
         expect(onReorder).not.toHaveBeenCalled();
     });
@@ -60,9 +64,9 @@ describe('하위로 끌어 넣기 (V4)', () => {
         const { tree, onReorder } = setup();
         grab('d');
         const c = box('c');
-        drag(c, 'dragover', 10);
+        over(10);
         expect(c.className).toContain('border-t-accent');
-        drag(c, 'drop', 10);
+        drop(10);
         expect(onReorder).toHaveBeenCalledWith('d', 'c');
         expect(tree.onMoveUnder).not.toHaveBeenCalled();
     });
@@ -70,43 +74,42 @@ describe('하위로 끌어 넣기 (V4)', () => {
         const { onReorder } = setup();
         grab('a');
         const c = box('c');
-        drag(c, 'dragover', 90);
+        over(90);
         expect(c.className).toContain('border-b-accent');
-        drag(c, 'drop', 90);
+        drop(90);
         expect(onReorder).toHaveBeenLastCalledWith('a', 'd');
         grab('a');
-        const d = box('d');
-        drag(d, 'dragover', 90);
-        drag(d, 'drop', 90);
+        box('d', 200);
+        over(290);
+        drop(290);
         expect(onReorder).toHaveBeenLastCalledWith('a', null);
     });
     it('자기 자신·자기 자손 위에는 못 놓는다(순환) — 선도 안 뜬다', () => {
         const { tree, onReorder } = setup();
         grab('a');
         const b = box('b');   // b 는 a 의 자식
-        const e = drag(b, 'dragover', 50);
-        expect(e.defaultPrevented).toBe(false);
+        over(50);
         expect(b.className).not.toContain('ring-accent');
-        drag(b, 'drop', 50);
+        drop(50);
         expect(tree.onMoveUnder).not.toHaveBeenCalled();
         expect(onReorder).not.toHaveBeenCalled();
     });
     it('접힌 행 가운데에 놓으면 넣은 뒤 펼친다', () => {
         const { tree } = setup({ collapsed: (id) => id === 'c' });
         grab('d');
-        const c = box('c');
-        drag(c, 'dragover', 50);
-        drag(c, 'drop', 50);
+        box('c');
+        over(50);
+        drop(50);
         expect(tree.onMoveUnder).toHaveBeenCalledWith('d', 'c');
         expect(tree.onToggleCollapse).toHaveBeenCalledWith('c');
     });
     it('onMoveUnder 가 없으면 가운데도 순서(앞/뒤 둘로 나뉜다) — 하위로는 안 들어간다', () => {
         const { onReorder } = setup({ onMoveUnder: undefined });
         grab('d');
-        const c = box('c');
-        drag(c, 'dragover', 50);
-        expect(c.className).not.toContain('ring-accent');
-        drag(c, 'drop', 30);
+        box('c');
+        over(50);
+        expect(q('[data-rv-row="c"]')!.className).not.toContain('ring-accent');
+        drop(30);
         expect(onReorder).toHaveBeenCalled();
     });
 });
@@ -117,5 +120,26 @@ describe('「하위로」 단추 삭제 (V4)', () => {
         act(() => { q('[data-rv-row="b"]')!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); });
         expect(q('[data-rv-indent]')).toBeNull();
         expect(q('[data-rv-outdent]')).toBeNull();
+    });
+});
+
+describe('행 끌기 터치화 — y 구역 번역 · 키보드 대안', () => {
+    it('rowDropZone: 하위 가능 = 위 25% 앞 · 아래 25% 뒤 · 가운데 하위 / 불가 = 반반', () => {
+        expect([0, 24, 25, 50, 75, 76, 100].map((y) => rowDropZone(y, 0, 100, true))).toEqual(['before', 'before', 'into', 'into', 'into', 'after', 'after']);
+        expect([0, 49, 50, 99].map((y) => rowDropZone(y, 0, 100, false))).toEqual(['before', 'before', 'after', 'after']);
+        expect(rowDropZone(150, 100, 100, true)).toBe('into');     // top 이 0 이 아니어도 사각형 기준
+        expect(rowDropZone(5, 0, 0, true)).toBe('into');           // 높이 0 방어
+    });
+    it('손잡이에서 Alt+↓ = 다음 행 뒤로 · Alt+↑ = 앞 행 앞으로 · 맨 앞/끝에선 무동작', () => {
+        const { onReorder } = setup();
+        const key = (id: string, k: string) => act(() => { q(`[data-rv-row-drag="${id}"]`)!.dispatchEvent(new KeyboardEvent('keydown', { key: k, altKey: true, bubbles: true, cancelable: true })); });
+        key('c', 'ArrowUp');
+        expect(onReorder).toHaveBeenLastCalledWith('c', 'b');
+        key('c', 'ArrowDown');
+        expect(onReorder).toHaveBeenLastCalledWith('c', null);   // d 뒤 = 맨 끝
+        const n = onReorder.mock.calls.length;
+        key('a', 'ArrowUp');
+        key('d', 'ArrowDown');
+        expect(onReorder.mock.calls.length).toBe(n);
     });
 });

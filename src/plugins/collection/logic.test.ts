@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-    applySorts, compareByField, deriveRows, displayText, evalFilter, filterIsEmpty, flatRules, isEmptyValue,
+    applySorts, compareByField, deriveRows, displayText, evalFilter, filterIsEmpty, flatRules, freshIds, isEmptyValue,
     matchesRule, matchesSearch, normalizeFilter, opNeedsValue, opsFor, pruneFilter, toNumber, withFlatRules,
 } from './logic';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
@@ -246,5 +246,16 @@ describe('FilterNode — 규칙·and·or 2단', () => {
         const recs = [{ id: 1, age: 20, team: 'b' }, { id: 2, age: 1, team: 'a' }, { id: 3, age: 1, team: 'b' }];
         const out = deriveRows(recs, [F.age, F.team], { search: '', filter: { or: [a, b] }, sorts: [] });
         expect(out.map((r) => r.id)).toEqual([1, 2]);
+    });
+});
+
+describe('freshIds — 새 행 전환', () => {
+    it('첫 렌더(prev 없음)는 비고, 늘어난 id 만 잡는다', () => {
+        expect([...freshIds(null, ['a', 'b'])]).toEqual([]);
+        expect([...freshIds(new Set(['a']), ['a', 'b'])]).toEqual(['b']);
+    });
+    it('한꺼번에 max 넘게 바뀌면(보기 갈아끼움) 비운다 · 줄어들면 비운다', () => {
+        expect(freshIds(new Set(['a']), ['x', 'y', 'z'], 2).size).toBe(0);
+        expect(freshIds(new Set(['a', 'b']), ['a']).size).toBe(0);
     });
 });

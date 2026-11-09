@@ -116,3 +116,11 @@ describe('🔴 label 을 키로 쓰는 코드 0건 (소스 검사)', () => {
         expect(hits).toEqual([]);
     });
 });
+
+describe('normalizeField — 유일 설정이 다시 읽어도 남는다 (R4-3)', () => {
+    it('unique: true 는 보존 · 그 밖의 값은 버린다', async () => {
+        const { normalizeField } = await import('./schema');
+        expect(normalizeField({ key: 'k', type: 'text', unique: true })?.unique).toBe(true);
+        expect(normalizeField({ key: 'k', type: 'text', unique: 'yes' })?.unique).toBeUndefined();
+    });
+});

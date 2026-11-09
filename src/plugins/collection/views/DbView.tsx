@@ -4,11 +4,11 @@
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { Button, Icon, undoKey } from '../../../pane-ui-system';
+import { Button, EmptyState, Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
@@ -29,7 +29,7 @@ function useDbSnapshot() {
 export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
     const Frame = getNodesApi()?.Frame;
-    const [barHost, setBarHost] = useState<HTMLElement | null>(null);   // Frame 툴바 자리(Q12)
+    const bar = useFrameToolbar();   // Frame 툴바 자리(Q12)
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
@@ -37,15 +37,17 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         const u = undoKey(e);
         if (u) {
             e.preventDefault();
-            host.commands.run(u === 'redo' ? 'explorer.redo' : 'explorer.undo');
+            const cmd = getNodesApi()?.cmd;
+            if (cmd) host.commands.run(u === 'redo' ? cmd.redo : cmd.undo);
         }
     }, [host]);
 
-    if (!snap) {
+    // 🔴 휴지통에 든 컬렉션은 그리지도 편집도 받지 않는다(페이지·시트·시간표와 같은 동작) — 시작 화면으로
+    if (!snap || getNodesApi()?.isTrashed(snap.id)) {
         return <StartScreen leafId={leaf.id} />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id, doc, records } = snap;
-    if (!Frame) return <p className="p-4 text-small text-muted">노드 시스템이 꺼져 있어 화면을 그릴 수 없습니다.</p>;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="노드 시스템이 꺼져 있습니다." />;
 
     const onFieldsChange = (fields: RecordField[]) => commit(id, { fields });
     const onViewsChange = (views: ViewDef[]) => commit(id, { views });
@@ -63,15 +65,15 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
 
     return (
         <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
-            <Frame nodeId={id} leafId={leaf.id} toolbar={<div ref={setBarHost} />}
+            <Frame nodeId={id} leafId={leaf.id} toolbar={bar.slot}
                 headerExtra={snap.trashedRows > 0 && (
-                    <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id)}>
+                    <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' }))}>
                         <Icon name="undo" size={13} /> 휴지통의 행 {snap.trashedRows}개 복원
                     </Button>
                 )}>
             <div className="h-full">
                 <RecordView
-                    toolbarHost={barHost}
+                    toolbarHost={bar.host}
                     fields={doc.fields}
                     records={records}
                     getId={(r) => r.id}

@@ -82,7 +82,7 @@ export const collectionPlugin = definePlugin({
         // 보던 게 없으면 시작 화면이 뜬다(새로 만들기 + 목록) — 다른 목록 꾸러미와 같은 결(옛 「첫 것 자동 고르기」 걷음)
         'collection.open': (host: PluginHost) => { host.workspace.open(DB_ID, { where: 'center' }); },
         // 탐색기 우클릭 「휴지통의 행 N개 복원」 — 메뉴가 가리킨 레코드 뷰의 휴지통 행을 되살린다.
-        'collection.restoreTrashed': () => { const id = getMenuTarget(); if (id) restoreTrashedRows(id); },
+        'collection.restoreTrashed': (host: PluginHost) => { const id = getMenuTarget(); if (id) restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' })); },
     },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'db' 가 가리킨다(열기·새로 만들기 초기값·메뉴).
     nodeTypes: recordNodeTypeImpl,

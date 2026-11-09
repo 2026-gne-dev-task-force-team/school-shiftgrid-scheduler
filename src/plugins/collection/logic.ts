@@ -199,3 +199,20 @@ export function deriveRows<T>(records: readonly T[], fields: readonly RecordFiel
     }
     return applySorts(rows, byKey, input.sorts);
 }
+
+/** 새로 들어온 행 id — 첫 렌더(prev 없음)·한꺼번에 많이 바뀜(보기 갈아끼움)이면 비운다(전부 튀면 산만하다). 필터·정렬은 records 를 안 바꾸니 여기 안 걸린다 */
+export function freshIds(prev: ReadonlySet<string> | null, ids: readonly string[], max = 20): Set<string> {
+    if (!prev) return new Set();
+    const added = ids.filter((id) => !prev.has(id));
+    return added.length > max ? new Set() : new Set(added);
+}
+
+/**
+ * 행 끌기 놓은 자리 번역(Q8) — 행 사각형 안의 y 위치로 「앞·뒤·하위」. 포인터 좌표만 받는 순수 함수라 터치·마우스가 같다.
+ *   하위로 넣을 수 있으면(canNest) 위 25% = 앞 · 아래 25% = 뒤 · 가운데 = 하위. 못 넣으면 반으로 갈라 앞/뒤.
+ */
+export function rowDropZone(y: number, top: number, height: number, canNest: boolean): 'before' | 'into' | 'after' {
+    const f = height > 0 ? (y - top) / height : 0.5;
+    if (!canNest) return f < 0.5 ? 'before' : 'after';
+    return f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'into';
+}

@@ -11,6 +11,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { Disposable, MenuEntry, NodeTypeContribution, PluginHost } from '../../pane-ui-system/plugin';
 import type { DbDoc, RecordCellValue, RecordField, RowDoc, ViewDef } from './contracts/collection';
+import { uniqueKeyOf } from './unique';
 import { DB_TYPE, ROW_TYPE, blankDb, blankRow, isoMinute, normalizeDb, normalizeRow } from './schema';
 
 export { DB_TYPE, ROW_TYPE };
@@ -30,11 +31,7 @@ export function getActiveDb(): string | null { return activeDbId; }
 export function pickFirstDbIfNone(): void {
     const a = api;
     if (activeDbId || !a) return;
-    const inTrash = (id: string): boolean => {
-        for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true;
-        return false;
-    };
-    const first = a.byType(DB_TYPE).find((n) => !inTrash(n.id));
+    const first = a.liveByType(DB_TYPE)[0];
     if (first) setActiveDb(first.id);
 }
 
@@ -42,8 +39,7 @@ export function pickFirstDbIfNone(): void {
 export function liveDbs(): { id: string; name: string; folder: string | null }[] {
     const a = api;
     if (!a) return [];
-    const inTrash = (id: string): boolean => { for (let p = a.parent(id); p; p = a.parent(p)) if (p === a.roots.trash) return true; return false; };
-    return a.byType(DB_TYPE).filter((n) => !inTrash(n.id)).map((n) => {
+    return a.liveByType(DB_TYPE).map((n) => {
         const p = a.parent(n.id);
         return { id: n.id, name: n.name, folder: p && p !== a.roots.main ? (a.get(p)?.name ?? null) : null };
     });
@@ -52,7 +48,7 @@ export function liveDbs(): { id: string; name: string; folder: string | null }[]
 export function createDb(): string | null {
     const a = api;
     if (!a) return null;
-    const names = new Set(a.byType(DB_TYPE).map((n) => n.name));
+    const names = new Set(a.liveByType(DB_TYPE).map((n) => n.name));
     let name = '컬렉션';
     for (let i = 2; names.has(name); i++) name = `컬렉션 ${i}`;
     return a.create(a.roots.main, { type: DB_TYPE, name, data: blankDb() }) || null;
@@ -233,6 +229,70 @@ export interface DbTx {
 
 const titleText = (v: RecordCellValue | undefined): string => (v === null || v === undefined ? '' : String(v));
 
+function uniqueKeysOf(doc: DbDoc): Set<string> {
+    return new Set(doc.fields.filter((f) => f.unique).map((f) => f.key));
+}
+
+/** 줄의 칸 값(제목 칸은 값이 없으면 노드 이름) — 유일 비교용 */
+function cellOf(row: PublicNode, doc: DbDoc, key: string): RecordCellValue | undefined {
+    const v = rowOfNode(row).values[key];
+    return v !== undefined ? v : key === doc.titleKey ? row.name : undefined;
+}
+
+function liveRowNodes(dbId: string): PublicNode[] {
+    const a = api;
+    if (!a) return [];
+    const out: PublicNode[] = [];
+    const walk = (p: string) => { for (const c of a.children(p)) if (c.type === ROW_TYPE) { out.push(c); walk(c.id); } };
+    walk(dbId);
+    return out;
+}
+
+/** 셀 변경에서 유일 칸을 어기는 것을 뺀다 — unique.ts 의 filterUniqueChanges 와 같은 규칙(장부는 값→id Map). */
+function filterCellsUnique(dbId: string, doc: DbDoc, cells: DbTx['cells'] & object): NonNullable<DbTx['cells']> {
+    const keys = uniqueKeysOf(doc);
+    if (keys.size === 0 || !cells.some((c) => keys.has(c.key))) return cells;
+    const rows = liveRowNodes(dbId);
+    const ledgers = new Map<string, Map<string, string>>();   // 칸 key → (비교키 → 줄 id)
+    const owner = new Map<string, Map<string, string | null>>();   // 칸 key → (줄 id → 지금 비교키)
+    const ledger = (key: string) => {
+        let m = ledgers.get(key);
+        if (!m) {
+            m = new Map(); const o = new Map<string, string | null>();
+            for (const r of rows) { const k = uniqueKeyOf(cellOf(r, doc, key)); o.set(r.id, k); if (k !== null && !m.has(k)) m.set(k, r.id); }
+            ledgers.set(key, m); owner.set(key, o);
+        }
+        return { m, o: owner.get(key)! };
+    };
+    const kept: NonNullable<DbTx['cells']> = [];
+    for (const c of cells) {
+        if (!keys.has(c.key)) { kept.push(c); continue; }
+        const { m, o } = ledger(c.key);
+        const k = uniqueKeyOf(c.value);
+        if (k !== null) { const hit = m.get(k); if (hit && hit !== c.id) continue; }
+        const old = o.get(c.id) ?? null;
+        if (old !== null && m.get(old) === c.id) m.delete(old);
+        if (k !== null) m.set(k, c.id);
+        o.set(c.id, k);
+        kept.push(c);
+    }
+    return kept;
+}
+
+/** 휴지통에서 되살릴 줄이 지금 살아 있는 줄과 유일 칸이 겹치나 — 겹치면 되살리지 않는다(휴지통에 그대로 있다). */
+function restoreConflicts(dbId: string, doc: DbDoc, rowId: string): boolean {
+    const keys = uniqueKeysOf(doc);
+    const a = api;
+    const rn = a?.get(rowId);
+    if (keys.size === 0 || !rn) return false;
+    const live = liveRowNodes(dbId);
+    for (const key of keys) {
+        const k = uniqueKeyOf(cellOf(rn, doc, key));
+        if (k !== null && live.some((r) => uniqueKeyOf(cellOf(r, doc, key)) === k)) return true;
+    }
+    return false;
+}
+
 /** 한 묶음으로 쓴다 — 되돌리기 한 번. 새로 만든 행 id 들을 돌려준다. */
 export function commit(dbId: string, tx: DbTx): string[] {
     const created: string[] = [];
@@ -245,7 +305,10 @@ export function commit(dbId: string, tx: DbTx): string[] {
         const now = isoMinute();
         // 셀 — 행마다 한 번만 쓴다(같은 행의 여러 칸을 모은다)
         const byRow = new Map<string, Map<string, RecordCellValue>>();
-        for (const c of tx.cells ?? []) {
+        // 🔴 「유일」 칸 — 화면(RecordView·RecordPage)이 먼저 걸러도, 노드 다리로 들어오는 모든 쓰기가 같은 검사를 지난다
+        //    (줄 문서·속성 패널·되살리기 …). 값→줄 장부는 칸마다 한 번만 만든다(변경마다 줄 전체를 훑지 않는다).
+        const cells = filterCellsUnique(dbId, doc, tx.cells ?? []);
+        for (const c of cells) {
             if (!byRow.has(c.id)) byRow.set(c.id, new Map());
             byRow.get(c.id)!.set(c.key, c.value);
         }
@@ -279,17 +342,20 @@ export function commit(dbId: string, tx: DbTx): string[] {
             a.setData(b.id, { ...rowOfNode(rn), updated: now });
         }
         for (const id of tx.removeRows ?? []) a.remove(id);
-        for (const id of tx.restoreRows ?? []) a.move(id, dbId);
+        for (const id of tx.restoreRows ?? []) if (!restoreConflicts(dbId, doc, id)) a.move(id, dbId);
     });
     return created;
 }
 
-/** 휴지통의 행을 전부 되살린다 — 메뉴·화면 단추가 같이 쓴다. */
-export function restoreTrashedRows(dbId: string): number {
+/** 휴지통의 행을 전부 되살린다 — 메뉴·화면 단추가 같이 쓴다. 유일 칸이 겹쳐 못 돌아온 줄이 있으면 notify 로 알린다(조용히 빠지지 않게). */
+export function restoreTrashedRows(dbId: string, notify?: (title: string) => void): number {
     const rows = trashedRows(dbId);
     if (rows.length === 0) return 0;
     commit(dbId, { restoreRows: rows.map((r) => r.id) });
-    return rows.length;
+    const restored = rows.length - trashedRows(dbId).length;   // 유일 칸이 겹쳐 못 돌아온 줄은 센 수에서 빠진다
+    const skipped = rows.length - restored;
+    if (skipped > 0) notify?.(`${skipped}개 항목은 같은 값이 있어 되살리지 않았습니다 — 휴지통에 그대로 있습니다.`);
+    return restored;
 }
 
 // ── 하위 항목(행 밑에 행) 구조 조작 — 전부 노드 move/setData 한 번(되돌리기 한 칸) ──

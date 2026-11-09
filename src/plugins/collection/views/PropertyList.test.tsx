@@ -23,6 +23,7 @@ function mount(el: React.ReactElement) {
 afterEach(() => { act(() => { root?.unmount(); }); hostEl?.remove(); root = null; hostEl = null; document.body.innerHTML = ''; });
 
 const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
+const mi = (label: string) => [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent === label) as HTMLButtonElement | undefined;
 const click = (el: Element | null) => act(() => { (el as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 const key = (el: Element, k: string) => act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })); });
 function setInput(el: HTMLInputElement, value: string) {
@@ -94,12 +95,12 @@ describe('locked 기본 칸 — 머리 메뉴가 지우기·타입 바꾸기를 
     };
     it('locked 칸: 칸 삭제 단추 없음 · 타입 단추 전부 비활성', () => {
         open('base');
-        expect(q('[data-rv-del-field]')).toBeNull();
+        expect(mi('칸 삭제')).toBeUndefined();
         expect(document.querySelectorAll('[data-rv-type]:not([disabled])').length).toBe(0);
     });
     it('보통 칸: 칸 삭제 단추 있음 · 타입 단추 활성(대조)', () => {
         open('free');
-        expect(q('[data-rv-del-field]')).toBeTruthy();
+        expect(mi('칸 삭제')).toBeTruthy();
         expect(document.querySelectorAll('[data-rv-type]:not([disabled])').length).toBeGreaterThan(0);
     });
 });

@@ -9,19 +9,19 @@
  * 🔑 보기 종류(kind)는 지금 'table' 하나지만 ViewDef.kind 로 갈라 둬 보드·목록·갤러리를 꽂을 자리를 열어 뒀다.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { Button, ContextMenu, Icon, IconButton, IconPicker, Tooltip, parseClipboard, useContextTrigger, type MenuEntry } from '../../pane-ui-system';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
-import { deriveRows, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
+import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
-import { isImeEnter } from './fields/ime';
+import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
@@ -55,19 +55,6 @@ function useCoarsePointer(): boolean {
 }
 
 const isEmptyVal = (v: RecordCellValue): boolean => v === null || v === '' || (Array.isArray(v) && v.length === 0);
-
-/** 칸 이름 입력 — 🔴 IME 조합 중 Enter 는 확정이 아니다 */
-function RenameInput({ field, onCommit }: { field: RecordField; onCommit: (label: string) => void }) {
-    return (
-        <input
-            data-rv-rename={field.key}
-            defaultValue={field.label}
-            onKeyDown={(e) => { if (isImeEnter(e)) return; if (e.key === 'Enter') onCommit((e.target as HTMLInputElement).value); }}
-            onBlur={(e) => onCommit(e.target.value)}
-            className="h-row px-2 mb-1 rounded border border-line bg-bg text-[13px] text-text outline-none"
-        />
-    );
-}
 
 export function RecordView<T>({
     fields,
@@ -120,8 +107,9 @@ export function RecordView<T>({
     const changeCells = (changes: CellChange[]) => {
         const writable = changes.filter((c) => !byKey.get(c.key)?.readOnly);
         // 🔴 「유일」 칸 — 겹치는 값을 쓰는 변경은 뺀다(한 칸 편집·채우기·여러 줄 바꾸기·되돌린 붙여넣기 모두 이 한 곳을 지난다)
-        const { kept: live, rejected } = filterUniqueChanges(writable, records.map((r) => getId(r)),
-            (id, key) => { const r = records.find((x) => getId(x) === id); return r ? rawValue(r, key) as RecordCellValue | undefined : undefined; },
+        const byId = new Map(records.map((r) => [getId(r), r] as const));   // 🔴 변경마다 records.find 로 훑으면 O(n²) — 한 번만 만든다
+        const { kept: live, rejected } = filterUniqueChanges(writable, [...byId.keys()],
+            (id, key) => { const r = byId.get(id); return r ? rawValue(r, key) as RecordCellValue | undefined : undefined; },
             new Set(fields.filter((f) => f.unique).map((f) => f.key)));
         if (rejected.length > 0) {
             const f = byKey.get(rejected[0].key);
@@ -169,6 +157,10 @@ export function RecordView<T>({
         [treeOn, tree, records, getId, flat],
     );
     const rows = useMemo(() => displayRows.map((d) => d.row), [displayRows]);
+    // S15': 새로 추가된 행만 .ui-pop-in(첫 렌더·필터 변경·보기 갈아끼움엔 안 켠다) — 렌더 뒤에 「본 id」를 갱신해 다음 렌더가 차이를 잡는다
+    const seenIds = useRef<Set<string> | null>(null);
+    const fresh = useMemo(() => freshIds(seenIds.current, records.map((r) => getId(r))), [records, getId]);
+    useEffect(() => { seenIds.current = new Set(records.map((r) => getId(r))); }, [records, getId]);
 
     // 🔴 폭 끌기 중에는 임시 폭만 그린다 — 손을 뗄 때 한 번만 보기 정의에 쓴다(안 그러면 포인터 한 칸마다 되돌리기 한 단계가 쌓인다)
     const [liveW, setLiveW] = useState<{ key: string; w: number } | null>(null);
@@ -234,33 +226,41 @@ export function RecordView<T>({
     // ── 행 끌어 순서 바꾸기·하위로 넣기(수동 순서일 때만) ──
     //   행 위 가장자리 = 그 앞으로 · 아래 가장자리 = 그 뒤로 · 가운데 = 그 행의 하위로(트리일 때만 · 노션 꼴 · Q8)
     const reorderable = !!onReorder && manualOrder;
-    const dragRow = useRef<string | null>(null);
     type DropMark = { id: string; zone: 'before' | 'into' | 'after' } | '__end__';
-    const [dropMark, setDropMark] = useState<DropMark | null>(null);
     const parentMap = useMemo(() => new Map(records.map((r) => [getId(r), tree?.parentOf(r) ?? null])), [records, getId, tree]);
     /** 끌고 있는 행 자신이거나 그 자손이면 거기엔 못 놓는다(자기 안으로 들어가는 순환) */
     const inOwnSubtree = (dragId: string, targetId: string) => {
         for (let cur: string | null | undefined = targetId, n = 0; cur && n < 10000; cur = parentMap.get(cur), n++) if (cur === dragId) return true;
         return false;
     };
-    const zoneOf = (e: ReactDragEvent, canNest: boolean): 'before' | 'into' | 'after' => {
-        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const f = r.height > 0 ? (e.clientY - r.top) / r.height : 0.5;
-        if (!canNest) return f < 0.5 ? 'before' : 'after';
-        return f < 0.25 ? 'before' : f > 0.75 ? 'after' : 'into';
+    /** 포인터 y 가 놓일 자리 — 행 사각형을 훑어 번역한다(맨 아래 너머 = 맨 끝). 자기 하위·자기 자신 위는 null */
+    const dropTargetAt = (from: string, y: number): DropMark | null => {
+        const els = [...(gridRef.current?.querySelectorAll<HTMLElement>('[data-rv-row]') ?? [])];
+        if (els.length === 0) return null;
+        const canNest = treeOn && !!tree?.onMoveUnder;
+        for (let i = 0; i < els.length; i++) {
+            const r = els[i].getBoundingClientRect();
+            if (y > r.bottom && i < els.length - 1) continue;
+            if (y > r.bottom) return '__end__';
+            const id = els[i].getAttribute('data-rv-row')!;
+            if (inOwnSubtree(from, id)) return null;
+            return { id, zone: rowDropZone(y, r.top, r.height, canNest) };
+        }
+        return null;
     };
-    const onRowDragOver = (e: ReactDragEvent, id: string) => {
-        const from = dragRow.current;
-        if (!from || inOwnSubtree(from, id)) { setDropMark(null); return; }
-        e.preventDefault();
-        const zone = zoneOf(e, treeOn && !!tree?.onMoveUnder);
-        setDropMark((m) => (m && m !== '__end__' && m.id === id && m.zone === zone ? m : { id, zone }));
-    };
-    const onRowDrop = (toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
-        const from = dragRow.current;
-        dragRow.current = null;
-        setDropMark(null);
-        if (!from || !onReorder || from === toId) return;
+    const rowDrag = useDragLeaf({
+        enabled: reorderable,
+        axis: 'y',
+        onContext: () => { /* 행 손잡이엔 메뉴 없음 */ },
+        onDrop: (from, _x, y) => {
+            const t = dropTargetAt(from, y);
+            if (t === '__end__') moveRow(from, null);
+            else if (t) moveRow(from, t.id, t.zone);
+        },
+    });
+    const dropMark: DropMark | null = rowDrag.drag ? dropTargetAt(rowDrag.drag.leafId, rowDrag.drag.y) : null;
+    const moveRow = (from: string, toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
+        if (!onReorder || from === toId) return;
         if (toId && inOwnSubtree(from, toId)) return;
         if (toId && zone === 'into' && tree?.onMoveUnder) {
             tree.onMoveUnder(from, toId);
@@ -279,19 +279,21 @@ export function RecordView<T>({
     };
 
     // ── 칸 순서 끌기(보기마다) ────────────────────────────────────────────────
-    const dragCol = useRef<string | null>(null);
-    const onColDrop = (e: ReactDragEvent, to: string) => {
-        e.preventDefault();
-        const from = dragCol.current;
-        dragCol.current = null;
-        if (!from || from === to) return;
-        const cols = view.columns.filter((c) => c.key !== from);
-        const item = view.columns.find((c) => c.key === from);
-        const at = cols.findIndex((c) => c.key === to);
-        if (!item || at < 0) return;
-        cols.splice(at, 0, item);
-        patchView({ columns: cols });
-    };
+    // 🔴 순서 바꾸기는 공용 훅 하나(보기 탭·리본과 같은 것 — 터치 길게 누르기·Alt+←/→ 키보드 포함). 숨긴 칸은 제자리에 둔다
+    const colReorder = useReorder<HTMLDivElement>({
+        ids: visibleFields.map((f) => f.key),
+        axis: 'x',
+        onReorder: (next) => {
+            const byColKey = new Map(view.columns.map((c) => [c.key, c] as const));
+            const shown = new Set(next);
+            let n = 0;
+            patchView({ columns: view.columns.map((c) => (shown.has(c.key) ? byColKey.get(next[n++])! : c)) });
+        },
+        onContext: (x, y, el) => {
+            const key = el.closest('[data-rv-head]')?.getAttribute('data-rv-head');
+            if (key) setHeadMenu({ key, rect: new DOMRect(x, y, 0, 0) });
+        },
+    });
 
     // ── 칸 구조(이름·타입·추가·삭제·선택지) — onFieldsChange 가 있을 때만 ──────────
     const fieldsEditable = !!onFieldsChange;
@@ -510,7 +512,9 @@ export function RecordView<T>({
             <div ref={gridRef} tabIndex={-1} data-rv-grid {...ctxTrigger} onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
                 <div style={{ minWidth: totalWidth }} className="text-text">
                     {/* 머리줄 */}
-                    <div className="flex sticky top-0 z-10 bg-panel2 border-b border-line select-none h-header">
+                    <div ref={colReorder.containerRef} {...colReorder.bind} onKeyDown={colReorder.onKeyDown}
+                        onPointerDown={(e) => { e.stopPropagation(); colReorder.bind.onPointerDown(e); }}   // 길게 누르기 메뉴는 끌기 훅 한 곳이 쥔다(표의 것과 안 겹치게)
+                        className="flex sticky top-0 z-10 bg-panel2 border-b border-line select-none h-header">
                         {reorderable && <div className="shrink-0 bg-panel2" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }} />}
                         {selectable && (
                             <div className="shrink-0 grid place-items-center bg-panel2" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
@@ -523,14 +527,10 @@ export function RecordView<T>({
                         {visibleFields.map((f, fi) => {
                             const dir = sortDirOf(f.key);
                             return (
-                                <div key={f.key} className={`relative shrink-0 flex items-center gap-1 px-2 border-r border-line ${fi < frozen ? 'bg-panel2' : ''}`} style={{ width: widthOf(f), ...frozenStyle(fi) }} data-rv-head={f.key}
-                                    onDragOver={(e) => { if (dragCol.current) e.preventDefault(); }}
-                                    onDrop={(e) => onColDrop(e, f.key)}>
+                                <div key={f.key} className={`relative shrink-0 flex items-center gap-1 px-2 border-r border-line ${fi < frozen ? 'bg-panel2' : ''}`} style={{ width: widthOf(f), ...frozenStyle(fi) }} data-rv-head={f.key}>
                                     {/* 끌어서 칸 순서 — 이름 부분이 손잡이(폭 손잡이·메뉴 단추와 안 겹치게) */}
-                                    <div draggable data-rv-drag={f.key}
-                                        onDragStart={(e) => { dragCol.current = f.key; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', f.key); } catch { /* 사파리 */ } }}
-                                        onDragEnd={() => { dragCol.current = null; }}
-                                        className="flex-1 min-w-0 flex items-center gap-1 cursor-grab">
+                                    <div data-rv-drag={f.key} data-row-id={f.key} title={f.label} tabIndex={0}
+                                        className="flex-1 min-w-0 flex items-center gap-1 cursor-grab outline-none">
                                         <Tooltip text={f.description} className="flex flex-1 min-w-0 items-center gap-1">
                                             <FieldGlyph field={f} />
                                             <span className="flex-1 min-w-0 truncate text-[12px] font-medium">{f.label}</span>
@@ -584,15 +584,20 @@ export function RecordView<T>({
                                 } : undefined}
                                 onMouseEnter={() => setHoverRow(id)}
                                 onMouseLeave={() => setHoverRow((h) => (h === id ? null : h))}
-                                onDragOver={reorderable ? (e) => onRowDragOver(e, id) : undefined}
-                                onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(id, mark?.zone); } : undefined}
-                                className={`flex border-b border-line min-h-[32px] ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
+                                className={`flex border-b border-line min-h-[32px] ${fresh.has(id) ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${mark?.zone === 'before' ? 'border-t-2 border-t-accent' : ''} ${mark?.zone === 'after' ? 'border-b-2 border-b-accent' : ''} ${mark?.zone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
                             >
                                 {reorderable && (
                                     <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
-                                        draggable data-rv-row-drag={id}
-                                        onDragStart={(e) => { dragRow.current = id; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', id); } catch { /* 사파리 */ } }}
-                                        onDragEnd={() => { dragRow.current = null; setDropMark(null); }}>
+                                        data-rv-row-drag={id} data-row-id={id} title={String(rawValue(r, titleKey ?? '') ?? '') || '제목 없음'}
+                                        tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...rowDrag.bind}
+                                        onKeyDown={(e) => {
+                                            // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
+                                            if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+                                            e.preventDefault(); e.stopPropagation();
+                                            const at = rowIds.indexOf(id);
+                                            if (e.key === 'ArrowUp' && at > 0) moveRow(id, rowIds[at - 1], 'before');
+                                            else if (e.key === 'ArrowDown' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
+                                        }}>
                                         <Icon name="grip" size={12} className={`text-muted cursor-grab ${hovered ? '' : 'opacity-0'}`} />
                                     </div>
                                 )}
@@ -630,7 +635,11 @@ export function RecordView<T>({
                                                 {iconOf(id) ?? <Icon name="fileText" size={14} className="text-muted" />}
                                             </span>
                                         )}
-                                        <div className="flex-1 min-w-0 h-full">
+                                        <div className="relative flex-1 min-w-0 h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
+                                            {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
+                                            {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
+                                                <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
+                                            )}
                                             <Cell
                                                 field={f}
                                                 rowValue={r}
@@ -655,17 +664,22 @@ export function RecordView<T>({
                         );
                     })}
 
-                    {rows.length === 0 && (
-                        <div className="px-3 py-6 text-[13px] text-muted select-none" data-rv-empty>
-                            표시할 행이 없습니다.{onPaste ? ' 엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : ''}
+                    {rows.length === 0 && (records.length > 0 && !manualOrder ? (
+                        // 걸린 조건 때문에 0개 — 데이터가 없는 게 아니다. 조건을 지우는 길을 바로 준다
+                        <div data-rv-empty="filtered">
+                            <EmptyState compact icon="filter" title="조건에 맞는 항목 없음"
+                                action={{ label: '필터 지우기', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
                         </div>
-                    )}
+                    ) : (
+                        <div data-rv-empty>
+                            <EmptyState compact icon="table" title="표시할 행이 없습니다"
+                                description={onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined} />
+                        </div>
+                    ))}
 
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
                         <button type="button" data-rv-add onClick={onAddRecord}
-                            onDragOver={reorderable ? (e) => { if (dragRow.current) { e.preventDefault(); setDropMark('__end__'); } } : undefined}
-                            onDrop={reorderable ? (e) => { e.preventDefault(); onRowDrop(null); } : undefined}
                             className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
@@ -691,19 +705,19 @@ export function RecordView<T>({
                 </div>
             </div>
 
+            <ReorderOverlay drag={colReorder.drag} indicator={colReorder.indicator} axis="x" />
+            <ReorderOverlay drag={rowDrag.drag} indicator={null} axis="y" />
+
             {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
 
             {/* 칸 추가 — 타입 고르기 */}
             {addMenu && (
                 <Popover anchor={addMenu} width={200} align="right" onClose={() => setAddMenu(null)}>
-                    <div className="flex flex-col gap-0.5" data-rv-add-menu>
+                    <div data-rv-add-menu>
                         <div className="px-2 py-0.5 text-[11px] text-muted">어떤 칸을 만들까요?</div>
-                        {fieldTypes.list().map((d) => (
-                            <button key={d.type} type="button" data-rv-add-type={d.type} onClick={() => addField(d.type)}
-                                className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                <Icon name={d.icon} size={14} className="text-muted" />{d.label}
-                            </button>
-                        ))}
+                        <MenuList autoFocus label="칸 종류">
+                            {fieldTypes.list().map((d) => <MenuItem key={d.type} label={d.label} icon={d.icon} onSelect={() => addField(d.type)} />)}
+                        </MenuList>
                     </div>
                 </Popover>
             )}
@@ -716,8 +730,15 @@ export function RecordView<T>({
                 const locked = title || f.locked === true;   // 기본 칸 — 지우기·타입 바꾸기 금지(이름표만 바꾼다)
                 return (
                     <Popover anchor={headMenu.rect} width={220} onClose={() => setHeadMenu(null)}>
-                        <div className="flex flex-col gap-0.5">
-                            {fieldsEditable && <RenameInput field={f} onCommit={(label) => { renameField(f.key, label); }} />}
+                        <MenuList autoFocus={false} label="칸 메뉴">
+                            {fieldsEditable && (
+                                <div data-rv-rename={f.key} className="mb-1">
+                                    {/* 🔴 한글 조합 중 Enter 는 InlineRename 이 거른다 · 이름이 바뀌면 key 로 새로 세워 다시 고칠 수 있게 */}
+                                    <InlineRename key={f.label} value={f.label} ariaLabel="칸 이름" onCancel={() => { /* 그대로 둔다 */ }}
+                                        onCommit={(label) => { renameField(f.key, label); }}
+                                        className="w-full h-row px-2 rounded border border-line bg-bg text-[13px] text-text outline-none" />
+                                </div>
+                            )}
                             {fieldsEditable && (
                                 <div className="flex items-center gap-2 h-row px-2 text-body text-text" data-rv-field-icon>
                                     <IconPicker icon={f.icon} onSetIcon={(ic) => setFieldIcon(f.key, ic)} sizeClass="text-body"
@@ -725,32 +746,18 @@ export function RecordView<T>({
                                     칸 아이콘
                                 </div>
                             )}
-                            <button type="button" data-rv-sort-asc onClick={() => setSortSingle(f.key, 'asc')} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                <Icon name="sort" size={14} className="rotate-180" />오름차순 정렬
-                            </button>
-                            <button type="button" data-rv-sort-desc onClick={() => setSortSingle(f.key, 'desc')} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                <Icon name="sort" size={14} />내림차순 정렬
-                            </button>
-                            {!title && (
-                                <button type="button" data-rv-hide-col onClick={() => { setColumn(f.key, { hidden: true }); setHeadMenu(null); }} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                    <Icon name="eyeOff" size={14} />칸 숨기기
-                                </button>
-                            )}
+                            <MenuItem label="오름차순 정렬" icon="sort" onSelect={() => setSortSingle(f.key, 'asc')} />
+                            <MenuItem label="내림차순 정렬" icon="sort" onSelect={() => setSortSingle(f.key, 'desc')} />
+                            {!title && <MenuItem label="칸 숨기기" icon="eyeOff" onSelect={() => { setColumn(f.key, { hidden: true }); setHeadMenu(null); }} />}
                             {(() => {
                                 const idx = visibleFields.findIndex((x) => x.key === f.key);
                                 const on = idx >= 0 && frozen === idx + 1;
-                                return idx >= 0 && (
-                                    <button type="button" data-rv-freeze onClick={() => { patchView({ frozen: on ? 0 : idx + 1 }); setHeadMenu(null); }} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                        <Icon name="pin" size={14} />{on ? '고정 풀기' : '여기까지 칸 고정'}
-                                    </button>
-                                );
+                                return idx >= 0 && <MenuItem label={on ? '고정 풀기' : '여기까지 칸 고정'} icon="pin" onSelect={() => { patchView({ frozen: on ? 0 : idx + 1 }); setHeadMenu(null); }} />;
                             })()}
-                            <button type="button" data-rv-wrap onClick={() => { setColumn(f.key, { wrap: !wrapOf(f.key) }); setHeadMenu(null); }} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-text hover:bg-text/[0.06] text-left">
-                                <Icon name="text" size={14} />{wrapOf(f.key) ? '줄바꿈 끄기' : '줄바꿈'}
-                            </button>
+                            <MenuItem label={wrapOf(f.key) ? '줄바꿈 끄기' : '줄바꿈'} icon="text" onSelect={() => { setColumn(f.key, { wrap: !wrapOf(f.key) }); setHeadMenu(null); }} />
                             {fieldsEditable && (
                                 <>
-                                    <div className="my-1 h-px bg-line" />
+                                    <MenuSeparator />
                                     <div className="px-2 py-0.5 text-[11px] text-muted">타입{locked ? ` (${title ? '제목' : '기본'} 칸은 바꿀 수 없습니다)` : ''}</div>
                                     <div className="flex flex-wrap gap-1 px-1 pb-1">
                                         {fieldTypes.list().map((d) => (
@@ -760,20 +767,11 @@ export function RecordView<T>({
                                             </button>
                                         ))}
                                     </div>
-                                    {!f.locked && (
-                                        <Button variant="plain" data-rv-unique aria-pressed={!!f.unique} onClick={() => toggleUnique(f.key)}
-                                            className="flex items-center gap-2 !px-2 text-left">
-                                            <Icon name={f.unique ? 'check' : 'key'} size={14} />{f.unique ? '유일 끄기' : '유일(같은 값 막기)'}
-                                        </Button>
-                                    )}
-                                    {!locked && (
-                                        <button type="button" data-rv-del-field onClick={() => deleteField(f.key)} className="flex items-center gap-2 h-row px-2 rounded text-[13px] text-bad hover:bg-bad/10 text-left">
-                                            <Icon name="trash" size={14} />칸 삭제
-                                        </button>
-                                    )}
+                                    {!f.locked && <MenuItem label={f.unique ? '유일 끄기' : '유일(같은 값 막기)'} icon={f.unique ? 'check' : 'key'} onSelect={() => toggleUnique(f.key)} />}
+                                    {!locked && <MenuItem label="칸 삭제" icon="trash" danger onSelect={() => deleteField(f.key)} />}
                                 </>
                             )}
-                        </div>
+                        </MenuList>
                     </Popover>
                 );
             })()}
@@ -784,13 +782,14 @@ export function RecordView<T>({
                 if (!f) return null;
                 return (
                     <Popover anchor={calcMenu.rect} width={180} onClose={() => setCalcMenu(null)}>
-                        <div className="flex flex-col gap-0.5 max-h-[320px] overflow-auto" data-rv-calc-menu>
-                            <button type="button" data-rv-calc-fn="" onClick={() => setCalc(f.key, null)} className="h-row px-2 rounded text-[13px] text-muted hover:bg-text/[0.06] text-left">계산 안 함</button>
+                        <MenuList autoFocus label="계산 함수" className="max-h-[320px] overflow-auto">
+                            <MenuItem label="계산 안 함" onSelect={() => setCalc(f.key, null)} />
                             {calcFnsFor(f).map((c) => (
-                                <button key={c.id} type="button" data-rv-calc-fn={c.id} onClick={() => setCalc(f.key, c.id)}
-                                    className={`h-row px-2 rounded text-[13px] hover:bg-text/[0.06] text-left ${view.calc?.[f.key] === c.id ? 'text-accent' : 'text-text'}`}>{c.label}</button>
+                                <MenuItem key={c.id} label={c.label} onSelect={() => setCalc(f.key, c.id)}>
+                                    {view.calc?.[f.key] === c.id && <Icon name="check" size={13} className="text-accent shrink-0" />}
+                                </MenuItem>
                             ))}
-                        </div>
+                        </MenuList>
                     </Popover>
                 );
             })()}
