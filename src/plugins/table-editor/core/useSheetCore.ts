@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
 import { parseClipboard, toTsv } from './tsv';
+import { undoKey } from '../../../pane-ui-system';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';
@@ -238,8 +239,8 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             const meta = e.metaKey || e.ctrlKey;
             const k = e.key;
             const act = activeRef.current;
-            if (meta && (k === 'z' || k === 'Z')) { e.preventDefault(); e.stopPropagation(); if (e.shiftKey) a.onRedo?.(); else a.onUndo?.(); return; }
-            if (meta && (k === 'y' || k === 'Y')) { e.preventDefault(); e.stopPropagation(); a.onRedo?.(); return; }
+            const u = undoKey(e);   // ⌘Z 판정은 창틀 공용(한글 조합 중·Alt 낀 것 거름) — 더미는 역트랜잭션이라 여기 몫
+            if (u) { e.preventDefault(); e.stopPropagation(); if (u === 'redo') a.onRedo?.(); else a.onUndo?.(); return; }
             if (meta && (k === 'c' || k === 'C')) { e.preventDefault(); e.stopPropagation(); impl.current.doCopy(); return; }
             if (meta && (k === 'v' || k === 'V')) { e.preventDefault(); e.stopPropagation(); return; } // paste 이벤트가 처리
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); impl.current.fillDown(selRef.current.r2); return; }
