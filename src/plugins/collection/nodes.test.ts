@@ -40,6 +40,7 @@ function fakeApi() {
         invalidate: () => {}, select: () => {}, open: () => {}, promptInput: () => {},
         subscribe: (fn) => { listeners.add(fn); return { dispose() { listeners.delete(fn); } }; },
         roots: { main: 'root', trash: 'trash' },
+        isTrashed: () => false, liveByType: () => [], cmd: {} as NodesApi['cmd'],   // R2 새 칸 — 이 테스트는 안 쓴다
     };
     return { api, nodes, log };
 }

@@ -6,14 +6,16 @@
  * ⭐ 키보드(R1): 뜨면 첫 항목에 초점 · ↑↓/Home/End 이동 · Enter 실행 · Esc 닫기 · 닫히면 열기 전 초점 자리로 돌아간다.
  *    항목 꼴은 Menu.tsx(MenuItem) 한 벌 — Popover 안 메뉴와 같은 꼴이다.
  */
+import type { JsonValue } from '../json';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IconName } from './Icon';
 import { MenuList, MenuItem, MenuSeparator } from './Menu';
 import { pushEscapeLayer, useLayerToken } from './layers';
 
-/** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다. */
-export interface MenuCommandArg { leafId?: string; tabsId?: string }
+/** 메뉴 항목이 가리키는 명령 맥락(어느 탭/묶음/노드 + 데이터). ContextMenu 는 뜻을 모르고 onCommand 로 넘길 뿐이다.
+ *  plugin CommandContext 와 같은 꼴(층을 안 거스르려 여기 따로 적는다 · 구조적으로 같다). */
+export interface MenuCommandArg { leafId?: string; tabsId?: string; nodeId?: string; nodeIds?: string[]; args?: JsonValue }
 
 export type MenuEntry =
     | { sep: true }

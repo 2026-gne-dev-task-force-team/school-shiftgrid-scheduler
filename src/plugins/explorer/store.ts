@@ -6,6 +6,8 @@
  * ⭐ 명령의 대상 노드는 여기 「고른 노드」에서 읽는다(🙋 5 — 창틀 CommandContext 는 안 넓힌다).
  */
 import { useSyncExternalStore } from 'react';
+import { josa } from '../../pane-ui-system';
+import { CMD } from './contracts/commands';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
@@ -394,8 +396,14 @@ function doRemove(ids: string[]): void {
         for (const id of topmostOnly(t, ids)) x = remove(x, id, permitDelete);
         return x;
     }, { patch: { ...singleSel(null), renamingId: null, deleteConfirm: null } });
-    // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 한 건에 덮인다
-    hostRef?.notify({ title: `${what}를 휴지통으로 옮겼습니다`, action: { label: '되돌리기', commandId: 'explorer.undo' }, key: 'explorer.trashed', timeout: 8000 });
+    // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 토스트는 한 건에 덮인다.
+    //   🔴 args.undoTop = 이 삭제가 쌓은 더미 칸의 토큰(C1) — 뒤에 다른 작업이 쌓이면 enabled 가 false 라 옛 알림이 남의 작업을 안 되돌린다.
+    const token = undoToken();
+    hostRef?.notify({
+        title: `${josa(what, '을/를')} 휴지통으로 옮겼습니다`,
+        action: { label: '되돌리기', commandId: CMD.undo, args: token === null ? null : { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
+        key: 'explorer.trashed', timeout: 8000,
+    });
 }
 
 /** 노드 틀(⋯ 메뉴)의 「휴지통으로」 — 선택과 무관하게 이 노드만. can.delete 는 여기서 한 번 더 거른다(경고 문구는 틀이 먼저 물었다). */
@@ -531,6 +539,21 @@ export function purgeAllConfirmed(): void {
 }
 
 // ─────────────────────────── 되돌리기/다시하기(N3) ───────────────────────────
+
+/**
+ * 되돌리기 더미 맨 위 칸의 토큰 — 그 칸(바꾸기 직전 나무)의 rev. 비었으면 null.
+ *   rev 는 apply·undo·redo 마다 오르니 칸마다 다르다 — 「지금 맨 위가 그 작업이 쌓은 칸인가」를 이걸로 가린다(C1).
+ */
+export function undoToken(): number | null {
+    const p = state.history.past;
+    return p.length > 0 ? p[p.length - 1].rev : null;
+}
+
+/** 이 맥락으로 되돌려도 되나 — args.undoTop 이 있으면 지금 맨 위 토큰과 맞을 때만(알림의 낡은 단추 막기). 없으면 늘 된다. */
+export function undoAllowed(args: unknown): boolean {
+    if (!args || typeof args !== 'object' || !('undoTop' in args)) return args !== null;
+    return (args as { undoTop: unknown }).undoTop === undoToken();
+}
 
 /** 되돌리기 — 더미 과거의 맨 뒤 상태로. rev 는 저장용으로만 올린다. */
 export function undoAction(): void {

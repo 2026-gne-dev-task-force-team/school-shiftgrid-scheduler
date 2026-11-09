@@ -5,11 +5,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const run = vi.hoisted(() => vi.fn(() => true));
-vi.mock('./store', async (orig) => ({ ...(await orig<typeof import('./store')>()), runCommand: run }));
+const can = vi.hoisted(() => vi.fn((_id: string, _ctx?: unknown) => true));
+vi.mock('./store', async (orig) => ({ ...(await orig<typeof import('./store')>()), runCommand: run, commandEnabled: can }));
 
 import {
     notify, dismiss, runNotifyAction, markAllRead, clearNotifications, applyNotifyRetain,
-    getNotifications, __resetNotifyForTest,
+    getNotifications, actionState, __resetNotifyForTest,
 } from './notify';
 import { setPaneSettings, resetPaneSettings } from '../layout/pane-settings';
 import { makeHost } from './host';
@@ -22,6 +23,7 @@ beforeEach(() => {
     resetPaneSettings();
     __resetNotifyForTest();
     run.mockClear();
+    can.mockReset(); can.mockImplementation(() => true);
 });
 afterEach(() => { vi.useRealTimers(); });
 
@@ -87,7 +89,7 @@ describe('읽음 · 비우기 · 단추', () => {
     it('🔴 단추는 함수가 아니라 명령 id — 누르면 runCommand · 토스트는 걷히고 읽음', () => {
         const id = notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo' }, timeout: 0 });
         runNotifyAction(id);
-        expect(run).toHaveBeenCalledWith('x.undo');
+        expect(run).toHaveBeenCalledWith('x.undo', undefined);
         expect(getNotifications().toasts).toHaveLength(0);
         expect(getNotifications().items[0].read).toBe(true);
     });
@@ -100,6 +102,38 @@ describe('읽음 · 비우기 · 단추', () => {
     });
     it('단추 없는 알림에 runNotifyAction 은 아무 일도 안 한다', () => {
         const id = notify('a', { title: '그냥' });
+        runNotifyAction(id);
+        expect(run).not.toHaveBeenCalled();
+    });
+});
+
+describe('🔴 C1 — 낡은 단추는 안 눌린다(args 토큰 · 새로고침 만료)', () => {
+    it('args 는 명령 맥락 ctx.args 로 넘어간다', () => {
+        const id = notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo', args: { undoTop: 7 } }, timeout: 0 });
+        expect(can).toHaveBeenCalledTimes(0);
+        runNotifyAction(id);
+        expect(can).toHaveBeenCalledWith('x.undo', { args: { undoTop: 7 } });
+        expect(run).toHaveBeenCalledWith('x.undo', { args: { undoTop: 7 } });
+    });
+    it('명령이 「지금 안 된다」(enabled=false) 면 안 부르고 회색 + 까닭 · 단추는 안 쓴 채로 남는다', () => {
+        const id = notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo', args: { undoTop: 1 }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }, timeout: 0 });
+        can.mockImplementation(() => false);
+        const it0 = getNotifications().items[0];
+        expect(actionState(it0)).toEqual({ kind: 'stale', reason: '이미 다른 작업이 있어 되돌릴 수 없습니다' });
+        runNotifyAction(id);
+        expect(run).not.toHaveBeenCalled();
+        expect(getNotifications().items[0].actionUsed).toBeFalsy();
+        expect(getNotifications().toasts).toHaveLength(1);
+        // 다시 맞으면(뒤 작업을 되돌렸으면) 살아난다
+        can.mockImplementation(() => true);
+        expect(actionState(getNotifications().items[0]).kind).toBe('ready');
+    });
+    it('🔴 새로고침 뒤 불러온 기록의 단추는 만료 — 안 부른다', () => {
+        const id = notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo', args: { undoTop: 1 } } });
+        __resetNotifyForTest();
+        const it0 = getNotifications().items[0];
+        expect(it0.id).toBe(id);
+        expect(actionState(it0).kind).toBe('stale');
         runNotifyAction(id);
         expect(run).not.toHaveBeenCalled();
     });

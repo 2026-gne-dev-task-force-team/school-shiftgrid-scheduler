@@ -17,6 +17,8 @@ import type { ComponentType, ReactNode } from 'react';
 import type { ViewDef, ViewProps } from '../view-registry';
 import type { IconName } from '../primitives/Icon';
 import type { MenuEntry } from '../primitives/ContextMenu';
+import type { JsonValue } from '../json';
+export type { JsonValue } from '../json';
 
 /** 창틀 버전 — manifest.minHostVersion 이 이걸 넘어서면 활성 안 함(버전 비교는 P2). */
 export const HOST_VERSION = '0.1.0';
@@ -142,6 +144,12 @@ export interface CommandContext {
     leafId?: string;
     /** 대상 탭 묶음(가르기처럼 묶음이 필요한 명령용) */
     tabsId?: string;
+    /** 대상 노드 하나(우클릭한 노드 등) — 없으면 명령이 「고른 노드」를 쓴다. 전역 menuTarget 우회 대신 이걸로. */
+    nodeId?: string;
+    /** 대상 노드 여럿(여러 줄 고르기) */
+    nodeIds?: string[];
+    /** 그 밖의 데이터(알림 단추의 대상 토큰 등) — 순수 데이터뿐(함수 금지). */
+    args?: JsonValue;
 }
 
 /** 명령(command) — 레지스트리에 쌓인다. 🔴 리본·메뉴·팔레트가 commandId 로 가리켜 runCommand 로 부른다. */
@@ -153,6 +161,10 @@ export interface CommandDef {
     keys?: string;
     /** 🔴 선택 — 플러그인 상세(설정 「설치된 플러그인」 피크)가 보여 주는 한 줄 설명(쥔님 2026-11-01). */
     description?: string;
+    /** false = 명령 팔레트에 안 보인다(「삭제 확인」처럼 다른 화면 안에서만 쓰는 내부 단계 명령). 기본 보인다. */
+    palette?: boolean;
+    /** 지금 이 맥락으로 부를 수 있나 — false 면 runCommand 가 안 부르고 단추는 회색(알림 「되돌리기」가 낡았을 때 등). 없으면 늘 된다. */
+    enabled?(ctx?: CommandContext): boolean;
 }
 /** 설정 기여 항목 — section 에 꽂는다. 같은 section 은 합쳐진다(제목은 첫 등록이 이긴다). */
 export interface SettingsContribution {
@@ -196,13 +208,13 @@ export interface ViewContribution<CompName extends string = string> extends Omit
  *      🔴 ⛔ 함수 직접 받기 금지 — args 는 데이터뿐, 함수는 여전히 impl 이름으로만. 「런타임이니까 더 받자」를 막는다.
  */
 export type CommandContribution<CmdName extends string = string> =
-    | (Omit<CommandDef, 'run' | 'id'> & {
+    | (Omit<CommandDef, 'run' | 'id' | 'enabled'> & {
         /** 모듈 commands 의 키 = 이 명령 id — 호스트가 이 이름으로 run 을 찾아 꽂는다. */
         id: CmdName;
         impl?: never;
         args?: never;
     })
-    | (Omit<CommandDef, 'run' | 'id'> & {
+    | (Omit<CommandDef, 'run' | 'id' | 'enabled'> & {
         /** 런타임에 정해지는 명령 id(id 는 자유 문자열) — 구현은 impl 이름이 가리킨다. */
         id: string;
         /** 모듈 commands 의 키 — run 을 이 이름으로 찾는다. */
@@ -336,6 +348,8 @@ export interface PluginImpl {
     components?: Record<string, ComponentType<ViewProps & { host: PluginHost }>>;
     /** 🔴 첫 인자 host(안드로이드 Context) · ctx(우클릭 맥락) · args(선언이 붙인 데이터 — declare 의 args·contributes 명령의 args). */
     commands?: Record<string, (host: PluginHost, ctx?: CommandContext, args?: unknown) => void>;
+    /** 명령의 「지금 되나」 판정 — commands 와 같은 키. 없으면 늘 된다(CommandDef.enabled 로 꽂힌다). */
+    enabled?: Record<string, (host: PluginHost, ctx?: CommandContext) => boolean>;
     /** 설정 항목 pane 은 { host } · 인스펙터 칸 pane 은 { host, target }(PropertiesPaneProps) */
     panes?: Record<string, ComponentType<{ host: PluginHost }> | ComponentType<PropertiesPaneProps>>;
     renders?: Record<string, (host: PluginHost) => ReactNode>;

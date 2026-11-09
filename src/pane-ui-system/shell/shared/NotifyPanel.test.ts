@@ -24,7 +24,7 @@ describe('NotifyPanel', () => {
     it('기록을 최신순으로 다 보이고, 열면 읽음 처리된다', () => {
         notify('a', { title: '첫째' }); notify('b', { title: '둘째' });
         const h = mount();
-        expect(h.textContent).toContain('알림 2건');
+        expect(h.textContent).toContain('전체 2건');   // 머리는 전체 수(배지는 안 읽음 수 — S8)
         expect(h.querySelector('li')!.textContent).toContain('둘째');
         expect(getNotifications().unread).toBe(0);
     });
@@ -39,10 +39,18 @@ describe('NotifyPanel', () => {
         expect(h.querySelectorAll('li')).toHaveLength(2);
     });
 
+    it('🔴 낡은 단추(새로 고침 뒤)는 회색 + 까닭 한 줄(C1)', () => {
+        notify('a', { title: '지움', action: { label: '되돌리기', commandId: 'x.undo', args: { undoTop: 1 } } });
+        __resetNotifyForTest();
+        const h = mount();
+        expect(btn(h, '되돌리기').disabled).toBe(true);
+        expect(h.textContent).toContain('새로 고친 뒤라 쓸 수 없습니다');
+    });
+
     it('비우기는 기록을 지운다', () => {
         notify('a', { title: '하나' });
         const h = mount();
-        act(() => btn(h, '비우기').click());
+        act(() => btn(h, '모두 지우기').click());
         expect(h.textContent).toContain('알림이 없습니다');
         expect(getNotifications().items).toHaveLength(0);
     });

@@ -56,6 +56,8 @@ export function definePlugin<
     };
     components?: C;
     commands?: Cmd;
+    /** 명령의 「지금 되나」 판정 — commands 와 같은 키만(오타는 tsc 가 잡는다). */
+    enabled?: { [K in keyof Cmd]?: (host: PluginHost, ctx?: CommandContext) => boolean };
     panes?: P;
     renders?: R;
     /** 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 이 이 키를 가리킨다(오타는 tsc 가 잡는다). */

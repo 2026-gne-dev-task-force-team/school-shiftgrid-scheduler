@@ -210,7 +210,7 @@
  * ⛔ 이 판정은 Row 조각 한 곳에서만 쓴다 — 다른 데로 복사하지 않는다.
  */
 @media (hover: none) {
-  .hover-only { display: flex !important; }
+  .hover-only { display: flex !important; opacity: 1 !important; pointer-events: auto !important; }
 }
 
 /*

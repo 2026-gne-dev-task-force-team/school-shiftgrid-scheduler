@@ -7,6 +7,7 @@
  *   소비자는 이 타입을 host.modules 로 받는다(약속 이름 nodes).
  */
 import type { ComponentType, ReactNode } from 'react';
+import type { CMD } from './commands';
 import type {
     Disposable, PluginHost, PluginImpl, NodeTypeContribution, IconName, MenuEntry,
 } from '../../../pane-ui-system/plugin';
@@ -243,6 +244,10 @@ export interface NodesApi {
     path(id: string): string[];                         // 루트 밑 첫 조상 → id (루트 sentinel 제외)
     find(pred: (n: PublicNode) => boolean): PublicNode[];
     byType(type: string): PublicNode[];
+    /** 🔑 휴지통 안(휴지통 자신·그 자손)인가 — 없는 id 는 false. */
+    isTrashed(id: string): boolean;
+    /** 🔑 byType 에서 휴지통 안 것을 뺀 것 — 「살아 있는」 그 타입 노드. 이름 짓기(uniqueName)·목록은 이걸 쓴다. */
+    liveByType(type: string): PublicNode[];
 
     // ── 쓰기 ──
     create(parentId: string, spec: { type: string; name: string; data?: unknown; index?: number }): string;
@@ -273,4 +278,6 @@ export interface NodesApi {
 
     subscribe(fn: (changedIds: string[]) => void): Disposable;
     roots: { main: string; trash: string };
+    /** 🔑 탐색기 명령 id 상수(contracts/commands 의 CMD) — 값은 약속 모듈로 받는다(남의 contracts 값 import 금지). */
+    readonly cmd: typeof CMD;
 }

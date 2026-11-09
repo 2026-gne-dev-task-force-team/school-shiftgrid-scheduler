@@ -95,7 +95,7 @@ export function Row({
             <span className="flex-1 min-w-0 truncate text-[13px] leading-none">{label}</span>
             {end && (
                 <span
-                    className={`items-center shrink-0 ${revealOnHover ? 'hidden group-hover:flex hover-only' : 'flex'}`}
+                    className={`items-center shrink-0 ${revealOnHover ? `flex hover-only ${active ? 'opacity-100' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}` : 'flex'}`}
                 >
                     {end}
                 </span>
