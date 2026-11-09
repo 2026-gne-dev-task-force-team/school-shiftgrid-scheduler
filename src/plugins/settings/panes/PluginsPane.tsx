@@ -10,14 +10,15 @@
  *   ⚠️ 피크 창구가 없으면(공급자 밖) 줄 안에서 펼치는 폴백으로 — 상세를 못 보는 일이 없게.
  */
 import { useState } from 'react';
-import { Icon, FOCUS_RING } from '../../../pane-ui-system';
+import { Icon } from '../../../pane-ui-system';
 import {
     type PluginHost, listPlugins, enablePlugin, disablePlugin, usePluginRegistry, useContribVersion, HOST_VERSION,
     type PluginStatus,
 } from '../../../pane-ui-system/plugin';
-import { Toggle, Button } from '../../../pane-ui-system';
+import { Toggle } from '../../../pane-ui-system';
 import { PluginDetail } from './PluginDetail';
 import { PlatformDetail } from './PlatformDetail';
+import { DetailButton, LockedMark } from './plugin-parts';
 import { useSettingsChrome } from '../chrome-context';
 import { disableImpact } from '../plugin-graph';
 
@@ -61,9 +62,10 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                 <span className="text-note px-1.5 rounded bg-accent/15 text-accent">바닥</span>
                             </div>
                             <p className="text-small text-text/80 leading-snug">모든 플러그인이 올라서는 바닥 — 플러그인에게 주는 기능 목록과 켜진 약속을 봅니다.</p>
+                            <span className="text-note text-muted font-mono">platform</span>
                         </div>
-                        <Button onClick={openPlatform} aria-label="플랫폼 자세히" className="shrink-0">자세히 <Icon name="right" size={12} /></Button>
-                        <span className="shrink-0 pl-3 ml-1 border-l border-line flex items-center gap-1 text-note text-muted"><Icon name="pin" size={11} /> 끌 수 없음</span>
+                        <DetailButton label="플랫폼 자세히" onClick={openPlatform} open={platformOpen && !chrome.peek} expanded={chrome.peek ? undefined : platformOpen} />
+                        <LockedMark title="바닥은 끌 수 없습니다" />
                     </div>
                     {platformOpen && !chrome.peek && <div className="px-3 pb-3 bg-side/40 border-t border-line"><div className="pt-2"><PlatformDetail /></div></div>}
                 </div>
@@ -89,23 +91,14 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                     <span className="text-[11px] text-muted font-mono">{p.id}</span>
                                 </div>
                                 {/* 🔴 상세 열기 — 제목이 아니라 이 별도 단추로(오클릭 방지). 테두리 있는 작은 단추. */}
-                                <button
-                                    type="button"
-                                    onClick={() => openDetail(p)}
-                                    aria-expanded={chrome.peek ? undefined : open}
-                                    aria-label={`${p.name} 자세히`}
-                                    className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded border border-line text-[12px] text-muted hover:bg-text/[0.04] hover:text-text transition-colors ${FOCUS_RING}`}
-                                >
-                                    자세히
-                                    <Icon name="right" size={12} className="transition-transform" style={{ transform: open ? 'rotate(90deg)' : 'none' }} />
-                                </button>
+                                <DetailButton label={`${p.name} 자세히`} onClick={() => openDetail(p)} open={open} expanded={chrome.peek ? undefined : open} />
                                 {/* 🔴 ④ 코어는 끄기 단추 자체가 없다 — 잠김 표시만. 비코어는 스위치 하나.
                                     「자세히」 단추와 섞이지 않게 구분선+여백으로 떨어뜨린다(쥔님: 토글과 충분히 떨어지게).
                                     끌 때 같이 꺼질 것이 있으면 바로 끄지 않고 상세를 열어 확인 단계를 보여 준다. */}
-                                <span className="shrink-0 pl-3 ml-1 border-l border-line">
-                                    {p.core
-                                        ? <span className="flex items-center gap-1 text-[11px] text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={11} /> 끌 수 없음</span>
-                                        : (
+                                {p.core
+                                    ? <LockedMark title="코어 플러그인은 끌 수 없습니다" />
+                                    : (
+                                        <span className="shrink-0 pl-3 ml-1 border-l border-line">
                                             <Toggle
                                                 on={p.enabled}
                                                 label={`${p.name} ${p.enabled ? '끄기' : '켜기'}`}
@@ -116,8 +109,8 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                                     else disablePlugin(p.id);
                                                 }}
                                             />
-                                        )}
-                                </span>
+                                        </span>
+                                    )}
                             </div>
                             {open && (
                                 <div className="px-3 pb-3 pl-9 bg-side/40 border-t border-line">

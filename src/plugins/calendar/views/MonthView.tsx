@@ -345,7 +345,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     for (let i = vis.start; i < vis.end; i++) rows.push(range.from + i);
 
     return (
-        <div className="relative h-full flex flex-col bg-bg select-text">
+        <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0">
                 <div ref={jumpRef} className="relative">

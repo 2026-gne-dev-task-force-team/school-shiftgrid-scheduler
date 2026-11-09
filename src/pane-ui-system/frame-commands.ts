@@ -22,3 +22,13 @@ export const FRAME_COMMAND = {
 } as const;
 
 export type FrameCommandId = (typeof FRAME_COMMAND)[keyof typeof FRAME_COMMAND];
+
+/**
+ * 사이드 패널 뷰 — 한 번 닫으면 다시 열 길이 있어야 한다(Q1·X7). 가운데 뷰는 탭이라 새 탭·리본으로 열고, 옆 패널은 이 이름의 명령으로 연다.
+ * 명령 id 는 뷰 id 에서 정해진다 — 꾸러미가 리본에 꽂을 때도 같은 함수로 부른다(글자로 안 적는다).
+ */
+export const viewOpenCommandId = (viewId: string): string => `frame.view.open.${viewId}`;
+
+/** 옆 패널로 열리는 뷰인가 — defaultArea 가 왼쪽·오른쪽 */
+export const isSidePanelView = (v: { defaultArea?: 'left' | 'center' | 'right' }): v is { defaultArea: 'left' | 'right' } =>
+    v.defaultArea === 'left' || v.defaultArea === 'right';

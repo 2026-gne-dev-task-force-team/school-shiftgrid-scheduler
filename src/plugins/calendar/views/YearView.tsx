@@ -57,7 +57,7 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
     });
 
     return (
-        <div className="h-full flex flex-col bg-bg select-text">
+        <div className="h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 연도 · 오른쪽 이동(◀ 올해 ▶) + 뷰 전환(trailing). 월 보기와 같은 높이·여백 */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0">
                 <span className="text-base font-semibold text-text tabular-nums">{yearLabel(year)}</span>

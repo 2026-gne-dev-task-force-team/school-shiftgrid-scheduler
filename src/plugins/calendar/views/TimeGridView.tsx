@@ -238,7 +238,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
     });
 
     return (
-        <div className="relative h-full flex flex-col bg-bg select-text">
+        <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <header className="flex items-center justify-between px-pad py-2 shrink-0 gap-2">
                 <div className="min-w-0">

@@ -4,6 +4,7 @@
  *     bareButton : 맨 <button 수 — 공통 Button·IconButton·Dialog 단추를 쓰면 안 는다
  *     arbPx      : 임의 크기 -[Npx] 수(text-[12px]·w-[340px] …) — 글자는 단계 토큰(text-small …), 치수는 토큰·표준 클래스
  *     cmdIdString: 다른 꾸러미의 명령 id 를 글자로 부른 수 — 약속 파일의 상수로
+ *     ctxDirect  : onContextMenu 를 직접 처리한 수 — 우클릭은 창틀 ContextMenu(useContextTrigger) 하나로만, 꾸러미는 메뉴 항목만 낸다(Q1·X2)
  *   줄었으면 기준을 내린다:  RATCHET_UPDATE=1 npx vitest run src/pane-ui-system/__tests__/ratchet.test.ts
  *   ⛔ 기준을 올리는 건 규칙을 어기는 일이다 — 올려야 하면 이유를 커밋에 적는다(새 꾸러미는 0 에서 시작한다).
  *
@@ -17,7 +18,7 @@ import { join, resolve } from 'node:path';
 const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
 
-type Metric = 'bareButton' | 'arbPx' | 'cmdIdString';
+type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect';
 type Counts = Record<Metric, number>;
 
 function walk(dir: string): string[] {
@@ -57,17 +58,18 @@ for (const [scope, texts] of Object.entries(files)) {
 
 function measure(scope: string): Counts {
     const texts = files[scope];
-    let bareButton = 0, arbPx = 0, cmdIdString = 0;
+    let bareButton = 0, arbPx = 0, cmdIdString = 0, ctxDirect = 0;
     for (const t of texts) {
         bareButton += count(t, /<button\b/g);
         arbPx += count(t, /-\[\d+(?:\.\d+)?px\]/g);
+        ctxDirect += count(t, /\bonContextMenu\b/g);
         for (const [id, owner] of commandOwner) {
             if (owner === scope) continue;
             cmdIdString += t.split(`'${id}'`).length - 1;
             cmdIdString += t.split(`"${id}"`).length - 1;
         }
     }
-    return { bareButton, arbPx, cmdIdString };
+    return { bareButton, arbPx, cmdIdString, ctxDirect };
 }
 
 const current: Record<string, Counts> = Object.fromEntries(Object.keys(SCOPES).map((s) => [s, measure(s)]));
@@ -77,11 +79,12 @@ if (process.env.RATCHET_UPDATE) {
 }
 
 const baseline: Record<string, Counts> = JSON.parse(readFileSync(BASELINE_FILE, 'utf-8'));
-const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString'];
+const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect'];
 const HOW: Record<Metric, string> = {
     bareButton: '공통 Button·IconButton·Dialog 를 써라',
     arbPx: '글자는 단계 토큰(text-micro·note·small·body·lead), 치수는 토큰·표준 클래스로',
     cmdIdString: '다른 꾸러미 명령은 그 꾸러미 약속 파일의 상수로 불러라',
+    ctxDirect: '우클릭은 창틀 useContextTrigger + ContextMenu 로 — 꾸러미는 메뉴 항목만 낸다',
 };
 
 describe('톱니 검사 — 직접 짠 것이 늘지 않는다', () => {

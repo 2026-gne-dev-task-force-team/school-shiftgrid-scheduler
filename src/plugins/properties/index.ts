@@ -19,10 +19,16 @@ export const propertiesPlugin = definePlugin({
                 layout: { minWidth: 200, squeeze: 'scroll' },
                 component: 'Panel',
             }],
+            // 닫아도 다시 열 길(Q1·X7) — 명령 팔레트 + 리본. 제 `<id>.open` 명령이 있으면 창틀은 같은 명령을 또 만들지 않는다.
+            commands: [{ id: 'properties.open', title: '속성 패널 열기', icon: 'info' }],
+            ribbon: [{ commandId: 'properties.open', icon: 'info' }],
         },
     },
     // 첫 실행 때 오른쪽에 한 번 연다(기기별 한 번 — 닫으면 그대로 닫혀 있다).
     lifecycle: { onFirstRun: (host) => { host.workspace.open('properties.panel', { where: 'right' }); } },
+    commands: {
+        'properties.open': (host: PluginHost) => { host.workspace.open('properties.panel', { where: 'right' }); },
+    },
     components: {
         Panel: (p: { host: PluginHost }) => createElement(PropertiesView, { host: p.host }),
     },

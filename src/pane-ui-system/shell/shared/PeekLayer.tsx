@@ -121,7 +121,7 @@ export function PeekLayer({ wide, closing = false, onClose, children }: { wide: 
                     <span className="text-[12px] font-semibold text-muted">미리보기</span>
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
-                <div className="flex-1 min-h-0 overflow-auto p-4 select-text">{children}</div>
+                <div className="flex-1 min-h-0 overflow-auto p-4">{children}</div>
             </div>
         </div>
     );

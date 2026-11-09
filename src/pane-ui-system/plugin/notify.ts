@@ -3,7 +3,8 @@
  *
  * 🔴 ⛔ 도메인 0 · 색 0 — 여기는 「누가 무엇을 언제 알렸나」만 쥔다(구조 검사 ①⑤).
  * ⭐ 동작(action)은 함수가 아니라 명령 id 로만 받는다(매니페스트가 함수를 못 받는 것과 같은 결) — 눌리면 runCommand.
- * ⭐ key 가 같으면(같은 보낸이) 덮어 쓴다 — 같은 알림이 폭주해 토스트가 쌓이지 않게.
+ * ⭐ key 가 같으면(같은 보낸이) 떠 있는 토스트만 덮는다 — 같은 알림이 폭주해 토스트가 쌓이지 않게. 기록엔 전부 쌓인다.
+ * ⭐ 단추(action)는 한 번 쓰면 끝(actionUsed) — 토스트·패널 어디서든 다시 안 눌린다.
  * ⭐ 기록 보관 개수는 창틀 설정 notifyRetain(기본 200 · 0 = 이 세션 메모리에만, 새로고침하면 비움). 기기별 저장.
  *    기록 저장이 실패해도 던지지도·보고하지도 않는다(저장 실패 → 알림 → 저장 실패 되먹임 방지).
  */
@@ -24,7 +25,7 @@ export interface NotifyInput {
     action?: NotifyAction;
     /** ms — 기본 5000 · error 는 기본 0 · 0 = 닫을 때까지 */
     timeout?: number;
-    /** 같은 보낸이의 같은 key 는 덮어 쓴다 */
+    /** 같은 보낸이의 같은 key 는 떠 있는 토스트만 덮는다(기록엔 다 쌓인다) */
     key?: string;
 }
 
@@ -39,6 +40,8 @@ export interface NotifyItem {
     key?: string;
     at: number;
     read: boolean;
+    /** 단추를 이미 눌렀다 */
+    actionUsed?: boolean;
 }
 
 export interface NotifySnapshot { items: NotifyItem[]; toasts: NotifyItem[]; unread: number }
@@ -107,8 +110,7 @@ export function notify(owner: string, input: NotifyInput): string {
     ensure();
     const level = input.level ?? 'info';
     if (input.key !== undefined) {
-        const old = items.find((i) => i.owner === owner && i.key === input.key);
-        if (old) { hideToast(old.id); items = items.filter((i) => i !== old); }
+        for (const old of items) if (old.owner === owner && old.key === input.key) hideToast(old.id);
     }
     const id = `${Date.now().toString(36)}-${++seq}`;
     items = [...items, {
@@ -135,9 +137,9 @@ export function dismiss(id: string): void {
 /** 알림의 단추를 누른다 — 명령을 부르고 토스트를 걷고 읽음으로. */
 export function runNotifyAction(id: string): void {
     const it = items.find((i) => i.id === id);
-    if (!it?.action) return;
+    if (!it?.action || it.actionUsed) return;
     hideToast(id);
-    items = items.map((i) => (i.id === id ? { ...i, read: true } : i));
+    items = items.map((i) => (i.id === id ? { ...i, read: true, actionUsed: true } : i));
     persist();
     emit();
     runCommand(it.action.commandId);
