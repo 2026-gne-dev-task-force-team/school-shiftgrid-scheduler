@@ -17,7 +17,7 @@ import { NodeIcon } from './NodeIcon';
 import { useIconPacks } from './packs';
 import { addCommand } from '../plugin/store';
 import { dismiss, notify, type NotifyInput } from '../plugin/notify';
-import { notifyUndo } from '../plugin/undo-notice';
+import { createUndoSlot } from '../plugin/undo-notice';
 
 const RECENT_KEY = 'nodeIcon.recent';
 function loadRecent(): string[] {
@@ -27,21 +27,22 @@ function saveRecent(list: string[]): void {
     try { localStorage.setItem(storageKey(RECENT_KEY), JSON.stringify(list)); } catch { /* 저장이 막혀도 고르기는 된다 */ }
 }
 
-// ── 지우기 되돌리기 — 앱 공용 알림 + 되돌리기(undo-notice). 마지막 한 건만 산다.
+// ── 지우기 되돌리기 — 앱 공용 알림 + 되돌리기(undo-notice · createUndoSlot). 마지막 한 건만 산다.
 const UNDO_CMD = 'node-icon.undoClear';
-let lastClear: { prev: string; apply: (v: string | undefined) => void } | null = null;
+const slot = createUndoSlot({ commandId: UNDO_CMD, key: 'node-icon.cleared' });
 let cmdReady = false;
 function notifyCleared(prev: string, apply: (v: string | undefined) => void): void {
-    lastClear = { prev, apply };
+    let pending = true;
     if (!cmdReady) {
         cmdReady = true;
         addCommand('node-icon', {
             id: UNDO_CMD, title: '아이콘 지우기 되돌리기',
-            enabled: () => lastClear !== null,
-            run: () => { const c = lastClear; lastClear = null; c?.apply(c.prev); },
+            enabled: () => slot.undoable(),
+            run: () => slot.undo(),
         });
     }
-    notifyUndo({ notify: Object.assign((i: NotifyInput) => notify('node-icon', i), { dismiss }) }, { title: '아이콘을 지웠어요', key: 'node-icon.cleared', commandId: UNDO_CMD });
+    slot.notify({ notify: Object.assign((i: NotifyInput) => notify('node-icon', i), { dismiss }) },
+        '아이콘을 지웠어요', () => { if (pending) { pending = false; apply(prev); } }, () => pending);
 }
 
 const TABS: { id: PickerTab; label: string }[] = [
