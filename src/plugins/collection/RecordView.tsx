@@ -8,7 +8,7 @@
  * 🔴 칸 종류를 모른다 — 셀·연산자·변환이 전부 칸 타입 레지스트리(fields/)에서 온다. 화면에 switch(type) 이 없다.
  * 🔑 보기 종류(kind)는 지금 'table' 하나지만 ViewDef.kind 로 갈라 둬 보드·목록·갤러리를 꽂을 자리를 열어 뒀다.
  */
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { Popover, Select } from '../../pane-ui-system';
@@ -353,6 +353,18 @@ export function RecordView<T>({
     const [addMenu, setAddMenu] = useState<DOMRect | null>(null);
     const [pending, setPending] = useState<ConvertPlan | null>(null);
     const gridRef = useRef<HTMLDivElement>(null);
+    // 보이는 폭(스크롤 칸 폭) — 빈 문구가 표 전체 폭이 아니라 이 폭 기준 가운데에 서게. 0 이면 모름(100% 로 둔다)
+    const [viewW, setViewW] = useState(0);
+    useLayoutEffect(() => {
+        const el = gridRef.current;
+        if (!el) return;
+        const upd = () => setViewW(el.clientWidth);
+        upd();
+        if (typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver(upd);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     const byKey = useMemo(() => new Map(fields.map((f) => [f.key, f])), [fields]);
     const visibleFields = useMemo(
@@ -361,6 +373,8 @@ export function RecordView<T>({
     );
     const hiddenKeys = useMemo(() => view.columns.filter((c) => c.hidden).map((c) => c.key), [view.columns]);
     // 🔴 「수동 순서」(정렬·필터·검색 0)일 때만 트리로 그린다 — 그 밖엔 평평(노션과 같다).
+    const searchOnly = search.trim() !== '' && filterIsEmpty(view.filter);
+    const emptyBoxStyle = viewW > 0 ? { width: viewW } : undefined;
     const manualOrder = view.sorts.length === 0 && filterIsEmpty(view.filter) && search.trim() === '';
     const treeOn = !!tree && manualOrder;
     const flat = useMemo(
@@ -956,12 +970,16 @@ export function RecordView<T>({
 
                     {rows.length === 0 && (records.length > 0 && !manualOrder ? (
                         // 걸린 조건 때문에 0개 — 데이터가 없는 게 아니다. 조건을 지우는 길을 바로 준다
-                        <div data-rv-empty="filtered">
-                            <EmptyState compact icon="filter" title="조건에 맞는 항목이 없습니다" description="걸어 둔 조건 때문에 모두 가려져 있습니다."
-                                action={{ label: '필터 삭제', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
+                        <div data-rv-empty="filtered" className="sticky left-0" style={emptyBoxStyle}>
+                            <EmptyState compact icon="filter"
+                                title={searchOnly ? '검색어에 맞는 항목이 없습니다' : '조건에 맞는 항목이 없습니다'}
+                                description={searchOnly ? '입력한 검색어와 맞는 항목이 없습니다.' : '걸어 둔 조건 때문에 모두 가려져 있습니다.'}
+                                action={searchOnly
+                                    ? { label: '검색어 지우기', onClick: () => setSearch('') }
+                                    : { label: '필터 삭제', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
                         </div>
                     ) : (
-                        <div data-rv-empty>
+                        <div data-rv-empty className="sticky left-0" style={emptyBoxStyle}>
                             <EmptyState compact icon="table" title="아직 항목이 없습니다"
                                 action={usage && usage.length > 0 && onAddRecord ? { label: '새 행 추가', onClick: () => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); } } : undefined}
                                 description={<>
