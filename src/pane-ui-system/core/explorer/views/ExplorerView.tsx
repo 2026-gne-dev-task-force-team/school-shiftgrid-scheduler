@@ -391,7 +391,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     }
 
 
-    const renderRows = (list: ExplorerRow[]) => list.map((row) => {
+    // secHead — 섹션 머리줄로 그릴 때(휴지통 머리줄과 같은 꼴: 작은 글자·흐린 색·「이름 (개수)」·맨 클릭 = 접기/펴기)
+    const renderRows = (list: ExplorerRow[], secHead = false) => list.map((row) => {
                     const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
                     const isFocus = selectedId === row.id && selectedIds.length > 1;   // 키보드 커서 — 여럿일 때만 포커스 링
                     const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
@@ -435,9 +436,13 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             data-row-id={row.id}
                             role="treeitem"
                             aria-selected={isSel}
-                            aria-expanded={row.hasChildren ? !row.node.collapsed : undefined}
+                            aria-expanded={row.hasChildren || secHead ? !row.node.collapsed : undefined}
                             title={row.node.name}
-                            onClick={(e) => clickRow(row, e)}
+                            onClick={(e) => {
+                                // 섹션 머리줄은 맨 클릭 = 접기/펴기(휴지통처럼). Ctrl·Shift·드래그 직후는 원래 길로
+                                if (!secHead || isMod(e) || e.shiftKey || draggedRef.current) { clickRow(row, e); return; }
+                                clearRenameTimer(); rootRef.current?.focus(); select(row.id); toggle(row.id);
+                            }}
                             onDoubleClick={() => dblRow()}
                             onMouseEnter={() => setHoverId(row.id)}
                             onMouseLeave={() => setHoverId((h) => (h === row.id ? null : h))}
@@ -447,7 +452,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : isFocus ? 'ring-1 ring-inset ring-accent/40' : ''}`}
                             style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
                         >
-                            {row.hasChildren ? (
+                            {secHead ? (
+                                <Icon name="right" size={11} className={`shrink-0 mx-0.5 text-muted transition-transform ${row.node.collapsed ? '' : 'rotate-90'}`} />
+                            ) : row.hasChildren ? (
                                 <span
                                     role="button"
                                     aria-label={row.node.collapsed ? '펴기' : '접기'}
@@ -462,7 +469,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
                             {emojiOf(row.node)
                                 ? <NodeIcon value={emojiOf(row.node)} size={15} fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0" />} />
-                                : <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />}
+                                : <Icon name={iconOf(row.node)} size={secHead ? 13 : 15} className={`shrink-0 ${known && !secHead ? '' : 'text-muted'}`} />}
 
                             {isRenaming ? (
                                 // 🔑 공통 InlineRename(Enter·Esc·blur·한글 조합 Enter 무시) — 줄의 드래그·두 번 누르기는 감싼 칸에서 막는다
@@ -478,9 +485,15 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                     />
                                 </span>
                             ) : (
-                                <span className={`flex-1 min-w-0 truncate text-body leading-none ${known ? 'text-text' : 'text-muted'}`}>
-                                    {row.node.name}
-                                </span>
+                                secHead ? (
+                                    <span className="flex-1 min-w-0 truncate text-small leading-none text-muted">
+                                        {row.node.name} ({row.node.children.length})
+                                    </span>
+                                ) : (
+                                    <span className={`flex-1 min-w-0 truncate text-body leading-none ${known ? 'text-text' : 'text-muted'}`}>
+                                        {row.node.name}
+                                    </span>
+                                )
                             )}
 
                             {/* ⋯ 단추 — 올렸을 때(모바일은 늘) 오른쪽 끝에. 누르면 우클릭과 같은 메뉴를 그 자리에(메뉴 코드는 하나) */}
@@ -551,8 +564,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     if (!head || head.id !== g.sec || head.kind !== 'node') return <Fragment key={gi}>{renderRows(g.rows)}</Fragment>;
                     const h = secH[head.id];
                     return (
-                        <div key={gi} className="border-y border-line relative bg-text/[0.02]">
-                            {renderRows([head])}
+                        <div key={gi} className="border-b border-line relative">
+                            {renderRows([head], true)}
                             {!head.node.collapsed && g.rows.length > 1 && (
                                 <div className="overflow-auto" style={h ? { height: h } : undefined}>{renderRows(g.rows.slice(1))}</div>
                             )}

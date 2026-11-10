@@ -15,7 +15,7 @@ const STORE_TYPE = 'calendar.store';
 export const ROOM_BOOKING_PRESET: CalendarPreset = {
     id: 'room-booking.default',
     label: '방 예약',
-    icon: 'door',
+    icon: 'doorClock',
     words: { store: '예약 목록', event: '예약', newEvent: '새 예약', unit: '건' },
     defaultView: 'week',
     baseFields: (store) => [{
@@ -41,11 +41,11 @@ export const roomBookingPlugin = definePlugin({
         ...manifest,
         contributes: {
             commands: [
-                { id: 'room-booking.open', title: '방 예약 열기', icon: 'door' },
-                { id: 'room-booking.new', title: '새 방 예약', icon: 'door' },
+                { id: 'room-booking.open', title: '방 예약 열기', icon: 'doorClock' },
+                { id: 'room-booking.new', title: '새 방 예약', icon: 'doorClock' },
             ],
             // 리본 「방 예약」 — 누를 때마다 새로 만들지 않는다: 있으면 첫 예약 목록을 열고, 없을 때만 만든다(쥔님 11-10 15:13)
-            ribbon: [{ commandId: 'room-booking.open', icon: 'door', order: 5 }],
+            ribbon: [{ commandId: 'room-booking.open', icon: 'doorClock', order: 5 }],
         },
     },
     commands: {
