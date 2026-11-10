@@ -692,12 +692,6 @@ export function RecordView<T>({
         if (g.edit && inner && inner.tagName !== 'BUTTON') inner.click();   // 편집 열기 = 클릭과 같은 길(체크 단추는 건드리지 않는다)
     }, [pendingGo, rows.length]);   // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { if (!pendingGo) return; const h = setTimeout(() => setPendingGo(null), 1500); return () => clearTimeout(h); }, [pendingGo]);
-    const rowIsBlank = (r: number, input: HTMLElement) => {
-        const rec = rows[r];
-        const typed = (input as HTMLInputElement).value;
-        if (!rec || (typeof typed === 'string' && typed.trim() !== '')) return false;
-        return visibleFields.every((f) => f.readOnly || isEmptyValue(rawValue(rec, f.key), f.type, f.config));
-    };
     const onEditKey = (e: React.KeyboardEvent): boolean => {
         const t = e.target as HTMLElement;
         if (!t.matches('[data-rv-editing]') || e.nativeEvent.isComposing || e.keyCode === 229) return false;
@@ -708,8 +702,7 @@ export function RecordView<T>({
         if (e.key === 'Enter') {
             if (e.shiftKey && t.tagName === 'TEXTAREA') return true;   // 글 칸 줄바꿈 — 입력칸이 받는다
             if (r + 1 < rows.length) setPendingGo({ r: r + 1, c, edit: true, minLen: 0 });
-            else if (rowIsBlank(r, t)) setPendingGo({ r, c, edit: true, minLen: 0 });   // 비어 있는 마지막 행에서 Enter — 빈 행을 또 만들지 않고 그 자리에 머문다
-            else if (onAddRecord) { onAddRecord(); setPendingGo({ r: r + 1, c, edit: true, minLen: rows.length + 1, born: true }); }
+            else setPendingGo({ r, c, edit: false, minLen: 0 });   // 마지막 행 Enter — 노션식 「확정만」(새 행을 만들지 않는다)
             return true;
         }
         if (e.key === 'Tab') {
@@ -915,6 +908,7 @@ export function RecordView<T>({
                                         <Tooltip text={f.description} className="flex flex-1 min-w-0 items-center gap-1">
                                             <FieldGlyph field={f} />
                                             <span className="flex-1 min-w-0 truncate text-small font-medium">{f.label}</span>
+                                            {f.description?.trim() && <span data-rv-head-info={f.key} className="shrink-0 grid place-items-center text-text/80"><Icon name="info" size={12} /></span>}
                                         </Tooltip>
                                     </div>
                                     {dir && <Icon name="sort" size={12} className={`text-accent shrink-0 ${dir === 'asc' ? 'rotate-180' : ''}`} />}

@@ -10,6 +10,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'user',
     description: '선생님과 직원의 명단을 만들고, 맡은 일·학년·과목·담임 반을 적어 둡니다.',
     about: {
         what: '선생님과 직원을 한 줄씩 적는 명단입니다. 담임·전담·비교과·보조인력 중 어떤 일을 맡는지, 보직(부장)인지 일반인지 지원인력인지, 맡은 학년과 과목, 담임이면 어느 반인지 적어 둡니다. 사람 명단에 같은 사람이 있으면 이어 둘 수도 있고, 비워 둬도 됩니다.',

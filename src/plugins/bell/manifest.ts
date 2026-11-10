@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'bell',
     description: '교시별 시작·끝 시각, 점심, 하교를 적습니다.',
     about: {
         what: '학교의 교시별 시작·끝 시각과 점심, 하교 시각을 적는 일과표입니다. 학년마다 점심이 달라 같은 「3교시」가 학년마다 다른 시각이어도, 실제 시각으로 겹치는지 셀 수 있습니다.',

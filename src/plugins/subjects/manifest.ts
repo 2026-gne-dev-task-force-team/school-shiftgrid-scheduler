@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'book',
     description: '과목 목록을 만들어 과목(이름·약칭·구분·색·특별실)을 담습니다.',
     about: {
         what: '과목 목록을 만들어 과목을 담습니다. 과목마다 이름·약칭·메모와 구분(담임 과목·전담 과목·공통), 색, 쓰는 특별실을 적을 수 있고, 엑셀이나 한글의 표를 복사해 붙이면 여러 과목을 한 번에 넣을 수 있습니다.',

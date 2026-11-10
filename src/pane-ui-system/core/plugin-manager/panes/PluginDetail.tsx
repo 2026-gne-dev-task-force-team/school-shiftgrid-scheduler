@@ -8,7 +8,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey, josa } from '../../..';
+import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey } from '../../..';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, listContributions, listPlugins, usePluginRegistry, HOST_VERSION,
@@ -178,7 +178,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
         <div className="flex flex-col gap-4">
             {/* 머리 — 이름·판·상태 + 토글 */}
             <div className="flex items-start justify-between gap-3">
-                <DetailTitle name={p.name} version={p.version} id={p.id} badges={<>
+                <DetailTitle icon={p.icon} name={p.name} version={p.version} id={p.id} badges={<>
                     {p.core && <Badge>기본</Badge>}
                     {p.failed && <span className="flex items-center gap-1 text-note text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
                 </>} />
@@ -259,7 +259,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                             <RelGroup title="꼭 있어야 하는 것" note="없으면 이 플러그인이 꺼집니다.">
                                 {requires.map(([n, r]) => {
                                     const prov = providerOf(n);
-                                    return <RelRow key={n} left={nameOf(n)} note={prov ? `${prov.name}${josa(prov.name, '이/가')} 내주는 중 ✓` : '내주는 플러그인 없음'} right={`${n} ${r}`} />;
+                                    return <RelRow key={n} left={nameOf(n)} note={prov ? `내주는 곳: ${prov.name} ✓` : '내주는 플러그인 없음'} right={`${n} ${r}`} />;
                                 })}
                             </RelGroup>
                         )}

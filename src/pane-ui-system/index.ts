@@ -51,7 +51,7 @@ export { DateField } from './primitives/DateField';
 export { Popover } from './primitives/Popover';
 export { Tooltip } from './primitives/Tooltip';
 export { PropertyField } from './primitives/PropertyField';
-export { IconPicker, TitleField, TITLE_FIELD, COMMON_EMOJI } from './primitives/IconPicker';
+export { IconPicker, IconPickerPopover, TitleField, TITLE_FIELD, COMMON_EMOJI } from './primitives/IconPicker';
 export { NodeIcon } from './node-icon/NodeIcon';
 export { NodeIconPanel } from './node-icon/NodeIconPicker';
 export {

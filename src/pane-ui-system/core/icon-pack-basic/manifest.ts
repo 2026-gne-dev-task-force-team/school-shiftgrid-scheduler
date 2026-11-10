@@ -11,6 +11,7 @@ export const manifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'platform',
+    icon: 'sparkles',
     core: true,
     description: '제목 옆에 붙일 수 있는 선 그림 아이콘 열두 개를 더합니다.',
     about: {

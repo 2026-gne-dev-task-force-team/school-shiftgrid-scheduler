@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     name: 'Pane UI Test',
     version: '0.1.0',
     minHostVersion: '0.1.0',
+    icon: 'flask',
     description: '창틀(pane-ui-system)을 눈으로 시험하는 하네스 — 패널·탭·스크롤·미리보기를 한 탭 안에서 연다',
     about: {
         what: '화면 틀(패널·탭·스크롤·미리보기)이 제대로 움직이는지 눈으로 확인하는 시험용 화면입니다.',

@@ -8,12 +8,12 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { PluginStatus } from '../../plugin';
-import { explainBlock, disableImpact } from './plugin-graph';
+import { explainBlock, disableImpact, groupByLayer } from './plugin-graph';
 
 type P = Partial<PluginStatus> & { id: string };
 function mk(p: P): PluginStatus {
     return {
-        name: p.id, version: '0.1.0', core: false, enabled: true, failed: false, blocked: false,
+        name: p.id, version: '0.1.0', core: false, layer: 'app', enabled: true, failed: false, blocked: false,
         minHostVersion: '0.1.0',
         provides: {}, requires: {}, supports: {}, interfaces: [], permissions: [], userFields: [], roleFields: [],
         ...p,
@@ -117,5 +117,18 @@ describe('disableImpact ④ — 같이 꺼질 것 / 기능만 떨어질 것 (호
         ];
         const { willBlock } = disableImpact('account', ps);
         expect(willBlock.map((x) => x.id)).toContain('boss');     // 꾸러미를 끄면 provides 가 사라져 소비자가 막힌다
+    });
+});
+
+describe('groupByLayer — 선언(layer·core)으로 층을 가른다', () => {
+    it('위→아래: 업무 → 공통 → 기반 → 후라이팬(core), 빈 층은 뺀다', () => {
+        const r = groupByLayer([
+            mk({ id: 'a', layer: 'platform' }), mk({ id: 'b', layer: 'domain' }), mk({ id: 'c', layer: 'app' }),
+            mk({ id: 'd', layer: 'platform', core: true }), mk({ id: 'e', layer: 'domain' }),
+        ]);
+        expect(r.map((x) => x.key)).toEqual(['domain', 'app', 'base', 'core']);
+        expect(r[0].plugins.map((p) => p.id)).toEqual(['b', 'e']);
+        expect(r[3].plugins.map((p) => p.id)).toEqual(['d']);
+        expect(groupByLayer([mk({ id: 'x', layer: 'app' })]).map((x) => x.key)).toEqual(['app']);
     });
 });
