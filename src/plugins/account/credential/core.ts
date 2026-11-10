@@ -6,7 +6,7 @@
 import type { PluginHost, Disposable } from '../../../pane-ui-system/plugin';
 import type { CredentialMethod } from '../contracts/credential';
 import type { NodesApi, PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
-import { makeHash, verifyHash } from './hash';
+import { makeHash, verifyHash } from '../hash';
 import { SECRET_TYPE, LEGACY_SECRET_TYPE, type LocalSecret } from './nodes';
 import { requestSecret } from './dialog';
 
