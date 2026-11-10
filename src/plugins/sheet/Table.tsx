@@ -13,7 +13,7 @@
  */
 import { createPortal } from 'react-dom';
 import {
-    forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
+    Fragment, forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
 } from 'react';
 import { useSheetCore } from './core/useSheetCore';
 import { verticalViewport } from './core/platform';
@@ -60,6 +60,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         decorate, validate, headerMenu, merges, renderText, mention,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
         footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, onRemoved,
+        rowGap, rowHeadWidth, onSelectionChange,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -76,6 +77,9 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const hasValidate = has('validate');
     const hasMerge = has('merge');
     const hasQuickCalc = has('quick-calc');
+    const hasRowHead = has('row-head');
+    const hasRowGaps = has('row-gaps') && !!rowGap;
+    const headW = rowHeadWidth ?? 76;
     const preset: TableStylePreset = has('table-style') ? tableStyle ?? 'basic' : 'basic';
     const historyOwned = !onUndo && has('history');
     // 머리 행·꼬리 행(넘버스) — 채우기 씨앗·합계 바에서 뺀다. 꼬리는 줄이 둘 이상일 때만.
@@ -375,6 +379,37 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const heightOf = (row: { id: string; weight?: number }): number | undefined =>
         (liveWeight?.id === row.id ? liveWeight.weight : row.weight);
 
+    // ── 행 앞 틈 끌기(row-gaps) — 아래 끝을 끌면 그 틈만 바뀐다(뒤 행을 밀지는 소유자가 정한다) ──
+    const [liveGap, setLiveGap] = useState<{ id: string; size: number } | null>(null);
+    const gapDrag = useRef<{ id: string; startY: number; start: number; cur: number } | null>(null);
+    const beginGap = (e: React.MouseEvent, id: string, cur: number): void => {
+        e.preventDefault(); e.stopPropagation();
+        gapDrag.current = { id, startY: e.clientY, start: cur, cur };
+        setLiveGap({ id, size: cur });
+    };
+    useEffect(() => {
+        if (!liveGap) return;
+        const move = (e: MouseEvent): void => {
+            const d = gapDrag.current; if (!d) return;
+            d.cur = Math.max(0, d.start + (e.clientY - d.startY));
+            setLiveGap({ id: d.id, size: d.cur });
+        };
+        const up = (): void => {
+            const d = gapDrag.current;
+            gapDrag.current = null;
+            if (d) {
+                const delta = Math.round(d.cur / 5) * 5 - d.start;
+                if (delta !== 0) emit({ cells: [], axis: { rowGap: [{ id: d.id, delta }] }, source: 'drag' }, false);
+            }
+            setLiveGap(null);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [liveGap?.id]);
+    const [renamingRow, setRenamingRow] = useState<string | null>(null);
+
     // ── 손잡이 끌어서 순서 바꾸기(행·열) ──────────────────────
     // reorder.kind: 끄는 축 · idx: 집은 자리 · over: 떨굴 자리(앞 경계) · pos: 표시선 위치(px, 컨테이너 기준)
     const [reorder, setReorder] = useState<{ kind: 'row' | 'col'; idx: number; over: number } | null>(null);
@@ -582,6 +617,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         });
     }, [sel.r1, sel.c1, sel.r2, sel.c2, rows, columns, merges, liveResize, liveWeight, core.containerRef]);
 
+    useEffect(() => { onSelectionChange?.({ r1: sel.r1, r2: sel.r2, c1: sel.c1, c2: sel.c2 }); },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [sel.r1, sel.r2, sel.c1, sel.c2]);
+
     const invalidCount = hasValidate && validate
         ? rows.reduce((n, row) => n + columns.filter((col) => validate(row.id, col.key, row.cells[col.key] ?? '')).length, 0)
         : 0;
@@ -700,6 +739,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         <span className="block h-2 w-2 rounded-[1px] border border-current" />
                                     </div>
                                 </td>
+                                {hasRowHead && <th aria-hidden className={`p-0 border-0 ${hasSticky ? 'sticky left-0 z-30 bg-bg' : ''} ${stickyColHandleCls}`} style={{ width: headW, minWidth: headW }} />}
                                 {columns.map((col, idx) => {
                                     const lineSel = sel.c1 <= idx && idx <= sel.c2 && sel.r1 === 0 && sel.r2 >= rows.length - 1;
                                     return (
@@ -750,6 +790,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                         {showColTitles && columns.length > 0 && (
                             <tr>
                                 <td className="w-7 p-0 border-0" />
+                                {hasRowHead && <th aria-hidden className={`bg-panel border border-line ${hasSticky ? 'sticky left-0 z-20' : ''} ${hasSticky && !showColHandles ? 'top-0' : ''}`} style={{ width: headW, minWidth: headW }} />}
                                 {columns.map((col, idx) => (
                                     <th
                                         key={col.key}
@@ -784,8 +825,26 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     <tbody>
                         {rows.map((row, r) => {
                             const h = heightOf(row);
+                            const gap = hasRowGaps ? rowGap!(row.id) : undefined;
+                            const gapSize = gap ? (liveGap?.id === row.id ? liveGap.size : gap.size) : 0;
                             return (
-                                <tr key={row.id} data-row-idx={r} style={h ? { height: h } : undefined}>
+                                <Fragment key={row.id}>
+                                {gap && (
+                                    <tr data-row-gap={row.id} style={{ height: gapSize }}>
+                                        <td className="w-7 p-0 border-0" />
+                                        {hasRowHead && (
+                                            <td className={`relative p-0 border-0 ${hasSticky ? 'sticky left-0 z-10 bg-bg' : ''}`}>
+                                                <span data-testid="gap-edge" onMouseDown={(e) => beginGap(e, row.id, gap.size)}
+                                                    title="끌어서 틈 크기 조절"
+                                                    className="absolute inset-x-0 -bottom-1 z-10 h-1.5 cursor-ns-resize hover:bg-accent/40" />
+                                            </td>
+                                        )}
+                                        <td colSpan={Math.max(1, columns.length)} className="p-0 border-x border-line bg-text/[0.02] text-center align-middle overflow-hidden">
+                                            {gap.label && gapSize >= 10 && <span data-testid="gap" className="text-micro leading-none text-muted">{gap.label}</span>}
+                                        </td>
+                                    </tr>
+                                )}
+                                <tr data-row-idx={r} style={h ? { height: h } : undefined}>
                                     {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
                                     <td className="relative w-7 p-0 border-0 align-middle">
                                         {hasRows && (
@@ -818,6 +877,26 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             <span className="absolute left-7 top-0 h-0.5 w-screen max-w-[600px] bg-accent" />
                                         )}
                                     </td>
+                                    {hasRowHead && (
+                                        <th data-row-head={r} scope="row"
+                                            className={`relative border border-line bg-panel px-1.5 py-0.5 text-left align-top font-normal ${hasSticky ? 'sticky left-0 z-10' : ''}`}
+                                            style={{ width: headW, minWidth: headW, maxWidth: headW }}
+                                            onDoubleClick={hasAxisEdit ? () => setRenamingRow(row.id) : undefined}>
+                                            {renamingRow === row.id ? (
+                                                <InlineRename value={row.label ?? ''} ariaLabel="행 이름" className="w-full bg-bg text-text px-1 select-text"
+                                                    onCommit={(n) => { setRenamingRow(null); if (n !== (row.label ?? '')) emit({ cells: [], rows: { rename: [{ id: row.id, label: n }] }, source: 'menu' }, false); }}
+                                                    onCancel={() => setRenamingRow(null)} />
+                                            ) : (
+                                                <span className="block truncate text-small text-text" title={hasAxisEdit ? '더블클릭으로 이름 고치기' : undefined}>{row.label || '\u00a0'}</span>
+                                            )}
+                                            {row.sub && (h == null || h >= 40) && <span className="block text-micro tabular-nums text-muted">{row.sub}</span>}
+                                            {hasRowWeight && (
+                                                <span data-testid="row-edge-end" onMouseDown={(e) => beginWeight(e, row.id, heightOf(row) ?? 24)}
+                                                    title="끌어서 줄 높이 조절"
+                                                    className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize hover:bg-accent/40" />
+                                            )}
+                                        </th>
+                                    )}
                                     {columns.map((col, c) => {
                                         if (mergeMap.covered.has(`${r}:${c}`)) return null;   // 병합에 덮인 칸은 안 그린다
                                         const span = mergeMap.anchors.get(`${r}:${c}`);
@@ -887,6 +966,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         );
                                     })}
                                 </tr>
+                                </Fragment>
                             );
                         })}
                         {rows.length === 0 && (

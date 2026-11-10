@@ -5,7 +5,8 @@
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { TimeGrid } from './TimeGrid';
+import { TimeSheet } from './TimeSheet';
+import { Table } from '../../sheet/Table';
 import { parseHm } from './GridToolbar';
 import { blankTimetable, guardTimeline, rowLength, type TimetableData } from '../model';
 
@@ -21,7 +22,7 @@ function Harness() {
     latest = hist.cur;
     return (<>
         <div ref={setBar} />
-        <TimeGrid data={hist.cur} toolbarHost={bar} onNotice={(m) => notices.push(m)}
+        <TimeSheet data={hist.cur} Table={Table} toolbarHost={bar} onNotice={(m) => notices.push(m)}
             edit={(fn) => setHist((h) => { const n = guardTimeline(h.cur, fn(h.cur)); return n === h.cur ? h : { past: [...h.past, h.cur], cur: n, future: [] }; })}
             undo={() => setHist((h) => h.past.length ? { past: h.past.slice(0, -1), cur: h.past[h.past.length - 1], future: [h.cur, ...h.future] } : h)}
             redo={() => setHist((h) => h.future.length ? { past: [...h.past, h.cur], cur: h.future[0], future: h.future.slice(1) } : h)}
@@ -39,7 +40,8 @@ afterEach(() => { act(() => { root?.unmount(); }); root = null; document.body.in
 const q = (s: string) => document.querySelector(s) as HTMLElement | null;
 const btn = (label: string) => q(`button[aria-label="${label}"]`) as HTMLButtonElement;
 const click = (el: Element) => act(() => { el.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
-const select = (c: number, r: number) => act(() => { q(`[data-c="${c}"][data-r="${r}"]`)!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); });
+const select = (c: number, r: number) => act(() => { q(`[data-rc="${r}:${c}"]`)!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); });
+const rowH = (r: number) => q(`tr[data-row-idx="${r}"]`)!.style.height;
 function enter(label: string, value: string) {
     const el = q(`input[aria-label="${label}"]`) as HTMLInputElement;
     act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); });
@@ -124,14 +126,13 @@ describe('시간표 툴바', () => {
 
     it('칸 지우기 · 확대(칸 높이가 커진다)', () => {
         mount();
-        const cell = q('[data-c="0"][data-r="0"]')!;
-        expect(btn('칸 지우기').disabled).toBe(true);
-        select(0, 0);
+        select(0, 0);   // 시트는 늘 칸 하나가 골라져 있다 — 지우기는 켜져 있다
+        expect(btn('칸 지우기').disabled).toBe(false);
+        expect(rowH(0)).toBe('40px');   // 50분 × 0.8
         click(btn('확대'));
-        expect(q('[data-c="0"][data-r="0"]')!.style.height).toBe('60px');   // 50분 × 1.2
+        expect(rowH(0)).toBe('60px');   // 50분 × 1.2
         click(btn('축소')); click(btn('축소'));
-        expect(q('[data-c="0"][data-r="0"]')!.style.height).toBe('25px');   // 50분 × 0.5
-        expect(cell).toBeTruthy();
+        expect(rowH(0)).toBe('25px');   // 50분 × 0.5
     });
 
     it('시각 파서', () => {
