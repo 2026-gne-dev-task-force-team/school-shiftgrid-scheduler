@@ -33,6 +33,7 @@ const look: RelationLook = {
     liveByType: (t) => Object.keys(nodes).filter((id) => nodes[id].type === t && !nodes[id].trashed).map(pub),
     children: (id) => Object.keys(nodes).filter((k) => parentOf(k) === id).map(pub),
     parent: parentOf,
+    find: (pred) => Object.keys(nodes).map(pub).filter(pred),
 };
 const toA = { target: { kind: 'db', nodeId: 'dbA' }, many: true };
 const field = { key: 'f_r', label: '관계', type: 'relation', config: toA };

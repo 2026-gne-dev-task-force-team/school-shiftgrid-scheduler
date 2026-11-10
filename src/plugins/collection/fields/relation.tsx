@@ -5,16 +5,15 @@
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
-import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
-import { DB_TYPE, ROW_TYPE, normalizeRelation, relationToText } from '../schema';
+import { DB_TYPE, normalizeRelation, relationToText } from '../schema';
 import { effectiveParentId } from '../tree';
+import { castCandidate, liveIn, parseRelationEntry, recordsOf, type RelationLook } from './cast';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
 export interface RelationConfig { target?: RelationTarget; many: boolean }
-/** 노드 시스템에서 관계 칸이 쓰는 것만 — 시험은 가짜로 채운다 */
-export type RelationLook = Pick<NodesApi, 'get' | 'isTrashed' | 'path' | 'liveByType' | 'children' | 'parent'>;
+export type { RelationLook } from './cast';
 /** path = 부모 항목 이름들(바깥 → 안) — 최상위면 빈 배열 */
 export interface RelationItem { id: string; name: string; path: string[] }
 
@@ -33,30 +32,6 @@ export function relationConfig(config: unknown): RelationConfig {
 
 /** 값 → id 배열(설정의 many 를 따른다) */
 export const relationIds = (value: unknown, config: unknown): string[] => normalizeRelation(value, relationConfig(config).many);
-
-/**
- * 대상 컬렉션의 레코드 — 범용 컬렉션(collection.db)은 행이 노드 나무로 중첩되고(하위 항목),
- *   defineCollection 컬렉션(꾸러미가 정의한 목록 노드)은 레코드가 목록 노드의 납작한 자식이고 중첩은 data.parentId 다.
- *   shortcut: 납작한 쪽은 「목록의 살아 있는 직속 자식 = 레코드」로 본다(record 타입 표를 노드 약속이 안 드러내서) — 목록에 레코드 아닌 자식이 생기면 타입 표 조회로 바꾼다.
- */
-function recordsOf(look: RelationLook, dbId: string): { id: string; name: string; parentId?: string }[] {
-    if (look.get(dbId)?.type === DB_TYPE) {
-        return look.liveByType(ROW_TYPE).filter((n) => look.path(n.id).includes(dbId)).map((n) => ({ id: n.id, name: n.name }));
-    }
-    if (!look.get(dbId) || look.isTrashed(dbId)) return [];
-    return look.children(dbId).filter((n) => !look.isTrashed(n.id)).map((n) => {
-        const p = (n.data as { parentId?: unknown } | undefined)?.parentId;
-        return { id: n.id, name: n.name, parentId: typeof p === 'string' && p ? p : undefined };
-    });
-}
-
-/** 이 id 가 대상 컬렉션 안에 살아 있는 레코드인가 */
-function liveIn(look: RelationLook, dbId: string, id: string): boolean {
-    const n = look.get(id);
-    if (!n || look.isTrashed(id)) return false;
-    if (look.get(dbId)?.type === DB_TYPE) return n.type === ROW_TYPE && look.path(id).includes(dbId);
-    return look.parent(id) === dbId && !look.isTrashed(dbId);
-}
 
 /** 고르기 후보 — 대상 컬렉션 안 살아 있는 레코드(하위 항목 포함) + 부모 경로. 'source'·대상 없음·대상이 휴지통이면 빈 목록 */
 export function relationCandidates(look: RelationLook | null, target: RelationTarget | undefined): RelationItem[] {
@@ -83,8 +58,13 @@ export function relationCandidates(look: RelationLook | null, target: RelationTa
 /** 값의 id 하나하나 → 이름. 없음·휴지통·대상 밖이면 name = null(「사라진 항목」) */
 export function resolveRelation(look: RelationLook | null, target: RelationTarget | undefined, ids: readonly string[]): { id: string; name: string | null }[] {
     return ids.map((id) => {
-        if (!look || target?.kind !== 'db' || !liveIn(look, target.nodeId, id)) return { id, name: null };
-        return { id, name: look.get(id)?.name || UNTITLED };
+        if (!look || target?.kind !== 'db') return { id, name: null };
+        if (liveIn(look, target.nodeId, id)) return { id, name: look.get(id)?.name || UNTITLED };
+        // 캐스팅 원소(다른 목록의 줄 · 고른 대상) — 그 줄 이름 그대로, 고른 것이 있으면 「반 · 방」
+        const { id: src, via } = parseRelationEntry(id);
+        if (castCandidate(look, target.nodeId, src) === 'block') return { id, name: null };
+        const viaName = via && liveIn(look, target.nodeId, via) ? look.get(via)?.name || UNTITLED : null;
+        return { id, name: `${look.get(src)?.name || UNTITLED}${viaName ? ` · ${viaName}` : ''}` };
     });
 }
 

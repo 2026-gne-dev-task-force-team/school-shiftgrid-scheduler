@@ -317,6 +317,10 @@ export interface RecordSchemaApi {
     normalizeRelation(value: unknown, many?: boolean): string[];
     /** 관계 칸 값 → 대상 이름을 `, ` 로 이은 글자(모르는 id 는 건너뛴다) */
     relationToText(ids: readonly string[], nameOf: (id: string) => string | undefined): string;
+    /** 관계 칸 값 → 대상 줄 id[] — 다른 목록의 줄(예: 반)을 넣은 원소는 그 줄이 가리키는(고른 또는 유일한) 대상으로 따라간다. 옛 값(대상 id)은 그대로 */
+    resolveRelationTargets(value: unknown, config: unknown): string[];
+    /** 거꾸로 보기 — 그 줄을 (다른 목록 줄 경유 포함) 가리키는 레코드와 칸 key, 여럿 그대로 */
+    relationReferrers(targetId: string): { id: string; key: string }[];
 }
 
 /** 속성 목록 props — 이름표 | 그 타입의 Cell 한 줄씩(인스펙터가 쓴다). onChange 가 없으면 보기 전용. */
