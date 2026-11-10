@@ -2,7 +2,7 @@
  * 🔴 블록 편집 — 전부 순수 함수(Page 를 받아 새 Page 를 돌려준다 · 테스트로 박는다).
  *   키 동작(Enter·Backspace·Tab)의 「무엇을 하나」가 여기 산다. 뷰는 캐럿만 챙기고 이 함수들을 부른다.
  */
-import type { Block, BlockType, Page, TableBlockData } from './types';
+import type { Block, BlockType, NodeDisplay, Page, TableBlockData } from './types';
 import { emptyBlock, emptyTable, isList, newId } from './types';
 // 🔴 import type 만 — table 약속 타입은 표 편집기 꾸러미 contracts 에서(값 아님, 구조 검사 d·g).
 import type { TableTx } from '../../sheet/contracts/table';
@@ -45,6 +45,15 @@ export function setNodeRef(page: Page, id: string, nodeId: string): Page {
     return { ...page, blocks: replaceAt(page.blocks, idx, { ...page.blocks[idx], nodeId }) };
 }
 
+/** 끼워 넣기 표시 모양 바꾸기(R3-E) — card 는 칸을 지운다(옛 블록과 같은 모양 그대로 저장). */
+export function setNodeDisplay(page: Page, id: string, display: NodeDisplay): Page {
+    const idx = indexOf(page, id);
+    if (idx < 0 || page.blocks[idx].type !== 'node') return page;
+    const next: Block = { ...page.blocks[idx] };
+    if (display === 'inline') next.display = 'inline'; else delete next.display;
+    return { ...page, blocks: replaceAt(page.blocks, idx, next) };
+}
+
 /** 표 데이터 바꾸기. */
 export function setTable(page: Page, id: string, table: TableBlockData): Page {
     const idx = indexOf(page, id);
@@ -64,7 +73,7 @@ export function changeType(page: Page, id: string, type: BlockType): Page {
     if (type === 'todo') next.checked = cur.checked ?? false;
     if (isList(type)) next.indent = cur.indent ?? 0;
     if (type === 'table') { next.text = ''; next.table = cur.table ?? emptyTable(); }
-    if (type === 'node') { next.text = ''; next.nodeId = cur.nodeId; next.view = cur.view; }
+    if (type === 'node') { next.text = ''; next.nodeId = cur.nodeId; next.view = cur.view; if (cur.display) next.display = cur.display; }
     if (type === 'divider') next.text = '';
     return { ...page, blocks: replaceAt(page.blocks, idx, next) };
 }

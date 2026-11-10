@@ -25,27 +25,31 @@ export interface ThemeControls {
 }
 
 // ── 모듈 단일 스토어 ──
-let current: ThemeSettings = loadThemeSettings();
+// 🔴 지연 로드 — ⛔ import 시점에 읽지 않는다. main.tsx 의 setStoragePrefix 는 import 가 다 끝난 뒤에 돌아서,
+//    import 시점에 읽으면 접두사 없는 키('pane-ui-system.theme')를 읽어 저장값을 못 보고 기본값(system)이 박힌다
+//    → 저장이 「밝게」인데 OS 가 바뀌면 낡은 system 사본이 applyTheme 를 다시 불러 OS 를 따라가 버렸다(2026-11-10 실제 OS 전환으로 재현).
+let current: ThemeSettings | null = null;
+function cur(): ThemeSettings { return current ??= loadThemeSettings(); }
 const listeners = new Set<() => void>();
 
 function commit(next: ThemeSettings): void {
     current = next;
-    applyTheme(current);
-    saveThemeSettings(current);
+    applyTheme(next);
+    saveThemeSettings(next);
     for (const l of listeners) l();
 }
 
 /** 바깥(설정 판·플러그인)이 직접 읽을 때 */
-export function getThemeSettings(): ThemeSettings { return current; }
+export function getThemeSettings(): ThemeSettings { return cur(); }
 export function setThemeSettings(patch: Partial<ThemeSettings>): void {
-    commit(normalizeThemeSettings({ ...current, ...patch }));
+    commit(normalizeThemeSettings({ ...cur(), ...patch }));
 }
 export function resetThemeSettings(): void { commit(defaultThemeSettings()); }
 
 // 시스템 밝기 구독 — 모듈이 한 번만. 값이 바뀌면 mode:'system' 일 때만 다시 적용(저장값은 그대로)
 if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => { if (current.mode === 'system') applyTheme(current); };
+    const onChange = () => { const c = cur(); if (c.mode === 'system') applyTheme(c); };
     if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
     else (mq as MediaQueryList & { addListener?: (cb: () => void) => void }).addListener?.(onChange);
 }

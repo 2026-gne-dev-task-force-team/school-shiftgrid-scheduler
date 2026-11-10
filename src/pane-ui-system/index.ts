@@ -144,7 +144,7 @@ export {
 } from './view-registry';
 
 // 테마 — 토큰 단일 원본 + 적용 + 설정
-export { useTheme, type ThemeControls } from './theme/useTheme';
+export { useTheme, getThemeSettings, type ThemeControls } from './theme/useTheme';
 export { applyTheme, resolveMode, effectiveColors, themeSwatchStyle, type ResolvedMode } from './theme/apply';
 export {
     loadThemeSettings, saveThemeSettings, normalizeThemeSettings, defaultThemeSettings,

@@ -136,7 +136,9 @@ export function presetForMode(id: string, resolved: 'light' | 'dark'): ThemePres
         const pair = THEMES.find((p) => p.id === t.pairId);
         if (pair) return pair;
     }
-    return t;   // 짝 없음 → mode 무관
+    // 짝 없음(Nord 등 단일 테마) — 밝기가 안 맞으면 기본 테마(노션)의 그 밝기 짝으로 떨어진다.
+    // ⛔ 「mode 무관」으로 두지 않는다: 시스템/밝게/어둡게를 골라도 안 따라가는 것으로 보인다(쥔님 겪음 2026-11-10)
+    return THEMES.find((p) => p.base === resolved && p.id.startsWith(DEFAULT_THEME_ID.split('-')[0])) ?? t;
 }
 
 // ── 치수 토큰 ─────────────────────────────────────────────────────────────

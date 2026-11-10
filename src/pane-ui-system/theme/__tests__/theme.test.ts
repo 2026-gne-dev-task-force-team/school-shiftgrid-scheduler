@@ -101,9 +101,10 @@ describe('④ 모드 짝', () => {
     it('같은 밝기면 그대로다', () => {
         expect(presetForMode('notion-light', 'light').id).toBe('notion-light');
     });
-    it('짝이 없는 테마는 mode 와 무관하다', () => {
-        expect(presetForMode('nord', 'light').id).toBe('nord');
-        expect(presetForMode('dracula', 'light').id).toBe('dracula');
-        expect(presetForMode('obsidian', 'light').id).toBe('obsidian');
+    it('짝이 없는 테마는 자기 밝기면 그대로, 밝기가 안 맞으면 노션 짝으로 떨어진다', () => {
+        expect(presetForMode('nord', 'dark').id).toBe('nord');
+        expect(presetForMode('nord', 'light').id).toBe('notion-light');
+        expect(presetForMode('dracula', 'light').id).toBe('notion-light');
+        expect(presetForMode('obsidian', 'light').id).toBe('notion-light');
     });
 });
