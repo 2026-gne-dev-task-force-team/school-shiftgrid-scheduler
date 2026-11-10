@@ -10,9 +10,9 @@
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { storageKey } from '../../storage';
-import { FOCUS_RING } from '../../primitives/focus';
 import { Icon } from '../../primitives/Icon';
 import { ConfirmDialog } from '../../primitives/ConfirmDialog';
+import { Button } from '../../primitives/Button';
 import { resetPaneSettings } from '../../layout/pane-settings';
 import { clearWorkspace } from '../../layout/workspace-store';
 import { layoutKey } from '../../layout/panels';
@@ -74,14 +74,7 @@ export class ViewErrorBoundary extends Component<ViewBoundaryProps, ViewBoundary
                     <p className="text-note text-muted leading-relaxed break-all">
                         {this.state.error.message || '알 수 없는 오류'}
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => this.setState({ error: null })}
-                        className={`h-btn px-3 rounded border border-accent text-small text-text bg-text/[0.06]
-                            hover:bg-text/[0.1] transition-colors ${FOCUS_RING}`}
-                    >
-                        다시 시도
-                    </button>
+                    <Button variant="solid" tone="accent" onClick={() => this.setState({ error: null })}>다시 시도</Button>
                 </div>
             </div>
         );
@@ -139,14 +132,7 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, RootBo
                     <p className="text-small text-muted leading-relaxed">
                         이전 버전의 화면 배치나 캐시가 충돌했을 수 있습니다. 아래 단추를 누르면 저장된 자료는 유지한 채 화면 배치만 초기화하고 다시 엽니다.
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => this.setState({ confirmReset: true })}
-                        className={`h-btn px-4 rounded border border-accent text-body text-text bg-text/[0.06]
-                            hover:bg-text/[0.12] transition-colors ${FOCUS_RING}`}
-                    >
-                        화면 배치 초기화 후 다시 열기
-                    </button>
+                    <Button variant="solid" tone="accent" onClick={() => this.setState({ confirmReset: true })}>화면 배치 초기화 후 다시 열기</Button>
                     {this.state.confirmReset && (
                         <ConfirmDialog title="화면 배치를 초기화할까요?" confirmLabel="초기화" danger
                             onConfirm={() => { this.setState({ confirmReset: false }); void this.handleManualReset(); }}

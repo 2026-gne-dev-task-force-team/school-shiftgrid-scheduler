@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNarrow } from '../../layout/useScreen';
 import { useNotifications, dismiss, runNotifyAction, actionState, type NotifyLevel } from '../../plugin/notify';
 import { listPlugins } from '../../plugin/registry';
-import { FOCUS_RING } from '../../primitives/focus';
+import { Button } from '../../primitives/Button';
+import { IconButton } from '../../primitives/IconButton';
 import { Icon, type IconName } from '../../primitives/Icon';
 
 export const LEVEL_STYLE: Record<NotifyLevel, { icon: IconName; bar: string; text: string }> = {
@@ -85,28 +86,15 @@ export function Toasts() {
                             {t.body && <div className="mt-0.5 text-small text-muted break-words">{t.body}</div>}
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                 {t.action && (
-                                    <button
-                                        type="button"
-                                        disabled={act.kind !== 'ready'}
+                                    <Button size="sm" variant="outline" disabled={act.kind !== 'ready'}
                                         title={act.kind === 'stale' ? act.reason : undefined}
-                                        onClick={() => runNotifyAction(t.id)}
-                                        className={`h-6 px-2 rounded border border-line text-small whitespace-nowrap shrink-0 hover:bg-text/[0.06] disabled:opacity-40 disabled:pointer-events-none ${FOCUS_RING}`}
-                                    >
-                                        {t.action.label}
-                                    </button>
+                                        onClick={() => runNotifyAction(t.id)}>{t.action.label}</Button>
                                 )}
                                 {act.kind === 'stale' && <span className="text-note text-muted">{act.reason}</span>}
                                 {who && <span className="text-note text-muted whitespace-nowrap">{who}</span>}
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            aria-label="알림 닫기"
-                            onClick={() => dismiss(t.id)}
-                            className={`hit-44 relative shrink-0 rounded text-muted hover:text-text ${FOCUS_RING}`}
-                        >
-                            <Icon name="x" size={14} />
-                        </button>
+                        <IconButton icon="x" label="알림 닫기" iconSize={14} onClick={() => dismiss(t.id)} />
                     </div>
                 );
             })}

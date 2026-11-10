@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, Dialog, Select, TextInput, Toggle, isImeEnter } from '../../../pane-ui-system';
+import { Button, Dialog, Field, Select, TextInput, Toggle, isImeEnter } from '../../../pane-ui-system';
 import { createUserWithLogin, credentialMethods } from '../core';
 
 export function NewUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string, name: string) => void }) {
@@ -46,19 +46,19 @@ export function NewUserDialog({ onClose, onCreated }: { onClose: () => void; onC
                 // Enter = 만들기(입력 칸에서 · 한글 조합 중 Enter 는 넘긴다)
                 onKeyDown={(e) => { if (e.key === 'Enter' && !isImeEnter(e) && e.target instanceof HTMLInputElement) { e.preventDefault(); void submit(); } }}
                 className="flex flex-col gap-2 text-small text-text" data-acc-new-user>
-                <label className="flex flex-col gap-1">이름
+                <Field label="이름">
                     <TextInput autoFocus aria-label="이름" value={name} onChange={edit(setName)} />
-                </label>
-                <label className="flex flex-col gap-1">아이디
+                </Field>
+                <Field label="아이디">
                     <TextInput aria-label="아이디" autoComplete="off" value={loginId} onChange={edit(setLoginId)} />
-                </label>
-                <label className="flex flex-col gap-1">자격증명 종류
+                </Field>
+                <Field label="자격증명 종류">
                     <Select aria-label="자격증명 종류" value={method} onChange={(e) => setMethod(e.target.value)}
                         options={methods.map((m) => ({ value: m.id, label: m.title }))} />
-                </label>
-                <label className="flex flex-col gap-1">초기 비밀번호 <span className="text-note text-muted">(비우면 처음 들어올 때 본인이 정합니다)</span>
+                </Field>
+                <Field label="초기 비밀번호" hint="비우면 처음 들어올 때 본인이 정합니다">
                     <TextInput type="password" aria-label="초기 비밀번호" autoComplete="new-password" value={pw} onChange={edit(setPw)} />
-                </label>
+                </Field>
                 <div className="flex items-center justify-between">
                     <span>활성</span>
                     <Toggle on={active} onToggle={setActive} label="활성" />

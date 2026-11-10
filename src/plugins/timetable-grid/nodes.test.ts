@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { sheetMenu, initGridNodes, inTrash, SHEET_TYPE } from './nodes';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 
 describe('시간표 우클릭 메뉴', () => {
     it('모든 항목이 자기 시간표를 commandArg.nodeId 로 싣는다 — 뒤에 연 메뉴가 앞 메뉴 대상을 못 바꾼다', () => {

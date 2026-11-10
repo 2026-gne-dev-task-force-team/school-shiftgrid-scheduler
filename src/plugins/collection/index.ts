@@ -12,7 +12,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { recordViewApi } from './api';
 import { DbView } from './views/DbView';
@@ -47,7 +47,7 @@ export const collectionPlugin = definePlugin({
         provides: { 'collection': '0.2.0' },
         // 🔴 레코드 뷰도 노드다 — nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
-        // 줄 문서 — 페이지 편집기가 있으면 줄마다 문서를 붙인다(없으면 칸만)
+        // 줄 문서 — 노트가 있으면 줄마다 문서를 붙인다(없으면 칸만)
         supports: { 'page-doc': '^0.1' },
         contributes: {
             // 🔴 collection 약속을 들고 온다(꾸러미 매니페스트) — 켜진 collection 가 호스트 약속 목록에 collection 를 올린다.

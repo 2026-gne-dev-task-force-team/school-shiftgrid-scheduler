@@ -7,7 +7,7 @@
  * 🔴 이 검사 자체가 정규식 문자열로 금지 패턴을 품고 있으니, 검사 폴더(__tests__)는 스캔 대상에서 뺀다.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, basename, dirname, relative, sep } from 'node:path';
 
 const ROOT = resolve(process.cwd(), 'src');
@@ -31,11 +31,22 @@ function walk(dir: string): string[] {
 
 const read = (p: string) => readFileSync(p, 'utf-8');
 
+/**
+ * 🍳 후라이팬 이사(2026-11-10) — 「코어」는 pane-ui-system/core/ 폴더 하나다(내부 코어 플러그인: 매니페스트·definePlugin 꼴 그대로).
+ *   CORE      = pane-ui-system/core 아래 전부 — 플러그인과 같은 결(매니페스트·host)로 지어져 플러그인 검사를 같이 받는다
+ *   ENGINE    = pane-ui-system 에서 core 를 뺀 것 — 엔진. 바깥·core 를 모르고 도메인 낱말도 모른다(⑦a·⑤)
+ *   PLUGINLIKE = plugins + core — 「꾸러미 꼴」 검사(①⑩⑭⑯⑰⑱)의 스캔 범위. ⚠️ 안 넓히면 이사한 코드가 조용히 검사 밖으로 빠진다.
+ */
+const CORE_DIR = join(ROOT, 'pane-ui-system', 'core');
+const CORE = walk(CORE_DIR);
+const ENGINE = walk(join(ROOT, 'pane-ui-system')).filter((f) => !f.startsWith(CORE_DIR + sep));
+const PLUGINLIKE = [...walk(join(ROOT, 'plugins')), ...CORE];
+
 describe('① app·shell·plugins 에 하드코딩 색 0건', () => {
     // #rrggbb · rgb( · bg-gray- · text-gray- · border-gray-
     // 🔴 plugins 도 본다 — 뷰가 제멋대로 색을 박으면 테마가 안 먹는다(팬 UI 엔진 테스트의 색 글자도 토큰으로만).
     const BANNED = /#[0-9a-fA-F]{3,8}\b|rgb\(|\b(?:bg|text|border)-gray-/;
-    const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system', 'shell')), ...walk(join(ROOT, 'plugins'))];
+    const files = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system', 'shell')), ...PLUGINLIKE];
 
     it('스캔할 파일이 실제로 있다(빈 글롭이 거짓 통과를 주지 않게)', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -86,26 +97,41 @@ describe('③ 호버-숨김(group-hover)은 Row 조각 한 곳에만', () => {
  *      ⑦ 안에서 바깥(app·plugins)을 부르지 않는다 — 부르면 떼어 갈 때 끊긴다
  *      ⑤ 도메인 낱말이 안 들어온다 — 들어오면 이 창틀이 도메인 전용이 된다
  */
-describe('⑦ pane-ui-system 은 바깥(app·plugins·interfaces)을 import 하지 않는다', () => {
+describe('⑦a 엔진(pane-ui-system 에서 core/ 를 뺀 것)은 바깥(app·plugins·interfaces)과 core 를 import 하지 않는다', () => {
     // 🔴 /interfaces/ 추가(M0) — 창틀은 인터페이스를 「이름 문자열」로만 안다(src/interfaces 를 import 하면 도메인이 샌다).
-    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App|\.\.\/interfaces|\/interfaces\/)[^'"]*['"]/;
-    const files = walk(join(ROOT, 'pane-ui-system'));
+    // 🍳 /core/ 추가(후라이팬) — 조립은 app 몫이다. 엔진이 core 를 부르면 엔진→core 역방향이 생겨 core 를 떼어 낼 수 없다.
+    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App|\.\.\/interfaces|\/interfaces\/|(?:^|[/'"])core(?:\/|['"]))[^'"]*['"]/;
+    const files = ENGINE;
 
     it('스캔할 파일이 있다', () => { expect(files.length).toBeGreaterThan(0); });
 
     for (const f of files) {
-        it(`바깥 의존 없음: ${basename(f)}`, () => {
+        it(`바깥·core 의존 없음: ${f.slice(ROOT.length + 1)}`, () => {
             expect(OUTWARD.test(read(f))).toBe(false);
         });
     }
 });
 
-describe('⑤ pane-ui-system 에 도메인 낱말 0건', () => {
+describe('⑦b core/ 는 바깥(app·plugins·interfaces)을 import 하지 않는다 (비테스트 — core 는 plugins 를 못 부른다)', () => {
+    const OUTWARD = /from\s+['"][^'"]*(?:\.\.\/app|\/app\/|\.\.\/plugins|\/plugins\/|\.\.\/App|\.\.\/interfaces|\/interfaces\/)[^'"]*['"]/;
+
+    it('스캔할 core 파일이 있다', () => { expect(CORE.length).toBeGreaterThan(0); });
+
+    for (const f of CORE) {
+        it(`바깥 의존 없음: ${f.slice(ROOT.length + 1)}`, () => {
+            expect(OUTWARD.test(read(f))).toBe(false);
+        });
+    }
+});
+
+describe('⑤ 엔진(pane-ui-system 에서 core/ 를 뺀 것)에 도메인 낱말 0건', () => {
     // 이 창틀은 시간표를 모른다. ⚠️ 「바텀 시트」 같은 UI 용어와 겹치지 않게 낱말을 고른다
     // ⭐ 「속성」도 이번부터 도메인이다 — 창틀이 사이드바에 든 뷰 이름(속성 등)을 알면 안 된다(그건 앱이 등록소로 준다)
     const DOMAIN = ['시간표', '교시', '교사', '학교', '학년', '반 ', '과목', '특별실', '보결', '근태', '속성', 'shiftgrid'];
     // 이모지 사전은 낱말 자체가 데이터다(🏫=학교 · 🧑‍🏫=교사) — 창틀 코드가 도메인을 아는 게 아니라 일반 어휘라서 이 파일만 뺀다
-    const files = walk(join(ROOT, 'pane-ui-system')).filter((f) => basename(f) !== 'emoji-data.ts');
+    const files = ENGINE.filter((f) => basename(f) !== 'emoji-data.ts');   // 🍳 core 는 뺀다 — core 의 「속성」·주석 속 「시간표·교사」는 허용
+
+    it('스캔할 엔진 파일이 있다', () => { expect(files.length).toBeGreaterThan(0); });
 
     for (const f of files) {
         it(`도메인 낱말 없음: ${basename(f)}`, () => {
@@ -133,6 +159,34 @@ describe('⑥ plugins 는 pane-ui-system 속(shell·layout·primitives)을 직�
     for (const f of files) {
         it(`창틀 속 직접 import 없음: ${f.slice(ROOT.length + 1)}`, () => {
             expect(DEEP.test(read(f)), `${basename(f)} 가 창틀 속을 직접 집었다 — pane-ui-system/plugin 배럴로`).toBe(false);
+        });
+    }
+});
+
+/*
+ * ⑥′ plugins 가 core/ 를 부를 때는 `core/<m>/contracts/` 의 `import type` 만 — core 의 일반 코드·값을 끌면 plugins↔core 가 런타임으로 엉킨다
+ *   (값은 host.modules.use 로). 약속 타입만 컴파일 때 지나가는 문이다.
+ */
+describe("⑥′ plugins → core 는 core/<m>/contracts/ 의 import type 만", () => {
+    const files = walk(join(ROOT, 'plugins'));
+
+    it('스캔할 플러그인 파일이 실제로 있다', () => { expect(files.length).toBeGreaterThan(0); });
+
+    for (const f of files) {
+        it(`core 를 약속 타입으로만 부른다: ${f.slice(ROOT.length + 1)}`, () => {
+            const src = read(f);
+            const typeOnly = new Set([...src.matchAll(/import\s+type\s+[^'"]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]));
+            const bad: string[] = [];
+            for (const m of src.matchAll(/(?:from|import\s*\()\s*['"]([^'"]+)['"]/g)) {
+                const s = m[1];
+                if (!s.startsWith('.')) continue;
+                const rel = relative(CORE_DIR, resolve(dirname(f), s));
+                if (rel.startsWith('..')) continue;               // core 바깥
+                const parts = rel.split(sep);
+                const ok = parts[1] === 'contracts' && typeOnly.has(s);
+                if (!ok) bad.push(s);
+            }
+            expect(bad, `${basename(f)} 가 core 를 약속 타입 밖으로 부른다(core/<m>/contracts/ 의 import type 만 — 값은 host.modules.use): ${bad.join(', ')}`).toEqual([]);
         });
     }
 });
@@ -188,7 +242,7 @@ describe('⑩ 메뉴 항목은 명령으로 — 직접 핸들러 금지', () => 
     const BANNED = /onClick:\s*\(\)\s*=>\s*(?:handlers\.|host\.workspace\.|host\.commands\.(?!run))/;
     const files = [
         join(ROOT, 'pane-ui-system', 'shell', 'shared', 'WorkspaceView.tsx'),
-        ...walk(join(ROOT, 'plugins')),
+        ...PLUGINLIKE,
     ];
 
     it('스캔할 파일이 실제로 있다', () => { expect(files.length).toBeGreaterThan(0); });
@@ -304,6 +358,36 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
 });
 
 /*
+ * ⑧′ core/<m>/manifest.ts — id === 폴더명 · core: true · layer 'platform'. 그리고 plugins/ 쪽 매니페스트엔 core: true 가 0
+ *    (코어 = core/ 폴더 하나로 — 폴더가 신분이고 plugins/ 에 두고 core 표시만 하는 길은 닫는다).
+ */
+describe('⑧′ core/<m>/manifest.ts 는 id·core:true·layer platform · plugins/ 매니페스트에 core:true 0', () => {
+    const mods = (() => {
+        try { return readdirSync(CORE_DIR, { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== '__tests__').map((e) => e.name); } catch { return []; }
+    })();
+
+    it('core 모듈 폴더가 하나 이상 있다', () => { expect(mods.length).toBeGreaterThan(0); });
+
+    for (const m of mods.filter((d) => existsSync(join(CORE_DIR, d, 'manifest.ts')))) {   // 🍳 manifest.ts 가 있는 모듈만 — 없으면 꾸러미가 아닌 부품(nodes·node-store·node-frame·plugin-manager)
+        it(`core/${m}/manifest.ts — id '${m}' · core: true · layer 'platform'`, () => {
+            const src = read(join(CORE_DIR, m, 'manifest.ts'));
+            expect(src.match(/\bid:\s*['"]([^'"]+)['"]/)?.[1], `core/${m}/manifest.ts id`).toBe(m);
+            expect(/\bcore:\s*true\b/.test(src), `core/${m}/manifest.ts 에 core: true 가 없다`).toBe(true);
+            expect(/\blayer:\s*['"]platform['"]/.test(src), `core/${m}/manifest.ts 의 layer 가 platform 이 아니다`).toBe(true);
+        });
+    }
+
+    // 🍳 이사 중 — 아직 plugins/ 에 남은 코어 셋. ⭐ 이사하는 판이 자기 이름을 이 목록에서 지운다(P2 properties · P3 explorer · P4 settings). 다 지우면 이 목록과 이 주석을 없앤다.
+    const NOT_MOVED_YET: string[] = [];
+    for (const d of readdirSync(join(ROOT, 'plugins'), { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== '__tests__' && !NOT_MOVED_YET.includes(e.name)).map((e) => e.name)) {
+        it(`plugins/${d}/manifest.ts 에 core: true 없음`, () => {
+            const src = read(join(ROOT, 'plugins', d, 'manifest.ts'));
+            expect(/^\s*core:\s*true\b/m.test(src), `plugins/${d} 는 코어가 아니다 — 코어는 pane-ui-system/core/ 로 옮긴다`).toBe(false);
+        });
+    }
+});
+
+/*
  * ⑭ 플러그인은 kv 를 직접 안 부른다 — host.store 로만(⑥ 창틀 속 금지·⑩ 명령 창구와 같은 결).
  *   kvGet/kvSet/kvDel 을 직접 부르면 네임스페이스(plugin.<id>.<key>)를 안 거친 키가 생긴다 —
  *   host.store 가 그걸 가두는 자리다. 저장은 전부 host.store·host.storage 창구로.
@@ -315,7 +399,7 @@ describe('⑧ plugins/<id>/ 마다 manifest.ts 의 id 가 폴더명과 같다', 
  */
 describe('⑯ plugins/**/views 에 소문자 record 비교 0 (레코드 판정은 isRecordType 콜백으로만)', () => {
     const NEEDLE = /\brecord\b(?!-view)/;   // 꾸러미 이름 collection(약속 import·modules.use)는 레코드성 판정이 아니라 뺀다 ·   // 소문자 — isRecordType·isRecord 의 대문자 R 은 안 걸린다
-    const files = walk(join(ROOT, 'plugins')).filter((f) => f.includes(`${sep}views${sep}`));
+    const files = PLUGINLIKE.filter((f) => f.includes(`${sep}views${sep}`));
 
     it('스캔할 뷰 파일이 실제로 있다', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -355,10 +439,10 @@ describe('⑮ kv.ts 쓰기 트랜잭션 안에 await 가 없다 (openDb 직후�
 
 describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로만 (노드 스토어만 persist.ts 예외)', () => {
     // kvGet/kvSet/kvDel 은 전부 금지(네임스페이스 없는 키를 막는다).
-    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 explorer/persist.ts 하나만 예외.
+    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 core/node-store/persist.ts 하나만 예외.
     const BANNED = /\b(?:kv(?:Get|Set|Del)|nodesGetAll|nodesWrite)\s*\(/;
-    const PERSIST = join('explorer', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
-    const files = walk(join(ROOT, 'plugins'));
+    const PERSIST = join('node-store', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
+    const files = PLUGINLIKE;
 
     it('스캔할 플러그인 파일이 실제로 있다', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -388,7 +472,7 @@ describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로�
  */
 describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contributes·host.declare 로만', () => {
     const BANNED = /host\.(?:views\.register|commands\.add|ribbon\.add|settings\.add(?:Section|Item)|statusBar\.add)\s*\(/;
-    const files = walk(join(ROOT, 'plugins'));
+    const files = PLUGINLIKE;
 
     it('스캔할 플러그인 파일이 실제로 있다', () => {
         expect(files.length).toBeGreaterThan(0);
@@ -417,15 +501,20 @@ describe('⑰ plugins 에 매니페스트 밖 등록(옛 5종) 0건 — contribu
  */
 describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 선언된 약속만 · 약속 타입은 꾸러미 contracts/ 또는 contract-*/ 에서만', () => {
     const PLUGROOT = join(ROOT, 'plugins');
-    const files = walk(PLUGROOT);
-    const plugins = [...new Set(files.map((f) => relative(PLUGROOT, f).split(sep)[0]))];
+    const files = walk(PLUGROOT);   // (d·g) 는 plugins 끼리만 본다(core 는 ⑥′·⑦b 가 막는다)
+    // 🍳 모듈 단위 = plugins/<id> 또는 core/<m> — (a)(b)(c) 는 core 도 같은 결로 받는다
+    const unitFiles = PLUGINLIKE;
+    const unitOf = (f: string) => (f.startsWith(CORE_DIR + sep) ? 'core/' + relative(CORE_DIR, f).split(sep)[0] : relative(PLUGROOT, f).split(sep)[0]);
+    const plugins = [...new Set(unitFiles.map(unitOf))];
 
     it('스캔할 플러그인 폴더가 실제로 있다', () => { expect(plugins.length).toBeGreaterThan(0); });
 
     /** provides/requires/supports 객체 리터럴의 키(= 선언된 인터페이스 이름)를 그 플러그인 파일들에서 모은다. */
     function declaredFor(plugin: string): { all: Set<string>; supports: Set<string> } {
         const all = new Set<string>(); const supports = new Set<string>();
-        for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+        // 🍳 manifest.ts 없는 core 폴더는 「부품」(nodes·node-store·node-frame) — 꾸러미(explorer)가 선언한 약속을 같이 쓴다. 부품의 선언 집합 = core 전체 선언의 합
+        const isPart = plugin.startsWith('core/') && !existsSync(join(CORE_DIR, plugin.slice(5), 'manifest.ts'));
+        for (const f of unitFiles.filter((x) => (isPart ? x.startsWith(CORE_DIR + sep) : unitOf(x) === plugin))) {
             const src = read(f);
             for (const kind of ['provides', 'requires', 'supports']) {
                 for (const m of src.matchAll(new RegExp(`${kind}\\s*:\\s*\\{([^{}]*)\\}`, 'g'))) {
@@ -476,7 +565,7 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
 
     // (a) host.plugins.get( 0건
     const GET = /host\.plugins\.get\s*\(/;
-    for (const f of files) {
+    for (const f of unitFiles) {
         it(`(a) host.plugins.get 없음: ${f.slice(ROOT.length + 1)}`, () => {
             const hit = read(f).split('\n').findIndex((ln) => GET.test(ln));
             expect(hit, `${basename(f)} ${hit + 1}번째 줄 — host.plugins.get 은 걷혔다(host.modules.use 로)`).toBe(-1);
@@ -488,7 +577,7 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
         it(`(b) use 는 선언된 인터페이스만: ${plugin}`, () => {
             const { all } = declaredFor(plugin);
             const bad: string[] = [];
-            for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+            for (const f of unitFiles.filter((x) => unitOf(x) === plugin)) {
                 for (const name of usedIn(read(f))) if (!all.has(name)) bad.push(`${basename(f)}:${name}`);
             }
             expect(bad, `${plugin} 가 선언 안 한 인터페이스를 use 한다(requires/supports/provides 에 적어라): ${bad.join(', ')}`).toEqual([]);
@@ -496,7 +585,7 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
         it(`(c) onInterface 는 supports 와 짝: ${plugin}`, () => {
             const { supports } = declaredFor(plugin);
             const bad: string[] = [];
-            for (const f of files.filter((x) => relative(PLUGROOT, x).split(sep)[0] === plugin)) {
+            for (const f of unitFiles.filter((x) => unitOf(x) === plugin)) {
                 for (const name of onInterfaceKeys(read(f))) if (!supports.has(name)) bad.push(`${basename(f)}:${name}`);
             }
             expect(bad, `${plugin} 의 onInterface.${bad.join('/')} 가 supports 에 없다 — supports 에 그 인터페이스를 적어라`).toEqual([]);
@@ -548,7 +637,7 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
     //      (contributes.ts NODES_INTERFACE)라 제외한다(범용 약속 · 도메인 아님). 테스트 픽스처(.test.ts·__tests__)는 walk 가 이미 건너뛴다.
     describe('(f) src/app·src/pane-ui-system 에 학교 약속 이름 0', () => {
         const SCHOOL = ['roster', 'clock', 'week-grid', 'timetable', 'absence', 'identity', 'export', 'credential', 'permit'];
-        const platformFiles = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'pane-ui-system'))];
+        const platformFiles = [...walk(join(ROOT, 'app')), ...ENGINE, ...CORE];   // 🍳 core 도 건다 — account 같은 학교 약속이 core 로 못 들어오게 하는 문
         // 낱말 경계로 — 'export' 키워드와 안 겹치게 따옴표로 감싼 리터럴만 본다('roster' 등).
         for (const f of platformFiles) {
             it(`학교 약속 이름 없음: ${f.slice(ROOT.length + 1)}`, () => {
@@ -569,12 +658,22 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
  */
 describe('⑲ provides·requires·supports 의 약속 이름은 레포에 정의(contract-dir 또는 꾸러미 contracts 파일)가 있다', () => {
     const PLUGROOT = join(ROOT, 'plugins');
+    const COREROOT = join(ROOT, 'pane-ui-system', 'core');
 
     /** 정의된 약속 이름 모음 — ① contract-<이름> 폴더 ② 꾸러미 contracts 폴더의 <이름>.ts 파일. */
     function definedPromises(): Set<string> {
         const out = new Set<string>();
         let top: Array<{ name: string; isDirectory(): boolean }> = [];
         try { top = readdirSync(PLUGROOT, { withFileTypes: true }); } catch { top = []; }
+        // 🍳 ③ core/<m>/contracts/<이름>.ts — 후라이팬 코어가 들고 있는 약속(selection 등)
+        let coreTop: Array<{ name: string; isDirectory(): boolean }> = [];
+        try { coreTop = readdirSync(COREROOT, { withFileTypes: true }); } catch { coreTop = []; }
+        for (const e of coreTop) {
+            if (!e.isDirectory()) continue;
+            let inner: string[] = [];
+            try { inner = readdirSync(join(COREROOT, e.name, 'contracts')); } catch { inner = []; }
+            for (const f of inner) if (/\.ts$/.test(f) && !/\.test\.ts$/.test(f)) out.add(f.replace(/\.ts$/, ''));
+        }
         for (const e of top) {
             if (!e.isDirectory()) continue;
             if (e.name.startsWith('contract-')) out.add(e.name.slice('contract-'.length));   // ① 미편입 약속 폴더
@@ -589,7 +688,7 @@ describe('⑲ provides·requires·supports 의 약속 이름은 레포에 정의
     /** 모든 플러그인 파일의 provides/requires/supports 객체 리터럴 키(= 쓰인 약속 이름)와 어디 쓰였나. */
     function usedPromises(): { name: string; where: string }[] {
         const out: { name: string; where: string }[] = [];
-        for (const f of walk(PLUGROOT)) {
+        for (const f of PLUGINLIKE) {
             const src = read(f);
             for (const kind of ['provides', 'requires', 'supports']) {
                 for (const m of src.matchAll(new RegExp(`${kind}\\s*:\\s*\\{([^{}]*)\\}`, 'g'))) {

@@ -5,7 +5,7 @@
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, normalizeRelation, relationToText } from '../schema';

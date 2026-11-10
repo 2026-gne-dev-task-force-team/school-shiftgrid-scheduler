@@ -15,7 +15,7 @@
  */
 import type { ComponentType, ReactElement, ReactNode } from 'react';
 import type { Disposable, IconName, PluginHost, PeekHandle, PropertiesPaneProps } from '../../../pane-ui-system/plugin';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { DatePattern } from '../../../pane-ui-system/date-pattern';
 
 /** 내장 칸 종류 — 여섯. 🔴 칸 type 자체는 string(꽂힌 타입은 `<pluginId>.<name>`)이고 이 이름들은 내장 등록의 키일 뿐이다. */

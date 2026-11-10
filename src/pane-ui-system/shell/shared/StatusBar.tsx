@@ -22,6 +22,7 @@ function Item({ it }: { it: StatusItem }) {
     const content = it.node ?? it.text;
     if (it.onClick) {
         return (
+            // oxlint-disable-next-line react/forbid-elements -- 상태 막대 칸 — 막대 안 글자 크기
             <button
                 type="button"
                 onClick={it.onClick}

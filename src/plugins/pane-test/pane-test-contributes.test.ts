@@ -19,8 +19,8 @@ import { paneTestPlugin } from './index';
 
 // ── 옛 집합(골든) — 전환 전 onActivate 가 꽂던 그대로 ──
 const SAMPLE_IDS = ['panel-a', 'panel-b', 'panel-c', 'panel-d', 'tab-ga', 'tab-na', 'tab-da', 'tab-ra', 'scroll'];
-const GOLDEN_VIEWS = ['pane-test.console', ...SAMPLE_IDS.map((id) => `pane-test.${id}`)];
-const GOLDEN_CMDS = ['pane-test.open', ...SAMPLE_IDS.map((id) => `pane-test.open-${id}`)];
+const GOLDEN_VIEWS = ['pane-test.console', 'pane-test.gallery', ...SAMPLE_IDS.map((id) => `pane-test.${id}`)];
+const GOLDEN_CMDS = ['pane-test.open', 'pane-test.open-gallery', ...SAMPLE_IDS.map((id) => `pane-test.open-${id}`)];
 
 beforeEach(() => {
     disposeOwner('pane-test');
@@ -32,13 +32,13 @@ afterEach(() => {
 });
 
 describe('D4 pane-test — contributes 집합이 옛 집합과 같다', () => {
-    it('뷰 10개가 접두사 붙어 전부 꽂힌다(시험 탭 + 샘플 아홉)', () => {
+    it('뷰 11개가 접두사 붙어 전부 꽂힌다(시험 탭 + 부품 견본 + 샘플 아홉)', () => {
         activateAll([paneTestPlugin]);
         for (const v of GOLDEN_VIEWS) expect(getView(v), `뷰 ${v}`).toBeTruthy();
         expect(listPlugins().find((p) => p.id === 'pane-test')?.failed, '활성 실패 아님').toBe(false);
     });
 
-    it('명령 10개가 전부 꽂힌다(열기 + 샘플 아홉 열기)', () => {
+    it('명령 11개가 전부 꽂힌다(열기 + 견본 열기 + 샘플 아홉 열기)', () => {
         activateAll([paneTestPlugin]);
         for (const c of GOLDEN_CMDS) expect(getCommand(c), `명령 ${c}`).toBeTruthy();
     });

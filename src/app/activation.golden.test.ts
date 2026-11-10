@@ -44,9 +44,9 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
         activateAll(PLUGINS);
         const ps = listPlugins();
         expect(ps.map((p) => p.id)).toEqual([
-            // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
-            'settings', 'explorer', 'selection', 'properties', 'page', 'collection', 'sheet',
-            'calendar', 'account', 'icon-pack-basic',
+            // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. P2(2026-11-10): icon-pack-basic 이 코어가 돼 코어 묶음 끝으로 올라왔다. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
+            'settings', 'explorer', 'selection', 'properties', 'icon-pack-basic', 'page', 'collection', 'sheet',
+            'calendar', 'account',
             'people', 'rooms', 'room-booking', 'substitute', 'timetable-grid',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);

@@ -1,5 +1,5 @@
 /**
- * 시간표 그리드 화면 — 달력 주 보기 꼴(Q4 T5): 왼쪽에 시각 눈금 + 행 머리, 위에 열 머리, 칸 줄.
+ * 시간표 화면 — 달력 주 보기 꼴(Q4 T5): 왼쪽에 시각 눈금 + 행 머리, 위에 열 머리, 칸 줄.
  *   🔴 행(교시 같은 것)은 **시각 띠**다 — 높이 = 그 행이 차지하는 시간이라 행 사이 쉬는 틈도 그대로 보인다.
  *   🔴 데이터는 받은 data 를 읽고 edit(순수 함수)로만 바꾼다 — 저장·되돌리기는 위(GridTab → nodes.ts)가 쥔다.
  *   🔴 W10a: 행 길이(분)가 1급 값 — 행 아래 끝을 끌면 길이가 바뀌고 뒤 행이 같이 밀린다(5분 단위 · 최소 5분).
@@ -49,7 +49,10 @@ function CommitField({ value, onCommit, className, label, placeholder, multiline
         else if (e.key === 'Enter' && !e.shiftKey && !isImeEnter(e)) { e.preventDefault(); e.currentTarget.blur(); }
     };
     return multiline
+        // bare: 셀 즉석 편집 — 칸 모양 그대로 덮어써야 해서 공통 입력 부품을 안 쓴다
+        // oxlint-disable-next-line react/forbid-elements -- 셀 즉석 편집 — 칸 모양
         ? <textarea {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />
+        // oxlint-disable-next-line react/forbid-elements -- 셀 즉석 편집 — 칸 모양
         : <input {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />;
 }
 
@@ -66,6 +69,8 @@ function CellEditor({ text, label, onChange, onKey, onBlur }: {
         el.setSelectionRange(el.value.length, el.value.length);
     }, []);
     return (
+        // bare: 셀 즉석 편집 — 칸 모양 그대로 덮어써야 해서 공통 입력 부품을 안 쓴다
+        // oxlint-disable-next-line react/forbid-elements -- 셀 즉석 편집 — 칸 모양
         <textarea ref={ref} value={text} aria-label={label} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' && isAlt(e) && !e.nativeEvent.isComposing) {

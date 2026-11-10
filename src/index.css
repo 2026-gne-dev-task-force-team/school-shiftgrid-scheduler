@@ -405,3 +405,18 @@ body.is-dragging .drawer-panel { pointer-events: auto; }
 @media (pointer: coarse) {
   .hit-44::before { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 44px; min-height: 44px; width: 100%; height: 100%; }
 }
+
+/* ── 공통 부품 토큰(U-부품a, 덧붙임) — 입력칸 높이 --s-field(md 단추·입력 = 28px×밀도) · 모서리 --r-ctl.
+ *    tailwind.config.js 를 안 건드리려 유틸(h-field·w-field·rounded-ctl)을 위 z-modal 처럼 @layer utilities 에 둔다. */
+:root {
+  --s-field: max(var(--f-field, 0px), calc(28px * var(--density)));   /* 입력칸·md 단추 */
+  --r-ctl: 6px;   /* 단추·입력칸 모서리 */
+}
+@media (hover: none) and (pointer: coarse) {
+  :root { --f-field: 40px; }
+}
+@layer utilities {
+  .h-field { height: var(--s-field); }
+  .w-field { width: var(--s-field); }
+  .rounded-ctl { border-radius: var(--r-ctl); }
+}

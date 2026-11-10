@@ -15,6 +15,7 @@ export function DateField({
     time = false,
     placeholder = '날짜',
     className = '',
+    label: labelProp,
     ariaLabel,
     disabled = false,
 }: {
@@ -23,22 +24,25 @@ export function DateField({
     time?: boolean;
     placeholder?: string;
     className?: string;
+    /** 스크린리더용 이름 */
+    label?: string;
+    /** @deprecated label */
     ariaLabel?: string;
     disabled?: boolean;
 }) {
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
-    const label = value ? (time ? value.replace('T', ' ') : value.slice(0, 10)) : '';
+    const shown = value ? (time ? value.replace('T', ' ') : value.slice(0, 10)) : '';
     return (
         <>
             <button
                 type="button"
-                aria-label={ariaLabel}
+                aria-label={labelProp ?? ariaLabel}
                 aria-haspopup="dialog"
                 disabled={disabled}
                 onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
-                className={`text-left tabular-nums rounded ${PRESS_STATE} ${FOCUS_RING} ${label ? 'text-text' : 'text-muted'} ${className}`}
+                className={`text-left tabular-nums rounded-ctl ${PRESS_STATE} ${FOCUS_RING} ${shown ? 'text-text' : 'text-muted'} ${className}`}
             >
-                {label || placeholder}
+                {shown || placeholder}
             </button>
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>

@@ -50,10 +50,13 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
 }
 
 /** 탭 머리 제목 칸 — 고치고 Enter·포커스 빠질 때 한 번 넘긴다(빈 값은 무시). 밖에서 이름이 바뀌면 따라간다. */
-export function TitleField({ value, onRename, className = '', ariaLabel = '제목', placeholder, onEnter }: {
+export function TitleField({ value, onRename, className = '', label, ariaLabel, placeholder, onEnter }: {
     value: string;
     onRename: (name: string) => void;
     className?: string;
+    /** 스크린리더용 이름(기본 「제목」) */
+    label?: string;
+    /** @deprecated label */
     ariaLabel?: string;
     placeholder?: string;
     /** Enter 로 확정한 뒤 불린다(본문으로 캐럿 넘기기 등). IME 조합 중 Enter 는 안 불린다. */
@@ -66,7 +69,7 @@ export function TitleField({ value, onRename, className = '', ariaLabel = '제�
     return (
         <input
             value={text}
-            aria-label={ariaLabel}
+            aria-label={label ?? ariaLabel ?? '제목'}
             placeholder={placeholder}
             onChange={(e) => setText(e.target.value)}
             onFocus={(e) => { if (/^페이지( \d+)?$/.test(value)) e.currentTarget.select(); }}   // 새로 만든 기본 이름이면 전체 선택 — 입력이 뒤에 안 붙는다

@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, DateField, Icon, IconButton, MenuItem, MenuList, Popover, Toolbar as FrameToolbar } from '../../pane-ui-system';
+import { Button, DateField, Icon, IconButton, Select, TextInput, MenuItem, MenuList, Popover, Toolbar as FrameToolbar } from '../../pane-ui-system';
 import { isRule, opDefsFor, opNeedsValue, opsFor } from './logic';
 import { fieldTypes } from './fields/registry';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
@@ -24,19 +24,17 @@ function ValueEditor({ field, rule, onChange }: { field: RecordField; rule: Filt
     const input = fieldTypes.get(field.type)?.filterInput ?? 'text';
     if (input === 'option') {
         return (
-            <select className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)}>
-                <option value="">(고르기)</option>
-                {(field.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <Select size="sm" className="flex-1 min-w-0" value={String(val)} onChange={(e) => onChange(e.target.value)}
+                placeholder="(고르기)" options={(field.options ?? []).map((o) => ({ value: o.value, label: o.label }))} />
         );
     }
     if (input === 'number') {
-        return <input type="number" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} />;
+        return <TextInput size="sm" type="number" className="flex-1 min-w-0" value={String(val)} onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))} />;
     }
     if (input === 'date') {
         return <DateField className={`${selCls} flex-1`} value={String(val)} onChange={(v) => onChange(v)} />;
     }
-    return <input type="text" className={`${selCls} flex-1`} value={String(val)} onChange={(e) => onChange(e.target.value)} placeholder="값" />;
+    return <TextInput size="sm" type="text" className="flex-1 min-w-0" value={String(val)} onChange={(e) => onChange(e.target.value)} placeholder="값" />;
 }
 
 type Group = { conj: 'and' | 'or'; kids: FilterNode[] };
@@ -50,13 +48,11 @@ function RuleRow({ fields, rule, onChange, onRemove }: { fields: RecordField[]; 
     if (!f) return null;
     return (
         <div className="flex items-center gap-1" data-rv-filter-row>
-            <select className={`${selCls} w-[90px]`} value={rule.key}
-                onChange={(e) => { const nf = fields.find((x) => x.key === e.target.value)!; onChange({ key: nf.key, op: firstOp(nf) }); }}>
-                {fields.map((ff) => <option key={ff.key} value={ff.key}>{ff.label}</option>)}
-            </select>
-            <select className={`${selCls} w-[86px]`} value={rule.op} onChange={(e) => onChange({ key: rule.key, op: e.target.value })}>
-                {opDefsFor(f.type).map((od) => <option key={od.id} value={od.id}>{od.label}</option>)}
-            </select>
+            <Select size="sm" className="w-[90px] min-w-0" value={rule.key}
+                onChange={(e) => { const nf = fields.find((x) => x.key === e.target.value)!; onChange({ key: nf.key, op: firstOp(nf) }); }}
+                options={fields.map((ff) => ({ value: ff.key, label: ff.label }))} />
+            <Select size="sm" className="w-[86px] min-w-0" value={rule.op} onChange={(e) => onChange({ key: rule.key, op: e.target.value })}
+                options={opDefsFor(f.type).map((od) => ({ value: od.id, label: od.label }))} />
             <ValueEditor field={f} rule={rule} onChange={(v) => onChange({ ...rule, value: v })} />
             <IconButton icon="x" label="필터 삭제" size={14} onClick={onRemove} />
         </div>
@@ -76,10 +72,8 @@ function RuleList({ fields, group, depth, onChange, newRule }: {
         <div className={`flex flex-col gap-1.5 ${depth > 0 ? 'p-1.5 rounded border border-line bg-text/[0.02]' : ''}`} data-rv-filter-group={depth}>
             {group.kids.length === 0 && depth === 0 && <span className="text-small text-muted px-1">필터가 없습니다.</span>}
             {group.kids.length > 1 && (
-                <select data-rv-filter-conj={depth} className={`${selCls} self-start`} value={group.conj} onChange={(e) => set(group.kids, e.target.value as 'and' | 'or')}>
-                    <option value="and">모두 만족(그리고)</option>
-                    <option value="or">하나라도 만족(또는)</option>
-                </select>
+                <Select size="sm" data-rv-filter-conj={depth} className="self-start" value={group.conj} onChange={(e) => set(group.kids, e.target.value as 'and' | 'or')}
+                    options={[{ value: 'and', label: '모두 만족(그리고)' }, { value: 'or', label: '하나라도 만족(또는)' }]} />
             )}
             {group.kids.map((k, i) => (isRule(k)
                 ? <RuleRow key={i} fields={fields} rule={k} onChange={(r) => put(i, r)} onRemove={() => drop(i)} />
@@ -93,13 +87,9 @@ function RuleList({ fields, group, depth, onChange, newRule }: {
                     </div>
                 )))}
             <div className="flex items-center gap-1">
-                <button type="button" data-rv-add-filter={depth} onClick={addRule} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06]">
-                    <Icon name="plus" size={13} />필터 추가
-                </button>
+                <Button size="sm" variant="ghost" icon="plus" data-rv-add-filter={depth} onClick={addRule}>필터 추가</Button>
                 {depth === 0 && (
-                    <button type="button" data-rv-add-filter-group onClick={addGroup} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06]">
-                        <Icon name="plus" size={13} />그룹 추가
-                    </button>
+                    <Button size="sm" variant="ghost" icon="plus" data-rv-add-filter-group onClick={addGroup}>그룹 추가</Button>
                 )}
             </div>
         </div>
@@ -174,6 +164,7 @@ export function Toolbar({
             {/* 검색 */}
             <div className="flex items-center gap-1 h-row px-2 rounded border border-line bg-bg min-w-[120px]">
                 <Icon name="search" size={14} className="text-muted shrink-0" />
+                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                 <input
                     data-rv-search
                     value={search}
@@ -202,6 +193,7 @@ export function Toolbar({
                         {sorts.length === 0 && <span className="text-small text-muted px-1">정렬이 없습니다.</span>}
                         {sorts.map((rule, i) => (
                             <div key={i} className="flex items-center gap-1" data-rv-sort-row>
+                                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                                 <select
                                     className={`${selCls} flex-1`}
                                     value={rule.key}
@@ -209,6 +201,7 @@ export function Toolbar({
                                 >
                                     {fields.map((ff) => <option key={ff.key} value={ff.key}>{ff.label}</option>)}
                                 </select>
+                                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                                 <button
                                     type="button"
                                     data-rv-sort-dir
@@ -218,9 +211,7 @@ export function Toolbar({
                                 <IconButton icon="x" label="정렬 삭제" size={14} onClick={() => onSorts(sorts.filter((_, j) => j !== i))} />
                             </div>
                         ))}
-                        <button type="button" data-rv-add-sort onClick={addSort} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06] self-start">
-                            <Icon name="plus" size={13} />정렬 추가
-                        </button>
+                        <Button size="sm" variant="ghost" icon="plus" data-rv-add-sort onClick={addSort} className="self-start">정렬 추가</Button>
                     </div>
                 </Popover>
             )}

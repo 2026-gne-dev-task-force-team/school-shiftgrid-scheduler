@@ -3,7 +3,7 @@
  *   A 에서 메뉴를 연 뒤 B 의 메뉴를 열어도(전역 같으면 B 로 덮인다) A 항목을 실행하면 A 가 열린다.
  */
 import { describe, it, expect, vi } from 'vitest';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import pagePlugin from './index';
 import { pageMenu, initPageNodes } from './nodes';

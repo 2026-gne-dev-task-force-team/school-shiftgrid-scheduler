@@ -72,6 +72,7 @@ export function TabSwitcher({
                 })}
 
                 {/* ＋ 새 탭 카드 — 틀의 조작이다 */}
+                {/* oxlint-disable-next-line react/forbid-elements -- 새 탭 카드 — 카드 모양 */}
                 <button
                     type="button"
                     onClick={() => { onNew(); onClose(); }}

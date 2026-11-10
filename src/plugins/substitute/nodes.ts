@@ -3,7 +3,7 @@
  *   다른 점 하나: 명단 노드의 createInit 이 「구분」 칸을 심는다(탐색기 「새로 만들기」 길 — 시작 화면 길은 config.newListFields 를 kit 가 쓴다).
  *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만 · collection 값은 host.modules.use('collection') 로(구조 검사 ⑨).
  */
-import type { NodesApi, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { STAFF_CONFIG, LIST_TYPE, STAFF_TYPE, newListFields } from './config';

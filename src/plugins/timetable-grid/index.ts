@@ -1,5 +1,5 @@
 /**
- * 「시간표 그리드」 플러그인 — 시간표(timetable-grid.sheet) 노드 하나 +
+ * 「시간표」 플러그인 — 시간표(timetable-grid.sheet) 노드 하나 +
  *   그리드 화면 하나(명세 [[시간표 그리드 요구명세]]). ⭐ 선언형 전환(달력·명단과 같은 결):
  *   뷰·명령·리본·노드 타입을 contributes 에 「적고」, 실행 함수·컴포넌트는 이름으로 가리킨다.
  *   🔴 ⛔ 선언 안 되는 것만 onActivate 에 — 노드 다리(modules.use('nodes'))뿐이다.
@@ -11,7 +11,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { GridTab } from './views/GridTab';
 import { TimetableProps } from './views/TimetableProps';

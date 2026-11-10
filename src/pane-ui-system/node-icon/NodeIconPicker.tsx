@@ -165,6 +165,7 @@ export function NodeIconPanel({ value, onPick }: {
             {tab === 'icon' && (
                 <div className="flex items-center gap-1" role="radiogroup" aria-label="아이콘 색">
                     {[{ id: undefined, label: '기본 색', cls: 'text-text' }, ...NODE_ICON_COLORS].map((c) => (
+                        // oxlint-disable-next-line react/forbid-elements -- 색 견본 동그라미 — radio
                         <button key={c.id ?? 'none'} type="button" role="radio" aria-checked={color === c.id} aria-label={c.label} title={c.label} onClick={() => setColor(c.id)}
                             className={`w-5 h-5 rounded-full grid place-items-center ${c.cls} ${color === c.id ? 'ring-2 ring-accent' : ''}`}>
                             <Icon name="dot" size={16} />
@@ -185,6 +186,7 @@ export function NodeIconPanel({ value, onPick }: {
                             {s.cells.map((c) => {
                                 const i = n++;
                                 return (
+                                    // oxlint-disable-next-line react/forbid-elements -- 아이콘 격자 칸 — listbox 옵션
                                     <button key={c.key} type="button" role="option" id={optId(i)} tabIndex={-1} title={c.label} aria-label={c.label}
                                         aria-selected={i === active}
                                         onClick={() => choose(c.value)}

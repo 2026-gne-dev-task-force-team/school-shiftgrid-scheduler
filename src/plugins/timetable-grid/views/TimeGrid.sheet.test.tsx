@@ -6,7 +6,7 @@
 import { act, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { applyEdit, initGridNodes, SHEET_TYPE, sheetDataOf, stepEdit } from '../nodes';
 import { blankTimetable, mergeCells, setCellText, type TimetableData } from '../model';
 import { step } from '../gridNav';

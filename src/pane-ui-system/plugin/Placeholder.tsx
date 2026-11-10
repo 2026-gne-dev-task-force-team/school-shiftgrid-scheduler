@@ -7,7 +7,7 @@
  */
 import type { Leaf } from '../layout/tree';
 import { Icon } from '../primitives/Icon';
-import { FOCUS_RING } from '../primitives/focus';
+import { Button } from '../primitives/Button';
 import { ownerOfView, enablePlugin, usePluginRegistry } from './registry';
 
 export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string }) {
@@ -36,15 +36,7 @@ export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string
                     <p className="text-body text-muted leading-relaxed select-none">
                         「{owner.name}」 플러그인이 꺼져 있습니다.
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => enablePlugin(owner.id)}
-                        className={`h-btn px-3 rounded border border-accent text-body text-text bg-text/[0.06]
-                            hover:bg-text/[0.1] transition-colors
-                            ${FOCUS_RING}`}
-                    >
-                        켜기
-                    </button>
+                    <Button variant="solid" tone="accent" onClick={() => enablePlugin(owner.id)}>켜기</Button>
                 </div>
             </div>
         );
