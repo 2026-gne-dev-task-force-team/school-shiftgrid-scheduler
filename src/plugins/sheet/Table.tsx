@@ -29,7 +29,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { isAlt, keyLabel, isMacPlatform, ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
+import { isAlt, keyLabel, isMacPlatform, Checkbox, ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -875,9 +875,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 ) : (
                                                     <>
                                                         {isBool ? (
-                                                            <input type="checkbox" checked={isChecked(value)} aria-label={col.title}
-                                                                onChange={() => toggleCell(r, c)}
-                                                                className="accent-accent align-middle" />
+                                                            <Checkbox checked={isChecked(value)} aria-label={col.title}
+                                                                onChange={() => toggleCell(r, c)} className="align-middle" />
                                                         ) : (
                                                             <span>{value}</span>
                                                         )}

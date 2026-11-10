@@ -3,7 +3,7 @@
  *   보기 목록은 안 쥔다(onChange 로 통째 넘긴다 — 바깥이 한 묶음으로 저장 = 되돌리기 한 칸). 활성 탭만 onSelect.
  */
 import { useState } from 'react';
-import { isAlt, Icon, InlineRename, MenuItem, MenuList, Popover, useReorder } from '../../pane-ui-system';
+import { isAlt, Icon, IconButton, InlineRename, MenuItem, MenuList, Popover, useReorder } from '../../pane-ui-system';
 import { ReorderOverlay } from './ReorderOverlay';
 import { defaultView, uid } from './view-state';
 import type { RecordField, ViewDef } from './contracts/collection';
@@ -83,10 +83,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                     </button>
                 );
             })}
-            <button type="button" data-rv-view-add aria-label="보기 추가" onClick={add}
-                className="hit-44 relative shrink-0 grid place-items-center w-6 h-6 mb-0.5 rounded text-muted hover:text-text hover:bg-text/[0.06]">
-                <Icon name="plus" size={14} />
-            </button>
+            <IconButton icon="plus" label="보기 추가" iconSize={14} data-rv-view-add="" onClick={add} className="mb-0.5" />
             {menu && (
                 <Popover anchor={menu.rect} width={180} onClose={() => setMenu(null)}>
                     <MenuList autoFocus label="보기 메뉴">

@@ -7,6 +7,8 @@
  */
 import { FOCUS_RING } from './focus';
 
+import { useFieldCtx } from './Field';
+
 export function Toggle({ checked, onChange, on, onToggle, disabled = false, label, size = 'md' }: {
     checked?: boolean;
     onChange?: (v: boolean) => void;
@@ -19,12 +21,14 @@ export function Toggle({ checked, onChange, on, onToggle, disabled = false, labe
     label?: string;
     size?: 'sm' | 'md';
 }) {
+    const f = useFieldCtx();
     const isOn = checked ?? on ?? false;
     const fire = onChange ?? onToggle;
     const sm = size === 'sm';
     return (
         <button
             type="button"
+            id={f?.id}
             role="switch"
             aria-checked={isOn}
             aria-label={label}

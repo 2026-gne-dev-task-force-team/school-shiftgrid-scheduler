@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react';
 import {
-    usePaneSettings, setViewOverride, getViewOverride, Button, TextInput, Select,
+    usePaneSettings, setViewOverride, getViewOverride, Button, TextInput, Select, Field,
     type Squeeze, type ViewLayout, type ViewDef,
 } from '../../..';
 
@@ -21,11 +21,7 @@ const SQUEEZES: { id: Squeeze; name: string; hint: string }[] = [
 
 function Cell({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
     return (
-        <label className="flex flex-col gap-1">
-            <span className="text-note font-medium text-text">{label}</span>
-            {children}
-            {hint && <span className="text-note text-muted leading-snug">{hint}</span>}
-        </label>
+        <Field label={label} hint={hint}>{children}</Field>
     );
 }
 
