@@ -40,14 +40,22 @@ export type MenuEntry =
 
 const GAP = 6;
 
-export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
+interface ContextMenuProps {
     x: number;
     y: number;
     items: MenuEntry[];
     onClose: () => void;
     /** 🔴 commandId 가 있는 항목을 누르면 이걸로 부른다(shell 이 runCommand 를 주입). 없으면 onClick 폴백. */
     onCommand?: (id: string, arg?: MenuCommandArg) => void;
-}) {
+}
+
+/** 🔴 자리가 바뀌면 새 메뉴다 — key 로 갈아 끼운다. Esc 로 닫는 중(퇴장 120ms)에 새 우클릭이 오면
+ *  같은 인스턴스가 「닫는 중」 상태 그대로 새 자리를 받아, 곧 닫힘 콜백이 새 메뉴를 꺼 버렸다(첫 우클릭이 안 먹는 것처럼 보임). */
+export function ContextMenu(props: ContextMenuProps) {
+    return <ContextMenuInner key={`${props.x},${props.y}`} {...props} />;
+}
+
+function ContextMenuInner({ x, y, items, onClose: onCloseProp, onCommand }: ContextMenuProps) {
     const ref = useRef<HTMLDivElement>(null);
     const { closing, close: onClose } = useExitClose(onCloseProp);
     const closeRef = useRef(onClose);
@@ -65,7 +73,7 @@ export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
         let nx = x;
         let ny = y;
         if (nx + r.width > window.innerWidth - GAP) nx = window.innerWidth - r.width - GAP;
-        if (ny + r.height > window.innerHeight - GAP) ny = window.innerHeight - r.height - GAP;
+        if (ny + r.height > window.innerHeight - GAP) ny = window.innerHeight - r.height - GAP;   // 높이는 max-height 로 이미 뷰포트 안
         setPos({ x: Math.max(GAP, nx), y: Math.max(GAP, ny) });
     }, [x, y]);
 
@@ -95,8 +103,8 @@ export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
     return createPortal(
         <div
             ref={ref}
-            className={`fixed z-popover min-w-[180px] max-w-[260px] py-1 rounded-md border border-line bg-panel shadow-lg select-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
-            style={{ left: pos.x, top: pos.y }}
+            className={`fixed z-popover min-w-[180px] max-w-[260px] py-1 overflow-y-auto rounded-md border border-line bg-panel shadow-lg select-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
+            style={{ left: pos.x, top: pos.y, maxHeight: `calc(100vh - ${GAP * 2}px)` }}
         >
             <MenuList autoFocus>
                 {items.map((it, i) => (

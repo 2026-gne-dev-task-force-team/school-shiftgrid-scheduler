@@ -182,3 +182,33 @@ describe('ContextMenu 키보드', () => {
         expect(b.className).toContain('text-bad');
     });
 });
+
+describe('ContextMenu 자리·재오픈', () => {
+    const its: MenuEntry[] = Array.from({ length: 19 }, (_, i) => ({ label: `항목${i}`, onClick: () => {} }));
+
+    it('아래쪽 근처에서 열어도 top 이 뷰포트 안 · 너무 크면 max-height 로 스크롤', () => {
+        vi.stubGlobal('innerHeight', 600);
+        const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 180, 400));
+        mount(h(ContextMenu, { x: 10, y: 590, items: its, onClose: () => {} }));
+        const el = document.querySelector('[role="menu"]')!.parentElement as HTMLElement;
+        spy.mockRestore();
+        expect(parseFloat(el.style.top)).toBeLessThanOrEqual(600 - 400 - 6);
+        expect(parseFloat(el.style.top)).toBeGreaterThanOrEqual(0);
+        expect(el.style.maxHeight).toContain('100vh');
+        expect(el.className).toContain('overflow-y-auto');
+    });
+
+    it('Esc 로 닫는 중에 새 자리로 다시 열면 새 메뉴가 꺼지지 않는다', () => {
+        vi.stubGlobal('matchMedia', () => ({ matches: false }));
+        vi.useFakeTimers();
+        try {
+            const onClose = vi.fn();
+            const root = mount(h(ContextMenu, { x: 1, y: 1, items: its, onClose }));
+            key('Escape');
+            act(() => root.render(h(ContextMenu, { x: 50, y: 50, items: its, onClose })));
+            act(() => { vi.advanceTimersByTime(300); });
+            expect(onClose).not.toHaveBeenCalled();
+            expect(document.querySelector('[role="menu"]')).not.toBeNull();
+        } finally { vi.useRealTimers(); }
+    });
+});
