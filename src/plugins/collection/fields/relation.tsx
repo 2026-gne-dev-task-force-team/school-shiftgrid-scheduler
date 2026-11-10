@@ -9,7 +9,7 @@ import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, h
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
-import { kitOfType } from '../kits';
+import { kitListTypes, kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
 import { castCandidate, castCandidates, castKeys, liveIn, parseRelationEntry, recordsOf, relationEntry, type RelationLook } from './cast';
 
@@ -20,6 +20,17 @@ export type { RelationLook } from './cast';
 export interface RelationItem { id: string; name: string; path: string[] }
 
 const UNTITLED = '제목 없음';
+
+/** 가리킬 수 있는 목록 — 범용 컬렉션 + defineCollection 으로 만든 목록(방 목록 같은 꾸러미 타입). 폴더 이름은 든 곳 */
+export function targetCollections(): { id: string; name: string; folder: string | null }[] {
+    const a = getNodesApi();
+    if (!a) return liveDbs();
+    const extra = kitListTypes().flatMap((t) => a.liveByType(t)).map((n) => {
+        const p = a.parent(n.id);
+        return { id: n.id, name: n.name, folder: p && p !== a.roots?.main ? (a.get(p)?.name ?? null) : null };
+    });
+    return [...liveDbs(), ...extra];
+}
 
 /** 저장된 config → 꼴 맞춘 설정. 틀린 target 은 버린다(없음 = 아직 안 고름) · many 는 기본 true */
 export function relationConfig(config: unknown): RelationConfig {
@@ -245,7 +256,7 @@ export function RelationConfigEditor({ field, onChange }: { field: RecordField; 
                 가리킬 컬렉션
                 <Select value={cur} data-rv-rel-target
                     onChange={(e) => set({ target: e.target.value ? { kind: 'db', nodeId: e.target.value } : undefined })}
-                    options={[{ value: '', label: '— 고르기 —' }, ...liveDbs().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
+                    options={[{ value: '', label: '— 고르기 —' }, ...targetCollections().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
             </label>
             <div className="flex items-center justify-between gap-2 text-body text-text">
                 여러 개 고르기

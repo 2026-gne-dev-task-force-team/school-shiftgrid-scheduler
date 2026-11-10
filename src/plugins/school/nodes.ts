@@ -12,10 +12,12 @@ export { SCHOOL_TYPE, YEAR_TYPE, CLASS_TYPE };
 
 let kit: CollectionKit | null = null;
 let nodes: NodesApi | null = null;
+let rv: RecordViewApi | null = null;
 export function getKit(): CollectionKit | null { return kit; }
+export function getRv(): RecordViewApi | null { return rv; }
 export function getNodes(): NodesApi | null { return nodes; }
 /** 테스트가 직접 건넬 수 있다(활성 없이). */
-export function setKit(k: CollectionKit | null, n: NodesApi | null = nodes): void { kit = k; nodes = n; }
+export function setKit(k: CollectionKit | null, n: NodesApi | null = nodes, r: RecordViewApi | null = rv): void { kit = k; nodes = n; rv = r; }
 
 /** 지금 열린 학교 노드(싱글톤이라 사실상 하나 — 열 때 적어 둔다). */
 let activeSchool: string | null = null;
@@ -28,7 +30,7 @@ export function liveSchoolId(): string | null { return nodes?.liveByType(SCHOOL_
 
 /** 활성(index.ts)이 한 번 — 컬렉션 모듈로 kit 를 만들고 NodesApi 를 잇는다(없으면 조용히 빈 상태). */
 export function initSchool(host: PluginHost): Disposable | null {
-    const rv = host.modules.use<RecordViewApi>('collection');
+    rv = host.modules.use<RecordViewApi>('collection') ?? null;
     nodes = host.modules.use<NodesApi>('nodes') ?? null;
     kit = rv ? rv.defineCollection(CLASS_CONFIG) : null;
     return kit?.init(nodes) ?? null;

@@ -26,6 +26,7 @@ import { defineCollection } from '../collection/define';
 import { schoolNodeTypes, schoolNodeTypeImpl, SCHOOL_TYPE, YEAR_TYPE, CLASS_TYPE, getKit, setKit } from './nodes';
 import { CLASS_CONFIG } from './config';
 import { schoolApi } from './api';
+import type { RecordViewApi } from '../collection/contracts/collection';
 
 function host(): PluginHost {
     return {
@@ -92,5 +93,21 @@ describe('반 칸 정의 · 약속 읽기', () => {
         const cid = getKit()!.addItem(yid, { name: '3-2', grade: 3, no: 2, special: true, f_room: ['r1'] });
         expect(schoolApi.years().map((y) => y.id)).toEqual([yid]);
         expect(schoolApi.classesIn(yid)).toEqual([{ id: cid, yearId: yid, name: '3-2', grade: 3, no: 2, rooms: ['r1'], special: true }]);
+    });
+});
+
+describe('반 → 교실 읽기 — collection 약속의 resolveRelationTargets 를 거친다', () => {
+    it('칸 설정(config)과 칸 값을 약속에 넘기고, 돌아온 방 id 를 rooms 로 쓴다', () => {
+        const api = wire();
+        api.create(api.roots.main, { type: SCHOOL_TYPE, name: '햇살초' });
+        const yid = getKit()!.createList()!;
+        const cid = getKit()!.addItem(yid, { name: '3-2', f_room: ['classX'] });
+        const calls: unknown[][] = [];
+        const rv = { schema: { resolveRelationTargets: (...a: unknown[]) => { calls.push(a); return ['roomA']; } } } as unknown as RecordViewApi;
+        setKit(getKit(), api, rv);
+        expect(schoolApi.classesIn(yid).find((c) => c.id === cid)?.rooms).toEqual(['roomA']);
+        expect(calls[0][0]).toEqual(['classX']);
+        expect(calls[0][1]).toEqual({ many: true });
+        setKit(getKit(), api, null);
     });
 });
