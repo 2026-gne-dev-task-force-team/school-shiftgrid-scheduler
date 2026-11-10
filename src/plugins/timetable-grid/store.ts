@@ -13,8 +13,6 @@ export function setActiveSheet(id: string | null): void {
     for (const l of listeners) l();
 }
 
-export function getActiveSheet(): string | null { return activeId; }
-
 export function useActiveSheet(): string | null {
     return useSyncExternalStore(
         (l) => { listeners.add(l); return () => { listeners.delete(l); }; },

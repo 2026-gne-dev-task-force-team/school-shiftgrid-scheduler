@@ -22,7 +22,7 @@ export function SectionHeader({
 }) {
     return (
         <div className="flex items-center gap-1 h-header px-pad shrink-0 select-none border-b border-line">
-            <span className="flex-1 min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-muted">
+            <span className="flex-1 min-w-0 truncate text-note font-semibold uppercase tracking-wide text-muted">
                 {title}
             </span>
             {end && <span className="flex items-center shrink-0">{end}</span>}

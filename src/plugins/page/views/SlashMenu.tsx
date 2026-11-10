@@ -52,7 +52,7 @@ export function SlashMenu({ items, active, onPick }: {
     }, [active, items.length]);
     if (items.length === 0) {
         return (
-            <div className="absolute z-20 mt-1 w-56 rounded-md border border-line bg-panel shadow-lg p-2 text-[12px] text-muted">
+            <div className="absolute z-20 mt-1 w-56 rounded-md border border-line bg-panel shadow-lg p-2 text-small text-muted">
                 맞는 블록이 없어요.
             </div>
         );
@@ -73,7 +73,7 @@ export function SlashMenu({ items, active, onPick }: {
                     data-slash-index={i}
                     // 🔴 마우스다운으로 — 편집창 blur 보다 먼저 잡아 포커스가 안 날아간다.
                     onMouseDown={(e) => { e.preventDefault(); onPick(it.type); }}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-[13px] ${i === active ? 'bg-text/[0.06] text-text' : 'text-muted hover:text-text'}`}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-body ${i === active ? 'bg-text/[0.06] text-text' : 'text-muted hover:text-text'}`}
                 >
                     <Icon name={it.icon} size={14} />
                     {it.label}

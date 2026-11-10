@@ -27,9 +27,9 @@ export function SampleView({ title, tone, scroll, p }: { title: string; tone: nu
         return (
             <div className="min-h-full p-4 flex flex-col gap-1.5 select-text">
                 <h2 className={`text-xl font-bold ${t.text} mb-2`}>{title}</h2>
-                <p className="text-[12px] text-muted mb-2">칸 폭 {p.width}px · 높이 {p.height}px — 아래로 길게 넘칩니다.</p>
+                <p className="text-small text-muted mb-2">칸 폭 {p.width}px · 높이 {p.height}px — 아래로 길게 넘칩니다.</p>
                 {Array.from({ length: 60 }).map((_, i) => (
-                    <div key={i} className={`shrink-0 py-2 px-3 rounded ${t.chip} text-[13px] ${t.text}`}>
+                    <div key={i} className={`shrink-0 py-2 px-3 rounded ${t.chip} text-body ${t.text}`}>
                         줄 {i + 1} — 스크롤 시험 내용
                     </div>
                 ))}
@@ -41,7 +41,7 @@ export function SampleView({ title, tone, scroll, p }: { title: string; tone: nu
     return (
         <div className="h-full flex flex-col items-center justify-center gap-1.5 p-4 text-center select-text">
             <span className={`text-sm font-semibold ${t.text}`}>{title}</span>
-            <p className="text-[12px] text-muted">끌어서 가르기·사이드바로 옮겨 보세요 · 칸 {p.width}×{p.height}px</p>
+            <p className="text-small text-muted">끌어서 가르기·사이드바로 옮겨 보세요 · 칸 {p.width}×{p.height}px</p>
         </div>
     );
 }

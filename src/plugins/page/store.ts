@@ -13,8 +13,6 @@ export function setActivePage(id: string | null): void {
     for (const l of listeners) l();
 }
 
-export function getActivePage(): string | null { return activeId; }
-
 export function useActivePage(): string | null {
     return useSyncExternalStore(
         (l) => { listeners.add(l); return () => { listeners.delete(l); }; },

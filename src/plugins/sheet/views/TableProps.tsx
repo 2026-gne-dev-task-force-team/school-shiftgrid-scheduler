@@ -18,7 +18,7 @@ export function TableProps({ target }: PropertiesPaneProps) {
     const set = (patch: Partial<typeof doc>): void => writeDoc(target.id, { ...docOf(target.id), ...patch });
     const preset = doc.style ?? 'basic';
     const row = (label: string, on: boolean, onToggle: (v: boolean) => void) => (
-        <label className="flex items-center justify-between gap-2 text-[13px] text-text">
+        <label className="flex items-center justify-between gap-2 text-body text-text">
             {label}<Toggle on={on} label={label} onToggle={onToggle} />
         </label>
     );
@@ -27,7 +27,7 @@ export function TableProps({ target }: PropertiesPaneProps) {
             <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="표 스타일">
                 {STYLES.map(([p, label]) => (
                     <button key={p} type="button" role="radio" aria-checked={p === preset} onClick={() => set({ style: p })}
-                        className={`h-btn rounded border text-[12px] ${p === preset ? 'border-accent text-accent bg-accent/10' : 'border-edge text-muted hover:text-text'}`}>
+                        className={`h-btn rounded border text-small ${p === preset ? 'border-accent text-accent bg-accent/10' : 'border-edge text-muted hover:text-text'}`}>
                         {label}
                     </button>
                 ))}
@@ -36,7 +36,7 @@ export function TableProps({ target }: PropertiesPaneProps) {
             {row('머리 열', !!doc.headerCol, (v) => set({ headerCol: v }))}
             {row('열 머리(A·B·C…) 늘 보이기', !!doc.colTabs, (v) => set({ colTabs: v }))}
             {row('꼬리 행', !!doc.footerRow, (v) => set({ footerRow: v }))}
-            <p className="text-[12px] text-muted select-none">행 {doc.rows.length} · 열 {doc.cols.length}</p>
+            <p className="text-small text-muted select-none">행 {doc.rows.length} · 열 {doc.cols.length}</p>
         </div>
     );
 }

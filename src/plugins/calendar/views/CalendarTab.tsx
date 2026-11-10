@@ -100,7 +100,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
     const switcher = (
         <div className="flex items-center gap-1 ml-1">
             {selection && (
-                <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-accent/60 bg-accent/[0.08] text-[12px]" title="고른 범위">
+                <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-accent/60 bg-accent/[0.08] text-small" title="고른 범위">
                     <span className="truncate max-w-[18rem] text-text tabular-nums">{selectionLabel(selection)}</span>
                     <button
                         type="button"
@@ -122,7 +122,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
                         role="tab"
                         aria-selected={mode === m.id}
                         onClick={() => setMode(m.id)}
-                        className={`px-2 h-btn text-[12px] border-l border-line first:border-l-0 transition-colors
+                        className={`px-2 h-btn text-small border-l border-line first:border-l-0 transition-colors
                             ${mode === m.id ? 'bg-text/[0.08] text-text font-medium' : 'text-muted hover:text-text hover:bg-text/[0.04]'}`}
                     >
                         {m.label}

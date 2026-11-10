@@ -175,7 +175,7 @@ const RecordRow = memo(function RecordRow({
                     <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
                         {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
                         {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
-                            <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-[13px] text-muted/60 pointer-events-none select-none">제목 없음</span>
+                            <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-body text-muted/60 pointer-events-none select-none">제목 없음</span>
                         )}
                         <Cell
                             field={f}
@@ -740,17 +740,17 @@ export function RecordView<T>({
             {/* 선택 막대 */}
             {selectable && liveSelected.length > 0 && (
                 <div className="flex items-center gap-2 px-2 py-1 border-b border-line bg-panel2 shrink-0" data-rv-selbar>
-                    <span className="text-[12px] text-text">{liveSelected.length}개 선택</span>
+                    <span className="text-small text-text">{liveSelected.length}개 선택</span>
                     {visibleFields.some((f) => canEditCell(f)) && (
                         <button type="button" data-rv-bulk onClick={(e) => setBulk({ rect: e.currentTarget.getBoundingClientRect(), key: visibleFields.find((f) => canEditCell(f))!.key })}
-                            className="h-row px-2 rounded text-[12px] text-text hover:bg-text/[0.06] inline-flex items-center gap-1">
+                            className="h-row px-2 rounded text-small text-text hover:bg-text/[0.06] inline-flex items-center gap-1">
                             <Icon name="edit" size={13} />속성 바꾸기
                         </button>
                     )}
-                    <button type="button" data-rv-delete onClick={deleteSelected} className="h-row px-2 rounded text-[12px] text-bad hover:bg-bad/10 inline-flex items-center gap-1">
+                    <button type="button" data-rv-delete onClick={deleteSelected} className="h-row px-2 rounded text-small text-bad hover:bg-bad/10 inline-flex items-center gap-1">
                         <Icon name="trash" size={13} />삭제
                     </button>
-                    <button type="button" onClick={() => setSelected(new Set())} className="h-row px-2 rounded text-[12px] text-muted hover:text-text">해제</button>
+                    <button type="button" onClick={() => setSelected(new Set())} className="h-row px-2 rounded text-small text-muted hover:text-text">해제</button>
                 </div>
             )}
 
@@ -787,7 +787,7 @@ export function RecordView<T>({
                                         className="flex-1 min-w-0 flex items-center gap-1 cursor-grab outline-none">
                                         <Tooltip text={f.description} className="flex flex-1 min-w-0 items-center gap-1">
                                             <FieldGlyph field={f} />
-                                            <span className="flex-1 min-w-0 truncate text-[12px] font-medium">{f.label}</span>
+                                            <span className="flex-1 min-w-0 truncate text-small font-medium">{f.label}</span>
                                         </Tooltip>
                                     </div>
                                     {dir && <Icon name="sort" size={12} className={`text-accent shrink-0 ${dir === 'asc' ? 'rotate-180' : ''}`} />}
@@ -855,7 +855,7 @@ export function RecordView<T>({
                     {onAddRecord && (
                         <button type="button" data-rv-add
                             onClick={() => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); }}
-                            className={`flex items-center gap-1.5 w-full h-row px-3 text-[13px] text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
+                            className={`flex items-center gap-1.5 w-full h-row px-3 text-body text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
                     )}
@@ -870,7 +870,7 @@ export function RecordView<T>({
                             return (
                                 <button key={f.key} type="button" data-rv-calc={f.key}
                                     onClick={(e) => setCalcMenu({ key: f.key, rect: e.currentTarget.getBoundingClientRect() })}
-                                    className={`shrink-0 flex items-center justify-end gap-1 px-2 text-[12px] hover:bg-text/[0.04] ${label ? 'text-text' : 'text-transparent hover:text-muted'}`}
+                                    className={`shrink-0 flex items-center justify-end gap-1 px-2 text-small hover:bg-text/[0.04] ${label ? 'text-text' : 'text-transparent hover:text-muted'}`}
                                     style={{ width: widthOf(f) }}>
                                     {label ? <><span className="text-muted">{label}</span><span className="tabular-nums" data-rv-calc-val>{val}</span></> : '계산'}
                                 </button>
@@ -889,7 +889,7 @@ export function RecordView<T>({
             {addMenu && (
                 <Popover anchor={addMenu} width={200} align="right" onClose={() => setAddMenu(null)}>
                     <div data-rv-add-menu>
-                        <div className="px-2 py-0.5 text-[11px] text-muted">어떤 칸을 만들까요?</div>
+                        <div className="px-2 py-0.5 text-note text-muted">어떤 칸을 만들까요?</div>
                         <MenuList autoFocus label="칸 종류">
                             {fieldTypes.list().map((d) => <MenuItem key={d.type} label={d.label} icon={d.icon} onSelect={() => addField(d.type)} />)}
                         </MenuList>
@@ -911,7 +911,7 @@ export function RecordView<T>({
                                     {/* 🔴 한글 조합 중 Enter 는 InlineRename 이 거른다 · 이름이 바뀌면 key 로 새로 세워 다시 고칠 수 있게 */}
                                     <InlineRename key={f.label} value={f.label} ariaLabel="칸 이름" onCancel={() => { /* 그대로 둔다 */ }}
                                         onCommit={(label) => { renameField(f.key, label); }}
-                                        className="w-full h-row px-2 rounded border border-line bg-bg text-[13px] text-text outline-none" />
+                                        className="w-full h-row px-2 rounded border border-line bg-bg text-body text-text outline-none" />
                                 </div>
                             )}
                             {fieldsEditable && (
@@ -933,11 +933,11 @@ export function RecordView<T>({
                             {fieldsEditable && (
                                 <>
                                     <MenuSeparator />
-                                    <div className="px-2 py-0.5 text-[11px] text-muted">타입{locked ? ` (${title ? '제목' : '기본'} 칸은 바꿀 수 없습니다)` : ''}</div>
+                                    <div className="px-2 py-0.5 text-note text-muted">타입{locked ? ` (${title ? '제목' : '기본'} 칸은 바꿀 수 없습니다)` : ''}</div>
                                     <div className="flex flex-wrap gap-1 px-1 pb-1">
                                         {fieldTypes.list().map((d) => (
                                             <button key={d.type} type="button" data-rv-type={d.type} disabled={locked} onClick={() => requestRetype(f.key, d.type)}
-                                                className={`inline-flex items-center gap-1 h-row px-1.5 rounded border text-[12px] disabled:opacity-50 disabled:cursor-not-allowed ${f.type === d.type ? 'border-accent text-text' : 'border-line text-muted hover:text-text'}`}>
+                                                className={`inline-flex items-center gap-1 h-row px-1.5 rounded border text-small disabled:opacity-50 disabled:cursor-not-allowed ${f.type === d.type ? 'border-accent text-text' : 'border-line text-muted hover:text-text'}`}>
                                                 <Icon name={d.icon} size={12} />{d.label}
                                             </button>
                                         ))}
@@ -977,14 +977,14 @@ export function RecordView<T>({
                     <Popover anchor={bulk.rect} width={260} onClose={() => setBulk(null)}>
                         <div className="flex flex-col gap-1.5" data-rv-bulk-panel>
                             <select data-rv-bulk-field value={bulk.key} onChange={(e) => setBulk({ ...bulk, key: e.target.value })}
-                                className="h-row rounded border border-line bg-bg text-text text-[12px] px-1">
+                                className="h-row rounded border border-line bg-bg text-text text-small px-1">
                                 {visibleFields.filter((x) => canEditCell(x)).map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
                             </select>
                             <div className="h-[32px] rounded border border-line" data-rv-bulk-cell>
                                 <Cell key={f.key} field={f} rowValue={{}} editable
                                     onChange={(val) => { changeCells(liveSelected.map((id) => ({ id, key: f.key, value: val }))); setBulk(null); }} />
                             </div>
-                            <div className="text-[11px] text-muted">고른 {liveSelected.length}행에 같은 값이 들어갑니다.</div>
+                            <div className="text-note text-muted">고른 {liveSelected.length}행에 같은 값이 들어갑니다.</div>
                         </div>
                     </Popover>
                 );
@@ -998,13 +998,13 @@ export function RecordView<T>({
                 return (
                     <div className="absolute inset-0 z-[150] grid place-items-center bg-bg/60" data-rv-confirm role="alertdialog" aria-modal="true">
                         <div className="w-[320px] max-w-[90%] rounded-md border border-line bg-panel shadow-lg p-4 flex flex-col gap-3">
-                            <div className="text-[13px] text-text">
+                            <div className="text-body text-text">
                                 「{label}」 칸을 「{to}」로 바꾸면 <b>{pending.lost}행의 값이 {emptied === pending.lost ? '비워집니다' : '바뀌며 일부 내용이 사라집니다'}</b>.
                             </div>
-                            <div className="text-[12px] text-muted">되돌리기(⌘Z)로 되살릴 수 있습니다.</div>
+                            <div className="text-small text-muted">되돌리기(⌘Z)로 되살릴 수 있습니다.</div>
                             <div className="flex justify-end gap-2">
-                                <button type="button" data-rv-confirm-cancel onClick={() => setPending(null)} className="h-row px-3 rounded border border-line text-[13px] text-text hover:bg-text/[0.06]">취소</button>
-                                <button type="button" data-rv-confirm-ok onClick={() => { const p = pending; setPending(null); applyConvert(p); }} className="h-row px-3 rounded bg-accent text-bg text-[13px]">바꾸기</button>
+                                <button type="button" data-rv-confirm-cancel onClick={() => setPending(null)} className="h-row px-3 rounded border border-line text-body text-text hover:bg-text/[0.06]">취소</button>
+                                <button type="button" data-rv-confirm-ok onClick={() => { const p = pending; setPending(null); applyConvert(p); }} className="h-row px-3 rounded bg-accent text-bg text-body">바꾸기</button>
                             </div>
                         </div>
                     </div>

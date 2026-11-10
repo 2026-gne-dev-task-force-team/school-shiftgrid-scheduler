@@ -36,7 +36,7 @@ const DayHeader = memo(function DayHeader({ offset, left, width, todayIso, showM
             {/* 달 띠 — 글자는 칸을 넘어 오른쪽으로 흐른다(좁은 칸이라) */}
             <div className="relative border-l border-line" style={{ height: MONTH_H }}>
                 {showMonth && (
-                    <span className="absolute left-1 top-0 whitespace-nowrap text-[11px] font-medium text-text leading-5">
+                    <span className="absolute left-1 top-0 whitespace-nowrap text-note font-medium text-text leading-5">
                         {monthLabel(d.getFullYear(), d.getMonth() + 1)}
                     </span>
                 )}
@@ -46,11 +46,11 @@ const DayHeader = memo(function DayHeader({ offset, left, width, todayIso, showM
                 style={{ height: DAY_H }}
             >
                 {isToday ? (
-                    <span className="grid place-items-center w-5 h-5 rounded-full bg-accent text-bg text-[11px] font-semibold tabular-nums">{d.getDate()}</span>
+                    <span className="grid place-items-center w-5 h-5 rounded-full bg-accent text-bg text-note font-semibold tabular-nums">{d.getDate()}</span>
                 ) : (
-                    <span className="text-[11px] leading-none text-text tabular-nums">{d.getDate()}</span>
+                    <span className="text-note leading-none text-text tabular-nums">{d.getDate()}</span>
                 )}
-                <span className="text-[9px] leading-none text-muted mt-0.5">{WEEKDAYS[d.getDay()]}</span>
+                <span className="text-micro leading-none text-muted mt-0.5">{WEEKDAYS[d.getDay()]}</span>
             </div>
         </div>
     );
@@ -145,7 +145,7 @@ export function GanttView({ value, onChange, trailing, selection, onSelect }: { 
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>

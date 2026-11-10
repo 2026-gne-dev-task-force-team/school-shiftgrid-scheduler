@@ -41,7 +41,7 @@ export function TitleBar({
             style={DRAG}
         >
             {/* 왼쪽: 앱 이름 — 좁아지면 먼저 잘린다(가운데·오른쪽 자리를 지킨다) */}
-            {title && <span className="shrink min-w-0 truncate text-[12px] font-semibold text-text">{title}</span>}
+            {title && <span className="shrink min-w-0 truncate text-small font-semibold text-text">{title}</span>}
 
             {/* 가운데: 빈 자리(나중에 검색·명령). 공간을 먹어 액션을 오른쪽 끝으로 민다 */}
             <div className="flex-1 min-w-0 flex items-center justify-center" style={NO_DRAG}>{center}</div>

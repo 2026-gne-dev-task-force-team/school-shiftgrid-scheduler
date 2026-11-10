@@ -68,16 +68,16 @@ export class ViewErrorBoundary extends Component<ViewBoundaryProps, ViewBoundary
             <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
                 <div className="flex flex-col items-center gap-3 max-w-[22rem]">
                     <Icon name="warn" size={28} className="text-warn/70" />
-                    <p className="text-[13px] text-text leading-relaxed">
+                    <p className="text-body text-text leading-relaxed">
                         이 화면을 표시하는 중 문제가 생겼습니다.
                     </p>
-                    <p className="text-[11px] text-muted leading-relaxed break-all">
+                    <p className="text-note text-muted leading-relaxed break-all">
                         {this.state.error.message || '알 수 없는 오류'}
                     </p>
                     <button
                         type="button"
                         onClick={() => this.setState({ error: null })}
-                        className={`h-btn px-3 rounded border border-accent text-[12px] text-text bg-text/[0.06]
+                        className={`h-btn px-3 rounded border border-accent text-small text-text bg-text/[0.06]
                             hover:bg-text/[0.1] transition-colors ${FOCUS_RING}`}
                     >
                         다시 시도
@@ -133,16 +133,16 @@ export class RootErrorBoundary extends Component<{ children: ReactNode }, RootBo
             <div className="h-full w-full grid place-items-center bg-bg text-text px-6 py-8 text-center">
                 <div className="flex flex-col items-center gap-4 max-w-[24rem] p-6 rounded border border-line bg-panel">
                     <Icon name="warn" size={32} className="text-warn/80" />
-                    <p className="text-[14px] font-medium text-text leading-relaxed">
+                    <p className="text-lead font-medium text-text leading-relaxed">
                         화면 구성을 불러오는 중 문제가 생겼습니다.
                     </p>
-                    <p className="text-[12px] text-muted leading-relaxed">
+                    <p className="text-small text-muted leading-relaxed">
                         이전 버전의 화면 배치나 캐시가 충돌했을 수 있습니다. 아래 단추를 누르면 저장된 자료는 유지한 채 화면 배치만 초기화하고 다시 엽니다.
                     </p>
                     <button
                         type="button"
                         onClick={() => this.setState({ confirmReset: true })}
-                        className={`h-btn px-4 rounded border border-accent text-[13px] text-text bg-text/[0.06]
+                        className={`h-btn px-4 rounded border border-accent text-body text-text bg-text/[0.06]
                             hover:bg-text/[0.12] transition-colors ${FOCUS_RING}`}
                     >
                         화면 배치 초기화 후 다시 열기

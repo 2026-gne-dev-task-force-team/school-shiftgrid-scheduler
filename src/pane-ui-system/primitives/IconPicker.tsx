@@ -50,11 +50,11 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && custom.trim()) { e.preventDefault(); choose(custom.trim()); } }}
                             placeholder="직접 입력"
                             maxLength={8}
-                            className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-[13px] text-text outline-none"
+                            className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-body text-text outline-none"
                         />
                         {icon && (
                             <button type="button" onClick={() => { onSetIcon(undefined); close(); }}
-                                className="flex items-center gap-1 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05]">
+                                className="flex items-center gap-1 h-btn px-2 rounded text-small text-muted hover:text-text hover:bg-text/[0.05]">
                                 <Icon name="trash" size={12} /> 지우기
                             </button>
                         )}

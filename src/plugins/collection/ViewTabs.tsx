@@ -68,7 +68,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                 const on = v.id === activeId;
                 return renaming === v.id ? (
                     <span key={v.id} data-rv-view-rename={v.id} className="inline-flex mb-1">
-                        <InlineRename value={v.name} ariaLabel="보기 이름" className="h-row w-[110px] px-2 rounded border border-line bg-bg text-[13px] text-text outline-none"
+                        <InlineRename value={v.name} ariaLabel="보기 이름" className="h-row w-[110px] px-2 rounded border border-line bg-bg text-body text-text outline-none"
                             onCommit={(name) => rename(v.id, name)} onCancel={() => setRenaming(null)} />
                     </span>
                 ) : (
@@ -78,7 +78,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                             if (on) setMenu({ id: v.id, rect: e.currentTarget.getBoundingClientRect() }); else onSelect(v.id);
                         }}
                         onDoubleClick={() => { setMenu(null); setRenaming(v.id); }}
-                        className={`shrink-0 inline-flex items-center gap-1 h-row px-2 -mb-px border-b-2 text-[13px] ${on ? 'border-text text-text font-medium' : 'border-transparent text-muted hover:text-text'}`}>
+                        className={`shrink-0 inline-flex items-center gap-1 h-row px-2 -mb-px border-b-2 text-body ${on ? 'border-text text-text font-medium' : 'border-transparent text-muted hover:text-text'}`}>
                         <Icon name="table" size={13} />{v.name}
                     </button>
                 );

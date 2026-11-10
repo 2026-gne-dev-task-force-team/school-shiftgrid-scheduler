@@ -17,7 +17,7 @@ export function PaneTestSettings({ host }: { host: PluginHost }) {
     };
 
     return (
-        <div className="flex flex-col gap-4 max-w-[560px] text-[13px] text-text">
+        <div className="flex flex-col gap-4 max-w-[560px] text-body text-text">
             <p className="text-muted">
                 이 플러그인은 창틀(pane-ui-system)을 눈으로 시험하는 하네스입니다. 리본의 ✨ 아이콘으로 시험 탭을 엽니다.
             </p>

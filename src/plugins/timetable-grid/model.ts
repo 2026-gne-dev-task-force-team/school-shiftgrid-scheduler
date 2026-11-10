@@ -135,18 +135,6 @@ export function setCellText(data: TimetableData, col: number, row: number, text:
     return withCells(data, cells);
 }
 
-/** 칸별 시각 덮어쓰기(숨은 기능) — null 이면 덮어쓰기를 걷는다(행 시각으로 되돌림). */
-export function setCellTime(data: TimetableData, col: number, row: number, time: { start: number; end: number } | null): TimetableData {
-    const key = cellKey(col, row);
-    const cells = { ...data.cells };
-    const prev = cells[key] ?? { text: '' };
-    const next: Cell = { ...prev };
-    if (time) next.time = time; else delete next.time;
-    if (next.text === '' && (next.rowSpan ?? 1) <= 1 && (next.colSpan ?? 1) <= 1 && !next.time) delete cells[key];
-    else cells[key] = next;
-    return withCells(data, cells);
-}
-
 // ── 셀 병합(세로 필수·가로 허용) ──
 
 export interface Selection { col0: number; row0: number; col1: number; row1: number; }

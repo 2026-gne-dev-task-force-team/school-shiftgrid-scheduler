@@ -43,7 +43,7 @@ export function StartScreen({
                         <Icon name={icon} size={18} className="text-muted" />
                         <span className="text-[16px] font-medium">{title}</span>
                     </div>
-                    <div className="text-[12px] text-muted">{description ?? `새로 만들거나, 만들어 둔 ${josa(noun, '을/를')} 고른다.`}</div>
+                    <div className="text-small text-muted">{description ?? `새로 만들거나, 만들어 둔 ${josa(noun, '을/를')} 고른다.`}</div>
                 </div>
 
                 <button
@@ -56,13 +56,13 @@ export function StartScreen({
                         <Icon name="plus" size={16} />
                     </span>
                     <span className="flex flex-col">
-                        <span className="text-[13px] font-medium text-text">{newLabel}</span>
-                        {newHint && <span className="text-[11px] text-muted">{newHint}</span>}
+                        <span className="text-body font-medium text-text">{newLabel}</span>
+                        {newHint && <span className="text-note text-muted">{newHint}</span>}
                     </span>
                 </button>
 
                 <div className="flex flex-col gap-1">
-                    <div className="text-[11px] text-muted px-1">만들어 둔 것 · {items.length}</div>
+                    <div className="text-note text-muted px-1">만들어 둔 것 · {items.length}</div>
                     {items.length === 0 ? (
                         <div className="rounded-lg border border-line"><EmptyState compact icon={icon} title={`만들어 둔 ${noun}${josa(noun, '이/가').slice(noun.length)} 없다`} description={`위의 「${newLabel}」로 시작한다.`} /></div>
                     ) : (
@@ -77,10 +77,10 @@ export function StartScreen({
                                         {it.emoji
                                             ? <span className="w-4 text-center text-small leading-none shrink-0">{it.emoji}</span>
                                             : <Icon name={it.icon ?? icon} size={14} className="text-muted shrink-0" />}
-                                        <span className="text-[13px] text-text truncate">{it.name}</span>
+                                        <span className="text-body text-text truncate">{it.name}</span>
                                         <span className="flex-1" />
                                         {it.folder && (
-                                            <span className="flex items-center gap-1 text-[11px] text-muted truncate max-w-[40%]">
+                                            <span className="flex items-center gap-1 text-note text-muted truncate max-w-[40%]">
                                                 <Icon name="folder" size={11} /> {it.folder}
                                             </span>
                                         )}

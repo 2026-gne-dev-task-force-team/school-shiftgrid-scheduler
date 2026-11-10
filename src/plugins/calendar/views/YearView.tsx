@@ -65,7 +65,7 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
                     <button
                         type="button"
                         onClick={() => goYear(now.getFullYear())}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                        className="px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
                     >
                         올해
                     </button>
@@ -89,7 +89,7 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
                     {MONTHS.map((m) => (
                         <div
                             key={`h${m}`}
-                            className="sticky top-0 z-10 border-r border-b border-line bg-panel py-1 text-center text-[11px] font-medium text-muted select-none"
+                            className="sticky top-0 z-10 border-r border-b border-line bg-panel py-1 text-center text-note font-medium text-muted select-none"
                         >
                             {m}월
                         </div>
@@ -98,7 +98,7 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
                     {/* 날짜 줄 — 첫 칸은 일(日) 숫자 머리(왼쪽에 붙어 있다), 그 다음 12달 칸 */}
                     {DAYS.map((d) => (
                         <div key={`r${d}`} className="contents">
-                            <div className="sticky left-0 z-10 border-r border-b border-line bg-panel grid place-items-center text-[10px] tabular-nums text-muted select-none">
+                            <div className="sticky left-0 z-10 border-r border-b border-line bg-panel grid place-items-center text-micro tabular-nums text-muted select-none">
                                 {d}
                             </div>
                             {MONTHS.map((m) => {
@@ -118,10 +118,10 @@ export function YearView({ value, onChange, trailing, selection, onSelect }: { v
                                         data-day={c.iso}
                                         className={`border-r border-b border-line px-1 flex items-center gap-1 overflow-hidden ${bg}`}
                                     >
-                                        <span className={`text-[11px] leading-none tabular-nums ${c.isToday ? 'text-bg font-semibold' : 'text-text'}`}>
+                                        <span className={`text-note leading-none tabular-nums ${c.isToday ? 'text-bg font-semibold' : 'text-text'}`}>
                                             {c.d}
                                         </span>
-                                        <span className={`text-[10px] leading-none ${c.isToday ? 'text-bg' : 'text-muted'}`}>
+                                        <span className={`text-micro leading-none ${c.isToday ? 'text-bg' : 'text-muted'}`}>
                                             {WEEKDAYS[c.weekday]}
                                         </span>
                                         {hasEvent && (

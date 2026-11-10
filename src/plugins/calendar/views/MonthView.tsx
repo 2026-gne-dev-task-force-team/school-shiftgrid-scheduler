@@ -401,7 +401,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>
@@ -424,7 +424,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                             {/* 년도 줄 */}
                             <div className="flex items-center justify-between mb-1">
                                 <IconButton icon="left" label="이전 해" onClick={() => setJumpYear((y) => y - 1)} />
-                                <span className="text-[13px] font-semibold text-text tabular-nums">{jumpYear}년</span>
+                                <span className="text-body font-semibold text-text tabular-nums">{jumpYear}년</span>
                                 <IconButton icon="right" label="다음 해" onClick={() => setJumpYear((y) => y + 1)} />
                             </div>
                             {/* 달 12칸 — 지금 보는 달은 accent, 오늘 달은 점 */}
@@ -437,7 +437,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                                             key={m}
                                             type="button"
                                             onClick={() => jumpTo(m)}
-                                            className={`relative h-8 rounded text-[13px] tabular-nums transition-colors
+                                            className={`relative h-8 rounded text-body tabular-nums transition-colors
                                                 ${isCurrent ? 'bg-accent text-bg font-semibold' : 'text-text hover:bg-text/[0.06]'}`}
                                         >
                                             {m}월
@@ -467,7 +467,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     style={{ height: WD_HEADER_H }}
                 >
                     {labels.map((w) => (
-                        <div key={w} className="border-r border-b border-line text-center text-[11px] leading-[22px] font-medium text-muted select-none">
+                        <div key={w} className="border-r border-b border-line text-center text-note leading-[22px] font-medium text-muted select-none">
                             {w}
                         </div>
                     ))}

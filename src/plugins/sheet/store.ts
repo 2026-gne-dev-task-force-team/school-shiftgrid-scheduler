@@ -13,8 +13,6 @@ export function setActiveTable(id: string | null): void {
     for (const l of listeners) l();
 }
 
-export function getActiveTable(): string | null { return activeTableId; }
-
 export function useActiveTable(): string | null {
     return useSyncExternalStore(
         (l) => { listeners.add(l); return () => { listeners.delete(l); }; },

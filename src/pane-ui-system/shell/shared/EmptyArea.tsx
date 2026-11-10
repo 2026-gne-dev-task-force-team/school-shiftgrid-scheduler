@@ -59,7 +59,7 @@ export function EmptyArea({
             {/* 🔴 data-empty-area — 드롭이 여기로 떨어지면 그 자리(left/right) 이름으로 moveLeaf(resolveDropAt) */}
             <div className="flex-1 min-h-0 grid place-items-center bg-side px-8 py-6 text-center" data-empty-area={chrome?.side} {...trigger}>
                 {/* 🔴 상자 배경 없이 글자만 · 좁아도 자연스럽게 줄바꿈(max-w + text-balance) · 세로 가운데(항목 3) */}
-                <p className="max-w-[15rem] text-[13px] text-muted/80 select-none leading-relaxed text-balance">
+                <p className="max-w-[15rem] text-body text-muted/80 select-none leading-relaxed text-balance">
                     비어 있습니다. 여기로 끌어오거나 메뉴로 보내세요.
                 </p>
             </div>
