@@ -73,11 +73,12 @@ export function IconButton({
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'onMouseDown' | 'title' | 'disabled' | 'className' | 'type'>) {
     const box: 'sm' | 'md' = size === 'md' ? 'md' : 'sm';
     const px = iconSize ?? (typeof size === 'number' ? size : box === 'md' ? 18 : 16);
-    return (
+    const tip = title ?? label;
+    const btn = (
         <button
             type="button"
             aria-label={label}
-            title={title ?? label}
+            title={tip}
             data-row-id={rowId}
             {...data}
             {...rest}
@@ -91,4 +92,6 @@ export function IconButton({
             <Icon name={icon} size={px} />
         </button>
     );
+    // 꺼진 단추는 마우스 이벤트가 안 가 title 이 안 뜬다(pointer-events-none) — 감싸는 span 이 title 을 든다
+    return disabled ? <span title={tip} className="inline-flex shrink-0">{btn}</span> : btn;
 }

@@ -40,7 +40,7 @@ function PasswordSlot({ userId, manage }: { userId: string; manage: boolean }) {
                         onChange={(e) => setPw(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') void save(); if (e.key === 'Escape') cancel(); }} />
                     <Button variant="ghost" size="sm" onClick={cancel}>취소</Button>
-                    <Button variant="accent" size="sm" onClick={() => void save()} disabled={!pw}>저장</Button>
+                    <Button variant="accent" size="sm" onClick={() => void save()} disabled={!pw} disabledReason="먼저 비밀번호를 입력하세요.">저장</Button>
                 </>
             ) : (
                 <>

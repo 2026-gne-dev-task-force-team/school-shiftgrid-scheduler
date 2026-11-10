@@ -146,7 +146,7 @@ export function StorageErrorStatus() {
                 ref={btnRef}
                 type="button"
                 aria-label={aria}
-                title={kind === 'best-effort' ? durabilityText('best-effort') : undefined}
+                title={kind === 'best-effort' ? '자동으로 저장됩니다 · 이 브라우저에만 저장돼서 다른 컴퓨터에선 안 보입니다' : undefined}
                 onClick={() => {
                     if (open) { setOpen(false); return; }
                     const r = btnRef.current?.getBoundingClientRect();
