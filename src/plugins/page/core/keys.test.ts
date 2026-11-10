@@ -12,6 +12,16 @@ const base: KeyInput = {
 };
 const k = (over: Partial<KeyInput>): KeyInput => ({ ...base, ...over });
 
+describe('한글 자판 — e.code 로 글자 단축키', () => {
+    it('key ㅠ + code KeyB + Mod → bold', () => {
+        setPlatform('mac');
+        expect(decideKey(k({ key: 'ㅠ', code: 'KeyB', metaKey: true }))).toBe('bold');
+    });
+    it('라틴 key 우선 — key i + code KeyB → italic', () => {
+        expect(decideKey(k({ key: 'i', code: 'KeyB', metaKey: true }))).toBe('italic');
+    });
+});
+
 describe('🔴 IME 조합 중엔 무변환(요구 11)', () => {
     it('조합 중 Enter 는 default(가르지 않는다)', () => {
         expect(decideKey(k({ key: 'Enter', isComposing: true }))).toBe('default');

@@ -2,7 +2,7 @@
  * 🔴 키 입력을 「무엇을 하나」로 옮기는 순수 판정(명세 요구 6·11). 뷰는 이 답만 보고 움직인다.
  *   ⭐ 한글 IME: 조합 중(isComposing)엔 무조건 default — 가로채면 글자가 깨진다(명세 요구 11).
  */
-import { isMod, undoKey } from '../../../pane-ui-system';
+import { isMod, undoKey, latinKey } from '../../../pane-ui-system';
 
 export type KeyAction =
     | 'default'        // 브라우저에 맡긴다(글자 입력·줄 안 이동 등)
@@ -25,6 +25,8 @@ export type KeyAction =
 
 export interface KeyInput {
     key: string;
+    /** 물리 키(KeyZ …) — e.key 가 한글 자모일 때 글자 단축키를 대신 판정한다. */
+    code?: string;
     shiftKey: boolean;
     metaKey: boolean;
     ctrlKey: boolean;
@@ -53,7 +55,7 @@ export function decideKey(i: KeyInput): KeyAction {
     if (mod) {
         const u = undoKey(i);
         if (u) return u;
-        const k = i.key.toLowerCase();
+        const k = latinKey(i);
         if (k === 'b') return 'bold';
         if (k === 'i') return 'italic';
         if (k === 'd' && !i.shiftKey) return 'duplicate';  // ⌘D — 지금 블록 복제
