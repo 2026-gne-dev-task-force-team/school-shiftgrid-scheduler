@@ -86,8 +86,14 @@ export function createSheet(): string | null {
     const taken = new Set(sheetNodes.map((n) => n.name));
     let name = '시간표';
     for (let i = 2; taken.has(name); i++) name = `시간표 ${i}`;
-    return api.create(api.roots.main, { type: SHEET_TYPE, name });
+    const id = api.create(api.roots.main, { type: SHEET_TYPE, name });
+    if (id) fresh.add(id);
+    return id;
 }
+/** 방금 만든 시간표 — 처음 열릴 때 격자 첫 칸에 초점을 준다(한 번). */
+const fresh = new Set<string>();
+export const isFresh = (id: string): boolean => fresh.has(id);
+export const takeFresh = (id: string): void => { fresh.delete(id); };
 
 /** 노드가 든 폴더 이름(맨 위면 null) — 시작 화면 목록의 꼬리표. */
 export function parentNameOf(id: string): string | null {

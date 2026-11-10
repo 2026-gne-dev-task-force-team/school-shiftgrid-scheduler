@@ -13,7 +13,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { step, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
+import { step, ownerOf, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
 import { isMod, isAlt, Button, ContextMenu, FrameToolbarPortal, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import { GridToolbar } from './GridToolbar';
 import {
@@ -89,8 +89,10 @@ export interface TimeGridToolbarProps {
     undo?: () => void; redo?: () => void; canUndo?: boolean; canRedo?: boolean;
 }
 
-export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, redo, canUndo, canRedo }: {
+export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, toolbarHost, onNotice, undo, redo, canUndo, canRedo }: {
     data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void;
+    /** 새로 만든 직후 — 격자 첫 칸을 선택하고 초점을 준다(시트 「새로 만들기」와 같게) */
+    focusFirst?: boolean; onFocusedFirst?: () => void;
 } & TimeGridToolbarProps) {
     const [ppm, setPpm] = useState(DEFAULT_PPM);
     const nCols = columnCount(data.columns);
@@ -115,6 +117,19 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
     const focusGrid = () => gridRef.current?.focus({ preventScroll: true });
     const reveal = (p: Pos) => gridRef.current?.querySelector<HTMLElement>(`[data-c="${p.c}"][data-r="${p.r}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     const selectAt = (p: Pos) => { setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r }); reveal(p); };
+    useEffect(() => {
+        if (!focusFirst) return;
+        selectAt({ c: 0, r: 0 }); focusGrid(); onFocusedFirst?.();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    /** 칸 지우기 — 바뀐 게 있을 때만 「알림+되돌리기」(행·열 지우기와 같은 길). */
+    const clearSel = (s: Selection) => {
+        const d0 = dataRef.current;
+        if (clearRange(d0, s) === d0) return;
+        editFn.current((d) => clearRange(d, s));
+        onRemoved?.('칸 글자를 지웠습니다');
+        
+    };
     const beginEdit = (p: Pos, typed?: string) => {
         const orig = getCell(data, p.c, p.r)?.text ?? '';
         setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r });
@@ -141,7 +156,20 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
             return;
         }
         if (meta || isAlt(e)) return;   // ⌘Z 등은 위(GridTab)로 흘린다 · ⌘C/X/V 는 문서 clipboard 이벤트로
-        if (k === 'Tab') { e.preventDefault(); selectAt(step(data, cur, e.shiftKey ? -1 : 1, 0)); return; }
+        if (k === 'Tab') {
+            // Tab = 오른쪽 칸 · 행 끝이면 다음 행 첫 칸 · 마지막 칸(⇧: 첫 칸)에선 격자 밖으로(기본 동작)
+            const o = ownerOf(data, cur.c, cur.r), nxt = step(data, cur, e.shiftKey ? -1 : 1, 0);
+            if (nxt.c !== o.c || nxt.r !== o.r) { e.preventDefault(); selectAt(nxt); return; }
+            const lastC = nCols - 1;
+            if (!e.shiftKey) {
+                const below = step(data, { c: o.c, r: o.r }, 0, 1);
+                if (below.r === o.r) return;
+                e.preventDefault(); selectAt(ownerOf(data, 0, below.r)); return;
+            }
+            const above = step(data, { c: o.c, r: o.r }, 0, -1);
+            if (above.r === o.r) return;
+            e.preventDefault(); selectAt(ownerOf(data, lastC, above.r)); return;
+        }
         // 🙋17 시트와 같게(구글 시트 관례) — 선택 상태 Enter = 편집 시작 · ⇧Enter = 위로. 편집 중 Enter(확정+아래)는 편집창이 받는다.
         if (k === 'Enter') {
             if (isImeEnter(e)) return;
@@ -150,7 +178,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
             return;
         }
         if (k === 'F2') { e.preventDefault(); beginEdit(cur); return; }
-        if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); if (sel) edit((d) => clearRange(d, sel)); return; }
+        if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); if (sel) clearSel(sel); return; }
         if (k === 'Escape') { if (sel) setSel({ ...sel, col1: sel.col0, row1: sel.row0 }); return; }
         // 한글 첫 글자 — 조합 키는 막지 않고 빈 편집창을 동기로 열어 그 자리에서 조합을 이어받게 한다(시트와 같은 수).
         if (k === 'Process' || e.nativeEvent.isComposing) { flushSync(() => beginEdit(cur, '')); return; }
@@ -164,7 +192,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
             if (!s) return;
             e.clipboardData?.setData('text/plain', rangeTsv(dataRef.current, s));
             e.preventDefault();
-            if (cut) editFn.current((d) => clearRange(d, s));
+            if (cut) clearSel(s);
         };
         const onPaste = (e: ClipboardEvent) => {
             const s = mine();
@@ -253,9 +281,9 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
         }
         if (r !== null) {
             items.push(
-                { label: '위에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r)) },
-                { label: '아래에 행 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r + 1)) },
-                { label: '이 행 삭제', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); onRemoved?.('행 1개를 삭제했습니다'); } },
+                { label: '위에 교시 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r)) },
+                { label: '아래에 교시 넣기', icon: 'plus', onClick: () => edit((d) => addRow(d, r + 1)) },
+                { label: '이 교시 삭제', icon: 'trash', danger: true, disabled: nRows <= 1, onClick: () => { edit((d) => removeRow(d, r)); setSel(null); onRemoved?.('교시 1개를 삭제했습니다'); } },
             );
         }
         if (c !== null) {
@@ -275,7 +303,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
     return (<>
         <FrameToolbarPortal host={toolbarHost} fallback="none">
             <GridToolbar data={data} row={sel ? Math.min(sel.row0, sel.row1) : null} edit={edit} onNotice={onNotice} onRemoved={onRemoved}
-                onRowRemoved={() => setSel(null)} onClear={() => { if (sel) edit((d) => clearRange(d, sel)); }} canClear={!!sel}
+                onRowRemoved={() => setSel(null)} onClear={() => { if (sel) clearSel(sel); }} canClear={!!sel}
                 undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} zoom={ppm} setZoom={setPpm} />
         </FrameToolbarPortal>
         <div className="h-full overflow-auto" {...trigger}>
@@ -311,7 +339,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
                             const top = yOf(rowStart(r)), h = yOf(rowEnd(r)) - top;
                             return (
                                 <div key={row.id} data-r={r} className="absolute overflow-hidden border-y border-line bg-text/[0.03]" style={{ left: TIME_W, width: HEAD_W, top, height: h }}>
-                                    <CommitField value={row.name} label={`행 ${r + 1} 이름`} placeholder={`행 ${r + 1}`}
+                                    <CommitField value={row.name} label={`${r + 1}교시 이름`} placeholder={`${r + 1}교시`}
                                         onCommit={(v) => edit((d) => renameRow(d, r, v))}
                                         className="w-full bg-transparent px-1.5 pt-1 text-small text-text outline-none focus:bg-text/[0.04]" />
                                     {h >= 40 && <div className="px-1.5 text-micro tabular-nums text-muted">{fmt(rowStart(r))}~{fmt(rowEnd(r))}</div>}
@@ -355,7 +383,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
                             const merged = r1 > r || c1 > c;
                             const active = sel?.col0 === c && sel.row0 === r;
                             const single = !!sel && sel.col0 === sel.col1 && sel.row0 === sel.row1;
-                            const label = `${colName(data, c) || `열 ${c + 1}`} ${row.name || `행 ${r + 1}`} 칸`;
+                            const label = `${colName(data, c) || `열 ${c + 1}`} ${row.name || `${r + 1}교시`} 칸`;
                             return (
                                 <div key={`${c}:${row.id}`} data-c={c} data-r={r} className="absolute p-px" style={{ left: lefts[c], width, top, height }}
                                     onMouseDown={(e) => onCellDown(e, c, r)} onMouseOver={() => onCellOver(c, r)} onDoubleClick={() => beginEdit({ c, r })}>
@@ -378,7 +406,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
                 </div>
 
                 <div className="sticky left-0 w-max px-1 py-1">
-                    <Button variant="plain" size="sm" className="whitespace-nowrap" title="행 넣기" onClick={() => edit((d) => addRow(d))}><Icon name="plus" size={12} /> 행</Button>
+                    <Button variant="plain" size="sm" className="whitespace-nowrap" title="교시 넣기" onClick={() => edit((d) => addRow(d))}><Icon name="plus" size={12} /> 교시</Button>
                 </div>
             </div>
             {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
