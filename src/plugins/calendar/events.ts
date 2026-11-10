@@ -56,6 +56,8 @@ export interface CalEvent {
 export const occId = (seriesId: string, originalStart: string) => `${seriesId}@${originalStart}`;
 /** 칩 id → 노드 id(가상 회차면 규칙 일정 id). */
 export const nodeIdOf = (id: string) => id.split('@')[0];
+/** 가상 회차(아직 실체 없는 규칙 회차) 칩은 고스트로 — 연하게 + 점선 테두리(쥔님 2026-11-10). outline 이라 칸 높이는 안 바뀐다. */
+export const ghostCls = (e: CalEvent) => (e.occ?.virtual ? 'opacity-60 outline-dashed outline-1 outline-current' : '');
 
 /** 일정 data 의 생김새(노드에 저장되는 불투명 값). */
 export interface EventData {

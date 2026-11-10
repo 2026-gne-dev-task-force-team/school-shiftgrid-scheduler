@@ -20,7 +20,7 @@ import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLab
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 import { useCalendarData } from '../useEvents';
 import { createEvent, removeEvent } from '../nodes';
-import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
+import { buildDayIndex, ghostCls, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
 import { useWords } from '../presets';
 import { useCardPeek } from './useCardPeek';
@@ -92,7 +92,7 @@ const DayHeader = memo(function DayHeader(
             {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
-                    <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
+                    <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar} ${ghostCls(e)}`}>
                         {e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}
                     </div>
                 ))}
@@ -113,7 +113,7 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
         <div
             data-event-id={e.id}
             {...CHIP_A11Y}
-            className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
+            className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border} ${ghostCls(e)}`}
             style={{ top, height }}
         >
             <div className="truncate text-micro leading-4 text-text">{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</div>

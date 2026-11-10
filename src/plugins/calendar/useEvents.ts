@@ -30,6 +30,8 @@ function toMs(s: unknown): number {
 export interface CalendarData {
     /** 살아 있는(휴지통 아닌) 일정 전부 — 날짜 무관. 범위 필터는 eventsInRange 로. */
     events: CalEvent[];
+    /** 반복 규칙 일정 자신(시작 = 첫 회차) — 달력엔 안 그리고 목록(레코드)에만 쓴다. 범위 필터는 events 와 같다. */
+    rules: CalEvent[];
     /** 저장소 id → 이름·색인. 살아 있는 저장소만. */
     stores: Map<string, StoreInfo>;
     /** 색 고를 때 쓰는 저장소 순서(살아 있는 것만) */
@@ -59,6 +61,7 @@ export function useCalendarData(): CalendarData {
         });
 
         const events: CalEvent[] = [];
+        const rules: CalEvent[] = [];
         for (const n of eventNodes) {
             if (inTrash(n.id)) continue;               // 🔴 조상 휴지통 제외
             const storeId = api?.parent(n.id) ?? '';
@@ -68,8 +71,8 @@ export function useCalendarData(): CalendarData {
             const endMs = toMs(d.end);
             if (Number.isNaN(startMs) || Number.isNaN(endMs)) continue;
             const sd = n.data as SeriesData;
-            if (sd.recur) continue;                    // 규칙 일정 자신은 안 그린다 — 회차로 아래서 편다
-            events.push({
+            // 규칙 일정 자신은 달력에 안 그린다(회차로 아래서 편다) — 목록(레코드)에만 한 줄로 간다
+            (sd.recur ? rules : events).push({
                 id: n.id,
                 storeId,
                 name: n.name,
@@ -108,7 +111,7 @@ export function useCalendarData(): CalendarData {
                 }
             }
         }
-        return { events, stores, storeList };
+        return { events, rules, stores, storeList };
     }, [eventNodes, storeNodes]);
 
     // 범위 필터 — scope 가 살아 있는 저장소일 때만 건다(휴지통에 가거나 사라졌으면 전체로 · 지움은 CalendarTab 이 setScope(null)).
@@ -116,6 +119,6 @@ export function useCalendarData(): CalendarData {
     return useMemo<CalendarData>(() => {
         const effScope = scope && base.stores.has(scope) ? scope : null;
         const own = eventsInScope(base.events, base.stores, effScope);
-        return { events: foreign.length ? [...own, ...foreign] : own, stores: base.stores, storeList: base.storeList };
+        return { events: foreign.length ? [...own, ...foreign] : own, rules: eventsInScope(base.rules, base.stores, effScope), stores: base.stores, storeList: base.storeList };
     }, [base, scope, foreign]);
 }

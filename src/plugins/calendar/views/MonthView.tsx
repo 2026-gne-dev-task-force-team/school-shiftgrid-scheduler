@@ -25,7 +25,7 @@ import {
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
-import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
+import { buildDayIndex, ghostCls, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
 import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useWords } from '../presets';
@@ -81,13 +81,13 @@ function EventChip({ b }: { b: WeekBar }) {
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
-            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar}`}>
+            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar} ${ghostCls(e)}`}>
                 {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
     }
     return (
-        <div data-event-id={e.id} {...CHIP_A11Y} className="flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
+        <div data-event-id={e.id} {...CHIP_A11Y} className={`flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded ${ghostCls(e)}`}>
             <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
             <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
         </div>
