@@ -8,6 +8,7 @@ export const FRAME_COMMAND = {
     closeTab: 'frame.tab.close',
     closeOthers: 'frame.tab.close-others',
     closeRight: 'frame.tab.close-right',
+    reopenTab: 'frame.tab.reopen',
     splitRow: 'frame.tab.split-row',
     splitCol: 'frame.tab.split-col',
     moveLeft: 'frame.move.left',

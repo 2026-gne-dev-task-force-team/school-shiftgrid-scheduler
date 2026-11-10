@@ -213,9 +213,15 @@ export function Workbench() {
     // 설정 — 코어 settings 플러그인의 뷰(싱글턴). openView 가 이미 떠 있으면 그리로 보낸다.
     const openSettings = useCallback(() => { openView('settings.main'); }, [openView]);
 
+    const closedRef = useRef<{ lf: Leaf; area: AreaKey }[]>([]);
     const handlers: WorkspaceHandlers = useMemo(() => ({
         onActivate: (id) => { setWs((w) => activateLeaf(w, id)); setFocus(id); },
-        onClose: (id) => setWs((w) => closeLeaf(w, id)),
+        onClose: (id) => {
+            // 닫은 탭 기록(세션 메모리, 최근 10개) — ⌘⇧T 가 되살린다. 단일 탭 닫기만 기록한다
+            const cur = wsRef.current; const lf = findLeaf(cur, id); const area = areaOfLeaf(cur, id);
+            if (lf && area) closedRef.current = [{ lf, area }, ...closedRef.current].slice(0, 10);
+            setWs((w) => closeLeaf(w, id));
+        },
         // 🔴 가르기 = 원본 탭(sourceLeafId)을 복제해 옆에 — 새 「표 N」 아님(W8, 옵시디언식)
         // 🔴 ⭐ 가르기는 **틀 조작**이다 — 활성 탭을 복제하지 않고 새 쪽에 **빈 탭**을 연다(쥔님 2026-11-01 19:34
         //    *"복제는 아직 만들기엔 복잡한 게 많을 거 같은데 없애주고"* · 세로 나누기가 모든 뷰에서 막혀 있던 뿌리 =
@@ -237,6 +243,12 @@ export function Workbench() {
         addLabel: newTab?.label ?? '새 탭',
         // 🔴 「모든 탭 메뉴」 기여 — 플러그인이 host.menu 로 꽂은 항목을 이 leaf 로 푼다
         tabMenu: (lf: Leaf) => listTabMenu({ id: lf.id, viewId: lf.viewId, title: lf.title, params: lf.params }),
+        onReopen: () => {
+            const e = closedRef.current.shift();
+            if (!e) return;
+            setWs((w) => openLeaf(w, e.lf, e.area));
+            setFocus(e.lf.id);
+        },
         onCloseOthers: (id) => setWs((w) => closeOthers(w, id)),
         onCloseRight: (id) => setWs((w) => closeToRight(w, id)),
         // 🔴 이동은 전부 placement 를 묻는다 — 메뉴가 잠궜어도 드래그·키보드가 뚫지 못하게 모델 앞에서 한 번 더
@@ -285,7 +297,8 @@ export function Workbench() {
 
         runs['frame.palette.k'] = () => setPalette((v) => !v);
         const disp: Disposable[] = [
-            add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x'),
+            add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x', 'Mod+W'),
+            add(FRAME_COMMAND.reopenTab, '닫은 탭 다시 열기', () => { handlersRef.current.onReopen(); }, undefined, 'Mod+Shift+T'),
             add(FRAME_COMMAND.closeOthers, '다른 탭 모두 닫기', (c) => { const id = target(c); if (id) H().onCloseOthers(id); }),
             add(FRAME_COMMAND.closeRight, '오른쪽 탭 닫기', (c) => { const id = target(c); if (id) H().onCloseRight(id); }),
             add(FRAME_COMMAND.splitRow, '오른쪽으로 가르기', (c) => { const id = target(c); if (!id) return; const t = tabsOf(c, id); if (t) H().onSplit(t, 'row', id); }, 'split', 'Mod+\\'),
