@@ -11,6 +11,25 @@ import type { TableTx } from '../../sheet/contracts/table';
 
 const page = (...blocks: Page['blocks']): Page => ({ blocks });
 
+describe('Enter — 서식 마커 짝 보존', () => {
+    const cases: [string, string][] = [['굵게', '**'], ['기울임', '*'], ['취소선', '~~'], ['코드', '`']];
+    for (const [name, m] of cases) {
+        it(`${name} 맨 끝 Enter — 윗줄 그대로 · 아랫줄 빈 문단`, () => {
+            const t = `${m}sel${m}`;
+            const r = splitBlock(page({ id: 'a', type: 'paragraph', text: t }), 'a', m.length + 3);
+            expect(r.page.blocks.map((b) => b.text)).toEqual([t, '']);
+        });
+        it(`${name} 중간 Enter — 양쪽 다 닫힌 서식`, () => {
+            const r = splitBlock(page({ id: 'a', type: 'paragraph', text: `${m}sel${m}` }), 'a', m.length + 2);
+            expect(r.page.blocks.map((b) => b.text)).toEqual([`${m}se${m}`, `${m}l${m}`]);
+        });
+        it(`${name} 맨 앞 Enter — 서식 밖으로`, () => {
+            const r = splitBlock(page({ id: 'a', type: 'paragraph', text: `x${m}sel${m}` }), 'a', 1 + m.length);
+            expect(r.page.blocks.map((b) => b.text)).toEqual(['x', `${m}sel${m}`]);
+        });
+    }
+});
+
 describe('Enter — 가르기(요구 6)', () => {
     it('문단을 캐럿에서 두 블록으로 가른다', () => {
         const p = page({ id: 'a', type: 'paragraph', text: '가나다라' });
