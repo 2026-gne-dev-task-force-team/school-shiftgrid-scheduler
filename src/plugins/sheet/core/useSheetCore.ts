@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
 import { undoKey, isImeEnter, parseClipboard, toTsv } from '../../../pane-ui-system';
+import { verticalViewport } from './platform';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';
@@ -299,7 +300,10 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 e.preventDefault();
                 const box = containerRef.current;
                 const rowH = box?.querySelector<HTMLElement>('[data-rc]')?.getBoundingClientRect().height || 0;
-                const page = box && rowH > 0 ? Math.max(1, Math.floor(box.clientHeight / rowH) - 1) : 10;
+                // 🔴 보이는 높이는 표 상자가 아니라 세로로 굴러가는 조상의 띠다(표 상자 높이 = 표 전체 → 한 번에 끝으로 갔다).
+                const vp = box ? verticalViewport(box) : null;
+                const visH = vp ? vp.bottom - Math.max(vp.top, box!.getBoundingClientRect().top) : 0;
+                const page = rowH > 0 && visH > 0 ? Math.max(1, Math.floor(visH / rowH) - 1) : 10;
                 impl.current.moveTo(act.r + (k === 'PageDown' ? page : -page), act.c, e.shiftKey);
                 return;
             }
