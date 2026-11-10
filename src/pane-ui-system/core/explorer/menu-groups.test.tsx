@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { PluginHost } from '../../plugin';
-import { initStore, apiCreate } from '../node-store/store';
+import { initStore, apiCreate, getState } from '../node-store/store';
 import { registerType, clearTypes } from '../nodes/model/types';
 import { clearDerived } from '../nodes/model/derive';
 import { ExplorerView } from './views/ExplorerView';
@@ -62,5 +62,26 @@ describe('탐색기 메뉴', () => {
         expect(items.filter((x) => x === '열기').length).toBe(1);
         expect(items).not.toContain('사람 명단 열기');
         expect(items).toContain('표 복사');
+    });
+});
+
+describe('K18 탐색기에서 아이콘 바꾸기', () => {
+    it('줄 아이콘을 누르면 고르기가 뜨고, 이모지를 고르면 그 노드 icon 이 바뀐다', () => {
+        const id = apiCreate('root', { type: 'page.page', name: '글' });
+        act(() => { root.render(<ExplorerView host={mkHost(false)} />); });
+        const row = container.querySelector(`[data-row-id="${id}"]`) as HTMLElement;
+        act(() => { (row.querySelector('[aria-label="아이콘 바꾸기"]') as HTMLElement).click(); });
+        const emoji = document.querySelector('[role="option"][aria-label="그리스"]') as HTMLElement;
+        expect(emoji).toBeTruthy();
+        act(() => { emoji.click(); });
+        expect(getState().tree.nodes[id].icon).toBeTruthy();
+        expect(document.querySelector('[role="option"][aria-label="그리스"]')).toBeNull();
+    });
+    it('우클릭 메뉴에 「아이콘 바꾸기」가 있다', () => {
+        const id = apiCreate('root', { type: 'page.page', name: '글' });
+        act(() => { root.render(<ExplorerView host={mkHost(false)} />); });
+        const row = container.querySelector(`[data-row-id="${id}"]`) as HTMLElement;
+        act(() => { row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })); });
+        expect(menuItems()).toContain('아이콘 바꾸기');
     });
 });
