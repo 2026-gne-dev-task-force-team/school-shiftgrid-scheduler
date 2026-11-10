@@ -262,7 +262,7 @@ export function move(
     id: string,
     parentId: string,
     index?: number,
-    canAccept?: (parentType: string, childType: string) => boolean,
+    canAccept?: (parentType: string, childType: string, parentId?: string) => boolean,
     uniqueOf?: (type: string) => 'tree' | 'parent' | undefined,
     canMove?: (type: string, id: string) => boolean,
 ): Tree {
@@ -274,9 +274,7 @@ export function move(
     if (parentId === id) return tree;
     if (isDescendant(tree, parentId, id)) return tree;        // 제 자손 밑으로 — 사이클
     if (canMove && !canMove(node.type, id)) return tree;      // 🔑 can.move 관문 — 드래그·메뉴가 뚫는 것을 막는다(remove·restore 는 안 넘긴다)
-    // 🔴 싱글톤(unique:'tree')은 제 부모 안에서 순서만 바꾼다(고정 구역 순서 · 쥔님 2026-11-09) — 다른 부모로는 못 간다.
-    if (canMove && uniqueOf?.(node.type) === 'tree' && parentOf(tree, id) !== parentId) return tree;
-    if (canAccept && !canAccept(parent.type, node.type)) return tree;   // 🔴 accepts 최종 관문
+    if (canAccept && !canAccept(parent.type, node.type, parentId)) return tree;   // 🔴 accepts 최종 관문
     if (uniqueOf && violatesUnique(tree, node.type, parentId, id, uniqueOf)) return tree;   // 🔑 싱글톤 최종 관문(자기 제외)
 
     const nodes: Record<string, Node> = {};
@@ -300,6 +298,7 @@ export function remove(
     tree: Tree,
     id: string,
     canDelete?: (type: string, id: string) => boolean,
+    releasesChildren?: (type: string) => boolean,
 ): Tree {
     if (id === tree.root || id === tree.trash) return tree;
     if (id.includes('/')) return tree;                        // 🔴 유도(가상) id — 지울 실물이 없다
@@ -307,6 +306,13 @@ export function remove(
     if (!n) return tree;
     if (canDelete && !canDelete(n.type, id)) return tree;     // 🔑 can.delete 관문
     const from = parentOf(tree, id);
+    // 🔑 섹션 — 자식은 지우지 않고 섹션 자리에 순서대로 풀어 놓은 뒤 섹션만 휴지통으로(한 번의 apply 라 되돌리기 한 번에 원상복구).
+    if (releasesChildren?.(n.type) && from && n.children.length) {
+        const at = tree.nodes[from].children.indexOf(id);
+        let x = tree;
+        n.children.forEach((c, i) => { x = move(x, c, from, at + i); });   // 관문 없이 — 풀어 주는 것이지 사람의 이동이 아니다
+        return remove(x, id, canDelete);
+    }
     const marked: Tree = from
         ? { ...tree, nodes: { ...tree.nodes, [id]: { ...n, trashedFrom: from } } }
         : tree;

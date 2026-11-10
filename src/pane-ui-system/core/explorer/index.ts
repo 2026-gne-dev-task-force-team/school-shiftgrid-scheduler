@@ -138,7 +138,11 @@ export const explorerPlugin = definePlugin({
             // 상태바 — 「노드 N · 휴지통 M」. render 는 아래 renders.Count.
             statusBar: [{ id: 'count', side: 'left', render: 'Count' }],
             // ⭐ 내장 노드 타입 「폴더」 하나(컨테이너) — 함수 칸 없는 순수 데이터라 impl 이 없다(folder 는 접두사 없는 예외).
-            nodeTypes: [{ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } }],
+            nodeTypes: [
+                { type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } },
+                // ⭐ 섹션 — 뿌리 밑에서 탐색기를 위아래로 나누는 칸(들여쓰기 없음 · 지우면 자식은 뿌리로). 열리는 화면은 없다.
+                { type: 'section', label: '섹션', icon: 'divider', container: true, section: true, create: { label: '섹션' } },
+            ],
         },
     },
     // 🔴 뷰·상태바 구현은 이름으로 — 호스트가 꽂을 때 host(p.host)를 끼워 넣는다(안드로이드 Context).

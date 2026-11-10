@@ -6,16 +6,16 @@
  */
 import type { IconName } from '../../../plugin';
 import type { Node, Tree } from '../../nodes/model/tree';
-import { isContainerType, getType } from '../../nodes/model/types';
+import { isContainerType, isSectionType, getType } from '../../nodes/model/types';
 import { getDerived } from '../../nodes/model/derive';
 
 export type ExplorerRow =
-    | { kind: 'node'; id: string; depth: number; node: Node; hasChildren: boolean }
+    | { kind: 'node'; id: string; depth: number; node: Node; hasChildren: boolean; sec?: string }
     | {
         kind: 'virtual';
         id: string; depth: number;
         name: string; icon?: IconName; vtype?: string; openable?: boolean;
-        hasChildren: boolean; failed?: boolean;
+        hasChildren: boolean; failed?: boolean; sec?: string;
     };
 
 /**
@@ -41,6 +41,7 @@ export function buildMainRows(
         vnodes: { key: string; name: string; icon?: IconName; type?: string; openable?: boolean; children?: unknown[] }[],
         parentVid: string,
         depth: number,
+        sec?: string,
     ): void => {
         for (const v of vnodes) {
             const vid = `${parentVid}/${v.key}`;
@@ -48,13 +49,14 @@ export function buildMainRows(
             out.push({
                 kind: 'virtual', id: vid, depth,
                 name: v.name, icon: v.icon, vtype: v.type, openable: v.openable,
-                hasChildren: kids.length > 0,
+                hasChildren: kids.length > 0, sec,
             });
-            if (kids.length) emitVirtual(kids, vid, depth + 1);   // 중첩 유도 — 늘 펼침
+            if (kids.length) emitVirtual(kids, vid, depth + 1, sec);   // 중첩 유도 — 늘 펼침
         }
     };
 
-    const walk = (id: string, depth: number): void => {
+    // sec = 이 줄이 든 섹션 id(섹션 자신 포함) — 뷰가 이걸로 칸을 가른다. 섹션 안 자식은 깊이 0(들여쓰기 없음), 그 자손부터 평소대로.
+    const walk = (id: string, depth: number, sec?: string): void => {
         const n = tree.nodes[id];
         if (!n) return;
         for (const cid of n.children) {
@@ -70,15 +72,17 @@ export function buildMainRows(
                 ? c.children.reduce((acc, k) => { const kn = tree.nodes[k]; return acc + (kn && !hid(kn) ? 1 : 0); }, 0)
                 : c.children.length;
             const hasChildren = container && (visibleKids > 0 || hasDerived);
-            out.push({ kind: 'node', id: cid, depth, node: c, hasChildren });
+            const isSec = isSectionType(c.type);
+            const csec = isSec ? cid : sec;
+            out.push({ kind: 'node', id: cid, depth, node: c, hasChildren, sec: csec });
 
             const expand = hasChildren && !c.collapsed;
             if (expand) {
-                walk(cid, depth + 1);                               // 저장된 자식 먼저
+                walk(cid, isSec ? 0 : depth + 1, csec);             // 저장된 자식 먼저
                 if (der?.failed) {
-                    out.push({ kind: 'virtual', id: `${cid}/⚠`, depth: depth + 1, name: '유도 실패', hasChildren: false, failed: true });
+                    out.push({ kind: 'virtual', id: `${cid}/⚠`, depth: depth + 1, name: '유도 실패', hasChildren: false, failed: true, sec: csec });
                 } else if (der) {
-                    emitVirtual(der.children, cid, depth + 1);      // 그 뒤에 유도 자식
+                    emitVirtual(der.children, cid, depth + 1, csec);      // 그 뒤에 유도 자식
                 }
             }
         }
