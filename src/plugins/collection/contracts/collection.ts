@@ -370,6 +370,8 @@ export interface CollectionConfig {
     text: { startDescription: string; startHint: string };
     /** 참이면 항목이 같은 목록 안의 다른 항목을 부모로 가진다(항목 안에 항목) — 인스펙터 부모 칸 이름표 */
     tree?: { parentLabel: string };
+    /** 새 목록에 미리 심는 사용자 칸 — baseFields 와 달리 고치고 지울 수 있다(목록마다 `data.fields` 로 산다). 탐색기 「새로 만들기」 길은 꾸러미의 createInit 이 같은 함수를 쓴다 */
+    newListFields?: () => RecordField[];
 }
 
 /** 항목 하나 — 제목(노드 이름) + 칸 값들. parentId 는 tree 일 때만. ext 는 위층 꽂는 자리(이 꾸러미는 안 건드린다). */
