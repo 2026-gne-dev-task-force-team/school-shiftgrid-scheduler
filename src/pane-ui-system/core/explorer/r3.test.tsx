@@ -101,7 +101,7 @@ describe('R3 nodeMenu', () => {
         const m = nodeMenu(bId, {
             open: true, move: true, reveal: () => {}, rename: { run: () => {} }, remove: { run: () => {} },
         });
-        expect(labels(m)).toEqual(['열기', '이름 바꾸기', '탐색기에서 보기', '위로', '아래로', '삭제']);
+        expect(labels(m)).toEqual(['열기', '탐색기에서 보기', '이름 바꾸기', '위로', '아래로', '삭제']);
         const del = m.at(-1) as { danger?: boolean };
         expect(del.danger).toBe(true);
         expect((m.at(-2) as { sep?: boolean }).sep).toBe(true);

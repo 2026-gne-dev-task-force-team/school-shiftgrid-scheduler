@@ -39,7 +39,7 @@ export { SectionHeader } from './primitives/SectionHeader';
 export { Icon, type IconName } from './primitives/Icon';
 export { StartScreen, type StartItem } from './primitives/StartScreen';
 export { uniqueName } from './primitives/naming';
-export { ContextMenu, type MenuEntry } from './primitives/ContextMenu';
+export { ContextMenu, type MenuEntry, type MenuGroup } from './primitives/ContextMenu';
 export { MenuList, MenuItem, MenuSeparator, handleMenuKey } from './primitives/Menu';
 export { EmptyState } from './primitives/EmptyState';
 export { InlineRename } from './primitives/InlineRename';
