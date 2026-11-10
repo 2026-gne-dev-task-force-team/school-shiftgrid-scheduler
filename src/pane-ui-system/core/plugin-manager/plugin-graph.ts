@@ -10,11 +10,11 @@
  *   🔴 실행 판정과 같은 규칙 하나뿐: requires 한 약속을 **채우는 활성 플러그인이 없으면** 꺼진다(사유 「채워 주는 플러그인 없음」).
  *   정의(contributes.interfaces)·uses 연쇄는 보지 않는다(쥔님 2026-11-08 19:42 — 정의와 제공은 서로 기대지 않는다).
  */
-import type { PluginStatus } from '../../pane-ui-system/plugin';
+import type { PluginStatus } from '../../plugin';
 
 // 🔴 끄기 영향은 호스트 단일 진실을 그대로 쓴다 — 설정에서 쓰던 이름(disableImpact·ImpactItem·DisableImpact)은 여기로 재수출한다.
-export { disableImpact } from '../../pane-ui-system/plugin';
-export type { ImpactItem, DisableImpact } from '../../pane-ui-system/plugin';
+export { disableImpact } from '../../plugin';
+export type { ImpactItem, DisableImpact } from '../../plugin';
 
 // ── 버전 범위: `*`·`^a.b` 둘만(호스트 satisfies 와 같은 규칙) ──
 function satisfies(range: string, version: string): boolean {

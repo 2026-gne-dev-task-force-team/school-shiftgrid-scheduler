@@ -2,7 +2,7 @@
  * 「이 프로그램」 Pane — 앱 이름·판·창틀 판·설치된 플러그인 수. 쥔님 2026-11-01 13:14: *"설정에서 이 프로그램에 대해서 그것도 하나"*
  * 🔴 앱 이름은 document.title 에서 읽는다 — 설정 플러그인은 어느 앱에 꽂혔는지 모른다.
  */
-import { HOST_VERSION, listPlugins, usePluginRegistry } from '../../../pane-ui-system/plugin';
+import { HOST_VERSION, listPlugins, usePluginRegistry } from '../../../plugin';
 
 function appVersion(): string {
     const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;

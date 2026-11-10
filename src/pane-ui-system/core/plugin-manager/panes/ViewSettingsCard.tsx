@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import {
     usePaneSettings, setViewOverride, getViewOverride, Button, TextInput, Select,
     type Squeeze, type ViewLayout, type ViewDef,
-} from '../../../pane-ui-system';
+} from '../../..';
 
 const SQUEEZES: { id: Squeeze; name: string; hint: string }[] = [
     { id: 'shrink', name: '찌그러뜨림', hint: '좁아지면 내용을 그대로 눌러 담는다' },

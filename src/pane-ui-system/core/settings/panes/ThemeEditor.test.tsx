@@ -3,8 +3,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { addUserTheme, removeUserTheme, getUserThemesForTest } from '../../../pane-ui-system/theme/user-themes';
+import type { PluginHost } from '../../../plugin';
+import { addUserTheme, removeUserTheme, getUserThemesForTest } from '../../../theme/user-themes';
 import { undoReset } from '../reset-undo';
 import { ThemeEditor } from './ThemeEditor';
 

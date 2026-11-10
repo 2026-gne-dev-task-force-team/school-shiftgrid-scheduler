@@ -5,7 +5,7 @@
  * 뷰·리본 Pane 은 플러그인의 host(뷰 목록·리본 조회 창구)가 필요해 이 props 를 받는다.
  * 모양 Pane 은 테마를 스스로 쥔다(useTheme) · 패널 Pane 은 아무것도 안 받는다 — 각자 자족한다.
  */
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../plugin';
 
 export interface SettingsPaneProps {
     host: PluginHost;

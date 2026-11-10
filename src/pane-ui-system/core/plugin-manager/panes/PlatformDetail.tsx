@@ -2,7 +2,7 @@
  * 「플랫폼(바닥)」 상세 — 바닥이 플러그인에게 주는 것(HOST_SERVICES 표)과 지금 켜진 약속 목록(P6a · R8).
  * ⭐ 모양은 플러그인 상세와 같은 부품(머리·Section·카드 줄)을 쓴다 — 설정 화면 안에서 스타일이 따로 놀지 않게(Q1·F4).
  */
-import { HOST_SERVICES, HOST_VERSION, listInterfaces, usePluginRegistry } from '../../../pane-ui-system/plugin';
+import { HOST_SERVICES, HOST_VERSION, listInterfaces, usePluginRegistry } from '../../../plugin';
 import { Section, RelRow, DetailTitle, Badge } from './plugin-parts';
 
 export function PlatformDetail() {

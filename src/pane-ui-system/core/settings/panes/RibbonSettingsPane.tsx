@@ -11,8 +11,8 @@ import {
     usePaneSettings, nudgeId, useReorder,
     setRibbonOrder, toggleRibbonHidden, resetRibbon,
     Icon, Button, FOCUS_RING,
-} from '../../../pane-ui-system';
-import { resolveRibbonEntries, useContribVersion } from '../../../pane-ui-system/plugin';
+} from '../../..';
+import { resolveRibbonEntries, useContribVersion } from '../../../plugin';
 import type { SettingsPaneProps } from '../registry';
 
 export function RibbonSettingsPane(_: SettingsPaneProps) {

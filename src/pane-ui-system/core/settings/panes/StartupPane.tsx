@@ -3,8 +3,8 @@
  *   켜 둔 뷰는 닫아 뒀어도 다음 시작에 다시 열린다. 이미 떠 있으면 그대로 둔다(Workbench 가 연다).
  *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
-import { usePaneSettings, setPaneSettings, Icon, Button } from '../../../pane-ui-system';
-import { useContribVersion, listPlugins } from '../../../pane-ui-system/plugin';
+import { usePaneSettings, setPaneSettings, Icon, Button } from '../../..';
+import { useContribVersion, listPlugins } from '../../../plugin';
 import type { SettingsPaneProps } from '../registry';
 
 export function StartupPane({ host }: SettingsPaneProps) {

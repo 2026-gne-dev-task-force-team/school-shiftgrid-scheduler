@@ -11,8 +11,8 @@
  * 🔴 색은 토큰 클래스로만.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { Row, Icon, IconButton, SectionHeader, useNarrow, type PeekHandle } from '../../pane-ui-system';
-import { listSettings, useContribVersion } from '../../pane-ui-system/plugin';
+import { Row, Icon, IconButton, SectionHeader, useNarrow, type PeekHandle } from '../..';
+import { listSettings, useContribVersion } from '../../plugin';
 import { manifest } from './manifest';
 import { SettingsChromeContext, type SettingsChrome } from './chrome-context';
 

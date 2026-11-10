@@ -4,7 +4,7 @@
  *   쥔님 2026-11-01 13:42: *"플러그인 누르면 플러그인 상세 나오고 … 설정 가기"* — 상세는 피크로, 「설정 가기」는 섹션 전환.
  */
 import { createContext, useContext } from 'react';
-import type { PeekHandle } from '../../pane-ui-system';
+import type { PeekHandle } from '../..';
 
 export interface SettingsChrome {
     /** 이 설정 뷰(탭) 안에서 피크를 띄우는 손잡이 — 없으면(좁은 화면 등) null */
