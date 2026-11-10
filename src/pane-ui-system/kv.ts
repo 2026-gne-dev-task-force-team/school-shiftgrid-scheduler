@@ -123,6 +123,14 @@ export async function kvGet<T>(key: string): Promise<T | null> {
 }
 
 /**
+ * 🔴 트랜잭션 실패의 진짜 에러 — 요청 하나가 실패하면 tx.onerror 가 먼저 불리는데 그때 tx.error 는 아직 null 이다
+ *   (QuotaExceededError 는 요청 쪽 error 에 있다). null 이면 이벤트 대상(요청)의 error 를 본다 — 안 그러면 늘 「알 수 없는 이유」.
+ */
+function txError(tx: IDBTransaction, ev?: Event): unknown {
+    return tx.error ?? (ev?.target as IDBRequest | null | undefined)?.error ?? null;
+}
+
+/**
  * 쓰기 — 🔴 성패를 돌려준다(성공 true · 실패 false). 실패는 던지지 않고 reportStorageError 로도 보고한다.
  *   부르는 쪽(persist 의 이사)은 이 boolean 으로 「원본을 지워도 되나」를 가른다.
  *   - 열기 거부/없음 → 'blocked' · false
@@ -145,8 +153,8 @@ export async function kvSet(key: string, value: unknown): Promise<boolean> {
             const tx = db.transaction(STORE, 'readwrite');
             tx.objectStore(STORE).put(value, key);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
             tx.oncomplete = () => { announceWrite(dbName(), { kind: 'kv', key }); done(true); };
-            tx.onerror = () => fail(tx.error);
-            tx.onabort = () => fail(tx.error);
+            tx.onerror = (ev) => fail(txError(tx, ev));
+            tx.onabort = (ev) => fail(txError(tx, ev));
         } catch (err) {
             fail(err);
         }
@@ -295,8 +303,8 @@ export async function nodesWrite(batch: {
                 if (rejected.length > 0) { try { batch.onRejected?.(rejected); } catch { /* 부르는 쪽 사정 */ } }
                 done(true);
             };
-            tx.onerror = () => fail(tx.error);
-            tx.onabort = () => fail(tx.error);
+            tx.onerror = (ev) => fail(txError(tx, ev));
+            tx.onabort = (ev) => fail(txError(tx, ev));
         } catch (err) {
             fail(err);
         }

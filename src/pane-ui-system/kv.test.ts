@@ -298,3 +298,27 @@ describe('노드 스토어 — versionchange 뒤 재연결(R3-S)', () => {
         expect(opens).toBe(2);
     });
 });
+
+describe('kvSet — 트랜잭션 오류에서 tx.error 가 null 이어도 요청의 QuotaExceededError 를 사유로 건진다', () => {
+    it("tx.onerror 때 tx.error=null · 이벤트 대상 error=QuotaExceededError 면 reason 'quota'", async () => {
+        const saved = (globalThis as { indexedDB?: unknown }).indexedDB;
+        const tx: { error: unknown; onerror?: (ev: unknown) => void; onabort?: (ev: unknown) => void; oncomplete?: () => void; objectStore: () => unknown } = {
+            error: null,
+            objectStore: () => ({ put: () => { setTimeout(() => tx.onerror?.({ target: { error: { name: 'QuotaExceededError' } } }), 0); } }),
+        };
+        (globalThis as { indexedDB?: unknown }).indexedDB = {
+            open: () => {
+                const req: { result: unknown; onsuccess?: () => void } = { result: { objectStoreNames: { contains: () => true }, transaction: () => tx } };
+                setTimeout(() => req.onsuccess?.(), 0);
+                return req;
+            },
+        };
+        try {
+            await expect(kvSet('qk', 1)).resolves.toBe(false);
+            expect(listStorageErrors()[0]).toMatchObject({ key: 'qk', reason: 'quota' });
+        } finally {
+            if (saved === undefined) delete (globalThis as { indexedDB?: unknown }).indexedDB;
+            else (globalThis as { indexedDB?: unknown }).indexedDB = saved;
+        }
+    });
+});
