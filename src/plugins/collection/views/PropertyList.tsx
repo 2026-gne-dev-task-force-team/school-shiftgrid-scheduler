@@ -4,15 +4,34 @@
  *   onChange 가 없으면 보기 전용 · readOnly 칸(created·updated·id · field.readOnly)은 늘 보기만.
  *   쓰는 곳: 레코드를 옆으로 열었을 때의 페이지(머리 밑) · 속성 패널.
  */
-import { Tooltip } from '../../../pane-ui-system';
+import { useSyncExternalStore } from 'react';
+import { Pill, Tooltip } from '../../../pane-ui-system';
 import { Cell } from '../Cell';
 import { FieldGlyph } from '../FieldGlyph';
 import { fieldTypes } from '../fields/registry';
+import { relationReferrers } from '../fields/cast';
+import { getDbRev, getNodesApi, subscribeDb } from '../nodes';
 import type { PropertyListProps, RecordCellValue } from '../contracts/collection';
 
 const isBlank = (v: RecordCellValue | undefined) => v == null || v === '' || (Array.isArray(v) && v.length === 0) || (typeof v === 'number' && Number.isNaN(v));
 
-export function PropertyList({ fields, values, onChange, onOptionsChange }: PropertyListProps) {
+/** 「나를 가리키는 것」 — 이 줄을 (다른 목록 줄 경유 포함) 가리키는 줄들의 칩. 여럿 그대로 · 비었으면 안 그린다 */
+function Referrers({ rowId }: { rowId: string }) {
+    useSyncExternalStore(subscribeDb, getDbRev);
+    const look = getNodesApi();
+    const refs = look ? relationReferrers(look, rowId) : [];
+    if (!look || refs.length === 0) return null;
+    return (
+        <div data-rv-referrers className="flex items-start gap-2 rounded">
+            <div className="shrink-0 w-32 h-row flex items-center px-1 text-small text-muted">나를 가리키는 것</div>
+            <div className="flex flex-wrap gap-1 py-1 min-w-0">
+                {refs.map((r) => <span key={`${r.id}/${r.key}`} data-rv-referrer={r.id}><Pill color="gray">{look.get(r.id)?.name || '제목 없음'}</Pill></span>)}
+            </div>
+        </div>
+    );
+}
+
+export function PropertyList({ fields, values, onChange, onOptionsChange, rowId }: PropertyListProps) {
     return (
         <div data-rv-props className="flex flex-col">
             {fields.map((f) => {
@@ -43,6 +62,7 @@ export function PropertyList({ fields, values, onChange, onOptionsChange }: Prop
                     </div>
                 );
             })}
+            {rowId && <Referrers rowId={rowId} />}
         </div>
     );
 }

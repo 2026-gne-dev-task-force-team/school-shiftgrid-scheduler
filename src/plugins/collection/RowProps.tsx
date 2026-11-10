@@ -28,6 +28,7 @@ export function RowProps({ target }: PropertiesPaneProps) {
     if (!dbId || !snap || !rec) return null;
     return (
         <PropertyList
+            rowId={target.id}
             fields={snap.doc.fields}
             values={rec as Record<string, RecordCellValue>}
             onChange={(key, value) => commit(dbId, { cells: [{ id: target.id, key, value }] })}

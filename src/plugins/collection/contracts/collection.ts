@@ -331,6 +331,8 @@ export interface PropertyListProps {
     values: Record<string, RecordCellValue>;
     onChange?: (key: string, v: RecordCellValue) => void;
     onOptionsChange?: (key: string, options: FieldOption[]) => void;
+    /** 이 줄의 노드 id — 주면 맨 밑에 「나를 가리키는 것」(역참조) 칩이 뜬다. 비었으면 안 보인다 */
+    rowId?: string;
 }
 
 /**
