@@ -14,6 +14,7 @@
 export { setStoragePrefix, storageKey } from './storage';
 // 큰 자료용 보관 — IndexedDB(origin 당 5MB 천장 회피). 작은 설정은 host.storage(localStorage) 그대로.
 export { kvGet, kvSet, kvDel, kvEstimate, kvAvailable } from './kv';
+export { onStorageKey } from './cross-tab';
 // 클립보드 TSV 해석·만들기 — 표 편집기·레코드 뷰가 한 벌을 쓴다(순수 함수)
 export { parseClipboard, toTsv } from './clipboard-tsv';
 // 창틀 동작의 명령 id — 창틀이 이름을 쥐고 앱이 run 을 꽂는다(「모든 동작은 명령」)
@@ -132,7 +133,7 @@ export {
     closeOthers, closeToRight, areaOfLeaf, renameLeaf, withLeafGlyph,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
-export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
+export { loadWorkspace, saveWorkspace, hasWorkspace, clearWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
 // 뷰 등록소 — 🔴 ⛔ 등록·조회 함수는 이 문으로 내보내지 않는다(registerView·getView·listViews·…).
 //    바깥(앱·플러그인)은 host 로만 등록·조회한다 — 「주인 없는 등록」이 생길 구멍을 막는다.

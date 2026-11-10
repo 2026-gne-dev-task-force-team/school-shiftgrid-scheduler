@@ -19,6 +19,7 @@ import { storageKey } from '../storage';
 import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution, PluginAbout } from './types';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
+import { onStorageKey } from '../cross-tab';
 import { applyContributes } from './contributes';
 import { disposeOwner, trackScope, disposeScope, disposeConsumerScopes } from './store';
 
@@ -106,6 +107,15 @@ function saveDisabled(): void {
         if (typeof localStorage !== 'undefined') localStorage.setItem(pluginsKey(), JSON.stringify({ disabled: [...disabledIds] }));
     } catch { /* 조용히 */ }
 }
+
+// 🔴 R3-X — 다른 탭이 플러그인을 켜고 끄면 같은 조정(reconcile)을 돈다(저장은 안 한다 — 이미 저장돼 있다).
+onStorageKey(pluginsKey, () => {
+    if (installed.length === 0) return;   // 아직 시동 전 — activateAll 이 최신을 읽는다
+    const core = new Set(installed.filter((m) => m.manifest.core).map((m) => m.manifest.id));
+    disabledIds = new Set([...loadDisabled()].filter((id) => !core.has(id)));
+    reconcile();
+    emitReg();
+});
 
 // ── 버전 비교: minHostVersion <= HOST_VERSION 인가(a.b.c 숫자 비교) ──
 function parseVer(v: string): number[] { return v.split('.').map((n) => parseInt(n, 10) || 0); }

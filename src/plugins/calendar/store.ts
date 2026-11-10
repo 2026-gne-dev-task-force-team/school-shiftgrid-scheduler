@@ -24,6 +24,8 @@ export function initOptions(host: PluginHost): void {
     hostRef = host;
     const saved = host.storage.get<Partial<CalendarOptions>>(KEY, {});
     opts = { ...DEFAULT_OPTIONS, ...saved };
+    // 🔴 R3-X — 다른 탭이 옵션을 바꾸면 다시 읽는다(설정은 탭 사이에 같게)
+    host.storage.watch?.(KEY, () => { opts = { ...DEFAULT_OPTIONS, ...host.storage.get<Partial<CalendarOptions>>(KEY, {}) }; emit(); });
     emit();
 }
 

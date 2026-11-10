@@ -144,7 +144,7 @@ export async function kvSet(key: string, value: unknown): Promise<boolean> {
         try {
             const tx = db.transaction(STORE, 'readwrite');
             tx.objectStore(STORE).put(value, key);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
-            tx.oncomplete = () => { announceWrite(dbName()); done(true); };
+            tx.oncomplete = () => { announceWrite(dbName(), { kind: 'kv', key }); done(true); };
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {
@@ -201,13 +201,24 @@ export async function nodesGetAll(): Promise<unknown[] | null> {
     });
 }
 
+/** 🔴 영구삭제 묘비 — 노드 스토어에 `__tomb:<id>` 레코드로 산다. 이 id 는 다시는 put 되지 않는다(다른 탭이 되살리기 ⛔). */
+export const TOMB_PREFIX = '__tomb:';
+/** 🔴 테스트 전용 — 버그 심기용 스위치(묘비 검사를 끈다). 프로덕션 경로는 안 바꾼다. */
+let tombGuard = true;
+export function __setTombGuardForTest(on: boolean): void { tombGuard = on; }
+
 /**
- * 한 트랜잭션에 묶어 쓴다 — clear(있으면 먼저) → put 전부 → delete 전부. 🔴 전부 한 readwrite 로(반쯤 써짐 없음).
- *   🔴 ⛔ 트랜잭션 안에서 await 금지 — 자동 커밋에 죽는다(작업은 전부 동기로 큐에 넣고 oncomplete 를 기다린다).
- *   성패를 돌려준다(성공 true · 실패 false + reportStorageError, scope 'nodes'). 부르는 쪽(이사)이 이 boolean 으로
- *   「옛 레코드를 지워도 되나」를 가른다. put 값은 keyPath 'id' 라 key 를 따로 안 준다.
+ * 한 트랜잭션에 묶어 쓴다 — 묘비 읽기 → clear(있으면) → put 전부 → delete 전부 → purge(삭제+묘비). 🔴 전부 한 readwrite 로(반쯤 써짐 없음).
+ *   🔴 ⛔ 트랜잭션 안에서 await 금지 — 자동 커밋에 죽는다(요청 콜백 안에서 이어 큐에 넣고 oncomplete 를 기다린다).
+ *   🔴 R3-X 묘비 — 묘비가 있는 id 의 put 은 버리고 onRejected 로 돌려준다(그 탭이 메모리에서도 치우게).
+ *      clear 는 묘비까지 지우니 다시 심는다. purge 는 「영구삭제」 — 삭제 + 묘비(다른 탭의 낡은 사본이 되살리지 못한다).
+ *   성패를 돌려준다(성공 true · 실패 false + reportStorageError, scope 'nodes'). put 값은 keyPath 'id' 라 key 를 따로 안 준다.
+ *   성공하면 다른 탭에 바뀐 id 를 알린다(clear 면 'all').
  */
-export async function nodesWrite(batch: { put?: object[]; del?: string[]; clear?: boolean }): Promise<boolean> {
+export async function nodesWrite(batch: {
+    put?: object[]; del?: string[]; clear?: boolean; purge?: string[];
+    onRejected?: (ids: string[]) => void;
+}): Promise<boolean> {
     const db = await openDb();
     if (!db) {
         reportStorageError({ scope: NODES_SCOPE, key: '__batch', reason: 'blocked', at: Date.now() });
@@ -220,13 +231,45 @@ export async function nodesWrite(batch: { put?: object[]; del?: string[]; clear?
             reportStorageError({ scope: NODES_SCOPE, key: '__batch', reason: classifyStorageError(err), at: Date.now() });
             done(false);
         };
+        const changed: string[] = [];
+        const rejected: string[] = [];
         try {
             const tx = db.transaction(NODES, 'readwrite');
             const os = tx.objectStore(NODES);
-            if (batch.clear) os.clear();                      // 먼저 비운다(전부 다시 쓰기)
-            if (batch.put) for (const v of batch.put) os.put(v);   // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
-            if (batch.del) for (const id of batch.del) os.delete(id);
-            tx.oncomplete = () => { clearStorageError(NODES_SCOPE, '__batch'); announceWrite(dbName()); done(true); };
+            const queue = (tombs: Set<string>) => {
+                try {
+                    if (batch.clear) {
+                        os.clear();                               // 먼저 비운다(전부 다시 쓰기)
+                        for (const id of tombs) os.put({ id: TOMB_PREFIX + id, tomb: true });   // 묘비는 살린다
+                    }
+                    for (const v of batch.put ?? []) {
+                        const id = (v as { id?: unknown }).id;
+                        if (tombGuard && typeof id === 'string' && tombs.has(id)) { rejected.push(id); continue; }
+                        os.put(v);                                // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
+                        if (typeof id === 'string') changed.push(id);
+                    }
+                    for (const id of batch.del ?? []) { os.delete(id); changed.push(id); }
+                    for (const id of batch.purge ?? []) {
+                        os.delete(id);
+                        os.put({ id: TOMB_PREFIX + id, tomb: true, at: Date.now() });
+                        changed.push(id);
+                    }
+                } catch (err) {
+                    try { tx.abort(); } catch { /* 이미 끝남 */ }
+                    fail(err);
+                }
+            };
+            // 묘비 키만 범위로 읽는다(노드 전부를 안 훑는다).
+            const range = typeof IDBKeyRange !== 'undefined' ? IDBKeyRange.bound(TOMB_PREFIX, TOMB_PREFIX + '\uffff') : undefined;
+            const req = os.getAllKeys(range);
+            req.onsuccess = () => queue(new Set((req.result as IDBValidKey[]).map(String)
+                .filter((k) => k.startsWith(TOMB_PREFIX)).map((k) => k.slice(TOMB_PREFIX.length))));
+            tx.oncomplete = () => {
+                clearStorageError(NODES_SCOPE, '__batch');
+                announceWrite(dbName(), { kind: 'nodes', ids: batch.clear ? 'all' : changed });
+                if (rejected.length > 0) { try { batch.onRejected?.(rejected); } catch { /* 부르는 쪽 사정 */ } }
+                done(true);
+            };
             tx.onerror = () => fail(tx.error);
             tx.onabort = () => fail(tx.error);
         } catch (err) {

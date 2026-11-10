@@ -12,12 +12,12 @@ import { notifyUndo, type PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, restoreDest, purge, purgeAll, toggleCollapse, parentOf,
-    isDescendant, setData as setDataTree, setField, newFolderParent, topmostOnly, violatesUnique,
+    isDescendant, setData as setDataTree, setField, newFolderParent, topmostOnly, violatesUnique, normalize,
 } from './model/tree';
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from './model/selection';
 import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from './model/types';
 import { getDerived, invalidateDerived } from './model/derive';
-import { loadTree, saveTree } from './persist';
+import { loadTree, saveTree, onRemoteNodes, isPendingLocal, rebasePending, type RemoteNodes } from './persist';
 
 interface ExplorerState {
     tree: Tree;
@@ -139,6 +139,7 @@ export function subscribeChanges(fn: (ids: string[]) => void): () => void {
 /** 활성(index.ts)이 한 번 부른다 — 저장된 나무를 읽어 들인다. */
 export function initStore(host: PluginHost): Promise<void> {
     hostRef = host;
+    onRemoteNodes(applyRemote);
     // 🔴 먼저 빈 나무 + loading:true 로 세운다 — 조작·저장이 막힌 상태. 로드가 끝나면 교체한다.
     state = { ...freshState(emptyTree()), loading: true };
     emit();
@@ -168,9 +169,61 @@ function apply(fn: (t: Tree) => Tree, opts?: { patch?: Partial<ExplorerState>; h
             : state.history;
     state = { ...state, tree: bumped, history, ...opts?.patch };
     // 🔴 저장 층엔 「바뀐 노드」만 넘긴다(dirty 집합) — bumped.nodes === next.nodes 라 diffIds 결과가 같다.
-    if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped));
+    //    'clear'(영구삭제)로 사라진 노드는 purge 로 — 묘비를 남겨 다른 탭이 되살리지 못하게(R3-X).
+    const purgedIds = mode === 'clear' ? Object.keys(prev.nodes).filter((id) => !bumped.nodes[id]) : undefined;
+    if (hostRef) saveTree(hostRef, bumped, diffIds(prev, bumped), purgedIds);
     emit();
     fireChange(prev, next);   // 🔴 유도 캐시 무효화 + NodesApi.subscribe 알림
+}
+
+// ─────────────────────────── 탭 간 동기화(R3-X) ───────────────────────────
+
+/**
+ * 🔴 다른 탭이 저장소에 쓴 노드를 이 탭 나무에 들인다 — 노드 단위 「마지막 쓰기가 이긴다」.
+ *   - 이 탭이 아직 안 쓴 칸(dirty)은 persist 가 이미 뺐다(편집 유실 ⛔ · 내 쓰기 뒤에 다시 읽는다).
+ *   - ⭐ 접힘(collapsed)은 보기 상태다 — 이 탭의 값을 지킨다(탭마다 따로).
+ *   - ⭐ 되돌리기 더미도 같은 칸을 고쳐 둔다 — 내 ⌘Z 가 다른 탭의 변경을 되돌리지 않게(더미는 탭마다).
+ *   - 저장하지 않는다(이미 저장소에 있다) · 이름바꾸기 입력·고르기는 그대로(사라진 노드만 비운다).
+ */
+function applyRemote(r: RemoteNodes): void {
+    if (state.loading) return;   // 로드가 끝나면 저장소를 통째로 읽는다
+    const cur = state.tree;
+    const upsert = new Map<string, Node>();
+    const gone = new Set<string>();
+    for (const [id, n] of r.nodes) {
+        if (id === cur.root || id === cur.trash) { if (n) upsert.set(id, n); continue; }
+        if (n) upsert.set(id, n); else if (cur.nodes[id]) gone.add(id);
+    }
+    if (r.full) {
+        for (const id of Object.keys(cur.nodes)) {
+            if (id === cur.root || id === cur.trash) continue;
+            if (!r.nodes.has(id) && !isPendingLocal(id)) gone.add(id);
+        }
+    }
+    const patch = (t: Tree): Tree => {
+        const nodes = { ...t.nodes };
+        for (const [id, n] of upsert) {
+            const local = cur.nodes[id];
+            nodes[id] = local ? { ...n, collapsed: local.collapsed } : n;
+        }
+        for (const id of gone) delete nodes[id];
+        return { ...t, nodes };
+    };
+    const merged = normalize(patch(cur));
+    if (diffIds(cur, merged).length === 0) return;
+    const next: Tree = { ...merged, rev: cur.rev + 1 };
+    const history = { past: state.history.past.map(patch), future: state.history.future.map(patch) };
+    const alive = (id: string | null) => (id && next.nodes[id] ? id : null);
+    const selectedIds = state.selectedIds.filter((id) => next.nodes[id] || id.includes('/'));
+    state = {
+        ...state, tree: next, history, selectedIds,
+        selectedId: state.selectedId && selectedIds.includes(state.selectedId) ? state.selectedId : (selectedIds[selectedIds.length - 1] ?? null),
+        renamingId: alive(state.renamingId) ?? (state.renamingId?.includes('/') ? state.renamingId : null),
+        purgeConfirmId: alive(state.purgeConfirmId),
+    };
+    rebasePending(next);
+    emit();
+    fireChange(cur, next);
 }
 
 // ─────────────────────────── 구독 ───────────────────────────

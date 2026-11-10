@@ -461,6 +461,11 @@ export interface PluginHost {
         set(key: string, v: unknown): void;
         /** 키 하나 지우기 — 큰 자료가 kv 로 이사한 뒤 옛 localStorage 원본을 치울 때. 실패는 조용히(삭제 실패는 유실이 아니다). */
         remove(key: string): void;
+        /**
+         * 🔴 R3-X — 다른 탭이 이 키를 바꾸면 fn(설정이 탭 사이에 같게). 보기 상태(폭·접힘)는 걸지 말 것(탭마다 따로).
+         *   선택 칸 — 옛 가짜 호스트를 깨지 않게. 해지는 돌려준 Disposable(플러그인이 꺼지면 같이 풀린다).
+         */
+        watch?(key: string, fn: () => void): Disposable;
     };
     /**
      * 플러그인별 큰 저장(비동기 · IndexedDB) — 나무처럼 5MB localStorage 천장을 넘기는 자료용.

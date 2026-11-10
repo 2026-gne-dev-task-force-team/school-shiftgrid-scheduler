@@ -11,6 +11,7 @@
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
 import { reportSettingsSaveFail } from './save-fail';
+import { onStorageKey } from '../cross-tab';
 import { getView } from '../view-registry';
 import { mergeLayout, type ViewLayout, type Squeeze } from './clamp';
 
@@ -252,6 +253,11 @@ function ensure(): Store {
     return store;
 }
 function emit(): void { for (const l of listeners) l(); }
+
+// 🔴 R3-X 탭 간 동기화 — 다른 탭이 바꾼 설정 칸만 다시 읽는다(아직 안 읽었으면 할 일 없음 — 처음 읽을 때 최신을 읽는다).
+onStorageKey(paneKey, () => { if (store) { store = { ...store, settings: loadPaneSettings() }; emit(); } });
+onStorageKey(viewOverrideKey, () => { if (store) { store = { ...store, overrides: loadViewOverrides() }; emit(); } });
+onStorageKey(ribbonKey, () => { if (store) { store = { ...store, ribbon: loadRibbon() }; emit(); } });
 
 function subscribePane(l: () => void): () => void { listeners.add(l); return () => { listeners.delete(l); }; }
 function paneSnapshot(): Store { return ensure(); }

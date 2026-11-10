@@ -25,7 +25,7 @@ import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
-    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews,
+    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews, watchViews,
 } from './view-state';
 import type {
     CellChange, ConvertPlan, FieldOption, RecordCellValue, RecordField, RecordViewProps, SortRule, ViewDef,
@@ -237,6 +237,8 @@ export function RecordView<T>({
             setActiveLocal(loadActiveView(viewKey));
         }
     }, [viewKey, controlled]);
+    // 🔴 R3-X — 다른 탭이 이 보기 정의를 바꾸면 다시 읽는다(설정은 탭 사이에 같게 · 활성 탭은 탭마다)
+    useEffect(() => (controlled ? undefined : watchViews(viewKey, () => setLocalViews(loadViews(viewKey)))), [viewKey, controlled]);
     const views = controlled ? viewsProp : localViews;
     // 🔴 활성 탭은 기기별(localStorage) — 보기 목록이 노드에 있어도 「지금 어느 탭」은 여기 둔다
     const [activeLocal, setActiveLocal] = useState<string | null>(() => loadActiveView(viewKey));
