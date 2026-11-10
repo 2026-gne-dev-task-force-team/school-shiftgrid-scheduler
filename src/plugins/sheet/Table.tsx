@@ -930,6 +930,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
             {/* 넘버스 둥근 추가 단추 — 오른쪽 위 = 열, 왼쪽 아래 = 행. 누르면 1개, 바깥쪽으로 끌면 끈 만큼 여러 개. */}
             {hasAxisEdit && columns.length > 0 && (
+                // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
                 <button
                     type="button"
                     data-testid="add-col"
@@ -944,6 +945,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 </button>
             )}
             {hasRows && (
+                // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
                 <button
                     type="button"
                     data-testid="add-row"
@@ -973,6 +975,7 @@ function renderEditor(
     if (col.type === 'select') {
         const options = col.options ?? [];
         return (
+            // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
             <select
                 autoFocus
                 value={text}
@@ -987,6 +990,7 @@ function renderEditor(
         );
     }
     return (
+        // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
         <input
             autoFocus
             size={1}

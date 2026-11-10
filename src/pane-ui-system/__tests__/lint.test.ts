@@ -4,7 +4,8 @@
  *      공통 부품(src/pane-ui-system/primitives)만 쓴다 → 테마·모양을 한 곳에서 바꿀 수 있게.
  *   ⚠️ 예외 목록은 `.oxlintrc.json` overrides:
  *      ① primitives 자신 ② 업무 PC 영역(calendar·collection/fields·room-booking·rooms — 임시, 그쪽 갈기 뒤 푼다)
- *      ③ pane-test(개발용 시험대) ④ 구조상 날 요소가 남은 파일 목록(줄이기만 한다 — 새 파일을 여기 더하지 말 것)
+ *      ③ pane-test(개발용 시험대). 파일 목록 예외는 2026-11-10 에 비웠다 —
+ *      칸·행·막 모양처럼 공통 부품이 안 맞는 자리는 그 줄 위에 `oxlint-disable-next-line react/forbid-elements -- 이유` 를 단다(이유 필수)
  *   예외 파일 안에서 개수가 느는 것은 ratchet.test 의 bareButton·bareInput·bareTextarea·bareLabel 이 막는다.
  *   경고(warning)는 세지 않는다 — `--quiet`.
  */

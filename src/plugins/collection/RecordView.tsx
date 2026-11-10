@@ -147,6 +147,7 @@ const RecordRow = memo(function RecordRow({
             )}
             {selectable && (
                 <div className="shrink-0 grid place-items-center bg-bg" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
+                    {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                     <button type="button" role="checkbox" aria-checked={checked} data-rv-check={id} onClick={() => act.toggleOne(id)}
                         className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${checked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                         {checked && <Icon name="check" size={12} />}
@@ -170,6 +171,7 @@ const RecordRow = memo(function RecordRow({
                         <div className="shrink-0 flex items-center self-stretch">
                             {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
                             {hasChildren ? (
+                                // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                                 <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
                                     onClick={() => act.toggleCollapse(id)}
                                     className="hit-44 relative grid place-items-center w-4 h-4 rounded text-muted hover:text-text hover:bg-text/[0.08]">
@@ -789,6 +791,7 @@ export function RecordView<T>({
                         {reorderable && <div className="shrink-0 bg-panel2" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }} />}
                         {selectable && (
                             <div className="shrink-0 grid place-items-center bg-panel2" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
+                                {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                                 <button type="button" role="checkbox" aria-label={allChecked ? '모두 선택 해제' : '모두 선택'} aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
                                     className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${allChecked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                     {allChecked && <Icon name="check" size={12} />}
@@ -808,6 +811,7 @@ export function RecordView<T>({
                                         </Tooltip>
                                     </div>
                                     {dir && <Icon name="sort" size={12} className={`text-accent shrink-0 ${dir === 'asc' ? 'rotate-180' : ''}`} />}
+                                    {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
                                         onClick={(e) => setHeadMenu({ key: f.key, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
                                         className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
@@ -825,6 +829,7 @@ export function RecordView<T>({
                             );
                         })}
                         {fieldsEditable && (
+                            // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                             <button type="button" data-rv-add-field onClick={(e) => setAddMenu((e.currentTarget as HTMLElement).getBoundingClientRect())} className="shrink-0 grid place-items-center text-muted hover:text-text hover:bg-text/[0.06]" style={{ width: 40 }} aria-label="칸 추가">
                                 <Icon name="plus" size={15} />
                             </button>
@@ -870,6 +875,7 @@ export function RecordView<T>({
 
                     {/* + 새로 만들기 */}
                     {onAddRecord && (
+                        // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                         <button type="button" data-rv-add
                             onClick={() => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); }}
                             className={`flex items-center gap-1.5 w-full h-row px-3 text-body text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
@@ -885,6 +891,7 @@ export function RecordView<T>({
                             const label = fnId ? calcFnsFor(f).find((c) => c.id === fnId)?.label : undefined;
                             const val = label ? runCalc(fnId, rows.map((r) => rawValue(r, f.key) as RecordCellValue | undefined), f) : '';
                             return (
+                                // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                                 <button key={f.key} type="button" data-rv-calc={f.key}
                                     onClick={(e) => setCalcMenu({ key: f.key, rect: e.currentTarget.getBoundingClientRect() })}
                                     className={`shrink-0 flex items-center justify-end gap-1 px-2 text-small hover:bg-text/[0.04] ${label ? 'text-text' : 'text-transparent hover:text-muted'}`}

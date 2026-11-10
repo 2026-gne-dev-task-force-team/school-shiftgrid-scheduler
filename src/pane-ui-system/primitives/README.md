@@ -2,7 +2,7 @@
 
 화면의 단추·입력칸은 **여기 부품만** 쓴다. 맨 `<button> <input> <select> <textarea> <label>` 은 쓰지 않는다.
 모양을 바꾸고 싶으면 사용처가 아니라 **여기(또는 theme 토큰)** 를 고친다 — 그래야 전체가 한 번에 바뀐다.
-새 파일에 맨 요소를 쓰면 `npm run lint`(와 테스트 `__tests__/lint.test.ts`)가 빨강을 낸다. 예외는 `.oxlintrc.json` overrides — 목록은 줄이기만 한다.
+새 파일에 맨 요소를 쓰면 `npm run lint`(와 테스트 `__tests__/lint.test.ts`)가 빨강을 낸다. 예외는 `.oxlintrc.json` overrides(업무 PC 영역·시험대 — 줄이기만 한다), 아니면 그 줄 위에 `// oxlint-disable-next-line react/forbid-elements -- 이유`(JSX 안이면 `{/* … */}`).
 
 ## 낱말 세 개면 끝
 | prop | 값 | 기본 |

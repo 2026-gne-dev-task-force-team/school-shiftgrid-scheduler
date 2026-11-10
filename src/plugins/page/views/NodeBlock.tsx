@@ -49,6 +49,7 @@ export function NodeBlock({ nodeId, selfId, onPick, display }: { nodeId?: string
     };
     return (
         <div className="my-1 rounded border border-line p-2">
+            {/* oxlint-disable-next-line react/forbid-elements -- 블록 안 콤보 검색칸 */}
             <input
                 autoFocus value={q} onChange={(e) => { setQ(e.target.value); setActive(0); }} placeholder="끼워 넣을 항목 이름…"
                 aria-label="끼워 넣을 항목 찾기" role="combobox" aria-expanded aria-controls="node-pick-list"
