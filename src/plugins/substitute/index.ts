@@ -18,16 +18,16 @@ export const substitutePlugin = definePlugin({
         supports: { 'page-doc': '^0.1' },
         contributes: {
             views: [{
-                id: 'sheet', title: '보결 명단', icon: 'users', defaultArea: 'center',
+                id: 'sheet', title: '보결 명단', icon: 'userSwap', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 280, squeeze: 'scroll' },
                 component: 'Sheet',
             }],
             commands: [
-                { id: 'substitute.open', title: '보결 명단 열기', icon: 'users' },
-                { id: 'substitute.openList', title: '명단 열기', icon: 'users', palette: false },
+                { id: 'substitute.open', title: '보결 명단 열기', icon: 'userSwap' },
+                { id: 'substitute.openList', title: '명단 열기', icon: 'userSwap', palette: false },
             ],
-            ribbon: [{ commandId: 'substitute.open', icon: 'users', order: 5 }],
+            ribbon: [{ commandId: 'substitute.open', icon: 'userSwap', order: 5 }],
             nodeTypes: substituteNodeTypes,
         },
     },

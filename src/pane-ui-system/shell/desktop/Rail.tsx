@@ -11,9 +11,10 @@
  *    ⛔ 드래그·재배열 판정은 interactive/ 한 곳만 쓴다 — 여기선 미리보기 선·고스트·메뉴만 그린다.
  * 🔴 색은 토큰으로만.
  */
-import { useCallback, useState, type CSSProperties } from 'react';
+import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconButton } from '../../primitives/IconButton';
+import { Icon, type IconName } from '../../primitives/Icon';
+import { FOCUS_RING } from '../../primitives/focus';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
 import { useReorder } from '../../interactive/useReorder';
 import {
@@ -78,27 +79,25 @@ export function Rail({
         onContext,
     });
 
-    // ⭐ 리본 안에서만 아이콘 버튼이 커진다 — --s-btn 을 리본 값으로 바꿔치기한다(옵시디언 눈금).
     return (
         <nav
             ref={containerRef}
             className={horizontal
-                ? 'shrink-0 w-full h-rail bg-panel border-b border-line flex flex-row items-center px-2 gap-1'
-                : 'shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center py-2 gap-1'}
-            style={{ '--s-btn': 'var(--s-railbtn)' } as CSSProperties}
+                ? 'shrink-0 w-full h-rail bg-panel border-b border-line flex flex-row items-center px-2 gap-0.5'
+                : 'shrink-0 w-rail bg-panel border-r border-line flex flex-col items-center px-1 py-1.5 gap-0.5'}
             onPointerDownCapture={() => { draggedRef.current = false; }}
             onKeyDown={onKeyDown}
             {...bind}
         >
             {/* 위: 리본 동작(숨긴 것 제외) — 아이콘·순서는 등록+기기 배치가 준다. 끌어 재배치 가능 */}
             {visible.map((v) => (
-                <IconButton
+                <RailButton
                     key={v.id}
                     rowId={v.id}
                     icon={v.icon ?? 'dot'}
-                    label={v.title}
-                    size={18}
-                    data={{ 'data-ribbon-kind': v.kind }}
+                    title={v.title}
+                    kind={v.kind}
+                    wide={horizontal}
                     onClick={() => {
                         if (draggedRef.current) { draggedRef.current = false; return; }
                         // 🔴 동작은 명령을 부른다(run) · 뷰는 바깥이 연다(onOpenView). 창틀은 그 뜻을 모른다
@@ -111,7 +110,7 @@ export function Rail({
             <div className="flex-1" />
 
             {/* 맨 아래 고정: 설정 (⛔ 리본 재배치 대상 아님 — data-row-id 없음) */}
-            <IconButton icon="gear" label="설정 열기" size={18} onClick={onOpenSettings} />
+            <RailButton icon="gear" title="설정 열기" wide={horizontal} onClick={onOpenSettings} />
 
             {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
 
@@ -136,5 +135,35 @@ export function Rail({
                 document.body,
             )}
         </nav>
+    );
+}
+
+/** 「○○ 패널 열기」→「○○」 · 「○○ 열기」→「○○」 — 리본 밑 라벨은 동사를 뗀 이름만 */
+const railLabel = (title: string) => title.replace(/(\s*패널)?\s*열기$/, '') || title;
+
+/**
+ * 리본 단추 — 아이콘(16) 밑에 작은 라벨(쥔님 2026-11-10 *"아이콘이랑 아래 라벨링 살짝 작게"*).
+ *   아이콘만으론 뭐가 뭔지 몰랐다. 툴팁·aria-label 은 원래 제목 그대로.
+ */
+function RailButton({ icon, title, onClick, rowId, kind, wide }: {
+    icon: IconName; title: string; onClick: () => void; rowId?: string; kind?: string;
+    /** 가로 리본 — 줄 높이만큼의 고정 폭(세로일 땐 리본 폭을 채운다) */
+    wide?: boolean;
+}) {
+    return (
+        // oxlint-disable-next-line react/forbid-elements -- 리본 단추 — 아이콘+라벨 두 층이라 IconButton(정사각) 이 못 담는다
+        <button
+            type="button"
+            aria-label={title}
+            title={title}
+            data-row-id={rowId}
+            data-ribbon-kind={kind}
+            onClick={onClick}
+            className={`${wide ? 'w-rail' : 'w-full'} shrink-0 flex flex-col items-center gap-0.5 pt-1 pb-0.5 rounded-ctl
+                text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.12] transition-colors duration-fast ${FOCUS_RING}`}
+        >
+            <Icon name={icon} size={16} />
+            <span className="w-full px-0.5 text-micro leading-tight text-center break-keep line-clamp-2">{railLabel(title)}</span>
+        </button>
     );
 }

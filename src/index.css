@@ -52,7 +52,7 @@
   --s-row:    max(var(--f-row,    0px), calc(28px * var(--density)));   /* 목록 한 줄(탭 한 칸 포함) */
   --s-btn:    max(var(--f-btn,    0px), calc(24px * var(--density)));   /* 아이콘 단추 */
   --s-pad:    max(var(--f-pad,    0px), calc(8px  * var(--density)));   /* 패널 안쪽 가로 여백 (6→8, 쥔님 2026-10-31 "여백 더") */
-  --s-rail:   max(var(--f-rail,   0px), calc(48px * var(--density)));   /* 리본 폭 — 옵시디언 44 보다 조금 넓다 */
+  --s-rail:   max(var(--f-rail,   0px), calc(56px * var(--density)));   /* 리본 폭 — 아이콘 밑 라벨(10px)이 들어갈 만큼(2026-11-10) */
   --s-railbtn: max(var(--f-railbtn, 0px), calc(28px * var(--density)));  /* 리본 아이콘 버튼 — 리본 폭보다 20px 작아 좌우 10px 여백 */
   /* 🔴 틀 두 줄(판 A, 2026-11-01) — 전체 폭 상단 타이틀바·하단 상태바. 치수 토큰과 같은 층(코드는 h-titlebar 이름만) */
   --s-titlebar:  max(var(--f-titlebar,  0px), calc(32px * var(--density)));  /* 상단 타이틀바(앱 이름 + 액션) */

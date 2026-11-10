@@ -33,7 +33,7 @@ export const substituteNodeTypeImpl = {
 
 export const substituteNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, body: 'collection', label: '보결 명단', icon: 'users',
+        type: LIST_TYPE, body: 'collection', label: '보결 명단', icon: 'userSwap',
         container: { accepts: [STAFF_TYPE, 'folder', LIST_TYPE] }, openable: true,
         create: { label: '보결 명단', under: ['folder', LIST_TYPE] },
         impl: 'list',
