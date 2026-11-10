@@ -553,11 +553,27 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             {deleteConfirm && <TrashConfirm msg={deleteConfirm.msg} onConfirm={() => run('explorer.confirm-remove')} onCancel={() => run('explorer.cancel-remove')} />}
 
             <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
-                {rows.length === 0 && (
-                    <p className="px-pad py-2 text-small text-muted select-none">
-                        {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
-                    </p>
+                {rows.length === 0 && q && (
+                    <p className="px-pad py-2 text-small text-muted select-none">맞는 항목이 없습니다.</p>
                 )}
+                {rows.length === 0 && !q && (() => {
+                    // 처음 켠 빈 저장소 — 「새로 만들기」 메뉴와 같은 표(createItems)에서 바로 만들기 단추를 낸다. 「새 폴더」는 맨 끝 보조 링크.
+                    const all = createItems('selection');
+                    const starts = all.filter((e) => 'label' in e && e.label !== '새 폴더');
+                    const folder = all.find((e) => 'label' in e && e.label === '새 폴더')
+                        ?? folderFallback('selection', tree.nodes[newFolderParent(tree, selectedId, isContainerType, 'selection')]?.type ?? 'folder')[0];
+                    return (
+                        <div className="px-pad py-3 flex flex-col gap-2 select-none" data-explorer-empty>
+                            <p className="text-small text-text">처음이신가요? 아래에서 하나를 골라 시작하세요.</p>
+                            {starts.map((e, i) => 'label' in e && (
+                                <Button key={i} size="sm" variant="soft" tone="accent" block icon={e.icon} disabled={e.disabled} onClick={() => e.onClick?.()}>{e.label}</Button>
+                            ))}
+                            {folder && 'label' in folder && !folder.disabled && (
+                                <Button size="sm" variant="ghost" onClick={() => folder.onClick?.()}>폴더 만들기</Button>
+                            )}
+                        </div>
+                    );
+                })()}
                 {groups.map((g, gi) => {
                     // 섹션 칸 — 머리줄(섹션 자신) + 접히는 몸통(끌어 정한 높이) + 아래 경계 손잡이. 섹션 밖 줄은 그냥 이어 그린다.
                     const head = g.sec ? g.rows[0] : null;
