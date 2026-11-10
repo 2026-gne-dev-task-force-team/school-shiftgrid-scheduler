@@ -2,7 +2,7 @@
  * 내장 칸 타입의 셀 — 표시+편집. 제어형이라 고친 값은 onChange 로 알리고, 바깥이 값을 되돌려 준다.
  *   text/number : 눌러서 인라인 입력(Enter·바깥클릭 확정 · Esc 취소 · 🔴 IME 조합 중 Enter 는 무시)
  *   select/multi: 눌러서 고르기 메뉴(색 알약) · 선택지를 그 자리에서 추가·이름·색·순서·삭제(onOptionsChange 가 있을 때)
- *   date        : 눌러서 월 그리드(DatePicker)
+ *   date        : 눌러서 월 그리드(DatePicker) · 패턴이 있으면 그 아래 패턴 편집기(PatternEditor)
  *   check       : 눌러서 바로 켜고 끈다
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
@@ -11,6 +11,7 @@ import { DatePicker, Icon, Popover, Pill, PILL_COLORS, MenuItem, MenuList, isIme
 import { ReorderOverlay } from '../ReorderOverlay';
 import { formatNumber } from './format';
 import { dateText, toDateValue, type DateConfig } from './dates';
+import { PatternEditor } from './PatternEditor';
 import { hrefOf, isValidLink, type LinkKind } from './links';
 import type { DateValue, FieldCellProps, FieldOption, RecordField } from '../contracts/collection';
 
@@ -311,13 +312,15 @@ export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
     const dv = toDateValue(value);
     const label = dateText(value);
     // 시작을 고치면 끝은(있으면·range 면) 지킨다. range 가 아니면 하나 고르고 닫는다.
+    // 🔴 pattern 은 시작·끝을 고쳐도 지킨다(새 객체로 덮으면 패턴이 날아간다). 패턴이 있으면 팝오버를 닫지 않는다(아래에서 이어 고친다).
+    const keep = dv?.pattern ? { pattern: dv.pattern } : {};
     const setStart = (s: string) => {
-        const next: DateValue = { start: s };
+        const next: DateValue = { start: s, ...keep };
         if (cfg.range && dv?.end) next.end = dv.end;
         onChange(next);
-        if (!cfg.range) setAnchor(null);
+        if (!cfg.range && !dv?.pattern) setAnchor(null);
     };
-    const setEnd = (e: string) => onChange({ start: dv?.start ?? e, end: e });
+    const setEnd = (e: string) => onChange({ start: dv?.start ?? e, end: e, ...keep });
     return (
         <>
             <div
@@ -328,7 +331,7 @@ export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
                 {label || '—'}
             </div>
             {anchor && (
-                <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
+                <Popover anchor={anchor} width={dv?.pattern ? 340 : 260} onClose={() => setAnchor(null)}>
                     <div data-rv-date-start>
                         {cfg.range && <div className="px-1 pb-0.5 text-note text-muted">시작</div>}
                         <DatePicker value={dv?.start ?? null} time={cfg.time} onChange={setStart} />
@@ -339,8 +342,17 @@ export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
                             <DatePicker value={dv?.end ?? null} time={cfg.time} onChange={setEnd} />
                         </div>
                     )}
+                    {dv?.pattern && (
+                        <div className="mt-2 pt-2 border-t border-line">
+                            <PatternEditor value={dv.pattern} start={dv.start}
+                                onChange={(p) => onChange(p ? { ...dv, pattern: p } : { start: dv.start, ...(dv.end ? { end: dv.end } : {}) })} />
+                        </div>
+                    )}
                     {dv && (
-                        <div className="mt-1"><MenuList label="셀 비우기"><MenuItem label="비우기" icon="x" onSelect={() => { onChange(null); setAnchor(null); }} /></MenuList></div>
+                        <div className="mt-1"><MenuList label="셀 비우기">
+                            {!dv.pattern && <MenuItem label="패턴으로" icon="calendar" onSelect={() => onChange({ ...dv, pattern: { rules: [{ freq: 'weekly' }] } })} />}
+                            <MenuItem label="비우기" icon="x" onSelect={() => { onChange(null); setAnchor(null); }} />
+                        </MenuList></div>
                     )}
                 </Popover>
             )}
