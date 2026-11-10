@@ -32,6 +32,7 @@ export function RibbonSheet({
         <BottomSheet open={open} onClose={onClose} label="리본">
             <div className="flex flex-col p-pad gap-0.5">
                 {visible.map((v) => (
+                    // oxlint-disable-next-line react/forbid-elements -- 리본 시트 목록 줄 — 행 모양
                     <button
                         key={v.id}
                         type="button"

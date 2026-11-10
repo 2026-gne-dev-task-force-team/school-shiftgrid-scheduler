@@ -11,6 +11,7 @@ import { FRAME_COMMAND } from '../../frame-commands';
 export function NotifyStatus() {
     const { unread } = useNotifications();
     return (
+        // oxlint-disable-next-line react/forbid-elements -- 상태 막대 칸 — 막대 안 글자 크기
         <button
             type="button"
             aria-label={unread > 0 ? `알림 ${unread}건 안 읽음` : '알림'}

@@ -68,6 +68,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         <div className={`fixed inset-0 z-modal flex items-start justify-center pt-[12vh] ${closing ? 'pointer-events-none' : ''}`} role="dialog" aria-modal="true" aria-label="명령 팔레트">
             <div className={`absolute inset-0 bg-text/30 ${closing ? 'ui-fade-out' : 'ui-fade-in'}`} onClick={onClose} aria-hidden="true" />
             <div className={`relative w-[min(560px,92vw)] max-h-[70vh] flex flex-col rounded-lg border border-line bg-panel shadow-xl overflow-hidden ${closing ? 'ui-pop-out' : 'ui-pop-in'}`}>
+                {/* oxlint-disable-next-line react/forbid-elements -- 팔레트 검색칸 — 틀 크기 입력 */}
                 <input
                     ref={inputRef}
                     value={q}
@@ -84,6 +85,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                             const key = effectiveKey(c.id, c.keys, ko);
                             const who = ownerName(c.owner);
                             return (
+                                // oxlint-disable-next-line react/forbid-elements -- 팔레트 목록 줄 — 행 모양
                                 <button
                                     key={c.id}
                                     type="button"
