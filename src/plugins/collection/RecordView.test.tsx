@@ -711,3 +711,47 @@ describe('R3-K 초점 — 칸 추가 · 열기', () => {
     });
 });
 
+
+describe('QA ux2 — 설명 자리·행 ⠿ 메뉴·빈 행 Enter', () => {
+    it('빈 목록 설명도 늘 보이는 「설명 추가…」 자리(hover 전용 아님)', () => {
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.ux2a" titleKey="f_t" onDescriptionChange={() => {}} />);
+        const b = q('button[data-rv-desc]')!;
+        expect(b.textContent).toBe('설명 추가…');
+        expect(b.className).not.toContain('opacity-0');
+    });
+
+    it('칸 메뉴의 「설명」 입력 → onFieldsChange 에 description 이 실린다', () => {
+        const spy = spies();
+        mount(<Harness init={[]} spy={spy} />);
+        click(q('[data-rv-head-menu="f_x"]'));
+        const inp = q('[data-rv-field-desc="f_x"] input') as HTMLInputElement;
+        setInput(inp, '금액(원)');
+        key(inp, 'Enter');
+        const out = spy.fields.mock.calls.at(-1)![0] as RecordField[];
+        expect(out.find((f) => f.key === 'f_x')!.description).toBe('금액(원)');
+    });
+
+    it('⠿ 를 끌지 않고 누르면 행 메뉴 · 버튼 역할 + 툴팁', () => {
+        const del = vi.fn();
+        mount(<RecordView<Rec> fields={START} records={[{ id: 'r1', f_t: 'a' }]} getId={(r) => r.id} viewKey="t.ux2b" titleKey="f_t" onReorder={() => {}} onDeleteRecords={del} onCellChange={() => {}} />);
+        const grip = q('[data-rv-row-drag="r1"]')!;
+        expect(grip.getAttribute('aria-haspopup')).toBe('menu');
+        expect(grip.getAttribute('title')).toBe('끌어서 옮기기 · 눌러서 메뉴');
+        act(() => { grip.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 })); });
+        act(() => { grip.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 5, clientY: 5 })); });
+        click(mi('삭제') ?? null);
+        expect(del).toHaveBeenCalledWith(['r1']);
+    });
+
+    it('빈 마지막 행에서 Enter 는 새 행을 안 만든다 · 값이 있으면 만든다', () => {
+        const spy = spies();
+        mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }]} spy={spy} />);
+        click(q('[data-rv-row="r1"] [data-rv-cell="f_t"]'));
+        key(q('[data-rv-editing]')!, 'Enter');
+        expect(spy.add).not.toHaveBeenCalled();
+        const input = q('[data-rv-editing]') as HTMLInputElement;
+        setInput(input, '가');
+        key(input, 'Enter');
+        expect(spy.add).toHaveBeenCalledTimes(1);
+    });
+});

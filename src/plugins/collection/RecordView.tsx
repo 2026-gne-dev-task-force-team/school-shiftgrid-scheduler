@@ -73,6 +73,7 @@ interface RowAct {
     openTab(id: string): void;
     tab(id: string, shift: boolean): void;
     moveAlt(id: string, dir: 'up' | 'down'): void;
+    rowMenu(id: string, x: number, y: number): void;
 }
 type DragBindLike = ReturnType<typeof useDragLeaf>['bind'];
 
@@ -110,6 +111,7 @@ const RecordRow = memo(function RecordRow({
     cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, rowIcon, act, dragBind,
 }: RecordRowProps) {
     rowRenderProbe.n++;
+    const gripDown = useRef<{ x: number; y: number } | null>(null);
     const showOpen = hasOpen && hovered;
     const showTree = treeOn && hovered;
     const isTitle = (key: string) => key === titleKey;
@@ -136,16 +138,31 @@ const RecordRow = memo(function RecordRow({
             className={`flex border-b border-line min-h-[32px] ${isFresh ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${markZone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
         >
             {reorderable && (
-                <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
-                    data-rv-row-drag={id} data-row-id={id} title={String(rawValue(r, titleKey ?? '') ?? '') || '제목 없음'}
-                    tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...dragBind}
+                <div className="group shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
+                    data-rv-row-drag={id} data-row-id={id} title="끌어서 옮기기 · 눌러서 메뉴"
+                    tabIndex={0} role="button" aria-haspopup="menu" aria-label="행 순서 바꾸기(Alt+↑↓) · 눌러서 메뉴" {...dragBind}
+                    onPointerDown={(e) => { gripDown.current = { x: e.clientX, y: e.clientY }; dragBind.onPointerDown?.(e); }}
+                    onPointerUp={(e) => {
+                        dragBind.onPointerUp?.(e);
+                        // 끌지 않고 누르면 행 메뉴(노션 ⠿) — 끈 거리가 4px 넘으면 끌기라 메뉴를 안 연다
+                        const d = gripDown.current; gripDown.current = null;
+                        if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) return;
+                        const rc = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        act.rowMenu(id, rc.left, rc.bottom);
+                    }}
                     onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const rc = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            act.rowMenu(id, rc.left, rc.bottom);
+                            return;
+                        }
                         // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
                         if (!isAlt(e) || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
                         e.preventDefault(); e.stopPropagation();
                         act.moveAlt(id, e.key === 'ArrowUp' ? 'up' : 'down');
                     }}>
-                    <Icon name="grip" size={16} className={`text-text/80 hover:text-text cursor-grab ${hovered ? '' : 'opacity-0'}`} />
+                    <Icon name="grip" size={16} className={`text-text/80 hover:text-text cursor-grab ${hovered ? '' : 'opacity-0 group-focus-within:opacity-100'}`} />
                 </div>
             )}
             {selectable && (
@@ -377,19 +394,21 @@ export function RecordView<T>({
     };
     // R6 우클릭: 줄·칸 → 줄 메뉴 · 칸 머리 → 칸 메뉴(머리 ⋯ 와 같은 것) · 빈 곳 → 새로 만들기. 입력칸 안은 기본 메뉴
     const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
+    const rowMenuItems = (rowId: string): MenuEntry[] => {
+        const items: MenuEntry[] = [];
+        if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
+        if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
+        if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
+        if (treeOn && tree) items.push({ label: '들여쓰기 (⌘])', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기 (⌘[)', onClick: () => tree.onOutdent(rowId) });
+        if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
+        return items;
+    };
     const ctxTrigger = useContextTrigger((x, y, ev) => {
         const t = ev.target as HTMLElement;
         const headKey = t.closest('[data-rv-head]')?.getAttribute('data-rv-head');
         if (headKey) { setHeadMenu({ key: headKey, rect: new DOMRect(x, y, 0, 0) }); return; }
         const rowId = t.closest('[data-rv-row]')?.getAttribute('data-rv-row');
-        const items: MenuEntry[] = [];
-        if (rowId) {
-            if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
-            if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
-            if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
-            if (treeOn && tree) items.push({ label: '들여쓰기 (⌘])', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기 (⌘[)', onClick: () => tree.onOutdent(rowId) });
-            if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
-        }
+        const items: MenuEntry[] = rowId ? rowMenuItems(rowId) : [];
         if (!rowId && onAddRecord) items.push({ label: '새로 만들기', icon: 'plus', onClick: onAddRecord });
         if (items.length) setCtx({ x, y, items });
     }, (t) => !!t.closest('input, textarea, select'));
@@ -661,6 +680,12 @@ export function RecordView<T>({
         if (g.edit && inner && inner.tagName !== 'BUTTON') inner.click();   // 편집 열기 = 클릭과 같은 길(체크 단추는 건드리지 않는다)
     }, [pendingGo, rows.length]);   // eslint-disable-line react-hooks/exhaustive-deps
     useEffect(() => { if (!pendingGo) return; const h = setTimeout(() => setPendingGo(null), 1500); return () => clearTimeout(h); }, [pendingGo]);
+    const rowIsBlank = (r: number, input: HTMLElement) => {
+        const rec = rows[r];
+        const typed = (input as HTMLInputElement).value;
+        if (!rec || (typeof typed === 'string' && typed.trim() !== '')) return false;
+        return visibleFields.every((f) => f.readOnly || isEmptyValue(rawValue(rec, f.key), f.type, f.config));
+    };
     const onEditKey = (e: React.KeyboardEvent): boolean => {
         const t = e.target as HTMLElement;
         if (!t.matches('[data-rv-editing]') || e.nativeEvent.isComposing || e.keyCode === 229) return false;
@@ -671,6 +696,7 @@ export function RecordView<T>({
         if (e.key === 'Enter') {
             if (e.shiftKey && t.tagName === 'TEXTAREA') return true;   // 글 칸 줄바꿈 — 입력칸이 받는다
             if (r + 1 < rows.length) setPendingGo({ r: r + 1, c, edit: true, minLen: 0 });
+            else if (rowIsBlank(r, t)) setPendingGo({ r, c, edit: true, minLen: 0 });   // 비어 있는 마지막 행에서 Enter — 빈 행을 또 만들지 않고 그 자리에 머문다
             else if (onAddRecord) { onAddRecord(); setPendingGo({ r: r + 1, c, edit: true, minLen: rows.length + 1, born: true }); }
             return true;
         }
@@ -776,6 +802,7 @@ export function RecordView<T>({
         open: (id) => openRow(id),
         openTab: (id) => onOpenRecordTab?.(id),
         tab: (id, shift) => { if (shift) tree?.onOutdent(id); else tree?.onIndent(id); },
+        rowMenu: (id, x, y) => { const items = rowMenuItems(id); if (items.length) setCtx({ x, y, items }); },
         moveAlt: (id, dir) => {
             const at = rowIds.indexOf(id);
             if (dir === 'up' && at > 0) moveRow(id, rowIds[at - 1], 'before');
@@ -795,6 +822,7 @@ export function RecordView<T>({
         openTab: (id) => latest.current.openTab(id),
         tab: (id, s) => latest.current.tab(id, s),
         moveAlt: (id, d) => latest.current.moveAlt(id, d),
+        rowMenu: (id, x, y) => latest.current.rowMenu(id, x, y),
     }), []);
     const dragLatest = useRef(rowDrag.bind);
     dragLatest.current = rowDrag.bind;
@@ -1014,6 +1042,14 @@ export function RecordView<T>({
                                 </div>
                             )}
                             {fieldsEditable && (
+                                <div data-rv-field-desc={f.key} className="mb-1">
+                                    <div className="px-1 pb-0.5 text-note text-muted">설명</div>
+                                    <InlineRename key={`d:${f.description ?? ''}`} value={f.description ?? ''} ariaLabel="칸 설명" autoFocus={false} placeholder="이 칸이 무엇인지 한 줄" onCancel={() => { /* 그대로 둔다 */ }}
+                                        onCommit={(description) => { if (description.trim() !== (f.description ?? '').trim()) onFieldsChange?.(fields.map((x) => (x.key === f.key ? { ...x, description: description.trim() || undefined } : x))); }}
+                                        className="w-full h-row px-2 rounded border border-line bg-bg text-body text-text outline-none" />
+                                </div>
+                            )}
+                            {fieldsEditable && (
                                 <div className="flex items-center gap-2 h-row px-2 text-body text-text" data-rv-field-icon>
                                     <IconPicker icon={f.icon} onSetIcon={(ic) => setFieldIcon(f.key, ic)} sizeClass="text-body"
                                         fallback={<Icon name={fieldTypes.get(f.type)?.icon ?? 'help'} size={14} className="text-muted" />} />
@@ -1139,8 +1175,8 @@ export function DescriptionLine({ text, onChange }: { text?: string; onChange?: 
     return (
         // oxlint-disable-next-line react/forbid-elements -- 글자 자체가 누름 자리(노션 설명 줄)
         <button type="button" data-rv-desc onClick={() => setEditing(true)}
-            className={`-mx-1 px-1 rounded text-left text-small whitespace-pre-wrap shrink-0 hover:bg-text/[0.04] ${has ? 'text-muted' : 'text-muted/60 opacity-0 hover:opacity-100 focus-visible:opacity-100'}`}>
-            {has ? text : '설명 추가'}
+            className={`-mx-1 px-1 rounded text-left text-small whitespace-pre-wrap shrink-0 hover:bg-text/[0.04] ${has ? 'text-muted' : 'text-muted/60 hover:text-muted'}`}>
+            {has ? text : '설명 추가…'}
         </button>
     );
 }
