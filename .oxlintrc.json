@@ -12,6 +12,97 @@
       {
         "allowConstantExport": true
       }
+    ],
+    "react/forbid-elements": [
+      "error",
+      {
+        "forbid": [
+          {
+            "element": "button",
+            "message": "공통 부품 Button·IconButton 을 쓴다 (src/pane-ui-system/primitives/README.md)"
+          },
+          {
+            "element": "input",
+            "message": "공통 부품 TextInput·NumberInput·Checkbox 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "select",
+            "message": "공통 부품 Select 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "textarea",
+            "message": "공통 부품 Textarea 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "label",
+            "message": "공통 부품 Field 로 이름표를 단다 (primitives/README.md)"
+          }
+        ]
+      }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/pane-ui-system/primitives/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    },
+    {
+      "files": [
+        "src/plugins/calendar/**",
+        "src/plugins/collection/fields/**",
+        "src/plugins/room-booking/**",
+        "src/plugins/rooms/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    },
+    {
+      "files": [
+        "src/plugins/pane-test/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    },
+    {
+      "files": [
+        "src/pane-ui-system/core/explorer/views/ExplorerView.tsx",
+        "src/pane-ui-system/core/plugin-manager/panes/PluginDetail.tsx",
+        "src/pane-ui-system/core/settings/panes/AppearancePane.tsx",
+        "src/pane-ui-system/core/settings/panes/KeybindingsPane.tsx",
+        "src/pane-ui-system/core/settings/panes/RibbonSettingsPane.tsx",
+        "src/pane-ui-system/core/settings/panes/ThemeEditor.tsx",
+        "src/pane-ui-system/node-icon/NodeIconPicker.tsx",
+        "src/pane-ui-system/plugin/Placeholder.tsx",
+        "src/pane-ui-system/shell/mobile/BottomBar.tsx",
+        "src/pane-ui-system/shell/mobile/RibbonSheet.tsx",
+        "src/pane-ui-system/shell/mobile/TabSwitcher.tsx",
+        "src/pane-ui-system/shell/shared/CommandPalette.tsx",
+        "src/pane-ui-system/shell/shared/ErrorBoundary.tsx",
+        "src/pane-ui-system/shell/shared/NotifyStatus.tsx",
+        "src/pane-ui-system/shell/shared/SidePanel.tsx",
+        "src/pane-ui-system/shell/shared/StatusBar.tsx",
+        "src/pane-ui-system/shell/shared/StorageErrorStatus.tsx",
+        "src/pane-ui-system/shell/shared/Toasts.tsx",
+        "src/plugins/account/panes/AccountStatus.tsx",
+        "src/plugins/collection/RecordView.tsx",
+        "src/plugins/collection/Toolbar.tsx",
+        "src/plugins/collection/ViewTabs.tsx",
+        "src/plugins/page/views/NodeBlock.tsx",
+        "src/plugins/page/views/PageView.tsx",
+        "src/plugins/page/views/SlashMenu.tsx",
+        "src/plugins/sheet/Table.tsx",
+        "src/plugins/timetable-grid/views/GridToolbar.tsx",
+        "src/plugins/timetable-grid/views/TimeGrid.tsx"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    }
+  ]
 }
