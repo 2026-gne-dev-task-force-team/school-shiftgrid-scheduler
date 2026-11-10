@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
-import { DB_TYPE, ROW_TYPE, commit, liveDbs, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
+import { DB_TYPE, ROW_TYPE, commit, liveDbs, liveRelationTargets, registerListType, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 import { filterUniqueChanges } from './unique';
 
@@ -291,6 +291,18 @@ describe('줄 문서(body) · 시작 화면 목록', () => {
         expect(env.api.get(a)!.name).not.toBe(env.api.get(b)!.name);
         env.api.remove(b);
         expect(liveDbs().some((x) => x.id === b)).toBe(false);
+    });
+    it('관계 칸 대상 후보 = 범용 컬렉션 + 등록된 목록 타입(휴지통 밖 · 이름이 목록 이름과 다르면 「종류 · 이름」)', () => {
+        registerListType('qa.list', '큐에이 목록');
+        const l1 = env.api.create('root', { type: 'qa.list', name: '큐에이 목록' });
+        const l2 = env.api.create('root', { type: 'qa.list', name: '별관' });
+        const l3 = env.api.create('root', { type: 'qa.list', name: '버림' });
+        env.api.remove(l3);
+        const t = liveRelationTargets();
+        expect(t[0]).toEqual({ id: dbId, label: '내 뷰' });
+        expect(t).toContainEqual({ id: l1, label: '큐에이 목록' });
+        expect(t).toContainEqual({ id: l2, label: '큐에이 목록 · 별관' });
+        expect(t.some((x) => x.id === l3)).toBe(false);
     });
 });
 

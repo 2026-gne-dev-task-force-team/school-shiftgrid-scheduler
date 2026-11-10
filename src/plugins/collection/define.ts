@@ -17,6 +17,7 @@ import { CollectionTab } from './views/CollectionTab';
 import { ItemProps, ItemPeek } from './views/ItemProps';
 import { registerRecordTab } from './tab-open';
 import { registerKit } from './kits';
+import { registerListType } from './nodes';
 
 /** 뷰가 읽는 손잡이 — kit 에 구독·보고 있는 목록·부모 이름이 더 붙는다(밖으로는 안 나간다). */
 export interface Bridge extends Omit<CollectionKit, 'Tab' | 'Props'> {
@@ -30,6 +31,7 @@ export interface Bridge extends Omit<CollectionKit, 'Tab' | 'Props'> {
 const isEmpty = (v: unknown): boolean => v == null || v === '' || (Array.isArray(v) && v.length === 0);
 
 export function defineCollection(cfg: CollectionConfig): CollectionKit {
+    registerListType(cfg.listType, cfg.listLabel);
     const titleKey = cfg.baseFields[0].key;
     const baseKeys = cfg.baseFields.map((f) => f.key);
     let api: NodesApi | null = null;

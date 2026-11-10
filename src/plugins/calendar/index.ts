@@ -23,7 +23,7 @@ import { CalendarTab } from './views/CalendarTab';
 // 📌 같은 날 *"시험보기도 그냥 없애"* — 설정 「달력」 판(시험 기능 보기 토글)을 걷었다. 전체 내보내기는 명령 팔레트에 남는다.
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
-import { createPresetStore } from './presets';
+import { newPresetStore } from './presets';
 import { parseIcs, parseIcsSeries, writeIcs } from './ics';
 import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
@@ -141,8 +141,7 @@ export const calendarPlugin = definePlugin({
         'calendar.newPresetStore': (_host: PluginHost, ctx?: CommandContext) => {
             const api = getNodesApi();
             if (!api || typeof ctx?.args !== 'string') return;
-            const id = createPresetStore(ctx.args, (ctx.nodeId && api.parent(ctx.nodeId)) || undefined);
-            if (id) api.open(id);
+            newPresetStore(ctx.args, (ctx.nodeId && api.parent(ctx.nodeId)) || undefined);
         },
         // 저장소 우클릭 「ICS 가져오기」 — .ics 파일을 골라 그 저장소에 내 일정으로 복사(UID 중복 제외). 끝나면 그 저장소 달력을 연다.
         'calendar.importIcs': (host: PluginHost, ctx?: CommandContext) => {

@@ -11,5 +11,3 @@ export const registerKit = (kit: Pick<CollectionKit, 'config' | 'addItem' | 'set
 };
 export const kitOfType = (type: string | undefined) => (type ? byType.get(type) : undefined);
 
-/** defineCollection 으로 만든 목록 노드 타입들 — 관계 칸이 가리킬 수 있는 대상 후보 */
-export const kitListTypes = (): string[] => [...new Set([...byType.values()].map((k) => k.config.listType))];

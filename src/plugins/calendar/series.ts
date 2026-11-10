@@ -10,7 +10,7 @@ import type { DateValue } from '../collection/contracts/collection';
 import { EVENT_TYPE } from './config';
 import { getNodesApi } from './nodes';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
-import { isoMinuteOf, parseLocal, type EventData } from './events';
+import { isoMinuteOf, occId, parseLocal, type EventData } from './events';
 
 /** 일정 노드 data — 레코드 꼴 + 반복 칸(규칙 일정은 values.when.pattern · 실체 회차는 seriesId·originalStart). */
 export interface SeriesData extends StoredEvent {
@@ -125,6 +125,14 @@ export function reschedule(o: Occurrence, start: string, end: string): string {
         api.setData(id, { ...cur, values: eventToStored({ start, end, allDay: o.allDay, memo }, cur.values ?? {}).values });
     });
     return id;
+}
+
+/** 「원래대로」 — 실체 회차를 휴지통으로 보내 그 자리 가상 회차가 돌아오게(고친 칸 값도 같이 걷힌다). 돌아온 가상 회차 칩 id(못 하면 ''). */
+export function restore(o: Occurrence): string {
+    const api = getNodesApi();
+    if (!api || o.virtual || !o.seriesId || !o.originalStart || !api.get(o.eventId)) return '';
+    api.remove(o.eventId);
+    return occId(o.seriesId, o.originalStart);
 }
 
 /** 회차를 days 일 옮긴다(시각 유지) — 하루 미루기 +1 · 당기기 -1. 실체 id. */

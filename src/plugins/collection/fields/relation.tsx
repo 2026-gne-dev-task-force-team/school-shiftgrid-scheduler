@@ -7,9 +7,9 @@
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, Field, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
-import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
+import { getDbRev, getNodesApi, liveRelationTargets, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
-import { kitListTypes, kitOfType } from '../kits';
+import { kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
 import { TITLE_KEY, targetFields, targetValue, valueText } from './follow';
 import { castCandidate, castCandidates, castKeys, liveIn, ownerOf, parseRelationEntry, recordsOf, relationEntry, resolveRelationTargets, type RelationLook } from './cast';
@@ -22,17 +22,6 @@ export type { RelationLook } from './cast';
 export interface RelationItem { id: string; name: string; path: string[] }
 
 const UNTITLED = '제목 없음';
-
-/** 가리킬 수 있는 목록 — 범용 컬렉션 + defineCollection 으로 만든 목록(방 목록 같은 꾸러미 타입). 폴더 이름은 든 곳 */
-export function targetCollections(): { id: string; name: string; folder: string | null }[] {
-    const a = getNodesApi();
-    if (!a) return liveDbs();
-    const extra = kitListTypes().flatMap((t) => a.liveByType(t)).map((n) => {
-        const p = a.parent(n.id);
-        return { id: n.id, name: n.name, folder: p && p !== a.roots?.main ? (a.get(p)?.name ?? null) : null };
-    });
-    return [...liveDbs(), ...extra];
-}
 
 /** 저장된 config → 꼴 맞춘 설정. 틀린 target 은 버린다(없음 = 아직 안 고름) · many 는 기본 true */
 export function relationConfig(config: unknown): RelationConfig {
@@ -49,6 +38,12 @@ export function relationConfig(config: unknown): RelationConfig {
 export const relationIds = (value: unknown, config: unknown): string[] => normalizeRelation(value, relationConfig(config).many);
 
 /** 고르기 후보 — 대상 컬렉션 안 살아 있는 레코드(하위 항목 포함) + 부모 경로. 'source'·대상 없음·대상이 휴지통이면 빈 목록 */
+/** 고르기 찾기 — 이름 또는 경로 낱말로 걸린다(「3층」으로 그 안의 항목도). 빈 낱말이면 전부. */
+export function filterCandidates(all: RelationItem[], q: string): RelationItem[] {
+    const key = q.trim().toLowerCase();
+    return key ? all.filter((c) => [c.name, ...c.path].some((s) => s.toLowerCase().includes(key))) : all;
+}
+
 export function relationCandidates(look: RelationLook | null, target: RelationTarget | undefined): RelationItem[] {
     if (!look || target?.kind !== 'db') return [];
     const db = target.nodeId;
@@ -145,7 +140,7 @@ function RelationPicker({ target, ids, many, selfDb, onPick, onClear }: {
     const look = getNodesApi();
     const all = relationCandidates(look, target);
     const key = q.trim().toLowerCase();
-    const shown = key ? all.filter((c) => c.name.toLowerCase().includes(key)) : all;
+    const shown = filterCandidates(all, q);
     const casts = look ? castCandidates(look, target.nodeId, selfDb).filter((c) => !key || c.name.toLowerCase().includes(key)) : [];
     const nameOf = (id: string) => look?.get(id)?.name || UNTITLED;
     if (step) {
@@ -264,7 +259,7 @@ export function RelationConfigEditor({ field, onChange }: { field: RecordField; 
                 가리킬 컬렉션
                 <Select value={cur} data-rv-rel-target
                     onChange={(e) => set({ target: e.target.value ? { kind: 'db', nodeId: e.target.value } : undefined })}
-                    options={[{ value: '', label: '— 고르기 —' }, ...targetCollections().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
+                    options={[{ value: '', label: '— 고르기 —' }, ...liveRelationTargets().map((d) => ({ value: d.id, label: d.label }))]} />
             </label>
             {cur && (
                 <Field label="칩에 보일 칸">

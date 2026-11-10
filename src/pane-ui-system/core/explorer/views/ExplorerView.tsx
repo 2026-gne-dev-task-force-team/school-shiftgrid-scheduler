@@ -323,6 +323,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
                     : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
                         : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via, targetId: selectedId ?? undefined }) });
+            // 변형 줄(예: 「새 방 예약」) — 타입 줄이 만들 수 있을 때만, 같은 자리에
+            if (!dup && !blocked) for (const v of def.createVariants?.(parent) ?? []) out.push({ label: `새 ${v.label}`, icon: v.icon, onClick: v.run });
         }
         return out;
     };

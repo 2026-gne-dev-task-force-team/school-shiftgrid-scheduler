@@ -83,6 +83,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 type: item.type,
                 label: item.label,
                 icon: fns?.icon ?? item.icon ?? 'file',   // 함수 아이콘(impl) → 데이터 아이콘 → 기본 'file'
+                createIcon: item.icon,                    // 함수 아이콘이어도 「새로 만들기」 줄은 데이터 아이콘으로
                 container: item.container,
                 openable: item.openable,
                 open: fns?.open ? (id) => fns.open!(host, id) : undefined,
@@ -90,6 +91,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 create: item.create
                     ? { ...item.create, init: fns?.createInit ? (pid) => fns.createInit!(host, pid) : undefined }
                     : undefined,
+                createVariants: fns?.createVariants,
                 menu: fns?.menu ? (id) => fns.menu!(host, id) : undefined,
                 // 🔑 조작 가능 여부 — 함수 꼴(impl.can)이 있으면 그걸(노드·상황에 따라), 없으면 매니페스트의 고정 객체(item.can).
                 can: fns?.can ?? item.can,

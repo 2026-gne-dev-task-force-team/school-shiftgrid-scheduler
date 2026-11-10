@@ -16,7 +16,7 @@ import { isoMinuteOf, nodeIdOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, DateValue, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
-import { presetOf, listPresets } from './presets';
+import { presetOf, listPresets, newPresetStore } from './presets';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { IcsSeriesItem, IcsWriteEvent } from './ics';
@@ -71,6 +71,10 @@ export const calendarNodeTypeImpl = {
             host.workspace.open(MONTH_ID, { where: 'center' });
         },
         menu: (_host: PluginHost, id: string) => storeMenu(id),
+        // 프리셋 저장소는 그 프리셋 아이콘(방 예약 = 문) — 꾸러미를 끄면 기본 달력 아이콘으로 돌아간다
+        icon: (node: { id: string }) => presetOf(node.id).icon,
+        // 탐색기 「새로 만들기」에 「새 달력 저장소」 바로 뒤로 프리셋마다 한 줄(쥔님 11-10 15:13 「우클릭은 너무 어려워」)
+        createVariants: (parentId: string) => listPresets().map((p) => ({ label: p.label, icon: p.icon, run: () => { newPresetStore(p.id, parentId); } })),
         embed: StoreEmbed,
     } satisfies NodeTypeImplFns,
 };

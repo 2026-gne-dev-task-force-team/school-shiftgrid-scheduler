@@ -72,6 +72,13 @@ export function createPresetStore(presetId: string, parentId?: string): string {
     return id;
 }
 
+/** 만들고 연다 — 저장소 우클릭 「새 ○○」 명령과 약속 newPresetStore 가 같이 쓴다. */
+export function newPresetStore(presetId: string, parentId?: string): string {
+    const id = createPresetStore(presetId, parentId);
+    if (id) getNodesApi()?.open(id);
+    return id;
+}
+
 /** 뷰용 — 프리셋 등록·해제 때 다시 그린다(저장소 노드 변화는 useCalendarData 가 깨운다). */
 export function usePreset(storeId: string | null | undefined): CalendarPreset {
     useSyncExternalStore(

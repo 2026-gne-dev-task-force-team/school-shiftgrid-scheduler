@@ -29,6 +29,7 @@ import { buildMainRows } from '../../pane-ui-system/core/explorer/views/rows';
 import type { CollectionConfig, CollectionKit } from './contracts/collection';
 import { defineCollection } from './define';
 import { effectiveParentId } from './tree';
+import { initRecordNodes, liveRelationTargets } from './nodes';
 
 const BASE: CollectionConfig = {
     listType: 'demo.list', itemType: 'demo.item', viewId: 'demo.sheet', openCommandId: 'demo.openList', viewKey: 'demo.list',
@@ -289,5 +290,15 @@ describe('평평한 컬렉션 — 트리 조작은 아무 일 없음', () => {
         kit.setParent(b, a); kit.indent(b); kit.outdent(b);
         expect(kit.itemOf(b)?.parentId).toBeUndefined();
         expect(api.get(b)?.data).not.toHaveProperty('parentId');
+    });
+});
+
+describe('관계 칸 대상 — 설정 한 장으로 만든 목록도 「어느 목록을 가리키나」 후보에 뜬다', () => {
+    it('defineCollection 이 목록 타입을 등록 → liveRelationTargets 에 그 목록이 「종류 · 이름」으로', () => {
+        const { api, kit } = wire(BASE); current = kit;
+        const d = initRecordNodes(api);
+        const lid = api.create(api.roots.main, { type: BASE.listType, name: '별관' });
+        expect(liveRelationTargets()).toContainEqual({ id: lid, label: '묶음 · 별관' });
+        d?.dispose(); initRecordNodes(null);
     });
 });

@@ -45,6 +45,17 @@ export function liveDbs(): { id: string; name: string; folder: string | null }[]
         return { id: n.id, name: n.name, folder: p && p !== a.roots.main ? (a.get(p)?.name ?? null) : null };
     });
 }
+// defineCollection 이 꽂는 목록 타입(타입 → 목록 이름) — 관계 칸 「가리킬 컬렉션」 후보에 범용 컬렉션과 같이 낸다.
+const listTypes = new Map<string, string>();
+export function registerListType(type: string, label: string): void { listTypes.set(type, label); }
+/** 관계 칸 대상 후보 — 범용 컬렉션 + defineCollection 목록들(휴지통 밖). 목록은 이름 앞에 종류(「방 목록 · 본관 동」 꼴). */
+export function liveRelationTargets(): { id: string; label: string }[] {
+    const a = api;
+    const dbs = liveDbs().map((d) => ({ id: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }));
+    if (!a) return dbs;
+    const lists = [...listTypes].flatMap(([type, label]) => a.liveByType(type).map((n) => ({ id: n.id, label: n.name === label ? label : `${label} · ${n.name}` })));
+    return [...dbs, ...lists];
+}
 /** 시작 화면 「새 레코드 뷰」 — 탐색기 맨 위에 빈 레코드 뷰 하나. 이름이 겹치면 「레코드 뷰 2」… 못 만들면 null. */
 export function createDb(): string | null {
     const a = api;

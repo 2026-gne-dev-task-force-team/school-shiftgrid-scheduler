@@ -8,7 +8,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NodesApi, PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit } from '../contracts/collection';
-import { initRecordNodes } from '../nodes';
+import { initRecordNodes, registerListType } from '../nodes';
 import { registerKit } from '../kits';
 import { RelationCell, RelationConfigEditor } from './relation';
 
@@ -44,6 +44,8 @@ const addItem = vi.fn(() => 'rNew');
 const kitCfg = (listType: string, itemType: string) => ({ listType, itemType, baseFields: [{ key: 'title', label: '이름', type: 'text' }] }) as unknown as CollectionKit['config'];
 registerKit({ config: kitCfg('school.year', 'school.class'), setValue, addItem: vi.fn() });
 registerKit({ config: kitCfg('rooms.list', 'rooms.room'), setValue: vi.fn(), addItem });
+registerListType('school.year', '학년도');
+registerListType('rooms.list', '방 목록');
 
 let root: Root | null = null;
 afterEach(() => { act(() => root?.unmount()); root = null; document.body.innerHTML = ''; initRecordNodes(null); vi.clearAllMocks(); });

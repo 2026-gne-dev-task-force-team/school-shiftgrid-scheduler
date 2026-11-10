@@ -7,6 +7,7 @@
 import { isoOf } from '../../pane-ui-system';
 // 🔴 import type 만 — 약속 타입은 달력 약속(이 꾸러미 contracts/calendar)에서(값 아님, 구조 검사 ⑱·g).
 import type { CalendarItem, Occurrence } from './contracts/calendar';
+import type { PaletteEntry } from './palette';
 
 /**
  * 남의 일정(다른 플러그인이 꽂은 출처 항목)임을 가리키는 꼬리표 — 자기 일정(노드)이면 없다(undefined).
@@ -56,8 +57,11 @@ export interface CalEvent {
 export const occId = (seriesId: string, originalStart: string) => `${seriesId}@${originalStart}`;
 /** 칩 id → 노드 id(가상 회차면 규칙 일정 id). */
 export const nodeIdOf = (id: string) => id.split('@')[0];
-/** 가상 회차(아직 실체 없는 규칙 회차) 칩은 고스트로 — 연하게 + 점선 테두리(쥔님 2026-11-10). outline 이라 칸 높이는 안 바뀐다. */
-export const ghostCls = (e: CalEvent) => (e.occ?.virtual ? 'opacity-60 outline-dashed outline-1 outline-current' : '');
+/** 가상 회차(아직 실체 없는 규칙 회차) 칩은 고스트로 — 연하게 + 점선 테두리(쥔님 2026-11-10). outline 이라 칸 높이는 안 바뀐다.
+ *  월·주·일 칩이 모두 이 둘만 쓴다 — 고스트 규칙은 여기 한 곳. */
+export const ghostCls = (e: CalEvent) => (e.occ?.virtual ? 'opacity-70 outline-dashed outline-1 -outline-offset-1 outline-current' : '');
+/** 채운 막대 칩의 바탕 — 고스트는 채움 대신 연한 바탕 + 색 글자(점선이 그 색으로 보인다 · 채운 막대 위 점선은 안 보였다). */
+export const barCls = (e: CalEvent, pal: PaletteEntry) => (e.occ?.virtual ? `${pal.soft} ${pal.text} ${ghostCls(e)}` : pal.bar);
 
 /** 일정 data 의 생김새(노드에 저장되는 불투명 값). */
 export interface EventData {
