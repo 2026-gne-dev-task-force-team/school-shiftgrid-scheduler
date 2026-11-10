@@ -13,12 +13,24 @@ import { RecordView } from '../RecordView';
 import { effectiveParentId } from '../tree';
 import { ItemPeek } from './ItemProps';
 import { openRecordTab } from '../tab-open';
+import { buildPaste } from '../paste';
 
 type Rec = { id: string } & Record<string, RecordCellValue>;
 
-/** 레코드 뷰 붙여넣기(보이는 칸 key 순서 + 글자) → 기본 칸 순서의 TSV 한 덩어리. 순수 함수. */
-export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
-    return req.rows.map((r) => keys.map((k) => { const i = req.keys.indexOf(k); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
+/**
+ * 레코드 뷰 붙여넣기 → 새 항목들. 기본 칸·사용자 칸 모두 받는다 — 값은 칸 타입의 fromText(선택 칸은 이름표 → 저장값 · 모르는 이름은 새 선택지).
+ *   남는 열(칸 key 가 null)은 버린다(새 칸을 만들지 않는다) · 제목이 빈 줄은 건너뛴다(parseRows 와 같은 규칙).
+ */
+export function pasteIntoList(kit: Pick<Bridge, 'nodes' | 'addItem' | 'setUserFields'>, listId: string, fields: readonly RecordField[], baseKeys: readonly string[], req: PasteRequest): void {
+    const cols = req.keys.flatMap((k, i) => (k === null ? [] : [i]));
+    const plan = buildPaste(fields, cols.map((i) => req.keys[i]), req.rows.map((r) => cols.map((i) => r[i] ?? '')));
+    const titleKey = baseKeys[0];
+    const run = () => {
+        if (plan.fieldsChanged) kit.setUserFields(listId, plan.fields.filter((f) => !baseKeys.includes(f.key)));
+        for (const row of plan.rows) if (String(row[titleKey] ?? '').trim() !== '') kit.addItem(listId, row);
+    };
+    const api = kit.nodes();
+    if (api) api.batch(run); else run();
 }
 
 /**
@@ -101,7 +113,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onAddRecord={() => { kit.addItem(activeId); }}
                     onDeleteRecords={(ids) => deleteWithUndo(kit, host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`, () => ids.forEach(kit.removeItem))}
                     onDestructive={(title, run) => deleteWithUndo(kit, host, title, run)}
-                    onPaste={(req) => kit.pasteItems(activeId, pasteToTsv(req, baseKeys))}
+                    onPaste={(req) => pasteIntoList(kit, activeId, fields, baseKeys, req)}
                     onReorder={kit.reorderItem}
                     tree={tree}
                     iconOf={(id) => kit.nodes()?.get(id)?.icon}
