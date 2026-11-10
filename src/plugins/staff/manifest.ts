@@ -1,12 +1,12 @@
 /**
- * 「교원·직원 명단」 신분증 — 학교 패키징에서 「선생님 목록」으로 보는 꾸러미. 사람 명단(people)과는 별개 컬렉션.
+ * 「교직원 명단」 신분증 — 학교 패키징에서 「선생님 목록」으로 보는 꾸러미. 사람 명단(people)과는 별개 컬렉션.
  *   ⛔ 코어 아님 — 설정 「플러그인」에서 끌 수 있다. id 는 폴더명과 같다(구조 검사 ⑧). 기능은 없다 — 명단 관리만.
  */
 import type { PluginManifest } from '../../pane-ui-system/plugin';
 
 export const manifest: PluginManifest = {
     id: 'staff',
-    name: '교원·직원 명단',
+    name: '교직원 명단',
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',

@@ -30,16 +30,16 @@ export const staffPlugin = definePlugin({
             interfaces: [{ name: 'staff', version: '0.1.0', label: '교직원 명단', desc: '이름을 담는 명단' }],
             // 명단 화면(싱글턴·가운데·안 가름 — 달력 월 보기와 같은 placement).
             views: [{
-                id: 'sheet', title: '교직원 명단', icon: 'users', defaultArea: 'center',
+                id: 'sheet', title: '교직원 명단', icon: 'shieldCheck', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 280, squeeze: 'scroll' },
                 component: 'Sheet',
             }],
             commands: [
-                { id: 'staff.open', title: '교직원 명단 열기', icon: 'users' },
-                { id: 'staff.openList', title: '명단 열기', icon: 'users', palette: false },
+                { id: 'staff.open', title: '교직원 명단 열기', icon: 'shieldCheck' },
+                { id: 'staff.openList', title: '명단 열기', icon: 'shieldCheck', palette: false },
             ],
-            ribbon: [{ commandId: 'staff.open', icon: 'users', order: 4 }],
+            ribbon: [{ commandId: 'staff.open', icon: 'shieldCheck', order: 4 }],
             // 🔴 노드 타입 둘(명단·사람) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: staffNodeTypes,
         },

@@ -6,7 +6,7 @@
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { SUBJECT_CONFIG, LIST_TYPE, SUBJECT_TYPE } from './config';
+import { SUBJECT_CONFIG, LIST_TYPE, SUBJECT_TYPE, newListFields } from './config';
 
 export { LIST_TYPE, SUBJECT_TYPE };
 
@@ -28,6 +28,7 @@ export const subjectsNodeTypeImpl = {
     list: {
         open: (host: PluginHost, id: string) => { kit?.open(host, id); },
         menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
+        createInit: () => ({ data: { fields: newListFields() } }),
     } satisfies NodeTypeImplFns,
 };
 
