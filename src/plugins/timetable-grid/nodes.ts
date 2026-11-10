@@ -12,7 +12,6 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { TimetableData, ScheduleEntry } from '../contract-week-grid/types';
 import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { emptyHistory, record as pushHistory, undo, redo, type History } from '../../pane-ui-system';
 import { blankTimetable } from './model';
 import { scheduleRange } from './schedule';
 import { setActiveSheet } from './store';
@@ -120,7 +119,8 @@ export function applyEdit(id: string, edit: (data: TimetableData) => TimetableDa
     const prev = sheetDataOf(id);
     const next = edit(prev);
     if (next === prev) return;
-    histories.set(id, pushHistory(histories.get(id) ?? emptyHistory<TimetableData>(), prev));
+    const h = histories.get(id) ?? { past: [], future: [] };
+    histories.set(id, { past: [...h.past, { before: prev, after: next }].slice(-HISTORY_LIMIT), future: [] });
     editSeq++;
     api.setData(id, next);
 }
@@ -136,16 +136,72 @@ export function notifyRemoved(id: string, title: string): void {
 export const removedUndoable = removal.undoable;
 export const undoRemoved = removal.undo;
 
-// ⌘Z 더미 — 시간표마다 따로(값 스냅샷 · 창틀 공용 history). 저장 안 함(새로고침하면 비워진다).
-const histories = new Map<string, History<TimetableData>>();
+// ⌘Z 더미 — 시간표마다 따로. 저장 안 함(새로고침하면 비워진다).
+//   🔴 W-X2 칸 단위 — 한 칸 = 편집 앞뒤 한 쌍(before·after). 되돌리기는 문서 통째를 before 로 바꾸지 않고
+//      「이 편집이 바꾼 칸만」 지금 문서 위에서 before 값으로 돌린다 — 그 사이 다른 탭이 고친 칸은 그대로 산다.
+interface EditStep { before: TimetableData; after: TimetableData }
+interface EditHistory { past: EditStep[]; future: EditStep[] }
+const HISTORY_LIMIT = 100;
+const histories = new Map<string, EditHistory>();
+
+/** 칸을 쪼개 보는 자리 — 열쇠마다 따로 되돌린다. 나머지(range·columns·rows·view)는 통째 한 칸. */
+const KEYED = new Set<string>(['cells', 'colNames', 'colWidths']);
+
+function same(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    const ka = Object.keys(a).filter((k) => (a as Record<string, unknown>)[k] !== undefined);
+    const kb = Object.keys(b).filter((k) => (b as Record<string, unknown>)[k] !== undefined);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+}
+
+/**
+ * from→to 로 바뀐 칸만 cur 위에 to 값으로 옮긴다(from·to 가 같은 칸은 cur 그대로).
+ *   되돌리기 = applyDiff(after, before, 지금) · 다시하기 = applyDiff(before, after, 지금).
+ */
+export function applyDiff(from: TimetableData, to: TimetableData, cur: TimetableData): TimetableData {
+    const out: Record<string, unknown> = { ...cur };
+    const f = from as unknown as Record<string, unknown>;
+    const t = to as unknown as Record<string, unknown>;
+    for (const k of new Set([...Object.keys(f), ...Object.keys(t)])) {
+        if (same(f[k], t[k])) continue;
+        if (KEYED.has(k)) {
+            const fo = (f[k] ?? {}) as Record<string, unknown>;
+            const to2 = (t[k] ?? {}) as Record<string, unknown>;
+            const next: Record<string, unknown> = { ...((out[k] ?? {}) as Record<string, unknown>) };
+            for (const kk of new Set([...Object.keys(fo), ...Object.keys(to2)])) {
+                if (same(fo[kk], to2[kk])) continue;
+                if (to2[kk] === undefined) delete next[kk]; else next[kk] = to2[kk];
+            }
+            out[k] = next;
+        } else if (t[k] === undefined) delete out[k];
+        else out[k] = t[k];
+    }
+    return out as unknown as TimetableData;
+}
+
 /** 되돌리기/다시하기 한 칸 — 더미가 비면 아무것도 안 한다. */
 export function stepEdit(id: string, which: 'undo' | 'redo'): void {
     const h = histories.get(id);
-    const r = h && (which === 'undo' ? undo : redo)(h, sheetDataOf(id));
-    if (!r || !api) return;
+    if (!h || !api) return;
+    const cur = sheetDataOf(id);
+    let step: EditStep | undefined;
+    let value: TimetableData;
+    if (which === 'undo') {
+        step = h.past[h.past.length - 1];
+        if (!step) return;
+        value = applyDiff(step.after, step.before, cur);
+        histories.set(id, { past: h.past.slice(0, -1), future: [step, ...h.future] });
+    } else {
+        step = h.future[0];
+        if (!step) return;
+        value = applyDiff(step.before, step.after, cur);
+        histories.set(id, { past: [...h.past, step], future: h.future.slice(1) });
+    }
     editSeq++;
-    histories.set(id, r.history);
-    api.setData(id, r.value);
+    api.setData(id, value);
 }
 
 /**

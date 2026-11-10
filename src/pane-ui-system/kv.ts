@@ -214,10 +214,15 @@ export function __setTombGuardForTest(on: boolean): void { tombGuard = on; }
  *      clear 는 묘비까지 지우니 다시 심는다. purge 는 「영구삭제」 — 삭제 + 묘비(다른 탭의 낡은 사본이 되살리지 못한다).
  *   성패를 돌려준다(성공 true · 실패 false + reportStorageError, scope 'nodes'). put 값은 keyPath 'id' 라 key 를 따로 안 준다.
  *   성공하면 다른 탭에 바뀐 id 를 알린다(clear 면 'all').
+ *   🔴 W-X2 merge — 주면 put 마다 저장소의 지금 레코드를 **같은 트랜잭션 안에서** 읽어 merge(내 값, 저장소 값)의
+ *      결과를 쓴다(저장소에 없으면 내 값 그대로). 읽기와 쓰기 사이에 다른 탭이 끼어들 틈이 없다 — 탭이 닫히는 중의
+ *      저장도 같은 길이다. ⛔ merge 는 동기 함수여야 한다(await 를 섞으면 트랜잭션이 닫힌다). 던지면 내 값을 쓴다.
+ *      clear 와는 함께 안 돈다(전부 다시 쓰기엔 합칠 저장소 값이 없다).
  */
 export async function nodesWrite(batch: {
     put?: object[]; del?: string[]; clear?: boolean; purge?: string[];
     onRejected?: (ids: string[]) => void;
+    merge?: (mine: object, stored: unknown) => object;
 }): Promise<boolean> {
     const db = await openDb();
     if (!db) {
@@ -236,15 +241,19 @@ export async function nodesWrite(batch: {
         try {
             const tx = db.transaction(NODES, 'readwrite');
             const os = tx.objectStore(NODES);
-            const queue = (tombs: Set<string>) => {
+            const queue = (tombs: Set<string>, stored: Map<string, unknown>) => {
                 try {
                     if (batch.clear) {
                         os.clear();                               // 먼저 비운다(전부 다시 쓰기)
                         for (const id of tombs) os.put({ id: TOMB_PREFIX + id, tomb: true });   // 묘비는 살린다
                     }
-                    for (const v of batch.put ?? []) {
-                        const id = (v as { id?: unknown }).id;
+                    for (const mine of batch.put ?? []) {
+                        const id = (mine as { id?: unknown }).id;
                         if (tombGuard && typeof id === 'string' && tombs.has(id)) { rejected.push(id); continue; }
+                        let v = mine;
+                        if (batch.merge && typeof id === 'string' && stored.has(id)) {
+                            try { v = batch.merge(mine, stored.get(id)); } catch { v = mine; }
+                        }
                         os.put(v);                                // 🔴 담기지 않는 값이면 여기서 동기로 던진다(아래 catch)
                         if (typeof id === 'string') changed.push(id);
                     }
@@ -262,8 +271,24 @@ export async function nodesWrite(batch: {
             // 묘비 키만 범위로 읽는다(노드 전부를 안 훑는다).
             const range = typeof IDBKeyRange !== 'undefined' ? IDBKeyRange.bound(TOMB_PREFIX, TOMB_PREFIX + '\uffff') : undefined;
             const req = os.getAllKeys(range);
-            req.onsuccess = () => queue(new Set((req.result as IDBValidKey[]).map(String)
-                .filter((k) => k.startsWith(TOMB_PREFIX)).map((k) => k.slice(TOMB_PREFIX.length))));
+            req.onsuccess = () => {
+                const tombs = new Set((req.result as IDBValidKey[]).map(String)
+                    .filter((k) => k.startsWith(TOMB_PREFIX)).map((k) => k.slice(TOMB_PREFIX.length)));
+                // 🔴 합칠 put 의 저장소 값 — 같은 트랜잭션에서 get 을 줄줄이 걸고 마지막 응답에서 쓰기를 큐에 넣는다(비동기 대기 없음).
+                const stored = new Map<string, unknown>();
+                const ids = batch.merge && !batch.clear
+                    ? (batch.put ?? []).map((v) => (v as { id?: unknown }).id).filter((id): id is string => typeof id === 'string' && !tombs.has(id))
+                    : [];
+                let left = ids.length;
+                if (left === 0) { queue(tombs, stored); return; }
+                for (const id of ids) {
+                    const g = os.get(id);
+                    g.onsuccess = () => {
+                        if (g.result !== undefined) stored.set(id, g.result);
+                        if (--left === 0) queue(tombs, stored);
+                    };
+                }
+            };
             tx.oncomplete = () => {
                 clearStorageError(NODES_SCOPE, '__batch');
                 announceWrite(dbName(), { kind: 'nodes', ids: batch.clear ? 'all' : changed });
