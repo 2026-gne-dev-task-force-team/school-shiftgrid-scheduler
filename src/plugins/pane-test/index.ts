@@ -22,6 +22,7 @@ import type { PluginHost, ViewProps, ViewContribution, CommandContribution } fro
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { TestConsole } from './views/TestConsole';
+import { UiGallery } from './views/UiGallery';
 import { SampleView } from './views/SampleView';
 import { PaneTestSettings } from './settings/PaneTestSettings';
 import { OpenCountStatus } from './components/OpenCountStatus';
@@ -30,6 +31,8 @@ import { setOpenViewCount, setNodeCount, openCmdId } from './store';
 
 const CONSOLE_ID = 'pane-test.console';
 const OPEN_CMD = 'pane-test.open';
+const GALLERY_ID = 'pane-test.gallery';
+const GALLERY_CMD = 'pane-test.open-gallery';
 
 /** 시험 뷰 목록 — 각자 다른 색(tone)·이름·기본 자리. 전부 자유 배치(끌어 가르기·사이드바로 옮겨 시험). */
 const SAMPLES: { id: string; title: string; tone: number; where: 'left' | 'right' | 'center'; scroll?: boolean }[] = [
@@ -53,6 +56,8 @@ const sampleOf = (viewId: string) => SAMPLES.find((s) => viewId === `pane-test.$
 const components = {
     // 시험 탭 — 🔴 p.peek 을 넘긴다(피크는 이 탭 안에서 뜬다, 전역 창 아님). host 는 꽂혀 들어온다.
     Console: (p: ViewProps & { host: PluginHost }) => createElement(TestConsole, { host: p.host, peek: p.peek }),
+    // 부품 견본 — 공통 부품을 한 화면에(U-견본)
+    Gallery: () => createElement(UiGallery),
     // 샘플 뷰 — 제 leaf.viewId 로 SAMPLES 를 찾아 제목·색·스크롤을 집는다(아홉 뷰가 이 하나를 공유).
     Sample: (p: ViewProps & { host: PluginHost }) => {
         const s = sampleOf(p.leaf.viewId);
@@ -64,6 +69,7 @@ const components = {
 const commands: Record<string, (host: PluginHost) => void> = {
     // 리본·팔레트가 부르면 시험 탭을 연다(싱글턴이라 두 장 안 열린다)
     [OPEN_CMD]: (host) => { host.workspace.open(CONSOLE_ID, { where: 'center' }); },
+    [GALLERY_CMD]: (host) => { host.workspace.open(GALLERY_ID, { where: 'center' }); },
 };
 // 🔴 시험 뷰 열기도 전부 명령으로 — 콘솔 단추·팔레트가 같은 id 로 부른다(「모든 동작은 명령」).
 for (const s of SAMPLES) {
@@ -84,14 +90,20 @@ const renders = {
 // ── 선언(contributes) 으로 적는 것 — 전부 순수 데이터(id·제목·아이콘·자리·단축키). 함수는 위 이름으로만 가리킨다 ──
 
 /** 시험 탭(싱글턴·가운데·안 가름) + 샘플 아홉(자유 배치). */
-const viewDefs: ViewContribution<'Console' | 'Sample'>[] = [
+const viewDefs: ViewContribution<'Console' | 'Sample' | 'Gallery'>[] = [
     {
         id: 'console', title: 'Pane UI Test', icon: 'flask', defaultArea: 'center',
         placement: { areas: ['center'], singleton: true },
         layout: { minWidth: 240, squeeze: 'scroll' },
         component: 'Console',
     },
-    ...SAMPLES.map((s): ViewContribution<'Console' | 'Sample'> => ({
+    {
+        id: 'gallery', title: '부품 견본', icon: 'layers', defaultArea: 'center',
+        placement: { areas: ['center'], singleton: true },
+        layout: { minWidth: 240, squeeze: 'scroll' },
+        component: 'Gallery',
+    },
+    ...SAMPLES.map((s): ViewContribution<'Console' | 'Sample' | 'Gallery'> => ({
         id: s.id, title: s.title, icon: 'dot', defaultArea: 'center',
         layout: s.scroll ? { minWidth: 160, squeeze: 'scroll' } : { minWidth: 140 },
         component: 'Sample',
@@ -101,6 +113,7 @@ const viewDefs: ViewContribution<'Console' | 'Sample'>[] = [
 /** 명령: 시험 탭 열기(리본에 선다) + 샘플 아홉 열기(아이콘·제목만 다르다). */
 const commandDefs: CommandContribution[] = [
     { id: OPEN_CMD, title: 'Pane UI Test 열기', icon: 'flask' },
+    { id: GALLERY_CMD, title: '부품 견본 열기', icon: 'layers' },
     ...SAMPLES.map((s): CommandContribution => ({
         id: openCmdId(s.id), title: `${s.title} 열기`, icon: s.scroll ? 'layers' : 'dot',
     })),
