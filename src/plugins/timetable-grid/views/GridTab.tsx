@@ -7,7 +7,7 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
 import { useActiveSheet } from '../store';
-import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, getNodesApi, inTrash, stepEdit, notifyRemoved, canStep, notifyInfo } from '../nodes';
+import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, getNodesApi, inTrash, stepEdit, notifyRemoved, canStep, notifyInfo, isFresh, takeFresh } from '../nodes';
 import { StartScreen } from './StartScreen';
 import { TimeGrid } from './TimeGrid';
 
@@ -30,6 +30,7 @@ export function GridTab({ leafId }: { leafId?: string }) {
             <Frame nodeId={activeId} leafId={leafId} toolbar={bar.slot}
                 fallback={<Icon name="schedule" size={22} className="text-muted" />}>
                 <TimeGrid data={data} edit={(fn) => applyEdit(activeId, fn)} onRemoved={(t) => notifyRemoved(activeId, t)}
+                    focusFirst={isFresh(activeId)} onFocusedFirst={() => takeFresh(activeId)}
                     toolbarHost={bar.host} onNotice={notifyInfo}
                     undo={() => stepEdit(activeId, 'undo')} redo={() => stepEdit(activeId, 'redo')}
                     canUndo={canStep(activeId, 'undo')} canRedo={canStep(activeId, 'redo')} />

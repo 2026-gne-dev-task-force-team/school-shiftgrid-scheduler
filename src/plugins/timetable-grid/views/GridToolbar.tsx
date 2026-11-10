@@ -6,8 +6,8 @@
  *   좁은 폭에서는 자주 쓰는 것만 남기고 나머지는 「더보기」 팝오버로 접는다.
  *   칸 서식(굵게·배경색)은 시간표 칸(Cell)이 서식을 안 가져서 넣지 않았다.
  */
-import { useRef, useState } from 'react';
-import { IconButton, Button, Popover, TextInput, Toolbar, useNarrow } from '../../../pane-ui-system';
+import { useEffect, useRef, useState } from 'react';
+import { IconButton, Button, Popover, TextInput, Toolbar, useNarrow, isMod, keyLabel } from '../../../pane-ui-system';
 import {
     addRow, removeRow, rowLength, gapBefore, setRowLength, setGapBefore, setRowTimeChecked,
     type TimetableData,
@@ -31,16 +31,24 @@ export function parseHm(s: string): number | null {
 }
 
 /** 입력칸 — Enter·포커스 이탈에서 한 번만 넘긴다. */
-function Field({ label, value, onCommit, width = 'w-16', disabled }: {
+function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onGridUndo }: {
+    resetKey: unknown; onGridUndo?: (which: 'undo' | 'redo') => void;
     label: string; value: string; onCommit: (v: string) => void; width?: string; disabled?: boolean;
 }) {
     const [draft, setDraft] = useState<string | null>(null);
     const skip = useRef(false);
+    // 표가 바뀌면(되돌리기·교시 추가/삭제·선택 행 변경) 초안을 버리고 현재 값으로 다시 채운다.
+    useEffect(() => { setDraft(null); }, [resetKey]);
     return (
         <label className="flex shrink-0 items-center gap-1 text-micro text-muted">
             <span>{label}</span>
             <TextInput aria-label={label} disabled={disabled} value={draft ?? value} inputMode="numeric"
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {   // 편집 중이 아니면(초안 = 현재 값) ⌘Z 는 격자 되돌리기로
+                    if (!isMod(e.nativeEvent) || e.altKey || e.key.toLowerCase() !== 'z' || e.nativeEvent.isComposing) return;
+                    if (draft !== null && draft !== value) return;
+                    e.preventDefault(); e.stopPropagation(); onGridUndo?.(e.shiftKey ? 'redo' : 'undo');
+                }}
                 onBlur={() => { if (!skip.current && draft !== null && draft !== value) onCommit(draft); skip.current = false; setDraft(null); }}
                 onEscape={(e) => { skip.current = true; e.currentTarget.blur(); }}
                 onEnter={(_, e) => e.currentTarget.blur()}
@@ -95,11 +103,13 @@ export function GridToolbar(p: GridToolbarProps) {
         edit((d) => setGapBefore(d, r, m));
     };
 
+    const gridUndo = (w: 'undo' | 'redo') => { (w === 'undo' ? p.undo : p.redo)?.(); };
+    const rk = `${r}|${data.rows.map((x) => `${x.id}:${x.range.start}-${x.range.end}`).join(',')}`;
     const timeFields = (
         <>
-            <Field label="시작" value={r === null ? '' : fmt(data.rows[r].range.start)} onCommit={setStart} disabled={r === null} />
-            <Field label="길이(분)" value={r === null ? '' : String(rowLength(data, r))} onCommit={setLen} width="w-12" disabled={r === null} />
-            <Field label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="시작" value={r === null ? '' : fmt(data.rows[r].range.start)} onCommit={setStart} disabled={r === null} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="길이(분)" value={r === null ? '' : String(rowLength(data, r))} onCommit={setLen} width="w-12" disabled={r === null} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} />
         </>
     );
     const clearBtn = <Button variant="plain" size="sm" title="선택한 칸 지우기" aria-label="칸 지우기" disabled={!p.canClear} onMouseDown={keep} onClick={p.onClear}>지우기</Button>;
@@ -113,8 +123,8 @@ export function GridToolbar(p: GridToolbarProps) {
     return (
         <Toolbar label="시간표 도구 줄" scroll={!narrow}
             end={narrow ? <IconButton icon="dots" label="더보기" onMouseDown={keep} onClick={(e) => setMore((e.currentTarget as HTMLElement).getBoundingClientRect())} /> : undefined}>
-            <IconButton icon="undo" label="되돌리기" disabled={!p.canUndo} onMouseDown={keep} onClick={p.undo} />
-            <IconButton icon="redo" label="다시하기" disabled={!p.canRedo} onMouseDown={keep} onClick={p.redo} />
+            <IconButton icon="undo" label="되돌리기" title={`되돌리기 (${keyLabel('Mod+Z')})`} disabled={!p.canUndo} onMouseDown={keep} onClick={p.undo} />
+            <IconButton icon="redo" label="다시하기" title={`다시하기 (${keyLabel('Mod+Shift+Z')})`} disabled={!p.canRedo} onMouseDown={keep} onClick={p.redo} />
             <span className="mx-1 h-4 w-px bg-line" />
             <Button variant="plain" size="sm" title="교시 추가(선택 행 아래, 없으면 끝)" aria-label="교시 추가"
                 onMouseDown={keep} onClick={() => edit((d) => addRow(d, r === null ? undefined : r + 1))}>교시 추가</Button>
