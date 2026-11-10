@@ -879,7 +879,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                     </td>
                                     {hasRowHead && (
                                         <th data-row-head={r} scope="row"
-                                            className={`relative border border-line bg-panel px-1.5 py-0.5 text-left align-top font-normal ${hasSticky ? 'sticky left-0 z-10' : ''}`}
+                                            className={`relative border border-line bg-panel px-1.5 py-0.5 text-left align-top font-normal select-none ${hasSticky ? 'sticky left-0 z-10' : ''}`}
                                             style={{ width: headW, minWidth: headW, maxWidth: headW }}
                                             onDoubleClick={hasAxisEdit ? () => setRenamingRow(row.id) : undefined}>
                                             {renamingRow === row.id ? (
@@ -934,7 +934,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
                                             col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
                                         ].filter(Boolean).join(' ');
-                                        const title = vErr?.message ?? deco?.title;
+                                        const cw = widthOf(col.key, col.width);
+                                        // 열 폭이 정해진 칸은 글이 열을 늘리지 못하게 안쪽 상자 폭을 묶고 말줄임(…) + 마우스 올리면 전체(title).
+                                        const clamp = cw != null && !isBool && !editing;
+                                        const title = vErr?.message ?? deco?.title ?? (clamp && value ? value : undefined);
                                         return (
                                             <td
                                                 key={col.key}
@@ -959,6 +962,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                         {isBool ? (
                                                             <Checkbox checked={isChecked(value)} aria-label={col.title}
                                                                 onChange={() => toggleCell(r, c)} className="align-middle" />
+                                                        ) : clamp ? (
+                                                            <div data-clamp className={value.includes('\n') ? 'overflow-hidden break-words' : 'truncate'} style={{ maxWidth: Math.max(24, cw - 12) }}>
+                                                                {renderText ? renderText(value) : <span>{value}</span>}
+                                                            </div>
                                                         ) : (
                                                             renderText ? renderText(value) : <span>{value}</span>
                                                         )}
