@@ -17,6 +17,7 @@ import {
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from '../nodes/model/selection';
 import { isSectionType, isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from '../nodes/model/types';
 import { getDerived, invalidateDerived } from '../nodes/model/derive';
+import { storageKey } from '../../storage';
 import { loadTree, saveTree, onRemoteNodes, isPendingLocal, rebasePending, type RemoteNodes } from './persist';
 
 interface ExplorerState {
@@ -91,7 +92,29 @@ let batchDepth = 0;
 /** 🔴 N4 — 나무가 바뀔 때 「무엇이 바뀌었나(changedIds)」를 받는 구독(NodesApi.subscribe 가 이 위에 선다). */
 const changeListeners = new Set<(ids: string[]) => void>();
 
+/** 🔴 고른 노드(포커스 id) 한 개만 새로고침 너머로 기억한다 — 로딩 중엔 안 쓴다(빈 상태로 저장분을 지우지 않게). 다중 선택은 기억 안 함. */
+const SEL_KEY = 'selected-node';
+let lastSavedSel: string | null | undefined;
+function persistSelected(): void {
+    if (state.loading || state.selectedId === lastSavedSel) return;
+    lastSavedSel = state.selectedId;
+    try {
+        if (state.selectedId) localStorage.setItem(storageKey(SEL_KEY), state.selectedId);
+        else localStorage.removeItem(storageKey(SEL_KEY));
+    } catch { /* 저장 못 해도 화면은 돈다 */ }
+}
+
+/** 로딩이 끝난 나무에 그 id 가 살아 있으면(휴지통 밖) 되살릴 id, 아니면 null. */
+function restorableSelected(tree: Tree): string | null {
+    try {
+        const id = localStorage.getItem(storageKey(SEL_KEY));
+        if (!id || !tree.nodes[id] || id === tree.root || id === tree.trash || isDescendant(tree, id, tree.trash)) return null;
+        return id;
+    } catch { return null; }
+}
+
 function emit(): void {
+    persistSelected();
     for (const l of listeners) l();
 }
 
@@ -141,11 +164,14 @@ export function initStore(host: PluginHost): Promise<void> {
     hostRef = host;
     onRemoteNodes(applyRemote);
     // 🔴 먼저 빈 나무 + loading:true 로 세운다 — 조작·저장이 막힌 상태. 로드가 끝나면 교체한다.
+    lastSavedSel = undefined;
     state = { ...freshState(emptyTree()), loading: true };
     emit();
     return loadTree(host).then((tree) => {
         const prev = state.tree;
-        state = { ...freshState(tree), loading: false };
+        const restored = restorableSelected(tree);
+        state = { ...freshState(tree), ...(restored ? singleSel(restored) : {}), loading: false };
+        lastSavedSel = restored;   // 되살린 값은 이미 저장돼 있다 · 못 살렸으면 null 로 맞춰 다음 emit 이 낡은 키를 지운다
         emit();
         // 🔴 로딩 완료 → 다른 플러그인의 NodesApi.subscribe 를 깨운다(그때 다시 읽는다 · 빈 나무→실나무 diff).
         fireChange(prev, tree);

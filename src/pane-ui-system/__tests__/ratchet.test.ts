@@ -77,6 +77,9 @@ const outsideParts = (scope: string) => scopeFiles(scope).filter((f) => !f.start
 /** cmdIdString 이 보는 글 — 약속 파일(`contracts/`)은 명령 id 글자 상수를 「정의하는」 자리라 뺀다(주인 범위와 약속 파일이 다른 모듈에 있어도 — 예: 탐색기 id 상수는 core/nodes/contracts) */
 const cmdTexts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, scopeFiles(k).filter((f) => !f.includes(sep + 'contracts' + sep)).map((f) => readFileSync(f, 'utf-8'))]));
 const r7Texts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, outsideParts(k)]));
+/** ownTrash 가 보는 글 — 노드 저장소 주인 파일(core/node-store/store.ts)은 뺀다: 나무·휴지통의 주인이 제 나무를 쥐는 건 규칙이 막으려는 「주인 아닌 곳의 직접 손질」이 아니다 */
+const OWNER_STORE = join(CORE_ROOT, 'node-store', 'store.ts');
+const ownTrashTexts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, scopeFiles(k).filter((f) => f !== OWNER_STORE).map((f) => readFileSync(f, 'utf-8'))]));
 const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k]) => [k, scopeFiles(k).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));
 
 /** 명령 id 선언 → 주인 범위. 매니페스트 contributes 의 `{ id: 'x.y', title: … }` 꼴 */
@@ -98,7 +101,7 @@ function measure(scope: string): Counts {
         divClick += count(t, /<div\b(?:=>|[^>])*?\sonClick\b/g);
         if (/key\s*===\s*['"]Enter['"]/.test(t) && !/isImeEnter|isComposing/.test(t)) enterNoIme += 1;
     }
-    for (const t of texts) ownTrash += count(t, /\broots\.trash\b|\btree\.trash\b|\btrashedFrom\b/g);
+    for (const t of ownTrashTexts[scope]) ownTrash += count(t, /\broots\.trash\b|\btree\.trash\b|\btrashedFrom\b/g);
     for (const t of roleToolbarTexts[scope]) roleToolbar += count(t, /role\s*[=:]\s*\{?\s*["']toolbar["']/g);
     for (const t of texts) {
         ownUndoNotice += count(t, /\blabel\s*:\s*['"]되돌리기['"]\s*,\s*commandId/g);
