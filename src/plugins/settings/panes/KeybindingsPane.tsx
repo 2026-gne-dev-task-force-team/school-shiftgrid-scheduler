@@ -14,11 +14,16 @@ import { listCommands, useContribVersion } from '../../../pane-ui-system/plugin'
 import type { SettingsPaneProps } from '../registry';
 import { notifyReset } from '../reset-undo';
 
+/** 크롬이 먼저 먹어 페이지가 못 받는 키(재지정해도 안 돈다) — 짧은 고정 목록. */
+const BROWSER_RESERVED = new Set(['Mod+N', 'Mod+T', 'Mod+W', 'Mod+Shift+T', 'Mod+Shift+N', 'Ctrl+Tab']);
+export function isBrowserReserved(key: string): boolean { return BROWSER_RESERVED.has(normalizeKey(key)); }
+
 export function KeybindingsPane({ host }: SettingsPaneProps) {
     useContribVersion();
     const o = useKeyOverrides();
     const [rec, setRec] = useState<string | null>(null);   // 키를 받는 중인 명령 id
     const [q, setQ] = useState('');
+    const [reservedMsg, setReservedMsg] = useState('');   // 예약 키를 눌렀을 때 안내
 
     // 받는 중엔 다음 키 하나를 가로챈다 — 캡처 단계라 전역 디스패처·뷰보다 먼저. Esc 는 취소.
     useEffect(() => {
@@ -27,7 +32,9 @@ export function KeybindingsPane({ host }: SettingsPaneProps) {
             const k = eventToKey(e);
             if (!k || e.isComposing) return;              // 수식 키만 — 다음 키를 기다린다
             e.preventDefault(); e.stopPropagation();
-            if (k !== 'Escape') setKeyOverride(rec, k);
+            if (k === 'Escape') { setReservedMsg(''); }
+            else if (isBrowserReserved(k)) { setReservedMsg(`${formatKey(k)} — 브라우저가 먼저 가로채는 키라 쓸 수 없습니다.`); }
+            else { setReservedMsg(''); setKeyOverride(rec, k); }
             setRec(null);
         };
         window.addEventListener('keydown', h, true);
@@ -45,6 +52,7 @@ export function KeybindingsPane({ host }: SettingsPaneProps) {
             <p className="text-small text-muted">
                 「바꾸기」를 누르고 새 키를 누르세요(Esc 는 취소). 같은 키를 둘이 쥐면 ⚠️ 가 뜨고 먼저 등록된 명령이 이깁니다. 저장은 이 기기에만 남습니다.
             </p>
+            {reservedMsg && <p role="alert" className="text-small">⚠️ {reservedMsg}</p>}
             <input
                 value={q} onChange={(e) => setQ(e.target.value)} placeholder="명령·키로 찾기"
                 className={`h-8 px-2 rounded border border-line bg-panel text-body ${FOCUS_RING}`}

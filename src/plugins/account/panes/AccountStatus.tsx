@@ -10,7 +10,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Button, Popover, Select, TextInput, isImeEnter } from '../../../pane-ui-system';
 import {
-    getCurrent, loginMaster, openAccount, checkLoginId, loginWithPassword, setupAndLogin, credentialMethods,
+    getCurrent, loginMaster, logout, hasProjectPassword, openAccount, checkLoginId, loginWithPassword, setupAndLogin, credentialMethods,
 } from '../core';
 import { useAccountVersion } from './useAccount';
 
@@ -47,6 +47,8 @@ export function AccountStatus({ host }: { host: PluginHost }) {
     };
 
     const enterMaster = async () => {
+        // 걸린 프로젝트 암호가 없으면 시작 상태가 마스터다 — 암호를 묻지 않고 그 상태로 돌아간다.
+        if (!hasProjectPassword()) { logout(); close(); return; }
         if (!pw) { setMsg('암호를 입력하세요.'); return; }
         const ok = await loginMaster(pw);
         if (ok) close();
@@ -137,6 +139,12 @@ export function AccountStatus({ host }: { host: PluginHost }) {
                         )}
 
                         {view === 'master' && (
+                            !hasProjectPassword() ? (
+                            <Form>
+                                <p className="text-note text-muted">프로젝트 암호가 아직 없습니다 — 암호 없이 마스터로 들어갑니다.</p>
+                                <Row>{back('menu')}<Button variant="accent" size="sm" onClick={enterMaster}>들어가기</Button></Row>
+                            </Form>
+                            ) : (
                             <Form>
                                 <p className="text-note text-muted">프로젝트 암호를 입력하세요.</p>
                                 <TextInput type="password" autoFocus aria-label="프로젝트 암호" value={pw}
@@ -144,6 +152,7 @@ export function AccountStatus({ host }: { host: PluginHost }) {
                                 {msgEl}
                                 <Row>{back('menu')}<Button variant="accent" size="sm" onClick={enterMaster}>들어가기</Button></Row>
                             </Form>
+                            )
                         )}
 
                         {view === 'loginId' && (
