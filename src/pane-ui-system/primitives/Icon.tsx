@@ -9,7 +9,7 @@ export type IconName =
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
     | 'calendar' | 'calendarMini' | 'flask' | 'grip'
     | 'text' | 'hash' | 'chevronDown' | 'filter' | 'sort' | 'eye' | 'eyeOff'
-    | 'users' | 'user' | 'door' | 'schedule' | 'fileText' | 'calendarEvent'
+    | 'users' | 'user' | 'userSwap' | 'door' | 'doorClock' | 'schedule' | 'fileText' | 'calendarEvent'
     | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down' | 'database'
     | 'heading1' | 'heading2' | 'heading3' | 'list' | 'listNumbered' | 'quote' | 'code' | 'divider'
     | 'rowAbove' | 'rowBelow' | 'rowDel' | 'colLeft' | 'colRight' | 'colDel' | 'merge' | 'unmerge';
@@ -107,6 +107,10 @@ const P: Record<IconName, string> = {
     users: 'M9 11a3 3 0 100-6 3 3 0 000 6zM4 20v-1a4 4 0 014-4h2a4 4 0 014 4v1M15 5.3a3 3 0 010 5.4M16 15.1a4 4 0 014 3.9v1',
     // 한 사람(레코드) — 머리 동그라미 + 어깨. 명단(users)의 한 명
     user: 'M12 3a4 4 0 100 8 4 4 0 000-8zM5 21v-1a6 6 0 016-6h2a6 6 0 016 6v1',
+    // 대신 들어가는 사람 — 한 사람 + 맞바꿈 화살표. 여러 사람(users)과 가른다(쥔님 2026-11-10 *"아이콘이 다 똑같아"*)
+    userSwap: 'M8 11a3 3 0 100-6 3 3 0 000 6zM2 20v-1a4 4 0 014-4h4a4 4 0 014 4v1M16 6h5M19 4l2 2-2 2M21 13h-5M18 11l-2 2 2 2',
+    // 문 + 시계(예약) — 문(door)과 가른다(같은 날)
+    doorClock: 'M4 21V4a1 1 0 011-1h8a1 1 0 011 1v6M2 21h9M11 12h.01M17 12a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM17 14.5v2l1.5 1',
     // 문(방·방 목록) — 문틀 + 손잡이 점 + 바닥선. book/file 로 겹치던 방을 가른다
     door: 'M6 21V4a1 1 0 011-1h10a1 1 0 011 1v17M4 21h16M14 12h.01',
     // 시간 격자 — 격자(오른 아래 한 칸을 비움) + 시계. 18px 에서 보통 표(table)와 한눈에 갈리게 시계를 얹었다

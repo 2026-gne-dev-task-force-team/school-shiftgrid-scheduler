@@ -71,10 +71,10 @@ export const collectionPlugin = definePlugin({
                 component: 'Record',
             }],
             commands: [
-                { id: 'collection.open', title: '컬렉션 열기', icon: 'layers' },
+                { id: 'collection.open', title: '컬렉션 열기', icon: 'database' },
                 { id: 'collection.restoreTrashed', title: '휴지통의 행 복원', icon: 'undo' },
             ],
-            ribbon: [{ commandId: 'collection.open', icon: 'layers', order: 20 }],
+            ribbon: [{ commandId: 'collection.open', icon: 'database', order: 20 }],
             // 🔴 노드 타입 둘(레코드 뷰·행) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: recordNodeTypes,
         },

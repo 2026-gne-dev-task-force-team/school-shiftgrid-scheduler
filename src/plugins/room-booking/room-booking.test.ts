@@ -58,7 +58,7 @@ describe('방 예약 프리셋', () => {
     it('등록하면 저장소 메뉴에 「새 방 예약」 항목이 생기고, 해제하면 사라진다', () => {
         const d = calendarModule.registerPreset(ROOM_BOOKING_PRESET);
         const item = storeMenu(mkStore()).find((i) => 'commandId' in i && i.commandId === 'calendar.newPresetStore');
-        expect(item).toMatchObject({ label: '새 방 예약', icon: 'door', commandArg: { args: 'room-booking.default' } });
+        expect(item).toMatchObject({ label: '새 방 예약', icon: 'doorClock', commandArg: { args: 'room-booking.default' } });
         d.dispose();
         expect(storeMenu(mkStore()).some((i) => 'commandId' in i && i.commandId === 'calendar.newPresetStore')).toBe(false);
     });
@@ -114,7 +114,7 @@ describe('방 예약 프리셋', () => {
     it('팔레트 「새 방 예약」 — 달력 약속 newPresetStore 로 맨 위에 예약 목록을 만든다', async () => {
         calendarModule.registerPreset(ROOM_BOOKING_PRESET);
         const cmd = roomBookingPlugin.manifest.contributes?.commands?.find((c) => c.id === 'room-booking.new');
-        expect(cmd).toMatchObject({ title: '새 방 예약', icon: 'door' });
+        expect(cmd).toMatchObject({ title: '새 방 예약', icon: 'doorClock' });
         roomBookingPlugin.commands!['room-booking.new']({ modules: { use: () => calendarModule } } as unknown as PluginHost);
         await Promise.resolve();
         const api = getNodesApi()!;
@@ -128,7 +128,7 @@ describe('방 예약 프리셋', () => {
         calendarModule.registerPreset(ROOM_BOOKING_PRESET);
         const api = getNodesApi()!;
         const h = { modules: { use: (n: string) => (n === 'nodes' ? api : calendarModule) } } as unknown as PluginHost;
-        expect(roomBookingPlugin.manifest.contributes?.ribbon).toEqual([{ commandId: 'room-booking.open', icon: 'door', order: 5 }]);
+        expect(roomBookingPlugin.manifest.contributes?.ribbon).toEqual([{ commandId: 'room-booking.open', icon: 'doorClock', order: 5 }]);
         roomBookingPlugin.commands!['room-booking.open'](h);
         roomBookingPlugin.commands!['room-booking.open'](h);
         await Promise.resolve();
@@ -140,12 +140,12 @@ describe('방 예약 프리셋', () => {
         const api = getNodesApi()!;
         const folder = api.create(api.roots.main, { type: 'folder', name: '본관' });
         const vs = calendarNodeTypeImpl.store.createVariants(folder);
-        expect(vs.map((v) => [v.label, v.icon])).toEqual([['방 예약', 'door']]);
+        expect(vs.map((v) => [v.label, v.icon])).toEqual([['방 예약', 'doorClock']]);
         vs[0].run();
         await Promise.resolve();
         const [store] = api.liveByType(STORE_TYPE);
         expect(api.parent(store.id)).toBe(folder);
-        expect(calendarNodeTypeImpl.store.icon(store)).toBe('door');
+        expect(calendarNodeTypeImpl.store.icon(store)).toBe('doorClock');
         d.dispose();
         expect(calendarNodeTypeImpl.store.icon(store)).toBe('calendar');
         expect(calendarNodeTypeImpl.store.createVariants(folder)).toEqual([]);

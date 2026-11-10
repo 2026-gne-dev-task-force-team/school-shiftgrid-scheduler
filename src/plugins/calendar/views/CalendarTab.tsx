@@ -173,7 +173,13 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
     }
     return (
         <div className={`h-full flex flex-col min-h-0 ${padBottom}`}>
-            <div data-nf-bar className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none" />
+            {/* 🔑 노드 화면은 이 줄에 경로가 선다 — 전체 달력은 노드가 아니라 빈 줄로 보였다(쥔님 2026-11-10 *"하얀 빈줄 정체 뭐냐"*). 경로 자리에 자기 이름 한 칸 */}
+            <div data-nf-bar className="shrink-0 flex items-center gap-1 h-header px-pad border-b border-line select-none">
+                <nav aria-label="경로" className="min-w-0 flex-1 flex items-center gap-1 overflow-hidden text-small text-muted px-1.5">
+                    <Icon name="calendar" size={13} className="shrink-0" />
+                    <span className="truncate">전체 달력</span>
+                </nav>
+            </div>
             <div data-slot="head" className="shrink-0 w-full px-6 pt-3">
                 <div data-nf-header className="flex items-center gap-3 w-full min-w-0 pb-2">
                     <div className="flex-1 min-w-0 flex items-center gap-1.5 h-10">
