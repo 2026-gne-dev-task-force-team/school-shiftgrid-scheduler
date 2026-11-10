@@ -16,6 +16,7 @@ import { isoMinuteOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
+import { presetOf } from './presets';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
@@ -100,7 +101,7 @@ export function storeMenu(nodeId: string): MenuEntry[] {
     const commandArg = { nodeId };
     return [
         { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore', commandArg },
-        { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
+        { label: presetOf(nodeId).words.newEvent, icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
         { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs', commandArg },
         { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs', commandArg },
         ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable', commandArg }] : []),

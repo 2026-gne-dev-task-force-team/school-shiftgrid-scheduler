@@ -15,12 +15,14 @@ import type { RecordCellValue, RecordViewApi } from '../../collection/contracts/
 import type { StoredEvent } from '../event-fields';
 import { eventFields, eventToValues, applyEventValue } from '../event-fields';
 import { getCalendarHost, getNodesApi, getKit, patchEvent, setEventValue } from '../nodes';
+import { usePreset } from '../presets';
 
 const BASE_KEYS = new Set(['name', 'allDay', 'when', 'memo']);
 
 export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: () => void }) {
     const { events, storeList } = useCalendarData();
     const event = events.find((e) => e.id === eventId) ?? null;
+    const preset = usePreset(event?.storeId);
     // 일정이 사라지면(휴지통·출처 해제) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
     useEffect(() => { if (!event) onClose(); }, [event, onClose]);
     if (!event) return null;
@@ -40,7 +42,7 @@ export function EventCardPeek({ eventId, onClose }: { eventId: string; onClose: 
         <rv.RecordPage
             host={host}
             id={event.id}
-            fields={[...eventFields(event.allDay), ...userFields]}
+            fields={[...eventFields(event.allDay), ...(preset.baseFields ?? []), ...userFields]}
             values={values}
             onChange={(key, v) => {
                 if (!BASE_KEYS.has(key)) { setEventValue(event.id, key, v); return; }

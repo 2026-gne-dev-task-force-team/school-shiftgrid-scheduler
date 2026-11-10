@@ -59,7 +59,7 @@ describe('calendar 약속 + 제공자(달력) + 소비자 — 끝단', () => {
         expect(cal.failed).toBe(false);
         // 🔴 꾸러미가 약속을 들고 온다 — contributes.interfaces 에 calendar 가 있고 provides 로 채운다(둘 다 같은 꾸러미).
         expect(cal.interfaces.map((i) => i.name)).toContain('calendar');
-        expect(cal.provides.calendar).toBe('0.1.0');
+        expect(cal.provides.calendar).toBe('0.2.0');
     });
 
     it('소비자가 host.modules 로 calendar 를 받아 출처를 등록하면 달력 레지스트리에 뜬다', () => {

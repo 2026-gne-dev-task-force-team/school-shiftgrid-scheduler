@@ -10,6 +10,7 @@ import { EmptyState, Icon, isImeEnter, isoOf, type PeekHandle } from '../../../p
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent, renameEvent, removeEvent } from '../nodes';
+import { useWords } from '../presets';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField } from '../../collection/contracts/collection';
@@ -47,6 +48,7 @@ type RvRow = { id: string; date: { start: string }; time: string; title: string;
 export function ListView({ value, onChange, trailing, peek, selection, onSelect, host }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void; host?: PluginHost }) {
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     const { events, stores } = useCalendarData();
+    const words = useWords();
     const [query, setQuery] = useState('');
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
@@ -108,7 +110,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                         onClick={newEvent}
                         className="flex items-center gap-1 shrink-0 px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
                     >
-                        <Icon name="plus" size={13} /> 새 일정
+                        <Icon name="plus" size={13} /> {words.newEvent}
                     </button>
                 </div>
             </CalBar>

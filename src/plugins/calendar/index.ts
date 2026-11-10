@@ -59,12 +59,12 @@ export const calendarPlugin = definePlugin({
         // 저장소 = 컬렉션(P4b) — 사용자 칸·「표로 보기」·일정 표 모드가 컬렉션을 빌린다. 없으면 달력 보기만 — 있으면 쓰는 것이라 supports
         supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
-        provides: { calendar: '0.1.0' },
+        provides: { calendar: '0.2.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
         contributes: {
             // 🔴 calendar 약속을 **들고 온다**(2026-11-08 「플러그인은 꾸러미다」). 달력 꾸러미가 약속·provides·화면을 한 폴더에 묶는다
             //    — 들고 오는 쪽과 채우는 쪽이 같아도 된다(소비자는 남의 일정을 modules.calendar 로 꽂는다).
-            interfaces: [{ name: 'calendar', version: '0.1.0', label: '달력', desc: '달력에 넣는 일정' }],
+            interfaces: [{ name: 'calendar', version: '0.2.0', label: '달력', desc: '달력에 넣는 일정' }],
             views: [
                 // 월 보기(싱글턴·가운데·안 가름) — 아이콘은 'calendar'(쥔님 *"캘린더 스럽지 않아"* 로 'table' 에서 바꿈).
                 {

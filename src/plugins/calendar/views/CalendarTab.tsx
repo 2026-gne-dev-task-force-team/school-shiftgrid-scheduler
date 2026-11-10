@@ -25,6 +25,7 @@ import { useScope, setScope } from '../store';
 import { useCalendarData } from '../useEvents';
 import { visibleModes, resolveMode, type Mode } from '../modes';
 import { selectionLabel, type CalSelection } from '../selection';
+import { presetOf } from '../presets';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
@@ -80,6 +81,13 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
         const next = resolveMode(mode, false);
         if (next !== mode) setMode(next);
     }, [mode]);
+
+    // 프리셋 첫 화면 — 저장소를 열 때(범위가 바뀔 때) 그 프리셋의 defaultView 로. 없으면(기본 달력) 보던 그대로.
+    useEffect(() => {
+        const v = presetOf(scope).defaultView;
+        if (v && modes.some((m) => m.id === v)) setMode(v as Mode);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 범위가 바뀔 때만(모드 목록은 고정)
+    }, [scope]);
 
     // 🔴 범위 저장소가 휴지통에 가거나 사라지면 자동으로 전체(null)로 — 죽은 저장소에 갇히지 않게(쥔님 2026-11-02).
     useEffect(() => {
