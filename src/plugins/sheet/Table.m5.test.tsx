@@ -3,6 +3,7 @@
  * Table M5(넘버스 얼굴) 검산 — 합계 바 · 둥근 추가 단추 끌기 · 참조 탭 포커스 · 머리/꼬리 채우기 제외 · 넘버스 키.
  *   소유자는 실제 표 노드 다리의 applyTx(nodes.ts) 를 그대로 쓴다.
  */
+import { setPlatform } from '../../pane-ui-system/platform-keys';
 import { act, createRef, forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -197,6 +198,7 @@ describe('Table M5 — 넘버스 얼굴', () => {
     });
 
     it('⌘V keydown 은 막지 않는다(막으면 브라우저가 paste 이벤트를 안 쏜다) · paste 이벤트로 칸이 채워진다', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         const ref = createRef<CtrlRef>();
         mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
         act(() => ref.current!.h().click(1, 0));

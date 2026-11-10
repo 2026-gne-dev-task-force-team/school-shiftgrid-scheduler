@@ -10,7 +10,7 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
+import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
 import { Popover } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
@@ -112,7 +112,7 @@ const RecordRow = memo(function RecordRow({
     const isTitle = (key: string) => key === titleKey;
     // 제목 칸 빈 곳(단추 말고)을 ⌘클릭·가운데 클릭 — 탭으로 열기
     const tabClick = (e: React.MouseEvent<HTMLElement>, key: string) => hasOpenTab && isTitle(key)
-        && (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey)))
+        && (e.button === 1 || (e.button === 0 && isMod(e)))
         && !(e.target as HTMLElement).closest('button,input,textarea,select');
     const inRange = (fi: number) => rc0 >= 0 && fi >= rc0 && fi <= rc1;
     const frozenStyle = (fi: number) => frozenStyleOf(fi, frozen, lead, widths);
@@ -138,7 +138,7 @@ const RecordRow = memo(function RecordRow({
                     tabIndex={0} aria-label="행 순서 바꾸기(Alt+↑↓)" {...dragBind}
                     onKeyDown={(e) => {
                         // 키보드 대안 — 끌기 없이도 순서를 바꾼다(Alt+↑ = 앞 행 앞으로 · Alt+↓ = 다음 행 뒤로)
-                        if (!e.altKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+                        if (!isAlt(e) || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
                         e.preventDefault(); e.stopPropagation();
                         act.moveAlt(id, e.key === 'ArrowUp' ? 'up' : 'down');
                     }}>
@@ -204,11 +204,11 @@ const RecordRow = memo(function RecordRow({
                     )}
                     {isTitle(f.key) && showOpen && (
                         <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id}
-                            onClick={(e) => { if (hasOpenTab && (e.metaKey || e.ctrlKey)) act.openTab(id); else act.open(id); }}
+                            onClick={(e) => { if (hasOpenTab && isMod(e)) act.openTab(id); else act.open(id); }}
                             onAuxClick={(e) => { if (hasOpenTab && e.button === 1) { e.preventDefault(); act.openTab(id); } }}>열기</Button>
                     )}
                     {isTitle(f.key) && showOpen && hasOpenTab && (
-                        <Tooltip text="탭으로 열기 (⌘클릭)">
+                        <Tooltip text={`탭으로 열기 (${modClickLabel()})`}>
                             <IconButton icon="arrowRight" label="탭으로 열기" title="" size={13} data={{ 'data-rv-open-tab': id }} onClick={() => act.openTab(id)} />
                         </Tooltip>
                     )}
@@ -637,7 +637,7 @@ export function RecordView<T>({
         if (onEditKey(e)) return;
         const t = e.target as HTMLElement;
         if (!cur || e.nativeEvent.isComposing || t.closest('input,textarea,select,[contenteditable="true"],[data-rv-editing]')) return;
-        const mod = e.metaKey || e.ctrlKey;
+        const mod = isMod(e);
         const step: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
         if (step[e.key]) { e.preventDefault(); moveTo(cur.r + step[e.key][0], cur.c + step[e.key][1], e.shiftKey); return; }
         if (e.key === 'Tab') { e.preventDefault(); moveTo(cur.r, cur.c + (e.shiftKey ? -1 : 1), false); return; }
@@ -1023,7 +1023,7 @@ export function RecordView<T>({
                             <div className="text-body text-text">
                                 「{label}」 칸을 「{to}」로 바꾸면 <b>{pending.lost}행의 값이 {emptied === pending.lost ? '비워집니다' : '바뀌며 일부 내용이 사라집니다'}</b>.
                             </div>
-                            <div className="text-small text-muted">되돌리기(⌘Z)로 되살릴 수 있습니다.</div>
+                            <div className="text-small text-muted">되돌리기({keyLabel('Mod+Z')})로 되살릴 수 있습니다.</div>
                             <div className="flex justify-end gap-2">
                                 <button type="button" data-rv-confirm-cancel onClick={() => setPending(null)} className="h-row px-3 rounded border border-line text-body text-text hover:bg-text/[0.06]">취소</button>
                                 <button type="button" data-rv-confirm-ok onClick={() => { const p = pending; setPending(null); applyConvert(p); }} className="h-row px-3 rounded bg-accent text-bg text-body">바꾸기</button>

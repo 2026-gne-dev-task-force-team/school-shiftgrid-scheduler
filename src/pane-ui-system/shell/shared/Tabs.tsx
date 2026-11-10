@@ -12,6 +12,7 @@ import { Row } from '../../primitives/Row';
 import { IconButton } from '../../primitives/IconButton';
 import type { DragBind } from '../../interactive/useDragLeaf';
 import type { IconName } from '../../primitives/Icon';
+import { isAlt } from '../../platform-keys';
 
 export interface TabItem {
     id: string;
@@ -150,7 +151,7 @@ export function Tabs({
                     if (id && tabs.some((t) => t.id === id)) { e.preventDefault(); onClose(id); }
                 }}
                 onKeyDown={(e) => {
-                    if (!onKeyMove || !e.altKey) return;
+                    if (!onKeyMove || !isAlt(e)) return;
                     const delta = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
                     if (!delta) return;
                     const el = (e.target as HTMLElement).closest('[data-row-id]');

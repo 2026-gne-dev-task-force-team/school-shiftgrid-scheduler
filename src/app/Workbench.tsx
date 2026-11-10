@@ -19,7 +19,7 @@ import {
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
+    keyLabel, closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
     type MovePos,
 } from '../pane-ui-system';
 import {
@@ -302,7 +302,7 @@ export function Workbench() {
             // ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 디스패처가 preventDefault 로 가로챈다
             add(FRAME_COMMAND.palette, '명령 팔레트', () => setPalette((v) => !v), 'search', 'Mod+P'),
             // ⌘K / Ctrl+K 도 같은 팔레트 — 팔레트 목록엔 중복으로 안 보이게 숨긴다(keyMap 은 명령 하나에 키 하나)
-            fh.declare({ kind: 'command', id: 'frame.palette.k', title: '명령 팔레트 (⌘K)', keys: 'Mod+K', palette: false }),
+            fh.declare({ kind: 'command', id: 'frame.palette.k', title: `명령 팔레트 (${keyLabel('Mod+K')})`, keys: 'Mod+K', palette: false }),
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);

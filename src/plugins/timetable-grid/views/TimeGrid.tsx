@@ -14,7 +14,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { step, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
-import { Button, ContextMenu, FrameToolbarPortal, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { isMod, isAlt, Button, ContextMenu, FrameToolbarPortal, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import { GridToolbar } from './GridToolbar';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells, addRow, removeRow,
@@ -68,7 +68,7 @@ function CellEditor({ text, label, onChange, onKey, onBlur }: {
     return (
         <textarea ref={ref} value={text} aria-label={label} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
             onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.altKey && !e.nativeEvent.isComposing) {
+                if (e.key === 'Enter' && isAlt(e) && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     const el = e.currentTarget, a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
                     onChange(el.value.slice(0, a) + '\n' + el.value.slice(b));
@@ -130,17 +130,17 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
     };
     const onGridKey = (e: React.KeyboardEvent) => {
         if (e.target !== gridRef.current || editRef.current) return;
-        const k = e.key, meta = e.metaKey || e.ctrlKey;
+        const k = e.key, meta = isMod(e);
         const cur: Pos = sel ? { c: sel.col0, r: sel.row0 } : { c: 0, r: 0 };
         const dirs: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
         if (!sel && (dirs[k] || k === 'Tab' || k === 'Enter')) { e.preventDefault(); selectAt(cur); return; }
-        if (dirs[k] && !meta && !e.altKey) {
+        if (dirs[k] && !meta && !isAlt(e)) {
             e.preventDefault();
             if (e.shiftKey && sel) { const end = step(data, { c: sel.col1, r: sel.row1 }, ...dirs[k]); setSel({ ...sel, col1: end.c, row1: end.r }); reveal(end); }
             else selectAt(step(data, cur, ...dirs[k]));
             return;
         }
-        if (meta || e.altKey) return;   // ⌘Z 등은 위(GridTab)로 흘린다 · ⌘C/X/V 는 문서 clipboard 이벤트로
+        if (meta || isAlt(e)) return;   // ⌘Z 등은 위(GridTab)로 흘린다 · ⌘C/X/V 는 문서 clipboard 이벤트로
         if (k === 'Tab') { e.preventDefault(); selectAt(step(data, cur, e.shiftKey ? -1 : 1, 0)); return; }
         // 🙋17 시트와 같게(구글 시트 관례) — 선택 상태 Enter = 편집 시작 · ⇧Enter = 위로. 편집 중 Enter(확정+아래)는 편집창이 받는다.
         if (k === 'Enter') {
@@ -365,7 +365,7 @@ export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, r
                                             onKey={(e) => {
                                                 if (e.nativeEvent.isComposing || isImeEnter(e)) return;   // 조합 중엔 확정·이동 키를 안 받는다
                                                 if (e.key === 'Escape') { e.preventDefault(); commitEdit(null, true); selectAt({ c, r }); focusGrid(); }
-                                                else if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); commitEdit([0, e.shiftKey ? -1 : 1]); }
+                                                else if (e.key === 'Enter' && !isAlt(e)) { e.preventDefault(); commitEdit([0, e.shiftKey ? -1 : 1]); }
                                                 else if (e.key === 'Tab') { e.preventDefault(); commitEdit([e.shiftKey ? -1 : 1, 0]); }
                                             }}
                                             onBlur={() => commitEdit(null)} />

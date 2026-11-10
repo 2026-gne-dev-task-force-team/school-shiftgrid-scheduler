@@ -3,6 +3,7 @@
  * P2 뒷부분 검산 — 보기 탭 · 필터 OR 그룹 · 상대 날짜 · 칸 고정/줄바꿈 · 계산 행 16종 · 키보드 셀 이동 · 복사(TSV)·채우기(⌘D) · 일괄 편집.
  *   🔴 채우기·일괄 편집은 onCellsChange 「한 번」 = 되돌리기 한 칸.
  */
+import { setPlatform } from '../../pane-ui-system/platform-keys';
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -213,6 +214,7 @@ describe('키보드 · 복사 · 채우기', () => {
         expect(data['text/plain']).toBe('하나\tx1\n둘\tx2');
     });
     it('⌘D — 맨 윗줄 값을 아래로, 한 묶음', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         down(pos(0, 1));
         down(pos(2, 1), { shiftKey: true });
         key(pos(2, 1), 'd', { ctrlKey: true });

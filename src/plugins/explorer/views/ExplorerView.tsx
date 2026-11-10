@@ -13,7 +13,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
-import { Icon, NodeIcon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
+import { isMod, Icon, NodeIcon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
 import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
@@ -208,7 +208,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
         // 🔴 Ctrl/⌘·Shift 가 눌린 클릭은 **고르기만**(열지도 펴지도 않는다 · 쥔님 2026-11-02) — 맨 클릭만 연다.
-        const ctrl = e.ctrlKey || e.metaKey;
+        const ctrl = isMod(e);
         if (ctrl || e.shiftKey) {
             clearRenameTimer();
             clickSelect(row.id, rowsOrder, { ctrl, shift: e.shiftKey });
@@ -256,7 +256,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             return;
         }
         // 🔴 Ctrl/⌘+A — 보이는 줄 전부 고르기(이름칸·검색칸 안에선 위 INPUT 가드가 이미 브라우저에 양보한다)
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        if (isMod(e) && (e.key === 'a' || e.key === 'A')) {
             e.preventDefault();
             selectAllRows(rowsOrder);
             return;

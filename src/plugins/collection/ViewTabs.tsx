@@ -3,7 +3,7 @@
  *   보기 목록은 안 쥔다(onChange 로 통째 넘긴다 — 바깥이 한 묶음으로 저장 = 되돌리기 한 칸). 활성 탭만 onSelect.
  */
 import { useState } from 'react';
-import { Icon, InlineRename, MenuItem, MenuList, Popover, useReorder } from '../../pane-ui-system';
+import { isAlt, Icon, InlineRename, MenuItem, MenuList, Popover, useReorder } from '../../pane-ui-system';
 import { ReorderOverlay } from './ReorderOverlay';
 import { defaultView, uid } from './view-state';
 import type { RecordField, ViewDef } from './contracts/collection';
@@ -48,7 +48,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
     // #48 롤빙 tabindex — 활성 탭만 Tab 정차, ←/→(·Home/End)로 탭 사이 이동. Alt+←/→ 는 순서 바꾸기(reorder)가 맡는다
     const onTabsKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
         const k = e.key;
-        if (!e.altKey && (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'Home' || k === 'End')) {
+        if (!isAlt(e) && (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'Home' || k === 'End')) {
             const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[data-rv-view-tab]'));
             const i = tabs.indexOf(document.activeElement as HTMLElement);
             if (i >= 0) {

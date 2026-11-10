@@ -4,6 +4,7 @@
  *   옛 부품의 두 얼굴 테스트를 한 얼굴(엔진 손잡이)로 옮겼다: 키보드 이동·클램프·클릭 · 복붙·채우기·지우기 ·
  *   그리고 흡수하며 넓힌 commit(changes, source) 가 동작 종류를 싣는지.
  */
+import { setPlatform } from '../../../pane-ui-system/platform-keys';
 import { act, createRef, forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -183,21 +184,22 @@ describe('판 W-S — 잘라내기·붙인 범위·Home/End/⌘방향·PageUp/Do
     });
 
     it('Home/End 는 행 처음·끝, ⌘방향·⌘Home/End 는 표 끝', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         const { h } = mount(5, 4);
         act(() => { h().click(2, 2); });
         act(() => { keyOf('Home'); });
         expect(h().state().active).toEqual({ r: 2, c: 0 });
         act(() => { keyOf('End'); });
         expect(h().state().active).toEqual({ r: 2, c: 3 });
-        act(() => { keyOf('ArrowDown', { metaKey: true }); });
+        act(() => { keyOf('ArrowDown', { ctrlKey: true }); });
         expect(h().state().active).toEqual({ r: 4, c: 3 });
         act(() => { keyOf('ArrowUp', { ctrlKey: true }); });
         expect(h().state().active).toEqual({ r: 0, c: 3 });
-        act(() => { keyOf('End', { metaKey: true }); });
+        act(() => { keyOf('End', { ctrlKey: true }); });
         expect(h().state().active).toEqual({ r: 4, c: 3 });
-        act(() => { keyOf('Home', { metaKey: true }); });
+        act(() => { keyOf('Home', { ctrlKey: true }); });
         expect(h().state().active).toEqual({ r: 0, c: 0 });
-        act(() => { keyOf('ArrowRight', { metaKey: true, shiftKey: true }); });
+        act(() => { keyOf('ArrowRight', { ctrlKey: true, shiftKey: true }); });
         expect(h().state().anchor).toEqual({ r: 0, c: 0 });
         expect(h().state().active).toEqual({ r: 0, c: 1 + 2 });
     });

@@ -6,7 +6,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
+import { isMod, ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
@@ -383,7 +383,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     };
     const onRootKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
         if (e.target !== e.currentTarget || selRef.current.length === 0) return;
-        const mod = e.metaKey || e.ctrlKey;
+        const mod = isMod(e);
         const k = e.key.toLowerCase();
         if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); deleteSelected(); return; }
         if (e.key === 'Escape') { e.preventDefault(); setSelected([]); return; }
