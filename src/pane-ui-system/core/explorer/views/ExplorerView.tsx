@@ -38,6 +38,8 @@ const clampTrashH = (h: number): number =>
     Math.min(TRASH_MAX_H, Math.max(TRASH_MIN_H, Number.isFinite(h) ? h : TRASH_DEFAULT_H));
 /** 이미 고른 줄을 또 누른 뒤 이름바꾸기까지 기다리는 시간(ms) — 두 번 누르기(열기)면 그 전에 취소된다(맥 Finder 꼴). */
 const RENAME_CLICK_DELAY = 450;
+/** 빈 탐색기 처음 단추 — 앞에 낼 타입(순서). 목록에 없는 타입은 건너뛰고, 나머지는 「더 보기」. */
+const START_TYPES = ['timetable-grid.sheet', 'people.list', 'page.page', 'collection.db'];
 
 /** 드래그가 떨어질 자리 — 포인터 DOM 자리를 「어느 줄·어느 띠」로 번역한 결과. */
 interface DropResolved {
@@ -133,6 +135,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const listRef = useRef<HTMLDivElement>(null);
     const draggedRef = useRef(false);
     // 이미 고른 줄을 또 눌렀을 때의 이름바꾸기 지연 타이머(두 번 누르기면 취소).
+    const [showMoreStarts, setShowMoreStarts] = useState(false);
     const renameTimer = useRef<number | null>(null);
     const clearRenameTimer = useCallback(() => {
         if (renameTimer.current != null) { clearTimeout(renameTimer.current); renameTimer.current = null; }
@@ -307,7 +310,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
     // ── 우클릭 메뉴 — 등록 표에서 「새로 만들기」를 짜고(⛔ 타입 비교 없음), 나머지 동작을 붙인다 ──
     // 「새 <타입>」 줄들 — 우클릭(via 'context')과 + 단추(via 'selection')가 같은 표를 쓴다. 생길 자리의 타입이 받는 것만.
-    const createItems = (via: 'selection' | 'context'): MenuEntry[] => {
+    const createItems = (via: 'selection' | 'context', opts?: { openNow?: boolean; typeOf?: Map<MenuEntry, string> }): MenuEntry[] => {
         const parent = newFolderParent(tree, selectedId, isContainerType, via);
         const baseType = via === 'context'
             ? (selectedId ? tree.nodes[selectedId]?.type : undefined) ?? tree.nodes[tree.root]?.type ?? 'folder'
@@ -319,10 +322,11 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             const dup = violatesUnique(tree, def.type, at, null, uniqueOf);
             const blocked = !canCreateType(def.type, at);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
             const icon = createIconOf(def);   // 「plus」만 줄지어 있으면 무엇을 만드는지 안 보인다 — 타입 자신의 아이콘
-            out.push(
-                dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
-                    : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
-                        : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via, targetId: selectedId ?? undefined }) });
+            const entry: MenuEntry = dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
+                : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
+                    : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via, targetId: selectedId ?? undefined, openNow: opts?.openNow }) };
+            opts?.typeOf?.set(entry, def.type);
+            out.push(entry);
             // 변형 줄(예: 「새 방 예약」) — 타입 줄이 만들 수 있을 때만, 같은 자리에
             if (!dup && !blocked) for (const v of def.createVariants?.(parent) ?? []) out.push({ label: `새 ${v.label}`, icon: v.icon, onClick: v.run });
         }
@@ -558,8 +562,12 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 )}
                 {rows.length === 0 && !q && (() => {
                     // 처음 켠 빈 저장소 — 「새로 만들기」 메뉴와 같은 표(createItems)에서 바로 만들기 단추를 낸다. 「새 폴더」는 맨 끝 보조 링크.
-                    const all = createItems('selection');
-                    const starts = all.filter((e) => 'label' in e && e.label !== '새 폴더');
+                    // 앞 넷(START_TYPES 순서 · 없는 타입은 건너뜀)만 — 나머지는 「더 보기」로 펼친다. 만들면 바로 가운데 탭에 열린다(openNow).
+                    const typeOf = new Map<MenuEntry, string>();
+                    const all = createItems('selection', { openNow: true, typeOf });
+                    const rest = all.filter((e) => 'label' in e && e.label !== '새 폴더');
+                    const first = START_TYPES.map((t) => rest.find((e) => typeOf.get(e) === t)).filter((e): e is MenuEntry => !!e);
+                    const starts = showMoreStarts ? rest : first;
                     const folder = all.find((e) => 'label' in e && e.label === '새 폴더')
                         ?? folderFallback('selection', tree.nodes[newFolderParent(tree, selectedId, isContainerType, 'selection')]?.type ?? 'folder')[0];
                     return (
@@ -568,6 +576,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             {starts.map((e, i) => 'label' in e && (
                                 <Button key={i} size="sm" variant="soft" tone="accent" block icon={e.icon} disabled={e.disabled} onClick={() => e.onClick?.()}>{e.label}</Button>
                             ))}
+                            {!showMoreStarts && rest.length > first.length && (
+                                <Button size="sm" variant="ghost" onClick={() => setShowMoreStarts(true)}>더 보기</Button>
+                            )}
                             {folder && 'label' in folder && !folder.disabled && (
                                 <Button size="sm" variant="ghost" onClick={() => folder.onClick?.()}>폴더 만들기</Button>
                             )}

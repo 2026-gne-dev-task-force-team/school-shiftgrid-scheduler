@@ -378,7 +378,7 @@ function createSlots(tree: Tree, parentId: string, parentType: string, seen: Set
  *   🔴 마지막에 그 부모가 accepts 로 이 타입을 받는지 한 번 더 묻는다: 안 받으면 루트에, 루트도 안 받으면 만들지 않고
  *      상태바 한 줄(메뉴만 보고 뚫는 것을 여기서 막는다 — move 의 canAccept 와 같은 결).
  */
-export function newNode(type: string, opts?: { via?: 'selection' | 'context'; targetId?: string }): void {
+export function newNode(type: string, opts?: { via?: 'selection' | 'context'; targetId?: string; openNow?: boolean }): void {
     if (state.loading) return;
     const via = opts?.via ?? 'selection';
     const basis = opts?.targetId !== undefined ? opts.targetId : state.selectedId;
@@ -413,15 +413,22 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     const inputPatch = ci
         ? { renameKind: 'create', renameInitial: '', renamePlaceholder: ci.placeholder ?? null }
         : { renameKind: 'name', renameInitial: null, renamePlaceholder: null };
-    pendingOpenId = ci ? null : id;
+    // 🔑 openNow(빈 탐색기 처음 단추) — 이름칸을 안 띄우고 만들자마자 가운데 탭에 연다(이름은 열린 화면에서). createInput 타입은 값 입력이 필요해 기존 길.
+    const openNow = !!opts?.openNow && !ci;
+    pendingOpenId = ci || openNow ? null : id;
     apply(
         (t) => {
             const made = createNode(t, parent, { id, type, name, data: init.data }, uniqueOf, permitCreate);
             if (made === t) return t;                                     // 관문에 막힘(이론상 위에서 걸러짐)
             return createSlots(made, id, type, new Set());                // 🔑 자동 슬롯 — 한 묶음(되돌리기 한 번)
         },
-        { patch: { ...singleSel(id), renamingId: id, ...inputPatch } },
+        { patch: openNow ? { ...singleSel(id) } : { ...singleSel(id), renamingId: id, ...inputPatch } },
     );
+    if (openNow && state.tree.nodes[id]) {
+        openById(id);
+        const sel = FOCUS_ON_OPEN[type];
+        if (sel) focusWhenReady(sel.selector, sel.select);
+    }
 }
 
 /**
