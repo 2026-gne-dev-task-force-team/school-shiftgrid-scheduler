@@ -448,12 +448,12 @@ export function renameSelected(): void {
 export function removeSelected(): void {
     const ids = state.selectedIds.filter((id) => id !== state.tree.root && id !== state.tree.trash && state.tree.nodes[id]);
     if (ids.length === 0) return;
-    // 🔑 can.delete 로 지울 수 있는 것만(막힌 건 조용히 빠진다 — 메뉴는 이미 회색이지만 단축키·멀티 선택 대비).
+    // 🔑 can.delete 로 지울 수 있는 것만(메뉴는 이미 회색이지만 단축키·멀티 선택 대비). 🔴 하나도 못 지우면 까닭을 알린다(Q5-C — 조용히 안 되는 것 금지).
     const deletable = topmostOnly(state.tree, ids).filter((id) => {
         const n = state.tree.nodes[id];
         return !!n && canDo(n.type, id, 'delete');
     });
-    if (deletable.length === 0) return;
+    if (deletable.length === 0) { flashNotice('지울 수 없는 노드입니다 — 지금 계정에 삭제 권한이 없거나 고정된 구조물입니다.'); return; }
     // 🔑 confirmDelete — 지울 것 중 하나라도 노드 타입이 경고를 요청하면 먼저 인라인으로 묻는다(⛔ window.confirm 안 씀).
     const msg = deletable
         .map((id) => { const n = state.tree.nodes[id]; return n ? confirmDeleteMsg(n.type, id) : null; })

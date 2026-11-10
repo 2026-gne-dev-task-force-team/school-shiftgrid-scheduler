@@ -14,7 +14,8 @@ import type { NodesApi, Node, PublicNode } from '../explorer/contracts/nodes';
 import { accountPlugin } from './index';
 import * as core from './core';
 import * as credCore from './credential/core';
-import { SECRET_TYPE, accountNodeTypeImpl } from './nodes';
+import { SECRET_TYPE, ROOT_TYPE, USER_TYPE, ROLE_TYPE, POLICY_TYPE, accountNodeTypeImpl, accountNodeTypes } from './nodes';
+import { registerType, clearTypes, canDo } from '../explorer/model/types';
 import * as credDialog from './credential/dialog';
 
 // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속 셋(identity·credential·permit)은 account 꾸러미가 들고 온다(contributes.interfaces).
@@ -658,5 +659,31 @@ describe('Q11 — 계정 손질', () => {
         const dump = JSON.stringify(nodes.allData()) + JSON.stringify(notes);
         expect(dump).not.toContain('PlainSecret-77');
         expect(dump).not.toContain('MasterPlain-99');
+    });
+});
+
+// ─────────────────────────── Q5-C — 마스터 + 프로젝트 암호 상태에서 계정 노드 지우기(쥔님 2026-11-10 「삭제 안됨 · 버그」) ───────────────────────────
+describe('Q5-C — 계정 노드 지우기 관문(탐색기 canDo)', () => {
+    afterEach(() => { clearTypes(); });
+    // 탐색기 api.ts registerContributed 와 같은 결로 등록 — can·confirmDelete 는 impl, unique 는 매니페스트에서.
+    const reg = (item: (typeof accountNodeTypes)[number]) => {
+        const fns = item.impl ? (accountNodeTypeImpl as Record<string, { can?: unknown; confirmDelete?: unknown }>)[item.impl] : undefined;
+        registerType({ type: item.type, label: item.label, icon: 'file', container: item.container, unique: item.unique, record: item.record, can: fns?.can, confirmDelete: fns?.confirmDelete } as Parameters<typeof registerType>[0]);
+    };
+
+    it('마스터(암호 걸고 로그인)는 계정 루트·사용자·역할을 지울 수 있다 · 손님은 루트를 못 지운다', async () => {
+        const nodes = makeNodes();
+        activateAll([...BASE(), nodes.plugin, accountPlugin]);
+        for (const t of accountNodeTypes) reg(t);
+        await core.setProjectPassword('', 'master-pw');
+        await core.loginMaster('master-pw');
+        expect(core.getCurrent().kind).toBe('master');
+        expect(canDo(ROOT_TYPE, 'r', 'delete')).toBe(true);
+        expect(canDo(USER_TYPE, 'u', 'delete')).toBe(true);
+        expect(canDo(ROLE_TYPE, 'g', 'delete')).toBe(true);
+        expect(canDo(POLICY_TYPE, 'p', 'delete')).toBe(false);   // 정책 싱글톤은 계속 막힌다
+        core.logout();
+        expect(core.getCurrent().kind).toBe('guest');
+        expect(canDo(ROOT_TYPE, 'r', 'delete')).toBe(false);
     });
 });
