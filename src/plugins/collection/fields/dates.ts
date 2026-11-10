@@ -4,6 +4,7 @@
  *   time 이면 start 가 'YYYY-MM-DDTHH:MM', range 면 end 가 붙는다. 저장은 늘 이 꼴.
  */
 import type { DateValue } from '../contracts/collection';
+import { isPattern, patternSummary } from '../../../pane-ui-system/date-pattern';
 
 const DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;
 
@@ -20,7 +21,7 @@ export function toDateValue(v: unknown): DateValue | null {
         const start = cleanStamp(o.start);
         if (!start) return null;
         const end = cleanStamp(o.end);
-        return end ? { start, end } : { start };
+        return { start, ...(end ? { end } : {}), ...(isPattern(o.pattern) ? { pattern: o.pattern } : {}) };
     }
     return null;
 }
@@ -36,6 +37,8 @@ function stampText(s: string): string {
 export function dateText(v: unknown): string {
     const dv = toDateValue(v);
     if (!dv) return '';
+    // 반복 — 「↻ 매주 월 · 11/3부터」. shortcut: 붙여넣기(parseDateText)는 이 글자에서 패턴을 못 되살린다
+    if (dv.pattern) return `↻ ${patternSummary(dv.pattern, dv.start)} · ${+dv.start.slice(5, 7)}/${+dv.start.slice(8, 10)}부터`;
     return dv.end ? `${stampText(dv.start)} ~ ${stampText(dv.end)}` : stampText(dv.start);
 }
 
