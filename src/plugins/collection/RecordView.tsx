@@ -957,12 +957,12 @@ export function RecordView<T>({
                     {rows.length === 0 && (records.length > 0 && !manualOrder ? (
                         // 걸린 조건 때문에 0개 — 데이터가 없는 게 아니다. 조건을 지우는 길을 바로 준다
                         <div data-rv-empty="filtered">
-                            <EmptyState compact icon="filter" title="조건에 맞는 항목 없음"
+                            <EmptyState compact icon="filter" title="조건에 맞는 항목이 없습니다" description="걸어 둔 조건 때문에 모두 가려져 있습니다."
                                 action={{ label: '필터 삭제', onClick: () => { setSearch(''); patchView({ filter: EMPTY_FILTER }); } }} />
                         </div>
                     ) : (
                         <div data-rv-empty>
-                            <EmptyState compact icon="table" title="표시할 행이 없습니다"
+                            <EmptyState compact icon="table" title="아직 항목이 없습니다"
                                 action={usage && usage.length > 0 && onAddRecord ? { label: '새 행 추가', onClick: () => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); } } : undefined}
                                 description={<>
                                     {description?.trim() && <span data-rv-empty-desc className="block text-text/80 mb-1">{description}</span>}

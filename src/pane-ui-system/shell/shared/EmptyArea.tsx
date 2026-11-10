@@ -7,6 +7,7 @@
  * ⭐ 빈 면 우클릭(손가락은 길게) → 뷰 등록소 목록에서 「여기에 열기」.
  */
 import { useCallback, useState } from 'react';
+import { EmptyState } from '../../primitives/EmptyState';
 import { IconButton } from '../../primitives/IconButton';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
 import { useContextTrigger } from '../../interactive/useContextTrigger';
@@ -59,9 +60,7 @@ export function EmptyArea({
             {/* 🔴 data-empty-area — 드롭이 여기로 떨어지면 그 자리(left/right) 이름으로 moveLeaf(resolveDropAt) */}
             <div className="flex-1 min-h-0 grid place-items-center bg-side px-8 py-6 text-center" data-empty-area={chrome?.side} {...trigger}>
                 {/* 🔴 상자 배경 없이 글자만 · 좁아도 자연스럽게 줄바꿈(max-w + text-balance) · 세로 가운데(항목 3) */}
-                <p className="max-w-[15rem] text-body text-muted/80 select-none leading-relaxed text-balance">
-                    비어 있습니다. 여기로 끌어오거나 메뉴로 보내세요.
-                </p>
+                <EmptyState compact title="비어 있는 자리입니다" description="탭을 여기로 끌어 놓거나, 탭 메뉴에서 이 자리로 보내면 나타납니다." />
             </div>
             {menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={close} />}
         </div>

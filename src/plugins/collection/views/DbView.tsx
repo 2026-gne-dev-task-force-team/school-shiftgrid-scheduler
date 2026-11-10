@@ -54,7 +54,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
         return <StartScreen leafId={leaf.id} />;   // 보고 있는 게 없으면 시작 화면(새로 만들기 + 만들어 둔 목록)
     }
     const { id } = snap;
-    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 시스템이 꺼져 있습니다." />;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 화면 기능이 꺼져 있습니다. 설정에서 켜면 나타납니다." />;
 
     return (
         <div ref={rootRef} className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>

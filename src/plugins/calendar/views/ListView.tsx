@@ -140,7 +140,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
             /* 표 — 날짜·시간·제목·저장소(레코드 뷰가 꺼져 있을 때) */
             <div className="flex-1 min-h-0 overflow-auto border-t border-line" {...range.bind}>
                 {rows.length === 0 ? (
-                    <EmptyState compact icon="calendar" title={query ? '찾는 일정이 없다' : '일정이 없다'} description={query ? undefined : '「새 일정」이나 달력 칸 더블클릭으로'} />
+                    <EmptyState compact icon="calendar" title={query ? '찾는 일정이 없습니다' : '아직 일정이 없습니다'} description={query ? '다른 낱말로 찾아 보세요.' : '달력 칸을 두 번 눌러도 만들 수 있습니다.'} action={query ? undefined : { label: words.newEvent, onClick: newEvent, icon: 'plus' }} />
                 ) : (
                     <table className="w-full text-small text-text border-collapse">
                         <thead className="sticky top-0 bg-bg">

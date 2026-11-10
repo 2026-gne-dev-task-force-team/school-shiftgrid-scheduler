@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../../primitives/Button';
 import { ConfirmDialog } from '../../primitives/ConfirmDialog';
+import { EmptyState } from '../../primitives/EmptyState';
 import { Icon } from '../../primitives/Icon';
 import { ViewHeader } from '../../primitives/ViewHeader';
 import {
@@ -85,7 +86,7 @@ export function NotifyPanel() {
                 </ConfirmDialog>
             )}
             {shown.length === 0
-                ? <div className="px-pad py-4 text-small text-muted">알림이 없습니다.</div>
+                ? <EmptyState compact icon="info" title="알림이 없습니다" description="저장 실패나 안내가 생기면 여기에 나타납니다." />
                 : <ul className="flex-1 min-h-0 overflow-y-auto">{shown.map((it) => <Entry key={it.id} it={it} />)}</ul>}
         </div>
     );

@@ -570,9 +570,9 @@ describe('R4 — 빈 상태 · 제목 없음 · 새 행', () => {
         const [views, setViews] = useState<ViewDef[]>(FILT);
         return <RecordView<Rec> fields={START} records={rows} getId={(r) => r.id} viewKey="t.empty" titleKey="f_t" views={views} onViewsChange={setViews} onCellChange={() => {}} />;
     }
-    it('필터 때문에 0개면 「조건에 맞는 항목 없음」 + 「필터 삭제」가 행을 되살린다', () => {
+    it('필터 때문에 0개면 「조건에 맞는 항목이 없습니다」 + 「필터 삭제」가 행을 되살린다', () => {
         mount(<FilterHarness rows={[{ id: 'r1', f_t: '가', f_x: 'a' }]} />);
-        expect(q('[data-rv-empty="filtered"]')!.textContent).toContain('조건에 맞는 항목 없음');
+        expect(q('[data-rv-empty="filtered"]')!.textContent).toContain('조건에 맞는 항목이 없습니다');
         expect(q('[data-rv-row="r1"]')).toBeNull();
         const btn = qa('[data-rv-empty="filtered"] button').find((b) => b.textContent!.includes('필터 삭제'))!;
         click(btn);
