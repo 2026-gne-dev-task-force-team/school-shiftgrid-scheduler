@@ -52,6 +52,9 @@ describe('시간표 툴바', () => {
     it('툴바가 뜨고 아이콘 버튼엔 aria-label·title', () => {
         mount();
         expect(q('[role="toolbar"]')).not.toBeNull();
+        const bar = q('[role="toolbar"]')!;
+        expect(bar.className).toContain('flex-wrap');
+        expect(bar.innerHTML).not.toContain('overflow-x-auto');
         for (const l of ['되돌리기', '다시하기', '교시 삭제', '더보기'].filter((x) => x !== '더보기')) {
             expect(btn(l).getAttribute('aria-label')).toBe(l);
             expect(btn(l).title).toBeTruthy();
