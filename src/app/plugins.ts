@@ -25,6 +25,7 @@ import { roomsPlugin } from '../plugins/rooms';
 import { roomBookingPlugin } from '../plugins/room-booking';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
+import { paneTestPlugin } from '../plugins/pane-test';
 
 
 // 🔴 코어 넷(settings·explorer·selection·properties)은 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
@@ -46,4 +47,6 @@ export const PLUGINS: PluginModule[] = [
     roomsPlugin,             // 방 목록 꾸러미
     roomBookingPlugin,       // 방 예약 꾸러미 — 달력 프리셋 한 장
     timetableGridPlugin,     // 시간표 꾸러미(시트 확장)
+    // 🧪 개발 전용 — 개발 서버에서 주소 끝에 `?pane-test` 를 붙여 열면 Pane UI Test(부품 견본 포함)가 켜진다. 배포본·일반 화면엔 안 뜬다.
+    ...(import.meta.env.DEV && typeof window !== 'undefined' && window.location.search.includes('pane-test') ? [paneTestPlugin] : []),
 ];
