@@ -771,6 +771,7 @@ function BlockRow(props: RowProps) {
         >
             {/* 손잡이 — 끌어서 순서, 눌러서 메뉴. 마우스를 올리거나 활성 블록일 때만 보인다(터치는 활성 블록에서) */}
             <div className={`absolute -left-6 top-0.5 w-6 flex justify-center transition-opacity ${shown ? 'opacity-100' : 'opacity-0'}`}>
+                {/* oxlint-disable-next-line react/forbid-elements -- 블록 편집 — 본문 모양 */}
                 <button
                     type="button"
                     draggable
@@ -848,6 +849,7 @@ function listMarker(props: RowProps): ReactElement | null {
     if (block.type === 'numbered') return <span className="select-none text-muted pt-0.5 tabular-nums">{props.ordinal ?? 1}.</span>;
     if (block.type === 'todo') {
         return (
+            // oxlint-disable-next-line react/forbid-elements -- 블록 편집 — 본문 모양
             <input
                 type="checkbox"
                 checked={!!block.checked}
@@ -913,6 +915,7 @@ function Editable(props: RowProps) {
 function CodeBlock(props: RowProps) {
     const { block } = props;
     return (
+        // oxlint-disable-next-line react/forbid-elements -- 블록 편집 — 본문 모양
         <textarea
             ref={(el) => props.setEl(block.id, el)}
             value={block.text}

@@ -164,6 +164,7 @@ export function Toolbar({
             {/* 검색 */}
             <div className="flex items-center gap-1 h-row px-2 rounded border border-line bg-bg min-w-[120px]">
                 <Icon name="search" size={14} className="text-muted shrink-0" />
+                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                 <input
                     data-rv-search
                     value={search}
@@ -192,6 +193,7 @@ export function Toolbar({
                         {sorts.length === 0 && <span className="text-small text-muted px-1">정렬이 없습니다.</span>}
                         {sorts.map((rule, i) => (
                             <div key={i} className="flex items-center gap-1" data-rv-sort-row>
+                                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                                 <select
                                     className={`${selCls} flex-1`}
                                     value={rule.key}
@@ -199,6 +201,7 @@ export function Toolbar({
                                 >
                                     {fields.map((ff) => <option key={ff.key} value={ff.key}>{ff.label}</option>)}
                                 </select>
+                                {/* oxlint-disable-next-line react/forbid-elements -- 보기 도구줄 안 좁은 칸 */}
                                 <button
                                     type="button"
                                     data-rv-sort-dir

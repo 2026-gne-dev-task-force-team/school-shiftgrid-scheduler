@@ -72,6 +72,7 @@ export function ViewTabs({ views, activeId, fields, onSelect, onChange }: {
                             onCommit={(name) => rename(v.id, name)} onCancel={() => setRenaming(null)} />
                     </span>
                 ) : (
+                    // oxlint-disable-next-line react/forbid-elements -- 보기 탭 — 탭 모양
                     <button key={v.id} type="button" data-rv-view-tab={v.id} data-row-id={v.id} title={v.name} aria-selected={on} role="tab" tabIndex={on ? 0 : -1}
                         onClick={(e) => {
                             if (reorder.draggedRef.current) { reorder.draggedRef.current = false; return; }   // 끌기 끝에 따라오는 클릭은 삼킨다

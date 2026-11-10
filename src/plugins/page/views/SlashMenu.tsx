@@ -67,6 +67,7 @@ export function SlashMenu({ items, active, onPick }: {
             className="absolute z-20 mt-1 w-56 rounded-md border border-line bg-panel shadow-lg py-1 max-h-72 overflow-y-auto overscroll-contain"
         >
             {items.map((it, i) => (
+                // oxlint-disable-next-line react/forbid-elements -- 메뉴 줄 — 행 모양
                 <button
                     type="button"
                     key={it.type}

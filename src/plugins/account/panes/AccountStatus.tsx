@@ -111,6 +111,7 @@ export function AccountStatus({ host }: { host: PluginHost }) {
 
     return (
         <>
+            {/* oxlint-disable-next-line react/forbid-elements -- 상태 막대 칸 */}
             <button
                 ref={btnRef}
                 type="button"

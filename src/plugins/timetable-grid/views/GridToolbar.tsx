@@ -42,6 +42,7 @@ function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onG
     // 표가 바뀌면(되돌리기·교시 추가/삭제·선택 행 변경) 초안을 버리고 현재 값으로 다시 채운다.
     useEffect(() => { setDraft(null); }, [resetKey]);
     return (
+        // oxlint-disable-next-line react/forbid-elements -- TextInput 을 감싼 꼬리표
         <label className="flex shrink-0 items-center gap-1 text-micro text-muted">
             <span>{label}</span>
             <TextInput aria-label={label} disabled={disabled} title={disabled ? hint : undefined} placeholder={disabled ? hint : undefined} value={draft ?? value} inputMode="numeric"

@@ -68,23 +68,6 @@
       "rules": {
         "react/forbid-elements": "off"
       }
-    },
-    {
-      "files": [
-        "src/plugins/account/panes/AccountStatus.tsx",
-        "src/plugins/collection/RecordView.tsx",
-        "src/plugins/collection/Toolbar.tsx",
-        "src/plugins/collection/ViewTabs.tsx",
-        "src/plugins/page/views/NodeBlock.tsx",
-        "src/plugins/page/views/PageView.tsx",
-        "src/plugins/page/views/SlashMenu.tsx",
-        "src/plugins/sheet/Table.tsx",
-        "src/plugins/timetable-grid/views/GridToolbar.tsx",
-        "src/plugins/timetable-grid/views/TimeGrid.tsx"
-      ],
-      "rules": {
-        "react/forbid-elements": "off"
-      }
     }
   ]
 }
