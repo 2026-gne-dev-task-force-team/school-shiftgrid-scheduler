@@ -90,3 +90,21 @@ export function explainBlock(p: PluginStatus, plugins: PluginStatus[]): BlockCau
     }
     return causes;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 목록 층 나누기 — 🔴 하드코딩 목록이 아니라 매니페스트의 layer·core 선언에서 끌어낸다(쥔님 검수 K15).
+//   위에서 아래로: 도메인 특화 → 공통(app) → 기반(platform, 끌 수 있는 것) → 맨 밑 후라이팬(core 꾸러미).
+// ─────────────────────────────────────────────────────────────────────────────
+export interface LayerSection { key: 'domain' | 'app' | 'base' | 'core'; title: string; note: string; plugins: PluginStatus[] }
+
+export function groupByLayer(plugins: PluginStatus[]): LayerSection[] {
+    const core = plugins.filter((p) => p.core);
+    const rest = plugins.filter((p) => !p.core);
+    const sections: LayerSection[] = [
+        { key: 'domain', title: '업무 기능', note: '다른 기능 위에 얹혀, 학교 업무에 맞춘 것들입니다.', plugins: rest.filter((p) => p.layer === 'domain') },
+        { key: 'app', title: '공통 기능', note: '여러 기능이 함께 쓰는 범용 기능입니다.', plugins: rest.filter((p) => p.layer === 'app') },
+        { key: 'base', title: '기반 기능', note: '플랫폼 바로 위에서 다른 기능의 바탕이 됩니다.', plugins: rest.filter((p) => p.layer === 'platform') },
+        { key: 'core', title: '후라이팬 기본 기능', note: '후라이팬에 들어 있어 끌 수 없습니다.', plugins: core },
+    ];
+    return sections.filter((x) => x.plugins.length > 0);
+}

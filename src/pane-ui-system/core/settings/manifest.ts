@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'platform',
+    icon: 'gear',
     core: true,
     description: '앱의 설정을 모아 둔 화면입니다.',
     about: {

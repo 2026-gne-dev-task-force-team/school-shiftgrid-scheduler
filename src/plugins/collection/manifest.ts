@@ -11,6 +11,7 @@ export const manifest = {
     version: '0.2.0',
     minHostVersion: '0.1.0',
     layer: 'platform',
+    icon: 'database',
     description: '노션 데이터베이스처럼 칸과 행을 직접 만들어 쓰는 「컬렉션」. 탐색기에서 새로 만들 수 있고, 다른 꾸러미가 host.modules 로 이 화면을 빌려 쓸 수도 있어요.',
     about: {
         what: '노션 데이터베이스처럼 칸(글자·숫자·고르기·여러 개·날짜·체크)을 정하고 행을 넣는 표입니다. 칸을 눌러 바로 고치고, 조건으로 거르고, 원하는 순서로 정렬하고, 엑셀 표를 붙여넣어 한꺼번에 넣을 수 있습니다.',

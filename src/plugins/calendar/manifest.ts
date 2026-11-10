@@ -10,6 +10,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'app',
+    icon: 'calendar',
     description: '구글 캘린더 같은 달력을 보여 줍니다.',
     about: {
         what: '구글 캘린더처럼 달력을 보여 줍니다. 년·월·주·3일·하루 단위로 바꿔 볼 수 있고, 일정을 적어 둘 수 있습니다.',

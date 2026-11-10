@@ -71,6 +71,8 @@ export interface PluginManifest {
     minHostVersion: string;  // 모자라면 활성 안 함(P2)
     /** 층 — PLUGINS 줄 세우기의 기준(core 플랫폼 → app 범용 → domain 업무 도메인). 활성 순서는 requires 가 정한다. */
     layer?: PluginLayer;
+    /** 설정 「플러그인」 목록·상세 머리에 그리는 아이콘(선택 — 없으면 점). */
+    icon?: IconName;
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
     description?: string;     // 목록 줄에 보이는 한 줄 요약(쉬운 말)
     /** 🔴 상세에 보이는 사람용 설명 — 무엇을/이럴 때/끄면/같이(위 PluginAbout). 개발 낱말 금지. */

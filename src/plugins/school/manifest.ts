@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'home',
     description: '학교 하나와 학년도별 반 목록을 담습니다.',
     about: {
         what: '학교(이름·학교급·메모와 자유 글)를 하나 만들고, 학년도마다 반(학년·반·교실·도움반·메모)을 적어 둡니다. 학교를 먼저 만들어야 학년도를 만들 수 있습니다.',
