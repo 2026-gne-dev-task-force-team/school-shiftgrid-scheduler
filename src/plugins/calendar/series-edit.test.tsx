@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * C2c-2 — 「반복」 칸(setRecur) · 회차 단추(미루기·당기기·빠뜨리기·이후 전부·시리즈 열기) · 회차 휴지통 = skip.
+ * C2c-2 — 「반복」(setRecur · 패턴 편집기 · 속성 패널 PatternPane) · 회차 단추(미루기·당기기·빠뜨리기·이후 전부·시리즈 열기) · 회차 휴지통 = skip.
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -30,6 +30,8 @@ import { eventToStored } from './event-fields';
 import { isoMinuteOf, occId } from './events';
 import { occurrences, setRecur, nudge, splitSeries, patternOf, type SeriesData } from './series';
 import { EventCardPeek } from './views/EventCardPeek';
+import { PatternPane } from './views/SeriesControls';
+import { PatternEditor } from '../collection/fields/PatternEditor';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 class RO { observe() {} unobserve() {} disconnect() {} }
@@ -81,9 +83,12 @@ const plus = (s: string, days: number) => { const d = new Date(s); d.setDate(d.g
 let shown = '';
 function mountCard(id: string): HTMLElement {
     const RecordPage = (p: { id: string; after: React.ReactNode }) => { shown = p.id; return <div>{p.after}</div>; };
-    setCalendarHost({ ...host(), notify: () => '', modules: { use: () => ({ RecordPage }) } } as unknown as PluginHost);
+    setCalendarHost(cardHost(RecordPage));
     return render(<EventCardPeek eventId={id} onClose={() => { shown = ''; }} />);
 }
+const cardHost = (RecordPage?: unknown) => ({ ...host(), notify: () => '', modules: { use: () => ({ RecordPage, PatternEditor }) } } as unknown as PluginHost);
+/** 미니 달력에서 테두리(focus)가 걸린 날 */
+const focused = (el: HTMLElement) => [...el.querySelectorAll('[data-pattern-day]')].filter((b) => b.className.includes('!border-accent')).map((b) => b.getAttribute('data-pattern-day'));
 const click = (el: Element | null) => act(() => { (el as HTMLElement).click(); });
 const btn = (el: HTMLElement, text: string) => [...el.querySelectorAll('button')].find((b) => b.textContent?.includes(text)) ?? null;
 
@@ -104,16 +109,34 @@ describe('C2c-2 「반복」 칸 — setRecur', () => {
         expect(occs(id)).toEqual([]);
     });
 
-    it('카드: 반복 아닌 일정에서 「매주」를 고르면 규칙 일정이 되고 카드는 그 일정에 머문다', () => {
+    it('카드: 반복 아닌 일정에서 「반복 만들기」 → 규칙 일정 · 카드는 그 일정에 머물고 패턴 편집기가 뜬다', () => {
         const d = new Date(); d.setHours(9, 0, 0, 0);
         const s = isoMinuteOf(d);
         const id = api().create(store, { type: EVENT_TYPE, name: '보통', data: eventToStored({ start: s, end: s.replace('T09', 'T10'), allDay: false }) });
         const el = mountCard(id);
-        const sel = el.querySelector('select[aria-label="반복"]') as HTMLSelectElement;
-        act(() => { sel.value = 'weekly'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
-        expect(patternOf(dataOf(id))).toEqual({ rules: [{ freq: 'weekly', weekdays: [d.getDay()] }] });
+        expect(el.querySelector('[data-pattern-editor]')).toBeNull();
+        click(btn(el, '반복 만들기'));
+        expect(patternOf(dataOf(id))).toEqual({ rules: [{ freq: 'weekly' }] });
         expect(shown).toBe(id);
-        expect(el.querySelector('[data-cal-recur]')).not.toBeNull();
+        expect(el.querySelector('[data-pattern-editor]')).not.toBeNull();
+    });
+
+    it('카드: 패턴 편집기에서 날을 누르면 노드 values.when.pattern 이 바뀐다(빼기)', () => {
+        const { id, first } = weekly(3);
+        const el = mountCard(id);
+        click(el.querySelector(`[data-pattern-day="${first.slice(0, 10)}"]`));
+        const w = (dataOf(id).values as Record<string, { pattern?: unknown }>).when;
+        expect(w.pattern).toEqual({ rules: [{ freq: 'weekly', count: 3 }], exdates: [first.slice(0, 10)] });
+        expect(occs(id).map((o) => o.originalStart)).not.toContain(first);
+    });
+
+    it('카드: 가상 회차(고스트)로 열면 그 시리즈 패턴 + 그 회차가 강조된다', () => {
+        const { id } = weekly(3);
+        const second = occs(id)[1].originalStart!;
+        const el = mountCard(occId(id, second));
+        expect(el.querySelector('[data-pattern-editor]')).not.toBeNull();
+        expect(focused(el)).toEqual([second.slice(0, 10)]);
+        expect(el.querySelector('[data-cal-occ]')).not.toBeNull();   // 회차 단추는 그대로
     });
 });
 
@@ -175,6 +198,40 @@ describe('C2c-2 회차 단추', () => {
         click(el.querySelector('button[aria-label="더보기"]'));
         click([...document.querySelectorAll('[role="menuitem"]')].find((b) => b.textContent?.includes('시리즈 열기'))!);
         expect(shown).toBe(nid);
-        expect(el.querySelector('[data-cal-recur]')).not.toBeNull();
+        expect(el.querySelector('[data-pattern-editor]')).not.toBeNull();
+    });
+});
+
+describe('속성 패널 「날짜 패턴」(PatternPane)', () => {
+    it('규칙 일정 노드 → 편집기 · 실체 회차는 진하게(realStarts) · 고치면 시리즈에 쓴다', () => {
+        const { id, first } = weekly(3);
+        nudge(occs(id)[1], 1);
+        const el = render(<PatternPane host={cardHost()} target={{ type: EVENT_TYPE, id }} />);
+        expect(el.querySelector('[data-pattern-editor]')).not.toBeNull();
+        expect(focused(el)).toEqual([]);
+        click(el.querySelector(`[data-pattern-day="${first.slice(0, 10)}"]`));
+        expect(patternOf(dataOf(id))!.exdates).toEqual([first.slice(0, 10)]);
+    });
+
+    it('실체 회차 노드를 고르면 그 시리즈 패턴 + focus = 그 회차 원래 시작', () => {
+        const { id } = weekly(3);
+        const o = occs(id)[1];
+        const m = nudge(o, 1);
+        const el = render(<PatternPane host={cardHost()} target={{ type: EVENT_TYPE, id: m }} />);
+        expect(focused(el)).toEqual([o.originalStart!.slice(0, 10)]);
+        click(el.querySelector('[data-pattern-add-rule]'));
+        expect(patternOf(dataOf(id))!.rules).toHaveLength(2);   // 회차가 아니라 시리즈에 썼다
+        expect(patternOf(dataOf(m))).toBeUndefined();
+    });
+
+    it('반복 아닌 일정 → 「반복 만들기」 하나', () => {
+        const d = new Date(); d.setHours(9, 0, 0, 0);
+        const s = isoMinuteOf(d);
+        const id = api().create(store, { type: EVENT_TYPE, name: '보통', data: eventToStored({ start: s, end: s.replace('T09', 'T10'), allDay: false }) });
+        const el = render(<PatternPane host={cardHost()} target={{ type: EVENT_TYPE, id }} />);
+        expect(el.querySelector('[data-pattern-editor]')).toBeNull();
+        click(btn(el, '반복 만들기'));
+        expect(patternOf(dataOf(id))).toEqual({ rules: [{ freq: 'weekly' }] });
+        expect(el.querySelector('[data-pattern-editor]')).not.toBeNull();
     });
 });

@@ -12,6 +12,7 @@ import { fieldTypes } from './fields/registry';
 import { normalizeRelation, relationToText } from './schema';
 import { defineCollection } from './define';
 import { openRecordTab } from './tab-open';
+import { PatternEditor } from './fields/PatternEditor';
 
 export const recordViewApi: RecordViewApi = {
     version: 2,
@@ -22,4 +23,5 @@ export const recordViewApi: RecordViewApi = {
     schema: { planConvert, normalizeRelation, relationToText },
     defineCollection,
     openInTab: openRecordTab,
+    PatternEditor,
 };
