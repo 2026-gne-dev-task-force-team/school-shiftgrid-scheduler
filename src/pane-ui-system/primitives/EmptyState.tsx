@@ -27,7 +27,7 @@ export function EmptyState({ icon, title, description, action, compact = false, 
                 </span>
             )}
             <p className="text-lead font-medium text-text">{title}</p>
-            {description && <p className="max-w-xs text-small text-muted">{description}</p>}
+            {description && <div className="max-w-xs text-small text-muted">{description}</div>}
             {action && (
                 <Button className="mt-2 inline-flex items-center gap-1" onClick={action.onClick}>
                     {action.icon && <Icon name={action.icon} size={13} />}
