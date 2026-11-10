@@ -90,7 +90,7 @@ describe('달력 범위 저장소 휴지통 회귀', () => {
         expect(getState().selectedId).toBe(sid);
     });
 
-    it('V6 #3: 일정을 지우면 달력 툴바에 「지운 일정 1」 단추가 뜬다', () => {
+    it('V6 #3: 일정을 지우면 달력 툴바에 「삭제한 일정 1」 단추가 뜬다', () => {
         const api = getNodesApi()!;
         const sid = api.create(api.roots.main, { type: STORE_TYPE, name: '달력' });
         const eid = api.create(sid, { type: EVENT_TYPE, name: '회의' });
@@ -102,6 +102,6 @@ describe('달력 범위 저장소 휴지통 회귀', () => {
         expect(el.querySelector('[data-cal-deleted]')).toBeNull();
         act(() => { removeEvent(eid); });
         const btn = el.querySelector('[data-cal-deleted]');
-        expect(btn?.textContent).toContain('지운 일정 1');
+        expect(btn?.textContent).toContain('삭제한 일정 1');
     });
 });

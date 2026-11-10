@@ -28,7 +28,7 @@ import { selectionLabel, type CalSelection } from '../selection';
 
 const DENSE_DAYS = 14;   // 「분기 뷰」 — 2주. 쥔님: 분기 단위로 자르는 게 아니라 주보다 촘촘한 시간축
 
-/** 「지운 일정」 — 8초 알림을 놓쳐도 여기서 되살린다(일정은 탐색기 휴지통에 안 보인다). 없으면 단추도 없다. */
+/** 「삭제한 일정」 — 8초 알림을 놓쳐도 여기서 되살린다(일정은 탐색기 휴지통에 안 보인다). 없으면 단추도 없다. */
 function DeletedEvents() {
     const [, bump] = useState(0);
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
@@ -37,8 +37,8 @@ function DeletedEvents() {
     if (list.length === 0) return null;
     return (
         <>
-            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="지운 일정 되살리기">
-                <Icon name="trash" size={13} /> 지운 일정 {list.length}
+            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="삭제한 일정 되살리기">
+                <Icon name="trash" size={13} /> 삭제한 일정 {list.length}
             </Button>
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
