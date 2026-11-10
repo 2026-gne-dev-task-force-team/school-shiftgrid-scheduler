@@ -3,7 +3,7 @@
  *   실체 회차 = `calendar.event` + data.seriesId·data.originalStart(손댔을 때만 생긴다 — 🔴 자동 실체화 ⛔).
  *   계산은 recur/expand(순수), 쓰기는 NodesApi 하나로(nodes.ts 의 getNodesApi). 날짜는 전부 'YYYY-MM-DDTHH:mm'(종일은 'T00:00').
  */
-import type { PublicNode } from '../explorer/contracts/nodes';
+import type { PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Occurrence } from './contracts/calendar';
 import { expand, expandPattern, isPattern, ruleToPattern, type DatePattern, type RecurRule } from './recur';
 import type { DateValue } from '../collection/contracts/collection';

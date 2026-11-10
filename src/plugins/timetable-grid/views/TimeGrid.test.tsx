@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Q4 T5 시간표 그리드 — 시각 눈금 · 행 = 시각 띠(높이 ∝ 시간) · 칸 글자 · 행 시각 끌기 · 열 너비 끌기.
+ * Q4 T5 시간표 — 시각 눈금 · 행 = 시각 띠(높이 ∝ 시간) · 칸 글자 · 행 시각 끌기 · 열 너비 끌기.
  */
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -35,7 +35,7 @@ function type(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
     act(() => { el.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); });
 }
 
-describe('시간표 그리드(달력 주 보기 꼴)', () => {
+describe('시간표(달력 주 보기 꼴)', () => {
     it('왼쪽 시각 눈금 09:00~15:00 · 열 머리 월~금 · 칸 높이는 시간에 비례(50분 = 40px)', () => {
         mount();
         const text = document.body.textContent ?? '';

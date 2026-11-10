@@ -9,7 +9,7 @@
  *   ④ 만들기·고치기·휴지통·저장소 바꾸기 조작(전부 NodesApi 로)
  */
 // 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { notifyNodeUndo, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf, nodeIdOf } from './events';

@@ -6,7 +6,7 @@
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar, CalendarPreset } from '../calendar/contracts/calendar';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 
 const ROOM_LIST_TYPE = 'rooms.list';

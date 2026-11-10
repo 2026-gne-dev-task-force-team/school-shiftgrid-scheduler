@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NodeBlock } from './views/NodeBlock';
 import { initPageNodes } from './nodes';
-import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -3,7 +3,7 @@
  *   색은 토큰 클래스로만(구조 검사 ①).
  */
 import { useState } from 'react';
-import { Button, ConfirmDialog, Select } from '../../../pane-ui-system';
+import { Button, ConfirmDialog, Field, Select, TextInput } from '../../../pane-ui-system';
 import { getCurrent, hasProjectPassword, setProjectPassword, getKeepMinutes, setKeepMinutes } from '../core';
 import { useAccountVersion } from './useAccount';
 
@@ -34,11 +34,10 @@ export function ProjectPasswordPane() {
     // 로그인 유지(P4d A2) — 기기별이라 누구나 고른다. 기한이 지나면 다음에 열 때 손님으로 시작한다.
     const [keep, setKeep] = useState(() => String(getKeepMinutes()));
     const keepRow = (
-        <label className="flex items-center gap-2 text-small text-muted">
-            로그인 유지
+        <Field label="로그인 유지" layout="row">
             <Select value={keep} options={KEEP_OPTIONS}
                 onChange={(e) => { setKeep(e.target.value); setKeepMinutes(Number(e.target.value)); }} />
-        </label>
+        </Field>
     );
 
     if (!isMaster) {
@@ -59,21 +58,17 @@ export function ProjectPasswordPane() {
             <p className="text-small text-warn leading-relaxed">⚠️ 암호를 잊으면 되돌릴 방법이 없습니다(복구 수단 없음).</p>
 
             {has && (
-                <label className="flex flex-col gap-1 text-small text-muted">
-                    현재 암호
-                    <input type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)}
-                        className="rounded border border-line bg-side text-text px-2 py-1 text-body" />
-                </label>
+                <Field label="현재 암호">
+                    <TextInput type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} />
+                </Field>
             )}
-            <label className="flex flex-col gap-1 text-small text-muted">
-                {has ? '새 암호' : '암호'}
-                <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)}
-                    className="rounded border border-line bg-side text-text px-2 py-1 text-body" />
-            </label>
+            <Field label={has ? '새 암호' : '암호'}>
+                <TextInput type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+            </Field>
 
             <div className="flex items-center gap-2">
-                <Button variant="accent" size="md" onClick={apply}>{has ? '암호 바꾸기' : '암호 걸기'}</Button>
-                {has && <Button variant="ghost" size="md" onClick={() => setConfirmOff(true)}>암호 해제</Button>}
+                <Button variant="solid" tone="accent" onClick={apply}>{has ? '암호 바꾸기' : '암호 걸기'}</Button>
+                {has && <Button variant="outline" onClick={() => setConfirmOff(true)}>암호 해제</Button>}
             </div>
             {confirmOff && (
                 <ConfirmDialog title="프로젝트 암호를 해제할까요?" danger confirmLabel="해제" onConfirm={remove} onCancel={() => setConfirmOff(false)}>

@@ -2,7 +2,7 @@
  * W10a 시간 띠 — 행 길이가 1급 값 · 뒤 행 밀림 · 쉬는 시간은 갭 · 겹침 금지(경로마다) · 되돌리기 한 묶음 · 옛 자료 변환.
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import {
     blankTimetable, setCellText, setRowLength, setGapBefore, setRowTime, setRowTimeChecked, addRow, removeRow,
     rowLength, gapBefore, timelineProblem, guardTimeline, migrateBreakRows, normalizeTimetable, getCell, DAY_END,

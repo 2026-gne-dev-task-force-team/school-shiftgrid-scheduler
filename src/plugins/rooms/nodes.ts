@@ -6,7 +6,7 @@
  *   🔴 collection 꾸러미의 값은 import 못 한다(구조 검사 ⑨) — defineCollection 은 host.modules.use('collection') 로 받는다.
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g).
-import type { NodesApi, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { ROOM_CONFIG, LIST_TYPE, ROOM_TYPE } from './config';

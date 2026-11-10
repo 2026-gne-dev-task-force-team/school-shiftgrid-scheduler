@@ -18,6 +18,7 @@ import {
 } from '../../plugin/storage-errors';
 import { storageStatusKind } from './storage-status';
 import { FOCUS_RING } from '../../primitives/focus';
+import { Button } from '../../primitives/Button';
 
 const GAP = 6;
 
@@ -89,13 +90,7 @@ function ErrorListBody({ errors, onClose }: { errors: StorageError[]; onClose: (
         <>
             <div className="flex items-center justify-between gap-2 px-pad py-1.5 border-b border-line">
                 <span className="font-medium text-bad">저장 실패 {errors.length}</span>
-                <button
-                    type="button"
-                    onClick={() => { clearStorageErrors(); onClose(); }}
-                    className={`shrink-0 px-1.5 py-0.5 rounded text-muted hover:text-text hover:bg-text/[0.06] ${FOCUS_RING}`}
-                >
-                    지우기
-                </button>
+                <Button size="sm" variant="ghost" onClick={() => { clearStorageErrors(); onClose(); }}>지우기</Button>
             </div>
             <ul>
                 {errors.map((e) => (
@@ -146,6 +141,7 @@ export function StorageErrorStatus() {
 
     return (
         <>
+            {/* oxlint-disable-next-line react/forbid-elements -- 상태 막대 칸 — 막대 안 글자 크기 */}
             <button
                 ref={btnRef}
                 type="button"

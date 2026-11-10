@@ -7,7 +7,7 @@
  *   ⭐ 이 파일은 React 를 안 안다(화면은 views/CollectionTab·ItemProps) — 다만 Tab·Props 를 kit 에 붙이려 createElement 로 잇는다.
  */
 import { createElement } from 'react';
-import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, PluginHost, PeekHandle, PropertiesPaneProps } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
 import type { CollectionConfig, CollectionItem, CollectionKit, RecordCellValue, RecordField } from './contracts/collection';

@@ -1,5 +1,5 @@
 /**
- * 시간표 그리드 ↔ 노드 시스템 다리 — 🔴 시간표 한 장이 노드다. 저장·휴지통·복원은 노드 시스템이 쥔다
+ * 시간표 ↔ 노드 시스템 다리 — 🔴 시간표 한 장이 노드다. 저장·휴지통·복원은 노드 시스템이 쥔다
  *   (달력·명단 다리와 같은 규칙). ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만.
  *
  * 이 모듈이 쥐는 것:
@@ -9,7 +9,7 @@
  *   ④ 일정 목록 계산(schedule.ts)
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { TimetableData, ScheduleEntry } from './types';
 import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { blankTimetable, guardTimeline, normalizeTimetable } from './model';

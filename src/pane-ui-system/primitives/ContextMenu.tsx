@@ -27,6 +27,9 @@ export type MenuEntry =
         /** 오른쪽 회색 단축키 글자(보여주기만) */
         shortcut?: string;
         disabled?: boolean;
+        /** 'danger' 면 위험색 */
+        tone?: 'danger';
+        /** @deprecated tone: 'danger' */
         danger?: boolean;
         /** 🔴 동작은 commandId 로 — ContextMenu 가 onCommand(id, arg) 로 부른다(「모든 동작은 명령」). */
         commandId?: string;
@@ -105,6 +108,7 @@ export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
                                 label={it.label}
                                 icon={it.icon}
                                 shortcut={it.shortcut}
+                                tone={it.tone}
                                 danger={it.danger}
                                 disabled={it.disabled}
                                 onSelect={() => {

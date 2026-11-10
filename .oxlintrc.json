@@ -12,6 +12,62 @@
       {
         "allowConstantExport": true
       }
+    ],
+    "react/forbid-elements": [
+      "error",
+      {
+        "forbid": [
+          {
+            "element": "button",
+            "message": "공통 부품 Button·IconButton 을 쓴다 (src/pane-ui-system/primitives/README.md)"
+          },
+          {
+            "element": "input",
+            "message": "공통 부품 TextInput·NumberInput·Checkbox 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "select",
+            "message": "공통 부품 Select 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "textarea",
+            "message": "공통 부품 Textarea 를 쓴다 (primitives/README.md)"
+          },
+          {
+            "element": "label",
+            "message": "공통 부품 Field 로 이름표를 단다 (primitives/README.md)"
+          }
+        ]
+      }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/pane-ui-system/primitives/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    },
+    {
+      "files": [
+        "src/plugins/calendar/**",
+        "src/plugins/collection/fields/**",
+        "src/plugins/room-booking/**",
+        "src/plugins/rooms/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    },
+    {
+      "files": [
+        "src/plugins/pane-test/**"
+      ],
+      "rules": {
+        "react/forbid-elements": "off"
+      }
+    }
+  ]
 }

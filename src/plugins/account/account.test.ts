@@ -9,13 +9,13 @@ import { activateAll, disablePlugin, enablePlugin, listPlugins, disposeOwner } f
 import type { PluginModule, PluginHost } from '../../pane-ui-system/plugin';
 import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
-import type { NodesApi, Node, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, Node, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 
 import { accountPlugin } from './index';
 import * as core from './core';
 import * as credCore from './credential/core';
 import { SECRET_TYPE, ROOT_TYPE, USER_TYPE, ROLE_TYPE, POLICY_TYPE, accountNodeTypeImpl, accountNodeTypes } from './nodes';
-import { registerType, clearTypes, canDo } from '../explorer/model/types';
+import { registerType, clearTypes, canDo } from '../../pane-ui-system/core/nodes/model/types';
 import * as credDialog from './credential/dialog';
 
 // 🔴 꾸러미 전환(2026-11-08 「플러그인은 꾸러미다」) — 약속 셋(identity·credential·permit)은 account 꾸러미가 들고 온다(contributes.interfaces).

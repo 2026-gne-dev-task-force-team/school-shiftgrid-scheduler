@@ -9,7 +9,7 @@ export interface HostService { label: string; desc: string; example: string }
 
 export const HOST_SERVICES: Record<keyof PluginHost, HostService> = {
     id: { label: '내 이름표', desc: '플러그인이 자기 id 를 아는 칸입니다.', example: '저장 키·알림 보낸이 표시에 쓰입니다' },
-    hostVersion: { label: '바닥 판', desc: '지금 돌고 있는 바닥의 버전입니다.', example: '요구 판(minHostVersion)과 맞는지 가늠' },
+    hostVersion: { label: '후라이팬 판', desc: '지금 돌고 있는 후라이팬의 버전입니다.', example: '요구 판(minHostVersion)과 맞는지 가늠' },
     views: { label: '뷰 보기', desc: '등록된 화면(뷰)을 찾아 읽습니다. 등록은 매니페스트로만 합니다.', example: '설정 상세가 이 플러그인의 뷰 목록을 그림' },
     commands: { label: '명령 실행', desc: '「모든 동작은 명령」 — 리본·메뉴·팔레트가 같은 길로 명령을 부릅니다.', example: '휴지통 이동 알림의 「되돌리기」 단추' },
     menu: { label: '탭 메뉴 더하기', desc: '탭을 우클릭했을 때 뜨는 메뉴에 항목을 보탭니다.', example: '탐색기의 「이름 바꾸기」' },
