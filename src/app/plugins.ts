@@ -10,8 +10,7 @@
  * 🔴 ⭐ 2026-11-08 「플러그인은 꾸러미다」(쥔님 18:55) — 약속(contract-*)을 터뜨려 두지 않고 **꾸러미 안으로 묶었다**.
  *    약속(타입)·제공 부품은 그 꾸러미 폴더 안의 부품이고 따로 토글되지 않는다. 약속은 꾸러미가
  *    매니페스트 contributes.interfaces 로 들고 온다(옛 별도 contract-* 플러그인 7개 삭제). 켜고 끄는 단위 = 꾸러미 하나.
- *    ⛔ 미등록 약속 폴더 여섯(contract-absence·clock·export·roster·timetable·week-grid)은 소비자·제공자가 생길 때
- *       그 꾸러미로 들어간다 — 지금은 PLUGINS 에 없다(「필요 없는 건 안 박힌다」).
+ *    📌 미등록 약속 폴더 여섯(contract-absence·clock·export·roster·timetable·week-grid)은 2026-11-10 쥔님 지시로 전부 걷었다 — 다시 정의한다.
  */
 import type { PluginModule } from '../pane-ui-system/plugin';
 import { settingsPlugin } from '../plugins/settings';
