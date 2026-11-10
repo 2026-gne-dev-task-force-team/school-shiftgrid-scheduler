@@ -56,7 +56,7 @@ function BarButton({ icon, label, onClick, badge }: Omit<BarItem, 'id' | 'pinned
                 <span
                     aria-hidden="true"
                     className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-[3px] grid place-items-center
-                        rounded-full bg-accent text-bg text-[10px] leading-none font-medium"
+                        rounded-full bg-accent text-bg text-micro leading-none font-medium"
                 >
                     {badge > 99 ? '99+' : badge}
                 </span>

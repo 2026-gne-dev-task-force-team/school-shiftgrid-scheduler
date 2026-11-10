@@ -92,7 +92,7 @@ export function Row({
             {glyph
                 ? <span className="shrink-0 w-4 text-center text-small leading-none" aria-hidden="true">{glyph}</span>
                 : icon && <Icon name={icon} size={15} className="shrink-0" />}
-            <span className="flex-1 min-w-0 truncate text-[13px] leading-none">{label}</span>
+            <span className="flex-1 min-w-0 truncate text-body leading-none">{label}</span>
             {end && (
                 <span
                     className={`items-center shrink-0 ${revealOnHover ? `flex hover-only ${active ? 'opacity-100' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}` : 'flex'}`}

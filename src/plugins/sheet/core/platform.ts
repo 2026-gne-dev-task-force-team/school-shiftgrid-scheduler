@@ -1,9 +1,3 @@
-/** 단축키 안내에 쓰는 보조키 이름 — 맥은 ⌘, 그 밖은 Ctrl(학교 윈도우 PC 엔 ⌘ 가 없다). 엔진 안에서 판단한다. */
-export const MOD: string =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '')
-        ? '⌘'
-        : 'Ctrl';
-
 /**
  * W-X 세로로 「실제로 보이는 띠」 — 표 상자 자신이 아니라 세로로 스크롤되는 가장 가까운 조상(없으면 창)을 찾는다.
  *   🔴 표 상자(containerRef)는 가로만 스크롤된다 — 세로는 바깥 틀(Frame scroll)이 굴러서 box.clientHeight = 표 전체 높이였다

@@ -129,7 +129,7 @@ export function DatePicker({
             {/* 머리줄 — ◀ 2026년 11월 ▶ */}
             <div className="flex items-center justify-between gap-1 px-1 pb-1">
                 <IconButton icon="left" label="이전 달" size={15} onClick={() => stepMonth(-1)} />
-                <span className="flex-1 text-center text-[13px] font-semibold leading-none">
+                <span className="flex-1 text-center text-body font-semibold leading-none">
                     {monthLabel(view.y, view.m)}
                 </span>
                 <IconButton icon="right" label="다음 달" size={15} onClick={() => stepMonth(1)} />
@@ -138,7 +138,7 @@ export function DatePicker({
             {/* 요일 머리 */}
             <div className="grid grid-cols-7">
                 {weekdayIdx.map((wd) => (
-                    <div key={wd} className="grid place-items-center text-[11px] text-muted leading-none py-1">
+                    <div key={wd} className="grid place-items-center text-note text-muted leading-none py-1">
                         {WD_SHORT[wd]}
                     </div>
                 ))}
@@ -171,7 +171,7 @@ export function DatePicker({
                             data-iso={cell.iso}
                             tabIndex={cell.iso === focused ? 0 : -1}
                             onClick={() => pick(cell)}
-                            className={`grid place-items-center aspect-square rounded text-[12px] leading-none cursor-pointer
+                            className={`grid place-items-center aspect-square rounded text-small leading-none cursor-pointer
                                 transition-colors ${tone} ${todayRing}
                                 ${FOCUS_RING}`}
                         >
@@ -183,7 +183,7 @@ export function DatePicker({
 
             {time && (
                 <div className="flex items-center gap-1.5 px-1 pt-2 mt-1 border-t border-line">
-                    <span className="text-[11px] text-muted">시각</span>
+                    <span className="text-note text-muted">시각</span>
                     <input
                         type="time"
                         data-dp-time
@@ -193,7 +193,7 @@ export function DatePicker({
                             setClock(t);
                             if (value) onChange(`${value.slice(0, 10)}T${t}`);
                         }}
-                        className="flex-1 h-row px-2 rounded border border-line bg-bg text-[12px] text-text outline-none"
+                        className="flex-1 h-row px-2 rounded border border-line bg-bg text-small text-text outline-none"
                     />
                 </div>
             )}

@@ -17,7 +17,7 @@ export function PropertiesBody({ target }: { target: PropertiesTarget | null }) 
         <div className="flex flex-col">
             {panes.map(({ owner, id, title, Pane }) => (
                 <section key={`${owner}:${id}`} className="border-b border-line">
-                    <h3 className="px-pad pt-2 pb-1 text-[12px] text-muted select-none">{title}</h3>
+                    <h3 className="px-pad pt-2 pb-1 text-small text-muted select-none">{title}</h3>
                     <div className="px-pad pb-2"><Pane target={target} /></div>
                 </section>
             ))}

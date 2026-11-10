@@ -42,11 +42,11 @@ export function RibbonSheet({
                             hover:bg-text/[0.06] ${FOCUS_RING}`}
                     >
                         <Icon name={v.icon ?? 'dot'} size={18} />
-                        <span className="min-w-0 flex-1 truncate text-left text-[14px]">{v.title}</span>
+                        <span className="min-w-0 flex-1 truncate text-left text-lead">{v.title}</span>
                     </button>
                 ))}
                 {visible.length === 0 && (
-                    <p className="px-pad py-6 text-center text-[13px] text-muted/80 select-none">리본에 올린 항목이 없습니다.</p>
+                    <p className="px-pad py-6 text-center text-body text-muted/80 select-none">리본에 올린 항목이 없습니다.</p>
                 )}
             </div>
         </BottomSheet>

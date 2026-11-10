@@ -21,12 +21,12 @@ export function PropertyField({
     const [draft, setDraft] = useState(value);
     useEffect(() => { setDraft(value); }, [value]);
     const commit = () => { if (onCommit && draft !== value) onCommit(draft); };
-    const cls = 'rounded border border-line bg-side text-text px-2 py-1 text-[13px] w-full';
+    const cls = 'rounded border border-line bg-side text-text px-2 py-1 text-body w-full';
     return (
-        <label className="flex flex-col gap-1 text-[12px] text-muted">
+        <label className="flex flex-col gap-1 text-small text-muted">
             {label}
             {!onCommit ? (
-                <span className="text-[13px] text-text whitespace-pre-wrap break-words">{value || '—'}</span>
+                <span className="text-body text-text whitespace-pre-wrap break-words">{value || '—'}</span>
             ) : multiline ? (
                 <textarea
                     value={draft} placeholder={placeholder} rows={3}

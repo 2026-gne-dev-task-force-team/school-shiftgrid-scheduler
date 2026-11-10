@@ -73,18 +73,18 @@ const DayHeader = memo(function DayHeader(
             {dense && (
                 <div className="relative shrink-0 border-b border-line" style={{ height: MONTH_BAND }}>
                     {showMonth && (
-                        <span className="absolute left-1 top-0 whitespace-nowrap text-[11px] font-medium text-text leading-[18px]">
+                        <span className="absolute left-1 top-0 whitespace-nowrap text-note font-medium text-text leading-[18px]">
                             {monthLabel(d.getFullYear(), d.getMonth() + 1)}
                         </span>
                     )}
                 </div>
             )}
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-0.5">
-                <span className="text-[11px] text-muted">{WEEKDAYS[d.getDay()]}</span>
+                <span className="text-note text-muted">{WEEKDAYS[d.getDay()]}</span>
                 {isToday ? (
                     <span className="grid place-items-center min-w-6 h-6 px-1 rounded-full bg-accent text-bg text-body font-semibold tabular-nums whitespace-nowrap">{label}</span>
                 ) : (
-                    <span className="leading-6 text-[13px] text-text tabular-nums">{label}</span>
+                    <span className="leading-6 text-body text-text tabular-nums">{label}</span>
                 )}
             </div>
             {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
@@ -113,8 +113,8 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
             className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
             style={{ top, height }}
         >
-            <div className="truncate text-[10px] leading-4 text-text">{e.name || <span className="opacity-60">제목 없음</span>}</div>
-            <div className="truncate text-[9px] leading-3 text-muted tabular-nums">{hhmm(e.startMs)}</div>
+            <div className="truncate text-micro leading-4 text-text">{e.name || <span className="opacity-60">제목 없음</span>}</div>
+            <div className="truncate text-micro leading-3 text-muted tabular-nums">{hhmm(e.startMs)}</div>
         </div>
     );
 }
@@ -277,7 +277,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>
@@ -288,7 +288,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                     <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
                     {/* 「분기 뷰」(days=14)만 — 보고 있는 맨 왼쪽 날 기준 분기 한 줄(명목). 다른 폭엔 안 뜬다. */}
                     {days === DENSE_DAYS && cols.length > 0 && (
-                        <div className="text-[11px] text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>
+                        <div className="text-note text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>
                     )}
                 </div>
             </CalBar>
@@ -318,7 +318,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span
                                     key={h}
-                                    className="absolute left-1 -translate-y-1/2 text-[11px] text-muted tabular-nums select-none"
+                                    className="absolute left-1 -translate-y-1/2 text-note text-muted tabular-nums select-none"
                                     style={{ top: h * HOUR_H }}
                                 >
                                     {hourLabel(h)}

@@ -918,7 +918,7 @@ function CodeBlock(props: RowProps) {
             value={block.text}
             spellCheck={false}
             rows={Math.max(2, block.text.split('\n').length)}
-            className="my-1 w-full rounded border border-line bg-text/[0.03] px-3 py-2 text-[13px] font-mono text-text outline-none resize-none"
+            className="my-1 w-full rounded border border-line bg-text/[0.03] px-3 py-2 text-body font-mono text-text outline-none resize-none"
             style={{ userSelect: 'text' as const, WebkitUserSelect: 'text' }}
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={() => props.onFocusActive(block.id)}

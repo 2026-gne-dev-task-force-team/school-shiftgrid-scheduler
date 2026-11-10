@@ -74,7 +74,7 @@ function Popover({ anchor, label, width, onClose, children }: {
             role="dialog"
             aria-label={label}
             className="fixed z-[200] max-w-[90vw] max-h-[50vh] overflow-auto
-                rounded-md border border-line bg-panel shadow-lg text-[12px] select-none"
+                rounded-md border border-line bg-panel shadow-lg text-small select-none"
             style={{ left: pos.left, top: pos.top, width }}
         >
             {children}

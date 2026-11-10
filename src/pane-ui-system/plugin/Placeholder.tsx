@@ -21,8 +21,8 @@ export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string
             <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
                 <div className="flex flex-col items-center gap-3 max-w-[22rem]">
                     <Icon name="warn" size={28} className="text-warn/60" />
-                    <p className="text-[13px] text-text leading-relaxed select-none">「{owner.name}」 플러그인이 의존을 못 채웠습니다.</p>
-                    {owner.reason && <p className="text-[12px] text-muted leading-relaxed select-none">{owner.reason.replace(/^꺼짐 — /, '')}</p>}
+                    <p className="text-body text-text leading-relaxed select-none">「{owner.name}」 플러그인이 의존을 못 채웠습니다.</p>
+                    {owner.reason && <p className="text-small text-muted leading-relaxed select-none">{owner.reason.replace(/^꺼짐 — /, '')}</p>}
                 </div>
             </div>
         );
@@ -33,13 +33,13 @@ export function ViewPlaceholder({ leaf, surface }: { leaf: Leaf; surface: string
             <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
                 <div className="flex flex-col items-center gap-3 max-w-[20rem]">
                     <Icon name="ban" size={28} className="text-muted/50" />
-                    <p className="text-[13px] text-muted leading-relaxed select-none">
+                    <p className="text-body text-muted leading-relaxed select-none">
                         「{owner.name}」 플러그인이 꺼져 있습니다.
                     </p>
                     <button
                         type="button"
                         onClick={() => enablePlugin(owner.id)}
-                        className={`h-btn px-3 rounded border border-accent text-[13px] text-text bg-text/[0.06]
+                        className={`h-btn px-3 rounded border border-accent text-body text-text bg-text/[0.06]
                             hover:bg-text/[0.1] transition-colors
                             ${FOCUS_RING}`}
                     >

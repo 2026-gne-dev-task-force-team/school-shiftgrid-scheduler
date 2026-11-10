@@ -56,7 +56,7 @@ export function TabSwitcher({
                         >
                             <div className="flex items-center gap-1.5 shrink-0">
                                 {t.glyph ? <span className="w-4 text-center text-body leading-none" aria-hidden="true">{t.glyph}</span> : <Icon name={t.icon ?? 'table'} size={16} />}
-                                <span className="min-w-0 flex-1 truncate text-[13px] text-text">{t.title}</span>
+                                <span className="min-w-0 flex-1 truncate text-body text-text">{t.title}</span>
                                 <IconButton
                                     icon="x"
                                     label={`${t.title} 닫기`}
@@ -79,7 +79,7 @@ export function TabSwitcher({
                         h-20 text-muted hover:text-text hover:bg-text/[0.04] transition-colors select-none"
                 >
                     <Icon name="plus" size={20} />
-                    <span className="text-[12px]">새 탭</span>
+                    <span className="text-small">새 탭</span>
                 </button>
             </div>
         </BottomSheet>

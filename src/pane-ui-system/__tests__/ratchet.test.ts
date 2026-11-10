@@ -2,7 +2,7 @@
  * 톱니(ratchet) 검사 — 「공통 부품을 안 쓰고 제 손으로 짜는 것」이 다시는 늘지 않게 한다. 한 번에 다 고치지 않아도 된다.
  *   꾸러미(src/plugins/<id>) · app · pane-ui-system 마다 아래 셋을 세어 ratchet-baseline.json 과 비교한다 — **늘면 빨강**.
  *     bareButton : 맨 <button 수 — 공통 Button·IconButton·Dialog 단추를 쓰면 안 는다
- *     arbPx      : 임의 크기 -[Npx] 수(text-[12px]·w-[340px] …) — 글자는 단계 토큰(text-small …), 치수는 토큰·표준 클래스
+ *     arbPx      : 임의 크기 -[Npx] 수(text-small·w-[340px] …) — 글자는 단계 토큰(text-small …), 치수는 토큰·표준 클래스
  *     cmdIdString: 다른 꾸러미의 명령 id 를 글자로 부른 수 — 약속 파일의 상수로
  *     ctxDirect  : onContextMenu 를 직접 처리한 수 — 우클릭은 창틀 ContextMenu(useContextTrigger) 하나로만, 꾸러미는 메뉴 항목만 낸다(Q1·X2)
  *     roleToolbar: `role="toolbar"` 직접 쓰기 수 — 툴바는 Frame 의 toolbar 자리 + 창틀 Toolbar(primitives/Toolbar.tsx 한 곳만 0 예외)로만 그린다(Q10 W6).
@@ -14,6 +14,7 @@
  *       ⚠️ 이 글자 셈은 못 잡는 모양이 있다(다른 이름의 변수·동적 접근). 확실히 잡히는 판별식만 센다. 휴지통의 주인 explorer 는 기준값이 높아도 정상이다.
  *     enterNoIme : `key === 'Enter'` 를 쓰는데 isImeEnter·isComposing 가드가 같은 파일에 없는 「파일」 수 — 한글 조합 중 Enter 가 확정으로 새지 않게(R7)
  *     ownUndoNotice: `label: '되돌리기'` 를 제 손으로 짠 수 — 「알림 + 되돌리기」는 창틀 notifyUndo·notifyNodeUndo·createUndoSlot 으로만(R3-U, 9벌이 하나로 모였다)
+ *     textPx     : 글자 크기를 px 로 박은 수(`text-[Npx]`) — 글자는 단계 토큰(text-micro·note·small·body·lead)만. 남은 것은 쪽 제목·이모지 크기처럼 단계에 없는 값(R3-Z)
  *   ② ③ ⑤ ① 은 공통 부품 내부(pane-ui-system/primitives/)를 세지 않는다 — 부품이 제 몸에서 쓰는 건 당연하다.
  *   줄었으면 기준을 내린다:  RATCHET_UPDATE=1 npx vitest run src/pane-ui-system/__tests__/ratchet.test.ts
  *   ⛔ 기준을 올리는 건 규칙을 어기는 일이다 — 올려야 하면 이유를 커밋에 적는다(새 꾸러미는 0 에서 시작한다).
@@ -29,7 +30,7 @@ const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
 
 type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect' | 'roleToolbar'
-    | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme' | 'ownUndoNotice';
+    | 'textPx' | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme' | 'ownUndoNotice';
 type Counts = Record<Metric, number>;
 
 function walk(dir: string): string[] {
@@ -76,7 +77,7 @@ for (const [scope, texts] of Object.entries(files)) {
 
 function measure(scope: string): Counts {
     const texts = files[scope];
-    let bareButton = 0, arbPx = 0, cmdIdString = 0, ctxDirect = 0, roleToolbar = 0;
+    let bareButton = 0, arbPx = 0, textPx = 0, cmdIdString = 0, ctxDirect = 0, roleToolbar = 0;
     let zRaw = 0, bareInput = 0, divClick = 0, ownTrash = 0, enterNoIme = 0, ownUndoNotice = 0;
     for (const t of r7Texts[scope]) {
         zRaw += count(t, /\bz-\[\d+\]/g) + count(t, /\bzIndex\s*:\s*\d/g);
@@ -90,6 +91,7 @@ function measure(scope: string): Counts {
         ownUndoNotice += count(t, /\blabel\s*:\s*['"]되돌리기['"]\s*,\s*commandId/g);
         bareButton += count(t, /<button\b/g);
         arbPx += count(t, /-\[\d+(?:\.\d+)?px\]/g);
+        textPx += count(t, /\btext-\[\d+(?:\.\d+)?px\]/g);
         ctxDirect += count(t, /\bonContextMenu\b/g);
         for (const [id, owner] of commandOwner) {
             if (owner === scope) continue;
@@ -97,7 +99,7 @@ function measure(scope: string): Counts {
             cmdIdString += t.split(`"${id}"`).length - 1;
         }
     }
-    return { bareButton, arbPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme, ownUndoNotice };
+    return { bareButton, arbPx, textPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme, ownUndoNotice };
 }
 
 const current: Record<string, Counts> = Object.fromEntries(Object.keys(SCOPES).map((s) => [s, measure(s)]));
@@ -107,10 +109,11 @@ if (process.env.RATCHET_UPDATE) {
 }
 
 const baseline: Record<string, Counts> = JSON.parse(readFileSync(BASELINE_FILE, 'utf-8'));
-const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme', 'ownUndoNotice'];
+const METRICS: Metric[] = ['bareButton', 'arbPx', 'textPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme', 'ownUndoNotice'];
 const HOW: Record<Metric, string> = {
     bareButton: '공통 Button·IconButton·Dialog 를 써라',
     arbPx: '글자는 단계 토큰(text-micro·note·small·body·lead), 치수는 토큰·표준 클래스로',
+    textPx: '글자 크기는 단계 토큰(text-micro 10 · note 11 · small 12 · body 13 · lead 14)으로 — text-[Npx] 금지',
     cmdIdString: '다른 꾸러미 명령은 그 꾸러미 약속 파일의 상수로 불러라',
     ctxDirect: '우클릭은 창틀 useContextTrigger + ContextMenu 로 — 꾸러미는 메뉴 항목만 낸다',
     roleToolbar: '툴바는 Frame 의 toolbar 자리에 창틀 Toolbar 로 — role="toolbar" 를 직접 쓰지 마라',

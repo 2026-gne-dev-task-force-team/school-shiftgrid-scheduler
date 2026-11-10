@@ -5,5 +5,5 @@ import { useOpenViewCount } from '../store';
 
 export function OpenCountStatus() {
     const n = useOpenViewCount();
-    return <span className="text-[12px] text-muted">시험 뷰 {n}</span>;
+    return <span className="text-small text-muted">시험 뷰 {n}</span>;
 }

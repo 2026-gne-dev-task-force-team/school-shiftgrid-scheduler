@@ -25,7 +25,7 @@ export function Cell({
     if (!def) {
         const t = value === null || value === undefined ? '' : Array.isArray(value) ? value.join(', ') : String(value);
         return (
-            <div data-rv-cell={field.key} data-rv-orphan className="w-full h-full flex items-center px-2 text-[13px] text-muted truncate" title="이 칸 타입을 내놓던 플러그인이 꺼져 있습니다">
+            <div data-rv-cell={field.key} data-rv-orphan className="w-full h-full flex items-center px-2 text-body text-muted truncate" title="이 칸 타입을 내놓던 플러그인이 꺼져 있습니다">
                 {t || '(꺼진 타입)'}
             </div>
         );

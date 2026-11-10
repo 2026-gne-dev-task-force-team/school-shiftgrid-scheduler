@@ -6,5 +6,5 @@ import { useNodeCount } from '../store';
 
 export function NodeCountStatus() {
     const n = useNodeCount();
-    return <span className="text-[12px] text-muted">항목 {n}</span>;
+    return <span className="text-small text-muted">항목 {n}</span>;
 }

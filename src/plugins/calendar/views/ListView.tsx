@@ -99,13 +99,13 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={onSearchKey}
                             placeholder="제목·메모 검색"
-                            className="min-w-0 flex-1 bg-transparent text-[12px] text-text outline-none"
+                            className="min-w-0 flex-1 bg-transparent text-small text-text outline-none"
                         />
                     </div>
                     <button
                         type="button"
                         onClick={newEvent}
-                        className="flex items-center gap-1 shrink-0 px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
+                        className="flex items-center gap-1 shrink-0 px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
                     >
                         <Icon name="plus" size={13} /> 새 일정
                     </button>
@@ -134,7 +134,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                 {rows.length === 0 ? (
                     <EmptyState compact icon="calendar" title={query ? '찾는 일정이 없다' : '일정이 없다'} description={query ? undefined : '「새 일정」이나 달력 칸 더블클릭으로'} />
                 ) : (
-                    <table className="w-full text-[12px] text-text border-collapse">
+                    <table className="w-full text-small text-text border-collapse">
                         <thead className="sticky top-0 bg-bg">
                             <tr className="text-muted text-left">
                                 <th className="font-medium px-3 py-1.5 border-b border-line w-36">날짜</th>

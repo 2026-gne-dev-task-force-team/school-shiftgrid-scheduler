@@ -13,7 +13,7 @@ import { makeHost } from '../pane-ui-system/plugin';
 function BlankView() {
     return (
         <div className="h-full grid place-items-center select-none">
-            <p className="text-[13px] text-muted/60">왼쪽 리본에서 열 것을 고르세요</p>
+            <p className="text-body text-muted/60">왼쪽 리본에서 열 것을 고르세요</p>
         </div>
     );
 }

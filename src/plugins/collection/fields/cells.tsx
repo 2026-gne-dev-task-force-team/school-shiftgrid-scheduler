@@ -62,7 +62,7 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
             else if (e.key === 'Escape') { e.preventDefault(); done.current = true; onCancel(); }
         },
     };
-    const cls = `w-full h-full px-2 bg-bg text-text text-[13px] outline-none border border-accent rounded-none ${numeric ? 'text-right tabular-nums' : ''}`;
+    const cls = `w-full h-full px-2 bg-bg text-text text-body outline-none border border-accent rounded-none ${numeric ? 'text-right tabular-nums' : ''}`;
     if (multiline) {
         return (
             <textarea ref={ref} {...common} rows={1} value={text} onChange={(e) => setText(e.target.value)}
@@ -113,7 +113,7 @@ function makeInlineCell(numeric: boolean) {
             <div
                 data-rv-cell={field.key}
                 onClick={() => editable && setEditing(true)}
-                className={`w-full h-full flex items-center px-2 text-[13px] truncate ${numeric ? 'justify-end tabular-nums' : ''} ${editable ? 'cursor-text' : 'cursor-default'} ${text === '' ? 'text-muted' : 'text-text'}`}
+                className={`w-full h-full flex items-center px-2 text-body truncate ${numeric ? 'justify-end tabular-nums' : ''} ${editable ? 'cursor-text' : 'cursor-default'} ${text === '' ? 'text-muted' : 'text-text'}`}
             >
                 {text}
             </div>
@@ -146,7 +146,7 @@ function OptionEditRow({ option, onChange, onDelete }: { option: FieldOption; on
                     if (isImeEnter(e)) return;
                     if (e.key === 'Enter') { e.preventDefault(); const t = label.trim(); if (t && t !== option.label) onChange({ ...option, label: t }); }
                 }}
-                className="h-row px-2 rounded border border-line bg-bg text-[13px] text-text outline-none"
+                className="h-row px-2 rounded border border-line bg-bg text-body text-text outline-none"
             />
             <div className="flex flex-wrap gap-1">
                 {PILL_COLORS.map((c) => (
@@ -158,7 +158,7 @@ function OptionEditRow({ option, onChange, onDelete }: { option: FieldOption; on
                     />
                 ))}
             </div>
-            <button type="button" data-rv-opt-delete onClick={onDelete} className="flex items-center gap-1.5 h-row px-1 rounded text-[12px] text-bad hover:bg-bad/10 self-start">
+            <button type="button" data-rv-opt-delete onClick={onDelete} className="flex items-center gap-1.5 h-row px-1 rounded text-small text-bad hover:bg-bad/10 self-start">
                 <Icon name="trash" size={12} />선택지 삭제
             </button>
         </div>
@@ -246,7 +246,7 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => { if (isImeEnter(e)) return; if (e.key === 'Enter') { e.preventDefault(); addDraft(); } }}
                     placeholder="+ 새 선택지"
-                    className="mt-1 h-row px-2 rounded border border-line bg-bg text-[13px] text-text outline-none"
+                    className="mt-1 h-row px-2 rounded border border-line bg-bg text-body text-text outline-none"
                 />
             )}
             <ReorderOverlay drag={reorder.drag} indicator={reorder.indicator} axis="y" />
@@ -264,7 +264,7 @@ export function SelectCell({ field, value, editable, onChange, onOptionsChange }
                 onClick={(e) => editable && setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())}
                 className={`w-full h-full flex items-center gap-1 px-2 truncate ${editable ? 'cursor-pointer' : 'cursor-default'}`}
             >
-                {cur !== null ? <OptionPill option={optOf(field, cur)} /> : <span className="text-[12px] text-muted">—</span>}
+                {cur !== null ? <OptionPill option={optOf(field, cur)} /> : <span className="text-small text-muted">—</span>}
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>
@@ -290,7 +290,7 @@ export function MultiCell({ field, value, editable, onChange, onOptionsChange }:
                 onClick={(e) => editable && setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())}
                 className={`w-full h-full flex items-center gap-1 px-2 overflow-hidden ${editable ? 'cursor-pointer' : 'cursor-default'}`}
             >
-                {arr.length > 0 ? arr.map((v) => <OptionPill key={v} option={optOf(field, v)} />) : <span className="text-[12px] text-muted">—</span>}
+                {arr.length > 0 ? arr.map((v) => <OptionPill key={v} option={optOf(field, v)} />) : <span className="text-small text-muted">—</span>}
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={240} onClose={() => setAnchor(null)}>
@@ -323,19 +323,19 @@ export function DateCell({ field, value, editable, onChange }: FieldCellProps) {
             <div
                 data-rv-cell={field.key}
                 onClick={(ev) => editable && setAnchor((ev.currentTarget as HTMLElement).getBoundingClientRect())}
-                className={`w-full h-full flex items-center px-2 text-[13px] truncate ${editable ? 'cursor-pointer' : 'cursor-default'} ${label ? 'text-text' : 'text-muted'}`}
+                className={`w-full h-full flex items-center px-2 text-body truncate ${editable ? 'cursor-pointer' : 'cursor-default'} ${label ? 'text-text' : 'text-muted'}`}
             >
                 {label || '—'}
             </div>
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
                     <div data-rv-date-start>
-                        {cfg.range && <div className="px-1 pb-0.5 text-[11px] text-muted">시작</div>}
+                        {cfg.range && <div className="px-1 pb-0.5 text-note text-muted">시작</div>}
                         <DatePicker value={dv?.start ?? null} time={cfg.time} onChange={setStart} />
                     </div>
                     {cfg.range && (
                         <div data-rv-date-end className="mt-2 pt-2 border-t border-line">
-                            <div className="px-1 pb-0.5 text-[11px] text-muted">종료</div>
+                            <div className="px-1 pb-0.5 text-note text-muted">종료</div>
                             <DatePicker value={dv?.end ?? null} time={cfg.time} onChange={setEnd} />
                         </div>
                     )}
@@ -367,7 +367,7 @@ function makeLinkCell(kind: LinkKind) {
             <div
                 data-rv-cell={field.key}
                 onClick={() => editable && setEditing(true)}
-                className={`w-full h-full flex items-center gap-1 px-2 text-[13px] ${editable ? 'cursor-text' : 'cursor-default'} ${s === '' ? 'text-muted' : 'text-text'}`}
+                className={`w-full h-full flex items-center gap-1 px-2 text-body ${editable ? 'cursor-text' : 'cursor-default'} ${s === '' ? 'text-muted' : 'text-text'}`}
             >
                 <span className="flex-1 min-w-0 truncate">{s || '—'}</span>
                 {s !== '' && !valid && (
@@ -396,7 +396,7 @@ export function ReadonlyCell({ field, value, config }: FieldCellProps) {
         ? (typeof value === 'number' ? `${(config as { prefix?: string })?.prefix ?? ''}${value}` : '')
         : (typeof value === 'string' ? value.replace('T', ' ') : '');
     return (
-        <div data-rv-cell={field.key} className={`w-full h-full flex items-center px-2 text-[13px] truncate ${t ? 'text-muted' : 'text-muted/60'}`}>
+        <div data-rv-cell={field.key} className={`w-full h-full flex items-center px-2 text-body truncate ${t ? 'text-muted' : 'text-muted/60'}`}>
             {t || '—'}
         </div>
     );

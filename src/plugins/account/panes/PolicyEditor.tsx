@@ -16,7 +16,7 @@ export function PolicyEditor() {
     return (
         <div className="flex flex-col gap-4 p-4 max-w-[560px]">
             <section className="flex flex-col gap-2">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">붙이는 길</h4>
+                <h4 className="text-note font-semibold uppercase tracking-wide text-muted">붙이는 길</h4>
                 <Row label="① 사용자에 권한 직접" on={pol.paths.direct} onToggle={(v) => setPolicy({ paths: { ...pol.paths, direct: v } })} />
                 <Row label="③ 역할이 담은 권한" on={pol.paths.role} onToggle={(v) => setPolicy({ paths: { ...pol.paths, role: v } })} />
                 <Row label="② 역할 수준 문턱" on={pol.paths.level} onToggle={(v) => setPolicy({ paths: { ...pol.paths, level: v } })} />
@@ -24,18 +24,18 @@ export function PolicyEditor() {
 
             {pol.paths.level && perms.length > 0 && (
                 <section className="flex flex-col gap-2">
-                    <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">길② 권한별 요구 수준</h4>
+                    <h4 className="text-note font-semibold uppercase tracking-wide text-muted">길② 권한별 요구 수준</h4>
                     {perms.map((p) => (
-                        <label key={p.id} className="flex items-center justify-between gap-2 text-[12px]">
+                        <label key={p.id} className="flex items-center justify-between gap-2 text-small">
                             <span className="min-w-0 flex flex-col" title={p.id}>
                                 <span className="text-text truncate">{p.title}</span>
-                                {p.desc && <span className="text-[11px] text-muted leading-snug">{p.desc}</span>}
+                                {p.desc && <span className="text-note text-muted leading-snug">{p.desc}</span>}
                             </span>
                             <input
                                 type="number"
                                 value={pol.thresholds[p.id] ?? 0}
                                 onChange={(e) => setPolicy({ thresholds: { [p.id]: Number(e.target.value) || 0 } })}
-                                className="w-16 rounded border border-line bg-side text-text px-1 py-0.5 text-[12px]"
+                                className="w-16 rounded border border-line bg-side text-text px-1 py-0.5 text-small"
                             />
                         </label>
                     ))}
@@ -44,15 +44,15 @@ export function PolicyEditor() {
 
             {roles.length > 0 && (
                 <section className="flex flex-col gap-2">
-                    <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted">증명 요구 역할</h4>
-                    <p className="text-[11px] text-muted">이 역할로 로그인하면 증명을 거칩니다(증명 수단이 없으면 「증명 안 됨」으로 남습니다).</p>
+                    <h4 className="text-note font-semibold uppercase tracking-wide text-muted">증명 요구 역할</h4>
+                    <p className="text-note text-muted">이 역할로 로그인하면 증명을 거칩니다(증명 수단이 없으면 「증명 안 됨」으로 남습니다).</p>
                     <div className="flex flex-wrap gap-1.5">
                         {roles.map((r) => {
                             const on = pol.verifyRoles.includes(r.id);
                             return (
                                 <button key={r.id} type="button"
                                     onClick={() => setPolicy({ verifyRoles: on ? pol.verifyRoles.filter((x) => x !== r.id) : [...pol.verifyRoles, r.id] })}
-                                    className={`text-[12px] px-2 py-0.5 rounded border ${on ? 'border-accent text-accent' : 'border-line text-muted'}`}>
+                                    className={`text-small px-2 py-0.5 rounded border ${on ? 'border-accent text-accent' : 'border-line text-muted'}`}>
                                     {r.name}
                                 </button>
                             );
@@ -62,7 +62,7 @@ export function PolicyEditor() {
             )}
 
             {perms.length === 0 && (
-                <p className="text-[12px] text-muted">아직 권한 낱말을 선언한 기능이 없습니다.</p>
+                <p className="text-small text-muted">아직 권한 낱말을 선언한 기능이 없습니다.</p>
             )}
         </div>
     );
@@ -71,7 +71,7 @@ export function PolicyEditor() {
 function Row({ label, on, onToggle }: { label: string; on: boolean; onToggle: (v: boolean) => void }) {
     return (
         <div className="flex items-center justify-between gap-3">
-            <span className="text-[13px] text-text">{label}</span>
+            <span className="text-body text-text">{label}</span>
             <Toggle on={on} label={label} onToggle={onToggle} />
         </div>
     );
