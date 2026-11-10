@@ -4,7 +4,8 @@
  *      반대 tx 를 **그 자리에서** 계산한다. 내장 되돌리기 스택엔 이 반대 tx 만 쌓인다.
  *   짝 규칙: add↔remove 는 **같은 id**로 맞춘다(그래서 편집기가 add 때 id 를 미리 매긴다 — redo/undo 가 어긋나지 않는다).
  */
-import type { MergeRegion, TableColumn, TableRow, TableTx } from '../contracts/table';
+import { fmtKey } from './fmt';
+import type { CellFmt, MergeRegion, TableColumn, TableRow, TableTx } from '../contracts/table';
 
 /** tx 의 반대 tx — rows·cols·axis·merge·cells 전부. 지금 상태(rows·columns·merges)를 읽어 되돌릴 값을 담는다. */
 export function inverseTx(
@@ -12,6 +13,7 @@ export function inverseTx(
     rows: TableRow[],
     columns: TableColumn[],
     merges: MergeRegion[] | undefined,
+    cellFmt?: Record<string, CellFmt>,
 ): TableTx {
     const byId = new Map(rows.map((r) => [r.id, r]));
     const colByKey = new Map(columns.map((c, i) => [c.key, { col: c, i }]));
@@ -86,6 +88,8 @@ export function inverseTx(
         inv.merge = m;
     }
 
+    if (tx.fmt?.length) inv.fmt = tx.fmt.map((f) => ({ rowId: f.rowId, key: f.key, fmt: cellFmt?.[fmtKey(f.rowId, f.key)] ?? null }));
+
     return inv;
 }
 
@@ -96,6 +100,6 @@ export function txHasEffect(tx: TableTx): boolean {
         tx.rows?.add?.length || tx.rows?.remove?.length || tx.rows?.move?.length || tx.rows?.rename?.length ||
         tx.cols?.add?.length || tx.cols?.remove?.length || tx.cols?.resize?.length || tx.cols?.rename?.length || tx.cols?.move?.length ||
         tx.axis?.rowWeight?.length || tx.axis?.rowGap?.length ||
-        tx.merge?.set?.length || tx.merge?.clear?.length
+        tx.fmt?.length || tx.merge?.set?.length || tx.merge?.clear?.length
     );
 }

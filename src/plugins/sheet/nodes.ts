@@ -14,7 +14,8 @@ import type { RichCellApi } from '../page/contracts/rich-cell';
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { createUndoSlot, type Disposable, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
-import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
+import { fmtKey } from './core/fmt';
+import type { CellFmt, CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
 import { SheetPreview } from './views/SheetPreview';
 
@@ -38,6 +39,8 @@ export interface TableDoc {
     style?: TableStylePreset;
     rowTones?: Record<string, CellTone>;
     colTones?: Record<string, CellTone>;
+    /** 칸 서식 — 열쇠는 fmtKey(rowId, key). 옛 자료엔 없다(없으면 서식 없음). */
+    cellFmt?: Record<string, CellFmt>;
 }
 
 /** 칸 기본 높이(px) — Table 의 h-6 과 같다. 행 높이 끌기는 여기서부터 더한다. */
@@ -82,7 +85,10 @@ export function applyTx(doc: TableDoc, tx: TableTx): TableDoc {
     for (const s of tx.merge?.set ?? []) { merges = merges.filter((m) => !(m.rowId === s.rowId && m.key === s.key)); merges.push({ ...s }); }
     for (const cl of tx.merge?.clear ?? []) merges = merges.filter((m) => !(m.rowId === cl.rowId && m.key === cl.key));
 
-    return { ...doc, rows, cols, merges };
+    if (!tx.fmt?.length) return { ...doc, rows, cols, merges };
+    const cellFmt = { ...(doc.cellFmt ?? {}) };
+    for (const f of tx.fmt) { const k = fmtKey(f.rowId, f.key); if (f.fmt && Object.keys(f.fmt).length) cellFmt[k] = { ...f.fmt }; else delete cellFmt[k]; }
+    return { ...doc, rows, cols, merges, cellFmt };
 }
 
 // ── 다리 상태(모듈 전역 — 달력·명단 nodes.ts 와 같은 결) ──

@@ -37,6 +37,8 @@ export interface SheetCoreAdapter {
     editInitial: (r: number, c: number, typed?: string) => string;
     /** 'toggle' 칸을 뒤집는다. */
     toggle?: (r: number, c: number) => void;
+    /** ⌘B — 고른 칸 굵게 토글. 없으면 그 키는 흘린다. */
+    bold?: () => void;
     onUndo?: () => void;
     onRedo?: () => void;
     /** M5 넘버스 키 — Alt+화살표(행·열 넣기) · 맨 아랫줄 Enter(행 추가). 없으면 그 키는 껍데기로 흘린다. */

@@ -15,6 +15,8 @@ import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemov
 import { StartScreen } from './StartScreen';
 
 
+const NO_FMT = {};   // 옛 자료(서식 칸 없음)도 서식 기능은 켠다 — 안정된 빈 객체
+
 export function TableNodeView({ leafId }: { leafId?: string }) {
     const activeId = useLeafNode(leafId, useActiveTable(), setActiveTable);   // 새로고침 뒤에도 이 탭의 표
     // 툴바 자리 — Frame 의 toolbar 자리에 놓은 빈 요소. Table 이 단추를 거기에 그린다(본문 스크롤 밖 고정).
@@ -54,6 +56,7 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     columns={doc.cols}
                     rows={doc.rows}
                     merges={doc.merges}
+                    cellFmt={doc.cellFmt ?? NO_FMT}
                     features={DEFAULT_FEATURES}
                     hideColHeader
                     toolbar
