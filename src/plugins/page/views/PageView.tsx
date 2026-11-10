@@ -6,7 +6,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { EmptyState, isMod, ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
+import { EmptyState, isMod, keyLabel, ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useLeafNode } from '../../../pane-ui-system/plugin';
 import { useActivePage, setActivePage } from '../store';
@@ -624,8 +624,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     if (!Frame) return <EmptyState icon="warn" title="문서를 그릴 수 없습니다" description="항목 화면 기능이 꺼져 있습니다. 설정에서 켜면 나타납니다." />;
     // 페이지 전체 동작은 상단 줄 ⋯ 메뉴로(R3) — 되돌리기·다시는 단추 없이 ⌘Z·메뉴
     const menu: MenuEntry[] = [
-        { label: '실행 취소', icon: 'undo', disabled: !canUndo(hist), onClick: doUndo },
-        { label: '다시 실행', icon: 'redo', disabled: !canRedo(hist), onClick: doRedo },
+        { label: '실행 취소', icon: 'undo', shortcut: keyLabel('Mod+Z'), disabled: !canUndo(hist), onClick: doUndo },
+        { label: '다시 실행', icon: 'redo', shortcut: keyLabel('Mod+Shift+Z'), disabled: !canRedo(hist), onClick: doRedo },
         { label: '마크다운 복사', icon: 'copy', onClick: copyMarkdown },
     ];
 

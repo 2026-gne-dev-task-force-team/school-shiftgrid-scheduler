@@ -37,7 +37,7 @@ export function NotifyPane() {
             </div>
             <div className="flex items-center justify-between gap-4 pt-4 border-t border-line">
                 <div className="text-small text-muted">지금 {items.length}건 보관 중</div>
-                <Button onClick={() => (errorCount > 0 ? setConfirmClear(true) : clearNotifications())} disabled={items.length === 0}>모두 지우기</Button>
+                <Button onClick={() => (errorCount > 0 ? setConfirmClear(true) : clearNotifications())} disabled={items.length === 0} disabledReason="지울 알림이 아직 없습니다.">모두 지우기</Button>
                 {confirmClear && (
                     <ConfirmDialog title="오류 알림도 지울까요?" confirmLabel="모두 지우기" danger
                         onConfirm={() => { setConfirmClear(false); clearNotifications(); }} onCancel={() => setConfirmClear(false)}>

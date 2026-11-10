@@ -65,6 +65,7 @@ export function Button({
     className = '',
     type = 'button',
     disabled,
+    disabledReason,
     children,
     ...rest
 }: {
@@ -80,6 +81,8 @@ export function Button({
     block?: boolean;
     /** 눌림을 막고 점 세 개를 보인다 */
     loading?: boolean;
+    /** 꺼졌을 때 마우스를 올리면 보이는 「왜 안 되나 · 먼저 무엇을」(「먼저 ~하세요」 꼴). 꺼진 단추는 마우스 이벤트를 못 받아 감싸는 span 이 title 을 든다 */
+    disabledReason?: string;
     children?: ReactNode;
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
     // 옛 별칭 → 새 낱말(plain 은 도구 막대가 안 들썩이게 옛 높이 h-btn 을 지킨다)
@@ -87,12 +90,14 @@ export function Button({
     const v: ButtonVariant = variant === 'accent' ? 'soft' : legacyPlain ? 'ghost' : variant;
     const t: ButtonTone = variant === 'accent' ? 'accent' : tone;
     const sizeCls = legacyPlain ? 'h-btn px-3 text-body select-none' : SIZE[size];
-    return (
+    const off = !!(disabled || loading);
+    const wrapReason = off && !loading ? disabledReason : undefined;
+    const btn = (
         <button
             type={type}
             disabled={disabled || loading}
             aria-busy={loading || undefined}
-            className={`${sizeCls} ${block ? 'flex w-full' : 'inline-flex shrink-0'} items-center justify-center gap-1 whitespace-nowrap rounded-ctl border ${TABLE[v][t]} transition-colors duration-fast ${FOCUS_RING} ${className}`}
+            className={`${sizeCls} ${block ? 'flex w-full' : 'inline-flex shrink-0'} items-center justify-center gap-1 whitespace-nowrap rounded-ctl border ${TABLE[v][t]} transition-colors duration-fast ${FOCUS_RING} ${wrapReason ? 'pointer-events-none' : ''} ${className}`}
             {...rest}
         >
             {loading
@@ -106,4 +111,6 @@ export function Button({
                 )}
         </button>
     );
+    if (!wrapReason) return btn;
+    return <span title={wrapReason} className={block ? 'flex w-full' : 'inline-flex shrink-0'}>{btn}</span>;
 }

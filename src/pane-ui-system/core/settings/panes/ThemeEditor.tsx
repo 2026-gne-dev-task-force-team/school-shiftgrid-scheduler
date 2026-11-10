@@ -141,7 +141,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                         onEnter={() => saveAsUserTheme()}
                         className="flex-1 min-w-0"
                     />
-                    <Button onClick={saveAsUserTheme} disabled={!newName.trim()} className="disabled:opacity-30">저장</Button>
+                    <Button onClick={saveAsUserTheme} disabled={!newName.trim()} disabledReason="먼저 새 테마의 이름을 적어 주세요." className="disabled:opacity-30">저장</Button>
                 </div>
 
                 {userThemes.length > 0 && (

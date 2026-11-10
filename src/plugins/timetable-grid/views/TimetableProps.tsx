@@ -45,8 +45,8 @@ export function TimetableProps({ target }: PropertiesPaneProps) {
             {row('열 꼴', <Segmented label="열 꼴 고르기" value={data.columns.kind} options={[{ value: 'weekday', label: '요일' }, { value: 'cycle', label: '일차' }]}
                 onChange={(k) => { if (k !== data.columns.kind) edit((d) => toggleColumnKind(d)); }} />)}
             {row(`열 ${columnCount(data.columns)}개`, <>
-                <Button size="sm" aria-label="열 빼기" disabled={columnCount(data.columns) <= 1} onClick={() => edit((d) => removeColumn(d, columnCount(d.columns) - 1))}>−</Button>
-                <Button size="sm" aria-label="열 넣기" disabled={addColumn(data) === data} onClick={() => edit((d) => addColumn(d))}>+</Button>
+                <Button size="sm" aria-label="열 빼기" disabled={columnCount(data.columns) <= 1} disabledReason="열이 하나뿐이라 더 뺄 수 없습니다." onClick={() => edit((d) => removeColumn(d, columnCount(d.columns) - 1))}>−</Button>
+                <Button size="sm" aria-label="열 넣기" disabled={addColumn(data) === data} disabledReason="열을 더 넣을 수 없습니다. 먼저 필요 없는 열을 빼 주세요." onClick={() => edit((d) => addColumn(d))}>+</Button>
             </>)}
             {row('보이는 시각 자동', <Toggle on={!data.view} label="보이는 시각 자동"
                 onToggle={(auto) => edit((d) => setView(d, auto ? null : viewRange(d)))} />)}
