@@ -77,6 +77,8 @@ export interface TableTx {
         /** 행 앞 틈 끌기(row-gaps) — 그 행 위 틈 크기를 delta(px)만큼. 뜻(분·쉬는 시간)은 소유자가 정한다. */
         rowGap?: { id: string; delta: number }[];
     };
+    /** 칸 서식 바꾸기 — fmt 가 그 칸의 새 서식 전부(null = 서식 지움). 되돌리기는 옛 서식으로 되돌린다. */
+    fmt?: { rowId: string; key: string; fmt: CellFmt | null }[];
     /** 칸 병합·해제(M2 merge). set 은 앵커를 더하거나 덮고, clear 는 앵커를 푼다. */
     merge?: { set?: MergeRegion[]; clear?: { rowId: string; key: string }[] };
     source: TableTxSource;
@@ -84,6 +86,9 @@ export interface TableTx {
 
 /** 바탕 틴트 — 토큰 이름으로만(하드코딩 색 금지). 색 메뉴·decorate 가 쓴다. */
 export type CellTone = 'accent' | 'ok' | 'bad' | 'warn' | 'muted';
+
+/** 칸 서식(굵게·가로 정렬·배경색) — 칸 하나 단위. 비어 있으면 서식 없음. */
+export interface CellFmt { bold?: boolean; align?: 'left' | 'center' | 'right'; tone?: CellTone }
 
 /** 칸 꾸밈 — ③(손님)이 글자를 해석해 돌려준다(M2 decorate). 색은 토큰 이름으로만. */
 export interface CellDecoration {
@@ -209,6 +214,8 @@ export interface TableProps {
     /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */
     onSetHeaderRow?(v: boolean): void;
     onSetHeaderCol?(v: boolean): void;
+    /** 칸 서식(굵게·정렬·배경색) — 소유자가 쥔다. 주면 칸 우클릭 메뉴·⌘B 가 켜진다(열쇠는 fmtKey). 안 주면 서식 기능 없음. */
+    cellFmt?: Record<string, CellFmt>;
     /** v3 색 — 손잡이 메뉴에서 행·열 바탕 틴트를 고른다(소유자가 저장 → decorate 로 되비친다). undefined 는 색 없음. */
     onColor?(kind: 'row' | 'col', id: string, tone?: CellTone): void;
     /** M5 넘버스 — 마지막 줄을 꼬리 행으로(머리처럼 칠하고 합계 바·채우기에서 뺀다). 소유자가 쥔다. */

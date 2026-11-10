@@ -19,9 +19,10 @@ import { useSheetCore } from './core/useSheetCore';
 import { verticalViewport } from './core/platform';
 import type { CellChange, CommitSource, SheetCoreAdapter, SheetCoreHandle } from './core/types';
 import type {
-    CellChange as TxCellChange, CellTone, HeaderMenuEntry, TableCapability, TableColumn, TableProps, TableRow, TableState, TableTx,
+    CellChange as TxCellChange, CellFmt, CellTone, HeaderMenuEntry, TableCapability, TableColumn, TableProps, TableRow, TableState, TableTx,
     TableStylePreset,
 } from './contracts/table';
+import { fmtKey } from './core/fmt';
 import { quickCalc, fmtNum } from './core/quickcalc';
 import { buildConfig } from './features/install';
 import { DEFAULT_FEATURES } from './features/modules';
@@ -60,7 +61,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         decorate, validate, headerMenu, merges, renderText, mention,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
         footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, hideHandles, onRemoved,
-        rowGap, rowHeadWidth, onSelectionChange,
+        rowGap, rowHeadWidth, onSelectionChange, cellFmt,
     } = props;
 
     const stateRef = useRef<TableState>(EMPTY_STATE);
@@ -93,6 +94,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const rowsRef = useRef(rows); rowsRef.current = rows;
     const colsRef = useRef(columns); colsRef.current = columns;
     const mergesRef = useRef(merges); mergesRef.current = merges;
+    const fmtRef = useRef(cellFmt); fmtRef.current = cellFmt;
 
     // 편집기가 매기는 새 id(행·열) — 내장 되돌리기가 add↔remove 를 짝 맞추려면 안정된 id 가 필요하다.
     const idSeq = useRef(0);
@@ -109,7 +111,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         let out = tx;
         for (const w of config.commitWrappers) out = w(out);
         if (historyOwned && !fromHistory && txHasEffect(out)) {
-            const entry = inverseTx(out, rowsRef.current, colsRef.current, mergesRef.current);
+            const entry = inverseTx(out, rowsRef.current, colsRef.current, mergesRef.current, fmtRef.current);
             undoStack.current.push(entry);
             redoStack.current = [];
             const nr = out.rows?.remove?.length ?? 0, nc = out.cols?.remove?.length ?? 0;
@@ -123,13 +125,13 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const internalUndo = (): void => {
         const tx = undoStack.current.pop();
         if (!tx) return;
-        redoStack.current.push(inverseTx(tx, rowsRef.current, colsRef.current, mergesRef.current));
+        redoStack.current.push(inverseTx(tx, rowsRef.current, colsRef.current, mergesRef.current, fmtRef.current));
         applyingHistory.current = true; emit(tx, true); applyingHistory.current = false;
     };
     const internalRedo = (): void => {
         const tx = redoStack.current.pop();
         if (!tx) return;
-        undoStack.current.push(inverseTx(tx, rowsRef.current, colsRef.current, mergesRef.current));
+        undoStack.current.push(inverseTx(tx, rowsRef.current, colsRef.current, mergesRef.current, fmtRef.current));
         applyingHistory.current = true; emit(tx, true); applyingHistory.current = false;
     };
 
@@ -186,6 +188,30 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         emit({ cells: [{ rowId: row.id, key: col.key, value: toggledValue(row.cells[col.key] ?? '') }], source: 'edit' }, false);
     };
 
+    // ── 칸 서식(굵게·정렬·배경색) — 고른 범위 전체에 한 트랜잭션(= ⌘Z 한 칸). cellFmt 를 받은 표에서만 켜진다. ──
+    const fmtOn = !!cellFmt;
+    const applyFmt = (edit: (cur: CellFmt, all: CellFmt[]) => CellFmt): void => {
+        const s = core.sel;
+        const targets: { rowId: string; key: string; cur: CellFmt }[] = [];
+        for (let r = s.r1; r <= Math.min(s.r2, rows.length - 1); r++) {
+            for (let c = s.c1; c <= s.c2; c++) {
+                const col = colOf(c); if (!col) continue;
+                targets.push({ rowId: rows[r].id, key: col.key, cur: fmtRef.current?.[fmtKey(rows[r].id, col.key)] ?? {} });
+            }
+        }
+        if (!targets.length) return;
+        const all = targets.map((t) => t.cur);
+        const fmt = targets.map((t) => {
+            const nx = edit(t.cur, all);
+            for (const k of Object.keys(nx) as (keyof CellFmt)[]) if (nx[k] === undefined || nx[k] === false) delete nx[k];
+            return { rowId: t.rowId, key: t.key, fmt: Object.keys(nx).length ? nx : null };
+        });
+        emit({ cells: [], fmt, source: 'menu' }, false);
+    };
+    const toggleBold = (): void => applyFmt((cur, all) => ({ ...cur, bold: !all.every((f) => f.bold) }));
+    const setAlign = (a?: CellFmt['align']): void => applyFmt((cur) => ({ ...cur, align: a }));
+    const setCellTone = (tone?: CellTone): void => applyFmt((cur) => ({ ...cur, tone }));
+
     const rowCount = Math.max(1, rows.length);
     const adapter: SheetCoreAdapter = {
         rowCount,
@@ -202,6 +228,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         },
         editInitial: (r, c, typed) => (typed != null ? typed : (r < rows.length ? rows[r].cells[colOf(c)?.key ?? ''] ?? '' : '')),
         toggle: toggleCell,
+        bold: fmtOn ? toggleBold : undefined,
         onUndo: onUndo ?? (historyOwned ? internalUndo : undefined),
         onRedo: onRedo ?? (historyOwned ? internalRedo : undefined),
         growCols: hasAxisEdit,
@@ -586,6 +613,16 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             if (region) items.push({ label: lb.mergeCells, onClick: mergeSelection });
             if (covered) items.push({ label: lb.unmergeCells, onClick: unmergeAtActive });
         }
+        if (fmtOn) {
+            items.push(
+                { label: `굵게 (${keyLabel('Mod+B')})`, onClick: toggleBold },
+                { label: '왼쪽 정렬', onClick: () => setAlign('left') },
+                { label: '가운데 정렬', onClick: () => setAlign('center') },
+                { label: '오른쪽 정렬', onClick: () => setAlign('right') },
+                { label: '정렬 없음', onClick: () => setAlign(undefined) },
+                ...TONE_CHOICES.map((t) => ({ label: t.tone ? `칸 ${t.label}` : '칸 색 없음', onClick: () => setCellTone(t.tone) })),
+            );
+        }
         items.push({ label: lb.clearRow, onClick: () => core.handle.clear() });
         if (items.length) { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY, items }); }
     };
@@ -906,6 +943,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                         const inFill = core.fillActiveRef.current && core.fillTo != null
                                             && c >= sel.c1 && c <= sel.c2 && r > sel.r2 && r <= core.fillTo;
                                         const deco = decorate ? decorate(row.id, col.key, value) : undefined;
+                                        const fmt = cellFmt?.[fmtKey(row.id, col.key)];
                                         const vErr = hasValidate && validate ? validate(row.id, col.key, value) : undefined;
                                         const isBool = hasColTypes && col.type === 'bool';
                                         const isFoot = isFootRow(r);
@@ -928,11 +966,13 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             headerCol && c === 0 && !isHeadRow(r) ? 'border-r-2 border-r-edge' : '',
                                             striped ? 'bg-text/[0.03]' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
+                                            fmt?.tone ? TONE_BG[fmt.tone] ?? '' : '',
                                             selected || inFill ? 'bg-accent/10' : '',
                                             // 편집 중 표시 — 선택(옅은 파랑)과 똑같아 보이면 열렸는지 모른다(맨눈 검수 11-10). 흰 바탕 + 안쪽 링으로 「입력 중」이 보이게.
                                             editing && !isBool ? 'bg-bg ring-2 ring-inset ring-accent shadow-md z-10' : '',
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
-                                            col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
+                                            fmt?.align ? { left: 'text-left', center: 'text-center', right: 'text-right' }[fmt.align] : col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
+                                            fmt?.bold ? 'font-bold' : '',
                                         ].filter(Boolean).join(' ');
                                         const cw = widthOf(col.key, col.width);
                                         // 열 폭이 정해진 칸은 글이 열을 늘리지 못하게 안쪽 상자 폭을 묶고 말줄임(…) + 마우스 올리면 전체(title).
