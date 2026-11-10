@@ -206,11 +206,15 @@ export function setCalendarHost(h: PluginHost | null): void { hostRef = h; }
 export function getCalendarHost(): PluginHost | null { return hostRef; }
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
 export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
-/** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. */
+/** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. 반복 일정이면 그 실체 회차들도 같이(되돌리기 한 칸). */
 export function removeEvent(id: string): void {
     if (!api) return;
-    const name = api.get(id)?.name || '제목 없음';
-    api.remove(id);
+    const a = api;
+    const name = a.get(id)?.name || '제목 없음';
+    a.batch(() => {
+        a.remove(id);
+        for (const n of a.liveByType(EVENT_TYPE)) if ((n.data as { seriesId?: string } | undefined)?.seriesId === id) a.remove(n.id);
+    });
     if (hostRef) notifyNodeUndo(hostRef, api, `일정 「${name}」을 휴지통으로 옮겼습니다`, 'calendar.removed');
 }
 
