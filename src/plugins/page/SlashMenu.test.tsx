@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { SlashMenu, SLASH_ITEMS } from './views/SlashMenu';
+import { SlashMenu, SLASH_ITEMS, filterSlash } from './views/SlashMenu';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -32,5 +32,11 @@ describe('SlashMenu 스크롤', () => {
         document.body.addEventListener("wheel", outer);
         list.dispatchEvent(new WheelEvent('wheel', { bubbles: true }));
         expect(outer).not.toHaveBeenCalled();
+    });
+});
+
+describe('SlashMenu 검색 별칭', () => {
+    it.each(['컬렉션', '표', '링크', '데이터베이스'])('「%s」 검색에 항목 끼워 넣기가 나온다', (q) => {
+        expect(filterSlash(q).some((it) => it.type === 'node')).toBe(true);
     });
 });
