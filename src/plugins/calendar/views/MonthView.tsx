@@ -25,7 +25,7 @@ import {
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
-import { buildDayIndex, ghostCls, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
+import { barCls, buildDayIndex, ghostCls, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
 import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useWords } from '../presets';
@@ -77,19 +77,21 @@ function weekOffsetOf(d: Date): number {
 function EventChip({ b }: { b: WeekBar }) {
     const { e } = b;
     const pal = paletteAt(e.colorIdx);
-    const title = <>{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</>;
+    // 좁은 폭(<sm)은 반복 표시(↻)도 숨긴다 — 48px 칸에서 제목을 다 먹었다(반복은 점선 테두리로도 보인다)
+    const title = <>{e.occ && <Icon name="redo" size={10} className="hidden sm:inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</>;
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
-            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar} ${ghostCls(e)}`}>
-                {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
+            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${barCls(e, pal)}`}>
+                {!e.allDay && !b.contL && <span className="hidden sm:inline tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
     }
     return (
         <div data-event-id={e.id} {...CHIP_A11Y} className={`flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded ${ghostCls(e)}`}>
             <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
-            <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
+            {/* 좁은 폭(<sm)은 칸이 「09:0…」만 남겨 제목을 다 먹는다 — 시각은 숨기고 제목만 */}
+            <span className="truncate"><span className="hidden sm:inline tabular-nums text-muted">{hhmm(e.startMs)} </span>{title}</span>
         </div>
     );
 }
@@ -103,17 +105,18 @@ function DayBox({ c, isToday, inHead, selected }: { c: DayCell; isToday: boolean
     const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : inHead ? 'bg-bg' : 'bg-panel2';
     return (
         <div data-day={c.iso} onMouseEnter={() => setHot(true)} onMouseLeave={() => setHot(false)} className={`relative min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col ${bg}`}>
-            {hot && <IconButton icon="plus" size={13} label={`${c.m}월 ${c.d}일 새 일정`} data={{ 'data-day-add': '' }} className="absolute top-1 right-1 !w-5 !h-5" />}
-            <div className="flex shrink-0">
+            <div className="flex shrink-0 min-w-0 items-start">
                 {isToday ? (
                     <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-note font-semibold">
                         {label}
                     </span>
                 ) : (
-                    <span className={`px-1 text-note leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
+                    <span className={`min-w-0 truncate px-1 text-note leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
                         {label}
                     </span>
                 )}
+                {/* 「+」는 숫자와 같은 줄 오른끝 — 좁은 칸에서도 숫자를 덮지 않는다(absolute 였을 땐 겹쳤다) */}
+                {hot && <IconButton icon="plus" size={13} label={`${c.m}월 ${c.d}일 새 일정`} data={{ 'data-day-add': '' }} className="ml-auto shrink-0 !w-5 !h-5" />}
             </div>
         </div>
     );
@@ -256,7 +259,8 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     const [head, setHead] = useState({ y: initValue.current.getFullYear(), m: initValue.current.getMonth() + 1 });
 
     const prevFrom = useRef(range.from);
-    const keepTopIdx = useRef<number | null>(null);      // 줄 높이가 바뀔 때 맨 위 줄을 그대로 두기 위해
+    const keepTopIdx = useRef<number | null>(null);      // 줄 높이가 바뀔 때 맨 위 줄을 그대로 두기 위해 — 절대 주 offset(range.from 무관)
+    const laidH = useRef(rowH);                          // 지금 scrollTop 이 깔린 줄 높이(커밋된 값) — rowHRef 는 커밋 전에 앞서 간다
     const pendingScrollTo = useRef<number | null>(null); // 범위를 늘린 뒤 가야 할 offset
     const didInit = useRef(false);
     const raf = useRef(0);
@@ -294,7 +298,9 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             if (h === rowHRef.current) return;
             // 🔴 ⭐ 초기화 전(didInit=false)엔 보존 안 함 — 그땐 scrollTop 이 아직 0 이라 keepTopIdx=0 이 되고,
             //    그 0 이 바로 아래 init 이 잡은 자리를 rowH 바뀜 때 덮어 「처음 열면 2년 전(range.from)」으로 튀었다(2026-11-01 22:51 실측).
-            if (didInit.current) keepTopIdx.current = el.scrollTop / rowHRef.current;
+            //    🔴 커밋 전에 또 재면(peek 열고 닫는 애니메이션 중 연달아) rowHRef 는 새 값인데 scrollTop 은 옛 값이다 — 그래서 커밋된 laidH 로 나눈다.
+            //    🔴 ⭐ 「첫 값만 쥐기」는 A→B→A 로 되돌아와 커밋이 안 나면 값이 남아, 한참 뒤 다음 재측정 때 옛 자리로 튀었다(Q5 — 패턴 편집 뒤 Esc 에 10월로). 매번 덮는다.
+            if (didInit.current) keepTopIdx.current = el.scrollTop / laidH.current + rangeRef.current.from;
             rowHRef.current = h;
             setRowH(h);
         };
@@ -315,9 +321,11 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             //       이 effect 가 옛 rowH 를 들고 있어 틀린 자리로 간다(useDayScroller 와 같은 수정).
             el.scrollTop = offsetToScroll(weekOffsetOf(new Date(initValue.current.getFullYear(), initValue.current.getMonth(), 1)), rangeRef.current.from, rowHRef.current);
         } else if (keepTopIdx.current !== null) {
-            el.scrollTop = keepTopIdx.current * rowH;
+            el.scrollTop = (keepTopIdx.current - rangeRef.current.from) * rowH;
             keepTopIdx.current = null;
+            prevFrom.current = rangeRef.current.from; // 같은 커밋에 범위도 늘었으면 위 식이 이미 셌다 — 아래 효과가 또 밀지 않게
         }
+        laidH.current = rowH;
         syncFromScroll();
     }, [rowH]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -397,9 +405,9 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
             <CalBar end={<>
-                    <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted"
+                    <Button size="sm" variant="plain" aria-label={words.newEvent} title={words.newEvent} className="inline-flex items-center gap-1 text-muted"
                         onClick={() => newAllDay(head.y === now.getFullYear() && head.m === now.getMonth() + 1 ? todayIso : isoOf(head.y, head.m, 1))}>
-                        <Icon name="plus" size={13} /> {words.newEvent}
+                        <Icon name="plus" size={13} /><span className="hidden sm:inline">{words.newEvent}</span>
                     </Button>
                     <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
                     <button
@@ -412,16 +420,19 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
                     {trailing}
                 </>}>
-                <div ref={jumpRef} className="relative shrink-0">
+                {/* 음수 여백은 감싸개에 — 단추에 두면 max-w-full 이 4px 모자라 넓은 폭에서도 제목이 말줄임된다(Q6) */}
+                <div ref={jumpRef} className="relative min-w-0 sm:-ml-1">
                     <button
                         type="button"
                         onClick={openJump}
                         aria-expanded={jumpOpen}
                         aria-label="년·월 고르기"
-                        className="flex items-center gap-1 -ml-1 px-1 rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="flex items-center gap-1 px-1 max-w-full rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
-                        {monthLabel(head.y, head.m)}
-                        <Icon name="right" size={14} className={`text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
+                        {/* 좁으면(sm 미만) 「11월」만 — 툴바 단추에 자리를 내준다 */}
+                        <span className="truncate sm:hidden">{head.m}월</span>
+                        <span className="truncate hidden sm:inline">{monthLabel(head.y, head.m)}</span>
+                        <Icon name="right" size={14} className={`hidden sm:block shrink-0 text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
                     </button>
                     {jumpOpen && (
                         <Surface bordered rounded className="absolute left-0 top-full mt-1 z-20 p-2 w-[232px] shadow-lg">
@@ -466,6 +477,8 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                 onDoubleClick={onCellDouble}
                 {...mergeBind(rangeSel.bind, ctxTrigger)}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
+                // 🔴 브라우저 스크롤 고정(scroll anchoring)이 위쪽 빈 높이·줄 교체를 보고 scrollTop 을 제멋대로 민다 — 자리는 우리가 잡는다
+                style={{ overflowAnchor: 'none' }}
             >
                 <div
                     className="sticky top-0 z-10 grid grid-cols-7 bg-bg border-t border-line"

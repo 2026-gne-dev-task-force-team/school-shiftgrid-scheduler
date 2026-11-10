@@ -66,12 +66,75 @@ describe('PatternEditor', () => {
         expect(last()!.rdates).toBeUndefined();
     });
 
-    it('focus 의 달로 열린다 · 기간 빼기를 더하면 그 기간 회차가 빠진다', () => {
-        const { host, last } = mount({ rules: [{ freq: 'daily' }] }, '2026-11-02', '2026-12-15');
+    it('focus 의 달로 열린다 · 기간 빼기는 빈 초안으로 시작해 시작·끝을 다 골라야 except 에 쓴다', () => {
+        const { host, got, last } = mount({ rules: [{ freq: 'daily' }] }, '2026-11-02', '2026-12-15');
         expect(host.querySelector('[data-pattern-month]')!.textContent).toBe('2026년 12월');
         act(() => (host.querySelector('[data-pattern-add-except]') as HTMLElement).click());
-        expect(last()!.except).toEqual([{ from: '2026-11-02', to: '2026-11-02' }]);
+        expect(got).toHaveLength(0);   // 누르기만으론 아무 회차도 안 빠진다
+        const draft = () => host.querySelector('[data-pattern-except="draft"]') as HTMLElement;
+        const [from, to] = [...draft().querySelectorAll('input')] as HTMLInputElement[];
+        expect(from.value).toBe('');
+        const type = (el: HTMLInputElement, v: string) => act(() => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, v);
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        type(from, '2026-12-20');
+        expect(got).toHaveLength(0);
+        type(to, '2026-12-24');
+        expect(last()!.except).toEqual([{ from: '2026-12-20', to: '2026-12-24' }]);
+        expect(draft()).toBeNull();
         expect(host.querySelectorAll('[data-pattern-except]')).toHaveLength(1);
+        act(() => (host.querySelector('[data-pattern-add-except]') as HTMLElement).click());
+        act(() => (draft().querySelector('button') as HTMLElement).click());   // 초안은 휴지통으로 버린다
+        expect(draft()).toBeNull();
+        expect(last()!.except).toHaveLength(1);
+    });
+
+    it('간격 칸 — 0·음수는 1로 가두고 · 빈 값은 안 쓰고 · 칸을 떠나면 저장된 값으로 되돌린다', () => {
+        const { host, got, last } = mount({ rules: [{ freq: 'daily', interval: 3 }] });
+        const iv = () => host.querySelector('input[aria-label="간격"]') as HTMLInputElement;
+        const type = (v: string) => act(() => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(iv(), v);
+            iv().dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        expect(iv().min).toBe('1');
+        type('0');
+        expect(last()!.rules[0]).toEqual({ freq: 'daily' });   // 1 = 간격 없음
+        type('-4');
+        expect(last()!.rules[0]).toEqual({ freq: 'daily' });
+        const n = got.length;
+        type('');
+        expect(got.length).toBe(n);
+        act(() => { iv().focus(); iv().blur(); });
+        expect(iv().value).toBe('1');
+    });
+
+    it('미니 달력 — 옮긴 회차: 원래 날은 빈 점(「옮김」) · 옮겨 간 날은 실체 점', () => {
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        act(() => createRoot(host).render(createElement(PatternEditor, {
+            value: { rules: [{ freq: 'weekly', weekdays: [1] }] }, start: '2026-11-02', onChange: () => {},
+            realStarts: ['2026-11-16'], moved: [{ from: '2026-11-16', to: '2026-11-17' }],
+        })));
+        expect(day(host, '2026-11-16').querySelector('[data-pattern-moved]')?.getAttribute('title')).toBe('옮김 → 11/17');
+        expect(day(host, '2026-11-16').querySelector('.bg-accent')).toBeNull();
+        expect(day(host, '2026-11-17').querySelector('.bg-accent')).not.toBeNull();
+        expect(day(host, '2026-11-17').getAttribute('aria-label')).toContain('옮겨 온 회차');
+    });
+
+    it('미니 달력 — 더한 날은 규칙 회차와 다른 표시(＋ · 「더한 날」)', () => {
+        const { host } = mount({ rules: [{ freq: 'weekly', weekdays: [1] }], rdates: ['2026-11-20'] });
+        expect(day(host, '2026-11-20').querySelector('[data-pattern-added]')?.getAttribute('title')).toBe('더한 날');
+        expect(day(host, '2026-11-20').getAttribute('aria-label')).toContain('더한 날');
+        expect(day(host, '2026-11-09').querySelector('[data-pattern-added]')).toBeNull();
+    });
+
+    it('프리셋 이름은 시작 날짜로 채운다(○ 안 보임)', () => {
+        const { host } = mount({ rules: [{ freq: 'monthly', monthDay: 16 }] }, '2026-11-16');
+        const labels = [...host.querySelectorAll('[data-pattern-rule] select option')].map((o) => o.textContent);
+        expect(labels).toContain('매월 16일');
+        expect(labels).toContain('매월 셋째 월요일');
+        expect(labels.join()).not.toContain('○');
     });
 });
 

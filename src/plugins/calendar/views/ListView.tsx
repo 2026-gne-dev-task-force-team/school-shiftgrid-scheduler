@@ -38,9 +38,11 @@ function timeLabel(e: CalEvent): string {
 }
 
 // 레코드 뷰 칸 — 날짜·시간·제목·저장소. 제목만 고친다(자기 일정만) · 날짜·시간은 카드에서.
+//   일부러 읽기 전용: 이 칸 값은 시작 날만(dayIso)이라 여기서 고치면 시각·끝·반복이 떨어져 나간다 — 칸 머리 툴팁으로 길을 알린다.
+const CARD_HINT = '여기선 못 고칩니다 — 줄을 열어(→) 일정 카드에서 고치세요';
 const RV_FIELDS: RecordField[] = [
-    { key: 'date', label: '날짜', type: 'date', readOnly: true },
-    { key: 'time', label: '시간', type: 'text', readOnly: true },
+    { key: 'date', label: '날짜', type: 'date', readOnly: true, description: CARD_HINT },
+    { key: 'time', label: '시간', type: 'text', readOnly: true, description: CARD_HINT },
     { key: 'title', label: '제목', type: 'text' },
     { key: 'store', label: '저장소', type: 'text', readOnly: true },
 ];

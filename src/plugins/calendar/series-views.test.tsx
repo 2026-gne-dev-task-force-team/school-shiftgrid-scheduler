@@ -27,7 +27,8 @@ import { registerType, clearTypes } from '../../pane-ui-system/core/nodes/model/
 import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, ensureStore, removeEvent, restoreEvent, setCalendarHost, EVENT_TYPE } from './nodes';
 import { eventToStored } from './event-fields';
-import { isoMinuteOf, occId } from './events';
+import { barCls, isoMinuteOf, occId, type CalEvent } from './events';
+import { paletteAt } from './palette';
 import { reschedule, type SeriesData } from './series';
 import { ListView } from './views/ListView';
 import { MonthView } from './views/MonthView';
@@ -107,6 +108,17 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect(ghost[0].getAttribute('data-event-id')!.startsWith(`${id}@`)).toBe(true);
     });
 
+    it('고스트 규칙(barCls): 가상 회차 막대는 채움 대신 연한 바탕+점선 · 실물은 채운 막대 그대로', () => {
+        const pal = paletteAt(0);
+        const occ = { eventId: 'r@x', seriesId: 'r', originalStart: 'x', start: 'x', end: 'x', allDay: true };
+        const ghost = barCls({ occ: { ...occ, virtual: true } } as CalEvent, pal);
+        const real = barCls({ occ: { ...occ, virtual: false } } as CalEvent, pal);
+        expect(ghost).toContain('outline-dashed');
+        expect(ghost).toContain(pal.soft);
+        expect(ghost).not.toContain(pal.bar);
+        expect(real).toBe(pal.bar);
+    });
+
     it('월: 매주 3회 → 가상 칩 3개(id = 규칙 id@originalStart) · 규칙 일정 자신은 칩이 아니다', () => {
         const { id, first } = weekly(3);
         const el = render(<MonthView value={new Date()} onChange={() => {}} peek={peek} {...noSel} />);
@@ -114,6 +126,19 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect(new Set([...chips].map((c) => c.getAttribute('data-event-id'))).size).toBe(3);
         expect(el.querySelector(`[data-event-id="${occId(id, first)}"]`)).not.toBeNull();
         expect(el.querySelector(`[data-event-id="${id}"]`)).toBeNull();
+    });
+
+    it('월 좁은 폭(Q4): 회차 칩의 반복 아이콘은 sm 미만에서 숨는다 · 툴바 제목은 좁으면 「n월」만', () => {
+        const { id } = weekly(3);
+        const el = render(<MonthView value={new Date()} onChange={() => {}} peek={peek} {...noSel} />);
+        const svg = el.querySelector(`[data-event-id^="${id}@"] svg`)!;
+        expect(svg.getAttribute('class')).toMatch(/(^|\s)hidden(\s|$)/);
+        expect(svg.getAttribute('class')).toContain('sm:inline');
+        const jump = el.querySelector('[aria-label="년·월 고르기"]')!;
+        expect(jump.querySelector('.sm\\:hidden')!.textContent).toMatch(/^\d{1,2}월$/);   // jsdom 은 높이 0 이라 어느 달인지는 재지 않는다
+        // Q6: max-w-full 단추에 음수 여백을 같이 두면 넓은 폭에서도 4px 말줄임 — 여백은 감싸개 몫
+        expect(jump.getAttribute('class')).toContain('max-w-full');
+        expect(jump.getAttribute('class')).not.toMatch(/-ml-/);
     });
 
     it('카드: 가상 회차를 열기만 하면 노드 수 그대로 · 값을 고치면 그때 materialize(originalStart 유지) 후 실체로 갈아탄다', () => {
