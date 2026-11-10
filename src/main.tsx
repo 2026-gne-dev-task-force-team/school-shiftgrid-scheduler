@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './app/App.tsx'
-import { setStoragePrefix, storageKey, applyTheme, loadThemeSettings } from './pane-ui-system'
+import { setStoragePrefix, storageKey, applyTheme, getThemeSettings } from './pane-ui-system'
 import { activateAll } from './pane-ui-system/plugin'
 import { PLUGINS } from './app/plugins'
 
@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
 }
 
 activateAll(PLUGINS);
-applyTheme(loadThemeSettings())
+applyTheme(getThemeSettings())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
