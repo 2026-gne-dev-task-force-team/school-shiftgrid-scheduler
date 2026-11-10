@@ -9,6 +9,9 @@ import { PropertyList } from './PropertyList';
 import { RecordView } from '../RecordView';
 import { fieldTypes } from '../fields/registry';
 import type { RecordCellValue, RecordField } from '../contracts/collection';
+import type { NodesApi } from '../../explorer/contracts/nodes';
+import { initRecordNodes } from '../nodes';
+import { ROW_TYPE } from '../schema';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -37,6 +40,15 @@ const typeText = (cellKey: string, text: string) => {
     key(input, 'Enter');
 };
 
+/** 관계 칸 손짓용 — db1 밑 행 하나(r1 「첫째」)만 있는 가짜 노드 시스템 */
+const FAKE_NODES = {
+    get: (id: string) => (id === 'r1' ? { id, type: ROW_TYPE, name: '첫째', children: [] } : undefined),
+    isTrashed: () => false,
+    path: (id: string) => (id === 'r1' ? ['db1', 'r1'] : []),
+    liveByType: (t: string) => (t === ROW_TYPE ? [{ id: 'r1', type: ROW_TYPE, name: '첫째', children: [] }] : []),
+    subscribe: () => ({ dispose() { /* 빈 것 */ } }),
+} as unknown as NodesApi;
+
 const OPTS = [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }];
 /** 고칠 수 있는 내장 타입마다: 칸 하나 + 그 타입 값 꼴로 바꾸는 손짓 + 기대 값 */
 const EDITABLE: { type: string; field: Partial<RecordField>; act: (k: string) => void; expected: RecordCellValue }[] = [
@@ -50,6 +62,8 @@ const EDITABLE: { type: string; field: Partial<RecordField>; act: (k: string) =>
     { type: 'status', field: { options: OPTS }, act: (k) => { click(q(`[data-rv-cell="${k}"]`)); click(q('[data-rv-opt="a"]')); }, expected: 'a' },
     { type: 'multi', field: { options: OPTS }, act: (k) => { click(q(`[data-rv-cell="${k}"]`)); click(q('[data-rv-opt="a"]')); }, expected: ['a'] },
     { type: 'date', field: {}, act: (k) => { click(q(`[data-rv-cell="${k}"]`)); click(q('[data-iso="2026-11-15"]')); }, expected: { start: '2026-11-15' } },
+    { type: 'relation', field: { config: { target: { kind: 'db', nodeId: 'db1' }, many: true } },
+        act: (k) => { act(() => { initRecordNodes(FAKE_NODES); }); click(q(`[data-rv-cell="${k}"]`)); click(mi('첫째')!); act(() => { initRecordNodes(null); }); }, expected: ['r1'] },
 ];
 
 describe('PropertyList — 내장 타입이 인스펙터에서 고쳐진다', () => {
