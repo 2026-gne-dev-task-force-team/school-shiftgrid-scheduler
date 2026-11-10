@@ -11,10 +11,11 @@ import { isoMinuteOf, parseLocal, type CalEvent, type EventData } from './events
 /** 일정 노드 data — 컬렉션 레코드 꼴(칸 값은 values 하나 · 제목은 노드 이름). uid 는 칸이 아니라 .ics 가져오기 열쇠라 밖에 둔다. */
 export interface StoredEvent { values: Record<string, RecordCellValue>; uid?: string }
 
-/** EventData → 노드 data. prev(옛 values)의 사용자 칸은 그대로 두고 언제·메모만 갈아 끼운다. */
+/** EventData → 노드 data. prev(옛 values)의 사용자 칸은 그대로 두고 언제·메모만 갈아 끼운다 — 「언제」의 반복(pattern)은 남긴다. */
 export function eventToStored(d: EventData, prev: Record<string, RecordCellValue> = {}): StoredEvent {
     const { when } = eventToValues({ name: '', start: d.start, end: d.end, allDay: d.allDay, memo: '' });
-    const values: Record<string, RecordCellValue> = { ...prev, when };
+    const pattern = (prev.when as DateValue | null | undefined)?.pattern;
+    const values: Record<string, RecordCellValue> = { ...prev, when: pattern ? { ...(when as DateValue), pattern } : when };
     if (d.memo) values.memo = d.memo; else delete values.memo;
     return d.uid ? { values, uid: d.uid } : { values };
 }

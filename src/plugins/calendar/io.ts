@@ -8,12 +8,13 @@
  */
 import { isoMinuteOf, parseLocal, type EventData } from './events';
 import type { CalendarItem } from './contracts/calendar';
-import type { IcsWriteEvent } from './ics';
+import type { IcsSeriesItem, IcsWriteEvent } from './ics';
+import type { DatePattern } from './recur';
 
-export interface ImportSpec { name: string; data: EventData; }
+export interface ImportSpec { name: string; data: EventData; pattern?: DatePattern }
 
 /** CalendarItem → 노드에 넣을 name+data. 날짜는 우리 저장 꼴('YYYY-MM-DDTHH:mm')로 정규화(종일도 자정 문자열로). */
-export function itemToSpec(item: CalendarItem): ImportSpec {
+export function itemToSpec(item: IcsSeriesItem): ImportSpec {
     const data: EventData = {
         start: isoMinuteOf(parseLocal(item.start)),
         end: isoMinuteOf(parseLocal(item.end)),
@@ -21,14 +22,14 @@ export function itemToSpec(item: CalendarItem): ImportSpec {
         ...(item.memo ? { memo: item.memo } : {}),
         uid: item.id,
     };
-    return { name: item.title, data };
+    return item.pattern ? { name: item.title, data, pattern: item.pattern } : { name: item.title, data };
 }
 
 /**
  * 가져올 목록을 짠다 — 이미 있는 UID(existingUids)와 이번 묶음 안 중복을 UID 로 거른다.
  *   돌려주는 skipped 는 「UID 가 겹쳐 건너뛴 수」. UID 없는 항목은 못 거르니 전부 들인다.
  */
-export function planImport(existingUids: Iterable<string>, items: readonly CalendarItem[]): { specs: ImportSpec[]; skipped: number } {
+export function planImport(existingUids: Iterable<string>, items: readonly IcsSeriesItem[]): { specs: ImportSpec[]; skipped: number } {
     const seen = new Set<string>(existingUids);
     const specs: ImportSpec[] = [];
     let skipped = 0;
@@ -42,7 +43,7 @@ export function planImport(existingUids: Iterable<string>, items: readonly Calen
 }
 
 /** 내 일정 노드(이름·data·id) → .ics 작성기 입력. UID 는 가져온 것이면 원본, 아니면 노드 id. */
-export function eventToIcs(node: { id: string; name: string; data: EventData }): IcsWriteEvent {
+export function eventToIcs(node: { id: string; name: string; data: EventData }, pattern?: DatePattern): IcsWriteEvent {
     const d = node.data;
     return {
         uid: d.uid ?? node.id,
@@ -51,6 +52,7 @@ export function eventToIcs(node: { id: string; name: string; data: EventData }):
         end: d.end,
         allDay: d.allDay === true,
         ...(d.memo ? { memo: d.memo } : {}),
+        ...(pattern ? { pattern } : {}),
     };
 }
 

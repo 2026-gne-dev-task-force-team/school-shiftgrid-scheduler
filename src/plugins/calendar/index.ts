@@ -24,7 +24,7 @@ import { CalendarTab } from './views/CalendarTab';
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
 import { createPresetStore } from './presets';
-import { parseIcs, writeIcs } from './ics';
+import { parseIcs, parseIcsSeries, writeIcs } from './ics';
 import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
 import {
@@ -147,7 +147,7 @@ export const calendarPlugin = definePlugin({
             const storeId = ctx?.nodeId;
             if (!storeId) return;
             pickIcsFile((text) => {
-                importItemsToStore(storeId, parseIcs(text));   // {created, skipped} — 중복은 UID 로 거른다
+                importItemsToStore(storeId, parseIcsSeries(text));   // {created, skipped} — 중복은 UID 로 거른다 · 반복은 패턴째 한 건
                 setScope(storeId);
                 host.workspace.open(MONTH_ID, { where: 'center' });
             });

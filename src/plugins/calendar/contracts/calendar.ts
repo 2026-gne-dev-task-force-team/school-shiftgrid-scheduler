@@ -77,7 +77,7 @@ export interface Calendar {
 
 /**
  * 회차 하나(0.2) — 날짜는 'YYYY-MM-DDTHH:mm'(종일도 'T00:00' · end 는 반열린 끝).
- *   반복 일정 = `calendar.event` 의 data.recur · 실체 회차 = `calendar.event` + data.seriesId·data.originalStart.
+ *   반복 일정 = `calendar.event` 의 values.when.pattern(옛 data.recur 도 읽는다) · 실체 회차 = `calendar.event` + data.seriesId·data.originalStart.
  */
 export interface Occurrence {
     /** 실체면 그 레코드, 가상이면 규칙 일정 id */

@@ -14,18 +14,17 @@ import { notifyNodeUndo, type Disposable, type MenuEntry, type PluginHost, type 
 import type { EventData } from './events';
 import { isoMinuteOf, nodeIdOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
-import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
+import type { CollectionKit, DateValue, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
 import { presetOf, listPresets } from './presets';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
-import type { CalendarItem } from './contracts/calendar';
-import type { IcsWriteEvent } from './ics';
+import type { IcsSeriesItem, IcsWriteEvent } from './ics';
 import { eventToIcs, planImport } from './io';
 
 export { STORE_TYPE, EVENT_TYPE } from './config';
 import { STORE_TYPE, EVENT_TYPE } from './config';
-import { skip } from './series';
+import { patternOf, skip } from './series';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다). 저장소 open 이 여는 월 보기.
 const MONTH_ID = 'calendar.month';
@@ -217,8 +216,8 @@ export function removeEvent(chipId: string): void {
     const a = api;
     const name = a.get(id)?.name || '제목 없음';
     // 회차(가상 칩 `규칙id@원래시작` 또는 실체 회차)의 휴지통 = 그 회차만 빠뜨리기 — 시리즈 전체는 규칙 일정에서 지운다
-    const d = a.get(id)?.data as { seriesId?: string; originalStart?: string; recur?: unknown } | undefined;
-    const seriesId = chipId !== id ? id : !d?.recur ? d?.seriesId : undefined;
+    const d = a.get(id)?.data as { seriesId?: string; originalStart?: string } | undefined;
+    const seriesId = chipId !== id ? id : !patternOf(d) ? d?.seriesId : undefined;
     const originalStart = chipId !== id ? chipId.slice(id.length + 1) : d?.originalStart;
     if (seriesId && originalStart) {
         const allDay = storedToEvent(a.get(seriesId)?.data)?.allDay ?? false;
@@ -270,10 +269,10 @@ export function storeName(storeId: string): string {
 }
 
 /**
- * CalendarItem 들을 저장소에 가져온다 — UID 가 그 저장소에 이미 있으면 건너뛴다(중복). 돌려주는 {created, skipped}.
- *   🔴 index.ts 가 parseIcs 로 편 항목을 넘긴다(nodes 는 파서를 모른다 — 노드만 만진다).
+ * 일정들(반복은 패턴째)을 저장소에 가져온다 — UID 가 그 저장소에 이미 있으면 건너뛴다(중복). 돌려주는 {created, skipped}.
+ *   🔴 index.ts 가 parseIcsSeries 로 읽은 항목을 넘긴다(nodes 는 파서를 모른다 — 노드만 만진다).
  */
-export function importItemsToStore(storeId: string, items: readonly CalendarItem[]): { created: number; skipped: number } {
+export function importItemsToStore(storeId: string, items: readonly IcsSeriesItem[]): { created: number; skipped: number } {
     if (!api) return { created: 0, skipped: 0 };
     const existing = api.children(storeId)
         .filter((n) => n.type === EVENT_TYPE)
@@ -282,7 +281,9 @@ export function importItemsToStore(storeId: string, items: readonly CalendarItem
     const { specs, skipped } = planImport(existing, items);
     let created = 0;
     for (const s of specs) {
-        if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data: eventToStored(s.data) })) created++;
+        const data = eventToStored(s.data);
+        if (s.pattern) data.values.when = { ...(data.values.when as DateValue), pattern: s.pattern };
+        if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data })) created++;
     }
     return { created, skipped };
 }
@@ -294,11 +295,19 @@ export function importItemsToStore(storeId: string, items: readonly CalendarItem
 export function collectForExport(storeId: string | null): IcsWriteEvent[] {
     if (!api) return [];
     const out: IcsWriteEvent[] = [];
+    // 실체 회차는 따로 한 건으로 나가니 규칙 쪽에선 그 자리를 EXDATE 로 뺀다(안 빼면 다른 달력에 두 번 보인다)
+    const taken = new Map<string, string[]>();
+    for (const n of eventNodes) {
+        const d = n.data as { seriesId?: string; originalStart?: string } | undefined;
+        if (d?.seriesId && d.originalStart && !inTrash(n.id)) taken.set(d.seriesId, [...(taken.get(d.seriesId) ?? []), d.originalStart]);
+    }
     for (const n of eventNodes) {
         if (inTrash(n.id)) continue;
         if (storeId && !api.path(n.id).includes(storeId)) continue;   // 그 저장소 subtree 밖은 건너뜀
         const data = storedToEvent(n.data);
-        if (data) out.push(eventToIcs({ id: n.id, name: n.name, data }));
+        if (!data) continue;
+        const p = patternOf(n.data), tk = taken.get(n.id)?.map((s) => (data.allDay ? s.slice(0, 10) : s));
+        out.push(eventToIcs({ id: n.id, name: n.name, data }, p && tk ? { ...p, exdates: [...new Set([...(p.exdates ?? []), ...tk])] } : p));
     }
     return out;
 }

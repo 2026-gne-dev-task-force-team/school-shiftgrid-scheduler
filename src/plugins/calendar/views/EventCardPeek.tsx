@@ -16,7 +16,7 @@ import type { StoredEvent } from '../event-fields';
 import { eventFields, eventToValues, applyEventValue } from '../event-fields';
 import { getCalendarHost, getNodesApi, getKit, patchEvent, setEventValue } from '../nodes';
 import { usePreset, baseFieldsOf } from '../presets';
-import { materialize, type SeriesData } from '../series';
+import { materialize, patternOf } from '../series';
 import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
 import { storedToEvent } from '../event-fields';
 import { inTrash } from '../nodes';
@@ -28,7 +28,7 @@ const BASE_KEYS = new Set(['name', 'allDay', 'when', 'memo']);
 function ruleEvent(id: string, stores: Map<string, StoreInfo>): CalEvent | null {
     const api = getNodesApi();
     const n = api?.get(id), d = storedToEvent(n?.data);
-    if (!api || !n || !d || !(n.data as SeriesData).recur || inTrash(id)) return null;
+    if (!api || !n || !d || !patternOf(n.data) || inTrash(id)) return null;
     const storeId = api.parent(id) ?? '';
     return { id, storeId, name: n.name, start: d.start, end: d.end, startMs: new Date(d.start).getTime(), endMs: new Date(d.end).getTime(),
         allDay: d.allDay, memo: d.memo ?? '', colorIdx: stores.get(storeId)?.colorIdx ?? 0 };
@@ -78,7 +78,7 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
             after={<>
                 {event.occ
                     ? <OccActions chipId={event.id} occ={event.occ} onOpen={setEventId} />
-                    : <RecurField key={event.id} eventId={event.id} rule={(node?.data as SeriesData | undefined)?.recur} start={event.start} />}
+                    : <RecurField key={event.id} eventId={event.id} rule={patternOf(node?.data)?.rules[0]} start={event.start} />}
                 <EventActions event={event} stores={storeList} />
             </>}
         />
