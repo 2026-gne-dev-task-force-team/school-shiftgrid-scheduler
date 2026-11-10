@@ -259,7 +259,8 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     const [head, setHead] = useState({ y: initValue.current.getFullYear(), m: initValue.current.getMonth() + 1 });
 
     const prevFrom = useRef(range.from);
-    const keepTopIdx = useRef<number | null>(null);      // 줄 높이가 바뀔 때 맨 위 줄을 그대로 두기 위해
+    const keepTopIdx = useRef<number | null>(null);      // 줄 높이가 바뀔 때 맨 위 줄을 그대로 두기 위해 — 절대 주 offset(range.from 무관)
+    const laidH = useRef(rowH);                          // 지금 scrollTop 이 깔린 줄 높이(커밋된 값) — rowHRef 는 커밋 전에 앞서 간다
     const pendingScrollTo = useRef<number | null>(null); // 범위를 늘린 뒤 가야 할 offset
     const didInit = useRef(false);
     const raf = useRef(0);
@@ -297,8 +298,9 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             if (h === rowHRef.current) return;
             // 🔴 ⭐ 초기화 전(didInit=false)엔 보존 안 함 — 그땐 scrollTop 이 아직 0 이라 keepTopIdx=0 이 되고,
             //    그 0 이 바로 아래 init 이 잡은 자리를 rowH 바뀜 때 덮어 「처음 열면 2년 전(range.from)」으로 튀었다(2026-11-01 22:51 실측).
-            //    🔴 커밋 전에 또 재면(peek 열고 닫는 애니메이션 중 연달아) rowHRef 는 새 값인데 scrollTop 은 옛 값이라 엉뚱한 줄이 잡힌다 — 첫 값만 쥔다.
-            if (didInit.current && keepTopIdx.current === null) keepTopIdx.current = el.scrollTop / rowHRef.current;
+            //    🔴 커밋 전에 또 재면(peek 열고 닫는 애니메이션 중 연달아) rowHRef 는 새 값인데 scrollTop 은 옛 값이다 — 그래서 커밋된 laidH 로 나눈다.
+            //    🔴 ⭐ 「첫 값만 쥐기」는 A→B→A 로 되돌아와 커밋이 안 나면 값이 남아, 한참 뒤 다음 재측정 때 옛 자리로 튀었다(Q5 — 패턴 편집 뒤 Esc 에 10월로). 매번 덮는다.
+            if (didInit.current) keepTopIdx.current = el.scrollTop / laidH.current + rangeRef.current.from;
             rowHRef.current = h;
             setRowH(h);
         };
@@ -319,9 +321,11 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             //       이 effect 가 옛 rowH 를 들고 있어 틀린 자리로 간다(useDayScroller 와 같은 수정).
             el.scrollTop = offsetToScroll(weekOffsetOf(new Date(initValue.current.getFullYear(), initValue.current.getMonth(), 1)), rangeRef.current.from, rowHRef.current);
         } else if (keepTopIdx.current !== null) {
-            el.scrollTop = keepTopIdx.current * rowH;
+            el.scrollTop = (keepTopIdx.current - rangeRef.current.from) * rowH;
             keepTopIdx.current = null;
+            prevFrom.current = rangeRef.current.from; // 같은 커밋에 범위도 늘었으면 위 식이 이미 셌다 — 아래 효과가 또 밀지 않게
         }
+        laidH.current = rowH;
         syncFromScroll();
     }, [rowH]); // eslint-disable-line react-hooks/exhaustive-deps
 
