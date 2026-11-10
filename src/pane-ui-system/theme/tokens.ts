@@ -149,7 +149,7 @@ export type SizeToken = (typeof SIZE_TOKENS)[number];
 
 // ── 밀도 ──────────────────────────────────────────────────────────────────
 // 치수 토큰에 곱하는 배율. index.css 가 max(바닥, 기본 × 밀도) 로 쓴다.
-export type DensityId = 'compact' | 'cozy';
+export type DensityId = 'compact' | 'normal' | 'cozy' | 'roomy';
 
 export interface DensityDef {
     id: DensityId;
@@ -157,13 +157,41 @@ export interface DensityDef {
     scale: number;
 }
 
+// 🔴 4단계(W11, 쥔님 2026-11-10 *"어른들이 보기엔 이미 여유도 그렇게 여유롭지 않아"*).
+//    빽빽 = 옛 값 그대로 · 여유(cozy) = 옛 「편안」 id 를 이어받되 값이 1→1.22 로 넓어졌다 · 보통 = 새 기본 · 넉넉 = 한 단계 더.
+//    ⛔ 옛 'cozy' id 를 지우지 않는다 — 저장된 값이 그대로 읽혀야 한다.
 export const DENSITIES: DensityDef[] = [
     { id: 'compact', name: '빽빽', scale: 0.85 },
-    { id: 'cozy', name: '편안', scale: 1 },
+    { id: 'normal', name: '보통', scale: 1.1 },
+    { id: 'cozy', name: '여유', scale: 1.22 },
+    { id: 'roomy', name: '넉넉', scale: 1.36 },
 ];
 
-export const DEFAULT_DENSITY: DensityId = 'cozy';
+export const DEFAULT_DENSITY: DensityId = 'normal';
 
 export function densityScale(id: DensityId): number {
-    return DENSITIES.find((d) => d.id === id)?.scale ?? 1;
+    return DENSITIES.find((d) => d.id === id)?.scale ?? 1.1;
+}
+
+// ── 글자 크기 ─────────────────────────────────────────────────────────────
+// 단계 토큰(--fs-micro~lead)에 곱하는 배율 --fs-scale. 밀도와 따로 고른다.
+export type FontSizeId = 'small' | 'normal' | 'large' | 'xlarge';
+
+export interface FontSizeDef {
+    id: FontSizeId;
+    name: string;
+    scale: number;
+}
+
+export const FONT_SIZES: FontSizeDef[] = [
+    { id: 'small', name: '작게', scale: 0.9 },
+    { id: 'normal', name: '보통', scale: 1 },
+    { id: 'large', name: '크게', scale: 1.15 },
+    { id: 'xlarge', name: '아주 크게', scale: 1.3 },
+];
+
+export const DEFAULT_FONT_SIZE: FontSizeId = 'normal';
+
+export function fontScale(id: FontSizeId): number {
+    return FONT_SIZES.find((f) => f.id === id)?.scale ?? 1;
 }

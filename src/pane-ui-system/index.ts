@@ -151,8 +151,8 @@ export {
     type ThemeSettings, type ThemeMode,
 } from './theme/settings';
 export {
-    COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, findTheme,
-    type ColorToken, type DensityId, type ThemePreset, type Palette,
+    COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, FONT_SIZES, densityScale, fontScale, findTheme,
+    type ColorToken, type DensityId, type FontSizeId, type ThemePreset, type Palette,
 } from './theme/tokens';
 export { hexToRgb, rgbToHex, isTriplet } from './theme/color';
 export {
