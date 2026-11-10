@@ -126,8 +126,9 @@ export function GridToolbar(p: GridToolbarProps) {
     );
 
     return (
-        <Toolbar label="시간표 도구 줄" scroll={!narrow}
+        <Toolbar label="시간표 도구 줄" wrap
             end={narrow ? <IconButton icon="dots" label="더보기" onMouseDown={keep} onClick={(e) => setMore((e.currentTarget as HTMLElement).getBoundingClientRect())} /> : undefined}>
+            <div role="group" aria-label="편집" className="flex shrink-0 items-center gap-1">
             <IconButton icon="undo" label="되돌리기" title={`되돌리기 (${keyLabel('Mod+Z')})`} disabled={!p.canUndo} onMouseDown={keep} onClick={p.undo} />
             <IconButton icon="redo" label="다시하기" title={`다시하기 (${keyLabel('Mod+Shift+Z')})`} disabled={!p.canRedo} onMouseDown={keep} onClick={p.redo} />
             <span className="mx-1 h-4 w-px bg-line" />
@@ -135,14 +136,11 @@ export function GridToolbar(p: GridToolbarProps) {
                 onMouseDown={keep} onClick={() => edit((d) => addRow(d, r === null ? undefined : r + 1))}>교시 추가</Button>
             <IconButton icon="trash" label="교시 삭제" title={r === null ? HINT : n <= 1 ? '교시가 하나뿐이라 삭제할 수 없습니다' : `${rowName} 삭제`} disabled={r === null || n <= 1} onMouseDown={keep}
                 onClick={() => { if (r === null) return; edit((d) => removeRow(d, r)); p.onRowRemoved?.(); p.onRemoved?.('교시 1개를 삭제했습니다'); }} />
+            </div>
             {!narrow && (
                 <>
-                    <span className="mx-1 h-4 w-px bg-line" />
                     {timeFields}
-                    <span className="mx-1 h-4 w-px bg-line" />
-                    {clearBtn}
-                    <span className="mx-1 h-4 w-px bg-line" />
-                    {zoomBtns}
+                    <div role="group" aria-label="칸·확대" className="flex shrink-0 items-center gap-1">{clearBtn}{zoomBtns}</div>
                 </>
             )}
             {narrow && more && (
