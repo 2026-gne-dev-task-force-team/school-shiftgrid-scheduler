@@ -12,6 +12,7 @@ export function Cell({
     editable,
     onChange,
     onOptionsChange,
+    fields,
 }: {
     field: RecordField;
     /** 행 하나(셀은 [field.key] 로 읽는다) */
@@ -19,6 +20,8 @@ export function Cell({
     editable: boolean;
     onChange: (v: RecordCellValue) => void;
     onOptionsChange?: (options: FieldOption[]) => void;
+    /** 이 목록의 칸 전부(롤업이 형제 관계 칸을 찾는다) */
+    fields?: RecordField[];
 }) {
     const def = fieldTypes.get(field.type);
     const value = rawValue(rowValue, field.key) as RecordCellValue | undefined;
@@ -39,6 +42,7 @@ export function Cell({
             editable={editable}
             onChange={onChange}
             row={rowValue}
+            fields={fields}
             onOptionsChange={def.hasOptions ? onOptionsChange : undefined}
         />
     );

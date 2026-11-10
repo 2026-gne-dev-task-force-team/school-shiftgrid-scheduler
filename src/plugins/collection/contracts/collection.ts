@@ -132,6 +132,8 @@ export interface FieldCellProps {
     onChange: (v: RecordCellValue) => void;
     /** 행 전체(다른 칸을 읽고 싶은 타입용) */
     row: unknown;
+    /** 이 목록의 칸 전부(형제 칸을 따라가는 타입용 — 롤업). 안 주는 자리도 있다 */
+    fields?: RecordField[];
     /** 선택지를 화면에서 고치는 칸(select·multi)만 쓴다 — 안 주면 선택지 편집 UI 가 숨는다 */
     onOptionsChange?: (options: FieldOption[]) => void;
 }
@@ -172,7 +174,7 @@ export interface FieldTypeDef {
     /** 보드·그룹 묶기 키 */
     groupKey?(value: RecordCellValue | undefined, config: unknown): string | null;
     /** 칸 설정 팝오버(P2~) */
-    Config?: ComponentType<{ field: RecordField; onChange: (f: RecordField) => void }>;
+    Config?: ComponentType<{ field: RecordField; onChange: (f: RecordField) => void; /** 이 목록의 칸 전부 */ fields?: RecordField[] }>;
 }
 
 export interface FieldTypeRegistry {
@@ -329,6 +331,8 @@ export interface PropertyListProps {
     values: Record<string, RecordCellValue>;
     onChange?: (key: string, v: RecordCellValue) => void;
     onOptionsChange?: (key: string, options: FieldOption[]) => void;
+    /** 이 줄의 노드 id — 주면 맨 밑에 「나를 가리키는 것」(역참조) 칩이 뜬다. 비었으면 안 보인다 */
+    rowId?: string;
 }
 
 /**

@@ -8,6 +8,7 @@
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { RecordField } from '../contracts/collection';
 import { DB_TYPE, ROW_TYPE, normalizeRelation } from '../schema';
+import { kitOfType } from '../kits';
 
 /** 노드 시스템에서 관계 칸이 쓰는 것만 — 시험은 가짜로 채운다 */
 export type RelationLook = Pick<NodesApi, 'get' | 'isTrashed' | 'path' | 'liveByType' | 'children' | 'parent' | 'find'>;
@@ -52,9 +53,12 @@ export function ownerOf(look: RelationLook, id: string): string | null {
     return null;
 }
 
+/** 컬렉션의 칸 — 노드에 저장된 사용자 칸 + (defineCollection 목록이면) 꾸러미 기본 칸(baseFields) */
 const fieldsOf = (look: RelationLook, collId: string): RecordField[] => {
     const f = (look.get(collId)?.data as { fields?: unknown } | undefined)?.fields;
-    return Array.isArray(f) ? (f as RecordField[]) : [];
+    const user = Array.isArray(f) ? (f as RecordField[]) : [];
+    const base = kitOfType(look.get(collId)?.type)?.config.baseFields ?? [];
+    return base.length ? [...base, ...user.filter((u) => !base.some((b) => b.key === u.key))] : user;
 };
 const pointsAt = (f: RecordField, targetDb: string): boolean => {
     const t = (f.config as { target?: { kind?: unknown; nodeId?: unknown } } | undefined)?.target;
@@ -63,7 +67,7 @@ const pointsAt = (f: RecordField, targetDb: string): boolean => {
 const valuesOf = (look: RelationLook, id: string): Record<string, unknown> =>
     ((look.get(id)?.data as { values?: Record<string, unknown> } | undefined)?.values) ?? {};
 
-/** 그 레코드의 컬렉션에서 targetDb 를 가리키는 관계 칸 key 들(사용자 칸 data.fields 만 — 꾸러미 baseFields 는 노드에 없어 안 본다) */
+/** 그 레코드의 컬렉션에서 targetDb 를 가리키는 관계 칸 key 들(사용자 칸 data.fields + 꾸러미 baseFields) */
 export function castKeys(look: RelationLook, targetDb: string, sourceId: string): string[] {
     const owner = ownerOf(look, sourceId);
     if (!owner || owner === targetDb) return [];

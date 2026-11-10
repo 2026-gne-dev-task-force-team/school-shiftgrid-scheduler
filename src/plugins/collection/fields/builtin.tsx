@@ -7,6 +7,7 @@ import { CheckCell, DateCell, EmailCell, MultiCell, NumberCell, PhoneCell, Reado
 import { RELATIVE_DATES, dateText, inRelative, parseDateText, toDateValue } from './dates';
 import { isValidLink, type LinkKind } from './links';
 import { toNum, universalOps } from './ops';
+import { RollupCell, RollupConfigEditor } from './rollup';
 import { RelationCell, RelationConfigEditor, relationFromText, relationIds, relationText } from './relation';
 
 const labelOf = (field: RecordField, value: string): string => field.options?.find((o) => o.value === value)?.label ?? value;
@@ -174,8 +175,16 @@ const relationType = withOps({
     groupKey: (v) => (Array.isArray(v) && v.length > 0 ? String(v[0]) : null),
 }, (u) => [u.contains, u.notContains, u.empty, u.notEmpty]);
 
+// ── rollup — 관계 칸을 따라가 대상의 칸을 모아 보인다(저장 안 함 · 읽기 전용). 계산은 rollup.tsx · follow.ts ──
+const rollupType: FieldTypeDef = {
+    type: 'rollup', label: '롤업', icon: 'database', readOnly: true, Cell: RollupCell, Config: RollupConfigEditor,
+    defaultConfig: { how: 'list' },
+    // shortcut: 값이 없어(계산 칸) 검색·정렬·복사 글자는 빈 값 — 필요해지면 toText 가 형제 칸을 받게 넓힌다
+    toText: () => '', fromText: () => null, isEmpty: () => false,
+};
+
 /** 내장 — 순서가 칸 추가 팝오버의 순서다. */
 export const BUILTIN_FIELD_TYPES: readonly FieldTypeDef[] = [
     textType, numberType, selectType, multiType, dateType, checkType,
-    statusType, urlType, emailType, phoneType, createdType, updatedType, idType, relationType,
+    statusType, urlType, emailType, phoneType, createdType, updatedType, idType, relationType, rollupType,
 ];

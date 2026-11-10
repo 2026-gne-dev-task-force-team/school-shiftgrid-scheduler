@@ -10,7 +10,7 @@ import type { NodesApi, PublicNode } from '../../../pane-ui-system/core/nodes/co
 import type { CollectionKit } from '../contracts/collection';
 import { initRecordNodes } from '../nodes';
 import { registerKit } from '../kits';
-import { RelationCell } from './relation';
+import { RelationCell, RelationConfigEditor } from './relation';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -87,5 +87,20 @@ describe('관계 칸 고르개 — 캐스팅', () => {
         pick('[data-rv-rel-cast-new]');
         expect(addItem).toHaveBeenCalledWith('rl', { title: '새 항목' });
         expect(setValue).toHaveBeenLastCalledWith('c3', 'f_room', ['rNew']);
+    });
+});
+
+describe('관계 칸 설정 — 가리킬 컬렉션 후보', () => {
+    it('defineCollection 으로 만든 목록 타입(방 목록)도 후보에 든다', () => {
+        initRecordNodes(fake);
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+        root = createRoot(el);
+        const field = { key: 'f_room', label: '방', type: 'relation', config: toRooms[0].config };
+        act(() => root!.render(h(RelationConfigEditor, { field, onChange: () => {} } as never)));
+        const labels = [...el.querySelectorAll('[data-rv-rel-target] option, select option')].map((o) => o.textContent);
+        expect(labels).toContain('방 목록');
+        expect(labels).toContain('학년도');
+        expect(labels).not.toContain('딴 목록');
     });
 });

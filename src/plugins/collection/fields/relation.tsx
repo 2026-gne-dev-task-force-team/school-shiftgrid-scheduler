@@ -5,31 +5,44 @@
  *   1차는 target.kind 'db' 만 동작한다. 'source'(등록된 소스) 는 타입만 있고 셀은 「지원 안 함」.
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
+import { Button, Field, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
-import { kitOfType } from '../kits';
+import { kitListTypes, kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
-import { castCandidate, castCandidates, castKeys, liveIn, parseRelationEntry, recordsOf, relationEntry, type RelationLook } from './cast';
+import { TITLE_KEY, targetFields, targetValue, valueText } from './follow';
+import { castCandidate, castCandidates, castKeys, liveIn, parseRelationEntry, recordsOf, relationEntry, resolveRelationTargets, type RelationLook } from './cast';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
-export interface RelationConfig { target?: RelationTarget; many: boolean }
+/** show = 칩에 보일 대상 칸 key(없음 = 제목) */
+export interface RelationConfig { target?: RelationTarget; many: boolean; show?: string }
 export type { RelationLook } from './cast';
 /** path = 부모 항목 이름들(바깥 → 안) — 최상위면 빈 배열 */
 export interface RelationItem { id: string; name: string; path: string[] }
 
 const UNTITLED = '제목 없음';
 
+/** 가리킬 수 있는 목록 — 범용 컬렉션 + defineCollection 으로 만든 목록(방 목록 같은 꾸러미 타입). 폴더 이름은 든 곳 */
+export function targetCollections(): { id: string; name: string; folder: string | null }[] {
+    const a = getNodesApi();
+    if (!a) return liveDbs();
+    const extra = kitListTypes().flatMap((t) => a.liveByType(t)).map((n) => {
+        const p = a.parent(n.id);
+        return { id: n.id, name: n.name, folder: p && p !== a.roots?.main ? (a.get(p)?.name ?? null) : null };
+    });
+    return [...liveDbs(), ...extra];
+}
+
 /** 저장된 config → 꼴 맞춘 설정. 틀린 target 은 버린다(없음 = 아직 안 고름) · many 는 기본 true */
 export function relationConfig(config: unknown): RelationConfig {
-    const c = (config && typeof config === 'object' ? config : {}) as { target?: Partial<{ kind: string; nodeId: string; id: string }>; many?: unknown };
+    const c = (config && typeof config === 'object' ? config : {}) as { target?: Partial<{ kind: string; nodeId: string; id: string }>; many?: unknown; show?: unknown };
     const t = c.target;
     const target: RelationTarget | undefined =
         t?.kind === 'db' && typeof t.nodeId === 'string' && t.nodeId ? { kind: 'db', nodeId: t.nodeId }
         : t?.kind === 'source' && typeof t.id === 'string' && t.id ? { kind: 'source', id: t.id }
         : undefined;
-    return { target, many: c.many !== false };
+    return { target, many: c.many !== false, ...(typeof c.show === 'string' && c.show !== TITLE_KEY ? { show: c.show } : {}) };
 }
 
 /** 값 → id 배열(설정의 many 를 따른다) */
@@ -58,9 +71,14 @@ export function relationCandidates(look: RelationLook | null, target: RelationTa
 }
 
 /** 값의 id 하나하나 → 이름. 없음·휴지통·대상 밖이면 name = null(「사라진 항목」) */
-export function resolveRelation(look: RelationLook | null, target: RelationTarget | undefined, ids: readonly string[]): { id: string; name: string | null }[] {
+export function resolveRelation(look: RelationLook | null, target: RelationTarget | undefined, ids: readonly string[], show?: string): { id: string; name: string | null }[] {
     return ids.map((id) => {
         if (!look || target?.kind !== 'db') return { id, name: null };
+        // 보일 대상 칸을 골랐으면 같은 따라가기(resolveRelationTargets)로 대상 줄을 찾아 그 칸 값을 보인다 — 못 풀면 아래 제목 꼴로
+        if (show) {
+            const shown = resolveRelationTargets(look, target.nodeId, [id]).map((t) => valueText(look, targetValue(look, t, show))).filter((s) => s !== '');
+            if (shown.length > 0) return { id, name: shown.join(', ') };
+        }
         if (liveIn(look, target.nodeId, id)) return { id, name: look.get(id)?.name || UNTITLED };
         // 캐스팅 원소(다른 목록의 줄 · 고른 대상) — 그 줄 이름 그대로, 고른 것이 있으면 「반 · 방」
         const { id: src, via } = parseRelationEntry(id);
@@ -78,7 +96,7 @@ export function toggleRelation(ids: readonly string[], id: string, many: boolean
 
 /** 글자 — 살아 있는 대상 이름을 `, ` 로(사라진 것은 건너뛴다 · 값은 그대로) */
 export function relationText(value: RecordCellValue | undefined, config: unknown, look: RelationLook | null = getNodesApi()): string {
-    const names = new Map(resolveRelation(look, relationConfig(config).target, relationIds(value, config)).map((r) => [r.id, r.name ?? undefined]));
+    const names = new Map(resolveRelation(look, relationConfig(config).target, relationIds(value, config), relationConfig(config).show).map((r) => [r.id, r.name ?? undefined]));
     return relationToText(relationIds(value, config), (id) => names.get(id));
 }
 
@@ -198,7 +216,7 @@ export function RelationCell({ field, value, config, editable, onChange }: Field
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
     const cfg = relationConfig(config);
     const ids = relationIds(value, config);
-    const chips = resolveRelation(getNodesApi(), cfg.target, ids);
+    const chips = resolveRelation(getNodesApi(), cfg.target, ids, cfg.show);
     const unsupported = cfg.target?.kind === 'source';
     return (
         <>
@@ -245,8 +263,15 @@ export function RelationConfigEditor({ field, onChange }: { field: RecordField; 
                 가리킬 컬렉션
                 <Select value={cur} data-rv-rel-target
                     onChange={(e) => set({ target: e.target.value ? { kind: 'db', nodeId: e.target.value } : undefined })}
-                    options={[{ value: '', label: '— 고르기 —' }, ...liveDbs().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
+                    options={[{ value: '', label: '— 고르기 —' }, ...targetCollections().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
             </label>
+            {cur && (
+                <Field label="칩에 보일 칸">
+                    <Select value={cfg.show ?? TITLE_KEY} data-rv-rel-show
+                        onChange={(e) => set({ show: e.target.value || undefined })}
+                        options={targetFields(getNodesApi(), cur).map((c) => ({ value: c.key, label: c.label }))} />
+                </Field>
+            )}
             <div className="flex items-center justify-between gap-2 text-body text-text">
                 여러 개 고르기
                 <Toggle on={cfg.many} onToggle={(v) => set({ many: v })} label="여러 개 고르기" />

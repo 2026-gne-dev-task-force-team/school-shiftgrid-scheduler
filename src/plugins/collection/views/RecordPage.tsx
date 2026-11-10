@@ -57,7 +57,7 @@ export function RecordPage({ host, id, fields, values, onChange, onOptionsChange
     const props = (
         <div className="flex flex-col gap-3">
             {uniqueMsg && <p role="alert" data-rv-unique-msg className="px-2 text-small text-warn">{uniqueMsg}</p>}
-            <PropertyList fields={fields} values={values} onChange={guarded} onOptionsChange={onOptionsChange} />
+            <PropertyList rowId={id} fields={fields} values={values} onChange={guarded} onOptionsChange={onOptionsChange} />
             {after}
         </div>
     );
