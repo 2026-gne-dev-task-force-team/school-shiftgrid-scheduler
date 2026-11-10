@@ -16,6 +16,16 @@ export interface PastePlan {
 }
 
 /**
+ * 첫 줄이 머리글인가 — 제목 칸 이름표가 그 줄에 있으면 머리글로 본다(엑셀은 보통 머리글째 복사한다).
+ *   머리글이면 열마다 이름표가 같은 칸 key(모르는 열은 null)를, 아니면 null 을 준다. 숨긴 칸도 이름표로 찾는다.
+ */
+export function headerKeys(fields: readonly RecordField[], titleKey: string, first: readonly string[]): (string | null)[] | null {
+    const byLabel = new Map(fields.map((f) => [f.label.trim(), f.key]));
+    const keys = first.map((c) => byLabel.get(c.trim()) ?? null);
+    return keys.includes(titleKey) ? keys : null;
+}
+
+/**
  * 붙여넣은 글자 행렬 → 새 행 계획(순수). 열 i 는 keys[i] 칸으로 간다(보이는 칸 순서 — 첫 칸이 제목).
  *   keys[i] 가 null(칸이 모자람)이면 「칸 N」 글자 칸을 만든다. 값은 그 칸 타입의 fromText 로 — 모르는 선택지는 선택지로 만든다.
  *   🔴 빈 행(모든 칸이 빔)은 건너뛴다.

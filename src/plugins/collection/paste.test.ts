@@ -2,8 +2,18 @@
  * 붙여넣기 — 엑셀 TSV 파싱 · 행·칸 계획(칸이 모자라면 글자 칸을 만든다 · 모르는 선택지는 만든다).
  */
 import { describe, it, expect } from 'vitest';
-import { buildPaste } from './paste';
+import { buildPaste, headerKeys } from './paste';
 import type { RecordField } from './contracts/collection';
+
+describe('headerKeys — 첫 줄이 머리글인가', () => {
+    const F: RecordField[] = [{ key: 'f_t', label: '이름', type: 'text' }, { key: 'f_k', label: '구분', type: 'select' }];
+    it('제목 칸 이름표가 있으면 머리글 — 앞뒤 공백 무시 · 모르는 열은 null', () => {
+        expect(headerKeys(F, 'f_t', [' 구분 ', '이름', '연락처'])).toEqual(['f_k', 'f_t', null]);
+    });
+    it('제목 칸 이름표가 없으면 머리글이 아니다(데이터 줄)', () => {
+        expect(headerKeys(F, 'f_t', ['가나다', '구분'])).toBeNull();
+    });
+});
 
 describe('buildPaste', () => {
     const fields: RecordField[] = [

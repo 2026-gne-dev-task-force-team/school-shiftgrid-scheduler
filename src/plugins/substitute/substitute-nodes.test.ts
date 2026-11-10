@@ -65,9 +65,12 @@ describe('보결 명단 — 구분 칸', () => {
         expect(api.children(lid).map((n) => n.id)).toContain(sid);
     });
 
-    it('시작 화면 길(createList) — 구분 선택 칸이 기본 선택지 넷으로 심긴다', () => {
+    it('시작 화면 길(createList) — 칸 순서 이름·구분·메모 · 구분 선택 칸이 기본 선택지 넷으로 심긴다', () => {
         const api = wire();
-        const f = kindOf(api, getKit()!.createList()!);
+        const lid = getKit()!.createList()!;
+        expect([...STAFF_CONFIG.baseFields, ...getKit()!.userFieldsOf(lid)].map((x) => x.label)).toEqual(['이름', '구분', '메모']);
+        expect(getKit()!.userFieldsOf(lid).every((x) => x.locked)).toBe(true);
+        const f = kindOf(api, lid);
         expect(f?.type).toBe('select');
         expect(f?.options?.map((o) => o.label)).toEqual(['담임', '전담', '비교과', '보조인력']);
     });
@@ -85,7 +88,7 @@ describe('보결 명단 — 구분 칸', () => {
         const l1 = kit.createList()!;
         const l2 = kit.createList()!;
         const f = kindOf(api, l1)!;
-        kit.setUserFields(l1, [{ ...f, options: [...f.options!, { value: 'admin', label: '교감' }] } as never]);
+        kit.setUserFields(l1, kit.userFieldsOf(l1).map((x) => (x.key === 'f_kind' ? { ...f, options: [...f.options!, { value: 'admin', label: '교감' }] } as never : x)));
         expect(kindOf(api, l1)?.options?.map((o) => o.label)).toContain('교감');
         expect(kindOf(api, l2)?.options).toHaveLength(4);
     });
@@ -96,9 +99,10 @@ describe('보결 명단 — 구분 칸', () => {
         const lid = kit.createList()!;
         expect((kindOf(api, lid) as { locked?: boolean })?.locked).toBe(true);
         const fields = [...STAFF_CONFIG.baseFields, ...kit.userFieldsOf(lid)];
-        pasteIntoList(kit as never, lid, fields, ['name', 'memo'], { keys: ['name', 'f_kind'], rows: [['가나다', '담임'], ['라마바', '보조인력']] });
-        const vals = api.children(lid).filter((n) => n.type === STAFF_TYPE).map((n) => (n.data as { values?: Record<string, unknown> }).values?.f_kind);
-        expect(vals).toEqual(['homeroom', 'assistant']);
+        pasteIntoList(kit as never, lid, fields, ['name'], { keys: ['name', 'f_kind', 'memo'], rows: [['가나다', '담임', '1학년'], ['라마바', '보조인력', '']] });
+        const vals = api.children(lid).filter((n) => n.type === STAFF_TYPE).map((n) => (n.data as { values?: Record<string, unknown> }).values);
+        expect(vals.map((v) => v?.f_kind)).toEqual(['homeroom', 'assistant']);
+        expect(vals[0]?.memo).toBe('1학년');
         expect(kindOf(api, lid)?.options).toHaveLength(4);
     });
 });

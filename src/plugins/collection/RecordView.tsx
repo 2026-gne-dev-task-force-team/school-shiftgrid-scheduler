@@ -23,6 +23,7 @@ import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
+import { headerKeys } from './paste';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
     DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews, watchViews,
@@ -550,11 +551,14 @@ export function RecordView<T>({
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         const text = e.clipboardData.getData('text/plain');
         if (!text) return;
-        const matrix = parseClipboard(text);
+        let matrix = parseClipboard(text);
         if (matrix.every((r) => r.length === 0)) return;
         e.preventDefault();
         const width = Math.max(...matrix.map((r) => r.length));
-        const keys: (string | null)[] = Array.from({ length: width }, (_, i) => visibleFields[i]?.key ?? null);
+        // 머리글째 복사했으면 열을 이름표로 맞추고 그 줄은 버린다 — 아니면 보이는 칸 순서대로
+        const head = titleKey ? headerKeys(fields, titleKey, matrix[0]) : null;
+        if (head) matrix = matrix.slice(1);
+        const keys: (string | null)[] = Array.from({ length: width }, (_, i) => (head ? head[i] ?? null : visibleFields[i]?.key ?? null));
         // 🔴 「유일」 칸 — 기존 값·앞서 붙인 줄과 겹치는 칸은 비우고(그 칸만 건너뜀) 몇 칸 건너뛰었는지 알린다
         const uniq = filterUniquePaste(keys, matrix, (k) => records.map((r) => rawValue(r, k) as RecordCellValue | undefined),
             new Set(fields.filter((f) => f.unique).map((f) => f.key)));

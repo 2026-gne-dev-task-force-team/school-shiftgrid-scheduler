@@ -243,6 +243,14 @@ describe('붙여넣기 — 엑셀 TSV', () => {
         expect(req.keys).toEqual(['f_t', 'f_x']);   // 첫 열 = 제목 칸
         expect(ev.defaultPrevented).toBe(true);
     });
+    it('머리글째 붙여넣기 → 열을 이름표로 맞추고 머리 줄은 버린다(모르는 열은 null)', () => {
+        const spy = spies();
+        mount(<Harness init={[]} spy={spy} />);
+        pasteInto(q('[data-rv-grid]')!, '상태\t제목\t비고\n가\t하나\tx\n');
+        const req = spy.paste.mock.calls[0][0] as PasteRequest;
+        expect(req.keys).toEqual(['f_s', 'f_t', null]);
+        expect(req.rows).toEqual([['가', '하나', 'x']]);
+    });
     it('입력칸 안의 붙여넣기는 브라우저에 양보한다', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }]} spy={spy} />);
