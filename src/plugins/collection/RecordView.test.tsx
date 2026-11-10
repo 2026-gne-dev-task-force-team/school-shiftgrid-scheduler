@@ -178,6 +178,14 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
         expect(out.find((f) => f.key === 'f_s')!.options).toEqual([{ value: 'a', label: '가', color: 'red' }]);
     });
 
+    it('검수 K20 — 설명이 있는 열 머리에만 ⓘ 가 있다', () => {
+        const fs: RecordField[] = [START[0], { ...START[1], description: '금액(원)' }, { ...START[2], description: '   ' }];
+        mount(<RecordView<Rec> fields={fs} records={[]} getId={(r) => r.id} viewKey="t.k20" titleKey="f_t" />);
+        expect(q('[data-rv-head-info="f_x"]')).not.toBeNull();
+        expect(q('[data-rv-head-info="f_t"]')).toBeNull();
+        expect(q('[data-rv-head-info="f_s"]')).toBeNull();
+    });
+
     it('검수 K1 — 목록 설명이 표 위와 빈 표 안내에 뜬다 · 읽기 전용이면 누름 자리가 없다', () => {
         mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1" titleKey="f_t" description="이 학교 교직원 명단" />);
         expect(q('p[data-rv-desc]')?.textContent).toBe('이 학교 교직원 명단');
@@ -596,11 +604,15 @@ describe('칸 편집 키 — Enter·Shift+Enter·Tab·Esc·행 추가 단추', (
         expect(spy.cell).toHaveBeenCalledWith('r1', 'f_x', 'z');
         expect(editingAt()).toBe('1:1');
     });
-    it('마지막 행 Enter = 새 행을 만들고 그 칸 편집', () => {
+    it('마지막 행 Enter = 확정만(새 행 없음 · 편집 닫힘)', () => {
         const spy = spies();
         mount(<Harness init={two} spy={spy} />);
-        key(open('r2', 'f_x'), 'Enter');
-        expect(spy.add).toHaveBeenCalledTimes(1);
+        const input = open('r2', 'f_x');
+        setInput(input, 'z');
+        key(input, 'Enter');
+        expect(spy.cell).toHaveBeenCalledWith('r2', 'f_x', 'z');
+        expect(spy.add).not.toHaveBeenCalled();
+        expect(editingAt()).toBeUndefined();
     });
     it('조합 중 Enter 는 이동도 안 한다', () => {
         const spy = spies();
@@ -764,15 +776,16 @@ describe('QA ux2 — 설명 자리·행 ⠿ 메뉴·빈 행 Enter', () => {
         expect(re).toHaveBeenLastCalledWith('r3', 'r2');
     });
 
-    it('빈 마지막 행에서 Enter 는 새 행을 안 만든다 · 값이 있으면 만든다', () => {
+    it('마지막 행 Enter 는 비었든 값이 있든 새 행을 안 만든다', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }]} spy={spy} />);
         click(q('[data-rv-row="r1"] [data-rv-cell="f_t"]'));
         key(q('[data-rv-editing]')!, 'Enter');
         expect(spy.add).not.toHaveBeenCalled();
+        click(q('[data-rv-row="r1"] [data-rv-cell="f_t"]'));
         const input = q('[data-rv-editing]') as HTMLInputElement;
         setInput(input, '가');
         key(input, 'Enter');
-        expect(spy.add).toHaveBeenCalledTimes(1);
+        expect(spy.add).not.toHaveBeenCalled();
     });
 });
