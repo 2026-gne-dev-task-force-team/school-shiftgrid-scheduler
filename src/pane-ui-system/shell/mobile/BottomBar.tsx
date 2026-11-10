@@ -43,6 +43,7 @@ function useKeyboardOpen(): boolean {
 
 function BarButton({ icon, label, onClick, badge, iconSize }: Omit<BarItem, 'id' | 'pinned'> & { iconSize: number }) {
     return (
+        // oxlint-disable-next-line react/forbid-elements -- 하단 막대 원형 버튼 — 틀 크기 변수
         <button
             type="button"
             aria-label={label}

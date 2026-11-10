@@ -147,6 +147,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
             <>
                 {band}
                 <div className="fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
+                    {/* oxlint-disable-next-line react/forbid-elements -- 바깥 막(scrim) — 버튼 모양이 아니다 */}
                     <button
                         className={`absolute inset-0 bg-black/40 ${smooth ? 'pane-strans' : ''}`}
                         style={scrimStyle}
@@ -185,6 +186,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
             //    단 서랍 본체(drawer-panel)는 다시 살려 둔다 — 그 사이드바 위로 떨구는 길은 열어 둔다.
             <div className="drawer-layer fixed inset-0 z-[150] flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
                 {/* 바깥 막 — 좁은 화면은 어둡게, 넓은 화면 고정 풀림은 투명(모달처럼 어둡히지 않는다). 누르면 접힌다 */}
+                {/* oxlint-disable-next-line react/forbid-elements -- 바깥 막(scrim) — 버튼 모양이 아니다 */}
                 <button
                     className={`absolute inset-0 ${narrow ? 'bg-black/40' : 'bg-transparent'} ${scrimAnim}`}
                     onClick={() => onToggle(false)}
