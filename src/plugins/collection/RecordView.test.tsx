@@ -579,6 +579,20 @@ describe('R4 — 빈 상태 · 제목 없음 · 새 행', () => {
         expect(q('[data-rv-empty="filtered"]')).toBeNull();
         expect(q('[data-rv-row="r1"]')).toBeTruthy();
     });
+    it('검색어 때문에 0개면 「검색어에 맞는 항목이 없습니다」 + 「검색어 지우기」가 행을 되살린다', () => {
+        mount(<Harness init={[{ id: 'r1', f_t: '가', f_x: 'a' }]} spy={spies()} />);
+        const input = q('[data-rv-search]') as HTMLInputElement;
+        act(() => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'zzz');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        const box = q('[data-rv-empty="filtered"]')!;
+        expect(box.textContent).toContain('검색어에 맞는 항목이 없습니다');
+        expect(box.textContent).not.toContain('필터');
+        expect(box.className).toContain('sticky');
+        click(qa('[data-rv-empty="filtered"] button').find((b) => b.textContent!.includes('검색어 지우기'))!);
+        expect(q('[data-rv-row="r1"]')).toBeTruthy();
+    });
     it('데이터가 아예 없으면 필터 삭제 단추가 없다(그냥 빈 표)', () => {
         mount(<Harness init={[]} spy={spies()} />);
         expect(q('[data-rv-empty]')).toBeTruthy();
