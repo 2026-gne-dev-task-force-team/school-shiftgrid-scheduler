@@ -117,6 +117,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onReorder={kit.reorderItem}
                     tree={tree}
                     iconOf={(id) => kit.nodes()?.get(id)?.icon}
+                    rowIcon={cfg.itemIcon}
                     onOpenRecord={host && peek ? (id) => peek.show(<ItemPeek kit={kit} host={host} id={id} />, { wideMin: 480, openInTab: () => openRecordTab(host, id) }) : undefined}
                     onOpenRecordTab={host ? (id) => openRecordTab(host, id) : undefined}
                     className="flex-1 min-h-0"

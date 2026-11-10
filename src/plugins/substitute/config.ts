@@ -29,6 +29,7 @@ export const STAFF_CONFIG: CollectionConfig = {
     viewKey: 'substitute.list',
     listLabel: '보결 명단',
     listIcon: 'users',
+    itemIcon: 'user',
     baseFields: [
         { key: 'name', label: '이름', type: 'text', locked: true, description: '명단에서 이 사람을 가리키는 이름입니다. 탐색기 줄 이름과 같습니다.' },
         { key: 'memo', label: '메모', type: 'text', locked: true, description: '이 사람에 대한 자유 메모입니다.' },

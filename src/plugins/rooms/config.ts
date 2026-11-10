@@ -17,6 +17,7 @@ export const ROOM_CONFIG: CollectionConfig = {
     viewKey: 'rooms.list',
     listLabel: '방 목록',
     listIcon: 'door',
+    itemIcon: 'door',
     // 기본 칸 — 지우기·타입 바꾸기 금지(locked). 첫 칸이 제목(노드 이름).
     baseFields: [
         { key: 'name', label: '이름', type: 'text', locked: true, description: '이 방을 가리키는 이름입니다. 탐색기 줄 이름과 같습니다.' },

@@ -10,7 +10,7 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
+import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { Popover, Select } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
@@ -97,14 +97,14 @@ interface RecordRowProps {
     checked: boolean; hovered: boolean; collapsed: boolean;
     markZone: 'before' | 'into' | 'after' | null; isFresh: boolean;
     rc0: number; rc1: number;
-    icon: string | undefined; hasIconOf: boolean;
+    icon: string | undefined; hasIconOf: boolean; rowIcon: IconName;
     act: RowAct; dragBind: DragBindLike;
 }
 
 /** 🔴 행 하나 — React.memo. 새 행을 더해도 옛 행은 props 가 그대로라 다시 안 그려진다(#50: 1,000행에서 추가마다 전부 리렌더 → 비례 이상 느려짐) */
 const RecordRow = memo(function RecordRow({
     r, id, ri, depth, hasChildren, fields, widths, wraps, lead, frozen, titleKey, treeOn, reorderable, selectable, fieldsEditable,
-    cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, act, dragBind,
+    cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, rowIcon, act, dragBind,
 }: RecordRowProps) {
     rowRenderProbe.n++;
     const showOpen = hasOpen && hovered;
@@ -182,7 +182,7 @@ const RecordRow = memo(function RecordRow({
                     )}
                     {isTitle(f.key) && hasIconOf && (
                         <span className="shrink-0 pl-1.5 text-body leading-none select-none" data-rv-icon={id}>
-                            {icon ?? <Icon name="fileText" size={14} className="text-muted" />}
+                            {icon ?? <Icon name={rowIcon} size={14} className="text-muted" />}
                         </span>
                     )}
                     <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
@@ -239,6 +239,7 @@ export function RecordView<T>({
     onOpenRecord,
     onOpenRecordTab,
     iconOf,
+    rowIcon = 'fileText',
     onFieldsChange,
     onConvertField,
     onPaste,
@@ -854,7 +855,7 @@ export function RecordView<T>({
                                 collapsed={treeOn && tree ? tree.collapsed(id) : false}
                                 markZone={mark?.zone ?? null} isFresh={fresh.has(id)}
                                 rc0={inRow ? range!.c0 : -1} rc1={inRow ? range!.c1 : -1}
-                                icon={iconOf ? iconOf(id) : undefined} hasIconOf={!!iconOf}
+                                icon={iconOf ? iconOf(id) : undefined} hasIconOf={!!iconOf} rowIcon={rowIcon}
                                 act={act} dragBind={dragBindStable}
                             />
                         );

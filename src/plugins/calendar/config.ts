@@ -18,6 +18,7 @@ export const EVENT_CONFIG: CollectionConfig = {
     viewKey: 'calendar.table',
     listLabel: '달력 저장소',
     listIcon: 'calendar',
+    itemIcon: 'calendarEvent',
     baseFields: [
         { key: 'name', label: '제목', type: 'text', locked: true },
         { key: 'when', label: '언제', type: 'date', config: { time: true, range: true }, locked: true },
