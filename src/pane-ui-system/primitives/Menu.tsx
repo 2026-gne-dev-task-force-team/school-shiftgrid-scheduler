@@ -58,11 +58,14 @@ export function MenuList({ children, autoFocus = false, className = '', label }:
     );
 }
 
-export function MenuItem({ label, icon, shortcut, danger = false, disabled = false, onSelect, children }: {
+export function MenuItem({ label, icon, shortcut, tone, danger = false, disabled = false, onSelect, children }: {
     label: string;
     icon?: IconName;
     /** 오른쪽 회색 글자(⌘D 등) — 보여주기만 한다 */
     shortcut?: string;
+    /** 'danger' 면 위험색(되돌리기 힘든 일) */
+    tone?: 'danger';
+    /** @deprecated tone="danger" */
     danger?: boolean;
     disabled?: boolean;
     onSelect: () => void;
@@ -79,7 +82,7 @@ export function MenuItem({ label, icon, shortcut, danger = false, disabled = fal
             className={`w-full flex items-center gap-2 h-row px-pad text-body text-left whitespace-nowrap transition-colors duration-fast outline-none
                 ${disabled
                     ? 'text-muted/40 cursor-default'
-                    : danger
+                    : (tone === 'danger' || danger)
                         ? 'text-bad hover:bg-bad/10 focus:bg-bad/10'
                         : 'text-text hover:bg-text/[0.06] focus:bg-text/[0.06]'}`}
         >

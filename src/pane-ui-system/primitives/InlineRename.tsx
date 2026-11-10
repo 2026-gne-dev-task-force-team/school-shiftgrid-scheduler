@@ -8,13 +8,16 @@ import { useEffect, useRef, useState } from 'react';
 import { isImeEnter } from './ime';
 import { FOCUS_RING } from './focus';
 
-export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, ariaLabel, raw = false }: {
+export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, label, ariaLabel, raw = false }: {
     value: string;
     /** 다듬은(trim) 새 이름 */
     onCommit: (next: string) => void;
     onCancel: () => void;
     className?: string;
     placeholder?: string;
+    /** 스크린리더용 이름 */
+    label?: string;
+    /** @deprecated label */
     ariaLabel?: string;
     /** 참이면 빈 값·처음과 같은 값도 그대로 확정한다(이름이 아니라 「값 입력」 — 링크 칸처럼 빈 값·그대로 두기도 뜻이 있다). Esc 만 취소. */
     raw?: boolean;
@@ -43,7 +46,7 @@ export function InlineRename({ value, onCommit, onCancel, className = '', placeh
             ref={ref}
             value={draft}
             placeholder={placeholder}
-            aria-label={ariaLabel}
+            aria-label={label ?? ariaLabel}
             spellCheck={false}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {

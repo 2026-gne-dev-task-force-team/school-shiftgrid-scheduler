@@ -144,8 +144,12 @@ export function presetForMode(id: string, resolved: 'light' | 'dark'): ThemePres
 // ── 치수 토큰 ─────────────────────────────────────────────────────────────
 // 🔴 이름만 index.css 와 맞으면 된다. 실제 px·밀도·손가락 바닥은 index.css 가 쥔다(그 주석 참조).
 // 🔴 titlebar·statusbar 는 판 A(2026-11-01)가 더한 틀 두 줄 — 전체 폭 상단 타이틀바·하단 상태바 높이.
-export const SIZE_TOKENS = ['topbar', 'header', 'row', 'btn', 'pad', 'rail', 'railbtn', 'titlebar', 'statusbar'] as const;
+export const SIZE_TOKENS = ['topbar', 'header', 'row', 'btn', 'pad', 'rail', 'railbtn', 'titlebar', 'statusbar', 'field'] as const;
 export type SizeToken = (typeof SIZE_TOKENS)[number];
+
+// 🔴 모서리 토큰 — --r-ctl(단추·입력칸). 값은 index.css 가 쥔다.
+export const RADIUS_TOKENS = ['ctl'] as const;
+export type RadiusToken = (typeof RADIUS_TOKENS)[number];
 
 // ── 밀도 ──────────────────────────────────────────────────────────────────
 // 치수 토큰에 곱하는 배율. index.css 가 max(바닥, 기본 × 밀도) 로 쓴다.
