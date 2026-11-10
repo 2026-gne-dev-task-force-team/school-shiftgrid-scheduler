@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from 'react';
 import { josa, focusWhenReady } from '../../pane-ui-system';
 import { CMD } from './contracts/commands';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import { notifyUndo, type PluginHost } from '../../pane-ui-system/plugin';
 import {
     type Tree, type Node, type History, emptyTree, emptyHistory, record, undo as undoHist, redo as redoHist, uid,
     createNode, rename, move, remove, restore, restoreDest, purge, purgeAll, toggleCollapse, parentOf,
@@ -420,11 +420,7 @@ function doRemove(ids: string[]): void {
     // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 토스트는 한 건에 덮인다.
     //   🔴 args.undoTop = 이 삭제가 쌓은 더미 칸의 토큰(C1) — 뒤에 다른 작업이 쌓이면 enabled 가 false 라 옛 알림이 남의 작업을 안 되돌린다.
     const token = undoToken();
-    hostRef?.notify({
-        title: `${josa(what, '을/를')} 휴지통으로 옮겼습니다`,
-        action: { label: '되돌리기', commandId: CMD.undo, args: token === null ? null : { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
-        key: 'explorer.trashed', timeout: 8000,
-    });
+    if (hostRef) notifyUndo(hostRef, { title: `${josa(what, '을/를')} 휴지통으로 옮겼습니다`, key: 'explorer.trashed', commandId: CMD.undo, args: token === null ? null : { undoTop: token } });
 }
 
 /** 노드 틀(⋯ 메뉴)의 「휴지통으로」 — 선택과 무관하게 이 노드만. can.delete 는 여기서 한 번 더 거른다(경고 문구는 틀이 먼저 물었다). */

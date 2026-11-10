@@ -13,6 +13,7 @@
  *     ownTrash   : 꾸러미가 제 손으로 휴지통 부모 사슬을 판정한 수(`roots.trash`·`tree.trash`·`trashedFrom` 글자) — 판정은 nodes.isTrashed·liveByType 로(R7)
  *       ⚠️ 이 글자 셈은 못 잡는 모양이 있다(다른 이름의 변수·동적 접근). 확실히 잡히는 판별식만 센다. 휴지통의 주인 explorer 는 기준값이 높아도 정상이다.
  *     enterNoIme : `key === 'Enter'` 를 쓰는데 isImeEnter·isComposing 가드가 같은 파일에 없는 「파일」 수 — 한글 조합 중 Enter 가 확정으로 새지 않게(R7)
+ *     ownUndoNotice: `label: '되돌리기'` 를 제 손으로 짠 수 — 「알림 + 되돌리기」는 창틀 notifyUndo·notifyNodeUndo·createUndoSlot 으로만(R3-U, 9벌이 하나로 모였다)
  *   ② ③ ⑤ ① 은 공통 부품 내부(pane-ui-system/primitives/)를 세지 않는다 — 부품이 제 몸에서 쓰는 건 당연하다.
  *   줄었으면 기준을 내린다:  RATCHET_UPDATE=1 npx vitest run src/pane-ui-system/__tests__/ratchet.test.ts
  *   ⛔ 기준을 올리는 건 규칙을 어기는 일이다 — 올려야 하면 이유를 커밋에 적는다(새 꾸러미는 0 에서 시작한다).
@@ -28,7 +29,7 @@ const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
 
 type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect' | 'roleToolbar'
-    | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme';
+    | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme' | 'ownUndoNotice';
 type Counts = Record<Metric, number>;
 
 function walk(dir: string): string[] {
@@ -76,7 +77,7 @@ for (const [scope, texts] of Object.entries(files)) {
 function measure(scope: string): Counts {
     const texts = files[scope];
     let bareButton = 0, arbPx = 0, cmdIdString = 0, ctxDirect = 0, roleToolbar = 0;
-    let zRaw = 0, bareInput = 0, divClick = 0, ownTrash = 0, enterNoIme = 0;
+    let zRaw = 0, bareInput = 0, divClick = 0, ownTrash = 0, enterNoIme = 0, ownUndoNotice = 0;
     for (const t of r7Texts[scope]) {
         zRaw += count(t, /\bz-\[\d+\]/g) + count(t, /\bzIndex\s*:\s*\d/g);
         bareInput += count(t, /<(?:input|select)\b/g);
@@ -86,6 +87,7 @@ function measure(scope: string): Counts {
     for (const t of texts) ownTrash += count(t, /\broots\.trash\b|\btree\.trash\b|\btrashedFrom\b/g);
     for (const t of roleToolbarTexts[scope]) roleToolbar += count(t, /role\s*[=:]\s*\{?\s*["']toolbar["']/g);
     for (const t of texts) {
+        ownUndoNotice += count(t, /\blabel\s*:\s*['"]되돌리기['"]\s*,\s*commandId/g);
         bareButton += count(t, /<button\b/g);
         arbPx += count(t, /-\[\d+(?:\.\d+)?px\]/g);
         ctxDirect += count(t, /\bonContextMenu\b/g);
@@ -95,7 +97,7 @@ function measure(scope: string): Counts {
             cmdIdString += t.split(`"${id}"`).length - 1;
         }
     }
-    return { bareButton, arbPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme };
+    return { bareButton, arbPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme, ownUndoNotice };
 }
 
 const current: Record<string, Counts> = Object.fromEntries(Object.keys(SCOPES).map((s) => [s, measure(s)]));
@@ -105,7 +107,7 @@ if (process.env.RATCHET_UPDATE) {
 }
 
 const baseline: Record<string, Counts> = JSON.parse(readFileSync(BASELINE_FILE, 'utf-8'));
-const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme'];
+const METRICS: Metric[] = ['bareButton', 'arbPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme', 'ownUndoNotice'];
 const HOW: Record<Metric, string> = {
     bareButton: '공통 Button·IconButton·Dialog 를 써라',
     arbPx: '글자는 단계 토큰(text-micro·note·small·body·lead), 치수는 토큰·표준 클래스로',
@@ -116,6 +118,7 @@ const HOW: Record<Metric, string> = {
     bareInput: '공통 TextInput·InlineRename·Select·Toggle 을 써라',
     divClick: '클릭은 공통 Button·Row·MenuItem·IconButton 으로 — div 에 onClick 을 달지 마라',
     ownTrash: '휴지통 판정은 nodes.isTrashed·liveByType 로 — 부모 사슬을 제 손으로 걷지 마라',
+    ownUndoNotice: '알림 + 되돌리기는 창틀 notifyUndo(명령)·notifyNodeUndo(노드 더미)·createUndoSlot(꾸러미 제 더미)으로 — label: \'되돌리기\' 를 손으로 짜지 마라',
     enterNoIme: 'Enter 확정은 isImeEnter 가드(또는 TextInput onEnter·InlineRename)로 — 한글 조합 중 Enter 가 새지 않게',
 };
 
