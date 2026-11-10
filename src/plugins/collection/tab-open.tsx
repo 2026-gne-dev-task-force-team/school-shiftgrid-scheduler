@@ -11,7 +11,7 @@ import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { setLeafGlyph, setLeafTitle } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
-import { EmptyState } from '../../pane-ui-system';
+import { EmptyState, focusWhenReady } from '../../pane-ui-system';
 import { modClickLabel } from '../../pane-ui-system/platform-keys';
 import type { NodesApi } from '../explorer/contracts/nodes';
 
@@ -39,7 +39,10 @@ export function openRecordTab(host: PluginHost, id: string, collectionId?: strin
     if (renderers.has(node.type)) {
         const params: Record<string, unknown> = collectionId ? { recordId: id, collectionId } : { recordId: id };
         focusOnOpen = id;
-        return host.workspace.open(RECORD_TAB_ID, { where: 'center', reuse: true, params, title: node.name }) != null;
+        const opened = host.workspace.open(RECORD_TAB_ID, { where: 'center', reuse: true, params, title: node.name }) != null;
+        // 🔑 이미 열린 같은 레코드 탭을 재사용하면 RecordTab 이 새로 안 그려져 아래 효과가 안 돈다 — 여기서도 제목 칸으로 초점
+        if (opened) focusWhenReady('input[aria-label="제목"]', false);
+        return opened;
     }
     nodes.open(id);
     return true;
