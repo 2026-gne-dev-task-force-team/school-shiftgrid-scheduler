@@ -1,5 +1,5 @@
 /**
- * 일정 열기 페이지 — 미리보기(peek)에 담는다. 🙋 7 A(쥔님 2026-11-09): 레코드는 열기 페이지 하나에서 고친다(속성 패널 칸 없음).
+ * 일정 열기 페이지 — 미리보기(peek)에 담는다. 칸은 여기서 고치고, 날짜 패턴만 속성 패널에도 같은 편집기(SeriesPattern)가 있다.
  *   컬렉션 공통 RecordPage 한 벌(Q5 R5)에 일정 칸만 얹는다: 머리(아이콘·제목) → 속성 목록 → 문서(page-doc 이 있으면).
  *   속성 = 기본 칸(제목·종일·언제·메모) + 저장소의 사용자 칸 · 그 밑에 저장소(EventActions — 속성이 아니라 동작). 지우기는 틀 ⋯.
  *   🔴 피크 내용은 EditorArea 가 한 번 스냅샷(ReactNode)으로 쥔다 — 그래서 **제 구독(useCalendarData)으로 최신을 그린다**.
@@ -20,7 +20,7 @@ import { materialize, patternOf } from '../series';
 import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
 import { storedToEvent } from '../event-fields';
 import { inTrash } from '../nodes';
-import { RecurField, OccActions } from './SeriesControls';
+import { SeriesPattern, OccActions } from './SeriesControls';
 
 const BASE_KEYS = new Set(['name', 'allDay', 'when', 'memo']);
 
@@ -76,9 +76,9 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
             onRename={event.occ ? (name) => change('name', name) : undefined}
             onOptionsChange={(key, options) => kit?.setUserFields(event.storeId, userFields.map((f) => (f.key === key ? { ...f, options } : f)))}
             after={<>
-                {event.occ
-                    ? <OccActions chipId={event.id} occ={event.occ} onOpen={setEventId} />
-                    : <RecurField key={event.id} eventId={event.id} rule={patternOf(node?.data)?.rules[0]} start={event.start} />}
+                {event.occ && <OccActions chipId={event.id} occ={event.occ} onOpen={setEventId} />}
+                {/* 가상 회차(고스트)로 열렸으면 그 시리즈 패턴 + 그 회차 강조 · 실체 회차는 SeriesPattern 이 제 시리즈를 찾는다 */}
+                <SeriesPattern host={host} eventId={nodeIdOf(event.id)} focus={event.occ?.virtual ? event.occ.originalStart : undefined} />
                 <EventActions event={event} stores={storeList} />
             </>}
         />

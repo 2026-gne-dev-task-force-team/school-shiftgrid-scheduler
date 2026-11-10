@@ -132,10 +132,16 @@ describe('skip', () => {
     it('가상 회차 — exdates 에 더해 빠진다 · 노드 수 그대로', () => {
         const id = rule({ freq: 'weekly' });
         skip(occurrences(store, '2026-11-09', '2026-11-10')[0]);
-        expect(pat(id).exdates).toEqual(['2026-11-09T09:00']);
+        expect(pat(id).exdates).toEqual(['2026-11-09']);   // 시각 있는 회차도 날짜만
         expect(dataOf(id).recur).toBeUndefined();   // 쓰면서 옛 자리는 걷힌다
         expect(starts('2026-11-01', '2026-11-20')).toEqual(['2026-11-02T09:00', '2026-11-16T09:00']);
         expect(live()).toBe(1);
+    });
+    it('빠뜨린 뒤 시리즈 시각을 바꿔도 빠진 날은 안 살아난다', () => {
+        const id = rule({ freq: 'weekly' });
+        skip(occurrences(store, '2026-11-09', '2026-11-10')[0]);
+        patchEvent(id, { name: '회의', start: '2026-11-02T14:00', end: '2026-11-02T15:00', allDay: false, memo: '메모' });
+        expect(starts('2026-11-01', '2026-11-20')).toEqual(['2026-11-02T14:00', '2026-11-16T14:00']);
     });
     it('실체 회차 — 레코드는 휴지통으로(영구 아님) · 종일은 날짜로 적는다', () => {
         const id = rule({ freq: 'daily' }, '2026-11-10', '2026-11-11');

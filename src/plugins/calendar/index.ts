@@ -30,7 +30,7 @@ import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, setCalendarHost,
     setDefaultStore, newEventInStore,
-    importItemsToStore, collectForExport, storeName, initCalendarKit, getKit,
+    importItemsToStore, collectForExport, storeName, initCalendarKit, getKit, EVENT_TYPE,
 } from './nodes';
 // 🔴 구독 캘린더 — 2026-11-09 쥔님 *"달력 플러그인 안으로 들여라"* 로 별도 꾸러미에서 달력 안(subscribe/)으로 들였다.
 //    달력이 자기 약속(calendar 모듈·parseIcs·registerSource)을 스스로 쓰는 소비자다 — 남의 플러그인용 입구는 그대로 열려 있다.
@@ -39,6 +39,7 @@ import {
 import { initSubs, subscribeSubs, getSubsApi, getSubById, updateSub } from './subscribe/subscriptions';
 import { subscribeNodeTypes, subscribeNodeTypeImpl, SUB_TYPE } from './subscribe/nodes';
 import { SubLinkPane } from './subscribe/SubLinkPane';
+import { PatternPane } from './views/SeriesControls';
 import { setCalendar, reconcile, disposeAll as disposeSubs, refreshAllEnabled, refresh as refreshSub } from './subscribe/controller';
 import { pickIcsText } from './subscribe/file-pick';
 
@@ -108,9 +109,10 @@ export const calendarPlugin = definePlugin({
             //    🔴 구독 노드 타입(impl 'sub')도 같이 낸다 — 구독 하나 = 탐색기에 보이는 노드(subscribe/nodes).
             nodeTypes: [...calendarNodeTypes, ...subscribeNodeTypes],
             // 구독 노드를 고르면 속성 패널에 링크 칸(쥔님 2026-11-09 — 노드 이름 자리에 링크 치던 것 대신).
-            //    🔴 일정은 속성 패널 칸이 없다 — 🙋 7 A: 레코드는 열기 페이지(EventCardPeek) 하나에서 고친다.
+            //    일정을 고르면 「날짜 패턴」 칸(쥔님 2026-11-10) — 다른 칸은 여전히 열기 페이지(EventCardPeek)에서 고친다.
             properties: [
                 { target: SUB_TYPE, id: 'sub-link', title: '구독', pane: 'SubLink' },
+                { target: EVENT_TYPE, id: 'pattern', title: '날짜 패턴', pane: 'PatternPane' },
             ],
         },
     },
@@ -122,7 +124,7 @@ export const calendarPlugin = definePlugin({
         // 표 화면은 컬렉션 바닥이 낸다 — 활성 때 만든 kit 를 부를 때마다 읽는다(collection 이 없으면 빈 화면).
         Table: ({ host, peek, leaf }: ViewProps & { host: PluginHost }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
-    panes: { SubLink: SubLinkPane },
+    panes: { SubLink: SubLinkPane, PatternPane },
     commands: {
         // 리본 「달력 열기」는 범위를 전체(null)로 — 저장소 하나로 좁혀 보던 걸 풀고 모든 저장소 일정을 본다(쥔님 2026-11-02).
         'calendar.open': (host: PluginHost) => { setScope(null); host.workspace.open(MONTH_ID, { where: 'center' }); },
