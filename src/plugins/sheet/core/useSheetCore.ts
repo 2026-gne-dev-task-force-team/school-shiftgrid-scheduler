@@ -102,6 +102,23 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         [clamp],
     );
 
+    // Q17b — 마지막 행·마지막 열에서 Tab = 새 행을 붙이고 그 첫 칸으로(엑셀·넘버스). 행이 들어온 뒤(rowCount 가 늘면) 옮긴다.
+    const pendingRowRef = useRef<number | null>(null);
+    useEffect(() => {
+        const r = pendingRowRef.current;
+        if (r != null && adapter.rowCount > r) { pendingRowRef.current = null; moveTo(r, 0); }
+    });
+    /** 마지막 행·마지막 열에서 앞으로 Tab 이면 행을 붙이고 true. */
+    const tabAppendRow = (r: number, c: number): boolean => {
+        const a = adapterRef.current;
+        if (!a.insert || a.dataRowCount < 1 || r < a.dataRowCount - 1 || c < a.colCount - 1) return false;
+        pendingRowRef.current = a.dataRowCount;
+        a.insert('row', a.dataRowCount);
+        return true;
+    };
+    const tabAppendRowRef = useRef(tabAppendRow);
+    tabAppendRowRef.current = tabAppendRow;
+
     const selectRange = useCallback(
         (r1: number, c1: number, r2: number, c2: number) => {
             setAnchorState(clamp(r1, c1));
@@ -136,6 +153,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             //    commitEdit 을 재진입하는데(이중 확정 → 커서가 편집 자리로 되돌아감), 그때 ed 를 null 로 보게 한다.
             editRef.current = null;
             setEdit(null);
+            if (moveR === 0 && moveC === 1 && tabAppendRowRef.current(ed.r, ed.c)) { focusGrid(); return; }
             moveTo(ed.r + moveR, ed.c + moveC);
             focusGrid();
         },
@@ -307,6 +325,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 impl.current.moveTo(act.r + (k === 'PageDown' ? page : -page), act.c, e.shiftKey);
                 return;
             }
+            if (k === 'Tab' && !e.shiftKey && tabAppendRowRef.current(act.r, act.c)) { e.preventDefault(); return; }
             if (k === 'Tab') { e.preventDefault(); impl.current.moveTo(act.r, act.c + (e.shiftKey ? -1 : 1)); return; }
             if (k === 'Enter') {
                 if (isImeEnter(e)) return;   // 🔴 조합 중 Enter 는 칸 이동을 일으키지 않는다(편집창이 이어받는다)

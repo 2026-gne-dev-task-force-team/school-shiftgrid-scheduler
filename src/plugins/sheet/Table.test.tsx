@@ -266,4 +266,26 @@ describe('Table — data-editing 표시', () => {
         act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
         expect(td().hasAttribute('data-editing')).toBe(false);
     });
+    it('Q17b 마지막 행·마지막 열에서 Tab = 새 행 + 그 첫 칸 · 중간 칸 Tab 은 새 행 없음', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: {} }, { id: 'r2', cells: {} }]} features={['rows']} />);
+        const h = () => ref.current!.h();
+        act(() => h().focus());
+        key('ArrowDown'); key('Tab');                       // 1:0 → 1:1 (마지막 열이지만 아직 중간 아님 → 이동만)
+        expect(h().state().active).toEqual({ r: 1, c: 1 }); expect(ref.current!.rows().length).toBe(2);
+        key('Tab');                                         // 마지막 행·마지막 열
+        expect(ref.current!.rows().length).toBe(3);
+        expect(h().state().active).toEqual({ r: 2, c: 0 });
+    });
+
+    it('Q17b 편집 중 마지막 칸 Tab 도 새 행', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: {} }]} features={['rows']} />);
+        const h = () => ref.current!.h();
+        act(() => h().focus());
+        key('ArrowRight'); key('Enter'); expect(h().state().editing).toBe(true);
+        act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); });
+        expect(ref.current!.rows().length).toBe(2);
+        expect(h().state().active).toEqual({ r: 1, c: 0 });
+    });
 });
