@@ -108,8 +108,7 @@ function persistSelected(): void {
 function restorableSelected(tree: Tree): string | null {
     try {
         const id = localStorage.getItem(storageKey(SEL_KEY));
-        const { root, trash } = tree;   // 이 스토어가 나무의 주인이라 직접 쥔다(톱니 ownTrash 는 꾸러미 밖 손질을 막는 것)
-        if (!id || !tree.nodes[id] || id === root || id === trash || isDescendant(tree, id, trash)) return null;
+        if (!id || !tree.nodes[id] || id === tree.root || id === tree.trash || isDescendant(tree, id, tree.trash)) return null;
         return id;
     } catch { return null; }
 }
