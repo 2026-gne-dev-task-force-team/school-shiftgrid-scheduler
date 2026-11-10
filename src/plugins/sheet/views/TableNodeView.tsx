@@ -9,13 +9,14 @@ import { Icon } from '../../../pane-ui-system';
 import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
-import { useActiveTable } from '../store';
+import { useLeafNode } from '../../../pane-ui-system/plugin';
+import { useActiveTable, setActiveTable } from '../store';
 import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemoved, removedTitle, docOf, writeDoc, applyTx, inTrash, richCell } from '../nodes';
 import { StartScreen } from './StartScreen';
 
 
 export function TableNodeView({ leafId }: { leafId?: string }) {
-    const activeId = useActiveTable();
+    const activeId = useLeafNode(leafId, useActiveTable(), setActiveTable);   // 새로고침 뒤에도 이 탭의 표
     // 툴바 자리 — Frame 의 toolbar 자리에 놓은 빈 요소. Table 이 단추를 거기에 그린다(본문 스크롤 밖 고정).
     const [barHost, setBarHost] = useState<HTMLElement | null>(null);
     // 노드가 바뀔 때만 다시 읽는다(rev 스냅샷).

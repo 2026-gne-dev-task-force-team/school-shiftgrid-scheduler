@@ -41,4 +41,32 @@ describe('GridTab 휴지통 회귀', () => {
         expect(document.querySelector('[data-testid="frame"]')).toBeNull();
         expect(document.body.textContent).toContain('새 시간표');
     });
+
+    it('새로고침(전역 비움 · 같은 탭 id 로 다시 그림) 뒤에도 그 탭은 원래 시간표를 연다', () => {
+        const node = { id: 's1', type: SHEET_TYPE, name: '1학년 1반', data: undefined };
+        const api = {
+            roots: { main: 'm', trash: 't' },
+            byType: () => [node], liveByType: () => [node],
+            get: () => node, parent: () => 'm',
+            isTrashed: () => false,
+            subscribe: () => ({ dispose() { /* 없음 */ } }),
+            Frame: ({ children }: { children: React.ReactNode }) => <div data-testid="frame">{children}</div>,
+        } as unknown as NodesApi;
+        initGridNodes(api);
+        const mount = () => {
+            const host = document.createElement('div');
+            document.body.appendChild(host);
+            root = createRoot(host);
+            act(() => { root!.render(<GridTab leafId="timetable-grid.grid" />); });
+        };
+        setActiveSheet('s1');
+        mount();
+        expect(document.querySelector('[data-testid="frame"]')).not.toBeNull();
+        // 새로고침 — 화면도 모듈 전역(보고 있는 시간표)도 사라진다. 탭 id 와 localStorage 만 남는다.
+        act(() => { root!.unmount(); }); root = null; document.body.innerHTML = '';
+        setActiveSheet(null);
+        mount();
+        expect(document.querySelector('[data-testid="frame"]')).not.toBeNull();
+        expect(document.body.textContent).not.toContain('새 시간표');
+    });
 });

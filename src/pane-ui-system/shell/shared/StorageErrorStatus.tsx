@@ -2,7 +2,7 @@
  * 저장 상태바 칸 — 🔴 평시엔 아무것도 안 보인다. 우선순위 하나만 비춘다:
  *   실패 ≥1  → 「🔴 저장 실패 N」 (누르면 무엇이 왜 실패했는지 한 줄씩 + 「지우기」)
  *   실패 0 · unavailable → 「🔴 저장 안 됨」 (이 브라우저가 저장을 막았다)
- *   실패 0 · best-effort → 「⚠️ 저장 위태」 (공간 필요 시 지워질 수 있다)
+ *   실패 0 · best-effort → 「임시 저장」 (흐린 글씨 — 저장은 되고, 브라우저가 공간이 모자라면 지울 수 있다. 경고색 ⛔: 처음 쓰는 사람이 불안해했다 · QA 1바퀴)
  *   persisted · unknown  → null (평시)
  *
  * 🔴 실패와 내구성은 다른 것이다 — 실패는 「저장이 안 됐다」(지울 수 있다), 내구성은 「언젠가 지워질 수
@@ -26,7 +26,7 @@ const GAP = 6;
 function durabilityText(kind: 'unavailable' | 'best-effort'): string {
     return kind === 'unavailable'
         ? '이 브라우저가 저장을 막았다 — 지금 작업은 창을 닫으면 사라진다'
-        : '브라우저가 공간이 필요하면 이 자료를 지울 수 있다. 사파리는 7일 안 열면 지운다 — 홈 화면에 추가하면 면제된다';
+        : '브라우저가 저장 공간을 영구로 잡아 두지 않았습니다. 자료는 저장되지만 브라우저가 공간이 모자라면 지울 수 있습니다. 내보내기로 백업하세요. (사파리는 7일 안 열면 지웁니다 — 홈 화면에 추가하면 면제됩니다)';
 }
 
 /** HH:MM:SS — 언제 실패했나(시각만, 날짜는 당일이라 생략) */
@@ -111,8 +111,8 @@ function ErrorListBody({ errors, onClose }: { errors: StorageError[]; onClose: (
 function DurabilityBody({ kind }: { kind: 'unavailable' | 'best-effort' }) {
     return (
         <div className="px-pad py-1.5">
-            <div className={`font-medium ${kind === 'best-effort' ? 'text-warn' : 'text-bad'}`}>
-                {kind === 'unavailable' ? '저장 안 됨' : '저장 위태'}
+            <div className={`font-medium ${kind === 'best-effort' ? 'text-muted' : 'text-bad'}`}>
+                {kind === 'unavailable' ? '저장 안 됨' : '임시 저장'}
             </div>
             <div className="mt-0.5 text-muted">{durabilityText(kind)}</div>
         </div>
@@ -132,12 +132,12 @@ export function StorageErrorStatus() {
 
     const label = kind === 'fail' ? `🔴 저장 실패 ${errors.length}`
         : kind === 'unavailable' ? '🔴 저장 안 됨'
-            : '⚠️ 저장 위태';
+            : '임시 저장';
     const aria = kind === 'fail' ? `저장 실패 ${errors.length}건`
         : kind === 'unavailable' ? '저장 안 됨'
-            : '저장 위태';
-    // 색은 토큰으로만 — 주의색(warn)은 best-effort, 그 밖은 bad.
-    const tone = kind === 'best-effort' ? 'text-warn hover:bg-warn/10' : 'text-bad hover:bg-bad/10';
+            : '임시 저장';
+    // 색은 토큰으로만 — best-effort 는 경고색이 아니라 흐린 글씨(실제 쓰기 실패가 아니다), 그 밖은 bad.
+    const tone = kind === 'best-effort' ? 'text-muted hover:bg-line/40' : 'text-bad hover:bg-bad/10';
 
     return (
         <>
@@ -146,6 +146,7 @@ export function StorageErrorStatus() {
                 ref={btnRef}
                 type="button"
                 aria-label={aria}
+                title={kind === 'best-effort' ? durabilityText('best-effort') : undefined}
                 onClick={() => {
                     if (open) { setOpen(false); return; }
                     const r = btnRef.current?.getBoundingClientRect();

@@ -6,7 +6,8 @@
  */
 import { useMemo, useSyncExternalStore } from 'react';
 import { Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
-import { useActiveSheet } from '../store';
+import { useLeafNode } from '../../../pane-ui-system/plugin';
+import { useActiveSheet, setActiveSheet } from '../store';
 import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, getNodesApi, inTrash, stepEdit, notifyRemoved, canStep, notifyInfo, isFresh, takeFresh, tableApi, richCell } from '../nodes';
 import { StartScreen } from './StartScreen';
 import { TimeSheet } from './TimeSheet';
@@ -14,7 +15,7 @@ import { TimeSheet } from './TimeSheet';
 export function GridTab({ leafId }: { leafId?: string }) {
     const Frame = getNodesApi()?.Frame;
     const bar = useFrameToolbar();   // Frame 툴바 자리
-    const activeId = useActiveSheet();
+    const activeId = useLeafNode(leafId, useActiveSheet(), setActiveSheet);   // 새로고침 뒤에도 이 탭의 시간표
     // 노드가 바뀔 때만 다시 그린다(편집도 같은 recompute 로 전파된다).
     const sheetNodes = useSyncExternalStore(subscribeNodes, getSheetNodes, getSheetNodes);
     // eslint-disable-next-line react-hooks/exhaustive-deps
