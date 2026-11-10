@@ -41,18 +41,15 @@ describe('칸 메뉴', () => {
 
 describe('Enter 로 만든 빈 행', () => {
     const editFirst = () => click(q('[data-rv-row="r0"] [data-rv-cell="f_t"]'));
-    it('값 없이 Esc 로 빠지면 치운다', async () => {
+    it('검수 K25 — 마지막 행 Enter 는 새 행을 안 만든다(확정만 · 편집 닫힘)', async () => {
         const discard = vi.fn();
         mount(<H discard={discard} init={[{ id: 'r0', f_t: 'A' }]} />);
         editFirst();
-        key(q('[data-rv-editing]')!, 'Enter');   // r0 가 마지막 → 새 행 + 편집
+        key(q('[data-rv-editing]')!, 'Enter');
         await wait(50);
-        expect(q('[data-rv-row="n1"]')).toBeTruthy();
-        key(q('[data-rv-editing]')!, 'Escape');
-        await wait(400);
-        expect(discard).toHaveBeenCalledWith(['n1']);
         expect(q('[data-rv-row="n1"]')).toBeNull();
-        expect(q('[data-rv-row="r0"]')).toBeTruthy();
+        expect(q('[data-rv-editing]')).toBeNull();
+        expect(discard).not.toHaveBeenCalled();
     });
     it('원래 있던 빈 행은 건드리지 않는다', async () => {
         const discard = vi.fn();
