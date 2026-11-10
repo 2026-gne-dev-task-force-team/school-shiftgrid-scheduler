@@ -1,8 +1,8 @@
 /**
  * 보기 정의 정규화 검사 — 아무 JSON(옛 판·깨진 값)을 안전한 ViewDef 로 떨구는지 · 옛 RecordViewState 를 올리는지 · 칸과 맞추는지.
  */
-import { describe, it, expect } from 'vitest';
-import { defaultView, normalizeView, normalizeViews, reconcileColumns } from './view-state';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { defaultView, normalizeView, normalizeViews, reconcileColumns, loadActiveView, saveActiveView } from './view-state';
 import type { RecordField } from './contracts/collection';
 
 describe('normalizeView', () => {
@@ -82,5 +82,28 @@ describe('reconcileColumns — 보기가 칸과 맞는다', () => {
     it('이미 맞으면 같은 객체(리렌더 폭주 방지)', () => {
         const v = { ...defaultView(), columns: [{ key: 'a' }, { key: 'b' }] };
         expect(reconcileColumns(v, [f('a'), f('b')])).toBe(v);
+    });
+});
+
+describe('R3-X 🙋16 — 「지금 고른 보기」만 탭마다(정의는 탭 사이 같게 — watchViews)', () => {
+    const fakeArea = (m: Map<string, string>) => ({
+        getItem: (k: string) => (m.has(k) ? m.get(k)! : null),
+        setItem: (k: string, v: string) => { m.set(k, String(v)); },
+        removeItem: (k: string) => { m.delete(k); },
+    });
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    it('다른 탭이 고른 보기가 이 탭의 고른 보기를 덮지 않고, 새 탭은 마지막 고른 것으로 시작한다', () => {
+        const local = new Map<string, string>();
+        const sessA = new Map<string, string>();
+        const sessB = new Map<string, string>();
+        const asTab = (sess: Map<string, string>) => {
+            vi.stubGlobal('localStorage', fakeArea(local));
+            vi.stubGlobal('sessionStorage', fakeArea(sess));
+        };
+        asTab(sessA); saveActiveView('k', 'v_a');
+        asTab(sessB); expect(loadActiveView('k')).toBe('v_a');   // 새 탭은 마지막 고른 것
+        saveActiveView('k', 'v_b');
+        asTab(sessA); expect(loadActiveView('k')).toBe('v_a');   // 🔴 A 는 제 것을 지킨다
     });
 });

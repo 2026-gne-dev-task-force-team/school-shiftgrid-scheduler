@@ -15,11 +15,11 @@ const kv = vi.hoisted(() => {
     const store = new Map<string, Record<string, unknown>>();
     const flags = { open: true, writeOk: true };
     const nodesGetAll = vi.fn(async (): Promise<unknown[] | null> => (flags.open ? [...store.values()] : null));
-    const nodesWrite = vi.fn(async (batch: { put?: Record<string, unknown>[]; del?: string[]; clear?: boolean }): Promise<boolean> => {
+    const nodesWrite = vi.fn(async (batch: { put?: Record<string, unknown>[]; del?: string[]; clear?: boolean; purge?: string[] }): Promise<boolean> => {
         if (!flags.writeOk) return false;
         if (batch.clear) store.clear();
         for (const v of batch.put ?? []) store.set(v.id as string, v);
-        for (const id of batch.del ?? []) store.delete(id);
+        for (const id of [...(batch.del ?? []), ...(batch.purge ?? [])]) store.delete(id);
         return true;
     });
     return { store, flags, nodesGetAll, nodesWrite };
@@ -155,7 +155,7 @@ describe('A⑤ 열기 실패(null) — 메모리만, 옛 자료는 안 건드린
 /** 마지막 nodesWrite 호출의 배치. */
 function lastWrite() {
     const calls = kv.nodesWrite.mock.calls;
-    return calls[calls.length - 1][0] as { put?: { id: string }[]; del?: string[]; clear?: boolean };
+    return calls[calls.length - 1][0] as { put?: { id: string }[]; del?: string[]; clear?: boolean; purge?: string[] };
 }
 
 describe('B 노드당 레코드 — 바뀐 노드만 쓴다(diffIds 를 store 가 넘긴다)', () => {
@@ -224,7 +224,9 @@ describe('B 노드당 레코드 — 바뀐 노드만 쓴다(diffIds 를 store �
         await flushTree();
 
         const b = lastWrite();
-        expect(b.del).toHaveLength(5);                       // 🔴 가지 5가 전부 del
+        // 🔴 R3-X — 영구삭제는 del 이 아니라 purge(삭제 + 묘비)로 간다. 가지 5가 전부.
+        expect(b.purge).toHaveLength(5);
+        expect(b.del ?? []).toHaveLength(0);
     });
 
     it('undo 로 사라졌다 redo 로 되살아난 노드가 put 된다(diffIds 양방향)', async () => {

@@ -15,7 +15,7 @@ import { CalBar } from './CalBar';
 import { DayLabel } from './DayLabel';
 import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
-import { ContextMenu, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
+import { Button, ContextMenu, Icon, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 import { useCalendarData } from '../useEvents';
@@ -23,6 +23,7 @@ import { createEvent, removeEvent } from '../nodes';
 import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { focusPeekTitle } from './focus-title';
 import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { timeSelection, timeSliceForDay, floorToSnap, eventFromSelection, type CalSelection } from '../selection';
@@ -216,13 +217,21 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         const base = dayAt(offset);
         if (useSelection) {   // 우클릭 「새 일정」 — 고른 범위 안을 눌렀으면 범위 전체(W7)
             const span = eventFromSelection(selection, isoOf(base.getFullYear(), base.getMonth() + 1, base.getDate()), base.getTime() + min * 60_000);
-            if (span) { const sid = createEvent(span, ''); if (sid) card.open(sid); return; }
+            if (span) { const sid = createEvent(span, ''); if (sid) { card.open(sid); focusPeekTitle(); } return; }
         }
         const start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), Math.floor(min / 60), min % 60);
         const end = new Date(start.getTime() + 3_600_000);
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(end), allDay: false }, '');
-        if (id) card.open(id);
+        if (id) { card.open(id); focusPeekTitle(); }
     }
+    // 툴바 「새 일정」 — 보이는 날 중 오늘(없으면 맨 왼쪽 날)의 종일 일정
+    const newToday = () => {
+        const col = cols.find((c) => c.isToday) ?? cols[0];
+        if (!col) return;
+        const st = new Date(col.y, col.m - 1, col.d);
+        const id = createEvent({ start: isoMinuteOf(st), end: isoMinuteOf(new Date(col.y, col.m - 1, col.d + 1)), allDay: true }, '');
+        if (id) { card.open(id); focusPeekTitle(); }
+    };
 
     // 범위 선택 — 빈 시간 칸을 죽 끌어 [start,end) 를 고른다(일정 생성 아님). anchor 는 슬롯 시작 ms.
     const selAnchor = useRef<number | null>(null);
@@ -261,6 +270,9 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <CalBar end={<>
+                    <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted" onClick={newToday}>
+                        <Icon name="plus" size={13} /> 새 일정
+                    </Button>
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button
                         type="button"

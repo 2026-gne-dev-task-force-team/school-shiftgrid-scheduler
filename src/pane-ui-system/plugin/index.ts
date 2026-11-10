@@ -54,3 +54,7 @@ export {
     useNotifications, getNotifications,
     type NotifyInput, type NotifyItem, type NotifyLevel, type NotifyAction, type NotifyActionState, type NotifySnapshot,
 } from './notify';
+export {
+    notifyUndo, notifyNodeUndo, createUndoSlot, UNDO_LABEL, UNDO_UNAVAILABLE, UNDO_TIMEOUT,
+    type NotifyUndoInput, type NodeUndoSource, type UndoSlot,
+} from './undo-notice';

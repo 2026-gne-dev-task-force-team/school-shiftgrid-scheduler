@@ -11,7 +11,7 @@
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { TimetableData, ScheduleEntry } from './types';
-import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { emptyHistory, record as pushHistory, undo, redo, type History } from '../../pane-ui-system';
 import { blankTimetable } from './model';
 import { scheduleRange } from './schedule';
@@ -128,17 +128,13 @@ export function applyEdit(id: string, edit: (data: TimetableData) => TimetableDa
 // ── 행·열 지우기·병합 해제 되돌리기 알림 — 기존 ⌘Z 더미(stepEdit)로 되돌린다. 뒤에 편집이 쌓이면(editSeq 가 달라짐) 회색.
 let hostRef: PluginHost | null = null;
 let editSeq = 0;
-let removal: { id: string; seq: number } | null = null;
+const removal = createUndoSlot({ commandId: 'timetable-grid.undoRemoved', key: 'timetable-grid.removed' });
 export function notifyRemoved(id: string, title: string): void {
-    removal = { id, seq: editSeq };
-    hostRef?.notify({
-        title,
-        action: { label: '되돌리기', commandId: 'timetable-grid.undoRemoved', unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
-        key: 'timetable-grid.removed', timeout: 8000,
-    });
+    const seq = editSeq;
+    if (hostRef) removal.notify(hostRef, title, () => stepEdit(id, 'undo'), () => seq === editSeq);
 }
-export function removedUndoable(): boolean { return !!removal && removal.seq === editSeq; }
-export function undoRemoved(): void { if (removal && removedUndoable()) stepEdit(removal.id, 'undo'); }
+export const removedUndoable = removal.undoable;
+export const undoRemoved = removal.undo;
 
 // ⌘Z 더미 — 시간표마다 따로(값 스냅샷 · 창틀 공용 history). 저장 안 함(새로고침하면 비워진다).
 const histories = new Map<string, History<TimetableData>>();

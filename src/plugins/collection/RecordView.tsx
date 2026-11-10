@@ -25,7 +25,7 @@ import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
-    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews,
+    DEFAULT_COL_WIDTH, MIN_COL_WIDTH, defaultView, loadActiveView, loadViews, reconcileColumns, saveActiveView, saveViews, watchViews,
 } from './view-state';
 import type {
     CellChange, ConvertPlan, FieldOption, RecordCellValue, RecordField, RecordViewProps, SortRule, ViewDef,
@@ -237,6 +237,8 @@ export function RecordView<T>({
             setActiveLocal(loadActiveView(viewKey));
         }
     }, [viewKey, controlled]);
+    // 🔴 R3-X — 다른 탭이 이 보기 정의를 바꾸면 다시 읽는다(설정은 탭 사이에 같게 · 활성 탭은 탭마다)
+    useEffect(() => (controlled ? undefined : watchViews(viewKey, () => setLocalViews(loadViews(viewKey)))), [viewKey, controlled]);
     const views = controlled ? viewsProp : localViews;
     // 🔴 활성 탭은 기기별(localStorage) — 보기 목록이 노드에 있어도 「지금 어느 탭」은 여기 둔다
     const [activeLocal, setActiveLocal] = useState<string | null>(() => loadActiveView(viewKey));
@@ -331,6 +333,12 @@ export function RecordView<T>({
         setSelected(new Set());
     };
 
+    // 열기 — 피크가 닫히면 그 행으로 초점이 돌아오게, 열기 전에 그 행의 첫 칸에 초점을 둔다(피크 층이 그 자리를 기억한다)
+    const openRow = (id: string) => {
+        [...(gridRef.current?.querySelectorAll<HTMLElement>('[data-rv-row]') ?? [])].find((el) => el.getAttribute('data-rv-row') === id)
+            ?.querySelector<HTMLElement>('[data-rv-pos]')?.focus({ preventScroll: true });
+        onOpenRecord?.(id);
+    };
     // R6 우클릭: 줄·칸 → 줄 메뉴 · 칸 머리 → 칸 메뉴(머리 ⋯ 와 같은 것) · 빈 곳 → 새로 만들기. 입력칸 안은 기본 메뉴
     const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const ctxTrigger = useContextTrigger((x, y, ev) => {
@@ -340,7 +348,7 @@ export function RecordView<T>({
         const rowId = t.closest('[data-rv-row]')?.getAttribute('data-rv-row');
         const items: MenuEntry[] = [];
         if (rowId) {
-            if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => onOpenRecord(rowId) });
+            if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
             if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
             if (treeOn && tree) items.push({ label: '들여쓰기', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기', onClick: () => tree.onOutdent(rowId) });
             if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
@@ -486,12 +494,18 @@ export function RecordView<T>({
     const addField = (type: string) => {
         const def = fieldTypes.get(type);
         if (!def) return;
-        const f = newField(type);
+        // 기본 이름이 겹치면 「새 칸 2」처럼 번호
+        const taken = new Set(fields.map((x) => x.label));
+        let label = '새 칸';
+        for (let n = 2; taken.has(label); n++) label = `새 칸 ${n}`;
+        const f = newField(type, label);
         if (def.defaultConfig !== undefined) f.config = def.defaultConfig;
         if (def.defaultOptions) f.options = def.defaultOptions.map((o) => ({ ...o }));
         else if (def.hasOptions) f.options = [];
         if (def.readOnly) f.readOnly = true;
         onFieldsChange?.([...fields, f]);
+        // 새 칸 이름 편집으로 초점(칸 메뉴의 이름 입력이 뜨며 전체 선택한다)
+        if (addMenu) setHeadMenu({ key: f.key, rect: addMenu });
         setAddMenu(null);
     };
 
@@ -667,7 +681,7 @@ export function RecordView<T>({
         setOptions,
         toggleCollapse: (id) => tree?.onToggleCollapse(id),
         addChild: (id) => tree?.onAddChild?.(id),
-        open: (id) => onOpenRecord?.(id),
+        open: (id) => openRow(id),
         tab: (id, shift) => { if (shift) tree?.onOutdent(id); else tree?.onIndent(id); },
         moveAlt: (id, dir) => {
             const at = rowIds.indexOf(id);

@@ -14,7 +14,7 @@ import { FOCUS_RING } from '../../primitives/focus';
 import { Icon } from '../../primitives/Icon';
 import { ConfirmDialog } from '../../primitives/ConfirmDialog';
 import { resetPaneSettings } from '../../layout/pane-settings';
-import { workspaceKey } from '../../layout/workspace-store';
+import { clearWorkspace } from '../../layout/workspace-store';
 import { layoutKey } from '../../layout/panels';
 import { resetFirstRunFlags } from '../../plugin/host';
 import { notify } from '../../plugin/notify';
@@ -24,8 +24,8 @@ const AUTO_HEAL_SESSION_KEY = () => storageKey('auto-healed-once');
 /** 기기별 화면·배치 localStorage 만 깨끗이 초기화한다(IndexedDB 프로젝트 노드 자료는 보존). */
 export function healLayoutStorage(): void {
     try {
+        clearWorkspace();   // 🔴 이 탭(sessionStorage)과 마지막 배치(localStorage) 둘 다 — 한쪽만 지우면 깨진 배치가 다시 실린다
         if (typeof localStorage !== 'undefined') {
-            localStorage.removeItem(workspaceKey());
             localStorage.removeItem(layoutKey());
             localStorage.removeItem(storageKey('plugins'));
         }

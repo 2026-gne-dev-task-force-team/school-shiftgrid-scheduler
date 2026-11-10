@@ -1,9 +1,11 @@
 /**
  * 보관 받아들이기 — 모양이 틀린 저장값을 통째로 버리지 않고 살릴 만큼 살린다.
  */
-import { describe, it, expect } from 'vitest';
-import { normalizeRaw, hasWorkspace, loadWorkspace, workspaceKey } from './workspace-store';
-import { flatten } from './tree';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { getNotifications, __resetNotifyForTest } from '../plugin/notify';
+import { __resetSettingsSaveFailForTest } from './save-fail';
+import { normalizeRaw, hasWorkspace, loadWorkspace, saveWorkspace, clearWorkspace, workspaceKey } from './workspace-store';
+import { flatten, emptyWorkspace, openLeaf, leaf } from './tree';
 
 describe('normalizeRaw', () => {
     it('null·엉뚱한 값은 빈 배치', () => {
@@ -85,5 +87,56 @@ describe('normalizeRaw', () => {
         } finally {
             Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: prev });
         }
+    });
+
+    it('깨진 값을 치우다 removeItem 이 실패하면 조용히 삼키지 않고 저장 실패 알림을 낸다(R3-U)', async () => {
+        __resetNotifyForTest(); __resetSettingsSaveFailForTest();
+        const prev = globalThis.localStorage;
+        Object.defineProperty(globalThis, 'localStorage', {
+            configurable: true,
+            value: { getItem: () => '{broken-json', setItem: () => { throw new Error('quota'); }, removeItem: () => { throw new Error('denied'); } },
+        });
+        try {
+            expect(hasWorkspace()).toBe(false);
+            await vi.waitFor(() => expect(getNotifications().items.some((n) => n.key === 'settings-save:작업 공간 배치')).toBe(true));
+        } finally {
+            Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: prev });
+        }
+    });
+});
+
+describe('R3-X 🙋15 — 배치는 탭마다(sessionStorage) · 새 탭은 마지막 배치(localStorage)로 시작', () => {
+    const fakeArea = (m: Map<string, string>) => ({
+        getItem: (k: string) => (m.has(k) ? m.get(k)! : null),
+        setItem: (k: string, v: string) => { m.set(k, String(v)); },
+        removeItem: (k: string) => { m.delete(k); },
+    });
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    it('탭 A 의 저장이 이미 열린 탭 B 의 배치를 덮지 않고, 새 탭 C 는 마지막 배치로 시작한다', () => {
+        const local = new Map<string, string>();           // 탭 공용
+        const sessA = new Map<string, string>();            // 탭마다
+        const sessB = new Map<string, string>();
+        const sessC = new Map<string, string>();
+        const asTab = (sess: Map<string, string>) => {
+            vi.stubGlobal('localStorage', fakeArea(local));
+            vi.stubGlobal('sessionStorage', fakeArea(sess));
+        };
+
+        asTab(sessB);
+        saveWorkspace(openLeaf(emptyWorkspace(), leaf('v', 'B 문서', { id: 'b1' })));
+        asTab(sessA);
+        expect(flatten(loadWorkspace().center).map((l) => l.id)).toEqual(['b1']);   // 새 탭 A 는 마지막 배치(B 것)로 시작
+        saveWorkspace(openLeaf(emptyWorkspace(), leaf('v', 'A 문서', { id: 'a1' })));
+
+        asTab(sessB);
+        expect(flatten(loadWorkspace().center).map((l) => l.id)).toEqual(['b1']);   // 🔴 B 는 제 배치를 지킨다
+        asTab(sessC);
+        expect(hasWorkspace()).toBe(true);
+        expect(flatten(loadWorkspace().center).map((l) => l.id)).toEqual(['a1']);   // 새 탭 C 는 마지막 저장(A)
+
+        clearWorkspace();                                    // 초기화는 이 탭 + 마지막 배치 둘 다
+        expect(sessC.has(workspaceKey())).toBe(false);
+        expect(local.has(workspaceKey())).toBe(false);
     });
 });

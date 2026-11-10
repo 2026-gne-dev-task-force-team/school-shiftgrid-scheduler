@@ -6,8 +6,7 @@
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { EmptyState, StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
-import { useLauncherTab } from '../../../pane-ui-system/plugin';
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { useLauncherTab, notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
 import { RecordView } from '../RecordView';
@@ -19,6 +18,17 @@ type Rec = { id: string } & Record<string, RecordCellValue>;
 /** 레코드 뷰 붙여넣기(보이는 칸 key 순서 + 글자) → 기본 칸 순서의 TSV 한 덩어리. 순수 함수. */
 export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
     return req.rows.map((r) => keys.map((k) => { const i = req.keys.indexOf(k); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
+}
+
+/**
+ * 지운 직후 「되돌리기」 알림 — DbView.notifyUndo 와 같은 창구(창틀 notifyNodeUndo).
+ *   host 가 없으면(알림 창구 없음) 지우기만 한다. run 은 한 묶음으로 쥐어 한 번에 되돌아온다.
+ */
+export function deleteWithUndo(kit: Pick<Bridge, 'nodes'>, host: PluginHost | undefined, title: string, run: () => void): void {
+    const api = kit.nodes();
+    if (api) api.batch(run); else run();
+    if (!host) return;
+    notifyNodeUndo(host, api, title, 'collection.removed');
 }
 
 function CollectionStart({ kit, leafId }: { kit: Bridge; leafId?: string }) {
@@ -88,7 +98,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onCellChange={(id, key, value) => kit.setValue(id, key, value)}
                     onFieldsChange={(next) => kit.setUserFields(activeId, next.filter((f) => !baseKeys.includes(f.key)))}
                     onAddRecord={() => { kit.addItem(activeId); }}
-                    onDeleteRecords={(ids) => ids.forEach(kit.removeItem)}
+                    onDeleteRecords={(ids) => deleteWithUndo(kit, host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`, () => ids.forEach(kit.removeItem))}
+                    onDestructive={(title, run) => deleteWithUndo(kit, host, title, run)}
                     onPaste={(req) => kit.pasteItems(activeId, pasteToTsv(req, baseKeys))}
                     onReorder={kit.reorderItem}
                     tree={tree}

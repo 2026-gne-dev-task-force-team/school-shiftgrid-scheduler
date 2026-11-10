@@ -20,7 +20,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
-    ContextMenu, Icon, IconButton, Surface, useContextTrigger, type MenuEntry,
+    Button, ContextMenu, Icon, IconButton, Surface, useContextTrigger, type MenuEntry,
     monthLabel, shiftMonth, isoOf, addDays, startOfWeek, weeksBetween, weekRow, type DayCell, type PeekHandle,
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
@@ -29,6 +29,7 @@ import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../
 import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { focusPeekTitle } from './focus-title';
 import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { daysSelection, dayInSelection, eventFromSelection, type CalSelection } from '../selection';
@@ -93,12 +94,14 @@ function EventChip({ b }: { b: WeekBar }) {
 
 /** 한 칸 — 날짜 숫자 왼쪽 위 · 1일은 「n월 1일」 · 오늘은 accent 동그라미 · 머리줄의 달이 아니면 어둡게. 일정은 주 줄이 겹쳐 그린다(WeekRow). */
 function DayBox({ c, isToday, inHead, selected }: { c: DayCell; isToday: boolean; inHead: boolean; selected: boolean }) {
+    const [hot, setHot] = useState(false);   // 마우스를 올리면 「+」 — 노션처럼. (CSS 호버-숨김은 Row 만 쓴다 · 구조 검사 ③)
     const first = c.d === 1;
     const label = <DayLabel month={c.m} day={c.d} />;
     // 고른 칸 — 연한 accent 바탕 + 안쪽 테두리(토큰만, 구조 검사 ①). 아니면 본래 바탕(머리달/바깥달).
     const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : inHead ? 'bg-bg' : 'bg-panel2';
     return (
-        <div data-day={c.iso} className={`min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col ${bg}`}>
+        <div data-day={c.iso} onMouseEnter={() => setHot(true)} onMouseLeave={() => setHot(false)} className={`relative min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col ${bg}`}>
+            {hot && <IconButton icon="plus" size={13} label={`${c.m}월 ${c.d}일 새 일정`} data={{ 'data-day-add': '' }} className="absolute top-1 right-1 !w-5 !h-5" />}
             <div className="flex shrink-0">
                 {isToday ? (
                     <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-note font-semibold">
@@ -173,21 +176,23 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
 
     // 날 칸 더블클릭 → 종일 일정 생성 + 카드(제목 포커스) · 일정 클릭 → 카드. 칸 바깥 위임(data-day·data-event-id).
     const onCellClick = (e: ReactMouseEvent) => {
+        const add = (e.target as HTMLElement).closest('[data-day-add]');
+        if (add) { const day = add.closest('[data-day]')?.getAttribute('data-day'); if (day) newAllDay(day); return; }
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
         if (id) card.open(id);
     };
     const newAllDay = (iso: string, useSelection = false) => {
         // 우클릭 「새 일정」 — 고른 범위 안을 눌렀으면 범위 전체(W7)
         const span = useSelection ? eventFromSelection(selection, iso) : null;
-        if (span) { const sid = createEvent(span, ''); if (sid) card.open(sid); return; }
+        if (span) { const sid = createEvent(span, ''); if (sid) { card.open(sid); focusPeekTitle(); } return; }
         const start = parseLocal(iso);
         if (Number.isNaN(start.getTime())) return;
         const id = createEvent({ start: isoMinuteOf(start), end: isoMinuteOf(new Date(start.getTime() + DAY_MS)), allDay: true }, '');
-        if (id) card.open(id);
+        if (id) { card.open(id); focusPeekTitle(); }
     };
     const onCellDouble = (e: ReactMouseEvent) => {
         const t = e.target as HTMLElement;
-        if (t.closest('[data-event-id]')) return;              // 일정 위 더블클릭은 생성이 아니다
+        if (t.closest('[data-event-id]') || t.closest('[data-day-add]')) return;   // 일정·「+」 위 더블클릭은 생성이 아니다
         const iso = t.closest('[data-day]')?.getAttribute('data-day');
         if (iso) newAllDay(iso);
     };
@@ -206,7 +211,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
     const resolveDay = (x: number, y: number): RangeHit<string> => {
         const el = document.elementFromPoint(x, y) as HTMLElement | null;
         if (!el) return { value: null, onEvent: false };
-        const onEvent = !!el.closest('[data-event-id]');
+        const onEvent = !!el.closest('[data-event-id], [data-day-add]');   // 「+」 위에서도 범위 선택을 시작하지 않는다
         return { value: el.closest('[data-day]')?.getAttribute('data-day') ?? null, onEvent };
     };
     const rangeSel = useRangeSelect<string>({
@@ -388,6 +393,10 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
             <CalBar end={<>
+                    <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted"
+                        onClick={() => newAllDay(head.y === now.getFullYear() && head.m === now.getMonth() + 1 ? todayIso : isoOf(head.y, head.m, 1))}>
+                        <Icon name="plus" size={13} /> 새 일정
+                    </Button>
                     <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
                     <button
                         type="button"

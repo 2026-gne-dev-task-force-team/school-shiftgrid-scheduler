@@ -542,7 +542,7 @@ describe('칸 편집 키 — Enter·Shift+Enter·Tab·Esc·행 추가 단추', (
         expect(spy.cell).not.toHaveBeenCalled();
         expect(editingAt()).toBe('0:1');
     });
-    it('Tab = 저장 + 오른쪽 칸 편집 · Shift+Tab = 왼쪽 · 행 끝이면 다음 행 첫 칸', () => {
+    it('Tab = 저장 + 오른쪽 칸 편집 · Shift+Tab = 왼쪽 · 행 끝이면 다음 행 첫 칸', async () => {
         const spy = spies();
         mount(<Harness init={two} spy={spy} />);
         let input = open('r1', 'f_t');
@@ -552,9 +552,12 @@ describe('칸 편집 키 — Enter·Shift+Enter·Tab·Esc·행 추가 단추', (
         expect(editingAt()).toBe('0:1');
         key(q('[data-rv-editing]')!, 'Tab', { shiftKey: true });
         expect(editingAt()).toBe('0:0');
-        // 다음 행 첫 칸: 셋째(고르기) 칸은 편집창이 안 열리므로 칸에 초점만 간다
+        // 셋째(고르기) 칸은 편집창 대신 고르기 팝오버가 뜬다 — 초점이 그 안으로 가고(R3-K), Esc 로 닫으면 칸으로 돌아온다
         key(q('[data-rv-editing]')!, 'Tab');
         key(q('[data-rv-editing]')!, 'Tab');
+        expect(document.activeElement?.closest('[data-popover]')).not.toBeNull();
+        act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+        await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
         expect(document.activeElement?.getAttribute('data-rv-pos')).toBe('0:2');
     });
     it('Esc = 취소 + 초점은 그 칸에 남는다(body 로 안 빠짐)', () => {
@@ -602,3 +605,34 @@ describe('#42 칸 껍데기 클릭·더블클릭 = 글 칸 편집 시작', () =>
         expect(q('[data-rv-editing]')).toBeNull();
     });
 });
+
+describe('R3-K 초점 — 칸 추가 · 열기', () => {
+    const addOne = () => {
+        click(q('[data-rv-add-field]'));
+        click(q('[data-rv-add-menu] [role="menuitem"]'));
+    };
+    it('칸 종류를 고르면 새 칸 이름 입력에 초점 · 이름 전체 선택', () => {
+        mount(<Harness init={[]} spy={spies()} />);
+        addOne();
+        const ae = document.activeElement as HTMLInputElement;
+        expect(ae.getAttribute('aria-label')).toBe('칸 이름');
+        expect(ae.value).toBe('새 칸');
+        expect([ae.selectionStart, ae.selectionEnd]).toEqual([0, 3]);
+    });
+    it('기본 이름이 겹치면 「새 칸 2」 · 「새 칸 3」', () => {
+        const spy = spies();
+        mount(<Harness init={[]} spy={spy} />);
+        addOne(); key(document.activeElement!, 'Escape');
+        click(q('[data-rv-add-field]')); click(q('[data-rv-add-menu] [role="menuitem"]'));
+        const labels = (spy.fields.mock.calls.at(-1)![0] as RecordField[]).map((f) => f.label);
+        expect(labels.filter((l) => l.startsWith('새 칸'))).toEqual(['새 칸', '새 칸 2']);
+    });
+    it('행 열기(onOpenRecord) 직전에 그 행의 첫 칸에 초점을 둔다(피크가 닫히면 여기로 돌아온다)', () => {
+        const open = vi.fn(() => { expect((document.activeElement as HTMLElement).closest('[data-rv-row]')?.getAttribute('data-rv-row')).toBe('r2'); });
+        mount(<RecordView<Rec> fields={START} records={[{ id: 'r1', f_t: 'a' }, { id: 'r2', f_t: 'b' }]} getId={(r) => r.id} viewKey="t.open" titleKey="f_t" onOpenRecord={open} onCellChange={() => {}} />);
+        act(() => { q('[data-rv-row="r2"]')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 5 })); });
+        click(mi('열기') ?? null);
+        expect(open).toHaveBeenCalledWith('r2');
+    });
+});
+
