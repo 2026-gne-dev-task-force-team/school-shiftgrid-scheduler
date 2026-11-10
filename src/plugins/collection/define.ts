@@ -16,6 +16,7 @@ import { parseRows } from './parse';
 import { CollectionTab } from './views/CollectionTab';
 import { ItemProps, ItemPeek } from './views/ItemProps';
 import { registerRecordTab } from './tab-open';
+import { registerKit } from './kits';
 import { registerListType } from './nodes';
 
 /** 뷰가 읽는 손잡이 — kit 에 구독·보고 있는 목록·부모 이름이 더 붙는다(밖으로는 안 나간다). */
@@ -218,6 +219,7 @@ export function defineCollection(cfg: CollectionConfig): CollectionKit {
 
     // 「탭으로 열기」 — 항목은 제 편집 탭이 없으니 레코드 탭이 미리보기와 같은 열기 페이지(ItemPeek)로 그린다
     registerRecordTab(cfg.itemType, (host, id) => createElement(ItemPeek, { kit, host, id }));
+    registerKit(kit);
 
     // 화면 — 컴포넌트 정체는 kit 마다 한 번(렌더마다 새로 만들면 React 가 매번 갈아 끼운다)
     return Object.assign(kit, {

@@ -38,7 +38,7 @@ function useItemProperties(kit: Bridge, id: string): { fields: RecordField[]; va
 
 export function ItemProps({ kit, target }: { kit: Bridge } & PropertiesPaneProps) {
     const p = useItemProperties(kit, target.id);
-    return p ? <PropertyList {...p} /> : null;
+    return p ? <PropertyList {...p} rowId={target.id} /> : null;
 }
 
 /** 레코드 열기 페이지 — 컬렉션 공통 RecordPage 한 벌(틀 + 칸 + 문서). */

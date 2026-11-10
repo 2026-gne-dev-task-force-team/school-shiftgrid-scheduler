@@ -192,6 +192,8 @@ const RecordRow = memo(function RecordRow({
                         )}
                         <Cell
                             field={f}
+                            fields={fields}
+                            rowId={id}
                             rowValue={r}
                             editable={cellEditable && !f.readOnly}
                             onChange={(val) => act.changeCell(id, f.key, val)}
@@ -966,7 +968,7 @@ export function RecordView<T>({
                                     </div>
                                     {(() => {
                                         const C = fieldTypes.get(f.type)?.Config;
-                                        return C && <C field={f} onChange={(nf) => onFieldsChange?.(fields.map((x) => (x.key === nf.key ? nf : x)))} />;
+                                        return C && <C field={f} fields={fields} onChange={(nf) => onFieldsChange?.(fields.map((x) => (x.key === nf.key ? nf : x)))} />;
                                     })()}
                                     {!f.locked && <MenuItem label={f.unique ? '유일 끄기' : '유일(같은 값 막기)'} icon={f.unique ? 'check' : 'key'} onSelect={() => toggleUnique(f.key)} />}
                                     {!locked && <MenuItem label="속성 삭제" icon="trash" danger onSelect={() => deleteField(f.key)} />}

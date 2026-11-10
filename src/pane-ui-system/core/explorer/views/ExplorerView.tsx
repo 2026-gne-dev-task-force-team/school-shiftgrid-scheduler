@@ -15,7 +15,7 @@ import type { PluginHost, MenuEntry } from '../../../plugin';
 import { usePluginRegistry } from '../../../plugin';
 import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../..';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../../nodes/model/tree';
-import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
+import { isContainerType, isSectionType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { nodeMenu } from '../../node-frame/views/node-menu';
@@ -30,6 +30,10 @@ const TRASH_MIN_H = 72;
 const TRASH_MAX_H = 520;
 const TRASH_DEFAULT_H = 180;
 const TRASH_H_KEY = 'trash-h';
+const SEC_H_KEY = 'section-h';
+const SEC_MIN_H = 36;
+const ROW_PX = 28;   // 높이를 아직 안 정한 섹션의 손잡이 시작값 추정(줄 하나 ≈ 28px)
+const clampSecH = (h: number): number => Math.min(TRASH_MAX_H * 2, Math.max(SEC_MIN_H, Number.isFinite(h) ? h : SEC_MIN_H));
 const clampTrashH = (h: number): number =>
     Math.min(TRASH_MAX_H, Math.max(TRASH_MIN_H, Number.isFinite(h) ? h : TRASH_DEFAULT_H));
 /** 이미 고른 줄을 또 누른 뒤 이름바꾸기까지 기다리는 시간(ms) — 두 번 누르기(열기)면 그 전에 취소된다(맥 Finder 꼴). */
@@ -65,8 +69,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
             const dn = tree.nodes[did];
             return !!dn && tree.root !== did && !isDescendant(tree, tree.root, did)
                 && canDo(dn.type, did, 'move')
-                && (uniqueOf(dn.type) !== 'tree' || parentOf(tree, did) === tree.root)
-                && acceptsChild(rootNode.type, dn.type)
+                && acceptsChild(rootNode.type, dn.type, tree.root)
                 && !violatesUnique(tree, dn.type, tree.root, did, uniqueOf);
         });
         return { targetId: lastEl.getAttribute('data-row-id') ?? tree.root, pos: 'after', rect: lastRect, destParent: tree.root, index: sibs.length, ok };
@@ -106,8 +109,7 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
         const dn = tree.nodes[did];
         return !!dn && destParent !== did && !isDescendant(tree, destParent, did)
             && canDo(dn.type, did, 'move')
-            && (uniqueOf(dn.type) !== 'tree' || parentOf(tree, did) === destParent)   // 싱글톤은 제 부모 안 순서만
-            && acceptsChild(dp.type, dn.type)
+            && acceptsChild(dp.type, dn.type, destParent)
             && !violatesUnique(tree, dn.type, destParent, did, uniqueOf);
     });
     return { targetId, pos, rect, destParent, index, ok };
@@ -124,6 +126,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     // 🔴 휴지통 높이 — 기기별 저장값에서 읽어 와 끌어서 조절한다(TrashResizeHandle). 끝에 host.storage 로 남긴다.
     const [trashH, setTrashH] = useState<number>(() =>
         clampTrashH(host.storage.get<number>(TRASH_H_KEY, TRASH_DEFAULT_H)));
+    // 🔴 섹션 칸 높이(px) — 휴지통 trashH 와 같은 꼴: 끌어 정하고 기기별 host.storage 에 남긴다. 없으면 내용만큼.
+    const [secH, setSecH] = useState<Record<string, number>>(() => host.storage.get<Record<string, number>>(SEC_H_KEY, {}));
     const [hoverId, setHoverId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
@@ -163,18 +167,13 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             keep: (() => { const k = filterIds(tree, tree.root, (n) => !nodeHidden(n) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
         }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
         : buildMainRows(tree, tree.root, undefined, nodeHidden);
-    // 🔴 고정 구역 — 맨 위 싱글톤(계정 등)과 그 자손은 휴지통처럼 따로, 나무 위에 떼어 그린다(쥔님 2026-11-09 「너무 평범해 · 실수로 지운다」).
-    //    줄은 깊이 우선 순서라 depth 0 줄부터 다음 depth 0 줄 전까지가 한 덩어리다. 키보드 순서는 고정 → 나무.
-    const pinnedRows: ExplorerRow[] = [];
-    const mainRows: ExplorerRow[] = [];
-    {
-        let pin = false;
-        for (const r of allRows) {
-            if (r.depth === 0) pin = r.kind === 'node' && uniqueOf(r.node.type) === 'tree';
-            (pin ? pinnedRows : mainRows).push(r);
-        }
+    // 섹션 칸 가르기 — 같은 sec 가 이어진 줄을 한 묶음으로(검색 중엔 sec 가 없어 평평한 한 묶음).
+    const groups: { sec?: string; rows: ExplorerRow[] }[] = [];
+    for (const r of allRows) {
+        const g = groups[groups.length - 1];
+        if (g && g.sec === r.sec) g.rows.push(r); else groups.push({ sec: r.sec, rows: [r] });
     }
-    const rows: ExplorerRow[] = [...pinnedRows, ...mainRows];
+    const rows: ExplorerRow[] = allRows;
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
     const rowsOrder = rows.map((r) => r.id);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
 
@@ -316,8 +315,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         const out: MenuEntry[] = [];
         // 🔑 싱글톤이 이미 있으면 숨기지 말고 회색(비활성) + 이유를 라벨에 보인다(설계) — 생길 자리에서 판정.
         for (const def of createCandidates(baseType)) {
-            const dup = violatesUnique(tree, def.type, parent, null, uniqueOf);
-            const blocked = !canCreateType(def.type, parent);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
+            const at = isSectionType(def.type) ? tree.root : parent;   // 섹션은 늘 뿌리 밑
+            const dup = violatesUnique(tree, def.type, at, null, uniqueOf);
+            const blocked = !canCreateType(def.type, at);   // 🔑 「만들기」 가림 — 회색 + 이유(탐색기는 이유의 속을 모른다)
             const icon = createIconOf(def);   // 「plus」만 줄지어 있으면 무엇을 만드는지 안 보인다 — 타입 자신의 아이콘
             out.push(
                 dup ? { label: `새 ${def.label} (이미 있음)`, icon, disabled: true }
@@ -391,53 +391,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     }
 
 
-    return (
-        <div
-            ref={rootRef}
-            className="h-full flex flex-col bg-side outline-none"
-            style={drag && preview && !preview.ok ? { cursor: 'not-allowed' } : undefined}
-            tabIndex={0}
-            role="tree"
-            aria-multiselectable="true"
-            onKeyDown={onKeyDown}
-            {...bind}
-        >
-            <SectionHeader
-                title="탐색기"
-                end={(
-                    <IconButton icon="plus" label="새로 만들기" onClick={(e) => {
-                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setMenu({ x: r.left, y: r.bottom, create: true });
-                    }} />
-                )}
-            />
-
-            {/* 검색 — 맞는 줄과 그 조상만(접힘 무시) · 비우면 원래대로 */}
-            <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0">
-                <Icon name="search" size={13} className="text-muted shrink-0" />
-                {/* oxlint-disable-next-line react/forbid-elements -- 탐색기 검색칸 — 아이콘 붙은 틀 입력 */}
-                <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="검색"
-                    className="flex-1 min-w-0 text-small leading-none bg-transparent text-text placeholder:text-muted outline-none"
-                />
-                {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
-            </div>
-
-            {/* 🔑 「휴지통으로 옮길까요?」 — 노드 틀과 같은 확인 창(노드 타입이 confirmDelete 로 요청한 경고 · ⛔ window.confirm 안 씀) */}
-            {deleteConfirm && <TrashConfirm msg={deleteConfirm.msg} onConfirm={() => run('explorer.confirm-remove')} onCancel={() => run('explorer.cancel-remove')} />}
-
-            <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
-                {rows.length === 0 && (
-                    <p className="px-pad py-2 text-small text-muted select-none">
-                        {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
-                    </p>
-                )}
-                {[pinnedRows, mainRows].map((list, li) => (<Fragment key={li}>
-                {li === 0 && list.length > 0 && <div className="px-pad pt-1 pb-0.5 text-note text-muted select-none">고정</div>}
-                {li === 1 && pinnedRows.length > 0 && <div className="mx-pad my-1 border-t border-line" />}
-                {list.map((row) => {
+    const renderRows = (list: ExplorerRow[]) => list.map((row) => {
                     const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
                     const isFocus = selectedId === row.id && selectedIds.length > 1;   // 키보드 커서 — 여럿일 때만 포커스 링
                     const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
@@ -546,8 +500,72 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             )}
                         </div>
                     );
+                });
+
+    return (
+        <div
+            ref={rootRef}
+            className="h-full flex flex-col bg-side outline-none"
+            style={drag && preview && !preview.ok ? { cursor: 'not-allowed' } : undefined}
+            tabIndex={0}
+            role="tree"
+            aria-multiselectable="true"
+            onKeyDown={onKeyDown}
+            {...bind}
+        >
+            <SectionHeader
+                title="탐색기"
+                end={(
+                    <IconButton icon="plus" label="새로 만들기" onClick={(e) => {
+                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setMenu({ x: r.left, y: r.bottom, create: true });
+                    }} />
+                )}
+            />
+
+            {/* 검색 — 맞는 줄과 그 조상만(접힘 무시) · 비우면 원래대로 */}
+            <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0">
+                <Icon name="search" size={13} className="text-muted shrink-0" />
+                {/* oxlint-disable-next-line react/forbid-elements -- 탐색기 검색칸 — 아이콘 붙은 틀 입력 */}
+                <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="검색"
+                    className="flex-1 min-w-0 text-small leading-none bg-transparent text-text placeholder:text-muted outline-none"
+                />
+                {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
+            </div>
+
+            {/* 🔑 「휴지통으로 옮길까요?」 — 노드 틀과 같은 확인 창(노드 타입이 confirmDelete 로 요청한 경고 · ⛔ window.confirm 안 씀) */}
+            {deleteConfirm && <TrashConfirm msg={deleteConfirm.msg} onConfirm={() => run('explorer.confirm-remove')} onCancel={() => run('explorer.cancel-remove')} />}
+
+            <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
+                {rows.length === 0 && (
+                    <p className="px-pad py-2 text-small text-muted select-none">
+                        {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
+                    </p>
+                )}
+                {groups.map((g, gi) => {
+                    // 섹션 칸 — 머리줄(섹션 자신) + 접히는 몸통(끌어 정한 높이) + 아래 경계 손잡이. 섹션 밖 줄은 그냥 이어 그린다.
+                    const head = g.sec ? g.rows[0] : null;
+                    if (!head || head.id !== g.sec || head.kind !== 'node') return <Fragment key={gi}>{renderRows(g.rows)}</Fragment>;
+                    const h = secH[head.id];
+                    return (
+                        <div key={gi} className="border-y border-line relative bg-text/[0.02]">
+                            {renderRows([head])}
+                            {!head.node.collapsed && g.rows.length > 1 && (
+                                <div className="overflow-auto" style={h ? { height: h } : undefined}>{renderRows(g.rows.slice(1))}</div>
+                            )}
+                            {!head.node.collapsed && g.rows.length > 1 && (
+                                <TrashResizeHandle
+                                    down label="섹션 높이 조절" height={h ?? (g.rows.length - 1) * ROW_PX}
+                                    onResize={(v) => setSecH((m) => ({ ...m, [head.id]: clampSecH(v) }))}
+                                    onCommit={(v) => host.storage.set(SEC_H_KEY, { ...secH, [head.id]: clampSecH(v) })}
+                                />
+                            )}
+                        </div>
+                    );
                 })}
-                </Fragment>))}
             </div>
 
             {/* 🗑 휴지통 — 맨 아래 접이식. 안의 줄은 회색. 영구삭제·비우기는 인라인 확인(⛔ window.confirm 안 씀) */}
@@ -668,7 +686,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
  *   가로 띠로 쓴다. ⛔ 새 위젯을 만들지 않았고, shell/ 를 직접 import 하지도 않는다(플러그인 경계 — 구조 검사 ⑥).
  *   위로 끌면 휴지통이 커진다(경계가 올라간다) = startH + (startY − 지금 Y). onCommit 으로 host.storage 에 남긴다.
  */
-function TrashResizeHandle({ height, onResize, onCommit }: {
+function TrashResizeHandle({ height, onResize, onCommit, down, label = '휴지통 높이 조절' }: {
+    down?: boolean;   // 아래 경계 손잡이(섹션) — 아래로 끌면 커진다
+    label?: string;
     height: number;
     onResize: (h: number) => void;
     onCommit: (h: number) => void;
@@ -687,7 +707,7 @@ function TrashResizeHandle({ height, onResize, onCommit }: {
     const onPointerMove = useCallback((e: React.PointerEvent) => {
         const s = start.current;
         if (!s) return;
-        onResize(s.h + (s.y - e.clientY));   // 위로(음의 Y 이동) 끌면 커진다
+        onResize(s.h + (down ? e.clientY - s.y : s.y - e.clientY));   // 휴지통은 위로, 섹션은 아래로 끌면 커진다
     }, [onResize]);
     const end = useCallback(() => {
         if (!start.current) return;
@@ -709,19 +729,19 @@ function TrashResizeHandle({ height, onResize, onCommit }: {
         <div
             role="separator"
             aria-orientation="horizontal"
-            aria-label="휴지통 높이 조절"
+            aria-label={label}
             tabIndex={0}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={end}
             onPointerCancel={end}
             onKeyDown={(e) => {
-                if (e.key === 'ArrowUp') { e.preventDefault(); onResize(latest.current + 16); onCommit(latest.current + 16); }
-                else if (e.key === 'ArrowDown') { e.preventDefault(); onResize(latest.current - 16); onCommit(latest.current - 16); }
+                const d = e.key === 'ArrowUp' ? 16 : e.key === 'ArrowDown' ? -16 : 0;
+                if (d) { e.preventDefault(); const v = latest.current + (down ? -d : d); onResize(v); onCommit(v); }
             }}
-            title="끌어서 휴지통 높이 조절"
+            title={`끌어서 ${label}`}
             // 잡는 자리는 위아래로 넉넉히(h-3, -top-1.5), 보이는 띠는 가운데 1px — 창틀 손잡이와 같은 치수
-            className="resize-handle absolute left-0 right-0 -top-1.5 h-3 cursor-row-resize z-20 touch-none"
+            className={`resize-handle absolute left-0 right-0 ${down ? '-bottom-1.5' : '-top-1.5'} h-3 cursor-row-resize z-20 touch-none`}
         >
             <div className={`resize-bar absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px ${dragging ? 'is-dragging' : ''}`} />
         </div>

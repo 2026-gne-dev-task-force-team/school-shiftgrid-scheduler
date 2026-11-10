@@ -19,6 +19,14 @@ export type { VirtualNode, CreateSpec, NodeTypeDef, CanFlags } from '../contract
 
 const registry = new Map<string, NodeTypeDef>();
 
+/** 뿌리 노드 id — emptyTree 가 늘 'root' 로 만든다(섹션 「뿌리 전용」 판정이 쓴다). */
+const ROOT_ID = 'root';
+
+/** 섹션 타입인가 — 들여쓰기 없는 칸 · 뿌리 전용 · 지우면 자식이 뿌리로 풀린다. */
+export function isSectionType(type: string): boolean {
+    return !!registry.get(type)?.section;
+}
+
 /**
  * 🔴 등록/해제 알림 — index.ts 가 「create 있는 타입마다 new-<type> 명령」을 자동으로 켜고 끈다(N4 반쪽 메꿈).
  *   create 가 있는 타입이 등록되면 register, 그 등록이 거둬지면 unregister. create 없는 타입(일정 record 등)은 안 알린다.
@@ -100,7 +108,9 @@ export function isKnownType(type: string): boolean {
  *   - 컨테이너가 아니면 안 받는다 · container === true 면 전부 · { accepts } 면 그 목록만.
  *   🔴 모르는 타입(등록 안 됨)은 컨테이너가 아니라고 본다 — 자식을 못 받는다.
  */
-export function acceptsChild(parentType: string, childType: string): boolean {
+export function acceptsChild(parentType: string, childType: string, parentId?: string): boolean {
+    // 🔴 섹션은 뿌리 바로 밑에만(섹션 안에 섹션 없음) — parentId 를 주는 호출(이동·드롭)에서 건다. 만들기는 canCreateType 이 같은 걸 건다.
+    if (parentId !== undefined && parentId !== ROOT_ID && registry.get(childType)?.section) return false;
     const c = registry.get(parentType)?.container;
     if (!c) return false;
     if (c === true) return true;
@@ -184,7 +194,7 @@ export function slotsOf(type: string): string[] {
  */
 export function canDo(type: string, nodeId: string, what: 'rename' | 'move' | 'delete'): boolean {
     // 🔴 싱글톤(나무에 하나 · unique:'tree')은 탐색기에서 지우기를 아예 막는다 — 막아도 실수로 지우는 일이 잦았다(쥔님 2026-11-09).
-    //    맨 위 고정 구역에 따로 뜬다(ExplorerView). 옮기기는 「제 부모 안 순서 바꾸기」만 — tree.move 가 다른 부모행을 막는다.
+    //    옮기기는 다른 부모로도 된다(섹션 포함) — 「나무에 하나」(violatesUnique)만 그대로 지킨다.
     //    🔴 단 타입 can 이 delete:true 를 「명시」하면 그걸 따른다 — 계정 루트(마스터만 · confirmDelete 경고)가 막혀 못 지웠다(Q5-C 쥔님 2026-11-10 「삭제 안됨 · 버그」).
     const can = registry.get(type)?.can;
     const flags = can == null ? undefined : typeof can === 'function' ? can(nodeId) : can;
@@ -197,6 +207,7 @@ export function canDo(type: string, nodeId: string, what: 'rename' | 'move' | 'd
  *   우클릭 메뉴 회색·헤더 단추·공개 API create 가 전부 지난다. parentId 가 null 이면 부모 미정 자리(헤더 단추 등).
  */
 export function canCreateType(type: string, parentId: string | null): boolean {
+    if (parentId !== null && parentId !== ROOT_ID && registry.get(type)?.section) return false;   // 섹션은 뿌리 밑 전용
     const fn = registry.get(type)?.canCreate;
     return fn ? fn(parentId) : true;
 }

@@ -280,6 +280,8 @@ export interface NodeTypeContribution<ImplName extends string = string> {
     createInput?: { placeholder?: string };
     /** 🔑 싱글톤 — 'tree' 나무에 하나 · 'parent' 부모마다 하나(없으면 제한 없음). 레지스트라가 NodeTypeDef.unique 로 넘긴다. */
     unique?: 'tree' | 'parent';
+    /** 🔑 섹션 — 뿌리 밑 전용 · 들여쓰기 없는 칸 · 지우면 자식이 뿌리로 풀린다. 레지스트라가 NodeTypeDef.section 으로 넘긴다. */
+    section?: boolean;
     /** 🔑 자동 슬롯 — 이 타입을 만들면 같이 만들 자식 타입들. 레지스트라가 NodeTypeDef.slots 로 넘긴다. */
     slots?: string[];
     /** 모듈 nodeTypes 의 키 — 함수 묶음(아이콘 함수·open·derive·menu·create.init)을 레지스트라가 여기서 찾는다. */

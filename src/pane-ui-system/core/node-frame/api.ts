@@ -100,6 +100,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 hidden: fns?.hidden,                // 🔑 조건부 숨김 — impl 에서
                 embed: fns?.embed ? (p) => createElement(fns.embed!, { ...p, host }) : undefined,
                 unique: item.unique,
+                section: item.section,
                 slots: item.slots,
                 record: item.record,
                 body: item.body as NodeTypeDef['body'],

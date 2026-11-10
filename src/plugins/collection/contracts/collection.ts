@@ -132,6 +132,10 @@ export interface FieldCellProps {
     onChange: (v: RecordCellValue) => void;
     /** 행 전체(다른 칸을 읽고 싶은 타입용) */
     row: unknown;
+    /** 이 목록의 칸 전부(형제 칸을 따라가는 타입용 — 롤업). 안 주는 자리도 있다 */
+    fields?: RecordField[];
+    /** 이 행의 id(관계 칸이 제 목록을 후보에서 빼려고 쓴다). 안 주는 자리도 있다 */
+    rowId?: string;
     /** 선택지를 화면에서 고치는 칸(select·multi)만 쓴다 — 안 주면 선택지 편집 UI 가 숨는다 */
     onOptionsChange?: (options: FieldOption[]) => void;
 }
@@ -172,7 +176,7 @@ export interface FieldTypeDef {
     /** 보드·그룹 묶기 키 */
     groupKey?(value: RecordCellValue | undefined, config: unknown): string | null;
     /** 칸 설정 팝오버(P2~) */
-    Config?: ComponentType<{ field: RecordField; onChange: (f: RecordField) => void }>;
+    Config?: ComponentType<{ field: RecordField; onChange: (f: RecordField) => void; /** 이 목록의 칸 전부 */ fields?: RecordField[] }>;
 }
 
 export interface FieldTypeRegistry {
@@ -317,6 +321,10 @@ export interface RecordSchemaApi {
     normalizeRelation(value: unknown, many?: boolean): string[];
     /** 관계 칸 값 → 대상 이름을 `, ` 로 이은 글자(모르는 id 는 건너뛴다) */
     relationToText(ids: readonly string[], nameOf: (id: string) => string | undefined): string;
+    /** 관계 칸 값 → 대상 줄 id[] — 다른 목록의 줄(예: 반)을 넣은 원소는 그 줄이 가리키는(고른 또는 유일한) 대상으로 따라간다. 옛 값(대상 id)은 그대로 */
+    resolveRelationTargets(value: unknown, config: unknown): string[];
+    /** 거꾸로 보기 — 그 줄을 (다른 목록 줄 경유 포함) 가리키는 레코드와 칸 key, 여럿 그대로 */
+    relationReferrers(targetId: string): { id: string; key: string }[];
 }
 
 /** 속성 목록 props — 이름표 | 그 타입의 Cell 한 줄씩(인스펙터가 쓴다). onChange 가 없으면 보기 전용. */
@@ -325,6 +333,8 @@ export interface PropertyListProps {
     values: Record<string, RecordCellValue>;
     onChange?: (key: string, v: RecordCellValue) => void;
     onOptionsChange?: (key: string, options: FieldOption[]) => void;
+    /** 이 줄의 노드 id — 주면 맨 밑에 「나를 가리키는 것」(역참조) 칩이 뜬다. 비었으면 안 보인다 */
+    rowId?: string;
 }
 
 /**
