@@ -82,14 +82,15 @@ function EventChip({ b }: { b: WeekBar }) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
             <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${barCls(e, pal)}`}>
-                {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
+                {!e.allDay && !b.contL && <span className="hidden sm:inline tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
     }
     return (
         <div data-event-id={e.id} {...CHIP_A11Y} className={`flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded ${ghostCls(e)}`}>
             <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
-            <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
+            {/* 좁은 폭(<sm)은 칸이 「09:0…」만 남겨 제목을 다 먹는다 — 시각은 숨기고 제목만 */}
+            <span className="truncate"><span className="hidden sm:inline tabular-nums text-muted">{hhmm(e.startMs)} </span>{title}</span>
         </div>
     );
 }
@@ -295,7 +296,8 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             if (h === rowHRef.current) return;
             // 🔴 ⭐ 초기화 전(didInit=false)엔 보존 안 함 — 그땐 scrollTop 이 아직 0 이라 keepTopIdx=0 이 되고,
             //    그 0 이 바로 아래 init 이 잡은 자리를 rowH 바뀜 때 덮어 「처음 열면 2년 전(range.from)」으로 튀었다(2026-11-01 22:51 실측).
-            if (didInit.current) keepTopIdx.current = el.scrollTop / rowHRef.current;
+            //    🔴 커밋 전에 또 재면(peek 열고 닫는 애니메이션 중 연달아) rowHRef 는 새 값인데 scrollTop 은 옛 값이라 엉뚱한 줄이 잡힌다 — 첫 값만 쥔다.
+            if (didInit.current && keepTopIdx.current === null) keepTopIdx.current = el.scrollTop / rowHRef.current;
             rowHRef.current = h;
             setRowH(h);
         };
@@ -467,6 +469,8 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                 onDoubleClick={onCellDouble}
                 {...mergeBind(rangeSel.bind, ctxTrigger)}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
+                // 🔴 브라우저 스크롤 고정(scroll anchoring)이 위쪽 빈 높이·줄 교체를 보고 scrollTop 을 제멋대로 민다 — 자리는 우리가 잡는다
+                style={{ overflowAnchor: 'none' }}
             >
                 <div
                     className="sticky top-0 z-10 grid grid-cols-7 bg-bg border-t border-line"
