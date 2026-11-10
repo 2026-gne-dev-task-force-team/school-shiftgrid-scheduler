@@ -13,7 +13,7 @@ import { useScope } from './store';
 import { PALETTE_LEN } from './palette';
 import { eventsInScope, isoMinuteOf, occId, type CalEvent, type StoreInfo } from './events';
 import { storedToEvent } from './event-fields';
-import { occurrences, type SeriesData } from './series';
+import { occurrences, patternOf, type SeriesData } from './series';
 
 /** 반복 규칙을 펴는 창 — 오늘 앞 2년 ~ 뒤 5년. shortcut: 보기마다 「보이는 범위」를 넘기지 않고 한 창으로 편다(끝없는 월 스크롤도 이 창 밖엔 회차가 없다) — 창 밖 회차가 아쉬우면 보기가 범위를 넘기게 바꾼다. */
 function seriesWindow(): [string, string] {
@@ -72,7 +72,7 @@ export function useCalendarData(): CalendarData {
             if (Number.isNaN(startMs) || Number.isNaN(endMs)) continue;
             const sd = n.data as SeriesData;
             // 규칙 일정 자신은 달력에 안 그린다(회차로 아래서 편다) — 목록(레코드)에만 한 줄로 간다
-            (sd.recur ? rules : events).push({
+            (patternOf(sd) ? rules : events).push({
                 id: n.id,
                 storeId,
                 name: n.name,

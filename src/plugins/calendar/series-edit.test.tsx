@@ -28,7 +28,7 @@ import { clearDerived } from '../explorer/model/derive';
 import { calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, ensureStore, removeEvent, setCalendarHost, EVENT_TYPE } from './nodes';
 import { eventToStored } from './event-fields';
 import { isoMinuteOf, occId } from './events';
-import { occurrences, setRecur, nudge, splitSeries, type SeriesData } from './series';
+import { occurrences, setRecur, nudge, splitSeries, patternOf, type SeriesData } from './series';
 import { EventCardPeek } from './views/EventCardPeek';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -97,6 +97,7 @@ describe('C2c-2 「반복」 칸 — setRecur', () => {
         const m = nudge(occs(id)[1], 1);
         setRecur(id, null);
         expect(dataOf(id).recur).toBeUndefined();
+        expect(patternOf(dataOf(id))).toBeUndefined();
         expect(dataOf(m).seriesId).toBeUndefined();
         expect(dataOf(m).originalStart).toBeUndefined();
         expect(live()).toBe(2);
@@ -110,7 +111,7 @@ describe('C2c-2 「반복」 칸 — setRecur', () => {
         const el = mountCard(id);
         const sel = el.querySelector('select[aria-label="반복"]') as HTMLSelectElement;
         act(() => { sel.value = 'weekly'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
-        expect(dataOf(id).recur).toEqual({ freq: 'weekly', weekdays: [d.getDay()] });
+        expect(patternOf(dataOf(id))).toEqual({ rules: [{ freq: 'weekly', weekdays: [d.getDay()] }] });
         expect(shown).toBe(id);
         expect(el.querySelector('[data-cal-recur]')).not.toBeNull();
     });
@@ -168,7 +169,7 @@ describe('C2c-2 회차 단추', () => {
         const nid = splitSeries(third);
         expect(occs(id).length).toBe(2);
         expect(occs(nid).map((o) => o.originalStart)).toEqual([third.originalStart, plus(third.originalStart!, 7)]);
-        expect(dataOf(nid).recur!.count).toBe(2);
+        expect(patternOf(dataOf(nid))!.rules[0].count).toBe(2);
         // 시리즈 열기 — 회차 카드에서 더보기 → 규칙 일정 카드(반복 칸이 보인다)
         const el = mountCard(occId(nid, third.originalStart!));
         click(el.querySelector('button[aria-label="더보기"]'));
