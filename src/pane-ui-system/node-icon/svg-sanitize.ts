@@ -21,7 +21,8 @@ function badValue(v: string): boolean {
     return urls.some((u) => !/^url\(['"]?#/.test(u));
 }
 
-export function sanitizeSvg(src: string): string | null {
+/** prefix 를 주면 id 와 url(#id) 참조에 접두사를 붙인다 — 같은 그림이 한 화면에 여러 번 그려져도 id 가 겹치지 않게. */
+export function sanitizeSvg(src: string, prefix?: string): string | null {
     if (typeof src !== 'string' || !src.trim() || typeof DOMParser === 'undefined') return null;
     const doc = new DOMParser().parseFromString(src, 'text/html');
     const root = doc.body.querySelector('svg');
@@ -37,6 +38,18 @@ export function sanitizeSvg(src: string): string | null {
         }
     };
     clean(root);
+    if (prefix) {
+        const pre = prefix.replace(/[^A-Za-z0-9_-]/g, '_');
+        const all = [root, ...Array.from(root.querySelectorAll('*'))];
+        for (const el of all) {
+            const id = el.getAttribute('id');
+            if (id) el.setAttribute('id', `${pre}-${id}`);
+            for (const a of Array.from(el.attributes)) {
+                if (a.name === 'id' || !a.value.includes('url(')) continue;
+                el.setAttribute(a.name, a.value.replace(/url\((['"]?)#([^)'"]*)\1\)/g, (_m, q: string, i: string) => `url(${q}#${pre}-${i}${q})`));
+            }
+        }
+    }
     root.removeAttribute('width');
     root.removeAttribute('height');
     root.setAttribute('width', '100%');
