@@ -70,3 +70,16 @@ describe('PeekLayer 초점', () => {
         expect(document.activeElement).toBe(row);
     });
 });
+
+describe('PeekLayer 열 때 초점 (R3-C)', () => {
+    it('열면 미리보기 안 첫 조작 요소로 초점이 간다', () => {
+        opener();
+        mount(h(PeekLayer, { mode: 'overlay', onClose: () => {}, children: h('div', null, h('button', { id: 'p1' }, 'a'), h('input', { id: 'p2' })) }));
+        expect(document.activeElement?.id).toBe('p1');
+    });
+    it('안쪽이 이미 초점을 가져갔으면(autoFocus) 덮지 않는다', () => {
+        opener();
+        mount(h(PeekLayer, { mode: 'overlay', onClose: () => {}, children: h('div', null, h('button', { id: 'p1' }, 'a'), h('input', { id: 'p2', autoFocus: true })) }));
+        expect(document.activeElement?.id).toBe('p2');
+    });
+});

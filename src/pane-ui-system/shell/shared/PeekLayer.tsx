@@ -50,6 +50,7 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
     const wide = mode !== 'bottom';   // 오른쪽에 서는가(밀기·겹침) — 좌우로 크기 조절
     const push = mode === 'push';
     const layerRef = useRef<HTMLDivElement>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
     // 기기별로 기억한 크기 — 폭(오른쪽 피크)·높이(아래 피크). 없으면 문서급 기본
     const [w, setW] = useState(() => loadNum(WKEY, DEFAULT_W));
     const [h, setH] = useState(() => loadNum(HKEY, 0));   // 0 = 아직 없음 → 마운트 때 62% 로
@@ -62,6 +63,17 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
         const a = document.activeElement;
         if ((!a || a === document.body) && opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
     }, [opener]);
+
+    // 열면 초점이 미리보기 안 첫 조작 요소로(R3-C) — 본문 먼저, 없으면 머리줄. 안쪽이 이미 초점을 가져갔으면(autoFocus) 덮지 않는다.
+    //   ⭐ 위 「닫으면 연 자리로」는 그대로 — opener 는 이 효과 전에 렌더에서 잡혔다.
+    useEffect(() => {
+        const layer = layerRef.current;
+        if (!layer) return;
+        const a = document.activeElement;
+        if (a && a !== document.body && layer.contains(a)) return;
+        const sel = 'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
+        (bodyRef.current?.querySelector<HTMLElement>(sel) ?? layer.querySelector<HTMLElement>(sel))?.focus({ preventScroll: true });
+    }, []);
 
     // Esc 로 닫는다(✕ 와 함께 유일한 닫기 길 — 바깥 클릭은 안 닫는다)
     useEffect(() => {
@@ -151,7 +163,7 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
                 <PeekBarProvider slot={bar.slot} claim={bar.claim}>
-                    <div className="flex-1 min-h-0 overflow-auto p-4">{children}</div>
+                    <div ref={bodyRef} className="flex-1 min-h-0 overflow-auto p-4">{children}</div>
                 </PeekBarProvider>
             </div>
         </div>

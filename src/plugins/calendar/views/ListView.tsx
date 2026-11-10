@@ -15,6 +15,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { RecordViewApi, RecordField } from '../../collection/contracts/collection';
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
+import { focusPeekTitle } from './focus-title';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { daysSelection, dayInSelection, type CalSelection } from '../selection';
 
@@ -77,7 +78,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
     const newEvent = () => {
         const base = new Date(value.getFullYear(), value.getMonth(), value.getDate());
         const id = createEvent({ start: isoMinuteOf(base), end: isoMinuteOf(new Date(base.getTime() + DAY_MS)), allDay: true }, '');
-        if (id) card.open(id);
+        if (id) { card.open(id); focusPeekTitle(); }
     };
     const openRow = (e: CalEvent) => {
         onChange(new Date(e.startMs));   // anchor 를 그 날로 — 다른 뷰로 가도 그 날이 보인다
