@@ -290,6 +290,12 @@ export function can(permission: string): boolean {
     return false;
 }
 
+/** 지금 사용자가 가진 역할 이름들(휴지통·삭제된 역할은 뺀다) — 상태바 메뉴용. 사용자가 아니면 빈 목록. */
+export function currentRoleNames(): string[] {
+    if (session.kind !== 'user') return [];
+    return session.roles.map((rid) => (valuesOf(rid, ROLE_TYPE) ? nodesApi?.get(rid)?.name ?? '' : '')).filter(Boolean);
+}
+
 function credentialProvider(): Credential | null {
     return hostRef?.modules.use<Credential>('credential') ?? null;
 }

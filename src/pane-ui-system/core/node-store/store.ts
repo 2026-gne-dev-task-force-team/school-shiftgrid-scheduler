@@ -411,7 +411,7 @@ function createSlots(tree: Tree, parentId: string, parentType: string, seen: Set
 export function canNewNode(type: string): boolean {
     const parent = isSectionType(type) ? state.tree.root : newFolderParent(state.tree, state.selectedId, isContainerType, 'selection');
     const at = parentAccepts(parent, type) || !parentAccepts(state.tree.root, type) ? parent : state.tree.root;
-    return canCreateType(type, at);
+    return canCreateType(type, at) && !violatesUnique(state.tree, type, at, null, uniqueOf);   // 싱글톤 「이미 있음」(탐색기 회색)도 숨긴다
 }
 
 export function newNode(type: string, opts?: { via?: 'selection' | 'context'; targetId?: string; openNow?: boolean }): void {
@@ -424,20 +424,20 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
             parent = state.tree.root;
         } else {
             const def = getType(type);
-            flashNotice(`「${def?.create?.label ?? def?.label ?? type}」를 넣을 자리가 없습니다.`);
+            flashNotice(`${josa(`「${def?.create?.label ?? def?.label ?? type}」`, '을/를')} 넣을 자리가 없습니다.`);
             return;
         }
     }
     // 🔑 「만들기」 가림 사전점검 — 모델 관문(createNode 의 canCreate)이 막기 전에 이유를 알린다(메뉴 회색과 같은 판정).
     if (!canCreateType(type, parent)) {
         const d = getType(type);
-        flashNotice(`「${d?.create?.label ?? d?.label ?? type}」를 여기에 만들 수 없습니다.`);
+        flashNotice(`${josa(`「${d?.create?.label ?? d?.label ?? type}」`, '을/를')} 여기에 만들 수 없습니다.`);
         return;
     }
     // 🔑 싱글톤 사전점검 — 모델 관문(createNode 의 uniqueOf)이 막기 전에 이유를 알린다(메뉴 회색과 같은 판정).
     if (violatesUnique(state.tree, type, parent, null, uniqueOf)) {
         const d = getType(type);
-        flashNotice(`「${d?.create?.label ?? d?.label ?? type}」는 이미 있습니다.`);
+        flashNotice(`${josa(`「${d?.create?.label ?? d?.label ?? type}」`, '은/는')} 이미 있습니다.`);
         return;
     }
     const def = getType(type);

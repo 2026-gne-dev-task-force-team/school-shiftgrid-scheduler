@@ -12,7 +12,7 @@ import { runCommand } from '../../../plugin';
 import type { NodeFrameProps } from '../../nodes/contracts/nodes';
 import { parentOf } from '../../nodes/model/tree';
 import type { Node } from '../../nodes/model/tree';
-import { canOpenType, confirmDeleteMsg, iconOf } from '../../nodes/model/types';
+import { canOpenType, confirmDeleteMsg, iconOf, isHiddenNode } from '../../nodes/model/types';
 import { getState, openById, select as selectNode, subscribeState, trashNode } from '../../node-store/store';
 import { NodeHeader } from './NodeHeader';
 import { nodeMenu } from './node-menu';
@@ -50,7 +50,8 @@ export function NodeFrame({
     nodeId, leafId, actions, menu, toolbar, headerExtra, subheader, width = 'full', scroll = false,
     titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
 }: NodeFrameProps) {
-    const tree = useSyncExternalStore(subscribeState, () => getState().tree);
+    // 🔑 state 통째로 구독 — 세션이 바뀌어 apiInvalidate 가 state 참조만 새로 만들 때도(나무는 그대로) 다시 그려 잠금 판정을 새로 한다
+    const tree = useSyncExternalStore(subscribeState, getState).tree;
     const slot = usePeekBar();
     const [pop, setPop] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const [ask, setAsk] = useState<string | null>(null);
@@ -63,6 +64,16 @@ export function NodeFrame({
     // 🔑 이 탭이 이 노드를 보고 있다고 적고 고른다 — 탐색기 강조·속성 패널이 따라온다(피크는 leafId 가 없어 안 건드린다)
     useEffect(() => bindLeafNode(leafId, nodeId), [leafId, nodeId]);
     if (!node) return null;
+    // 🔴 지금 사용자가 볼 수 없는 노드(탐색기가 숨기는 것과 같은 판정 hidden)면 본문 대신 잠금 화면 — 탭은 그대로 두고,
+    //    권한 있는 사용자로 돌아오면 바로 보인다. 이름·값은 그리지 않는다.
+    if (isHiddenNode(node)) {
+        return (
+            <div data-nf-locked={nodeId} className="h-full flex flex-col items-center justify-center gap-2 text-muted">
+                <Icon name="ban" size={22} />
+                <p className="text-small">이 항목을 볼 권한이 없습니다.</p>
+            </div>
+        );
+    }
 
     const focusTitle = () => {
         const el = Array.from(root.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea') ?? []).find((i) => i.getAttribute('aria-label') === titleAriaLabel);

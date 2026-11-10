@@ -8,7 +8,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { PluginHost } from '../../../plugin';
 import { setWorkspaceBridge } from '../../../plugin';
 import { PeekBarProvider, usePeekBarState } from '../../../shell/shared/peek-bar';
-import { initStore, getState, apiCreate, apiRename } from '../../node-store/store';
+import { initStore, getState, apiCreate, apiRename, apiInvalidate } from '../../node-store/store';
 import { registerType, clearTypes } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
 import { NodeFrame } from './NodeFrame';
@@ -44,6 +44,24 @@ afterEach(() => { act(() => root.unmount()); container.remove(); document.body.i
 const render = (node: ReactNode) => act(() => { root.render(node); });
 const click = (el: Element | null | undefined) => act(() => { (el as HTMLElement).click(); });
 const menuItem = (label: string) => [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
+
+describe('QK-1 잠금 화면 — 지금 사용자가 볼 수 없는 노드', () => {
+    it('hidden 이 참이 되면(세션 바뀜) 본문 대신 잠금 문구, 다시 거짓이면 바로 본문', () => {
+        let ok = true;
+        registerType({ type: 'secret', label: '비밀', icon: 'file', hidden: () => !ok });
+        const id = apiCreate(getState().tree.root, { type: 'secret', name: '김선생' });
+        render(<NodeFrame nodeId={id}><p>본문값</p></NodeFrame>);
+        expect(container.textContent).toContain('본문값');
+        ok = false;
+        act(() => { apiInvalidate(getState().tree.root); });
+        expect(container.textContent).toContain('이 항목을 볼 권한이 없습니다');
+        expect(container.textContent).not.toContain('본문값');
+        expect(container.textContent).not.toContain('김선생');
+        ok = true;
+        act(() => { apiInvalidate(getState().tree.root); });
+        expect(container.textContent).toContain('본문값');
+    });
+});
 
 describe('nodes.Frame', () => {
     it('상단 줄에 조상 경로(뒤로 단추 없음), 그 밑에 큰 머리·본문이 선다', () => {
