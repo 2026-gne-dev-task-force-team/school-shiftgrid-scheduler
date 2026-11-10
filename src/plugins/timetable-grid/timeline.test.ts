@@ -9,6 +9,7 @@ import {
     type TimetableData, type RowSpec,
 } from './model';
 import { pasteTsv } from './gridNav';
+import { cellKey } from './model';
 import { scheduleOn } from './schedule';
 import { applyEdit, initGridNodes, sheetDataOf, stepEdit, SHEET_TYPE } from './nodes';
 
@@ -179,5 +180,20 @@ describe('노드 다리 — 읽기 변환 · 되돌리기 한 번 = 끌기 한 �
         expect(timelineProblem(sheetDataOf('s1').rows)).toBeNull();
         expect(ranges(sheetDataOf('s1'))[1]).toEqual([590, 640]);
         expect(timelineProblem(data!.rows), '저장된 날 값부터 겹침이 없다(읽기 변환에 기대지 않는다)').toBeNull();
+    });
+});
+
+describe('붙여넣기 자동 확장', () => {
+    it('마지막 교시를 넘으면 교시를 더한다 · 하루 끝이면 들어간 만큼만 + 알림', () => {
+        const t0 = blankTimetable();
+        const n = t0.rows.length;
+        const text = Array.from({ length: n + 2 }, (_, i) => `x${i}`).join('\n');
+        const r = pasteTsv(t0, { col0: 0, row0: 0, col1: 0, row1: 0 }, text);
+        expect(r.data.rows.length).toBe(n + 2);
+        expect(r.data.cells[cellKey(0, n + 1)]?.text).toBe(`x${n + 1}`);
+        expect(r.notice).toBeUndefined();
+        const big = pasteTsv(t0, { col0: 0, row0: 0, col1: 0, row1: 0 }, Array.from({ length: 80 }, (_, i) => `y${i}`).join('\n'));
+        expect(big.notice).toMatch(/행은 하루 끝을 넘어 붙이지 못했습니다/);
+        expect(big.data.rows.length).toBeLessThan(80);
     });
 });

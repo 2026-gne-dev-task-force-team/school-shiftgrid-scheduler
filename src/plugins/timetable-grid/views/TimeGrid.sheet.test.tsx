@@ -121,7 +121,7 @@ describe('W-T 시간표 격자 = 스프레드시트', () => {
         expect([txt(0, 0), txt(1, 0), txt(0, 1)]).toEqual(['', '', '01']);
     });
 
-    it('여러 칸 TSV 붙여넣기 = 칸마다 · 표 밖은 자름 · 되돌리기 한 번 · 복사는 범위 TSV', () => {
+    it('여러 칸 TSV 붙여넣기 = 칸마다 · 표 밖은 열·교시 자동 확장 · 되돌리기 한 번 · 복사는 범위 TSV', () => {
         mount();
         mouse(cellEl(0, 0), 'mousedown');
         clip('paste', 'A\tB\nC\tD');
@@ -130,9 +130,9 @@ describe('W-T 시간표 격자 = 스프레드시트', () => {
         expect(clip('copy')).toBe('A\tB\nC\tD');
         act(() => { stepEdit('s1', 'undo'); });
         expect(Object.keys(data.cells)).toEqual([]);
-        mouse(cellEl(4, 5), 'mousedown');   // 맨 오른쪽 아래(금 · 6행) — 넘치는 건 자른다
+        mouse(cellEl(4, 5), 'mousedown');   // 맨 오른쪽 아래(금 · 6행) — 넘치면 열·교시를 더한다
         clip('paste', '1\t2\n3\t4');
-        expect(Object.entries(data.cells).map(([k, v]) => [k, v.text])).toEqual([['c4r5', '1']]);
+        expect(Object.entries(data.cells).map(([k, v]) => [k, v.text])).toEqual([['c4r5', '1'], ['c5r5', '2'], ['c4r6', '3'], ['c5r6', '4']]);
         mouse(cellEl(4, 5), 'mousedown');
         expect(clip('cut')).toBe('1');
         expect(txt(4, 5)).toBe('');
