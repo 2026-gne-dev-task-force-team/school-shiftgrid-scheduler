@@ -54,7 +54,7 @@ function clean(r: RecurRule): RecurRule {
     return o as unknown as RecurRule;
 }
 
-/** 숫자 칸(제어형) — 바깥 값이 바뀌면 따라가고, 1 이상(·max 이하) 정수일 때만 알린다. */
+/** 숫자 칸(제어형) — 바깥 값이 바뀌면 따라가고, 정수면 1~max 로 가둬 알린다 · 빈 값·0·음수는 칸을 떠날 때 저장된 값으로 되돌린다. */
 function NumField({ value, onCommit, label, max }: { value: number; onCommit: (n: number) => void; label: string; max?: number }) {
     const [text, setText] = useState(String(value));
     useEffect(() => { setText(String(value)); }, [value]);
@@ -63,8 +63,9 @@ function NumField({ value, onCommit, label, max }: { value: number; onCommit: (n
             onChange={(e) => {
                 setText(e.target.value);
                 const n = Number(e.target.value);
-                if (Number.isInteger(n) && n >= 1 && (!max || n <= max)) onCommit(n);
-            }} />
+                if (e.target.value !== '' && Number.isInteger(n)) onCommit(Math.min(max ?? Infinity, Math.max(1, n)));
+            }}
+            onBlur={() => setText(String(value))} />
     );
 }
 
@@ -131,7 +132,10 @@ function toggleDay(p: DatePattern, d: string, ruleDays: ReadonlySet<string>): Da
     return { ...p, rdates: [...rd, d].sort() };
 }
 
-function MiniMonth({ value, start, onChange, realStarts, focus }: { value: DatePattern; start: string; onChange: (p: DatePattern) => void; realStarts?: readonly string[]; focus?: string }) {
+/** 옮긴 회차 — 원래 날(from) → 지금 날(to). 미니 달력이 지금 날에 진한 점, 원래 날에 빈 점(「옮김」)을 찍는다. */
+type MovedOcc = { from: string; to: string };
+
+function MiniMonth({ value, start, onChange, realStarts, moved, focus }: { value: DatePattern; start: string; onChange: (p: DatePattern) => void; realStarts?: readonly string[]; moved?: readonly MovedOcc[]; focus?: string }) {
     const f0 = (focus ?? start).slice(0, 10);
     const [ym, setYm] = useState<[number, number]>([+f0.slice(0, 4), +f0.slice(5, 7)]);
     const cells = monthGrid(ym[0], ym[1]);
@@ -140,7 +144,8 @@ function MiniMonth({ value, start, onChange, realStarts, focus }: { value: DateP
     const to = isoUTC(last);
     const shown = new Set(expandPattern(value, start, from, to).map((s) => s.slice(0, 10)));
     const ruleDays = new Set(expandPattern({ rules: value.rules }, start, from, to).map((s) => s.slice(0, 10)));
-    const real = new Set((realStarts ?? []).map((s) => s.slice(0, 10)));
+    const movedFrom = new Map((moved ?? []).map((m) => [m.from.slice(0, 10), m.to.slice(0, 10)]));
+    const real = new Set([...(realStarts ?? []).map((s) => s.slice(0, 10)).filter((d) => !movedFrom.has(d)), ...(moved ?? []).map((m) => m.to.slice(0, 10))]);
     const ex = new Set(value.exdates ?? []), added = new Set(value.rdates ?? []);
     const inExcept = (d: string) => (value.except ?? []).some((e) => d >= e.from.slice(0, 10) && d <= e.to.slice(0, 10));
     return (
@@ -153,17 +158,19 @@ function MiniMonth({ value, start, onChange, realStarts, focus }: { value: DateP
             <div className="grid grid-cols-7 text-center text-note text-muted">{WD.map((w) => <span key={w}>{w}</span>)}</div>
             <div className="grid grid-cols-7">
                 {cells.map((c) => {
-                    const on = shown.has(c.iso), isReal = real.has(c.iso), off = ex.has(c.iso), plus = added.has(c.iso);
+                    const on = shown.has(c.iso), isReal = real.has(c.iso), off = ex.has(c.iso), plus = added.has(c.iso), away = movedFrom.get(c.iso);
                     return (
                         <Button key={c.iso} variant="plain" size="sm" data-pattern-day={c.iso} aria-pressed={on}
-                            aria-label={`${c.m}월 ${c.d}일${plus ? ' · 더한 날' : on ? ' · 반복 날' : ''}${off ? ' · 빠진 날' : ''}`}
+                            aria-label={`${c.m}월 ${c.d}일${plus ? ' · 더한 날' : on ? ' · 반복 날' : ''}${off ? ' · 빠진 날' : ''}${away ? ` · ${+away.slice(5, 7)}월 ${+away.slice(8, 10)}일로 옮김` : isReal && !on ? ' · 옮겨 온 회차' : ''}`}
                             onClick={() => onChange(toggleDay(value, c.iso, ruleDays))}
                             className={`relative !h-7 !px-0 flex-col !gap-0 tabular-nums ${c.inMonth ? '' : 'opacity-40'} ${off ? 'line-through text-muted' : ''}
                                 ${inExcept(c.iso) ? 'bg-text/[0.06]' : ''} ${c.iso === focus?.slice(0, 10) ? '!border-accent' : ''}`}>
                             <span>{c.d}</span>
                             {plus
                                 ? <span data-pattern-added title="더한 날" className="leading-none text-note text-accent">＋</span>
-                                : <span className={`w-1 h-1 rounded-full ${isReal ? 'bg-accent' : on ? 'bg-accent/40' : 'bg-transparent'}`} />}
+                                : away
+                                    ? <span data-pattern-moved title={`옮김 → ${+away.slice(5, 7)}/${+away.slice(8, 10)}`} className="w-1 h-1 rounded-full border border-accent" />
+                                    : <span className={`w-1 h-1 rounded-full ${isReal ? 'bg-accent' : on ? 'bg-accent/40' : 'bg-transparent'}`} />}
                         </Button>
                     );
                 })}
@@ -172,8 +179,8 @@ function MiniMonth({ value, start, onChange, realStarts, focus }: { value: DateP
     );
 }
 
-export function PatternEditor({ value, start, onChange, realStarts, focus }: {
-    value: DatePattern; start: string; onChange: (p: DatePattern | null) => void; realStarts?: readonly string[]; focus?: string;
+export function PatternEditor({ value, start, onChange, realStarts, moved, focus }: {
+    value: DatePattern; start: string; onChange: (p: DatePattern | null) => void; realStarts?: readonly string[]; moved?: readonly MovedOcc[]; focus?: string;
 }) {
     const setRules = (rules: RecurRule[]) => onChange({ ...value, rules });
     const except = value.except ?? [];
@@ -215,7 +222,7 @@ export function PatternEditor({ value, start, onChange, realStarts, focus }: {
                     onDelete={() => setRules(value.rules.filter((_, j) => j !== i))} />
             ))}
             <Button size="sm" data-pattern-add-rule className="self-start" onClick={() => setRules([...value.rules, { freq: 'weekly' }])}>+ 규칙</Button>
-            <MiniMonth value={value} start={start} onChange={onChange} realStarts={realStarts} focus={focus} />
+            <MiniMonth value={value} start={start} onChange={onChange} realStarts={realStarts} moved={moved} focus={focus} />
             <div className="text-note text-muted">날을 누르면 그날을 빼거나 더해요. 다시 누르면 되돌려요.</div>
             {except.map((e, i) => exceptRow(String(i), e.from, e.to,
                 (v) => setExcept(except.map((x, j) => (j === i ? { ...x, from: v } : x))),

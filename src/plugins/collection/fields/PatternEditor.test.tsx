@@ -90,6 +90,38 @@ describe('PatternEditor', () => {
         expect(last()!.except).toHaveLength(1);
     });
 
+    it('간격 칸 — 0·음수는 1로 가두고 · 빈 값은 안 쓰고 · 칸을 떠나면 저장된 값으로 되돌린다', () => {
+        const { host, got, last } = mount({ rules: [{ freq: 'daily', interval: 3 }] });
+        const iv = () => host.querySelector('input[aria-label="간격"]') as HTMLInputElement;
+        const type = (v: string) => act(() => {
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(iv(), v);
+            iv().dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        expect(iv().min).toBe('1');
+        type('0');
+        expect(last()!.rules[0]).toEqual({ freq: 'daily' });   // 1 = 간격 없음
+        type('-4');
+        expect(last()!.rules[0]).toEqual({ freq: 'daily' });
+        const n = got.length;
+        type('');
+        expect(got.length).toBe(n);
+        act(() => { iv().focus(); iv().blur(); });
+        expect(iv().value).toBe('1');
+    });
+
+    it('미니 달력 — 옮긴 회차: 원래 날은 빈 점(「옮김」) · 옮겨 간 날은 실체 점', () => {
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        act(() => createRoot(host).render(createElement(PatternEditor, {
+            value: { rules: [{ freq: 'weekly', weekdays: [1] }] }, start: '2026-11-02', onChange: () => {},
+            realStarts: ['2026-11-16'], moved: [{ from: '2026-11-16', to: '2026-11-17' }],
+        })));
+        expect(day(host, '2026-11-16').querySelector('[data-pattern-moved]')?.getAttribute('title')).toBe('옮김 → 11/17');
+        expect(day(host, '2026-11-16').querySelector('.bg-accent')).toBeNull();
+        expect(day(host, '2026-11-17').querySelector('.bg-accent')).not.toBeNull();
+        expect(day(host, '2026-11-17').getAttribute('aria-label')).toContain('옮겨 온 회차');
+    });
+
     it('미니 달력 — 더한 날은 규칙 회차와 다른 표시(＋ · 「더한 날」)', () => {
         const { host } = mount({ rules: [{ freq: 'weekly', weekdays: [1] }], rdates: ['2026-11-20'] });
         expect(day(host, '2026-11-20').querySelector('[data-pattern-added]')?.getAttribute('title')).toBe('더한 날');

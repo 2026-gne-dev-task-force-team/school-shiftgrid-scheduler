@@ -186,6 +186,22 @@ describe('C2c-2 회차 단추', () => {
         expect(api().isTrashed(id)).toBe(false);
     });
 
+    it('회차 카드 상태 줄 — 고스트 「아직 그대로」 → 미루면 「원래 ○ → 옮김」 → 원래대로 = 실체 휴지통 + 고스트 복귀', () => {
+        const { id, first } = weekly(3);
+        const el = mountCard(occId(id, first));
+        expect(el.querySelector('[data-cal-occ-state]')!.getAttribute('data-cal-occ-state')).toBe('ghost');
+        expect(el.textContent).toContain('반복 회차(아직 그대로)');
+        click(btn(el, '하루 미루기'));
+        const m = shown;
+        expect(m).not.toBe(id);
+        expect(el.querySelector('[data-cal-occ-state]')!.getAttribute('data-cal-occ-state')).toBe('moved');
+        expect(el.textContent).toMatch(/원래 \d+\/\d+\(.\) → 옮김/);
+        click(el.querySelector('[data-cal-occ-act="restore"]'));
+        expect(api().isTrashed(m)).toBe(true);
+        expect(occs(id).find((o) => o.originalStart === first)?.virtual).toBe(true);
+        expect(el.querySelector('[data-cal-occ-state]')!.getAttribute('data-cal-occ-state')).toBe('ghost');
+    });
+
     it('회차 카드엔 휴지통이 없다(「이 회차 빠뜨리기」와 같은 동작) — 빠뜨리기가 그 회차만 뺀다', () => {
         const { id, first } = weekly(3);
         const el = mountCard(occId(id, first));
@@ -222,12 +238,15 @@ describe('속성 패널 「날짜 패턴」(PatternPane)', () => {
         expect(patternOf(dataOf(id))!.exdates).toEqual([first.slice(0, 10)]);
     });
 
-    it('실체 회차 노드를 고르면 그 시리즈 패턴 + focus = 그 회차 원래 시작', () => {
+    it('실체 회차 노드를 고르면 그 시리즈 패턴 + focus = 옮겨 간 날 · 원래 날은 「옮김」 빈 점', () => {
         const { id } = weekly(3);
         const o = occs(id)[1];
         const m = nudge(o, 1);
         const el = render(<PatternPane host={cardHost()} target={{ type: EVENT_TYPE, id: m }} />);
-        expect(focused(el)).toEqual([o.originalStart!.slice(0, 10)]);
+        const to = plus(o.originalStart!, 1).slice(0, 10);
+        expect(focused(el)).toEqual([to]);
+        expect(el.querySelector(`[data-pattern-day="${o.originalStart!.slice(0, 10)}"] [data-pattern-moved]`)).not.toBeNull();
+        expect(el.querySelector(`[data-pattern-day="${to}"] .bg-accent`)).not.toBeNull();   // 옮겨 간 날 = 실체 점
         click(el.querySelector('[data-pattern-add-rule]'));
         expect(patternOf(dataOf(id))!.rules).toHaveLength(2);   // 회차가 아니라 시리즈에 썼다
         expect(patternOf(dataOf(m))).toBeUndefined();

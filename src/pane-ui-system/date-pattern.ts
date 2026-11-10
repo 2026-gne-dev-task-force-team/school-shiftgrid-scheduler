@@ -160,7 +160,9 @@ function ruleSummary(r: RecurRule, s: { n: number }): string {
     if (r.freq === 'daily') return iv > 1 ? `${iv}일마다` : '매일';
     if (r.freq === 'weekly') {
         const wds = r.weekdays?.length ? [...new Set(r.weekdays)].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)) : [dow(s.n)];
-        return `${iv > 1 ? `${iv}주마다` : '매주'} ${wds.map((w) => WD[w]).join('·')}`;
+        // 편집기 프리셋 이름과 같은 낱말 — 「평일(월~금)」
+        const days = wds.join() === '1,2,3,4,5' ? '평일(월~금)' : wds.map((w) => WD[w]).join('·');
+        return iv > 1 ? `${iv}주마다 ${days}` : days === '평일(월~금)' ? days : `매주 ${days}`;
     }
     if (r.freq === 'monthly') {
         const head = iv > 1 ? `${iv}개월마다` : '매월';
@@ -171,9 +173,10 @@ function ruleSummary(r: RecurRule, s: { n: number }): string {
     return `${iv > 1 ? `${iv}년마다` : '매년'} ${sm + 1}월 ${sd}일`;
 }
 
-const mdText = (d: string) => `${+d.slice(5, 7)}월 ${+d.slice(8, 10)}일`;
+/** 「2월 10일」 — 시작과 해가 다르면 「2027년 2월 10일」. */
+const mdText = (d: string, y0?: number) => `${y0 !== undefined && +d.slice(0, 4) !== y0 ? `${+d.slice(0, 4)}년 ` : ''}${+d.slice(5, 7)}월 ${+d.slice(8, 10)}일`;
 
-/** 읽는 한 줄 요약 — 「매주 월·수 9:00 · 10회 · 빠짐 2」. 규칙 여럿은 「 + 」. */
+/** 읽는 한 줄 요약 — 「매주 월·수 9:00 · 10번 · 빠진 날 2」(낱말은 편집기와 같게). 규칙 여럿은 「 + 」. */
 export function patternSummary(p: DatePattern, start: string): string {
     const s = parse(start);
     if (!s) return '';
@@ -181,13 +184,13 @@ export function patternSummary(p: DatePattern, start: string): string {
     if (!s.allDay) text += ` ${+s.time.slice(0, 2)}:${s.time.slice(3)}`;
     const ends = new Set<string>();
     for (const r of p.rules) {
-        if (r.count !== undefined) ends.add(`${r.count}회`);
-        if (r.until) ends.add(`${mdText(r.until)}까지`);
+        if (r.count !== undefined) ends.add(`${r.count}번`);
+        if (r.until) ends.add(`${mdText(r.until, ymd(s.n)[0])}까지`);
     }
     const tail = [...ends];
     if (p.except?.length) tail.push(`기간 빼기 ${p.except.length}`);
-    if (p.exdates?.length) tail.push(`빠짐 ${p.exdates.length}`);
-    if (p.rdates?.length) tail.push(`더함 ${p.rdates.length}`);
+    if (p.exdates?.length) tail.push(`빠진 날 ${p.exdates.length}`);
+    if (p.rdates?.length) tail.push(`더한 날 ${p.rdates.length}`);
     return [text, ...tail].join(' · ');
 }
 
