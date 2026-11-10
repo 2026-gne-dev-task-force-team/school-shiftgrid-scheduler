@@ -48,13 +48,15 @@ type RvRow = { id: string; date: { start: string }; time: string; title: string;
 
 export function ListView({ value, onChange, trailing, peek, selection, onSelect, host }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void; host?: PluginHost }) {
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
-    const { events, stores } = useCalendarData();
+    const { events, rules, stores } = useCalendarData();
     const words = useWords();
     const [query, setQuery] = useState('');
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
 
-    const rows = useMemo(() => sortEvents(filterEvents(events, query)), [events, query]);
+    // 🔴 목록은 실제 자료만(쥔님 2026-11-10) — 가상 회차는 빼고, 반복 일정은 규칙 일정 한 줄 + 손댄(실체) 회차만
+    const rows = useMemo(() => sortEvents(filterEvents([...events.filter((e) => !e.occ?.virtual), ...rules], query)), [events, rules, query]);
+    const ruleIds = useMemo(() => new Set(rules.map((r) => r.id)), [rules]);
 
     // 범위 선택 — 줄(일정)의 「날」을 고른다. 끌면 지나간 줄들의 날 min~max. 줄 클릭은 peek 도 연다(공존).
     const selAnchor = useRef<string | null>(null);
@@ -156,7 +158,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                                     <tr key={e.id} data-day={iso} tabIndex={0} onClick={() => openRow(e)} onKeyDown={(ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !isImeEnter(ev) && ev.target === ev.currentTarget) { ev.preventDefault(); openRow(e); } }} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
-                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.occ && <Icon name="redo" size={11} className="inline mr-1 text-muted" />}{e.name || <span className="opacity-60">제목 없음</span>}</td>
+                                        <td className="px-3 py-1.5 border-b border-line truncate">{(e.occ || ruleIds.has(e.id)) && <Icon name="redo" size={11} className="inline mr-1 text-muted" />}{e.name || <span className="opacity-60">제목 없음</span>}</td>
                                         <td className="px-3 py-1.5 border-b border-line">
                                             <span className="flex items-center gap-1.5 min-w-0">
                                                 <span className={`shrink-0 w-2 h-2 rounded-full ${paletteAt(e.colorIdx).dot}`} />

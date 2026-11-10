@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * 회차 카드(event.occ)에서는 휴지통 단추를 숨긴다(「이 회차 빠뜨리기」와 같은 동작) — 일반 일정엔 그대로.
+ * 일정 카드 동작 줄엔 저장소 칸만 — 내보내기·휴지통 단추는 없앴다(쥔님 2026-11-10 · 지우기는 틀 ⋯ 「휴지통으로」).
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -14,14 +14,15 @@ const ev = (occ?: unknown) => ({ id: 'e', storeId: 's', name: 'x', occ } as unkn
 function text(e: CalEvent): string {
     const el = document.createElement('div');
     root = createRoot(el);
-    act(() => { root!.render(<EventActions event={e} stores={[]} />); });
+    act(() => { root!.render(<EventActions event={e} stores={[{ id: 's', name: '내 달력' } as never]} />); });
     return el.textContent ?? '';
 }
 
-describe('EventActions 휴지통', () => {
-    it('일반 일정은 휴지통이 보이고, 회차 카드는 숨긴다', () => {
-        expect(text(ev())).toContain('휴지통');
-        act(() => root?.unmount());
-        expect(text(ev({ virtual: true }))).not.toContain('휴지통');
+describe('EventActions', () => {
+    it('저장소 칸만 있고 내보내기·휴지통 단추는 없다', () => {
+        const t = text(ev());
+        expect(t).toContain('저장소');
+        expect(t).not.toContain('휴지통');
+        expect(t).not.toContain('내보내기');
     });
 });

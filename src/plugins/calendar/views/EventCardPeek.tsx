@@ -1,7 +1,7 @@
 /**
  * 일정 열기 페이지 — 미리보기(peek)에 담는다. 🙋 7 A(쥔님 2026-11-09): 레코드는 열기 페이지 하나에서 고친다(속성 패널 칸 없음).
  *   컬렉션 공통 RecordPage 한 벌(Q5 R5)에 일정 칸만 얹는다: 머리(아이콘·제목) → 속성 목록 → 문서(page-doc 이 있으면).
- *   속성 = 기본 칸(제목·종일·언제·메모) + 저장소의 사용자 칸 · 그 밑에 저장소·내보내기·휴지통(EventActions — 속성이 아니라 동작).
+ *   속성 = 기본 칸(제목·종일·언제·메모) + 저장소의 사용자 칸 · 그 밑에 저장소(EventActions — 속성이 아니라 동작). 지우기는 틀 ⋯.
  *   🔴 피크 내용은 EditorArea 가 한 번 스냅샷(ReactNode)으로 쥔다 — 그래서 **제 구독(useCalendarData)으로 최신을 그린다**.
  *   🔴 일정이 휴지통에 가면(자료에서 사라지면) 스스로 닫는다. 남의 일정은 출처 카드로(편집 코드로 안 넘긴다).
  *   ⭐ 여는 손잡이(useCardPeek)는 짝 파일에 있다 — 이 파일은 컴포넌트 하나만 내보낸다(fast-refresh 규칙).
@@ -64,7 +64,7 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
         const next = applyEventValue(event, key, v);
         if (next) patchEvent(id, next);
     };
-    // 열기 페이지 한 벌(컬렉션 RecordPage — Q5 R5): 머리·경로·⋯ 는 틀이, 칸은 기본 칸 + 저장소 사용자 칸, 그 밑에 동작 줄(저장소·내보내기·휴지통)
+    // 열기 페이지 한 벌(컬렉션 RecordPage — Q5 R5): 머리·경로·⋯ 는 틀이, 칸은 기본 칸 + 저장소 사용자 칸, 그 밑에 저장소 칸
     // 🔴 RecordPage 는 노드를 찾는다 — 가상 회차 id(규칙@시작)는 노드가 아니라 규칙 노드 id 를 넘긴다(F1 A). 제목 고치기는 회차 실체화로 돌린다.
     return (
         <rv.RecordPage
@@ -79,7 +79,7 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
                 {event.occ
                     ? <OccActions chipId={event.id} occ={event.occ} onOpen={setEventId} />
                     : <RecurField key={event.id} eventId={event.id} rule={(node?.data as SeriesData | undefined)?.recur} start={event.start} />}
-                <EventActions event={event} stores={storeList} onClose={onClose} />
+                <EventActions event={event} stores={storeList} />
             </>}
         />
     );

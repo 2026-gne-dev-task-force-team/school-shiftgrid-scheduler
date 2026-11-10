@@ -80,17 +80,31 @@ function render(node: React.ReactNode): HTMLElement {
 }
 
 describe('C2c-1 보기 — 반복 회차', () => {
-    it('목록: 매주 4회 → 4줄 · 회차 하나를 옮겨 실체화해도 4줄(가상 자리를 대신 · 중복 없음)', () => {
+    it('목록은 실제 자료만: 매주 4회 → 규칙 일정 1줄 · 회차 하나를 옮겨 실체화하면 그 회차가 1줄 더(가상 회차는 안 뜬다)', () => {
         const { id } = weekly(4);
         const el = render(<ListView value={new Date()} onChange={() => {}} peek={peek} {...noSel} />);
         const rows = () => [...el.querySelectorAll('tbody tr')];
-        expect(rows().length).toBe(4);
-        expect(el.querySelectorAll('tbody svg').length).toBe(4);   // 반복 표시
+        expect(rows().length).toBe(1);
+        expect(el.querySelectorAll('tbody svg').length).toBe(1);   // 반복 표시
         const d = new Date(); d.setHours(9, 0, 0, 0); d.setDate(d.getDate() + 7);
         const os = isoMinuteOf(d);
         act(() => { reschedule({ eventId: id, seriesId: id, originalStart: os, start: os, end: os.replace('T09', 'T10'), allDay: false, virtual: true }, os.replace('T09', 'T13'), os.replace('T09', 'T14')); });
         expect(live()).toBe(2);
-        expect(rows().length).toBe(4);
+        expect(rows().length).toBe(2);
+        expect(el.querySelectorAll('tbody svg').length).toBe(2);
+    });
+
+    it('달력 보기: 가상 회차 칩은 고스트(연하게·점선) · 실체 회차는 보통', () => {
+        const { id } = weekly(2);
+        const d = new Date(); d.setHours(9, 0, 0, 0); d.setDate(d.getDate() + 7);
+        const os = isoMinuteOf(d);
+        act(() => { reschedule({ eventId: id, seriesId: id, originalStart: os, start: os, end: os.replace('T09', 'T10'), allDay: false, virtual: true }, os.replace('T09', 'T13'), os.replace('T09', 'T14')); });
+        const el = render(<MonthView value={new Date()} onChange={() => {}} peek={peek} {...noSel} />);
+        const chips = [...el.querySelectorAll('[data-event-id]')];
+        expect(chips.length).toBe(2);
+        const ghost = chips.filter((c) => c.className.includes('outline-dashed'));
+        expect(ghost.length).toBe(1);
+        expect(ghost[0].getAttribute('data-event-id')!.startsWith(`${id}@`)).toBe(true);
     });
 
     it('월: 매주 3회 → 가상 칩 3개(id = 규칙 id@originalStart) · 규칙 일정 자신은 칩이 아니다', () => {
