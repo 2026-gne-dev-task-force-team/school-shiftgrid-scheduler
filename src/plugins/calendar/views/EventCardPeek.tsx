@@ -15,7 +15,7 @@ import type { RecordCellValue, RecordViewApi } from '../../collection/contracts/
 import type { StoredEvent } from '../event-fields';
 import { eventFields, eventToValues, applyEventValue } from '../event-fields';
 import { getCalendarHost, getNodesApi, getKit, patchEvent, setEventValue } from '../nodes';
-import { usePreset } from '../presets';
+import { usePreset, baseFieldsOf } from '../presets';
 import { materialize, type SeriesData } from '../series';
 import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
 import { storedToEvent } from '../event-fields';
@@ -40,7 +40,7 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
     const [eventId, setEventId] = useState(openedId);
     useEffect(() => setEventId(openedId), [openedId]);
     const event = events.find((e) => e.id === eventId) ?? ruleEvent(eventId, stores);
-    const preset = usePreset(event?.storeId);
+    usePreset(event?.storeId);   // 프리셋 등록·해제 때 다시 그린다(칸은 baseFieldsOf 가 푼다)
     // 일정이 사라지면(휴지통·출처 해제) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
     useEffect(() => { if (!event) onClose(); }, [event, onClose]);
     if (!event) return null;
@@ -60,7 +60,7 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
         <rv.RecordPage
             host={host}
             id={event.id}
-            fields={[...eventFields(event.allDay), ...(preset.baseFields ?? []), ...userFields]}
+            fields={[...eventFields(event.allDay), ...baseFieldsOf(event.storeId), ...userFields]}
             values={values}
             onChange={(key, v) => {
                 // 🔴 보기만으로는 실체화 ⛔ — 값을 고칠 때 처음으로 materialize(실체면 그 id 그대로)

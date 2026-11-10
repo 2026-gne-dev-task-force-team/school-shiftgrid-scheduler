@@ -47,7 +47,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
             'settings', 'explorer', 'selection', 'properties', 'page', 'collection', 'sheet',
             'calendar', 'account', 'icon-pack-basic',
-            'people', 'rooms', 'timetable-grid',
+            'people', 'rooms', 'room-booking', 'timetable-grid',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);

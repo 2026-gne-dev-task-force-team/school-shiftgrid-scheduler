@@ -16,7 +16,7 @@ import { isoMinuteOf, nodeIdOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
-import { presetOf } from './presets';
+import { presetOf, listPresets } from './presets';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
@@ -105,6 +105,8 @@ export function storeMenu(nodeId: string): MenuEntry[] {
         { label: presetOf(nodeId).words.newEvent, icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
         { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs', commandArg },
         { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs', commandArg },
+        // 등록된 프리셋마다 「새 <label>」 — 이 저장소 옆에 그 프리셋 저장소를 만든다(commandArg.args = 프리셋 id)
+        ...listPresets().map((p) => ({ label: `새 ${p.label}`, icon: p.icon, commandId: 'calendar.newPresetStore', commandArg: { nodeId, args: p.id } })),
         ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable', commandArg }] : []),
     ];
 }

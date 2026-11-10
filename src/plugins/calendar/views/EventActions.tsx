@@ -28,9 +28,10 @@ export function EventActions({ event, stores, onClose }: { event: CalEvent; stor
                 <button type="button" onClick={exportIcs} className="flex flex-1 items-center justify-center gap-1 rounded border border-line py-1 text-small text-muted hover:text-text hover:bg-text/[0.06]">
                     <Icon name="download" size={13} /> 내보내기
                 </button>
-                <button type="button" onClick={() => { removeEvent(event.id); onClose?.(); }} className="flex flex-1 items-center justify-center gap-1 rounded border border-line py-1 text-small text-bad hover:bg-bad/[0.1]">
+                {/* 회차 카드는 「이 회차 빠뜨리기」가 같은 동작이라 휴지통을 숨긴다 */}
+                {!event.occ && <button type="button" onClick={() => { removeEvent(event.id); onClose?.(); }} className="flex flex-1 items-center justify-center gap-1 rounded border border-line py-1 text-small text-bad hover:bg-bad/[0.1]">
                     <Icon name="trash" size={13} /> 휴지통
-                </button>
+                </button>}
             </div>
         </>
     );
