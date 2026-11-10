@@ -18,7 +18,10 @@ export function DateField({
     label: labelProp,
     ariaLabel,
     disabled = false,
+    openAt,
 }: {
+    /** 값이 비어 있을 때 달력이 먼저 보여 줄 달의 날(예: 끝 날짜 칸에 시작일) — 안 주면 오늘 */
+    openAt?: string | null;
     value: string;
     onChange: (iso: string) => void;
     time?: boolean;
@@ -48,6 +51,7 @@ export function DateField({
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
                     <DatePicker
                         value={value || null}
+                        openAt={openAt}
                         time={time}
                         onChange={(iso) => { onChange(iso); if (!time) setAnchor(null); }}
                     />

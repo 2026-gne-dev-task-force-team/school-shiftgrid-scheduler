@@ -34,7 +34,7 @@ export function TimetableProps({ target }: PropertiesPaneProps) {
                     <DateField value={data.range.start} className={field}
                         onChange={(v) => edit((d) => setRangeSpec(d, { kind: 'period', start: v, end: d.range.kind === 'period' ? d.range.end : '' }))} />
                     <span>~</span>
-                    <DateField value={data.range.end} className={field}
+                    <DateField value={data.range.end} openAt={data.range.start} className={field}
                         onChange={(v) => edit((d) => setRangeSpec(d, { kind: 'period', start: d.range.kind === 'period' ? d.range.start : '', end: v }))} />
                 </div>
             ) : row('반복 횟수', (

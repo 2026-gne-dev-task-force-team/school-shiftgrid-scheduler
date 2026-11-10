@@ -35,7 +35,10 @@ export function DatePicker({
     weekStart = 0,
     time = false,
     className = '',
+    openAt,
 }: {
+    /** 값이 없을 때 처음 보여 줄 달의 날('YYYY-MM-DD') — 안 주면 오늘. 값이 있으면 값의 달이 우선 */
+    openAt?: string | null;
     /** 고른 날 'YYYY-MM-DD' (time 이면 'YYYY-MM-DDTHH:MM' · 없으면 null) */
     value: string | null;
     onChange: (iso: string) => void;
@@ -47,9 +50,9 @@ export function DatePicker({
 }) {
     const today = useMemo(() => new Date(), []);
     const start = useMemo(() => {
-        const p = parseIso(value);
+        const p = parseIso(value) ?? parseIso(openAt);
         return p ?? { y: today.getFullYear(), m: today.getMonth() + 1, d: today.getDate() };
-    }, [value, today]);
+    }, [value, openAt, today]);
 
     // 보고 있는 달(내부 state) · 포커스된 칸(iso) — 키보드 이동이 여기를 민다
     const [view, setView] = useState<{ y: number; m: number }>({ y: start.y, m: start.m });
