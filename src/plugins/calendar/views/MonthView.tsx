@@ -77,7 +77,8 @@ function weekOffsetOf(d: Date): number {
 function EventChip({ b }: { b: WeekBar }) {
     const { e } = b;
     const pal = paletteAt(e.colorIdx);
-    const title = <>{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</>;
+    // 좁은 폭(<sm)은 반복 표시(↻)도 숨긴다 — 48px 칸에서 제목을 다 먹었다(반복은 점선 테두리로도 보인다)
+    const title = <>{e.occ && <Icon name="redo" size={10} className="hidden sm:inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</>;
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
@@ -415,16 +416,18 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
                     {trailing}
                 </>}>
-                <div ref={jumpRef} className="relative shrink-0">
+                <div ref={jumpRef} className="relative min-w-0">
                     <button
                         type="button"
                         onClick={openJump}
                         aria-expanded={jumpOpen}
                         aria-label="년·월 고르기"
-                        className="flex items-center gap-1 -ml-1 px-1 rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="flex items-center gap-1 sm:-ml-1 px-1 max-w-full rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
-                        {monthLabel(head.y, head.m)}
-                        <Icon name="right" size={14} className={`text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
+                        {/* 좁으면(sm 미만) 「11월」만 — 툴바 단추에 자리를 내준다 */}
+                        <span className="truncate sm:hidden">{head.m}월</span>
+                        <span className="truncate hidden sm:inline">{monthLabel(head.y, head.m)}</span>
+                        <Icon name="right" size={14} className={`hidden sm:block shrink-0 text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
                     </button>
                     {jumpOpen && (
                         <Surface bordered rounded className="absolute left-0 top-full mt-1 z-20 p-2 w-[232px] shadow-lg">

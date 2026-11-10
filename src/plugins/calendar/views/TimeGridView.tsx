@@ -290,7 +290,10 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                     {trailing}
                 </>}>
                 <div className="min-w-0">
-                    <div className="text-base font-semibold text-text truncate">{rangeLabel(cols)}</div>
+                    <div className="text-base font-semibold text-text truncate">
+                        {cols.length > 0 && <span className="sm:hidden">{cols[0].m}월</span>}
+                        <span className={cols.length > 0 ? 'hidden sm:inline' : ''}>{rangeLabel(cols)}</span>
+                    </div>
                     {/* 「분기 뷰」(days=14)만 — 보고 있는 맨 왼쪽 날 기준 분기 한 줄(명목). 다른 폭엔 안 뜬다. */}
                     {days === DENSE_DAYS && cols.length > 0 && (
                         <div className="text-note text-muted truncate">{quarterLabel(cols[0].y, cols[0].m)}</div>

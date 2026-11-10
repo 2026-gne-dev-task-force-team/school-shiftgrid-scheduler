@@ -38,8 +38,9 @@ function DeletedEvents() {
     if (list.length === 0) return null;
     return (
         <>
-            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="삭제한 일정 되살리기">
-                <Icon name="trash" size={13} /> 삭제한 일정 {list.length}
+            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="삭제한 일정 되살리기" aria-label={`삭제한 일정 ${list.length}`}>
+                {/* 좁으면 휴지통 + 숫자만 */}
+                <Icon name="trash" size={13} /><span className="hidden sm:inline"> 삭제한 일정</span> {list.length}
             </Button>
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
@@ -130,7 +131,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
                         role="tab"
                         aria-selected={mode === m.id}
                         onClick={() => setMode(m.id)}
-                        className={`px-2 h-btn text-small border-l border-line first:border-l-0 transition-colors
+                        className={`px-1.5 sm:px-2 h-btn text-small border-l border-line first:border-l-0 transition-colors
                             ${mode === m.id ? 'bg-text/[0.08] text-text font-medium' : 'text-muted hover:text-text hover:bg-text/[0.04]'}`}
                     >
                         {m.label}

@@ -128,6 +128,16 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect(el.querySelector(`[data-event-id="${id}"]`)).toBeNull();
     });
 
+    it('월 좁은 폭(Q4): 회차 칩의 반복 아이콘은 sm 미만에서 숨는다 · 툴바 제목은 좁으면 「n월」만', () => {
+        const { id } = weekly(3);
+        const el = render(<MonthView value={new Date()} onChange={() => {}} peek={peek} {...noSel} />);
+        const svg = el.querySelector(`[data-event-id^="${id}@"] svg`)!;
+        expect(svg.getAttribute('class')).toMatch(/(^|\s)hidden(\s|$)/);
+        expect(svg.getAttribute('class')).toContain('sm:inline');
+        const jump = el.querySelector('[aria-label="년·월 고르기"]')!;
+        expect(jump.querySelector('.sm\\:hidden')!.textContent).toMatch(/^\d{1,2}월$/);   // jsdom 은 높이 0 이라 어느 달인지는 재지 않는다
+    });
+
     it('카드: 가상 회차를 열기만 하면 노드 수 그대로 · 값을 고치면 그때 materialize(originalStart 유지) 후 실체로 갈아탄다', () => {
         const { id, first } = weekly(3);
         let props: { id: string; onChange: (k: string, v: unknown) => void } | null = null;
