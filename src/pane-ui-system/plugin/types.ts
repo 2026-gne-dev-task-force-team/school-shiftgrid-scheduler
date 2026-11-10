@@ -16,6 +16,7 @@ import type { NotifyInput } from './notify';
 import type { ComponentType, ReactNode } from 'react';
 import type { ViewDef, ViewProps } from '../view-registry';
 import type { IconName } from '../primitives/Icon';
+import type { IconPackContribution } from '../node-icon/packs';
 import type { MenuEntry } from '../primitives/ContextMenu';
 import type { JsonValue } from '../json';
 export type { JsonValue } from '../json';
@@ -312,6 +313,11 @@ export interface Contributes<
     statusBar?: StatusBarContribution<RenderName>[];
     /** 🔴 인스펙터 칸 — 인스펙터 패널이 「고른 대상」의 종류로 모아 그린다(위 PropertiesContribution). pane 은 모듈 panes 의 키. */
     properties?: PropertiesContribution<PaneName>[];
+    /**
+     * 🔴 커스텀 아이콘 묶음 — 제목 옆 아이콘 고르기 창의 「커스텀」 탭에 묶음별로 뜬다. 꼴: { id, name, icons: [{ id, name, keywords?, svg? | url? }] }.
+     *   SVG 는 그리기 전에 소독한다(script·on*·외부 href 제거) · 이미지 주소는 https·같은 출처·그림 data: 만. 저장 값은 `custom:묶음id:그림id`.
+     */
+    iconPacks?: IconPackContribution[];
     /** 노드 타입 — applyContributes 가 노드 레지스트라(host.modules.use('nodes'))에 통째로 넘긴다(위 NodeTypeContribution). */
     nodeTypes?: NodeTypeContribution<NTName>[];
     /**
@@ -392,7 +398,8 @@ export type DeclareInput =
     | { kind: 'settingsSection'; id: string; title: string; icon?: IconName }
     | { kind: 'settingsItem'; section: string; id: string; title: string; icon: IconName; pane: string }
     | ({ kind: 'statusBar' } & StatusBarContribution)
-    | ({ kind: 'properties' } & PropertiesContribution);
+    | ({ kind: 'properties' } & PropertiesContribution)
+    | ({ kind: 'iconPack' } & IconPackContribution);
 
 /**
  * 🔴 기여 장부 한 줄 — 「이 플러그인이 호스트에 지금 무엇을 꽂아 두었나」의 읽기 전용 거울(2026-11-02 D7).

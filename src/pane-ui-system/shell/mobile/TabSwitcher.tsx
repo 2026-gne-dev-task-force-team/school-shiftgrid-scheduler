@@ -7,6 +7,7 @@
  */
 import { BottomSheet } from '../../primitives/BottomSheet';
 import { Icon } from '../../primitives/Icon';
+import { NodeIcon } from '../../node-icon/NodeIcon';
 import { IconButton } from '../../primitives/IconButton';
 import { useContextTrigger } from '../../interactive/useContextTrigger';
 import type { TabItem } from '../shared/Tabs';
@@ -55,7 +56,7 @@ export function TabSwitcher({
                                 ${active ? 'border-accent text-text' : 'border-line text-muted'}`}
                         >
                             <div className="flex items-center gap-1.5 shrink-0">
-                                {t.glyph ? <span className="w-4 text-center text-body leading-none" aria-hidden="true">{t.glyph}</span> : <Icon name={t.icon ?? 'table'} size={16} />}
+                                {t.glyph ? <NodeIcon value={t.glyph} size={16} /> : <Icon name={t.icon ?? 'table'} size={16} />}
                                 <span className="min-w-0 flex-1 truncate text-body text-text">{t.title}</span>
                                 <IconButton
                                     icon="x"

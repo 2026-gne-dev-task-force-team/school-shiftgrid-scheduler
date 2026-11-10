@@ -11,6 +11,7 @@
  */
 import type { MouseEvent, ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
+import { NodeIcon } from '../node-icon/NodeIcon';
 
 export function Row({
     icon,
@@ -27,7 +28,7 @@ export function Row({
     rowId,
 }: {
     icon?: IconName;
-    /** 글자 아이콘(이모지) — 있으면 icon 대신 그린다 */
+    /** 노드 아이콘(저장 문자열 — 이모지·아이콘·커스텀) — 있으면 icon 대신 그린다 */
     glyph?: string;
     label: ReactNode;
     active?: boolean;
@@ -90,7 +91,7 @@ export function Row({
             }}
         >
             {glyph
-                ? <span className="shrink-0 w-4 text-center text-small leading-none" aria-hidden="true">{glyph}</span>
+                ? <NodeIcon value={glyph} size={15} />
                 : icon && <Icon name={icon} size={15} className="shrink-0" />}
             <span className="flex-1 min-w-0 truncate text-body leading-none">{label}</span>
             {end && (

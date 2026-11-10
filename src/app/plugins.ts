@@ -26,6 +26,7 @@ import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 import { selectionPlugin } from '../plugins/selection';
 import { propertiesPlugin } from '../plugins/properties';
+import { iconPackBasicPlugin } from '../plugins/icon-pack-basic';
 
 // 🔴 코어(settings·explorer)는 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
@@ -42,6 +43,7 @@ export const PLUGINS: PluginModule[] = [
     // ── 범용 앱 층('app') — 끌 수 있다
     calendarPlugin,          // 달력 꾸러미 — calendar 약속 · 구독은 달력 안(calendar/subscribe/)
     accountPlugin,           // 계정 꾸러미 — identity·credential·permit
+    iconPackBasicPlugin,     // 기본 아이콘 묶음 — 제목 옆 아이콘 「커스텀」 탭에 뜨는 SVG 열두 개(아이콘 묶음 확장점의 본보기)
     // ── 학교 도메인 층('domain') — 끌 수 있다
     peoplePlugin,            // 사람 명단 꾸러미
     roomsPlugin,             // 방 목록 꾸러미

@@ -9,6 +9,7 @@ import { createElement } from 'react';
 import type { ComponentType } from 'react';
 import { registerView, unregisterView } from '../view-registry';
 import type { ViewProps } from '../view-registry';
+import { addIconPack } from '../node-icon/packs';
 import {
     track, addCommand, addRibbonAction, getCommand,
     addSettingsSection, addSettingsItem, addStatusItem, setNewTab, touchContrib, addPropertiesPane,
@@ -50,6 +51,7 @@ function ledgerRecord(owner: string, item: DeclareInput, origin: ContributionRec
         case 'settingsItem': return { kind: 'settingsItem', id: item.id, title: item.title, origin };
         case 'statusBar': return { kind: 'statusBar', id: item.id, origin };
         case 'properties': return { kind: 'properties', id: item.id, title: item.title, origin };
+        case 'iconPack': return { kind: 'iconPack', id: item.id, title: item.name, origin };
     }
 }
 
@@ -119,6 +121,10 @@ function registerOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Di
             if (!fn) throw new Error(`[plugin] "${owner}" 상태바 "${item.id}" 가 가리키는 render "${item.render}" 가 renders 에 없다`);
             return track(owner, addStatusItem(owner, { id: item.id, side: item.side, render: () => fn(host) }));
         }
+        case 'iconPack': {
+            const { kind, ...pack } = item;
+            return track(owner, addIconPack(owner, pack));
+        }
         case 'properties': {
             const Impl = impl.panes?.[item.pane];
             if (!Impl) throw new Error(`[plugin] "${owner}" 인스펙터 칸 "${item.id}" 가 가리키는 pane "${item.pane}" 가 panes 에 없다`);
@@ -143,6 +149,7 @@ export function applyContributes(c: Contributes | undefined, impl: PluginImpl, h
     for (const it of c.settings?.items ?? []) declareOne({ kind: 'settingsItem', ...it }, impl, host, 'manifest');
     for (const sb of c.statusBar ?? []) declareOne({ kind: 'statusBar', ...sb }, impl, host, 'manifest');
     for (const pp of c.properties ?? []) declareOne({ kind: 'properties', ...pp }, impl, host, 'manifest');
+    for (const ip of c.iconPacks ?? []) declareOne({ kind: 'iconPack', ...ip }, impl, host, 'manifest');
 
     // 🔴 노드 타입 — 창틀은 꼴을 모른다(도메인). nodes 인터페이스 모듈(host.modules.use)에 항목·impl·host 를
     //    통째로 넘겨 꽂는다. 없으면 던져서 「활성 실패」로 올린다 — 명세 「조용히 안 넘어간다」. 이 플러그인은

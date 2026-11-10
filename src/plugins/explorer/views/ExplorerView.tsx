@@ -13,7 +13,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
-import { Icon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
+import { Icon, NodeIcon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
 import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
@@ -504,7 +504,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             )}
 
                             {emojiOf(row.node)
-                                ? <span className="shrink-0 w-[15px] text-center text-body leading-none select-none">{emojiOf(row.node)}</span>
+                                ? <NodeIcon value={emojiOf(row.node)} size={15} fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0" />} />
                                 : <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />}
 
                             {isRenaming ? (
@@ -616,7 +616,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                         <span className="shrink-0 w-4" />
                                     )}
                                     {emojiOf(row.node)
-                                        ? <span className="shrink-0 w-[15px] text-center text-body leading-none select-none opacity-60">{emojiOf(row.node)}</span>
+                                        ? <NodeIcon value={emojiOf(row.node)} size={15} className="opacity-60" fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />} />
                                         : <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />}
                                     {confirming ? (
                                         <span className="flex items-center gap-1 flex-1 min-w-0 text-note">

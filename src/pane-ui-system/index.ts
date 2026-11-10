@@ -50,6 +50,14 @@ export { Popover } from './primitives/Popover';
 export { Tooltip } from './primitives/Tooltip';
 export { PropertyField } from './primitives/PropertyField';
 export { IconPicker, TitleField, COMMON_EMOJI } from './primitives/IconPicker';
+export { NodeIcon } from './node-icon/NodeIcon';
+export { NodeIconPanel } from './node-icon/NodeIconPicker';
+export {
+    parseNodeIcon, serializeNodeIcon, NODE_ICON_COLORS,
+    type NodeIconValue, type NodeIconColor,
+} from './node-icon/model';
+export { addIconPack, listIconPacks, useIconPacks, type IconPackContribution, type IconPackIcon } from './node-icon/packs';
+export { sanitizeSvg, safeImageUrl } from './node-icon/svg-sanitize';
 export { Toggle } from './primitives/Toggle';
 export { Dialog } from './primitives/Dialog';
 export { ConfirmDialog } from './primitives/ConfirmDialog';
