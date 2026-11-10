@@ -12,7 +12,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import { notifyNodeUndo, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
-import { isoMinuteOf } from './events';
+import { isoMinuteOf, nodeIdOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
@@ -205,10 +205,12 @@ let hostRef: PluginHost | null = null;
 export function setCalendarHost(h: PluginHost | null): void { hostRef = h; }
 export function getCalendarHost(): PluginHost | null { return hostRef; }
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
-export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
+/** 🔴 id 는 칩 id 도 받는다 — 가상 회차면 규칙 일정(시리즈 전체)을 옮긴다. */
+export function moveEvent(id: string, storeId: string): void { api?.move(nodeIdOf(id), storeId); }
 /** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. 반복 일정이면 그 실체 회차들도 같이(되돌리기 한 칸). */
-export function removeEvent(id: string): void {
+export function removeEvent(chipId: string): void {
     if (!api) return;
+    const id = nodeIdOf(chipId);   // 가상 회차면 규칙 일정(시리즈 전체) — 회차 하나 빼기는 skip(C2c-2)
     const a = api;
     const name = a.get(id)?.name || '제목 없음';
     a.batch(() => {
@@ -234,10 +236,16 @@ export function getDeletedEvents(): PublicNode[] {
 export function restoreEvent(id: string): boolean {
     if (!api) return false;
     const n = api.get(id);
-    if (!n || !getDeletedEvents().some((e) => e.id === id)) return false;
+    const deleted = getDeletedEvents();
+    if (!n || !deleted.some((e) => e.id === id)) return false;
     const from = getDefaultStore() ?? ensureStore();
     if (!from) return false;
-    api.move(id, from);
+    const a = api;
+    // 규칙 일정이면 같이 버린 실체 회차도 함께(되돌리기 한 칸)
+    a.batch(() => {
+        a.move(id, from);
+        for (const e of deleted) if ((e.data as { seriesId?: string } | undefined)?.seriesId === id) a.move(e.id, from);
+    });
     return true;
 }
 
@@ -284,7 +292,7 @@ export function collectForExport(storeId: string | null): IcsWriteEvent[] {
 
 /** 일정 하나(record 노드)를 .ics 작성기 입력으로 — 일정 카드 「내보내기」가 쓴다. 일정 노드가 아니면 null. */
 export function collectEventForExport(eventId: string): IcsWriteEvent | null {
-    const n = api?.get(eventId);
+    const n = api?.get(nodeIdOf(eventId));
     const data = n && n.type === EVENT_TYPE ? storedToEvent(n.data) : null;
     return n && data ? eventToIcs({ id: n.id, name: n.name, data }) : null;
 }

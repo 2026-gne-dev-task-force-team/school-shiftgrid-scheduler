@@ -11,8 +11,16 @@ import { subscribeFeeds, getFeedsVersion, listFeedSources } from './feed';
 import { mapFeedEvents, FEED_FROM, FEED_TO } from './feed-events';
 import { useScope } from './store';
 import { PALETTE_LEN } from './palette';
-import { eventsInScope, type CalEvent, type StoreInfo } from './events';
+import { eventsInScope, isoMinuteOf, occId, type CalEvent, type StoreInfo } from './events';
 import { storedToEvent } from './event-fields';
+import { occurrences, type SeriesData } from './series';
+
+/** 반복 규칙을 펴는 창 — 오늘 앞 2년 ~ 뒤 5년. shortcut: 보기마다 「보이는 범위」를 넘기지 않고 한 창으로 편다(끝없는 월 스크롤도 이 창 밖엔 회차가 없다) — 창 밖 회차가 아쉬우면 보기가 범위를 넘기게 바꾼다. */
+function seriesWindow(): [string, string] {
+    const now = new Date();
+    const y = now.getFullYear();
+    return [isoMinuteOf(new Date(y - 2, 0, 1)), isoMinuteOf(new Date(y + 5, 0, 1))];
+}
 
 function toMs(s: unknown): number {
     if (typeof s !== 'string') return NaN;
@@ -59,6 +67,8 @@ export function useCalendarData(): CalendarData {
             const startMs = toMs(d.start);
             const endMs = toMs(d.end);
             if (Number.isNaN(startMs) || Number.isNaN(endMs)) continue;
+            const sd = n.data as SeriesData;
+            if (sd.recur) continue;                    // 규칙 일정 자신은 안 그린다 — 회차로 아래서 편다
             events.push({
                 id: n.id,
                 storeId,
@@ -70,7 +80,33 @@ export function useCalendarData(): CalendarData {
                 allDay: d.allDay,
                 memo: d.memo ?? '',
                 colorIdx: stores.get(storeId)?.colorIdx ?? 0,
+                ...(sd.seriesId && sd.originalStart ? { occ: { eventId: n.id, seriesId: sd.seriesId, originalStart: sd.originalStart, start: d.start, end: d.end, allDay: d.allDay, virtual: false } } : {}),
             });
+        }
+        // 가상 회차 — 맨 위 저장소마다 occurrences 한 번(자손 저장소를 품으니 겹치지 않게 맨 위만) · 실체 회차는 위에서 이미 그렸다
+        if (api) {
+            const [from, to] = seriesWindow();
+            for (const s of storeList) {
+                if (api.path(s.id).slice(0, -1).some((a) => stores.has(a))) continue;
+                for (const o of occurrences(s.id, from, to)) {
+                    if (!o.virtual || !o.seriesId || !o.originalStart) continue;
+                    const rule = api.get(o.seriesId);
+                    const sid = api.parent(o.seriesId) ?? '';
+                    events.push({
+                        id: occId(o.seriesId, o.originalStart),
+                        storeId: sid,
+                        name: rule?.name ?? '',
+                        start: o.start,
+                        end: o.end,
+                        startMs: toMs(o.start),
+                        endMs: toMs(o.end),
+                        allDay: o.allDay,
+                        memo: storedToEvent(rule?.data)?.memo ?? '',
+                        colorIdx: stores.get(sid)?.colorIdx ?? 0,
+                        occ: o,
+                    });
+                }
+            }
         }
         return { events, stores, storeList };
     }, [eventNodes, storeNodes]);

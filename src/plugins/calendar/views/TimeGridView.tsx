@@ -93,7 +93,7 @@ const DayHeader = memo(function DayHeader(
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
                     <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
-                        {e.name || <span className="opacity-60">제목 없음</span>}
+                        {e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}
                     </div>
                 ))}
                 {allDay.length > 1 && <span className="shrink-0 text-micro text-muted tabular-nums">+{allDay.length - 1}</span>}
@@ -116,7 +116,7 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
             className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
             style={{ top, height }}
         >
-            <div className="truncate text-micro leading-4 text-text">{e.name || <span className="opacity-60">제목 없음</span>}</div>
+            <div className="truncate text-micro leading-4 text-text">{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</div>
             <div className="truncate text-micro leading-3 text-muted tabular-nums">{hhmm(e.startMs)}</div>
         </div>
     );

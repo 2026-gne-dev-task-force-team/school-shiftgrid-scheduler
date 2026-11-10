@@ -6,7 +6,7 @@
  */
 import { isoOf } from '../../pane-ui-system';
 // 🔴 import type 만 — 약속 타입은 달력 약속(이 꾸러미 contracts/calendar)에서(값 아님, 구조 검사 ⑱·g).
-import type { CalendarItem } from './contracts/calendar';
+import type { CalendarItem, Occurrence } from './contracts/calendar';
 
 /**
  * 남의 일정(다른 플러그인이 꽂은 출처 항목)임을 가리키는 꼬리표 — 자기 일정(노드)이면 없다(undefined).
@@ -48,7 +48,14 @@ export interface CalEvent {
     colorIdx: number;
     /** 🔴 남의 일정이면 붙는다(자기 일정은 undefined). 붙으면 편집은 카드가 출처 editor 로만 보낸다. */
     foreign?: ForeignRef;
+    /** 반복 일정의 회차면 붙는다(가상·실체 둘 다). 가상이면 id 는 occId(규칙 id, originalStart) — 노드가 아니다. */
+    occ?: Occurrence;
 }
+
+/** 가상 회차의 칩 id — 규칙 일정 id + 원래 시작(노드 id 엔 '@' 가 없다). */
+export const occId = (seriesId: string, originalStart: string) => `${seriesId}@${originalStart}`;
+/** 칩 id → 노드 id(가상 회차면 규칙 일정 id). */
+export const nodeIdOf = (id: string) => id.split('@')[0];
 
 /** 일정 data 의 생김새(노드에 저장되는 불투명 값). */
 export interface EventData {
