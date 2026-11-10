@@ -3,13 +3,13 @@
  *   🔴 손 편집이 바닥이다(명세 16:13) — 이 파일이 그 바닥: 빈 표 만들기 · 칸 글자 · 행/열 넣고 빼기 ·
  *      머리 이름 · 셀 병합(세로 필수·가로 허용) · 열 꼴/범위 꼴 바꾸기. 전부 새 데이터를 돌려주는 순수 함수다.
  *   ⛔ 학교 낱말(교시·반·과목·담임·급식) 0 — 칸은 글자일 뿐이고 뜻은 그리드가 모른다(명세).
- *   타입은 약속(contract-week-grid)에서 import type 으로만 받는다(구조 검사 ⑱ d·g).
+ *   타입은 같은 폴더 types.ts 에 산다.
  *
  *   일정 목록 계산은 schedule.ts(같은 폴더)에 산다 — 이 파일은 「한 장의 모양과 손 편집」만.
  */
 import type {
     TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay, ScheduleEntry,
-} from '../contract-week-grid/types';
+} from './types';
 
 export type { TimetableData, RangeSpec, ColumnSpec, RowSpec, Cell, CellAddr, GridDay, ScheduleEntry };
 

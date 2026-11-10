@@ -10,7 +10,7 @@
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
-import type { TimetableData, ScheduleEntry } from '../contract-week-grid/types';
+import type { TimetableData, ScheduleEntry } from './types';
 import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { blankTimetable, guardTimeline, normalizeTimetable } from './model';
 import { scheduleRange } from './schedule';

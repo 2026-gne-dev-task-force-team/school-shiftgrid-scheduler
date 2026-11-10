@@ -4,7 +4,7 @@
  *      나중에 달력으로 가는 재료다(날짜+시작~끝+글자). ⛔ 달력 약속을 여기서 import 하지 않는다(다른 레인 몫).
  *   (특별 시간표는 11-09 쥔님 지시로 걷었다 — 도메인 특화 낱말이라 시간표 한 장만 남긴다.)
  */
-import type { TimetableData, ScheduleEntry, GridDay } from '../contract-week-grid/types';
+import type { TimetableData, ScheduleEntry, GridDay } from './types';
 import { cellKey, getCell, coveredBy, columnCount, rowCount } from './model';
 
 // ── 날짜 유틸(UTC 로 다뤄 시간대 밀림 없이) ──
