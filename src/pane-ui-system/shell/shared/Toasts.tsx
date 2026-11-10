@@ -82,8 +82,8 @@ export function Toasts() {
                     >
                         <Icon name={st.icon} size={16} className={`mt-0.5 shrink-0 ${st.text}`} />
                         <div className="flex-1 min-w-0">
-                            <div className="font-medium break-words">{t.title}</div>
-                            {t.body && <div className="mt-0.5 text-small text-muted break-words">{t.body}</div>}
+                            <div className="font-medium break-all line-clamp-2" title={t.title}>{t.title}</div>
+                            {t.body && <div className="mt-0.5 text-small text-muted break-all line-clamp-2" title={typeof t.body === 'string' ? t.body : undefined}>{t.body}</div>}
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                                 {t.action && (
                                     <Button size="sm" variant="outline" disabled={act.kind !== 'ready'}

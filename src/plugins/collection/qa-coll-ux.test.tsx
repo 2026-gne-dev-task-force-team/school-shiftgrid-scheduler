@@ -56,3 +56,13 @@ describe('Enter 로 만든 빈 행', () => {
         expect(q('[data-rv-row="r0"]')).not.toBeNull();
     });
 });
+
+describe('Q15 긴 제목 말줄임', () => {
+    it('글자 칸 안쪽 span 이 truncate + title(전체 제목)을 가진다', () => {
+        const long = '아주아주 긴 제목 '.repeat(12);
+        mount(<H init={[{ id: 'a', f_t: long, f_x: 'x' }]} />);
+        const span = q('[data-rv-cell="f_t"] span') as HTMLElement;
+        expect(span.className).toContain('truncate');
+        expect(span.getAttribute('title')).toBe(long);
+    });
+});

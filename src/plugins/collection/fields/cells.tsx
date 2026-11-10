@@ -121,9 +121,10 @@ function makeInlineCell(numeric: boolean) {
             <div
                 data-rv-cell={field.key}
                 onClick={() => editable && setEditing(true)}
-                className={`w-full h-full flex items-center px-2 text-body truncate ${numeric ? 'justify-end tabular-nums' : ''} ${editable ? 'cursor-text' : 'cursor-default'} ${text === '' ? 'text-muted' : 'text-text'}`}
+                className={`w-full h-full flex items-center px-2 text-body ${numeric ? 'justify-end tabular-nums' : ''} ${editable ? 'cursor-text' : 'cursor-default'} ${text === '' ? 'text-muted' : 'text-text'}`}
             >
-                {text}
+                {/* flex 컨테이너의 text-overflow 는 안 먹는다 — 글자를 감싼 span 이 말줄임을 맡는다 */}
+                <span className="min-w-0 truncate" title={text || undefined}>{text}</span>
             </div>
         );
     };
