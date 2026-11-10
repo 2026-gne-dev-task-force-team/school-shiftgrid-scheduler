@@ -225,6 +225,8 @@ export interface NodeFrameProps {
     toolbar?: ReactNode;
     /** 큰 머리 오른쪽 곁 — 개수·상태 글자 같은 것(단추 아님). */
     headerExtra?: ReactNode;
+    /** 제목 줄 바로 밑 한 줄(노션 데이터베이스 설명 자리 — 검수 K1) */
+    subheader?: ReactNode;
     /** 본문 폭 — full(칸 전체 · 컬렉션·시간표·달력) / page(읽기 폭 · 문서) / wide(조금 더 넓은 읽기 폭 · 시트). 머리·툴바도 같은 폭에 선다. */
     width?: 'full' | 'page' | 'wide';
     /** 머리부터 본문까지 한 덩이로 스크롤(문서·시트) — 아니면 머리·툴바는 고정, 본문 칸이 남은 높이를 채운다. */

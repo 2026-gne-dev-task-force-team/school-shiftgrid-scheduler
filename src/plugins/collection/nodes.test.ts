@@ -95,6 +95,13 @@ describe('commit — 한 tx = 한 묶음', () => {
         expect(snap.doc.fields).toHaveLength(3);
     });
 
+    it('검수 K1 — 목록 설명은 commit 으로 쓰고 빈 글자면 지운다', () => {
+        commit(dbId, { description: '  교직원 명단  ' });
+        expect(snapshotOf(dbId)!.doc.description).toBe('교직원 명단');
+        commit(dbId, { description: '' });
+        expect(snapshotOf(dbId)!.doc.description).toBeUndefined();
+    });
+
     it('제목 셀 수정 — 값과 노드 이름이 같이 바뀐다 · 빈 제목은 이름을 안 지운다', () => {
         const [row] = commit(dbId, { addRows: [{ [titleKey]: '옛' }] });
         commit(dbId, { cells: [{ id: row, key: titleKey, value: '새' }] });

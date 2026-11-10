@@ -16,11 +16,23 @@ import { reportSettingsSaveFail } from '../layout/save-fail';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
+/** 하위 항목 한 단 들여쓰기 폭(검수 K11 — 「너무 깊다 → 설정에 폭 옵션 · 기본값은 좁게」) */
+export type IndentId = 'narrow' | 'normal' | 'wide';
+export const INDENTS: { id: IndentId; name: string; px: number }[] = [
+    { id: 'narrow', name: '좁게', px: 12 },
+    { id: 'normal', name: '보통', px: 20 },
+    { id: 'wide', name: '넓게', px: 28 },
+];
+export const DEFAULT_INDENT: IndentId = 'narrow';
+export function indentPx(id: IndentId): number { return (INDENTS.find((i) => i.id === id) ?? INDENTS[0]).px; }
+
 export interface ThemeSettings {
     mode: ThemeMode;
     density: DensityId;
     /** 글자 크기 단계 — 밀도와 따로 고른다(W11) */
     fontSize: FontSizeId;
+    /** 하위 항목 들여쓰기 폭(K11) — 컬렉션 표의 한 단 폭 */
+    indent: IndentId;
     /** 고른 테마 프리셋 id (tokens.ts 의 THEMES) */
     theme: string;
     /** 🔴 나중 자리 — 사용자가 토큰을 직접 덮는 자유 테마. 모양 틀린 칸은 버린다 */
@@ -39,7 +51,7 @@ const DENSITIES: DensityId[] = DENSITY_DEFS.map((d) => d.id);
 const FONT_IDS: FontSizeId[] = FONT_SIZES.map((f) => f.id);
 
 export function defaultThemeSettings(): ThemeSettings {
-    return { mode: 'system', density: DEFAULT_DENSITY, fontSize: DEFAULT_FONT_SIZE, theme: DEFAULT_THEME_ID };
+    return { mode: 'system', density: DEFAULT_DENSITY, fontSize: DEFAULT_FONT_SIZE, indent: DEFAULT_INDENT, theme: DEFAULT_THEME_ID };
 }
 
 /** "r g b" 세 수인가 — custom 토큰 값 받아들이기용 */
@@ -67,6 +79,7 @@ export function normalizeThemeSettings(raw: unknown): ThemeSettings {
         mode: MODES.includes(o.mode as ThemeMode) ? (o.mode as ThemeMode) : d.mode,
         density: DENSITIES.includes(o.density as DensityId) ? (o.density as DensityId) : d.density,
         fontSize: FONT_IDS.includes(o.fontSize as FontSizeId) ? (o.fontSize as FontSizeId) : d.fontSize,
+        indent: INDENTS.some((i) => i.id === o.indent) ? (o.indent as IndentId) : d.indent,
         // 아는 테마 프리셋 id 만 받는다 — 없으면 기본 테마
         theme: THEMES.some((t) => t.id === o.theme) ? (o.theme as string) : d.theme,
         custom: normalizeCustom(o.custom),

@@ -198,6 +198,8 @@ export interface DbDoc {
     views: ViewDef[];
     /** ID 칸 자동 번호의 다음 값(P2) */
     seq: number;
+    /** 목록 설명 한 줄(검수 K1 — 노션 데이터베이스 설명) — 표 위와 빈 표 안내에 뜬다 */
+    description?: string;
 }
 
 /** 행 노드(`collection.row`)의 data */
@@ -279,6 +281,12 @@ export interface RecordViewProps<T> {
     onCellChange?: (id: string, key: string, value: RecordCellValue) => void;
     /** 여러 셀을 한 번에(채우기 ⌘D·일괄 편집) — 한 묶음으로 저장하면 되돌리기 한 칸. 안 넘기면 onCellChange 를 셀마다 부른다. */
     onCellsChange?: (changes: CellChange[]) => void;
+    /** 목록 설명(검수 K1) — 표 위 한 줄 + 빈 표 「표시할 행이 없습니다」 밑. 꾸러미가 선언으로 채운다 */
+    description?: string;
+    /** 설명을 화면에서 고치게 — 안 넘기면 읽기 전용(꾸러미 선언 설명) */
+    onDescriptionChange?: (description: string) => void;
+    /** false 면 표 위 설명 줄을 안 그린다(화면이 틀 제목 밑에 따로 둘 때) — 빈 표 안내의 설명은 그대로 */
+    descriptionLine?: boolean;
     /** 행이 하나도 없을 때 빈 상태 안내 한 줄 — 안 넘기면 onAddRecord 가 있을 때 「새로 만들기」 안내를 낸다. */
     emptyHint?: string;
     /** 「+ 새로 만들기」 줄을 누르면. 안 넘기면 그 줄이 안 뜬다. */
@@ -382,6 +390,8 @@ export interface CollectionConfig {
     itemIcon?: IconName;
     /** 기본 칸 — 첫 칸이 제목(노드 이름)이다. 전부 locked 로 취급(지우기·타입 바꾸기 금지) */
     baseFields: RecordField[];
+    /** 목록 설명 한 줄(검수 K1) — 표 위·빈 표 안내에 뜬다. 칸 설명은 baseFields[].description */
+    description?: string;
     /** 개수 단위(「3개」) · 안내 문구들 */
     unit: string;
     text: { startDescription: string; startHint: string };

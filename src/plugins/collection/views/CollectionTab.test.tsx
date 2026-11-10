@@ -118,6 +118,7 @@ describe('빈 컬렉션 = 프리셋 — 같은 칸을 손으로 적으면 같은
         const hand: CollectionConfig = {
             listType: 'demo.list', itemType: 'demo.item', viewId: 'demo.sheet', openCommandId: 'demo.openList', viewKey: 'demo.list',
             listLabel: '명단', listIcon: 'users', unit: '명',
+            description: '학교 사람들을 모아 두는 명단입니다. 시간표·보결·근무에서 사람을 고를 때 여기서 고릅니다.',
             baseFields: [
                 { key: 'name', label: '이름', type: 'text', locked: true },
                 { key: 'memo', label: '메모', type: 'text', locked: true },

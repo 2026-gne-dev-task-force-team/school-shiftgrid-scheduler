@@ -7,7 +7,7 @@
  */
 import type { ReactNode } from 'react';
 import { Icon, Button, FOCUS_RING, useTheme, type IconName } from '../../..';
-import { THEMES, DENSITIES, FONT_SIZES } from '../../..';
+import { THEMES, DENSITIES, FONT_SIZES, INDENTS } from '../../..';
 import { themeSwatchStyle } from '../../..';
 import type { ThemeMode } from '../../..';
 import { ThemeEditor } from './ThemeEditor';
@@ -136,6 +136,16 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                             onClick={() => setSettings({ fontSize: f.id })}
                         >
                             {f.name}
+                        </Choice>
+                    ))}
+                </div>
+            </Field>
+
+            <Field title="들여쓰기 폭" hint="컬렉션에서 하위 항목을 한 단 들여쓸 때의 폭입니다.">
+                <div className="flex flex-wrap gap-2">
+                    {INDENTS.map((i) => (
+                        <Choice key={i.id} active={settings.indent === i.id} onClick={() => setSettings({ indent: i.id })}>
+                            {i.name}
                         </Choice>
                     ))}
                 </div>

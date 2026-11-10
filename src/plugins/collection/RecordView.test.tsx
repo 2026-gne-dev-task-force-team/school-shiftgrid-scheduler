@@ -177,6 +177,25 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
         const out = spy.fields.mock.calls.at(-1)![0] as RecordField[];
         expect(out.find((f) => f.key === 'f_s')!.options).toEqual([{ value: 'a', label: '가', color: 'red' }]);
     });
+
+    it('검수 K1 — 목록 설명이 표 위와 빈 표 안내에 뜬다 · 읽기 전용이면 누름 자리가 없다', () => {
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1" titleKey="f_t" description="이 학교 교직원 명단" />);
+        expect(q('p[data-rv-desc]')?.textContent).toBe('이 학교 교직원 명단');
+        expect(q('[data-rv-empty-desc]')?.textContent).toBe('이 학교 교직원 명단');
+    });
+
+    it('검수 K1 — 설명 없고 고칠 수 없으면 줄 자체가 없다 · 고칠 수 있으면 눌러서 고친다', () => {
+        const onDesc = vi.fn();
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1b" titleKey="f_t" />);
+        expect(q('[data-rv-desc]')).toBeNull();
+        expect(q('[data-rv-empty-desc]')).toBeNull();
+        act(() => root!.render(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1b" titleKey="f_t" onDescriptionChange={onDesc} />));
+        click(q('button[data-rv-desc]'));
+        const inp = q('[data-rv-desc-edit] input') as HTMLInputElement;
+        setInput(inp, '방 목록');
+        key(inp, 'Enter');
+        expect(onDesc).toHaveBeenCalledWith('방 목록');
+    });
 });
 
 describe('칸 추가 — 타입 고르기', () => {

@@ -157,7 +157,7 @@ export {
 export { useTheme, getThemeSettings, type ThemeControls } from './theme/useTheme';
 export { applyTheme, resolveMode, effectiveColors, themeSwatchStyle, type ResolvedMode } from './theme/apply';
 export {
-    loadThemeSettings, saveThemeSettings, normalizeThemeSettings, defaultThemeSettings,
+    loadThemeSettings, saveThemeSettings, normalizeThemeSettings, defaultThemeSettings, INDENTS, indentPx,
     type ThemeSettings, type ThemeMode,
 } from './theme/settings';
 export {

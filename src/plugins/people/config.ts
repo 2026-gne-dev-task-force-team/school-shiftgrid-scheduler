@@ -23,6 +23,7 @@ export const PERSON_CONFIG: CollectionConfig = {
         { key: 'name', label: '이름', type: 'text', locked: true, description: '명단에서 이 사람을 가리키는 이름입니다. 탐색기 줄 이름과 같습니다.' },
         { key: 'memo', label: '메모', type: 'text', locked: true, description: '이 사람에 대한 자유 메모입니다.' },
     ],
+    description: '학교 사람들을 모아 두는 명단입니다. 시간표·보결·근무에서 사람을 고를 때 여기서 고릅니다.',
     unit: '명',
     text: { startDescription: '새로 만들거나, 만들어 둔 명단을 고른다.', startHint: '빈 명단이 바로 열린다' },
 };

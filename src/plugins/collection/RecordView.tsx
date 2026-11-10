@@ -37,7 +37,8 @@ import type {
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/collection';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
-const INDENT_PX = 20;   // 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8)
+/** 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8). 설정 「모양 › 들여쓰기 폭」이 `--indent-step` 을 고른다(K11 · 기본 좁게 12px) */
+const indentWidth = (depth: number) => `calc(var(--indent-step, 12px) * ${depth})`;
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
 function useCoarsePointer(): boolean {
@@ -170,7 +171,7 @@ const RecordRow = memo(function RecordRow({
                     style={{ width: widths[fi], ...frozenStyle(fi) }}>
                     {fi === 0 && treeOn && (
                         <div className="shrink-0 flex items-center self-stretch">
-                            {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
+                            {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: indentWidth(depth) }} />}
                             {hasChildren ? (
                                 // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                                 <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
@@ -242,6 +243,9 @@ export function RecordView<T>({
     onCellsChange,
     onAddRecord,
     emptyHint,
+    description,
+    onDescriptionChange,
+    descriptionLine = true,
     onDeleteRecords,
     onDestructive,
     onOpenRecord,
@@ -768,6 +772,7 @@ export function RecordView<T>({
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
+            {descriptionLine && <DescriptionLine text={description} onChange={onDescriptionChange} />}
             <ViewTabs
                 views={views.length > 0 ? views : [view]}
                 activeId={view.id}
@@ -899,7 +904,10 @@ export function RecordView<T>({
                     ) : (
                         <div data-rv-empty>
                             <EmptyState compact icon="table" title="표시할 행이 없습니다"
-                                description={emptyHint ?? (onAddRecord ? (onPaste ? '아래 「새로 만들기」를 누르거나 엑셀 표를 복사해 붙여넣으면 만들 수 있습니다.' : '아래 「새로 만들기」를 누르면 첫 항목을 만듭니다.') : onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined)} />
+                                description={<>
+                                    {description?.trim() && <span data-rv-empty-desc className="block text-text/80 mb-1">{description}</span>}
+                                    {emptyHint ?? (onAddRecord ? (onPaste ? '아래 「새로 만들기」를 누르거나 엑셀 표를 복사해 붙여넣으면 만들 수 있습니다.' : '아래 「새로 만들기」를 누르면 첫 항목을 만듭니다.') : onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : null)}
+                                </>} />
                         </div>
                     ))}
 
@@ -1072,5 +1080,30 @@ export function RecordView<T>({
                 );
             })()}
         </div>
+    );
+}
+
+/** 목록 설명 한 줄(검수 K1 · 노션 데이터베이스 설명) — 고칠 수 있으면 눌러서 고치고, 비었으면 머물 때만 「설명 추가」가 보인다.
+ *   틀(Frame) 제목 밑에 두려면 화면이 이걸 subheader 로 넘기고 RecordView 엔 descriptionLine={false}. */
+export function DescriptionLine({ text, onChange }: { text?: string; onChange?: (s: string) => void }) {
+    const [editing, setEditing] = useState(false);
+    const has = !!text?.trim();
+    if (!has && !onChange) return null;
+    if (editing && onChange) {
+        return (
+            <div className="pt-1 shrink-0" data-rv-desc-edit>
+                <InlineRename value={text ?? ''} ariaLabel="목록 설명" placeholder="이 목록이 무엇을 담는지 한 줄"
+                    onCommit={(v) => { setEditing(false); if (v.trim() !== (text ?? '').trim()) onChange(v); }}
+                    onCancel={() => setEditing(false)} />
+            </div>
+        );
+    }
+    if (!onChange) return <p data-rv-desc className="text-small text-muted whitespace-pre-wrap shrink-0">{text}</p>;
+    return (
+        // oxlint-disable-next-line react/forbid-elements -- 글자 자체가 누름 자리(노션 설명 줄)
+        <button type="button" data-rv-desc onClick={() => setEditing(true)}
+            className={`-mx-1 px-1 rounded text-left text-small whitespace-pre-wrap shrink-0 hover:bg-text/[0.04] ${has ? 'text-muted' : 'text-muted/60 opacity-0 hover:opacity-100 focus-visible:opacity-100'}`}>
+            {has ? text : '설명 추가'}
+        </button>
     );
 }
