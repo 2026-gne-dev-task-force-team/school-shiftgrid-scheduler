@@ -12,15 +12,15 @@
  *    리본·플러그인 Pane 은 그 host(뷰 목록·리본 조회 창구)를 쓰고, 모양·패널·정보 Pane 은 안 쓴다(각자 자족).
  */
 import { createElement } from 'react';
-import { definePlugin } from '../../pane-ui-system/plugin';
-import type { ViewProps } from '../../pane-ui-system/plugin';
+import { definePlugin } from '../../plugin';
+import type { ViewProps } from '../../plugin';
 import { manifest } from './manifest';
 import { undoReset, resetUndoable } from './reset-undo';
 import { SettingsScreen } from './SettingsScreen';
 import { AppearancePane } from './panes/AppearancePane';
 import { PaneSettingsPane } from './panes/PaneSettingsPane';
 import { RibbonSettingsPane } from './panes/RibbonSettingsPane';
-import { PluginsPane } from './panes/PluginsPane';
+import { PluginsPane } from '../plugin-manager/panes/PluginsPane';
 import { StartupPane } from './panes/StartupPane';
 import { NotifyPane } from './panes/NotifyPane';
 import { KeybindingsPane } from './panes/KeybindingsPane';

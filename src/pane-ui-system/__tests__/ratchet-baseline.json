@@ -209,20 +209,6 @@
     "enterNoIme": 0,
     "ownUndoNotice": 0
   },
-  "plugins/settings": {
-    "bareButton": 8,
-    "arbPx": 9,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 0,
-    "bareInput": 4,
-    "divClick": 0,
-    "ownTrash": 0,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
   "plugins/sheet": {
     "bareButton": 3,
     "arbPx": 7,
@@ -254,6 +240,34 @@
   "pane-ui-system/core/selection": {
     "bareButton": 0,
     "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/settings": {
+    "bareButton": 6,
+    "arbPx": 8,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 4,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/plugin-manager": {
+    "bareButton": 2,
+    "arbPx": 1,
     "textPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,

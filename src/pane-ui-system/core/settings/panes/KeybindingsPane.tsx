@@ -9,8 +9,8 @@ import { useEffect, useState } from 'react';
 import {
     useKeyOverrides, effectiveKey, keyMap, formatKey, eventToKey, normalizeKey,
     setKeyOverride, resetKeyOverride, resetAllKeyOverrides, getKeyOverrides, restoreKeyOverrides, Button, FOCUS_RING,
-} from '../../../pane-ui-system';
-import { listCommands, useContribVersion } from '../../../pane-ui-system/plugin';
+} from '../../..';
+import { listCommands, useContribVersion } from '../../../plugin';
 import type { SettingsPaneProps } from '../registry';
 import { notifyReset } from '../reset-undo';
 

@@ -10,16 +10,16 @@
  *   ⚠️ 피크 창구가 없으면(공급자 밖) 줄 안에서 펼치는 폴백으로 — 상세를 못 보는 일이 없게.
  */
 import { useState } from 'react';
-import { Icon } from '../../../pane-ui-system';
+import { Icon } from '../../..';
 import {
     type PluginHost, listPlugins, enablePlugin, disablePlugin, usePluginRegistry, useContribVersion, HOST_VERSION,
     type PluginStatus,
-} from '../../../pane-ui-system/plugin';
-import { Toggle } from '../../../pane-ui-system';
+} from '../../../plugin';
+import { Toggle } from '../../..';
 import { PluginDetail } from './PluginDetail';
 import { PlatformDetail } from './PlatformDetail';
 import { DetailButton, LockedMark } from './plugin-parts';
-import { useSettingsChrome } from '../chrome-context';
+import { useSettingsChrome } from '../../settings/chrome-context';
 import { disableImpact } from '../plugin-graph';
 
 export function PluginsPane({ host }: { host: PluginHost }) {

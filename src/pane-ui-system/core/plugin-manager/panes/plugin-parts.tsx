@@ -3,7 +3,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import type { ReactNode } from 'react';
-import { Icon, Button } from '../../../pane-ui-system';
+import { Icon, Button } from '../../..';
 
 /** 상세 안 한 묶음 — 작은 대문자 제목 + 개수 */
 export function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {

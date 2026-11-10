@@ -8,10 +8,10 @@
  * 🔴 모듈 전역 스토어·뷰 레지스트리라 다른 테스트와 안 번지게 뒤에 비운다.
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { getView, clearViews } from '../../pane-ui-system/view-registry';
-import { activateAll, listPlugins } from '../../pane-ui-system/plugin/registry';
-import { listSettings } from '../../pane-ui-system/plugin/store';
-import { disposeOwner } from '../../pane-ui-system/plugin/store';
+import { getView, clearViews } from '../../view-registry';
+import { activateAll, listPlugins } from '../../plugin/registry';
+import { listSettings } from '../../plugin/store';
+import { disposeOwner } from '../../plugin/store';
 import { settingsPlugin } from './index';
 import { PLUGIN_GROUP_TITLE } from './SettingsScreen';
 

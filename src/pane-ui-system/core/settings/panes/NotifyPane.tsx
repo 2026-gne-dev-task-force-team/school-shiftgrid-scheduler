@@ -4,8 +4,8 @@
  *   🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState } from 'react';
-import { usePaneSettings, setPaneSettings, Button, ConfirmDialog, TextInput } from '../../../pane-ui-system';
-import { applyNotifyRetain, clearNotifications, useNotifications } from '../../../pane-ui-system/plugin';
+import { usePaneSettings, setPaneSettings, Button, ConfirmDialog, TextInput } from '../../..';
+import { applyNotifyRetain, clearNotifications, useNotifications } from '../../../plugin';
 
 export function NotifyPane() {
     const { settings } = usePaneSettings();

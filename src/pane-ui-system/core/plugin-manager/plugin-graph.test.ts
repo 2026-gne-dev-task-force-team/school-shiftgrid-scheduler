@@ -7,7 +7,7 @@
  *    disableImpact 는 호스트 단일 진실을 re-export 한 것이다(여기선 그 결과를 잰다).
  */
 import { describe, it, expect } from 'vitest';
-import type { PluginStatus } from '../../pane-ui-system/plugin';
+import type { PluginStatus } from '../../plugin';
 import { explainBlock, disableImpact } from './plugin-graph';
 
 type P = Partial<PluginStatus> & { id: string };

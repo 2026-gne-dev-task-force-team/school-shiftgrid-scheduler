@@ -6,10 +6,10 @@
  * ⭐ 2026-11-01(W12): 풀 편집·내 테마·JSON 은 ThemeEditor 소절로 뺀다(이 파일은 고르기만).
  */
 import type { ReactNode } from 'react';
-import { Icon, Button, FOCUS_RING, useTheme, type IconName } from '../../../pane-ui-system';
-import { THEMES, DENSITIES, FONT_SIZES } from '../../../pane-ui-system';
-import { themeSwatchStyle } from '../../../pane-ui-system';
-import type { ThemeMode } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, useTheme, type IconName } from '../../..';
+import { THEMES, DENSITIES, FONT_SIZES } from '../../..';
+import { themeSwatchStyle } from '../../..';
+import type { ThemeMode } from '../../..';
 import { ThemeEditor } from './ThemeEditor';
 import type { SettingsPaneProps } from '../registry';
 import { notifyReset } from '../reset-undo';

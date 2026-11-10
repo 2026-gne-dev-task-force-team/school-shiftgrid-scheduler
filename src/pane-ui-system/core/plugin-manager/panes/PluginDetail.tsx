@@ -8,15 +8,15 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey, josa } from '../../../pane-ui-system';
+import { Icon, Button, FOCUS_RING, setViewOverride, getViewOverride, useKeyOverrides, effectiveKey, formatKey, josa } from '../../..';
 import {
     type PluginHost, type PluginStatus, enablePlugin, disablePlugin,
     listCommands, listSettings, listContributions, listPlugins, usePluginRegistry, HOST_VERSION,
     attachmentsOf, consumersOf,
     type ContributionKind, type ContributionRecord,
-} from '../../../pane-ui-system/plugin';
-import { notifyReset } from '../reset-undo';
-import { useSettingsChrome } from '../chrome-context';
+} from '../../../plugin';
+import { notifyReset } from '../../settings/reset-undo';
+import { useSettingsChrome } from '../../settings/chrome-context';
 import { Section, RelRow, DetailTitle, Badge } from './plugin-parts';
 import { ViewSettingsCard, ViewSettingsNote } from './ViewSettingsCard';
 import { explainBlock, disableImpact, type ImpactItem } from '../plugin-graph';

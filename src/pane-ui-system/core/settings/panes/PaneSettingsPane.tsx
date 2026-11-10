@@ -9,9 +9,9 @@
 import type { ReactNode } from 'react';
 import type { SettingsPaneProps } from '../registry';
 import { notifyReset } from '../reset-undo';
-import { usePaneSettings, setPaneSettings, resetPaneSettings, snapshotPaneStore, restorePaneStore, Button, TextInput } from '../../../pane-ui-system';
-import type { PaneSettings } from '../../../pane-ui-system';
-import { Toggle } from '../../../pane-ui-system';
+import { usePaneSettings, setPaneSettings, resetPaneSettings, snapshotPaneStore, restorePaneStore, Button, TextInput } from '../../..';
+import type { PaneSettings } from '../../..';
+import { Toggle } from '../../..';
 
 function Field({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
     return (

@@ -7,7 +7,7 @@
  * 🔴 ⛔ 토큰 이름을 코드에 나열하지 않는다 — COLOR_TOKENS 를 돌며 그린다(판 A 가 색 토큰을 더해도 저절로 뜬다).
  *    친근한 이름이 없는 토큰은 id 를 그대로 보여 준다.
  */
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import type { PluginHost } from '../../../plugin';
 import { notifyReset } from '../reset-undo';
 import { useRef, useState, type ReactNode } from 'react';
 import {
@@ -15,7 +15,7 @@ import {
     useUserThemes, addUserTheme, removeUserTheme, restoreUserTheme, renameUserTheme,
     exportThemeJSON, importThemeJSON, FOCUS_RING, Button, TextInput, InlineRename,
     type ColorToken, type ThemeControls, type UserTheme,
-} from '../../../pane-ui-system';
+} from '../../..';
 
 /** 친근한 이름(없는 토큰은 id 그대로) — 판 A 가 더하는 토큰도 id 로 저절로 뜬다 */
 const LABELS: Partial<Record<ColorToken, string>> = {
