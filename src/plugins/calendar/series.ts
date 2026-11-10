@@ -148,7 +148,7 @@ export function setRecur(id: string, rule: RecurRule | null): void {
     setPattern(id, rule ? { ...cur, rules: [rule, ...(cur?.rules.slice(1) ?? [])] } : null);
 }
 
-/** 그 회차만 빼기 — 패턴 exdates 에 originalStart(종일이면 날짜)를 더하고, 실체가 있으면 노드 휴지통으로. 반복 아닌 일정엔 아무것도 안 한다. */
+/** 그 회차만 빼기 — 패턴 exdates 에 originalStart 의 날짜를 더하고, 실체가 있으면 노드 휴지통으로. 반복 아닌 일정엔 아무것도 안 한다. */
 export function skip(o: Occurrence): void {
     const api = getNodesApi();
     const { seriesId, originalStart } = o;
@@ -157,7 +157,7 @@ export function skip(o: Occurrence): void {
         const d = dataOf(api.get(seriesId));
         const p = patternOf(d);
         if (p) {
-            const x = o.allDay ? originalStart.slice(0, 10) : originalStart;
+            const x = originalStart.slice(0, 10);   // 날짜만 — 시리즈 시각을 바꿔도 빠진 날이 되살아나지 않게
             const ex = p.exdates ?? [];
             if (!ex.includes(x)) api.setData(seriesId, withPattern(d, { ...p, exdates: [...ex, x] }));
         }

@@ -452,4 +452,6 @@ export interface RecordViewApi {
     schema: RecordSchemaApi;
     /** 🔑 컬렉션 한 벌(목록 노드 + 레코드 노드 + 화면 + 속성 칸) — 설정 한 장으로. 활성 때 만든다(꾸러미 사이 값 import 금지라 모듈로 건넨다). */
     defineCollection(config: CollectionConfig): CollectionKit;
+    /** 날짜 패턴 편집기(요약·규칙 줄·미니 달력·기간 빼기) — 제어형. 꾸러미 사이 값 import 금지라 모듈로 건넨다. */
+    PatternEditor?(props: { value: DatePattern; start: string; onChange: (p: DatePattern | null) => void; realStarts?: readonly string[]; focus?: string }): ReactElement | null;
 }
