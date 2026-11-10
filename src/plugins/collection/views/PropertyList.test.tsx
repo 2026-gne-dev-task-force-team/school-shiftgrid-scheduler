@@ -46,6 +46,7 @@ const FAKE_NODES = {
     isTrashed: () => false,
     path: (id: string) => (id === 'r1' ? ['db1', 'r1'] : []),
     liveByType: (t: string) => (t === ROW_TYPE ? [{ id: 'r1', type: ROW_TYPE, name: '첫째', children: [] }] : []),
+    find: () => [],
     subscribe: () => ({ dispose() { /* 빈 것 */ } }),
 } as unknown as NodesApi;
 

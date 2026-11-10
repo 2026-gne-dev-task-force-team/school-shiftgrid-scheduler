@@ -1,15 +1,17 @@
 /**
  * 관계 칸(relation) — 다른 컬렉션의 항목(행 노드)을 가리킨다. 값 = 노드 id[] · 이름은 노드 시스템에서 그때그때 푼다.
  *   🔴 가리키던 항목이 휴지통·없음·대상 밖(대상을 바꿨을 때)이면 「사라진 항목」 칩 — 값은 안 지운다(복원·되돌리면 돌아온다).
+ *   다른 목록의 줄도 넣을 수 있다(캐스팅 — 판정·값 꼴은 cast.ts) · 고르개가 「다른 목록에서」 후보 · 여러 대상 고르기 · 비었으면 잇기/새로 만들기를 띄운다.
  *   1차는 target.kind 'db' 만 동작한다. 'source'(등록된 소스) 는 타입만 있고 셀은 「지원 안 함」.
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
-import { DB_TYPE, normalizeRelation, relationToText } from '../schema';
+import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
+import { kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
-import { castCandidate, liveIn, parseRelationEntry, recordsOf, type RelationLook } from './cast';
+import { castCandidate, castCandidates, castKeys, liveIn, parseRelationEntry, recordsOf, relationEntry, type RelationLook } from './cast';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
 export interface RelationConfig { target?: RelationTarget; many: boolean }
@@ -90,6 +92,27 @@ export function relationFromText(text: string, config: unknown, look: RelationLo
     return normalizeRelation(ids, cfg.many);
 }
 
+/** 비어 있는 줄(캐스팅 empty)을 대상 줄에 잇는다 — 그 줄의 (첫) 관계 칸에 대상 id 를 더한다. 쓰기는 그 줄 타입 주인의 손(kit)으로 */
+function castLink(targetDb: string, srcId: string, targetId: string): void {
+    const look = getNodesApi();
+    const n = look?.get(srcId);
+    const key = look && castKeys(look, targetDb, srcId)[0];
+    if (!look || !n || !key) return;
+    const d = (n.data ?? {}) as { values?: Record<string, RecordCellValue> };
+    const next = [...normalizeRelation(d.values?.[key]).filter((x) => x !== targetId), targetId];
+    const kit = kitOfType(n.type);
+    if (kit) kit.setValue(srcId, key, next);
+    else if (n.type === ROW_TYPE) look.setData(srcId, { ...d, values: { ...d.values, [key]: next } });
+}
+/** 대상 컬렉션에 새 줄 — 범용은 행 노드, defineCollection 은 그 kit 으로. 못 만들면 '' */
+function castNewTarget(targetDb: string, name: string): string {
+    const look = getNodesApi();
+    if (!look) return '';
+    if (look.get(targetDb)?.type === DB_TYPE) return look.create(targetDb, { type: ROW_TYPE, name, data: blankRow() }) || '';
+    const kit = kitOfType(look.get(targetDb)?.type);
+    return kit ? kit.addItem(targetDb, { [kit.config.baseFields[0].key]: name }) || '' : '';
+}
+
 function RelationPicker({ target, ids, many, onPick, onClear }: {
     target: RelationTarget & { kind: 'db' };
     ids: string[];
@@ -98,10 +121,42 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
     onClear: () => void;
 }) {
     const [q, setQ] = useState('');
+    const [step, setStep] = useState<{ kind: 'pick' | 'empty'; id: string; name: string; targets: string[] } | null>(null);
     const listRef = useRef<HTMLDivElement>(null);
-    const all = relationCandidates(getNodesApi(), target);
+    const look = getNodesApi();
+    const all = relationCandidates(look, target);
     const key = q.trim().toLowerCase();
     const shown = key ? all.filter((c) => c.name.toLowerCase().includes(key)) : all;
+    const casts = look ? castCandidates(look, target.nodeId).filter((c) => !key || c.name.toLowerCase().includes(key)) : [];
+    const nameOf = (id: string) => look?.get(id)?.name || UNTITLED;
+    if (step) {
+        // 캐스팅 2단 — pick: 그 줄이 가리키는 것 중 하나(넣은 칸 값에 적는다) · empty: 있는 항목에 잇거나 새로 만들어 잇는다(그 줄 쪽 칸이 채워진다)
+        const link = (tid: string) => { if (tid) castLink(target.nodeId, step.id, tid); onPick(step.id); setStep(null); };
+        const fresh = q.trim() || '새 항목';
+        return (
+            <div className="flex flex-col gap-1" data-rv-rel-cast-step={step.kind}>
+                <div className="px-2 text-note text-muted">{step.kind === 'pick' ? `「${step.name}」 — 어느 항목인지 고르세요` : `「${step.name}」은 아직 가리키는 항목이 없어요 — 이을 항목을 고르세요`}</div>
+                <div className="max-h-72 overflow-auto">
+                    <MenuList label="이을 항목">
+                        <MenuItem label="뒤로" icon="left" onSelect={() => setStep(null)} />
+                        {step.kind === 'pick'
+                            ? step.targets.map((t) => (
+                                <div key={t} className="contents" data-rv-rel-cast-target={t}>
+                                    <MenuItem label={nameOf(t)} icon={ids.includes(relationEntry(step.id, t)) ? 'check' : undefined}
+                                        onSelect={() => { onPick(relationEntry(step.id, t)); setStep(null); }} />
+                                </div>
+                            ))
+                            : <>
+                                {all.map((c) => (
+                                    <div key={c.id} className="contents" data-rv-rel-cast-target={c.id}><MenuItem label={c.name} onSelect={() => link(c.id)} /></div>
+                                ))}
+                                <div className="contents" data-rv-rel-cast-new><MenuItem label={`새로 만들어 잇기: ${fresh}`} icon="plus" onSelect={() => link(castNewTarget(target.nodeId, fresh))} /></div>
+                            </>}
+                    </MenuList>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="flex flex-col gap-1" data-rv-rel-picker>
             {/* ↑↓ 로 목록에 내려가고(MenuList 가 이어받는다) · Enter = 맨 위 항목 · Esc 는 Popover 가 닫는다 */}
@@ -119,8 +174,17 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
                             {c.path.length > 0 && <div data-rv-rel-path className="-mt-1 pb-1 pl-8 pr-pad text-note text-muted truncate">{c.path.join(' › ')}</div>}
                         </div>
                     ))}
+                    {casts.length > 0 && <div data-rv-rel-cast-head className="px-2 pt-1 text-note text-muted">다른 목록에서</div>}
+                    {casts.map((c) => (
+                        <div key={c.id} className="contents" data-rv-rel-cast={c.id} data-rv-rel-cast-kind={c.kind}>
+                            <MenuItem label={c.name || UNTITLED}
+                                icon={ids.some((e) => parseRelationEntry(e).id === c.id) ? 'check' : c.kind === 'direct' ? undefined : 'right'}
+                                onSelect={() => (c.kind === 'direct' ? onPick(c.id) : setStep({ kind: c.kind, id: c.id, name: c.name || UNTITLED, targets: c.targets }))} />
+                            <div className="-mt-1 pb-1 pl-8 pr-pad text-note text-muted truncate">{c.from}</div>
+                        </div>
+                    ))}
                 </MenuList>
-                {shown.length === 0 && (
+                {shown.length === 0 && casts.length === 0 && (
                     <div data-rv-rel-empty className="px-2 py-1 text-note text-muted">{all.length > 0 ? '맞는 항목이 없어요' : '가리킬 컬렉션에 항목이 없어요'}</div>
                 )}
             </div>
