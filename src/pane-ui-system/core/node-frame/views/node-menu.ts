@@ -38,6 +38,12 @@ export interface NodeMenuOpts {
 const CREATE_FOLD_MIN = 4;
 const GROUP_ORDER: MenuGroup[] = ['open', 'new', 'edit', 'move', 'danger'];
 
+/** 「새로 만들기」 후보가 많으면 「새로 만들기 ▸」 하위 메뉴 한 줄로 접는다 — 노드 메뉴와 탐색기 빈자리 메뉴가 같이 쓴다(두 벌 금지). */
+export function foldCreate(create: MenuEntry[]): MenuEntry[] {
+    const n = create.filter((it) => !it.sep).length;
+    return n > CREATE_FOLD_MIN ? [{ label: '새로 만들기', icon: 'plus' as const, children: create }] : create;
+}
+
 export function nodeMenu(nodeId: string, o: NodeMenuOpts): MenuEntry[] {
     const tree = getState().tree;
     const node = tree.nodes[nodeId];
@@ -46,10 +52,7 @@ export function nodeMenu(nodeId: string, o: NodeMenuOpts): MenuEntry[] {
     if (o.open) g.open.push({ label: '열기', icon: 'arrowRight', commandId: o.viaCommands ? CMD.open : undefined, onClick: () => openById(nodeId) });
     if (o.extra?.length) g.open.push(...o.extra);
     if (o.reveal) g.open.push({ label: '탐색기에서 보기', icon: 'folder', onClick: o.reveal });
-    if (o.create?.length) {
-        const n = o.create.filter((it) => !it.sep).length;
-        g.new.push(...(n > CREATE_FOLD_MIN ? [{ label: '새로 만들기', icon: 'plus' as const, children: o.create }] : o.create));
-    }
+    if (o.create?.length) g.new.push(...foldCreate(o.create));
     g.edit.push({
         label: '이름 바꾸기', icon: 'edit', disabled: !!o.renameBlocked || !canDo(node.type, nodeId, 'rename'),
         commandId: o.rename.commandId, onClick: o.rename.run,

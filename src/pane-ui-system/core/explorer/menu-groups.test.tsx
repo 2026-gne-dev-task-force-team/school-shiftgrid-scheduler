@@ -97,3 +97,13 @@ describe('K23 노드 우클릭 묶음 순서', () => {
         expect(items).toEqual(['새로 만들기▸', '---', '이름 바꾸기', '아이콘 바꾸기', '---', '위로', '아래로', '---', '삭제']);
     });
 });
+
+describe('Q28 ② 빈자리 우클릭도 만들기를 하위 메뉴로 접는다', () => {
+    it('빈자리 우클릭 → 「새로 만들기▸」 한 줄(노드 우클릭과 같은 foldCreate) · + 단추 메뉴는 그대로 평면', () => {
+        apiCreate('root', { type: 'folder', name: '묶음' });
+        act(() => { root.render(<ExplorerView host={mkHost(false)} />); });
+        const list = container.querySelector('[role="tree"] > div.overflow-auto') as HTMLElement;
+        act(() => { list.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 400 })); });
+        expect(menuItems()).toEqual(['새로 만들기▸']);
+    });
+});

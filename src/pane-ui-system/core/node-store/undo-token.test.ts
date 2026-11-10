@@ -96,3 +96,19 @@ describe('🔴 C1 — 낡은 「되돌리기」는 남의 작업을 안 되돌�
         expect(actionState(it0).kind).toBe('stale');
     });
 });
+
+describe('Q28 ① 되돌리기가 어느 길로 일어나든 그 삭제 알림은 닫힌다', () => {
+    it('⌘Z(undoAction 직접)로 되살리면 토스트가 걷힌다 · 기록엔 남는다', () => {
+        const dismissed: string[] = [];
+        const h = host();
+        (h.notify as unknown as { dismiss: (id: string) => void }).dismiss = (id) => { dismissed.push(id); };
+        return initStore(h).then(() => {
+            const a = mk();
+            const na = del(a);
+            expect(dismissed).toEqual([]);
+            undoAction();
+            expect(trashed(a)).toBe(false);
+            expect(dismissed).toEqual([na]);
+        });
+    });
+});

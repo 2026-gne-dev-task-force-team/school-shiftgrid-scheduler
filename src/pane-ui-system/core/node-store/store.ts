@@ -507,8 +507,14 @@ function doRemove(ids: string[]): void {
     // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 토스트는 한 건에 덮인다.
     //   🔴 args.undoTop = 이 삭제가 쌓은 더미 칸의 토큰(C1) — 뒤에 다른 작업이 쌓이면 enabled 가 false 라 옛 알림이 남의 작업을 안 되돌린다.
     const token = undoToken();
-    if (hostRef) notifyUndo(hostRef, { title: `${josa(what, '을/를')} 휴지통으로 옮겼습니다`, key: 'explorer.trashed', commandId: CMD.undo, args: token === null ? null : { undoTop: token } });
+    if (hostRef) {
+        const nid = notifyUndo(hostRef, { title: `${josa(what, '을/를')} 휴지통으로 옮겼습니다`, key: 'explorer.trashed', commandId: CMD.undo, args: token === null ? null : { undoTop: token } });
+        if (token !== null) undoNotices.set(token, nid);
+    }
 }
+
+/** 되돌리기 칸 토큰 → 그 칸을 만든 삭제 알림 id — 되돌리기가 어느 길(⌘Z · 단추 · 메뉴)로 칸을 쓰면 알림을 닫는다(Q28 ①). */
+const undoNotices = new Map<number, string>();
 
 /** 노드 틀(⋯ 메뉴)의 「휴지통으로」 — 선택과 무관하게 이 노드만. can.delete 는 여기서 한 번 더 거른다(경고 문구는 틀이 먼저 물었다). */
 export function trashNode(id: string): void {
@@ -661,8 +667,14 @@ export function undoAllowed(args: unknown): boolean {
 
 /** 되돌리기 — 더미 과거의 맨 뒤 상태로. rev 는 저장용으로만 올린다. */
 export function undoAction(): void {
+    const consumed = undoToken();
     const r = undoHist(state.history, state.tree);
     if (!r) return;
+    // 🔴 소비된 칸에 매인 알림은 닫는다 — 안 그러면 되살린 뒤에도 「휴지통으로 옮겼습니다」가 남는다(토스트만 걷고 기록엔 남는다)
+    if (consumed !== null) {
+        const nid = undoNotices.get(consumed);
+        if (nid !== undefined) { undoNotices.delete(consumed); hostRef?.notify.dismiss(nid); }
+    }
     const prev = state.tree;
     const bumped: Tree = { ...r.value, rev: state.tree.rev + 1 };
     state = { ...state, tree: bumped, history: r.history, renamingId: null, purgeConfirmId: null, purgeAllConfirm: false };

@@ -18,7 +18,7 @@ import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUn
 import { isContainerType, isSectionType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
-import { nodeMenu } from '../../node-frame/views/node-menu';
+import { nodeMenu, foldCreate } from '../../node-frame/views/node-menu';
 import { TrashConfirm } from '../../node-frame/views/TrashConfirm';
 import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode, apiSetField } from '../../node-store/store';
 
@@ -410,7 +410,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         }
         const items: MenuEntry[] = createItems('context', { grouped: true });
         if (items.length === 0) items.push(...folderFallback('context', selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder')));
-        return items;
+        return foldCreate(items);   // 빈자리 우클릭 — 노드 메뉴와 같은 접기 규칙(Q28 ②)
     };
 
     // 🔴 비동기 로드가 끝나기 전 — 줄·명령·키보드를 안 그린다(이 early return 이 조작을 막는 한쪽. 다른 쪽은
