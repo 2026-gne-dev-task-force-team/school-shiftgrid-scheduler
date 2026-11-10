@@ -1,15 +1,14 @@
 /**
- * 「방 예약」 플러그인 — 달력 약속(calendar 0.2)에 프리셋 한 장을 꽂는다. 화면·노드 타입은 없다(달력 것을 그대로 쓴다).
- *   🔴 방 목록은 컬렉션 레코드(collection.db · 칸: 이름) — 「방」 관계 칸이 kind:'db' 로 가리킨다(F1 B). 노드 약속으로 만든다 — 값 import 없이 타입 문자열만.
+ * 「방 예약」 플러그인 — 딱 둘을 엮는다: 달력(calendar 0.2 프리셋 한 장) + 방 목록(rooms). 화면·노드 타입은 없다(둘의 것을 그대로 쓴다).
+ *   🔴 「방」 관계 칸이 방 목록 플러그인의 목록 노드(rooms.list)를 kind:'db' 로 가리킨다(설계 4-2). 값 import 없이 타입 문자열만(구조 검사 ⑨).
+ *   방 목록은 같이 쓴다 — 살아 있는 방 목록이 있으면 그걸, 없으면 저장소 옆에 새로(쥔님 11-10 14:00 「같이 쓰기, 일단」).
  */
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar, CalendarPreset } from '../calendar/contracts/calendar';
 import { manifest } from './manifest';
 
-const ROOM_LIST_TYPE = 'collection.db';
-/** 방 목록 컬렉션의 처음 꼴 — 제목 칸 「이름」 하나(나머지는 컬렉션 정규화가 채운다) */
-const roomListData = () => ({ fields: [{ key: 'f_name', label: '이름', type: 'text' }], titleKey: 'f_name' });
+const ROOM_LIST_TYPE = 'rooms.list';
 
 export const ROOM_BOOKING_PRESET: CalendarPreset = {
     id: 'room-booking.default',
@@ -21,10 +20,13 @@ export const ROOM_BOOKING_PRESET: CalendarPreset = {
         key: 'f_room', label: '방', type: 'relation',
         config: { target: { kind: 'db', nodeId: store.data.roomListId }, many: false },
     }],
-    // 저장소 옆(같은 부모)에 「방 목록」을 만들고 그 id 를 저장소 data 에 둔다 — 부모가 못 받으면 루트에.
+    // 있는 방 목록(첫 것)을 가리키고, 없으면 저장소 옆(같은 부모)에 만든다 — 부모가 못 받으면 루트에.
     onCreateStore({ storeId, nodes, setStoreData }) {
+        const existing = nodes.liveByType(ROOM_LIST_TYPE)[0]?.id;
         const parent = nodes.parent(storeId) ?? nodes.roots.main;
-        const roomListId = nodes.create(parent, { type: ROOM_LIST_TYPE, name: '방 목록', data: roomListData() }) || nodes.create(nodes.roots.main, { type: ROOM_LIST_TYPE, name: '방 목록', data: roomListData() });
+        const roomListId = existing
+            || nodes.create(parent, { type: ROOM_LIST_TYPE, name: '방 목록' })
+            || nodes.create(nodes.roots.main, { type: ROOM_LIST_TYPE, name: '방 목록' });
         if (roomListId) setStoreData({ roomListId });
     },
 };
