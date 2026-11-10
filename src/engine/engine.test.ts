@@ -7,6 +7,7 @@ import {
 } from './core';
 import { makeSmallDoc, put, IDS, SLOT } from './__fixtures__/small';
 import { sampleDoc } from '../io/sample';
+import { setMeta } from '../store/doc-ops';
 
 const count = (viols: Violation[], templateId: string) =>
     viols.filter((v) => v.templateId === templateId).length;
@@ -285,5 +286,30 @@ describe('solve · autoAdjust', () => {
         const p = r.best.assignments.find((a) => a.id === 'pinned1')!;
         expect(p.dayIndex).toBe(0);
         expect(p.slotIndex).toBe(0);
+    });
+});
+
+// ──────────────────────────────── 고정 배치는 권장 감점에서 뺀다 (운영 앱 연동 5-2)
+describe('고정 배치 권장 감점 제외', () => {
+    // 같은 반·과목이 요일마다 다른 교시 + 같은 날 떨어짐 + 피함 칸 — 고정이 아니면 셋 다 감점
+    const mk = (fixed: boolean): Doc => ({ ...makeSmallDoc(), demands: [],
+        weeklyBlocks: [{ id: 'wb', name: '회피', dayIndex: 0, targets: [{ kind: 'track', id: IDS.t31 }], soft: true }],
+        assignments: [
+            put('f1', IDS.t31, 0, 0, { activityId: IDS.sci, fixed }),
+            put('f2', IDS.t31, 0, 2, { activityId: IDS.sci, fixed }),
+            put('f3', IDS.t31, 1, 1, { activityId: IDS.sci, fixed }),
+        ],
+    });
+    for (const id of ['same-period-across-days', 'subject-adjacent', 'avoid']) {
+        it(`${id}: 고정 아니면 감점, 고정이면 0`, () => {
+            expect(count(evaluateAll(mk(false)), id)).toBeGreaterThan(0);
+            expect(count(evaluateAll(mk(true)), id)).toBe(0);
+        });
+    }
+});
+
+describe('setMeta 는 판수 3 을 지킨다', () => {
+    it('학교 이름을 고쳐도 schemaVersion 3', () => {
+        expect(setMeta(makeSmallDoc(), { name: '바뀐초' }).meta.schemaVersion).toBe(3);
     });
 });

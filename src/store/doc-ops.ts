@@ -21,7 +21,7 @@ export function colorFor(n: number): string {
 
 // ── 메타 ──────────────────────────────────────────────────────
 export const setMeta = (d: Doc, patch: Partial<SchoolMeta>): Doc =>
-    ({ ...d, meta: { ...d.meta, ...patch, schemaVersion: 2, updatedAt: nowIso() } });
+    ({ ...d, meta: { ...d.meta, ...patch, schemaVersion: 3, updatedAt: nowIso() } });
 
 // ── 엔티티 (교사·과목·특별실) ─────────────────────────────────
 export function addAgent(d: Doc, name: string, extra?: Partial<Agent>): Doc {
