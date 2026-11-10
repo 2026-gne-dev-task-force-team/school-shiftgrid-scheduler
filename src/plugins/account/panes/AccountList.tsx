@@ -60,6 +60,8 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     // 목록이 사라지면(탭 닫기·다른 노드로 바뀜) 열린 미리보기도 닫는다(유령 방지)
     const hidePeek = peek?.hide;   // peek 객체는 그릴 때마다 새로 오니 손잡이(hide)에만 건다
     useEffect(() => () => hidePeek?.(), [hidePeek, kind]);
+    // 🔴 역할 삭제는 확인창부터 — 그 역할을 가진 사용자는 권한을 잃는다(#28) · 훅이라 아래 이른 return 보다 위에(rules-of-hooks)
+    const [pendingRoles, setPendingRoles] = useState<string[] | null>(null);
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     if (!rv) return <EmptyState icon="warn" title="목록을 그릴 수 없습니다" description="컬렉션 꾸러미가 꺼져 있습니다." />;
     const m = kind === 'perms' ? permsModel() : recordsModel(kind);
@@ -70,8 +72,6 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     };
     // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」는 노드 시스템 정식 되돌리기(nodes.cmd.undo)
     const remove = (ids: string[]) => { if (host) removeAndNotify(host, kind, ids); else removeAccountRecords(ids); };
-    // 🔴 역할 삭제는 확인창부터 — 그 역할을 가진 사용자는 권한을 잃는다(#28)
-    const [pendingRoles, setPendingRoles] = useState<string[] | null>(null);
     const rolesAffected = pendingRoles ? listUsers().filter((u) => { const r = u.values.roles; return Array.isArray(r) && pendingRoles.some((id) => r.map(String).includes(id)); }).length : 0;
     const askRemove = (ids: string[]) => { if (kind === 'roles') setPendingRoles(ids); else remove(ids); };
     const { RecordView } = rv;
