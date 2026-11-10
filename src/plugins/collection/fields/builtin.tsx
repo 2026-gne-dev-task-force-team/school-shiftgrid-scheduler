@@ -7,6 +7,7 @@ import { CheckCell, DateCell, EmailCell, MultiCell, NumberCell, PhoneCell, Reado
 import { RELATIVE_DATES, dateText, inRelative, parseDateText, toDateValue } from './dates';
 import { isValidLink, type LinkKind } from './links';
 import { toNum, universalOps } from './ops';
+import { RelationCell, RelationConfigEditor, relationFromText, relationIds, relationText } from './relation';
 
 const labelOf = (field: RecordField, value: string): string => field.options?.find((o) => o.value === value)?.label ?? value;
 /** 글자 → 선택지 값 — 라벨이 같은 선택지가 있으면 그 값, 없으면 글자 그대로(선택지는 변환·붙여넣기가 만든다) */
@@ -163,8 +164,18 @@ const idType: FieldTypeDef = {
     compare: (a, b) => toNum(a) - toNum(b),
 };
 
-/** 내장 — 순서가 칸 추가 팝오버의 순서다. 🔴 relation 은 일부러 없다(P3 에 등록). */
+// ── relation — 다른 컬렉션 항목(행 노드 id[])을 가리킨다. 이름 풀기·사라진 항목은 relation.tsx ──
+const relationType = withOps({
+    type: 'relation', label: '관계', icon: 'database', filterInput: 'text', Cell: RelationCell, Config: RelationConfigEditor,
+    defaultConfig: { many: true },
+    toText: (v, c) => relationText(v, c),
+    fromText: (t, c) => relationFromText(t, c),
+    isEmpty: (v, c) => relationIds(v, c).length === 0,
+    groupKey: (v) => (Array.isArray(v) && v.length > 0 ? String(v[0]) : null),
+}, (u) => [u.contains, u.notContains, u.empty, u.notEmpty]);
+
+/** 내장 — 순서가 칸 추가 팝오버의 순서다. */
 export const BUILTIN_FIELD_TYPES: readonly FieldTypeDef[] = [
     textType, numberType, selectType, multiType, dateType, checkType,
-    statusType, urlType, emailType, phoneType, createdType, updatedType, idType,
+    statusType, urlType, emailType, phoneType, createdType, updatedType, idType, relationType,
 ];

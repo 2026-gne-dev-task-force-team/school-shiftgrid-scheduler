@@ -84,9 +84,9 @@ describe('관계 칸 모델 — UI 는 P3, 값·정규화·글자만', () => {
         expect(relationToText(['n1', 'gone', 'n2'], (id) => names[id])).toBe('첫째, 둘째');
         expect(relationToText([], (id) => names[id])).toBe('');
     });
-    it('relation 은 P1 레지스트리에 없다 — 변환 대상으로도 안 뜬다', () => {
+    it('text → relation(R 판에서 등록) — 대상에 없는 이름은 빈 값이 된다', () => {
         const p = planConvert([{ id: 'r', value: 'x' }], { key: 'f_x', label: 'x', type: 'text' }, 'relation');
-        expect(p.changes).toEqual([]);
+        expect(p.changes).toEqual([{ id: 'r', value: [] }]);
     });
 });
 
