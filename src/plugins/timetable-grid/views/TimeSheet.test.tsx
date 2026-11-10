@@ -171,3 +171,35 @@ describe('시간표 지우기 알림(되돌리기 알림)', () => {
     });
 
 });
+
+describe('칸 편집 진입(맨눈 검수 1번)', () => {
+    const dbl = (c: number, r: number) => {
+        const el = cell(c, r);
+        mouse(el, 'mousedown'); mouse(window, 'mouseup'); mouse(el, 'click');
+        mouse(el, 'mousedown', { detail: 2 }); mouse(window, 'mouseup'); mouse(el, 'click', { detail: 2 });
+        mouse(el, 'dblclick', { detail: 2 });
+    };
+    it('단일 클릭은 선택만 — 편집창이 안 열린다', () => {
+        mount();
+        mouse(cell(1, 1), 'mousedown'); mouse(window, 'mouseup'); mouse(cell(1, 1), 'click');
+        expect(q('textarea')).toBeNull();
+        expect(cell(1, 1).getAttribute('data-active')).toBe('true');
+    });
+    it('더블클릭 = 편집창이 열리고 초점을 받고, 타자 후 Enter 로 저장', () => {
+        mount();
+        dbl(1, 1);
+        const ta = cell(1, 1).querySelector('textarea');
+        expect(ta).not.toBeNull();
+        expect(document.activeElement).toBe(ta);
+        typeIn('수학'); key('Enter');
+        expect(txt(1, 1)).toBe('수학');
+    });
+    it('선택 상태 Enter = 편집 진입(아래 칸 이동이 아니다) · 편집 중 칸에 표시(data-editing)', () => {
+        mount();
+        pick(1, 1);
+        key('Enter');
+        expect(cell(1, 1).querySelector('textarea')).not.toBeNull();
+        expect(cell(1, 1).getAttribute('data-active')).toBe('true');
+        expect(cell(1, 1).hasAttribute('data-editing')).toBe(true);
+    });
+});

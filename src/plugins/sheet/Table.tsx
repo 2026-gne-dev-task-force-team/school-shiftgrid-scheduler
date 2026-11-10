@@ -929,6 +929,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                             striped ? 'bg-text/[0.03]' : '',
                                             deco?.tone ? TONE_BG[deco.tone] ?? '' : '',
                                             selected || inFill ? 'bg-accent/10' : '',
+                                            // 편집 중 표시 — 선택(옅은 파랑)과 똑같아 보이면 열렸는지 모른다(맨눈 검수 11-10). 흰 바탕 + 안쪽 링으로 「입력 중」이 보이게.
+                                            editing && !isBool ? 'bg-bg ring-2 ring-inset ring-accent shadow-md z-10' : '',
                                             vErr ? (vErr.level === 'bad' ? 'ring-1 ring-inset ring-bad' : 'ring-1 ring-inset ring-warn') : '',
                                             col.align === 'right' || col.type === 'number' || (!col.align && !isHeadCell && /^-?[\d,]+(\.\d+)?%?$/.test(value.trim())) ? 'text-right' : col.align === 'center' || isBool ? 'text-center' : '',
                                         ].filter(Boolean).join(' ');
@@ -939,6 +941,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 data-rc={`${r}:${c}`}
                                                 aria-selected={selected}
                                                 data-active={core.active.r === r && core.active.c === c ? 'true' : undefined}
+                                                data-editing={editing && !isBool ? 'true' : undefined}
                                                 className={cls}
                                                 style={{ width: widthOf(col.key, col.width), minWidth: widthOf(col.key, col.width) }}
                                                 rowSpan={span?.rowSpan}
