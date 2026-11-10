@@ -101,6 +101,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                         const overridden = custom[t] != null;
                         return (
                             <div key={t} className="flex items-center gap-2">
+                                {/* oxlint-disable-next-line react/forbid-elements -- 색 고르기(type=color) — 공통 부품 없음 */}
                                 <input
                                     type="color"
                                     aria-label={`${LABELS[t] ?? t} 색`}
@@ -109,6 +110,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                     className="w-8 h-8 shrink-0 rounded border border-line bg-bg p-0.5 cursor-pointer"
                                 />
                                 <span className="w-24 shrink-0 text-small text-text truncate">{LABELS[t] ?? t}</span>
+                                {/* oxlint-disable-next-line react/forbid-elements -- rgb 숫자 칸 — 색 견본 줄 안 좁은 칸 */}
                                 <input
                                     type="text"
                                     aria-label={`${LABELS[t] ?? t} r g b`}
@@ -119,16 +121,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                         ${FOCUS_RING}`}
                                 />
                                 <span className="text-note text-muted w-16 shrink-0 truncate">{t}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => revertToken(t)}
-                                    disabled={!overridden}
-                                    className={`ml-auto h-7 px-2 rounded border border-line text-small text-muted
-                                        enabled:hover:text-text enabled:hover:bg-text/[0.04] disabled:opacity-30
-                                        ${FOCUS_RING}`}
-                                >
-                                    되돌리기
-                                </button>
+                                <Button size="sm" variant="outline" className="ml-auto" onClick={() => revertToken(t)} disabled={!overridden}>되돌리기</Button>
                             </div>
                         );
                     })}
@@ -165,6 +158,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                     />
                                 ) : (
                                     // bare: 목록 줄 이름 자체가 누르는 자리(글자 링크 모양)
+                                    // oxlint-disable-next-line react/forbid-elements -- 목록 줄 이름 링크 모양
                                     <button type="button" onClick={() => applyUserTheme(t)}
                                         className="flex-1 min-w-0 text-left text-body text-text truncate hover:text-accent">
                                         {t.name}
@@ -182,6 +176,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
 
                 <div className="flex items-center gap-2">
                     <Button onClick={() => fileRef.current?.click()}>JSON 가져오기</Button>
+                    {/* oxlint-disable-next-line react/forbid-elements -- 숨은 파일 고르기 입력 */}
                     <input
                         ref={fileRef}
                         type="file"

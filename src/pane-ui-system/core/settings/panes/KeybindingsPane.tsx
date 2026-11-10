@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import {
     useKeyOverrides, effectiveKey, keyMap, formatKey, eventToKey, normalizeKey,
-    setKeyOverride, resetKeyOverride, resetAllKeyOverrides, getKeyOverrides, restoreKeyOverrides, Button, FOCUS_RING,
+    setKeyOverride, resetKeyOverride, resetAllKeyOverrides, getKeyOverrides, restoreKeyOverrides, Button, TextInput,
 } from '../../..';
 import { listCommands, useContribVersion } from '../../../plugin';
 import type { SettingsPaneProps } from '../registry';
@@ -53,10 +53,7 @@ export function KeybindingsPane({ host }: SettingsPaneProps) {
                 「바꾸기」를 누르고 새 키를 누르세요(Esc 는 취소). 같은 키를 둘이 쥐면 ⚠️ 가 뜨고 먼저 등록된 명령이 이깁니다. 저장은 이 기기에만 남습니다.
             </p>
             {reservedMsg && <p role="alert" className="text-small">⚠️ {reservedMsg}</p>}
-            <input
-                value={q} onChange={(e) => setQ(e.target.value)} placeholder="명령·키로 찾기"
-                className={`h-8 px-2 rounded border border-line bg-panel text-body ${FOCUS_RING}`}
-            />
+            <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="명령·키로 찾기" label="명령·키로 찾기" />
             <div className="flex flex-col rounded border border-line overflow-hidden">
                 {cmds.map((c) => {
                     const k = effectiveKey(c.id, c.keys, o);

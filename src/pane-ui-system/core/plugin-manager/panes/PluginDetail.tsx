@@ -279,6 +279,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
 
             {/* 🔴 개발자 정보 — 권한·칸 장부와 기여 목록은 평소엔 접어 둔다(쥔님 2026-11-08: 설명·관계가 먼저 보이게). */}
             <div className="flex flex-col gap-2">
+                {/* oxlint-disable-next-line react/forbid-elements -- 개발자 정보 펼침 — 회전 갈매기 */}
                 <button
                     type="button"
                     onClick={() => setShowDev((v) => !v)}
@@ -383,6 +384,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
                                     const open = openViews.has(v.id);
                                     return (
                                         <div key={v.id} className="border-b border-line last:border-b-0">
+                                            {/* oxlint-disable-next-line react/forbid-elements -- 펼침 목록 줄 — 행 모양 */}
                                             <button
                                                 type="button"
                                                 aria-expanded={open}
