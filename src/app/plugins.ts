@@ -24,6 +24,7 @@ import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { roomsPlugin } from '../plugins/rooms';
 import { roomBookingPlugin } from '../plugins/room-booking';
 import { substitutePlugin } from '../plugins/substitute';
+import { schoolPlugin } from '../plugins/school';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 import { paneTestPlugin } from '../plugins/pane-test';
@@ -48,6 +49,7 @@ export const PLUGINS: PluginModule[] = [
     roomsPlugin,             // 방 목록 꾸러미
     roomBookingPlugin,       // 방 예약 꾸러미 — 달력 프리셋 한 장
     substitutePlugin,        // 보결 명단 꾸러미
+    schoolPlugin,            // 학교 정보 꾸러미
     timetableGridPlugin,     // 시간표 꾸러미(시트 확장)
     // 🧪 개발 전용 — 개발 서버에서 주소 끝에 `?pane-test` 를 붙여 열면 Pane UI Test(부품 견본 포함)가 켜진다. 배포본·일반 화면엔 안 뜬다.
     ...(import.meta.env.DEV && typeof window !== 'undefined' && window.location.search.includes('pane-test') ? [paneTestPlugin] : []),

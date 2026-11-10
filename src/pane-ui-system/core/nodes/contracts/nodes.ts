@@ -50,6 +50,9 @@ export interface CreateSpec {
     init?: (parentId: string) => Partial<Node>;
 }
 
+/** 「새로 만들기」에 타입 줄 바로 뒤로 붙는 변형 한 칸(예: 달력 저장소 → 「새 방 예약」) — 만들기·열기는 run 이 다 한다. */
+export interface CreateVariant { label: string; icon: IconName; run: () => void }
+
 /**
  * 🔑 조작 가능 플래그 — rename·move·delete 각각 「해도 되나」. 생략/undefined 는 true.
  *   ⭐ 고정 객체(타입 전체가 늘 같은 답)로도, 함수(노드·현재 상황에 따라 답이 다름)로도 줄 수 있다 — NodeTypeDef.can 참고.
@@ -70,6 +73,8 @@ export interface NodeTypeDef {
     type: string;
     label: string;
     icon: IconName | ((node: Node) => IconName);
+    /** icon 이 함수일 때 「새로 만들기」 줄에 그릴 아이콘(아직 노드가 없다) — 없으면 'plus'. */
+    createIcon?: IconName;
     /** 폴더 역할 — 자식을 받나(true), 어떤 타입만 받나({ accepts }). */
     container?: boolean | { accepts: string[] };
     /** 파일 역할 — 두 번 누르기·Enter 로 열리나. */
@@ -79,6 +84,8 @@ export interface NodeTypeDef {
     /** 🔑 유도 트리 — 자식을 저장소가 아니라 이 함수가 만든다(저장 안 됨 · 이름 못 바꿈 · 못 끔). */
     derive?: (node: Node) => VirtualNode[];
     create?: CreateSpec;
+    /** 그 부모 밑에 낼 변형 줄들 — create 가 있는 타입만, 타입 줄이 만들 수 있을 때만 붙는다. */
+    createVariants?: (parentId: string) => CreateVariant[];
     menu?: (nodeId: string) => MenuEntry[];
     /**
      * 🔑 이름바꾸기·옮기기·지우기를 「해도 되나」 — 기본 전부 true. 두 꼴:
@@ -114,6 +121,11 @@ export interface NodeTypeDef {
      *   없으면 제한 없음(기본 · 내장 '폴더'가 그렇다). 관문은 모델 한 곳(violatesUnique) — 만들기·옮기기·복원·API 가 전부 지난다.
      */
     unique?: 'tree' | 'parent';
+    /**
+     * 🔑 섹션 — 폴더처럼 묶되 들여쓰기 없이 탐색기를 위아래로 나눈 칸으로 그린다. 뿌리 바로 밑에만 놓이고(안에 섹션 없음),
+     *   지우면 안의 노드는 지워지지 않고 뿌리로 풀려난다(섹션 자리에 순서대로). container 와 함께 쓴다.
+     */
+    section?: boolean;
     /** 🔑 끼워 넣기 모습(P5) — impl.embed 에 host 를 묶어 온다. 없으면 링크 줄. */
     embed?: ComponentType<EmbedProps>;
     /** 🔑 칩 모습 — 글 줄 안(시트 칸·리치 글자)에 이 타입이 어떻게 보일지. impl.chip 에 host 를 묶어 온다. 없으면 「아이콘+이름」 기본 칩. */
@@ -155,6 +167,8 @@ export interface NodeTypeImplFns {
     derive?: (node: Node) => VirtualNode[];
     menu?: (host: PluginHost, nodeId: string) => MenuEntry[];
     createInit?: (host: PluginHost, parentId: string) => Partial<Node>;
+    /** 「새로 만들기」 변형 줄들(NodeTypeDef.createVariants) — 예: 달력 저장소가 프리셋마다 「새 방 예약」. */
+    createVariants?: (parentId: string) => CreateVariant[];
     /**
      * 🔑 상황에 따라 답하는 판정·가림 함수들 — 매니페스트엔 함수를 못 넣으니 여기 모아 두고 impl 이름으로 가리킨다.
      *   can — 노드별 rename/move/delete 가능 여부(고정 객체는 매니페스트 can 에 둬도 된다 · 함수면 여기).

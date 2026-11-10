@@ -135,7 +135,7 @@ describe('제목 칸 보호', () => {
         click(q('[data-rv-head-menu="f_t"]'));
         expect(mi('속성 삭제')).toBeUndefined();
         const types = qa('[data-rv-type]');
-        expect(types.length).toBe(14);
+        expect(types.length).toBe(15);
         expect(types.every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
     });
     it('다른 칸은 삭제할 수 있다', () => {
@@ -165,11 +165,11 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
 });
 
 describe('칸 추가 — 타입 고르기', () => {
-    it('[data-rv-add-field] → 타입 팝오버(내장 14종) → 칸 +1 · key 가 f_ · 이름 「새 칸」', () => {
+    it('[data-rv-add-field] → 타입 팝오버(내장 15종) → 칸 +1 · key 가 f_ · 이름 「새 칸」', () => {
         const spy = spies();
         mount(<Harness init={[]} spy={spy} />);
         click(q('[data-rv-add-field]'));
-        expect(qa('[role="menuitem"]')).toHaveLength(14);
+        expect(qa('[role="menuitem"]')).toHaveLength(15);
         click(mi('숫자') ?? null);
         const next = spy.fields.mock.calls[0][0] as RecordField[];
         expect(next).toHaveLength(4);

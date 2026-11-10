@@ -20,7 +20,7 @@ vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWr
 import { initStore } from '../../pane-ui-system/core/node-store/store';
 import { __resetPersistForTest } from '../../pane-ui-system/core/node-store/persist';
 import { makeNodesApi } from '../../pane-ui-system/core/node-frame/api';
-import { registerType, clearTypes } from '../../pane-ui-system/core/nodes/model/types';
+import { registerType, clearTypes, createIconOf, getType } from '../../pane-ui-system/core/nodes/model/types';
 import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, storeMenu, clearPendingCard, STORE_TYPE } from '../calendar/nodes';
 import { baseFieldsOf, createPresetStore, __resetPresets } from '../calendar/presets';
@@ -30,6 +30,7 @@ function host(): PluginHost {
     return {
         storage: { get: <T,>(_k: string, f: T) => f, set: () => {}, remove: () => {} },
         store: { get: async <T,>(_k: string, f: T) => f, set: async () => true, del: async () => {}, available: async () => true, estimate: async () => null },
+        workspace: { open: () => {} },
     } as unknown as PluginHost;
 }
 let disp: Disposable | null = null;
@@ -48,7 +49,7 @@ beforeEach(async () => {
 afterEach(() => { disp?.dispose(); disp = null; clearPendingCard(); __resetPersistForTest(); __resetPresets(); });
 
 import { presetOf, DEFAULT_PRESET } from '../calendar/presets';
-import { ROOM_BOOKING_PRESET } from './index';
+import { ROOM_BOOKING_PRESET, roomBookingPlugin } from './index';
 import { relationCandidates, type RelationTarget } from '../collection/fields/relation';
 
 const mkStore = () => getNodesApi()!.create(getNodesApi()!.roots.main, { type: STORE_TYPE, name: 's', data: {} });
@@ -108,6 +109,48 @@ describe('방 예약 프리셋', () => {
         const top = api.create(cfg.target.nodeId, { type: 'rooms.room', name: 'qa-본관' });
         api.create(cfg.target.nodeId, { type: 'rooms.room', name: 'qa-음악실', data: { parentId: top } });
         expect(relationCandidates(api, cfg.target).map((c) => [c.name, c.path])).toEqual([['qa-본관', []], ['qa-음악실', ['qa-본관']]]);
+    });
+
+    it('팔레트 「새 방 예약」 — 달력 약속 newPresetStore 로 맨 위에 예약 목록을 만든다', async () => {
+        calendarModule.registerPreset(ROOM_BOOKING_PRESET);
+        const cmd = roomBookingPlugin.manifest.contributes?.commands?.find((c) => c.id === 'room-booking.new');
+        expect(cmd).toMatchObject({ title: '새 방 예약', icon: 'door' });
+        roomBookingPlugin.commands!['room-booking.new']({ modules: { use: () => calendarModule } } as unknown as PluginHost);
+        await Promise.resolve();
+        const api = getNodesApi()!;
+        const [store] = api.liveByType(STORE_TYPE);
+        expect(store).toMatchObject({ name: '예약 목록' });
+        expect(api.parent(store.id)).toBe(api.roots.main);
+        expect((store.data as { preset: string }).preset).toBe('room-booking.default');
+    });
+
+    it('리본 「방 예약」 — 없으면 만들고, 있으면 그 예약 목록을 연다(누를 때마다 새로 만들지 않는다)', async () => {
+        calendarModule.registerPreset(ROOM_BOOKING_PRESET);
+        const api = getNodesApi()!;
+        const h = { modules: { use: (n: string) => (n === 'nodes' ? api : calendarModule) } } as unknown as PluginHost;
+        expect(roomBookingPlugin.manifest.contributes?.ribbon).toEqual([{ commandId: 'room-booking.open', icon: 'door', order: 5 }]);
+        roomBookingPlugin.commands!['room-booking.open'](h);
+        roomBookingPlugin.commands!['room-booking.open'](h);
+        await Promise.resolve();
+        expect(api.liveByType(STORE_TYPE)).toHaveLength(1);
+    });
+
+    it('탐색기 「새로 만들기」 변형 — 프리셋마다 한 줄, 고른 자리 밑에 만든다 · 저장소 아이콘은 프리셋을 따른다', async () => {
+        const d = calendarModule.registerPreset(ROOM_BOOKING_PRESET);
+        const api = getNodesApi()!;
+        const folder = api.create(api.roots.main, { type: 'folder', name: '본관' });
+        const vs = calendarNodeTypeImpl.store.createVariants(folder);
+        expect(vs.map((v) => [v.label, v.icon])).toEqual([['방 예약', 'door']]);
+        vs[0].run();
+        await Promise.resolve();
+        const [store] = api.liveByType(STORE_TYPE);
+        expect(api.parent(store.id)).toBe(folder);
+        expect(calendarNodeTypeImpl.store.icon(store)).toBe('door');
+        d.dispose();
+        expect(calendarNodeTypeImpl.store.icon(store)).toBe('calendar');
+        expect(calendarNodeTypeImpl.store.createVariants(folder)).toEqual([]);
+        // 함수 아이콘이어도 「새 달력 저장소」 줄은 선언한 달력 아이콘('+' 로 떨어지지 않는다)
+        expect(createIconOf(getType(STORE_TYPE)!)).toBe('calendar');
     });
 
     it('꾸러미를 끄면(해제) 기본 달력으로 보이고 칸이 사라진다 — 데이터는 그대로', async () => {

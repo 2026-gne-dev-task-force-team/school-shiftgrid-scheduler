@@ -1,6 +1,6 @@
 /**
  * 선언형 전환 증명(D2) — 탐색기를 선언형(definePlugin + contributes)으로 켜도 **옛 집합과 같다**.
- *   ① 실 플러그인을 activateAll 로 켜면 뷰1·명령17(16 선언 + new-folder 자동)·리본1·상태바1 이 옛 그대로 선다
+ *   ① 실 플러그인을 activateAll 로 켜면 뷰1·명령18(16 선언 + new-folder·new-section 자동)·리본1·상태바1 이 옛 그대로 선다
  *   ② 노드 타입 folder 가 contributes.nodeTypes 로 꽂힌다(onActivate 는 이제 registerType 을 안 부른다 → 켜졌으면 레지스트라 경로다)
  *      + 그 덕에 registerTypeCommands 가 new-folder 를 자동으로 켠다(순서 보존)
  *
@@ -28,7 +28,7 @@ import { explorerPlugin } from './index';   // 🔴 꾸러미 전환 — 탐색�
 
 const OWNER = 'explorer';
 
-/** 옛(호출형) 집합과 같아야 하는 명령 17 — 16 선언 + folder 타입이 자동으로 켜는 new-folder.
+/** 옛(호출형) 집합과 같아야 하는 명령 18 — 16 선언 + folder·section 타입이 자동으로 켜는 new-folder·new-section.
  *   (16 = 옛 14 + confirmDelete 인라인 확인 둘: confirm-remove·cancel-remove.) */
 const EXPECTED_COMMANDS = [
     'explorer.open-panel', 'explorer.rename', 'explorer.remove',
@@ -36,7 +36,7 @@ const EXPECTED_COMMANDS = [
     'explorer.open', 'explorer.move-up', 'explorer.move-down',
     'explorer.restore', 'explorer.ask-purge', 'explorer.ask-purge-all',
     'explorer.purge', 'explorer.purge-all', 'explorer.cancel-purge',
-    'explorer.undo', 'explorer.redo', 'explorer.new-folder',
+    'explorer.undo', 'explorer.redo', 'explorer.new-folder', 'explorer.new-section',
 ].sort();
 
 beforeEach(() => {
@@ -46,11 +46,11 @@ beforeEach(() => {
 afterEach(() => { disposeOwner(OWNER); clearTypes(); __resetPersistForTest(); });
 
 describe('① 선언형으로 켜도 뷰·명령·리본·상태바가 옛 집합과 같다', () => {
-    it('명령 17(16 선언 + new-folder) · 뷰 tree · 리본 open-panel · 상태바 count', () => {
+    it('명령 18(16 선언 + new-folder·new-section) · 뷰 tree · 리본 open-panel · 상태바 count', () => {
         activateAll([explorerPlugin]);
 
         const cmds = listCommands().filter((c) => c.owner === OWNER).map((c) => c.id).sort();
-        expect(cmds, '명령 집합이 옛 그대로(17)').toEqual(EXPECTED_COMMANDS);
+        expect(cmds, '명령 집합이 옛 그대로(18)').toEqual(EXPECTED_COMMANDS);
 
         expect(getView('explorer.tree'), '뷰가 접두사 붙어 등록').toBeTruthy();
         expect(listRibbonActions().some((a) => a.id === 'explorer.open-panel'), '리본이 open-panel 을 가리킴').toBe(true);

@@ -15,11 +15,11 @@ const stub = (type: string): FieldTypeDef => ({
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('내장 칸 타입', () => {
-    it('fieldTypes.list() — 내장 14종(P2 로 status·url·email·phone·created·updated·id · R 로 relation 추가)', () => {
-        expect(recordViewApi.fieldTypes.list()).toHaveLength(14);
+    it('fieldTypes.list() — 내장 15종(롤업 추가 · P2 로 status·url·email·phone·created·updated·id · R 로 relation 추가)', () => {
+        expect(recordViewApi.fieldTypes.list()).toHaveLength(15);
         expect(fieldTypes.list().map((d) => d.type)).toEqual([
             'text', 'number', 'select', 'multi', 'date', 'check',
-            'status', 'url', 'email', 'phone', 'created', 'updated', 'id', 'relation',
+            'status', 'url', 'email', 'phone', 'created', 'updated', 'id', 'relation', 'rollup',
         ]);
     });
     it('relation 은 R 판에서 올라 있다(칸 추가 팝오버 맨 끝)', () => {
@@ -45,7 +45,7 @@ describe('등록·해제', () => {
         expect(warn).toHaveBeenCalled();
         const d = reg.register(stub('x.person'));
         expect(reg.get('x.person')).toBeTruthy();
-        expect(reg.list()).toHaveLength(15);
+        expect(reg.list()).toHaveLength(16);
         d.dispose();
         expect(reg.get('x.person')).toBeUndefined();   // 해제하면 목록에서 사라진다
     });
@@ -54,7 +54,7 @@ describe('등록·해제', () => {
         const reg = createFieldTypeRegistry(BUILTIN_FIELD_TYPES);
         reg.register(stub('x.a'));
         reg.register(stub('x.a'));
-        expect(reg.list()).toHaveLength(15);
+        expect(reg.list()).toHaveLength(16);
         reg.register(stub('text'));
         expect(reg.get('text')).toBe(BUILTIN_FIELD_TYPES[0]);
     });

@@ -38,8 +38,9 @@ function DeletedEvents() {
     if (list.length === 0) return null;
     return (
         <>
-            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="삭제한 일정 되살리기">
-                <Icon name="trash" size={13} /> 삭제한 일정 {list.length}
+            <Button size="sm" data-cal-deleted onClick={(e) => setAnchor((e.currentTarget as HTMLElement).getBoundingClientRect())} title="삭제한 일정 되살리기" aria-label={`삭제한 일정 ${list.length}`}>
+                {/* 좁으면 휴지통 + 숫자만 */}
+                <Icon name="trash" size={13} /><span className="hidden sm:inline"> 삭제한 일정</span> {list.length}
             </Button>
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
@@ -105,9 +106,9 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
     // 전환 단추. (작은 달력 여는 단추는 23:27 쥔님 *"요 버튼은 이제 없어져도 될듯"* — 리본에 있고 기본 오른쪽이라 걷었다)
     //   범위 저장소가 있으면 왼쪽에 「📁 <이름> · 전체」 칩을 붙인다(쥔님 2026-11-02: 저장소를 열면 그 저장소 것만 · 「전체」로 되돌림).
     const Frame = getNodesApi()?.Frame;
-    const switcher = (
-        <div className="flex items-center gap-1 ml-1">
-            {selection && (
+    // 「고른 범위」 칩 — 툴바 밖, 본문 아래에 떠 있다(Q6: 툴바에 두면 390 은 넘치고 707 창틀은 제목이 24px 로 눌렸다 · 줄을 늘리면 드래그 중 격자가 밀린다).
+    const selChip = selection && (
+        <div className="absolute z-20 bottom-2 left-1/2 -translate-x-1/2 max-w-[calc(100%-1rem)] rounded bg-panel shadow-lg">
                 <span className="flex items-center gap-1 h-btn pl-2 pr-1 rounded border border-accent/60 bg-accent/[0.08] text-small" title="고른 범위">
                     <span className="truncate max-w-[18rem] text-text tabular-nums">{selectionLabel(selection)}</span>
                     <button
@@ -120,7 +121,10 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
                         ✕
                     </button>
                 </span>
-            )}
+        </div>
+    );
+    const switcher = (
+        <div className="flex items-center gap-1 ml-1">
             <DeletedEvents />
             <div role="tablist" aria-label="보기 전환" className="flex items-center rounded border border-line overflow-hidden">
                 {modes.map((m) => (
@@ -130,7 +134,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
                         role="tab"
                         aria-selected={mode === m.id}
                         onClick={() => setMode(m.id)}
-                        className={`px-2 h-btn text-small border-l border-line first:border-l-0 transition-colors
+                        className={`px-1.5 sm:px-2 h-btn text-small border-l border-line first:border-l-0 transition-colors
                             ${mode === m.id ? 'bg-text/[0.08] text-text font-medium' : 'text-muted hover:text-text hover:bg-text/[0.04]'}`}
                     >
                         {m.label}
@@ -156,7 +160,7 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
     // 🔴 전체 달력도 같은 머리(아이콘+제목 한 줄, data-nf-header)를 단다 — 노드가 없어 Frame 은 못 쓰니 같은 꼴을 AllCalendarHead 가 낸다(R6-4).
     //    좁은 화면은 아래 독 높이만큼(pb-16, 다른 노드 화면과 같은 값) 비운다(R6-S14).
     const padBottom = narrow ? 'pb-16' : '';
-    const body = <CalBarHost.Provider value={bar.host}><div className="h-full">{view}</div></CalBarHost.Provider>;
+    const body = <CalBarHost.Provider value={bar.host}><div className="relative h-full">{view}{selChip}</div></CalBarHost.Provider>;
     if (scopeStore && Frame) {
         return (
             <div className={`h-full ${padBottom}`}>

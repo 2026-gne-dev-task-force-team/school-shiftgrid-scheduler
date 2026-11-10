@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import type { PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { ROW_TYPE } from '../schema';
 import { BUILTIN_FIELD_TYPES } from './builtin';
-import { relationCandidates, relationConfig, relationFromText, relationIds, relationText, resolveRelation, toggleRelation, type RelationLook } from './relation';
+import { filterCandidates, relationCandidates, relationConfig, relationFromText, relationIds, relationText, resolveRelation, toggleRelation, type RelationLook } from './relation';
 
 // 나무: dbA ─ a1, a2(─ a2c 하위 항목) · dbB ─ b1 · trash ─ a3(원래 dbA)
 // + 방 꼴(defineCollection) 목록: rl ─ r1(본관), r2(3층 · parentId r1), r3(음악실 · parentId r2), rX(휴지통) · rl 안 납작
@@ -33,6 +33,7 @@ const look: RelationLook = {
     liveByType: (t) => Object.keys(nodes).filter((id) => nodes[id].type === t && !nodes[id].trashed).map(pub),
     children: (id) => Object.keys(nodes).filter((k) => parentOf(k) === id).map(pub),
     parent: parentOf,
+    find: (pred) => Object.keys(nodes).map(pub).filter(pred),
 };
 const toA = { target: { kind: 'db', nodeId: 'dbA' }, many: true };
 const field = { key: 'f_r', label: '관계', type: 'relation', config: toA };
@@ -88,5 +89,11 @@ describe('관계 칸', () => {
         ]);
         expect(resolveRelation(look, toRooms, ['r3', 'rX', 'a1'])).toEqual([{ id: 'r3', name: '음악실' }, { id: 'rX', name: null }, { id: 'a1', name: null }]);
         expect(relationCandidates(look, { kind: 'db', nodeId: 'dbA' }).some((c) => c.id.startsWith('r'))).toBe(false);
+    });
+    it('찾기는 이름 또는 경로 — 「3층」이면 3층과 그 안의 음악실 · 빈 낱말이면 전부', () => {
+        const all = relationCandidates(look, { kind: 'db', nodeId: 'rl' });
+        expect(filterCandidates(all, ' 3층 ').map((c) => c.id)).toEqual(['r2', 'r3']);
+        expect(filterCandidates(all, '음악').map((c) => c.id)).toEqual(['r3']);
+        expect(filterCandidates(all, '')).toBe(all);
     });
 });

@@ -42,7 +42,12 @@ describe('patternSummary', () => {
             rules: [{ freq: 'weekly', count: 10 }, { freq: 'monthly', monthDay: 1, until: '2026-12-31' }],
             except: [{ from: '2026-12-20', to: '2026-12-31' }], exdates: ['2026-11-09', '2026-11-16'], rdates: ['2026-11-05'],
         };
-        expect(patternSummary(p, '2026-11-02T09:00')).toBe('매주 월 + 매월 1일 9:00 · 10회 · 12월 31일까지 · 기간 빼기 1 · 빠짐 2 · 더함 1');
+        expect(patternSummary(p, '2026-11-02T09:00')).toBe('매주 월 + 매월 1일 9:00 · 10번 · 12월 31일까지 · 기간 빼기 1 · 빠진 날 2 · 더한 날 1');
+    });
+    it('낱말 = 편집기 프리셋 · 끝 날짜 해가 다르면 해까지', () => {
+        expect(patternSummary({ rules: [{ freq: 'weekly', weekdays: [5, 1, 2, 3, 4] }] }, '2026-11-02')).toBe('평일(월~금)');
+        expect(patternSummary({ rules: [{ freq: 'weekly', interval: 2, weekdays: [1, 2, 3, 4, 5] }] }, '2026-11-02')).toBe('2주마다 평일(월~금)');
+        expect(patternSummary({ rules: [{ freq: 'daily', until: '2027-02-10' }] }, '2026-11-02')).toBe('매일 · 2027년 2월 10일까지');
     });
 });
 
