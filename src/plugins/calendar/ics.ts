@@ -7,16 +7,17 @@
  *   · DTSTART/DTEND — `VALUE=DATE`(종일) · 떠 있는 지역시각 · UTC(`Z`) · `TZID=Asia/Seoul`(+09:00) · 나머지 TZID 는 로컬 근사
  *   · DTEND 없으면: 종일은 1일, 시각 일정은 길이 0
  *   · 줄 접힘(이어쓰기) · 이스케이프(\\ \; \, \n) · CRLF/LF 둘 다
- *   · RRULE 은 `FREQ=YEARLY`(INTERVAL·COUNT·UNTIL)만 펼친다 — 나머지 FREQ 는 첫 회만(⛔ 못 펼침, 보고 대상).
- * ⛔ 못 하는 것: DURATION · VTIMEZONE 실제 규칙 해석(Asia/Seoul 만 하드코딩) · RRULE 의 BY* · EXDATE · RDATE · VTODO/VALARM.
+ *   · RRULE 은 DAILY·WEEKLY(BYDAY)·MONTHLY(BYMONTHDAY · BYDAY+순번)·YEARLY × INTERVAL·COUNT·UNTIL 을 recur/expand 로 펼친다. 모르는 FREQ 는 첫 회만.
+ * ⛔ 못 하는 것: DURATION · VTIMEZONE 실제 규칙 해석(Asia/Seoul 만 하드코딩) · 그 밖의 BY* · EXDATE · RDATE · VTODO/VALARM.
  */
 import { isoMinuteOf, parseLocal } from './events';
 import type { CalendarItem } from './contracts/calendar';
+import { expand, type RecurFreq, type RecurRule } from './recur';
 
 // ── 공통 보조 ──
 const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 const KST_MS = 9 * 3_600_000;
-/** 펼침 상한 없는 YEARLY 의 안전 상한(COUNT·UNTIL 없을 때). */
+/** 끝 없는 YEARLY 의 안전 지평(년) — 나머지 FREQ 는 2년. */
 export const MAX_YEARLY = 25;
 
 /** 'YYYY-MM-DD'(종일) 또는 'YYYY-MM-DDTHH:mm'(시각)에서 날짜 부분만 'YYYYMMDD'. */
@@ -122,16 +123,26 @@ interface RawEvent {
     rrule?: Record<string, string>;
 }
 
-/** UNTIL(날짜/일시) → 비교용 ms(그 날을 포함하도록 하루 끝까지). */
-function untilMs(until: string): number {
-    const m8 = /^(\d{4})(\d{2})(\d{2})/.exec(until);
-    if (!m8) return NaN;
-    const d = new Date(+m8[1], +m8[2] - 1, +m8[3]);
-    d.setHours(23, 59, 59, 999);
-    return d.getTime();
+const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+/** RRULE 속성들 → 규칙 꼴. FREQ 가 모르는 값이면 null(첫 회만). BYDAY: 매주는 요일들, 매월은 `2TU`·`-1FR` 하나만. */
+function ruleOf(rr: Record<string, string>): RecurRule | null {
+    const freq = ({ DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' } as const)[(rr.FREQ ?? '').toUpperCase() as 'DAILY'];
+    if (!freq) return null;
+    const rule: { -readonly [K in keyof RecurRule]: RecurRule[K] } = { freq: freq as RecurFreq };
+    if (rr.INTERVAL) rule.interval = Math.max(1, +rr.INTERVAL || 1);
+    if (rr.COUNT) rule.count = +rr.COUNT;
+    const u = /^(\d{4})(\d{2})(\d{2})/.exec(rr.UNTIL ?? '');
+    if (u) rule.until = `${u[1]}-${u[2]}-${u[3]}`;
+    const days = (rr.BYDAY ?? '').split(',').map((t) => /^([+-]?\d)?(SU|MO|TU|WE|TH|FR|SA)$/i.exec(t.trim())).filter((m) => m !== null);
+    if (rule.freq === 'weekly' && days.length) rule.weekdays = days.map((m) => DAY_CODES.indexOf(m[2].toUpperCase()));
+    if (rule.freq === 'monthly') {
+        if (rr.BYMONTHDAY) rule.monthDay = +rr.BYMONTHDAY.split(',')[0];
+        else if (days[0]?.[1]) rule.nth = { n: +days[0][1], weekday: DAY_CODES.indexOf(days[0][2].toUpperCase()) };
+    }
+    return rule;
 }
 
-/** RawEvent → CalendarItem 들(RRULE=YEARLY 는 펼친다). */
+/** RawEvent → CalendarItem 들(RRULE 은 expand 로 펼친다). */
 function emit(raw: RawEvent, uid: string): CalendarItem[] {
     if (!raw.dtstart) return [];
     const allDay = raw.dtstart.allDay;
@@ -142,29 +153,26 @@ function emit(raw: RawEvent, uid: string): CalendarItem[] {
     const memo = raw.description ? unescapeText(raw.description) : undefined;
     const base: CalendarItem = { id: uid, title, start, end, allDay, ...(memo ? { memo } : {}) };
 
-    const rr = raw.rrule;
-    if (!rr || (rr.FREQ ?? '').toUpperCase() !== 'YEARLY') return [base];   // YEARLY 아닌 RRULE 은 첫 회만
+    const rule = raw.rrule ? ruleOf(raw.rrule) : null;
+    if (!rule) return [base];   // RRULE 없음 · 모르는 FREQ 는 첫 회만
 
-    // ── FREQ=YEARLY 펼치기 ──
-    const interval = rr.INTERVAL ? Math.max(1, +rr.INTERVAL) : 1;
-    const count = rr.COUNT ? +rr.COUNT : undefined;
-    const until = rr.UNTIL ? untilMs(rr.UNTIL) : undefined;
     const startDate = parseLocal(start);
     const durMs = parseLocal(end).getTime() - startDate.getTime();
-    const out: CalendarItem[] = [];
-    for (let n = 0; ; n++) {
-        if (count !== undefined ? n >= count : n >= MAX_YEARLY) break;
-        const occStart = new Date(startDate);
-        occStart.setFullYear(startDate.getFullYear() + n * interval);
-        if (until !== undefined && occStart.getTime() > until) break;
+    // 끝(COUNT·UNTIL)이 없으면 안전 지평까지만 — 매년 25년(MAX_YEARLY) · 나머지 2년
+    const horizon = new Date(startDate);
+    if (rule.count === undefined && !rule.until) horizon.setFullYear(horizon.getFullYear() + (rule.freq === 'yearly' ? MAX_YEARLY : 2));
+    else horizon.setFullYear(9999);
+    const starts = expand(rule, start, start, isoMinuteOf(horizon));
+    const out = starts.map((s, n): CalendarItem => {
+        const occStart = parseLocal(s);
         const occEnd = new Date(occStart.getTime() + durMs);
-        out.push({
+        return {
             ...base,
             id: n === 0 ? uid : `${uid}#${n}`,
             start: allDay ? fmtDate(occStart) : isoMinuteOf(occStart),
             end: allDay ? fmtDate(occEnd) : isoMinuteOf(occEnd),
-        });
-    }
+        };
+    });
     return out.length ? out : [base];
 }
 
