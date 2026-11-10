@@ -16,6 +16,7 @@ import {
     forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
 } from 'react';
 import { useSheetCore } from './core/useSheetCore';
+import { verticalViewport } from './core/platform';
 import type { CellChange, CommitSource, SheetCoreAdapter, SheetCoreHandle } from './core/types';
 import type {
     CellChange as TxCellChange, CellTone, HeaderMenuEntry, TableCapability, TableColumn, TableProps, TableRow, TableState, TableTx,
@@ -232,11 +233,14 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         if (!td) return;
         const cr = box.getBoundingClientRect(), tr = td.getBoundingClientRect();
         const headH = hasSticky ? (box.querySelector('thead')?.getBoundingClientRect().height ?? 0) : 0;
-        const topEdge = cr.top + headH, leftEdge = cr.left;
+        const leftEdge = cr.left;
         if (tr.left < leftEdge) box.scrollLeft -= leftEdge - tr.left;
         else if (tr.right > cr.left + box.clientWidth) box.scrollLeft += tr.right - (cr.left + box.clientWidth);
-        if (tr.top < topEdge) box.scrollTop -= topEdge - tr.top;
-        else if (tr.bottom > cr.top + box.clientHeight) box.scrollTop += tr.bottom - (cr.top + box.clientHeight);
+        // 세로는 표 상자가 아니라 실제로 굴러가는 조상(바깥 틀)을 굴린다 — verticalViewport.
+        const vp = verticalViewport(box);
+        const vTop = Math.max(vp.top, cr.top) + headH;
+        const dy = tr.top < vTop ? tr.top - vTop : tr.bottom > vp.bottom ? tr.bottom - vp.bottom : 0;
+        if (dy) { if (vp.scroller) vp.scroller.scrollTop += dy; else window.scrollBy(0, dy); }
     }, [core.active.r, core.active.c, core.edit, core.containerRef, hasSticky]);
 
     const lb = {

@@ -4,8 +4,8 @@
  *   🔴 데이터는 받은 data 를 읽고 edit(순수 함수)로만 바꾼다 — 저장·되돌리기는 위(GridTab → nodes.ts)가 쥔다.
  *   조작: 칸 글자는 칸에서 바로 · 행 시각은 띠 위·아래 가장자리를 끌어서(5분 단위) · 열 너비는 열 머리 오른쪽 가장자리를 끌어서
  *         · 병합·행/열 넣고 빼기는 우클릭(길게 누르기) 메뉴. ⛔ 위쪽 도구 막대는 없다(T3).
- *   칸은 스프레드시트처럼 두 상태다(W-T): 선택(격자에 초점 — 화살표·Tab·Enter 이동 · ⇧/끌기/⇧클릭 범위 · Delete 지우기 · ⌘C/X/V TSV)
- *         ↔ 편집(타자 시작·F2·더블클릭 — Enter 확정+아래 · Tab 확정+옆 · Esc 취소 · ⌥Enter 줄바꿈). 이동은 gridNav.ts(병합을 한 칸으로).
+ *   칸은 스프레드시트처럼 두 상태다(W-T): 선택(격자에 초점 — 화살표·Tab·⇧Enter 이동 · ⇧/끌기/⇧클릭 범위 · Delete 지우기 · ⌘C/X/V TSV)
+ *         ↔ 편집(타자 시작·F2·Enter·더블클릭 — Enter 확정+아래 · Tab 확정+옆 · Esc 취소 · ⌥Enter 줄바꿈). 이동은 gridNav.ts(병합을 한 칸으로).
  *   shortcut: 시트 엔진(useSheetCore)은 안 쓴다 — 병합·시각 띠 배치를 모르는 엔진이라. 채우기 손잡이는 없다.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -126,7 +126,13 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
         }
         if (meta || e.altKey) return;   // ⌘Z 등은 위(GridTab)로 흘린다 · ⌘C/X/V 는 문서 clipboard 이벤트로
         if (k === 'Tab') { e.preventDefault(); selectAt(step(data, cur, e.shiftKey ? -1 : 1, 0)); return; }
-        if (k === 'Enter') { e.preventDefault(); selectAt(step(data, cur, 0, e.shiftKey ? -1 : 1)); return; }
+        // 🙋17 시트와 같게(구글 시트 관례) — 선택 상태 Enter = 편집 시작 · ⇧Enter = 위로. 편집 중 Enter(확정+아래)는 편집창이 받는다.
+        if (k === 'Enter') {
+            if (isImeEnter(e)) return;
+            e.preventDefault();
+            if (e.shiftKey) selectAt(step(data, cur, 0, -1)); else beginEdit(cur);
+            return;
+        }
         if (k === 'F2') { e.preventDefault(); beginEdit(cur); return; }
         if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); if (sel) edit((d) => clearRange(d, sel)); return; }
         if (k === 'Escape') { if (sel) setSel({ ...sel, col1: sel.col0, row1: sel.row0 }); return; }

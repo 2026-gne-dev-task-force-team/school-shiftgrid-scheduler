@@ -146,6 +146,8 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 /** 로드 결과를 dirty 기계의 기준점으로 삼는다 — 막 읽은 상태라 깨끗하다(이사 실패면 저장 안 됐으니 다음에 전부 쓴다). */
 function markLoaded(tree: Tree, saved = true): Tree {
+    base.clear();
+    if (saved) for (const [id, n] of Object.entries(tree.nodes)) base.set(id, n);
     dirty.clear();
     purged.clear();
     touched.clear();
@@ -214,7 +216,11 @@ async function flushOnce(): Promise<void> {
     if (fullRewrite) {
         const purge = [...purged].filter((id) => !tree.nodes[id]);
         const ok = await migrateToNodes(tree, purge);
-        if (ok) { fullRewrite = false; dirty.clear(); purged.clear(); touched.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; resetRetry(); afterWrite(); }
+        if (ok) {
+            base.clear();
+            for (const [id, n] of Object.entries(tree.nodes)) base.set(id, n);
+            fullRewrite = false; dirty.clear(); purged.clear(); touched.clear(); lastRev = tree.rev; pendingHost = null; pendingTree = null; resetRetry(); afterWrite();
+        }
         else scheduleRetry();
         return;   // 실패면 fullRewrite·pending 유지 → 다음에 다시
     }
@@ -222,12 +228,31 @@ async function flushOnce(): Promise<void> {
     const put: object[] = [];
     const del: string[] = [];
     const purge: string[] = [];
+    const mine: Node[] = [];
     for (const id of dirty) {
         const n = tree.nodes[id];
-        if (n) put.push(n);                         // 있으면 put
+        if (n) mine.push(n);                        // 있으면 put(아래에서 저장소의 새 값과 합친다)
         else if (purged.has(id)) purge.push(id);    // 🔴 영구삭제 — 묘비까지
         else del.push(id);                          // 없어졌으면 del(되돌린 만들기 등 — 다시 하기로 살아날 수 있다)
     }
+    // 🔴 W-X 낡은 사본 덮기 막기 — 저장소의 그 노드가 내가 마지막으로 본 값(base)과 다르면 다른 탭이 그 사이 썼다.
+    //    노드를 통째로 put 하면 그 탭의 칸이 사라진다(시트·시간표 data 는 문서 통째) → 세 갈래로 합쳐 쓴다(merge3).
+    //    합친 값이 내 값과 다르면 쓴 뒤 저장소를 다시 읽어 이 탭 화면에도 들인다(deferred).
+    const merged = new Set<string>();
+    const urgent = urgentFlush; urgentFlush = false;
+    if (mine.length > 0 && mergeGuard && !urgent) {
+        const stored = await storedById(mine.map((n) => n.id));
+        for (let i = 0; i < mine.length; i++) {
+            const n = mine[i];
+            const b = base.get(n.id);
+            const theirs = stored?.get(n.id);
+            if (!b || !theirs || deepEqual(theirs, b)) { put.push(n); continue; }
+            const m = merge3(b, n, theirs) as Node;
+            put.push(m);
+            if (!deepEqual(m, n)) merged.add(n.id);
+        }
+    }
+    else put.push(...mine);
     if (tree.rev !== lastRev) put.push(metaOf(tree));   // 머리는 rev 가 바뀌었을 때만
     if (put.length === 0 && del.length === 0 && purge.length === 0) { pendingHost = null; pendingTree = null; resetRetry(); afterWrite(); return; }
 
@@ -235,6 +260,10 @@ async function flushOnce(): Promise<void> {
     const wrote = new Map([...dirty].map((id) => [id, touched.get(id)]));
     const ok = await nodesWrite({ put, del, purge, onRejected: rejectedByStore });
     if (ok) {
+        // ⭐ base = 내 메모리 값(합친 값이 아니라) — 이 탭 나무는 아직 그걸 뿌리로 두고 있다. 합친 값은 다시 읽을 때 base 가 된다.
+        for (const n of mine) base.set(n.id, n);
+        for (const id of [...del, ...purge]) base.delete(id);
+        for (const id of merged) deferred.add(id);
         for (const [id, seq] of wrote) {
             if (touched.get(id) !== seq) continue;   // 쓰는 사이 또 바뀌었다 — 남겨 둔다
             dirty.delete(id); purged.delete(id); touched.delete(id);
@@ -245,6 +274,97 @@ async function flushOnce(): Promise<void> {
         afterWrite();
     }
     else scheduleRetry();   // 실패면 dirty·pending 유지 — 백오프로 자동 재시도(실패 보고는 nodesWrite 가 했다).
+}
+
+// ── W-X 세 갈래 합치기 ──
+/** 🔴 이 탭이 마지막으로 저장소와 맞춰 본 노드 값 — 로드·내 쓰기·다시 읽기 때 갱신. 다른 탭이 그 사이 썼는지 가르는 기준. */
+const base = new Map<string, Node>();
+/** 🔴 버그 심기 스위치 — false 로 두면 낡은 사본이 통째로 덮는다(cross-tab-sheet.test 가 빨개져야 한다). */
+let mergeGuard = true;
+/** 탭이 닫히는/가려지는 중의 flush — 합치기 읽기를 건너뛴다(bindFlush). */
+let urgentFlush = false;
+
+/** 저장소의 지금 값 — 그 id 들만 Node 로(묘비·없음은 빠진다). 열기 실패면 null(합치지 않고 그대로 쓴다). */
+async function storedById(ids: string[]): Promise<Map<string, Node> | null> {
+    const all = await nodesGetAll();
+    if (all == null) return null;
+    const want = new Set(ids);
+    const out = new Map<string, Node>();
+    for (const r of all) {
+        const id = (r as { id?: unknown } | null)?.id;
+        if (typeof id !== 'string' || !want.has(id)) continue;
+        const n = coerceNode(r);
+        if (n) out.set(id, n);
+    }
+    return out;
+}
+
+const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** 값 같음(키 순서 무시 · undefined 칸 = 없는 칸). */
+export function deepEqual(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    if (Array.isArray(a) || Array.isArray(b)) {
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+        return true;
+    }
+    if (!isPlain(a) || !isPlain(b)) return false;
+    const ka = Object.keys(a).filter((k) => a[k] !== undefined);
+    const kb = Object.keys(b).filter((k) => b[k] !== undefined);
+    if (ka.length !== kb.length) return false;
+    for (const k of ka) if (!deepEqual(a[k], b[k])) return false;
+    return true;
+}
+
+/** 배열 원소의 이름표 — `id`·`key` 문자열(시트 행·열). 없으면 null(그 배열은 통째 값으로 본다). */
+function idOf(v: unknown): string | null {
+    if (!isPlain(v)) return null;
+    if (typeof v.id === 'string') return 'i:' + v.id;
+    if (typeof v.key === 'string') return 'k:' + v.key;
+    return null;
+}
+
+function mergeArrays(b: unknown[], m: unknown[], t: unknown[]): unknown[] {
+    const ids = (xs: unknown[]) => xs.map(idOf);
+    const ib = ids(b), im = ids(m), it = ids(t);
+    if ([...ib, ...im, ...it].some((x) => x === null)) return m;   // 이름표 없는 배열 — 둘 다 고쳤으면 내 것
+    const byB = new Map(b.map((x, i) => [ib[i]!, x]));
+    const byM = new Map(m.map((x, i) => [im[i]!, x]));
+    const byT = new Map(t.map((x, i) => [it[i]!, x]));
+    const same = (x: (string | null)[], y: (string | null)[]) => x.length === y.length && x.every((v, i) => v === y[i]);
+    let order: string[];
+    if (same(im, ib)) order = it as string[];                       // 내가 행·열 구성을 안 바꿨다 — 그쪽 구성
+    else if (same(it, ib)) order = im as string[];                  // 그쪽이 안 바꿨다 — 내 구성
+    else {                                                          // 둘 다 바꿨다 — 내 순서 · 그쪽이 지운 것 빼고 · 그쪽이 더한 것 끝에
+        order = (im as string[]).filter((id) => !(byB.has(id) && !byT.has(id)));
+        for (const id of it as string[]) if (!byB.has(id) && !byM.has(id)) order.push(id);
+    }
+    return order.map((id) => {
+        const x = byM.get(id), y = byT.get(id);
+        return x !== undefined && y !== undefined ? merge3(byB.get(id), x, y) : (x ?? y);
+    });
+}
+
+/**
+ * 세 갈래 합치기 — base(공통 뿌리) · mine(이 탭) · theirs(저장소 = 다른 탭이 쓴 값).
+ *   한쪽만 바꾼 칸은 바꾼 쪽 · 둘 다 바꿨으면 객체는 칸마다 내려가고, 끝까지 부딪히면 내 것(마지막 쓰기가 이긴다).
+ *   `id`·`key` 를 단 원소의 배열(시트 rows·cols)은 원소마다 합친다 — 다른 행의 칸을 고친 두 탭이 서로를 안 지운다.
+ */
+export function merge3(b: unknown, m: unknown, t: unknown): unknown {
+    if (deepEqual(m, b)) return t;
+    if (deepEqual(t, b) || deepEqual(m, t)) return m;
+    if (Array.isArray(b) && Array.isArray(m) && Array.isArray(t)) return mergeArrays(b, m, t);
+    if (isPlain(m) && isPlain(t)) {
+        const bo = isPlain(b) ? b : {};
+        const out: Record<string, unknown> = {};
+        for (const k of new Set([...Object.keys(m), ...Object.keys(t), ...Object.keys(bo)])) {
+            const v = merge3(bo[k], m[k], t[k]);
+            if (v !== undefined) out[k] = v;
+        }
+        return out;
+    }
+    return m;
 }
 
 // ── 탭 간 동기화(R3-X) ──
@@ -293,13 +413,16 @@ async function pullRemote(ids: string[] | 'all'): Promise<void> {
     const full = ids === 'all';
     const want = full ? [...byId.keys()] : ids;
     if (full && fullRewrite) { deferredAll = true; return; }
+    if (full) for (const id of [...base.keys()]) if (!byId.has(id) && !dirty.has(id)) base.delete(id);
     const nodes = new Map<string, Node | null>();
     for (const id of want) {
         if (id === META_ID) continue;
         if (dirty.has(id)) { deferred.add(id); continue; }
         const rec = byId.get(id);
         if (rec && (rec as { tomb?: unknown }).tomb === true) continue;
-        nodes.set(id, rec === undefined ? null : coerceNode(rec));
+        const n = rec === undefined ? null : coerceNode(rec);
+        nodes.set(id, n);
+        if (n) base.set(id, n); else base.delete(id);   // 이 탭이 이제 저장소 값을 뿌리로 쥔다
     }
     if (nodes.size === 0 && !full) return;
     remoteFn({ nodes, full });
@@ -312,7 +435,8 @@ function bindFlush(): void {
     if (flushBound) return;
     if (typeof window === 'undefined') return;
     flushBound = true;
-    const flush = () => { void flushTree(); };
+    // ⚠️ 닫히는 중엔 저장소 읽기(합치기)를 건너뛰고 바로 쓴다 — 쓰기 시작이 한 박자라도 늦으면 탭이 죽으며 잃는다.
+    const flush = () => { urgentFlush = true; void flushTree(); };
     window.addEventListener('beforeunload', flush);
     window.addEventListener('pagehide', flush);
     if (typeof document !== 'undefined') {
@@ -331,6 +455,8 @@ export function __resetPersistForTest(): void {
     touched.clear();
     deferred.clear();
     deferredAll = false;
+    base.clear();
+    mergeGuard = true;
     fullRewrite = false;
     lastRev = 0;
     remoteFn = null;

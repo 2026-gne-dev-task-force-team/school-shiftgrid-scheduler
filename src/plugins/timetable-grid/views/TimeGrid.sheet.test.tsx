@@ -51,7 +51,7 @@ function clip(type: 'copy' | 'cut' | 'paste', text = '') {
 const txt = (c: number, r: number) => data.cells[`c${c}r${r}`]?.text ?? '';
 
 describe('W-T 시간표 격자 = 스프레드시트', () => {
-    it('칸 클릭 = 선택(편집창 없음 · 초점은 격자) → 화살표·Tab·Enter 로 칸 이동', () => {
+    it('칸 클릭 = 선택(편집창 없음 · 초점은 격자) → 화살표·Tab 로 칸 이동 · Enter = 편집 시작', () => {
         mount();
         mouse(cellEl(1, 1), 'mousedown');
         expect(textarea()).toBeNull();
@@ -61,7 +61,12 @@ describe('W-T 시간표 격자 = 스프레드시트', () => {
         key(grid(), 'ArrowDown'); expect(at()).toEqual([2, 2]);
         key(grid(), 'Tab'); expect(at()).toEqual([3, 2]);
         key(grid(), 'Tab', { shiftKey: true }); expect(at()).toEqual([2, 2]);
-        key(grid(), 'Enter'); expect(at()).toEqual([2, 3]);
+        key(grid(), 'ArrowDown'); expect(at()).toEqual([2, 3]);
+        key(grid(), 'Enter');                                   // 🙋17 선택 상태 Enter = 편집 시작(시트와 같게)
+        expect(textarea()).not.toBeNull();
+        expect(at()).toEqual([2, 3]);
+        key(textarea()!, 'Escape');
+        expect(textarea()).toBeNull();
         key(grid(), 'ArrowUp'); key(grid(), 'ArrowLeft'); key(grid(), 'ArrowLeft'); key(grid(), 'ArrowLeft');
         expect(at()).toEqual([0, 2]);   // 표 밖으론 안 나간다
     });
