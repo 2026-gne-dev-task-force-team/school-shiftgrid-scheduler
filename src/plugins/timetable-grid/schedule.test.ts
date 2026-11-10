@@ -1,5 +1,5 @@
 /**
- * 시간표 그리드 — 일정 목록 검사(명세 3단계). 「어느 날짜·시각에 무엇이 적용되나」가 핵심.
+ * 시간표 — 일정 목록 검사(명세 3단계). 「어느 날짜·시각에 무엇이 적용되나」가 핵심.
  */
 import { describe, it, expect } from 'vitest';
 import { dayNumber, gridDayOf, eachDate, inRange, activeColumn, scheduleOn, scheduleRange } from './schedule';

@@ -25,7 +25,7 @@ export interface Node {
     data?: unknown;             // 🔴 그 타입의 플러그인만 읽고 쓰는 불투명 칸
     /** 🔑 이모지 아이콘 — 모든 노드 공통 칸(P2). 탐색기·탭 머리가 이것 하나만 읽는다. 없으면 타입 기본 아이콘. */
     icon?: string;
-    /** 🔑 본문 — 모든 노드 공통 칸(P2). 속은 page-doc 주인(페이지 편집기)만 안다 — 노드 바닥은 저장만. */
+    /** 🔑 본문 — 모든 노드 공통 칸(P2). 속은 page-doc 주인(노트)만 안다 — 노드 바닥은 저장만. */
     body?: unknown;
     /** 휴지통에 있는 동안만: 지우기 전 원래 부모 id(복원 자리). */
     trashedFrom?: string;
@@ -58,7 +58,7 @@ export interface CanFlags { rename?: boolean; move?: boolean; delete?: boolean }
 
 /**
  * 🔑 본문 종류 등록 표 — 모든 노드는 페이지고, 다른 건 본문 종류뿐(노션식 정비 P1.5).
- *   doc 블록(페이지 편집기) · sheet 격자(시트) · collection 자식 페이지를 표·목록·달력·보드로(컬렉션).
+ *   doc 블록(노트) · sheet 격자(시트) · collection 자식 페이지를 표·목록·달력·보드로(컬렉션).
  *   새 본문(예: canvas)은 여기 한 줄 + 그 꾸러미가 노드 타입에 body 로 적으면 끝 — 노드·탐색기·머리는 안 바뀐다.
  */
 export const BODY_KINDS = { doc: '문서', sheet: '시트', collection: '컬렉션' } as const;
@@ -214,7 +214,7 @@ export interface NodeFrameProps {
     titlePlaceholder?: string;
     onTitleEnter?: () => void;
     onRename?: (name: string) => void;
-    /** 본문. 함수면 큰 머리를 틀이 안 그리고 넘겨 준다 — 본문 안(같은 왼쪽 선·같이 스크롤)에 직접 놓을 때(페이지 편집기). */
+    /** 본문. 함수면 큰 머리를 틀이 안 그리고 넘겨 준다 — 본문 안(같은 왼쪽 선·같이 스크롤)에 직접 놓을 때(노트). */
     children: ReactNode | ((header: ReactNode) => ReactNode);
 }
 

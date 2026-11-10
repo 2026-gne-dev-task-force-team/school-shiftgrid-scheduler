@@ -45,5 +45,5 @@ export const PLUGINS: PluginModule[] = [
     peoplePlugin,            // 사람 명단 꾸러미
     roomsPlugin,             // 방 목록 꾸러미
     roomBookingPlugin,       // 방 예약 꾸러미 — 달력 프리셋 한 장
-    timetableGridPlugin,     // 시간표 그리드 꾸러미(시트 확장)
+    timetableGridPlugin,     // 시간표 꾸러미(시트 확장)
 ];

@@ -179,13 +179,13 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             {/* 머리 — 이름·판·상태 + 토글 */}
             <div className="flex items-start justify-between gap-3">
                 <DetailTitle name={p.name} version={p.version} id={p.id} badges={<>
-                    {p.core && <Badge>코어</Badge>}
+                    {p.core && <Badge>기본</Badge>}
                     {p.failed && <span className="flex items-center gap-1 text-note text-warn"><Icon name="warn" size={12} /> 활성 실패</span>}
                 </>} />
                 {/* 🔴 ④ 코어는 끄기 단추 자체가 없다(쥔님) — 잠김 표시만. 비코어는 끄기/켜기 단추. */}
                 <div className="shrink-0">
                     {p.core
-                        ? <span className="flex items-center gap-1 text-note text-muted" title="코어 플러그인은 끌 수 없습니다"><Icon name="pin" size={12} /> 코어 · 끌 수 없음</span>
+                        ? <span className="flex items-center gap-1 text-note text-muted" title="기본 기능은 끌 수 없습니다"><Icon name="pin" size={12} /> 기본 기능 · 끌 수 없음</span>
                         : p.enabled
                             ? <Button variant="ghost" size="sm" onClick={() => { if (hasImpact) setConfirming(true); else disablePlugin(p.id); }}>끄기</Button>
                             : <Button variant="accent" size="sm" onClick={() => enablePlugin(p.id)}>켜기</Button>}
@@ -236,7 +236,7 @@ export function PluginDetail({ p: p0, host, startConfirming = false }: { p: Plug
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-small">
                 <dt className="text-muted">판</dt><dd className="text-text">{p.version}</dd>
                 <dt className="text-muted">요구 창틀</dt><dd className="text-text">≥ {p.minHostVersion} (지금 {HOST_VERSION})</dd>
-                <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 코어' : ''}</dd>
+                <dt className="text-muted">상태</dt><dd className="text-text">{p.failed ? '활성 실패' : p.enabled ? '켜짐' : '꺼짐'}{p.core ? ' · 기본 기능' : ''}</dd>
             </dl>
 
             {/* 🔴 다른 플러그인과의 관계 — 「기여」와 같은 카드 줄 꼴로, 사람 말 이름 + 지금 상태(쥔님 2026-11-08 21:27). 접힘 밖에 둔다. */}

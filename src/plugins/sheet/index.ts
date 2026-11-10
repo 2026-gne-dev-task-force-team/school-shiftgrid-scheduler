@@ -1,6 +1,6 @@
 /**
  * 「sheet」 꾸러미 — table 약속을 **들고 와**(contributes.interfaces) 채운다(provides: table · 모듈 값은 tableApi).
- *   손님(roster·시간표 그리드)이 host.modules 로 table 모듈을 받아 Table 을 쓴다.
+ *   손님(roster·시간표)이 host.modules 로 table 모듈을 받아 Table 을 쓴다.
  *   🔴 약속·제공·엔진·기능 모듈을 한 폴더(이 꾸러미)에 묶는다(2026-11-08 「플러그인은 꾸러미다」).
  *
  *   ⭐ v3(2026-11-08): 「표 연습장」을 걷고 **표 노드**로 바꿨다 — 탐색기에서 「새로 만들기 ▸ 표」로 만들고 열면

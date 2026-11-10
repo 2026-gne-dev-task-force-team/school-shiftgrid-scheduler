@@ -51,7 +51,7 @@ describe('PageView 통합', () => {
         setActivePage(null);
         initPageNodes(fakeNodes);
         render();
-        expect(container.textContent).toContain('새 페이지');
+        expect(container.textContent).toContain('새 노트');
     });
 
     it('휴지통에 든 페이지는 편집 화면 대신 시작 화면을 보여 준다(nodes.isTrashed)', () => {
@@ -62,7 +62,7 @@ describe('PageView 통합', () => {
         render();
         expect(container.querySelector('input[aria-label="페이지 제목"]')).toBeNull();
         expect(container.textContent).not.toContain('비밀 본문');
-        expect(container.textContent).toContain('새 페이지');
+        expect(container.textContent).toContain('새 노트');
     });
 
     it('페이지를 열면 블록 글자가 보이고, 표 약속이 없으면 읽기 전용 표로 버틴다', () => {
