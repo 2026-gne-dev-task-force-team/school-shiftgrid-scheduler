@@ -12,6 +12,7 @@ import { COLOR_TOKENS, THEMES, DEFAULT_THEME_ID, type ColorToken } from './token
 import { isTriplet } from './color';
 import { storageKey } from '../storage';
 import { reportSettingsSaveFail } from '../layout/save-fail';
+import { onStorageKey } from '../cross-tab';
 
 export interface UserTheme {
     /** 기기 로컬 식별자 — 저장할 때 부여 */
@@ -117,6 +118,8 @@ const listeners = new Set<() => void>();
 function ensure(): UserTheme[] { if (!store) store = load(); return store; }
 function emit(): void { for (const l of listeners) l(); }
 function commit(list: UserTheme[]): void { store = list; save(list); emit(); }
+// 🔴 R3-X — 다른 탭이 사용자 테마를 바꾸면 다시 읽는다
+onStorageKey(themesKey, () => { store = load(); emit(); });
 
 /** 새 한 벌을 더한다(이름은 이미 정해진 채) — 부여된 id 를 돌려준다 */
 export function addUserTheme(t: Omit<UserTheme, 'id'>): string {

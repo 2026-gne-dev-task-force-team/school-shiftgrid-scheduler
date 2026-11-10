@@ -12,6 +12,7 @@
 import { useSyncExternalStore } from 'react';
 import { storageKey } from './storage';
 import { listCommands, runCommand } from './plugin/store';
+import { onStorageKey } from './cross-tab';
 
 /** 명령 id → 키 글자. '' = 사용자가 지운 것(기본 키도 끈다). */
 export type KeyOverrides = Record<string, string>;
@@ -59,6 +60,9 @@ export function formatKey(k: string, mac = isMac()): string {
 const overridesKey = () => storageKey('keybindings');
 let cache: KeyOverrides | null = null;
 const listeners = new Set<() => void>();
+
+// 🔴 R3-X — 다른 탭이 단축키를 바꾸면 캐시를 버리고 다시 읽게 한다
+onStorageKey(overridesKey, () => { cache = null; for (const l of listeners) l(); });
 
 export function getKeyOverrides(): KeyOverrides {
     if (cache) return cache;

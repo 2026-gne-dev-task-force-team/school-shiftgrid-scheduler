@@ -25,6 +25,7 @@ import {
 } from './store';
 import { reportStorageError, classifyStorageError } from './storage-errors';
 import { notify, dismiss } from './notify';
+import { onStorageKey } from '../cross-tab';
 
 const FIRST_RUN_KEY = '__first-run';
 
@@ -74,6 +75,10 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
         remove(key: string) {
             if (typeof localStorage === 'undefined') return;
             try { localStorage.removeItem(skey(key)); } catch { /* 삭제 실패는 유실이 아니다 — 조용히 */ }
+        },
+        watch(key: string, fn: () => void) {
+            const off = onStorageKey(() => skey(key), () => fn());
+            return track(pluginId, { dispose: off });
         },
     };
 

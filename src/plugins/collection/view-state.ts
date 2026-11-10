@@ -6,7 +6,7 @@
  * 🔴 창틀은 자기를 쓰는 앱 이름을 모른다 — storageKey 접두사(setStoragePrefix)를 거쳐 키를 만든다.
  *    ⚠️ 저장이 막혀도(사파리 프라이빗) 조용히 기본값으로 산다(목록은 그냥 안 기억될 뿐 고장 아님).
  */
-import { storageKey } from '../../pane-ui-system';
+import { storageKey, onStorageKey } from '../../pane-ui-system';
 import type { RecordField, SortRule, ViewColumn, ViewDef } from './contracts/collection';
 import { normalizeFilter, EMPTY_FILTER } from './logic';
 
@@ -151,6 +151,14 @@ export function saveViews(viewKey: string, views: ViewDef[]): void {
 }
 
 /** 활성 탭 id — 기기별(노드가 아니라 localStorage). */
+/**
+ * 🔴 R3-X — 다른 탭이 이 보기 정의(열·필터·정렬)를 바꾸면 fn. 보기 정의는 설정이라 탭 사이에 같게 한다.
+ *   ⭐ 활성 탭(ACTIVE_KEY)은 보기 상태라 안 건다(탭마다 따로).
+ */
+export function watchViews(viewKey: string, fn: () => void): () => void {
+    return onStorageKey(() => KEY(viewKey), () => fn());
+}
+
 export function loadActiveView(viewKey: string): string | null {
     try { return localStorage.getItem(ACTIVE_KEY(viewKey)); } catch { return null; }
 }

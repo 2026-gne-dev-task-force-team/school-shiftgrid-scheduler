@@ -6,6 +6,7 @@
  * 🔴 모듈 전역 스토어라 테스트끼리 안 번지게 각 테스트 전에 clearStorageErrors.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { IDBFactory, IDBKeyRange as FakeKeyRange } from 'fake-indexeddb';
 import { kvGet, kvSet, kvAvailable, nodesGetAll, nodesWrite, __resetKvForTest } from './kv';
 import {
     reportStorageError, clearStorageErrors, listStorageErrors, classifyStorageError,
@@ -135,64 +136,23 @@ describe('저장 실패 스토어 — 키별 마지막 하나만, 최대 20건',
 });
 
 /**
- * 노드 스토어(nodesGetAll/nodesWrite) — node 엔 indexedDB 가 없으니 작은 가짜 IDB 를 끼운다(kv.test 의 stub 과 같은 결).
- *   🔴 이벤트 모델을 흉내 낸다: 작업은 동기로 Map 에 반영하고, oncomplete·onsuccess 는 microtask 로(핸들러가 달린 뒤에).
+ * 노드 스토어(nodesGetAll/nodesWrite) — node 엔 indexedDB 가 없으니 fake-indexeddb 를 끼운다(R3-X — 손수 짠 가짜는
+ *   묘비 범위 읽기(getAllKeys)를 못 흉내 내 진짜 꼴의 가짜로 바꿨다). 테스트마다 새 IDBFactory(빈 DB).
  */
-function fakeIndexedDB() {
-    const stores = new Map<string, { keyPath?: string; data: Map<unknown, unknown> }>();
-    let version = 0;
-    return {
-        _stores: stores,
-        open(_name: string, v: number) {
-            const req: {
-                result?: unknown;
-                onsuccess?: () => void; onerror?: () => void;
-                onupgradeneeded?: () => void; onblocked?: () => void;
-            } = {};
-            queueMicrotask(() => {
-                const db = {
-                    objectStoreNames: { contains: (n: string) => stores.has(n) },
-                    createObjectStore: (n: string, opts?: { keyPath?: string }) => {
-                        stores.set(n, { keyPath: opts?.keyPath, data: new Map() });
-                        return {};
-                    },
-                    transaction: (storeName: string) => {
-                        const store = stores.get(storeName)!;
-                        const tx: { objectStore: () => unknown; oncomplete?: () => void; onerror?: () => void; onabort?: () => void; error?: unknown } = {
-                            objectStore: () => ({
-                                put: (val: Record<string, unknown>) => { store.data.set(store.keyPath ? val[store.keyPath] : val, val); },
-                                delete: (key: unknown) => { store.data.delete(key); },
-                                clear: () => { store.data.clear(); },
-                                getAll: () => {
-                                    const r: { result?: unknown; onsuccess?: () => void; onerror?: () => void } = {};
-                                    queueMicrotask(() => { r.result = [...store.data.values()]; r.onsuccess?.(); });
-                                    return r;
-                                },
-                            }),
-                        };
-                        queueMicrotask(() => { tx.oncomplete?.(); });   // 동기 작업이 다 큐에 든 뒤에 완료
-                        return tx;
-                    },
-                };
-                req.result = db;
-                if (v > version) { version = v; req.onupgradeneeded?.(); }
-                req.onsuccess?.();
-            });
-            return req;
-        },
-    };
-}
+function fakeIndexedDB() { return new IDBFactory(); }
 
 describe('노드 스토어 — nodesGetAll/nodesWrite(가짜 IDB · 한 트랜잭션)', () => {
     let savedIdb: unknown;
     beforeEach(() => {
         savedIdb = (globalThis as { indexedDB?: unknown }).indexedDB;
         (globalThis as { indexedDB?: unknown }).indexedDB = fakeIndexedDB();
+        (globalThis as { IDBKeyRange?: unknown }).IDBKeyRange = FakeKeyRange;
         __resetKvForTest();
     });
     afterEach(() => {
         if (savedIdb === undefined) delete (globalThis as { indexedDB?: unknown }).indexedDB;
         else (globalThis as { indexedDB?: unknown }).indexedDB = savedIdb;
+        delete (globalThis as { IDBKeyRange?: unknown }).IDBKeyRange;
         savedIdb = undefined;
         __resetKvForTest();
     });
@@ -319,7 +279,7 @@ describe('노드 스토어 — versionchange 뒤 재연결(R3-S)', () => {
             ...fake,
             open(name: string, v: number) {
                 opens++;
-                const req = origOpen(name, v) as typeof lastReq;
+                const req = origOpen(name, v) as unknown as typeof lastReq;
                 lastReq = req;
                 return req;
             },

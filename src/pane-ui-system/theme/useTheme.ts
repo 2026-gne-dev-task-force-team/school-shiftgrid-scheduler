@@ -10,8 +10,9 @@
  */
 import { useCallback, useSyncExternalStore } from 'react';
 import { applyTheme } from './apply';
+import { onStorageKey } from '../cross-tab';
 import {
-    defaultThemeSettings, loadThemeSettings, normalizeThemeSettings, saveThemeSettings,
+    defaultThemeSettings, loadThemeSettings, normalizeThemeSettings, saveThemeSettings, themeKey,
     type ThemeSettings,
 } from './settings';
 
@@ -48,6 +49,13 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
     else (mq as MediaQueryList & { addListener?: (cb: () => void) => void }).addListener?.(onChange);
 }
+
+// 🔴 R3-X 탭 간 동기화 — 다른 탭이 테마 설정을 바꾸면 다시 읽어 적용한다(저장은 안 한다 — 이미 저장돼 있다).
+onStorageKey(themeKey, () => {
+    current = loadThemeSettings();
+    applyTheme(current);
+    for (const l of listeners) l();
+});
 
 function subscribe(fn: () => void): () => void {
     listeners.add(fn);
