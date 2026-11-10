@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     applySorts, compareByField, deriveRows, displayText, evalFilter, filterIsEmpty, flatRules, freshIds, isEmptyValue,
-    matchesRule, matchesSearch, normalizeFilter, opNeedsValue, opsFor, pruneFilter, toNumber, withFlatRules,
+    matchesRule, matchesSearch, normalizeFilter, opNeedsValue, opsFor, pruneFilter, rowDropZone, toNumber, withFlatRules,
 } from './logic';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
 
@@ -257,5 +257,26 @@ describe('freshIds — 새 행 전환', () => {
     it('한꺼번에 max 넘게 바뀌면(보기 갈아끼움) 비운다 · 줄어들면 비운다', () => {
         expect(freshIds(new Set(['a']), ['x', 'y', 'z'], 2).size).toBe(0);
         expect(freshIds(new Set(['a', 'b']), ['a']).size).toBe(0);
+    });
+});
+
+describe('rowDropZone — 위 35% 앞 · 가운데 30% 하위 · 아래 35% 뒤 (경계 값)', () => {
+    // top=100, height=100 → y-100 = 백분율
+    const z = (pct: number, nest = true) => rowDropZone(100 + pct, 100, 100, nest);
+    it('경계 바로 밖·안', () => {
+        expect(z(34)).toBe('before');
+        expect(z(36)).toBe('into');
+        expect(z(64)).toBe('into');
+        expect(z(66)).toBe('after');
+        expect(z(0)).toBe('before');
+        expect(z(100)).toBe('after');
+    });
+    it('하위로 못 넣는 줄은 절반에서 앞/뒤', () => {
+        expect(z(49, false)).toBe('before');
+        expect(z(51, false)).toBe('after');
+        expect(z(40, false)).toBe('before');
+    });
+    it('높이 0 이면 가운데로 본다', () => {
+        expect(rowDropZone(5, 5, 0, true)).toBe('into');
     });
 });
