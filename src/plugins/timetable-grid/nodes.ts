@@ -188,6 +188,15 @@ export function applyDiff(from: TimetableData, to: TimetableData, cur: Timetable
     return out as unknown as TimetableData;
 }
 
+/** 되돌리기/다시하기 할 칸이 있나(툴바 단추 끔 판단). */
+export function canStep(id: string, which: 'undo' | 'redo'): boolean {
+    const h = histories.get(id);
+    return !!h && (which === 'undo' ? h.past.length > 0 : h.future.length > 0);
+}
+
+/** 창틀 알림 한 줄(정보). */
+export function notifyInfo(title: string): void { hostRef?.notify({ title }); }
+
 /** 되돌리기/다시하기 한 칸 — 더미가 비면 아무것도 안 한다. */
 export function stepEdit(id: string, which: 'undo' | 'redo'): void {
     const h = histories.get(id);

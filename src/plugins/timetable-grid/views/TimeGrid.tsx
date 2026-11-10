@@ -6,7 +6,7 @@
  *         쉬는 시간은 행이 아니라 행 사이 갭 — 빈 띠 + 「쉬는 시간 N분」, 갭 아래 끝을 끌어 늘리고 줄인다(뒤 행이 밀림).
  *         끄는 동안은 모델 함수(setRowLength·setGapBefore)로 미리 그리고, 놓을 때 한 번 저장 = 되돌리기 한 칸.
  *   조작: 칸 글자는 칸에서 바로 · 열 너비는 열 머리 오른쪽 가장자리를 끌어서
- *         · 병합·행/열 넣고 빼기는 우클릭(길게 누르기) 메뉴. ⛔ 위쪽 도구 막대는 없다(T3).
+ *         · 병합·행/열 넣고 빼기는 우클릭(길게 누르기) 메뉴. 위쪽 도구 줄은 W10b 툴바(GridToolbar)가 Frame 툴바 자리에.
  *   칸은 스프레드시트처럼 두 상태다(W-T): 선택(격자에 초점 — 화살표·Tab·⇧Enter 이동 · ⇧/끌기/⇧클릭 범위 · Delete 지우기 · ⌘C/X/V TSV)
  *         ↔ 편집(타자 시작·F2·Enter·더블클릭 — Enter 확정+아래 · Tab 확정+옆 · Esc 취소 · ⌥Enter 줄바꿈). 이동은 gridNav.ts(병합을 한 칸으로).
  *   shortcut: 시트 엔진(useSheetCore)은 안 쓴다 — 병합·시각 띠 배치를 모르는 엔진이라. 채우기 손잡이는 없다.
@@ -14,14 +14,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { step, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
-import { Button, ContextMenu, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { Button, ContextMenu, FrameToolbarPortal, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
+import { GridToolbar } from './GridToolbar';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells, addRow, removeRow,
     addColumn, removeColumn, renameRow, renameColumn, setCellText, setRowLength, setGapBefore, rowLength, gapBefore, setColWidth, colWidth, viewRange,
     COL_MIN_W, type TimetableData, type Selection,
 } from '../model';
 
-const PPM = 0.8;          // 1분 = 0.8px → 50분 ≈ 40px, 1시간 = 48px
+const DEFAULT_PPM = 0.8;  // 1분 = 0.8px → 50분 ≈ 40px, 1시간 = 48px (툴바 확대/축소로 바뀐다)
 const TIME_W = 44;        // 왼쪽 시각 눈금 폭
 const HEAD_W = 76;        // 행 머리(이름·시각) 폭
 const LEFT_W = TIME_W + HEAD_W;
@@ -81,7 +82,17 @@ function CellEditor({ text, label, onChange, onKey, onBlur }: {
 
 type Live = { kind: 'row'; row: number; len: number } | { kind: 'gap'; row: number; gap: number } | { kind: 'col'; col: number; width: number } | null;
 
-export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void }) {
+export interface TimeGridToolbarProps {
+    /** Frame 툴바 자리 — 없으면 툴바를 안 그린다 */
+    toolbarHost?: HTMLElement | null;
+    onNotice?: (msg: string) => void;
+    undo?: () => void; redo?: () => void; canUndo?: boolean; canRedo?: boolean;
+}
+
+export function TimeGrid({ data, edit, onRemoved, toolbarHost, onNotice, undo, redo, canUndo, canRedo }: {
+    data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void;
+} & TimeGridToolbarProps) {
+    const [ppm, setPpm] = useState(DEFAULT_PPM);
     const nCols = columnCount(data.columns);
     const nRows = rowCount(data);
     const [live, setLive] = useState<Live>(null);
@@ -192,7 +203,7 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
     const lefts: number[] = [];
     let gridW = 0;
     for (let c = 0; c < nCols; c++) { lefts.push(gridW); gridW += widthOf(c); }
-    const yOf = (min: number) => Math.round((min - view.start) * PPM);
+    const yOf = (min: number) => Math.round((min - view.start) * ppm);
     const bodyH = yOf(view.end);
 
     // ── 끌기(행 시각 · 열 너비) ──
@@ -206,7 +217,7 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
         const d = dragRef.current;
         if (!d || !live) return;
         if (live.kind === 'col') { setLive({ ...live, width: Math.max(COL_MIN_W, Math.round(d.v0 + e.clientX - d.x0)) }); return; }
-        const raw = Math.round((d.v0 + (e.clientY - d.y0) / PPM) / SNAP) * SNAP;
+        const raw = Math.round((d.v0 + (e.clientY - d.y0) / ppm) / SNAP) * SNAP;
         if (live.kind === 'row') setLive({ ...live, len: Math.max(SNAP, raw) });
         else setLive({ ...live, gap: Math.max(0, raw) });
     }
@@ -261,7 +272,12 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
     const hours: number[] = [];
     for (let h = Math.ceil(view.start / 60); h * 60 <= view.end; h++) hours.push(h);
 
-    return (
+    return (<>
+        <FrameToolbarPortal host={toolbarHost} fallback="none">
+            <GridToolbar data={data} row={sel ? Math.min(sel.row0, sel.row1) : null} edit={edit} onNotice={onNotice} onRemoved={onRemoved}
+                onRowRemoved={() => setSel(null)} onClear={() => { if (sel) edit((d) => clearRange(d, sel)); }} canClear={!!sel}
+                undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} zoom={ppm} setZoom={setPpm} />
+        </FrameToolbarPortal>
         <div className="h-full overflow-auto" {...trigger}>
             <div className="relative" style={{ width: LEFT_W + gridW + 40, minWidth: '100%' }}>
                 {/* 열 머리 — 위에 붙는다 */}
@@ -367,5 +383,5 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
             </div>
             {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
         </div>
-    );
+    </>);
 }
