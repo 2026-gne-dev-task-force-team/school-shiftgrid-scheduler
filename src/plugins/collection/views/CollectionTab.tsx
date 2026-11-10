@@ -6,7 +6,7 @@
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { EmptyState, StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
-import { useLauncherTab, notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
+import { useLauncherTab, useLeafNode, notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
 import { DescriptionLine, RecordView } from '../RecordView';
@@ -68,7 +68,7 @@ function CollectionStart({ kit, leafId }: { kit: Bridge; leafId?: string }) {
 export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?: PluginHost; peek?: PeekHandle; leafId?: string }) {
     const { config: cfg } = kit;
     const rev = useSyncExternalStore(kit.subscribe, kit.rev, kit.rev);
-    const activeId = kit.active();
+    const activeId = useLeafNode(leafId, kit.active(), kit.setActive);   // 새로고침 뒤에도 이 탭의 목록
     const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
     const bar = useFrameToolbar();   // Frame 툴바 자리(Q12)
     const titleKey = cfg.baseFields[0].key;

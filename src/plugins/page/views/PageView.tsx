@@ -8,7 +8,8 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { isMod, ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { useActivePage } from '../store';
+import { useLeafNode } from '../../../pane-ui-system/plugin';
+import { useActivePage, setActivePage } from '../store';
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { notifyBlocksRemoved } from '../removed';
 import { createChildPage, getNodesApi, inlineBlocked, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
@@ -40,7 +41,7 @@ interface FocusIntent { id: string; offset: number; end?: number; }
 interface SlashState { blockId: string; query: string; index: number; }
 
 export function PageView({ host, leafId }: { host: PluginHost; leafId?: string }) {
-    const activeId = useActivePage();
+    const activeId = useLeafNode(leafId, useActivePage(), setActivePage);   // 새로고침 뒤에도 이 탭의 페이지
     // 보고 있는 페이지가 없으면(리본으로 처음 열기 · 휴지통으로 감) 시작 화면 — 새로 만들기 + 목록.
     if (!activeId || inTrash(activeId)) return <StartScreen leafId={leafId} />;
     return (
