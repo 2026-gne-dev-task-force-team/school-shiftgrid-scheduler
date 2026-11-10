@@ -19,13 +19,13 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, getState } from '../explorer/store';
-import { __resetPersistForTest } from '../explorer/persist';
-import { makeNodesApi } from '../explorer/api';
-import { registerType, clearTypes, isRecordType, isContainerType } from '../explorer/model/types';
-import { clearDerived } from '../explorer/model/derive';
-import { flatten } from '../explorer/model/tree';
-import { buildMainRows } from '../explorer/views/rows';
+import { initStore, getState } from '../../pane-ui-system/core/node-store/store';
+import { __resetPersistForTest } from '../../pane-ui-system/core/node-store/persist';
+import { makeNodesApi } from '../../pane-ui-system/core/node-frame/api';
+import { registerType, clearTypes, isRecordType, isContainerType } from '../../pane-ui-system/core/nodes/model/types';
+import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
+import { flatten } from '../../pane-ui-system/core/nodes/model/tree';
+import { buildMainRows } from '../../pane-ui-system/core/explorer/views/rows';
 import { calendarNodeTypes, calendarNodeTypeImpl, STORE_TYPE, EVENT_TYPE } from './nodes';
 
 function host(): PluginHost {

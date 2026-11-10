@@ -3,7 +3,7 @@
  *   노드 시스템은 가짜(RelationLook)로 채운다.
  */
 import { describe, it, expect } from 'vitest';
-import type { PublicNode } from '../../explorer/contracts/nodes';
+import type { PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { ROW_TYPE } from '../schema';
 import { BUILTIN_FIELD_TYPES } from './builtin';
 import { relationCandidates, relationConfig, relationFromText, relationIds, relationText, resolveRelation, toggleRelation, type RelationLook } from './relation';

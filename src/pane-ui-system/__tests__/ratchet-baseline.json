@@ -125,20 +125,6 @@
     "enterNoIme": 0,
     "ownUndoNotice": 0
   },
-  "plugins/explorer": {
-    "bareButton": 5,
-    "arbPx": 2,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 1,
-    "bareInput": 1,
-    "divClick": 4,
-    "ownTrash": 40,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
   "plugins/page": {
     "bareButton": 2,
     "arbPx": 4,
@@ -291,6 +277,62 @@
     "divClick": 2,
     "ownTrash": 0,
     "enterNoIme": 2,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/explorer": {
+    "bareButton": 5,
+    "arbPx": 2,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 1,
+    "bareInput": 1,
+    "divClick": 4,
+    "ownTrash": 4,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/node-frame": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 2,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/node-store": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 10,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/nodes": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 24,
+    "enterNoIme": 0,
     "ownUndoNotice": 0
   }
 }

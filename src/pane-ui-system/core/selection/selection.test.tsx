@@ -15,11 +15,11 @@ const kv = vi.hoisted(() => ({
 }));
 vi.mock('../../kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, clickSelect, getState } from '../../../plugins/explorer/store';
-import { __resetPersistForTest } from '../../../plugins/explorer/persist';
-import { makeNodesApi } from '../../../plugins/explorer/api';
-import { registerType, clearTypes } from '../../../plugins/explorer/model/types';
-import { attachSelection } from '../../../plugins/explorer';
+import { initStore, select, clickSelect, getState } from '../node-store/store';
+import { __resetPersistForTest } from '../node-store/persist';
+import { makeNodesApi } from '../node-frame/api';
+import { registerType, clearTypes } from '../nodes/model/types';
+import { attachSelection } from '../explorer';
 import { PropertiesView } from '../../../plugins/properties/views/PropertiesPanel';
 import { selectionApi } from './index';
 

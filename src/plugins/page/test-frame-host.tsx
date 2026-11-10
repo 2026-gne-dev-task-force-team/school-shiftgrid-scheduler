@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { TitleField } from '../../pane-ui-system';
 import type { PluginHost } from '../../pane-ui-system/plugin';
-import type { NodeFrameProps, NodesApi } from '../explorer/contracts/nodes';
+import type { NodeFrameProps, NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 
 /** host.notify 로 들어온 알림 — 테스트가 읽는다(frameHost 가 호출될 때마다 비운다) */
 export const notices: Array<{ title: string; action?: { commandId: string } }> = [];

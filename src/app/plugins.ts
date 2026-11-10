@@ -17,7 +17,6 @@ import { CORE_PLUGINS } from '../pane-ui-system/core';
 
 import { settingsPlugin } from '../plugins/settings';
 
-import { explorerPlugin } from '../plugins/explorer';
 
 import { calendarPlugin } from '../plugins/calendar';
 import { accountPlugin } from '../plugins/account';
@@ -40,7 +39,6 @@ export const PLUGINS: PluginModule[] = [
     // 🍳 이사 중: core/ 로 간 코어는 CORE_PLUGINS 한 줄로 오고(core/index.ts 에 한 줄씩 더한다), 아직 plugins/ 에 있는 코어는 아래에 직접 선다.
     //    활성 순서(골든)가 settings → explorer → selection → properties 라 아직 이사 안 한 둘이 core 를 감싼다 — 이사 판마다 해당 줄을 지우고 core 배럴에 더한다.
     settingsPlugin,
-    explorerPlugin,   // 탐색기 꾸러미 — 코어(끌 수 없다). nodes 약속을 들고 와 채운다(provides) + 탐색기 패널(N1)
     ...CORE_PLUGINS,         // core/ 폴더의 코어 — 지금 selection(선택 알림 · 약속 화면 없음 · 탐색기가 알리고 속성이 듣는다)
     propertiesPlugin,        // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다
     pagePlugin,              // 페이지 꾸러미 — 노션식 블록 페이지(문서 본문)

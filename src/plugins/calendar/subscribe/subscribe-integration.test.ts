@@ -22,11 +22,11 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore } from '../../explorer/store';
-import { __resetPersistForTest } from '../../explorer/persist';
-import { makeNodesApi } from '../../explorer/api';
-import { registerType, clearTypes } from '../../explorer/model/types';
-import { clearDerived } from '../../explorer/model/derive';
+import { initStore } from '../../../pane-ui-system/core/node-store/store';
+import { __resetPersistForTest } from '../../../pane-ui-system/core/node-store/persist';
+import { makeNodesApi } from '../../../pane-ui-system/core/node-frame/api';
+import { registerType, clearTypes } from '../../../pane-ui-system/core/nodes/model/types';
+import { clearDerived } from '../../../pane-ui-system/core/nodes/model/derive';
 import { calendarModule, listFeedSources, __resetFeeds } from '../feed';
 import { mapFeedEvents } from '../feed-events';
 import { eventsInRange } from '../events';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_KINDS } from '../plugins/explorer/contracts/nodes';
+import { BODY_KINDS } from '../pane-ui-system/core/nodes/contracts/nodes';
 import { pageNodeTypes } from '../plugins/page/nodes';
 import { tableNodeTypes } from '../plugins/sheet/nodes';
 import { recordNodeTypes } from '../plugins/collection/nodes';

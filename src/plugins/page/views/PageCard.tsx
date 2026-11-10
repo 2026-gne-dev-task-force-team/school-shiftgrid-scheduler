@@ -6,7 +6,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import { Icon, pressProps } from '../../../pane-ui-system';
-import type { EmbedProps } from '../../explorer/contracts/nodes';
+import type { EmbedProps } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { getNodesApi, getPageRev, pageDataOf, subscribePageNodes } from '../nodes';
 import type { Block } from '../core/types';
 import { InlineText } from './Inline';

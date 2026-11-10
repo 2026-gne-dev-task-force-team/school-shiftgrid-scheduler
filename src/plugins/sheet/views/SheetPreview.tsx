@@ -1,6 +1,6 @@
 /** 끼워 넣기 모습(P5) — 시트 미리보기: 첫 4행 × 첫 5열을 읽기 전용으로. 누르면 그 시트를 연다. */
 import { Icon, pressProps } from '../../../pane-ui-system';
-import type { EmbedProps } from '../../explorer/contracts/nodes';
+import type { EmbedProps } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { getNodesApi, docOf } from '../nodes';
 
 const MAX_ROWS = 4;

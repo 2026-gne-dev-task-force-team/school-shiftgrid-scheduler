@@ -71,6 +71,8 @@ const files = Object.fromEntries(Object.entries(SCOPES).map(([k]) => [k, scopeFi
 /** 공통 부품 내부 — R7 지표(zRaw·bareInput·divClick·enterNoIme)가 안 센다 */
 const PARTS_DIR = join(ROOT, 'pane-ui-system', 'primitives') + sep;
 const outsideParts = (scope: string) => scopeFiles(scope).filter((f) => !f.startsWith(PARTS_DIR)).map((f) => readFileSync(f, 'utf-8'));
+/** cmdIdString 이 보는 글 — 약속 파일(`contracts/`)은 명령 id 글자 상수를 「정의하는」 자리라 뺀다(주인 범위와 약속 파일이 다른 모듈에 있어도 — 예: 탐색기 id 상수는 core/nodes/contracts) */
+const cmdTexts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, scopeFiles(k).filter((f) => !f.includes(sep + 'contracts' + sep)).map((f) => readFileSync(f, 'utf-8'))]));
 const r7Texts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, outsideParts(k)]));
 const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k]) => [k, scopeFiles(k).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));
 
@@ -99,6 +101,8 @@ function measure(scope: string): Counts {
         arbPx += count(t, /-\[\d+(?:\.\d+)?px\]/g);
         textPx += count(t, /\btext-\[\d+(?:\.\d+)?px\]/g);
         ctxDirect += count(t, /\bonContextMenu\b/g);
+    }
+    for (const t of cmdTexts[scope]) {
         for (const [id, owner] of commandOwner) {
             if (owner === scope) continue;
             cmdIdString += t.split(`'${id}'`).length - 1;
