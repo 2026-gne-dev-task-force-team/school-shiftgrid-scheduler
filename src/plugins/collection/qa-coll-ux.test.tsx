@@ -2,7 +2,7 @@
 /** 검수 r1 S3 — 칸 메뉴 초점·라벨 · Enter 로 만든 빈 행 치우기 */
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RecordView } from './RecordView';
 import type { RecordField } from './contracts/collection';
 
@@ -15,13 +15,12 @@ const click = (el: Element | null) => act(() => { (el as HTMLElement).dispatchEv
 const key = (el: Element, k: string) => act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })); });
 const wait = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 
-function H({ discard, init }: { discard: (ids: string[]) => void; init: Rec[] }) {
+function H({ init }: { init: Rec[] }) {
     const [rows, setRows] = useState<Rec[]>(init);
     return (
         <RecordView<Rec> fields={F} records={rows} getId={(r) => r.id} viewKey="t.qa" titleKey="f_t"
             onCellChange={(id, k, v) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, [k]: v } : r)))}
             onAddRecord={() => setRows((rs) => [...rs, { id: `n${rs.length}`, f_t: '' }])}
-            onDiscardRecords={(ids) => { discard(ids); setRows((rs) => rs.filter((r) => !ids.includes(r.id))); }}
             onFieldsChange={() => {}} />
     );
 }
@@ -31,7 +30,7 @@ function mount(ui: React.ReactElement) { const el = document.createElement('div'
 
 describe('칸 메뉴', () => {
     it('열어도 이름 입력칸에 초점이 안 가고 「칸 이름」 라벨이 보인다', () => {
-        mount(<H discard={vi.fn()} init={[]} />);
+        mount(<H init={[]} />);
         click(q('[data-rv-head-menu="f_x"]'));
         const input = q('[data-rv-rename="f_x"] input')!;
         expect(document.activeElement).not.toBe(input);
@@ -42,21 +41,18 @@ describe('칸 메뉴', () => {
 describe('Enter 로 만든 빈 행', () => {
     const editFirst = () => click(q('[data-rv-row="r0"] [data-rv-cell="f_t"]'));
     it('검수 K25 — 마지막 행 Enter 는 새 행을 안 만든다(확정만 · 편집 닫힘)', async () => {
-        const discard = vi.fn();
-        mount(<H discard={discard} init={[{ id: 'r0', f_t: 'A' }]} />);
+        mount(<H init={[{ id: 'r0', f_t: 'A' }]} />);
         editFirst();
         key(q('[data-rv-editing]')!, 'Enter');
         await wait(50);
         expect(q('[data-rv-row="n1"]')).toBeNull();
         expect(q('[data-rv-editing]')).toBeNull();
-        expect(discard).not.toHaveBeenCalled();
     });
     it('원래 있던 빈 행은 건드리지 않는다', async () => {
-        const discard = vi.fn();
-        mount(<H discard={discard} init={[{ id: 'r0', f_t: '' }]} />);
+        mount(<H init={[{ id: 'r0', f_t: '' }]} />);
         editFirst();
         key(q('[data-rv-editing]')!, 'Escape');
         await wait(400);
-        expect(discard).not.toHaveBeenCalled();
+        expect(q('[data-rv-row="r0"]')).not.toBeNull();
     });
 });

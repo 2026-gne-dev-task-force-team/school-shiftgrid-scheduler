@@ -192,6 +192,21 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
         expect(q('[data-rv-empty-desc]')?.textContent).toBe('이 학교 교직원 명단');
     });
 
+    it('검수 K21 — usage 가 있으면 빈 표에 번호 매긴 사용법과 「새 행 추가」 단추가 뜬다 · 없으면 지금 안내', () => {
+        const add = vi.fn();
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k21" titleKey="f_t" description="명단" usage={['첫째', '둘째']} onAddRecord={add} />);
+        const lis = [...document.querySelectorAll('[data-rv-empty-usage] li')].map((x) => x.textContent);
+        expect(lis).toEqual(['첫째', '둘째']);
+        expect(q('[data-rv-empty-desc]')?.textContent).toBe('명단');
+        const btn = [...document.querySelectorAll('[data-rv-empty] button')].find((b) => b.textContent?.includes('새 행 추가'));
+        expect(btn).toBeTruthy();
+        click(btn!);
+        expect(add).toHaveBeenCalled();
+        act(() => root!.render(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k21" titleKey="f_t" onAddRecord={add} />));
+        expect(q('[data-rv-empty-usage]')).toBeNull();
+        expect(q('[data-rv-empty]')?.textContent).toContain('새로 만들기');
+    });
+
     it('검수 K1 — 설명 없고 고칠 수 없으면 줄 자체가 없다 · 고칠 수 있으면 눌러서 고친다', () => {
         const onDesc = vi.fn();
         mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1b" titleKey="f_t" />);

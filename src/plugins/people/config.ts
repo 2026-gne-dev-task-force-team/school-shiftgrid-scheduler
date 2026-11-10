@@ -24,6 +24,7 @@ export const PERSON_CONFIG: CollectionConfig = {
         { key: 'memo', label: '메모', type: 'text', locked: true, description: '이 사람에 대한 자유 메모입니다.' },
     ],
     description: '학교 사람들을 모아 두는 명단입니다. 시간표·보결·근무에서 사람을 고를 때 여기서 고릅니다.',
+    usage: ['아래 「새 행 추가」를 누르면 한 줄이 생기고 이름 칸이 바로 열립니다.', '이름을 쓰고 Enter 를 누르면 저장됩니다.', '메모 칸에는 담당 업무 같은 참고 내용을 적어 둡니다.', '시간표·보결·근무에서 사람을 고를 때 이 명단이 나옵니다.'],
     unit: '명',
     text: { startDescription: '새로 만들거나, 만들어 둔 명단을 고른다.', startHint: '빈 명단이 바로 열린다' },
 };

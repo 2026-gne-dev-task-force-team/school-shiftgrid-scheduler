@@ -121,7 +121,6 @@ export function DbTable({ host, snap, toolbarHost, onOpenRecord, onOpenRecordTab
                 commit(id, { removeRows: ids });
                 notifyUndo(host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`);
             }}
-            onDiscardRecords={(ids) => { commit(id, { removeRows: ids }); }}
             onDestructive={(title, run) => {
                 getNodesApi()?.batch(run);
                 notifyUndo(host, title);

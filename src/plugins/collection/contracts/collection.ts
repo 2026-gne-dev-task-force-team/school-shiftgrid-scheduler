@@ -283,6 +283,8 @@ export interface RecordViewProps<T> {
     onCellsChange?: (changes: CellChange[]) => void;
     /** 목록 설명(검수 K1) — 표 위 한 줄 + 빈 표 「표시할 행이 없습니다」 밑. 꾸러미가 선언으로 채운다 */
     description?: string;
+    /** 빈 표에서 「어떻게 쓰나」 단계(검수 K21) — 번호 매겨 설명 밑에 뜨고, onAddRecord 가 있으면 「새 행 추가」 단추도 뜬다. 안 넘기면 지금 안내 그대로 */
+    usage?: string[];
     /** 설명을 화면에서 고치게 — 안 넘기면 읽기 전용(꾸러미 선언 설명) */
     onDescriptionChange?: (description: string) => void;
     /** false 면 표 위 설명 줄을 안 그린다(화면이 틀 제목 밑에 따로 둘 때) — 빈 표 안내의 설명은 그대로 */
@@ -293,8 +295,6 @@ export interface RecordViewProps<T> {
     onAddRecord?: () => void;
     /** 고른 행들을 지우라고 부른다(일괄 삭제 막대). 안 넘기면 선택·삭제 UI 가 안 뜬다. */
     onDeleteRecords?: (ids: string[]) => void;
-    /** Enter 로 막 만들고 값 없이 떠난 빈 행을 알림·되돌리기 없이 치운다 — 사용자가 만든 적 없는 행이라서. 안 넘기면 치우지 않는다. */
-    onDiscardRecords?: (ids: string[]) => void;
     /** 칸·선택지·보기를 지우는 일을 감싼다 — 한 묶음으로 실행하고 「되돌리기」 알림을 띄운다. 없으면 그냥 실행. */
     onDestructive?: (title: string, run: () => void) => void;
     /** 행의 「열기」 단추(제목 칸 hover)를 누르면. 안 넘기면 그 단추가 안 뜬다. */
@@ -394,6 +394,8 @@ export interface CollectionConfig {
     baseFields: RecordField[];
     /** 목록 설명 한 줄(검수 K1) — 표 위·빈 표 안내에 뜬다. 칸 설명은 baseFields[].description */
     description?: string;
+    /** 빈 표 「어떻게 쓰나」 단계 2~4줄(검수 K21) — 번호 매겨 빈 표 설명 밑에 뜬다 */
+    usage?: string[];
     /** 개수 단위(「3개」) · 안내 문구들 */
     unit: string;
     text: { startDescription: string; startHint: string };
