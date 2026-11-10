@@ -528,3 +528,29 @@ describe('newFolderParent — 새 폴더는 늘 어떤 폴더 하위로', () => 
         expect(newFolderParent(base(), 'nope', isC, 'selection')).toBe('root');
     });
 });
+
+describe('parentOf 역색인', () => {
+    it('나무가 바뀌면 새 색인 — 옛 나무는 옛 답, 새 나무는 새 답', () => {
+        const t1 = make({ a: { children: ['c'] }, b: {}, c: {} });
+        expect(parentOf(t1, 'c')).toBe('a');
+        const t2 = move(t1, 'c', 'b');
+        expect(parentOf(t2, 'c')).toBe('b');
+        expect(parentOf(t1, 'c')).toBe('a');
+    });
+    it('같은 나무에 거듭 물어도 같은 답 · 없는 id 와 루트는 null', () => {
+        const t = make({ a: { children: ['c'] }, c: {} });
+        expect(parentOf(t, 'c')).toBe(parentOf(t, 'c'));
+        expect(parentOf(t, 'zzz')).toBeNull();
+        expect(parentOf(t, 'root')).toBeNull();
+    });
+    it('두 부모(깨진 나무)면 먼저 나온 부모가 이긴다 — 예전 선형 탐색과 같다', () => {
+        const t: Tree = { root: 'root', trash: 'trash', rev: 0, nodes: {
+            root: { id: 'root', type: 'folder', name: 'r', children: ['x', 'y'] },
+            trash: { id: 'trash', type: 'folder', name: 't', children: [] },
+            x: { id: 'x', type: 'folder', name: 'x', children: ['k'] },
+            y: { id: 'y', type: 'folder', name: 'y', children: ['k'] },
+            k: { id: 'k', type: 'folder', name: 'k', children: [] },
+        } };
+        expect(parentOf(t, 'k')).toBe('x');
+    });
+});
