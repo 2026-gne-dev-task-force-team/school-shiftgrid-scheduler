@@ -85,3 +85,15 @@ describe('K18 탐색기에서 아이콘 바꾸기', () => {
         expect(menuItems()).toContain('아이콘 바꾸기');
     });
 });
+
+describe('K23 노드 우클릭 묶음 순서', () => {
+    it('(열기) → 새로 만들기 ▸(하위) → 편집 → 옮기기 → 삭제(맨 아래), 묶음 사이 구분선', () => {
+        const a = apiCreate('root', { type: 'folder', name: '묶음' });
+        apiCreate('root', { type: 'page.page', name: '글' });
+        act(() => { root.render(<ExplorerView host={mkHost(false)} />); });
+        const row = container.querySelector(`[data-row-id="${a}"]`) as HTMLElement;
+        act(() => { row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 5 })); });
+        const items = menuItems();
+        expect(items).toEqual(['새로 만들기▸', '---', '이름 바꾸기', '아이콘 바꾸기', '---', '위로', '아래로', '---', '삭제']);
+    });
+});

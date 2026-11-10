@@ -395,26 +395,18 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         //    🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
         if (selNode && !inTrash) {
             const multi = selectedIds.length > 1;
-            const menuItems = nodeMenu(selectedId!, {
+            const at = new DOMRect(menu?.x ?? 0, menu?.y ?? 0, 0, 0);
+            const id = selectedId!;
+            return nodeMenu(id, {
                 viaCommands: true,
                 open: !multi && canOpenType(selNode.type),
                 create: multi ? [] : createItems('context', { grouped: true }),
                 move: !multi,
+                edit: !multi && canDo(selNode.type, id, 'rename') ? [{ label: '아이콘 바꾸기', icon: 'sparkles', onClick: () => setIconPick({ id, rect: at }) }] : [],
                 renameBlocked: multi,
                 rename: { run: () => run('explorer.rename'), commandId: 'explorer.rename' },
                 remove: { run: () => run('explorer.remove'), commandId: 'explorer.remove', label: multi ? `삭제 (${selectedIds.length}개)` : '삭제' },
             });
-            // 「열기」가 있으면 타입 menu 의 「○○ 열기」는 뺀다 — 같은 노드를 같은 open 으로 연다(각 명령이 getNodesApi().open / kit.openList → def.open).
-            if (menuItems.some((it) => !it.sep && it.label === '열기')) {
-                return menuItems.filter((it) => it.sep || it.label === '열기' || !(it.label.endsWith(' 열기') && it.commandArg?.nodeId === selectedId));
-            }
-            if (!multi && canDo(selNode.type, selectedId!, 'rename')) {
-                const at = new DOMRect(menu?.x ?? 0, menu?.y ?? 0, 0, 0);
-                const id = selectedId!;
-                const idx = menuItems.findIndex((it) => !it.sep && it.label === '이름 바꾸기');
-                menuItems.splice(idx < 0 ? menuItems.length : idx + 1, 0, { label: '아이콘 바꾸기', icon: 'sparkles', onClick: () => setIconPick({ id, rect: at }) });
-            }
-            return menuItems;
         }
         const items: MenuEntry[] = createItems('context', { grouped: true });
         if (items.length === 0) items.push(...folderFallback('context', selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder')));
@@ -617,18 +609,18 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     const rest = all.filter((e) => 'label' in e && e.label !== '새 폴더');
                     const first = START_TYPES.map((t) => rest.find((e) => typeOf.get(e) === t)).filter((e): e is MenuEntry => !!e);
                     const starts = showMoreStarts ? rest : first;
-                    const folder = all.find((e) => 'label' in e && e.label === '새 폴더')
+                    const folder = all.find((e) => !e.sep && e.label === '새 폴더')
                         ?? folderFallback('selection', tree.nodes[newFolderParent(tree, selectedId, isContainerType, 'selection')]?.type ?? 'folder')[0];
                     return (
                         <div className="px-pad py-3 flex flex-col gap-2 select-none" data-explorer-empty>
                             <p className="text-small text-text">처음이신가요? 아래에서 하나를 골라 시작하세요.</p>
-                            {starts.map((e, i) => 'label' in e && (
+                            {starts.map((e, i) => !e.sep && (
                                 <Button key={i} size="sm" variant="soft" tone="accent" block icon={e.icon} disabled={e.disabled} onClick={() => e.onClick?.()}>{e.label}</Button>
                             ))}
                             {!showMoreStarts && rest.length > first.length && (
                                 <Button size="sm" variant="ghost" onClick={() => setShowMoreStarts(true)}>더 보기</Button>
                             )}
-                            {folder && 'label' in folder && !folder.disabled && (
+                            {folder && !folder.sep && !folder.disabled && (
                                 <Button size="sm" variant="ghost" onClick={() => folder.onClick?.()}>폴더 만들기</Button>
                             )}
                         </div>

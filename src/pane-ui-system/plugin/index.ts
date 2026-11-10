@@ -6,7 +6,7 @@
  */
 export type { ViewDef, ViewProps, ViewMenu, ViewMenuHost, PeekHandle } from '../view-registry';
 export type { IconName } from '../primitives/Icon';
-export type { MenuEntry } from '../primitives/ContextMenu';
+export type { MenuEntry, MenuGroup } from '../primitives/ContextMenu';
 
 export type {
     PluginManifest, PluginAbout, PluginModule, PluginHost, Disposable,
