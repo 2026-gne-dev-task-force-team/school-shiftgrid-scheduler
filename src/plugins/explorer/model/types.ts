@@ -185,10 +185,10 @@ export function slotsOf(type: string): string[] {
 export function canDo(type: string, nodeId: string, what: 'rename' | 'move' | 'delete'): boolean {
     // 🔴 싱글톤(나무에 하나 · unique:'tree')은 탐색기에서 지우기를 아예 막는다 — 막아도 실수로 지우는 일이 잦았다(쥔님 2026-11-09).
     //    맨 위 고정 구역에 따로 뜬다(ExplorerView). 옮기기는 「제 부모 안 순서 바꾸기」만 — tree.move 가 다른 부모행을 막는다.
-    if (what === 'delete' && registry.get(type)?.unique === 'tree') return false;
+    //    🔴 단 타입 can 이 delete:true 를 「명시」하면 그걸 따른다 — 계정 루트(마스터만 · confirmDelete 경고)가 막혀 못 지웠다(Q5-C 쥔님 2026-11-10 「삭제 안됨 · 버그」).
     const can = registry.get(type)?.can;
-    if (can == null) return true;
-    const flags = typeof can === 'function' ? can(nodeId) : can;
+    const flags = can == null ? undefined : typeof can === 'function' ? can(nodeId) : can;
+    if (what === 'delete' && registry.get(type)?.unique === 'tree') return flags?.delete === true;
     return flags?.[what] !== false;
 }
 

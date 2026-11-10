@@ -224,7 +224,7 @@ describe('스토어·API — 모든 창구가 같은 관문을 지난다', () =>
         expect(getState().tree.nodes[id]).toBeTruthy();   // 그대로 산다
     });
 
-    it('removeSelected — can.delete false 면 아무 일도 안 한다(경고도 안 뜸)', () => {
+    it('removeSelected — can.delete false 면 안 지우고(확인 줄도 없음) 막힌 까닭을 알린다', () => {
         allowed = true;
         newNode('acc.user', { via: 'context', targetId: root() });
         const id = nodesOfType('acc.user')[0].id;
@@ -233,6 +233,18 @@ describe('스토어·API — 모든 창구가 같은 관문을 지난다', () =>
         removeSelected();
         expect(getState().deleteConfirm).toBeNull();
         expect(getState().tree.nodes[id]).toBeTruthy();
+        // 🔴 Q5-C — 조용히 안 되는 것 금지: 막힌 까닭이 알림으로 보인다
+        expect(notified.at(-1)).toMatchObject({ level: 'warn', key: 'explorer.blocked' });
+    });
+
+    it('Q5-C — 싱글톤은 기본으로 못 지우지만, 타입 can 이 delete:true 를 명시하면 지운다(계정 루트·마스터)', () => {
+        registerType({ type: 'acc.single', label: '단일', icon: 'file', unique: 'tree', create: { label: '단일' }, can: () => ({ delete: allowed }) });
+        registerType({ type: 'acc.single2', label: '단일2', icon: 'file', unique: 'tree', create: { label: '단일2' } });
+        allowed = true;
+        expect(canDo('acc.single', 's', 'delete')).toBe(true);
+        expect(canDo('acc.single2', 's', 'delete')).toBe(false);
+        allowed = false;
+        expect(canDo('acc.single', 's', 'delete')).toBe(false);
     });
 
     it('공개 API apiRemove — can.delete 관문을 지난다', () => {
