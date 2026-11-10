@@ -68,7 +68,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     // 🔴 줄 열기는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 레코드 페이지를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
     const open = (id: string) => {
         if (!peek) { setActiveAccountNode(id); return; }
-        peek.show(<RecordPage id={id} host={host} />, { wideMin: 480 });
+        peek.show(<RecordPage id={id} host={host} />, { wideMin: 480, openInTab: host ? () => rv.openInTab(host, id) : undefined });
     };
     // 🔴 W9 — 여러 줄도 한 묶음으로 휴지통에 · 알림의 「되돌리기」는 노드 시스템 정식 되돌리기(nodes.cmd.undo)
     const remove = (ids: string[]) => { if (host) removeAndNotify(host, kind, ids); else removeAccountRecords(ids); };
@@ -95,6 +95,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
                 emptyHint={kind === 'perms' ? '권한은 직접 만들지 않고, 권한을 내놓는 기능 꾸러미가 켜져 있으면 여기에 나타납니다.' : kind === 'users' ? '아래 「새로 만들기」를 눌러 첫 사용자를 만드세요.' : '아래 「새로 만들기」를 눌러 첫 역할을 만드세요.'}
                 onDeleteRecords={m.canDelete ? askRemove : undefined}
                 onOpenRecord={kind === 'perms' ? undefined : open}
+                onOpenRecordTab={kind === 'perms' || !host ? undefined : (id) => rv.openInTab(host, id)}
                 onReorder={m.canEdit ? reorderAccount : undefined}
                 className="flex-1 min-h-0"
             />

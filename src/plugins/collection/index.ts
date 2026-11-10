@@ -7,7 +7,7 @@
  *   제공(provides: collection · 모듈 값 recordViewApi)으로 채운다 — 손님은 host.modules.use<RecordViewApi>('collection').
  *   ⭐ 2026-11-09 「연습장」을 걷었다(쥔님) — 리본은 다른 꾸러미처럼 노드 화면을 연다(보던 게 없으면 첫 레코드 뷰).
  */
-import { useEffect } from 'react';
+import { createElement, useEffect } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
@@ -16,7 +16,10 @@ import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 import { recordViewApi } from './api';
 import { DbView } from './views/DbView';
-import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, restoreTrashedRows } from './nodes';
+import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, restoreTrashedRows, ROW_TYPE } from './nodes';
+import { RecordTab, registerRecordTab } from './tab-open';
+import { RowDoc } from './RowDoc';
+import { dbOf } from './RowProps';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'collection.' 를 붙인다). contributes 엔 접두사 없는 'db' 로.
 const DB_ID = 'collection.db';
@@ -60,6 +63,12 @@ export const collectionPlugin = definePlugin({
                 id: 'playground', title: '컬렉션 연습장', icon: 'layers', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 component: 'LegacyPlayground',
+            }, {
+                // 🔴 W13 「탭으로 열기」 — 제 편집 탭이 없는 레코드(행·목록 항목)를 미리보기와 같은 열기 페이지로 가운데 탭에(tab-open.tsx)
+                id: 'record', title: '레코드', icon: 'fileText', defaultArea: 'center',
+                placement: { areas: ['center'], singleton: true },
+                layout: { minWidth: 320, squeeze: 'scroll' },
+                component: 'Record',
             }],
             commands: [
                 { id: 'collection.open', title: '컬렉션 열기', icon: 'layers' },
@@ -76,6 +85,8 @@ export const collectionPlugin = definePlugin({
         LegacyPlayground: LegacyPlaygroundRedirect,
         // 레코드 뷰 노드 화면 — host 로 탐색기 되돌리기 명령을 부른다.
         Db: DbView,
+        // 레코드 탭 — 미리보기의 「탭으로 열기」·목록 ⌘클릭이 여기로 온다
+        Record: RecordTab,
     },
     commands: {
         // 리본 「레코드 뷰 열기」 — 보던 레코드 뷰가 없으면 첫 레코드 뷰를 잡고 연다(하나도 없으면 안내).
@@ -94,6 +105,8 @@ export const collectionPlugin = definePlugin({
         onActivate(host: PluginHost) {
             const nodes = host.modules.use<NodesApi>('nodes');
             initRecordNodes(nodes ?? null);
+            // 행은 제 편집 탭이 없다 — 「탭으로 열기」는 레코드 탭이 미리보기와 같은 RowDoc 으로 그린다
+            registerRecordTab(ROW_TYPE, (h, id) => { const db = dbOf(id); return db ? createElement(RowDoc, { host: h, dbId: db, rowId: id }) : null; });
         },
     },
 });

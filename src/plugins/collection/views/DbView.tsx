@@ -12,6 +12,7 @@ import { Button, EmptyState, Icon, undoKey, useFrameToolbar } from '../../../pan
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
+import { openRecordTab } from '../tab-open';
 import type { CellChange, ConvertPlan, PasteRequest, RecordCellValue, RecordField, ViewDef } from '../RecordView';
 import { buildPaste } from '../paste';
 import { blankDb } from '../schema';
@@ -66,7 +67,8 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
             <div className="h-full">
                 <DbTable host={host} snap={snap} toolbarHost={bar.host}
                     focusRoot={() => rootRef.current?.focus({ preventScroll: true })}
-                    onOpenRecord={(rowId) => peek.show(<RowDoc host={host} dbId={id} rowId={rowId} />, { wideMin: 480 })} />
+                    onOpenRecord={(rowId) => peek.show(<RowDoc host={host} dbId={id} rowId={rowId} />, { wideMin: 480, openInTab: () => openRecordTab(host, rowId) })}
+                    onOpenRecordTab={(rowId) => { openRecordTab(host, rowId); }} />
             </div>
             </Frame>
         </div>
@@ -77,8 +79,8 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
  * 표 한 벌(컬렉션 id 하나) — 탭 화면(DbView)과 끼워 넣기 펼침(DbEmbed · R3-E)이 같이 쓴다. 쓰기는 전부 commit(노드 다리) 한 곳.
  *   onOpenRecord 가 없으면 줄 열기(→)가 안 보인다 · focusRoot 는 지운 뒤 초점을 둘 자리(없으면 그대로).
  */
-export function DbTable({ host, snap, toolbarHost, onOpenRecord, focusRoot }: {
-    host: PluginHost; snap: DbSnapshot; toolbarHost?: HTMLElement | null; onOpenRecord?: (rowId: string) => void; focusRoot?: () => void;
+export function DbTable({ host, snap, toolbarHost, onOpenRecord, onOpenRecordTab, focusRoot }: {
+    host: PluginHost; snap: DbSnapshot; toolbarHost?: HTMLElement | null; onOpenRecord?: (rowId: string) => void; onOpenRecordTab?: (rowId: string) => void; focusRoot?: () => void;
 }) {
     const { id, doc, records } = snap;
     // 접힘 장부 — 행마다 records.find 로 훑으면 행 수² (#50). 레코드가 같은 동안 한 번만 만든다
@@ -127,6 +129,7 @@ export function DbTable({ host, snap, toolbarHost, onOpenRecord, focusRoot }: {
             // 줄 열기(→) — 미리보기에 그 줄의 칸들 + 페이지 문서(노션 줄 열기)
             iconOf={(rowId) => getNodesApi()?.get(rowId)?.icon}
             onOpenRecord={onOpenRecord}
+            onOpenRecordTab={onOpenRecordTab}
             tree={{
                 parentOf: (r) => (r.__parent as string | null) ?? null,
                 collapsed: (rowId) => collapsedIds.has(rowId),
