@@ -9,6 +9,8 @@
  *       ⚠️ 컬렉션(collection/Toolbar.tsx)은 role 없이 제 줄을 그린다 — 이 세기가 못 본다. Q12 가 창틀 Toolbar 로 옮기면 끝(기준값은 이미 0 이라 허용 수 1 을 둘 일이 없었다).
  *     zRaw       : 맨 z-index 숫자(`z-[N]`·`zIndex: N`) 수 — 겹침은 z 토큰(z-modal·z-popover·z-tooltip·z-toast)으로(R7)
  *     bareInput  : 맨 <input·<select 수 — 공통 TextInput·InlineRename·Select·Toggle 을 쓰면 안 는다(type=color·file 같은 네이티브 전용 칸은 못 줄인다)(R7)
+ *     bareTextarea: 맨 <textarea 수(bareInput 값을 못 건드려 따로 둔다 — select 는 이미 bareInput 이 센다)
+ *     bareLabel  : 맨 <label 수 — 공통 Field·FormRow 부품으로
  *     divClick   : `<div … onClick` 수 — 단추가 아닌 클릭 영역. 공통 Button·Row·MenuItem·IconButton 을 쓴다(R7)
  *     ownTrash   : 꾸러미가 제 손으로 휴지통 부모 사슬을 판정한 수(`roots.trash`·`tree.trash`·`trashedFrom` 글자) — 판정은 nodes.isTrashed·liveByType 로(R7)
  *       ⚠️ 이 글자 셈은 못 잡는 모양이 있다(다른 이름의 변수·동적 접근). 확실히 잡히는 판별식만 센다. 휴지통의 주인 explorer 는 기준값이 높아도 정상이다.
@@ -30,7 +32,8 @@ const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
 
 type Metric = 'bareButton' | 'arbPx' | 'cmdIdString' | 'ctxDirect' | 'roleToolbar'
-    | 'textPx' | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme' | 'ownUndoNotice';
+    | 'textPx' | 'zRaw' | 'bareInput' | 'divClick' | 'ownTrash' | 'enterNoIme' | 'ownUndoNotice'
+    | 'bareTextarea' | 'bareLabel';
 type Counts = Record<Metric, number>;
 
 function walk(dir: string): string[] {
@@ -86,10 +89,12 @@ for (const [scope, texts] of Object.entries(files)) {
 function measure(scope: string): Counts {
     const texts = files[scope];
     let bareButton = 0, arbPx = 0, textPx = 0, cmdIdString = 0, ctxDirect = 0, roleToolbar = 0;
-    let zRaw = 0, bareInput = 0, divClick = 0, ownTrash = 0, enterNoIme = 0, ownUndoNotice = 0;
+    let bareTextarea = 0, bareLabel = 0, zRaw = 0, bareInput = 0, divClick = 0, ownTrash = 0, enterNoIme = 0, ownUndoNotice = 0;
     for (const t of r7Texts[scope]) {
         zRaw += count(t, /\bz-\[\d+\]/g) + count(t, /\bzIndex\s*:\s*\d/g);
         bareInput += count(t, /<(?:input|select)\b/g);
+        bareTextarea += count(t, /<textarea\b/g);
+        bareLabel += count(t, /<label\b/g);
         divClick += count(t, /<div\b(?:=>|[^>])*?\sonClick\b/g);
         if (/key\s*===\s*['"]Enter['"]/.test(t) && !/isImeEnter|isComposing/.test(t)) enterNoIme += 1;
     }
@@ -109,7 +114,7 @@ function measure(scope: string): Counts {
             cmdIdString += t.split(`"${id}"`).length - 1;
         }
     }
-    return { bareButton, arbPx, textPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme, ownUndoNotice };
+    return { bareButton, arbPx, textPx, cmdIdString, ctxDirect, roleToolbar, zRaw, bareInput, divClick, ownTrash, enterNoIme, ownUndoNotice, bareTextarea, bareLabel };
 }
 
 const current: Record<string, Counts> = Object.fromEntries(Object.keys(SCOPES).map((s) => [s, measure(s)]));
@@ -119,7 +124,7 @@ if (process.env.RATCHET_UPDATE) {
 }
 
 const baseline: Record<string, Counts> = JSON.parse(readFileSync(BASELINE_FILE, 'utf-8'));
-const METRICS: Metric[] = ['bareButton', 'arbPx', 'textPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme', 'ownUndoNotice'];
+const METRICS: Metric[] = ['bareButton', 'arbPx', 'textPx', 'cmdIdString', 'ctxDirect', 'roleToolbar', 'zRaw', 'bareInput', 'divClick', 'ownTrash', 'enterNoIme', 'ownUndoNotice', 'bareTextarea', 'bareLabel'];
 const HOW: Record<Metric, string> = {
     bareButton: '공통 Button·IconButton·Dialog 를 써라',
     arbPx: '글자는 단계 토큰(text-micro·note·small·body·lead), 치수는 토큰·표준 클래스로',
@@ -129,6 +134,8 @@ const HOW: Record<Metric, string> = {
     roleToolbar: '툴바는 Frame 의 toolbar 자리에 창틀 Toolbar 로 — role="toolbar" 를 직접 쓰지 마라',
     zRaw: '겹침은 z 토큰(z-modal 260 · z-popover 270 · z-tooltip 290 · z-toast 300)으로 — 맨 숫자 금지',
     bareInput: '공통 TextInput·InlineRename·Select·Toggle 을 써라',
+    bareTextarea: '여러 줄 입력은 공통 TextArea(또는 TextInput multiline)를 써라 — 맨 textarea 금지',
+    bareLabel: '라벨은 공통 Field·FormRow 등 부품으로 — 맨 label 금지',
     divClick: '클릭은 공통 Button·Row·MenuItem·IconButton 으로 — div 에 onClick 을 달지 마라',
     ownTrash: '휴지통 판정은 nodes.isTrashed·liveByType 로 — 부모 사슬을 제 손으로 걷지 마라',
     ownUndoNotice: '알림 + 되돌리기는 창틀 notifyUndo(명령)·notifyNodeUndo(노드 더미)·createUndoSlot(꾸러미 제 더미)으로 — label: \'되돌리기\' 를 손으로 짜지 마라',
