@@ -202,6 +202,12 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         return tsv;
     }, [buildTsv]);
 
+    // ⌘X — 복사 + 선택 범위 지우기(commit 한 번 = ⌘Z 한 번)
+    const doCut = useCallback(() => {
+        doCopy();
+        clearSelection();
+    }, [doCopy, clearSelection]);
+
     const doPaste = useCallback((tsv: string, atR?: number, atC?: number) => {
         const a = adapterRef.current;
         const baseR = atR ?? activeRef.current.r;
@@ -221,16 +227,27 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         const lastR = baseR + grid.length - 1;
         const wantC = baseC + Math.max(...grid.map((l) => l.length)) - 1;
         const lastC = a.growCols ? wantC : Math.min(a.colCount - 1, wantC);
+        // 🔴 붙인 범위 전체를 고른다 — 행은 이 commit 으로 늘어날 것이라 rowCount(옛 값)로 자르지 않는다.
+        //    실제로 안 늘었으면 아래 보정 효과가 렌더 뒤에 범위를 표 안으로 접는다.
         setAnchorState({ r: baseR, c: baseC });
-        setActiveState(a.growCols ? { r: clamp(lastR, 0).r, c: lastC } : clamp(lastR, lastC));
-    }, [clamp]);
+        setActiveState({ r: Math.max(0, lastR), c: Math.max(0, lastC) });
+    }, []);
+
+    // 선택이 표 밖(옛 rowCount 기준으로 늘려 잡은 붙여넣기 범위 · 줄어든 표)을 가리키면 표 안으로 접는다.
+    const { rowCount: rcNow, colCount: ccNow } = adapter;
+    useEffect(() => {
+        const fix = (p: CellPos): CellPos => ({ r: Math.max(0, Math.min(rcNow - 1, p.r)), c: Math.max(0, Math.min(ccNow - 1, p.c)) });
+        const a2 = fix(activeRef.current), b2 = fix(anchorRef.current);
+        if (a2.r !== activeRef.current.r || a2.c !== activeRef.current.c) setActiveState(a2);
+        if (b2.r !== anchorRef.current.r || b2.c !== anchorRef.current.c) setAnchorState(b2);
+    }, [rcNow, ccNow, active, anchor]);
 
     // ── 문서 레벨 키·복붙 (격자에 포커스가 있을 때만) ─────────
     // impl 에 최신 함수를 담아 리스너는 한 번만 붙인다.
     const impl = useRef({
-        moveTo, beginEdit, commitEdit, clearSelection, fillDown, doCopy, doPaste, buildTsv, selectRange,
+        moveTo, beginEdit, commitEdit, clearSelection, fillDown, doCopy, doCut, doPaste, buildTsv, selectRange,
     });
-    impl.current = { moveTo, beginEdit, commitEdit, clearSelection, fillDown, doCopy, doPaste, buildTsv, selectRange };
+    impl.current = { moveTo, beginEdit, commitEdit, clearSelection, fillDown, doCopy, doCut, doPaste, buildTsv, selectRange };
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -243,6 +260,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             const u = undoKey(e);   // ⌘Z 판정은 창틀 공용(한글 조합 중·Alt 낀 것 거름) — 더미는 역트랜잭션이라 여기 몫
             if (u) { e.preventDefault(); e.stopPropagation(); if (u === 'redo') a.onRedo?.(); else a.onUndo?.(); return; }
             if (meta && (k === 'c' || k === 'C' || e.code === 'KeyC')) { e.preventDefault(); e.stopPropagation(); impl.current.doCopy(); return; }
+            if (meta && (k === 'x' || k === 'X' || e.code === 'KeyX')) { e.preventDefault(); e.stopPropagation(); impl.current.doCut(); return; }
             // 🔴 ⌘V 는 preventDefault 하면 안 된다 — 브라우저가 paste 이벤트를 아예 안 쏜다(붙여넣기 먹통이던 원인). paste 이벤트가 처리
             if (meta && (k === 'v' || k === 'V' || e.code === 'KeyV')) { e.stopPropagation(); return; }
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); impl.current.fillDown(selRef.current.r2); return; }
@@ -256,6 +274,18 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 else if (k === 'ArrowRight') a.insert('col', act.c + 1);
                 return;
             }
+            // 엑셀 관례 — ⌘/Ctrl+방향 = 표 끝, ⌘Home = A1, ⌘End = 마지막 칸 (⇧ 로 범위 확장)
+            if (meta && !e.altKey) {
+                const lastR = Math.max(0, a.dataRowCount - 1), lastC = a.colCount - 1;
+                let to: CellPos | null = null;
+                if (k === 'ArrowDown') to = { r: lastR, c: act.c };
+                else if (k === 'ArrowUp') to = { r: 0, c: act.c };
+                else if (k === 'ArrowLeft') to = { r: act.r, c: 0 };
+                else if (k === 'ArrowRight') to = { r: act.r, c: lastC };
+                else if (k === 'Home') to = { r: 0, c: 0 };
+                else if (k === 'End') to = { r: lastR, c: lastC };
+                if (to) { e.preventDefault(); e.stopPropagation(); impl.current.moveTo(to.r, to.c, e.shiftKey); return; }
+            }
             // 격자가 안 쓰는 단축키(Ctrl+S 등)는 껍데기로 흘려보낸다
             if (meta || e.altKey || (/^F\d+$/.test(k) && k !== 'F2')) return;
             e.stopPropagation();
@@ -263,6 +293,16 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (k === 'ArrowUp') { e.preventDefault(); impl.current.moveTo(act.r - 1, act.c, e.shiftKey); return; }
             if (k === 'ArrowLeft') { e.preventDefault(); impl.current.moveTo(act.r, act.c - 1, e.shiftKey); return; }
             if (k === 'ArrowRight') { e.preventDefault(); impl.current.moveTo(act.r, act.c + 1, e.shiftKey); return; }
+            if (k === 'Home') { e.preventDefault(); impl.current.moveTo(act.r, 0, e.shiftKey); return; }
+            if (k === 'End') { e.preventDefault(); impl.current.moveTo(act.r, a.colCount - 1, e.shiftKey); return; }
+            if (k === 'PageDown' || k === 'PageUp') {
+                e.preventDefault();
+                const box = containerRef.current;
+                const rowH = box?.querySelector<HTMLElement>('[data-rc]')?.getBoundingClientRect().height || 0;
+                const page = box && rowH > 0 ? Math.max(1, Math.floor(box.clientHeight / rowH) - 1) : 10;
+                impl.current.moveTo(act.r + (k === 'PageDown' ? page : -page), act.c, e.shiftKey);
+                return;
+            }
             if (k === 'Tab') { e.preventDefault(); impl.current.moveTo(act.r, act.c + (e.shiftKey ? -1 : 1)); return; }
             if (k === 'Enter') {
                 if (isImeEnter(e)) return;   // 🔴 조합 중 Enter 는 칸 이동을 일으키지 않는다(편집창이 이어받는다)

@@ -225,6 +225,20 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         wasEditing.current = now;
     }, [core.edit, core.containerRef]);
 
+    // 활성칸이 보이도록 가로·세로 스크롤(고정 머리 줄에 가리지 않게) — 브라우저 기본은 칸 포커스가 아니라 안 따라온다.
+    useEffect(() => {
+        const box = core.containerRef.current; if (!box || core.edit) return;
+        const td = box.querySelector<HTMLElement>(`[data-rc="${core.active.r}:${core.active.c}"]`);
+        if (!td) return;
+        const cr = box.getBoundingClientRect(), tr = td.getBoundingClientRect();
+        const headH = hasSticky ? (box.querySelector('thead')?.getBoundingClientRect().height ?? 0) : 0;
+        const topEdge = cr.top + headH, leftEdge = cr.left;
+        if (tr.left < leftEdge) box.scrollLeft -= leftEdge - tr.left;
+        else if (tr.right > cr.left + box.clientWidth) box.scrollLeft += tr.right - (cr.left + box.clientWidth);
+        if (tr.top < topEdge) box.scrollTop -= topEdge - tr.top;
+        else if (tr.bottom > cr.top + box.clientHeight) box.scrollTop += tr.bottom - (cr.top + box.clientHeight);
+    }, [core.active.r, core.active.c, core.edit, core.containerRef, hasSticky]);
+
     const lb = {
         addRow: labels?.addRow ?? '행 추가',
         addCol: labels?.addCol ?? '열 추가',
@@ -276,7 +290,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
     const mergeSelection = (): void => {
         const region = regionFromSelection(core.sel, rows, columns);
-        if (region) emit({ cells: [], merge: { set: [region] }, source: 'menu' }, false);
+        if (region) {
+            emit({ cells: [], merge: { set: [region] }, source: 'menu' }, false);
+            core.moveTo(core.sel.r1, core.sel.c1);   // 활성칸이 덮인 칸으로 남지 않게 병합 칸 좌상을 활성으로
+        }
     };
     const unmergeAtActive = (): void => {
         const a = anchorCovering(merges, core.active.r, core.active.c, rows, columns);
@@ -659,7 +676,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 data-testid="table-grid"
                 onFocus={() => { core.onFocus(); setFocused(true); }}
                 onBlur={(e) => { core.onBlur(e); if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false); }}
-                className="relative overflow-auto outline-none max-h-full w-max max-w-full"
+                className="relative overflow-auto outline-none max-h-full w-max max-w-full pr-1.5 pb-1.5"
             >
                 <table className="border-collapse">
                     <thead>
