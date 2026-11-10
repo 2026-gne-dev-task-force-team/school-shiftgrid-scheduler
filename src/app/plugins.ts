@@ -55,7 +55,7 @@ export const PLUGINS: PluginModule[] = [
     substitutePlugin,        // 보결 명단 꾸러미
     schoolPlugin,            // 학교 정보 꾸러미
     subjectsPlugin,          // 과목 꾸러미
-    staffPlugin,             // 교원·직원 명단 꾸러미
+    staffPlugin,             // 교직원 명단 꾸러미
     bellPlugin,              // 일과표 꾸러미 — clock 약속(학년별 교시 ↔ 실제 시각)
     dutyPlugin,              // 복무 꾸러미 — duty 약속(그 날·그 교시 빠지는 사람)
     timetableGridPlugin,     // 시간표 꾸러미(시트 확장)
