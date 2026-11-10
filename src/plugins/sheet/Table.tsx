@@ -29,7 +29,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
+import { isAlt, keyLabel, isMacPlatform, ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -625,10 +625,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const selColKeys = columns.slice(sel.c1, sel.c2 + 1).map((c) => c.key);
     const hasCells = rows.length > 0 && columns.length > 0;
     const tools: Tool[] = toolbar ? [
-        { id: 'undo', icon: 'undo', label: '되돌리기', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
-        { id: 'redo', icon: 'redo', label: '다시 하기', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
+        { id: 'undo', icon: 'undo', label: '되돌리기', title: `되돌리기 (${keyLabel('Mod+Z')})`, on: !!undoFn, run: () => undoFn?.() },
+        { id: 'redo', icon: 'redo', label: '다시 하기', title: `다시 하기 (${keyLabel('Mod+Shift+Z')}${isMacPlatform() ? '' : ' · Ctrl+Y'})`, on: !!redoFn, run: () => redoFn?.() },
         '|',
-        { id: 'copy', icon: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
+        { id: 'copy', icon: 'copy', label: '복사', title: `복사 (${keyLabel('Mod+C')}) — 붙여넣기는 ${keyLabel('Mod+V')}`, on: hasCells, run: () => core.handle.copy() },
         '|',
         { id: 'row-above', icon: 'rowAbove', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
         { id: 'row-below', icon: 'rowBelow', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
@@ -999,7 +999,7 @@ function renderEditor(
                 const k = e.key;
                 if (k === 'Escape') { e.preventDefault(); core.cancelEdit(); return; }
                 if (k === 'Enter') {
-                    if (e.altKey) {
+                    if (isAlt(e)) {
                         e.preventDefault();
                         const el = e.currentTarget;
                         const s = el.selectionStart ?? el.value.length;

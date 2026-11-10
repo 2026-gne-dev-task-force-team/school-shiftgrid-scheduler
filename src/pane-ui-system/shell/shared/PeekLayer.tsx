@@ -14,6 +14,7 @@ import { IconButton } from '../../primitives/IconButton';
 import { storageKey } from '../../storage';
 import { isImeEnter } from '../../primitives/ime';
 import { PeekBarProvider, usePeekBarState } from './peek-bar';
+import { isMod, keyLabel } from '../../platform-keys';
 
 const DEFAULT_W = 640;   // 문서급 기본 폭(쥔님: 480→640 이상)
 const MIN_W = 320;
@@ -81,7 +82,7 @@ export function PeekLayer({ mode, closing = false, onClose, onOpenInTab, childre
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
             // ⌘Enter(윈도 Ctrl+Enter) = 탭으로 열기 — 초점이 이 피크 안에 있을 때만(다른 칸의 ⌘Enter 를 뺏지 않게)
-            if (e.key === 'Enter' && !isImeEnter(e) && (e.metaKey || e.ctrlKey) && onOpenInTab && layerRef.current?.contains(document.activeElement)) {
+            if (e.key === 'Enter' && !isImeEnter(e) && isMod(e) && onOpenInTab && layerRef.current?.contains(document.activeElement)) {
                 e.preventDefault(); e.stopPropagation(); onOpenInTab();
             }
         };
@@ -167,7 +168,7 @@ export function PeekLayer({ mode, closing = false, onClose, onOpenInTab, childre
                     <div ref={bar.setSlot} className="flex-1 min-w-0 flex items-center gap-1">
                         {!bar.claimed && <span className="text-small font-semibold text-muted">미리보기</span>}
                     </div>
-                    {onOpenInTab && <IconButton icon="arrowRight" label="탭으로 열기 (⌘Enter)" data={{ 'data-peek-open-tab': '' }} onClick={onOpenInTab} />}
+                    {onOpenInTab && <IconButton icon="arrowRight" label={`탭으로 열기 (${keyLabel('Mod+Enter')})`} data={{ 'data-peek-open-tab': '' }} onClick={onOpenInTab} />}
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
                 <PeekBarProvider slot={bar.slot} claim={bar.claim}>

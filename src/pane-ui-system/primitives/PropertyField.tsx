@@ -4,6 +4,7 @@
  *   🔴 색·치수는 토큰 클래스로만. 한글 조합 중 Enter 는 확정이 아니다.
  */
 import { useEffect, useState } from 'react';
+import { isMod } from '../platform-keys';
 
 export function PropertyField({
     label,
@@ -31,7 +32,7 @@ export function PropertyField({
                 <textarea
                     value={draft} placeholder={placeholder} rows={3}
                     onChange={(e) => setDraft(e.target.value)} onBlur={commit}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) commit(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && isMod(e) && !e.nativeEvent.isComposing) commit(); }}
                     className={`${cls} resize-y`}
                 />
             ) : (
