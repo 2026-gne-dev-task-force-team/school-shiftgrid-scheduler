@@ -9,7 +9,7 @@
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { SLOT_CONFIG, LIST_TYPE, SLOT_TYPE } from './config';
+import { SLOT_CONFIG, LIST_TYPE, SLOT_TYPE, newListFields } from './config';
 
 export { LIST_TYPE, SLOT_TYPE };
 
@@ -37,6 +37,7 @@ export const bellNodeTypeImpl = {
     list: {
         open: (host: PluginHost, id: string) => { kit?.open(host, id); },
         menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
+        createInit: () => ({ data: { fields: newListFields() } }),
     } satisfies NodeTypeImplFns,
 };
 

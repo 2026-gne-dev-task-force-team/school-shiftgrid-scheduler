@@ -59,7 +59,7 @@ export const STAFF_CONFIG: CollectionConfig = {
     openCommandId: 'staff.openList',
     viewKey: 'staff.list',
     listLabel: '교직원 명단',
-    listIcon: 'users',
+    listIcon: 'shieldCheck',
     itemIcon: 'user',
     baseFields: [
         { key: 'name', label: '이름', type: 'text', locked: true, description: '명단에서 이 선생님·직원을 가리키는 이름입니다. 탐색기 줄 이름과 같습니다.' },

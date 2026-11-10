@@ -9,7 +9,7 @@
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { STAFF_CONFIG, LIST_TYPE, MEMBER_TYPE } from './config';
+import { STAFF_CONFIG, LIST_TYPE, MEMBER_TYPE, newListFields } from './config';
 
 export { LIST_TYPE, MEMBER_TYPE };
 
@@ -37,6 +37,7 @@ export const staffNodeTypeImpl = {
     list: {
         open: (host: PluginHost, id: string) => { kit?.open(host, id); },
         menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
+        createInit: () => ({ data: { fields: newListFields() } }),
     } satisfies NodeTypeImplFns,
 };
 
@@ -47,7 +48,7 @@ export const staffNodeTypeImpl = {
  */
 export const staffNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, body: 'collection', label: '교직원 명단', icon: 'users',
+        type: LIST_TYPE, body: 'collection', label: '교직원 명단', icon: 'shieldCheck',
         container: { accepts: [MEMBER_TYPE, 'folder', LIST_TYPE] }, openable: true,
         create: { label: '교직원 명단', under: ['folder', LIST_TYPE] },
         impl: 'list',

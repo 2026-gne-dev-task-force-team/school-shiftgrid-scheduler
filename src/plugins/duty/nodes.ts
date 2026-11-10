@@ -9,7 +9,7 @@
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { DUTY_CONFIG, LIST_TYPE, ENTRY_TYPE } from './config';
+import { DUTY_CONFIG, LIST_TYPE, ENTRY_TYPE, newLedgerFields } from './config';
 
 export { LIST_TYPE, ENTRY_TYPE };
 
@@ -37,6 +37,7 @@ export const dutyNodeTypeImpl = {
     list: {
         open: (host: PluginHost, id: string) => { kit?.open(host, id); },
         menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
+        createInit: () => ({ data: { fields: newLedgerFields() } }),
     } satisfies NodeTypeImplFns,
 };
 
