@@ -23,7 +23,7 @@ export function StartScreen({ leafId }: { leafId?: string }) {
             title="시트"
             noun="시트"
             newLabel="새 시트"
-            newHint="빈 시트(3×3)가 바로 열린다"
+            newHint="빈 시트(3×3)가 바로 열립니다"
             items={items}
             onNew={make}
             onOpen={open}

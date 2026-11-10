@@ -46,16 +46,16 @@ export function PaneSettingsPane({ host }: SettingsPaneProps) {
                 <Field title="사이드바 기본 폭" hint="새로 열 때의 폭(px)">
                     <NumberInput value={settings.sidebarWidth} onChange={(n) => set({ sidebarWidth: n })} />
                 </Field>
-                <Field title="사이드바 최소 폭" hint="이 아래로는 못 줄인다 · 뷰가 더 큰 최소를 요구하면 그쪽이 이긴다">
+                <Field title="사이드바 최소 폭" hint="이 아래로는 못 줄입니다 · 뷰가 더 큰 최소를 요구하면 그쪽이 이깁니다">
                     <NumberInput value={settings.sidebarMinWidth} onChange={(n) => set({ sidebarMinWidth: n })} />
                 </Field>
-                <Field title="사이드바 최대 폭" hint="이 위로는 못 늘린다(px)">
+                <Field title="사이드바 최대 폭" hint="이 위로는 못 늘립니다(px)">
                     <NumberInput value={settings.sidebarMaxWidth} onChange={(n) => set({ sidebarMaxWidth: n })} />
                 </Field>
             </div>
 
             <div className="flex flex-col gap-4 pt-4 border-t border-line">
-                <Field title="탭 한 칸 최소/최대 폭" hint="좁으면 글자가 잘리고, 넘치면 탭 줄이 스크롤된다(px)">
+                <Field title="탭 한 칸 최소/최대 폭" hint="좁으면 글자가 잘리고, 넘치면 탭 줄이 스크롤됩니다(px)">
                     <div className="flex items-center gap-2">
                         <NumberInput value={settings.tabMinWidth} onChange={(n) => set({ tabMinWidth: n })} />
                         <span className="text-muted">~</span>
@@ -65,7 +65,7 @@ export function PaneSettingsPane({ host }: SettingsPaneProps) {
                 <Field title="좁은 화면 기준폭" hint="이 폭 아래면 붙박이 대신 덮는 서랍으로(px)">
                     <NumberInput value={settings.narrowWidth} onChange={(n) => set({ narrowWidth: n })} />
                 </Field>
-                <Field title="서랍 자동 닫기" hint="고정을 푼 서랍에서 바깥을 누르면 접힌다">
+                <Field title="서랍 자동 닫기" hint="고정을 푼 서랍에서 바깥을 누르면 접힙니다">
                     <Toggle on={settings.autoClose} onToggle={(v) => set({ autoClose: v })} />
                 </Field>
             </div>
@@ -78,7 +78,7 @@ export function PaneSettingsPane({ host }: SettingsPaneProps) {
                 <Field title="상태바 보이기" hint="전체 폭 하단 상태바(정보 줄)">
                     <Toggle on={settings.showStatusBar} onToggle={(v) => set({ showStatusBar: v })} />
                 </Field>
-                <Field title="좁은 화면 상태바" hint="폰에서는 기본 숨김 — 켜면 하단 바 위에 뜬다">
+                <Field title="좁은 화면 상태바" hint="폰에서는 기본 숨김 — 켜면 하단 바 위에 뜹니다">
                     <Toggle on={settings.statusBarNarrow} onToggle={(v) => set({ statusBarNarrow: v })} />
                 </Field>
             </div>

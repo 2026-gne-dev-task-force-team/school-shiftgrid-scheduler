@@ -177,7 +177,7 @@ function computeActivation(): { order: string[]; blocked: Map<string, string>; p
         if (blocked.has(m.manifest.id)) continue;
         const hasNodeTypes = (m.manifest.contributes?.nodeTypes?.length ?? 0) > 0;
         if (hasNodeTypes && !('nodes' in req(m)) && !('nodes' in prov(m))) {
-            blocked.set(m.manifest.id, `꺼짐 — nodeTypes 기여엔 requires.nodes 선언이 필요하다`);
+            blocked.set(m.manifest.id, `꺼짐 — nodeTypes 기여엔 requires.nodes 선언이 필요합니다`);
         }
     }
     // ③ 전이 블록 — 필요한 제공자가 블록이면 나도 블록(고정점)

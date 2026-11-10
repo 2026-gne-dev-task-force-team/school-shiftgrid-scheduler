@@ -25,7 +25,7 @@ export const ROOM_CONFIG: CollectionConfig = {
     ],
     description: '교실·특별실 같은 방을 모아 두는 목록입니다. 방 안에 방을 들여쓰기로 넣을 수 있고, 시간표·방 예약에서 방을 고를 때 여기서 고릅니다.',
     unit: '개',
-    text: { startDescription: '새로 만들거나, 만들어 둔 방 목록을 고른다.', startHint: '빈 목록이 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 방 목록을 고르세요.', startHint: '빈 목록이 바로 열립니다' },
     // 🔴 방 안에 방 — 부모는 노드 부모가 아니라 data.parentId 칸(부모를 지워도 자식은 최상위로 — effectiveParentId)
     tree: { parentLabel: '부모 방' },
 };

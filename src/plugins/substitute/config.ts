@@ -36,5 +36,5 @@ export const STAFF_CONFIG: CollectionConfig = {
     ],
     newListFields,
     unit: '명',
-    text: { startDescription: '새로 만들거나, 만들어 둔 보결 명단을 고른다.', startHint: '구분 칸이 든 빈 명단이 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 보결 명단을 고르세요.', startHint: '구분 칸이 든 빈 명단이 바로 열립니다' },
 };

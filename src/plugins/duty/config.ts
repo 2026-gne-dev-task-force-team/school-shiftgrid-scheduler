@@ -48,5 +48,5 @@ export const DUTY_CONFIG: CollectionConfig = {
     newListFields: newLedgerFields,
     description: '교직원의 출장·연수·연가·병가 같은 복무를 적는 대장입니다. 보결이 「그 시간 누가 학교에 없나」를 여기서 읽습니다.',
     unit: '건',
-    text: { startDescription: '새로 만들거나, 만들어 둔 복무 대장을 고른다.', startHint: '빈 복무 대장이 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 복무 대장을 고르세요.', startHint: '빈 복무 대장이 바로 열립니다' },
 };

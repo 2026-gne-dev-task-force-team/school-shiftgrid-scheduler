@@ -23,7 +23,7 @@ export function StartScreen({ leafId }: { leafId?: string }) {
             title="노트"
             noun="노트"
             newLabel="새 노트"
-            newHint="빈 노트가 바로 열린다"
+            newHint="빈 노트가 바로 열립니다"
             items={items}
             onNew={make}
             onOpen={open}

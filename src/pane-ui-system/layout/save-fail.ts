@@ -10,7 +10,7 @@ export function reportSettingsSaveFail(label: string, err?: unknown): void {
     void import('../plugin/notify').then(({ notify }) => {
         notify('frame', {
             level: 'error', title: '화면 설정 저장 실패',
-            body: `${label}을(를) 저장하지 못했다 — 새로고침하면 바뀐 설정이 돌아갈 수 있다`,
+            body: `${label}을(를) 저장하지 못했습니다 — 새로고침하면 바뀐 설정이 돌아갈 수 있습니다`,
             key: `settings-save:${label}`,
         });
     }).catch(() => { /* 알림 실패는 되먹이지 않는다 */ });

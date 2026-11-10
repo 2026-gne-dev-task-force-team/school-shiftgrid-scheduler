@@ -14,7 +14,7 @@ export const propertiesPlugin = definePlugin({
         contributes: {
             views: [{
                 id: 'panel', title: '속성', icon: 'info', defaultArea: 'right',
-                description: '고른 것의 속성 — 칸은 그 대상을 가진 플러그인이 낸다',
+                description: '고른 것의 속성 — 칸은 그 대상을 가진 플러그인이 냅니다',
                 placement: { singleton: true },
                 layout: { minWidth: 200, squeeze: 'scroll' },
                 component: 'Panel',

@@ -67,5 +67,5 @@ export const STAFF_CONFIG: CollectionConfig = {
     newListFields,
     description: '학교 교원·직원을 모아 두는 명단입니다. 구분·학년·과목·담임 반을 적어 둡니다.',
     unit: '명',
-    text: { startDescription: '새로 만들거나, 만들어 둔 교직원 명단을 고른다.', startHint: '이름·구분·티어·학년·과목·담임 반·사람·메모 칸이 든 빈 명단이 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 교직원 명단을 고르세요.', startHint: '이름·구분·티어·학년·과목·담임 반·사람·메모 칸이 든 빈 명단이 바로 열립니다' },
 };

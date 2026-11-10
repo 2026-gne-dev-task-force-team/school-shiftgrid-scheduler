@@ -118,12 +118,12 @@ describe('R3 시작 화면', () => {
     const base = { icon: 'database' as const, title: '컬렉션', newLabel: '새 컬렉션', onNew: () => {}, onOpen: () => {}, items: [] };
     it('받침에 맞는 조사 — 컬렉션을·컬렉션이 없다 / 페이지를·페이지가 없다', () => {
         render(<StartScreen {...base} noun="컬렉션" />);
-        expect(container.textContent).toContain('만들어 둔 컬렉션을 고른다');
-        expect(container.textContent).toContain('만들어 둔 컬렉션이 없다');
+        expect(container.textContent).toContain('만들어 둔 컬렉션을 고르세요');
+        expect(container.textContent).toContain('만들어 둔 컬렉션이 없습니다');
         expect(container.textContent).not.toMatch(/컬렉션(를|가)/);
         render(<StartScreen {...base} noun="페이지" title="페이지" />);
-        expect(container.textContent).toContain('만들어 둔 페이지를 고른다');
-        expect(container.textContent).toContain('만들어 둔 페이지가 없다');
+        expect(container.textContent).toContain('만들어 둔 페이지를 고르세요');
+        expect(container.textContent).toContain('만들어 둔 페이지가 없습니다');
     });
     it('목록 행 아이콘은 이모지 우선, 아니면 그 타입 아이콘', () => {
         render(<StartScreen {...base} noun="표" items={[{ id: '1', name: '가', emoji: '🍎' }, { id: '2', name: '나' }]} />);
