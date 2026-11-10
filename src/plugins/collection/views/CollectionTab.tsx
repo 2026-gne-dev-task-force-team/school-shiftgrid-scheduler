@@ -6,8 +6,7 @@
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { EmptyState, StartScreen as StartScreenBase, useFrameToolbar, type PeekHandle } from '../../../pane-ui-system';
-import { useLauncherTab } from '../../../pane-ui-system/plugin';
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { useLauncherTab, notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
 import { RecordView } from '../RecordView';
@@ -22,21 +21,14 @@ export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
 }
 
 /**
- * 지운 직후 「되돌리기」 알림 — DbView.notifyUndo 와 같은 창구(노드 되돌리기 명령 + 방금 쌓인 더미 칸 토큰).
+ * 지운 직후 「되돌리기」 알림 — DbView.notifyUndo 와 같은 창구(창틀 notifyNodeUndo).
  *   host 가 없으면(알림 창구 없음) 지우기만 한다. run 은 한 묶음으로 쥐어 한 번에 되돌아온다.
  */
 export function deleteWithUndo(kit: Pick<Bridge, 'nodes'>, host: PluginHost | undefined, title: string, run: () => void): void {
     const api = kit.nodes();
     if (api) api.batch(run); else run();
     if (!host) return;
-    const token = api?.undoToken() ?? null;
-    host.notify({
-        title,
-        action: api && token !== null
-            ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }
-            : undefined,
-        key: 'collection.removed', timeout: 8000,
-    });
+    notifyNodeUndo(host, api, title, 'collection.removed');
 }
 
 function CollectionStart({ kit, leafId }: { kit: Bridge; leafId?: string }) {

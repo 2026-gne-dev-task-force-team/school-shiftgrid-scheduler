@@ -1,7 +1,9 @@
 /**
  * 보관 받아들이기 — 모양이 틀린 저장값을 통째로 버리지 않고 살릴 만큼 살린다.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { getNotifications, __resetNotifyForTest } from '../plugin/notify';
+import { __resetSettingsSaveFailForTest } from './save-fail';
 import { normalizeRaw, hasWorkspace, loadWorkspace, workspaceKey } from './workspace-store';
 import { flatten } from './tree';
 
@@ -82,6 +84,21 @@ describe('normalizeRaw', () => {
             mem.set(workspaceKey(), '"문자열"');
             expect(flatten(loadWorkspace().center)).toEqual([]);
             expect(mem.has(workspaceKey())).toBe(false);
+        } finally {
+            Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: prev });
+        }
+    });
+
+    it('깨진 값을 치우다 removeItem 이 실패하면 조용히 삼키지 않고 저장 실패 알림을 낸다(R3-U)', async () => {
+        __resetNotifyForTest(); __resetSettingsSaveFailForTest();
+        const prev = globalThis.localStorage;
+        Object.defineProperty(globalThis, 'localStorage', {
+            configurable: true,
+            value: { getItem: () => '{broken-json', setItem: () => { throw new Error('quota'); }, removeItem: () => { throw new Error('denied'); } },
+        });
+        try {
+            expect(hasWorkspace()).toBe(false);
+            await vi.waitFor(() => expect(getNotifications().items.some((n) => n.key === 'settings-save:작업 공간 배치')).toBe(true));
         } finally {
             Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: prev });
         }

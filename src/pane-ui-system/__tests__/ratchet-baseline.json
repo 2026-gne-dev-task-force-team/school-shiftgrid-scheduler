@@ -9,7 +9,8 @@
     "bareInput": 3,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 1
+    "enterNoIme": 1,
+    "ownUndoNotice": 0
   },
   "plugins/calendar": {
     "bareButton": 12,
@@ -21,7 +22,8 @@
     "bareInput": 4,
     "divClick": 3,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/collection": {
     "bareButton": 24,
@@ -33,7 +35,8 @@
     "bareInput": 12,
     "divClick": 5,
     "ownTrash": 4,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-absence": {
     "bareButton": 0,
@@ -45,7 +48,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-clock": {
     "bareButton": 0,
@@ -57,7 +61,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-export": {
     "bareButton": 0,
@@ -69,7 +74,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-roster": {
     "bareButton": 0,
@@ -81,7 +87,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-timetable": {
     "bareButton": 0,
@@ -93,7 +100,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/contract-week-grid": {
     "bareButton": 0,
@@ -105,7 +113,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/explorer": {
     "bareButton": 5,
@@ -117,7 +126,8 @@
     "bareInput": 1,
     "divClick": 4,
     "ownTrash": 40,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/page": {
     "bareButton": 2,
@@ -129,7 +139,8 @@
     "bareInput": 2,
     "divClick": 0,
     "ownTrash": 2,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/pane-test": {
     "bareButton": 1,
@@ -141,7 +152,8 @@
     "bareInput": 1,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/people": {
     "bareButton": 0,
@@ -153,7 +165,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/properties": {
     "bareButton": 0,
@@ -165,7 +178,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/rooms": {
     "bareButton": 0,
@@ -177,7 +191,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/selection": {
     "bareButton": 0,
@@ -189,7 +204,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/settings": {
     "bareButton": 8,
@@ -201,7 +217,8 @@
     "bareInput": 4,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/sheet": {
     "bareButton": 3,
@@ -213,7 +230,8 @@
     "bareInput": 3,
     "divClick": 3,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "plugins/timetable-grid": {
     "bareButton": 0,
@@ -225,7 +243,8 @@
     "bareInput": 1,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "app": {
     "bareButton": 0,
@@ -237,7 +256,8 @@
     "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
-    "enterNoIme": 0
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
   },
   "pane-ui-system": {
     "bareButton": 26,
@@ -249,6 +269,7 @@
     "bareInput": 1,
     "divClick": 2,
     "ownTrash": 0,
-    "enterNoIme": 2
+    "enterNoIme": 2,
+    "ownUndoNotice": 0
   }
 }

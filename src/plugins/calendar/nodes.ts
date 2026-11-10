@@ -10,7 +10,7 @@
  */
 // 🔴 import type 만 — 약속 타입은 노드 약속(explorer/contracts/nodes)에서(값 아님, 구조 검사 ⑱·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
-import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { notifyNodeUndo, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
 import { isoMinuteOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
@@ -211,15 +211,10 @@ export function removeEvent(id: string): void {
     if (!api) return;
     const name = api.get(id)?.name || '제목 없음';
     api.remove(id);
-    const token = api.undoToken();
-    hostRef?.notify({
-        title: `일정 「${name}」을 휴지통으로 옮겼습니다`,
-        action: token !== null ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' } : undefined,
-        key: 'calendar.removed', timeout: 8000,
-    });
+    if (hostRef) notifyNodeUndo(hostRef, api, `일정 「${name}」을 휴지통으로 옮겼습니다`, 'calendar.removed');
 }
 
-/** 휴지통에 직접 놓인 일정들(지운 일정) — 일정 노드는 record 라 탐색기 휴지통엔 안 뜨니 달력이 따로 보여 준다. 저장소째 지워진 것은 저장소를 되살리면 돌아온다. */
+/** 휴지통에 직접 놓인 일정들(삭제한 일정) — 일정 노드는 record 라 탐색기 휴지통엔 안 뜨니 달력이 따로 보여 준다. 저장소째 지워진 것은 저장소를 되살리면 돌아온다. */
 export function getDeletedEvents(): PublicNode[] {
     if (!api) return [];
     // 휴지통 안이면서 부모가 저장소·폴더가 아닌 것 = 일정 자신이 직접 버려진 것(저장소째면 저장소를 되살린다)
@@ -231,7 +226,7 @@ export function getDeletedEvents(): PublicNode[] {
         return pt !== STORE_TYPE && pt !== 'folder';
     });
 }
-/** 지운 일정을 되살린다 — 기본 저장소로(원래 자리는 이 창구가 못 읽는다). 되살렸으면 true. */
+/** 삭제한 일정을 되살린다 — 기본 저장소로(원래 자리는 이 창구가 못 읽는다). 되살렸으면 true. */
 export function restoreEvent(id: string): boolean {
     if (!api) return false;
     const n = api.get(id);

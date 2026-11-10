@@ -11,7 +11,7 @@
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
-import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { createUndoSlot, type Disposable, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
 import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';
 import { setActiveTable } from './store';
@@ -129,19 +129,14 @@ export function getNodesApi(): NodesApi | null { return api; }
 
 // ── 행·열 지우기 되돌리기 알림 — 표 내장 되돌리기 더미(Table.internalUndo)를 되돌린다. 뒤에 다른 작업이 쌓이면(isTop=false) 회색.
 let hostRef: PluginHost | null = null;
-let removal: { run: () => void; isTop: () => boolean } | null = null;
+const removal = createUndoSlot({ commandId: 'sheet.undoRemoved', key: 'sheet.removed' });
 /** 알림 제목 — 행·열은 지웠고 병합은 풀었다. */
 export function removedTitle(kind: '행' | '열' | '병합', n: number): string { return kind === '병합' ? `병합 ${n}곳을 풀었습니다` : `${kind} ${n}개를 삭제했습니다`; }
 export function notifyRemoved(title: string, run: () => void, isTop: () => boolean): void {
-    removal = { run, isTop };
-    hostRef?.notify({
-        title,
-        action: { label: '되돌리기', commandId: 'sheet.undoRemoved', unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' },
-        key: 'sheet.removed', timeout: 8000,
-    });
+    if (hostRef) removal.notify(hostRef, title, run, isTop);
 }
-export function removedUndoable(): boolean { return !!removal?.isTop(); }
-export function undoRemoved(): void { if (removal?.isTop()) removal.run(); }
+export const removedUndoable = removal.undoable;
+export const undoRemoved = removal.undo;
 
 // ── React 구독 창구(useSyncExternalStore) — rev 가 바뀌면 다시 읽는다 ──
 export function subscribeTableNodes(fn: () => void): () => void { subs.add(fn); return () => { subs.delete(fn); }; }

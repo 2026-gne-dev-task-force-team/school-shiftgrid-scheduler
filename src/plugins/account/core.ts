@@ -7,7 +7,7 @@
  *
  * 🔴 import type 만 — 약속 타입은 약속 플러그인(contract-*)에서. 값은 host.modules.use 로 받는다(구조 검사 ⑱).
  */
-import type { PluginHost, Disposable } from '../../pane-ui-system/plugin';
+import { notifyNodeUndo, type PluginHost, type Disposable } from '../../pane-ui-system/plugin';
 import type { CurrentUser } from './contracts/identity';
 import type { Credential } from './contracts/credential';
 import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
@@ -498,15 +498,7 @@ export function removeAccountRecords(ids: string[]): number {
 export function removeAndNotify(host: PluginHost, kind: 'users' | 'roles' | 'perms', ids: string[]): number {
     const n = removeAccountRecords(ids);
     if (n === 0) return 0;
-    const api = nodesApi;
-    const token = api?.undoToken() ?? null;
-    host.notify({
-        title: `${kind === 'users' ? '사용자' : '역할'} ${n}개를 휴지통으로 옮겼습니다`,
-        action: api && token !== null
-            ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }
-            : undefined,
-        key: 'account.removed', timeout: 8000,
-    });
+    notifyNodeUndo(host, nodesApi, `${kind === 'users' ? '사용자' : '역할'} ${n}개를 휴지통으로 옮겼습니다`, 'account.removed');
     return n;
 }
 /** 사용자·역할 목록의 순서 바꾸기 — beforeId 앞으로(null 이면 끝). 같은 폴더 안에서만. */

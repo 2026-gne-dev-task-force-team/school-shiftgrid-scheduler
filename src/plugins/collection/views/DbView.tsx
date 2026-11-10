@@ -7,7 +7,7 @@
 import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
-import type { PluginHost } from '../../../pane-ui-system/plugin';
+import { notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import { Button, EmptyState, Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
 import { RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
@@ -26,17 +26,9 @@ function useDbSnapshot() {
     return snapshotOf(getActiveDb());
 }
 
-/** 지운 직후 「되돌리기」 알림 — 탐색기 지우기와 같은 창구(노드 되돌리기 명령 + 방금 쌓인 더미 칸 토큰). */
+/** 지운 직후 「되돌리기」 알림 — 탐색기 지우기와 같은 창구(창틀 notifyNodeUndo). */
 function notifyUndo(host: PluginHost, title: string): void {
-    const api = getNodesApi();
-    const token = api?.undoToken() ?? null;
-    host.notify({
-        title,
-        action: api && token !== null
-            ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }
-            : undefined,
-        key: 'collection.removed', timeout: 8000,
-    });
+    notifyNodeUndo(host, getNodesApi(), title, 'collection.removed');
 }
 
 export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
