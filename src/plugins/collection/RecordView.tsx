@@ -11,7 +11,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
-import { Popover } from '../../pane-ui-system';
+import { Popover, Select } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
@@ -764,15 +764,10 @@ export function RecordView<T>({
                 <div className="flex items-center gap-2 px-2 py-1 border-b border-line bg-panel2 shrink-0" data-rv-selbar>
                     <span className="text-small text-text">{liveSelected.length}개 선택</span>
                     {visibleFields.some((f) => canEditCell(f)) && (
-                        <button type="button" data-rv-bulk onClick={(e) => setBulk({ rect: e.currentTarget.getBoundingClientRect(), key: visibleFields.find((f) => canEditCell(f))!.key })}
-                            className="h-row px-2 rounded text-small text-text hover:bg-text/[0.06] inline-flex items-center gap-1">
-                            <Icon name="edit" size={13} />속성 바꾸기
-                        </button>
+                        <Button size="sm" variant="ghost" icon="edit" data-rv-bulk onClick={(e) => setBulk({ rect: e.currentTarget.getBoundingClientRect(), key: visibleFields.find((f) => canEditCell(f))!.key })}>속성 바꾸기</Button>
                     )}
-                    <button type="button" data-rv-delete onClick={deleteSelected} className="h-row px-2 rounded text-small text-bad hover:bg-bad/10 inline-flex items-center gap-1">
-                        <Icon name="trash" size={13} />삭제
-                    </button>
-                    <button type="button" onClick={() => setSelected(new Set())} className="h-row px-2 rounded text-small text-muted hover:text-text">해제</button>
+                    <Button size="sm" variant="ghost" tone="danger" icon="trash" data-rv-delete onClick={deleteSelected}>삭제</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>해제</Button>
                 </div>
             )}
 
@@ -958,10 +953,8 @@ export function RecordView<T>({
                                     <div className="px-2 py-0.5 text-note text-muted">타입{locked ? ` (${title ? '제목' : '기본'} 칸은 바꿀 수 없습니다)` : ''}</div>
                                     <div className="flex flex-wrap gap-1 px-1 pb-1">
                                         {fieldTypes.list().map((d) => (
-                                            <button key={d.type} type="button" data-rv-type={d.type} disabled={locked} onClick={() => requestRetype(f.key, d.type)}
-                                                className={`inline-flex items-center gap-1 h-row px-1.5 rounded border text-small disabled:opacity-50 disabled:cursor-not-allowed ${f.type === d.type ? 'border-accent text-text' : 'border-line text-muted hover:text-text'}`}>
-                                                <Icon name={d.icon} size={12} />{d.label}
-                                            </button>
+                                            <Button key={d.type} size="sm" variant={f.type === d.type ? 'soft' : 'outline'} tone={f.type === d.type ? 'accent' : 'neutral'}
+                                                icon={d.icon} data-rv-type={d.type} disabled={locked} onClick={() => requestRetype(f.key, d.type)}>{d.label}</Button>
                                         ))}
                                     </div>
                                     {(() => {
@@ -1002,10 +995,8 @@ export function RecordView<T>({
                 return (
                     <Popover anchor={bulk.rect} width={260} onClose={() => setBulk(null)}>
                         <div className="flex flex-col gap-1.5" data-rv-bulk-panel>
-                            <select data-rv-bulk-field value={bulk.key} onChange={(e) => setBulk({ ...bulk, key: e.target.value })}
-                                className="h-row rounded border border-line bg-bg text-text text-small px-1">
-                                {visibleFields.filter((x) => canEditCell(x)).map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
-                            </select>
+                            <Select size="sm" data-rv-bulk-field value={bulk.key} onChange={(e) => setBulk({ ...bulk, key: e.target.value })}
+                                options={visibleFields.filter((x) => canEditCell(x)).map((x) => ({ value: x.key, label: x.label }))} />
                             <div className="h-[32px] rounded border border-line" data-rv-bulk-cell>
                                 <Cell key={f.key} field={f} rowValue={{}} editable
                                     onChange={(val) => { changeCells(liveSelected.map((id) => ({ id, key: f.key, value: val }))); setBulk(null); }} />
@@ -1029,8 +1020,8 @@ export function RecordView<T>({
                             </div>
                             <div className="text-small text-muted">되돌리기({keyLabel('Mod+Z')})로 되살릴 수 있습니다.</div>
                             <div className="flex justify-end gap-2">
-                                <button type="button" data-rv-confirm-cancel onClick={() => setPending(null)} className="h-row px-3 rounded border border-line text-body text-text hover:bg-text/[0.06]">취소</button>
-                                <button type="button" data-rv-confirm-ok onClick={() => { const p = pending; setPending(null); applyConvert(p); }} className="h-row px-3 rounded bg-accent text-bg text-body">바꾸기</button>
+                                <Button variant="outline" data-rv-confirm-cancel onClick={() => setPending(null)}>취소</Button>
+                                <Button variant="solid" tone="accent" data-rv-confirm-ok onClick={() => { const p = pending; setPending(null); applyConvert(p); }}>바꾸기</Button>
                             </div>
                         </div>
                     </div>
