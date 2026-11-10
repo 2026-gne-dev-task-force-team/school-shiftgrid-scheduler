@@ -3,7 +3,7 @@
  *   권한 표는 켜진 기능들의 선언을 모은 것(고정 목록 없음). 색은 토큰 클래스로만(구조 검사 ①).
  *   정책은 싱글턴이라 노드 id 가 필요 없다 — core 의 전역 정책을 읽고 쓴다(탐색기에서 「정책」을 누르면 열린다).
  */
-import { Toggle } from '../../../pane-ui-system';
+import { Button, Field, NumberInput, Toggle } from '../../../pane-ui-system';
 import { getPolicy, setPolicy, listRoles } from '../core';
 import { useAccountVersion, allPermissions } from './useAccount';
 
@@ -26,18 +26,10 @@ export function PolicyEditor() {
                 <section className="flex flex-col gap-2">
                     <h4 className="text-note font-semibold uppercase tracking-wide text-muted">길② 권한별 요구 수준</h4>
                     {perms.map((p) => (
-                        <label key={p.id} className="flex items-center justify-between gap-2 text-small">
-                            <span className="min-w-0 flex flex-col" title={p.id}>
-                                <span className="text-text truncate">{p.title}</span>
-                                {p.desc && <span className="text-note text-muted leading-snug">{p.desc}</span>}
-                            </span>
-                            <input
-                                type="number"
-                                value={pol.thresholds[p.id] ?? 0}
-                                onChange={(e) => setPolicy({ thresholds: { [p.id]: Number(e.target.value) || 0 } })}
-                                className="w-16 rounded border border-line bg-side text-text px-1 py-0.5 text-small"
-                            />
-                        </label>
+                        <Field key={p.id} label={p.title} hint={p.desc} layout="row">
+                            <NumberInput size="sm" className="w-16" value={pol.thresholds[p.id] ?? 0}
+                                onChange={(n) => setPolicy({ thresholds: { [p.id]: n ?? 0 } })} />
+                        </Field>
                     ))}
                 </section>
             )}
@@ -50,11 +42,10 @@ export function PolicyEditor() {
                         {roles.map((r) => {
                             const on = pol.verifyRoles.includes(r.id);
                             return (
-                                <button key={r.id} type="button"
-                                    onClick={() => setPolicy({ verifyRoles: on ? pol.verifyRoles.filter((x) => x !== r.id) : [...pol.verifyRoles, r.id] })}
-                                    className={`text-small px-2 py-0.5 rounded border ${on ? 'border-accent text-accent' : 'border-line text-muted'}`}>
+                                <Button key={r.id} size="sm" variant={on ? 'soft' : 'outline'} tone={on ? 'accent' : 'neutral'} aria-pressed={on}
+                                    onClick={() => setPolicy({ verifyRoles: on ? pol.verifyRoles.filter((x) => x !== r.id) : [...pol.verifyRoles, r.id] })}>
                                     {r.name}
-                                </button>
+                                </Button>
                             );
                         })}
                     </div>
