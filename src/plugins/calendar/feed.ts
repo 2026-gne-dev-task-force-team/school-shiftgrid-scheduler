@@ -10,6 +10,7 @@ import type { Disposable } from '../../pane-ui-system/plugin';
 import { PALETTE_LEN } from './palette';
 import { parseIcs } from './ics';
 import { registerPreset } from './presets';
+import { occurrences, materialize, reschedule, skip } from './series';
 
 interface FeedEntry {
     source: CalendarSource;
@@ -52,8 +53,8 @@ export function registerSource(source: CalendarSource): Disposable {
     };
 }
 
-/** 달력이 provides 로 꽂는 모듈 — 출처 등록 + .ics 파서(가져오기·구독 공용) + 프리셋 등록(0.2). */
-export const calendarModule: Calendar = { registerSource, parseIcs, registerPreset };
+/** 달력이 provides 로 꽂는 모듈 — 출처 등록 + .ics 파서(가져오기·구독 공용) + 프리셋 등록 + 회차 넷(0.2). */
+export const calendarModule: Calendar = { registerSource, parseIcs, registerPreset, occurrences, materialize, reschedule, skip };
 
 /** 출처 변경 구독(useSyncExternalStore 용) — register·dispose·출처 onChange 때 울린다. */
 export function subscribeFeeds(cb: () => void): () => void {

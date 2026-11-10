@@ -61,6 +61,35 @@ export interface Calendar {
     parseIcs(text: string): CalendarItem[];
     /** 프리셋 하나 등록(0.2) — 해제하면 그 프리셋을 든 저장소는 기본 달력으로 보인다(데이터 그대로). */
     registerPreset(preset: CalendarPreset): Disposable;
+    /**
+     * 저장소(+자손 저장소) 일정의 회차들 — [from,to) 와 겹치는 것만 · 시작순. 보통 일정 + 반복 일정의 가상 회차 + 실체 회차(가상 자리를 대신).
+     *   ⭐ 범위만 계산한다(먼 미래까지 펴지 않는다) · 🔴 부르기만 해서는 노드가 안 생긴다(자동 실체화 ⛔).
+     */
+    occurrences(storeId: string, from: string, to: string): readonly Occurrence[];
+    /** 가상 → 실체 레코드 id(이미 실체면 그 id). 🔴 손댈 때만 부른다. */
+    materialize(o: Occurrence): string;
+    /** 미루기·당기기 — 실체화 후 옮긴다(originalStart 는 그대로). */
+    reschedule(o: Occurrence, start: string, end: string): void;
+    /** 그 회차만 빼기 — 규칙의 빠지는 날에 더하고, 실체였으면 그 레코드를 휴지통으로. */
+    skip(o: Occurrence): void;
+}
+
+/**
+ * 회차 하나(0.2) — 날짜는 'YYYY-MM-DDTHH:mm'(종일도 'T00:00' · end 는 반열린 끝).
+ *   반복 일정 = `calendar.event` 의 data.recur · 실체 회차 = `calendar.event` + data.seriesId·data.originalStart.
+ */
+export interface Occurrence {
+    /** 실체면 그 레코드, 가상이면 규칙 일정 id */
+    eventId: string;
+    /** 규칙 일정 id(반복이 아니면 없음) */
+    seriesId?: string;
+    /** 규칙상 원래 시작(미뤘으면 start 와 다르다) */
+    originalStart?: string;
+    start: string;
+    end: string;
+    allDay: boolean;
+    /** 아직 저장 안 된 회차 */
+    virtual: boolean;
 }
 
 /**
