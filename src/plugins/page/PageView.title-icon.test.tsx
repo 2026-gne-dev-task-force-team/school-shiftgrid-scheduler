@@ -94,3 +94,20 @@ describe('제목(요구 12)', () => {
         expect(document.activeElement).toBe(t);   // 제목칸에 그대로
     });
 });
+
+describe('빈 본문 안내·빈 곳 클릭', () => {
+    it('빈 문단 하나뿐이면 「여기에 쓰세요」 안내가 보인다', () => {
+        setup({ blocks: [{ id: 'b', type: 'paragraph', text: '' }] });
+        expect(container.querySelector('[data-testid="page-empty-hint"]')?.textContent).toContain('여기에 쓰세요');
+    });
+    it('글이 있으면 안내가 없다', () => {
+        setup({ blocks: [{ id: 'b', type: 'paragraph', text: '본문' }] });
+        expect(container.querySelector('[data-testid="page-empty-hint"]')).toBeNull();
+    });
+    it('본문 아래 빈 곳을 누르면 글이 있는 끝에 새 문단이 붙는다', () => {
+        setup({ blocks: [{ id: 'b', type: 'paragraph', text: '본문' }] });
+        const tail = container.querySelector('[data-testid="page-tail"]') as HTMLElement;
+        act(() => { tail.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); });
+        expect(container.querySelectorAll('[data-block-row]').length).toBe(2);
+    });
+});

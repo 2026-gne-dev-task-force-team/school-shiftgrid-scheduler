@@ -47,9 +47,9 @@ export const peopleNodeTypeImpl = {
  */
 export const peopleNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, body: 'collection', label: '명단', icon: 'users',
+        type: LIST_TYPE, body: 'collection', label: '사람 명단', icon: 'users',
         container: { accepts: [PERSON_TYPE, 'folder', LIST_TYPE] }, openable: true,
-        create: { label: '명단', under: ['folder', LIST_TYPE] },
+        create: { label: '사람 명단', under: ['folder', LIST_TYPE] },
         impl: 'list',
     },
     { type: PERSON_TYPE, label: '사람', icon: 'user', record: true },
