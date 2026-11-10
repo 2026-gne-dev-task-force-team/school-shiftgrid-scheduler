@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'users',
     description: '명단을 만들어 사람(이름·메모)을 담습니다.',
     about: {
         what: '명단을 만들어 사람을 담습니다. 사람마다 이름과 메모를 적을 수 있고, 엑셀이나 한글의 표를 복사해 붙이면 여러 명을 한 번에 넣을 수 있습니다.',

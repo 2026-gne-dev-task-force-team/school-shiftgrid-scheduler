@@ -10,6 +10,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'platform',
+    icon: 'pin',
     core: true,
     description: '지금 고른 것을 다른 기능에 알려 줍니다.',
     about: {

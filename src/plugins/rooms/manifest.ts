@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'door',
     description: '목록을 만들어 방·공간(이름·메모)을 담습니다.',
     about: {
         what: '목록을 만들어 방이나 공간을 담습니다. 방 안에 하위 방(건물 → 층 → 방)을 둘 수 있고, 엑셀이나 한글의 표를 복사해 붙이면 여러 방을 한 번에 넣을 수 있습니다.',

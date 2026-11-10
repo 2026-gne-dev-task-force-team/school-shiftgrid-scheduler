@@ -16,7 +16,8 @@
  */
 import { useSyncExternalStore } from 'react';
 import { storageKey } from '../storage';
-import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution, PluginAbout } from './types';
+import type { PluginModule, PluginHost, Disposable, PerCallerApi, InterfaceContribution, PluginAbout, PluginLayer } from './types';
+import type { IconName } from '../primitives/Icon';
 import { HOST_VERSION } from './types';
 import { makeHost } from './host';
 import { onStorageKey } from '../cross-tab';
@@ -426,6 +427,9 @@ export interface PluginStatus {
     name: string;
     version: string;
     core: boolean;
+    /** 층 — 목록 섹션을 가른다(선언 안 했으면 app). */
+    layer: PluginLayer;
+    icon?: IconName;
     enabled: boolean;        // 사용자 의도(안 껐나) — blocked 여도 enabled 는 true 일 수 있다
     failed: boolean;
     blocked: boolean;        // requires 미충족(비영구)
@@ -461,6 +465,8 @@ export function listPlugins(): PluginStatus[] {
             about: m.manifest.about,
             minHostVersion: m.manifest.minHostVersion,
             core: !!m.manifest.core,
+            layer: m.manifest.layer ?? 'app',
+            icon: m.manifest.icon,
             enabled: !disabledIds.has(id),
             failed: failedIds.has(id),
             blocked,

@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'merge',
     description: '보결에 쓸 교직원 명단(이름·구분·메모)을 담습니다.',
     about: {
         what: '보결을 맡길 수 있는 교직원 명단을 만듭니다. 사람마다 구분(담임·전담·비교과·보조인력)을 고를 수 있고, 구분 선택지는 명단마다 고치거나 더할 수 있습니다. 엑셀이나 한글의 표를 복사해 붙이면 여러 명을 한 번에 넣을 수 있습니다.',

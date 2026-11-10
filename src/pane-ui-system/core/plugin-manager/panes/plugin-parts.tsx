@@ -3,7 +3,7 @@
  * 🔴 plugins/ 라 하드코딩 색 검사 — 토큰 클래스로만.
  */
 import type { ReactNode } from 'react';
-import { Icon, Button } from '../../..';
+import { Icon, Button, type IconName } from '../../..';
 
 /** 상세 안 한 묶음 — 작은 대문자 제목 + 개수 */
 export function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
@@ -31,10 +31,11 @@ export function RelRow({ left, note, right }: { left: string; note?: string; rig
 }
 
 /** 상세 머리 왼쪽 — 이름·판·배지(코어/바닥/실패) + 작은 식별자. 플러그인 상세와 플랫폼 상세가 같은 모양이다 */
-export function DetailTitle({ name, version, id, badges }: { name: string; version: string; id: string; badges?: ReactNode }) {
+export function DetailTitle({ name, version, id, badges, icon }: { icon?: IconName; name: string; version: string; id: string; badges?: ReactNode }) {
     return (
         <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
+                {icon && <Icon name={icon} size={16} className="text-muted shrink-0" />}
                 <span className="text-lead font-semibold text-text">{name}</span>
                 <span className="text-note text-muted">v{version}</span>
                 {badges}

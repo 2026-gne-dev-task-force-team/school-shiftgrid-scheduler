@@ -11,6 +11,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',   // 달력과 같게
     layer: 'platform',
+    icon: 'folder',
     core: true,
     description: '왼쪽에 폴더 나무를 띄워 만든 것을 정리하고 찾습니다.',
     about: {

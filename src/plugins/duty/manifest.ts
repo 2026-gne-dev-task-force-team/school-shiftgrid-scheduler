@@ -7,6 +7,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    icon: 'schedule',
     description: '출장·연수·연가·병가 같은 복무를 적는 대장입니다.',
     about: {
         what: '선생님이 언제 학교에 없는지 적어 두는 대장입니다. 출장·연수·연가·병가·조퇴 같은 복무를 날짜와 교시로 적습니다.',

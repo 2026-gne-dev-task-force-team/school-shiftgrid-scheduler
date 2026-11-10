@@ -20,15 +20,16 @@ import { PluginDetail } from './PluginDetail';
 import { PlatformDetail } from './PlatformDetail';
 import { DetailButton, LockedMark } from './plugin-parts';
 import { useSettingsChrome } from '../../settings/chrome-context';
-import { disableImpact } from '../plugin-graph';
+import { disableImpact, groupByLayer } from '../plugin-graph';
 
 export function PluginsPane({ host }: { host: PluginHost }) {
     usePluginRegistry();   // 켜고 끄면 다시 그린다
     useContribVersion();   // 기여(설정 섹션·명령)가 바뀌면 다시 그린다
     const chrome = useSettingsChrome();
     const plugins = listPlugins();
-    const normalPlugins = plugins.filter((p) => !p.core);
-    const corePlugins = plugins.filter((p) => p.core);
+    const sections = groupByLayer(plugins);
+    const upper = sections.filter((x) => x.key !== 'core');   // 위쪽 섹션 — 도메인 → 공통 → 기반
+    const corePlugins = sections.find((x) => x.key === 'core')?.plugins ?? [];
     const [openId, setOpenId] = useState<string | null>(null);   // 폴백(피크 없을 때)
 
     const openDetail = (p: PluginStatus, startConfirming = false) => {
@@ -47,25 +48,25 @@ export function PluginsPane({ host }: { host: PluginHost }) {
         else setPlatformOpen((v) => !v);
     };
 
-    const renderRow = (p: PluginStatus) => {
+    const renderRow = (p: PluginStatus, small = false) => {
                     const open = openId === p.id && !chrome.peek;
                     return (
                         <div key={p.id} className="border-b border-line last:border-b-0">
                             {/* 🔴 줄 전체를 누르는 버튼을 걷었다(쥔님 2026-11-08 「메뉴 같아」) — 제목은 그냥 글자다. */}
-                            <div className="flex items-center gap-3 px-3 py-2 min-h-row">
+                            <div className={`flex items-center gap-3 px-3 ${small ? 'py-1 pl-8' : 'py-2 min-h-row'}`}>
+                                <Icon name={p.icon ?? 'dot'} size={small ? 14 : 18} className="shrink-0 text-muted" />
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-body font-semibold text-text truncate">{p.name}</span>
+                                        <span className={`${small ? 'text-small' : 'text-body'} font-semibold text-text truncate`}>{p.name}</span>
                                         <span className="text-note text-muted">v{p.version}</span>
-                                        {p.core && <span className="text-note px-1.5 rounded bg-accent/15 text-accent">기본</span>}
-                                        {p.failed && (
+                                                                                {p.failed && (
                                             <span className="flex items-center gap-1 text-note text-warn">
                                                 <Icon name="warn" size={12} /> 활성 실패
                                             </span>
                                         )}
                                     </div>
                                     {/* 🔴 한 줄 요약(쥔님 2026-11-08 「설명이 너무 부족」) — 목록에서 뭐 하는 것인지 바로 보이게. */}
-                                    {p.description && <p className="text-small text-text/80 leading-snug">{p.description}</p>}
+                                    {p.description && <p className={`${small ? 'text-note' : 'text-small'} text-text/80 leading-snug`}>{p.description}</p>}
                                     <span className="text-note text-muted font-mono">{p.id}</span>
                                 </div>
                                 {/* 🔴 상세 열기 — 제목이 아니라 이 별도 단추로(오클릭 방지). 테두리 있는 작은 단추. */}
@@ -106,11 +107,17 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                 「켜기」 자리표시로 남습니다(다시 켜면 그 자리에서 돌아옵니다). 줄 오른쪽 「자세히」로 상세가 옆에 뜹니다.
             </p>
             <div className="flex flex-col rounded border border-line overflow-hidden">
-                {normalPlugins.map(renderRow)}
+                {upper.map((sec) => (
+                    <div key={sec.key} className="border-b border-line last:border-b-0">
+                        <p className="px-3 pt-2 text-note font-semibold text-muted">{sec.title} <span className="font-normal">— {sec.note}</span></p>
+                        {sec.plugins.map((p) => renderRow(p))}
+                    </div>
+                ))}
                 {/* P6a — 후라이팬 자신도 한 줄(끌 수 없음). 플러그인이 아니라 「플러그인에게 주는 것」을 보이는 줄이다. */}
                 {/* 맨 아래: 후라이팬 줄 → 그 아래 「기본 기능」(코어 꾸러미) — 일반 플러그인 목록과 따로 */}
-                <div className="border-t border-line">
+                <div className="border-t-2 border-accent/40">
                     <div className="flex items-center gap-3 px-3 py-2 min-h-row">
+                        <Icon name="shield" size={18} className="shrink-0 text-muted" />
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                                 <span className="text-body font-semibold text-text truncate">후라이팬</span>
@@ -124,13 +131,13 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                         <LockedMark title="후라이팬은 끌 수 없습니다" />
                     </div>
                     {platformOpen && !chrome.peek && <div className="px-3 pb-3 bg-side/40 border-t border-line"><div className="pt-2"><PlatformDetail /></div></div>}
-                </div>
                 {corePlugins.length > 0 && (
-                    <div className="border-t border-line bg-side/30">
-                        <p className="px-3 pt-2 text-note text-muted">기본 기능 — 후라이팬과 함께 들어 있어 끌 수 없습니다.</p>
-                        {corePlugins.map(renderRow)}
+                    <div className="bg-side/30 pb-1">
+                        <p className="pl-8 pr-3 pt-1 text-note text-muted">후라이팬에 들어 있는 기본 기능 — 끌 수 없습니다.</p>
+                        {corePlugins.map((p) => renderRow(p, true))}
                     </div>
                 )}
+                </div>
             </div>
         </div>
     );
