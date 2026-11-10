@@ -85,7 +85,7 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                             <button
                                 key={t.id}
                                 type="button"
-                                onClick={() => setSettings({ theme: t.id })}
+                                onClick={() => setSettings(t.pairId ? { theme: t.id } : { theme: t.id, mode: t.base })}
                                 aria-pressed={active}
                                 title={t.name}
                                 className={`flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-md border text-body transition-colors
@@ -102,7 +102,7 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                 </div>
             </Field>
 
-            <Field title="밝기" hint="시스템은 기기의 밝기 설정을 따라갑니다. 밝기 짝이 없는 테마에는 영향이 없습니다.">
+            <Field title="밝기" hint="시스템은 기기의 밝기 설정을 따라갑니다. 밝기 짝이 없는 테마(Nord 등)를 고르면 그 테마의 밝기로 고정되고, 밝기를 바꾸면 노션 테마로 돌아갑니다.">
                 <div className="flex flex-wrap gap-2">
                     {MODES.map((m) => (
                         <Choice
