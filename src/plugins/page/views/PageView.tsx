@@ -11,12 +11,12 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import { notifyBlocksRemoved } from '../removed';
-import { createChildPage, getNodesApi, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
+import { createChildPage, getNodesApi, inlineBlocked, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
-import type { Block, BlockType, Page, TableBlockData } from '../core/types';
+import type { Block, BlockType, NodeDisplay, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
 import {
-    setText, setChecked, setTable, setNodeRef, splitBlock, outdentOrParagraph, mergeBackspace,
+    setText, setChecked, setTable, setNodeRef, setNodeDisplay, splitBlock, outdentOrParagraph, mergeBackspace,
     indentBlock, softBreak, duplicateBlock, moveBlock, removeBlock, changeType, insertAfter, removeBlocks, moveBlocks, rangeIds, type EditResult,
 } from '../core/blocks';
 import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
@@ -445,6 +445,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const onChecked = (id: string, checked: boolean) => { const next = setChecked(pageRef.current, id, checked); commitPage(next); };
     const onTableChange = (id: string, table: TableBlockData) => { const next = setTable(pageRef.current, id, table); commitPage(next); };
     const onNodePick = (id: string, nodeId: string) => { commitPage(setNodeRef(pageRef.current, id, nodeId)); };
+    const onNodeDisplay = (id: string, display: NodeDisplay) => { commitPage(setNodeDisplay(pageRef.current, id, display)); };
     const onDelete = (id: string) => {
         const hp = hasChildPage([id]);
         const r = removeBlock(pageRef.current, id);
@@ -642,6 +643,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                                 onChecked={onChecked}
                                 onTableChange={onTableChange}
                                 onNodePick={onNodePick}
+                                onNodeDisplay={onNodeDisplay}
                                 selfId={activeId}
                                 onPickSlash={pickSlash}
                                 canChildPage={!!syncBlocks}
@@ -694,6 +696,8 @@ interface RowProps {
     onChecked: (id: string, checked: boolean) => void;
     onTableChange: (id: string, table: TableBlockData) => void;
     onNodePick: (id: string, nodeId: string) => void;
+    /** R3-E 끼워 넣기 표시 모양 바꾸기(링크 카드 ↔ 본문 펼침) */
+    onNodeDisplay: (id: string, display: NodeDisplay) => void;
     selfId: string;
     onPickSlash: (id: string, type: BlockType) => void;
     canChildPage: boolean;
@@ -733,6 +737,12 @@ function BlockRow(props: RowProps) {
         ...([['글로', 'paragraph'], ['제목 1', 'heading1'], ['글머리표', 'bulleted'], ['체크 목록', 'todo'], ['표', 'table'], ['항목 끼워 넣기', 'node']] as const)
             .map(([label, type]) => ({ label, onClick: () => props.onChangeType(block.id, type) })),
         { sep: true },
+        // R3-E 끼운 항목의 모양 — 노션 「링크로 / 인라인으로」. 지금 모양은 흐리게 · 자기 자신·상위 항목은 펼치기 못 함
+        ...(block.type === 'node' && block.nodeId ? [
+            { label: '링크 카드로', icon: 'arrowRight', disabled: block.display !== 'inline', onClick: () => props.onNodeDisplay(block.id, 'card') },
+            { label: '본문에 펼치기', icon: 'table', disabled: block.display === 'inline' || inlineBlocked(block.nodeId, props.selfId), onClick: () => props.onNodeDisplay(block.id, 'inline') },
+            { sep: true },
+        ] satisfies MenuEntry[] : []),
         { label: '복제', icon: 'copy', onClick: () => props.onDuplicate(block.id) },
         { label: '위로', icon: 'up', disabled: index === 0, onClick: () => props.onMoveBy(block.id, -1) },
         { label: '아래로', icon: 'down', disabled: props.last, onClick: () => props.onMoveBy(block.id, 1) },
@@ -810,7 +820,7 @@ function renderContent(props: RowProps): ReactElement {
         );
     }
     if (block.type === 'node') {
-        return <NodeBlock nodeId={block.nodeId} selfId={props.selfId} onPick={(nid) => props.onNodePick(block.id, nid)} />;
+        return <NodeBlock nodeId={block.nodeId} display={block.display} selfId={props.selfId} onPick={(nid) => props.onNodePick(block.id, nid)} />;
     }
     if (block.type === 'childpage') {
         return <ChildPageBlock nodeId={block.nodeId} />;

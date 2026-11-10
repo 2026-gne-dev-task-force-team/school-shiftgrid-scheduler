@@ -13,6 +13,7 @@ import type { Disposable, MenuEntry, NodeTypeContribution, PluginHost } from '..
 import type { DbDoc, RecordCellValue, RecordField, RowDoc, ViewDef } from './contracts/collection';
 import { uniqueKeyOf } from './unique';
 import { DB_TYPE, ROW_TYPE, blankDb, blankRow, isoMinute, normalizeDb, normalizeRow } from './schema';
+import { DbEmbed } from './views/DbEmbed';
 
 export { DB_TYPE, ROW_TYPE };
 
@@ -62,6 +63,8 @@ export const recordNodeTypeImpl = {
             host.workspace.open(DB_VIEW_ID, { where: 'center' });
         },
         createInit: () => ({ data: blankDb() }),
+        // R3-E 끼워 넣기 — 기본은 링크 한 줄, view 'inline' 이면 표가 그 자리에서 편집된다(페이지 「본문에 펼치기」)
+        embed: DbEmbed,
         menu: (_host: PluginHost, id: string): MenuEntry[] => {
             const n = trashedRows(id).length;
             return n > 0 ? [{ label: `휴지통의 행 ${n}개 복원`, icon: 'undo', commandId: 'collection.restoreTrashed', commandArg: { nodeId: id } }] : [];
