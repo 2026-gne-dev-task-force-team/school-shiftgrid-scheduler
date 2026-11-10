@@ -121,8 +121,17 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     // 노드 트리가 바뀌면(탐색기에서 자식 만들기·옮기기·휴지통) 본문의 하위 페이지 줄을 맞춘다 — 저장은 안 한다(트리가 진실 · 루프 없음).
     const nodesRev = useSyncExternalStore(subscribePageNodes, getPageRev, getPageRev);
     useEffect(() => {
-        if (!syncBlocks) return;
-        setHist((h) => { const n = syncBlocks(h.present); return n === h.present ? h : { ...h, present: n }; });
+        // 🔴 새로고침 직후 노드 저장소는 비동기로 올라온다 — 첫 그림 때 load() 는 빈 페이지였다. 아직 손 안 댄 편집기(past 없음)면
+        //   저장소가 채워진 순간 본문을 다시 읽어 들인다(안 하면 제목만 남고 본문이 빈 채로 보이고, 다음 입력이 저장된 본문을 덮는다).
+        let fresh: Page | null = null;
+        if (activeBlockRef.current === null && typingRunRef.current === null) {
+            try { fresh = load(); } catch { fresh = null; }
+        }
+        setHist((h) => {
+            if (fresh && h.past.length === 0 && h.future.length === 0 && JSON.stringify(fresh) !== JSON.stringify(h.present)) return initHistory(fresh);
+            if (!syncBlocks) return h;
+            const n = syncBlocks(h.present); return n === h.present ? h : { ...h, present: n };
+        });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodesRev]);
 
