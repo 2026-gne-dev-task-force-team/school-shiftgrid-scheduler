@@ -31,7 +31,9 @@ export function parseHm(s: string): number | null {
 }
 
 /** 입력칸 — Enter·포커스 이탈에서 한 번만 넘긴다. */
-function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onGridUndo }: {
+const HINT = '교시를 먼저 고르세요';
+function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onGridUndo, hint }: {
+    hint?: string;
     resetKey: unknown; onGridUndo?: (which: 'undo' | 'redo') => void;
     label: string; value: string; onCommit: (v: string) => void; width?: string; disabled?: boolean;
 }) {
@@ -42,7 +44,7 @@ function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onG
     return (
         <label className="flex shrink-0 items-center gap-1 text-micro text-muted">
             <span>{label}</span>
-            <TextInput aria-label={label} disabled={disabled} value={draft ?? value} inputMode="numeric"
+            <TextInput aria-label={label} disabled={disabled} title={disabled ? hint : undefined} placeholder={disabled ? hint : undefined} value={draft ?? value} inputMode="numeric"
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {   // 편집 중이 아니면(초안 = 현재 값) ⌘Z 는 격자 되돌리기로
                     if (!isMod(e.nativeEvent) || e.altKey || e.key.toLowerCase() !== 'z' || e.nativeEvent.isComposing) return;
@@ -107,9 +109,9 @@ export function GridToolbar(p: GridToolbarProps) {
     const rk = `${r}|${data.rows.map((x) => `${x.id}:${x.range.start}-${x.range.end}`).join(',')}`;
     const timeFields = (
         <>
-            <Field resetKey={rk} onGridUndo={gridUndo} label="시작" value={r === null ? '' : fmt(data.rows[r].range.start)} onCommit={setStart} disabled={r === null} />
-            <Field resetKey={rk} onGridUndo={gridUndo} label="길이(분)" value={r === null ? '' : String(rowLength(data, r))} onCommit={setLen} width="w-12" disabled={r === null} />
-            <Field resetKey={rk} onGridUndo={gridUndo} label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="시작" value={r === null ? '' : fmt(data.rows[r].range.start)} onCommit={setStart} disabled={r === null} hint={HINT} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="길이(분)" value={r === null ? '' : String(rowLength(data, r))} onCommit={setLen} width="w-12" disabled={r === null} hint={HINT} />
+            <Field resetKey={rk} onGridUndo={gridUndo} label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} hint={r === null ? HINT : '첫 교시는 앞 쉬는 시간이 없습니다'} />
         </>
     );
     const clearBtn = <Button variant="plain" size="sm" title="선택한 칸 지우기" aria-label="칸 지우기" disabled={!p.canClear} onMouseDown={keep} onClick={p.onClear}>지우기</Button>;

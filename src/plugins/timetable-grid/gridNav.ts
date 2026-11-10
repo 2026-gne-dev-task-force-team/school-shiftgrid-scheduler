@@ -4,7 +4,7 @@
  *   TSV 해석·생성은 창틀 공용(parseClipboard/toTsv)을 쓴다 — 시트와 같은 규칙.
  */
 import { parseClipboard, toTsv } from '../../pane-ui-system';
-import { cellKey, columnCount, getCell, isCovered, normSel, parseCellKey, rowCount, setCellText, type Selection, type TimetableData } from './model';
+import { addColumn, addRow, cellKey, columnCount, getCell, isCovered, normSel, parseCellKey, rowCount, setCellText, type Selection, type TimetableData } from './model';
 
 export interface Pos { c: number; r: number; }
 
@@ -57,14 +57,23 @@ export function clearRange(data: TimetableData, sel: Selection): TimetableData {
  *   한 칸짜리 글을 범위에 붙이면 범위 전체를 채운다(엑셀 관례). 바뀐 게 없으면 원본 그대로.
  *   돌려주는 area = 붙여넣은 범위(선택을 거기로 옮긴다).
  */
-export function pasteTsv(data: TimetableData, sel: Selection, text: string): { data: TimetableData; area: Selection } {
+export function pasteTsv(data: TimetableData, sel: Selection, text: string): { data: TimetableData; area: Selection; notice?: string } {
     const s = normSel(sel);
     const grid = parseClipboard(text);
-    const nC = columnCount(data.columns), nR = rowCount(data);
     if (grid.length === 1 && grid[0].length === 0) return { data, area: s };
     const single = grid.length === 1 && grid[0].length === 1;
     const h = single ? s.row1 - s.row0 + 1 : grid.length;
     const w = single ? s.col1 - s.col0 + 1 : Math.max(...grid.map((g) => g.length));
+    // 넘치면 자동 확장 — 교시(행)는 addRow(시간 관문 guardTimeline 경유), 열은 addColumn. 더 못 늘리면 들어간 만큼만.
+    let base = data;
+    if (!single) {
+        while (rowCount(base) < s.row0 + h) { const nx = addRow(base); if (nx === base || rowCount(nx) === rowCount(base)) break; base = nx; }
+        while (columnCount(base.columns) < s.col0 + w) { const nx = addColumn(base); if (nx === base) break; base = nx; }
+    }
+    data = base;
+    const nC = columnCount(data.columns), nR = rowCount(data);
+    const lostRows = Math.max(0, s.row0 + h - nR), lostCols = Math.max(0, s.col0 + w - nC);
+    const notice = lostRows > 0 ? `${lostRows}행은 하루 끝을 넘어 붙이지 못했습니다` : lostCols > 0 ? `${lostCols}열은 더 붙이지 못했습니다` : undefined;
     const area = { col0: s.col0, row0: s.row0, col1: Math.min(s.col0 + w, nC) - 1, row1: Math.min(s.row0 + h, nR) - 1 };
     let d = data;
     for (let r = area.row0; r <= area.row1; r++) {
@@ -74,5 +83,5 @@ export function pasteTsv(data: TimetableData, sel: Selection, text: string): { d
             d = setCellText(d, c, r, v);
         }
     }
-    return { data: d, area };
+    return { data: d, area, notice };
 }

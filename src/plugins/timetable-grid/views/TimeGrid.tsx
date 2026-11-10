@@ -114,6 +114,7 @@ export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, to
     const dataRef = useRef(data); dataRef.current = data;
     const selDrag = useRef(false);
     const editFn = useRef(edit); editFn.current = edit;
+    const onNoticeRef = useRef(onNotice); onNoticeRef.current = onNotice;
     const focusGrid = () => gridRef.current?.focus({ preventScroll: true });
     const reveal = (p: Pos) => gridRef.current?.querySelector<HTMLElement>(`[data-c="${p.c}"][data-r="${p.r}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     const selectAt = (p: Pos) => { setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r }); reveal(p); };
@@ -201,6 +202,7 @@ export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, to
             const r = pasteTsv(dataRef.current, s, e.clipboardData?.getData('text/plain') ?? '');
             if (r.data !== dataRef.current) editFn.current(() => r.data);
             setSel(r.area);
+            if (r.notice) onNoticeRef.current?.(r.notice);
         };
         const copy = (e: ClipboardEvent) => onCopy(e, false), cut = (e: ClipboardEvent) => onCopy(e, true);
         const up = () => { selDrag.current = false; };
@@ -397,7 +399,7 @@ export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, to
                                                 else if (e.key === 'Tab') { e.preventDefault(); commitEdit([e.shiftKey ? -1 : 1, 0]); }
                                             }}
                                             onBlur={() => commitEdit(null)} />
-                                        : <div aria-label={label} className={`h-full w-full overflow-hidden whitespace-pre-wrap break-words rounded-sm px-1.5 py-1 text-small text-text
+                                        : <div aria-label={label} title={cell?.text || undefined} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: Math.max(1, Math.floor((height - 10) / 18)) }} className={`h-full w-full overflow-hidden whitespace-pre-wrap break-words rounded-sm px-1.5 py-1 text-small text-text
                                             ${active ? 'ring-1 ring-inset ring-accent' : ''} ${inSel(c, r, c1, r1) && !single ? 'bg-accent/15' : merged ? 'bg-text/[0.05]' : ''}`}>{cell?.text ?? ''}</div>}
                                 </div>
                             );
