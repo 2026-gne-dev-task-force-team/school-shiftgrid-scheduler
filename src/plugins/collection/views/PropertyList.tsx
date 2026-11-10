@@ -52,6 +52,7 @@ export function PropertyList({ fields, values, onChange, onOptionsChange, rowId 
                             <Cell
                                 field={f}
                                 fields={fields}
+                                rowId={rowId}
                                 rowValue={values}
                                 editable={editable}
                                 onChange={(nv) => onChange?.(f.key, nv)}

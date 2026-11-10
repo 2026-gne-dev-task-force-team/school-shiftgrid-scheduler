@@ -12,7 +12,7 @@ import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '
 import { kitListTypes, kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
 import { TITLE_KEY, targetFields, targetValue, valueText } from './follow';
-import { castCandidate, castCandidates, castKeys, liveIn, parseRelationEntry, recordsOf, relationEntry, resolveRelationTargets, type RelationLook } from './cast';
+import { castCandidate, castCandidates, castKeys, liveIn, ownerOf, parseRelationEntry, recordsOf, relationEntry, resolveRelationTargets, type RelationLook } from './cast';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
 /** show = 칩에 보일 대상 칸 key(없음 = 제목) */
@@ -131,10 +131,11 @@ function castNewTarget(targetDb: string, name: string): string {
     return kit ? kit.addItem(targetDb, { [kit.config.baseFields[0].key]: name }) || '' : '';
 }
 
-function RelationPicker({ target, ids, many, onPick, onClear }: {
+function RelationPicker({ target, ids, many, selfDb, onPick, onClear }: {
     target: RelationTarget & { kind: 'db' };
     ids: string[];
     many: boolean;
+    selfDb?: string;
     onPick: (id: string) => void;
     onClear: () => void;
 }) {
@@ -145,7 +146,7 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
     const all = relationCandidates(look, target);
     const key = q.trim().toLowerCase();
     const shown = key ? all.filter((c) => c.name.toLowerCase().includes(key)) : all;
-    const casts = look ? castCandidates(look, target.nodeId).filter((c) => !key || c.name.toLowerCase().includes(key)) : [];
+    const casts = look ? castCandidates(look, target.nodeId, selfDb).filter((c) => !key || c.name.toLowerCase().includes(key)) : [];
     const nameOf = (id: string) => look?.get(id)?.name || UNTITLED;
     if (step) {
         // 캐스팅 2단 — pick: 그 줄이 가리키는 것 중 하나(넣은 칸 값에 적는다) · empty: 있는 항목에 잇거나 새로 만들어 잇는다(그 줄 쪽 칸이 채워진다)
@@ -211,7 +212,7 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
     );
 }
 
-export function RelationCell({ field, value, config, editable, onChange }: FieldCellProps) {
+export function RelationCell({ field, value, config, editable, onChange, rowId }: FieldCellProps) {
     useSyncExternalStore(subscribeDb, getDbRev);   // 대상 항목 이름·휴지통이 바뀌면 다시 그린다
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
     const cfg = relationConfig(config);
@@ -237,7 +238,7 @@ export function RelationCell({ field, value, config, editable, onChange }: Field
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
                     {cfg.target?.kind === 'db' ? (
-                        <RelationPicker target={cfg.target} ids={ids} many={cfg.many}
+                        <RelationPicker target={cfg.target} ids={ids} many={cfg.many} selfDb={(rowId && ownerOf(getNodesApi()!, rowId)) || undefined}
                             onPick={(id) => { onChange(toggleRelation(ids, id, cfg.many)); if (!cfg.many) setAnchor(null); }}
                             onClear={() => { onChange([]); setAnchor(null); }} />
                     ) : (

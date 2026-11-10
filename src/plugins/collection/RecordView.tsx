@@ -193,6 +193,7 @@ const RecordRow = memo(function RecordRow({
                         <Cell
                             field={f}
                             fields={fields}
+                            rowId={id}
                             rowValue={r}
                             editable={cellEditable && !f.readOnly}
                             onChange={(val) => act.changeCell(id, f.key, val)}

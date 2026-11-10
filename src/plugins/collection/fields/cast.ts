@@ -85,18 +85,19 @@ export function castTargets(look: RelationLook, targetDb: string, sourceId: stri
 }
 
 /** targetDb 를 가리키는 칸에 sourceId 줄을 넣을 수 있나 — 대상 자신의 줄은 direct */
-export function castCandidate(look: RelationLook, targetDb: string, sourceId: string): CastKind {
+export function castCandidate(look: RelationLook, targetDb: string, sourceId: string, selfDb?: string): CastKind {
     if (liveIn(look, targetDb, sourceId)) return 'direct';
+    if (selfDb && ownerOf(look, sourceId) === selfDb) return 'block';   // 칸이 속한 목록 자신의 줄은 제 칸에 못 넣는다
     if (!look.get(sourceId) || look.isTrashed(sourceId) || castKeys(look, targetDb, sourceId).length === 0) return 'block';
     const n = castTargets(look, targetDb, sourceId).length;
     return n === 0 ? 'empty' : n === 1 ? 'direct' : 'pick';
 }
 
 /** 다른 목록에서 넣을 수 있는 줄들 — targetDb 를 가리키는 관계 칸이 있는 컬렉션의 살아 있는 줄(block 은 안 나온다) */
-export function castCandidates(look: RelationLook, targetDb: string): { id: string; name: string; from: string; kind: Exclude<CastKind, 'block'>; targets: string[] }[] {
-    const colls = look.find((n) => n.id !== targetDb && !look.isTrashed(n.id) && fieldsOf(look, n.id).some((f) => pointsAt(f, targetDb)));
+export function castCandidates(look: RelationLook, targetDb: string, selfDb?: string): { id: string; name: string; from: string; kind: Exclude<CastKind, 'block'>; targets: string[] }[] {
+    const colls = look.find((n) => n.id !== targetDb && n.id !== selfDb && !look.isTrashed(n.id) && fieldsOf(look, n.id).some((f) => pointsAt(f, targetDb)));
     return colls.flatMap((c) => recordsOf(look, c.id).map((r) => {
-        const kind = castCandidate(look, targetDb, r.id);
+        const kind = castCandidate(look, targetDb, r.id, selfDb);
         return kind === 'block' ? null : { id: r.id, name: r.name, from: c.name, kind, targets: castTargets(look, targetDb, r.id) };
     }).filter((x): x is NonNullable<typeof x> => x !== null));
 }

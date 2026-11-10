@@ -134,6 +134,8 @@ export interface FieldCellProps {
     row: unknown;
     /** 이 목록의 칸 전부(형제 칸을 따라가는 타입용 — 롤업). 안 주는 자리도 있다 */
     fields?: RecordField[];
+    /** 이 행의 id(관계 칸이 제 목록을 후보에서 빼려고 쓴다). 안 주는 자리도 있다 */
+    rowId?: string;
     /** 선택지를 화면에서 고치는 칸(select·multi)만 쓴다 — 안 주면 선택지 편집 UI 가 숨는다 */
     onOptionsChange?: (options: FieldOption[]) => void;
 }
