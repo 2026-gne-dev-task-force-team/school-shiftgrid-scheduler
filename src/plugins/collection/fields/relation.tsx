@@ -8,13 +8,15 @@ import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, h
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
-import { ROW_TYPE, normalizeRelation, relationToText } from '../schema';
+import { DB_TYPE, ROW_TYPE, normalizeRelation, relationToText } from '../schema';
+import { effectiveParentId } from '../tree';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
 export interface RelationConfig { target?: RelationTarget; many: boolean }
 /** 노드 시스템에서 관계 칸이 쓰는 것만 — 시험은 가짜로 채운다 */
-export type RelationLook = Pick<NodesApi, 'get' | 'isTrashed' | 'path' | 'liveByType'>;
-export interface RelationItem { id: string; name: string }
+export type RelationLook = Pick<NodesApi, 'get' | 'isTrashed' | 'path' | 'liveByType' | 'children' | 'parent'>;
+/** path = 부모 항목 이름들(바깥 → 안) — 최상위면 빈 배열 */
+export interface RelationItem { id: string; name: string; path: string[] }
 
 const UNTITLED = '제목 없음';
 
@@ -32,19 +34,50 @@ export function relationConfig(config: unknown): RelationConfig {
 /** 값 → id 배열(설정의 many 를 따른다) */
 export const relationIds = (value: unknown, config: unknown): string[] => normalizeRelation(value, relationConfig(config).many);
 
-/** 이 id 가 대상 db 안에 살아 있는 행인가 */
-function liveIn(look: RelationLook, dbId: string, id: string): boolean {
-    const n = look.get(id);
-    return !!n && n.type === ROW_TYPE && !look.isTrashed(id) && look.path(id).includes(dbId);
+/**
+ * 대상 컬렉션의 레코드 — 범용 컬렉션(collection.db)은 행이 노드 나무로 중첩되고(하위 항목),
+ *   defineCollection 컬렉션(꾸러미가 정의한 목록 노드)은 레코드가 목록 노드의 납작한 자식이고 중첩은 data.parentId 다.
+ *   shortcut: 납작한 쪽은 「목록의 살아 있는 직속 자식 = 레코드」로 본다(record 타입 표를 노드 약속이 안 드러내서) — 목록에 레코드 아닌 자식이 생기면 타입 표 조회로 바꾼다.
+ */
+function recordsOf(look: RelationLook, dbId: string): { id: string; name: string; parentId?: string }[] {
+    if (look.get(dbId)?.type === DB_TYPE) {
+        return look.liveByType(ROW_TYPE).filter((n) => look.path(n.id).includes(dbId)).map((n) => ({ id: n.id, name: n.name }));
+    }
+    if (!look.get(dbId) || look.isTrashed(dbId)) return [];
+    return look.children(dbId).filter((n) => !look.isTrashed(n.id)).map((n) => {
+        const p = (n.data as { parentId?: unknown } | undefined)?.parentId;
+        return { id: n.id, name: n.name, parentId: typeof p === 'string' && p ? p : undefined };
+    });
 }
 
-/** 고르기 후보 — 대상 db 안 살아 있는 행(하위 항목 포함). 'source'·대상 없음·대상이 휴지통이면 빈 목록 */
+/** 이 id 가 대상 컬렉션 안에 살아 있는 레코드인가 */
+function liveIn(look: RelationLook, dbId: string, id: string): boolean {
+    const n = look.get(id);
+    if (!n || look.isTrashed(id)) return false;
+    if (look.get(dbId)?.type === DB_TYPE) return n.type === ROW_TYPE && look.path(id).includes(dbId);
+    return look.parent(id) === dbId && !look.isTrashed(dbId);
+}
+
+/** 고르기 후보 — 대상 컬렉션 안 살아 있는 레코드(하위 항목 포함) + 부모 경로. 'source'·대상 없음·대상이 휴지통이면 빈 목록 */
 export function relationCandidates(look: RelationLook | null, target: RelationTarget | undefined): RelationItem[] {
     if (!look || target?.kind !== 'db') return [];
     const db = target.nodeId;
-    return look.liveByType(ROW_TYPE)
-        .filter((n) => look.path(n.id).includes(db))
-        .map((n) => ({ id: n.id, name: n.name || UNTITLED }));
+    const recs = recordsOf(look, db);
+    const byId = new Map(recs.map((r) => [r.id, r]));
+    const pathOf = (id: string): string[] => {
+        if (look.get(db)?.type === DB_TYPE) {
+            const p = look.path(id);
+            return p.slice(p.indexOf(db) + 1, -1).map((x) => look.get(x)?.name || UNTITLED);
+        }
+        const out: string[] = [];
+        const seen = new Set([id]);
+        for (let cur = effectiveParentId(recs, id); cur && !seen.has(cur); cur = effectiveParentId(recs, cur)) {
+            seen.add(cur);   // 순환 막기
+            out.unshift(byId.get(cur)?.name || UNTITLED);
+        }
+        return out;
+    };
+    return recs.map((r) => ({ id: r.id, name: r.name || UNTITLED, path: pathOf(r.id) }));
 }
 
 /** 값의 id 하나하나 → 이름. 없음·휴지통·대상 밖이면 name = null(「사라진 항목」) */
@@ -99,7 +132,13 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
             <div ref={listRef} className="max-h-72 overflow-auto">
                 <MenuList label="항목 고르기">
                     {ids.length > 0 && <MenuItem label="비우기" icon="x" onSelect={onClear} />}
-                    {shown.map((c) => <MenuItem key={c.id} label={c.name} icon={ids.includes(c.id) ? 'check' : undefined} onSelect={() => onPick(c.id)} />)}
+                    {shown.map((c) => (
+                        <div key={c.id} className="contents" data-rv-rel-option={c.id}>
+                            <MenuItem label={c.name} icon={ids.includes(c.id) ? 'check' : undefined} onSelect={() => onPick(c.id)} />
+                            {/* 항목 안의 항목 — 부모 경로를 이름 밑에 작게(눌러도 고르기는 위 줄이 맡는다) */}
+                            {c.path.length > 0 && <div data-rv-rel-path className="-mt-1 pb-1 pl-8 pr-pad text-note text-muted truncate">{c.path.join(' › ')}</div>}
+                        </div>
+                    ))}
                 </MenuList>
                 {shown.length === 0 && (
                     <div data-rv-rel-empty className="px-2 py-1 text-note text-muted">{all.length > 0 ? '맞는 항목이 없어요' : '가리킬 컬렉션에 항목이 없어요'}</div>

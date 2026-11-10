@@ -47,7 +47,7 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. P2(2026-11-10): icon-pack-basic 이 코어가 돼 코어 묶음 끝으로 올라왔다. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
             'settings', 'explorer', 'selection', 'properties', 'icon-pack-basic', 'page', 'collection', 'sheet',
             'calendar', 'account',
-            'people', 'rooms', 'room-booking', 'timetable-grid',
+            'people', 'rooms', 'room-booking', 'substitute', 'timetable-grid',
         ]);
         expect(ps.every((p) => p.enabled)).toBe(true);
         expect(ps.some((p) => p.failed)).toBe(false);
@@ -100,7 +100,7 @@ describe('속성 칸 — 노드 타입마다 주인이 칸을 낸다', () => {
         for (const type of ['page.page', 'calendar-subscribe.subscription', 'calendar.event']) {
             expect(listPropertiesPanes(type).length, `${type} 에 속성 칸이 없다`).toBeGreaterThan(0);
         }
-        for (const type of ['people.person', 'rooms.room', 'collection.row', 'account.user', 'account.role']) expect(listPropertiesPanes(type), `${type} 은 열기 페이지로 — 속성 패널 칸 없음`).toEqual([]);
+        for (const type of ['people.person', 'rooms.room', 'substitute.staff', 'collection.row', 'account.user', 'account.role']) expect(listPropertiesPanes(type), `${type} 은 열기 페이지로 — 속성 패널 칸 없음`).toEqual([]);
         expect(listPropertiesPanes('account.secret')).toEqual([]);
         expect(listPropertiesPanes('account.cred-secret')).toEqual([]);
     });

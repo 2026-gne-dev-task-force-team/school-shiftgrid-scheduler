@@ -108,7 +108,8 @@ export function defineCollection(cfg: CollectionConfig): CollectionKit {
         // ── 쓰기 ──
         createList() {
             if (!api) return null;
-            return api.create(api.roots.main, { type: cfg.listType, name: uniqueName(cfg.listLabel, listNodes.map((n) => n.name)) }) || null;
+            const seed = cfg.newListFields?.();
+            return api.create(api.roots.main, { type: cfg.listType, name: uniqueName(cfg.listLabel, listNodes.map((n) => n.name)), ...(seed ? { data: { fields: seed } } : {}) }) || null;
         },
         addItem(listId, values = {}) {
             if (!api) return '';

@@ -11,7 +11,7 @@ import { fieldTypes } from '../fields/registry';
 import type { RecordCellValue, RecordField } from '../contracts/collection';
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { initRecordNodes } from '../nodes';
-import { ROW_TYPE } from '../schema';
+import { DB_TYPE, ROW_TYPE } from '../schema';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -42,7 +42,7 @@ const typeText = (cellKey: string, text: string) => {
 
 /** 관계 칸 손짓용 — db1 밑 행 하나(r1 「첫째」)만 있는 가짜 노드 시스템 */
 const FAKE_NODES = {
-    get: (id: string) => (id === 'r1' ? { id, type: ROW_TYPE, name: '첫째', children: [] } : undefined),
+    get: (id: string) => (id === 'r1' ? { id, type: ROW_TYPE, name: '첫째', children: [] } : id === 'db1' ? { id, type: DB_TYPE, name: 'db', children: ['r1'] } : undefined),
     isTrashed: () => false,
     path: (id: string) => (id === 'r1' ? ['db1', 'r1'] : []),
     liveByType: (t: string) => (t === ROW_TYPE ? [{ id: 'r1', type: ROW_TYPE, name: '첫째', children: [] }] : []),

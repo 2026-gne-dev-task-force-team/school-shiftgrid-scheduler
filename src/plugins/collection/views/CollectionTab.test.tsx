@@ -28,8 +28,8 @@ import { makeNodesApi } from '../../../pane-ui-system/core/node-frame/api';
 import { registerType, clearTypes } from '../../../pane-ui-system/core/nodes/model/types';
 import { clearDerived } from '../../../pane-ui-system/core/nodes/model/derive';
 import { defineCollection } from '../define';
-import { pasteToTsv, deleteWithUndo } from './CollectionTab';
-import type { CollectionConfig, CollectionKit } from '../contracts/collection';
+import { pasteIntoList, deleteWithUndo } from './CollectionTab';
+import type { CollectionConfig, CollectionKit, RecordField } from '../contracts/collection';
 import { peopleNodeTypes, peopleNodeTypeImpl } from '../../people/nodes';
 import { PERSON_CONFIG } from '../../people/config';
 
@@ -159,10 +159,19 @@ describe('빈 컬렉션 = 프리셋 — 같은 칸을 손으로 적으면 같은
     });
 });
 
-describe('pasteToTsv — 레코드 뷰 붙여넣기를 기본 칸 순서 TSV 로', () => {
-    it('보이는 칸 순서가 달라도 기본 칸 순서로 · 없는 칸은 빈 글자', () => {
-        expect(pasteToTsv({ keys: ['memo', 'name'], rows: [['m1', 'n1'], ['', 'n2']] }, ['name', 'memo'])).toBe('n1\tm1\nn2\t');
-        expect(pasteToTsv({ keys: ['name', null], rows: [['n', 'x']] }, ['name', 'memo'])).toBe('n\t');
+describe('pasteIntoList — 레코드 뷰 붙여넣기를 새 항목으로(기본 칸 + 사용자 칸)', () => {
+    it('보이는 칸 순서대로 · 사용자 선택 칸은 이름표 → 저장값 · 남는 열은 버리고 칸을 안 만든다 · 제목 빈 줄은 건너뛴다', () => {
+        const { api, kit, listType } = presetKit();
+        const lid = api.create(api.roots.main, { type: listType, name: '명단' });
+        const kind: RecordField = { key: 'f_k', label: '구분', type: 'select', options: [{ value: 'a', label: '가' }] };
+        kit.setUserFields(lid, [kind]);
+        const fields = [...PERSON_CONFIG.baseFields, kind];
+        pasteIntoList(kit as never, lid, fields, ['name', 'memo'], { keys: ['memo', 'name', 'f_k', null], rows: [['m1', 'n1', '가', 'x'], ['', 'n2', '나', ''], ['m3', '', '가', '']] });
+        const items = kit.itemsIn(lid);
+        expect(items.map((it) => it.name)).toEqual(['n1', 'n2']);
+        expect(items.map((it) => it.values)).toEqual([{ memo: 'm1', f_k: 'a' }, { f_k: '나' }]);
+        expect(kit.userFieldsOf(lid).map((f) => f.key)).toEqual(['f_k']);
+        expect(kit.userFieldsOf(lid)[0].options?.map((o) => o.label)).toEqual(['가', '나']);
     });
 });
 
