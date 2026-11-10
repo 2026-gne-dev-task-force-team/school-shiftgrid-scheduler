@@ -37,11 +37,17 @@ const old = (): TableDoc => ({
 const td = (r: number, c: number) => document.querySelector<HTMLElement>(`[data-rc="${r}:${c}"]`)!;
 const key = (k: string, o: KeyboardEventInit = {}) =>
     act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, ...o })); });
-function menu(r: number, c: number, label: string) {
+function menu(r: number, c: number, label: string, sub?: string) {
     act(() => { td(r, c).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })); });
-    const b = [...document.querySelectorAll('button,[role="menuitem"]')].find((x) => x.textContent?.includes(label));
+    const find = (l: string) => [...document.querySelectorAll('button,[role="menuitem"]')].find((x) => x.textContent?.includes(l));
+    const b = find(label);
     if (!b) throw new Error(`메뉴 못 찾음: ${label}`);
     act(() => { b.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    if (sub) {
+        const s = find(sub);
+        if (!s) throw new Error(`하위 메뉴 못 찾음: ${sub}`);
+        act(() => { s.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    }
 }
 
 describe('칸 서식', () => {
@@ -77,7 +83,7 @@ describe('칸 서식', () => {
         menu(0, 0, '가운데 정렬');
         expect(td(0, 0).className).toContain('text-center');
         expect(td(0, 1).className).toContain('text-center');
-        menu(0, 0, '칸 초록색');
+        menu(0, 0, '칸 색', '초록색');
         expect(td(0, 1).className).toContain('bg-ok/15');
         expect(ref.current!.doc().cellFmt).toEqual({
             'r0|a': { align: 'center', tone: 'ok' }, 'r0|b': { align: 'center', tone: 'ok' },
@@ -85,5 +91,31 @@ describe('칸 서식', () => {
         act(() => ref.current!.h().focus());
         key('z', { metaKey: true });
         expect(td(0, 1).className).not.toContain('bg-ok/15');
+    });
+
+    it('앱 안 복사 → 붙여넣기는 서식도 같이 · 바깥 글자는 서식 없이(기존 서식 그대로)', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={old()} />);
+        act(() => ref.current!.h().select(0, 0, 0, 0));
+        menu(0, 0, '칸 색', '초록색');
+        act(() => ref.current!.h().focus());
+        key('b', { metaKey: true });
+        let tsv = '';
+        act(() => { tsv = ref.current!.h().copy(); });
+        act(() => ref.current!.h().paste(tsv, 1, 1));
+        expect(td(1, 1).className).toContain('bg-ok/15');
+        expect(td(1, 1).className).toContain('font-bold');
+        act(() => ref.current!.h().paste('바깥', 0, 1));
+        expect(td(0, 1).className).not.toContain('bg-ok/15');
+        expect(td(0, 0).className).toContain('bg-ok/15');
+    });
+
+    it('선택 밖 칸을 우클릭해 서식을 고르면 그 칸에 걸린다(옛 선택이 아니라)', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={old()} />);
+        act(() => ref.current!.h().select(0, 0, 0, 0));
+        menu(1, 1, '칸 색', '초록색');
+        expect(td(1, 1).className).toContain('bg-ok/15');
+        expect(td(0, 0).className).not.toContain('bg-ok/15');
     });
 });

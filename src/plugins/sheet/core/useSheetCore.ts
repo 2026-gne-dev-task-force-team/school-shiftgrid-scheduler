@@ -12,6 +12,8 @@ import { verticalViewport } from './platform';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
 let lastCopiedTsv = '';
+// 같이 복사한 칸 서식 — 붙여넣는 글자(TSV)가 방금 복사한 것과 같을 때만 곁들인다(바깥에서 온 글자는 서식 없이).
+let lastCopiedFmt: { tsv: string; grid: unknown[][] } | null = null;
 
 export interface SheetCore {
     active: CellPos;
@@ -202,12 +204,16 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         const a = adapterRef.current;
         const s = selRef.current;
         const grid: string[][] = [];
+        const fgrid: unknown[][] = [];
         for (let r = s.r1; r <= s.r2; r++) {
             const cells: string[] = [];
-            for (let c = s.c1; c <= s.c2; c++) cells.push(a.getText(r, c));
-            grid.push(cells);
+            const fs: unknown[] = [];
+            for (let c = s.c1; c <= s.c2; c++) { cells.push(a.getText(r, c)); fs.push(a.getFmt?.(r, c) ?? null); }
+            grid.push(cells); fgrid.push(fs);
         }
-        return toTsv(grid);   // 칸 안 탭·줄바꿈은 따옴표로 보존(붙여넣기 매트릭스)
+        const tsv = toTsv(grid);
+        lastCopiedFmt = a.getFmt ? { tsv, grid: fgrid } : null;
+        return tsv;   // 칸 안 탭·줄바꿈은 따옴표로 보존(붙여넣기 매트릭스)
     }, []);
 
     const doCopy = useCallback(() => {
@@ -234,12 +240,13 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
         const grid = parseClipboard(tsv);   // 따옴표 안 줄바꿈·탭 보존
         if (grid.length === 1 && grid[0].length === 0) return;   // 빈 클립보드
         const changes: CellChange[] = [];
+        const fm = a.getFmt && lastCopiedFmt && lastCopiedFmt.tsv === tsv ? lastCopiedFmt.grid : null;
         grid.forEach((line, dr) => {
             line.forEach((raw, dc) => {
                 const c = baseC + dc;
                 if (c >= a.colCount && !a.growCols) return;   // 열 늘림 능력이 없으면 초과 열은 자른다
                 if (c < a.colCount && !a.editable(baseR + dr, c)) return;
-                changes.push({ r: baseR + dr, c, text: raw });
+                changes.push(fm ? { r: baseR + dr, c, text: raw, fmt: fm[dr]?.[dc] ?? null } : { r: baseR + dr, c, text: raw });
             });
         });
         if (changes.length) a.commit(changes, 'paste');
