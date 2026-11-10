@@ -447,6 +447,20 @@ describe('P2 — 행 포커스에서 Tab 들여쓰기 / Shift+Tab 내어쓰기',
         key(q('[data-rv-row="b"]')!, 'Tab', { shiftKey: true });
         expect(outdent).toHaveBeenCalledTimes(1);
     });
+
+    it('칸을 고른 채 ⌘] 들여쓰기 · ⌘[ 내어쓰기 (Tab 은 칸 이동 그대로)', () => {
+        const indent = vi.fn(); const outdent = vi.fn();
+        mount(treeRV(indent, outdent));
+        const cell = q('[data-rv-pos="1:0"]')!;
+        act(() => { cell.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
+        const mod = { metaKey: true, ctrlKey: true };
+        key(cell, ']', { ...mod, code: 'BracketRight' });
+        expect(indent).toHaveBeenCalledWith('b');
+        key(cell, '[', { ...mod, code: 'BracketLeft' });
+        expect(outdent).toHaveBeenCalledWith('b');
+        key(cell, ']', { code: 'BracketRight' });   // ⌘ 없으면 아무 일 없음
+        expect(indent).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe('Q11 W10 — 칸 옵션 「유일」', () => {

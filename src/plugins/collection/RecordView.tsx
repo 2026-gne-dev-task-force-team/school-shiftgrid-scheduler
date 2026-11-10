@@ -165,7 +165,7 @@ const RecordRow = memo(function RecordRow({
                     onClickCapture={(e) => { if (tabClick(e, f.key)) { e.preventDefault(); e.stopPropagation(); } }}
                     onMouseUp={(e) => { if (!tabClick(e, f.key)) openEditFromWrapper(e); }}
                     onDoubleClick={openEditFromWrapper}
-                    className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-pre-wrap [&_.truncate]:break-keep [&_.truncate]:[overflow-wrap:anywhere]' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
+                    className={`relative shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-pre-wrap [&_.truncate]:break-keep [&_.truncate]:[overflow-wrap:anywhere]' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                     style={{ width: widths[fi], ...frozenStyle(fi) }}>
                     {fi === 0 && treeOn && (
                         <div className="shrink-0 flex items-center self-stretch">
@@ -198,21 +198,26 @@ const RecordRow = memo(function RecordRow({
                             onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => act.setOptions(f.key, o) : undefined}
                         />
                     </div>
-                    {isTitle(f.key) && showTree && hasAddChild && (
+                    {/* 머무를 때 단추들 — 칸 위에 겹쳐 띄운다(자리를 차지하면 좁은 칸·줄바꿈 칸에서 제목이 한 글자씩 꺾인다) */}
+                    {isTitle(f.key) && ((showTree && hasAddChild) || showOpen) && (
+                    <div data-rv-hover-tools className="absolute right-0 top-0 h-8 flex items-center pl-1 bg-bg/90 rounded-l">
+                    {showTree && hasAddChild && (
                         <Tooltip text="하위 항목 추가">
                             <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
                                 onClick={() => { if (collapsed) act.toggleCollapse(id); act.addChild(id); }} />
                         </Tooltip>
                     )}
-                    {isTitle(f.key) && showOpen && (
+                    {showOpen && (
                         <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id}
                             onClick={(e) => { if (hasOpenTab && isMod(e)) act.openTab(id); else act.open(id); }}
                             onAuxClick={(e) => { if (hasOpenTab && e.button === 1) { e.preventDefault(); act.openTab(id); } }}>열기</Button>
                     )}
-                    {isTitle(f.key) && showOpen && hasOpenTab && (
+                    {showOpen && hasOpenTab && (
                         <Tooltip text={`탭으로 열기 (${modClickLabel()})`}>
                             <IconButton icon="arrowRight" label="탭으로 열기" title="" size={13} data={{ 'data-rv-open-tab': id }} onClick={() => act.openTab(id)} />
                         </Tooltip>
+                    )}
+                    </div>
                     )}
                 </div>
             ))}
@@ -373,7 +378,7 @@ export function RecordView<T>({
             if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
             if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
             if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
-            if (treeOn && tree) items.push({ label: '들여쓰기', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기', onClick: () => tree.onOutdent(rowId) });
+            if (treeOn && tree) items.push({ label: '들여쓰기 (⌘])', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기 (⌘[)', onClick: () => tree.onOutdent(rowId) });
             if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
         }
         if (!rowId && onAddRecord) items.push({ label: '새로 만들기', icon: 'plus', onClick: onAddRecord });
@@ -636,7 +641,28 @@ export function RecordView<T>({
         }
         return false;
     };
+    // ⌘] 들여쓰기 · ⌘[ 내어쓰기(옵시디언·VS Code 와 같은 키) — Tab 은 칸 이동이라 못 쓴다. 고른 칸의 행이 대상이고, 커서는 그 행을 따라간다.
+    const followRow = useRef<{ id: string; c: number } | null>(null);
+    useEffect(() => {
+        const f = followRow.current;
+        if (!f) return;
+        followRow.current = null;
+        const r = rowIds.indexOf(f.id);
+        if (r >= 0) { setAnchor(null); setCur({ r, c: f.c }); }
+    }, [rowIds]);
+    const onIndentKey = (e: React.KeyboardEvent): boolean => {
+        if (!treeOn || !cur || !isMod(e) || e.shiftKey || e.altKey || e.nativeEvent.isComposing) return false;
+        const out = e.code === 'BracketLeft' || e.key === '[';
+        if (!out && e.code !== 'BracketRight' && e.key !== ']') return false;
+        const id = rowIds[cur.r];
+        if (!id) return false;
+        e.preventDefault(); e.stopPropagation();
+        followRow.current = { id, c: cur.c };
+        if (out) tree?.onOutdent(id); else tree?.onIndent(id);
+        return true;
+    };
     const onGridKeyDown = (e: React.KeyboardEvent) => {
+        if (onIndentKey(e)) return;
         if (onEditKey(e)) return;
         const t = e.target as HTMLElement;
         if (!cur || e.nativeEvent.isComposing || t.closest('input,textarea,select,[contenteditable="true"],[data-rv-editing]')) return;
