@@ -155,7 +155,7 @@ describe('빈 컬렉션 = 프리셋 — 같은 칸을 손으로 적으면 같은
         const { api, kit, listType } = presetKit();
         api.create(api.roots.main, { type: listType, name: '만들어 둔 명단' });
         const el = mount(createElement(kit.Tab, {}));
-        expect(el.textContent).toContain('새 명단');
+        expect(el.textContent).toContain('새 사람 명단');
         expect(el.textContent).toContain('만들어 둔 명단');
     });
 });

@@ -592,6 +592,17 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         setActiveBlockId(p.blocks[0].id);
         setFocusIntent({ id: p.blocks[0].id, offset: 0 });
     };
+    // 본문 빈 곳 클릭 — 끝 블록이 빈 글자 블록이면 거기에, 아니면 새 문단을 붙이고 거기에 커서.
+    const clickTail = () => {
+        const p = pageRef.current;
+        const lastB = p.blocks[p.blocks.length - 1];
+        if (lastB && lastB.text === '' && lastB.type !== 'divider' && lastB.type !== 'table' && lastB.type !== 'node' && lastB.type !== 'childpage') {
+            setActiveBlockId(lastB.id); setFocusIntent({ id: lastB.id, offset: 0 }); return;
+        }
+        const nb = emptyBlock();
+        setActiveBlockId(nb.id);
+        commitPage({ ...p, blocks: [...p.blocks, nb] }, { id: nb.id, offset: 0 });
+    };
     // 번호 목록의 보이는 숫자 — 이어진 묶음 안에서 1,2,3…
     const ordinals: Record<string, number> = {};
     let run = 0;
@@ -659,6 +670,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
                                 touchLine={touchLineOf(i)}
                             />
                         ))}
+                        {/* 본문 아래 빈 곳 — 누르면 끝 블록(빈 문단이면 거기, 아니면 새 문단)에 커서 */}
+                        <div data-testid="page-tail" className="min-h-[40vh] cursor-text" onMouseDown={(e) => { e.preventDefault(); clickTail(); }} />
                     </div>
                     {band && (
                         <div
@@ -888,7 +901,15 @@ function Editable(props: RowProps) {
         buildInlineDom(el, block.text);
     });
 
+    // 빈 문단 안내 — 활성이거나 페이지에 이 블록뿐일 때만(빈 줄마다 깔리면 시끄럽다). 겹쳐 그리는 글자라 DOM <br> 에 안 흔들린다.
+    const showHint = block.type === 'paragraph' && block.text === '' && (props.active || (props.index === 0 && props.last));
     return (
+        <div className="relative">
+            {showHint && (
+                <span aria-hidden="true" data-testid="page-empty-hint" className={`absolute left-0 top-0 opacity-40 pointer-events-none select-none ${textClass(block)}`}>
+                    여기에 쓰세요 · 「/」로 블록 고르기
+                </span>
+            )}
         <div
             ref={(el) => { ref.current = el; props.setEl(block.id, el); }}
             contentEditable
@@ -908,6 +929,7 @@ function Editable(props: RowProps) {
                 props.onInput(block.id, serializeInline(e.currentTarget), e.currentTarget);
             }}
         />
+        </div>
     );
 }
 

@@ -15,7 +15,7 @@ export const PERSON_CONFIG: CollectionConfig = {
     viewId: 'people.sheet',
     openCommandId: 'people.openList',
     viewKey: 'people.list',
-    listLabel: '명단',
+    listLabel: '사람 명단',
     listIcon: 'users',
     itemIcon: 'user',
     // 기본 칸 — 지우기·타입 바꾸기 금지(locked). 첫 칸이 제목(노드 이름).
