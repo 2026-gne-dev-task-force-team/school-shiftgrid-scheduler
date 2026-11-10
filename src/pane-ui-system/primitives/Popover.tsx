@@ -20,6 +20,7 @@ export function Popover({
     children,
     width = 280,
     align = 'left',
+    initialFocus = true,
 }: {
     /** 기준 요소의 화면 사각형(getBoundingClientRect) */
     anchor: DOMRect;
@@ -27,6 +28,8 @@ export function Popover({
     children?: ReactNode;
     width?: number;
     align?: 'left' | 'right';
+    /** false 면 뜰 때 안쪽 첫 입력칸으로 초점을 안 보낸다(팝오버 자신이 받는다) — 열자마자 친 글자가 입력칸에 들어가면 안 되는 메뉴용 */
+    initialFocus?: boolean;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { closing, close: onClose } = useExitClose(onCloseProp);
@@ -74,7 +77,7 @@ export function Popover({
         // 열리면 안의 첫 조작 요소로 초점(안쪽이 이미 가져갔으면 그대로) — 팝오버 자신이 초점 폴백
         const el = ref.current;
         if (el && !el.contains(document.activeElement)) {
-            (el.querySelector<HTMLElement>('input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? el).focus({ preventScroll: true });
+            ((initialFocus ? el.querySelector<HTMLElement>('input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])') : null) ?? el).focus({ preventScroll: true });
         }
         document.addEventListener('pointerdown', onDown, true);
         window.addEventListener('scroll', onScroll, true);

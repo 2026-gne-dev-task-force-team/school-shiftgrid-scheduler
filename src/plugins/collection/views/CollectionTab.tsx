@@ -115,6 +115,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onFieldsChange={(next) => kit.setUserFields(activeId, next.filter((f) => !baseKeys.includes(f.key)))}
                     onAddRecord={() => { kit.addItem(activeId); }}
                     onDeleteRecords={(ids) => deleteWithUndo(kit, host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`, () => ids.forEach(kit.removeItem))}
+                    onDiscardRecords={(ids) => ids.forEach(kit.removeItem)}
                     onDestructive={(title, run) => deleteWithUndo(kit, host, title, run)}
                     onPaste={(req) => pasteIntoList(kit, activeId, fields, baseKeys, req)}
                     onReorder={kit.reorderItem}

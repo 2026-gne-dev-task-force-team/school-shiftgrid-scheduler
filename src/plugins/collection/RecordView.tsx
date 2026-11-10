@@ -17,12 +17,13 @@ import { FieldGlyph } from './FieldGlyph';
 import { Toolbar } from './Toolbar';
 import { ViewTabs } from './ViewTabs';
 import { calcFnsFor, runCalc } from './calc';
-import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsEmpty, pruneFilter, rawValue } from './logic';
+import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsEmpty, pruneFilter, rawValue, isEmptyValue } from './logic';
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { OptionsEditor } from './fields/cells';
 import { ReorderOverlay } from './ReorderOverlay';
+import type { ReorderIndicator } from '../../pane-ui-system/interactive/useReorder';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
 import {
@@ -132,7 +133,7 @@ const RecordRow = memo(function RecordRow({
             } : undefined}
             onMouseEnter={() => act.hover(id)}
             onMouseLeave={() => act.leave(id)}
-            className={`flex border-b border-line min-h-[32px] ${isFresh ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${markZone === 'before' ? 'border-t-2 border-t-accent' : ''} ${markZone === 'after' ? 'border-b-2 border-b-accent' : ''} ${markZone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
+            className={`flex border-b border-line min-h-[32px] ${isFresh ? 'ui-pop-in' : ''} ${checked ? 'bg-accent/[0.06]' : 'hover:bg-text/[0.02]'} ${markZone === 'into' ? 'bg-accent/[0.12] ring-1 ring-inset ring-accent' : ''}`}
         >
             {reorderable && (
                 <div className="shrink-0 grid place-items-center bg-bg" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }}
@@ -247,6 +248,7 @@ export function RecordView<T>({
     onDescriptionChange,
     descriptionLine = true,
     onDeleteRecords,
+    onDiscardRecords,
     onDestructive,
     onOpenRecord,
     onOpenRecordTab,
@@ -315,7 +317,7 @@ export function RecordView<T>({
     const coarse = useCoarsePointer();
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [hoverRow, setHoverRow] = useState<string | null>(null);
-    const [headMenu, setHeadMenu] = useState<{ key: string; rect: DOMRect } | null>(null);
+    const [headMenu, setHeadMenu] = useState<{ key: string; rect: DOMRect; focusName?: boolean } | null>(null);
     const [addMenu, setAddMenu] = useState<DOMRect | null>(null);
     const [pending, setPending] = useState<ConvertPlan | null>(null);
     const gridRef = useRef<HTMLDivElement>(null);
@@ -449,6 +451,18 @@ export function RecordView<T>({
         },
     });
     const dropMark: DropMark | null = rowDrag.drag ? dropTargetAt(rowDrag.drag.leafId, rowDrag.drag.y) : null;
+    /** 끄는 동안 가로 안내선 자리 — 앞·뒤·맨 끝일 때만(하위는 대상 행 강조로 보인다). 행 사각형은 그릴 때 잰다 */
+    const dropLine = ((): ReorderIndicator | null => {
+        if (!dropMark) return null;
+        const els = [...(gridRef.current?.querySelectorAll<HTMLElement>('[data-rv-row]') ?? [])];
+        if (els.length === 0) return null;
+        let el: HTMLElement | undefined; let atBottom = false;
+        if (dropMark === '__end__') { el = els[els.length - 1]; atBottom = true; }
+        else if (dropMark.zone !== 'into') { el = els.find((e) => e.getAttribute('data-rv-row') === dropMark.id); atBottom = dropMark.zone === 'after'; }
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { line: atBottom ? r.bottom : r.top, cross: r.left - 2, size: r.width + 4 };
+    })();
     const moveRow = (from: string, toId: string | null, zone: 'before' | 'into' | 'after' = 'before') => {
         if (!onReorder || from === toId) return;
         if (toId && inOwnSubtree(from, toId)) return;
@@ -540,7 +554,7 @@ export function RecordView<T>({
         if (def.readOnly) f.readOnly = true;
         onFieldsChange?.([...fields, f]);
         // 새 칸 이름 편집으로 초점(칸 메뉴의 이름 입력이 뜨며 전체 선택한다)
-        if (addMenu) setHeadMenu({ key: f.key, rect: addMenu });
+        if (addMenu) setHeadMenu({ key: f.key, rect: addMenu, focusName: true });
         setAddMenu(null);
     };
 
@@ -612,11 +626,33 @@ export function RecordView<T>({
         changeCells(changes);
     };
     // ── 칸 편집 중 키 — 입력칸이 먼저 확정/취소하고(버블로 여기 도착), 여기서 다음 칸 편집·초점 복귀를 맡는다 ──
-    const [pendingGo, setPendingGo] = useState<{ r: number; c: number; edit: boolean; minLen: number } | null>(null);
+    // Enter 로 방금 만든 행 — 값 없이 편집에서 빠지면 그 빈 행을 알림 없이 치운다(손으로 「새로 만들기」·원래 있던 행은 대상이 아니다)
+    const bornRow = useRef<string | null>(null);
+    const latestRows = useRef({ rows, getId, visibleFields, titleKey });
+    latestRows.current = { rows, getId, visibleFields, titleKey };
+    const discardBornIfEmpty = () => {
+        const id = bornRow.current;
+        if (!id || !onDiscardRecords) return;
+        const el = [...(gridRef.current?.querySelectorAll<HTMLElement>('[data-rv-row]') ?? [])].find((x) => x.getAttribute('data-rv-row') === id);
+        if (!el || el.querySelector('[data-rv-editing]')) return;   // 같은 행의 다른 칸으로 옮겨 편집 중이면 아직
+        const L = latestRows.current;
+        const at = L.rows.findIndex((x) => L.getId(x) === id);
+        if (at < 0) { bornRow.current = null; return; }
+        const rec = L.rows[at];
+        const hasValue = L.visibleFields.some((f) => !f.readOnly && !isEmptyValue(rawValue(rec, f.key), f.type, f.config));
+        const titleEmpty = isEmptyValue(rawValue(rec, L.titleKey ?? ''), 'text');
+        bornRow.current = null;
+        if (hasValue || !titleEmpty) return;   // 값이 생긴 행은 이제 사용자의 행
+        onDiscardRecords([id]);
+        setCur(at > 0 ? { r: at - 1, c: 0 } : null); setAnchor(null);
+    };
+    const onGridBlur = () => { if (bornRow.current) setTimeout(discardBornIfEmpty, 150); };
+    const [pendingGo, setPendingGo] = useState<{ r: number; c: number; edit: boolean; minLen: number; born?: boolean } | null>(null);
     useEffect(() => {
         if (!pendingGo || rows.length < pendingGo.minLen) return;
         const g = pendingGo;
         setPendingGo(null);
+        if (g.born && rows[g.r]) bornRow.current = getId(rows[g.r]);
         setCur({ r: g.r, c: g.c }); setAnchor(null);
         const pos = cellEl(g.r, g.c);
         if (!pos) return;
@@ -635,7 +671,7 @@ export function RecordView<T>({
         if (e.key === 'Enter') {
             if (e.shiftKey && t.tagName === 'TEXTAREA') return true;   // 글 칸 줄바꿈 — 입력칸이 받는다
             if (r + 1 < rows.length) setPendingGo({ r: r + 1, c, edit: true, minLen: 0 });
-            else if (onAddRecord) { onAddRecord(); setPendingGo({ r: r + 1, c, edit: true, minLen: rows.length + 1 }); }
+            else if (onAddRecord) { onAddRecord(); setPendingGo({ r: r + 1, c, edit: true, minLen: rows.length + 1, born: true }); }
             return true;
         }
         if (e.key === 'Tab') {
@@ -817,7 +853,7 @@ export function RecordView<T>({
             )}
 
             {/* 표 — 가로·세로 스크롤은 이 칸이 쥔다(좁은 화면은 가로 스크롤) */}
-            <div ref={gridRef} tabIndex={-1} data-rv-grid {...ctxTrigger} onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
+            <div ref={gridRef} tabIndex={-1} data-rv-grid {...ctxTrigger} onPaste={onGridPaste} onCopy={onGridCopy} onKeyDown={onGridKeyDown} onBlur={onGridBlur} onMouseDown={focusGrid} className="flex-1 min-h-0 overflow-auto outline-none">
                 <div style={{ minWidth: totalWidth }} className="text-text">
                     {/* 머리줄 */}
                     <div ref={colReorder.containerRef} {...colReorder.bind} onKeyDown={colReorder.onKeyDown}
@@ -849,7 +885,7 @@ export function RecordView<T>({
                                     {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
                                         onClick={(e) => setHeadMenu({ key: f.key, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-text/70 hover:text-text hover:bg-text/[0.08]">
+                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-text/80 hover:text-text hover:bg-text/[0.08]">
                                         <Icon name="dots" size={16} />
                                     </button>
                                     {/* 폭 끌기 손잡이 */}
@@ -916,7 +952,7 @@ export function RecordView<T>({
                         // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                         <button type="button" data-rv-add
                             onClick={() => { onAddRecord(); setPendingGo({ r: rows.length, c: Math.max(0, visibleFields.findIndex((f) => isTitle(f.key))), edit: true, minLen: rows.length + 1 }); }}
-                            className={`flex items-center gap-1.5 w-full h-row px-3 text-body text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0 ${dropMark === '__end__' ? 'border-t-2 border-t-accent' : ''}`}>
+                            className={`flex items-center gap-1.5 w-full h-row px-3 text-body text-muted hover:text-text hover:bg-text/[0.04] select-none sticky left-0`}>
                             <Icon name="plus" size={14} />새로 만들기
                         </button>
                     )}
@@ -943,7 +979,7 @@ export function RecordView<T>({
             </div>
 
             <ReorderOverlay drag={colReorder.drag} indicator={colReorder.indicator} axis="x" />
-            <ReorderOverlay drag={rowDrag.drag} indicator={null} axis="y" />
+            <ReorderOverlay drag={rowDrag.drag} indicator={dropLine} axis="y" />
 
             {ctx && <ContextMenu x={ctx.x} y={ctx.y} items={ctx.items} onClose={() => setCtx(null)} />}
 
@@ -966,12 +1002,13 @@ export function RecordView<T>({
                 const title = isTitle(f.key);
                 const locked = title || f.locked === true;   // 기본 칸 — 지우기·타입 바꾸기 금지(이름표만 바꾼다)
                 return (
-                    <Popover anchor={headMenu.rect} width={220} onClose={() => setHeadMenu(null)}>
+                    <Popover anchor={headMenu.rect} width={220} initialFocus={!!headMenu.focusName} onClose={() => setHeadMenu(null)}>
                         <MenuList autoFocus={false} label="칸 메뉴">
                             {fieldsEditable && (
                                 <div data-rv-rename={f.key} className="mb-1">
+                                    <div className="px-1 pb-0.5 text-note text-muted">칸 이름</div>
                                     {/* 🔴 한글 조합 중 Enter 는 InlineRename 이 거른다 · 이름이 바뀌면 key 로 새로 세워 다시 고칠 수 있게 */}
-                                    <InlineRename key={f.label} value={f.label} ariaLabel="칸 이름" onCancel={() => { /* 그대로 둔다 */ }}
+                                    <InlineRename key={f.label} value={f.label} ariaLabel="칸 이름" autoFocus={!!headMenu.focusName} onCancel={() => { /* 그대로 둔다 */ }}
                                         onCommit={(label) => { renameField(f.key, label); }}
                                         className="w-full h-row px-2 rounded border border-line bg-bg text-body text-text outline-none" />
                                 </div>

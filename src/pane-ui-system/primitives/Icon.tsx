@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 export type IconName =
     | 'home' | 'table' | 'ban' | 'sparkles' | 'search' | 'edit' | 'layers' | 'printer'
     | 'undo' | 'redo' | 'save' | 'folder' | 'file' | 'plus' | 'trash' | 'check' | 'x'
-    | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot'
+    | 'info' | 'left' | 'right' | 'warn' | 'copy' | 'pin' | 'gear' | 'download' | 'upload' | 'play' | 'dot' | 'mail' | 'phone' | 'status'
     | 'sun' | 'moon' | 'book' | 'help' | 'arrowRight'
     | 'menu' | 'dots' | 'panelLeft' | 'panelRight' | 'split' | 'splitH'
     | 'calendar' | 'calendarMini' | 'flask' | 'grip'
@@ -52,6 +52,12 @@ const P: Record<IconName, string> = {
     upload: 'M12 21V9M7 14l5-5 5 5M4 3h16',
     play: 'M7 4l12 8-12 8z',
     dot: 'M12 10a2 2 0 100 4 2 2 0 000-4z',
+    // 편지 봉투 — 상자 + 덮개 V (칸 종류 「이메일」)
+    mail: 'M3 6h18v12H3zM3 7l9 7 9-7',
+    // 전화기 수화기 (칸 종류 「전화」)
+    phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A15 15 0 013 6a2 2 0 012-2z',
+    // 진행 고리 — 동그라미 + 반쯤 찬 부채꼴 (칸 종류 「상태」)
+    status: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7a5 5 0 010 10z',
     right: 'M9 5l7 7-7 7',
     arrowRight: 'M4 12h15M13 6l6 6-6 6',
     sun: 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6L4.2 4.2M19.8 19.8l-1.4-1.4M18.4 5.6l1.4-1.4M4.2 19.8l1.4-1.4M12 8a4 4 0 100 8 4 4 0 000-8z',
