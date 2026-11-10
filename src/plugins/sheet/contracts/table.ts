@@ -6,7 +6,7 @@
  * ⭐ 범용 바닥(core:true) — 쥔님 2026-11-08 16:20 *"범용 표야"*. ⛔ 흡수한 엔진(옛 도메인 부품)의 이름을 여기 남기지 않는다.
  * ⭐ 「한 번 확정 = undo 한 단위」가 뼈대다(TableTx 하나 = 되돌리기 한 칸). 병합(merge)은 M2 — 모델이 막지 않게만 둔다.
  */
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /** 열 정의 — 편집기는 key·title·width·readOnly·align 만 안다(type 은 M2 col-types 가 해석). */
@@ -207,6 +207,16 @@ export interface TableProps {
     /** M5 넘버스 — 표 스타일 프리셋(table-style 기능). 소유자가 쥔다. 없으면 basic. */
     tableStyle?: TableStylePreset;
     onSetTableStyle?(s: TableStylePreset): void;
+    /**
+     * 칸 글자 그리기 — 주면 (편집 중이 아닌) 칸 글자를 이걸로 그린다. 리치 셀(마크다운·노드 칩)을 꽂는 자리.
+     *   🔴 저장은 그대로 글자다(복사·되돌리기·병합은 글자로 돈다) — 그리기만 바뀐다. 없으면 맨 글자.
+     */
+    renderText?(value: string): ReactNode;
+    /** 칸 편집 중 `@` — 주면 고르기(Picker)를 띄워 고른 노드를 token(id) 글자로 `@` 자리에 넣는다. */
+    mention?: {
+        Picker: ComponentType<{ anchor: DOMRect; onPick(nodeId: string): void; onClose(): void }>;
+        token(nodeId: string): string;
+    };
     labels?: Partial<TableLabels>;
     emptyHint?: string;
     className?: string;

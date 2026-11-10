@@ -18,6 +18,9 @@ import { blocksRemovedUndoable, undoBlocksRemoved } from './removed';
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'page.' 를 붙인다). contributes 엔 접두사 없는 'editor' 로.
 import { PageEditor } from './views/PageView';
 import type { PageDocApi } from './contracts/page-doc';
+import type { RichCellApi } from './contracts/rich-cell';
+import { RichText, NodePicker } from './views/RichText';
+import { nodeIdsIn, nodeToken, richToPlain } from './core/rich';
 import type { Page } from './core/types';
 import { emptyPage } from './core/types';
 const EDITOR_ID = 'page.editor';
@@ -33,6 +36,16 @@ const pageDocApi: PageDocApi = {
     }),
 };
 
+// 🔴 rich-cell 모듈 — 짧은 글 한 토막(시트 칸 등)을 작은 마크다운 + 노드 칩으로 그린다. 저장은 손님 몫(글자 그대로).
+const richCellApi: RichCellApi = {
+    version: 1,
+    RichText,
+    NodePicker,
+    token: nodeToken,
+    nodeIdsIn,
+    toPlain: (text) => richToPlain(text, (id) => getNodesApi()?.get(id)?.name),
+};
+
 export const pagePlugin = definePlugin({
     manifest: {
         ...manifest,
@@ -40,9 +53,12 @@ export const pagePlugin = definePlugin({
         requires: { nodes: '^0.1' },
         supports: { table: '^0.1' },
         // 🔴 page-doc — 다른 꾸러미가 자기 자료(레코드 줄 등)에 문서를 붙여 쓰는 편집기(모듈 값은 아래 modules['page-doc'])
-        provides: { 'page-doc': '0.1.0' },
+        provides: { 'page-doc': '0.1.0', 'rich-cell': '0.1.0' },
         contributes: {
-            interfaces: [{ name: 'page-doc', version: '0.1.0', label: '노트 문서', desc: '다른 화면의 줄·항목에 붙여 쓰는 문서 편집기' }],
+            interfaces: [
+                { name: 'page-doc', version: '0.1.0', label: '노트 문서', desc: '다른 화면의 줄·항목에 붙여 쓰는 문서 편집기' },
+                { name: 'rich-cell', version: '0.1.0', label: '꾸민 글 칸', desc: '표 칸 같은 짧은 글에 굵게·색·링크와 항목 칩을 그리는 부품' },
+            ],
             views: [{
                 id: 'editor', title: '노트', icon: 'fileText', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
@@ -74,7 +90,7 @@ export const pagePlugin = definePlugin({
     enabled: { 'page.undoRemoved': () => blocksRemovedUndoable() },
     // 🔴 노드 타입 함수 묶음 — contributes.nodeTypes 의 impl 'page' 가 가리킨다(open·menu).
     nodeTypes: pageNodeTypeImpl,
-    modules: { 'page-doc': pageDocApi },
+    modules: { 'page-doc': pageDocApi, 'rich-cell': richCellApi },
 
     lifecycle: {
         onActivate(host: PluginHost) {

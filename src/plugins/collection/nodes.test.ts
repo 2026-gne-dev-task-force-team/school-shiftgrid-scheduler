@@ -36,6 +36,7 @@ function fakeApi() {
         Header: () => null,
         Frame: () => null,
         Embed: () => null,
+        Chip: () => null,
         move: (id, pid, index) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); const kids = nodes.get(pid)!.children; if (index == null || index >= kids.length) kids.push(id); else kids.splice(Math.max(0, index), 0, id); delete nodes.get(id)!.trashedFrom; },
         remove: (id) => { write(); const from = parentOf(id)!; nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(id)!.trashedFrom = from; nodes.get('trash')!.children.push(id); },
         batch: (fn) => { log.batches++; depth++; try { fn(); } finally { depth--; for (const l of listeners) l([]); } },

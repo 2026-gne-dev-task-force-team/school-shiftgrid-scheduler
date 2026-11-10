@@ -57,7 +57,7 @@ const TONE_CHOICES: { label: string; tone?: CellTone }[] = [
 export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(props, ref) {
     const {
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
-        decorate, validate, headerMenu, merges,
+        decorate, validate, headerMenu, merges, renderText, mention,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
         footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, onRemoved,
     } = props;
@@ -871,14 +871,14 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 onDoubleClick={() => !isBool && core.beginEdit(r, c)}
                                             >
                                                 {editing && !isBool ? (
-                                                    renderEditor(col, core)
+                                                    renderEditor(col, core, mention)
                                                 ) : (
                                                     <>
                                                         {isBool ? (
                                                             <Checkbox checked={isChecked(value)} aria-label={col.title}
                                                                 onChange={() => toggleCell(r, c)} className="align-middle" />
                                                         ) : (
-                                                            <span>{value}</span>
+                                                            renderText ? renderText(value) : <span>{value}</span>
                                                         )}
                                                         {deco?.badge && <span className="ml-1 px-1 rounded bg-accent/15 text-accent text-note align-middle">{deco.badge}</span>}
                                                     </>
@@ -970,6 +970,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 function renderEditor(
     col: TableColumn,
     core: ReturnType<typeof useSheetCore>,
+    mention?: TableProps['mention'],
 ): React.ReactNode {
     const text = core.edit!.text;
     if (col.type === 'select') {
@@ -989,30 +990,45 @@ function renderEditor(
             </select>
         );
     }
-    return <CellTextEditor col={col} core={core} text={text} />;
+    return <CellTextEditor col={col} core={core} text={text} mention={mention} />;
 }
 
 /**
  * 글 칸 편집창 — 🔴 textarea 다(전엔 input 이라 Alt+Enter 로 넣은 줄바꿈을 브라우저가 지웠다 — 쥔님 11-10 「여러 줄 안 됨」).
  *   글 높이만큼 늘어나 둘째 줄부터도 보인다. Enter = 확정·아래로 · Shift+Enter = 확정·위로 · Alt+Enter = 칸 안 줄바꿈(엑셀).
  */
-function CellTextEditor({ col, core, text }: { col: TableColumn; core: ReturnType<typeof useSheetCore>; text: string }) {
+function CellTextEditor({ col, core, text, mention }: { col: TableColumn; core: ReturnType<typeof useSheetCore>; text: string; mention?: TableProps['mention'] }) {
     const ref = useRef<HTMLTextAreaElement>(null);
+    // `@` 고르기 — 친 `@` 자리(at)를 기억했다가 고른 노드의 토큰으로 바꾼다. 열린 동안엔 편집창이 초점을 잃어도 확정하지 않는다.
+    const [pick, setPick] = useState<{ anchor: DOMRect; at: number } | null>(null);
+    const backToEditor = (caret: number) => requestAnimationFrame(() => {
+        const el = ref.current;
+        if (!el) return;
+        el.focus();
+        el.selectionStart = el.selectionEnd = caret;
+    });
+    const Picker = mention?.Picker;
     useLayoutEffect(() => {
         const el = ref.current;
         if (!el) return;
         el.style.height = 'auto';
         el.style.height = `${el.scrollHeight}px`;   // ⛔ 부모 높이와 max 하지 말 것 — 부모가 따라 늘어 끝없이 커진다
     }, [text]);
-    return (
-        // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
+    return (<>
+        {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양 */}
         <textarea
             ref={ref}
             autoFocus
             rows={1}
             value={text}
             inputMode={col.type === 'number' ? 'numeric' : undefined}
-            onChange={(e) => core.setEditText(e.target.value)}
+            onChange={(e) => {
+                const el = e.currentTarget;
+                const v = el.value;
+                const at = (el.selectionStart ?? v.length) - 1;
+                core.setEditText(v);
+                if (mention && v.length === text.length + 1 && v[at] === '@') setPick({ anchor: el.getBoundingClientRect(), at });
+            }}
             onKeyDown={(e) => {
                 if (e.nativeEvent.isComposing || isImeEnter(e)) return;   // 🔴 조합 중(사파리 keyCode 229 Enter 포함)엔 확정·이동 키를 안 받는다
                 const k = e.key;
@@ -1031,11 +1047,26 @@ function CellTextEditor({ col, core, text }: { col: TableColumn; core: ReturnTyp
                 }
                 if (k === 'Tab') { e.preventDefault(); core.commitEdit(0, e.shiftKey ? -1 : 1); return; }
             }}
-            onBlur={() => core.commitEdit(0, 0)}
+            onBlur={() => { if (!pick) core.commitEdit(0, 0); }}
             aria-label={col.title}
             // 노션식 — 칸 안엔 글자만. 바탕·테두리·링 없이 셀 글자와 같은 자리에 뜬다(파란 테두리는 바깥 selRect 가 그린다).
             // w-full·min-w-0 로 편집창이 열을 넓히지 않게(열 폭 고정) · p-0 · leading-5 로 셀 글자(leading-5)와 자리를 맞춰 글자가 안 튀게.
             className="block w-full min-w-0 appearance-none border-0 bg-transparent text-text leading-5 p-0 outline-none select-text resize-none overflow-hidden whitespace-pre-wrap break-words"
         />
-    );
+        {pick && Picker && mention && (
+            <Picker
+                anchor={pick.anchor}
+                onPick={(id) => {
+                    const tok = mention.token(id);
+                    const cur = ref.current?.value ?? text;
+                    const at = cur[pick.at] === '@' ? pick.at : cur.lastIndexOf('@');
+                    const next = at >= 0 ? cur.slice(0, at) + tok + cur.slice(at + 1) : cur + tok;
+                    core.setEditText(next);
+                    setPick(null);
+                    backToEditor((at >= 0 ? at : cur.length) + tok.length);
+                }}
+                onClose={() => { setPick(null); backToEditor(pick.at + 1); }}
+            />
+        )}
+    </>);
 }

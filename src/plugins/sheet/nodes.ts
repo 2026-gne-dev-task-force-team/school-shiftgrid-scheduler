@@ -10,6 +10,7 @@
  * 🔴 TableDoc 은 그 노드의 불투명 data 다 — 탐색기는 안 본다(설계 「data 는 그 타입 주인 것」).
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
+import type { RichCellApi } from '../page/contracts/rich-cell';
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { createUndoSlot, type Disposable, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
@@ -136,6 +137,8 @@ export function notifyRemoved(title: string, run: () => void, isTop: () => boole
     if (hostRef) removal.notify(hostRef, title, run, isTop);
 }
 export const removedUndoable = removal.undoable;
+/** 리치 셀 모듈(노트가 낸다) — 꺼져 있으면 undefined(표는 맨 글자로 버틴다). */
+export function richCell(): RichCellApi | undefined { return hostRef?.modules.use<RichCellApi>('rich-cell') ?? undefined; }
 export const undoRemoved = removal.undo;
 
 // ── React 구독 창구(useSyncExternalStore) — rev 가 바뀌면 다시 읽는다 ──

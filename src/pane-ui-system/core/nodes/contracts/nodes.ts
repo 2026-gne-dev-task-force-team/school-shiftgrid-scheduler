@@ -116,6 +116,8 @@ export interface NodeTypeDef {
     unique?: 'tree' | 'parent';
     /** 🔑 끼워 넣기 모습(P5) — impl.embed 에 host 를 묶어 온다. 없으면 링크 줄. */
     embed?: ComponentType<EmbedProps>;
+    /** 🔑 칩 모습 — 글 줄 안(시트 칸·리치 글자)에 이 타입이 어떻게 보일지. impl.chip 에 host 를 묶어 온다. 없으면 「아이콘+이름」 기본 칩. */
+    chip?: ComponentType<ChipProps>;
     /**
      * 🔑 자동 슬롯 — 이 타입의 노드를 만들면 같이 만들 자식 타입들(예: 시간표를 만들면 선생님 목록·반 목록·규칙 폴더도).
      *   🔴 부모 생성과 슬롯 생성은 되돌리기 한 묶음(한 번의 apply). 슬롯 자식을 못 지우게/못 바꾸게 할지는
@@ -167,10 +169,15 @@ export interface NodeTypeImplFns {
     onInput?: (host: PluginHost, nodeId: string, kind: string, value: string) => void;
     /** 🔑 끼워 넣기 모습(P5) — 다른 노드 안(페이지 블록)에 이 타입이 어떻게 보일지. 없으면 「아이콘+이름」 링크 한 줄. */
     embed?: ComponentType<EmbedProps & { host: PluginHost }>;
+    /** 🔑 칩 모습 — 글 줄 안에 끼는 작은 꼴(시트 칸의 ⟦node:id⟧). 없으면 「아이콘+이름」 기본 칩. ⛔ 한 줄 높이를 넘기지 말 것. */
+    chip?: ComponentType<ChipProps & { host: PluginHost }>;
 }
 
 /** nodes.Embed 속성 — 끼워 넣을 노드 id(+ 타입이 알아듣는 보기 이름). */
 export interface EmbedProps { nodeId: string; view?: string }
+
+/** nodes.Chip 속성 — 글 줄 안에 끼울 노드 id. 누르면 그 노드를 연다(readOnly 면 안 연다). */
+export interface ChipProps { nodeId: string; readOnly?: boolean }
 
 /** nodes.Header 속성 — 뷰는 노드 id 만 주면 아이콘·제목이 알아서 그려지고 고쳐진다. */
 export interface NodeHeaderProps {
@@ -259,6 +266,8 @@ export interface NodesApi {
     Frame: ComponentType<NodeFrameProps>;
     /** 🔑 끼워 넣기 부품 — 그 타입의 embed 모습(없으면 링크 줄). 지워진 노드면 안내 줄. */
     Embed: ComponentType<EmbedProps>;
+    /** 🔑 칩 부품 — 글 줄 안의 노드(아이콘+이름 · 타입이 chip 을 등록했으면 그 모습). 지워진 노드면 흐린 「없는 항목」. */
+    Chip: ComponentType<ChipProps>;
     move(id: string, parentId: string, index?: number): void;
     remove(id: string): void;                           // 🔴 휴지통으로(영구 아님)
     /** 🔑 묶음 — fn 안의 쓰기 전부가 되돌리기 한 칸·저장 한 번·알림 한 번이 된다(붙여넣기·일괄 편집). 중첩은 바깥에 합쳐진다. */

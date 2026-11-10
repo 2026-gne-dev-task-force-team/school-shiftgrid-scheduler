@@ -21,6 +21,7 @@ import { registerType } from '../nodes/model/types';
 import { NodeHeader } from './views/NodeHeader';
 import { NodeFrame } from './views/NodeFrame';
 import { NodeEmbed } from './views/NodeEmbed';
+import { NodeChip } from './views/NodeChip';
 import { createElement } from 'react';
 import {
     getState, select as selectNode, apiCreate, apiRename, apiMove, apiRemove, apiSetData, apiSetField,
@@ -42,7 +43,7 @@ function realNodes(): Node[] {
 }
 
 /** 휴지통 안(휴지통 자신·그 자손)인가 — 없는 id 는 false. */
-function isTrashed(id: string): boolean {
+export function isTrashed(id: string): boolean {
     const t = getState().tree;
     if (!t.nodes[id]) return false;
     return id === t.trash || isDescendant(t, id, t.trash);
@@ -97,6 +98,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
                 confirmDelete: fns?.confirmDelete,  // 🔑 지울 때 경고(함수 꼴) — impl 에서
                 hidden: fns?.hidden,                // 🔑 조건부 숨김 — impl 에서
                 embed: fns?.embed ? (p) => createElement(fns.embed!, { ...p, host }) : undefined,
+                chip: fns?.chip ? (p) => createElement(fns.chip!, { ...p, host }) : undefined,
                 unique: item.unique,
                 slots: item.slots,
                 record: item.record,
@@ -156,6 +158,7 @@ export function makeNodesApi(callerId?: string, track?: (d: Disposable) => Dispo
         Header: NodeHeader,
         Frame: NodeFrame,
         Embed: NodeEmbed,
+        Chip: NodeChip,
         move(id, parentId, index) { apiMove(id, parentId, index); },
         remove(id) { apiRemove(id); },
         batch(fn) { apiBatch(fn); },

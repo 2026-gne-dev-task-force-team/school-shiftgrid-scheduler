@@ -49,6 +49,8 @@ export const sheetPlugin = definePlugin({
         provides: { table: '0.1.0' },
         // 🔴 표도 노드다 — nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 리치 셀(노트가 낸다) — 있으면 칸을 마크다운·노드 칩으로 그리고 `@` 로 칩을 넣는다. 없으면 맨 글자.
+        supports: { 'rich-cell': '^0.1' },
         contributes: {
             // 🔴 table 약속을 들고 온다(꾸러미 매니페스트) — 켜진 sheet 가 호스트 약속 목록에 table 을 올린다.
             interfaces: [{ name: 'table', version: '0.1.0', label: '표', desc: '값을 담는 표' }],
