@@ -7,12 +7,12 @@
  *   · DTSTART/DTEND — `VALUE=DATE`(종일) · 떠 있는 지역시각 · UTC(`Z`) · `TZID=Asia/Seoul`(+09:00) · 나머지 TZID 는 로컬 근사
  *   · DTEND 없으면: 종일은 1일, 시각 일정은 길이 0
  *   · 줄 접힘(이어쓰기) · 이스케이프(\\ \; \, \n) · CRLF/LF 둘 다
- *   · RRULE 은 DAILY·WEEKLY(BYDAY)·MONTHLY(BYMONTHDAY · BYDAY+순번)·YEARLY × INTERVAL·COUNT·UNTIL 을 recur/expand 로 펼친다. 모르는 FREQ 는 첫 회만.
+ *   · RRULE 은 DAILY·WEEKLY(BYDAY)·MONTHLY(BYMONTHDAY · BYDAY+순번)·YEARLY × INTERVAL·COUNT·UNTIL 을 recur(→ pane-ui-system/date-pattern)로 펼친다. 모르는 FREQ 는 첫 회만.
  * ⛔ 못 하는 것: DURATION · VTIMEZONE 실제 규칙 해석(Asia/Seoul 만 하드코딩) · 그 밖의 BY* · EXDATE · RDATE · VTODO/VALARM.
  */
 import { isoMinuteOf, parseLocal } from './events';
 import type { CalendarItem } from './contracts/calendar';
-import { expand, type RecurFreq, type RecurRule } from './recur';
+import { expand, ruleFromRRule } from './recur';
 
 // ── 공통 보조 ──
 const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -123,25 +123,6 @@ interface RawEvent {
     rrule?: Record<string, string>;
 }
 
-const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-/** RRULE 속성들 → 규칙 꼴. FREQ 가 모르는 값이면 null(첫 회만). BYDAY: 매주는 요일들, 매월은 `2TU`·`-1FR` 하나만. */
-function ruleOf(rr: Record<string, string>): RecurRule | null {
-    const freq = ({ DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' } as const)[(rr.FREQ ?? '').toUpperCase() as 'DAILY'];
-    if (!freq) return null;
-    const rule: { -readonly [K in keyof RecurRule]: RecurRule[K] } = { freq: freq as RecurFreq };
-    if (rr.INTERVAL) rule.interval = Math.max(1, +rr.INTERVAL || 1);
-    if (rr.COUNT) rule.count = +rr.COUNT;
-    const u = /^(\d{4})(\d{2})(\d{2})/.exec(rr.UNTIL ?? '');
-    if (u) rule.until = `${u[1]}-${u[2]}-${u[3]}`;
-    const days = (rr.BYDAY ?? '').split(',').map((t) => /^([+-]?\d)?(SU|MO|TU|WE|TH|FR|SA)$/i.exec(t.trim())).filter((m) => m !== null);
-    if (rule.freq === 'weekly' && days.length) rule.weekdays = days.map((m) => DAY_CODES.indexOf(m[2].toUpperCase()));
-    if (rule.freq === 'monthly') {
-        if (rr.BYMONTHDAY) rule.monthDay = +rr.BYMONTHDAY.split(',')[0];
-        else if (days[0]?.[1]) rule.nth = { n: +days[0][1], weekday: DAY_CODES.indexOf(days[0][2].toUpperCase()) };
-    }
-    return rule;
-}
-
 /** RawEvent → CalendarItem 들(RRULE 은 expand 로 펼친다). */
 function emit(raw: RawEvent, uid: string): CalendarItem[] {
     if (!raw.dtstart) return [];
@@ -153,7 +134,7 @@ function emit(raw: RawEvent, uid: string): CalendarItem[] {
     const memo = raw.description ? unescapeText(raw.description) : undefined;
     const base: CalendarItem = { id: uid, title, start, end, allDay, ...(memo ? { memo } : {}) };
 
-    const rule = raw.rrule ? ruleOf(raw.rrule) : null;
+    const rule = raw.rrule ? ruleFromRRule(raw.rrule) : null;
     if (!rule) return [base];   // RRULE 없음 · 모르는 FREQ 는 첫 회만
 
     const startDate = parseLocal(start);
