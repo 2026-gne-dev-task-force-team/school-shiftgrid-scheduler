@@ -78,6 +78,8 @@ export function initGridNodes(nodes: NodesApi | null, host?: PluginHost): Dispos
 }
 
 export function getNodesApi(): NodesApi | null { return api; }
+/** 시작 화면 환영 카드가 설정(작은 값)·명단 약속을 읽는 창구 — 활성 전엔 null. */
+export function getHost(): PluginHost | null { return hostRef; }
 
 // ── React 구독 창구 ──
 export function subscribeNodes(fn: () => void): () => void { subs.add(fn); return () => { subs.delete(fn); }; }
