@@ -115,7 +115,6 @@ export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, to
     const selDrag = useRef(false);
     const editFn = useRef(edit); editFn.current = edit;
     const onNoticeRef = useRef(onNotice); onNoticeRef.current = onNotice;
-    const pointerRef = useRef(false);   // 마우스로 들어온 초점은 클릭이 칸을 고른다 — 키보드·코드 초점(탐색기에서 새로 만듦)일 때만 첫 칸
     const focusGrid = () => gridRef.current?.focus({ preventScroll: true });
     const reveal = (p: Pos) => gridRef.current?.querySelector<HTMLElement>(`[data-c="${p.c}"][data-r="${p.r}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     const selectAt = (p: Pos) => { setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r }); reveal(p); };
@@ -360,8 +359,6 @@ export function TimeGrid({ data, edit, onRemoved, focusFirst, onFocusedFirst, to
                     </div>
 
                     <div ref={gridRef} tabIndex={0} role="grid" aria-label="시간표 칸" onKeyDown={onGridKey}
-                        onPointerDownCapture={() => { pointerRef.current = true; }} onPointerUp={() => { pointerRef.current = false; }}
-                        onFocus={(e) => { if (e.target === e.currentTarget && !pointerRef.current && !selRef.current) selectAt({ c: 0, r: 0 }); }}
                         className="relative shrink-0 outline-none" style={{ width: gridW, height: bodyH }}>
                         {hours.map((h) => <div key={h} className="absolute inset-x-0 border-t border-line/60" style={{ top: yOf(h * 60) }} />)}
                         {data.rows.map((row, r) => (

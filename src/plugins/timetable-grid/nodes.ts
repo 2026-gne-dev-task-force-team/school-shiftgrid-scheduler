@@ -26,8 +26,12 @@ let api: NodesApi | null = null;
 let sheetNodes: PublicNode[] = [];
 const subs = new Set<() => void>();
 
+let seen: Set<string> | null = null;
 function recompute(): void {
     sheetNodes = api ? api.byType(SHEET_TYPE) : [];
+    // 🔑 첫 계산 뒤에 새로 생긴 시간표(탐색기 「새로 만들기」 포함)는 처음 열릴 때 격자 첫 칸에 초점 — createSheet 만 지나는 게 아니다
+    if (seen) for (const n of sheetNodes) if (!seen.has(n.id)) fresh.add(n.id);
+    seen = new Set(sheetNodes.map((n) => n.id));
     for (const s of subs) s();
 }
 
