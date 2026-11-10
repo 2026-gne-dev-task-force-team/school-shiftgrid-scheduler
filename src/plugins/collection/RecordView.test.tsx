@@ -162,6 +162,21 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
         expect(out.map((f) => f.key)).toEqual(['f_t', 'f_x', 'f_s', 'f_r']);
         expect(out[3].config).toMatchObject({ many: false });
     });
+
+    it('검수 K2 — 머리 메뉴에서 선택지를 편집한다(잠긴 칸도)', () => {
+        const spy = spies();
+        const fields: RecordField[] = START.map((f) => (f.key === 'f_s' ? { ...f, locked: true } : f));
+        mount(<RecordView<Rec> fields={fields} records={[]} getId={(r) => r.id} viewKey="t.k2" titleKey="f_t" onCellChange={() => {}} onFieldsChange={(f) => spy.fields(f)} />);
+        click(q('[data-rv-head-menu="f_x"]'));
+        expect(q('[data-rv-head-options]')).toBeNull();   // 선택지 없는 칸엔 안 그려진다
+        click(q('[data-rv-head-menu="f_s"]'));
+        expect(q('[data-rv-head-options="f_s"]')).toBeTruthy();
+        click(q('[data-rv-head-options="f_s"] [data-rv-opt="a"]'));
+        expect(q('[data-rv-opt-editor="a"]')).toBeTruthy();
+        click(q('[data-rv-opt-color="red"]'));
+        const out = spy.fields.mock.calls.at(-1)![0] as RecordField[];
+        expect(out.find((f) => f.key === 'f_s')!.options).toEqual([{ value: 'a', label: '가', color: 'red' }]);
+    });
 });
 
 describe('칸 추가 — 타입 고르기', () => {

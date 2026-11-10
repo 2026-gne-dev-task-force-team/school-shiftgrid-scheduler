@@ -21,6 +21,7 @@ import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsE
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
+import { OptionsEditor } from './fields/cells';
 import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
@@ -843,8 +844,8 @@ export function RecordView<T>({
                                     {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
                                         onClick={(e) => setHeadMenu({ key: f.key, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
-                                        <Icon name="dots" size={14} />
+                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-text/70 hover:text-text hover:bg-text/[0.08]">
+                                        <Icon name="dots" size={16} />
                                     </button>
                                     {/* 폭 끌기 손잡이 */}
                                     <div
@@ -983,6 +984,13 @@ export function RecordView<T>({
                                 return idx >= 0 && <MenuItem label={on ? '고정 풀기' : '여기까지 칸 고정'} icon="pin" onSelect={() => { patchView({ frozen: on ? 0 : idx + 1 }); setHeadMenu(null); }} />;
                             })()}
                             <MenuItem label={wrapOf(f.key) ? '줄바꿈 끄기' : '줄바꿈'} icon="text" onSelect={() => { setColumn(f.key, { wrap: !wrapOf(f.key) }); setHeadMenu(null); }} />
+                            {fieldsEditable && !title && fieldTypes.get(f.type)?.hasOptions && (
+                                <div data-rv-head-options={f.key}>
+                                    <MenuSeparator />
+                                    <div className="px-2 py-0.5 text-note text-muted">선택지</div>
+                                    <OptionsEditor field={f} onOptionsChange={(o) => setOptions(f.key, o)} />
+                                </div>
+                            )}
                             {fieldsEditable && (
                                 <>
                                     <MenuSeparator />

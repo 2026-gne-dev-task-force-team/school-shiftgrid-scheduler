@@ -132,10 +132,13 @@ const P: Record<IconName, string> = {
 /** 기본 아이콘 세트 이름 전부(노드 아이콘 고르기 창의 「아이콘」 탭이 쓴다) */
 export const ICON_NAMES = Object.keys(P) as IconName[];
 
+/** 점으로만 된 아이콘(⋮·끌기 손잡이) — 선 굵기 1.7 이면 점 하나가 1px 남짓이라 「편집이 없는 줄 알았다」(쥔님 검수 K3). 점은 굵게 찍는다. */
+const DOT_ICONS = new Set<IconName>(['dots', 'grip']);
+
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round"
+            stroke="currentColor" strokeWidth={DOT_ICONS.has(name) ? 3.2 : 1.7} strokeLinecap="round" strokeLinejoin="round"
             className={className} style={style} aria-hidden="true">
             <path d={P[name]} />
         </svg>
