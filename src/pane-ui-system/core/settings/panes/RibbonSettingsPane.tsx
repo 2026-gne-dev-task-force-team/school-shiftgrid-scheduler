@@ -66,6 +66,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                                 {on ? '켜짐' : '꺼짐'}
                             </Button>
 
+                            {/* oxlint-disable-next-line react/forbid-elements -- 위로 — 아이콘 회전이 필요해 IconButton 불가 */}
                             <button
                                 type="button"
                                 aria-label={`${v.title} 위로`}
@@ -78,6 +79,7 @@ export function RibbonSettingsPane(_: SettingsPaneProps) {
                             >
                                 <Icon name="left" size={14} className="-rotate-90" />
                             </button>
+                            {/* oxlint-disable-next-line react/forbid-elements -- 아래로 — 아이콘 회전이 필요해 IconButton 불가 */}
                             <button
                                 type="button"
                                 aria-label={`${v.title} 아래로`}

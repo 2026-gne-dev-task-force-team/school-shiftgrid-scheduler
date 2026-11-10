@@ -413,6 +413,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             {/* 검색 — 맞는 줄과 그 조상만(접힘 무시) · 비우면 원래대로 */}
             <div className="flex items-center gap-1 px-pad py-1 border-b border-line shrink-0">
                 <Icon name="search" size={13} className="text-muted shrink-0" />
+                {/* oxlint-disable-next-line react/forbid-elements -- 탐색기 검색칸 — 아이콘 붙은 틀 입력 */}
                 <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
@@ -558,6 +559,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     />
                 )}
                 <div className="flex items-center gap-1 h-row px-pad select-none">
+                    {/* oxlint-disable-next-line react/forbid-elements -- 휴지통 접기 머리줄 — 행 모양 */}
                     <button
                         type="button"
                         onClick={() => setTrashOpen((v) => !v)}

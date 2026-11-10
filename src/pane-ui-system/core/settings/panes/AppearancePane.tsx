@@ -77,6 +77,7 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                     {THEMES.map((t) => {
                         const active = settings.theme === t.id;
                         return (
+                            // oxlint-disable-next-line react/forbid-elements -- 테마 견본 칩 — 카드 모양
                             <button
                                 key={t.id}
                                 type="button"

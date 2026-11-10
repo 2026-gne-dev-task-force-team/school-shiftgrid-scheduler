@@ -71,13 +71,6 @@
     },
     {
       "files": [
-        "src/pane-ui-system/core/explorer/views/ExplorerView.tsx",
-        "src/pane-ui-system/core/plugin-manager/panes/PluginDetail.tsx",
-        "src/pane-ui-system/core/settings/panes/AppearancePane.tsx",
-        "src/pane-ui-system/core/settings/panes/KeybindingsPane.tsx",
-        "src/pane-ui-system/core/settings/panes/RibbonSettingsPane.tsx",
-        "src/pane-ui-system/core/settings/panes/ThemeEditor.tsx",
-        "src/pane-ui-system/node-icon/NodeIconPicker.tsx",
         "src/plugins/account/panes/AccountStatus.tsx",
         "src/plugins/collection/RecordView.tsx",
         "src/plugins/collection/Toolbar.tsx",
