@@ -8,7 +8,7 @@
  */
 import type { MergeRegion, TableColumn, TableFeature, TableRow, TableTx } from '../sheet/contracts/table';
 import {
-    addColumn, addRow, colName, colWidth, columnCount, gapBefore, getCell, isCovered, mergeCells, removeColumn, removeRow,
+    addColumn, addRow, colName, colWidth, columnCount, COL_W, COL_MIN_W, gapBefore, getCell, isCovered, mergeCells, removeColumn, removeRow,
     renameColumn, renameRow, rowLength, setCellText, setColWidth, setGapBefore, setRowLength, unmergeCells, type TimetableData,
 } from './model';
 
@@ -20,10 +20,11 @@ export const colKeyOf = (c: number) => `c${c}`;
 export interface TimetableTable { columns: TableColumn[]; rows: TableRow[]; merges: MergeRegion[] }
 
 /** ① 시간표 → 시트 모양. ppm = 1분당 px(툴바 확대/축소). */
-export function toTable(data: TimetableData, ppm: number): TimetableTable {
+export function toTable(data: TimetableData, ppm: number, defaultW?: number): TimetableTable {
     const nCols = columnCount(data.columns);
     const columns: TableColumn[] = Array.from({ length: nCols }, (_, c) => ({
-        key: colKeyOf(c), title: colName(data, c) || `열 ${c + 1}`, width: colWidth(data, c),
+        key: colKeyOf(c), title: colName(data, c) || `열 ${c + 1}`,
+        width: data.colWidths?.[String(c)] ?? defaultW ?? colWidth(data, c),   // 손으로 바꾼 폭이 먼저, 없으면 화면에 맞춘 폭
     }));
     const merges: MergeRegion[] = [];
     const rows: TableRow[] = data.rows.map((row, r) => {
@@ -43,6 +44,12 @@ export function toTable(data: TimetableData, ppm: number): TimetableTable {
         };
     });
     return { columns, rows, merges };
+}
+
+/** 열 폭을 안 바꾼 열의 기본 폭 — 남은 폭(px)을 열 수로 나눈다. 기본(COL_W)보다 넓히진 않고 하한(COL_MIN_W) 아래로도 안 내린다. */
+export function fitColWidth(avail: number, nCols: number): number {
+    if (!(avail > 0) || nCols < 1) return COL_W;
+    return Math.max(COL_MIN_W, Math.min(COL_W, Math.floor(avail / nCols)));
 }
 
 /** 행 앞 틈(쉬는 시간) — 첫 행은 틈이 없다. 0분이어도 줄은 둔다(끌어서 늘릴 수 있게). */

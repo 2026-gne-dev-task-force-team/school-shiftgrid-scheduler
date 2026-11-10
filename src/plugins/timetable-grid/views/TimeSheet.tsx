@@ -10,9 +10,11 @@ import { FrameToolbarPortal } from '../../../pane-ui-system';
 import type { TableProps, TableTx } from '../../sheet/contracts/table';
 import type { RichCellApi } from '../../page/contracts/rich-cell';
 import { GridToolbar } from './GridToolbar';
-import { applyTableTx, gapOf, toTable, TIMETABLE_FEATURES } from '../sheetView';
-import type { TimetableData } from '../model';
+import { applyTableTx, fitColWidth, gapOf, toTable, TIMETABLE_FEATURES } from '../sheetView';
+import { columnCount, type TimetableData } from '../model';
 
+/** 열 폭 말고 가로를 먹는 것 — 번호 자리 28 · 행 머리 88 · 안쪽 여백/가장자리 ≈ 44 */
+const SIDE_RESERVE = 28 + 88 + 44;
 const DEFAULT_PPM = 0.8;  // 1분 = 0.8px → 50분 ≈ 40px (툴바 확대/축소로 바뀐다)
 
 /** 시트 Table 의 명령형 손잡이 중 시간표가 쓰는 것만 */
@@ -47,7 +49,21 @@ export function TimeSheet({ data, edit, Table, rich, onRemoved, focusFirst, onFo
     const [row, setRow] = useState<number | null>(null);
     const ref = useRef<TableHandle | null>(null);
     const T = Table as unknown as ForwardRefExoticComponent<TableProps & RefAttributes<TableHandle>>;
-    const shape = useMemo(() => toTable(data, ppm), [data, ppm]);
+    const boxRef = useRef<HTMLDivElement | null>(null);
+    const [boxW, setBoxW] = useState(0);   // 0 = 못 쟀다(기본 폭 그대로)
+    useEffect(() => {
+        const el = boxRef.current;
+        if (!el) return;
+        const read = () => setBoxW(el.clientWidth);
+        read();
+        if (typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver(read);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+    const nCols = columnCount(data.columns);
+    const defW = boxW > 0 ? fitColWidth(boxW - SIDE_RESERVE, nCols) : undefined;
+    const shape = useMemo(() => toTable(data, ppm, defW), [data, ppm, defW]);
     const dataRef = useRef(data); dataRef.current = data;
 
     useEffect(() => {
@@ -63,10 +79,10 @@ export function TimeSheet({ data, edit, Table, rich, onRemoved, focusFirst, onFo
                 onRowRemoved={() => setRow(null)} onClear={() => ref.current?.clear()} canClear={row !== null}
                 undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} zoom={ppm} setZoom={setPpm} />
         </FrameToolbarPortal>
-        <div className="h-full overflow-auto p-1" data-timesheet>
+        <div ref={boxRef} className="h-full overflow-auto p-1" data-timesheet>
             <T ref={ref}
                 columns={shape.columns} rows={shape.rows} merges={shape.merges}
-                features={TIMETABLE_FEATURES}
+                features={TIMETABLE_FEATURES} hideHandles
                 rowGap={(id) => gapOf(dataRef.current, ppm, id)}
                 rowHeadWidth={88}
                 onSelectionChange={(s) => setRow(s.r1 < data.rows.length ? s.r1 : null)}

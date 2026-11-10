@@ -3,7 +3,7 @@
  * 리치 셀 2단계 — 시간표 화면 = 시트 Table 확장. 진짜 시트 Table 을 끼워 잰다(가짜 아님).
  *   열 = 요일 · 행 머리 = 교시+시각 · 쉬는 시간 틈 · 편집/붙이기/지우기 → model · 되돌리기는 시간표 노드 다리(applyEdit/stepEdit).
  */
-import { act, useSyncExternalStore } from 'react';
+import { act, useState, useSyncExternalStore } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
@@ -28,8 +28,9 @@ function mount(init: TimetableData = blankTimetable()) {
     const sub = (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; };
     function Live() {
         const d = useSyncExternalStore(sub, () => sheetDataOf('s1'), () => sheetDataOf('s1'));
-        return <TimeSheet data={d} Table={Table} edit={(fn) => applyEdit('s1', fn)} onRemoved={(t) => notifyRemoved('s1', t)}
-            undo={() => stepEdit('s1', 'undo')} redo={() => stepEdit('s1', 'redo')} />;
+        const [bar, setBar] = useState<HTMLElement | null>(null);
+        return <><div ref={setBar} /><TimeSheet data={d} Table={Table} toolbarHost={bar} edit={(fn) => applyEdit('s1', fn)} onRemoved={(t) => notifyRemoved('s1', t)}
+            undo={() => stepEdit('s1', 'undo')} redo={() => stepEdit('s1', 'redo')} /></>;
     }
     const el = document.createElement('div'); document.body.appendChild(el);
     root = createRoot(el); act(() => { root!.render(<Live />); });
@@ -132,10 +133,11 @@ describe('시간표 지우기 알림(되돌리기 알림)', () => {
         expect(txt(0, 0)).toBe('국어');
     });
 
-    it('교시 지우기(행 손잡이 메뉴) → 알림 → 되돌리기 → 원상', () => {
+    it('교시 지우기(툴바 교시 삭제) → 알림 → 되돌리기 → 원상', () => {
         mount();
         const n0 = data.rows.length;
-        menu(document.querySelectorAll('[data-testid="row-handle"]')[1], '이 교시 삭제');
+        pick(0, 1);
+        act(() => { (document.querySelector('button[aria-label="교시 삭제"]') as HTMLElement).click(); });
         expect(data.rows).toHaveLength(n0 - 1);
         expect(notify.mock.calls.at(-1)![0].title).toBe('교시 1개를 삭제했습니다');
         act(() => { undoRemoved(); });
@@ -161,4 +163,11 @@ describe('시간표 지우기 알림(되돌리기 알림)', () => {
         act(() => { undoRemoved(); });
         expect(data).toEqual(merged);
     });
+    it('A~E 열 머리글·행 번호 탭은 안 그린다(요일·교시 머리만)', () => {
+        mount();
+        expect(document.querySelector('[data-testid="col-handle"]')).toBeNull();
+        expect(document.querySelector('[data-testid="row-handle"]')).toBeNull();
+        expect(document.body.textContent).toContain('1교시');
+    });
+
 });

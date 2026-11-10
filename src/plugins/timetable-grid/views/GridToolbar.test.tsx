@@ -141,4 +141,10 @@ describe('시간표 툴바', () => {
         expect(parseHm('24:00')).toBe(1440);
         expect(parseHm('가나')).toBeNull();
     });
+    it('시작·길이·쉬는 시간이 어느 교시 값인지 접두로 보인다', () => {
+        mount();
+        select(0, 1);
+        expect(document.querySelector('[data-testid="row-scope"]')?.textContent).toBe('2교시 ·');
+    });
+
 });

@@ -204,6 +204,8 @@ export interface TableProps {
     onRemoved?: (kind: '행' | '열' | '병합', n: number, undo: () => void, isTop: () => boolean) => void;
     /** S1 — 열 머리(A·B·C…) 탭을 포커스 없이도 늘 보인다. 소유자가 쥔다. */
     colTabs?: boolean;
+    /** 열 머리(A·B·C…) 줄과 행 번호 탭을 아예 안 그린다 — 열 제목·행 머리가 따로 있는 손님(시간표)용. 기본 꺼짐. */
+    hideHandles?: boolean;
     /** v3 머리 토글 — 손잡이 메뉴에서 머리 행/열을 켜고 끈다(소유자가 저장). */
     onSetHeaderRow?(v: boolean): void;
     onSetHeaderCol?(v: boolean): void;
