@@ -28,6 +28,7 @@ const fakeNodes = {
     open: (id: string) => { calls.open.push(id); },
     batch: (fn: () => void) => fn(),
     subscribe: () => ({ dispose() {} }),
+    find: () => [],
     byType: () => [],
     liveByType: () => [],
     isTrashed: (id: string) => { for (let p: string | null | undefined = id; p; p = store.get(p)?.parent) if (p === 'trash') return true; return false; },   // 정식 판정 흉내(자기·조상이 휴지통)
@@ -86,5 +87,13 @@ describe('슬래시 하위 페이지', () => {
         const ae = document.activeElement as HTMLInputElement;
         expect(ae.getAttribute('aria-label')).toBe('페이지 제목');
         expect([ae.selectionStart, ae.selectionEnd]).toEqual([0, 3]);
+    });
+
+    it('Q17b 빈 줄에 [[ → 항목 끼워 넣기 고르기(그 줄이 노드 블록)', () => {
+        open({ blocks: [{ id: 'a', type: 'paragraph', text: '' }] });
+        const ed = container.querySelector('[data-block-row="a"] [contenteditable]') as HTMLElement;
+        act(() => { ed.focus(); ed.textContent = '[['; ed.dispatchEvent(new InputEvent('input', { bubbles: true })); });
+        expect(container.querySelector('[data-block-row="a"] [role="combobox"]')).toBeTruthy();   // 고르기 칸
+        expect(container.querySelector('[data-block-row="a"] [contenteditable]')).toBeNull();
     });
 });
