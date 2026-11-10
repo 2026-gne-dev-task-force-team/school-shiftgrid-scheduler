@@ -132,6 +132,50 @@ describe('화면', () => {
         expect(box.querySelector('[data-fb]')).not.toBeNull();
     });
 
+    it('같은 그림을 여러 번 그려도 gradient id 가 겹치지 않고 참조가 따라간다', () => {
+        addIconPack('t', { id: 't-g', name: 'g', icons: [{ id: 'g', name: 'g', svg: '<svg><defs><linearGradient id="gr"><stop offset="0"/></linearGradient></defs><rect width="5" height="5" fill="url(#gr)"/></svg>' }] });
+        act(() => { root.render(<><NodeIcon value="custom:t-g:g" /><NodeIcon value="custom:t-g:g" /></>); });
+        const ids = [...box.querySelectorAll('[id]')].map((e) => e.id);
+        expect(ids).toHaveLength(2);
+        expect(new Set(ids).size).toBe(2);
+        const fills = [...box.querySelectorAll('rect')].map((r) => r.getAttribute('fill'));
+        expect(fills.map((f) => f!.replace(/^url\(#|\)$/g, ''))).toEqual(ids);
+    });
+
+    it('탭: 고른 탭만 tabindex 0 · ←→ Home End 로 옮기고 격자는 안 움직인다', () => {
+        act(() => { root.render(<NodeIconPanel value={undefined} onPick={() => {}} />); });
+        const tabs = () => [...box.querySelectorAll<HTMLElement>('[role="tab"]')];
+        expect(tabs().map((t) => t.tabIndex)).toEqual([0, -1, -1]);
+        key(tabs()[0], 'ArrowRight');
+        expect(tabs().map((t) => t.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false']);
+        expect(tabs().map((t) => t.tabIndex)).toEqual([-1, 0, -1]);
+        expect(document.activeElement).toBe(tabs()[1]);
+        key(tabs()[1], 'End');
+        expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+        key(tabs()[2], 'ArrowRight');   // 끝에서 처음으로
+        expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+        key(tabs()[0], 'ArrowLeft');
+        expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+        key(tabs()[2], 'Home');
+        expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+        expect(box.querySelectorAll('[role="option"][aria-selected="true"]')).toHaveLength(1);
+        expect(box.querySelector('[role="option"][aria-selected="true"]')!.id).toBe(box.querySelector('input')!.getAttribute('aria-activedescendant'));
+    });
+
+    it('지우기: 알림에 되돌리기가 붙고 누르면 직전 값으로 돌아간다 · 색 점에 title', async () => {
+        const { getCommand } = await import('../plugin/store');
+        const { runCommand } = await import('../plugin/store');
+        const picked: (string | undefined)[] = [];
+        act(() => { root.render(<NodeIconPanel value="📌" onPick={(v) => picked.push(v)} />); });
+        act(() => { [...box.querySelectorAll('button')].find((b) => b.textContent?.includes('지우기'))!.click(); });
+        expect(picked).toEqual([undefined]);
+        expect(getCommand('node-icon.undoClear')).toBeDefined();
+        act(() => { runCommand('node-icon.undoClear'); });
+        expect(picked).toEqual([undefined, '📌']);
+        act(() => { [...box.querySelectorAll<HTMLElement>('[role="tab"]')][1].click(); });
+        expect(box.querySelector('[role="radio"][aria-label="초록"]')!.getAttribute('title')).toBe('초록');
+    });
+
     const type = (el: HTMLInputElement, v: string) => {
         const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
         act(() => { set.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); });

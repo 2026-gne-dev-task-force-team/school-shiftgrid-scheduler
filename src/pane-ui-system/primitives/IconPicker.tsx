@@ -32,9 +32,11 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
         <>
             <button
                 type="button"
+                aria-haspopup="dialog"
+                aria-expanded={!!anchor}
                 aria-label={icon ? '아이콘 바꾸기' : '아이콘 고르기'}
                 onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
-                className={`hit-44 relative shrink-0 grid place-items-center leading-none rounded px-0.5 hover:bg-text/[0.06] ${sizeClass}`}
+                className={`hit-44 relative shrink-0 grid place-items-center leading-none rounded px-0.5 hover:bg-text/[0.06] ${anchor ? 'bg-text/[0.1]' : ''} ${sizeClass}`}
             >
                 <NodeIcon value={icon} size={SIZE_OF[sizeClass] ?? 22} fallback={fallback} />
             </button>

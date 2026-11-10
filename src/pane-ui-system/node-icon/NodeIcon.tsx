@@ -4,7 +4,7 @@
  *   size: 픽셀(기본 15). 이모지는 글자 크기로, 아이콘·그림은 정사각으로 그린다.
  *   🔴 커스텀 그림이 등록소에 없으면(그 플러그인이 꺼졌다) fallback 으로 돌아간다 — 빈칸으로 두지 않는다.
  */
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Icon } from '../primitives/Icon';
 import { colorClass, parseNodeIcon, type NodeIconValue } from './model';
 import { resolvePackIcon, useIconPacks } from './packs';
@@ -16,6 +16,7 @@ export function NodeIcon({ value, size = 15, fallback = null, className = '' }: 
     fallback?: ReactNode;
     className?: string;
 }) {
+    const uid = useId();
     useIconPacks();   // 묶음이 늦게 꽂히거나 빠지면 다시 그린다
     const v = parseNodeIcon(value);
     if (!v) return <>{fallback}</>;
@@ -30,7 +31,7 @@ export function NodeIcon({ value, size = 15, fallback = null, className = '' }: 
     if (!ic) return <>{fallback}</>;
     if (ic.svg) {
         // 등록 때 소독했지만 그리기 직전에 한 번 더 — 소독은 멱등이라 값이 같다
-        const html = sanitizeSvg(ic.svg);
+        const html = sanitizeSvg(ic.svg, `${v.pack}-${v.id}-${uid}`);
         if (!html) return <>{fallback}</>;
         return <span data-node-icon="custom" className={`shrink-0 inline-block ${className}`} style={box} aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
     }
