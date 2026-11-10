@@ -143,3 +143,16 @@ test('⑧ 설정에서 플러그인 껐다 켜기 — 리본에서 사라졌다 
     await page.getByRole('switch', { name: '방 예약 켜기' }).click();
     await expect(리본).toBeVisible();
 });
+
+test('⑨ 빈자리 우클릭 — 만들기가 「새로 만들기」 하위 메뉴로 접혀 있다', async ({ page }) => {
+    await 노트와폴더(page);
+    const 목록 = tree(page).locator('div.overflow-auto').first();
+    const 상자 = (await 목록.boundingBox())!;
+    await expect(async () => {
+        await page.mouse.click(상자.x + 상자.width / 2, 상자.y + 상자.height - 8, { button: 'right' });
+        await expect(page.getByRole('menuitem', { name: /^새로 만들기/ })).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 10_000 });
+    await expect(page.getByRole('menuitem', { name: '새 폴더', exact: true })).toHaveCount(0);
+    await page.getByRole('menuitem', { name: /^새로 만들기/ }).hover();
+    await expect(page.getByRole('menuitem', { name: '새 폴더', exact: true })).toBeVisible();
+});
