@@ -191,3 +191,53 @@ describe('W-X 두 탭 — 시간표', () => {
         await vi.waitFor(() => expect(b.grid.sheetDataOf(id).cells['x:2']?.text).toBe('A둘'));
     });
 });
+
+describe('W-X2 탭이 가려지는/닫히는 중의 저장', () => {
+    it('🔴 pagehide 로 바로 쓰는 낡은 탭도 상대 칸을 안 지운다(합치기가 쓰기 트랜잭션 안)', async () => {
+        vi.stubGlobal('window', new EventTarget());    // bindFlush 가 pagehide 를 건다(탭마다)
+        const [a, b] = await twoTabs();
+        const id = a.grid.createSheet()!;
+        await a.persist.flushTree();
+        await vi.waitFor(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
+
+        b.bc.paused = true;                  // B 는 A 의 알림을 아직 못 받았다
+        a.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'x:1': { text: 'A칸' } } }));
+        await a.persist.flushTree();
+        b.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'y:2': { text: 'B칸' } } }));
+        window.dispatchEvent(new Event('pagehide'));   // B 가 디바운스를 기다리지 않고 바로 쓴다
+        await b.persist.flushTree();
+
+        const d = (await stored(a, id)) as { cells: Record<string, { text: string }> };
+        expect(d.cells['x:1']?.text, '🔴 A 의 입력이 닫히는 탭의 저장에 지워졌다').toBe('A칸');
+        expect(d.cells['y:2']?.text).toBe('B칸');
+        b.bc.resume();
+    });
+});
+
+describe('W-X2 시간표 ⌘Z 는 내가 바꾼 칸만', () => {
+    it('🔴 A 칸1 · B 칸2 · A ⌘Z → 칸1 만 되돌고 칸2 는 B 값', async () => {
+        const [a, b] = await twoTabs();
+        const id = a.grid.createSheet()!;
+        await a.persist.flushTree();
+        await vi.waitFor(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
+
+        a.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'x:1': { text: 'A칸' } } }));
+        await a.persist.flushTree();
+        await vi.waitFor(() => expect(b.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A칸'));
+        b.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'y:2': { text: 'B칸' } } }));
+        await b.persist.flushTree();
+        await vi.waitFor(() => expect(a.grid.sheetDataOf(id).cells['y:2']?.text).toBe('B칸'));
+
+        a.grid.stepEdit(id, 'undo');
+        expect(a.grid.sheetDataOf(id).cells['x:1'], 'A 의 칸은 되돌았다').toBeUndefined();
+        expect(a.grid.sheetDataOf(id).cells['y:2']?.text, '🔴 B 의 칸까지 되돌렸다').toBe('B칸');
+        await a.persist.flushTree();
+        const d = (await stored(a, id)) as { cells: Record<string, { text: string }> };
+        expect(d.cells['y:2']?.text).toBe('B칸');
+        expect(d.cells['x:1']).toBeUndefined();
+
+        a.grid.stepEdit(id, 'redo');
+        expect(a.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A칸');
+        expect(a.grid.sheetDataOf(id).cells['y:2']?.text).toBe('B칸');
+    });
+});
