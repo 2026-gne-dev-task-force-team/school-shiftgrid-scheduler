@@ -13,6 +13,15 @@ import { normalizeRelation, relationToText } from './schema';
 import { defineCollection } from './define';
 import { openRecordTab } from './tab-open';
 import { PatternEditor } from './fields/PatternEditor';
+import { relationReferrers, resolveRelationTargets } from './fields/cast';
+import { relationConfig } from './fields/relation';
+import { getNodesApi } from './nodes';
+
+/** 관계 값 따라가기 — 노드 시스템이 아직 없거나 대상이 db 가 아니면 빈 배열 */
+function resolveTargets(value: unknown, config: unknown): string[] {
+    const look = getNodesApi(), t = relationConfig(config).target;
+    return look && t?.kind === 'db' ? resolveRelationTargets(look, t.nodeId, value) : [];
+}
 
 export const recordViewApi: RecordViewApi = {
     version: 2,
@@ -20,7 +29,11 @@ export const recordViewApi: RecordViewApi = {
     PropertyList,
     RecordPage,
     fieldTypes,
-    schema: { planConvert, normalizeRelation, relationToText },
+    schema: {
+        planConvert, normalizeRelation, relationToText,
+        resolveRelationTargets: resolveTargets,
+        relationReferrers: (id) => { const look = getNodesApi(); return look ? relationReferrers(look, id) : []; },
+    },
     defineCollection,
     openInTab: openRecordTab,
     PatternEditor,
