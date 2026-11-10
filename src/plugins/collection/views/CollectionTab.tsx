@@ -25,7 +25,7 @@ export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
  * 지운 직후 「되돌리기」 알림 — DbView.notifyUndo 와 같은 창구(노드 되돌리기 명령 + 방금 쌓인 더미 칸 토큰).
  *   host 가 없으면(알림 창구 없음) 지우기만 한다. run 은 한 묶음으로 쥐어 한 번에 되돌아온다.
  */
-export function deleteWithUndo(kit: Bridge, host: PluginHost | undefined, title: string, run: () => void): void {
+export function deleteWithUndo(kit: Pick<Bridge, 'nodes'>, host: PluginHost | undefined, title: string, run: () => void): void {
     const api = kit.nodes();
     if (api) api.batch(run); else run();
     if (!host) return;
