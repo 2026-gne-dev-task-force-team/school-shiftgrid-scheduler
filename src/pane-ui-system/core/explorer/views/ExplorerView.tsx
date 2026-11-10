@@ -688,7 +688,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     //    스크롤을 끝까지 내리면 마지막 줄이 완전히 보인다(쥔님 22:51 *"휴지통 아래 뭔가 가리고 … 마지막 줄 반쯤 잘린다"*).
                     <div className="overflow-auto pb-2" style={{ height: trashH }}>
                         {trashRows.length === 0 && (
-                            <p className="px-pad py-1 text-small text-muted select-none">휴지통이 비어 있습니다.</p>
+                            <p className="px-pad py-1 text-small text-muted select-none">휴지통이 비어 있습니다. 지운 항목이 여기에 모입니다.</p>
                         )}
                         {trashRows.map((row) => {
                             const isSel = selectedId === row.id;

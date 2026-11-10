@@ -81,13 +81,13 @@ export function RecordTab({ host, leaf }: ViewProps & { host: PluginHost }) {
         setLeafGlyph(leafId, trashed ? undefined : node.icon);
     }, [leafId, id, !node, node?.name, node?.icon, trashed]);   // eslint-disable-line react-hooks/exhaustive-deps
     if (id && trashed) {
-        return <EmptyState icon="fileText" title="삭제된 문서" description="이 레코드는 휴지통에 있습니다. 복원하면 다시 열립니다." />;
+        return <EmptyState icon="fileText" title="삭제된 문서" description="이 항목은 휴지통에 있습니다. 휴지통에서 되살리면 다시 열 수 있습니다." />;
     }
     if (id && !node) {
-        return <EmptyState icon="fileText" title="삭제된 레코드" description="이 레코드는 삭제되었습니다. 휴지통에도 없어 복원할 수 없습니다." />;
+        return <EmptyState icon="fileText" title="삭제된 레코드" description="이 항목은 삭제되어 휴지통에도 없습니다. 되살릴 수 없습니다." />;
     }
     if (!id || !node || !render) {
-        return <EmptyState icon="fileText" title="열린 레코드가 없습니다" description={`목록에서 줄을 ${modClickLabel()}하거나 미리보기의 「탭으로 열기」를 누르면 여기서 엽니다.`} />;
+        return <EmptyState icon="fileText" title="열린 항목이 없습니다" description={`목록에서 줄을 ${modClickLabel()}하거나 미리보기의 「탭으로 열기」를 누르면 여기서 엽니다.`} />;
     }
     return <div ref={bodyRef} className="h-full overflow-auto p-4">{render(host, id)}</div>;
 }

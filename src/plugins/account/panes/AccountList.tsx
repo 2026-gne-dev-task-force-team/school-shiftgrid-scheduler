@@ -63,7 +63,7 @@ export function AccountList({ kind, host, peek, leafId }: { kind: AccountKind | 
     // 🔴 역할 삭제는 확인창부터 — 그 역할을 가진 사용자는 권한을 잃는다(#28) · 훅이라 아래 이른 return 보다 위에(rules-of-hooks)
     const [pendingRoles, setPendingRoles] = useState<string[] | null>(null);
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
-    if (!rv) return <EmptyState icon="warn" title="목록을 그릴 수 없습니다" description="컬렉션 꾸러미가 꺼져 있습니다." />;
+    if (!rv) return <EmptyState icon="warn" title="목록을 그릴 수 없습니다" description="항목 목록 기능이 꺼져 있습니다. 설정에서 켜면 나타납니다." />;
     const m = kind === 'perms' ? permsModel() : recordsModel(kind);
     // 🔴 줄 열기는 미리보기(peek)로 — 목록은 그대로 두고 옆/아래에 레코드 페이지를 띄운다(쥔님 2026-11-09). peek 이 없으면 같은 탭에서.
     const open = (id: string) => {

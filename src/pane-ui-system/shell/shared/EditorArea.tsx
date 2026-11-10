@@ -13,6 +13,7 @@ import type { Leaf } from '../../layout/tree';
 import { getView, type PeekHandle, type PeekShowOptions } from '../../view-registry';
 import { effectiveViewLayout, usePaneSettings } from '../../layout/pane-settings';
 import { isCollapsed } from '../../layout/clamp';
+import { EmptyState } from '../../primitives/EmptyState';
 import { ViewPlaceholder } from '../../plugin/Placeholder';
 import { usePluginRegistry } from '../../plugin/registry';
 import { PeekLayer, peekModeFor } from './PeekLayer';
@@ -94,7 +95,7 @@ export function EditorArea({ leaf, sidebar = false }: { leaf: Leaf | null; sideb
     if (!leaf) {
         return (
             <div className={`flex-1 min-h-0 grid place-items-center ${surface} overflow-hidden px-8 py-6 text-center`}>
-                <p className="max-w-[18rem] text-body text-muted/80 select-none leading-relaxed text-balance">열린 탭이 없습니다. 위 + 로 새 탭을 엽니다.</p>
+                <EmptyState icon="plus" title="열려 있는 탭이 없습니다" description="위의 + 를 누르면 새 탭이 열립니다." />
             </div>
         );
     }

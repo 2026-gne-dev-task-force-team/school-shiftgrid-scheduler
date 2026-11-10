@@ -85,7 +85,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
     if (!activeId || !kit.lists().some((l) => l.id === activeId)) return <CollectionStart kit={kit} leafId={leafId} />;
 
     const Frame = kit.nodes()?.Frame;
-    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 시스템이 꺼져 있습니다." />;
+    if (!Frame) return <EmptyState icon="warn" title="화면을 그릴 수 없습니다" description="항목 화면 기능이 꺼져 있습니다. 설정에서 켜면 나타납니다." />;
     const fields: RecordField[] = [...cfg.baseFields, ...kit.userFieldsOf(activeId)];
     const tree: RecordTree<Rec> | undefined = cfg.tree ? {
         parentOf: (r) => (r.__parent as string | null) ?? null,

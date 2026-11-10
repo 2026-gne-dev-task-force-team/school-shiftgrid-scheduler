@@ -180,7 +180,7 @@ describe('탭으로 열기 — 여는 길', () => {
         setWorkspaceBridge({ open: () => null, close: () => {}, setTitle: (l: string, t: string) => { titles.push([l, t]); }, setGlyph: () => {} } as never);
         const nodes = { get: () => undefined, isTrashed: () => false, subscribe: () => ({ dispose() {} }) };
         mount(h(RecordTab, { host: fakeHost({ nodes }), leaf: leafOf('gone') } as never));
-        expect(document.body.textContent).toContain('이 레코드는 삭제되었습니다');
+        expect(document.body.textContent).toContain('이 항목은 삭제되어 휴지통에도 없습니다');
         expect(document.body.textContent).not.toContain('삭제된 문서');
         expect(titles.at(-1)).toEqual(['L1', '삭제된 레코드']);
         setWorkspaceBridge(null);
