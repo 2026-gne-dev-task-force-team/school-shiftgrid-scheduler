@@ -15,7 +15,7 @@ import {
     isDescendant, setData as setDataTree, setField, newFolderParent, topmostOnly, violatesUnique, normalize,
 } from '../nodes/model/tree';
 import { applyClick as applyClickSel, selectAll as selectAllSel, type Selection } from '../nodes/model/selection';
-import { isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from '../nodes/model/types';
+import { isSectionType, isContainerType, getType, acceptsChild, openType, uniqueOf, slotsOf, canDo, canCreateType, confirmDeleteMsg } from '../nodes/model/types';
 import { getDerived, invalidateDerived } from '../nodes/model/derive';
 import { loadTree, saveTree, onRemoteNodes, isPendingLocal, rebasePending, type RemoteNodes } from './persist';
 
@@ -342,7 +342,7 @@ export function commitRename(value: string): void {
 /** 이 부모가 이 타입을 자식으로 받나 — 실노드 + 등록 표(acceptsChild) 한 줄. */
 function parentAccepts(parentId: string, type: string): boolean {
     const p = state.tree.nodes[parentId];
-    return !!p && acceptsChild(p.type, type);
+    return !!p && acceptsChild(p.type, type, parentId);
 }
 
 /**
@@ -382,7 +382,7 @@ export function newNode(type: string, opts?: { via?: 'selection' | 'context'; ta
     if (state.loading) return;
     const via = opts?.via ?? 'selection';
     const basis = opts?.targetId !== undefined ? opts.targetId : state.selectedId;
-    let parent = newFolderParent(state.tree, basis, isContainerType, via);
+    let parent = isSectionType(type) ? state.tree.root : newFolderParent(state.tree, basis, isContainerType, via);   // 섹션은 늘 뿌리 밑
     if (!parentAccepts(parent, type)) {
         if (parentAccepts(state.tree.root, type)) {
             parent = state.tree.root;
@@ -468,7 +468,7 @@ function doRemove(ids: string[]): void {
     const what = top.length === 1 ? `「${state.tree.nodes[top[0]]?.name ?? ''}」` : `${top.length}개`;
     apply((t) => {
         let x = t;
-        for (const id of topmostOnly(t, ids)) x = remove(x, id, permitDelete);
+        for (const id of topmostOnly(t, ids)) x = remove(x, id, permitDelete, isSectionType);
         return x;
     }, { patch: { ...singleSel(null), renamingId: null, deleteConfirm: null } });
     // 🔔 「되돌리기」가 붙은 알림 — 명령 id 로만(함수 금지). 연달아 지워도 토스트는 한 건에 덮인다.
@@ -694,7 +694,7 @@ export function apiMove(id: string, parentId: string, index?: number): void {
 /** 휴지통으로(영구삭제 아님) — API 엔 purge 가 없다(사람만 비운다). */
 export function apiRemove(id: string): void {
     if (!state.tree.nodes[id]) return;
-    apply((t) => remove(t, id, permitDelete));
+    apply((t) => remove(t, id, permitDelete, isSectionType));
 }
 
 /** 불투명 data 쓰기 — 🔴 주인(타입 접두사) 검사는 api.ts 가 하고, 여기선 모델만 바꾼다. */

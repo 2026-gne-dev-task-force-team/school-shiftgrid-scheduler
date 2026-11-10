@@ -114,6 +114,11 @@ export interface NodeTypeDef {
      *   없으면 제한 없음(기본 · 내장 '폴더'가 그렇다). 관문은 모델 한 곳(violatesUnique) — 만들기·옮기기·복원·API 가 전부 지난다.
      */
     unique?: 'tree' | 'parent';
+    /**
+     * 🔑 섹션 — 폴더처럼 묶되 들여쓰기 없이 탐색기를 위아래로 나눈 칸으로 그린다. 뿌리 바로 밑에만 놓이고(안에 섹션 없음),
+     *   지우면 안의 노드는 지워지지 않고 뿌리로 풀려난다(섹션 자리에 순서대로). container 와 함께 쓴다.
+     */
+    section?: boolean;
     /** 🔑 끼워 넣기 모습(P5) — impl.embed 에 host 를 묶어 온다. 없으면 링크 줄. */
     embed?: ComponentType<EmbedProps>;
     /**
