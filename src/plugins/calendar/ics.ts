@@ -7,12 +7,14 @@
  *   · DTSTART/DTEND — `VALUE=DATE`(종일) · 떠 있는 지역시각 · UTC(`Z`) · `TZID=Asia/Seoul`(+09:00) · 나머지 TZID 는 로컬 근사
  *   · DTEND 없으면: 종일은 1일, 시각 일정은 길이 0
  *   · 줄 접힘(이어쓰기) · 이스케이프(\\ \; \, \n) · CRLF/LF 둘 다
- *   · RRULE 은 DAILY·WEEKLY(BYDAY)·MONTHLY(BYMONTHDAY · BYDAY+순번)·YEARLY × INTERVAL·COUNT·UNTIL 을 recur(→ pane-ui-system/date-pattern)로 펼친다. 모르는 FREQ 는 첫 회만.
- * ⛔ 못 하는 것: DURATION · VTIMEZONE 실제 규칙 해석(Asia/Seoul 만 하드코딩) · 그 밖의 BY* · EXDATE · RDATE · VTODO/VALARM.
+ *   · RRULE(여럿)·RDATE·EXDATE → 날짜 패턴(recur → pane-ui-system/date-pattern). RRULE 은 DAILY·WEEKLY(BYDAY)·MONTHLY(BYMONTHDAY · BYDAY+순번)·YEARLY
+ *     × INTERVAL·COUNT·UNTIL. parseIcs 는 펼친 회차들을, parseIcsSeries 는 패턴째(가져오기 — 반복 일정 하나로) 준다. 모르는 FREQ 는 첫 회만.
+ *   · 내보내기는 패턴을 RRULE·RDATE·EXDATE 로 쓴다(patternToRRule).
+ * ⛔ 못 하는 것: DURATION · VTIMEZONE 실제 규칙 해석(Asia/Seoul 만 하드코딩) · 그 밖의 BY* · RECURRENCE-ID · VTODO/VALARM.
  */
 import { isoMinuteOf, parseLocal } from './events';
 import type { CalendarItem } from './contracts/calendar';
-import { expand, ruleFromRRule } from './recur';
+import { expandPattern, patternToRRule, rruleToPattern, type DatePattern } from './recur';
 
 // ── 공통 보조 ──
 const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -120,55 +122,67 @@ interface RawEvent {
     description?: string;
     dtstart?: ParsedDate;
     dtend?: ParsedDate;
-    rrule?: Record<string, string>;
+    /** RRULE·RDATE·EXDATE 줄 그대로 — rruleToPattern 이 읽는다 */
+    recur: string[];
 }
 
-/** RawEvent → CalendarItem 들(RRULE 은 expand 로 펼친다). */
-function emit(raw: RawEvent, uid: string): CalendarItem[] {
-    if (!raw.dtstart) return [];
+/** 가져오기용 일정 한 건 — 반복이면 펼치지 않고 패턴째(start 가 첫 회). */
+export type IcsSeriesItem = CalendarItem & { pattern?: DatePattern };
+
+/** RawEvent → 일정 한 건(+패턴). 규칙이 없고 더한 날만 있으면 DTSTART 도 회차로 넣는다(RFC5545 — DTSTART 는 늘 첫 회). */
+function toSeries(raw: RawEvent, uid: string): IcsSeriesItem | null {
+    if (!raw.dtstart) return null;
     const allDay = raw.dtstart.allDay;
     const start = raw.dtstart.str;
     // 끝 — DTEND 있으면 그대로, 없으면 종일 1일 / 시각 길이 0
     const end = raw.dtend ? raw.dtend.str : (allDay ? addDaysStr(start, 1) : start);
     const title = raw.summary ? unescapeText(raw.summary) : '(제목 없음)';
     const memo = raw.description ? unescapeText(raw.description) : undefined;
-    const base: CalendarItem = { id: uid, title, start, end, allDay, ...(memo ? { memo } : {}) };
+    const base: IcsSeriesItem = { id: uid, title, start, end, allDay, ...(memo ? { memo } : {}) };
+    const p = rruleToPattern(raw.recur);   // 모르는 FREQ 뿐이면 null → 첫 회만
+    if (!p) return base;
+    if (!p.rules.length && !p.rdates?.includes(start)) p.rdates = [start, ...(p.rdates ?? [])];
+    return { ...base, pattern: p };
+}
 
-    const rule = raw.rrule ? ruleFromRRule(raw.rrule) : null;
-    if (!rule) return [base];   // RRULE 없음 · 모르는 FREQ 는 첫 회만
-
-    const startDate = parseLocal(start);
-    const durMs = parseLocal(end).getTime() - startDate.getTime();
-    // 끝(COUNT·UNTIL)이 없으면 안전 지평까지만 — 매년 25년(MAX_YEARLY) · 나머지 2년
+/** 일정 한 건 → 펼친 회차들(구독·남의 일정은 평면값만 받는다). */
+function flatten(item: IcsSeriesItem): CalendarItem[] {
+    const { pattern: p, ...base } = item;
+    if (!p) return [base];
+    const startDate = parseLocal(base.start);
+    const durMs = parseLocal(base.end).getTime() - startDate.getTime();
+    // 끝(COUNT·UNTIL) 없는 규칙이 있으면 안전 지평까지만 — 그게 전부 매년이면 25년(MAX_YEARLY) · 아니면 2년
+    const open = p.rules.filter((r) => r.count === undefined && !r.until);
     const horizon = new Date(startDate);
-    if (rule.count === undefined && !rule.until) horizon.setFullYear(horizon.getFullYear() + (rule.freq === 'yearly' ? MAX_YEARLY : 2));
+    if (open.length) horizon.setFullYear(horizon.getFullYear() + (open.every((r) => r.freq === 'yearly') ? MAX_YEARLY : 2));
     else horizon.setFullYear(9999);
-    const starts = expand(rule, start, start, isoMinuteOf(horizon));
+    const starts = expandPattern(p, base.start, base.start, isoMinuteOf(horizon));
     const out = starts.map((s, n): CalendarItem => {
         const occStart = parseLocal(s);
         const occEnd = new Date(occStart.getTime() + durMs);
         return {
             ...base,
-            id: n === 0 ? uid : `${uid}#${n}`,
-            start: allDay ? fmtDate(occStart) : isoMinuteOf(occStart),
-            end: allDay ? fmtDate(occEnd) : isoMinuteOf(occEnd),
+            id: n === 0 ? base.id : `${base.id}#${n}`,
+            start: base.allDay ? fmtDate(occStart) : isoMinuteOf(occStart),
+            end: base.allDay ? fmtDate(occEnd) : isoMinuteOf(occEnd),
         };
     });
     return out.length ? out : [base];
 }
 
 /**
- * .ics 문자열 → CalendarItem 들. 못 읽는 VEVENT 는 건너뛴다(DTSTART 없음 등). UID 없으면 자동 부여('ics-<n>').
+ * .ics 문자열 → 일정들(반복은 패턴째). 못 읽는 VEVENT 는 건너뛴다(DTSTART 없음 등). UID 없으면 자동 부여('ics-<n>').
  */
-export function parseIcs(text: string): CalendarItem[] {
+export function parseIcsSeries(text: string): IcsSeriesItem[] {
     const lines = unfold(text);
-    const items: CalendarItem[] = [];
+    const items: IcsSeriesItem[] = [];
     let raw: RawEvent | null = null;
     let auto = 0;
     for (const line of lines) {
-        if (line === 'BEGIN:VEVENT') { raw = {}; continue; }
+        if (line === 'BEGIN:VEVENT') { raw = { recur: [] }; continue; }
         if (line === 'END:VEVENT') {
-            if (raw) items.push(...emit(raw, raw.uid ?? `ics-${auto++}`));
+            const it = raw && toSeries(raw, raw.uid ?? `ics-${auto++}`);
+            if (it) items.push(it);
             raw = null;
             continue;
         }
@@ -181,18 +195,15 @@ export function parseIcs(text: string): CalendarItem[] {
             case 'DESCRIPTION': raw.description = prop.value; break;
             case 'DTSTART': { const d = parseDateValue(prop.value, prop.params); if (d) raw.dtstart = d; break; }
             case 'DTEND': { const d = parseDateValue(prop.value, prop.params); if (d) raw.dtend = d; break; }
-            case 'RRULE': {
-                const rule: Record<string, string> = {};
-                for (const kv of prop.value.split(';')) {
-                    const eq = kv.indexOf('=');
-                    if (eq > 0) rule[kv.slice(0, eq).toUpperCase()] = kv.slice(eq + 1);
-                }
-                raw.rrule = rule;
-                break;
-            }
+            case 'RRULE': case 'RDATE': case 'EXDATE': raw.recur.push(line); break;
         }
     }
     return items;
+}
+
+/** .ics 문자열 → CalendarItem 들(반복은 회차로 펼친다 — 링크 구독·약속 parseIcs 가 쓴다). */
+export function parseIcs(text: string): CalendarItem[] {
+    return parseIcsSeries(text).flatMap(flatten);
 }
 
 // ── 작성기(내보내기) ──
@@ -205,6 +216,8 @@ export interface IcsWriteEvent {
     end: string;
     allDay: boolean;
     memo?: string;
+    /** 반복 — RRULE·RDATE·EXDATE 로 쓴다 */
+    pattern?: DatePattern;
 }
 
 const PRODID = '-//shiftgrid//calendar 0.1//KO';
@@ -236,6 +249,7 @@ export function writeIcs(events: readonly IcsWriteEvent[], now = new Date()): st
         }
         lines.push(`SUMMARY:${escapeText(e.title)}`);
         if (e.memo) lines.push(`DESCRIPTION:${escapeText(e.memo)}`);
+        if (e.pattern) lines.push(...patternToRRule(e.pattern, e.allDay ? e.start.slice(0, 10) : e.start.slice(0, 16)));
         lines.push('END:VEVENT');
     }
     lines.push('END:VCALENDAR');
