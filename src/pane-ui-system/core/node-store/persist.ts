@@ -13,6 +13,7 @@ import type { PluginHost } from '../../plugin';
 import { type Tree, type Node, emptyTree, normalize } from '../nodes/model/tree';
 import { nodesGetAll, nodesWrite } from '../../kv';
 import { onOtherTabWrite } from '../../cross-tab';
+import { brokenNode, brokenDataOf, brokenReasons } from '../nodes/model/broken';
 
 const KEY = 'tree';           // 옛 「나무 통째」 레코드 키(kv·localStorage 이사 입구)
 const META_ID = '__meta';     // 노드 스토어의 예약 id — 나무의 머리(root·trash·rev). 노드 id 는 'n…' 라 안 부딪힌다.
@@ -26,11 +27,26 @@ function metaOf(tree: Tree): MetaRecord {
     return { id: META_ID, root: tree.root, trash: tree.trash, rev: tree.rev };
 }
 
-/** 레코드 하나를 Node 로 — 모양이 틀리면 null(묘비·머리 레코드도 여기서 떨어진다: type/name 이 없다). */
+/** 저장할 레코드 — 깨진 항목은 읽은 원래 레코드 그대로(휴지통 표식만 현재값) 쓴다. ⛔ 자동 복구 없음. */
+function recOf(n: Node): object {
+    const b = brokenDataOf(n);
+    if (!b) return n;
+    const { trashedFrom: _drop, ...rest } = b.raw;
+    return { ...rest, trashedFrom: n.trashedFrom };
+}
+
+/**
+ * 레코드 하나를 Node 로 — 묘비·머리·id 없는 레코드는 null.
+ *   🔴 type·name·children 이 잘못됐으면 버리지 않고 「깨진 항목」 노드로 보존한다(탐색기에 경고로 보인다 · 저장 때 원본 그대로).
+ */
 function coerceNode(v: unknown): Node | null {
     if (!v || typeof v !== 'object') return null;
     const n = v as Record<string, unknown>;
-    if (typeof n.id !== 'string' || typeof n.type !== 'string' || typeof n.name !== 'string') return null;
+    if (typeof n.id !== 'string') return null;
+    if (n.tomb === true) return null;
+    const reasons = brokenReasons(n);
+    if (reasons.length > 0) return brokenNode(n.id, n, reasons);
+    if (typeof n.type !== 'string' || typeof n.name !== 'string') return null;
     return {
         id: n.id,
         type: n.type,
@@ -80,7 +96,7 @@ function assemble(records: unknown[]): Tree {
 
 /** 나무를 노드 스토어에 통째로 심는다(이사·첫 쓰기) — clear + 전부 put. 성패를 돌려준다. */
 function migrateToNodes(tree: Tree, purge?: string[]): Promise<boolean> {
-    const put = [...Object.values(tree.nodes), metaOf(tree)];
+    const put = [...Object.values(tree.nodes).map(recOf), metaOf(tree)];
     return nodesWrite({ clear: true, put, purge, onRejected: rejectedByStore });
 }
 
@@ -240,7 +256,7 @@ async function flushOnce(): Promise<void> {
     //    🔴 W-X2 합치기는 nodesWrite 안에서 — 저장소 읽기·합치기·쓰기가 한 트랜잭션이라 경쟁 창이 없다(탭이 닫히는 중의 저장도).
     //    합친 값이 내 값과 다르면 쓴 뒤 저장소를 다시 읽어 이 탭 화면에도 들인다(deferred).
     const merged = new Set<string>();
-    put.push(...mine);
+    put.push(...mine.map(recOf));
     const merge = mergeGuard ? (n: object, stored: unknown): object => {
         const id = (n as { id?: unknown }).id;
         if (typeof id !== 'string' || id === META_ID) return n;
