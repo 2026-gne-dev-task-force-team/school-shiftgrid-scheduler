@@ -66,4 +66,25 @@ describe('슬래시 하위 페이지', () => {
         expect(links).toEqual([kids[0]]);
         expect(container.querySelector('[data-block-row="a"] [data-child-page]')).toBeTruthy();   // 줄은 / 를 친 그 자리
     });
+
+    it('만든 직후 → 새 하위 페이지를 열고 그 제목 입력에 초점(이름 전체 선택)', async () => {
+        open({ blocks: [{ id: 'a', type: 'paragraph', text: '' }] });
+        // 열리면 그려지는 새 페이지의 제목 입력 흉내 — 열기(open)가 불리면 붙인다
+        fakeNodes.open = (id: string) => {
+            calls.open.push(id);
+            const t = document.createElement('input');
+            t.setAttribute('aria-label', '페이지 제목'); t.value = '페이지';
+            t.getClientRects = () => [{}] as unknown as DOMRectList;   // jsdom 은 배치가 없어 「보이는 칸」 판정을 흉내
+            document.body.appendChild(t);
+        };
+        const ed = container.querySelector('[data-block-row="a"] [contenteditable]') as HTMLElement;
+        act(() => { ed.focus(); ed.textContent = '/'; ed.dispatchEvent(new InputEvent('input', { bubbles: true })); });
+        const item = [...container.querySelectorAll('[role="listbox"] button')].find((x) => x.textContent === '하위 페이지') as HTMLElement;
+        act(() => { item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); });
+        expect(calls.open).toEqual([store.get('p1')!.children[0]]);
+        await act(async () => { await new Promise((r) => setTimeout(r, 80)); });
+        const ae = document.activeElement as HTMLInputElement;
+        expect(ae.getAttribute('aria-label')).toBe('페이지 제목');
+        expect([ae.selectionStart, ae.selectionEnd]).toEqual([0, 3]);
+    });
 });

@@ -33,6 +33,8 @@ export function Popover({
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
     const layer = useLayerToken();
+    // 연 자리 — 렌더에서 잡는다(닫히면 초점을 돌려주려고)
+    const [opener] = useState(() => (typeof document !== 'undefined' ? document.activeElement as HTMLElement | null : null));
     const [pos, setPos] = useState<{ x: number; y: number }>(() => ({
         x: align === 'right' ? anchor.right - width : anchor.left,
         y: anchor.bottom + 4,
@@ -69,19 +71,28 @@ export function Popover({
             closeRef.current();
         };
         const popEsc = pushEscapeLayer(() => closeRef.current(), layer);
+        // 열리면 안의 첫 조작 요소로 초점(안쪽이 이미 가져갔으면 그대로) — 팝오버 자신이 초점 폴백
+        const el = ref.current;
+        if (el && !el.contains(document.activeElement)) {
+            (el.querySelector<HTMLElement>('input:not([disabled]),textarea:not([disabled]),select:not([disabled]),button:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? el).focus({ preventScroll: true });
+        }
         document.addEventListener('pointerdown', onDown, true);
         window.addEventListener('scroll', onScroll, true);
         return () => {
             popEsc();
             document.removeEventListener('pointerdown', onDown, true);
             window.removeEventListener('scroll', onScroll, true);
+            // 닫히면 연 자리로 — 초점이 갈 곳 없이 BODY 로 빠졌을 때만(다른 곳을 눌러 닫은 거면 그 초점을 존중)
+            const a = document.activeElement;
+            if ((!a || a === document.body) && opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
         };
-    }, [layer]);
+    }, [layer, opener]);
 
     return createPortal(
         <div
             ref={ref}
             data-popover
+            tabIndex={-1}
             className={`fixed z-popover rounded-md border border-line bg-panel shadow-lg p-2 select-none outline-none ${closing ? 'ui-pop-out pointer-events-none' : 'ui-pop-in'}`}
             style={{ left: pos.x, top: pos.y, width }}
         >

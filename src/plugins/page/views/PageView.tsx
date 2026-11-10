@@ -6,12 +6,12 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { ContextMenu, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
+import { ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import { notifyBlocksRemoved } from '../removed';
-import { createChildPage, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
+import { createChildPage, getNodesApi, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';
 import type { Block, BlockType, Page, TableBlockData } from '../core/types';
 import { emptyBlock, emptyPage, isList, newId } from '../core/types';
@@ -252,6 +252,9 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
             if (!cid) { commitPage(cleared); setActiveBlockId(id); setFocusIntent({ id, offset: 0 }); return; }
             commitPage({ ...cleared, blocks: cleared.blocks.map((b) => b.id === id ? { id, type: 'childpage' as const, text: '', nodeId: cid } : b) });
             setActiveBlockId(null);
+            // 새 하위 페이지를 열고 그 제목 입력으로 초점(이름 전체 선택)
+            getNodesApi()?.open(cid);
+            focusWhenReady('input[aria-label="페이지 제목"]', true);
             return;
         }
         const next = changeType(cleared, id, type);

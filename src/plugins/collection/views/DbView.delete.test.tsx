@@ -11,6 +11,7 @@ import { DbView } from './DbView';
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root | null = null;
 let hostEl: HTMLDivElement | null = null;
+let runSpy: ReturnType<typeof vi.fn> | null = null;
 afterEach(() => { act(() => { root?.unmount(); }); hostEl?.remove(); root = null; hostEl = null; initRecordNodes(null); setActiveDb(null); });
 
 interface N { id: string; type: string; name: string; data?: unknown; kids: string[]; trashedFrom?: string }
@@ -58,12 +59,24 @@ function mount(s: ReturnType<typeof setup>) {
     initRecordNodes(s.api); setActiveDb('db1');
     hostEl = document.createElement('div'); document.body.appendChild(hostEl);
     root = createRoot(hostEl);
-    const host = { commands: { run: vi.fn() }, notify: s.notify } as never;
+    const run = vi.fn();
+    const host = { commands: { run }, notify: s.notify } as never;
+    runSpy = run;
     act(() => { root!.render(<DbView host={host} peek={{} as never} leaf={{ id: 'L1' } as never} width={800} height={600} collapsed={false} />); });
 }
 const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 const click = (el: HTMLElement | null) => { act(() => { el!.dispatchEvent(new MouseEvent('click', { bubbles: true })); }); };
 const lastNote = (s: ReturnType<typeof setup>) => s.notify.mock.calls.at(-1)![0];
+
+describe('R3-K 행 삭제 뒤 ⌘Z', () => {
+    it('삭제하면 초점이 BODY 로 안 빠지고 뷰 뿌리에 남아, ⌘Z 가 창틀 되돌리기 명령으로 간다', () => {
+        const s = setup(); mount(s);
+        click(q('[data-rv-check="r1"]')); click(q('[data-rv-delete]'));
+        expect(document.activeElement).toBe(q('[data-rv-db]'));
+        act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true, cancelable: true })); });
+        expect(runSpy).toHaveBeenCalledWith('explorer.undo');
+    });
+});
 
 describe('컬렉션 삭제 안전망', () => {
     it('행 삭제 → 알림 「행 2개를 휴지통으로 옮겼습니다」 + 되돌리기 → 같은 자리로 돌아온다', () => {
