@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PeekLayer } from '../../../pane-ui-system/shell/shared/PeekLayer';
 import { TitleField } from '../../../pane-ui-system/primitives/IconPicker';
-import type { NodesApi, PublicNode } from '../../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { initCalendarNodes, calendarNodeTypeImpl, STORE_TYPE, EVENT_TYPE } from '../nodes';
 import { chipKeyId } from './chip-key';
 import { focusPeekTitle } from './focus-title';

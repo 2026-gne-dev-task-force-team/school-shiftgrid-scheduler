@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, FONT_SIZES, densityScale, presetForMode } from '../tokens';
+import { COLOR_TOKENS, SIZE_TOKENS, RADIUS_TOKENS, THEMES, DENSITIES, FONT_SIZES, densityScale, presetForMode } from '../tokens';
 import {
     defaultThemeSettings, normalizeThemeSettings, type ThemeSettings,
 } from '../settings';
@@ -30,6 +30,9 @@ describe('① 토큰 이름이 tokens.ts 와 index.css 에서 같다', () => {
     });
     it('치수 토큰(--s-*) 이름이 정확히 일치한다', () => {
         expect(cssTokenNames('s')).toEqual([...SIZE_TOKENS].sort());
+    });
+    it('모서리 토큰(--r-*) 이름이 정확히 일치한다', () => {
+        expect(cssTokenNames('r')).toEqual([...RADIUS_TOKENS].sort());
     });
 });
 

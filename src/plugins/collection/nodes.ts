@@ -8,7 +8,7 @@
  *   ② NodesApi 참조 + subscribe 로 「노드가 바뀌었다」를 뷰에 알린다(useSyncExternalStore · 스냅샷은 바뀔 때만 새로 짓는다)
  *   ③ 쓰기는 전부 commit(tx) 한 함수를 지난다 — 한 tx = NodesApi.batch 한 칸 = 되돌리기 한 번
  */
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, MenuEntry, NodeTypeContribution, PluginHost } from '../../pane-ui-system/plugin';
 import type { DbDoc, RecordCellValue, RecordField, RowDoc, ViewDef } from './contracts/collection';
 import { uniqueKeyOf } from './unique';

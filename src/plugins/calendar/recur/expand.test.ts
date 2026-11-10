@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { expand, MAX_RESULTS } from './expand';
+import { expand, MAX_RESULTS } from './index';
 
 const W = ['2000-01-01', '2100-01-01'] as const;
 

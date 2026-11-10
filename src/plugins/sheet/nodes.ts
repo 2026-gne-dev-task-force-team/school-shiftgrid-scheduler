@@ -10,7 +10,7 @@
  * 🔴 TableDoc 은 그 노드의 불투명 data 다 — 탐색기는 안 본다(설계 「data 는 그 타입 주인 것」).
  */
 // 🔴 import type 만 — 약속 타입은 약속 플러그인의 contracts 에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { createUndoSlot, type Disposable, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
 import type { CellTone, MergeRegion, TableStylePreset, TableTx } from './contracts/table';

@@ -9,7 +9,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { PageView } from './views/PageView';
 import { setActivePage } from './store';
 import { initPageNodes, savePage } from './nodes';
-import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { frameHost, notices } from './test-frame-host';
 import { undoBlocksRemoved, blocksRemovedUndoable } from './removed';
 import type { Page } from './core/types';

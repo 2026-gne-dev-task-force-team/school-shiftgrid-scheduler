@@ -33,3 +33,12 @@ export function focusWhenReady(selector: string, select = false): void {
     };
     setTimeout(go, 0);
 }
+
+/**
+ * 입력칸 초점 — 마우스로 눌러도 보인다(입력은 커서 자리라). 테두리가 강조색으로 + 옅은 바깥 고리.
+ * 🔴 ⛔ 완성된 클래스 문자열(Tailwind 정적 스캔) — 이어붙이기 금지.
+ */
+export const FOCUS_FIELD = 'focus:border-accent focus:outline focus:outline-2 focus:outline-accent/30 outline-offset-0';
+
+/** 입력칸 잘못된 값 모양 — 테두리·초점 고리가 경고색. FOCUS_FIELD 뒤에 붙여 이기게 한다 */
+export const INVALID = 'border-bad focus:border-bad focus:outline-bad/30';

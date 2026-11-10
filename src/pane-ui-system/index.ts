@@ -170,3 +170,13 @@ export {
     exportThemeJSON, importThemeJSON, normalizeUserThemes,
     type UserTheme, type ImportResult,
 } from './theme/user-themes';
+
+// 공통 부품 U-부품b — 입력류 새 부품 + 모서리 토큰
+export { Field } from './primitives/Field';
+export { Textarea } from './primitives/Textarea';
+export { NumberInput } from './primitives/NumberInput';
+export { Checkbox } from './primitives/Checkbox';
+export { Segmented } from './primitives/Segmented';
+export { RadioGroup } from './primitives/RadioGroup';
+export { Badge } from './primitives/Badge';
+export { RADIUS_TOKENS, type RadiusToken } from './theme/tokens';

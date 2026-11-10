@@ -3,7 +3,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { applyEdit, initGridNodes, notifyRemoved, removedUndoable, SHEET_TYPE, sheetDataOf, undoRemoved } from '../nodes';
 import { blankTimetable, columnCount, mergeCells, setCellText, type TimetableData } from '../model';
 import { TimeGrid } from './TimeGrid';

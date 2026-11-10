@@ -11,7 +11,9 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 1,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 8
   },
   "plugins/calendar": {
     "bareButton": 12,
@@ -25,7 +27,9 @@
     "divClick": 3,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 3
   },
   "plugins/collection": {
     "bareButton": 24,
@@ -39,7 +43,9 @@
     "divClick": 5,
     "ownTrash": 4,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 1,
+    "bareLabel": 1
   },
   "plugins/contract-absence": {
     "bareButton": 0,
@@ -125,20 +131,6 @@
     "enterNoIme": 0,
     "ownUndoNotice": 0
   },
-  "plugins/explorer": {
-    "bareButton": 5,
-    "arbPx": 2,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 1,
-    "bareInput": 1,
-    "divClick": 4,
-    "ownTrash": 40,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
   "plugins/page": {
     "bareButton": 2,
     "arbPx": 4,
@@ -151,7 +143,9 @@
     "divClick": 0,
     "ownTrash": 2,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 1,
+    "bareLabel": 0
   },
   "plugins/pane-test": {
     "bareButton": 1,
@@ -165,7 +159,9 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 1
   },
   "plugins/people": {
     "bareButton": 0,
@@ -179,21 +175,9 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
-  "plugins/properties": {
-    "bareButton": 0,
-    "arbPx": 0,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 0,
-    "bareInput": 0,
-    "divClick": 0,
-    "ownTrash": 0,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   },
   "plugins/rooms": {
     "bareButton": 0,
@@ -207,35 +191,9 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
-  "plugins/selection": {
-    "bareButton": 0,
-    "arbPx": 0,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 0,
-    "bareInput": 0,
-    "divClick": 0,
-    "ownTrash": 0,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
-  "plugins/settings": {
-    "bareButton": 8,
-    "arbPx": 9,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 0,
-    "bareInput": 4,
-    "divClick": 0,
-    "ownTrash": 0,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   },
   "plugins/sheet": {
     "bareButton": 3,
@@ -249,7 +207,9 @@
     "divClick": 3,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 1
   },
   "plugins/timetable-grid": {
     "bareButton": 0,
@@ -263,7 +223,73 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 2,
+    "bareLabel": 1
+  },
+  "pane-ui-system/core/selection": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/settings": {
+    "bareButton": 6,
+    "arbPx": 8,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 4,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/plugin-manager": {
+    "bareButton": 2,
+    "arbPx": 1,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 1
+  },
+  "pane-ui-system/core/properties": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   },
   "app": {
     "bareButton": 0,
@@ -277,7 +303,9 @@
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 0,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   },
   "pane-ui-system": {
     "bareButton": 26,
@@ -291,6 +319,104 @@
     "divClick": 2,
     "ownTrash": 0,
     "enterNoIme": 2,
-    "ownUndoNotice": 0
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/explorer": {
+    "bareButton": 5,
+    "arbPx": 2,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 1,
+    "bareInput": 1,
+    "divClick": 4,
+    "ownTrash": 4,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/node-frame": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 2,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/node-store": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 10,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/nodes": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 24,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "plugins/room-booking": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
+  },
+  "pane-ui-system/core/icon-pack-basic": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   }
 }

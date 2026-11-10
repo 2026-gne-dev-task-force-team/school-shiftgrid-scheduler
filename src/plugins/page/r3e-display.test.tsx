@@ -12,7 +12,7 @@ import { PageCard } from './views/PageCard';
 import { setActivePage } from './store';
 import { initPageNodes, inlineBlocked, pageViewOf } from './nodes';
 import { changeType, setNodeDisplay } from './core/blocks';
-import type { EmbedProps, NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { EmbedProps, NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { frameHost } from './test-frame-host';
 import type { Page } from './core/types';
 

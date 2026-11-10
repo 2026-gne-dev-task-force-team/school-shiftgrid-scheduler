@@ -14,14 +14,41 @@
 
 ---
 
-## 폴더
+## 폴더 — 제일 아래 「후라이팬」부터
+
+**후라이팬** = 우리 UI 시스템의 이름이다(폴더 `src/pane-ui-system/`). 아래 층이 위 층을 받친다.
 
 ```
-src/                새로 짓는 자리
- ├ core/            모델·순수 로직 (화면을 모른다)
- ├ ui/              보이는 부품
- └ features/        업무 묶음 — 시간표 · 보결 · 특별실 · 근태
+ ┌───────────────────────────────────────────────┐
+ │ app/        조립 — 어떤 플러그인을 올릴지 고른다      │
+ ├───────────────────────────────────────────────┤
+ │ plugins/    꾸러미 (후라이팬 위에 올리는 것)           │
+ │   범용 앱    노트(page) · sheet · collection · account │
+ │   학교 도메인 시간표(timetable-grid) · calendar ·      │
+ │             people · rooms · room-booking             │
+ │   견본       pane-test                                │
+ ├───────────────────────────────────────────────┤
+ │ pane-ui-system/   ★ 후라이팬 (제일 아래)              │
+ │   core/     기본 기능 9 = 「내부 코어 플러그인」        │
+ │             settings · plugin-manager · explorer ·    │
+ │             nodes · node-store · node-frame ·         │
+ │             selection · properties · icon-pack-basic  │
+ │   엔진      layout · shell · plugin · primitives ·    │
+ │             theme · interactive …                     │
+ └───────────────────────────────────────────────┘
+```
 
+| 층 | 무엇 | 비고 |
+|---|---|---|
+| 후라이팬 엔진 | 창틀·셸·플러그인 틀·부품·테마 | 도메인을 모른다 |
+| 후라이팬 `core/` | 기본 기능 9개 | 겉은 플러그인으로 등록되지만 `core: true` 라 **끌 수 없다** (`CORE_PLUGINS`) |
+| `plugins/` | 앱 기능 | 후라이팬만 쓴다. 끄고 켤 수 있다 |
+| `app/` | 조립 | 위 둘을 엮는다 |
+
+- 표시 이름은 **노트**(폴더·id 는 `page`) · **시간표**(폴더·id 는 `timetable-grid`) — id·저장 키는 그대로다.
+- 부품(primitives) 사용법: `src/pane-ui-system/primitives/README.md`
+
+```
 public/             정적 파일 · PWA 아이콘
 .github/workflows/  GitHub Pages 배포
 ```

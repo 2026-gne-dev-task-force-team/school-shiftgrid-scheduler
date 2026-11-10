@@ -9,7 +9,7 @@ import { PropertyList } from './PropertyList';
 import { RecordView } from '../RecordView';
 import { fieldTypes } from '../fields/registry';
 import type { RecordCellValue, RecordField } from '../contracts/collection';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { initRecordNodes } from '../nodes';
 import { ROW_TYPE } from '../schema';
 

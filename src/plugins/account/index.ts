@@ -12,7 +12,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, Disposable, PerCallerApi } from '../../pane-ui-system/plugin';
 import type { Identity } from './contracts/identity';
 import type { Permit } from './contracts/permit';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { accountNodeTypes, accountSecretNodeTypes, accountNodeTypeImpl } from './nodes';
 import { AccountList } from './panes/AccountList';

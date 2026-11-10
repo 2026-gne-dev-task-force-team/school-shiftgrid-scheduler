@@ -21,14 +21,14 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, undoAction, undoAllowed } from '../explorer/store';
-import { makeNodesApi } from '../explorer/api';
-import { __resetPersistForTest } from '../explorer/persist';
-import { registerType, clearTypes } from '../explorer/model/types';
-import { clearDerived } from '../explorer/model/derive';
+import { initStore, undoAction, undoAllowed } from '../../pane-ui-system/core/node-store/store';
+import { makeNodesApi } from '../../pane-ui-system/core/node-frame/api';
+import { __resetPersistForTest } from '../../pane-ui-system/core/node-store/persist';
+import { registerType, clearTypes } from '../../pane-ui-system/core/nodes/model/types';
+import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { notify, getNotifications, runNotifyAction, actionState, __resetNotifyForTest } from '../../pane-ui-system/plugin/notify';
 import { addCommand } from '../../pane-ui-system/plugin/store';
-import { CMD } from '../explorer/contracts/commands';
+import { CMD } from '../../pane-ui-system/core/nodes/contracts/commands';
 import * as core from './core';
 
 let off: { dispose(): void } | null = null;

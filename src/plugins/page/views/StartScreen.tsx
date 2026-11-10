@@ -9,7 +9,7 @@ import { useLauncherTab } from '../../../pane-ui-system/plugin';
 import { subscribePageNodes, getPageRev, livePages, createPage, parentNameOf, getNodesApi } from '../nodes';
 
 export function StartScreen({ leafId }: { leafId?: string }) {
-    useLauncherTab(leafId, '새 페이지');
+    useLauncherTab(leafId, '새 노트');
     // 노드가 바뀌면 다시 읽는다(rev 스냅샷).
     useSyncExternalStore(subscribePageNodes, getPageRev, getPageRev);
     const items = livePages().map((n) => ({ id: n.id, name: n.name, folder: parentNameOf(n.id), emoji: n.icon || undefined }));
@@ -20,10 +20,10 @@ export function StartScreen({ leafId }: { leafId?: string }) {
     return (
         <StartScreenBase
             icon="fileText"
-            title="페이지"
-            noun="페이지"
-            newLabel="새 페이지"
-            newHint="빈 페이지가 바로 열린다"
+            title="노트"
+            noun="노트"
+            newLabel="새 노트"
+            newHint="빈 노트가 바로 열린다"
             items={items}
             onNew={make}
             onOpen={open}

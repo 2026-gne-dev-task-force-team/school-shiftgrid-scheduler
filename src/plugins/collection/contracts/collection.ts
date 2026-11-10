@@ -15,7 +15,8 @@
  */
 import type { ComponentType, ReactElement, ReactNode } from 'react';
 import type { Disposable, IconName, PluginHost, PeekHandle, PropertiesPaneProps } from '../../../pane-ui-system/plugin';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
+import type { DatePattern } from '../../../pane-ui-system/date-pattern';
 
 /** 내장 칸 종류 — 여섯. 🔴 칸 type 자체는 string(꽂힌 타입은 `<pluginId>.<name>`)이고 이 이름들은 내장 등록의 키일 뿐이다. */
 export type BuiltinFieldType = 'text' | 'number' | 'select' | 'multi' | 'date' | 'check';
@@ -59,6 +60,8 @@ export interface RecordField {
 export interface DateValue {
     start: string;
     end?: string;
+    /** 반복 — 있으면 start 가 첫 회(기준)고 회차는 expandPattern 이 펼친다(따로 칸 타입 없음) */
+    pattern?: DatePattern;
 }
 
 /** 셀 하나가 가질 수 있는 값 — 종류별로 다르다. text/select=string · number/id=number · check=boolean · multi·relation=string[] · date={start,end?}. */

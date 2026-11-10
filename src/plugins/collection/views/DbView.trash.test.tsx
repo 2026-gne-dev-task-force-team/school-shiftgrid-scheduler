@@ -3,7 +3,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { NodesApi, PublicNode } from '../../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { DB_TYPE, initRecordNodes, setActiveDb } from '../nodes';
 import { blankDb } from '../schema';
 import { DbView } from './DbView';

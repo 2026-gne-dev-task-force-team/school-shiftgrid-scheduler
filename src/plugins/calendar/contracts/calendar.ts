@@ -11,7 +11,7 @@ import type { ComponentType } from 'react';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 import type { IconName } from '../../../pane-ui-system';
 import type { RecordField } from '../../collection/contracts/collection';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 
 /**
  * 달력에 그려 달라고 넘기는 일정 한 칸 — 노드도 뭐도 아닌 **평면 값**이다.
