@@ -29,8 +29,6 @@ import { roomBookingPlugin } from '../plugins/room-booking';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 
-import { propertiesPlugin } from '../plugins/properties';
-import { iconPackBasicPlugin } from '../plugins/icon-pack-basic';
 
 // 🔴 코어 넷(settings·explorer·selection·properties)은 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
@@ -42,14 +40,12 @@ export const PLUGINS: PluginModule[] = [
     settingsPlugin,
     explorerPlugin,   // 탐색기 꾸러미 — 코어(끌 수 없다). nodes 약속을 들고 와 채운다(provides) + 탐색기 패널(N1)
     ...CORE_PLUGINS,         // core/ 폴더의 코어 — 지금 selection(선택 알림 · 약속 화면 없음 · 탐색기가 알리고 속성이 듣는다)
-    propertiesPlugin,        // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다
     pagePlugin,              // 페이지 꾸러미 — 노션식 블록 페이지(문서 본문)
     collectionPlugin,        // 컬렉션 꾸러미 — collection 약속 + 컬렉션 노드 화면(속성 레지스트리)
     sheetPlugin,             // 시트 꾸러미 — 격자 엔진(table 약속) + 시트 노드
     // ── 범용 앱 층('app') — 끌 수 있다
     calendarPlugin,          // 달력 꾸러미 — calendar 약속 · 구독은 달력 안(calendar/subscribe/)
     accountPlugin,           // 계정 꾸러미 — identity·credential·permit
-    iconPackBasicPlugin,     // 기본 아이콘 묶음 — 제목 옆 아이콘 「커스텀」 탭에 뜨는 SVG 열두 개(아이콘 묶음 확장점의 본보기)
     // ── 학교 도메인 층('domain') — 끌 수 있다
     peoplePlugin,            // 사람 명단 꾸러미
     roomsPlugin,             // 방 목록 꾸러미

@@ -6,7 +6,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { definePlugin, activateAll, disablePlugin, disposeOwner, listPropertiesPanes, type PropertiesPaneProps } from '../../pane-ui-system/plugin';
+import { definePlugin, activateAll, disablePlugin, disposeOwner, listPropertiesPanes, type PropertiesPaneProps } from '../../plugin';
 import { PropertiesBody } from './views/PropertiesPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

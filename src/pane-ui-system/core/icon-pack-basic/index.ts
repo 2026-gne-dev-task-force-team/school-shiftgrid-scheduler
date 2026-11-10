@@ -2,7 +2,7 @@
  * 「기본 아이콘 묶음」 꾸러미 — 화면도 명령도 없이 아이콘 묶음 하나만 contributes.iconPacks 로 내놓는다.
  *   그림은 24 격자 선 그림(stroke=currentColor) — 고른 자리의 글자색을 따른다. SVG 는 호스트가 그리기 전에 소독한다.
  */
-import { definePlugin } from '../../pane-ui-system/plugin';
+import { definePlugin } from '../../plugin';
 import { manifest } from './manifest';
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;

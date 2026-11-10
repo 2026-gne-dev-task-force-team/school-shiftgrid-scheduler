@@ -3,9 +3,9 @@
  *   🔴 이 패널은 대상의 뜻을 모른다 — 칸은 그 대상을 가진 플러그인이 contributes.properties 로 낸다.
  */
 import { useSyncExternalStore } from 'react';
-import { EmptyState, SectionHeader } from '../../../pane-ui-system';
-import { listPropertiesPanes, useContribVersion, type PluginHost, type PropertiesTarget } from '../../../pane-ui-system/plugin';
-import type { SelectionApi } from '../../../pane-ui-system/core/selection/contracts/selection';
+import { EmptyState, SectionHeader } from '../../..';
+import { listPropertiesPanes, useContribVersion, type PluginHost, type PropertiesTarget } from '../../../plugin';
+import type { SelectionApi } from '../../selection/contracts/selection';
 
 /** 고른 대상 하나를 받아 그린다 — 대상이 어디서 오는지는 PropertiesView 몫(시험은 이걸 바로 그린다). */
 export function PropertiesBody({ target }: { target: PropertiesTarget | null }) {
