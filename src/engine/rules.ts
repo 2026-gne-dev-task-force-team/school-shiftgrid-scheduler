@@ -494,13 +494,14 @@ function weeklyBlockRange(ctx: EngineContext, wb: WeeklyBlock, trackId: string):
 
 const avoid: EngineRule = {
     id: 'avoid', label: '되도록 피함 칸 사용', kind: 'soft', bucket: 'preferred', params: [],
-    description: '되도록 피함 칸에 수업이 들어가 있습니다. 우선순위가 높은 교사일수록 점수가 더 크게 붙습니다.',
+    description: '되도록 피함 칸에 수업이 들어가 있습니다. 우선순위가 높은 교사일수록 점수가 더 크게 붙습니다(고정 수업 제외).',
     defaultMessage: '{교사} 교사가 되도록 피함 시간에 배치됐습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const softBlocks = ctx.doc.weeklyBlocks.filter((w) => w.soft);
         if (softBlocks.length === 0) return out;
         for (const a of ctx.doc.assignments) {
+            if (a.fixed) continue; // 고정 배치는 권장 감점 대상이 아니다(옮길 수 없다)
             const c = ctx.clockOf(a);
             if (!c) continue;
             const hit = softBlocks.some((wb) => {
@@ -688,13 +689,13 @@ const amPmBalance: EngineRule = {
 
 const samePeriodAcrossDays: EngineRule = {
     id: 'same-period-across-days', label: '요일별 동일 교시', kind: 'soft', bucket: 'preferred', params: [],
-    description: '같은 반·같은 과목이 여러 요일에 있을 때 교시가 다른 수입니다(같은 교시로 모을수록 좋습니다).',
+    description: '같은 반·같은 과목이 여러 요일에 있을 때 교시가 다른 수입니다(같은 교시로 모을수록 좋습니다). 고정 수업은 셈에서 뺍니다.',
     defaultMessage: '{반} {과목} 교시가 요일마다 다릅니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const groups = new Map<string, Assignment[]>();
         for (const a of ctx.doc.assignments) {
-            if (!a.activityId) continue;
+            if (!a.activityId || a.fixed) continue;
             const k = `${a.trackId}|${a.activityId}`;
             (groups.get(k) ?? groups.set(k, []).get(k)!).push(a);
         }
@@ -715,13 +716,13 @@ const samePeriodAcrossDays: EngineRule = {
 
 const subjectAdjacent: EngineRule = {
     id: 'subject-adjacent', label: '같은 과목 붙이기', kind: 'soft', bucket: 'important', params: [],
-    description: '같은 반·같은 과목이 같은 날 둘 이상인데 이어지지 않거나 점심을 사이에 두면 점수가 붙습니다.',
+    description: '같은 반·같은 과목이 같은 날 둘 이상인데 이어지지 않거나 점심을 사이에 두면 점수가 붙습니다(고정 수업 제외).',
     defaultMessage: '{반} {과목}이 같은 날 떨어져 있습니다',
     evaluate(_p, ctx) {
         const out: Violation[] = [];
         const groups = new Map<string, Assignment[]>();
         for (const a of ctx.doc.assignments) {
-            if (!a.activityId) continue;
+            if (!a.activityId || a.fixed) continue;
             const k = `${a.trackId}|${a.activityId}|${a.dayIndex}`;
             (groups.get(k) ?? groups.set(k, []).get(k)!).push(a);
         }
