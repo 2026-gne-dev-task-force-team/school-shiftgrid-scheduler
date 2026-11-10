@@ -66,7 +66,7 @@ export const collectionPlugin = definePlugin({
             }, {
                 // 🔴 W13 「탭으로 열기」 — 제 편집 탭이 없는 레코드(행·목록 항목)를 미리보기와 같은 열기 페이지로 가운데 탭에(tab-open.tsx)
                 id: 'record', title: '레코드', icon: 'fileText', defaultArea: 'center',
-                placement: { areas: ['center'], singleton: true },
+                placement: { areas: ['center'] },   // 싱글턴 아님 — 레코드마다 탭(params.recordId)
                 layout: { minWidth: 320, squeeze: 'scroll' },
                 component: 'Record',
             }],

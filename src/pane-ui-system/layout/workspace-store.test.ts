@@ -113,6 +113,17 @@ describe('R3-X 🙋15 — 배치는 탭마다(sessionStorage) · 새 탭은 마�
     });
     afterEach(() => { vi.unstubAllGlobals(); });
 
+    it('W15 레코드 탭 — params.recordId 가 저장·복원된다(새로고침·새 탭 배치 복원 뒤에도 그 레코드)', () => {
+        const local = new Map<string, string>(); const sess = new Map<string, string>();
+        vi.stubGlobal('localStorage', fakeArea(local)); vi.stubGlobal('sessionStorage', fakeArea(sess));
+        let ws = openLeaf(emptyWorkspace(), leaf('collection.record', '가', { id: 'x1', params: { recordId: 'r1' } }));
+        ws = openLeaf(ws, leaf('collection.record', '나', { id: 'x2', params: { recordId: 'r2', collectionId: 'c1' } }));
+        saveWorkspace(ws);
+        expect(flatten(loadWorkspace().center).map((l) => l.params)).toEqual([{ recordId: 'r1' }, { recordId: 'r2', collectionId: 'c1' }]);
+        vi.stubGlobal('sessionStorage', fakeArea(new Map()));   // 새 탭 — 마지막 배치(localStorage)로 시작
+        expect(flatten(loadWorkspace().center).map((l) => l.params?.recordId)).toEqual(['r1', 'r2']);
+    });
+
     it('탭 A 의 저장이 이미 열린 탭 B 의 배치를 덮지 않고, 새 탭 C 는 마지막 배치로 시작한다', () => {
         const local = new Map<string, string>();           // 탭 공용
         const sessA = new Map<string, string>();            // 탭마다

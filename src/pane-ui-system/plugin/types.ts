@@ -133,6 +133,7 @@ export interface WorkspaceOpenOptions {
     title?: string;
     params?: Record<string, unknown>;
     where?: 'center' | 'left' | 'right';
+    /** 비싱글턴 재사용 힌트 — params 가 같이 오면 「뷰+params 같은 탭」을 찾아 그리로(없으면 새 장). */
     reuse?: boolean;
 }
 

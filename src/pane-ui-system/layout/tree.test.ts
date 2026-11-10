@@ -13,7 +13,7 @@ import {
     leaf, tabs, split, emptyWorkspace, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, withLeafGlyph,
-    findLeaf, findLeafByView, flatten, sizesFor, MIN_FRACTION,
+    findLeaf, findLeafByView, findLeafByViewParams, flatten, sizesFor, MIN_FRACTION,
 } from './tree';
 
 /** 불변식 위반을 모아 돌려준다 — 성하면 빈 배열 */
@@ -475,6 +475,13 @@ describe('찾기·펴기', () => {
     it('findLeafByView — viewId 로 찾는다', () => {
         const ws = openLeaf(emptyWorkspace(), leaf('설정', '설정', { id: 's1' }), 'center');
         expect(findLeafByView(ws, '설정')?.id).toBe('s1');
+    });
+    it('findLeafByViewParams — 같은 뷰라도 params 가 같은 탭만(레코드마다 한 장)', () => {
+        let ws = openLeaf(emptyWorkspace(), leaf('rec', '가', { id: 'a', params: { recordId: 'r1' } }), 'center');
+        ws = openLeaf(ws, leaf('rec', '나', { id: 'b', params: { recordId: 'r2' } }), 'center');
+        expect(findLeafByViewParams(ws, 'rec', { recordId: 'r2' })?.id).toBe('b');
+        expect(findLeafByViewParams(ws, 'rec', { recordId: 'r3' })).toBeNull();
+        expect(findLeafByViewParams(ws, 'other', { recordId: 'r1' })).toBeNull();
     });
     it('flatten 은 순서대로 모든 leaf', () => {
         const base = wsThreeSingle('a');

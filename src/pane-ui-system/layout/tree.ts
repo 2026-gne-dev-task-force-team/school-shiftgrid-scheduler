@@ -259,6 +259,13 @@ export function findLeafByView(ws: Workspace, viewId: string): Leaf | null {
     return all.find((l) => l.viewId === viewId) ?? null;
 }
 
+/** 같은 뷰 + 같은 params(얕은 비교)인 leaf — 「종류+대상 id」로 탭을 찾는다(레코드를 문서처럼 탭마다 · W15). */
+export function findLeafByViewParams(ws: Workspace, viewId: string, params: Record<string, unknown>): Leaf | null {
+    const all = [...flatten(ws.center), ...flatten(ws.left), ...flatten(ws.right), ...ws.floating];
+    const keys = Object.keys(params);
+    return all.find((l) => l.viewId === viewId && !!l.params && keys.every((k) => l.params![k] === params[k])) ?? null;
+}
+
 /** 노드 아래 모든 leaf 를 순서대로 — 모바일 탭 전환이 쓴다 */
 export function flatten(node: Node | null): Leaf[] {
     if (!node) return [];

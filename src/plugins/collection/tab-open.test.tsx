@@ -6,10 +6,10 @@
 import { act, createElement as h, isValidElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PluginHost } from '../../pane-ui-system/plugin';
+import { setWorkspaceBridge, type PluginHost } from '../../pane-ui-system/plugin';
 import { RecordPage } from './views/RecordPage';
 import { RecordView } from './RecordView';
-import { RecordTab, openRecordTab, registerRecordTab, resetRecordTabForTest, RECORD_TAB_ID } from './tab-open';
+import { RecordTab, openRecordTab, registerRecordTab, RECORD_TAB_ID } from './tab-open';
 import { PeekLayer } from '../../pane-ui-system/shell/shared/PeekLayer';
 import { pagePlugin } from '../page/index';
 import { PageEditor } from '../page/views/PageView';
@@ -25,7 +25,7 @@ function mount(el: React.ReactElement) {
     const r = createRoot(div); roots.push(r);
     act(() => { r.render(el); });
 }
-afterEach(() => { act(() => roots.forEach((r) => r.unmount())); roots = []; document.body.innerHTML = ''; resetRecordTabForTest(); });
+afterEach(() => { act(() => roots.forEach((r) => r.unmount())); roots = []; document.body.innerHTML = ''; });
 const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
 
 function fakeHost(mods: Record<string, unknown>, open = vi.fn(() => 'leaf1')): PluginHost {
@@ -107,19 +107,47 @@ describe('탭으로 열기 — 목록 줄', () => {
 });
 
 describe('탭으로 열기 — 여는 길', () => {
-    it('제 탭이 없는 레코드는 「레코드」 탭(싱글턴 — 이미 떠 있으면 그 탭)에 미리보기와 같은 화면으로', () => {
+    const leafOf = (recordId: string, id = 'L1') => ({ id, viewId: RECORD_TAB_ID, title: '', params: { recordId } });
+    it('제 탭이 없는 레코드는 레코드마다 「레코드」 탭 — 레코드 id 를 params 로 싣고 reuse 로 연다(싱글턴 아님)', () => {
         registerRecordTab('t.row', (_h, id) => h('p', { 'data-rendered': id }));
-        const nodes = { get: (id: string) => ({ id, type: 't.row' }), isTrashed: () => false, open: vi.fn() };
+        const nodes = { get: (id: string) => ({ id, type: 't.row', name: `이름${id}` }), isTrashed: () => false, open: vi.fn(), subscribe: () => ({ dispose() {} }) };
         const open = vi.fn(() => 'leaf1');
         const host = fakeHost({ nodes }, open);
-        mount(h(RecordTab, { host } as never));
-        expect(q('[data-rendered]')).toBeNull();
-        act(() => { openRecordTab(host, 'r1'); });
-        expect(open).toHaveBeenCalledWith(RECORD_TAB_ID, { where: 'center' });
-        expect(q('[data-rendered]')?.getAttribute('data-rendered')).toBe('r1');
+        openRecordTab(host, 'r1');
+        openRecordTab(host, 'r2');
+        expect(open).toHaveBeenNthCalledWith(1, RECORD_TAB_ID, { where: 'center', reuse: true, params: { recordId: 'r1' }, title: '이름r1' });
+        expect(open).toHaveBeenNthCalledWith(2, RECORD_TAB_ID, { where: 'center', reuse: true, params: { recordId: 'r2' }, title: '이름r2' });
         expect(nodes.open).not.toHaveBeenCalled();
         const view = collectionPlugin.manifest.contributes!.views!.find((v) => `collection.${v.id}` === RECORD_TAB_ID);
-        expect(view?.placement?.singleton).toBe(true);
+        expect(view?.placement?.singleton).toBeFalsy();
+    });
+    it('탭 몸통은 저장된 params.recordId 레코드를 그린다 — 두 탭은 각자 제 레코드(복원 뒤에도 같다)', () => {
+        registerRecordTab('t.row', (_h, id) => h('p', { 'data-rendered': id }));
+        const nodes = { get: (id: string) => ({ id, type: 't.row', name: id }), isTrashed: () => false, subscribe: () => ({ dispose() {} }) };
+        const host = fakeHost({ nodes });
+        mount(h(RecordTab, { host, leaf: leafOf('r1') } as never));
+        mount(h(RecordTab, { host, leaf: leafOf('r2', 'L2') } as never));
+        expect([...document.querySelectorAll('[data-rendered]')].map((e) => e.getAttribute('data-rendered'))).toEqual(['r1', 'r2']);
+        document.body.innerHTML = '';
+        mount(h(RecordTab, { host, leaf: { id: 'L3', viewId: RECORD_TAB_ID, title: '' } } as never));   // params 없음 = 안내
+        expect(q('[data-rendered]')).toBeNull();
+    });
+    it('제목·아이콘은 레코드를 따라가고 바뀌면 갱신 — 휴지통에 가면 「삭제된 문서」', () => {
+        registerRecordTab('t.row', (_h, id) => h('p', { 'data-rendered': id }));
+        const state = { name: '첫 이름', icon: '🍎', trashed: false };
+        const subs = new Set<() => void>();
+        const nodes = { get: (id: string) => ({ id, type: 't.row', name: state.name, icon: state.icon }), isTrashed: () => state.trashed, subscribe: (fn: () => void) => { subs.add(fn); return { dispose() { subs.delete(fn); } }; } };
+        const titles: Array<[string, string]> = []; const glyphs: Array<[string, string | undefined]> = [];
+        setWorkspaceBridge({ open: () => null, close: () => {}, setTitle: (l: string, t: string) => { titles.push([l, t]); }, setGlyph: (l: string, g: string | undefined) => { glyphs.push([l, g]); } } as never);
+        mount(h(RecordTab, { host: fakeHost({ nodes }), leaf: leafOf('r1') } as never));
+        expect(titles.at(-1)).toEqual(['L1', '첫 이름']); expect(glyphs.at(-1)).toEqual(['L1', '🍎']);
+        act(() => { state.name = '새 이름'; subs.forEach((f) => f()); });
+        expect(titles.at(-1)).toEqual(['L1', '새 이름']);
+        act(() => { state.trashed = true; subs.forEach((f) => f()); });
+        expect(q('[data-rendered]')).toBeNull();
+        expect(document.body.textContent).toContain('삭제된 문서');
+        expect(titles.at(-1)).toEqual(['L1', '삭제된 문서']);
+        setWorkspaceBridge(null);
     });
     it('제 편집 탭이 있는 노드(사용자·역할·페이지)는 노드 열기 그대로', () => {
         const nodes = { get: (id: string) => ({ id, type: 'account.user' }), open: vi.fn() };

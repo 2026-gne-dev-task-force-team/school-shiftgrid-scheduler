@@ -141,7 +141,7 @@ export {
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, renameLeaf, withLeafGlyph,
-    findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
+    findLeaf, findLeafByView, findLeafByViewParams, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, clearWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
