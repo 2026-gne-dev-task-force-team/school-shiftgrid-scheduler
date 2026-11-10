@@ -226,11 +226,11 @@ describe('R5-6 한글 IME — 조합 중 Enter 는 칸 이동·확정을 일으�
         mount(<Controlled ref={ref} initial={rows3()} features={[]} onTx={onTx} />);
         act(() => ref.current!.h().focus());
         act(() => ref.current!.h().type('가', 0, 0));
-        const input = hostEl!.querySelector('input[aria-label="A"]') as HTMLInputElement;
+        const input = hostEl!.querySelector('textarea[aria-label="A"]') as HTMLTextAreaElement;
         expect(input).toBeTruthy();
         act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, bubbles: true })); });
         expect(onTx).not.toHaveBeenCalled();
-        expect(hostEl!.querySelector('input[aria-label="A"]')).toBeTruthy();   // 편집창이 그대로 열려 있다
+        expect(hostEl!.querySelector('textarea[aria-label="A"]')).toBeTruthy();   // 편집창이 그대로 열려 있다
         act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
         expect(onTx).toHaveBeenCalled();
     });

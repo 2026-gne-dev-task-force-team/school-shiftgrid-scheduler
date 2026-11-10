@@ -989,11 +989,27 @@ function renderEditor(
             </select>
         );
     }
+    return <CellTextEditor col={col} core={core} text={text} />;
+}
+
+/**
+ * 글 칸 편집창 — 🔴 textarea 다(전엔 input 이라 Alt+Enter 로 넣은 줄바꿈을 브라우저가 지웠다 — 쥔님 11-10 「여러 줄 안 됨」).
+ *   글 높이만큼 늘어나 둘째 줄부터도 보인다. Enter = 확정·아래로 · Shift+Enter = 확정·위로 · Alt+Enter = 칸 안 줄바꿈(엑셀).
+ */
+function CellTextEditor({ col, core, text }: { col: TableColumn; core: ReturnType<typeof useSheetCore>; text: string }) {
+    const ref = useRef<HTMLTextAreaElement>(null);
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;   // ⛔ 부모 높이와 max 하지 말 것 — 부모가 따라 늘어 끝없이 커진다
+    }, [text]);
     return (
         // oxlint-disable-next-line react/forbid-elements -- 표 칸 편집·축 추가 — 칸 모양
-        <input
+        <textarea
+            ref={ref}
             autoFocus
-            size={1}
+            rows={1}
             value={text}
             inputMode={col.type === 'number' ? 'numeric' : undefined}
             onChange={(e) => core.setEditText(e.target.value)}
@@ -1008,6 +1024,7 @@ function renderEditor(
                         const s = el.selectionStart ?? el.value.length;
                         const en = el.selectionEnd ?? s;
                         core.setEditText(el.value.slice(0, s) + '\n' + el.value.slice(en));
+                        requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 1; });
                         return;
                     }
                     e.preventDefault(); core.commitEdit(e.shiftKey ? -1 : 1, 0); return;
@@ -1017,8 +1034,8 @@ function renderEditor(
             onBlur={() => core.commitEdit(0, 0)}
             aria-label={col.title}
             // 노션식 — 칸 안엔 글자만. 바탕·테두리·링 없이 셀 글자와 같은 자리에 뜬다(파란 테두리는 바깥 selRect 가 그린다).
-            // w-full·min-w-0·size=1 로 편집창이 열을 넓히지 않게(열 폭 고정) · p-0 로 셀 글자와 자리를 맞춰 글자가 안 튀게.
-            className="w-full min-w-0 appearance-none border-0 bg-transparent text-text leading-normal p-0 outline-none select-text"
+            // w-full·min-w-0 로 편집창이 열을 넓히지 않게(열 폭 고정) · p-0 · leading-5 로 셀 글자(leading-5)와 자리를 맞춰 글자가 안 튀게.
+            className="block w-full min-w-0 appearance-none border-0 bg-transparent text-text leading-5 p-0 outline-none select-text resize-none overflow-hidden whitespace-pre-wrap break-words"
         />
     );
 }

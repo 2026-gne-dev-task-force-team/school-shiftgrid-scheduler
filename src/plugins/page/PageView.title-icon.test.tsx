@@ -47,13 +47,13 @@ function setup(page: Page, name = '테스트 페이지', icon?: string) {
 }
 
 /** 제어 input 에 값을 넣고 React onChange 를 깨운다(네이티브 value setter 로 추적기를 속인다). */
-function typeInto(input: HTMLInputElement, value: string) {
-    const setVal = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+function typeInto(input: HTMLTextAreaElement, value: string) {
+    const setVal = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
     act(() => { setVal.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })); });
 }
 
-function titleInput(): HTMLInputElement {
-    return container.querySelector('input[aria-label="페이지 제목"]') as HTMLInputElement;
+function titleInput(): HTMLTextAreaElement {
+    return container.querySelector('textarea[aria-label="페이지 제목"]') as HTMLTextAreaElement;
 }
 
 describe('제목(요구 12)', () => {

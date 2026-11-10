@@ -41,7 +41,7 @@ export function openRecordTab(host: PluginHost, id: string, collectionId?: strin
         focusOnOpen = id;
         const opened = host.workspace.open(RECORD_TAB_ID, { where: 'center', reuse: true, params, title: node.name }) != null;
         // 🔑 이미 열린 같은 레코드 탭을 재사용하면 RecordTab 이 새로 안 그려져 아래 효과가 안 돈다 — 여기서도 제목 칸으로 초점
-        if (opened) focusWhenReady('input[aria-label="제목"]', false);
+        if (opened) focusWhenReady(':is(input,textarea)[aria-label="제목"]', false);
         return opened;
     }
     nodes.open(id);

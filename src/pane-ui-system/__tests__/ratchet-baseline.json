@@ -203,12 +203,12 @@
     "ctxDirect": 5,
     "roleToolbar": 0,
     "zRaw": 0,
-    "bareInput": 2,
+    "bareInput": 1,
     "divClick": 3,
     "ownTrash": 0,
     "enterNoIme": 0,
     "ownUndoNotice": 0,
-    "bareTextarea": 0,
+    "bareTextarea": 1,
     "bareLabel": 0
   },
   "plugins/timetable-grid": {

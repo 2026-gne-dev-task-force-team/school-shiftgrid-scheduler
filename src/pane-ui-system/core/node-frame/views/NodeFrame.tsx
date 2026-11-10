@@ -65,7 +65,7 @@ export function NodeFrame({
     if (!node) return null;
 
     const focusTitle = () => {
-        const el = Array.from(root.current?.querySelectorAll<HTMLInputElement>('input') ?? []).find((i) => i.getAttribute('aria-label') === titleAriaLabel);
+        const el = Array.from(root.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea') ?? []).find((i) => i.getAttribute('aria-label') === titleAriaLabel);
         el?.focus(); el?.select();
     };
     const askTrash = () => {

@@ -51,7 +51,7 @@ describe('nodes.Frame', () => {
         const nav = container.querySelector('nav[aria-label="경로"]')!;
         expect(nav.textContent).toBe('윗 폴더');                                   // 자신은 큰 머리에 — 경로엔 조상만
         expect([...container.querySelectorAll('button')].some((b) => b.textContent?.includes('목록'))).toBe(false);
-        expect((container.querySelector('input[aria-label="제목"]') as HTMLInputElement).value).toBe('아래 폴더');
+        expect((container.querySelector('textarea[aria-label="제목"]') as HTMLInputElement).value).toBe('아래 폴더');
         expect(container.textContent).toContain('본문');
     });
 
@@ -64,8 +64,8 @@ describe('nodes.Frame', () => {
 
     it('children 이 함수면 틀이 큰 머리를 따로 안 그리고 넘겨 준다(본문 안에 놓는 편집기용)', () => {
         render(<NodeFrame nodeId={childId}>{(header) => <section data-body>{header}</section>}</NodeFrame>);
-        expect(container.querySelectorAll('input[aria-label="제목"]').length).toBe(1);
-        expect(container.querySelector('[data-body] input[aria-label="제목"]')).not.toBeNull();
+        expect(container.querySelectorAll('textarea[aria-label="제목"]').length).toBe(1);
+        expect(container.querySelector('[data-body] textarea[aria-label="제목"]')).not.toBeNull();
     });
 
     it('⋯ 메뉴: 본문이 보탠 항목 · 이름 바꾸기(제목 칸으로 포커스) · 휴지통으로(노드가 휴지통으로 간다)', () => {
@@ -77,7 +77,7 @@ describe('nodes.Frame', () => {
 
         click(container.querySelector('button[aria-label="더보기"]'));
         click(menuItem('이름 바꾸기'));
-        expect(document.activeElement).toBe(container.querySelector('input[aria-label="제목"]'));
+        expect(document.activeElement).toBe(container.querySelector('textarea[aria-label="제목"]'));
 
         click(container.querySelector('button[aria-label="더보기"]'));
         click(menuItem('삭제'));

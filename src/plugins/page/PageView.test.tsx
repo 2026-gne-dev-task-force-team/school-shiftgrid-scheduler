@@ -60,7 +60,7 @@ describe('PageView 통합', () => {
         initPageNodes(fakeNodes);
         act(() => { setActivePage('pt'); });
         render();
-        expect(container.querySelector('input[aria-label="페이지 제목"]')).toBeNull();
+        expect(container.querySelector('textarea[aria-label="페이지 제목"]')).toBeNull();
         expect(container.textContent).not.toContain('비밀 본문');
         expect(container.textContent).toContain('새 노트');
     });
@@ -81,7 +81,7 @@ describe('PageView 통합', () => {
         act(() => { setActivePage('p1'); });
         render();
 
-        expect((container.querySelector('input[aria-label="페이지 제목"]') as HTMLInputElement).value).toBe('테스트 페이지');   // 제목줄(노드 이름 = 틀 머리의 제목 칸)
+        expect((container.querySelector('textarea[aria-label="페이지 제목"]') as HTMLInputElement).value).toBe('테스트 페이지');   // 제목줄(노드 이름 = 틀 머리의 제목 칸)
         expect(container.textContent).toContain('안녕하세요');
         expect(container.textContent).toContain('첫 문단');
         expect(container.textContent).toContain('이름');           // 표 머리

@@ -6,7 +6,7 @@
  *   check       : 눌러서 바로 켜고 끈다
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DatePicker, Icon, Popover, Pill, PILL_COLORS, MenuItem, MenuList, isImeEnter, pillStyle, useReorder } from '../../../pane-ui-system';
 import { ReorderOverlay } from '../ReorderOverlay';
 import { formatNumber } from './format';
@@ -36,6 +36,13 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
     const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
     const done = useRef(false);
     useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+    // 🔴 글 칸 편집기는 글 높이만큼 늘어난다 — 전엔 행 높이에 묶여 둘째 줄부터 안 보였다(쥔님 11-10 「여러 줄 안 됨」)
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!multiline || !el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;   // ⛔ 부모 높이와 max 하지 말 것 — 부모가 이 칸을 따라 늘어 끝없이 커졌다(실측 590px)
+    }, [text, multiline]);
     const commit = () => { if (done.current) return; done.current = true; onCommit(text); };
     const common = {
         'data-rv-cell': dataKey,
@@ -67,7 +74,7 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
     if (multiline) {
         return (
             <textarea ref={ref} {...common} rows={1} value={text} onChange={(e) => setText(e.target.value)}
-                className={`${cls} py-1.5 leading-snug resize-none overflow-hidden`} />
+                className={`${cls} block py-1.5 leading-snug resize-none overflow-hidden whitespace-pre-wrap break-keep [overflow-wrap:anywhere]`} />
         );
     }
     return <input ref={ref} {...common} value={text} onChange={(e) => setText(e.target.value)} className={cls} />;

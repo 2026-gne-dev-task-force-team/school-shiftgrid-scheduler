@@ -165,7 +165,7 @@ const RecordRow = memo(function RecordRow({
                     onClickCapture={(e) => { if (tabClick(e, f.key)) { e.preventDefault(); e.stopPropagation(); } }}
                     onMouseUp={(e) => { if (!tabClick(e, f.key)) openEditFromWrapper(e); }}
                     onDoubleClick={openEditFromWrapper}
-                    className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
+                    className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-pre-wrap [&_.truncate]:break-keep [&_.truncate]:[overflow-wrap:anywhere]' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                     style={{ width: widths[fi], ...frozenStyle(fi) }}>
                     {fi === 0 && treeOn && (
                         <div className="shrink-0 flex items-center self-stretch">
