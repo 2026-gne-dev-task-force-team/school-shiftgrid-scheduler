@@ -10,9 +10,9 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { Button, Popover, Select, TextInput, isImeEnter } from '../../../pane-ui-system';
 import {
-    getCurrent, loginMaster, logout, hasProjectPassword, openAccount, checkLoginId, loginWithPassword, setupAndLogin, credentialMethods,
+    getCurrent, can, currentRoleNames, loginMaster, logout, hasProjectPassword, openAccount, checkLoginId, loginWithPassword, setupAndLogin, credentialMethods,
 } from '../core';
-import { useAccountVersion } from './useAccount';
+import { allPermissions, useAccountVersion } from './useAccount';
 
 type View = 'menu' | 'master' | 'loginId' | 'setup' | 'password';
 
@@ -37,6 +37,15 @@ export function AccountStatus({ host }: { host: PluginHost }) {
     const label = isMaster ? '마스터'
         : isGuest ? '손님'
             : `${cur.displayName}${cur.verified ? '' : ' (증명 안 됨)'}`;
+
+    /** 가진 권한 한 줄 — 마스터·손님은 그 사실만, 사용자는 역할 이름들과 권한 수 */
+    const permitLine = (): string => {
+        if (isMaster) return '모든 권한';
+        if (isGuest) return '손님 권한';
+        const roles = currentRoleNames();
+        const n = allPermissions().filter((p) => can(p.id)).length;
+        return `${roles.length ? `역할 ${roles.join('·')}` : '역할 없음'} · 권한 ${n}개`;
+    };
 
     const go = (v: View) => { setView(v); setPw(''); setPw2(''); setMsg(''); };
     const close = () => { setAnchor(null); go('menu'); setLoginId(''); setTarget(null); };
@@ -127,6 +136,7 @@ export function AccountStatus({ host }: { host: PluginHost }) {
                     <div data-acc-pop className="flex flex-col gap-1.5 text-small text-text">
                         <div className="px-1 pb-1 text-note text-muted border-b border-line">
                             지금: <span className="text-text">{label}</span>
+                            <div data-acc-permit>{permitLine()}</div>
                         </div>
 
                         {view === 'menu' && (

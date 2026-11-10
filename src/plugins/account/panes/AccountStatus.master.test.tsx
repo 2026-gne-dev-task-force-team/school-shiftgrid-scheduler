@@ -10,8 +10,9 @@ vi.mock('../core', () => ({
     hasProjectPassword: () => m.has, logout: m.logout, loginMaster: m.loginMaster,
     openAccount: () => {}, checkLoginId: () => ({ kind: 'empty' }), loginWithPassword: async () => true,
     setupAndLogin: async () => true, credentialMethods: () => [], canLogout: () => true,
+    can: () => false, currentRoleNames: () => [],
 }));
-vi.mock('./useAccount', () => ({ useAccountVersion: () => 0 }));
+vi.mock('./useAccount', () => ({ useAccountVersion: () => 0, allPermissions: () => [] }));
 import { AccountStatus } from './AccountStatus';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

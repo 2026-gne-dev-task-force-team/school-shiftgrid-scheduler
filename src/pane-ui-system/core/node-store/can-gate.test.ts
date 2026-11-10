@@ -21,7 +21,7 @@ const kv = vi.hoisted(() => {
 vi.mock('../../kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
 import {
-    initStore, getState, newNode, select,
+    initStore, getState, newNode, canNewNode, select,
     removeSelected, confirmRemove, cancelRemove,
     apiCreate, apiMove, apiRemove, apiInvalidate, subscribeState,
 } from './store';
@@ -285,6 +285,21 @@ describe('스토어·API — 모든 창구가 같은 관문을 지난다', () =>
 });
 
 // ─────────────────────────── 4) 판정이 바뀌면 다시 그린다(P4d A1) ───────────────────────────
+describe('QK-3·4 — 안내 조사 · 팔레트 새로 만들기 판정', () => {
+    it('받침에 따라 을/를 — 「사용자」는 를, 「계정」은 을', () => {
+        allowed = false;
+        newNode('acc.user');
+        expect(notified.at(-1)?.title).toBe('「사용자」를 여기에 만들 수 없습니다.');
+    });
+    it('canNewNode — 싱글톤이 이미 있으면 false(탐색기 회색과 같은 판정)', () => {
+        registerType({ type: 'one', label: '하나', icon: 'file', unique: 'tree', create: { label: '하나' } } as never);
+        expect(canNewNode('one')).toBe(true);
+        newNode('one');
+        expect(nodesOfType('one').length).toBe(1);
+        expect(canNewNode('one')).toBe(false);
+    });
+});
+
 describe('invalidate — 나무는 그대로여도 가림 판정이 바뀌면 화면이 다시 센다', () => {
     it('apiInvalidate 는 새 state 참조로 알린다(같은 참조면 useSyncExternalStore 가 다시 그리기를 건너뛴다)', () => {
         // 로그인으로 권한이 바뀐 상황 — 노드는 안 바뀌고 계정 꾸러미가 nodes.invalidate 만 부른다
