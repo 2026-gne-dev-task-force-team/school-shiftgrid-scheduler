@@ -1,7 +1,7 @@
 /**
  * 칸 타입 레지스트리 — 칸 종류를 「정의 한 벌」로 등록해 두고 화면·로직이 type 문자열로 조회한다.
  *   🔴 화면이 switch(type) 을 안 한다 — 꽂힌 타입(`<pluginId>.<name>`)이 내장과 같은 길을 탄다(2등 시민 금지).
- *   ⭐ 내장 여섯도 같은 정의 꼴(FieldTypeDef)로 등록된다(builtin.tsx). 관계(relation)는 P1 에선 레지스트리에 안 올린다 — UI 가 P3.
+ *   ⭐ 내장 여섯도 같은 정의 꼴(FieldTypeDef)로 등록된다(builtin.tsx). 관계(relation)도 같은 꼴로 올라 있다(relation.tsx).
  */
 import type { Disposable } from '../../../pane-ui-system/plugin';
 import type { FieldTypeDef, FieldTypeRegistry } from '../contracts/collection';

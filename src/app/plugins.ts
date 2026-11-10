@@ -21,6 +21,7 @@ import { peoplePlugin } from '../plugins/people';
 import { sheetPlugin } from '../plugins/sheet';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { roomsPlugin } from '../plugins/rooms';
+import { roomBookingPlugin } from '../plugins/room-booking';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 import { selectionPlugin } from '../plugins/selection';
@@ -46,5 +47,6 @@ export const PLUGINS: PluginModule[] = [
     // ── 학교 도메인 층('domain') — 끌 수 있다
     peoplePlugin,            // 사람 명단 꾸러미
     roomsPlugin,             // 방 목록 꾸러미
+    roomBookingPlugin,       // 방 예약 꾸러미 — 달력 프리셋 한 장
     timetableGridPlugin,     // 시간표 그리드 꾸러미(시트 확장)
 ];

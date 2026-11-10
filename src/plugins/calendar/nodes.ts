@@ -12,10 +12,11 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import { notifyNodeUndo, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import type { EventData } from './events';
-import { isoMinuteOf } from './events';
+import { isoMinuteOf, nodeIdOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
+import { presetOf, listPresets } from './presets';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
@@ -24,6 +25,7 @@ import { eventToIcs, planImport } from './io';
 
 export { STORE_TYPE, EVENT_TYPE } from './config';
 import { STORE_TYPE, EVENT_TYPE } from './config';
+import { skip } from './series';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다). 저장소 open 이 여는 월 보기.
 const MONTH_ID = 'calendar.month';
@@ -100,9 +102,11 @@ export function storeMenu(nodeId: string): MenuEntry[] {
     const commandArg = { nodeId };
     return [
         { label: '달력에서 열기', icon: 'calendar', commandId: 'calendar.openStore', commandArg },
-        { label: '새 일정', icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
+        { label: presetOf(nodeId).words.newEvent, icon: 'plus', commandId: 'calendar.newEventIn', commandArg },
         { label: 'ICS 가져오기', icon: 'upload', commandId: 'calendar.importIcs', commandArg },
         { label: 'ICS 내보내기', icon: 'download', commandId: 'calendar.exportIcs', commandArg },
+        // 등록된 프리셋마다 「새 <label>」 — 이 저장소 옆에 그 프리셋 저장소를 만든다(commandArg.args = 프리셋 id)
+        ...listPresets().map((p) => ({ label: `새 ${p.label}`, icon: p.icon, commandId: 'calendar.newPresetStore', commandArg: { nodeId, args: p.id } })),
         ...(kit ? [{ label: '표로 보기', icon: 'table' as const, commandId: 'calendar.openTable', commandArg }] : []),
     ];
 }
@@ -204,12 +208,28 @@ let hostRef: PluginHost | null = null;
 export function setCalendarHost(h: PluginHost | null): void { hostRef = h; }
 export function getCalendarHost(): PluginHost | null { return hostRef; }
 export function renameEvent(id: string, name: string): void { api?.rename(id, name); }
-export function moveEvent(id: string, storeId: string): void { api?.move(id, storeId); }
-/** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. */
-export function removeEvent(id: string): void {
+/** 🔴 id 는 칩 id 도 받는다 — 가상 회차면 규칙 일정(시리즈 전체)을 옮긴다. */
+export function moveEvent(id: string, storeId: string): void { api?.move(nodeIdOf(id), storeId); }
+/** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. 반복 일정이면 그 실체 회차들도 같이(되돌리기 한 칸). */
+export function removeEvent(chipId: string): void {
     if (!api) return;
-    const name = api.get(id)?.name || '제목 없음';
-    api.remove(id);
+    const id = nodeIdOf(chipId);
+    const a = api;
+    const name = a.get(id)?.name || '제목 없음';
+    // 회차(가상 칩 `규칙id@원래시작` 또는 실체 회차)의 휴지통 = 그 회차만 빠뜨리기 — 시리즈 전체는 규칙 일정에서 지운다
+    const d = a.get(id)?.data as { seriesId?: string; originalStart?: string; recur?: unknown } | undefined;
+    const seriesId = chipId !== id ? id : !d?.recur ? d?.seriesId : undefined;
+    const originalStart = chipId !== id ? chipId.slice(id.length + 1) : d?.originalStart;
+    if (seriesId && originalStart) {
+        const allDay = storedToEvent(a.get(seriesId)?.data)?.allDay ?? false;
+        skip({ eventId: chipId !== id ? seriesId : id, seriesId, originalStart, start: originalStart, end: originalStart, allDay, virtual: chipId !== id });
+        if (hostRef) notifyNodeUndo(hostRef, api, `「${name}」 회차 하나를 빠뜨렸습니다`, 'calendar.removed');
+        return;
+    }
+    a.batch(() => {
+        a.remove(id);
+        for (const n of a.liveByType(EVENT_TYPE)) if ((n.data as { seriesId?: string } | undefined)?.seriesId === id) a.remove(n.id);
+    });
     if (hostRef) notifyNodeUndo(hostRef, api, `일정 「${name}」을 휴지통으로 옮겼습니다`, 'calendar.removed');
 }
 
@@ -229,10 +249,16 @@ export function getDeletedEvents(): PublicNode[] {
 export function restoreEvent(id: string): boolean {
     if (!api) return false;
     const n = api.get(id);
-    if (!n || !getDeletedEvents().some((e) => e.id === id)) return false;
+    const deleted = getDeletedEvents();
+    if (!n || !deleted.some((e) => e.id === id)) return false;
     const from = getDefaultStore() ?? ensureStore();
     if (!from) return false;
-    api.move(id, from);
+    const a = api;
+    // 규칙 일정이면 같이 버린 실체 회차도 함께(되돌리기 한 칸)
+    a.batch(() => {
+        a.move(id, from);
+        for (const e of deleted) if ((e.data as { seriesId?: string } | undefined)?.seriesId === id) a.move(e.id, from);
+    });
     return true;
 }
 
@@ -279,7 +305,7 @@ export function collectForExport(storeId: string | null): IcsWriteEvent[] {
 
 /** 일정 하나(record 노드)를 .ics 작성기 입력으로 — 일정 카드 「내보내기」가 쓴다. 일정 노드가 아니면 null. */
 export function collectEventForExport(eventId: string): IcsWriteEvent | null {
-    const n = api?.get(eventId);
+    const n = api?.get(nodeIdOf(eventId));
     const data = n && n.type === EVENT_TYPE ? storedToEvent(n.data) : null;
     return n && data ? eventToIcs({ id: n.id, name: n.name, data }) : null;
 }

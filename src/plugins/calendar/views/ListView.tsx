@@ -10,6 +10,8 @@ import { EmptyState, Icon, isImeEnter, isoOf, type PeekHandle } from '../../../p
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent, renameEvent, removeEvent } from '../nodes';
+import { materialize } from '../series';
+import { useWords } from '../presets';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
 import type { RecordViewApi, RecordField } from '../../collection/contracts/collection';
@@ -47,6 +49,7 @@ type RvRow = { id: string; date: { start: string }; time: string; title: string;
 export function ListView({ value, onChange, trailing, peek, selection, onSelect, host }: { value: Date; onChange: (d: Date) => void; trailing?: ReactNode; peek: PeekHandle; selection: CalSelection; onSelect: (s: CalSelection) => void; host?: PluginHost }) {
     const rv = host?.modules.use<RecordViewApi>('collection') ?? null;
     const { events, stores } = useCalendarData();
+    const words = useWords();
     const [query, setQuery] = useState('');
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
@@ -108,7 +111,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                         onClick={newEvent}
                         className="flex items-center gap-1 shrink-0 px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] transition-colors"
                     >
-                        <Icon name="plus" size={13} /> 새 일정
+                        <Icon name="plus" size={13} /> {words.newEvent}
                     </button>
                 </div>
             </CalBar>
@@ -122,7 +125,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                         getId={(r) => r.id}
                         viewKey="calendar.list"
                         titleKey="title"
-                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(id, String(v ?? '').trim()); }}
+                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(ev.occ ? materialize(ev.occ) : id, String(v ?? '').trim()); }}
                         onAddRecord={newEvent}
                         onDeleteRecords={(ids) => ids.forEach((id) => { if (!rows.find((x) => x.id === id)?.foreign) removeEvent(id); })}
                         onOpenRecord={(id) => { const ev = rows.find((x) => x.id === id); if (ev) openRow(ev); }}
@@ -153,7 +156,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                                     <tr key={e.id} data-day={iso} tabIndex={0} onClick={() => openRow(e)} onKeyDown={(ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !isImeEnter(ev) && ev.target === ev.currentTarget) { ev.preventDefault(); openRow(e); } }} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
-                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.name || <span className="opacity-60">제목 없음</span>}</td>
+                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.occ && <Icon name="redo" size={11} className="inline mr-1 text-muted" />}{e.name || <span className="opacity-60">제목 없음</span>}</td>
                                         <td className="px-3 py-1.5 border-b border-line">
                                             <span className="flex items-center gap-1.5 min-w-0">
                                                 <span className={`shrink-0 w-2 h-2 rounded-full ${paletteAt(e.colorIdx).dot}`} />

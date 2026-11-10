@@ -59,7 +59,7 @@ describe('달력 선언형 전환 — contributes 로 꽂힌 집합이 옛 집�
             .sort();
         expect(cmds).toEqual([
             'calendar.exportAll', 'calendar.exportIcs', 'calendar.importIcs',
-            'calendar.newEventIn', 'calendar.open', 'calendar.openStore', 'calendar.openTable',
+            'calendar.newEventIn', 'calendar.newPresetStore', 'calendar.open', 'calendar.openStore', 'calendar.openTable',
         ]);
         // 「표로 보기」 화면(P4b — 저장소 = 컬렉션)
         expect(getView('calendar.table')?.placement).toEqual({ areas: ['center'], singleton: true });

@@ -22,6 +22,7 @@ import { useCalendarData } from '../useEvents';
 import { createEvent, removeEvent } from '../nodes';
 import { buildDayIndex, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
+import { useWords } from '../presets';
 import { useCardPeek } from './useCardPeek';
 import { focusPeekTitle } from './focus-title';
 import { mergeBind } from './ctx-bind';
@@ -92,7 +93,7 @@ const DayHeader = memo(function DayHeader(
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
                     <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
-                        {e.name || <span className="opacity-60">제목 없음</span>}
+                        {e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}
                     </div>
                 ))}
                 {allDay.length > 1 && <span className="shrink-0 text-micro text-muted tabular-nums">+{allDay.length - 1}</span>}
@@ -115,7 +116,7 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
             className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
             style={{ top, height }}
         >
-            <div className="truncate text-micro leading-4 text-text">{e.name || <span className="opacity-60">제목 없음</span>}</div>
+            <div className="truncate text-micro leading-4 text-text">{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</div>
             <div className="truncate text-micro leading-3 text-muted tabular-nums">{hhmm(e.startMs)}</div>
         </div>
     );
@@ -192,6 +193,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
 
     // 일정 — 열마다 카드로 그리고(dayIndex), 시간 칸 더블클릭 → 1시간 생성, 카드 클릭 → 미리보기 편집.
     const { events } = useCalendarData();
+    const words = useWords();
     const dayIndex = useMemo(() => buildDayIndex(events), [events]);
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
     const card = useCardPeek(peek);
@@ -208,7 +210,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         const t = ev.target as HTMLElement;
         const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
         if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
-        else if (t.closest('[data-day-offset]')) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAt(t, y, true) }] });
+        else if (t.closest('[data-day-offset]')) setCtx({ x, y, items: [{ label: words.newEvent, icon: 'plus', onClick: () => newAt(t, y, true) }] });
     });
     function newAt(target: HTMLElement, clientY: number, useSelection = false) {
         const colEl = target.closest('[data-day-offset]') as HTMLElement | null;
@@ -274,7 +276,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <CalBar end={<>
                     <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted" onClick={newToday}>
-                        <Icon name="plus" size={13} /> 새 일정
+                        <Icon name="plus" size={13} /> {words.newEvent}
                     </Button>
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button

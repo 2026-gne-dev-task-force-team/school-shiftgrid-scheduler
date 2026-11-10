@@ -15,15 +15,15 @@ const stub = (type: string): FieldTypeDef => ({
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('내장 칸 타입', () => {
-    it('fieldTypes.list() — 내장 13종(P2 로 status·url·email·phone·created·updated·id 추가)', () => {
-        expect(recordViewApi.fieldTypes.list()).toHaveLength(13);
+    it('fieldTypes.list() — 내장 14종(P2 로 status·url·email·phone·created·updated·id · R 로 relation 추가)', () => {
+        expect(recordViewApi.fieldTypes.list()).toHaveLength(14);
         expect(fieldTypes.list().map((d) => d.type)).toEqual([
             'text', 'number', 'select', 'multi', 'date', 'check',
-            'status', 'url', 'email', 'phone', 'created', 'updated', 'id',
+            'status', 'url', 'email', 'phone', 'created', 'updated', 'id', 'relation',
         ]);
     });
-    it('relation 은 P1 에선 올라 있지 않다(칸 추가 팝오버에 안 뜬다)', () => {
-        expect(fieldTypes.get('relation')).toBeUndefined();
+    it('relation 은 R 판에서 올라 있다(칸 추가 팝오버 맨 끝)', () => {
+        expect(fieldTypes.get('relation')?.label).toBe('관계');
     });
     it('모든 정의가 toText·fromText·Cell 을 갖는다 · 내장 ops 에 비어 있음이 있다', () => {
         for (const d of BUILTIN_FIELD_TYPES) {
@@ -32,7 +32,7 @@ describe('내장 칸 타입', () => {
             expect(d.Cell).toBeTruthy();
         }
         // check 는 켜짐·꺼짐만 · created·updated·id 는 ops 미지정(opsOf 가 기본을 준다)
-        expect(BUILTIN_FIELD_TYPES.filter((d) => d.ops?.some((o) => o.id === 'empty')).length).toBe(9);
+        expect(BUILTIN_FIELD_TYPES.filter((d) => d.ops?.some((o) => o.id === 'empty')).length).toBe(10);
     });
 });
 
@@ -45,7 +45,7 @@ describe('등록·해제', () => {
         expect(warn).toHaveBeenCalled();
         const d = reg.register(stub('x.person'));
         expect(reg.get('x.person')).toBeTruthy();
-        expect(reg.list()).toHaveLength(14);
+        expect(reg.list()).toHaveLength(15);
         d.dispose();
         expect(reg.get('x.person')).toBeUndefined();   // 해제하면 목록에서 사라진다
     });
@@ -54,7 +54,7 @@ describe('등록·해제', () => {
         const reg = createFieldTypeRegistry(BUILTIN_FIELD_TYPES);
         reg.register(stub('x.a'));
         reg.register(stub('x.a'));
-        expect(reg.list()).toHaveLength(14);
+        expect(reg.list()).toHaveLength(15);
         reg.register(stub('text'));
         expect(reg.get('text')).toBe(BUILTIN_FIELD_TYPES[0]);
     });

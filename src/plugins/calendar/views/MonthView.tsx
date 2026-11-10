@@ -28,6 +28,7 @@ import { useCalendarData } from '../useEvents';
 import { buildDayIndex, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
 import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
+import { useWords } from '../presets';
 import { useCardPeek } from './useCardPeek';
 import { focusPeekTitle } from './focus-title';
 import { CHIP_A11Y, chipKeyId } from './chip-key';
@@ -76,7 +77,7 @@ function weekOffsetOf(d: Date): number {
 function EventChip({ b }: { b: WeekBar }) {
     const { e } = b;
     const pal = paletteAt(e.colorIdx);
-    const title = e.name || <span className="opacity-60">제목 없음</span>;
+    const title = <>{e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}</>;
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
@@ -162,6 +163,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
 
     // 🔴 일정은 노드에서 온다(useEvents) — subscribe 변경 때만 색인을 다시 짓는다(스크롤엔 안 바뀐다)
     const { events } = useCalendarData();
+    const words = useWords();
     const dayIndex = useMemo(() => buildDayIndex(events), [events]);
 
     // 🔴 일정 카드는 창틀의 미리보기(peek)에 띄운다 — 뷰 안 고정 패널이 아니다(EventCardPeek 가 담는다).
@@ -205,7 +207,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         const evId = t.closest('[data-event-id]')?.getAttribute('data-event-id');
         const iso = t.closest('[data-day]')?.getAttribute('data-day');
         if (evId) setCtx({ x, y, items: [{ label: '열기', icon: 'right', onClick: () => card.open(evId) }, { sep: true }, { label: '휴지통으로', icon: 'trash', danger: true, onClick: () => removeEvent(evId) }] });
-        else if (iso) setCtx({ x, y, items: [{ label: '새 일정', icon: 'plus', onClick: () => newAllDay(iso, true) }] });
+        else if (iso) setCtx({ x, y, items: [{ label: words.newEvent, icon: 'plus', onClick: () => newAllDay(iso, true) }] });
     });
 
     // 범위 선택 — 빈 칸을 죽 끌어 날짜 범위를 고른다(일정 생성 아님). anchor 는 여기서 쥐고 Shift 확장 때 그대로 쓴다.
@@ -397,7 +399,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
             <CalBar end={<>
                     <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted"
                         onClick={() => newAllDay(head.y === now.getFullYear() && head.m === now.getMonth() + 1 ? todayIso : isoOf(head.y, head.m, 1))}>
-                        <Icon name="plus" size={13} /> 새 일정
+                        <Icon name="plus" size={13} /> {words.newEvent}
                     </Button>
                     <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
                     <button
