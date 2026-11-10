@@ -167,20 +167,6 @@
     "enterNoIme": 0,
     "ownUndoNotice": 0
   },
-  "plugins/properties": {
-    "bareButton": 0,
-    "arbPx": 0,
-    "textPx": 0,
-    "cmdIdString": 0,
-    "ctxDirect": 0,
-    "roleToolbar": 0,
-    "zRaw": 0,
-    "bareInput": 0,
-    "divClick": 0,
-    "ownTrash": 0,
-    "enterNoIme": 0,
-    "ownUndoNotice": 0
-  },
   "plugins/rooms": {
     "bareButton": 0,
     "arbPx": 0,
@@ -254,6 +240,20 @@
   "pane-ui-system/core/plugin-manager": {
     "bareButton": 2,
     "arbPx": 1,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 0,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0
+  },
+  "pane-ui-system/core/properties": {
+    "bareButton": 0,
+    "arbPx": 0,
     "textPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,

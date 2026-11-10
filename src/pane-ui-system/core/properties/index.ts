@@ -2,8 +2,8 @@
  * 속성 플러그인 — 오른쪽 패널에 「속성」 뷰 하나. 칸은 남이 낸다(contributes.properties → listPropertiesPanes).
  */
 import { createElement } from 'react';
-import type { PluginHost } from '../../pane-ui-system/plugin';
-import { definePlugin } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../plugin';
+import { definePlugin } from '../../plugin';
 import { manifest } from './manifest';
 import { PropertiesView } from './views/PropertiesPanel';
 

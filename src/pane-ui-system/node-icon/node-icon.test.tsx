@@ -13,7 +13,7 @@ import { moveActive, pushRecent, rowsOf, emojiSections } from './cells';
 import { NodeIcon } from './NodeIcon';
 import { NodeIconPanel } from './NodeIconPicker';
 import { activateAll, listPlugins } from '../plugin';
-import { iconPackBasicPlugin, ICON_PACK_BASIC_ICONS } from '../../plugins/icon-pack-basic';
+import { iconPackBasicPlugin, ICON_PACK_BASIC_ICONS } from '../core/icon-pack-basic';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

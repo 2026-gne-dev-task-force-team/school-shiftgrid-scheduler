@@ -378,7 +378,7 @@ describe('⑧′ core/<m>/manifest.ts 는 id·core:true·layer platform · plugi
     }
 
     // 🍳 이사 중 — 아직 plugins/ 에 남은 코어 셋. ⭐ 이사하는 판이 자기 이름을 이 목록에서 지운다(P2 properties · P3 explorer · P4 settings). 다 지우면 이 목록과 이 주석을 없앤다.
-    const NOT_MOVED_YET = ['properties'];
+    const NOT_MOVED_YET: string[] = [];
     for (const d of readdirSync(join(ROOT, 'plugins'), { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== '__tests__' && !NOT_MOVED_YET.includes(e.name)).map((e) => e.name)) {
         it(`plugins/${d}/manifest.ts 에 core: true 없음`, () => {
             const src = read(join(ROOT, 'plugins', d, 'manifest.ts'));

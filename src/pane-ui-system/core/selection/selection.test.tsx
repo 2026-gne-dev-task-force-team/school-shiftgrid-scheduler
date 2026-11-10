@@ -20,7 +20,7 @@ import { __resetPersistForTest } from '../node-store/persist';
 import { makeNodesApi } from '../node-frame/api';
 import { registerType, clearTypes } from '../nodes/model/types';
 import { attachSelection } from '../explorer';
-import { PropertiesView } from '../../../plugins/properties/views/PropertiesPanel';
+import { PropertiesView } from '../properties/views/PropertiesPanel';
 import { selectionApi } from './index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

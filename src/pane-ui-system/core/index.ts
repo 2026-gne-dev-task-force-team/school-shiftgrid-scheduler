@@ -8,7 +8,7 @@
  *   nodes · node-store · node-frame  탐색기가 쓰는 부품 셋(플러그인 아님 — 약속·모델 / 보관·저장 / 틀·머리·끼움)
  *   explorer   탐색기 — 노드 하이라키 패널 + 신분증·활성(nodes 약속을 채운다)
  *   settings · plugin-manager  설정 화면 틀 + 기능 관리 칸(plugin-manager 는 부품)
- *   (이사 예정) properties
+ *   properties  속성 패널 · icon-pack-basic  기본 아이콘 묶음
  *
  * 📌 도메인 누수 부채(이번에 고치지 않음): node-store/store.ts 에 FOCUS_ON_OPEN 의 'page.page'·'timetable-grid.sheet' 문자열이 있다.
  *
@@ -20,9 +20,13 @@ import type { PluginModule } from '../plugin';
 import { settingsPlugin } from './settings';
 import { explorerPlugin } from './explorer';
 import { selectionPlugin } from './selection';
+import { propertiesPlugin } from './properties';
+import { iconPackBasicPlugin } from './icon-pack-basic';
 
 export const CORE_PLUGINS: PluginModule[] = [
     settingsPlugin,    // 설정 꾸러미(끌 수 없다) — 설정 화면 틀 + 공용 칸 · plugin-manager(기능 관리 칸)는 이 꾸러미의 부품
     explorerPlugin,    // 탐색기 꾸러미 — 끌 수 없다. nodes 약속을 들고 와 채운다(provides) + 탐색기 패널
     selectionPlugin,   // 선택 알림 꾸러미 — selection 약속(화면 없음)
+    propertiesPlugin,  // 속성 꾸러미 — 오른쪽 「속성」 패널 · 칸은 대상 주인이 contributes.properties 로 낸다
+    iconPackBasicPlugin, // 기본 아이콘 묶음 — 「커스텀」 탭 SVG 열두 개(아이콘 묶음 확장점의 본보기 · 다른 묶음 플러그인도 같은 확장점을 쓴다)
 ];
