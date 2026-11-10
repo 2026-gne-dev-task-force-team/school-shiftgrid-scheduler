@@ -296,6 +296,7 @@ let pendingOpenId: string | null = null;
 export const FOCUS_ON_OPEN: Record<string, { selector: string; select: boolean }> = {
     'page.page': { selector: 'input[aria-label="페이지 제목"]', select: true },
     'sheet.sheet': { selector: '[data-testid="table-grid"]', select: false },
+    'timetable-grid.sheet': { selector: '[role="grid"][aria-label="시간표 칸"]', select: false },
 };
 function openIfPending(id: string): void {
     if (pendingOpenId !== id) return;
