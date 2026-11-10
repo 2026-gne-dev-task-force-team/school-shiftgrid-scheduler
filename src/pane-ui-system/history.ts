@@ -36,9 +36,16 @@ export function redo<T>(h: History<T>, current: T): { value: T; history: History
  * 키 → 되돌리기/다시하기 판정. ⌘/Ctrl+Z · ⇧⌘/Ctrl+Shift+Z · Ctrl+Y. 한글 조합 중이면 null.
  *   ⭐ 「어느 창의 더미인가」는 DOM 이 정한다 — 각 뷰가 자기 영역의 onKeyDown 에서 이걸 부른다(초점 있는 뷰만 받는다).
  */
-export function undoKey(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey?: boolean; isComposing?: boolean }): 'undo' | 'redo' | null {
+/** 글자 단축키용 키 — e.key 가 라틴 한 글자면 그대로(드보락 등 배열 존중), 아니면(한글 자모 등) e.code 의 KeyX 로 대신한다. */
+export function latinKey(e: { key: string; code?: string }): string {
+    if (/^[a-zA-Z]$/.test(e.key)) return e.key.toLowerCase();
+    const m = e.code ? /^Key([A-Z])$/.exec(e.code) : null;
+    return m ? m[1].toLowerCase() : e.key.toLowerCase();
+}
+
+export function undoKey(e: { key: string; code?: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey?: boolean; isComposing?: boolean }): 'undo' | 'redo' | null {
     if (e.isComposing || e.altKey || !isMod(e)) return null;
-    const k = e.key.toLowerCase();
+    const k = latinKey(e);
     if (k === 'z') return e.shiftKey ? 'redo' : 'undo';
     if (k === 'y' && !e.shiftKey && !isMacPlatform()) return 'redo';   // Ctrl+Y 는 윈도우 관례 — 맥은 ⌘⇧Z
     return null;

@@ -26,6 +26,13 @@ describe('undoKey', () => {
         expect(k('Z', { ctrlKey: true, shiftKey: true })).toBe('redo');
         expect(k('y', { ctrlKey: true })).toBe('redo');
     });
+    it('한글 자판(e.key 자모)이어도 e.code 로 판정 · 라틴 key 가 있으면 그것이 우선', () => {
+        setPlatform('win');
+        expect(undoKey({ key: 'ㅋ', code: 'KeyZ', ctrlKey: true, metaKey: false, shiftKey: false })).toBe('undo');
+        expect(undoKey({ key: 'ㅛ', code: 'KeyY', ctrlKey: true, metaKey: false, shiftKey: false })).toBe('redo');
+        // 드보락: 물리 KeyZ 위치에 라틴 ';' 가 아니라 'q' 등이 오면 key 를 따른다
+        expect(undoKey({ key: 'q', code: 'KeyZ', ctrlKey: true, metaKey: false, shiftKey: false })).toBeNull();
+    });
     it('수식키 없음·Alt·한글 조합 중·다른 글자는 null', () => {
         expect(k('z')).toBeNull();
         expect(k('z', { ctrlKey: true, altKey: true })).toBeNull();

@@ -291,7 +291,7 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
         }
 
         const action = decideKey({
-            key: e.key, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey,
+            key: e.key, code: e.code, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey,
             isComposing, atStart, atEnd, isEmpty: block.text === '',
             isListBlock: isList(block.type), isCodeBlock: block.type === 'code',
         });
