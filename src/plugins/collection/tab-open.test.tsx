@@ -1,0 +1,131 @@
+// @vitest-environment jsdom
+/**
+ * W13 「레코드 = 속성이 붙은 문서」 — ① 문서 화면 한 벌(page-doc 의 PageEditor)을 페이지·레코드가 같이 쓰나 ② 탭으로 열기
+ *   (미리보기 머리 단추·⌘Enter · 목록 ⌘클릭·가운데 클릭·줄 메뉴 · 이미 떠 있으면 그 탭 = 싱글턴).
+ */
+import { act, createElement as h, isValidElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { PluginHost } from '../../pane-ui-system/plugin';
+import { RecordPage } from './views/RecordPage';
+import { RecordView } from './RecordView';
+import { RecordTab, openRecordTab, registerRecordTab, resetRecordTabForTest, RECORD_TAB_ID } from './tab-open';
+import { PeekLayer } from '../../pane-ui-system/shell/shared/PeekLayer';
+import { pagePlugin } from '../page/index';
+import { PageEditor } from '../page/views/PageView';
+import { collectionPlugin } from './index';
+import type { RecordField } from './contracts/collection';
+
+(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+let roots: Root[] = [];
+function mount(el: React.ReactElement) {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const r = createRoot(div); roots.push(r);
+    act(() => { r.render(el); });
+}
+afterEach(() => { act(() => roots.forEach((r) => r.unmount())); roots = []; document.body.innerHTML = ''; resetRecordTabForTest(); });
+const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
+
+function fakeHost(mods: Record<string, unknown>, open = vi.fn(() => 'leaf1')): PluginHost {
+    return { modules: { use: (n: string) => mods[n] }, workspace: { open }, notify: vi.fn() } as unknown as PluginHost;
+}
+
+describe('문서 화면 한 벌 — 페이지와 레코드가 같은 편집기', () => {
+    it('page-doc 모듈의 문서는 페이지 노드 편집기와 같은 PageEditor 다', () => {
+        const PageDoc = (pagePlugin as unknown as { modules: { 'page-doc': { PageDoc: (p: unknown) => unknown } } }).modules['page-doc'].PageDoc;
+        const el = PageDoc({ host: {} as PluginHost, docKey: 'n1', value: undefined, onChange: () => {} });
+        expect(isValidElement(el) && el.type).toBe(PageEditor);
+    });
+    it('레코드 열기 페이지(RecordPage)는 page-doc 문서에 속성 칸을 넘겨 그린다 — 제목·본문은 문서가, 속성만 레코드가', () => {
+        const PageDoc = vi.fn((p: { properties?: React.ReactNode }) => h('div', { 'data-doc': '' }, p.properties));
+        const nodes = { get: () => ({ id: 'r1', type: 't.row', name: '첫 줄', body: undefined }), setBody: vi.fn() };
+        const fields: RecordField[] = [{ key: 't', label: '이름', type: 'text', locked: true }, { key: 'n', label: '수량', type: 'number' }];
+        mount(h(RecordPage, { host: fakeHost({ nodes, 'page-doc': { PageDoc } }), id: 'r1', fields, values: { t: '첫 줄', n: 3 } }));
+        expect(PageDoc).toHaveBeenCalled();
+        const props = PageDoc.mock.calls[0][0] as unknown as { docKey: string; properties: unknown };
+        expect(props.docKey).toBe('r1');
+        expect(q('[data-doc] [data-rv-prop="n"]')).toBeTruthy();   // 속성 칸이 문서 머리 밑에 들어갔다
+    });
+});
+
+describe('탭으로 열기 — 미리보기 머리', () => {
+    it('openInTab 을 주면 머리에 「탭으로 열기」 — 누르면 부른다 · ⌘Enter 도', () => {
+        const onOpenInTab = vi.fn();
+        mount(h(PeekLayer, { mode: 'overlay', onClose: () => {}, onOpenInTab, children: h('input', { id: 'in' }) }));
+        act(() => { q('[data-peek-open-tab]')!.click(); });
+        expect(onOpenInTab).toHaveBeenCalledTimes(1);
+        act(() => { q('#in')!.focus(); });
+        act(() => { q('#in')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true })); });
+        expect(onOpenInTab).toHaveBeenCalledTimes(2);
+    });
+    it('안 주면 단추가 없다', () => {
+        mount(h(PeekLayer, { mode: 'overlay', onClose: () => {}, children: h('div') }));
+        expect(q('[data-peek-open-tab]')).toBeNull();
+    });
+});
+
+describe('탭으로 열기 — 목록 줄', () => {
+    const FIELDS: RecordField[] = [{ key: 't', label: '이름', type: 'text', locked: true }, { key: 'n', label: '수량', type: 'number' }];
+    const rows = [{ id: 'a', t: '첫 줄', n: 1 }];
+    const cell = (fi: number) => q(`[data-rv-row="a"] [data-rv-pos="0:${fi}"]`)!;
+    function setup() {
+        const onOpen = vi.fn(); const onTab = vi.fn();
+        mount(h(RecordView<{ id: string }>, { fields: FIELDS, records: rows, getId: (r) => r.id, viewKey: 't.w13', titleKey: 't', onOpenRecord: onOpen, onOpenRecordTab: onTab }));
+        return { onOpen, onTab };
+    }
+    it('제목 칸 ⌘클릭 · 가운데 클릭 = 탭으로 · 그냥 누르면 안 간다 · 다른 칸 ⌘클릭도 안 간다', () => {
+        const { onTab } = setup();
+        act(() => { cell(0).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); });
+        expect(onTab).not.toHaveBeenCalled();
+        act(() => { cell(1).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, metaKey: true })); });
+        expect(onTab).not.toHaveBeenCalled();
+        act(() => { cell(0).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, metaKey: true })); });
+        expect(onTab).toHaveBeenCalledWith('a');
+        act(() => { cell(0).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 1 })); });
+        expect(onTab).toHaveBeenCalledTimes(2);
+    });
+    it('hover 하면 행 끝 「탭으로 열기」 단추 · 「열기」 ⌘클릭도 탭으로', () => {
+        const { onOpen, onTab } = setup();
+        const row = q('[data-rv-row="a"]')!;
+        act(() => { row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); });
+        act(() => { q('[data-rv-open-tab="a"]')!.click(); });
+        expect(onTab).toHaveBeenCalledWith('a');
+        act(() => { q('[data-rv-open="a"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, metaKey: true })); });
+        expect(onTab).toHaveBeenCalledTimes(2);
+        expect(onOpen).not.toHaveBeenCalled();
+    });
+    it('줄 우클릭 메뉴에 「탭으로 열기」', () => {
+        const { onTab } = setup();
+        act(() => { cell(1).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 5 })); });
+        const item = [...document.querySelectorAll('[role="menuitem"], button')].find((b) => b.textContent?.includes('탭으로 열기')) as HTMLElement | undefined;
+        expect(item).toBeTruthy();
+        act(() => { item!.click(); });
+        expect(onTab).toHaveBeenCalledWith('a');
+    });
+});
+
+describe('탭으로 열기 — 여는 길', () => {
+    it('제 탭이 없는 레코드는 「레코드」 탭(싱글턴 — 이미 떠 있으면 그 탭)에 미리보기와 같은 화면으로', () => {
+        registerRecordTab('t.row', (_h, id) => h('p', { 'data-rendered': id }));
+        const nodes = { get: (id: string) => ({ id, type: 't.row' }), isTrashed: () => false, open: vi.fn() };
+        const open = vi.fn(() => 'leaf1');
+        const host = fakeHost({ nodes }, open);
+        mount(h(RecordTab, { host } as never));
+        expect(q('[data-rendered]')).toBeNull();
+        act(() => { openRecordTab(host, 'r1'); });
+        expect(open).toHaveBeenCalledWith(RECORD_TAB_ID, { where: 'center' });
+        expect(q('[data-rendered]')?.getAttribute('data-rendered')).toBe('r1');
+        expect(nodes.open).not.toHaveBeenCalled();
+        const view = collectionPlugin.manifest.contributes!.views!.find((v) => `collection.${v.id}` === RECORD_TAB_ID);
+        expect(view?.placement?.singleton).toBe(true);
+    });
+    it('제 편집 탭이 있는 노드(사용자·역할·페이지)는 노드 열기 그대로', () => {
+        const nodes = { get: (id: string) => ({ id, type: 'account.user' }), open: vi.fn() };
+        const open = vi.fn();
+        openRecordTab(fakeHost({ nodes }, open), 'u1');
+        expect(nodes.open).toHaveBeenCalledWith('u1');
+        expect(open).not.toHaveBeenCalled();
+    });
+});

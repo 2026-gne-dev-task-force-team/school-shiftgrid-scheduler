@@ -12,6 +12,7 @@ import type { Bridge } from '../define';
 import { RecordView } from '../RecordView';
 import { effectiveParentId } from '../tree';
 import { ItemPeek } from './ItemProps';
+import { openRecordTab } from '../tab-open';
 
 type Rec = { id: string } & Record<string, RecordCellValue>;
 
@@ -104,7 +105,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onReorder={kit.reorderItem}
                     tree={tree}
                     iconOf={(id) => kit.nodes()?.get(id)?.icon}
-                    onOpenRecord={host && peek ? (id) => peek.show(<ItemPeek kit={kit} host={host} id={id} />, { wideMin: 480 }) : undefined}
+                    onOpenRecord={host && peek ? (id) => peek.show(<ItemPeek kit={kit} host={host} id={id} />, { wideMin: 480, openInTab: () => openRecordTab(host, id) }) : undefined}
+                    onOpenRecordTab={host ? (id) => openRecordTab(host, id) : undefined}
                     className="flex-1 min-h-0"
                 />
             </div>

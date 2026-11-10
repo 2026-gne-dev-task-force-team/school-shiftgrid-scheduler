@@ -67,6 +67,7 @@ interface RowAct {
     toggleCollapse(id: string): void;
     addChild(id: string): void;
     open(id: string): void;
+    openTab(id: string): void;
     tab(id: string, shift: boolean): void;
     moveAlt(id: string, dir: 'up' | 'down'): void;
 }
@@ -92,7 +93,7 @@ interface RecordRowProps {
     fields: RecordField[]; widths: number[]; wraps: boolean[];
     lead: number; frozen: number; titleKey?: string;
     treeOn: boolean; reorderable: boolean; selectable: boolean; fieldsEditable: boolean;
-    cellEditable: boolean; hasOpen: boolean; hasAddChild: boolean;
+    cellEditable: boolean; hasOpen: boolean; hasOpenTab: boolean; hasAddChild: boolean;
     checked: boolean; hovered: boolean; collapsed: boolean;
     markZone: 'before' | 'into' | 'after' | null; isFresh: boolean;
     rc0: number; rc1: number;
@@ -103,12 +104,16 @@ interface RecordRowProps {
 /** 🔴 행 하나 — React.memo. 새 행을 더해도 옛 행은 props 가 그대로라 다시 안 그려진다(#50: 1,000행에서 추가마다 전부 리렌더 → 비례 이상 느려짐) */
 const RecordRow = memo(function RecordRow({
     r, id, ri, depth, hasChildren, fields, widths, wraps, lead, frozen, titleKey, treeOn, reorderable, selectable, fieldsEditable,
-    cellEditable, hasOpen, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, act, dragBind,
+    cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, act, dragBind,
 }: RecordRowProps) {
     rowRenderProbe.n++;
     const showOpen = hasOpen && hovered;
     const showTree = treeOn && hovered;
     const isTitle = (key: string) => key === titleKey;
+    // 제목 칸 빈 곳(단추 말고)을 ⌘클릭·가운데 클릭 — 탭으로 열기
+    const tabClick = (e: React.MouseEvent<HTMLElement>, key: string) => hasOpenTab && isTitle(key)
+        && (e.button === 1 || (e.button === 0 && (e.metaKey || e.ctrlKey)))
+        && !(e.target as HTMLElement).closest('button,input,textarea,select');
     const inRange = (fi: number) => rc0 >= 0 && fi >= rc0 && fi <= rc1;
     const frozenStyle = (fi: number) => frozenStyleOf(fi, frozen, lead, widths);
     return (
@@ -150,8 +155,14 @@ const RecordRow = memo(function RecordRow({
             )}
             {fields.map((f, fi) => (
                 <div key={f.key} data-rv-pos={`${ri}:${fi}`} tabIndex={-1} data-rv-sel={inRange(fi) ? '' : undefined}
-                    onMouseDown={(e) => act.cellMouseDown(e, ri, fi)}
-                    onMouseUp={openEditFromWrapper}
+                    onMouseDown={(e) => {
+                        // 제목 칸 ⌘클릭·가운데 클릭 = 탭으로 열기(브라우저 「새 탭」 손버릇 · W13)
+                        if (tabClick(e, f.key)) { e.preventDefault(); act.openTab(id); return; }
+                        act.cellMouseDown(e, ri, fi);
+                    }}
+                    // ⌘클릭이 탭으로 갔으면 칸 편집은 안 연다(안쪽 칸의 click 도 여기서 끊는다)
+                    onClickCapture={(e) => { if (tabClick(e, f.key)) { e.preventDefault(); e.stopPropagation(); } }}
+                    onMouseUp={(e) => { if (!tabClick(e, f.key)) openEditFromWrapper(e); }}
                     onDoubleClick={openEditFromWrapper}
                     className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                     style={{ width: widths[fi], ...frozenStyle(fi) }}>
@@ -192,7 +203,14 @@ const RecordRow = memo(function RecordRow({
                         </Tooltip>
                     )}
                     {isTitle(f.key) && showOpen && (
-                        <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id} onClick={() => act.open(id)}>열기</Button>
+                        <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id}
+                            onClick={(e) => { if (hasOpenTab && (e.metaKey || e.ctrlKey)) act.openTab(id); else act.open(id); }}
+                            onAuxClick={(e) => { if (hasOpenTab && e.button === 1) { e.preventDefault(); act.openTab(id); } }}>열기</Button>
+                    )}
+                    {isTitle(f.key) && showOpen && hasOpenTab && (
+                        <Tooltip text="탭으로 열기 (⌘클릭)">
+                            <IconButton icon="arrowRight" label="탭으로 열기" title="" size={13} data={{ 'data-rv-open-tab': id }} onClick={() => act.openTab(id)} />
+                        </Tooltip>
                     )}
                 </div>
             ))}
@@ -217,6 +235,7 @@ export function RecordView<T>({
     onDeleteRecords,
     onDestructive,
     onOpenRecord,
+    onOpenRecordTab,
     iconOf,
     onFieldsChange,
     onConvertField,
@@ -349,6 +368,7 @@ export function RecordView<T>({
         const items: MenuEntry[] = [];
         if (rowId) {
             if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
+            if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
             if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
             if (treeOn && tree) items.push({ label: '들여쓰기', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기', onClick: () => tree.onOutdent(rowId) });
             if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
@@ -682,6 +702,7 @@ export function RecordView<T>({
         toggleCollapse: (id) => tree?.onToggleCollapse(id),
         addChild: (id) => tree?.onAddChild?.(id),
         open: (id) => openRow(id),
+        openTab: (id) => onOpenRecordTab?.(id),
         tab: (id, shift) => { if (shift) tree?.onOutdent(id); else tree?.onIndent(id); },
         moveAlt: (id, dir) => {
             const at = rowIds.indexOf(id);
@@ -699,6 +720,7 @@ export function RecordView<T>({
         toggleCollapse: (id) => latest.current.toggleCollapse(id),
         addChild: (id) => latest.current.addChild(id),
         open: (id) => latest.current.open(id),
+        openTab: (id) => latest.current.openTab(id),
         tab: (id, s) => latest.current.tab(id, s),
         moveAlt: (id, d) => latest.current.moveAlt(id, d),
     }), []);
@@ -827,7 +849,7 @@ export function RecordView<T>({
                                 fields={visibleFields} widths={widths} wraps={wraps}
                                 lead={lead} frozen={frozen} titleKey={titleKey}
                                 treeOn={treeOn} reorderable={reorderable} selectable={selectable} fieldsEditable={fieldsEditable}
-                                cellEditable={!!onCellChange} hasOpen={!!onOpenRecord} hasAddChild={!!tree?.onAddChild}
+                                cellEditable={!!onCellChange} hasOpen={!!onOpenRecord} hasOpenTab={!!onOpenRecordTab} hasAddChild={!!tree?.onAddChild}
                                 checked={selected.has(id)} hovered={hovered}
                                 collapsed={treeOn && tree ? tree.collapsed(id) : false}
                                 markZone={mark?.zone ?? null} isFresh={fresh.has(id)}

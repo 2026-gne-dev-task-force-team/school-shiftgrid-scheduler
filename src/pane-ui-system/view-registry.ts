@@ -26,9 +26,12 @@ import type { MenuEntry } from './primitives/ContextMenu';
  *   넓으면(칸 폭 ≥ wideMin) 그 탭 안 오른쪽에서, 좁으면 아래에서 — 가름은 **그 탭 칸의 폭**이다(창 폭 아님).
  *   ⛔ 탭 줄·패널 머리줄과 높이를 맞추지 않는다 — 탭 내용 위에 겹친다(EditorArea 가 그린다).
  */
+/** 피크 띄우기 선택 — openInTab 을 주면 머리줄에 「탭으로 열기」(⌘Enter)가 선다. 누르면 그걸 부르고 피크를 닫는다. */
+export interface PeekShowOptions { wideMin?: number; openInTab?: () => void }
+
 export interface PeekHandle {
     /** 이 탭 안에 피크를 띄운다 — content 는 뷰가 그린다. wideMin: 이 폭 이상이면 오른쪽, 아래면 바닥(기본 420). */
-    show(content: ReactNode, opts?: { wideMin?: number }): void;
+    show(content: ReactNode, opts?: PeekShowOptions): void;
     /** 피크를 닫는다 */
     hide(): void;
     /** 지금 피크가 떠 있나 */

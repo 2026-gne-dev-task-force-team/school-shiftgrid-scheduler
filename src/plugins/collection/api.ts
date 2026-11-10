@@ -11,6 +11,7 @@ import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
 import { normalizeRelation, relationToText } from './schema';
 import { defineCollection } from './define';
+import { openRecordTab } from './tab-open';
 
 export const recordViewApi: RecordViewApi = {
     version: 2,
@@ -20,4 +21,5 @@ export const recordViewApi: RecordViewApi = {
     fieldTypes,
     schema: { planConvert, normalizeRelation, relationToText },
     defineCollection,
+    openInTab: openRecordTab,
 };
