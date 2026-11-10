@@ -57,6 +57,8 @@ export interface WorkspaceHandlers {
     // ── W5 우클릭 메뉴가 부르는 것들 (전부 순수 연산 래퍼) ──
     onCloseOthers: (leafId: string) => void;
     onCloseRight: (leafId: string) => void;
+    /** 닫은 탭 다시 열기(⌘⇧T) — 최근 10개 */
+    onReopen: () => void;
     onMove: (leafId: string, to: 'left' | 'center' | 'right') => void;
     /** 내용 메뉴 「이름 바꾸기」가 쓴다 — leaf 제목만 바꾼다(틀 모양은 안 바뀐다) */
     onRename: (leafId: string, title: string) => void;
