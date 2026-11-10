@@ -8,8 +8,8 @@
  * 떨어뜨린다(통째로 버리지 않는다).
  */
 import {
-    DEFAULT_THEME_ID, DEFAULT_DENSITY, THEMES, COLOR_TOKENS,
-    type ColorToken, type DensityId,
+    DEFAULT_THEME_ID, DEFAULT_DENSITY, DEFAULT_FONT_SIZE, THEMES, COLOR_TOKENS, DENSITIES as DENSITY_DEFS, FONT_SIZES,
+    type ColorToken, type DensityId, type FontSizeId,
 } from './tokens';
 import { storageKey } from '../storage';
 import { reportSettingsSaveFail } from '../layout/save-fail';
@@ -19,6 +19,8 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export interface ThemeSettings {
     mode: ThemeMode;
     density: DensityId;
+    /** 글자 크기 단계 — 밀도와 따로 고른다(W11) */
+    fontSize: FontSizeId;
     /** 고른 테마 프리셋 id (tokens.ts 의 THEMES) */
     theme: string;
     /** 🔴 나중 자리 — 사용자가 토큰을 직접 덮는 자유 테마. 모양 틀린 칸은 버린다 */
@@ -33,10 +35,11 @@ export interface ThemeSettings {
 export const themeKey = () => storageKey('theme');
 
 const MODES: ThemeMode[] = ['system', 'light', 'dark'];
-const DENSITIES: DensityId[] = ['compact', 'cozy'];
+const DENSITIES: DensityId[] = DENSITY_DEFS.map((d) => d.id);
+const FONT_IDS: FontSizeId[] = FONT_SIZES.map((f) => f.id);
 
 export function defaultThemeSettings(): ThemeSettings {
-    return { mode: 'system', density: DEFAULT_DENSITY, theme: DEFAULT_THEME_ID };
+    return { mode: 'system', density: DEFAULT_DENSITY, fontSize: DEFAULT_FONT_SIZE, theme: DEFAULT_THEME_ID };
 }
 
 /** "r g b" 세 수인가 — custom 토큰 값 받아들이기용 */
@@ -63,6 +66,7 @@ export function normalizeThemeSettings(raw: unknown): ThemeSettings {
     return {
         mode: MODES.includes(o.mode as ThemeMode) ? (o.mode as ThemeMode) : d.mode,
         density: DENSITIES.includes(o.density as DensityId) ? (o.density as DensityId) : d.density,
+        fontSize: FONT_IDS.includes(o.fontSize as FontSizeId) ? (o.fontSize as FontSizeId) : d.fontSize,
         // 아는 테마 프리셋 id 만 받는다 — 없으면 기본 테마
         theme: THEMES.some((t) => t.id === o.theme) ? (o.theme as string) : d.theme,
         custom: normalizeCustom(o.custom),

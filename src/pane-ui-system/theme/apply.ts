@@ -8,7 +8,7 @@
  */
 import type { CSSProperties } from 'react';
 import {
-    COLOR_TOKENS, findTheme, presetForMode, densityScale,
+    COLOR_TOKENS, findTheme, presetForMode, densityScale, fontScale,
     type Palette,
 } from './tokens';
 import type { ThemeMode, ThemeSettings } from './settings';
@@ -65,6 +65,8 @@ export function applyTheme(s: ThemeSettings): void {
         root.style.setProperty(`--c-${t}`, colors[t]);
     }
     root.style.setProperty('--density', String(densityScale(s.density)));
+    root.style.setProperty('--fs-scale', String(fontScale(s.fontSize)));
+    root.dataset.density = s.density;   // 하단 바가 「빽빽일 때만 좁게」를 CSS 로 가른다
     // 브라우저 기본 UI(스크롤바·폼)도 실제 테마 밝기를 따르게 — 단일 테마(nord 등)는 그 테마의 밝기다
     root.style.colorScheme = scheme;
     root.dataset.theme = scheme;
