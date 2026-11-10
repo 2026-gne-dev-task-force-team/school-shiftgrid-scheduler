@@ -2,7 +2,7 @@
 /**
  * 제목(요구 12) — 제목↔노드 이름 동기화 · 제목 Enter 는 본문 첫 블록으로 · 🔴 IME 조합 중 Enter 는 무시(명세 요구 11·12).
  *   🔑 Q5: 머리(아이콘·제목)는 노드 틀(nodes.Frame)이 그린다 — 아이콘 고르기·저장 왕복은 explorer 의 머리 테스트가 본다.
- *   여기선 페이지 편집기가 틀에 넘기는 것(제목 접근성 이름·placeholder·Enter → 본문 첫 블록)만 본다. 틀은 가짜(test-frame-host).
+ *   여기선 노트가 틀에 넘기는 것(제목 접근성 이름·placeholder·Enter → 본문 첫 블록)만 본다. 틀은 가짜(test-frame-host).
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { act } from 'react';

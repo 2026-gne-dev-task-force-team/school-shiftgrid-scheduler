@@ -38,9 +38,9 @@ export const pageNodeTypeImpl = {
 /** 노드 타입 하나 — 페이지(파일 역할 · 폴더·페이지 밑에 만들 수 있다). */
 export const pageNodeTypes: NodeTypeContribution<'page'>[] = [
     {
-        type: PAGE_TYPE, body: 'doc', label: '페이지', icon: 'fileText',
+        type: PAGE_TYPE, body: 'doc', label: '노트', icon: 'fileText',
         openable: true,
-        create: { label: '페이지', under: ['folder', PAGE_TYPE] },
+        create: { label: '노트', under: ['folder', PAGE_TYPE] },
         container: { accepts: [PAGE_TYPE] },
         impl: 'page',
     },
@@ -48,7 +48,7 @@ export const pageNodeTypes: NodeTypeContribution<'page'>[] = [
 
 export function pageMenu(nodeId: string): MenuEntry[] {
     return [
-        { label: '페이지 열기', icon: 'fileText', commandId: 'page.openPage', commandArg: { nodeId } },
+        { label: '노트 열기', icon: 'fileText', commandId: 'page.openPage', commandArg: { nodeId } },
     ];
 }
 
@@ -142,14 +142,14 @@ export function livePages(): PublicNode[] {
  */
 export function createPage(): string | null {
     if (!api) return null;
-    const name = uniqueName('페이지', api.byType(PAGE_TYPE).map((n) => n.name));
+    const name = uniqueName('노트', api.byType(PAGE_TYPE).map((n) => n.name));
     return api.create(api.roots.main, { type: PAGE_TYPE, name }) || null;
 }
 
 /** 슬래시 「하위 페이지」 — parentId 페이지 밑에 빈 페이지 하나를 만든다(본문 줄은 호출자가 그 id 로 놓는다). 못 만들면 null. */
 export function createChildPage(parentId: string): string | null {
     if (!api) return null;
-    const name = uniqueName('페이지', api.children(parentId).map((n) => n.name));
+    const name = uniqueName('노트', api.children(parentId).map((n) => n.name));
     return api.create(parentId, { type: PAGE_TYPE, name }) || null;
 }
 

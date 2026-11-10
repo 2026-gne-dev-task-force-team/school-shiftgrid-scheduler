@@ -27,6 +27,8 @@ export function PluginsPane({ host }: { host: PluginHost }) {
     useContribVersion();   // 기여(설정 섹션·명령)가 바뀌면 다시 그린다
     const chrome = useSettingsChrome();
     const plugins = listPlugins();
+    const normalPlugins = plugins.filter((p) => !p.core);
+    const corePlugins = plugins.filter((p) => p.core);
     const [openId, setOpenId] = useState<string | null>(null);   // 폴백(피크 없을 때)
 
     const openDetail = (p: PluginStatus, startConfirming = false) => {
@@ -45,31 +47,7 @@ export function PluginsPane({ host }: { host: PluginHost }) {
         else setPlatformOpen((v) => !v);
     };
 
-    return (
-        <div className="flex flex-col gap-3 max-w-[560px]">
-            <p className="text-small text-muted">
-                설치된 플러그인입니다. 끄면 그 플러그인이 꽂은 뷰·리본·설정·상태바가 빠지고, 열려 있던 탭은
-                「켜기」 자리표시로 남습니다(다시 켜면 그 자리에서 돌아옵니다). 줄 오른쪽 「자세히」로 상세가 옆에 뜹니다.
-            </p>
-            <div className="flex flex-col rounded border border-line overflow-hidden">
-                {/* P6a — 바닥 자신도 한 줄(끌 수 없음). 플러그인이 아니라 「플러그인에게 주는 것」을 보이는 줄이다. */}
-                <div className="border-b border-line">
-                    <div className="flex items-center gap-3 px-3 py-2 min-h-row">
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                                <span className="text-body font-semibold text-text truncate">플랫폼(바닥)</span>
-                                <span className="text-note text-muted">v{HOST_VERSION}</span>
-                                <span className="text-note px-1.5 rounded bg-accent/15 text-accent">바닥</span>
-                            </div>
-                            <p className="text-small text-text/80 leading-snug">모든 플러그인이 올라서는 바닥 — 플러그인에게 주는 기능 목록과 켜진 약속을 봅니다.</p>
-                            <span className="text-note text-muted font-mono">platform</span>
-                        </div>
-                        <DetailButton label="플랫폼 자세히" onClick={openPlatform} open={platformOpen && !chrome.peek} expanded={chrome.peek ? undefined : platformOpen} />
-                        <LockedMark title="바닥은 끌 수 없습니다" />
-                    </div>
-                    {platformOpen && !chrome.peek && <div className="px-3 pb-3 bg-side/40 border-t border-line"><div className="pt-2"><PlatformDetail /></div></div>}
-                </div>
-                {plugins.map((p) => {
+    const renderRow = (p: PluginStatus) => {
                     const open = openId === p.id && !chrome.peek;
                     return (
                         <div key={p.id} className="border-b border-line last:border-b-0">
@@ -79,7 +57,7 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                     <div className="flex items-center gap-2">
                                         <span className="text-body font-semibold text-text truncate">{p.name}</span>
                                         <span className="text-note text-muted">v{p.version}</span>
-                                        {p.core && <span className="text-note px-1.5 rounded bg-accent/15 text-accent">코어</span>}
+                                        {p.core && <span className="text-note px-1.5 rounded bg-accent/15 text-accent">기본</span>}
                                         {p.failed && (
                                             <span className="flex items-center gap-1 text-note text-warn">
                                                 <Icon name="warn" size={12} /> 활성 실패
@@ -96,7 +74,7 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                                     「자세히」 단추와 섞이지 않게 구분선+여백으로 떨어뜨린다(쥔님: 토글과 충분히 떨어지게).
                                     끌 때 같이 꺼질 것이 있으면 바로 끄지 않고 상세를 열어 확인 단계를 보여 준다. */}
                                 {p.core
-                                    ? <LockedMark title="코어 플러그인은 끌 수 없습니다" />
+                                    ? <LockedMark title="기본 기능은 끌 수 없습니다" />
                                     : (
                                         <span className="shrink-0 pl-3 ml-1 border-l border-line">
                                             <Toggle
@@ -119,7 +97,40 @@ export function PluginsPane({ host }: { host: PluginHost }) {
                             )}
                         </div>
                     );
-                })}
+    };
+
+    return (
+        <div className="flex flex-col gap-3 max-w-[560px]">
+            <p className="text-small text-muted">
+                설치된 플러그인입니다. 끄면 그 플러그인이 꽂은 뷰·리본·설정·상태바가 빠지고, 열려 있던 탭은
+                「켜기」 자리표시로 남습니다(다시 켜면 그 자리에서 돌아옵니다). 줄 오른쪽 「자세히」로 상세가 옆에 뜹니다.
+            </p>
+            <div className="flex flex-col rounded border border-line overflow-hidden">
+                {normalPlugins.map(renderRow)}
+                {/* P6a — 후라이팬 자신도 한 줄(끌 수 없음). 플러그인이 아니라 「플러그인에게 주는 것」을 보이는 줄이다. */}
+                {/* 맨 아래: 후라이팬 줄 → 그 아래 「기본 기능」(코어 꾸러미) — 일반 플러그인 목록과 따로 */}
+                <div className="border-t border-line">
+                    <div className="flex items-center gap-3 px-3 py-2 min-h-row">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-body font-semibold text-text truncate">후라이팬</span>
+                                <span className="text-note text-muted">v{HOST_VERSION}</span>
+                                <span className="text-note px-1.5 rounded bg-accent/15 text-accent">맨 아래 층</span>
+                            </div>
+                            <p className="text-small text-text/80 leading-snug">모든 플러그인이 올라서는 맨 아래 층 — 플러그인에게 주는 기능 목록과 켜진 약속을 봅니다.</p>
+                            <span className="text-note text-muted font-mono">platform</span>
+                        </div>
+                        <DetailButton label="후라이팬 자세히" onClick={openPlatform} open={platformOpen && !chrome.peek} expanded={chrome.peek ? undefined : platformOpen} />
+                        <LockedMark title="후라이팬은 끌 수 없습니다" />
+                    </div>
+                    {platformOpen && !chrome.peek && <div className="px-3 pb-3 bg-side/40 border-t border-line"><div className="pt-2"><PlatformDetail /></div></div>}
+                </div>
+                {corePlugins.length > 0 && (
+                    <div className="border-t border-line bg-side/30">
+                        <p className="px-3 pt-2 text-note text-muted">기본 기능 — 후라이팬과 함께 들어 있어 끌 수 없습니다.</p>
+                        {corePlugins.map(renderRow)}
+                    </div>
+                )}
             </div>
         </div>
     );

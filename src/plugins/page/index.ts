@@ -42,22 +42,22 @@ export const pagePlugin = definePlugin({
         // 🔴 page-doc — 다른 꾸러미가 자기 자료(레코드 줄 등)에 문서를 붙여 쓰는 편집기(모듈 값은 아래 modules['page-doc'])
         provides: { 'page-doc': '0.1.0' },
         contributes: {
-            interfaces: [{ name: 'page-doc', version: '0.1.0', label: '페이지 문서', desc: '다른 화면의 줄·항목에 붙여 쓰는 문서 편집기' }],
+            interfaces: [{ name: 'page-doc', version: '0.1.0', label: '노트 문서', desc: '다른 화면의 줄·항목에 붙여 쓰는 문서 편집기' }],
             views: [{
-                id: 'editor', title: '페이지', icon: 'fileText', defaultArea: 'center',
+                id: 'editor', title: '노트', icon: 'fileText', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
                 layout: { minWidth: 360, squeeze: 'scroll' },
                 component: 'Editor',
             }],
             commands: [
-                { id: 'page.open', title: '페이지 열기', icon: 'fileText' },
-                { id: 'page.openPage', title: '페이지 열기(탐색기)', icon: 'fileText', palette: false },
+                { id: 'page.open', title: '노트 열기', icon: 'fileText' },
+                { id: 'page.openPage', title: '노트 열기(탐색기)', icon: 'fileText', palette: false },
                 { id: 'page.undoRemoved', title: '삭제한 블록 되돌리기', icon: 'undo', palette: false },
             ],
             ribbon: [{ commandId: 'page.open', icon: 'fileText', order: 7 }],
             nodeTypes: pageNodeTypes,
             // 🔴 속성 칸 — 탐색기에서 페이지를 고르면 제목·아이콘·위치가 뜬다
-            properties: [{ target: PAGE_TYPE, id: 'page', title: '페이지', pane: 'PageProps' }],
+            properties: [{ target: PAGE_TYPE, id: 'page', title: '노트', pane: 'PageProps' }],
         },
     },
 
