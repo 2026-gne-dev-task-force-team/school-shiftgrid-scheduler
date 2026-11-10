@@ -400,6 +400,12 @@ export function RecordView<T>({
         if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
         if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
         if (treeOn && tree) items.push({ label: '들여쓰기 (⌘])', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기 (⌘[)', onClick: () => tree.onOutdent(rowId) });
+        if (reorderable) {
+            const at = rowIds.indexOf(rowId);
+            items.push({ sep: true },
+                { label: '위로 옮기기', shortcut: 'Alt+↑', disabled: at <= 0, onClick: () => moveAlt(rowId, 'up') },
+                { label: '아래로 옮기기', shortcut: 'Alt+↓', disabled: at < 0 || at >= rowIds.length - 1, onClick: () => moveAlt(rowId, 'down') });
+        }
         if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
         return items;
     };
@@ -499,6 +505,12 @@ export function RecordView<T>({
             return;
         }
         onReorder(from, toId);
+    };
+    // 한 칸 위·아래 — Alt+↑↓ 키와 ⠿ 메뉴가 같이 쓴다
+    const moveAlt = (id: string, dir: 'up' | 'down') => {
+        const at = rowIds.indexOf(id);
+        if (dir === 'up' && at > 0) moveRow(id, rowIds[at - 1], 'before');
+        else if (dir === 'down' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
     };
 
     // ── 칸 순서 끌기(보기마다) ────────────────────────────────────────────────
@@ -803,11 +815,7 @@ export function RecordView<T>({
         openTab: (id) => onOpenRecordTab?.(id),
         tab: (id, shift) => { if (shift) tree?.onOutdent(id); else tree?.onIndent(id); },
         rowMenu: (id, x, y) => { const items = rowMenuItems(id); if (items.length) setCtx({ x, y, items }); },
-        moveAlt: (id, dir) => {
-            const at = rowIds.indexOf(id);
-            if (dir === 'up' && at > 0) moveRow(id, rowIds[at - 1], 'before');
-            else if (dir === 'down' && at < rowIds.length - 1) moveRow(id, rowIds[at + 1], 'after');
-        },
+        moveAlt,
     };
     const act = useMemo<RowAct>(() => ({
         toggleOne: (id) => latest.current.toggleOne(id),

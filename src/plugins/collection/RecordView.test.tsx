@@ -743,6 +743,27 @@ describe('QA ux2 — 설명 자리·행 ⠿ 메뉴·빈 행 Enter', () => {
         expect(del).toHaveBeenCalledWith(['r1']);
     });
 
+    it('⠿ 메뉴로 위·아래 옮기기 · 첫 행 「위로」·끝 행 「아래로」 비활성', () => {
+        const re = vi.fn();
+        mount(<RecordView<Rec> fields={START} records={[{ id: 'r1', f_t: 'a' }, { id: 'r2', f_t: 'b' }, { id: 'r3', f_t: 'c' }]} getId={(r) => r.id} viewKey="t.ux2m" titleKey="f_t" onReorder={re} onCellChange={() => {}} />);
+        const open = (id: string) => {
+            const grip = q(`[data-rv-row-drag="${id}"]`)!;
+            act(() => { grip.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 5, clientY: 5 })); });
+            act(() => { grip.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 5, clientY: 5 })); });
+        };
+        const m = (p: string) => [...document.querySelectorAll('[role="menuitem"]')].find((x) => x.textContent?.startsWith(p)) as HTMLButtonElement;
+        open('r1');
+        expect(m('위로 옮기기').disabled).toBe(true);
+        expect(m('아래로 옮기기').disabled).toBe(false);
+        expect(m('위로 옮기기').textContent).toContain('Alt+↑');
+        click(m('아래로 옮기기'));
+        expect(re).toHaveBeenLastCalledWith('r1', 'r3');   // r2 뒤 = r3 앞
+        open('r3');
+        expect(m('아래로 옮기기').disabled).toBe(true);
+        click(m('위로 옮기기'));
+        expect(re).toHaveBeenLastCalledWith('r3', 'r2');
+    });
+
     it('빈 마지막 행에서 Enter 는 새 행을 안 만든다 · 값이 있으면 만든다', () => {
         const spy = spies();
         mount(<Harness init={[{ id: 'r1', f_t: '', f_x: '' }]} spy={spy} />);
