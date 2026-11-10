@@ -5,7 +5,7 @@
 import { useSyncExternalStore } from 'react';
 import { EmptyState, SectionHeader } from '../../../pane-ui-system';
 import { listPropertiesPanes, useContribVersion, type PluginHost, type PropertiesTarget } from '../../../pane-ui-system/plugin';
-import type { SelectionApi } from '../../selection/contracts/selection';
+import type { SelectionApi } from '../../../pane-ui-system/core/selection/contracts/selection';
 
 /** 고른 대상 하나를 받아 그린다 — 대상이 어디서 오는지는 PropertiesView 몫(시험은 이걸 바로 그린다). */
 export function PropertiesBody({ target }: { target: PropertiesTarget | null }) {

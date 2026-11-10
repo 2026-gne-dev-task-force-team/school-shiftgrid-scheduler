@@ -21,7 +21,7 @@ import {
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
     undoAction, undoAllowed, redoAction, subscribeState,
 } from './store';
-import type { SelectionApi } from '../selection/contracts/selection';
+import type { SelectionApi } from '../../pane-ui-system/core/selection/contracts/selection';
 
 const TREE_VIEW_ID = 'explorer.tree';   // host 가 'explorer.' 를 붙인다(id: 'tree')
 

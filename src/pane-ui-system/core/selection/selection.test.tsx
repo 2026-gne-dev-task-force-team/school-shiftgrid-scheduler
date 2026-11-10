@@ -6,21 +6,21 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { PluginHost, PropertiesPaneProps } from '../../pane-ui-system/plugin';
-import { definePlugin, activateAll, disposeOwner } from '../../pane-ui-system/plugin';
+import type { PluginHost, PropertiesPaneProps } from '../../plugin';
+import { definePlugin, activateAll, disposeOwner } from '../../plugin';
 
 const kv = vi.hoisted(() => ({
     nodesGetAll: vi.fn(async (): Promise<unknown[] | null> => []),
     nodesWrite: vi.fn(async (): Promise<boolean> => true),
 }));
-vi.mock('../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
+vi.mock('../../kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore, select, clickSelect, getState } from '../explorer/store';
-import { __resetPersistForTest } from '../explorer/persist';
-import { makeNodesApi } from '../explorer/api';
-import { registerType, clearTypes } from '../explorer/model/types';
-import { attachSelection } from '../explorer';
-import { PropertiesView } from '../properties/views/PropertiesPanel';
+import { initStore, select, clickSelect, getState } from '../../../plugins/explorer/store';
+import { __resetPersistForTest } from '../../../plugins/explorer/persist';
+import { makeNodesApi } from '../../../plugins/explorer/api';
+import { registerType, clearTypes } from '../../../plugins/explorer/model/types';
+import { attachSelection } from '../../../plugins/explorer';
+import { PropertiesView } from '../../../plugins/properties/views/PropertiesPanel';
 import { selectionApi } from './index';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

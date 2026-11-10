@@ -1,7 +1,7 @@
 /**
  * 선택 알림 플러그인 — selection 약속을 들고 와 채운다(화면 없음). 마지막 하나만 쥔다.
  */
-import { definePlugin } from '../../pane-ui-system/plugin';
+import { definePlugin } from '../../plugin';
 import { manifest } from './manifest';
 import type { SelectionApi, SelectionTarget } from './contracts/selection';
 

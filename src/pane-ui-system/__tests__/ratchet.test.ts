@@ -53,20 +53,26 @@ const count = (s: string, re: RegExp) => (s.match(re) ?? []).length;
 
 /** 세는 범위 — 꾸러미마다 하나, 앱, 창틀 */
 const pluginDirs = readdirSync(join(ROOT, 'plugins'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+// 🍳 후라이팬 이사: 코어 모듈은 pane-ui-system/core/<m> 마다 한 범위(`pane-ui-system/core/<m>` 키)고, 'pane-ui-system' 범위(엔진)는 core/ 를 뺀다 — 안 빼면 이사분이 엔진 기준에 얹힌다.
+const CORE_ROOT = join(ROOT, 'pane-ui-system', 'core');
+const coreDirs = (() => { try { return readdirSync(CORE_ROOT, { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== '__tests__').map((e) => e.name); } catch { return []; } })();
 const SCOPES: Record<string, string> = {
     ...Object.fromEntries(pluginDirs.map((d) => [`plugins/${d}`, join(ROOT, 'plugins', d)])),
+    ...Object.fromEntries(coreDirs.map((d) => [`pane-ui-system/core/${d}`, join(CORE_ROOT, d)])),
     app: join(ROOT, 'app'),
     'pane-ui-system': join(ROOT, 'pane-ui-system'),
 };
+/** 범위의 파일 — 엔진 범위는 core/ 를 뺀다 */
+const scopeFiles = (scope: string) => walk(SCOPES[scope]).filter((f) => scope !== 'pane-ui-system' || !f.startsWith(CORE_ROOT + sep));
 
 /** 창틀 Toolbar 단 하나 — role="toolbar" 세기의 유일한 예외 */
 const TOOLBAR_PRIMITIVE = join(ROOT, 'pane-ui-system', 'primitives', 'Toolbar.tsx');
-const files = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).map((f) => readFileSync(f, 'utf-8'))]));
+const files = Object.fromEntries(Object.entries(SCOPES).map(([k]) => [k, scopeFiles(k).map((f) => readFileSync(f, 'utf-8'))]));
 /** 공통 부품 내부 — R7 지표(zRaw·bareInput·divClick·enterNoIme)가 안 센다 */
 const PARTS_DIR = join(ROOT, 'pane-ui-system', 'primitives') + sep;
-const outsideParts = (scope: string) => walk(SCOPES[scope]).filter((f) => !f.startsWith(PARTS_DIR)).map((f) => readFileSync(f, 'utf-8'));
+const outsideParts = (scope: string) => scopeFiles(scope).filter((f) => !f.startsWith(PARTS_DIR)).map((f) => readFileSync(f, 'utf-8'));
 const r7Texts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, outsideParts(k)]));
-const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));
+const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k]) => [k, scopeFiles(k).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));
 
 /** 명령 id 선언 → 주인 범위. 매니페스트 contributes 의 `{ id: 'x.y', title: … }` 꼴 */
 const COMMAND_DEF = /\{\s*id:\s*'([a-z][a-z0-9-]*\.[A-Za-z0-9.]+)'\s*,\s*title:/g;
