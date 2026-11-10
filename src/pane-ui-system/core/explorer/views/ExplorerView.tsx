@@ -13,7 +13,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../plugin';
 import { usePluginRegistry } from '../../../plugin';
-import { isMod, Icon, NodeIcon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../..';
+import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../..';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../../nodes/model/tree';
 import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
@@ -571,8 +571,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                         purgeAllConfirm ? (
                             <span className="flex items-center gap-1 text-note">
                                 <span className="text-muted">비울까요?</span>
-                                <button type="button" onClick={() => run('explorer.purge-all')} className="px-1 rounded text-bad hover:bg-bad/10">비우기</button>
-                                <button type="button" onClick={() => run('explorer.cancel-purge')} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
+                                <Button size="sm" variant="ghost" tone="danger" onClick={() => run('explorer.purge-all')}>비우기</Button>
+                                <Button size="sm" variant="ghost" onClick={() => run('explorer.cancel-purge')}>취소</Button>
                             </span>
                         ) : (
                             <IconButton icon="trash" label="휴지통 비우기" size={13} onClick={() => run('explorer.ask-purge-all')} />
@@ -621,8 +621,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                     {confirming ? (
                                         <span className="flex items-center gap-1 flex-1 min-w-0 text-note">
                                             <span className="text-muted truncate">정말 영구 삭제할까요?</span>
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.purge'); }} className="px-1 rounded text-bad hover:bg-bad/10">영구 삭제</button>
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.cancel-purge'); }} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
+                                            <Button size="sm" variant="ghost" tone="danger" onClick={(e) => { e.stopPropagation(); run('explorer.purge'); }}>영구 삭제</Button>
+                                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); run('explorer.cancel-purge'); }}>취소</Button>
                                         </span>
                                     ) : (
                                         <span className="flex-1 min-w-0 truncate text-body leading-none text-muted">{row.node.name}</span>
