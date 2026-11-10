@@ -5,8 +5,9 @@
  */
 import { useSyncExternalStore } from 'react';
 import type { Disposable } from '../../pane-ui-system/plugin';
+import type { RecordField } from '../collection/contracts/collection';
 import type { CalendarPreset } from './contracts/calendar';
-import { EVENT_CONFIG } from './config';
+import { EVENT_CONFIG, STORE_TYPE } from './config';
 import { getNodesApi } from './nodes';
 import { useScope } from './store';
 
@@ -42,6 +43,33 @@ export function presetOf(storeId: string | null | undefined): CalendarPreset {
     if (!storeId) return DEFAULT_PRESET;
     const id = (getNodesApi()?.get(storeId)?.data as { preset?: unknown } | undefined)?.preset;
     return (typeof id === 'string' && presets.get(id)) || DEFAULT_PRESET;
+}
+
+/** 저장소의 미리 깔린 칸 — 함수꼴이면 그 저장소 data 로 푼다. */
+export function baseFieldsOf(storeId: string | null | undefined): RecordField[] {
+    const b = presetOf(storeId).baseFields;
+    if (!b) return [];
+    return typeof b === 'function' ? b({ id: storeId!, data: (getNodesApi()?.get(storeId!)?.data ?? {}) as Record<string, unknown> }) : b;
+}
+
+/** 등록된 프리셋 목록(기본 달력 제외) — 「새로 만들기」 항목용. */
+export function listPresets(): CalendarPreset[] { return [...presets.values()]; }
+
+/**
+ * 프리셋 저장소 만들기 — parent 밑에 저장소(이름 = words.store · data.preset)를 만들고 onCreateStore 를 부른다. 못 만들면 ''.
+ *   🔴 data 는 달력만 쓸 수 있어 훅엔 setStoreData 를 쥐여 준다.
+ */
+export function createPresetStore(presetId: string, parentId?: string): string {
+    const api = getNodesApi();
+    const p = presets.get(presetId);
+    if (!api || !p) return '';
+    const id = api.create(parentId ?? api.roots.main, { type: STORE_TYPE, name: p.words.store, data: { preset: presetId } });
+    if (!id) return '';
+    const setStoreData = (patch: Record<string, unknown>) => {
+        api.setData(id, { ...((api.get(id)?.data ?? {}) as Record<string, unknown>), ...patch });
+    };
+    Promise.resolve(p.onCreateStore?.({ storeId: id, nodes: api, setStoreData })).catch((e) => console.warn('[calendar] onCreateStore 실패', e));
+    return id;
 }
 
 /** 뷰용 — 프리셋 등록·해제 때 다시 그린다(저장소 노드 변화는 useCalendarData 가 깨운다). */

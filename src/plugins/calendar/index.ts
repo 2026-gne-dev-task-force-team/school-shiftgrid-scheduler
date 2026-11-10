@@ -23,6 +23,7 @@ import { CalendarTab } from './views/CalendarTab';
 // 📌 같은 날 *"시험보기도 그냥 없애"* — 설정 「달력」 판(시험 기능 보기 토글)을 걷었다. 전체 내보내기는 명령 팔레트에 남는다.
 import { initOptions, setScope } from './store';
 import { calendarModule } from './feed';
+import { createPresetStore } from './presets';
 import { parseIcs, writeIcs } from './ics';
 import { itemToIcs } from './io';
 import { pickIcsFile, downloadText } from './file-io';
@@ -85,6 +86,8 @@ export const calendarPlugin = definePlugin({
                 { id: 'calendar.open', title: '달력 열기', icon: 'calendar', keys: 'Mod+Alt+C' },
                 { id: 'calendar.openStore', title: '달력에서 열기', icon: 'calendar' },
                 { id: 'calendar.newEventIn', title: '새 일정', icon: 'plus' },
+                // 프리셋 저장소 만들기 — 대상은 ctx.nodeId(옆에 만들 저장소) · 프리셋 id 는 ctx.args. 팔레트엔 인자가 없어 숨긴다.
+                { id: 'calendar.newPresetStore', title: '프리셋 달력 만들기', icon: 'plus', palette: false },
                 { id: 'calendar.importIcs', title: 'ICS 가져오기', icon: 'upload' },
                 { id: 'calendar.exportIcs', title: 'ICS 내보내기', icon: 'download' },
                 { id: 'calendar.exportAll', title: '일정 전체 ICS 내보내기', icon: 'download' },
@@ -132,6 +135,12 @@ export const calendarPlugin = definePlugin({
             setDefaultStore(id);
             if (!newEventInStore(id)) return;                      // 오늘 종일 일정 + 「열 카드」로 담기
             host.workspace.open(MONTH_ID, { where: 'center' });    // 월 보기(마운트/구독 때 카드를 연다)
+        },
+        'calendar.newPresetStore': (_host: PluginHost, ctx?: CommandContext) => {
+            const api = getNodesApi();
+            if (!api || typeof ctx?.args !== 'string') return;
+            const id = createPresetStore(ctx.args, (ctx.nodeId && api.parent(ctx.nodeId)) || undefined);
+            if (id) api.open(id);
         },
         // 저장소 우클릭 「ICS 가져오기」 — .ics 파일을 골라 그 저장소에 내 일정으로 복사(UID 중복 제외). 끝나면 그 저장소 달력을 연다.
         'calendar.importIcs': (host: PluginHost, ctx?: CommandContext) => {

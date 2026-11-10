@@ -153,10 +153,11 @@ describe('C2c-2 회차 단추', () => {
         expect(api().isTrashed(id)).toBe(false);
     });
 
-    it('카드 휴지통(가상 회차) = 그 회차만', () => {
+    it('회차 카드엔 휴지통이 없다(「이 회차 빠뜨리기」와 같은 동작) — 빠뜨리기가 그 회차만 뺀다', () => {
         const { id, first } = weekly(3);
         const el = mountCard(occId(id, first));
-        click(btn(el, '휴지통'));
+        expect(btn(el, '휴지통')).toBeNull();
+        click(btn(el, '빠뜨리기'));
         expect(api().isTrashed(id)).toBe(false);
         expect(occs(id).length).toBe(2);
     });

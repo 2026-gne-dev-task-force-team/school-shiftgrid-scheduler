@@ -11,6 +11,7 @@ import type { ComponentType } from 'react';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 import type { IconName } from '../../../pane-ui-system';
 import type { RecordField } from '../../collection/contracts/collection';
+import type { NodesApi } from '../../explorer/contracts/nodes';
 
 /**
  * 달력에 그려 달라고 넘기는 일정 한 칸 — 노드도 뭐도 아닌 **평면 값**이다.
@@ -92,6 +93,17 @@ export interface Occurrence {
     virtual: boolean;
 }
 
+/** 프리셋 저장소를 막 만든 직후 onCreateStore 가 받는 손잡이 — 저장소 data 는 달력만 쓸 수 있어 setStoreData 로 맡긴다. */
+export interface PresetCreateContext {
+    storeId: string;
+    nodes: NodesApi;
+    /** 저장소 data 에 patch 를 얕게 합친다(data.preset 은 유지). */
+    setStoreData(patch: Record<string, unknown>): void;
+}
+
+/** baseFields 함수꼴이 받는 저장소 — 저장소마다 다른 값(예: 방 목록 id)을 data 에서 읽는다. */
+export interface PresetStore { id: string; data: Record<string, unknown> }
+
 /**
  * 달력 프리셋(0.2) — 같은 노드 타입(calendar.store·calendar.event)을 쓰되 생긴 것·낱말·첫 화면·미리 깔린 칸만 바꾼다.
  *   저장소 노드 `data.preset` 이 이 id 를 든다. 없거나 못 찾으면 「기본 달력」. ⛔ 프리셋은 보기를 새로 만들지 않는다(고르기만).
@@ -104,8 +116,10 @@ export interface CalendarPreset {
     /** 낱말 — 저장소·일정·「새 일정」 단추·개수 단위 */
     words: { store: string; event: string; newEvent: string; unit: string };
     /** 기본 칸(제목·언제·메모) 뒤에 미리 깔리는 잠긴 칸 */
-    baseFields?: RecordField[];
+    baseFields?: RecordField[] | ((store: PresetStore) => RecordField[]);
     /** 저장소를 열 때 첫 화면 — 'year' | 'month' | 'week' | 'list' … (없으면 보던 그대로) */
     defaultView?: string;
     start?: { description: string; hint: string };
+    /** 이 프리셋으로 저장소를 만든 직후 한 번 — 곁에 필요한 노드를 만들고 저장소 data 에 담는다. */
+    onCreateStore?(ctx: PresetCreateContext): void | Promise<void>;
 }
