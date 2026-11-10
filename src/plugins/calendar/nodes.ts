@@ -302,10 +302,3 @@ export function collectForExport(storeId: string | null): IcsWriteEvent[] {
     }
     return out;
 }
-
-/** 일정 하나(record 노드)를 .ics 작성기 입력으로 — 일정 카드 「내보내기」가 쓴다. 일정 노드가 아니면 null. */
-export function collectEventForExport(eventId: string): IcsWriteEvent | null {
-    const n = api?.get(nodeIdOf(eventId));
-    const data = n && n.type === EVENT_TYPE ? storedToEvent(n.data) : null;
-    return n && data ? eventToIcs({ id: n.id, name: n.name, data }) : null;
-}
