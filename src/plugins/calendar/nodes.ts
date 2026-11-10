@@ -25,6 +25,7 @@ import { eventToIcs, planImport } from './io';
 
 export { STORE_TYPE, EVENT_TYPE } from './config';
 import { STORE_TYPE, EVENT_TYPE } from './config';
+import { skip } from './series';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'calendar.' 를 붙인다). 저장소 open 이 여는 월 보기.
 const MONTH_ID = 'calendar.month';
@@ -210,9 +211,19 @@ export function moveEvent(id: string, storeId: string): void { api?.move(nodeIdO
 /** 일정을 휴지통으로 — 탐색기와 같은 꼴의 「되돌리기」 알림(명령 id + 방금 쌓인 더미 칸 토큰)까지. 반복 일정이면 그 실체 회차들도 같이(되돌리기 한 칸). */
 export function removeEvent(chipId: string): void {
     if (!api) return;
-    const id = nodeIdOf(chipId);   // 가상 회차면 규칙 일정(시리즈 전체) — 회차 하나 빼기는 skip(C2c-2)
+    const id = nodeIdOf(chipId);
     const a = api;
     const name = a.get(id)?.name || '제목 없음';
+    // 회차(가상 칩 `규칙id@원래시작` 또는 실체 회차)의 휴지통 = 그 회차만 빠뜨리기 — 시리즈 전체는 규칙 일정에서 지운다
+    const d = a.get(id)?.data as { seriesId?: string; originalStart?: string; recur?: unknown } | undefined;
+    const seriesId = chipId !== id ? id : !d?.recur ? d?.seriesId : undefined;
+    const originalStart = chipId !== id ? chipId.slice(id.length + 1) : d?.originalStart;
+    if (seriesId && originalStart) {
+        const allDay = storedToEvent(a.get(seriesId)?.data)?.allDay ?? false;
+        skip({ eventId: chipId !== id ? seriesId : id, seriesId, originalStart, start: originalStart, end: originalStart, allDay, virtual: chipId !== id });
+        if (hostRef) notifyNodeUndo(hostRef, api, `「${name}」 회차 하나를 빠뜨렸습니다`, 'calendar.removed');
+        return;
+    }
     a.batch(() => {
         a.remove(id);
         for (const n of a.liveByType(EVENT_TYPE)) if ((n.data as { seriesId?: string } | undefined)?.seriesId === id) a.remove(n.id);
