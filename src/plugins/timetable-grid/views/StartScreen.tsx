@@ -31,7 +31,7 @@ export function StartScreen({ leafId }: { leafId?: string }) {
                     title="시간표"
                     noun="시간표"
                     newLabel="새 시간표"
-                    newHint="빈 표(월~금 × 6행)가 바로 열린다"
+                    newHint="빈 표(월~금 × 6행)가 바로 열립니다"
                     items={items}
                     onNew={make}
                     onOpen={open}

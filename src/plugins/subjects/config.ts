@@ -53,5 +53,5 @@ export const SUBJECT_CONFIG: CollectionConfig = {
     newListFields,
     description: '학교에서 가르치는 과목을 적어 두는 목록입니다.',
     unit: '과목',
-    text: { startDescription: '새로 만들거나, 만들어 둔 과목 목록을 고른다.', startHint: '빈 과목 목록이 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 과목 목록을 고르세요.', startHint: '빈 과목 목록이 바로 열립니다' },
 };

@@ -250,7 +250,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const lb = {
         addRow: labels?.addRow ?? '행 추가',
         addCol: labels?.addCol ?? '열 추가',
-        emptyHint: emptyHint ?? labels?.emptyHint ?? '빈 표 — 오른쪽·아래 + 를 눌러 열과 행을 더한다.',
+        emptyHint: emptyHint ?? labels?.emptyHint ?? '빈 표 — 오른쪽·아래 + 를 눌러 열과 행을 더하세요.',
         deleteRow: labels?.deleteRow ?? '행 삭제',
         insertAbove: labels?.insertAbove ?? '위에 행 넣기', insertBelow: labels?.insertBelow ?? '아래에 행 넣기',
         dupRow: '행 복제', dupCol: '열 복제', clearRow: '내용 지우기', clearCol: '내용 지우기',

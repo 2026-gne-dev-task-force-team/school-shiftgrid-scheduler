@@ -169,14 +169,14 @@ export function canMerge(data: TimetableData, sel: Selection): { ok: boolean; re
     const cols = columnCount(data.columns);
     const rows = rowCount(data);
     if (s.col0 < 0 || s.row0 < 0 || s.col1 >= cols || s.row1 >= rows) return { ok: false, reason: '격자 밖' };
-    if (s.col0 === s.col1 && s.row0 === s.row1) return { ok: false, reason: '한 칸은 병합할 수 없다' };
+    if (s.col0 === s.col1 && s.row0 === s.row1) return { ok: false, reason: '한 칸은 병합할 수 없습니다' };
     for (const b of mergeBlocks(data)) {
         const bc1 = b.col + b.cs - 1;
         const br1 = b.row + b.rs - 1;
         const intersects = b.col <= s.col1 && bc1 >= s.col0 && b.row <= s.row1 && br1 >= s.row0;
         if (!intersects) continue;
         const inside = b.col >= s.col0 && bc1 <= s.col1 && b.row >= s.row0 && br1 <= s.row1;
-        if (!inside) return { ok: false, reason: '선택이 기존 병합을 가로지른다' };
+        if (!inside) return { ok: false, reason: '선택이 기존 병합을 가로지릅니다' };
     }
     return { ok: true };
 }
@@ -328,10 +328,10 @@ function shiftRows(rows: RowSpec[], from: number, delta: number): RowSpec[] {
 export function timelineProblem(rows: readonly RowSpec[]): string | null {
     for (let i = 0; i < rows.length; i++) {
         const { start, end } = rows[i].range;
-        if (end - start < MIN_ROW_LEN) return `행 ${i + 1} 길이가 ${MIN_ROW_LEN}분보다 짧다`;
-        if (start < 0) return `행 ${i + 1} 이 0시 앞이다`;
-        if (i > 0 && start < rows[i - 1].range.end) return `행 ${i + 1} 이 앞 행과 겹친다`;
-        if (end > DAY_END) return `행 ${i + 1} 이 하루 끝(24:00)을 넘는다`;
+        if (end - start < MIN_ROW_LEN) return `행 ${i + 1} 길이가 ${MIN_ROW_LEN}분보다 짧습니다`;
+        if (start < 0) return `행 ${i + 1} 이 0시 앞입니다`;
+        if (i > 0 && start < rows[i - 1].range.end) return `행 ${i + 1} 이 앞 행과 겹칩니다`;
+        if (end > DAY_END) return `행 ${i + 1} 이 하루 끝(24:00)을 넘습니다`;
     }
     return null;
 }

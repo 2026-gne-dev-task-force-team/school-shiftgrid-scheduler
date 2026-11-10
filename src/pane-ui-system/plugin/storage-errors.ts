@@ -38,10 +38,10 @@ export function classifyStorageError(err: unknown): StorageErrorReason {
 /** 실패 사유를 사람 말로 — 상태바 쪽지와 알림이 같은 문장을 쓴다 */
 export function storageReasonText(reason: StorageErrorReason): string {
     switch (reason) {
-        case 'quota': return '저장 공간이 찼다 — 저장되지 않았다. 새로고침하면 최근 변경이 사라진다';
-        case 'blocked': return '브라우저가 저장을 막았다(프라이빗 모드일 수 있다)';
-        case 'blocked-upgrade': return '다른 탭이 열려 있어 저장소를 올리지 못했다 — 다른 탭을 닫고 새로고침';
-        default: return '알 수 없는 이유로 저장에 실패했다';
+        case 'quota': return '저장 공간이 찼습니다 — 저장되지 않았습니다. 새로고침하면 최근 변경이 사라집니다';
+        case 'blocked': return '브라우저가 저장을 막았습니다(프라이빗 모드일 수 있습니다)';
+        case 'blocked-upgrade': return '다른 탭이 열려 있어 저장소를 올리지 못했습니다 — 다른 탭을 닫고 새로고침하세요';
+        default: return '알 수 없는 이유로 저장에 실패했습니다';
     }
 }
 

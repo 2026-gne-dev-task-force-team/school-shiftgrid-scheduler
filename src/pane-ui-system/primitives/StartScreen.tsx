@@ -44,7 +44,7 @@ export function StartScreen({
                         <Icon name={icon} size={18} className="text-muted" />
                         <span className="text-[16px] font-medium">{title}</span>
                     </div>
-                    <div className="text-small text-muted">{description ?? `새로 만들거나, 만들어 둔 ${josa(noun, '을/를')} 고른다.`}</div>
+                    <div className="text-small text-muted">{description ?? `새로 만들거나, 만들어 둔 ${josa(noun, '을/를')} 고르세요.`}</div>
                 </div>
 
                 <button
@@ -65,7 +65,7 @@ export function StartScreen({
                 <div className="flex flex-col gap-1">
                     <div className="text-note text-muted px-1">만들어 둔 것 · {items.length}</div>
                     {items.length === 0 ? (
-                        <div className="rounded-lg border border-line"><EmptyState compact icon={icon} title={`만들어 둔 ${noun}${josa(noun, '이/가').slice(noun.length)} 없다`} description={`위의 「${newLabel}」로 시작한다.`} /></div>
+                        <div className="rounded-lg border border-line"><EmptyState compact icon={icon} title={`만들어 둔 ${noun}${josa(noun, '이/가').slice(noun.length)} 없습니다`} description={`위의 「${newLabel}」로 시작하세요.`} /></div>
                     ) : (
                         <ul className="flex flex-col rounded-lg border border-line overflow-hidden">
                             {items.map((it) => (

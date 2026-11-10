@@ -46,5 +46,5 @@ export const CLASS_CONFIG: CollectionConfig = {
     ],
     newListFields: newYearFields,
     unit: '반',
-    text: { startDescription: '새로 만들거나, 만들어 둔 학년도를 고른다.', startHint: '교실 칸이 든 빈 학년도가 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 학년도를 고르세요.', startHint: '교실 칸이 든 빈 학년도가 바로 열립니다' },
 };

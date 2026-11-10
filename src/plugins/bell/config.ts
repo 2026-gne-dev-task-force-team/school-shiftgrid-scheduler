@@ -47,5 +47,5 @@ export const SLOT_CONFIG: CollectionConfig = {
     newListFields,
     description: '학교의 교시별 시작·끝 시각, 점심, 하교를 적는 일과표입니다. 학년마다 점심이 다르면 학년 칸으로 갈라 적습니다.',
     unit: '줄',
-    text: { startDescription: '새로 만들거나, 만들어 둔 일과표를 고른다.', startHint: '구분·교시·시작·끝·학년 칸이 든 빈 일과표가 바로 열린다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 일과표를 고르세요.', startHint: '구분·교시·시작·끝·학년 칸이 든 빈 일과표가 바로 열립니다' },
 };

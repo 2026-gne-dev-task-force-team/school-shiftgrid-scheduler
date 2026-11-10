@@ -19,7 +19,7 @@ export function StartScreen({ leafId }: { leafId?: string }) {
             title="컬렉션"
             noun="컬렉션"
             newLabel="새 컬렉션"
-            newHint="빈 컬렉션이 바로 열린다"
+            newHint="빈 컬렉션이 바로 열립니다"
             items={items}
             onNew={make}
             onOpen={setActiveDb}

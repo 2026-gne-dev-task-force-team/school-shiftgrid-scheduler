@@ -14,9 +14,9 @@ import {
 } from '../../..';
 
 const SQUEEZES: { id: Squeeze; name: string; hint: string }[] = [
-    { id: 'shrink', name: '찌그러뜨림', hint: '좁아지면 내용을 그대로 눌러 담는다' },
-    { id: 'scroll', name: '스크롤', hint: '좁아지면 넘치는 만큼 스크롤한다(표·긴 목록)' },
-    { id: 'collapse', name: '접힘', hint: '접힘 폭 아래면 접힌 그림으로 바뀐다' },
+    { id: 'shrink', name: '찌그러뜨림', hint: '좁아지면 내용을 그대로 눌러 담습니다' },
+    { id: 'scroll', name: '스크롤', hint: '좁아지면 넘치는 만큼 스크롤합니다(표·긴 목록)' },
+    { id: 'collapse', name: '접힘', hint: '접힘 폭 아래면 접힌 그림으로 바뀝니다' },
 ];
 
 function Cell({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
@@ -77,7 +77,7 @@ export function ViewSettingsCard({ view: v }: { view: ViewDef }) {
     const pl = v.placement;
     const areas = pl?.areas && pl.areas.length ? pl.areas.join(' · ') : '어디든 (왼쪽·가운데·오른쪽)';
     const canSplitStr = pl?.singleton ? '안 됨 (한 장만이라 복제 불가)' : pl?.split === false ? '안 됨' : '됨';
-    const singletonStr = pl?.singleton ? '예 — 딱 한 장만 뜬다(이미 있으면 그리로)' : '아니오 — 여러 장 열 수 있다';
+    const singletonStr = pl?.singleton ? '예 — 딱 한 장만 뜹니다(이미 있으면 그리로)' : '아니오 — 여러 장 열 수 있습니다';
     return (
         <div className="flex flex-col gap-3 px-2.5 py-2.5 bg-panel2">
             {hasOver && (
@@ -97,7 +97,7 @@ export function ViewSettingsCard({ view: v }: { view: ViewDef }) {
             <div className="flex flex-wrap items-start gap-4">
                 <NumCell
                     label="최소 폭(px)"
-                    hint="이 폭 아래로는 못 줄인다"
+                    hint="이 폭 아래로는 못 줄입니다"
                     value={over.minWidth}
                     placeholder={base.minWidth}
                     onChange={(n) => patch({ minWidth: n })}

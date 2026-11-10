@@ -25,5 +25,5 @@ export const EVENT_CONFIG: CollectionConfig = {
         { key: 'memo', label: '메모', type: 'text', locked: true },
     ],
     unit: '개',
-    text: { startDescription: '일정을 표로 볼 달력 저장소를 고른다.', startHint: '빈 저장소가 바로 열린다' },
+    text: { startDescription: '일정을 표로 볼 달력 저장소를 고르세요.', startHint: '빈 저장소가 바로 열립니다' },
 };
