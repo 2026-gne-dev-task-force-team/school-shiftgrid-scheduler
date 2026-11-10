@@ -148,6 +148,22 @@ describe('제목 칸 보호', () => {
     });
 });
 
+describe('칸 설정(Config) — 칸 메뉴', () => {
+    it('관계 칸 메뉴에 Config 가 그려지고 onChange 가 onFieldsChange 로 간다', () => {
+        const spy = spies();
+        const fields: RecordField[] = [...START, { key: 'f_r', label: '관계', type: 'relation', config: { many: true } }];
+        mount(<RecordView<Rec> fields={fields} records={[]} getId={(r) => r.id} viewKey="t.cfg" titleKey="f_t" onCellChange={() => {}} onFieldsChange={(f) => spy.fields(f)} />);
+        click(q('[data-rv-head-menu="f_x"]'));
+        expect(q('[data-rv-rel-config]')).toBeNull();   // Config 없는 칸(text)엔 안 그려진다
+        click(q('[data-rv-head-menu="f_r"]'));
+        expect(q('[data-rv-rel-config="f_r"]')).toBeTruthy();
+        click(q('[data-rv-rel-config="f_r"] [role="switch"]'));
+        const out = spy.fields.mock.calls.at(-1)![0] as RecordField[];
+        expect(out.map((f) => f.key)).toEqual(['f_t', 'f_x', 'f_s', 'f_r']);
+        expect(out[3].config).toMatchObject({ many: false });
+    });
+});
+
 describe('칸 추가 — 타입 고르기', () => {
     it('[data-rv-add-field] → 타입 팝오버(내장 14종) → 칸 +1 · key 가 f_ · 이름 「새 칸」', () => {
         const spy = spies();
