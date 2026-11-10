@@ -65,6 +65,27 @@ describe('시간표 그리드(달력 주 보기 꼴)', () => {
         expect(latest.rows[0].range).toEqual({ start: 540, end: 640 });
     });
 
+    it('W10a 길이 끌기 — 끄는 동안 뒤 행이 밀려 그려지고, 놓으면 뒤 행 시각까지 한 번에 저장된다', () => {
+        mount();
+        const edge = q('[data-testid="row-edge-end"]')!;
+        fire(edge, 'pointerdown', { clientY: 100 });
+        fire(edge, 'pointermove', { clientY: 124 });   // +24px = +30분
+        expect(q('[data-c="0"][data-r="1"]')!.style.top).toBe('72px');   // 미리보기: 10:00 → 10:30
+        fire(edge, 'pointerup', { clientY: 124 });
+        expect(latest.rows.map((r) => r.range.start)).toEqual([540, 630, 690, 750, 810, 870]);
+    });
+
+    it('W10a 쉬는 시간은 행 사이 갭 띠 — 라벨이 붙고, 끌면 뒤 행이 밀린다', () => {
+        mount();
+        expect(qa('[data-testid="gap"]').map((g) => g.textContent)).toEqual(Array(5).fill('쉬는 시간 10분'));
+        const grip = qa('[data-testid="gap-edge"]')[0];
+        fire(grip, 'pointerdown', { clientY: 100 });
+        fire(grip, 'pointermove', { clientY: 116 });   // +16px = +20분
+        fire(grip, 'pointerup', { clientY: 116 });
+        expect(latest.rows.map((r) => r.range.start)).toEqual([540, 620, 680, 740, 800, 860]);
+        expect(qa('[data-testid="gap"]')[0].textContent).toBe('쉬는 시간 30분');
+    });
+
     it('열 머리 오른쪽 가장자리를 끌면 그 열 너비가 저장된다', () => {
         mount();
         const grip = q('[data-testid="col-resize"]')!;
