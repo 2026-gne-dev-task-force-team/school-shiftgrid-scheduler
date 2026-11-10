@@ -31,12 +31,13 @@ export function NodeHeader({ nodeId, leafId, fallback, titleAriaLabel, titlePlac
             {ok
                 ? <TitleField value={node.name} onRename={(n) => (onRename ?? ((x: string) => apiRename(nodeId, x)))(n)} className="flex-1 min-w-0 text-2xl font-bold leading-tight tracking-tight"
                     ariaLabel={titleAriaLabel} placeholder={titlePlaceholder} onEnter={onTitleEnter} />
-                : <span className="px-1 truncate text-text flex-1 min-w-0 text-2xl font-bold leading-tight tracking-tight">{node.name}</span>}
+                : <span className="px-1 break-keep [overflow-wrap:anywhere] text-text flex-1 min-w-0 text-2xl font-bold leading-tight tracking-tight">{node.name}</span>}
         </PageStack>
     );
 }
 
-/** 머리 한 줄 — 아이콘 + 제목이 같은 줄에 선다(V1 · 쥔님 「컴팩트하게 한줄로」). 높이는 모든 노드가 같다. */
+/** 머리 한 줄 — 아이콘 + 제목이 같은 줄에 선다(V1 · 쥔님 「컴팩트하게 한줄로」). 짧으면 모든 노드가 같은 높이(min-h-10),
+ *  긴 제목은 아래로 늘고 아이콘은 첫 줄에 붙어 있다(11-10 「제목 줄 깨짐」). */
 function PageStack({ children }: { children: ReactNode }) {
-    return <div className="flex-1 min-w-0 flex items-center gap-1.5 h-10">{children}</div>;
+    return <div className="flex-1 min-w-0 flex items-start gap-1.5 min-h-10 py-1">{children}</div>;
 }

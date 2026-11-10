@@ -47,7 +47,7 @@ export function frameMenu(nodeId: string, extra: MenuEntry[] | undefined, ops: {
 const EDITABLE = 'input, textarea, [contenteditable="true"], [contenteditable=""]';
 
 export function NodeFrame({
-    nodeId, leafId, actions, menu, toolbar, headerExtra, width = 'full', scroll = false,
+    nodeId, leafId, actions, menu, toolbar, headerExtra, subheader, width = 'full', scroll = false,
     titleAriaLabel = '제목', titlePlaceholder = '제목 없음', onTitleEnter, onRename, children,
 }: NodeFrameProps) {
     const tree = useSyncExternalStore(subscribeState, () => getState().tree);
@@ -65,7 +65,7 @@ export function NodeFrame({
     if (!node) return null;
 
     const focusTitle = () => {
-        const el = Array.from(root.current?.querySelectorAll<HTMLInputElement>('input') ?? []).find((i) => i.getAttribute('aria-label') === titleAriaLabel);
+        const el = Array.from(root.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea') ?? []).find((i) => i.getAttribute('aria-label') === titleAriaLabel);
         el?.focus(); el?.select();
     };
     const askTrash = () => {
@@ -95,13 +95,14 @@ export function NodeFrame({
     );
     // 🔑 머리는 모든 노드가 한 꼴 — 아이콘(그 타입 자신의 것 22px)+제목 한 줄. 높이(h-10)·아래 여백(pb-2)을 여기서만 정한다.
     //    ⛔ 호출자가 fallback 아이콘을 따로 주던 길은 닫았다(꾸러미마다 크기·모양이 달라 머리가 들쭉날쭉했다) — 탐색기와 같은 아이콘.
-    const header: ReactNode = (
-        <div data-nf-header className="flex items-center gap-3 w-full min-w-0 pb-2">
+    const row: ReactNode = (
+        <div data-nf-header className={`flex items-center gap-3 w-full min-w-0 ${subheader ? '' : 'pb-2'}`}>
             <NodeHeader nodeId={nodeId} leafId={leafId} fallback={<Icon name={iconOf(node)} size={22} className="text-muted" />}
                 titleAriaLabel={titleAriaLabel} titlePlaceholder={titlePlaceholder} onTitleEnter={onTitleEnter} onRename={onRename} />
             {headerExtra && <div className="shrink-0 text-small text-muted tabular-nums">{headerExtra}</div>}
         </div>
     );
+    const header: ReactNode = subheader ? <>{row}<div data-nf-subheader className="pb-2 -mt-1">{subheader}</div></> : row;
 
     const col = COLUMN[width];
     // 머리 자리(위 여백 pt-3 · 옆 px-6 · 폭 col) — 고정이든 스크롤 안이든 같은 상자를 쓴다.

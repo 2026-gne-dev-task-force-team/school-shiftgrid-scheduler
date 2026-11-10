@@ -10,7 +10,7 @@
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type MenuEntry } from '../../pane-ui-system';
+import { isMod, isAlt, keyLabel, modClickLabel, Button, ContextMenu, EmptyState, Icon, IconButton, IconPicker, InlineRename, MenuItem, MenuList, MenuSeparator, Tooltip, parseClipboard, useContextTrigger, useDragLeaf, useReorder, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { Popover, Select } from '../../pane-ui-system';
 import { Cell } from './Cell';
 import { FieldGlyph } from './FieldGlyph';
@@ -21,6 +21,7 @@ import { EMPTY_FILTER, deriveRows, freshIds, rowDropZone, displayText, filterIsE
 import { buildTree } from './subitems';
 import { planConvert } from './convert';
 import { fieldTypes } from './fields/registry';
+import { OptionsEditor } from './fields/cells';
 import { ReorderOverlay } from './ReorderOverlay';
 import { newField } from './schema';
 import { filterUniqueChanges, filterUniquePaste, firstDuplicate } from './unique';
@@ -36,7 +37,8 @@ import type {
 export type { CellChange, RecordField, RecordCellValue, ConvertPlan, PasteRequest, ViewDef } from './contracts/collection';
 
 const SEL_W = 34;   // 선택 체크 칸 폭
-const INDENT_PX = 20;   // 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8)
+/** 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8). 설정 「모양 › 들여쓰기 폭」이 `--indent-step` 을 고른다(K11 · 기본 좁게 12px) */
+const indentWidth = (depth: number) => `calc(var(--indent-step, 12px) * ${depth})`;
 
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
 function useCoarsePointer(): boolean {
@@ -97,14 +99,14 @@ interface RecordRowProps {
     checked: boolean; hovered: boolean; collapsed: boolean;
     markZone: 'before' | 'into' | 'after' | null; isFresh: boolean;
     rc0: number; rc1: number;
-    icon: string | undefined; hasIconOf: boolean;
+    icon: string | undefined; hasIconOf: boolean; rowIcon: IconName;
     act: RowAct; dragBind: DragBindLike;
 }
 
 /** 🔴 행 하나 — React.memo. 새 행을 더해도 옛 행은 props 가 그대로라 다시 안 그려진다(#50: 1,000행에서 추가마다 전부 리렌더 → 비례 이상 느려짐) */
 const RecordRow = memo(function RecordRow({
     r, id, ri, depth, hasChildren, fields, widths, wraps, lead, frozen, titleKey, treeOn, reorderable, selectable, fieldsEditable,
-    cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, act, dragBind,
+    cellEditable, hasOpen, hasOpenTab, hasAddChild, checked, hovered, collapsed, markZone, isFresh, rc0, rc1, icon, hasIconOf, rowIcon, act, dragBind,
 }: RecordRowProps) {
     rowRenderProbe.n++;
     const showOpen = hasOpen && hovered;
@@ -165,11 +167,11 @@ const RecordRow = memo(function RecordRow({
                     onClickCapture={(e) => { if (tabClick(e, f.key)) { e.preventDefault(); e.stopPropagation(); } }}
                     onMouseUp={(e) => { if (!tabClick(e, f.key)) openEditFromWrapper(e); }}
                     onDoubleClick={openEditFromWrapper}
-                    className={`shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
+                    className={`relative shrink-0 border-r border-line overflow-hidden flex outline-none ${wraps[fi] ? 'items-start py-1 [&_.truncate]:whitespace-pre-wrap [&_.truncate]:break-keep [&_.truncate]:[overflow-wrap:anywhere]' : 'items-center'} ${fi < frozen ? 'bg-bg' : ''} ${inRange(fi) ? 'ring-2 ring-inset ring-accent/60' : ''}`}
                     style={{ width: widths[fi], ...frozenStyle(fi) }}>
                     {fi === 0 && treeOn && (
                         <div className="shrink-0 flex items-center self-stretch">
-                            {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: depth * INDENT_PX }} />}
+                            {depth > 0 && <span data-rv-pad={depth} className="shrink-0" style={{ width: indentWidth(depth) }} />}
                             {hasChildren ? (
                                 // oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양
                                 <button type="button" data-rv-fold={id} aria-expanded={!collapsed} aria-label={collapsed ? '펼치기' : '접기'}
@@ -182,7 +184,7 @@ const RecordRow = memo(function RecordRow({
                     )}
                     {isTitle(f.key) && hasIconOf && (
                         <span className="shrink-0 pl-1.5 text-body leading-none select-none" data-rv-icon={id}>
-                            {icon ?? <Icon name="fileText" size={14} className="text-muted" />}
+                            {icon ?? <Icon name={rowIcon} size={14} className="text-muted" />}
                         </span>
                     )}
                     <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
@@ -200,21 +202,26 @@ const RecordRow = memo(function RecordRow({
                             onOptionsChange={fieldsEditable && !isTitle(f.key) ? (o) => act.setOptions(f.key, o) : undefined}
                         />
                     </div>
-                    {isTitle(f.key) && showTree && hasAddChild && (
+                    {/* 머무를 때 단추들 — 칸 위에 겹쳐 띄운다(자리를 차지하면 좁은 칸·줄바꿈 칸에서 제목이 한 글자씩 꺾인다) */}
+                    {isTitle(f.key) && ((showTree && hasAddChild) || showOpen) && (
+                    <div data-rv-hover-tools className="absolute right-0 top-0 h-8 flex items-center pl-1 bg-bg/90 rounded-l">
+                    {showTree && hasAddChild && (
                         <Tooltip text="하위 항목 추가">
                             <IconButton icon="plus" label="하위 항목 추가" title="" size={13} data={{ 'data-rv-add-child': id }}
                                 onClick={() => { if (collapsed) act.toggleCollapse(id); act.addChild(id); }} />
                         </Tooltip>
                     )}
-                    {isTitle(f.key) && showOpen && (
+                    {showOpen && (
                         <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id}
                             onClick={(e) => { if (hasOpenTab && isMod(e)) act.openTab(id); else act.open(id); }}
                             onAuxClick={(e) => { if (hasOpenTab && e.button === 1) { e.preventDefault(); act.openTab(id); } }}>열기</Button>
                     )}
-                    {isTitle(f.key) && showOpen && hasOpenTab && (
+                    {showOpen && hasOpenTab && (
                         <Tooltip text={`탭으로 열기 (${modClickLabel()})`}>
                             <IconButton icon="arrowRight" label="탭으로 열기" title="" size={13} data={{ 'data-rv-open-tab': id }} onClick={() => act.openTab(id)} />
                         </Tooltip>
+                    )}
+                    </div>
                     )}
                 </div>
             ))}
@@ -236,11 +243,15 @@ export function RecordView<T>({
     onCellsChange,
     onAddRecord,
     emptyHint,
+    description,
+    onDescriptionChange,
+    descriptionLine = true,
     onDeleteRecords,
     onDestructive,
     onOpenRecord,
     onOpenRecordTab,
     iconOf,
+    rowIcon = 'fileText',
     onFieldsChange,
     onConvertField,
     onPaste,
@@ -374,7 +385,7 @@ export function RecordView<T>({
             if (onOpenRecord) items.push({ label: '열기', icon: 'right', onClick: () => openRow(rowId) });
             if (onOpenRecordTab) items.push({ label: '탭으로 열기', icon: 'arrowRight', onClick: () => onOpenRecordTab(rowId) });
             if (tree?.onAddChild) items.push({ label: '하위 항목 추가', icon: 'plus', onClick: () => tree.onAddChild!(rowId) });
-            if (treeOn && tree) items.push({ label: '들여쓰기', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기', onClick: () => tree.onOutdent(rowId) });
+            if (treeOn && tree) items.push({ label: '들여쓰기 (⌘])', onClick: () => tree.onIndent(rowId) }, { label: '내어쓰기 (⌘[)', onClick: () => tree.onOutdent(rowId) });
             if (onDeleteRecords) items.push({ sep: true }, { label: '삭제', icon: 'trash', danger: true, onClick: () => onDeleteRecords([rowId]) });
         }
         if (!rowId && onAddRecord) items.push({ label: '새로 만들기', icon: 'plus', onClick: onAddRecord });
@@ -637,7 +648,28 @@ export function RecordView<T>({
         }
         return false;
     };
+    // ⌘] 들여쓰기 · ⌘[ 내어쓰기(옵시디언·VS Code 와 같은 키) — Tab 은 칸 이동이라 못 쓴다. 고른 칸의 행이 대상이고, 커서는 그 행을 따라간다.
+    const followRow = useRef<{ id: string; c: number } | null>(null);
+    useEffect(() => {
+        const f = followRow.current;
+        if (!f) return;
+        followRow.current = null;
+        const r = rowIds.indexOf(f.id);
+        if (r >= 0) { setAnchor(null); setCur({ r, c: f.c }); }
+    }, [rowIds]);
+    const onIndentKey = (e: React.KeyboardEvent): boolean => {
+        if (!treeOn || !cur || !isMod(e) || e.shiftKey || e.altKey || e.nativeEvent.isComposing) return false;
+        const out = e.code === 'BracketLeft' || e.key === '[';
+        if (!out && e.code !== 'BracketRight' && e.key !== ']') return false;
+        const id = rowIds[cur.r];
+        if (!id) return false;
+        e.preventDefault(); e.stopPropagation();
+        followRow.current = { id, c: cur.c };
+        if (out) tree?.onOutdent(id); else tree?.onIndent(id);
+        return true;
+    };
     const onGridKeyDown = (e: React.KeyboardEvent) => {
+        if (onIndentKey(e)) return;
         if (onEditKey(e)) return;
         const t = e.target as HTMLElement;
         if (!cur || e.nativeEvent.isComposing || t.closest('input,textarea,select,[contenteditable="true"],[data-rv-editing]')) return;
@@ -740,6 +772,7 @@ export function RecordView<T>({
 
     return (
         <div className={`relative flex flex-col h-full min-h-0 bg-bg ${className}`} data-rv-root>
+            {descriptionLine && <DescriptionLine text={description} onChange={onDescriptionChange} />}
             <ViewTabs
                 views={views.length > 0 ? views : [view]}
                 activeId={view.id}
@@ -816,8 +849,8 @@ export function RecordView<T>({
                                     {/* oxlint-disable-next-line react/forbid-elements -- 표 칸 안 조작 — 칸 모양 */}
                                     <button type="button" data-rv-head-menu={f.key} aria-label="칸 메뉴"
                                         onClick={(e) => setHeadMenu({ key: f.key, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
-                                        <Icon name="dots" size={14} />
+                                        className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-text/70 hover:text-text hover:bg-text/[0.08]">
+                                        <Icon name="dots" size={16} />
                                     </button>
                                     {/* 폭 끌기 손잡이 */}
                                     <div
@@ -856,7 +889,7 @@ export function RecordView<T>({
                                 collapsed={treeOn && tree ? tree.collapsed(id) : false}
                                 markZone={mark?.zone ?? null} isFresh={fresh.has(id)}
                                 rc0={inRow ? range!.c0 : -1} rc1={inRow ? range!.c1 : -1}
-                                icon={iconOf ? iconOf(id) : undefined} hasIconOf={!!iconOf}
+                                icon={iconOf ? iconOf(id) : undefined} hasIconOf={!!iconOf} rowIcon={rowIcon}
                                 act={act} dragBind={dragBindStable}
                             />
                         );
@@ -871,7 +904,10 @@ export function RecordView<T>({
                     ) : (
                         <div data-rv-empty>
                             <EmptyState compact icon="table" title="표시할 행이 없습니다"
-                                description={emptyHint ?? (onAddRecord ? (onPaste ? '아래 「새로 만들기」를 누르거나 엑셀 표를 복사해 붙여넣으면 만들 수 있습니다.' : '아래 「새로 만들기」를 누르면 첫 항목을 만듭니다.') : onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : undefined)} />
+                                description={<>
+                                    {description?.trim() && <span data-rv-empty-desc className="block text-text/80 mb-1">{description}</span>}
+                                    {emptyHint ?? (onAddRecord ? (onPaste ? '아래 「새로 만들기」를 누르거나 엑셀 표를 복사해 붙여넣으면 만들 수 있습니다.' : '아래 「새로 만들기」를 누르면 첫 항목을 만듭니다.') : onPaste ? '엑셀 표를 복사해 여기에 붙여넣으면 한꺼번에 만들 수 있습니다.' : null)}
+                                </>} />
                         </div>
                     ))}
 
@@ -956,6 +992,13 @@ export function RecordView<T>({
                                 return idx >= 0 && <MenuItem label={on ? '고정 풀기' : '여기까지 칸 고정'} icon="pin" onSelect={() => { patchView({ frozen: on ? 0 : idx + 1 }); setHeadMenu(null); }} />;
                             })()}
                             <MenuItem label={wrapOf(f.key) ? '줄바꿈 끄기' : '줄바꿈'} icon="text" onSelect={() => { setColumn(f.key, { wrap: !wrapOf(f.key) }); setHeadMenu(null); }} />
+                            {fieldsEditable && !title && fieldTypes.get(f.type)?.hasOptions && (
+                                <div data-rv-head-options={f.key}>
+                                    <MenuSeparator />
+                                    <div className="px-2 py-0.5 text-note text-muted">선택지</div>
+                                    <OptionsEditor field={f} onOptionsChange={(o) => setOptions(f.key, o)} />
+                                </div>
+                            )}
                             {fieldsEditable && (
                                 <>
                                     <MenuSeparator />
@@ -1037,5 +1080,30 @@ export function RecordView<T>({
                 );
             })()}
         </div>
+    );
+}
+
+/** 목록 설명 한 줄(검수 K1 · 노션 데이터베이스 설명) — 고칠 수 있으면 눌러서 고치고, 비었으면 머물 때만 「설명 추가」가 보인다.
+ *   틀(Frame) 제목 밑에 두려면 화면이 이걸 subheader 로 넘기고 RecordView 엔 descriptionLine={false}. */
+export function DescriptionLine({ text, onChange }: { text?: string; onChange?: (s: string) => void }) {
+    const [editing, setEditing] = useState(false);
+    const has = !!text?.trim();
+    if (!has && !onChange) return null;
+    if (editing && onChange) {
+        return (
+            <div className="pt-1 shrink-0" data-rv-desc-edit>
+                <InlineRename value={text ?? ''} ariaLabel="목록 설명" placeholder="이 목록이 무엇을 담는지 한 줄"
+                    onCommit={(v) => { setEditing(false); if (v.trim() !== (text ?? '').trim()) onChange(v); }}
+                    onCancel={() => setEditing(false)} />
+            </div>
+        );
+    }
+    if (!onChange) return <p data-rv-desc className="text-small text-muted whitespace-pre-wrap shrink-0">{text}</p>;
+    return (
+        // oxlint-disable-next-line react/forbid-elements -- 글자 자체가 누름 자리(노션 설명 줄)
+        <button type="button" data-rv-desc onClick={() => setEditing(true)}
+            className={`-mx-1 px-1 rounded text-left text-small whitespace-pre-wrap shrink-0 hover:bg-text/[0.04] ${has ? 'text-muted' : 'text-muted/60 opacity-0 hover:opacity-100 focus-visible:opacity-100'}`}>
+            {has ? text : '설명 추가'}
+        </button>
     );
 }

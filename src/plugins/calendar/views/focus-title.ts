@@ -7,7 +7,7 @@ export function focusPeekTitle(frames = 20): void {
     if (typeof document === 'undefined') return;
     const start = document.activeElement;
     const tick = (left: number) => {
-        const t = document.querySelector<HTMLInputElement>('[role="complementary"][aria-label="미리보기"] input[aria-label="제목"]');
+        const t = document.querySelector<HTMLInputElement>('[role="complementary"][aria-label="미리보기"] :is(input,textarea)[aria-label="제목"]');
         if (t) {
             const a = document.activeElement;
             // 처음 초점이 그대로이거나(BODY·열린 자리) 미리보기 안이면 덮는다 — 남의 입력칸이면 존중

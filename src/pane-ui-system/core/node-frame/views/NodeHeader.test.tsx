@@ -44,8 +44,8 @@ describe('nodes.Header', () => {
         act(() => { apiRename(id, '새 이름'); });
         expect(titles.at(-1)).toEqual(['leaf1', '새 이름']);          // 🔴 뷰는 탭 제목을 모른다 — 머리가 창틀에 시킨다
 
-        const input = container.querySelector('input[aria-label="제목"]') as HTMLInputElement;
-        const setVal = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+        const input = container.querySelector('textarea[aria-label="제목"]') as HTMLInputElement;
+        const setVal = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
         act(() => { setVal.call(input, '입력으로'); input.dispatchEvent(new Event('input', { bubbles: true })); });
         act(() => { input.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); input.blur(); });
         expect(getState().tree.nodes[id].name).toBe('입력으로');
@@ -81,7 +81,7 @@ describe('nodes.Header', () => {
         const id = getState().selectedId!;
         let n = 0;
         act(() => { root.render(<NodeHeader nodeId={id} onTitleEnter={() => { n += 1; }} />); });
-        const input = container.querySelector('input[aria-label="제목"]') as HTMLInputElement;
+        const input = container.querySelector('textarea[aria-label="제목"]') as HTMLInputElement;
         input.focus();
         act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true })); });
         expect(n).toBe(0);

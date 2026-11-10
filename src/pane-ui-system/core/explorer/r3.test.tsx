@@ -52,7 +52,7 @@ describe('R3 머리 한 꼴', () => {
             render(<NodeFrame nodeId={id}><p>x</p></NodeFrame>);
             const hd = container.querySelectorAll('[data-nf-header]');
             expect(hd.length).toBe(1);
-            return { cls: hd[0].className, inputs: hd[0].querySelectorAll('input[aria-label="제목"]').length, tag: hd[0].tagName };
+            return { cls: hd[0].className, inputs: hd[0].querySelectorAll('textarea[aria-label="제목"]').length, tag: hd[0].tagName };
         };
         const a = shape(aId); const b = shape(bId);
         expect(a).toEqual(b);

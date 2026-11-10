@@ -6,7 +6,7 @@
  * ⭐ 범용 바닥(core:true) — 쥔님 2026-11-08 16:20 *"범용 표야"*. ⛔ 흡수한 엔진(옛 도메인 부품)의 이름을 여기 남기지 않는다.
  * ⭐ 「한 번 확정 = undo 한 단위」가 뼈대다(TableTx 하나 = 되돌리기 한 칸). 병합(merge)은 M2 — 모델이 막지 않게만 둔다.
  */
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /** 열 정의 — 편집기는 key·title·width·readOnly·align 만 안다(type 은 M2 col-types 가 해석). */
@@ -59,6 +59,8 @@ export interface TableTx {
         add?: { at: number; count: number; cells?: Record<string, string>[]; ids?: string[] }[];
         remove?: string[];
         move?: { id: string; to: number }[];
+        /** 행 머리 이름 고치기(row-head + axis-edit) — 행 머리 더블클릭. */
+        rename?: { id: string; label: string }[];
     };
     cols?: {
         add?: { at: number; key: string; title: string }[];
@@ -70,7 +72,11 @@ export interface TableTx {
         move?: { key: string; to: number }[];
     };
     /** 경계 끌기(M2 row-weight) — 밀지 말지는 소유자가 정한다. */
-    axis?: { rowWeight?: { id: string; delta: number }[] };
+    axis?: {
+        rowWeight?: { id: string; delta: number }[];
+        /** 행 앞 틈 끌기(row-gaps) — 그 행 위 틈 크기를 delta(px)만큼. 뜻(분·쉬는 시간)은 소유자가 정한다. */
+        rowGap?: { id: string; delta: number }[];
+    };
     /** 칸 병합·해제(M2 merge). set 은 앵커를 더하거나 덮고, clear 는 앵커를 푼다. */
     merge?: { set?: MergeRegion[]; clear?: { rowId: string; key: string }[] };
     source: TableTxSource;
@@ -128,7 +134,9 @@ export type PasteOverflow = 'append' | 'clip';
 export type TableCapability =
     | 'rows' | 'fill' | 'history'
     | 'col-resize' | 'sticky-headers' | 'row-weight' | 'axis-edit' | 'col-types' | 'validate' | 'merge'
-    | 'quick-calc' | 'table-style';
+    | 'quick-calc' | 'table-style'
+    /** 리치 셀 2단계 — 시간표 같은 손님이 확장하는 자리: 행 머리 열(label·sub) · 행 사이 틈(rowGap) */
+    | 'row-head' | 'row-gaps';
 
 /**
  * M5(넘버스) 표 스타일 — 프리셋 넷. 색은 토큰 조합의 이름일 뿐(하드코딩 색 0).
@@ -207,6 +215,25 @@ export interface TableProps {
     /** M5 넘버스 — 표 스타일 프리셋(table-style 기능). 소유자가 쥔다. 없으면 basic. */
     tableStyle?: TableStylePreset;
     onSetTableStyle?(s: TableStylePreset): void;
+    /**
+     * 칸 글자 그리기 — 주면 (편집 중이 아닌) 칸 글자를 이걸로 그린다. 리치 셀(마크다운·노드 칩)을 꽂는 자리.
+     *   🔴 저장은 그대로 글자다(복사·되돌리기·병합은 글자로 돈다) — 그리기만 바뀐다. 없으면 맨 글자.
+     */
+    renderText?(value: string): ReactNode;
+    /** 칸 편집 중 `@` — 주면 고르기(Picker)를 띄워 고른 노드를 token(id) 글자로 `@` 자리에 넣는다. */
+    mention?: {
+        Picker: ComponentType<{ anchor: DOMRect; onPick(nodeId: string): void; onClose(): void }>;
+        token(nodeId: string): string;
+    };
+    /**
+     * 행 앞 틈(row-gaps 기능) — 행마다 그 행 **위** 빈 띠의 크기(px)와 글씨. undefined 면 틈 줄이 없다.
+     *   틈은 칸이 아니다(선택·복사·이동이 건너뛴다). 아래 끝을 끌면 tx.axis.rowGap 으로 올린다.
+     */
+    rowGap?(rowId: string): { size: number; label?: string } | undefined;
+    /** 행 머리 열 폭(row-head 기능) — 기본 76px */
+    rowHeadWidth?: number;
+    /** 고른 범위가 바뀔 때(뷰 좌표) — 손님이 자기 툴바를 고른 행에 맞출 때 */
+    onSelectionChange?(sel: { r1: number; r2: number; c1: number; c2: number }): void;
     labels?: Partial<TableLabels>;
     emptyHint?: string;
     className?: string;

@@ -186,7 +186,7 @@ describe('칸 고정 · 줄바꿈', () => {
         click(q('[data-rv-head-menu="f_x"]'));
         click(mi('줄바꿈') ?? null);
         expect(lastViews[0].columns.find((c) => c.key === 'f_x')?.wrap).toBe(true);
-        expect(pos(0, 1).className).toContain('whitespace-normal');
+        expect(pos(0, 1).className).toContain('whitespace-pre-wrap');
     });
 });
 

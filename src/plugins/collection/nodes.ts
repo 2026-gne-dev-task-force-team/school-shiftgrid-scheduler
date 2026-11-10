@@ -245,6 +245,8 @@ export function reorderRow(dbId: string, id: string, beforeId: string | null): v
 
 // ── 쓰기 — 전부 commit(tx) 한 함수를 지난다 ──
 export interface DbTx {
+    /** 목록 설명(검수 K1) — 빈 글자면 지운다 */
+    description?: string;
     fields?: RecordField[];
     views?: ViewDef[];
     /** 셀 값 바꾸기 */
@@ -364,8 +366,10 @@ export function commit(dbId: string, tx: DbTx): string[] {
             const id = a.create(tx.addUnder ?? dbId, { type: ROW_TYPE, name: titleText(values[doc.titleKey]), data });
             if (id) created.push(id);
         }
-        if (tx.fields || tx.views || addRows.length > 0) {
-            a.setData(dbId, { ...doc, fields: tx.fields ?? doc.fields, views: tx.views ?? doc.views, seq });
+        if (tx.fields || tx.views || addRows.length > 0 || tx.description !== undefined) {
+            const next: DbDoc = { ...doc, fields: tx.fields ?? doc.fields, views: tx.views ?? doc.views, seq };
+            if (tx.description !== undefined) { if (tx.description.trim()) next.description = tx.description.trim(); else delete next.description; }
+            a.setData(dbId, next);
         }
         for (const b of tx.body ?? []) {
             const rn = a.get(b.id);

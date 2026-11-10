@@ -98,6 +98,14 @@ afterEach(async () => {
     vi.resetModules();
 });
 
+/**
+ * 🔴 기다리는 품 — 탭 하나 = 모듈 그래프를 통째로 다시 import 한다(혼자 돌 때 첫 판 ~0.7초). 다른 세션 테스트와
+ *   겹쳐 컴퓨터가 바쁘면 이게 몇 배로 늘어 기본값(시험 5초 · waitFor 1초)에 걸려 1~5건이 떨어졌다(업무 PC 11-10).
+ *   코드가 틀린 게 아니라 기다리는 품이 좁았던 것 — 품만 넓힌다(⛔ 기다리는 대상·판정은 그대로).
+ */
+vi.setConfig({ testTimeout: 30_000 });
+const until = <T,>(fn: () => T) => vi.waitFor(fn, { timeout: 10_000, interval: 20 });
+
 async function twoTabs(): Promise<[Tab, Tab]> {
     const a = await openTab();
     await a.persist.flushTree();
@@ -124,19 +132,19 @@ describe('W-X 두 탭 — 시트', () => {
         const [a, b] = await twoTabs();
         const id = a.sheet.createTable()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.sheet.liveTables().map((n) => n.id)).toContain(id));
+        await until(() => expect(b.sheet.liveTables().map((n) => n.id)).toContain(id));
     });
 
     it('A 가 칸을 쓰면 B 에 반영된다', async () => {
         const [a, b] = await twoTabs();
         const id = a.sheet.createTable()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.sheet.tableNodeOf(id)).not.toBeNull());
+        await until(() => expect(b.sheet.tableNodeOf(id)).not.toBeNull());
         const key = a.sheet.docOf(id).cols[1].key;
         const rev0 = b.sheet.getTableRev();
         typeCell(a, id, 1, key, 'SYNCED');
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(cellOf(b, id, 1, key)).toBe('SYNCED'));
+        await until(() => expect(cellOf(b, id, 1, key)).toBe('SYNCED'));
         expect(b.sheet.getTableRev(), 'B 화면 구독이 깨어났다').toBeGreaterThan(rev0);
     });
 
@@ -144,7 +152,7 @@ describe('W-X 두 탭 — 시트', () => {
         const [a, b] = await twoTabs();
         const id = a.sheet.createTable()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.sheet.tableNodeOf(id)).not.toBeNull());
+        await until(() => expect(b.sheet.tableNodeOf(id)).not.toBeNull());
         const [k0, k1] = a.sheet.docOf(id).cols.map((c) => c.key);
 
         b.bc.paused = true;                  // B 는 A 의 알림을 아직 못 받았다(늦은 탭)
@@ -158,8 +166,8 @@ describe('W-X 두 탭 — 시트', () => {
         const d = (await stored(a, id)) as { rows: { cells: Record<string, string> }[] };
         expect(d.rows[1].cells[k0], '🔴 A 의 입력이 저장소에서 사라졌다').toBe('A칸');
         expect(d.rows[2].cells[k1]).toBe('B칸');
-        await vi.waitFor(() => expect(cellOf(a, id, 2, k1)).toBe('B칸'));
-        await vi.waitFor(() => expect(cellOf(b, id, 1, k0)).toBe('A칸'));
+        await until(() => expect(cellOf(a, id, 2, k1)).toBe('B칸'));
+        await until(() => expect(cellOf(b, id, 1, k0)).toBe('A칸'));
     });
 });
 
@@ -168,12 +176,12 @@ describe('W-X 두 탭 — 시간표', () => {
         const [a, b] = await twoTabs();
         const id = a.grid.createSheet()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
+        await until(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
 
         // 첫 쓰기(A) → B 반영
         a.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'x:1': { text: 'A수업' } } }));
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A수업'));
+        await until(() => expect(b.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A수업'));
 
         // 늦은 B 가 다른 칸을 쓴다
         b.bc.paused = true;
@@ -187,8 +195,8 @@ describe('W-X 두 탭 — 시간표', () => {
         const d = (await stored(a, id)) as { cells: Record<string, { text: string }> };
         expect(d.cells['x:2']?.text, '🔴 A 의 입력이 저장소에서 사라졌다').toBe('A둘');
         expect(d.cells['y:3']?.text).toBe('B셋');
-        await vi.waitFor(() => expect(a.grid.sheetDataOf(id).cells['y:3']?.text).toBe('B셋'));
-        await vi.waitFor(() => expect(b.grid.sheetDataOf(id).cells['x:2']?.text).toBe('A둘'));
+        await until(() => expect(a.grid.sheetDataOf(id).cells['y:3']?.text).toBe('B셋'));
+        await until(() => expect(b.grid.sheetDataOf(id).cells['x:2']?.text).toBe('A둘'));
     });
 });
 
@@ -198,7 +206,7 @@ describe('W-X2 탭이 가려지는/닫히는 중의 저장', () => {
         const [a, b] = await twoTabs();
         const id = a.grid.createSheet()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
+        await until(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
 
         b.bc.paused = true;                  // B 는 A 의 알림을 아직 못 받았다
         a.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'x:1': { text: 'A칸' } } }));
@@ -219,14 +227,14 @@ describe('W-X2 시간표 ⌘Z 는 내가 바꾼 칸만', () => {
         const [a, b] = await twoTabs();
         const id = a.grid.createSheet()!;
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
+        await until(() => expect(b.grid.getSheetNodes().map((n) => n.id)).toContain(id));
 
         a.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'x:1': { text: 'A칸' } } }));
         await a.persist.flushTree();
-        await vi.waitFor(() => expect(b.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A칸'));
+        await until(() => expect(b.grid.sheetDataOf(id).cells['x:1']?.text).toBe('A칸'));
         b.grid.applyEdit(id, (d) => ({ ...d, cells: { ...d.cells, 'y:2': { text: 'B칸' } } }));
         await b.persist.flushTree();
-        await vi.waitFor(() => expect(a.grid.sheetDataOf(id).cells['y:2']?.text).toBe('B칸'));
+        await until(() => expect(a.grid.sheetDataOf(id).cells['y:2']?.text).toBe('B칸'));
 
         a.grid.stepEdit(id, 'undo');
         expect(a.grid.sheetDataOf(id).cells['x:1'], 'A 의 칸은 되돌았다').toBeUndefined();

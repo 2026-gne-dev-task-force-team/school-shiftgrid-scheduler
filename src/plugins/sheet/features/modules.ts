@@ -98,6 +98,21 @@ export const tableStyleFeature: TableFeature = {
     install: (ctx) => { ctx.capabilities.enable('table-style'); },
 };
 
+// ── 리치 셀 2단계 — 손님(시간표)이 시트를 확장할 자리 ─────────────────────────
+
+/** 행 머리 열 — 행의 label(굵게)·sub(작게)를 왼쪽 고정 열에 그린다. axis-edit 가 있으면 더블클릭으로 이름을 고친다. */
+export const rowHeadFeature: TableFeature = {
+    id: 'row-head', version: '0.1.0',
+    install: (ctx) => { ctx.capabilities.enable('row-head'); },
+};
+
+/** 행 사이 틈 — 손님의 rowGap(rowId) 만큼 행 위에 빈 띠(글씨 하나)를 두고 아래 끝을 끌어 크기를 바꾼다. 뷰 순서를 흔드는 sort·filter 와는 못 쓴다. */
+export const rowGapsFeature: TableFeature = {
+    id: 'row-gaps', version: '0.1.0',
+    conflicts: ['sort', 'filter'],
+    install: (ctx) => { ctx.capabilities.enable('row-gaps'); },
+};
+
 /** 내장 모듈 표 — 조립기가 문자열 id 를 이걸로 푼다. */
 export const BUILTIN: Record<string, TableFeature> = {
     [rowsFeature.id]: rowsFeature,
@@ -114,6 +129,8 @@ export const BUILTIN: Record<string, TableFeature> = {
     [mergeFeature.id]: mergeFeature,
     [quickCalcFeature.id]: quickCalcFeature,
     [tableStyleFeature.id]: tableStyleFeature,
+    [rowHeadFeature.id]: rowHeadFeature,
+    [rowGapsFeature.id]: rowGapsFeature,
 };
 
 /**

@@ -36,6 +36,7 @@ function fakeApi() {
         Header: () => null,
         Frame: () => null,
         Embed: () => null,
+        Chip: () => null,
         move: (id, pid, index) => { write(); const from = parentOf(id); if (from) nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); const kids = nodes.get(pid)!.children; if (index == null || index >= kids.length) kids.push(id); else kids.splice(Math.max(0, index), 0, id); delete nodes.get(id)!.trashedFrom; },
         remove: (id) => { write(); const from = parentOf(id)!; nodes.get(from)!.children = nodes.get(from)!.children.filter((c) => c !== id); nodes.get(id)!.trashedFrom = from; nodes.get('trash')!.children.push(id); },
         batch: (fn) => { log.batches++; depth++; try { fn(); } finally { depth--; for (const l of listeners) l([]); } },
@@ -92,6 +93,13 @@ describe('commit — 한 tx = 한 묶음', () => {
         const snap = snapshotOf(dbId)!;
         expect(snap.records).toHaveLength(3);
         expect(snap.doc.fields).toHaveLength(3);
+    });
+
+    it('검수 K1 — 목록 설명은 commit 으로 쓰고 빈 글자면 지운다', () => {
+        commit(dbId, { description: '  교직원 명단  ' });
+        expect(snapshotOf(dbId)!.doc.description).toBe('교직원 명단');
+        commit(dbId, { description: '' });
+        expect(snapshotOf(dbId)!.doc.description).toBeUndefined();
     });
 
     it('제목 셀 수정 — 값과 노드 이름이 같이 바뀐다 · 빈 제목은 이름을 안 지운다', () => {

@@ -10,7 +10,7 @@ import { Table } from '../Table';
 import { DEFAULT_FEATURES } from '../features/modules';
 import type { CellDecoration, CellTone } from '../contracts/table';
 import { useActiveTable } from '../store';
-import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemoved, removedTitle, docOf, writeDoc, applyTx, inTrash } from '../nodes';
+import { subscribeTableNodes, getTableRev, tableNodeOf, getNodesApi, notifyRemoved, removedTitle, docOf, writeDoc, applyTx, inTrash, richCell } from '../nodes';
 import { StartScreen } from './StartScreen';
 
 
@@ -40,6 +40,10 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
         writeDoc(activeId, { ...doc, [field]: next });
     };
 
+    // 리치 셀 — 칸 글자를 마크다운·노드 칩으로 그리고, 편집 중 `@` 로 칩을 넣는다(노트 꾸러미가 꺼져 있으면 맨 글자).
+    const rc = richCell();
+    const RichText = rc?.RichText;
+
     return (
         // 노션 페이지처럼 — 가운데 정렬된 읽기 폭 · 큰 머리 · 넉넉한 여백(틀이 쥔다). 표가 더 넓으면 표 자체가 가로 스크롤.
         <Frame nodeId={activeId} leafId={leafId} scroll
@@ -57,6 +61,8 @@ export function TableNodeView({ leafId }: { leafId?: string }) {
                     headerRow={doc.headerRow}
                     headerCol={doc.headerCol}
                     decorate={decorate}
+                    renderText={RichText ? (v) => <RichText text={v} /> : undefined}
+                    mention={rc ? { Picker: rc.NodePicker, token: rc.token } : undefined}
                     onSetHeaderRow={(v) => writeDoc(activeId, { ...doc, headerRow: v })}
                     onSetHeaderCol={(v) => writeDoc(activeId, { ...doc, headerCol: v })}
                     footerRow={doc.footerRow}

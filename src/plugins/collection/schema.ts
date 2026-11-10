@@ -88,6 +88,7 @@ export function normalizeDb(raw: unknown): DbDoc {
     const views = normalizeViews(o.views).map((v) => reconcileColumns(v, fields));
     const seq = typeof o.seq === 'number' && o.seq >= 1 ? Math.floor(o.seq) : 1;
     const doc: DbDoc = { v: 1, fields, titleKey, views, seq };
+    if (typeof o.description === 'string' && o.description.trim() !== '') doc.description = o.description;
     return doc;
 }
 

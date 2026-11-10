@@ -198,6 +198,8 @@ export interface DbDoc {
     views: ViewDef[];
     /** ID 칸 자동 번호의 다음 값(P2) */
     seq: number;
+    /** 목록 설명 한 줄(검수 K1 — 노션 데이터베이스 설명) — 표 위와 빈 표 안내에 뜬다 */
+    description?: string;
 }
 
 /** 행 노드(`collection.row`)의 data */
@@ -279,6 +281,12 @@ export interface RecordViewProps<T> {
     onCellChange?: (id: string, key: string, value: RecordCellValue) => void;
     /** 여러 셀을 한 번에(채우기 ⌘D·일괄 편집) — 한 묶음으로 저장하면 되돌리기 한 칸. 안 넘기면 onCellChange 를 셀마다 부른다. */
     onCellsChange?: (changes: CellChange[]) => void;
+    /** 목록 설명(검수 K1) — 표 위 한 줄 + 빈 표 「표시할 행이 없습니다」 밑. 꾸러미가 선언으로 채운다 */
+    description?: string;
+    /** 설명을 화면에서 고치게 — 안 넘기면 읽기 전용(꾸러미 선언 설명) */
+    onDescriptionChange?: (description: string) => void;
+    /** false 면 표 위 설명 줄을 안 그린다(화면이 틀 제목 밑에 따로 둘 때) — 빈 표 안내의 설명은 그대로 */
+    descriptionLine?: boolean;
     /** 행이 하나도 없을 때 빈 상태 안내 한 줄 — 안 넘기면 onAddRecord 가 있을 때 「새로 만들기」 안내를 낸다. */
     emptyHint?: string;
     /** 「+ 새로 만들기」 줄을 누르면. 안 넘기면 그 줄이 안 뜬다. */
@@ -293,6 +301,8 @@ export interface RecordViewProps<T> {
     onOpenRecordTab?: (id: string) => void;
     /** 넘기면 제목 칸 앞에 행 아이콘이 뜬다(없는 행은 기본 문서 아이콘) — 레코드 = 페이지. */
     iconOf?: (id: string) => string | undefined;
+    /** 아이콘을 안 고른 행의 기본 아이콘(기본 'fileText') — 특화 컬렉션은 항목 타입 아이콘을 준다. */
+    rowIcon?: IconName;
     /** 넘기면 칸 추가·이름·삭제·선택지 편집을 허용한다. 안 넘기면 칸 구조는 고정. */
     onFieldsChange?: (fields: RecordField[]) => void;
     /** 타입 변환 — 값이 함께 바뀌니 칸+값을 한 묶음으로 받는다(깎임 확인은 화면이 이미 받았다). 안 넘기면 onFieldsChange + onCellChange 로 흉내 낸다. */
@@ -376,8 +386,12 @@ export interface CollectionConfig {
     /** 목록 이름표·아이콘 — 시작 화면·우클릭 메뉴·인스펙터 「목록」 칸이 쓴다 */
     listLabel: string;
     listIcon: IconName;
+    /** 항목 기본 아이콘 — 아이콘을 안 고른 행 머리에 뜬다(쥔님 11-10 「특화 컬렉션 기본 아이콘이 문서」). 항목 노드 타입 아이콘과 같게 둔다 */
+    itemIcon?: IconName;
     /** 기본 칸 — 첫 칸이 제목(노드 이름)이다. 전부 locked 로 취급(지우기·타입 바꾸기 금지) */
     baseFields: RecordField[];
+    /** 목록 설명 한 줄(검수 K1) — 표 위·빈 표 안내에 뜬다. 칸 설명은 baseFields[].description */
+    description?: string;
     /** 개수 단위(「3개」) · 안내 문구들 */
     unit: string;
     text: { startDescription: string; startHint: string };

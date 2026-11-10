@@ -9,7 +9,7 @@ import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import { notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import { Button, EmptyState, Icon, undoKey, useFrameToolbar } from '../../../pane-ui-system';
-import { RecordView } from '../RecordView';
+import { DescriptionLine, RecordView } from '../RecordView';
 import { StartScreen } from './StartScreen';
 import { RowDoc } from '../RowDoc';
 import { openRecordTab } from '../tab-open';
@@ -59,6 +59,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     return (
         <div ref={rootRef} className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <Frame nodeId={id} leafId={leaf.id} toolbar={bar.slot}
+                subheader={<DescriptionLine text={snap.doc.description} onChange={(description) => commit(id, { description })} />}
                 headerExtra={snap.trashedRows > 0 && (
                     <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' }))}>
                         <Icon name="undo" size={13} /> 휴지통의 행 {snap.trashedRows}개 복원
@@ -107,6 +108,8 @@ export function DbTable({ host, snap, toolbarHost, onOpenRecord, onOpenRecordTab
             getId={(r) => r.id}
             viewKey={`db.${id}`}
             titleKey={doc.titleKey}
+            description={doc.description}
+            descriptionLine={false}
             views={doc.views.length > 0 ? doc.views : [blankDb().views[0]]}
             onViewsChange={onViewsChange}
             onCellChange={onCellChange}

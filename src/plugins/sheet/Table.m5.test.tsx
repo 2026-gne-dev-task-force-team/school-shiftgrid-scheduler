@@ -169,8 +169,8 @@ describe('Table M5 — 넘버스 얼굴', () => {
             act(() => ref.current!.h().click(r, 1));
             key('Enter');
             expect(ref.current!.h().state().editing).toBe(true);
-            const input = document.querySelector<HTMLInputElement>('input[aria-label]')!;
-            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+            const input = document.querySelector<HTMLTextAreaElement>('textarea[aria-label]')!;
+            const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!;
             act(() => { setter.call(input, 'x'); input.dispatchEvent(new Event('input', { bubbles: true })); });
             act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
             expect(ref.current!.h().state().editing).toBe(false);

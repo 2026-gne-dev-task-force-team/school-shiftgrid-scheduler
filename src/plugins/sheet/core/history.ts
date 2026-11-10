@@ -45,6 +45,8 @@ export function inverseTx(
                 .map((m) => ({ id: m.id, to: rows.findIndex((x) => x.id === m.id) }))
                 .filter((m) => m.to >= 0);
         }
+        // rename → 옛 이름으로.
+        if (tx.rows.rename?.length) r.rename = tx.rows.rename.map((x) => ({ id: x.id, label: byId.get(x.id)?.label ?? '' }));
         inv.rows = r;
     }
 
@@ -68,8 +70,10 @@ export function inverseTx(
         inv.cols = c;
     }
 
-    if (tx.axis?.rowWeight) {
-        inv.axis = { rowWeight: tx.axis.rowWeight.map((w) => ({ id: w.id, delta: -w.delta })) };
+    if (tx.axis?.rowWeight || tx.axis?.rowGap) {
+        inv.axis = {};
+        if (tx.axis.rowWeight) inv.axis.rowWeight = tx.axis.rowWeight.map((w) => ({ id: w.id, delta: -w.delta }));
+        if (tx.axis.rowGap) inv.axis.rowGap = tx.axis.rowGap.map((w) => ({ id: w.id, delta: -w.delta }));
     }
 
     if (tx.merge) {
@@ -89,9 +93,9 @@ export function inverseTx(
 export function txHasEffect(tx: TableTx): boolean {
     return !!(
         tx.cells.length ||
-        tx.rows?.add?.length || tx.rows?.remove?.length || tx.rows?.move?.length ||
+        tx.rows?.add?.length || tx.rows?.remove?.length || tx.rows?.move?.length || tx.rows?.rename?.length ||
         tx.cols?.add?.length || tx.cols?.remove?.length || tx.cols?.resize?.length || tx.cols?.rename?.length || tx.cols?.move?.length ||
-        tx.axis?.rowWeight?.length ||
+        tx.axis?.rowWeight?.length || tx.axis?.rowGap?.length ||
         tx.merge?.set?.length || tx.merge?.clear?.length
     );
 }

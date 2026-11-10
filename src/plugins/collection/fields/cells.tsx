@@ -6,7 +6,7 @@
  *   check       : 눌러서 바로 켜고 끈다
  * 🔴 색·치수는 토큰 클래스 + 알약만(colors.pillStyle). 도메인은 모른다.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DatePicker, Icon, Popover, Pill, PILL_COLORS, MenuItem, MenuList, isImeEnter, pillStyle, useReorder } from '../../../pane-ui-system';
 import { ReorderOverlay } from '../ReorderOverlay';
 import { formatNumber } from './format';
@@ -36,6 +36,13 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
     const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
     const done = useRef(false);
     useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+    // 🔴 글 칸 편집기는 글 높이만큼 늘어난다 — 전엔 행 높이에 묶여 둘째 줄부터 안 보였다(쥔님 11-10 「여러 줄 안 됨」)
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!multiline || !el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;   // ⛔ 부모 높이와 max 하지 말 것 — 부모가 이 칸을 따라 늘어 끝없이 커졌다(실측 590px)
+    }, [text, multiline]);
     const commit = () => { if (done.current) return; done.current = true; onCommit(text); };
     const common = {
         'data-rv-cell': dataKey,
@@ -67,7 +74,7 @@ function InlineInput({ initial, numeric, multiline, dataKey, onCommit, onCancel 
     if (multiline) {
         return (
             <textarea ref={ref} {...common} rows={1} value={text} onChange={(e) => setText(e.target.value)}
-                className={`${cls} py-1.5 leading-snug resize-none overflow-hidden`} />
+                className={`${cls} block py-1.5 leading-snug resize-none overflow-hidden whitespace-pre-wrap break-keep [overflow-wrap:anywhere]`} />
         );
     }
     return <input ref={ref} {...common} value={text} onChange={(e) => setText(e.target.value)} className={cls} />;
@@ -167,12 +174,14 @@ function OptionEditRow({ option, onChange, onDelete }: { option: FieldOption; on
 }
 
 /** 선택지 목록 + 새 선택지 입력 — select·multi 팝오버의 몸통. 선택지 편집은 onOptionsChange 가 있을 때만 켜진다. */
-function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
+function OptionList({ field, picked, multi, onPick, onOptionsChange, editOnly = false }: {
     field: RecordField;
     picked: string[];
     multi: boolean;
     onPick: (value: string) => void;
     onOptionsChange?: (o: FieldOption[]) => void;
+    /** 고르기 없이 편집만(칸 머리 메뉴) — 선택지를 누르면 편집 줄이 열린다 */
+    editOnly?: boolean;
 }) {
     const options = field.options ?? [];
     const [editing, setEditing] = useState<string | null>(null);
@@ -203,10 +212,10 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                             className={`flex items-center gap-1 rounded hover:bg-text/[0.06] ${on ? 'bg-text/[0.04]' : ''}`}
                             data-rv-opt-row={o.value} data-row-id={o.value} title={o.label}
                         >
-                            {onOptionsChange && <span data-rv-opt-grip={o.value} tabIndex={0} aria-label="순서 바꾸기(Alt+↑↓)" className="grid place-items-center shrink-0 cursor-grab outline-none text-muted"><Icon name="grip" size={12} /></span>}
+                            {onOptionsChange && <span data-rv-opt-grip={o.value} tabIndex={0} aria-label="순서 바꾸기(Alt+↑↓)" className="grid place-items-center shrink-0 cursor-grab outline-none text-text/70"><Icon name="grip" size={14} /></span>}
                             <button
                                 type="button" data-rv-opt={o.value} aria-pressed={on}
-                                onClick={() => { if (reorder.draggedRef.current) { reorder.draggedRef.current = false; return; } onPick(o.value); }}
+                                onClick={() => { if (reorder.draggedRef.current) { reorder.draggedRef.current = false; return; } if (editOnly) setEditing(editing === o.value ? null : o.value); else onPick(o.value); }}
                                 className="flex-1 min-w-0 flex items-center gap-2 h-row px-1 text-left"
                             >
                                 {multi && (
@@ -219,8 +228,8 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
                             {onOptionsChange && (
                                 <button type="button" data-rv-opt-edit={o.value} aria-label="선택지 편집"
                                     onClick={() => setEditing(editing === o.value ? null : o.value)}
-                                    className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-muted hover:text-text hover:bg-text/[0.08]">
-                                    <Icon name="dots" size={14} />
+                                    className="hit-44 relative shrink-0 grid place-items-center w-5 h-5 rounded text-text/70 hover:text-text hover:bg-text/[0.08]">
+                                    <Icon name="dots" size={16} />
                                 </button>
                             )}
                         </div>
@@ -253,6 +262,11 @@ function OptionList({ field, picked, multi, onPick, onOptionsChange }: {
             <ReorderOverlay drag={reorder.drag} indicator={reorder.indicator} axis="y" />
         </div>
     );
+}
+
+/** 칸 머리 메뉴의 「선택지」 — 고르기 없이 이름·색·순서·삭제·추가만(노션 속성 편집처럼 · 쥔님 검수 K2). 기본 칸도 선택지는 고친다. */
+export function OptionsEditor({ field, onOptionsChange }: { field: RecordField; onOptionsChange: (o: FieldOption[]) => void }) {
+    return <OptionList field={field} picked={[]} multi={false} onPick={() => {}} onOptionsChange={onOptionsChange} editOnly />;
 }
 
 export function SelectCell({ field, value, editable, onChange, onOptionsChange }: FieldCellProps) {

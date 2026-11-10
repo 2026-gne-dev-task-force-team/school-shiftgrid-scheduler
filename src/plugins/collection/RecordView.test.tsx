@@ -162,6 +162,40 @@ describe('칸 설정(Config) — 칸 메뉴', () => {
         expect(out.map((f) => f.key)).toEqual(['f_t', 'f_x', 'f_s', 'f_r']);
         expect(out[3].config).toMatchObject({ many: false });
     });
+
+    it('검수 K2 — 머리 메뉴에서 선택지를 편집한다(잠긴 칸도)', () => {
+        const spy = spies();
+        const fields: RecordField[] = START.map((f) => (f.key === 'f_s' ? { ...f, locked: true } : f));
+        mount(<RecordView<Rec> fields={fields} records={[]} getId={(r) => r.id} viewKey="t.k2" titleKey="f_t" onCellChange={() => {}} onFieldsChange={(f) => spy.fields(f)} />);
+        click(q('[data-rv-head-menu="f_x"]'));
+        expect(q('[data-rv-head-options]')).toBeNull();   // 선택지 없는 칸엔 안 그려진다
+        click(q('[data-rv-head-menu="f_s"]'));
+        expect(q('[data-rv-head-options="f_s"]')).toBeTruthy();
+        click(q('[data-rv-head-options="f_s"] [data-rv-opt="a"]'));
+        expect(q('[data-rv-opt-editor="a"]')).toBeTruthy();
+        click(q('[data-rv-opt-color="red"]'));
+        const out = spy.fields.mock.calls.at(-1)![0] as RecordField[];
+        expect(out.find((f) => f.key === 'f_s')!.options).toEqual([{ value: 'a', label: '가', color: 'red' }]);
+    });
+
+    it('검수 K1 — 목록 설명이 표 위와 빈 표 안내에 뜬다 · 읽기 전용이면 누름 자리가 없다', () => {
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1" titleKey="f_t" description="이 학교 교직원 명단" />);
+        expect(q('p[data-rv-desc]')?.textContent).toBe('이 학교 교직원 명단');
+        expect(q('[data-rv-empty-desc]')?.textContent).toBe('이 학교 교직원 명단');
+    });
+
+    it('검수 K1 — 설명 없고 고칠 수 없으면 줄 자체가 없다 · 고칠 수 있으면 눌러서 고친다', () => {
+        const onDesc = vi.fn();
+        mount(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1b" titleKey="f_t" />);
+        expect(q('[data-rv-desc]')).toBeNull();
+        expect(q('[data-rv-empty-desc]')).toBeNull();
+        act(() => root!.render(<RecordView<Rec> fields={START} records={[]} getId={(r) => r.id} viewKey="t.k1b" titleKey="f_t" onDescriptionChange={onDesc} />));
+        click(q('button[data-rv-desc]'));
+        const inp = q('[data-rv-desc-edit] input') as HTMLInputElement;
+        setInput(inp, '방 목록');
+        key(inp, 'Enter');
+        expect(onDesc).toHaveBeenCalledWith('방 목록');
+    });
 });
 
 describe('칸 추가 — 타입 고르기', () => {
@@ -446,6 +480,20 @@ describe('P2 — 행 포커스에서 Tab 들여쓰기 / Shift+Tab 내어쓰기',
         expect(indent).toHaveBeenCalledTimes(1);
         key(q('[data-rv-row="b"]')!, 'Tab', { shiftKey: true });
         expect(outdent).toHaveBeenCalledTimes(1);
+    });
+
+    it('칸을 고른 채 ⌘] 들여쓰기 · ⌘[ 내어쓰기 (Tab 은 칸 이동 그대로)', () => {
+        const indent = vi.fn(); const outdent = vi.fn();
+        mount(treeRV(indent, outdent));
+        const cell = q('[data-rv-pos="1:0"]')!;
+        act(() => { cell.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
+        const mod = { metaKey: true, ctrlKey: true };
+        key(cell, ']', { ...mod, code: 'BracketRight' });
+        expect(indent).toHaveBeenCalledWith('b');
+        key(cell, '[', { ...mod, code: 'BracketLeft' });
+        expect(outdent).toHaveBeenCalledWith('b');
+        key(cell, ']', { code: 'BracketRight' });   // ⌘ 없으면 아무 일 없음
+        expect(indent).toHaveBeenCalledTimes(1);
     });
 });
 

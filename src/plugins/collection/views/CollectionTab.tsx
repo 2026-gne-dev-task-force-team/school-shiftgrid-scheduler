@@ -9,7 +9,7 @@ import { EmptyState, StartScreen as StartScreenBase, useFrameToolbar, type PeekH
 import { useLauncherTab, notifyNodeUndo, type PluginHost } from '../../../pane-ui-system/plugin';
 import type { PasteRequest, RecordCellValue, RecordField, RecordTree } from '../contracts/collection';
 import type { Bridge } from '../define';
-import { RecordView } from '../RecordView';
+import { DescriptionLine, RecordView } from '../RecordView';
 import { effectiveParentId } from '../tree';
 import { ItemPeek } from './ItemProps';
 import { openRecordTab } from '../tab-open';
@@ -99,7 +99,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
 
     return (
         <div className="h-full select-none">
-            <Frame nodeId={activeId} leafId={leafId} toolbar={bar.slot} headerExtra={`${records.length}${cfg.unit}`}>
+            <Frame nodeId={activeId} leafId={leafId} toolbar={bar.slot} headerExtra={`${records.length}${cfg.unit}`}
+                subheader={cfg.description ? <DescriptionLine text={cfg.description} /> : undefined}>
             <div className="h-full flex flex-col">
                 <RecordView<Rec>
                     toolbarHost={bar.host}
@@ -108,6 +109,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     getId={(r) => r.id}
                     viewKey={cfg.viewKey}
                     titleKey={titleKey}
+                    description={cfg.description}
+                    descriptionLine={false}
                     onCellChange={(id, key, value) => kit.setValue(id, key, value)}
                     onFieldsChange={(next) => kit.setUserFields(activeId, next.filter((f) => !baseKeys.includes(f.key)))}
                     onAddRecord={() => { kit.addItem(activeId); }}
@@ -117,6 +120,7 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onReorder={kit.reorderItem}
                     tree={tree}
                     iconOf={(id) => kit.nodes()?.get(id)?.icon}
+                    rowIcon={cfg.itemIcon}
                     onOpenRecord={host && peek ? (id) => peek.show(<ItemPeek kit={kit} host={host} id={id} />, { wideMin: 480, openInTab: () => openRecordTab(host, id) }) : undefined}
                     onOpenRecordTab={host ? (id) => openRecordTab(host, id) : undefined}
                     className="flex-1 min-h-0"

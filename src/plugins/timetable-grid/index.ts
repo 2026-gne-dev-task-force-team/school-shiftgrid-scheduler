@@ -27,6 +27,8 @@ export const timetableGridPlugin = definePlugin({
         ...manifest,
         // 🔴 시간표는 노드다 — nodes 없으면 의미가 없으니 requires. nodeTypes 를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
+        // 🔴 리치 셀 2단계 — 격자는 시트 표(table)를 확장해 그린다 · 칸 글자는 리치 셀(page)이 그린다(없으면 맨 글자).
+        supports: { table: '^0.1', 'rich-cell': '^0.1' },
         contributes: {
             // 그리드 화면(싱글턴·가운데·안 가름 — 달력·명단과 같은 placement).
             views: [{

@@ -11,6 +11,8 @@
 // 🔴 import type 만 — 약속 타입은 약속 플러그인에서(값 아님, 구조 검사 ⑱·d·g). 값은 host.modules.use('nodes') 로 받는다.
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { TimetableData, ScheduleEntry } from './types';
+import type { TableApi } from '../sheet/contracts/table';
+import type { RichCellApi } from '../page/contracts/rich-cell';
 import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { blankTimetable, guardTimeline, normalizeTimetable } from './model';
 import { scheduleRange } from './schedule';
@@ -206,6 +208,10 @@ export function canStep(id: string, which: 'undo' | 'redo'): boolean {
 
 /** 창틀 알림 한 줄(정보). */
 export function notifyInfo(title: string): void { hostRef?.notify({ title }); }
+/** 시트 표 편집기(table 약속) — 시간표는 이걸 확장해 그린다(리치 셀 2단계). 꺼져 있으면 null. */
+export function tableApi(): TableApi | null { return hostRef?.modules.use<TableApi>('table') ?? null; }
+/** 리치 셀(page 가 낸다) — 칸 글자를 마크다운·노드 칩으로. 꺼져 있으면 맨 글자. */
+export function richCell(): RichCellApi | null { return hostRef?.modules.use<RichCellApi>('rich-cell') ?? null; }
 
 /** 되돌리기/다시하기 한 칸 — 더미가 비면 아무것도 안 한다. */
 export function stepEdit(id: string, which: 'undo' | 'redo'): void {
