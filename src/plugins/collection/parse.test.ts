@@ -41,3 +41,16 @@ describe('parseRows — 탭/CRLF/빈 줄/한 칸만', () => {
         expect(parseRows('가\t나\t다\t라', KEYS)).toEqual([{ name: '가', memo: '나' }]);
     });
 });
+
+describe('parseRows — 따옴표 칸(공용 clipboard-tsv)', () => {
+    it('줄바꿈이 든 따옴표 칸은 한 칸으로 들어간다', () => {
+        expect(parseRows('"가\n나"\t메모\n다\t라', KEYS)).toEqual([
+            { name: '가\n나', memo: '메모' },
+            { name: '다', memo: '라' },
+        ]);
+    });
+
+    it('탭이 든 따옴표 칸도 한 칸으로 들어간다', () => {
+        expect(parseRows('이름\t"메\t모"', KEYS)).toEqual([{ name: '이름', memo: '메\t모' }]);
+    });
+});
