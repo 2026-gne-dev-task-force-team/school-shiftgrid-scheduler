@@ -13,7 +13,7 @@
  */
 import { CalBar } from './CalBar';
 import { DayLabel } from './DayLabel';
-import { memo, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌 — 플러그인 안에 사본을 두지 않는다
 import { Button, ContextMenu, Icon, IconButton, useContextTrigger, isoOf, startOfWeek, monthLabel, type MenuEntry, type PeekHandle } from '../../../pane-ui-system';
 import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLabel, columnBoundary, shouldShowMonth, type ColBoundary } from './time-grid';
@@ -25,6 +25,7 @@ import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { focusPeekTitle } from './focus-title';
 import { mergeBind } from './ctx-bind';
+import { CHIP_A11Y, chipKeyId } from './chip-key';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { timeSelection, timeSliceForDay, floorToSnap, eventFromSelection, type CalSelection } from '../selection';
 
@@ -90,7 +91,7 @@ const DayHeader = memo(function DayHeader(
             {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
-                    <div key={e.id} data-event-id={e.id} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
+                    <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar}`}>
                         {e.name || <span className="opacity-60">제목 없음</span>}
                     </div>
                 ))}
@@ -110,6 +111,7 @@ function TimedCard({ e, dayStartMs }: { e: CalEvent; dayStartMs: number }) {
     return (
         <div
             data-event-id={e.id}
+            {...CHIP_A11Y}
             className={`absolute left-0.5 right-0.5 z-20 overflow-hidden rounded border-l-2 px-1 cursor-pointer ${pal.soft} ${pal.border}`}
             style={{ top, height }}
         >
@@ -196,8 +198,9 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
 
     const onGridClick = (e: ReactMouseEvent) => {
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
-        if (id) card.open(id);
+        if (id) { card.open(id); focusPeekTitle(); }
     };
+    const onGridKey = (e: ReactKeyboardEvent) => { const id = chipKeyId(e); if (id) { card.open(id); focusPeekTitle(); } };
     const onGridDouble = (e: ReactMouseEvent) => newAt(e.target as HTMLElement, e.clientY);
     // R6 우클릭: 일정 → 열기·휴지통 · 시간 칸 → 새 일정(그 시각부터 1시간)
     const [ctx, setCtx] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
@@ -301,7 +304,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
             >
                 <div className="relative" style={{ width: s.contentW, height: hdrH + HOURS * HOUR_H }}>
                     {/* 열 머리 줄(sticky top) — 모서리는 sticky left */}
-                    <div className="sticky top-0 z-20 bg-bg border-b border-line" style={{ height: hdrH, width: s.contentW }} onClick={onGridClick} {...ctxTrigger}>
+                    <div className="sticky top-0 z-20 bg-bg border-b border-line" style={{ height: hdrH, width: s.contentW }} onClick={onGridClick} onKeyDown={onGridKey} {...ctxTrigger}>
                         <div className="sticky left-0 z-30 bg-bg" style={{ width: GUTTER, height: hdrH }} aria-hidden="true" />
                         {s.offsets.map((o, i) => (
                             <DayHeader
@@ -313,7 +316,7 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
                         ))}
                     </div>
                     {/* 본문 — 시간 눈금(sticky left) + 날 열들. 시간 칸 더블클릭 → 1시간 일정(data-day-offset 위임) */}
-                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onDoubleClick={onGridDouble} {...mergeBind(range.bind, ctxTrigger)}>
+                    <div className="relative" style={{ height: HOURS * HOUR_H, width: s.contentW }} onClick={onGridClick} onKeyDown={onGridKey} onDoubleClick={onGridDouble} {...mergeBind(range.bind, ctxTrigger)}>
                         <div className="sticky left-0 z-10 bg-bg border-r border-line" style={{ width: GUTTER, height: HOURS * HOUR_H }}>
                             {HOUR_LINES.filter((h) => h > 0 && h < 24).map((h) => (
                                 <span

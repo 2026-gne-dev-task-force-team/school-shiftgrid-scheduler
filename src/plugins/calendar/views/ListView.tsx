@@ -6,7 +6,7 @@
 import { CalBar } from './CalBar';
 import { useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { EmptyState, Icon, isoOf, type PeekHandle } from '../../../pane-ui-system';
+import { EmptyState, Icon, isImeEnter, isoOf, type PeekHandle } from '../../../pane-ui-system';
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent, renameEvent, removeEvent } from '../nodes';
@@ -83,6 +83,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
     const openRow = (e: CalEvent) => {
         onChange(new Date(e.startMs));   // anchor 를 그 날로 — 다른 뷰로 가도 그 날이 보인다
         card.open(e.id);
+        focusPeekTitle();
     };
     const onSearchKey = (ev: KeyboardEvent<HTMLInputElement>) => { if (ev.key === 'Escape') setQuery(''); };
 
@@ -149,7 +150,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                                 const iso = dayIso(e.startMs);
                                 const selected = dayInSelection(selection, iso);
                                 return (
-                                    <tr key={e.id} data-day={iso} onClick={() => openRow(e)} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
+                                    <tr key={e.id} data-day={iso} tabIndex={0} onClick={() => openRow(e)} onKeyDown={(ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !isImeEnter(ev) && ev.target === ev.currentTarget) { ev.preventDefault(); openRow(e); } }} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
                                         <td className="px-3 py-1.5 border-b border-line truncate">{e.name || <span className="opacity-60">제목 없음</span>}</td>

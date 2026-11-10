@@ -16,6 +16,7 @@ import { isoMinuteOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
+import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
 import type { IcsWriteEvent } from './ics';
@@ -69,6 +70,7 @@ export const calendarNodeTypeImpl = {
             host.workspace.open(MONTH_ID, { where: 'center' });
         },
         menu: (_host: PluginHost, id: string) => storeMenu(id),
+        embed: StoreEmbed,
     } satisfies NodeTypeImplFns,
 };
 

@@ -556,7 +556,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
 
     const sel = core.sel;
-    const stickyColHandleCls = hasSticky ? 'sticky top-0 z-20' : '';
+    const stickyColHandleCls = hasSticky ? 'sticky top-0 z-20 bg-bg' : '';
 
     // ── 선택 테두리 한 겹 — 고른 범위를 2px 파란 상자로 통째로 감싼다(칸마다 테두리를 박지 않아 이중선·어긋남이 안 난다) ──
     //    칸 안쪽 옅은 파란 바탕은 칸이 직접 칠한다(bg-accent/10) — 병합 칸도 자연히 덮인다.
