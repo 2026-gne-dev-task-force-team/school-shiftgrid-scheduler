@@ -47,10 +47,10 @@ export const staffNodeTypeImpl = {
  */
 export const staffNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, body: 'collection', label: '명단', icon: 'users',
+        type: LIST_TYPE, body: 'collection', label: '교직원 명단', icon: 'users',
         container: { accepts: [MEMBER_TYPE, 'folder', LIST_TYPE] }, openable: true,
-        create: { label: '명단', under: ['folder', LIST_TYPE] },
+        create: { label: '교직원 명단', under: ['folder', LIST_TYPE] },
         impl: 'list',
     },
-    { type: MEMBER_TYPE, label: '사람', icon: 'user', record: true },
+    { type: MEMBER_TYPE, label: '교직원', icon: 'user', record: true },
 ];
