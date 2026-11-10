@@ -115,6 +115,28 @@ export function parseInline(text: string): InlineSpan[] {
     return spans;
 }
 
+/**
+ * Enter 로 글을 가를 자리 — 🔴 서식 마커 짝을 깨지 않는다.
+ *   서식 맨 끝/맨 앞(마커 바로 옆)이면 서식 밖으로 밀어 가르고(아랫줄은 서식 없이),
+ *   서식 한가운데면 양쪽을 다 닫아 준다(`**se**` / `**l**`).
+ */
+export function splitInline(text: string, offset: number): [string, string] {
+    let i = 0;
+    while (i < text.length) {
+        const m = matchMarkerAt(text, i);
+        if (!m) { i += 1; continue; }
+        if (offset > i && offset < m.end) {
+            const L = INLINE_MARKERS[m.kind].length;
+            if (offset <= i + L) return [text.slice(0, i), text.slice(i)];
+            if (offset >= m.end - L) return [text.slice(0, m.end), text.slice(m.end)];
+            const mk = INLINE_MARKERS[m.kind];
+            return [text.slice(0, offset) + mk, mk + text.slice(offset)];
+        }
+        i = m.end;
+    }
+    return [text.slice(0, offset), text.slice(offset)];
+}
+
 /** 조각 하나의 서식 종류(없으면 null) — 직렬화·DOM 빌드가 쓴다. */
 export function kindOf(span: InlineSpan): InlineKind | null {
     if (span.bold) return 'bold';

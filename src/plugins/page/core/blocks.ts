@@ -3,6 +3,7 @@
  *   키 동작(Enter·Backspace·Tab)의 「무엇을 하나」가 여기 산다. 뷰는 캐럿만 챙기고 이 함수들을 부른다.
  */
 import type { Block, BlockType, NodeDisplay, Page, TableBlockData } from './types';
+import { splitInline } from './markdown';
 import { emptyBlock, emptyTable, isList, newId } from './types';
 // 🔴 import type 만 — table 약속 타입은 표 편집기 꾸러미 contracts 에서(값 아님, 구조 검사 d·g).
 import type { TableTx } from '../../sheet/contracts/table';
@@ -86,8 +87,9 @@ export function splitBlock(page: Page, id: string, offset: number): EditResult {
     const idx = indexOf(page, id);
     if (idx < 0) return { page, focusId: id, offset };
     const cur = page.blocks[idx];
-    const left = cur.text.slice(0, offset);
-    const right = cur.text.slice(offset);
+    const [left, right] = cur.type === 'code'
+        ? [cur.text.slice(0, offset), cur.text.slice(offset)]
+        : splitInline(cur.text, offset);
 
     const leftBlock: Block = { ...cur, text: left };
     let newBlock: Block;
