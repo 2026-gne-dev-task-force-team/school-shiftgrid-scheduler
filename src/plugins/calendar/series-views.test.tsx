@@ -136,6 +136,9 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect(svg.getAttribute('class')).toContain('sm:inline');
         const jump = el.querySelector('[aria-label="년·월 고르기"]')!;
         expect(jump.querySelector('.sm\\:hidden')!.textContent).toMatch(/^\d{1,2}월$/);   // jsdom 은 높이 0 이라 어느 달인지는 재지 않는다
+        // Q6: max-w-full 단추에 음수 여백을 같이 두면 넓은 폭에서도 4px 말줄임 — 여백은 감싸개 몫
+        expect(jump.getAttribute('class')).toContain('max-w-full');
+        expect(jump.getAttribute('class')).not.toMatch(/-ml-/);
     });
 
     it('카드: 가상 회차를 열기만 하면 노드 수 그대로 · 값을 고치면 그때 materialize(originalStart 유지) 후 실체로 갈아탄다', () => {

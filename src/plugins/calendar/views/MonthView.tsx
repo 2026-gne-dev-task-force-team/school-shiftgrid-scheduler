@@ -420,13 +420,14 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
                     {trailing}
                 </>}>
-                <div ref={jumpRef} className="relative min-w-0">
+                {/* 음수 여백은 감싸개에 — 단추에 두면 max-w-full 이 4px 모자라 넓은 폭에서도 제목이 말줄임된다(Q6) */}
+                <div ref={jumpRef} className="relative min-w-0 sm:-ml-1">
                     <button
                         type="button"
                         onClick={openJump}
                         aria-expanded={jumpOpen}
                         aria-label="년·월 고르기"
-                        className="flex items-center gap-1 sm:-ml-1 px-1 max-w-full rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="flex items-center gap-1 px-1 max-w-full rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         {/* 좁으면(sm 미만) 「11월」만 — 툴바 단추에 자리를 내준다 */}
                         <span className="truncate sm:hidden">{head.m}월</span>
