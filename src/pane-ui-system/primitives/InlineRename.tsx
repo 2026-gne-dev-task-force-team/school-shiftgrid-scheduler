@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isImeEnter } from './ime';
 import { FOCUS_RING } from './focus';
 
-export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, label, ariaLabel, raw = false }: {
+export function InlineRename({ value, onCommit, onCancel, className = '', placeholder, label, ariaLabel, raw = false, autoFocus = true }: {
     value: string;
     /** 다듬은(trim) 새 이름 */
     onCommit: (next: string) => void;
@@ -21,6 +21,8 @@ export function InlineRename({ value, onCommit, onCancel, className = '', placeh
     ariaLabel?: string;
     /** 참이면 빈 값·처음과 같은 값도 그대로 확정한다(이름이 아니라 「값 입력」 — 링크 칸처럼 빈 값·그대로 두기도 뜻이 있다). Esc 만 취소. */
     raw?: boolean;
+    /** 뜰 때 초점+전체 선택(기본 켬). 메뉴 안처럼 다른 걸 먼저 칠 수 있는 자리는 끈다 */
+    autoFocus?: boolean;
 }) {
     const [draft, setDraft] = useState(value);
     const ref = useRef<HTMLInputElement>(null);
@@ -28,10 +30,10 @@ export function InlineRename({ value, onCommit, onCancel, className = '', placeh
 
     useEffect(() => {
         const el = ref.current;
-        if (!el) return;
+        if (!el || !autoFocus) return;
         el.focus();
         el.select();
-    }, []);
+    }, [autoFocus]);
 
     const finish = (commit: boolean) => {
         if (done.current) return;

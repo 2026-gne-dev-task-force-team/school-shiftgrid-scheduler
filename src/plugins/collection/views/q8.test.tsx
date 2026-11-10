@@ -56,6 +56,7 @@ describe('하위로 끌어 넣기 (V4)', () => {
         const c = box('c');
         over(50);
         expect(c.className).toContain('ring-accent');   // 가운데 = 행 전체가 파랗게
+        expect(q('[data-rv-reorder-overlay] .bg-accent')).toBeNull();   // 하위일 땐 가로선 없음
         drop(50);
         expect(tree.onMoveUnder).toHaveBeenCalledWith('d', 'c');
         expect(onReorder).not.toHaveBeenCalled();
@@ -65,7 +66,8 @@ describe('하위로 끌어 넣기 (V4)', () => {
         grab('d');
         const c = box('c');
         over(10);
-        expect(c.className).toContain('border-t-accent');
+        expect(c.className).not.toContain('ring-accent');
+        expect(q('[data-rv-reorder-overlay] .bg-accent')!.style.top).toBe('-1.5px');   // 줄 위 가로 안내선
         drop(10);
         expect(onReorder).toHaveBeenCalledWith('d', 'c');
         expect(tree.onMoveUnder).not.toHaveBeenCalled();
@@ -73,9 +75,9 @@ describe('하위로 끌어 넣기 (V4)', () => {
     it('아래 가장자리 = 그 뒤로(= 다음 줄 앞) · 마지막 줄이면 맨 끝', () => {
         const { onReorder } = setup();
         grab('a');
-        const c = box('c');
+        box('c');
         over(90);
-        expect(c.className).toContain('border-b-accent');
+        expect(q('[data-rv-reorder-overlay] .bg-accent')!.style.top).toBe('98.5px');   // 줄 아래 가로 안내선
         drop(90);
         expect(onReorder).toHaveBeenLastCalledWith('a', 'd');
         grab('a');
@@ -124,8 +126,8 @@ describe('「하위로」 단추 삭제 (V4)', () => {
 });
 
 describe('행 끌기 터치화 — y 구역 번역 · 키보드 대안', () => {
-    it('rowDropZone: 하위 가능 = 위 25% 앞 · 아래 25% 뒤 · 가운데 하위 / 불가 = 반반', () => {
-        expect([0, 24, 25, 50, 75, 76, 100].map((y) => rowDropZone(y, 0, 100, true))).toEqual(['before', 'before', 'into', 'into', 'into', 'after', 'after']);
+    it('rowDropZone: 하위 가능 = 위 35% 앞 · 아래 35% 뒤 · 가운데 하위 / 불가 = 반반', () => {
+        expect([0, 34, 35, 50, 65, 66, 100].map((y) => rowDropZone(y, 0, 100, true))).toEqual(['before', 'before', 'into', 'into', 'into', 'after', 'after']);
         expect([0, 49, 50, 99].map((y) => rowDropZone(y, 0, 100, false))).toEqual(['before', 'before', 'after', 'after']);
         expect(rowDropZone(150, 100, 100, true)).toBe('into');     // top 이 0 이 아니어도 사각형 기준
         expect(rowDropZone(5, 0, 0, true)).toBe('into');           // 높이 0 방어
