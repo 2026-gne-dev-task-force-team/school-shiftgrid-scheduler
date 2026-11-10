@@ -29,7 +29,7 @@ export const bellPlugin = definePlugin({
                 { id: 'bell.open', title: '일과표 열기', icon: 'schedule' },
                 { id: 'bell.openList', title: '일과표 열기', icon: 'schedule', palette: false },
             ],
-            ribbon: [{ commandId: 'bell.open', icon: 'schedule', order: 6 }],
+            ribbon: [{ commandId: 'bell.open', icon: 'clockFace', order: 6 }],
             nodeTypes: bellNodeTypes,
         },
     },

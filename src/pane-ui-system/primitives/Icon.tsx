@@ -12,6 +12,7 @@ export type IconName =
     | 'users' | 'user' | 'userSwap' | 'door' | 'doorClock' | 'schedule' | 'fileText' | 'calendarEvent'
     | 'bell' | 'key' | 'shield' | 'shieldCheck' | 'puzzle' | 'up' | 'down' | 'database'
     | 'heading1' | 'heading2' | 'heading3' | 'list' | 'listNumbered' | 'quote' | 'code' | 'divider'
+    | 'clockFace' | 'clipboardList'
     | 'rowAbove' | 'rowBelow' | 'rowDel' | 'colLeft' | 'colRight' | 'colDel' | 'merge' | 'unmerge';
 
 const P: Record<IconName, string> = {
@@ -121,6 +122,10 @@ const P: Record<IconName, string> = {
     door: 'M6 21V4a1 1 0 011-1h10a1 1 0 011 1v17M4 21h16M14 12h.01',
     // 시간 격자 — 격자(오른 아래 한 칸을 비움) + 시계. 18px 에서 보통 표(table)와 한눈에 갈리게 시계를 얹었다
     schedule: 'M11 20H3V4h18v7M3 9h18M3 14h8M9 4v16M15 4v5M17 13a4 4 0 100 8 4 4 0 000-8zM17 15v2l1.5 1',
+    // 시계 얼굴 — 격자(schedule·table)와 겹치던 시각 항목을 가른다
+    clockFace: 'M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2',
+    // 클립보드 + 줄(대장) — 달력(calendar)과 겹치던 것을 가른다
+    clipboardList: 'M9 2h6v4H9zM15 4h3a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h3M12 11h4M12 16h4M8 11h.01M8 16h.01',
     // 글 있는 문서(페이지) — 파일 + 접힌 모서리 + 글줄 셋. 보통 file 과 갈린다
     fileText: 'M6 2h8l4 4v16H6zM14 2v4h4M9 12h6M9 16h6M9 8h3',
     // 일정(레코드) — 달력 몸통에 체크. 저장소(calendar)와 갈린다

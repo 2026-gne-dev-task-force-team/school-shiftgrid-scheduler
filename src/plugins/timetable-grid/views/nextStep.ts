@@ -18,3 +18,11 @@ export function nextStepLine({ hasStaff, staffFilled, sheets, hasCalendar }: Nex
     if (sheets === 0) return '이제 시간표를 만드세요. 「새 시간표」를 누르면 빈 표가 열립니다.';
     return hasCalendar ? '시간표가 있습니다. 달력에서 확인해 보세요.' : '시간표를 열어 칸을 채워 보세요.';
 }
+
+/** 「지금 할 일」이 가리키는 첫 걸음 — nextStepLine 과 같은 순서. 걸음 목록에 없는 일(시간표 열어 채우기)이면 null. */
+export type StepKey = 'staff' | 'make' | 'calendar';
+export function nextStepTarget({ hasStaff, staffFilled, sheets, hasCalendar }: NextStepInput): StepKey | null {
+    if (hasStaff && !staffFilled) return 'staff';
+    if (sheets === 0) return 'make';
+    return hasCalendar ? 'calendar' : null;
+}

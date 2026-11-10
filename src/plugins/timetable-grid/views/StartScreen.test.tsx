@@ -43,6 +43,17 @@ describe('시작 화면 환영 카드', () => {
         expect(document.body.textContent).toContain('시간표 만들기');
         expect(q('next-step')?.textContent).toContain('먼저 선생님 명단을 만드세요');
     });
+    it('지금 할 일 줄은 카드 안에 있고 가리키는 걸음(1. 선생님 명단)만 「지금」으로 강조된다 · 닫으면 카드 밖 한 줄', () => {
+        mount();
+        expect(q('welcome-card')?.contains(q('next-step'))).toBe(true);
+        const cur = document.querySelectorAll('[data-current="true"]');
+        expect(cur.length).toBe(1);
+        expect(cur[0].textContent).toContain('선생님 명단 만들기');
+        expect(cur[0].textContent).toContain('지금');
+        act(() => { btn('다시 보지 않기').click(); });
+        expect(q('welcome-card')).toBeNull();
+        expect(q('next-step')).not.toBeNull();
+    });
     it('「다시 보지 않기」를 누르면 카드가 사라지고 기억되며, 「안내 다시 보기」로 돌아온다', () => {
         const mem = mount();
         act(() => { btn('다시 보지 않기').click(); });
