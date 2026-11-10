@@ -43,7 +43,7 @@ function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onG
     useEffect(() => { setDraft(null); }, [resetKey]);
     return (
         // oxlint-disable-next-line react/forbid-elements -- TextInput 을 감싼 꼬리표
-        <label className="flex shrink-0 items-center gap-1 text-micro text-muted">
+        <label title={disabled ? hint : undefined} className="flex shrink-0 items-center gap-1 text-micro text-muted">
             <span>{label}</span>
             <TextInput aria-label={label} disabled={disabled} title={disabled ? hint : undefined} value={draft ?? value} inputMode="numeric"
                 onChange={(e) => setDraft(e.target.value)}
@@ -117,11 +117,11 @@ export function GridToolbar(p: GridToolbarProps) {
             <Field resetKey={rk} onGridUndo={gridUndo} label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} hint={r === null ? HINT : '첫 교시는 앞 쉬는 시간이 없습니다'} />
         </div>
     );
-    const clearBtn = <Button variant="plain" size="sm" title="선택한 칸 지우기" aria-label="칸 지우기" disabled={!p.canClear} onMouseDown={keep} onClick={p.onClear}>지우기</Button>;
+    const clearBtn = <Button variant="plain" size="sm" title={p.canClear ? '선택한 칸의 내용 지우기 (교시는 그대로)' : '지울 칸을 먼저 고르세요'} aria-label="칸 지우기" disabled={!p.canClear} onMouseDown={keep} onClick={p.onClear}>칸 지우기</Button>;
     const zoomBtns = (
         <>
-            <Button variant="plain" size="sm" title="축소" aria-label="축소" disabled={zi <= 0} onMouseDown={keep} onClick={() => p.setZoom(ZOOMS[zi - 1])}>−</Button>
-            <Button variant="plain" size="sm" title="확대" aria-label="확대" disabled={zi < 0 || zi >= ZOOMS.length - 1} onMouseDown={keep} onClick={() => p.setZoom(ZOOMS[zi + 1])}>＋</Button>
+            <Button variant="plain" size="sm" title={zi <= 0 ? '가장 작게 줄인 상태입니다' : '화면 축소'} aria-label="축소" disabled={zi <= 0} onMouseDown={keep} onClick={() => p.setZoom(ZOOMS[zi - 1])}>−</Button>
+            <Button variant="plain" size="sm" title={zi >= ZOOMS.length - 1 ? '가장 크게 키운 상태입니다' : '화면 확대'} aria-label="확대" disabled={zi < 0 || zi >= ZOOMS.length - 1} onMouseDown={keep} onClick={() => p.setZoom(ZOOMS[zi + 1])}>＋</Button>
         </>
     );
 
@@ -133,7 +133,7 @@ export function GridToolbar(p: GridToolbarProps) {
             <span className="mx-1 h-4 w-px bg-line" />
             <Button variant="plain" size="sm" title="교시 추가(선택 행 아래, 없으면 끝)" aria-label="교시 추가"
                 onMouseDown={keep} onClick={() => edit((d) => addRow(d, r === null ? undefined : r + 1))}>교시 추가</Button>
-            <IconButton icon="trash" label="교시 삭제" disabled={r === null || n <= 1} onMouseDown={keep}
+            <IconButton icon="trash" label="교시 삭제" title={r === null ? HINT : n <= 1 ? '교시가 하나뿐이라 삭제할 수 없습니다' : `${rowName} 삭제`} disabled={r === null || n <= 1} onMouseDown={keep}
                 onClick={() => { if (r === null) return; edit((d) => removeRow(d, r)); p.onRowRemoved?.(); p.onRemoved?.('교시 1개를 삭제했습니다'); }} />
             {!narrow && (
                 <>
