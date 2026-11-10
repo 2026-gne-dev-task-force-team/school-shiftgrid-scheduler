@@ -105,9 +105,31 @@ describe('파서 — RRULE', () => {
         const ics = 'BEGIN:VEVENT\nDTSTART;VALUE=DATE:20260101\nUID:y\nSUMMARY:s\nRRULE:FREQ=YEARLY\nEND:VEVENT';
         expect(parseIcs(ics).length).toBe(MAX_YEARLY);
     });
-    it('YEARLY 아닌 RRULE(WEEKLY)은 첫 회만', () => {
-        const ics = 'BEGIN:VEVENT\nDTSTART:20260101T090000\nUID:w\nSUMMARY:s\nRRULE:FREQ=WEEKLY;COUNT=10\nEND:VEVENT';
-        expect(parseIcs(ics).length).toBe(1);
+    const ev = (dt: string, rr: string) => `BEGIN:VEVENT
+${dt}
+UID:x
+SUMMARY:s
+RRULE:${rr}
+END:VEVENT`;
+    const starts = (t: string) => parseIcs(t).map((i) => i.start);
+    it('모르는 FREQ(HOURLY)는 첫 회만', () => {
+        expect(parseIcs(ev('DTSTART:20260101T090000', 'FREQ=HOURLY;COUNT=10')).length).toBe(1);
+    });
+    it('DAILY;INTERVAL;COUNT', () => {
+        expect(starts(ev('DTSTART:20260101T090000', 'FREQ=DAILY;INTERVAL=2;COUNT=3'))).toEqual(['2026-01-01T09:00', '2026-01-03T09:00', '2026-01-05T09:00']);
+    });
+    it('WEEKLY;BYDAY=MO,WE — 길이(DTEND) 유지', () => {
+        const r = parseIcs(ev('DTSTART:20260105T090000\nDTEND:20260105T100000', 'FREQ=WEEKLY;BYDAY=MO,WE;COUNT=3'));
+        expect(r.map((i) => i.start)).toEqual(['2026-01-05T09:00', '2026-01-07T09:00', '2026-01-12T09:00']);
+        expect(r[1].end).toBe('2026-01-07T10:00');
+    });
+    it('MONTHLY;BYMONTHDAY / BYDAY=2TU / BYDAY=-1FR', () => {
+        expect(starts(ev('DTSTART;VALUE=DATE:20260115', 'FREQ=MONTHLY;BYMONTHDAY=31;COUNT=2'))).toEqual(['2026-01-31', '2026-03-31']);
+        expect(starts(ev('DTSTART;VALUE=DATE:20260113', 'FREQ=MONTHLY;BYDAY=2TU;COUNT=2'))).toEqual(['2026-01-13', '2026-02-10']);
+        expect(starts(ev('DTSTART;VALUE=DATE:20260130', 'FREQ=MONTHLY;BYDAY=-1FR;COUNT=2'))).toEqual(['2026-01-30', '2026-02-27']);
+    });
+    it('끝 없는 DAILY 는 2년 지평에서 끊긴다', () => {
+        expect(parseIcs(ev('DTSTART;VALUE=DATE:20260101', 'FREQ=DAILY')).length).toBe(730);
     });
 });
 
