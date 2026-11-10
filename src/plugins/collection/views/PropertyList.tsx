@@ -32,6 +32,7 @@ export function PropertyList({ fields, values, onChange, onOptionsChange }: Prop
                         <div className={`relative flex-1 min-w-0 h-row ${empty ? '[&_[data-rv-cell]>span:only-child]:invisible' : ''}`}>
                             <Cell
                                 field={f}
+                                fields={fields}
                                 rowValue={values}
                                 editable={editable}
                                 onChange={(nv) => onChange?.(f.key, nv)}
