@@ -250,3 +250,20 @@ describe('R5-6 한글 IME — 조합 중 Enter 는 칸 이동·확정을 일으�
         expect(onTx).toHaveBeenCalled();
     });
 });
+
+describe('Table — data-editing 표시', () => {
+    it('편집 중인 칸에만 data-editing 이 붙고 끝나면 없어진다', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Controlled ref={ref} initial={[{ id: 'r1', cells: { a: 'x', b: 'y' } }]} features={[]} />);
+        const td = () => document.querySelector<HTMLElement>('[data-rc="0:0"]')!;
+        const other = () => document.querySelector<HTMLElement>('[data-rc="0:1"]')!;
+        expect(td().hasAttribute('data-editing')).toBe(false);
+        act(() => ref.current!.h().focus());
+        key('Enter');
+        expect(ref.current!.h().state().editing).toBe(true);
+        expect(td().getAttribute('data-editing')).toBe('true');
+        expect(other().hasAttribute('data-editing')).toBe(false);
+        act(() => { document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+        expect(td().hasAttribute('data-editing')).toBe(false);
+    });
+});
