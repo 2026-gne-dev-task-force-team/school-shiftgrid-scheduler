@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import type { PublicNode } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { castCandidate, castCandidates, parseRelationEntry, relationEntry, relationReferrers, resolveRelationTargets, type RelationLook } from './cast';
 import { resolveRelation } from './relation';
+import { registerKit } from '../kits';
 
 const toRooms = [{ key: 'f_room', label: '교실', type: 'relation', config: { target: { kind: 'db', nodeId: 'rl' }, many: true } }];
 // rl(방 목록) ─ r1, r2, r3, rX(휴지통) · yl(학년도, 교실 칸) ─ c1(r1) c2(r1,r2) c3(빔) c4(rX 만) · ol(교실 칸 없음) ─ o1 · bs(예약, 방 칸) ─ b1 b2 b3
@@ -71,5 +72,17 @@ describe('관계 칸 캐스팅', () => {
     it('거꾸로 보기 — 방을 가리키는 것 여럿 그대로(반 경유 포함)', () => {
         expect(relationReferrers(look, 'r1')).toEqual([{ id: 'c1', key: 'f_room' }, { id: 'c2', key: 'f_room' }, { id: 'b2', key: 'f_room' }]);
         expect(relationReferrers(look, 'r2')).toEqual([{ id: 'c2', key: 'f_room' }, { id: 'b1', key: 'f_room' }]);
+    });
+});
+
+describe('꾸러미 기본 칸(baseFields)에 있는 관계 칸도 캐스팅 판정에 든다', () => {
+    it('노드 data.fields 에 칸이 없어도 kit 의 baseFields 의 관계 칸으로 판정', () => {
+        registerKit({ config: { listType: 'pk.list', itemType: 'pk.item', baseFields: [{ key: 'name', label: '이름', type: 'text' }, ...toRooms] } as never, setValue: () => {}, addItem: () => '' });
+        nodes.pl = { type: 'pk.list', name: '꾸러미 목록', parent: null, data: {} };
+        nodes.p1 = { type: 'pk.item', name: '꾸러미 줄', parent: 'pl', data: { values: { f_room: ['r3'] } } };
+        try {
+            expect(castCandidate(look, 'rl', 'p1')).toBe('direct');
+            expect(resolveRelationTargets(look, 'rl', ['p1'])).toEqual(['r3']);
+        } finally { delete nodes.pl; delete nodes.p1; }
     });
 });

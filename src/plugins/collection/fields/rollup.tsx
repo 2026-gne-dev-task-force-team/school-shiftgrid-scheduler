@@ -4,7 +4,7 @@
  *   형제 칸 목록(fields)을 Cell·Config 가 받는다 — 어느 관계 칸을 어느 대상으로 따라갈지 칸 설정만으로 정해진다.
  */
 import { useSyncExternalStore } from 'react';
-import { Pill, Select } from '../../../pane-ui-system';
+import { Field, Pill, Select } from '../../../pane-ui-system';
 import type { FieldCellProps, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, subscribeDb } from '../nodes';
 import { TITLE_KEY, rollupConfig, rollupOf, targetFields, type RollupHow } from './follow';
@@ -40,22 +40,19 @@ export function RollupConfigEditor({ field, onChange, fields }: { field: RecordF
     const set = (patch: Partial<typeof cfg>) => onChange({ ...field, config: { ...cfg, ...patch } });
     return (
         <div className="flex flex-col gap-1.5 px-2 py-1" data-rv-rollup-config={field.key}>
-            <label className="flex flex-col gap-0.5 text-note text-muted">
-                따라갈 관계 칸
+            <Field label="따라갈 관계 칸">
                 <Select value={cfg.relationKey ?? ''} data-rv-rollup-relation
                     onChange={(e) => set({ relationKey: e.target.value || undefined, targetKey: TITLE_KEY })}
                     options={[{ value: '', label: '— 고르기 —' }, ...rels.map((f) => ({ value: f.key, label: f.label }))]} />
-            </label>
-            <label className="flex flex-col gap-0.5 text-note text-muted">
-                대상의 칸
+            </Field>
+            <Field label="대상의 칸">
                 <Select value={cfg.targetKey ?? TITLE_KEY} data-rv-rollup-target
                     onChange={(e) => set({ targetKey: e.target.value })}
                     options={cols.map((c) => ({ value: c.key, label: c.label }))} />
-            </label>
-            <label className="flex flex-col gap-0.5 text-note text-muted">
-                모으기
+            </Field>
+            <Field label="모으기">
                 <Select value={cfg.how} data-rv-rollup-how onChange={(e) => set({ how: e.target.value as RollupHow })} options={HOW} />
-            </label>
+            </Field>
         </div>
     );
 }

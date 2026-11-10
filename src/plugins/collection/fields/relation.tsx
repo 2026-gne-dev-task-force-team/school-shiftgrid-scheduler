@@ -5,7 +5,7 @@
  *   1차는 target.kind 'db' 만 동작한다. 'source'(등록된 소스) 는 타입만 있고 셀은 「지원 안 함」.
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
+import { Button, Field, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
@@ -266,12 +266,11 @@ export function RelationConfigEditor({ field, onChange }: { field: RecordField; 
                     options={[{ value: '', label: '— 고르기 —' }, ...targetCollections().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
             </label>
             {cur && (
-                <label className="flex flex-col gap-0.5 text-note text-muted">
-                    칩에 보일 칸
+                <Field label="칩에 보일 칸">
                     <Select value={cfg.show ?? TITLE_KEY} data-rv-rel-show
                         onChange={(e) => set({ show: e.target.value || undefined })}
                         options={targetFields(getNodesApi(), cur).map((c) => ({ value: c.key, label: c.label }))} />
-                </label>
+                </Field>
             )}
             <div className="flex items-center justify-between gap-2 text-body text-text">
                 여러 개 고르기
