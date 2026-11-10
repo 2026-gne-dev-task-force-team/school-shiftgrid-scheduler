@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveFeatures } from '../sheet/features/assemble';
 import { lookupFeature } from '../sheet/features/registry';
 import { blankTimetable, mergeCells, setCellText } from './model';
-import { applyTableTx, gapOf, toTable, timetableFeature, TIMETABLE_FEATURES } from './sheetView';
+import { applyTableTx, fitColWidth, gapOf, toTable, timetableFeature, TIMETABLE_FEATURES } from './sheetView';
 
 const PPM = 0.8;
 
@@ -93,5 +93,18 @@ describe('기능 모듈 timetable — 시트 조각을 needs 로 엮는다', () 
     });
     it('row-head 를 빼면 던진다(버그 심기)', () => {
         expect(() => resolveFeatures(['row-gaps', 'row-weight', 'merge', timetableFeature], lookupFeature)).toThrow(/row-head/);
+    });
+});
+
+describe('열 폭 맞추기', () => {
+    it('남은 폭에 맞춰 나누되 기본·하한을 넘지 않고, 손으로 바꾼 폭은 그대로', () => {
+        expect(fitColWidth(540, 5)).toBe(108);
+        expect(fitColWidth(900, 5)).toBe(120);
+        expect(fitColWidth(100, 5)).toBe(56);
+        expect(fitColWidth(0, 5)).toBe(120);
+        const d = { ...blankTimetable(), colWidths: { '1': 200 } };
+        const w = toTable(d, 0.8, 100).columns.map((c) => c.width);
+        expect(w[0]).toBe(100);
+        expect(w[1]).toBe(200);
     });
 });

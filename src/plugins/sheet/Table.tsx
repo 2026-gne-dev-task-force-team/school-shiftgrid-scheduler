@@ -59,7 +59,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         columns, rows, onCommit, features, onUndo, onRedo, emptyHint, labels, className,
         decorate, validate, headerMenu, merges, renderText, mention,
         headerRow, headerCol, hideColHeader, onSetHeaderRow, onSetHeaderCol, onColor,
-        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, onRemoved,
+        footerRow, onSetFooterRow, tableStyle, onSetTableStyle, toolbar, toolbarHost, colTabs, hideHandles, onRemoved,
         rowGap, rowHeadWidth, onSelectionChange,
     } = props;
 
@@ -261,7 +261,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         headerColOn: '머리 열 켜기', headerColOff: '머리 열 끄기',
     };
 
-    const showColHandles = hasAxisEdit && !emptyGrid();
+    const showColHandles = hasAxisEdit && !emptyGrid() && !hideHandles;
     function emptyGrid(): boolean { return columns.length === 0; }
     const mergeMap = buildMergeMap(merges, rows, columns);
 
@@ -847,7 +847,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                 <tr data-row-idx={r} style={h ? { height: h } : undefined}>
                                     {/* 넘버스 참조 탭(행 번호) — 포커스가 있을 때만 왼쪽 바깥에 1,2,3… */}
                                     <td className="relative w-7 p-0 border-0 align-middle">
-                                        {hasRows && (
+                                        {hasRows && !hideHandles && (
                                             // absolute — 표 칸 안 h-full 은 키운 행 높이를 못 따라간다(탭이 위에 몰리던 버그)
                                             <div className="absolute inset-0 flex items-stretch justify-end">
                                                 <div

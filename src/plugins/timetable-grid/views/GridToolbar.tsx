@@ -45,7 +45,7 @@ function Field({ label, value, onCommit, width = 'w-16', disabled, resetKey, onG
         // oxlint-disable-next-line react/forbid-elements -- TextInput 을 감싼 꼬리표
         <label className="flex shrink-0 items-center gap-1 text-micro text-muted">
             <span>{label}</span>
-            <TextInput aria-label={label} disabled={disabled} title={disabled ? hint : undefined} placeholder={disabled ? hint : undefined} value={draft ?? value} inputMode="numeric"
+            <TextInput aria-label={label} disabled={disabled} title={disabled ? hint : undefined} value={draft ?? value} inputMode="numeric"
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {   // 편집 중이 아니면(초안 = 현재 값) ⌘Z 는 격자 되돌리기로
                     if (!isMod(e.nativeEvent) || e.altKey || e.key.toLowerCase() !== 'z' || e.nativeEvent.isComposing) return;
@@ -108,12 +108,14 @@ export function GridToolbar(p: GridToolbarProps) {
 
     const gridUndo = (w: 'undo' | 'redo') => { (w === 'undo' ? p.undo : p.redo)?.(); };
     const rk = `${r}|${data.rows.map((x) => `${x.id}:${x.range.start}-${x.range.end}`).join(',')}`;
+    const rowName = r === null ? null : (data.rows[r].name || `${r + 1}교시`);
     const timeFields = (
-        <>
+        <div role="group" aria-label="선택한 교시 값" className="flex shrink-0 items-center gap-1">
+            <span className="shrink-0 whitespace-nowrap text-micro font-medium text-text" data-testid="row-scope">{rowName === null ? '선택한 교시 없음' : `${rowName} ·`}</span>
             <Field resetKey={rk} onGridUndo={gridUndo} label="시작" value={r === null ? '' : fmt(data.rows[r].range.start)} onCommit={setStart} disabled={r === null} hint={HINT} />
             <Field resetKey={rk} onGridUndo={gridUndo} label="길이(분)" value={r === null ? '' : String(rowLength(data, r))} onCommit={setLen} width="w-12" disabled={r === null} hint={HINT} />
             <Field resetKey={rk} onGridUndo={gridUndo} label="앞 쉬는 시간(분)" value={r === null || r === 0 ? '' : String(gapBefore(data, r))} onCommit={setGap} width="w-12" disabled={r === null || r === 0} hint={r === null ? HINT : '첫 교시는 앞 쉬는 시간이 없습니다'} />
-        </>
+        </div>
     );
     const clearBtn = <Button variant="plain" size="sm" title="선택한 칸 지우기" aria-label="칸 지우기" disabled={!p.canClear} onMouseDown={keep} onClick={p.onClear}>지우기</Button>;
     const zoomBtns = (

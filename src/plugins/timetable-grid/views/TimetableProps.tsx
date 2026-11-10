@@ -4,7 +4,7 @@
  *   저장은 화면과 같은 길(applyEdit) — 되돌리기 더미를 같이 쓴다.
  */
 import { useSyncExternalStore } from 'react';
-import { Button, DateField, Select, TextInput, Toggle } from '../../../pane-ui-system';
+import { Button, DateField, Segmented, Select, TextInput, Toggle } from '../../../pane-ui-system';
 import type { PropertiesPaneProps } from '../../../pane-ui-system/plugin';
 import { subscribeNodes, getSheetNodes, isSheet, sheetDataOf, applyEdit, duplicateSheet } from '../nodes';
 import {
@@ -28,7 +28,8 @@ export function TimetableProps({ target }: PropertiesPaneProps) {
     const field = 'rounded border border-line bg-bg px-1 py-0.5 text-text outline-none focus:border-accent';
     return (
         <div className="flex flex-col gap-3">
-            {row('범위', <Button size="sm" onClick={() => edit((d) => toggleRangeKind(d))}>{data.range.kind === 'period' ? '기간' : 'N회'}</Button>)}
+            {row('범위', <Segmented label="범위 꼴" value={data.range.kind} options={[{ value: 'period', label: '기간' }, { value: 'repeat', label: '횟수' }]}
+                onChange={(k) => { if (k !== data.range.kind) edit((d) => toggleRangeKind(d)); }} />)}
             {data.range.kind === 'period' ? (
                 <div className="flex items-center justify-end gap-1 text-small text-muted">
                     <DateField value={data.range.start} className={field}
@@ -41,7 +42,8 @@ export function TimetableProps({ target }: PropertiesPaneProps) {
                 <TextInput type="number" min={1} className="w-16" value={data.range.count}
                     onChange={(e) => edit((d) => setRangeSpec(d, { kind: 'repeat', count: Math.max(1, Number(e.target.value) || 1) }))} />
             ))}
-            {row('열 꼴', <Button size="sm" onClick={() => edit((d) => toggleColumnKind(d))}>{data.columns.kind === 'weekday' ? '요일' : '일차'}</Button>)}
+            {row('열 꼴', <Segmented label="열 꼴 고르기" value={data.columns.kind} options={[{ value: 'weekday', label: '요일' }, { value: 'cycle', label: '일차' }]}
+                onChange={(k) => { if (k !== data.columns.kind) edit((d) => toggleColumnKind(d)); }} />)}
             {row(`열 ${columnCount(data.columns)}개`, <>
                 <Button size="sm" aria-label="열 빼기" disabled={columnCount(data.columns) <= 1} onClick={() => edit((d) => removeColumn(d, columnCount(d.columns) - 1))}>−</Button>
                 <Button size="sm" aria-label="열 넣기" disabled={addColumn(data) === data} onClick={() => edit((d) => addColumn(d))}>+</Button>
@@ -55,7 +57,7 @@ export function TimetableProps({ target }: PropertiesPaneProps) {
                 <Select aria-label="보이는 끝" value={String(Math.ceil(view.end / 60) * 60)} options={HOURS.slice(1)}
                     onChange={(e) => edit((d) => setView(d, { start: viewRange(d).start, end: Number(e.target.value) }))} />
             </>)}
-            <Button size="sm" className="self-start whitespace-nowrap" onClick={() => { duplicateSheet(target.id); }}>시간표 복사</Button>
+            <Button size="sm" variant="ghost" className="self-start whitespace-nowrap" onClick={() => { duplicateSheet(target.id); }}>시간표 복사</Button>
         </div>
     );
 }
