@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-    detectBlockShortcut, parseInline, toggleMark, exportMarkdown, parseMarkdown, spansToMarkdown,
+    detectBlockShortcut, parseInline, toggleMark, collapsedMark, exportMarkdown, parseMarkdown, spansToMarkdown,
 } from './markdown';
 import type { Page } from './types';
 
@@ -178,5 +178,19 @@ describe('내보내기 ↔ 붙여넣기 왕복(요구 9)', () => {
         const back = parseMarkdown(md);
         expect(back.map((b) => b.type)).toEqual(['paragraph', 'code', 'paragraph']);
         expect(back[1].text).toBe('code line');
+    });
+});
+
+describe('collapsedMark — 고른 영역 없이 서식 키(Q17b)', () => {
+    it('빈 쌍을 열고 캐럿을 그 안에', () => {
+        expect(collapsedMark('ab ', 3, '**')).toEqual({ text: 'ab ****', start: 5, end: 5 });
+    });
+    it('닫는 마커 바로 앞이면 캐럿만 뒤로(글 끝이면 평문 자리용 공백 하나)', () => {
+        expect(collapsedMark('ab **B**', 6, '**')).toEqual({ text: 'ab **B** ', start: 9, end: 9 });
+        expect(collapsedMark('ab **B**c', 6, '**')).toEqual({ text: 'ab **B**c', start: 8, end: 8 });
+    });
+    it('기울임은 굵게 마커를 세지 않는다', () => {
+        expect(collapsedMark('**a**', 5, '*').text).toBe('**a****');
+        expect(collapsedMark('*a*b', 2, '*')).toEqual({ text: '*a*b', start: 3, end: 3 });
     });
 });

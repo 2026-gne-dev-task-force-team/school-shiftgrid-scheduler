@@ -165,6 +165,24 @@ export function toggleMark(text: string, start: number, end: number, marker: str
     return { text: before + wrapped + after, start: start + len, end: start + len + sel.length };
 }
 
+/**
+ * 고른 영역 없이 서식 키(⌘B 등) — 캐럿 바로 뒤가 닫는 마커면 그 뒤로 빠져나가고(text 그대로·start 만 이동),
+ * 아니면 빈 쌍(`****`)을 열고 그 안에 캐럿을 둔다.
+ */
+export function collapsedMark(text: string, at: number, marker: string): MarkResult {
+    const len = marker.length;
+    const before = text.slice(0, at);
+    // `*` 기울임은 `**` 굵게 마커를 빼고 센다
+    const count = (marker === '*' ? before.replace(/\*\*/g, '') : before).split(marker).length - 1;
+    const inside = marker === '*' ? !text.slice(at).startsWith('**') && text.slice(at).startsWith('*') : text.slice(at).startsWith(marker);
+    if (inside && count % 2 === 1) {
+        // 글 끝이면 평문 자리가 없어 캐럿이 서식 안에 붙잡힌다(빈 노드 뒤 입력은 브라우저가 서식 안으로 되돌린다) → 공백 하나로 평문 자리를 만든다
+        const out = at + len === text.length ? text + ' ' : text;
+        return { text: out, start: at + len + (out === text ? 0 : 1), end: at + len + (out === text ? 0 : 1) };
+    }
+    return { text: before + marker + marker + text.slice(at), start: at + len, end: at + len };
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // 페이지 → 마크다운 (명세 요구 9 · 표는 GFM)
 // ──────────────────────────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ import {
     setText, setChecked, setTable, setNodeRef, setNodeDisplay, splitBlock, outdentOrParagraph, mergeBackspace,
     indentBlock, softBreak, duplicateBlock, moveBlock, removeBlock, changeType, insertAfter, removeBlocks, moveBlocks, rangeIds, type EditResult,
 } from '../core/blocks';
-import { detectBlockShortcut, toggleMark, exportMarkdown } from '../core/markdown';
+import { detectBlockShortcut, toggleMark, collapsedMark, exportMarkdown } from '../core/markdown';
 import {
     initHistory, commit, undo, redo, canUndo, canRedo, type History,
 } from '../core/history';
@@ -202,6 +202,8 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
             setSlash(null);
         }
         const blk = pageRef.current.blocks.find((b) => b.id === id);
+        // `[[` — 항목(노드) 링크 고르기. 블록 모델에서 노드 링크는 「끼워 넣기」 블록이라 그 고르기로 바꾼다(/ 메뉴의 항목 끼워 넣기와 같은 길)
+        if (blk && blk.type === 'paragraph' && text === '[[') { pickSlash(id, 'node'); return; }
         if (blk && blk.type === 'paragraph' && text === '/') {
             setSlash({ blockId: id, query: '', index: 0 });
             applyText(id, text);
@@ -417,8 +419,14 @@ export function PageEditor({ host, docKey: activeId, load, save, syncBlocks, rev
     const doMark = (el: HTMLElement, id: string, marker: string) => {
         if (el instanceof HTMLTextAreaElement) return;   // 코드 블록엔 서식 토글 안 함
         const { start, end } = selectionSourceRange(el);
-        if (start === end) return;                       // 고른 영역이 없으면 토글 안 함(명세: 선택 영역에)
         const live = serializeInline(el);
+        if (start === end) {
+            // 🔴 Q17b — 고른 영역이 없을 때(노션처럼): 닫는 마커 바로 앞이면 그 뒤로 빠져나가고, 아니면 빈 쌍을 열어 그 안에 캐럿
+            const r = collapsedMark(live, start, marker);
+            if (r.text === live) { setCaretSource(el, r.start); return; }
+            commitPage(setText(pageRef.current, id, r.text), { id, offset: r.start });
+            return;
+        }
         const r = toggleMark(live, start, end, marker);
         const next = setText(pageRef.current, id, r.text);
         commitPage(next, { id, offset: r.start, end: r.end });
