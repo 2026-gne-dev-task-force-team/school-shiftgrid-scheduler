@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from 'react';
 import { StartScreen as StartScreenBase } from '../../../pane-ui-system';
 import { useLauncherTab } from '../../../pane-ui-system/plugin';
+import { WelcomeCard } from './WelcomeCard';
 import {
     subscribeNodes, getSheetNodes, inTrash, createSheet, parentNameOf, getNodesApi,
 } from '../nodes';
@@ -22,16 +23,21 @@ export function StartScreen({ leafId }: { leafId?: string }) {
     const make = () => { const id = createSheet(); if (id) open(id); };
 
     return (
-        <StartScreenBase
-            icon="schedule"
-            title="시간표"
-            noun="시간표"
-            newLabel="새 시간표"
-            newHint="빈 표(월~금 × 6행)가 바로 열린다"
-            items={items}
-            onNew={make}
-            onOpen={open}
-            disabled={!getNodesApi()}
-        />
+        <div className="h-full flex flex-col">
+            <WelcomeCard sheets={items.length} onMake={make} />
+            <div className="flex-1 min-h-0">
+                <StartScreenBase
+                    icon="schedule"
+                    title="시간표"
+                    noun="시간표"
+                    newLabel="새 시간표"
+                    newHint="빈 표(월~금 × 6행)가 바로 열린다"
+                    items={items}
+                    onNew={make}
+                    onOpen={open}
+                    disabled={!getNodesApi()}
+                />
+            </div>
+        </div>
     );
 }
