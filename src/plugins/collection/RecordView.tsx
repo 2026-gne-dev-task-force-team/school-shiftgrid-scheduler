@@ -205,7 +205,8 @@ const RecordRow = memo(function RecordRow({
                             {icon ?? <Icon name={rowIcon} size={14} className="text-muted" />}
                         </span>
                     )}
-                    <div data-rv-cellbox className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
+                    <div data-rv-cellbox style={isTitle(f.key) && !wraps[fi] && (showOpen || (showTree && hasAddChild)) ? { paddingRight: (showTree && hasAddChild ? 28 : 0) + (showOpen ? 60 : 0) + (showOpen && hasOpenTab ? 28 : 0) } : undefined}
+                        className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
                         {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
                         {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
                             <span data-rv-untitled className="absolute inset-y-0 left-2 flex items-center text-body text-muted/60 pointer-events-none select-none">제목 없음</span>
