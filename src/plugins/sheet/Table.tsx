@@ -16,6 +16,7 @@ import {
     forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState,
 } from 'react';
 import { useSheetCore } from './core/useSheetCore';
+import { verticalViewport } from './core/platform';
 import type { CellChange, CommitSource, SheetCoreAdapter, SheetCoreHandle } from './core/types';
 import type {
     CellChange as TxCellChange, CellTone, HeaderMenuEntry, TableCapability, TableColumn, TableProps, TableRow, TableState, TableTx,
@@ -225,6 +226,23 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         wasEditing.current = now;
     }, [core.edit, core.containerRef]);
 
+    // 활성칸이 보이도록 가로·세로 스크롤(고정 머리 줄에 가리지 않게) — 브라우저 기본은 칸 포커스가 아니라 안 따라온다.
+    useEffect(() => {
+        const box = core.containerRef.current; if (!box || core.edit) return;
+        const td = box.querySelector<HTMLElement>(`[data-rc="${core.active.r}:${core.active.c}"]`);
+        if (!td) return;
+        const cr = box.getBoundingClientRect(), tr = td.getBoundingClientRect();
+        const headH = hasSticky ? (box.querySelector('thead')?.getBoundingClientRect().height ?? 0) : 0;
+        const leftEdge = cr.left;
+        if (tr.left < leftEdge) box.scrollLeft -= leftEdge - tr.left;
+        else if (tr.right > cr.left + box.clientWidth) box.scrollLeft += tr.right - (cr.left + box.clientWidth);
+        // 세로는 표 상자가 아니라 실제로 굴러가는 조상(바깥 틀)을 굴린다 — verticalViewport.
+        const vp = verticalViewport(box);
+        const vTop = Math.max(vp.top, cr.top) + headH;
+        const dy = tr.top < vTop ? tr.top - vTop : tr.bottom > vp.bottom ? tr.bottom - vp.bottom : 0;
+        if (dy) { if (vp.scroller) vp.scroller.scrollTop += dy; else window.scrollBy(0, dy); }
+    }, [core.active.r, core.active.c, core.edit, core.containerRef, hasSticky]);
+
     const lb = {
         addRow: labels?.addRow ?? '행 추가',
         addCol: labels?.addCol ?? '열 추가',
@@ -276,7 +294,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
 
     const mergeSelection = (): void => {
         const region = regionFromSelection(core.sel, rows, columns);
-        if (region) emit({ cells: [], merge: { set: [region] }, source: 'menu' }, false);
+        if (region) {
+            emit({ cells: [], merge: { set: [region] }, source: 'menu' }, false);
+            core.moveTo(core.sel.r1, core.sel.c1);   // 활성칸이 덮인 칸으로 남지 않게 병합 칸 좌상을 활성으로
+        }
     };
     const unmergeAtActive = (): void => {
         const a = anchorCovering(merges, core.active.r, core.active.c, rows, columns);
@@ -659,7 +680,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 data-testid="table-grid"
                 onFocus={() => { core.onFocus(); setFocused(true); }}
                 onBlur={(e) => { core.onBlur(e); if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false); }}
-                className="relative overflow-auto outline-none max-h-full w-max max-w-full"
+                className="relative overflow-auto outline-none max-h-full w-max max-w-full pr-1.5 pb-1.5"
             >
                 <table className="border-collapse">
                     <thead>

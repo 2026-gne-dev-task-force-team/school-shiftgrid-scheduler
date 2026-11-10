@@ -227,3 +227,41 @@ describe('Table M5 — 넘버스 얼굴', () => {
         expect(ref.current!.doc().rows.map((r) => r.id)).toEqual(['h', 'r2', 'f']);
     });
 });
+
+describe('판 W-S — 병합 활성칸 · 가로 스크롤 따라가기', () => {
+    it('병합 직후 활성칸은 병합 칸 좌상(data-active 유지)', () => {
+        const ref = createRef<CtrlRef>();
+        mount(<Owner ref={ref} init={doc4({ footerRow: false })} />);
+        act(() => ref.current!.h().select(1, 0, 2, 1));
+        act(() => { q('tool-merge')!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        const act1 = document.querySelectorAll('[data-active="true"]');
+        expect(act1).toHaveLength(1);
+        expect(act1[0].getAttribute('data-rc')).toBe('1:0');
+    });
+
+    it('활성칸이 가로로 화면 밖이면 scrollLeft 를 옮겨 보이게 한다', () => {
+        const ref = createRef<CtrlRef>();
+        const orig = Element.prototype.getBoundingClientRect;
+        const cw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get() { return (this as HTMLElement).dataset.testid === 'table-grid' ? 300 : 0; } });
+        Element.prototype.getBoundingClientRect = function (this: Element) {
+            const rc = this.getAttribute('data-rc');
+            const sl = (document.querySelector('[data-testid="table-grid"]') as HTMLElement | null)?.scrollLeft ?? 0;
+            if (rc) { const c = Number(rc.split(':')[1]); return { left: c * 100 - sl, right: c * 100 + 100 - sl, top: 0, bottom: 20, width: 100, height: 20, x: 0, y: 0, toJSON() {} } as DOMRect; }
+            return { left: 0, right: 300, top: 0, bottom: 100, width: 300, height: 100, x: 0, y: 0, toJSON() {} } as DOMRect;
+        };
+        try {
+            const cols = Array.from({ length: 8 }, (_, i) => ({ key: `k${i}`, title: `K${i}` }));
+            mount(<Owner ref={ref} init={{ cols, rows: [{ id: 'r', cells: {} }], merges: [], headerRow: false, footerRow: false } as TableDoc} />);
+            act(() => ref.current!.h().click(0, 0));
+            for (let i = 0; i < 6; i++) key('ArrowRight');
+            const box = document.querySelector<HTMLElement>('[data-testid="table-grid"]')!;
+            expect(box.scrollLeft).toBe(6 * 100 + 100 - 300);   // 활성 칸(c=6)의 오른쪽 끝이 보이는 자리
+            for (let i = 0; i < 6; i++) key('ArrowLeft');
+            expect(box.scrollLeft).toBe(0);
+        } finally {
+            Element.prototype.getBoundingClientRect = orig;
+            if (cw) Object.defineProperty(HTMLElement.prototype, 'clientWidth', cw); else delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+        }
+    });
+});

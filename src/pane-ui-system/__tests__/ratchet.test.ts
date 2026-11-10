@@ -23,7 +23,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 
 const ROOT = resolve(process.cwd(), 'src');
 const BASELINE_FILE = join(ROOT, 'pane-ui-system', '__tests__', 'ratchet-baseline.json');
@@ -62,7 +62,7 @@ const SCOPES: Record<string, string> = {
 const TOOLBAR_PRIMITIVE = join(ROOT, 'pane-ui-system', 'primitives', 'Toolbar.tsx');
 const files = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).map((f) => readFileSync(f, 'utf-8'))]));
 /** 공통 부품 내부 — R7 지표(zRaw·bareInput·divClick·enterNoIme)가 안 센다 */
-const PARTS_DIR = join(ROOT, 'pane-ui-system', 'primitives') + '/';
+const PARTS_DIR = join(ROOT, 'pane-ui-system', 'primitives') + sep;
 const outsideParts = (scope: string) => walk(SCOPES[scope]).filter((f) => !f.startsWith(PARTS_DIR)).map((f) => readFileSync(f, 'utf-8'));
 const r7Texts = Object.fromEntries(Object.keys(SCOPES).map((k) => [k, outsideParts(k)]));
 const roleToolbarTexts = Object.fromEntries(Object.entries(SCOPES).map(([k, dir]) => [k, walk(dir).filter((f) => f !== TOOLBAR_PRIMITIVE).map((f) => readFileSync(f, 'utf-8'))]));

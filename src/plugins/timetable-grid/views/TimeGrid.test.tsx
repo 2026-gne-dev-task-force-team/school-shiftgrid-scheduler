@@ -49,6 +49,7 @@ describe('시간표 그리드(달력 주 보기 꼴)', () => {
 
     it('칸에 적고 포커스를 빼면 한 번에 저장된다 · 위쪽 도구 막대는 없다', () => {
         mount();
+        fire(q('[data-c="1"][data-r="2"]')!, 'dblclick');   // 칸은 선택 상태가 기본 — 더블클릭으로 편집
         type(q('[data-c="1"][data-r="2"] textarea') as HTMLTextAreaElement, '수학');
         expect(latest.cells['c1r2']?.text).toBe('수학');
         expect(q('[role="toolbar"]')).toBeNull();
