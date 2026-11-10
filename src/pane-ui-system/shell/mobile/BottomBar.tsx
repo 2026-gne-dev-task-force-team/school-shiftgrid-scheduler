@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Icon, type IconName } from '../../primitives/Icon';
 import { FOCUS_RING } from '../../primitives/focus';
 import { splitBarItems } from '../../layout/mobile';
+import { useTheme } from '../../theme/useTheme';
 
 /** 앱이 바에 꽂는 항목 하나 — 아이콘·동작만. pinned 면 오른쪽에 고정(스크롤 안 함) */
 export interface BarItem {
@@ -40,23 +41,23 @@ function useKeyboardOpen(): boolean {
     return open;
 }
 
-function BarButton({ icon, label, onClick, badge }: Omit<BarItem, 'id' | 'pinned'>) {
+function BarButton({ icon, label, onClick, badge, iconSize }: Omit<BarItem, 'id' | 'pinned'> & { iconSize: number }) {
     return (
         <button
             type="button"
             aria-label={label}
             title={label}
             onClick={onClick}
-            className={`relative grid place-items-center w-btn h-btn rounded-full shrink-0 transition-colors
+            className={`relative grid place-items-center w-[var(--nav-btn)] h-[var(--nav-btn)] min-w-[var(--nav-btn)] rounded-full shrink-0 transition-colors
                 text-muted hover:text-text hover:bg-text/[0.06]
                 ${FOCUS_RING}`}
         >
-            <Icon name={icon} size={18} />
+            <Icon name={icon} size={iconSize} />
             {badge != null && badge > 0 && (
                 <span
                     aria-hidden="true"
                     className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-[3px] grid place-items-center
-                        rounded-full bg-accent text-bg text-[10px] leading-none font-medium"
+                        rounded-full bg-accent text-bg text-micro leading-none font-medium"
                 >
                     {badge > 99 ? '99+' : badge}
                 </span>
@@ -81,6 +82,8 @@ export function BottomBar({
     aboveStatusBar?: boolean;
 }) {
     const keyboard = useKeyboardOpen();
+    const { settings } = useTheme();
+    const iconSize = settings.density === 'compact' ? 18 : 22;   // 빽빽만 옛 크기
     if (keyboard) return null;   // 키보드 위에 안 띄운다
 
     const { scroll, pinned } = splitBarItems(items);
@@ -90,31 +93,31 @@ export function BottomBar({
         <nav
             aria-label="하단 바"
             className="ui-chrome-nodrag fixed left-1/2 -translate-x-1/2 z-[120]
-                flex items-center gap-1 max-w-[calc(100vw-1.5rem)]
-                bg-panel border border-line rounded-full shadow-lg px-1.5 py-1"
-            style={{ bottom: `calc(env(safe-area-inset-bottom) + 14px${aboveStatusBar ? ' + var(--s-statusbar)' : ''})` }}
+                flex items-center gap-[var(--nav-gap)] max-w-[calc(100vw-1.5rem)]
+                bg-panel border border-line rounded-full shadow-lg px-[var(--nav-padx)] py-[var(--nav-pady)]"
+            style={{ bottom: `calc(env(safe-area-inset-bottom) + var(--nav-bottom)${aboveStatusBar ? ' + var(--s-statusbar)' : ''})` }}
         >
             {/* ◧ 왼쪽 서랍 — 왼쪽 고정 */}
-            <BarButton icon="panelLeft" label="왼쪽 사이드바" onClick={onOpenLeft} />
+            <BarButton iconSize={iconSize} icon="panelLeft" label="왼쪽 사이드바" onClick={onOpenLeft} />
 
             {/* ▤ 리본 — 왼쪽 고정(◧ 바로 옆). 누르면 리본 시트가 올라온다(⑤). 데스크톱은 세로 리본(Rail)이 그 몫 */}
-            {onOpenRibbon && <BarButton icon="menu" label="리본" onClick={onOpenRibbon} />}
+            {onOpenRibbon && <BarButton iconSize={iconSize} icon="menu" label="리본" onClick={onOpenRibbon} />}
 
             {/* 가운데: 앱 항목만 가로 스크롤(넘칠 때) */}
             {scroll.length > 0 && (
-                <div className="flex items-center gap-1 min-w-0 overflow-x-auto tab-scroll">
+                <div className="flex items-center gap-[var(--nav-gap)] min-w-0 overflow-x-auto tab-scroll">
                     {scroll.map((it) => (
-                        <BarButton key={it.id} icon={it.icon} label={it.label} onClick={it.onClick} badge={it.badge} />
+                        <BarButton iconSize={iconSize} key={it.id} icon={it.icon} label={it.label} onClick={it.onClick} badge={it.badge} />
                     ))}
                 </div>
             )}
 
             {/* 오른쪽 고정: 앱 pinned 항목 → ▦ 탭 전환 → ◨ 오른쪽 서랍 */}
             {pinned.map((it) => (
-                <BarButton key={it.id} icon={it.icon} label={it.label} onClick={it.onClick} badge={it.badge} />
+                <BarButton iconSize={iconSize} key={it.id} icon={it.icon} label={it.label} onClick={it.onClick} badge={it.badge} />
             ))}
-            <BarButton icon="copy" label="탭 전환" onClick={onOpenTabs} badge={tabCount} />
-            <BarButton icon="panelRight" label="오른쪽 사이드바" onClick={onOpenRight} />
+            <BarButton iconSize={iconSize} icon="copy" label="탭 전환" onClick={onOpenTabs} badge={tabCount} />
+            <BarButton iconSize={iconSize} icon="panelRight" label="오른쪽 사이드바" onClick={onOpenRight} />
         </nav>
     );
 }

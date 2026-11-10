@@ -21,6 +21,8 @@ export { parseClipboard, toTsv } from './clipboard-tsv';
 export { FRAME_COMMAND, viewOpenCommandId, isSidePanelView, type FrameCommandId } from './frame-commands';
 // 되돌리기 공용 더미 + ⌘Z 판정 — 범위(더미)는 쓰는 쪽마다 따로 든다
 export { emptyHistory, record, undo, redo, canUndo, canRedo, undoKey, type History } from './history';
+// 플랫폼 키 — 수정키 판정·표기의 유일한 자리(맥 ⌘ / 윈도우 Ctrl)
+export { isMod, isAlt, isMacPlatform, keyLabel, modClickLabel, platform, setPlatform, type Platform } from './platform-keys';
 // 단축키 — 명령의 keys + 사용자 재지정 → 전역 디스패처 하나
 export {
     installKeybindings, handleKeydown, eventToKey, normalizeKey, formatKey, effectiveKey, keyMap,
@@ -50,6 +52,14 @@ export { Popover } from './primitives/Popover';
 export { Tooltip } from './primitives/Tooltip';
 export { PropertyField } from './primitives/PropertyField';
 export { IconPicker, TitleField, COMMON_EMOJI } from './primitives/IconPicker';
+export { NodeIcon } from './node-icon/NodeIcon';
+export { NodeIconPanel } from './node-icon/NodeIconPicker';
+export {
+    parseNodeIcon, serializeNodeIcon, NODE_ICON_COLORS,
+    type NodeIconValue, type NodeIconColor,
+} from './node-icon/model';
+export { addIconPack, listIconPacks, useIconPacks, type IconPackContribution, type IconPackIcon } from './node-icon/packs';
+export { sanitizeSvg, safeImageUrl } from './node-icon/svg-sanitize';
 export { Toggle } from './primitives/Toggle';
 export { Dialog } from './primitives/Dialog';
 export { ConfirmDialog } from './primitives/ConfirmDialog';
@@ -131,7 +141,7 @@ export {
     leaf, tabs, split, uid, emptyWorkspace, emptyTabs, normalize,
     openLeaf, closeLeaf, activateLeaf, moveLeaf, moveTabWithin, splitAt, resize, addLeafToTabs,
     closeOthers, closeToRight, areaOfLeaf, renameLeaf, withLeafGlyph,
-    findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
+    findLeaf, findLeafByView, findLeafByViewParams, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
 export { loadWorkspace, saveWorkspace, hasWorkspace, clearWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
@@ -151,8 +161,8 @@ export {
     type ThemeSettings, type ThemeMode,
 } from './theme/settings';
 export {
-    COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, findTheme,
-    type ColorToken, type DensityId, type ThemePreset, type Palette,
+    COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, FONT_SIZES, densityScale, fontScale, findTheme,
+    type ColorToken, type DensityId, type FontSizeId, type ThemePreset, type Palette,
 } from './theme/tokens';
 export { hexToRgb, rgbToHex, isTriplet } from './theme/color';
 export {

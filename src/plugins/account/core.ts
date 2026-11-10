@@ -481,7 +481,6 @@ export function createRole(name: string, opts?: { permissions?: string[]; level?
     return nodesApi.create(folder, { type: ROLE_TYPE, name, data });
 }
 export function deleteRole(roleId: string): void { nodesApi?.remove(roleId); }
-export function deleteUser(userId: string): void { nodesApi?.remove(userId); }
 
 // ── 목록에서 지우기 + 되돌리기(W9) — 여러 줄을 한 묶음(batch = 되돌리기 한 칸)으로 휴지통에 보낸다 ──
 //    🔴 되돌리기는 자체 통로가 아니라 노드 시스템의 정식 되돌리기(nodes.cmd.undo)다 — 알림 단추가 대상 토큰(undoTop)을 싣는다(C1).
@@ -522,7 +521,6 @@ export function accountFolderId(kind: 'users' | 'roles' | 'perms'): string | nul
     if (!r) return null;
     return childOfType(r, kind === 'users' ? USERS_FOLDER_TYPE : kind === 'roles' ? ROLES_FOLDER_TYPE : PERMS_FOLDER_TYPE);
 }
-export function nodeNameOf(id: string): string { return nodesApi?.get(id)?.name ?? ''; }
 
 /** 사용자·역할 이름 = 노드 이름(제목 칸). 빈 이름은 무시. */
 export function renameRecord(id: string, name: string): void {

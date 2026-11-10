@@ -17,7 +17,7 @@
 import { CalBar } from './CalBar';
 import { DayLabel } from './DayLabel';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 // 🔑 날짜 계산은 창틀 부품(primitives/date-grid)과 한 벌이다 — 플러그인 안에 사본을 두지 않는다
 import {
     Button, ContextMenu, Icon, IconButton, Surface, useContextTrigger, type MenuEntry,
@@ -30,6 +30,7 @@ import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCa
 import { paletteAt } from '../palette';
 import { useCardPeek } from './useCardPeek';
 import { focusPeekTitle } from './focus-title';
+import { CHIP_A11Y, chipKeyId } from './chip-key';
 import { mergeBind } from './ctx-bind';
 import { useRangeSelect, type RangeHit } from './useRangeSelect';
 import { daysSelection, dayInSelection, eventFromSelection, type CalSelection } from '../selection';
@@ -79,13 +80,13 @@ function EventChip({ b }: { b: WeekBar }) {
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
-            <div data-event-id={e.id} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar}`}>
+            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar}`}>
                 {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
     }
     return (
-        <div data-event-id={e.id} className="flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
+        <div data-event-id={e.id} {...CHIP_A11Y} className="flex items-center gap-1 px-1 text-micro leading-4 text-text cursor-pointer hover:bg-text/[0.06] rounded">
             <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${pal.dot}`} />
             <span className="truncate"><span className="tabular-nums text-muted">{hhmm(e.startMs)}</span> {title}</span>
         </div>
@@ -179,8 +180,9 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         const add = (e.target as HTMLElement).closest('[data-day-add]');
         if (add) { const day = add.closest('[data-day]')?.getAttribute('data-day'); if (day) newAllDay(day); return; }
         const id = (e.target as HTMLElement).closest('[data-event-id]')?.getAttribute('data-event-id');
-        if (id) card.open(id);
+        if (id) { card.open(id); focusPeekTitle(); }
     };
+    const onCellKey = (e: ReactKeyboardEvent) => { const id = chipKeyId(e); if (id) { card.open(id); focusPeekTitle(); } };
     const newAllDay = (iso: string, useSelection = false) => {
         // 우클릭 「새 일정」 — 고른 범위 안을 눌렀으면 범위 전체(W7)
         const span = useSelection ? eventFromSelection(selection, iso) : null;
@@ -401,20 +403,20 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     <button
                         type="button"
                         onClick={goToday}
-                        className="px-2 h-btn rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="px-2 h-btn rounded text-small text-muted hover:text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         오늘
                     </button>
                     <IconButton icon="right" label="다음 달" onClick={() => go(1)} />
                     {trailing}
                 </>}>
-                <div ref={jumpRef} className="relative">
+                <div ref={jumpRef} className="relative shrink-0">
                     <button
                         type="button"
                         onClick={openJump}
                         aria-expanded={jumpOpen}
                         aria-label="년·월 고르기"
-                        className="flex items-center gap-1 -ml-1 px-1 rounded text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
+                        className="flex items-center gap-1 -ml-1 px-1 rounded whitespace-nowrap text-body sm:text-base font-semibold text-text hover:bg-text/[0.06] active:bg-text/[0.1] transition-colors"
                     >
                         {monthLabel(head.y, head.m)}
                         <Icon name="right" size={14} className={`text-muted transition-transform ${jumpOpen ? '-rotate-90' : 'rotate-90'}`} />
@@ -424,7 +426,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                             {/* 년도 줄 */}
                             <div className="flex items-center justify-between mb-1">
                                 <IconButton icon="left" label="이전 해" onClick={() => setJumpYear((y) => y - 1)} />
-                                <span className="text-[13px] font-semibold text-text tabular-nums">{jumpYear}년</span>
+                                <span className="text-body font-semibold text-text tabular-nums">{jumpYear}년</span>
                                 <IconButton icon="right" label="다음 해" onClick={() => setJumpYear((y) => y + 1)} />
                             </div>
                             {/* 달 12칸 — 지금 보는 달은 accent, 오늘 달은 점 */}
@@ -437,7 +439,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                                             key={m}
                                             type="button"
                                             onClick={() => jumpTo(m)}
-                                            className={`relative h-8 rounded text-[13px] tabular-nums transition-colors
+                                            className={`relative h-8 rounded text-body tabular-nums transition-colors
                                                 ${isCurrent ? 'bg-accent text-bg font-semibold' : 'text-text hover:bg-text/[0.06]'}`}
                                         >
                                             {m}월
@@ -458,6 +460,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                 ref={scrollerRef}
                 onScroll={onScroll}
                 onClick={onCellClick}
+                onKeyDown={onCellKey}
                 onDoubleClick={onCellDouble}
                 {...mergeBind(rangeSel.bind, ctxTrigger)}
                 className="flex-1 min-h-0 overflow-y-auto overscroll-contain border-l border-line"
@@ -467,7 +470,7 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
                     style={{ height: WD_HEADER_H }}
                 >
                     {labels.map((w) => (
-                        <div key={w} className="border-r border-b border-line text-center text-[11px] leading-[22px] font-medium text-muted select-none">
+                        <div key={w} className="border-r border-b border-line text-center text-note leading-[22px] font-medium text-muted select-none">
                             {w}
                         </div>
                     ))}

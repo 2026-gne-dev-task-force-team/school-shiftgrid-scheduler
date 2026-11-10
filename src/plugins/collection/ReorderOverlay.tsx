@@ -19,7 +19,7 @@ export function ReorderOverlay({ drag, indicator, axis }: { drag: DragLeafState 
                 />
             )}
             <div
-                className="absolute flex items-center rounded-md border border-line bg-panel2 text-text text-[13px] px-3 h-row shadow-lg opacity-90 truncate"
+                className="absolute flex items-center rounded-md border border-line bg-panel2 text-text text-body px-3 h-row shadow-lg opacity-90 truncate"
                 style={{ left: drag.x + 12, top: drag.y + 12, maxWidth: 220 }}
             >
                 <span className="truncate">{drag.title}</span>

@@ -4,6 +4,7 @@
  *   읽기 전용 표로 버티는지(최소 대체)를 본다. 깊은 contentEditable 조작은 jsdom 이 약하니
  *   「됐다」의 뼈대(모델·키·마크다운)는 core 테스트가 박고, 여기선 뷰가 뜨는지를 본다.
  */
+import { setPlatform } from '../../pane-ui-system/platform-keys';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -137,14 +138,15 @@ describe('PageView 통합', () => {
 
     // ── R5-7 — 고른 블록 상태의 키: 공통 undoKey · ⌘X 는 클립보드 쓰기가 끝난 뒤에만 지운다 ──
     it('고른 뒤 ⌘Z 로 되돌리고 Ctrl+Y 로 다시 한다(공통 undoKey) · 조합 중엔 안 받는다', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         open3();
         key(rows()[0].querySelector('[role="textbox"]')!, 'Escape');
         key(container.querySelector('[tabindex="-1"]')!, 'Backspace');
         expect(bodyIds()).toEqual(['b', 'c']);
         const tb = () => container.querySelector('[role="textbox"]')!;
-        key(tb(), 'z', { metaKey: true, isComposing: true });
+        key(tb(), 'z', { ctrlKey: true, isComposing: true });
         expect(bodyIds()).toEqual(['b', 'c']);
-        key(tb(), 'z', { metaKey: true });
+        key(tb(), 'z', { ctrlKey: true });
         expect(bodyIds()).toEqual(['a', 'b', 'c']);
         key(tb(), 'y', { ctrlKey: true });
         expect(bodyIds()).toEqual(['b', 'c']);

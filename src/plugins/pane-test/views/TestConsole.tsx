@@ -13,9 +13,9 @@ function PeekContent() {
     return (
         <div className="flex flex-col gap-2">
             <h3 className="text-lg font-bold text-accent">미리보기</h3>
-            <p className="text-[13px] text-muted">이 미리보기는 전역 창이 아니라 <span className="text-text font-semibold">이 탭 안</span>에서 뜹니다. 넓으면 오른쪽, 좁으면 아래.</p>
+            <p className="text-body text-muted">이 미리보기는 전역 창이 아니라 <span className="text-text font-semibold">이 탭 안</span>에서 뜹니다. 넓으면 오른쪽, 좁으면 아래.</p>
             {Array.from({ length: 30 }).map((_, i) => (
-                <div key={i} className="shrink-0 py-1.5 px-2 rounded bg-accent/10 text-[13px] text-text">미리보기 줄 {i + 1} — 피크 안 스크롤 시험</div>
+                <div key={i} className="shrink-0 py-1.5 px-2 rounded bg-accent/10 text-body text-text">미리보기 줄 {i + 1} — 피크 안 스크롤 시험</div>
             ))}
         </div>
     );
@@ -48,7 +48,7 @@ function Group({ id, title, host, children }: { id: string; title: string; host:
                 type="button"
                 onClick={toggle}
                 aria-expanded={open}
-                className="flex items-center gap-1.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted hover:text-text select-none"
+                className="flex items-center gap-1.5 text-left text-note font-semibold uppercase tracking-wide text-muted hover:text-text select-none"
             >
                 <Chevron open={open} />
                 {title}
@@ -68,7 +68,7 @@ export function TestConsole({ host, peek }: { host: PluginHost; peek: PeekHandle
         <div className="h-full overflow-auto p-5 flex flex-col gap-5 select-text bg-bg">
             <header className="flex flex-col gap-1">
                 <h2 className="text-base font-semibold text-text">Pane UI Test</h2>
-                <p className="text-[12px] text-muted">여기 단추로 여러 창 타입을 열어 창틀을 시험합니다. ⛔ 생성 단추는 이 탭 안에만 있습니다.</p>
+                <p className="text-small text-muted">여기 단추로 여러 창 타입을 열어 창틀을 시험합니다. ⛔ 생성 단추는 이 탭 안에만 있습니다.</p>
             </header>
 
             <Group id="panel" title="패널 — 틀에 하나씩" host={host}>

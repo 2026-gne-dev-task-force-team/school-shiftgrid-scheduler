@@ -29,7 +29,7 @@ import { lookupFeature } from './features/registry';
 import { buildMergeMap, regionFromSelection, anchorCovering } from './core/merge';
 import { inverseTx, txHasEffect } from './core/history';
 import { isChecked, toggledValue } from './core/coltypes';
-import { ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
+import { isAlt, keyLabel, isMacPlatform, ContextMenu, IconButton, InlineRename, isImeEnter, Toolbar, Tooltip, type IconName, type MenuEntry } from '../../pane-ui-system';
 import { setQuickCalc } from './store';
 
 export type { SheetCoreHandle as TableHandle };
@@ -556,7 +556,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     };
 
     const sel = core.sel;
-    const stickyColHandleCls = hasSticky ? 'sticky top-0 z-20' : '';
+    const stickyColHandleCls = hasSticky ? 'sticky top-0 z-20 bg-bg' : '';
 
     // ── 선택 테두리 한 겹 — 고른 범위를 2px 파란 상자로 통째로 감싼다(칸마다 테두리를 박지 않아 이중선·어긋남이 안 난다) ──
     //    칸 안쪽 옅은 파란 바탕은 칸이 직접 칠한다(bg-accent/10) — 병합 칸도 자연히 덮인다.
@@ -625,10 +625,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     const selColKeys = columns.slice(sel.c1, sel.c2 + 1).map((c) => c.key);
     const hasCells = rows.length > 0 && columns.length > 0;
     const tools: Tool[] = toolbar ? [
-        { id: 'undo', icon: 'undo', label: '되돌리기', title: '되돌리기 (Ctrl+Z)', on: !!undoFn, run: () => undoFn?.() },
-        { id: 'redo', icon: 'redo', label: '다시 하기', title: '다시 하기 (Ctrl+Shift+Z)', on: !!redoFn, run: () => redoFn?.() },
+        { id: 'undo', icon: 'undo', label: '되돌리기', title: `되돌리기 (${keyLabel('Mod+Z')})`, on: !!undoFn, run: () => undoFn?.() },
+        { id: 'redo', icon: 'redo', label: '다시 하기', title: `다시 하기 (${keyLabel('Mod+Shift+Z')}${isMacPlatform() ? '' : ' · Ctrl+Y'})`, on: !!redoFn, run: () => redoFn?.() },
         '|',
-        { id: 'copy', icon: 'copy', label: '복사', title: '복사 (Ctrl+C) — 붙여넣기는 Ctrl+V', on: hasCells, run: () => core.handle.copy() },
+        { id: 'copy', icon: 'copy', label: '복사', title: `복사 (${keyLabel('Mod+C')}) — 붙여넣기는 ${keyLabel('Mod+V')}`, on: hasCells, run: () => core.handle.copy() },
         '|',
         { id: 'row-above', icon: 'rowAbove', label: '위에 행', title: '위에 행 넣기 (Alt+↑)', on: hasRows && hasCells, run: () => insertRow(sel.r1) },
         { id: 'row-below', icon: 'rowBelow', label: '아래에 행', title: '아래에 행 넣기 (Alt+↓)', on: hasRows && hasCells, run: () => insertRow(sel.r2 + 1) },
@@ -662,10 +662,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     );
 
     return (
-        <div ref={outerRef} className={`relative text-[13px] ${className ?? ''}`}>
+        <div ref={outerRef} className={`relative text-body ${className ?? ''}`}>
             {toolbar && (toolbarHost ? createPortal(toolbarBar, toolbarHost) : toolbarBar)}
             {hasValidate && invalidCount > 0 && (
-                <div className="mb-1 text-[11px] text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
+                <div className="mb-1 text-note text-bad tabular-nums">확인 필요 {invalidCount}곳</div>
             )}
             {/* 떠있는 + 막대는 스크롤러(overflow-auto) 밖에 둬야 표 가장자리에서 안 잘린다.
                 이 래퍼가 표 + 오른쪽·아래 16px 투명 띠를 함께 감싸 호버 범위로 쓴다 — 쉬는 상태엔 자국이 없다(투명 여백). */}
@@ -717,7 +717,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                 onMouseEnter={() => setHoverTab(idx)}
                                                 onMouseLeave={() => setHoverTab(null)}
                                                 title="눌러서 열 고르기 · 끌어서 옮기기 · ▾ 메뉴"
-                                                className={`relative h-5 grid place-items-center border-r border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                className={`relative h-5 grid place-items-center border-r border-bg cursor-pointer leading-none select-none text-note font-medium tabular-nums transition-opacity
                                                     ${colTabsOn ? 'opacity-100' : 'opacity-0'}
                                                     ${lineSel ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
                                             >
@@ -726,7 +726,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                     data-testid="col-menu"
                                                     onMouseDown={(e) => e.stopPropagation()}
                                                     onClick={(e) => openColMenu(e, col.key, idx)}
-                                                    className={`absolute right-1 top-0 h-5 px-0.5 grid place-items-center text-[9px] ${hoverTab === idx ? 'opacity-100' : 'opacity-0'}`}
+                                                    className={`absolute right-1 top-0 h-5 px-0.5 grid place-items-center text-micro ${hoverTab === idx ? 'opacity-100' : 'opacity-0'}`}
                                                 >▾</span>
                                             </div>
                                             {reorder?.kind === 'col' && reorder.over === idx && (
@@ -797,7 +797,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                     onClick={(e) => { e.stopPropagation(); selectLine('row', r); }}
                                                     onContextMenu={(e) => openRowMenu(e, row.id, r)}
                                                     title="눌러서 행 고르기 · 끌어서 옮기기 · 우클릭 메뉴"
-                                                    className={`grid place-items-center w-6 min-h-6 border-b border-bg cursor-pointer leading-none select-none text-[11px] font-medium tabular-nums transition-opacity
+                                                    className={`grid place-items-center w-6 min-h-6 border-b border-bg cursor-pointer leading-none select-none text-note font-medium tabular-nums transition-opacity
                                                         ${tabsOn ? 'opacity-100' : 'opacity-0'}
                                                         ${sel.r1 <= r && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= columns.length - 1
                                                             ? 'bg-accent text-bg' : 'bg-panel2 text-muted hover:bg-text/[0.10]'}`}
@@ -881,7 +881,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                                                         ) : (
                                                             <span>{value}</span>
                                                         )}
-                                                        {deco?.badge && <span className="ml-1 px-1 rounded bg-accent/15 text-accent text-[11px] align-middle">{deco.badge}</span>}
+                                                        {deco?.badge && <span className="ml-1 px-1 rounded bg-accent/15 text-accent text-note align-middle">{deco.badge}</span>}
                                                     </>
                                                 )}
                                             </td>
@@ -941,7 +941,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     className={`absolute top-6 right-0 h-4 w-4 grid place-items-center rounded-full border border-line bg-panel shadow-sm cursor-ew-resize transition-opacity
                         ${hoverTable || focused || addDrag ? 'opacity-100' : 'opacity-0'} text-muted hover:text-accent hover:border-accent`}
                 >
-                    <span className="text-[11px] leading-none">{addDrag?.axis === 'col' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
+                    <span className="text-note leading-none">{addDrag?.axis === 'col' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
                 </button>
             )}
             {hasRows && (
@@ -955,7 +955,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                     className={`absolute left-7 bottom-0 h-4 w-4 grid place-items-center rounded-full border border-line bg-panel shadow-sm cursor-ns-resize transition-opacity
                         ${hoverTable || focused || addDrag ? 'opacity-100' : 'opacity-0'} text-muted hover:text-accent hover:border-accent`}
                 >
-                    <span className="text-[11px] leading-none">{addDrag?.axis === 'row' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
+                    <span className="text-note leading-none">{addDrag?.axis === 'row' && addDrag.n > 1 ? addDrag.n : '＋'}</span>
                 </button>
             )}
             </div>
@@ -999,7 +999,7 @@ function renderEditor(
                 const k = e.key;
                 if (k === 'Escape') { e.preventDefault(); core.cancelEdit(); return; }
                 if (k === 'Enter') {
-                    if (e.altKey) {
+                    if (isAlt(e)) {
                         e.preventDefault();
                         const el = e.currentTarget;
                         const s = el.selectionStart ?? el.value.length;

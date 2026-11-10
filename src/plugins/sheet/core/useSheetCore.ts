@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { CellChange, CellPos, SheetCoreAdapter, SheetCoreHandle } from './types';
-import { undoKey, isImeEnter, parseClipboard, toTsv } from '../../../pane-ui-system';
+import { isMod, isAlt, undoKey, isImeEnter, parseClipboard, toTsv } from '../../../pane-ui-system';
 import { verticalViewport } from './platform';
 
 // 마지막 복사한 TSV — navigator.clipboard 가 막힌 자리(file:// 등)의 내부 대비책.
@@ -255,7 +255,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (!focusedRef.current) return;
             if (editRef.current) return; // 편집 중엔 입력창이 처리한다
             const a = adapterRef.current;
-            const meta = e.metaKey || e.ctrlKey;
+            const meta = isMod(e);
             const k = e.key;
             const act = activeRef.current;
             const u = undoKey(e);   // ⌘Z 판정은 창틀 공용(한글 조합 중·Alt 낀 것 거름) — 더미는 역트랜잭션이라 여기 몫
@@ -267,7 +267,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
             if (meta && (k === 'd' || k === 'D')) { e.preventDefault(); e.stopPropagation(); impl.current.fillDown(selRef.current.r2); return; }
             if (meta && (k === 'a' || k === 'A')) { e.preventDefault(); e.stopPropagation(); setAnchorState({ r: 0, c: 0 }); setActiveState({ r: Math.max(0, a.dataRowCount - 1), c: a.colCount - 1 }); return; }
             // M5 넘버스 — Alt+↑/↓ 위·아래에 행, Alt+←/→ 왼·오른쪽에 열을 넣는다.
-            if (e.altKey && !meta && a.insert && k.startsWith('Arrow')) {
+            if (isAlt(e) && !meta && a.insert && k.startsWith('Arrow')) {
                 e.preventDefault(); e.stopPropagation();
                 if (k === 'ArrowUp') a.insert('row', act.r);
                 else if (k === 'ArrowDown') a.insert('row', act.r + 1);
@@ -276,7 +276,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 return;
             }
             // 엑셀 관례 — ⌘/Ctrl+방향 = 표 끝, ⌘Home = A1, ⌘End = 마지막 칸 (⇧ 로 범위 확장)
-            if (meta && !e.altKey) {
+            if (meta && !isAlt(e)) {
                 const lastR = Math.max(0, a.dataRowCount - 1), lastC = a.colCount - 1;
                 let to: CellPos | null = null;
                 if (k === 'ArrowDown') to = { r: lastR, c: act.c };
@@ -288,7 +288,7 @@ export function useSheetCore(adapter: SheetCoreAdapter): SheetCore {
                 if (to) { e.preventDefault(); e.stopPropagation(); impl.current.moveTo(to.r, to.c, e.shiftKey); return; }
             }
             // 격자가 안 쓰는 단축키(Ctrl+S 등)는 껍데기로 흘려보낸다
-            if (meta || e.altKey || (/^F\d+$/.test(k) && k !== 'F2')) return;
+            if (meta || isAlt(e) || (/^F\d+$/.test(k) && k !== 'F2')) return;
             e.stopPropagation();
             if (k === 'ArrowDown') { e.preventDefault(); impl.current.moveTo(act.r + 1, act.c, e.shiftKey); return; }
             if (k === 'ArrowUp') { e.preventDefault(); impl.current.moveTo(act.r - 1, act.c, e.shiftKey); return; }

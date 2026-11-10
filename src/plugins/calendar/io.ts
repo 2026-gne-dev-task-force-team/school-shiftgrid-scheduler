@@ -6,7 +6,7 @@
  * 🔴 중복 처리(쥔님 2026-11-08): 같은 .ics 를 두 번 넣으면 UID 같은 일정은 건너뛴다(저장소에 이미 있는 UID + 이번 묶음 안 중복 둘 다).
  *    UID 없는 일정(드문 경우)은 거를 열쇠가 없어 늘 들인다(그래서 두 번 넣으면 쌓인다 — 보고 대상).
  */
-import { isoMinuteOf, parseLocal, type EventData, type CalEvent } from './events';
+import { isoMinuteOf, parseLocal, type EventData } from './events';
 import type { CalendarItem } from './contracts/calendar';
 import type { IcsWriteEvent } from './ics';
 
@@ -69,14 +69,3 @@ export function itemToIcs(item: CalendarItem): IcsWriteEvent {
     };
 }
 
-/** 파싱된 내 일정(CalEvent) → .ics 작성기 입력 — 내보내기가 메모리 CalEvent 로 모을 때. */
-export function calEventToIcs(e: CalEvent): IcsWriteEvent {
-    return {
-        uid: e.id,
-        title: e.name || '(제목 없음)',
-        start: e.start,
-        end: e.end,
-        allDay: e.allDay,
-        ...(e.memo ? { memo: e.memo } : {}),
-    };
-}

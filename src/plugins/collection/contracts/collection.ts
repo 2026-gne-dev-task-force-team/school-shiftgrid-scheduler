@@ -282,6 +282,8 @@ export interface RecordViewProps<T> {
     onDestructive?: (title: string, run: () => void) => void;
     /** 행의 「열기」 단추(제목 칸 hover)를 누르면. 안 넘기면 그 단추가 안 뜬다. */
     onOpenRecord?: (id: string) => void;
+    /** 「탭으로 열기」 — 넘기면 줄 메뉴·행 끝 단추에 뜨고, 「열기」를 ⌘클릭·가운데 클릭해도 이리로 온다(W13). */
+    onOpenRecordTab?: (id: string) => void;
     /** 넘기면 제목 칸 앞에 행 아이콘이 뜬다(없는 행은 기본 문서 아이콘) — 레코드 = 페이지. */
     iconOf?: (id: string) => string | undefined;
     /** 넘기면 칸 추가·이름·삭제·선택지 편집을 허용한다. 안 넘기면 칸 구조는 고정. */
@@ -440,6 +442,8 @@ export interface RecordViewApi {
     PropertyList(props: PropertyListProps): ReactElement | null;
     /** 🔑 레코드 열기 페이지 한 벌 — 노드 틀 + 속성 목록 + 본문. 레코드를 옆으로 열 때 이것만 쓴다(Q5 R5). */
     RecordPage(props: RecordPageProps): ReactElement | null;
+    /** 🔑 레코드 하나를 편집 탭으로 연다(W13) — 제 편집 탭이 있는 노드는 노드 열기, 없으면 「레코드」 탭. 이미 떠 있으면 그 탭으로. */
+    openInTab(host: PluginHost, id: string): boolean;
     /** 칸 타입 레지스트리 — 내장 여섯이 같은 꼴로 올라 있고 꽂힌 타입은 `<pluginId>.<name>` 접두사 */
     fieldTypes: FieldTypeRegistry;
     schema: RecordSchemaApi;

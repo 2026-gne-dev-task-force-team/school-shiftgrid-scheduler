@@ -1,6 +1,7 @@
 /**
  * 키 판정 — Enter/Backspace/Tab/화살표·⌘단축 · 🔴 IME 조합 중 무변환(명세 요구 6·11).
  */
+import { setPlatform } from '../../../pane-ui-system/platform-keys';
 import { describe, it, expect } from 'vitest';
 import { decideKey, type KeyInput } from './keys';
 
@@ -73,6 +74,7 @@ describe('⌘ 단축', () => {
         expect(decideKey(k({ key: 'z', metaKey: true, shiftKey: true }))).toBe('redo');
     });
     it('Ctrl 로도 된다(윈도우)', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         expect(decideKey(k({ key: 'z', ctrlKey: true }))).toBe('undo');
     });
 });

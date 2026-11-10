@@ -13,12 +13,13 @@ import { useSyncExternalStore } from 'react';
 import { storageKey } from './storage';
 import { listCommands, runCommand } from './plugin/store';
 import { onStorageKey } from './cross-tab';
+import { isMacPlatform, isMod, isAlt, keyLabel } from './platform-keys';
 
 /** 명령 id → 키 글자. '' = 사용자가 지운 것(기본 키도 끈다). */
 export type KeyOverrides = Record<string, string>;
 
 const MODS = ['Mod', 'Ctrl', 'Alt', 'Shift'] as const;
-const isMac = (): boolean => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const isMac = isMacPlatform;
 
 /** 키 글자를 한 꼴로 — 수식 키 순서 고정·글자 대문자. 빈 값·수식 키만이면 ''. */
 export function normalizeKey(s: string): string {
@@ -41,20 +42,15 @@ export function eventToKey(e: Pick<KeyboardEvent, 'key' | 'code' | 'ctrlKey' | '
     const key = m ? (m[1] ?? m[2]) : e.key === ' ' ? 'Space' : e.key;
     if (!key || key === 'Unidentified') return null;
     const mods: string[] = [];
-    if (mac ? e.metaKey : e.ctrlKey) mods.push('Mod');
+    if (isMod(e, mac)) mods.push('Mod');
     if (mac && e.ctrlKey) mods.push('Ctrl');
-    if (e.altKey) mods.push('Alt');
+    if (isAlt(e)) mods.push('Alt');
     if (e.shiftKey) mods.push('Shift');
     return normalizeKey([...mods, key].join('+'));
 }
 
 /** 보여 줄 글자 — 맥이면 ⌘⌥⇧⌃, 그 밖은 Ctrl+Alt+Shift. */
-export function formatKey(k: string, mac = isMac()): string {
-    if (!k) return '';
-    if (!mac) return k.replace(/\bMod\b/, 'Ctrl');
-    const sym: Record<string, string> = { Mod: '⌘', Ctrl: '⌃', Alt: '⌥', Shift: '⇧' };
-    return k.split('+').map((p) => sym[p] ?? p).join('');
-}
+export function formatKey(k: string, mac = isMac()): string { return keyLabel(k, mac); }
 
 // ── 사용자 재지정 저장소 ──
 const overridesKey = () => storageKey('keybindings');

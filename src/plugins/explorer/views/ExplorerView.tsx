@@ -13,7 +13,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../pane-ui-system/plugin';
 import { usePluginRegistry } from '../../../pane-ui-system/plugin';
-import { Icon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
+import { isMod, Icon, NodeIcon, SectionHeader, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../../pane-ui-system';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../model/tree';
 import { isContainerType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../model/types';
 import { clearDerived } from '../model/derive';
@@ -208,7 +208,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (draggedRef.current) { draggedRef.current = false; return; }   // 방금 드래그 끝 — 클릭 삼킨다
         rootRef.current?.focus();                                        // 단축키(Ctrl+Z 등)가 뷰로 오게
         // 🔴 Ctrl/⌘·Shift 가 눌린 클릭은 **고르기만**(열지도 펴지도 않는다 · 쥔님 2026-11-02) — 맨 클릭만 연다.
-        const ctrl = e.ctrlKey || e.metaKey;
+        const ctrl = isMod(e);
         if (ctrl || e.shiftKey) {
             clearRenameTimer();
             clickSelect(row.id, rowsOrder, { ctrl, shift: e.shiftKey });
@@ -256,7 +256,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             return;
         }
         // 🔴 Ctrl/⌘+A — 보이는 줄 전부 고르기(이름칸·검색칸 안에선 위 INPUT 가드가 이미 브라우저에 양보한다)
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        if (isMod(e) && (e.key === 'a' || e.key === 'A')) {
             e.preventDefault();
             selectAllRows(rowsOrder);
             return;
@@ -383,7 +383,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         return (
             <div className="h-full flex flex-col bg-side">
                 <SectionHeader title="탐색기" />
-                <p className="px-pad py-3 text-[12px] text-muted select-none">불러오는 중…</p>
+                <p className="px-pad py-3 text-small text-muted select-none">불러오는 중…</p>
             </div>
         );
     }
@@ -417,7 +417,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="검색"
-                    className="flex-1 min-w-0 text-[12px] leading-none bg-transparent text-text placeholder:text-muted outline-none"
+                    className="flex-1 min-w-0 text-small leading-none bg-transparent text-text placeholder:text-muted outline-none"
                 />
                 {query && <IconButton icon="x" label="검색 지우기" size={13} onClick={() => setQuery('')} />}
             </div>
@@ -427,12 +427,12 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
             <div ref={listRef} className="flex-1 min-h-0 overflow-auto py-1 relative" onClick={onListClick}>
                 {rows.length === 0 && (
-                    <p className="px-pad py-2 text-[12px] text-muted select-none">
+                    <p className="px-pad py-2 text-small text-muted select-none">
                         {q ? '맞는 항목이 없습니다.' : '비어 있습니다 — 「새 폴더」로 시작하세요.'}
                     </p>
                 )}
                 {[pinnedRows, mainRows].map((list, li) => (<Fragment key={li}>
-                {li === 0 && list.length > 0 && <div className="px-pad pt-1 pb-0.5 text-[11px] text-muted select-none">고정</div>}
+                {li === 0 && list.length > 0 && <div className="px-pad pt-1 pb-0.5 text-note text-muted select-none">고정</div>}
                 {li === 1 && pinnedRows.length > 0 && <div className="mx-pad my-1 border-t border-line" />}
                 {list.map((row) => {
                     const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
@@ -463,7 +463,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                     <span className="shrink-0 w-4" />
                                 )}
                                 <Icon name={row.icon ?? 'dot'} size={15} className="shrink-0 text-muted" />
-                                <span className="flex-1 min-w-0 truncate text-[13px] leading-none text-muted italic">
+                                <span className="flex-1 min-w-0 truncate text-body leading-none text-muted italic">
                                     {row.name}
                                 </span>
                             </div>
@@ -504,7 +504,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                             )}
 
                             {emojiOf(row.node)
-                                ? <span className="shrink-0 w-[15px] text-center text-[13px] leading-none select-none">{emojiOf(row.node)}</span>
+                                ? <NodeIcon value={emojiOf(row.node)} size={15} fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0" />} />
                                 : <Icon name={iconOf(row.node)} size={15} className={`shrink-0 ${known ? '' : 'text-muted'}`} />}
 
                             {isRenaming ? (
@@ -515,13 +515,13 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                         value={renameInitial ?? row.node.name}
                                         placeholder={renamePlaceholder ?? undefined}
                                         raw={renameKind !== 'name'}
-                                        className="flex-1 !h-auto text-[13px] leading-none py-0.5"
+                                        className="flex-1 !h-auto text-body leading-none py-0.5"
                                         onCommit={commitRename}
                                         onCancel={cancelRename}
                                     />
                                 </span>
                             ) : (
-                                <span className={`flex-1 min-w-0 truncate text-[13px] leading-none ${known ? 'text-text' : 'text-muted'}`}>
+                                <span className={`flex-1 min-w-0 truncate text-body leading-none ${known ? 'text-text' : 'text-muted'}`}>
                                     {row.node.name}
                                 </span>
                             )}
@@ -561,7 +561,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     <button
                         type="button"
                         onClick={() => setTrashOpen((v) => !v)}
-                        className="flex items-center gap-1 flex-1 min-w-0 text-[12px] text-muted hover:text-text transition-colors"
+                        className="flex items-center gap-1 flex-1 min-w-0 text-small text-muted hover:text-text transition-colors"
                     >
                         <Icon name="right" size={11} className={`shrink-0 transition-transform ${trashOpen ? 'rotate-90' : ''}`} />
                         <Icon name="trash" size={13} className="shrink-0" />
@@ -569,7 +569,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     </button>
                     {trashRows.length > 0 && (
                         purgeAllConfirm ? (
-                            <span className="flex items-center gap-1 text-[11px]">
+                            <span className="flex items-center gap-1 text-note">
                                 <span className="text-muted">비울까요?</span>
                                 <button type="button" onClick={() => run('explorer.purge-all')} className="px-1 rounded text-bad hover:bg-bad/10">비우기</button>
                                 <button type="button" onClick={() => run('explorer.cancel-purge')} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
@@ -585,7 +585,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                     //    스크롤을 끝까지 내리면 마지막 줄이 완전히 보인다(쥔님 22:51 *"휴지통 아래 뭔가 가리고 … 마지막 줄 반쯤 잘린다"*).
                     <div className="overflow-auto pb-2" style={{ height: trashH }}>
                         {trashRows.length === 0 && (
-                            <p className="px-pad py-1 text-[12px] text-muted select-none">휴지통이 비어 있습니다.</p>
+                            <p className="px-pad py-1 text-small text-muted select-none">휴지통이 비어 있습니다.</p>
                         )}
                         {trashRows.map((row) => {
                             const isSel = selectedId === row.id;
@@ -616,16 +616,16 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                         <span className="shrink-0 w-4" />
                                     )}
                                     {emojiOf(row.node)
-                                        ? <span className="shrink-0 w-[15px] text-center text-[13px] leading-none select-none opacity-60">{emojiOf(row.node)}</span>
+                                        ? <NodeIcon value={emojiOf(row.node)} size={15} className="opacity-60" fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />} />
                                         : <Icon name={iconOf(row.node)} size={15} className="shrink-0 text-muted" />}
                                     {confirming ? (
-                                        <span className="flex items-center gap-1 flex-1 min-w-0 text-[11px]">
+                                        <span className="flex items-center gap-1 flex-1 min-w-0 text-note">
                                             <span className="text-muted truncate">정말 영구 삭제할까요?</span>
                                             <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.purge'); }} className="px-1 rounded text-bad hover:bg-bad/10">영구 삭제</button>
                                             <button type="button" onClick={(e) => { e.stopPropagation(); run('explorer.cancel-purge'); }} className="px-1 rounded text-muted hover:bg-text/[0.06]">취소</button>
                                         </span>
                                     ) : (
-                                        <span className="flex-1 min-w-0 truncate text-[13px] leading-none text-muted">{row.node.name}</span>
+                                        <span className="flex-1 min-w-0 truncate text-body leading-none text-muted">{row.node.name}</span>
                                     )}
                                 </div>
                             );

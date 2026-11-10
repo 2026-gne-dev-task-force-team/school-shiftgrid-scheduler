@@ -129,6 +129,9 @@ const P: Record<IconName, string> = {
     down: 'M12 4v16M6 14l6 6 6-6',
 };
 
+/** 기본 아이콘 세트 이름 전부(노드 아이콘 고르기 창의 「아이콘」 탭이 쓴다) */
+export const ICON_NAMES = Object.keys(P) as IconName[];
+
 export function Icon({ name, size = 18, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none"

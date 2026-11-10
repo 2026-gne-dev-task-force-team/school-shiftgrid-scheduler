@@ -213,7 +213,7 @@ export function WorkspaceView({
         return (
             <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                 <div className={`shrink-0 flex items-center gap-1 h-topbar border-b border-line px-pad ${sidebar ? 'bg-side2' : 'bg-panel2'}`}>
-                    <span className="flex-1 min-w-0 truncate text-[13px] text-text select-none">{activeLeaf ? leafTitle(activeLeaf) : ''}</span>
+                    <span className="flex-1 min-w-0 truncate text-body text-text select-none">{activeLeaf ? leafTitle(activeLeaf) : ''}</span>
                     {activeLeaf && rootTabsId && (
                         <IconButton
                             icon="dots"

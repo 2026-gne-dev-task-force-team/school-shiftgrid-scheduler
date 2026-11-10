@@ -51,7 +51,7 @@ export function DropZones({ drag, dragViewId }: { drag: DragLeafState; dragViewI
             {res && <PreviewShape preview={res.preview} />}
             {/* 고스트 — 잡은 탭 모양 작은 카드가 포인터를 따라다닌다 */}
             <div
-                className="absolute flex items-center rounded-md border border-line bg-panel2 text-text text-[13px] px-3 h-topbar shadow-lg opacity-90 truncate"
+                className="absolute flex items-center rounded-md border border-line bg-panel2 text-text text-body px-3 h-topbar shadow-lg opacity-90 truncate"
                 style={{ left: drag.x + 12, top: drag.y + 12, width: ghostW }}
             >
                 <span className="truncate">{drag.title}</span>

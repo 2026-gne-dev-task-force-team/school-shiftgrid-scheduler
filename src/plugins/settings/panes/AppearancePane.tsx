@@ -7,7 +7,7 @@
  */
 import type { ReactNode } from 'react';
 import { Icon, Button, FOCUS_RING, useTheme, type IconName } from '../../../pane-ui-system';
-import { THEMES, type DensityId } from '../../../pane-ui-system';
+import { THEMES, DENSITIES, FONT_SIZES } from '../../../pane-ui-system';
 import { themeSwatchStyle } from '../../../pane-ui-system';
 import type { ThemeMode } from '../../../pane-ui-system';
 import { ThemeEditor } from './ThemeEditor';
@@ -58,11 +58,6 @@ const MODES: { id: ThemeMode; name: string; icon?: IconName }[] = [
     { id: 'light', name: '밝게', icon: 'sun' },
     { id: 'dark', name: '어둡게', icon: 'moon' },
     { id: 'system', name: '시스템' },
-];
-
-const DENSITIES: { id: DensityId; name: string }[] = [
-    { id: 'compact', name: '빽빽' },
-    { id: 'cozy', name: '편안' },
 ];
 
 export function AppearancePane({ host }: SettingsPaneProps) {
@@ -117,7 +112,7 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                 </div>
             </Field>
 
-            <Field title="밀도" hint="빽빽하면 줄·단추가 작아집니다. 손가락 기기는 바닥 아래로 내려가지 않습니다.">
+            <Field title="밀도" hint="줄 높이·여백·단추 크기. 빽빽 · 보통 · 여유 · 넉넉 네 단계입니다. 손가락 기기는 바닥 아래로 내려가지 않습니다.">
                 <div className="flex flex-wrap gap-2">
                     {DENSITIES.map((d) => (
                         <Choice
@@ -130,6 +125,28 @@ export function AppearancePane({ host }: SettingsPaneProps) {
                     ))}
                 </div>
             </Field>
+
+            <Field title="글자 크기" hint="화면 전체 글자가 함께 커지거나 작아집니다. 밀도와 따로 고릅니다.">
+                <div className="flex flex-wrap gap-2">
+                    {FONT_SIZES.map((f) => (
+                        <Choice
+                            key={f.id}
+                            active={settings.fontSize === f.id}
+                            onClick={() => setSettings({ fontSize: f.id })}
+                        >
+                            {f.name}
+                        </Choice>
+                    ))}
+                </div>
+            </Field>
+
+            {/* 미리보기 — 지금 고른 글자 크기·밀도로 보이는 한 줄 */}
+            <div
+                data-testid="density-preview"
+                className="flex items-center h-row px-pad rounded-md border border-line bg-panel2 text-body text-text"
+            >
+                이렇게 보입니다 — 3교시 국어 · 김선생님 · 2학년 4반
+            </div>
 
             <div className="pt-2 border-t border-line">
                 {/* 🔴 단추는 안 찌그러진다 — shrink-0 + 줄바꿈 금지(쥔님 13:42 「되돌리기 버튼이 찌그러진다」) */}

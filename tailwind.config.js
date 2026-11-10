@@ -24,6 +24,10 @@ export default {
         ok: v('ok'),
         bad: v('bad'),
         warn: v('warn'),
+        // 노드 아이콘 색(8색 중 장식 셋) — 나머지는 accent·ok·warn·bad·muted
+        'ic-purple': v('ic-purple'),
+        'ic-pink': v('ic-pink'),
+        'ic-teal': v('ic-teal'),
         // 사이드바 전용(판 A) — 에디터보다 한 단 어두운 바탕·탭 줄·경계선
         side: v('side'),
         side2: v('side2'),

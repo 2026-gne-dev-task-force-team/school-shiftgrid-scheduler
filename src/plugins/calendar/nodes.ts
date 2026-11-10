@@ -16,6 +16,7 @@ import { isoMinuteOf } from './events';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
+import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { CalendarItem } from './contracts/calendar';
 import type { IcsWriteEvent } from './ics';
@@ -69,6 +70,7 @@ export const calendarNodeTypeImpl = {
             host.workspace.open(MONTH_ID, { where: 'center' });
         },
         menu: (_host: PluginHost, id: string) => storeMenu(id),
+        embed: StoreEmbed,
     } satisfies NodeTypeImplFns,
 };
 
@@ -196,9 +198,6 @@ export function patchEvent(id: string, f: { name: string; start: string; end: st
         a.setData(id, { ...cur, values: eventToStored(f, cur.values ?? {}).values });
     });
 }
-/** 일정 문서(page-doc 값) — 노드 공통 body 칸. */
-export function eventBodyOf(id: string): unknown { return api?.get(id)?.body; }
-export function setEventBody(id: string, body: unknown): void { api?.setBody(id, body); }
 
 // 미리보기 카드가 page-doc 모듈을 빌리려고 host 를 쥔다(onActivate 가 꽂는다).
 let hostRef: PluginHost | null = null;

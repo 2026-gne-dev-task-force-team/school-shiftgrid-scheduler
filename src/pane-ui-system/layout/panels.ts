@@ -19,9 +19,6 @@ export const MAX_PANEL = 520;
 export const DEFAULT_LEFT = 240;
 export const DEFAULT_RIGHT = 280;
 
-/** 접었을 때 남기는 레일 폭(px) — 넓은 화면에서만 그린다 */
-export const RAIL = 28;
-
 /** 이 폭 아래는 「좁은 화면」 — 두 패널이 자리를 비집고 들어오면 가운데가 죽는다 */
 export const NARROW_PX = 860;
 

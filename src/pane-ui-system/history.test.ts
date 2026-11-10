@@ -1,3 +1,4 @@
+import { setPlatform } from './platform-keys';
 import { describe, it, expect } from 'vitest';
 import { emptyHistory, record, undo, redo, undoKey } from './history';
 
@@ -19,8 +20,9 @@ describe('공용 되돌리기 더미', () => {
 describe('undoKey', () => {
     const k = (key: string, o: Partial<{ ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean; isComposing: boolean }> = {}) =>
         undoKey({ key, ctrlKey: false, metaKey: false, shiftKey: false, ...o });
-    it('⌘Z·Ctrl+Z 되돌리기 · Shift 붙으면 다시 · Ctrl+Y 다시', () => {
-        expect(k('z', { metaKey: true })).toBe('undo');
+    it('Ctrl+Z 되돌리기 · Shift 붙으면 다시 · Ctrl+Y 다시', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
+        expect(k('z', { ctrlKey: true })).toBe('undo');
         expect(k('Z', { ctrlKey: true, shiftKey: true })).toBe('redo');
         expect(k('y', { ctrlKey: true })).toBe('redo');
     });

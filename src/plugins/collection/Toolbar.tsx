@@ -11,7 +11,7 @@ import { isRule, opDefsFor, opNeedsValue, opsFor } from './logic';
 import { fieldTypes } from './fields/registry';
 import type { FilterNode, FilterRule, RecordField, SortRule } from './contracts/collection';
 
-const selCls = 'h-row rounded border border-line bg-bg text-text text-[12px] px-1 min-w-0';
+const selCls = 'h-row rounded border border-line bg-bg text-text text-small px-1 min-w-0';
 
 function firstOp(field: RecordField): string {
     return opsFor(field.type)[0] ?? 'empty';
@@ -74,7 +74,7 @@ function RuleList({ fields, group, depth, onChange, newRule }: {
     const addGroup = () => { const r = newRule(); if (r) set([...group.kids, { and: [r] }]); };
     return (
         <div className={`flex flex-col gap-1.5 ${depth > 0 ? 'p-1.5 rounded border border-line bg-text/[0.02]' : ''}`} data-rv-filter-group={depth}>
-            {group.kids.length === 0 && depth === 0 && <span className="text-[12px] text-muted px-1">필터가 없습니다.</span>}
+            {group.kids.length === 0 && depth === 0 && <span className="text-small text-muted px-1">필터가 없습니다.</span>}
             {group.kids.length > 1 && (
                 <select data-rv-filter-conj={depth} className={`${selCls} self-start`} value={group.conj} onChange={(e) => set(group.kids, e.target.value as 'and' | 'or')}>
                     <option value="and">모두 만족(그리고)</option>
@@ -93,11 +93,11 @@ function RuleList({ fields, group, depth, onChange, newRule }: {
                     </div>
                 )))}
             <div className="flex items-center gap-1">
-                <button type="button" data-rv-add-filter={depth} onClick={addRule} className="flex items-center gap-1 h-row px-1 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06]">
+                <button type="button" data-rv-add-filter={depth} onClick={addRule} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06]">
                     <Icon name="plus" size={13} />필터 추가
                 </button>
                 {depth === 0 && (
-                    <button type="button" data-rv-add-filter-group onClick={addGroup} className="flex items-center gap-1 h-row px-1 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06]">
+                    <button type="button" data-rv-add-filter-group onClick={addGroup} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06]">
                         <Icon name="plus" size={13} />그룹 추가
                     </button>
                 )}
@@ -180,7 +180,7 @@ export function Toolbar({
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="검색"
                     aria-label="검색"
-                    className="flex-1 min-w-0 bg-transparent text-[13px] text-text outline-none"
+                    className="flex-1 min-w-0 bg-transparent text-body text-text outline-none"
                 />
             </div>
         </FrameToolbar>
@@ -199,7 +199,7 @@ export function Toolbar({
             {open === 'sort' && anchor && (
                 <Popover anchor={anchor} align="right" width={300} onClose={() => setOpen(null)}>
                     <div className="flex flex-col gap-1.5" data-rv-sort-panel>
-                        {sorts.length === 0 && <span className="text-[12px] text-muted px-1">정렬이 없습니다.</span>}
+                        {sorts.length === 0 && <span className="text-small text-muted px-1">정렬이 없습니다.</span>}
                         {sorts.map((rule, i) => (
                             <div key={i} className="flex items-center gap-1" data-rv-sort-row>
                                 <select
@@ -213,12 +213,12 @@ export function Toolbar({
                                     type="button"
                                     data-rv-sort-dir
                                     onClick={() => { const next = [...sorts]; next[i] = { ...rule, dir: rule.dir === 'asc' ? 'desc' : 'asc' }; onSorts(next); }}
-                                    className="h-row px-2 rounded border border-line text-[12px] text-text hover:bg-text/[0.06]"
+                                    className="h-row px-2 rounded border border-line text-small text-text hover:bg-text/[0.06]"
                                 >{rule.dir === 'asc' ? '오름차순' : '내림차순'}</button>
                                 <IconButton icon="x" label="정렬 삭제" size={14} onClick={() => onSorts(sorts.filter((_, j) => j !== i))} />
                             </div>
                         ))}
-                        <button type="button" data-rv-add-sort onClick={addSort} className="flex items-center gap-1 h-row px-1 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.06] self-start">
+                        <button type="button" data-rv-add-sort onClick={addSort} className="flex items-center gap-1 h-row px-1 rounded text-small text-muted hover:text-text hover:bg-text/[0.06] self-start">
                             <Icon name="plus" size={13} />정렬 추가
                         </button>
                     </div>

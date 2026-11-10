@@ -9,7 +9,7 @@ import { hhmm, type CalEvent } from '../events';
 import { getFeedSource } from '../feed';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
-const LABEL = 'text-[11px] text-muted';
+const LABEL = 'text-note text-muted';
 
 function dateLabel(ms: number): string {
     const d = new Date(ms);
@@ -43,8 +43,8 @@ export function FeedEventCard({ event, onClose }: { event: CalEvent; onClose: ()
         <div className="flex flex-col gap-2">
             <div className="flex items-start gap-2">
                 <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-text break-words">{event.name || '(제목 없음)'}</div>
-                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
+                    <div className="text-body font-medium text-text break-words">{event.name || '(제목 없음)'}</div>
+                    <div className="mt-0.5 flex items-center gap-1 text-note text-muted">
                         <Icon name="calendar" size={11} className="shrink-0" />
                         <span className="truncate">{ref.sourceLabel}</span>
                         <span className="shrink-0">· 읽기 전용</span>
@@ -57,13 +57,13 @@ export function FeedEventCard({ event, onClose }: { event: CalEvent; onClose: ()
 
             <div className="flex flex-col gap-0.5">
                 <span className={LABEL}>때</span>
-                <span className="text-[12px] text-text tabular-nums">{whenLabel(event)}</span>
+                <span className="text-small text-text tabular-nums">{whenLabel(event)}</span>
             </div>
 
             {event.memo && (
                 <div className="flex flex-col gap-0.5">
                     <span className={LABEL}>메모</span>
-                    <span className="text-[12px] text-text whitespace-pre-wrap break-words">{event.memo}</span>
+                    <span className="text-small text-text whitespace-pre-wrap break-words">{event.memo}</span>
                 </div>
             )}
         </div>

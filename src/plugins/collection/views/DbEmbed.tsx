@@ -10,6 +10,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { EmbedProps } from '../../explorer/contracts/nodes';
 import { getDbRev, getNodesApi, snapshotOf, subscribeDb } from '../nodes';
 import { DbTable } from './DbView';
+import { openRecordTab } from '../tab-open';
 
 export function DbEmbed({ nodeId, view, host }: EmbedProps & { host: PluginHost }) {
     useSyncExternalStore(subscribeDb, getDbRev, getDbRev);
@@ -27,7 +28,7 @@ export function DbEmbed({ nodeId, view, host }: EmbedProps & { host: PluginHost 
     return (
         <div data-db-inline={nodeId} className="flex flex-col">
             {head('flex items-center gap-2 px-3 py-1.5 border-b border-line text-body font-semibold text-text cursor-pointer hover:underline')}
-            {snap && <DbTable host={host} snap={snap} />}
+            {snap && <DbTable host={host} snap={snap} onOpenRecordTab={(rowId) => { openRecordTab(host, rowId); }} />}
         </div>
     );
 }

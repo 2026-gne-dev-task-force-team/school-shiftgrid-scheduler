@@ -1,7 +1,7 @@
 /**
  * Button — 글자 텍스트 단추 하나. 설정 판·플러그인이 쓰던 같은 보일러플레이트(h-btn·border·focus 링)를 한 곳에.
  *   variant ghost = 테두리만(옛 border-line·text-muted 꼴) · accent = 강조(옛 「설정 가기」 꼴).
- *   size sm = px-2 text-[12px] · md = px-3 text-[13px].
+ *   size sm = px-2 text-small · md = px-3 text-body.
  * 🔴 색은 토큰으로만 · 포커스 링은 FOCUS_RING 하나로. 그 외 button prop 은 그대로 넘긴다.
  * ⭐ 아이콘+글자는 한 줄 가운데 정렬(inline-flex — 아이콘이 block 이라 글자가 아래로 꺾이던 것) · 글자는 안 꺾이고(whitespace-nowrap) 좁은 줄에서도 안 눌린다(shrink-0) — 기본값이다(R1). 꾸러미가 덧대지 말 것.
  */
@@ -19,8 +19,8 @@ const VARIANT = {
 } as const;
 
 const SIZE = {
-    sm: 'px-2 text-[12px]',
-    md: 'px-3 text-[13px]',
+    sm: 'px-2 text-small',
+    md: 'px-3 text-body',
 } as const;
 
 export function Button({

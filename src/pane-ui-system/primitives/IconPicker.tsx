@@ -1,12 +1,14 @@
 /**
- * IconPicker — 눌러서 이모지 아이콘을 고르는 단추(자주 쓰는 것 격자 + 직접 입력 + 지우기).
- *   탭 머리에서 「아이콘·제목 바로 바꾸기」에 쓴다. 아이콘이 없으면 fallback(보통 그 화면의 기본 아이콘)을 보여 준다.
- *   🔴 색·치수는 토큰 클래스로만. ⛔ 이모지 라이브러리 안 들인다 — 격자 + 직접 입력칸이 나머지를 받는다.
+ * IconPicker — 눌러서 노드 아이콘(이모지 · 기본 아이콘 · 커스텀)을 고르는 단추. 탭 머리·노드 머리·칸 아이콘에서 쓴다.
+ *   아이콘이 없으면 fallback(보통 그 화면의 기본 아이콘)을 보여 준다. 값은 저장 문자열 하나(옛 이모지 문자열도 그대로 읽힌다).
+ *   고르기 창 본체는 node-icon/NodeIconPicker — 여기는 단추 + 팝오버만. 🔴 색·치수는 토큰 클래스로만.
  */
 import { useState, type ReactNode } from 'react';
-import { Icon } from './Icon';
+import { NodeIcon } from '../node-icon/NodeIcon';
+import { NodeIconPanel } from '../node-icon/NodeIconPicker';
 import { Popover } from './Popover';
 
+/** 처음 쓰던 자주 쓰는 이모지 — 다른 곳이 이 이름을 가져다 쓸 수 있어 남겨 둔다 */
 export const COMMON_EMOJI = [
     '📄', '📝', '📌', '✅', '⭐', '🔥', '💡', '📊',
     '📅', '📁', '🎯', '🚀', '❤️', '⚠️', '❓', '🔖',
@@ -14,18 +16,18 @@ export const COMMON_EMOJI = [
     '🧠', '📍', '🎨', '🔍', '✏️', '📦', '👥', '🚪',
 ];
 
+const SIZE_OF: Record<string, number> = { 'text-2xl': 24, 'text-body': 14 };
+
 export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]' }: {
     icon?: string;
     onSetIcon: (icon: string | undefined) => void;
     /** 아이콘이 없을 때 보일 것 */
     fallback: ReactNode;
-    /** 이모지 글자 크기(토큰 클래스) */
+    /** 단추 글자 크기(토큰 클래스) — 그림 크기도 이것에서 따른다 */
     sizeClass?: string;
 }) {
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
-    const [custom, setCustom] = useState('');
-    const close = () => { setAnchor(null); setCustom(''); };
-    const choose = (e: string) => { onSetIcon(e); close(); };
+    const close = () => setAnchor(null);
     return (
         <>
             <button
@@ -34,31 +36,11 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
                 onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
                 className={`hit-44 relative shrink-0 grid place-items-center leading-none rounded px-0.5 hover:bg-text/[0.06] ${sizeClass}`}
             >
-                {icon || fallback}
+                <NodeIcon value={icon} size={SIZE_OF[sizeClass] ?? 22} fallback={fallback} />
             </button>
             {anchor && (
-                <Popover anchor={anchor} width={264} onClose={close}>
-                    <div className="grid grid-cols-8 gap-0.5 mb-2">
-                        {COMMON_EMOJI.map((e) => (
-                            <button key={e} type="button" onClick={() => choose(e)} className="text-[18px] rounded py-0.5 hover:bg-text/[0.1]">{e}</button>
-                        ))}
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <input
-                            value={custom}
-                            onChange={(e) => setCustom(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && custom.trim()) { e.preventDefault(); choose(custom.trim()); } }}
-                            placeholder="직접 입력"
-                            maxLength={8}
-                            className="flex-1 min-w-0 rounded border border-line bg-transparent px-2 py-1 text-[13px] text-text outline-none"
-                        />
-                        {icon && (
-                            <button type="button" onClick={() => { onSetIcon(undefined); close(); }}
-                                className="flex items-center gap-1 h-btn px-2 rounded text-[12px] text-muted hover:text-text hover:bg-text/[0.05]">
-                                <Icon name="trash" size={12} /> 지우기
-                            </button>
-                        )}
-                    </div>
+                <Popover anchor={anchor} width={296} onClose={close}>
+                    <NodeIconPanel value={icon} onPick={(v) => { onSetIcon(v); close(); }} />
                 </Popover>
             )}
         </>

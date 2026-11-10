@@ -25,6 +25,9 @@
   --c-ok: 27 121 67;         /* #1b7943 */
   --c-bad: 197 48 48;        /* #c53030 */
   --c-warn: 145 96 25;      /* #916019 */
+  --c-ic-purple: 120 74 176; /* 아이콘 색 — 보라 */
+  --c-ic-pink: 192 62 118;   /* 아이콘 색 — 분홍 */
+  --c-ic-teal: 20 124 130;   /* 아이콘 색 — 청록 */
 
   /*
    * 치수 — 색과 같은 층이다. 작업대 UI 는 머리줄이 낮고 여백이 얇아야 「도구」로 느껴진다.
@@ -55,11 +58,19 @@
   --s-titlebar:  max(var(--f-titlebar,  0px), calc(32px * var(--density)));  /* 상단 타이틀바(앱 이름 + 액션) */
   --s-statusbar: max(var(--f-statusbar, 0px), calc(22px * var(--density))); /* 하단 상태바(정보 줄) */
   /* 글자 크기 단계 — 화면 코드는 text-micro·note·small·body·lead 이름만 쓴다(tailwind.config.js fontSize) */
-  --fs-micro: 10px;
-  --fs-note: 11px;
-  --fs-small: 12px;
-  --fs-body: 13px;
-  --fs-lead: 14px;
+  --fs-scale: 1;      /* applyTheme 이 인라인으로 덮는다(작게 .9 / 보통 1 / 크게 1.15 / 아주 크게 1.3) */
+  --fs-micro: calc(11px * var(--fs-scale));
+  --fs-note: calc(12px * var(--fs-scale));
+  --fs-small: calc(13px * var(--fs-scale));
+  --fs-body: calc(14px * var(--fs-scale));   /* 어른 눈 기준 본문 14px (W11, 옛 13) */
+  --fs-lead: calc(15px * var(--fs-scale));
+
+  /* 하단 내비 바(모바일) — 손가락 44px 바닥 · 간격 넓게. 「빽빽」일 때만 옛 값(아래 data-density) */
+  --nav-btn: 44px;
+  --nav-gap: 8px;
+  --nav-padx: 10px;
+  --nav-pady: 8px;
+  --nav-bottom: 18px;
 
   /*
    * 🔴 겹 단계(z) — 떠 있는 것들의 앞뒤는 이 이름으로만 정한다(z-sticky·z-modal … 유틸은 아래 @layer utilities). ⛔ z-[숫자] 를 새로 쓰지 않는다.
@@ -85,6 +96,14 @@
   --motion-slow: .2s;
   --ease-out: cubic-bezier(.2,.8,.3,1);
   --ease-in: cubic-bezier(.4,0,1,1);
+}
+
+html[data-density="compact"] {
+  --nav-btn: var(--s-btn);
+  --nav-gap: 4px;
+  --nav-padx: 6px;
+  --nav-pady: 4px;
+  --nav-bottom: 14px;
 }
 
 /*
@@ -125,6 +144,9 @@
     --c-ok: 47 159 92;       /* #2f9f5c */
     --c-bad: 222 103 103;      /* #de6767 */
     --c-warn: 217 164 65;    /* #d9a441 */
+    --c-ic-purple: 176 138 232;
+    --c-ic-pink: 232 128 170;
+    --c-ic-teal: 70 190 196;
   }
 }
 

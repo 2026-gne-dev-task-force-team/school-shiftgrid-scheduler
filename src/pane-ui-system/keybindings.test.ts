@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { setPlatform } from './platform-keys';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { normalizeKey, eventToKey, formatKey, effectiveKey, keyMap, handleKeydown, setKeyOverride, resetAllKeyOverrides } from './keybindings';
 import { addCommand } from './plugin/store';
@@ -29,6 +30,7 @@ describe('keybindings', () => {
     });
 
     it('재지정이 기본을 이기고 · 지우면 꺼지고 · 겹침이 보이고 · 디스패처가 부른다', () => {
+        setPlatform('win');   // Ctrl 이 Mod — 윈도우 흉내(W14)
         let ran = 0;
         const a = addCommand('t', { id: 't.a', title: 'A', keys: 'Mod+J', run: () => { ran++; } });
         const b = addCommand('t', { id: 't.b', title: 'B', run: () => {} });

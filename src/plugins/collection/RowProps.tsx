@@ -10,7 +10,7 @@ import { PropertyList } from './views/PropertyList';
 import type { RecordCellValue } from './contracts/collection';
 
 /** 행이 사는 레코드 뷰(db) — 하위 항목이면 부모 행을 거슬러 올라간다. */
-function dbOf(rowId: string): string | null {
+export function dbOf(rowId: string): string | null {
     const api = getNodesApi();
     let id: string | null = rowId;
     for (let i = 0; id && i < 64; i++) {

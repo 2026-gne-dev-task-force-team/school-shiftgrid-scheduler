@@ -237,28 +237,26 @@ async function flushOnce(): Promise<void> {
     }
     // 🔴 W-X 낡은 사본 덮기 막기 — 저장소의 그 노드가 내가 마지막으로 본 값(base)과 다르면 다른 탭이 그 사이 썼다.
     //    노드를 통째로 put 하면 그 탭의 칸이 사라진다(시트·시간표 data 는 문서 통째) → 세 갈래로 합쳐 쓴다(merge3).
+    //    🔴 W-X2 합치기는 nodesWrite 안에서 — 저장소 읽기·합치기·쓰기가 한 트랜잭션이라 경쟁 창이 없다(탭이 닫히는 중의 저장도).
     //    합친 값이 내 값과 다르면 쓴 뒤 저장소를 다시 읽어 이 탭 화면에도 들인다(deferred).
     const merged = new Set<string>();
-    const urgent = urgentFlush; urgentFlush = false;
-    if (mine.length > 0 && mergeGuard && !urgent) {
-        const stored = await storedById(mine.map((n) => n.id));
-        for (let i = 0; i < mine.length; i++) {
-            const n = mine[i];
-            const b = base.get(n.id);
-            const theirs = stored?.get(n.id);
-            if (!b || !theirs || deepEqual(theirs, b)) { put.push(n); continue; }
-            const m = merge3(b, n, theirs) as Node;
-            put.push(m);
-            if (!deepEqual(m, n)) merged.add(n.id);
-        }
-    }
-    else put.push(...mine);
+    put.push(...mine);
+    const merge = mergeGuard ? (n: object, stored: unknown): object => {
+        const id = (n as { id?: unknown }).id;
+        if (typeof id !== 'string' || id === META_ID) return n;
+        const b = base.get(id);
+        const theirs = coerceNode(stored);
+        if (!b || !theirs || deepEqual(theirs, b)) return n;
+        const m = merge3(b, n, theirs) as Node;
+        if (!deepEqual(m, n)) merged.add(id);
+        return m;
+    } : undefined;
     if (tree.rev !== lastRev) put.push(metaOf(tree));   // 머리는 rev 가 바뀌었을 때만
     if (put.length === 0 && del.length === 0 && purge.length === 0) { pendingHost = null; pendingTree = null; resetRetry(); afterWrite(); return; }
 
     // 🔴 쓰는 동안 새로 쌓인 칸은 지우면 안 된다 — 이번에 쓴 것만 덜어낸다.
     const wrote = new Map([...dirty].map((id) => [id, touched.get(id)]));
-    const ok = await nodesWrite({ put, del, purge, onRejected: rejectedByStore });
+    const ok = await nodesWrite({ put, del, purge, onRejected: rejectedByStore, merge });
     if (ok) {
         // ⭐ base = 내 메모리 값(합친 값이 아니라) — 이 탭 나무는 아직 그걸 뿌리로 두고 있다. 합친 값은 다시 읽을 때 base 가 된다.
         for (const n of mine) base.set(n.id, n);
@@ -281,23 +279,6 @@ async function flushOnce(): Promise<void> {
 const base = new Map<string, Node>();
 /** 🔴 버그 심기 스위치 — false 로 두면 낡은 사본이 통째로 덮는다(cross-tab-sheet.test 가 빨개져야 한다). */
 let mergeGuard = true;
-/** 탭이 닫히는/가려지는 중의 flush — 합치기 읽기를 건너뛴다(bindFlush). */
-let urgentFlush = false;
-
-/** 저장소의 지금 값 — 그 id 들만 Node 로(묘비·없음은 빠진다). 열기 실패면 null(합치지 않고 그대로 쓴다). */
-async function storedById(ids: string[]): Promise<Map<string, Node> | null> {
-    const all = await nodesGetAll();
-    if (all == null) return null;
-    const want = new Set(ids);
-    const out = new Map<string, Node>();
-    for (const r of all) {
-        const id = (r as { id?: unknown } | null)?.id;
-        if (typeof id !== 'string' || !want.has(id)) continue;
-        const n = coerceNode(r);
-        if (n) out.set(id, n);
-    }
-    return out;
-}
 
 const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -425,7 +406,7 @@ async function pullRemote(ids: string[] | 'all'): Promise<void> {
         if (n) base.set(id, n); else base.delete(id);   // 이 탭이 이제 저장소 값을 뿌리로 쥔다
     }
     if (nodes.size === 0 && !full) return;
-    remoteFn({ nodes, full });
+    remoteFn?.({ nodes, full });     // 읽는 사이(await) 구독이 풀렸을 수 있다
 }
 
 // 🔴 디바운스 중 탭을 닫으면 그 300ms 가 유실된다 — beforeunload·visibilitychange(hidden)에서 즉시 flush.
@@ -435,8 +416,8 @@ function bindFlush(): void {
     if (flushBound) return;
     if (typeof window === 'undefined') return;
     flushBound = true;
-    // ⚠️ 닫히는 중엔 저장소 읽기(합치기)를 건너뛰고 바로 쓴다 — 쓰기 시작이 한 박자라도 늦으면 탭이 죽으며 잃는다.
-    const flush = () => { urgentFlush = true; void flushTree(); };
+    // ⭐ W-X2 닫히는 중에도 합친다 — 합치기가 쓰기 트랜잭션 안이라 따로 읽는 한 박자가 없다.
+    const flush = () => { void flushTree(); };
     window.addEventListener('beforeunload', flush);
     window.addEventListener('pagehide', flush);
     if (typeof document !== 'undefined') {

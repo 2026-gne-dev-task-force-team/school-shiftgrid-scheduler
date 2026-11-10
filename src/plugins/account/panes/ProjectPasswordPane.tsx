@@ -45,7 +45,7 @@ export function ProjectPasswordPane() {
         return (
             <div className="flex flex-col gap-3">
                 {keepRow}
-                <p className="text-[12px] text-muted">프로젝트 암호는 마스터만 바꿀 수 있습니다.</p>
+                <p className="text-small text-muted">프로젝트 암호는 마스터만 바꿀 수 있습니다.</p>
             </div>
         );
     }
@@ -53,22 +53,22 @@ export function ProjectPasswordPane() {
     return (
         <div className="flex flex-col gap-3">
             {keepRow}
-            <p className="text-[12px] text-muted leading-relaxed">
+            <p className="text-small text-muted leading-relaxed">
                 {has ? '프로젝트 암호가 걸려 있습니다.' : '프로젝트 암호가 없습니다 — 걸면 로그인 유지 기한이 지난 뒤 열 때 손님으로 시작하고, 이 암호로 마스터에 들어옵니다.'}
             </p>
-            <p className="text-[12px] text-warn leading-relaxed">⚠️ 암호를 잊으면 되돌릴 방법이 없습니다(복구 수단 없음).</p>
+            <p className="text-small text-warn leading-relaxed">⚠️ 암호를 잊으면 되돌릴 방법이 없습니다(복구 수단 없음).</p>
 
             {has && (
-                <label className="flex flex-col gap-1 text-[12px] text-muted">
+                <label className="flex flex-col gap-1 text-small text-muted">
                     현재 암호
                     <input type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)}
-                        className="rounded border border-line bg-side text-text px-2 py-1 text-[13px]" />
+                        className="rounded border border-line bg-side text-text px-2 py-1 text-body" />
                 </label>
             )}
-            <label className="flex flex-col gap-1 text-[12px] text-muted">
+            <label className="flex flex-col gap-1 text-small text-muted">
                 {has ? '새 암호' : '암호'}
                 <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)}
-                    className="rounded border border-line bg-side text-text px-2 py-1 text-[13px]" />
+                    className="rounded border border-line bg-side text-text px-2 py-1 text-body" />
             </label>
 
             <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function ProjectPasswordPane() {
                     <p className="text-small text-text">암호를 풀면 누구나 마스터로 들어올 수 있습니다.</p>
                 </ConfirmDialog>
             )}
-            {msg && <p className="text-[12px] text-text">{msg}</p>}
+            {msg && <p className="text-small text-text">{msg}</p>}
         </div>
     );
 }

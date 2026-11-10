@@ -20,7 +20,7 @@ export function SubLinkPane({ target }: PropertiesPaneProps) {
     const commit = () => { if (draft.trim() !== url) applyLink(target.id, 'link', draft); };
     return (
         <div className="flex flex-col gap-1">
-            <label className="flex flex-col gap-1 text-[12px] text-muted">
+            <label className="flex flex-col gap-1 text-small text-muted">
                 링크(.ics)
                 <input
                     type="url" value={draft} placeholder="https:// 또는 webcal://"
@@ -28,10 +28,10 @@ export function SubLinkPane({ target }: PropertiesPaneProps) {
                     onBlur={commit}
                     // 한글 조합 중 Enter 는 커밋 아님
                     onKeyDown={(e) => { if (e.key === 'Enter' && !isImeEnter(e)) commit(); }}
-                    className="rounded border border-line bg-side text-text px-2 py-1 text-[13px]"
+                    className="rounded border border-line bg-side text-text px-2 py-1 text-body"
                 />
             </label>
-            {sub.data.lastError && <p className="text-[12px] text-bad">{sub.data.lastError}</p>}
+            {sub.data.lastError && <p className="text-small text-bad">{sub.data.lastError}</p>}
         </div>
     );
 }

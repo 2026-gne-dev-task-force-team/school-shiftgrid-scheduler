@@ -12,7 +12,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { IconButton } from '../../primitives/IconButton';
 import { storageKey } from '../../storage';
+import { isImeEnter } from '../../primitives/ime';
 import { PeekBarProvider, usePeekBarState } from './peek-bar';
+import { isMod, keyLabel } from '../../platform-keys';
 
 const DEFAULT_W = 640;   // 문서급 기본 폭(쥔님: 480→640 이상)
 const MIN_W = 320;
@@ -46,7 +48,7 @@ function saveNum(key: string, n: number): void {
     try { if (typeof localStorage !== 'undefined') localStorage.setItem(storageKey(key), String(Math.round(n))); } catch { /* 조용히 */ }
 }
 
-export function PeekLayer({ mode, closing = false, onClose, children }: { mode: PeekMode; closing?: boolean; onClose: () => void; children: ReactNode }) {
+export function PeekLayer({ mode, closing = false, onClose, onOpenInTab, children }: { mode: PeekMode; closing?: boolean; onClose: () => void; onOpenInTab?: () => void; children: ReactNode }) {
     const wide = mode !== 'bottom';   // 오른쪽에 서는가(밀기·겹침) — 좌우로 크기 조절
     const push = mode === 'push';
     const layerRef = useRef<HTMLDivElement>(null);
@@ -77,10 +79,16 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
 
     // Esc 로 닫는다(✕ 와 함께 유일한 닫기 길 — 바깥 클릭은 안 닫는다)
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
+            // ⌘Enter(윈도 Ctrl+Enter) = 탭으로 열기 — 초점이 이 피크 안에 있을 때만(다른 칸의 ⌘Enter 를 뺏지 않게)
+            if (e.key === 'Enter' && !isImeEnter(e) && isMod(e) && onOpenInTab && layerRef.current?.contains(document.activeElement)) {
+                e.preventDefault(); e.stopPropagation(); onOpenInTab();
+            }
+        };
         window.addEventListener('keydown', onKey, true);
         return () => window.removeEventListener('keydown', onKey, true);
-    }, [onClose]);
+    }, [onClose, onOpenInTab]);
 
     // 아래 피크 기본 높이 — 칸 높이의 62%(기억값이 없을 때 한 번)
     useEffect(() => {
@@ -160,6 +168,7 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
                     <div ref={bar.setSlot} className="flex-1 min-w-0 flex items-center gap-1">
                         {!bar.claimed && <span className="text-small font-semibold text-muted">미리보기</span>}
                     </div>
+                    {onOpenInTab && <IconButton icon="arrowRight" label={`탭으로 열기 (${keyLabel('Mod+Enter')})`} data={{ 'data-peek-open-tab': '' }} onClick={onOpenInTab} />}
                     <IconButton icon="x" label="미리보기 닫기 (Esc)" onClick={onClose} />
                 </div>
                 <PeekBarProvider slot={bar.slot} claim={bar.claim}>

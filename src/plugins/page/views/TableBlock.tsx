@@ -20,7 +20,7 @@ export function TableBlock({ host, table, onChange }: {
         // 최소 대체 — 읽기 전용 GFM 표(🙋 표 편집기가 꺼져 있을 때만 보인다).
         return (
             <div className="my-1 overflow-auto rounded border border-line">
-                <table className="w-full text-[13px] text-text">
+                <table className="w-full text-body text-text">
                     <thead>
                         <tr className="border-b border-line bg-text/[0.03]">
                             {table.columns.map((c) => <th key={c.key} className="px-2 py-1 text-left font-medium">{c.title}</th>)}

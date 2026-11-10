@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { COLOR_TOKENS, SIZE_TOKENS, THEMES, presetForMode } from '../tokens';
+import { COLOR_TOKENS, SIZE_TOKENS, THEMES, DENSITIES, FONT_SIZES, densityScale, presetForMode } from '../tokens';
 import {
     defaultThemeSettings, normalizeThemeSettings, type ThemeSettings,
 } from '../settings';
@@ -106,5 +106,25 @@ describe('④ 모드 짝', () => {
         expect(presetForMode('nord', 'light').id).toBe('notion-light');
         expect(presetForMode('dracula', 'light').id).toBe('notion-light');
         expect(presetForMode('obsidian', 'light').id).toBe('notion-light');
+    });
+});
+
+describe('⑤ 밀도·글자 크기 단계 (W11)', () => {
+    it('밀도 4단계 — 빽빽은 옛 값 그대로, 나머지는 단계마다 커진다', () => {
+        expect(DENSITIES.map((d) => d.id)).toEqual(['compact', 'normal', 'cozy', 'roomy']);
+        expect(DENSITIES.map((d) => d.scale)).toEqual([0.85, 1.1, 1.22, 1.36]);
+        expect(densityScale('cozy')).toBeGreaterThan(1);   // 옛 여유(1)보다 넓다
+    });
+    it('옛 저장값 cozy/compact 는 그대로 이어 읽고, 글자 크기 칸이 없으면 보통', () => {
+        const a = normalizeThemeSettings({ mode: 'light', density: 'cozy', theme: 'dracula' });
+        expect(a.density).toBe('cozy');
+        expect(a.fontSize).toBe('normal');
+        expect(normalizeThemeSettings({ density: 'compact' }).density).toBe('compact');
+        expect(normalizeThemeSettings({ fontSize: '엉뚱' }).fontSize).toBe('normal');
+        expect(normalizeThemeSettings({ fontSize: 'xlarge' }).fontSize).toBe('xlarge');
+    });
+    it('글자 4단계 배율 · 기본 보통(본문 14px × 1)', () => {
+        expect(FONT_SIZES.map((f) => f.scale)).toEqual([0.9, 1, 1.15, 1.3]);
+        expect(css).toMatch(/--fs-body:\s*calc\(14px \* var\(--fs-scale\)\)/);
     });
 });

@@ -135,18 +135,6 @@ export function setCellText(data: TimetableData, col: number, row: number, text:
     return withCells(data, cells);
 }
 
-/** 칸별 시각 덮어쓰기(숨은 기능) — null 이면 덮어쓰기를 걷는다(행 시각으로 되돌림). */
-export function setCellTime(data: TimetableData, col: number, row: number, time: { start: number; end: number } | null): TimetableData {
-    const key = cellKey(col, row);
-    const cells = { ...data.cells };
-    const prev = cells[key] ?? { text: '' };
-    const next: Cell = { ...prev };
-    if (time) next.time = time; else delete next.time;
-    if (next.text === '' && (next.rowSpan ?? 1) <= 1 && (next.colSpan ?? 1) <= 1 && !next.time) delete cells[key];
-    else cells[key] = next;
-    return withCells(data, cells);
-}
-
 // ── 셀 병합(세로 필수·가로 허용) ──
 
 export interface Selection { col0: number; row0: number; col1: number; row1: number; }
@@ -271,26 +259,188 @@ function remapCells(cells: Record<string, Cell>, axis: 'row' | 'col', remap: (i:
     return out;
 }
 
-/** 행 넣기 — index(없으면 끝)에 빈 행. 끝에 넣으면 병합이 안 깨진다(안쪽이면 걸친 병합을 먼저 푼다). */
+/**
+ * 행 넣기 — index(없으면 끝)에 빈 행. 끝에 넣으면 병합이 안 깨진다(안쪽이면 걸친 병합을 먼저 푼다).
+ *   🔴 W10a 시간: 새 행은 앞 행 끝 + 갭에서 시작하고(길이는 이웃 행과 같게), 뒤 행은 「새 행 길이 + 갭」만큼 밀린다.
+ *      하루 끝(24:00)을 넘기게 되면 막는다(그대로 돌려준다).
+ */
 export function addRow(data: TimetableData, atIndex?: number): TimetableData {
     const n = rowCount(data);
     const at = atIndex === undefined ? n : Math.max(0, Math.min(atIndex, n));
     let cells = data.cells;
     if (at < n) cells = unmergeTouching(cells, 'row', at);
     cells = remapCells(cells, 'row', (i) => (i >= at ? i + 1 : i));
-    const rows = [...data.rows];
-    rows.splice(at, 0, makeRow(at));
+    const near = data.rows[at - 1] ?? data.rows[at];
+    const len = near ? near.range.end - near.range.start : DEFAULT_ROW_LEN;
+    const gap = at > 0 && at < n ? gapBefore(data, at) : DEFAULT_GAP;
+    const start = n === 0 ? 9 * 60 : at === 0 ? data.rows[0].range.start : data.rows[at - 1].range.end + gap;
+    const rows = shiftRows(data.rows, at, len + gap);
+    rows.splice(at, 0, { id: newRowId(), name: '', range: { start, end: start + len } });
+    return guardTimeline(data, { ...data, rows, cells });
+}
+
+/** 행 하나를 뺀다 — pull 이면 뒤 행을 「그 행 길이 + 그 뒤 갭」만큼 당긴다(앞 갭은 그대로 남는다). */
+function removeRowAt(data: TimetableData, index: number, pull: boolean): TimetableData {
+    let cells = unmergeTouching(data.cells, 'row', index);
+    cells = remapCells(cells, 'row', (i) => (i === index ? null : i > index ? i - 1 : i));
+    let rows = data.rows;
+    if (pull && index < rows.length - 1) rows = shiftRows(rows, index + 1, -(rowLength(data, index) + gapBefore(data, index + 1)));
+    rows = rows.filter((_, i) => i !== index);
     return { ...data, rows, cells };
 }
 
-/** 행 빼기 — 걸친 병합을 먼저 풀고, 그 행 칸을 지운 뒤 위로 당긴다. 마지막 한 행은 안 지운다. */
+/** 행 빼기 — 걸친 병합을 먼저 풀고, 그 행 칸을 지운 뒤 위로 당긴다(시간도 당긴다). 마지막 한 행은 안 지운다. */
 export function removeRow(data: TimetableData, index: number): TimetableData {
     const n = rowCount(data);
     if (n <= 1 || index < 0 || index >= n) return data;
-    let cells = unmergeTouching(data.cells, 'row', index);
-    cells = remapCells(cells, 'row', (i) => (i === index ? null : i > index ? i - 1 : i));
-    const rows = data.rows.filter((_, i) => i !== index);
-    return { ...data, rows, cells };
+    return guardTimeline(data, removeRowAt(data, index, true));
+}
+
+// ── 시간 띠(W10a) — 행 길이가 1급 값 · 쉬는 시간은 행 사이 갭 · 겹침 금지 ──
+//   🔴 저장 꼴은 그대로(행마다 절대 시각 range) — 길이 = end-start, 갭 = 이 행 start - 앞 행 end 로 읽는다.
+//      그래서 약속(contract-week-grid)·일정 계산(schedule.ts)은 안 바뀐다. 「밀림」은 아래 함수들이 뒤 행 range 를 함께 옮기는 것이다.
+//   🔴 칸은 행 순번 열쇠(cellKey)에 붙어 있고, 시간 조작은 행 순서를 안 바꾸므로 칸은 그 행(id)을 그대로 따라간다.
+
+export const DAY_END = 24 * 60;
+export const MIN_ROW_LEN = 5;
+export const DEFAULT_ROW_LEN = 50;
+export const DEFAULT_GAP = 10;
+
+/** 그 행의 길이(분). */
+export function rowLength(data: TimetableData, index: number): number {
+    const r = data.rows[index];
+    return r ? r.range.end - r.range.start : 0;
+}
+
+/** 그 행 앞의 갭(쉬는 시간, 분) — 첫 행·없는 행은 0. */
+export function gapBefore(data: TimetableData, index: number): number {
+    if (index <= 0 || index >= data.rows.length) return 0;
+    return data.rows[index].range.start - data.rows[index - 1].range.end;
+}
+
+/** from 번 행부터 끝까지 시각을 delta 분 옮긴 새 배열. */
+function shiftRows(rows: RowSpec[], from: number, delta: number): RowSpec[] {
+    if (delta === 0) return [...rows];
+    return rows.map((r, i) => (i >= from ? { ...r, range: { start: r.range.start + delta, end: r.range.end + delta } } : r));
+}
+
+/** 🔴 불변식 검사 — 어긋난 곳의 사유(없으면 null). 길이 ≥ 5분 · 0시 이후 · 앞 행과 안 겹침 · 24시 안. */
+export function timelineProblem(rows: readonly RowSpec[]): string | null {
+    for (let i = 0; i < rows.length; i++) {
+        const { start, end } = rows[i].range;
+        if (end - start < MIN_ROW_LEN) return `행 ${i + 1} 길이가 ${MIN_ROW_LEN}분보다 짧다`;
+        if (start < 0) return `행 ${i + 1} 이 0시 앞이다`;
+        if (i > 0 && start < rows[i - 1].range.end) return `행 ${i + 1} 이 앞 행과 겹친다`;
+        if (end > DAY_END) return `행 ${i + 1} 이 하루 끝(24:00)을 넘는다`;
+    }
+    return null;
+}
+
+/**
+ * 겹침·짧은 행을 「뒤로 밀어서」 푼다 — 앞 행은 안 건드리고, 밀린 행 뒤의 갭은 그대로 지킨다(누적 밀림).
+ *   하루 끝 넘김은 밀어서 못 푼다(timelineProblem 에 남는다). 고칠 게 없으면 원본을 그대로 돌려준다.
+ */
+export function settleTimeline(data: TimetableData): TimetableData {
+    let carry = 0;
+    let changed = false;
+    let prevEnd = 0;
+    const rows = data.rows.map((r, i) => {
+        let start = r.range.start + carry;
+        let end = r.range.end + carry;
+        if (start < 0 && i === 0) { carry -= start; end -= start; start = 0; }
+        if (i > 0 && start < prevEnd) { const d = prevEnd - start; carry += d; start += d; end += d; }
+        if (end - start < MIN_ROW_LEN) end = start + MIN_ROW_LEN;
+        prevEnd = end;
+        if (start === r.range.start && end === r.range.end) return r;
+        changed = true;
+        return { ...r, range: { start, end } };
+    });
+    return changed ? { ...data, rows } : data;
+}
+
+/**
+ * 🔴 겹침 금지의 관문 — **모든 쓰기 경로가 여기를 지난다**(model 의 시간 함수 · nodes.applyEdit · stepEdit).
+ *   next 를 밀어서 풀고(settleTimeline), 그래도 어긋나면(하루 끝 넘김 등) 행이 바뀐 편집은 막아 prev 를 돌려준다.
+ *   (행을 안 건드린 편집 — 칸 글자 등 — 은 옛 자료가 어긋나 있어도 막지 않는다.)
+ */
+export function guardTimeline(prev: TimetableData, next: TimetableData): TimetableData {
+    if (next === prev) return prev;
+    const settled = settleTimeline(next);
+    if (settled.rows !== prev.rows && timelineProblem(settled.rows)) return prev;
+    return settled;
+}
+
+/** 행 길이 바꾸기(행 아래 끝 끌기) — 뒤 행은 같은 양만큼 밀리거나 당겨진다(갭 유지). 최소 5분 · 하루 끝 넘기면 막는다. */
+export function setRowLength(data: TimetableData, index: number, minutes: number): TimetableData {
+    if (index < 0 || index >= data.rows.length) return data;
+    const len = Math.max(MIN_ROW_LEN, Math.round(minutes));
+    const delta = len - rowLength(data, index);
+    if (delta === 0) return data;
+    const rows = shiftRows(data.rows, index + 1, delta);
+    const r = rows[index];
+    rows[index] = { ...r, range: { start: r.range.start, end: r.range.start + len } };
+    return guardTimeline(data, { ...data, rows });
+}
+
+/** 갭(쉬는 시간) 바꾸기 — index 행 앞의 갭을 minutes 로. 그 행부터 뒤가 함께 밀리거나 당겨진다. 0 이상 · 하루 끝 넘기면 막는다. */
+export function setGapBefore(data: TimetableData, index: number, minutes: number): TimetableData {
+    if (index <= 0 || index >= data.rows.length) return data;
+    const delta = Math.max(0, Math.round(minutes)) - gapBefore(data, index);
+    if (delta === 0) return data;
+    return guardTimeline(data, { ...data, rows: shiftRows(data.rows, index, delta) });
+}
+
+/**
+ * 🔴 행 시각 직접 입력 — 겹치면 이렇게 푼다:
+ *   · 앞 행과 겹치면 막는다 — 시작을 앞 행 끝으로 맞추고(길이는 지킨다) 알림 한 줄.
+ *   · 끝이 늘어 뒤 행과 겹치면 뒤 행 전부를 늘어난 만큼 민다(갭 유지). 줄어들면 뒤 행은 그대로.
+ *   · 하루 끝을 넘기면 막는다(그대로 + 알림).
+ */
+export function setRowTimeChecked(data: TimetableData, index: number, start: number, end: number): { data: TimetableData; notice: string | null } {
+    if (index < 0 || index >= data.rows.length) return { data, notice: null };
+    let s = Math.max(0, Math.round(Math.min(start, end)));
+    const len = Math.max(MIN_ROW_LEN, Math.round(Math.max(start, end)) - s);
+    let notice: string | null = null;
+    const prev = data.rows[index - 1];
+    if (prev && s < prev.range.end) {
+        s = prev.range.end;
+        notice = `앞 행과 겹쳐 시작을 ${fmtHm(s)} 로 맞췄습니다`;
+    }
+    const oldEnd = data.rows[index].range.end;
+    const rows = shiftRows(data.rows, index + 1, Math.max(0, s + len - oldEnd));
+    rows[index] = { ...rows[index], range: { start: s, end: s + len } };
+    const next = guardTimeline(data, { ...data, rows });
+    if (next === data && s + len !== oldEnd) return { data, notice: '하루 끝(24:00)을 넘겨 막았습니다' };
+    return { data: next, notice };
+}
+
+function fmtHm(min: number): string {
+    return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
+
+/** 옛 자료에서 「쉬는 시간」으로 볼 행 이름. */
+const BREAK_NAME = /쉬는\s*시간|휴식|break/i;
+
+/**
+ * 🔴 옛 자료 변환 — 쉬는 시간이 **행**으로 저장돼 있으면 갭으로 옮긴다(행을 빼고 시간은 안 당긴다 → 그 자리가 갭이 된다).
+ *   그 행에 글자 있는 칸·병합이 하나라도 있으면 사용자 자료라 그대로 둔다. 마지막 한 행은 안 뺀다.
+ */
+export function migrateBreakRows(data: TimetableData): TimetableData {
+    let d = data;
+    for (let i = d.rows.length - 1; i >= 0; i--) {
+        if (d.rows.length <= 1) break;
+        if (!BREAK_NAME.test(d.rows[i].name)) continue;
+        const covered = coveredBy(d);
+        const used = Object.entries(d.cells).some(([k]) => parseCellKey(k)?.row === i) || [...covered].some((k) => parseCellKey(k)?.row === i);
+        if (used) continue;
+        d = removeRowAt(d, i, false);
+    }
+    return d;
+}
+
+/** 읽을 때 한 번 — 옛 자료 변환 + 겹침 풀기. 고칠 게 없으면 원본 그대로(같은 참조). */
+export function normalizeTimetable(data: TimetableData): TimetableData {
+    return settleTimeline(migrateBreakRows(data));
 }
 
 // ── 열 넣고 빼기 ──
@@ -366,13 +516,9 @@ export function setColumnDay(data: TimetableData, col: number, day: GridDay): Ti
     return { ...data, columns: { kind: 'weekday', days } };
 }
 
-/** 🔴 행 시각 일괄 편집(2단계) — 그 행 전체에 시각이 들어간다(명세: 행 경계 끌기·시각 입력이 행 전체에). */
+/** 🔴 행 시각 일괄 편집(2단계) — 그 행 전체에 시각이 들어간다. 겹침 처리는 setRowTimeChecked(알림이 필요하면 그쪽). */
 export function setRowTime(data: TimetableData, index: number, start: number, end: number): TimetableData {
-    if (index < 0 || index >= data.rows.length) return data;
-    const lo = Math.min(start, end);
-    const hi = Math.max(start, end);
-    const rows = data.rows.map((r, i) => (i === index ? { ...r, range: { start: lo, end: hi } } : r));
-    return { ...data, rows };
+    return setRowTimeChecked(data, index, start, end).data;
 }
 
 // ── 열 꼴·범위 꼴 바꾸기 ──
@@ -421,10 +567,14 @@ export function setColWidth(data: TimetableData, col: number, width: number): Ti
 
 /** 그리드에 보일 시각 범위(분) — 정한 값이 있으면 그것, 없으면 행 시각을 정시로 감싼 값(행이 없으면 09~15시). */
 export function viewRange(data: TimetableData): { start: number; end: number } {
-    if (data.view && data.view.end > data.view.start) return data.view;
-    if (data.rows.length === 0) return { start: 9 * 60, end: 15 * 60 };
+    if (data.rows.length === 0) return data.view && data.view.end > data.view.start ? data.view : { start: 9 * 60, end: 15 * 60 };
     const lo = Math.min(...data.rows.map((r) => r.range.start));
     const hi = Math.max(...data.rows.map((r) => r.range.end));
+    // 정한 값이 있어도 행이 밀려 나가면 그만큼은 넓혀 보인다(밀린 행이 화면 밖으로 사라지지 않게).
+    if (data.view && data.view.end > data.view.start) {
+        const v = data.view;
+        return lo >= v.start && hi <= v.end ? v : { start: Math.min(v.start, Math.floor(lo / 60) * 60), end: Math.max(v.end, Math.ceil(hi / 60) * 60) };
+    }
     return { start: Math.floor(lo / 60) * 60, end: Math.max(Math.ceil(hi / 60) * 60, Math.floor(lo / 60) * 60 + 60) };
 }
 

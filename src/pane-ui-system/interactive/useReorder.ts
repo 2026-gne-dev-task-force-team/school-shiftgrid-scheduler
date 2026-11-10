@@ -12,6 +12,7 @@
 import { useCallback, useRef, type RefObject, type MutableRefObject, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useDragLeaf, type DragAxis, type DragBind, type DragLeafState } from './useDragLeaf';
 import { reorderIds, nudgeId } from '../layout/pane-settings';
+import { isAlt } from '../platform-keys';
 
 /** 드롭 미리보기 선(쓰는 쪽이 그린다) — line: 주축 좌표 · cross: 교차축 시작 · size: 교차축 길이 */
 export interface ReorderIndicator { line: number; cross: number; size: number }
@@ -78,7 +79,7 @@ export function useReorder<E extends HTMLElement = HTMLElement>(opts: ReorderOpt
 
     // 🔴 키보드 재배열(접근성) — Alt+방향키로 포커스한 항목을 한 칸(쥔님 ⑨: *"키보드로도 되게"*).
     const onKeyDown = useCallback((e: ReactKeyboardEvent) => {
-        if (!e.altKey) return;
+        if (!isAlt(e)) return;
         const delta = (!horizontal && e.key === 'ArrowUp') || (horizontal && e.key === 'ArrowLeft') ? -1
             : (!horizontal && e.key === 'ArrowDown') || (horizontal && e.key === 'ArrowRight') ? 1 : 0;
         if (!delta) return;

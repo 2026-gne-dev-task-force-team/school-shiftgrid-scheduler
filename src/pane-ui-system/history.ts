@@ -5,6 +5,7 @@
  *   ⭐ 범위는 쓰는 쪽마다 따로다 — 앱 전체에 더미 하나를 두지 않는다(페이지 ⌘Z 가 탐색기를 되돌리면 안 된다).
  *   역연산으로 되돌리는 곳(표 편집기 inverseTx)은 이 더미를 안 쓴다 — 그건 도메인 지식이다.
  */
+import { isMod, isMacPlatform } from './platform-keys';
 export interface History<T> { past: T[]; future: T[] }
 
 export function emptyHistory<T>(): History<T> {
@@ -36,9 +37,9 @@ export function redo<T>(h: History<T>, current: T): { value: T; history: History
  *   ⭐ 「어느 창의 더미인가」는 DOM 이 정한다 — 각 뷰가 자기 영역의 onKeyDown 에서 이걸 부른다(초점 있는 뷰만 받는다).
  */
 export function undoKey(e: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey?: boolean; isComposing?: boolean }): 'undo' | 'redo' | null {
-    if (e.isComposing || e.altKey || !(e.ctrlKey || e.metaKey)) return null;
+    if (e.isComposing || e.altKey || !isMod(e)) return null;
     const k = e.key.toLowerCase();
     if (k === 'z') return e.shiftKey ? 'redo' : 'undo';
-    if (k === 'y' && !e.shiftKey) return 'redo';
+    if (k === 'y' && !e.shiftKey && !isMacPlatform()) return 'redo';   // Ctrl+Y 는 윈도우 관례 — 맥은 ⌘⇧Z
     return null;
 }

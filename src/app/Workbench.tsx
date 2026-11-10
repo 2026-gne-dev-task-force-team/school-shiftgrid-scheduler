@@ -17,9 +17,9 @@ import {
     installContextMenuGuard, installKeybindings,
     FRAME_COMMAND, viewOpenCommandId, isSidePanelView,
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
-    leaf, uid, findLeaf, findLeafByView, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
+    leaf, uid, findLeaf, findLeafByView, findLeafByViewParams, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
+    keyLabel, closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
     type MovePos,
 } from '../pane-ui-system';
 import {
@@ -154,7 +154,8 @@ export function Workbench() {
         const single = isSingleton(viewId);
         const wantReuse = single || !!o?.reuse;
         if (wantReuse) {
-            const ex = findLeafByView(wsRef.current, viewId);
+            // 비싱글턴 + params 가 있으면 「뷰+params 같은 탭」만 재사용(레코드 탭 — 레코드마다 한 장)
+            const ex = !single && o?.params ? findLeafByViewParams(wsRef.current, viewId, o.params) : findLeafByView(wsRef.current, viewId);
             if (ex) { setWs((w) => activateLeaf(w, ex.id)); setFocus(ex.id); return ex.id; }
         }
         // 새로 — 요청 자리가 placement.areas 에 막혀 있으면 허용된 첫 자리(없으면 가운데)로 떨군다
@@ -302,7 +303,7 @@ export function Workbench() {
             // ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 디스패처가 preventDefault 로 가로챈다
             add(FRAME_COMMAND.palette, '명령 팔레트', () => setPalette((v) => !v), 'search', 'Mod+P'),
             // ⌘K / Ctrl+K 도 같은 팔레트 — 팔레트 목록엔 중복으로 안 보이게 숨긴다(keyMap 은 명령 하나에 키 하나)
-            fh.declare({ kind: 'command', id: 'frame.palette.k', title: '명령 팔레트 (⌘K)', keys: 'Mod+K', palette: false }),
+            fh.declare({ kind: 'command', id: 'frame.palette.k', title: `명령 팔레트 (${keyLabel('Mod+K')})`, keys: 'Mod+K', palette: false }),
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);
