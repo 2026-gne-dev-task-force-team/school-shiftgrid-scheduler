@@ -88,16 +88,33 @@ export function materialize(o: Occurrence): string {
     return api.create(parent, { type: EVENT_TYPE, name: rule.name, data: { values, seriesId: o.seriesId, originalStart: o.originalStart } });
 }
 
-/** 미루기·당기기 — 실체화하고 그 레코드의 「언제」만 바꾼다(originalStart 그대로 · 되돌리기 한 칸). */
-export function reschedule(o: Occurrence, start: string, end: string): void {
+/** 미루기·당기기 — 실체화하고 그 레코드의 「언제」만 바꾼다(originalStart 그대로 · 되돌리기 한 칸). 실체 id(못 하면 ''). */
+export function reschedule(o: Occurrence, start: string, end: string): string {
     const api = getNodesApi();
-    if (!api) return;
+    if (!api) return '';
+    let id = '';
     api.batch(() => {
-        const id = materialize(o);
+        id = materialize(o);
         if (!id) return;
         const cur = dataOf(api.get(id));
         const memo = storedToEvent(cur)?.memo;
         api.setData(id, { ...cur, values: eventToStored({ start, end, allDay: o.allDay, memo }, cur.values ?? {}).values });
+    });
+    return id;
+}
+
+/** 회차를 days 일 옮긴다(시각 유지) — 하루 미루기 +1 · 당기기 -1. 실체 id. */
+export const nudge = (o: Occurrence, days: number): string => reschedule(o, addDays(o.start, days), addDays(o.end, days));
+
+/** 「반복」 칸 — 규칙을 달면 그 일정이 규칙 일정이 되고, null 이면 규칙을 뗀다(실체 회차는 seriesId·originalStart 를 걷어 보통 일정으로 남긴다). */
+export function setRecur(id: string, rule: RecurRule | null): void {
+    const api = getNodesApi();
+    const n = api?.get(id);
+    if (!api || !n) return;
+    const plain = (d: SeriesData): SeriesData => { const x = { ...d }; delete x.recur; delete x.seriesId; delete x.originalStart; return x; };
+    api.batch(() => {
+        api.setData(id, rule ? { ...plain(dataOf(n)), recur: rule } : plain(dataOf(n)));
+        if (!rule) for (const m of api.liveByType(EVENT_TYPE)) if (dataOf(m).seriesId === id) api.setData(m.id, plain(dataOf(m)));
     });
 }
 

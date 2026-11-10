@@ -16,17 +16,30 @@ import type { StoredEvent } from '../event-fields';
 import { eventFields, eventToValues, applyEventValue } from '../event-fields';
 import { getCalendarHost, getNodesApi, getKit, patchEvent, setEventValue } from '../nodes';
 import { usePreset } from '../presets';
-import { materialize } from '../series';
-import { nodeIdOf } from '../events';
+import { materialize, type SeriesData } from '../series';
+import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
+import { storedToEvent } from '../event-fields';
+import { inTrash } from '../nodes';
+import { RecurField, OccActions } from './SeriesControls';
 
 const BASE_KEYS = new Set(['name', 'allDay', 'when', 'memo']);
 
+/** 규칙 일정 자신 — 보기는 회차로만 펴서 events 에 없으니 카드가 노드에서 직접 읽는다(「시리즈 열기」·규칙을 막 단 일정). */
+function ruleEvent(id: string, stores: Map<string, StoreInfo>): CalEvent | null {
+    const api = getNodesApi();
+    const n = api?.get(id), d = storedToEvent(n?.data);
+    if (!api || !n || !d || !(n.data as SeriesData).recur || inTrash(id)) return null;
+    const storeId = api.parent(id) ?? '';
+    return { id, storeId, name: n.name, start: d.start, end: d.end, startMs: new Date(d.start).getTime(), endMs: new Date(d.end).getTime(),
+        allDay: d.allDay, memo: d.memo ?? '', colorIdx: stores.get(storeId)?.colorIdx ?? 0 };
+}
+
 export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string; onClose: () => void }) {
-    const { events, storeList } = useCalendarData();
+    const { events, storeList, stores } = useCalendarData();
     // 가상 회차로 열렸다가 값을 고치면 실체 레코드로 갈아탄다(그 자리의 가상 칩은 사라진다)
     const [eventId, setEventId] = useState(openedId);
     useEffect(() => setEventId(openedId), [openedId]);
-    const event = events.find((e) => e.id === eventId) ?? null;
+    const event = events.find((e) => e.id === eventId) ?? ruleEvent(eventId, stores);
     const preset = usePreset(event?.storeId);
     // 일정이 사라지면(휴지통·출처 해제) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
     useEffect(() => { if (!event) onClose(); }, [event, onClose]);
@@ -59,7 +72,12 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
                 if (next) patchEvent(id, next);
             }}
             onOptionsChange={(key, options) => kit?.setUserFields(event.storeId, userFields.map((f) => (f.key === key ? { ...f, options } : f)))}
-            after={<EventActions event={event} stores={storeList} onClose={onClose} />}
+            after={<>
+                {event.occ
+                    ? <OccActions chipId={event.id} occ={event.occ} onOpen={setEventId} />
+                    : <RecurField key={event.id} eventId={event.id} rule={(node?.data as SeriesData | undefined)?.recur} start={event.start} />}
+                <EventActions event={event} stores={storeList} onClose={onClose} />
+            </>}
         />
     );
 }
