@@ -67,8 +67,8 @@ export function ProjectPasswordPane() {
             </Field>
 
             <div className="flex items-center gap-2">
-                <Button variant="accent" size="md" onClick={apply}>{has ? '암호 바꾸기' : '암호 걸기'}</Button>
-                {has && <Button variant="ghost" size="md" onClick={() => setConfirmOff(true)}>암호 해제</Button>}
+                <Button variant="solid" tone="accent" onClick={apply}>{has ? '암호 바꾸기' : '암호 걸기'}</Button>
+                {has && <Button variant="outline" onClick={() => setConfirmOff(true)}>암호 해제</Button>}
             </div>
             {confirmOff && (
                 <ConfirmDialog title="프로젝트 암호를 해제할까요?" danger confirmLabel="해제" onConfirm={remove} onCancel={() => setConfirmOff(false)}>
