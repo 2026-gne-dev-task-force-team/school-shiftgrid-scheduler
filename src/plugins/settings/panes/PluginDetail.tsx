@@ -27,7 +27,7 @@ const AREA_LABEL: Record<string, string> = { left: '왼쪽 사이드바', center
 const KIND_LABEL: Record<ContributionKind, string> = {
     view: '뷰', command: '명령', ribbon: '리본',
     settingsSection: '설정 섹션', settingsItem: '설정 항목',
-    statusBar: '상태바', nodeType: '항목 종류', properties: '속성 칸',
+    statusBar: '상태바', nodeType: '항목 종류', properties: '속성 칸', iconPack: '아이콘 묶음',
 };
 
 /**

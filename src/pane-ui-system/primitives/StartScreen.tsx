@@ -6,6 +6,7 @@
  */
 import type { IconName } from './Icon';
 import { Icon } from './Icon';
+import { NodeIcon } from '../node-icon/NodeIcon';
 import { EmptyState } from './EmptyState';
 import { josa } from './josa';
 
@@ -75,7 +76,7 @@ export function StartScreen({
                                         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-text/[0.04]"
                                     >
                                         {it.emoji
-                                            ? <span className="w-4 text-center text-small leading-none shrink-0">{it.emoji}</span>
+                                            ? <NodeIcon value={it.emoji} size={14} />
                                             : <Icon name={it.icon ?? icon} size={14} className="text-muted shrink-0" />}
                                         <span className="text-body text-text truncate">{it.name}</span>
                                         <span className="flex-1" />

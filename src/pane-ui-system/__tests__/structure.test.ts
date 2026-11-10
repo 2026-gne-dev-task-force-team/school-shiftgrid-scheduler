@@ -104,7 +104,8 @@ describe('⑤ pane-ui-system 에 도메인 낱말 0건', () => {
     // 이 창틀은 시간표를 모른다. ⚠️ 「바텀 시트」 같은 UI 용어와 겹치지 않게 낱말을 고른다
     // ⭐ 「속성」도 이번부터 도메인이다 — 창틀이 사이드바에 든 뷰 이름(속성 등)을 알면 안 된다(그건 앱이 등록소로 준다)
     const DOMAIN = ['시간표', '교시', '교사', '학교', '학년', '반 ', '과목', '특별실', '보결', '근태', '속성', 'shiftgrid'];
-    const files = walk(join(ROOT, 'pane-ui-system'));
+    // 이모지 사전은 낱말 자체가 데이터다(🏫=학교 · 🧑‍🏫=교사) — 창틀 코드가 도메인을 아는 게 아니라 일반 어휘라서 이 파일만 뺀다
+    const files = walk(join(ROOT, 'pane-ui-system')).filter((f) => basename(f) !== 'emoji-data.ts');
 
     for (const f of files) {
         it(`도메인 낱말 없음: ${basename(f)}`, () => {
