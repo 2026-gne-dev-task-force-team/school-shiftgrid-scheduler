@@ -21,6 +21,7 @@ import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
 import { storedToEvent } from '../event-fields';
 import { inTrash } from '../nodes';
 import { SeriesPattern, OccActions } from './SeriesControls';
+import { EVENT_TYPE } from '../config';
 
 const BASE_KEYS = new Set(['name', 'allDay', 'when', 'memo']);
 
@@ -43,6 +44,11 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
     usePreset(event?.storeId);   // 프리셋 등록·해제 때 다시 그린다(칸은 baseFieldsOf 가 푼다)
     // 일정이 사라지면(휴지통·출처 해제) 미리보기를 닫는다 — 열린 뒤 바깥에서 지워진 경우
     useEffect(() => { if (!event) onClose(); }, [event, onClose]);
+    // 카드를 열면 그 일정(가상 회차면 규칙 일정)을 고른다 — 속성 패널이 「날짜 패턴」을 그린다. 약속은 구조 타입으로(selection import 금지)
+    const selId = event && !event.foreign ? nodeIdOf(event.id) : null;
+    useEffect(() => {
+        if (selId) getCalendarHost()?.modules.use<{ set(t: { type: string; id: string } | null): void }>('selection')?.set?.({ type: EVENT_TYPE, id: selId });
+    }, [selId]);
     if (!event) return null;
     if (event.foreign) return <FeedEventCard event={event} onClose={onClose} />;
 

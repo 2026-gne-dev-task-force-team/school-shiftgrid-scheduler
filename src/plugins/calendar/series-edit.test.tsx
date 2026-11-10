@@ -138,6 +138,15 @@ describe('C2c-2 「반복」 칸 — setRecur', () => {
         expect(focused(el)).toEqual([second.slice(0, 10)]);
         expect(el.querySelector('[data-cal-occ]')).not.toBeNull();   // 회차 단추는 그대로
     });
+
+    it('카드를 열면 그 일정을 고른다 — 가상 회차면 규칙 일정 id(속성 패널 「날짜 패턴」의 입구)', () => {
+        const { id } = weekly(3);
+        const picked: unknown[] = [];
+        const sel = { set: (t: unknown) => picked.push(t) };
+        setCalendarHost({ ...host(), notify: () => '', modules: { use: (n: string) => (n === 'selection' ? sel : { RecordPage: () => null, PatternEditor }) } } as unknown as PluginHost);
+        render(<EventCardPeek eventId={occId(id, occs(id)[1].originalStart!)} onClose={() => {}} />);
+        expect(picked).toEqual([{ type: EVENT_TYPE, id }]);
+    });
 });
 
 describe('C2c-2 회차 단추', () => {
