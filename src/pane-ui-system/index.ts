@@ -133,7 +133,7 @@ export {
     closeOthers, closeToRight, areaOfLeaf, renameLeaf, withLeafGlyph,
     findLeaf, findLeafByView, firstTabs, lastTabs, flatten, sizesFor, MIN_FRACTION,
 } from './layout/tree';
-export { loadWorkspace, saveWorkspace, hasWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
+export { loadWorkspace, saveWorkspace, hasWorkspace, clearWorkspace, normalizeRaw, workspaceKey } from './layout/workspace-store';
 
 // 뷰 등록소 — 🔴 ⛔ 등록·조회 함수는 이 문으로 내보내지 않는다(registerView·getView·listViews·…).
 //    바깥(앱·플러그인)은 host 로만 등록·조회한다 — 「주인 없는 등록」이 생길 구멍을 막는다.

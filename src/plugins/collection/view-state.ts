@@ -2,7 +2,8 @@
  * 보기 정의(ViewDef) — 기본값·정규화(옛 RecordViewState 를 올리는 길 포함)·보관(localStorage).
  *
  * 🔴 보기 정의는 「자료를 보는 창」이다 — 필터·정렬·칸 순서·폭·숨김. 노드 얼굴은 이걸 노드 data 에 저장하고(공유·백업 대상),
- *    제어형 손님이 views 를 안 넘기면 여기 localStorage(viewKey · 기기별)에 둔다. 기기별로 남는 건 활성 탭 하나뿐이다.
+ *    제어형 손님이 views 를 안 넘기면 여기 localStorage(viewKey · 기기별)에 둔다 — 정의는 탭 사이에 맞춘다(watchViews).
+ *    「지금 고른 보기」(활성 탭)만 탭마다다(loadActiveView · R3-X 🙋16).
  * 🔴 창틀은 자기를 쓰는 앱 이름을 모른다 — storageKey 접두사(setStoragePrefix)를 거쳐 키를 만든다.
  *    ⚠️ 저장이 막혀도(사파리 프라이빗) 조용히 기본값으로 산다(목록은 그냥 안 기억될 뿐 고장 아님).
  */
@@ -159,9 +160,21 @@ export function watchViews(viewKey: string, fn: () => void): () => void {
     return onStorageKey(() => KEY(viewKey), () => fn());
 }
 
+/**
+ * 🔴 R3-X 🙋16 — 「지금 고른 보기」는 탭마다: 이 탭(sessionStorage) 먼저, 없으면 마지막으로 고른 것(localStorage).
+ *   저장은 둘 다 — 새 탭은 마지막 고른 보기로 시작하고, 이미 열린 탭은 제 것을 지킨다(배치 workspace-store 와 같은 꼴).
+ */
+function sessionArea(): Storage | null {
+    try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; } catch { return null; }
+}
 export function loadActiveView(viewKey: string): string | null {
+    try {
+        const mine = sessionArea()?.getItem(ACTIVE_KEY(viewKey));
+        if (mine) return mine;
+    } catch { /* 막힌 환경 — 아래로 */ }
     try { return localStorage.getItem(ACTIVE_KEY(viewKey)); } catch { return null; }
 }
 export function saveActiveView(viewKey: string, id: string): void {
+    try { sessionArea()?.setItem(ACTIVE_KEY(viewKey), id); } catch { /* 조용히 */ }
     try { localStorage.setItem(ACTIVE_KEY(viewKey), id); } catch { /* 조용히 */ }
 }
