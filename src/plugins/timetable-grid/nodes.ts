@@ -12,7 +12,7 @@
 import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
 import type { TimetableData, ScheduleEntry } from '../contract-week-grid/types';
 import { createUndoSlot, type Disposable, type MenuEntry, type PluginHost, type NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { blankTimetable } from './model';
+import { blankTimetable, guardTimeline, normalizeTimetable } from './model';
 import { scheduleRange } from './schedule';
 import { setActiveSheet } from './store';
 
@@ -105,10 +105,16 @@ export function inTrash(id: string): boolean { return api?.isTrashed(id) ?? fals
 /** 시간표 노드인가. */
 export function isSheet(id: string): boolean { return api?.get(id)?.type === SHEET_TYPE; }
 
-/** 시간표 데이터 — 없으면 빈 표(결정적). */
+/** 읽기 변환 캐시 — 같은 저장 객체엔 같은 결과(useSyncExternalStore 스냅샷이 흔들리지 않게). */
+const normalized = new WeakMap<object, TimetableData>();
+
+/** 시간표 데이터 — 없으면 빈 표(결정적). 🔴 W10a: 옛 자료(쉬는 시간 행·겹친 행)는 읽을 때 갭·밀림으로 고쳐 준다. */
 export function sheetDataOf(id: string): TimetableData {
-    const n = api?.get(id);
-    return (n?.data as TimetableData | undefined) ?? blankTimetable();
+    const raw = api?.get(id)?.data as TimetableData | undefined;
+    if (!raw) return blankTimetable();
+    let out = normalized.get(raw);
+    if (!out) { out = normalizeTimetable(raw); normalized.set(raw, out); }
+    return out;
 }
 
 // ── 쓰기 ──
@@ -117,7 +123,7 @@ export function sheetDataOf(id: string): TimetableData {
 export function applyEdit(id: string, edit: (data: TimetableData) => TimetableData): void {
     if (!api) return;
     const prev = sheetDataOf(id);
-    const next = edit(prev);
+    const next = guardTimeline(prev, edit(prev));   // 🔴 겹침 금지 관문 — 모든 손 편집이 지난다
     if (next === prev) return;
     const h = histories.get(id) ?? { past: [], future: [] };
     histories.set(id, { past: [...h.past, { before: prev, after: next }].slice(-HISTORY_LIMIT), future: [] });
@@ -201,7 +207,7 @@ export function stepEdit(id: string, which: 'undo' | 'redo'): void {
         histories.set(id, { past: [...h.past, step], future: h.future.slice(1) });
     }
     editSeq++;
-    api.setData(id, value);
+    api.setData(id, guardTimeline(cur, value));
 }
 
 /**

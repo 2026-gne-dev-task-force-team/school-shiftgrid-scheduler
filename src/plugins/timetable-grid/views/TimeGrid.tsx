@@ -2,7 +2,10 @@
  * 시간표 그리드 화면 — 달력 주 보기 꼴(Q4 T5): 왼쪽에 시각 눈금 + 행 머리, 위에 열 머리, 칸 줄.
  *   🔴 행(교시 같은 것)은 **시각 띠**다 — 높이 = 그 행이 차지하는 시간이라 행 사이 쉬는 틈도 그대로 보인다.
  *   🔴 데이터는 받은 data 를 읽고 edit(순수 함수)로만 바꾼다 — 저장·되돌리기는 위(GridTab → nodes.ts)가 쥔다.
- *   조작: 칸 글자는 칸에서 바로 · 행 시각은 띠 위·아래 가장자리를 끌어서(5분 단위) · 열 너비는 열 머리 오른쪽 가장자리를 끌어서
+ *   🔴 W10a: 행 길이(분)가 1급 값 — 행 아래 끝을 끌면 길이가 바뀌고 뒤 행이 같이 밀린다(5분 단위 · 최소 5분).
+ *         쉬는 시간은 행이 아니라 행 사이 갭 — 빈 띠 + 「쉬는 시간 N분」, 갭 아래 끝을 끌어 늘리고 줄인다(뒤 행이 밀림).
+ *         끄는 동안은 모델 함수(setRowLength·setGapBefore)로 미리 그리고, 놓을 때 한 번 저장 = 되돌리기 한 칸.
+ *   조작: 칸 글자는 칸에서 바로 · 열 너비는 열 머리 오른쪽 가장자리를 끌어서
  *         · 병합·행/열 넣고 빼기는 우클릭(길게 누르기) 메뉴. ⛔ 위쪽 도구 막대는 없다(T3).
  *   칸은 스프레드시트처럼 두 상태다(W-T): 선택(격자에 초점 — 화살표·Tab·⇧Enter 이동 · ⇧/끌기/⇧클릭 범위 · Delete 지우기 · ⌘C/X/V TSV)
  *         ↔ 편집(타자 시작·F2·Enter·더블클릭 — Enter 확정+아래 · Tab 확정+옆 · Esc 취소 · ⌥Enter 줄바꿈). 이동은 gridNav.ts(병합을 한 칸으로).
@@ -14,7 +17,7 @@ import { step, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
 import { Button, ContextMenu, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells, addRow, removeRow,
-    addColumn, removeColumn, renameRow, renameColumn, setCellText, setRowTime, setColWidth, colWidth, viewRange,
+    addColumn, removeColumn, renameRow, renameColumn, setCellText, setRowLength, setGapBefore, rowLength, gapBefore, setColWidth, colWidth, viewRange,
     COL_MIN_W, type TimetableData, type Selection,
 } from '../model';
 
@@ -76,15 +79,17 @@ function CellEditor({ text, label, onChange, onKey, onBlur }: {
     );
 }
 
-type Live = { kind: 'row'; row: number; edge: 'start' | 'end'; value: number } | { kind: 'col'; col: number; width: number } | null;
+type Live = { kind: 'row'; row: number; len: number } | { kind: 'gap'; row: number; gap: number } | { kind: 'col'; col: number; width: number } | null;
 
 export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void }) {
     const nCols = columnCount(data.columns);
     const nRows = rowCount(data);
-    const view = viewRange(data);
+    const [live, setLive] = useState<Live>(null);
+    // 끄는 중엔 모델 함수로 밀린 모습을 미리 그린다(놓을 때 같은 함수로 한 번 저장).
+    const shown = live?.kind === 'row' ? setRowLength(data, live.row, live.len) : live?.kind === 'gap' ? setGapBefore(data, live.row, live.gap) : data;
+    const view = viewRange(shown);
     const [sel, setSel] = useState<Selection | null>(null);
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
-    const [live, setLive] = useState<Live>(null);
     const dragRef = useRef<{ y0: number; x0: number; v0: number } | null>(null);
 
     // ── 칸 선택 ↔ 편집(W-T) — sel.col0/row0 = 활성 칸(앵커), col1/row1 = 범위 끝 ──
@@ -181,8 +186,8 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
     };
 
     // ── 좌표 — 끄는 중엔 live 값으로 덮어 그린다(놓을 때 한 번만 저장) ──
-    const rowStart = (r: number) => (live?.kind === 'row' && live.row === r && live.edge === 'start' ? live.value : data.rows[r].range.start);
-    const rowEnd = (r: number) => (live?.kind === 'row' && live.row === r && live.edge === 'end' ? live.value : data.rows[r].range.end);
+    const rowStart = (r: number) => shown.rows[r].range.start;
+    const rowEnd = (r: number) => shown.rows[r].range.end;
     const widthOf = (c: number) => (live?.kind === 'col' && live.col === c ? live.width : colWidth(data, c));
     const lefts: number[] = [];
     let gridW = 0;
@@ -202,17 +207,16 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
         if (!d || !live) return;
         if (live.kind === 'col') { setLive({ ...live, width: Math.max(COL_MIN_W, Math.round(d.v0 + e.clientX - d.x0)) }); return; }
         const raw = Math.round((d.v0 + (e.clientY - d.y0) / PPM) / SNAP) * SNAP;
-        const { start, end } = data.rows[live.row].range;
-        const value = live.edge === 'start' ? Math.min(Math.max(raw, view.start), end - SNAP) : Math.max(Math.min(raw, view.end), start + SNAP);
-        setLive({ ...live, value });
+        if (live.kind === 'row') setLive({ ...live, len: Math.max(SNAP, raw) });
+        else setLive({ ...live, gap: Math.max(0, raw) });
     }
     function endDrag() {
         const l = live;
         dragRef.current = null; setLive(null);
         if (!l) return;
         if (l.kind === 'col') { edit((d) => setColWidth(d, l.col, l.width)); return; }
-        const { start, end } = data.rows[l.row].range;
-        if (l.value !== (l.edge === 'start' ? start : end)) edit((d) => setRowTime(d, l.row, l.edge === 'start' ? l.value : start, l.edge === 'end' ? l.value : end));
+        if (l.kind === 'row') { if (l.len !== rowLength(data, l.row)) edit((d) => setRowLength(d, l.row, l.len)); return; }
+        if (l.gap !== gapBefore(data, l.row)) edit((d) => setGapBefore(d, l.row, l.gap));
     }
     const dragProps = { onPointerMove: moveDrag, onPointerUp: endDrag, onPointerCancel: endDrag };
 
@@ -295,13 +299,17 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
                                         onCommit={(v) => edit((d) => renameRow(d, r, v))}
                                         className="w-full bg-transparent px-1.5 pt-1 text-small text-text outline-none focus:bg-text/[0.04]" />
                                     {h >= 40 && <div className="px-1.5 text-micro tabular-nums text-muted">{fmt(rowStart(r))}~{fmt(rowEnd(r))}</div>}
-                                    <div data-testid="row-edge-start" title="끌어서 시작 시각 조절" onPointerDown={(e) => beginDrag(e, { kind: 'row', row: r, edge: 'start', value: row.range.start }, row.range.start)}
-                                        {...dragProps} className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize hover:bg-accent/40" />
-                                    <div data-testid="row-edge-end" title="끌어서 끝 시각 조절" onPointerDown={(e) => beginDrag(e, { kind: 'row', row: r, edge: 'end', value: row.range.end }, row.range.end)}
+                                    <div data-testid="row-edge-end" title="끌어서 길이 조절(뒤 행이 밀린다)" onPointerDown={(e) => beginDrag(e, { kind: 'row', row: r, len: rowLength(data, r) }, rowLength(data, r))}
                                         {...dragProps} className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize hover:bg-accent/40" />
                                 </div>
                             );
                         })}
+                        {/* 갭 손잡이 — 행 사이 쉬는 시간의 아래 끝(= 뒤 행 위 끝). 갭이 0이어도 잡을 수 있다. */}
+                        {data.rows.map((row, r) => r === 0 ? null : (
+                            <div key={`gap-${row.id}`} data-testid="gap-edge" title="끌어서 쉬는 시간 조절(뒤 행이 밀린다)"
+                                onPointerDown={(e) => beginDrag(e, { kind: 'gap', row: r, gap: gapBefore(data, r) }, gapBefore(data, r))}
+                                {...dragProps} className="absolute z-10 h-1.5 cursor-ns-resize hover:bg-accent/40" style={{ left: TIME_W, width: HEAD_W, top: yOf(rowStart(r)) - 1 }} />
+                        ))}
                     </div>
 
                     <div ref={gridRef} tabIndex={0} role="grid" aria-label="시간표 칸" onKeyDown={onGridKey}
@@ -310,6 +318,17 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
                         {data.rows.map((row, r) => (
                             <div key={row.id} className="absolute inset-x-0 bg-text/[0.025]" style={{ top: yOf(rowStart(r)), height: yOf(rowEnd(r)) - yOf(rowStart(r)) }} />
                         ))}
+                        {shown.rows.map((row, r) => {
+                            const g = r > 0 ? rowStart(r) - rowEnd(r - 1) : 0;
+                            if (g <= 0) return null;
+                            const top = yOf(rowEnd(r - 1));
+                            return (
+                                <div key={`gap-${row.id}`} data-testid="gap" className="pointer-events-none absolute inset-x-0 flex items-center justify-center overflow-visible"
+                                    style={{ top, height: yOf(rowStart(r)) - top }}>
+                                    <span className="rounded bg-panel px-1 text-micro leading-none text-muted">쉬는 시간 {g}분</span>
+                                </div>
+                            );
+                        })}
                         {lefts.map((l, c) => <div key={c} className="absolute inset-y-0 border-r border-line" style={{ left: l, width: widthOf(c) }} />)}
                         {Array.from({ length: nCols }, (_, c) => data.rows.map((row, r) => {
                             if (isCovered(data, c, r)) return null;
