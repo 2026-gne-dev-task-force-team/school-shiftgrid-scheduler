@@ -55,22 +55,25 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
     const values: Record<string, RecordCellValue> = { ...stored, ...eventToValues(event) };
     if (!host || !rv) return null;
 
+    const change = (key: string, v: RecordCellValue) => {
+        // 🔴 보기만으로는 실체화 ⛔ — 값을 고칠 때 처음으로 materialize(실체면 그 id 그대로)
+        const id = event.occ ? materialize(event.occ) : event.id;
+        if (!id) return;
+        if (id !== event.id) setEventId(id);
+        if (!BASE_KEYS.has(key)) { setEventValue(id, key, v); return; }
+        const next = applyEventValue(event, key, v);
+        if (next) patchEvent(id, next);
+    };
     // 열기 페이지 한 벌(컬렉션 RecordPage — Q5 R5): 머리·경로·⋯ 는 틀이, 칸은 기본 칸 + 저장소 사용자 칸, 그 밑에 동작 줄(저장소·내보내기·휴지통)
+    // 🔴 RecordPage 는 노드를 찾는다 — 가상 회차 id(규칙@시작)는 노드가 아니라 규칙 노드 id 를 넘긴다(F1 A). 제목 고치기는 회차 실체화로 돌린다.
     return (
         <rv.RecordPage
             host={host}
-            id={event.id}
+            id={nodeIdOf(event.id)}
             fields={[...eventFields(event.allDay), ...baseFieldsOf(event.storeId), ...userFields]}
             values={values}
-            onChange={(key, v) => {
-                // 🔴 보기만으로는 실체화 ⛔ — 값을 고칠 때 처음으로 materialize(실체면 그 id 그대로)
-                const id = event.occ ? materialize(event.occ) : event.id;
-                if (!id) return;
-                if (id !== event.id) setEventId(id);
-                if (!BASE_KEYS.has(key)) { setEventValue(id, key, v); return; }
-                const next = applyEventValue(event, key, v);
-                if (next) patchEvent(id, next);
-            }}
+            onChange={change}
+            onRename={event.occ ? (name) => change('name', name) : undefined}
             onOptionsChange={(key, options) => kit?.setUserFields(event.storeId, userFields.map((f) => (f.key === key ? { ...f, options } : f)))}
             after={<>
                 {event.occ

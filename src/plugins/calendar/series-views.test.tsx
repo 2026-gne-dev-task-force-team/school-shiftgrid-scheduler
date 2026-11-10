@@ -32,6 +32,7 @@ import { reschedule, type SeriesData } from './series';
 import { ListView } from './views/ListView';
 import { MonthView } from './views/MonthView';
 import { EventCardPeek } from './views/EventCardPeek';
+import { RecordPage } from '../collection/views/RecordPage';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 class RO { observe() {} unobserve() {} disconnect() {} }
@@ -108,7 +109,7 @@ describe('C2c-1 보기 — 반복 회차', () => {
         setCalendarHost({ ...host(), modules: { use: () => ({ RecordPage }) } } as unknown as PluginHost);
         render(<EventCardPeek eventId={occId(id, first)} onClose={() => {}} />);
         expect(live()).toBe(1);
-        expect(props!.id).toBe(occId(id, first));
+        expect(props!.id).toBe(id);   // RecordPage 는 노드를 찾는다 — 가상 회차는 규칙 노드 id(F1 A)
         act(() => { props!.onChange('name', '바뀐 회의'); });
         expect(live()).toBe(2);
         const m = api().liveByType(EVENT_TYPE).find((n) => n.id !== id)!;
@@ -116,6 +117,18 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect((m.data as SeriesData).originalStart).toBe(first);
         expect(props!.id).toBe(m.id);
         expect(api().get(id)!.name).toBe('회의');   // 규칙 일정 자체는 안 바뀐다
+    });
+
+    it('F1 A: 가상 회차 카드를 실제 RecordPage 로 열면 「없어졌습니다」 대신 회차 단추가 보이고 하루 미루기가 동작한다', () => {
+        const { id, first } = weekly(3);
+        const h = { ...host(), modules: { use: (k: string) => (k === 'collection' ? { RecordPage } : k === 'nodes' ? api() : undefined) } } as unknown as PluginHost;
+        setCalendarHost(h);
+        const el = render(<EventCardPeek eventId={occId(id, first)} onClose={() => {}} />);
+        expect(el.textContent).not.toContain('이 줄이 없어졌습니다');
+        expect(el.querySelector('[data-cal-occ-act="skip"]')).not.toBeNull();
+        act(() => { (el.querySelector('[data-cal-occ-act="later"]') as HTMLElement).click(); });
+        expect(live()).toBe(2);
+        expect(el.textContent).not.toContain('이 줄이 없어졌습니다');
     });
 
     it('되살리기: 규칙 일정을 휴지통에서 되살리면 같이 버린 실체 회차도 돌아온다', () => {
