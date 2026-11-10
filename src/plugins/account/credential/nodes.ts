@@ -3,7 +3,7 @@
  *   record: true 라 탐색기에 안 보인다. 🔴 평문 0 — 해시만. userId 당 한 노드.
  */
 import type { NodeTypeContribution } from '../../../pane-ui-system/plugin';
-import type { Hashed } from './hash';
+import type { Hashed } from '../hash';
 
 export const SECRET_TYPE = 'account.cred-secret';
 /** 꾸러미 통합(2026-11-08) 이전 별도 플러그인 시절의 노드 타입 — 탐색기에 노출되지 않게 record 로 함께 등록하고 자동 이사한다. */
