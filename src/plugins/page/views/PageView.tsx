@@ -9,7 +9,7 @@ import type { ReactElement, ReactNode, KeyboardEvent as ReactKeyboardEvent } fro
 import { isMod, ContextMenu, focusWhenReady, Icon, undoKey, useContextTrigger, useDragLeaf, type DragBind, type MenuEntry } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { useActivePage } from '../store';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { notifyBlocksRemoved } from '../removed';
 import { createChildPage, getNodesApi, inlineBlocked, pageViewOf, savePage, inTrash, childPageIds, reviveChildren, getPageRev, subscribePageNodes } from '../nodes';
 import { StartScreen } from './StartScreen';

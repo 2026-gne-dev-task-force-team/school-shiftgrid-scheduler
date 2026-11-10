@@ -54,8 +54,8 @@ function minimalHost(): PluginHost {
 }
 
 interface Tab {
-    store: typeof import('../explorer/store');
-    persist: typeof import('../explorer/persist');
+    store: typeof import('../../pane-ui-system/core/node-store/store');
+    persist: typeof import('../../pane-ui-system/core/node-store/persist');
     crossTab: typeof import('../../pane-ui-system/cross-tab');
     kv: typeof import('../../pane-ui-system/kv');
     sheet: typeof import('./nodes');
@@ -66,11 +66,11 @@ interface Tab {
 async function openTab(): Promise<Tab> {
     vi.resetModules();
     const before = FakeBC.all.length;
-    const store = await import('../explorer/store');
-    const persist = await import('../explorer/persist');
+    const store = await import('../../pane-ui-system/core/node-store/store');
+    const persist = await import('../../pane-ui-system/core/node-store/persist');
     const crossTab = await import('../../pane-ui-system/cross-tab');
     const kv = await import('../../pane-ui-system/kv');
-    const api = await import('../explorer/api');
+    const api = await import('../../pane-ui-system/core/node-frame/api');
     const sheet = await import('./nodes');
     const grid = await import('../timetable-grid/nodes');
     await store.initStore(minimalHost());

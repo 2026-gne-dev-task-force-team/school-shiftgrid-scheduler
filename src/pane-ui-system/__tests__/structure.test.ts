@@ -7,7 +7,7 @@
  * 🔴 이 검사 자체가 정규식 문자열로 금지 패턴을 품고 있으니, 검사 폴더(__tests__)는 스캔 대상에서 뺀다.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve, basename, dirname, relative, sep } from 'node:path';
 
 const ROOT = resolve(process.cwd(), 'src');
@@ -368,7 +368,7 @@ describe('⑧′ core/<m>/manifest.ts 는 id·core:true·layer platform · plugi
 
     it('core 모듈 폴더가 하나 이상 있다', () => { expect(mods.length).toBeGreaterThan(0); });
 
-    for (const m of mods) {
+    for (const m of mods.filter((d) => existsSync(join(CORE_DIR, d, 'manifest.ts')))) {   // 🍳 manifest.ts 가 있는 모듈만 — 없으면 꾸러미가 아닌 부품(nodes·node-store·node-frame)
         it(`core/${m}/manifest.ts — id '${m}' · core: true · layer 'platform'`, () => {
             const src = read(join(CORE_DIR, m, 'manifest.ts'));
             expect(src.match(/\bid:\s*['"]([^'"]+)['"]/)?.[1], `core/${m}/manifest.ts id`).toBe(m);
@@ -378,7 +378,7 @@ describe('⑧′ core/<m>/manifest.ts 는 id·core:true·layer platform · plugi
     }
 
     // 🍳 이사 중 — 아직 plugins/ 에 남은 코어 셋. ⭐ 이사하는 판이 자기 이름을 이 목록에서 지운다(P2 properties · P3 explorer · P4 settings). 다 지우면 이 목록과 이 주석을 없앤다.
-    const NOT_MOVED_YET = ['settings', 'explorer', 'properties'];
+    const NOT_MOVED_YET = ['settings', 'properties'];
     for (const d of readdirSync(join(ROOT, 'plugins'), { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== '__tests__' && !NOT_MOVED_YET.includes(e.name)).map((e) => e.name)) {
         it(`plugins/${d}/manifest.ts 에 core: true 없음`, () => {
             const src = read(join(ROOT, 'plugins', d, 'manifest.ts'));
@@ -439,9 +439,9 @@ describe('⑮ kv.ts 쓰기 트랜잭션 안에 await 가 없다 (openDb 직후�
 
 describe('⑭ plugins 는 kv 를 직접 부르지 않는다 — host.store 로만 (노드 스토어만 persist.ts 예외)', () => {
     // kvGet/kvSet/kvDel 은 전부 금지(네임스페이스 없는 키를 막는다).
-    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 explorer/persist.ts 하나만 예외.
+    // nodesGetAll/nodesWrite 는 노드 저장 층 전용 — 그 층인 core/node-store/persist.ts 하나만 예외.
     const BANNED = /\b(?:kv(?:Get|Set|Del)|nodesGetAll|nodesWrite)\s*\(/;
-    const PERSIST = join('explorer', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
+    const PERSIST = join('node-store', 'persist.ts');   // 저장소 레이어 한 파일만 노드 스토어를 직접 쓴다
     const files = PLUGINLIKE;
 
     it('스캔할 플러그인 파일이 실제로 있다', () => {
@@ -512,7 +512,9 @@ describe('⑱ 모듈·의존성 — host.plugins.get 0 · use/onInterface 는 �
     /** provides/requires/supports 객체 리터럴의 키(= 선언된 인터페이스 이름)를 그 플러그인 파일들에서 모은다. */
     function declaredFor(plugin: string): { all: Set<string>; supports: Set<string> } {
         const all = new Set<string>(); const supports = new Set<string>();
-        for (const f of unitFiles.filter((x) => unitOf(x) === plugin)) {
+        // 🍳 manifest.ts 없는 core 폴더는 「부품」(nodes·node-store·node-frame) — 꾸러미(explorer)가 선언한 약속을 같이 쓴다. 부품의 선언 집합 = core 전체 선언의 합
+        const isPart = plugin.startsWith('core/') && !existsSync(join(CORE_DIR, plugin.slice(5), 'manifest.ts'));
+        for (const f of unitFiles.filter((x) => (isPart ? x.startsWith(CORE_DIR + sep) : unitOf(x) === plugin))) {
             const src = read(f);
             for (const kind of ['provides', 'requires', 'supports']) {
                 for (const m of src.matchAll(new RegExp(`${kind}\\s*:\\s*\\{([^{}]*)\\}`, 'g'))) {

@@ -2,7 +2,7 @@
  * 페이지 ↔ 노드 시스템 다리 — 🔴 페이지 한 장도 노드다(저장·휴지통·복원은 노드 시스템이 쥔다).
  *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만(import type 만 · 값은 host.modules.use('nodes')).
  */
-import type { NodesApi, PublicNode, NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
 import { uniqueName } from '../../pane-ui-system';
 import type { Page } from './core/types';

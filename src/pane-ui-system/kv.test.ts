@@ -14,7 +14,7 @@ import {
 } from './plugin/storage-errors';
 import { makeHost } from './plugin/host';
 import { disposeOwner } from './plugin/store';
-import { uid } from '../plugins/explorer/model/tree';
+import { uid } from './core/nodes/model/tree';
 
 beforeEach(() => { clearStorageErrors(); __resetKvForTest(); });
 

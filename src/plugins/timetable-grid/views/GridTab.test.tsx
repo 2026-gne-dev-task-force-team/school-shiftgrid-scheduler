@@ -5,7 +5,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { initGridNodes, SHEET_TYPE } from '../nodes';
 import { setActiveSheet } from '../store';
 import { GridTab } from './GridTab';

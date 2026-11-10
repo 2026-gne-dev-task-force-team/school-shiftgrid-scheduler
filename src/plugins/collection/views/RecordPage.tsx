@@ -6,7 +6,7 @@
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입(값은 host.modules.use).
-import type { NodesApi } from '../../explorer/contracts/nodes';
+import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PageDocApi } from '../../page/contracts/page-doc';
 import type { RecordPageProps } from '../contracts/collection';
 import { useState } from 'react';

@@ -12,7 +12,7 @@
  *   ⚠️ 이 파일은 비-뷰라 소문자 record 리터럴을 둬도 된다(구조 검사 ⑯: 뷰에만 금지).
  */
 import type { NodeTypeContribution, PluginHost } from '../../pane-ui-system/plugin';
-import type { NodeTypeImplFns } from '../explorer/contracts/nodes';
+import type { NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Hashed } from './hash';
 import type { RecordCellValue } from '../collection/contracts/collection';
 import * as core from './core';

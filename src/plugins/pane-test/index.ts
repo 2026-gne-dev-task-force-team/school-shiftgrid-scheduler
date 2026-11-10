@@ -19,7 +19,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, ViewProps, ViewContribution, CommandContribution } from '../../pane-ui-system/plugin';
 // 🔴 약속의 「타입만」 import(import type) — 노드 약속(explorer/contracts/nodes)에서. 값은 host.modules.use('nodes') 로만(구조 검사 ⑱·g).
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { TestConsole } from './views/TestConsole';
 import { SampleView } from './views/SampleView';

@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from 'react';
 import { Icon, pressProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import type { EmbedProps } from '../../explorer/contracts/nodes';
+import type { EmbedProps } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { getEventNodes, getNodesApi, inTrash, subscribeNodes } from '../nodes';
 import { storedToEvent } from '../event-fields';
 

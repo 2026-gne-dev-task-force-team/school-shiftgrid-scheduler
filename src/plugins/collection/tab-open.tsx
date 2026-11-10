@@ -13,7 +13,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
 import { EmptyState, focusWhenReady } from '../../pane-ui-system';
 import { modClickLabel } from '../../pane-ui-system/platform-keys';
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 
 export const RECORD_TAB_ID = 'collection.record';
 

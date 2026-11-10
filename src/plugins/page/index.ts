@@ -8,7 +8,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 // 🔴 import type 만 — 약속 타입은 약속 플러그인 contracts 에서(값은 host.modules.use('nodes')).
-import type { NodesApi } from '../explorer/contracts/nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { PageView } from './views/PageView';
 import { pageNodeTypes, pageNodeTypeImpl, initPageNodes, getNodesApi, PAGE_TYPE } from './nodes';

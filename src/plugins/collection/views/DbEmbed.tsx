@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from 'react';
 import { Icon, pressProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import type { EmbedProps } from '../../explorer/contracts/nodes';
+import type { EmbedProps } from '../../../pane-ui-system/core/nodes/contracts/nodes';
 import { getDbRev, getNodesApi, snapshotOf, subscribeDb } from '../nodes';
 import { DbTable } from './DbView';
 import { openRecordTab } from '../tab-open';

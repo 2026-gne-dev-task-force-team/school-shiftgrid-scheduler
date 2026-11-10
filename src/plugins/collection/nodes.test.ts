@@ -3,7 +3,7 @@
  *   NodesApi 는 메모리 가짜(실제 탐색기 스토어와 같은 약속) — 묶음 안에서만 쓰는지 · 한 tx = 한 묶음인지를 센다.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { DB_TYPE, ROW_TYPE, commit, liveDbs, createDb, getActiveDb, indentRow, initRecordNodes, outdentRow, pickFirstDbIfNone, reorderRow, setActiveDb, restoreTrashedRows, snapshotOf, toggleRowCollapse, trashedRows } from './nodes';
 import { blankDb } from './schema';
 import { filterUniqueChanges } from './unique';

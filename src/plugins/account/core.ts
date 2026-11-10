@@ -10,7 +10,7 @@
 import { notifyNodeUndo, type PluginHost, type Disposable } from '../../pane-ui-system/plugin';
 import type { CurrentUser } from './contracts/identity';
 import type { Credential } from './contracts/credential';
-import type { NodesApi, PublicNode } from '../explorer/contracts/nodes';
+import type { NodesApi, PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { makeHash, verifyHash } from './hash';
 import type { Hashed } from './hash';
 import {
