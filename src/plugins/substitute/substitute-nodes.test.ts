@@ -26,6 +26,7 @@ import { clearDerived } from '../explorer/model/derive';
 import { defineCollection } from '../collection/define';
 import { substituteNodeTypes, substituteNodeTypeImpl, LIST_TYPE, STAFF_TYPE, getKit, setKit } from './nodes';
 import { STAFF_CONFIG } from './config';
+import { pasteIntoList } from '../collection/views/CollectionTab';
 
 function host(): PluginHost {
     return {
@@ -87,5 +88,17 @@ describe('보결 명단 — 구분 칸', () => {
         kit.setUserFields(l1, [{ ...f, options: [...f.options!, { value: 'admin', label: '교감' }] } as never]);
         expect(kindOf(api, l1)?.options?.map((o) => o.label)).toContain('교감');
         expect(kindOf(api, l2)?.options).toHaveLength(4);
+    });
+
+    it('칸은 잠겨 있다(지우기·타입 바꾸기 금지) · 붙여 넣은 「담임」은 저장값 homeroom 으로 — 새 선택지가 안 생긴다', () => {
+        const api = wire();
+        const kit = getKit()!;
+        const lid = kit.createList()!;
+        expect((kindOf(api, lid) as { locked?: boolean })?.locked).toBe(true);
+        const fields = [...STAFF_CONFIG.baseFields, ...kit.userFieldsOf(lid)];
+        pasteIntoList(kit as never, lid, fields, ['name', 'memo'], { keys: ['name', 'f_kind'], rows: [['가나다', '담임'], ['라마바', '보조인력']] });
+        const vals = api.children(lid).filter((n) => n.type === STAFF_TYPE).map((n) => (n.data as { values?: Record<string, unknown> }).values?.f_kind);
+        expect(vals).toEqual(['homeroom', 'assistant']);
+        expect(kindOf(api, lid)?.options).toHaveLength(4);
     });
 });

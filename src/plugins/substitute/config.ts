@@ -10,7 +10,7 @@ export const STAFF_TYPE = 'substitute.staff';
 
 /** 새 명단에 심는 칸 — 부를 때마다 새 객체(명단끼리 공유하지 않게). */
 export const newListFields = (): RecordField[] => [{
-    key: 'f_kind', label: '구분', type: 'select',
+    key: 'f_kind', label: '구분', type: 'select', locked: true,   // 칸은 못 지운다(후보 등급이 읽는다) · 선택지·이름표는 고친다
     description: '보결 후보를 가르는 구분입니다. 선택지는 이 명단 안에서 고치거나 더할 수 있습니다.',
     options: [
         { value: 'homeroom', label: '담임', color: 'blue' },
