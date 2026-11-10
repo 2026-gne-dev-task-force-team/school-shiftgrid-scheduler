@@ -39,16 +39,26 @@ export function IconPicker({ icon, onSetIcon, fallback, sizeClass = 'text-[22px]
                 aria-expanded={!!anchor}
                 aria-label={icon ? '아이콘 바꾸기' : '아이콘 고르기'}
                 onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
-                className={`hit-44 relative shrink-0 grid place-items-center leading-none rounded px-0.5 hover:bg-text/[0.06] ${anchor ? 'bg-text/[0.1]' : ''} ${sizeClass}`}
+                className={`hit-44 relative shrink-0 grid place-items-center leading-none rounded px-0.5 hover:bg-text/[0.06] ${anchor ? 'bg-text/[0.1]' : ''} ${sizeClass} ${sizeClass === 'text-2xl' ? 'h-[1.25em]' : ''}`}   // 제목 한 줄(leading-tight=1.25)과 같은 높이 — 단차 없이 가운데 정렬(K19)
             >
                 <NodeIcon value={icon} size={SIZE_OF[sizeClass] ?? 22} fallback={fallback} />
             </button>
-            {anchor && (
-                <Popover anchor={anchor} width={296} onClose={close}>
-                    <NodeIconPanel value={icon} onPick={(v) => { onSetIcon(v); close(); }} />
-                </Popover>
-            )}
+            {anchor && <IconPickerPopover anchor={anchor} icon={icon} onSetIcon={onSetIcon} onClose={close} />}
         </>
+    );
+}
+
+/** 아이콘 고르기 팝오버 — 노드 머리의 IconPicker 와 탐색기 줄이 같이 쓴다(새 부품 없음). 고르면 값을 넘기고 닫는다. */
+export function IconPickerPopover({ anchor, icon, onSetIcon, onClose }: {
+    anchor: DOMRect;
+    icon?: string;
+    onSetIcon: (icon: string | undefined) => void;
+    onClose: () => void;
+}) {
+    return (
+        <Popover anchor={anchor} width={296} onClose={onClose}>
+            <NodeIconPanel value={icon} onPick={(v) => { onSetIcon(v); onClose(); }} />
+        </Popover>
     );
 }
 

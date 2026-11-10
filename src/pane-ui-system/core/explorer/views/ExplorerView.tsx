@@ -13,14 +13,14 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../plugin';
 import { usePluginRegistry } from '../../../plugin';
-import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, InlineRename, useDragLeaf, undoKey } from '../../..';
+import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, IconPickerPopover, InlineRename, useDragLeaf, undoKey } from '../../..';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../../nodes/model/tree';
 import { isContainerType, isSectionType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
 import { nodeMenu } from '../../node-frame/views/node-menu';
 import { TrashConfirm } from '../../node-frame/views/TrashConfirm';
-import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode } from '../../node-store/store';
+import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode, apiSetField } from '../../node-store/store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
 const INDENT = 12;
@@ -138,6 +138,8 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const [query, setQuery] = useState('');
     // create: 헤더 + 단추가 연 「새로 만들기」 메뉴(우클릭과 같은 후보 · 모바일엔 우클릭이 없다 — 쥔님 2026-11-09)
     const [menu, setMenu] = useState<{ x: number; y: number; create?: boolean } | null>(null);
+    // K18: 줄 아이콘을 눌러/우클릭 「아이콘 바꾸기」로 연 고르기(노드 머리와 같은 부품)
+    const [iconPick, setIconPick] = useState<{ id: string; rect: DOMRect } | null>(null);
     const [narrow, setNarrow] = useState<boolean>(() => host.screen.narrow());
     const [trashOpen, setTrashOpen] = useState(false);
     // 🔴 휴지통 높이 — 기기별 저장값에서 읽어 와 끌어서 조절한다(TrashResizeHandle). 끝에 host.storage 로 남긴다.
@@ -406,6 +408,12 @@ export function ExplorerView({ host }: { host: PluginHost }) {
             if (menuItems.some((it) => !it.sep && it.label === '열기')) {
                 return menuItems.filter((it) => it.sep || it.label === '열기' || !(it.label.endsWith(' 열기') && it.commandArg?.nodeId === selectedId));
             }
+            if (!multi && canDo(selNode.type, selectedId!, 'rename')) {
+                const at = new DOMRect(menu?.x ?? 0, menu?.y ?? 0, 0, 0);
+                const id = selectedId!;
+                const idx = menuItems.findIndex((it) => !it.sep && it.label === '이름 바꾸기');
+                menuItems.splice(idx < 0 ? menuItems.length : idx + 1, 0, { label: '아이콘 바꾸기', icon: 'sparkles', onClick: () => setIconPick({ id, rect: at }) });
+            }
             return menuItems;
         }
         const items: MenuEntry[] = createItems('context', { grouped: true });
@@ -501,9 +509,20 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                                 <span className="shrink-0 w-4" />
                             )}
 
+                            <span
+                                role={secHead ? undefined : 'button'}
+                                aria-label={secHead ? undefined : '아이콘 바꾸기'}
+                                className="shrink-0 grid place-items-center"
+                                onClick={secHead || !canDo(row.node.type, row.id, 'rename') ? undefined : (e) => {
+                                    e.stopPropagation(); select(row.id);
+                                    setIconPick({ id: row.id, rect: e.currentTarget.getBoundingClientRect() });
+                                }}
+                                onDoubleClick={secHead ? undefined : (e) => e.stopPropagation()}
+                            >
                             {emojiOf(row.node)
                                 ? <NodeIcon value={emojiOf(row.node)} size={15} fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0" />} />
                                 : <Icon name={iconOf(row.node)} size={secHead ? 13 : 15} className={`shrink-0 ${known && !secHead ? '' : 'text-muted'}`} />}
+                            </span>
 
                             {isRenaming ? (
                                 // 🔑 공통 InlineRename(Enter·Esc·blur·한글 조합 Enter 무시) — 줄의 드래그·두 번 누르기는 감싼 칸에서 막는다
@@ -735,6 +754,15 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                         width: preview.rect.width,
                         top: preview.pos === 'before' ? preview.rect.top : preview.rect.bottom,
                     }}
+                />
+            )}
+
+            {iconPick && tree.nodes[iconPick.id] && (
+                <IconPickerPopover
+                    anchor={iconPick.rect}
+                    icon={tree.nodes[iconPick.id].icon}
+                    onSetIcon={(i) => apiSetField(iconPick.id, 'icon', i)}
+                    onClose={() => setIconPick(null)}
                 />
             )}
 
