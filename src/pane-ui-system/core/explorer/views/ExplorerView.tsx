@@ -10,21 +10,20 @@
  *    모델 move 가 마지막 관문. 좁은 화면(narrow)에선 드래그를 끄고 메뉴의 「위로·아래로」로.
  * ⭐ 이미 고른 줄을 또 누르면(지연) 이름바꾸기(맥 Finder 느린 재클릭 · 유지) · 두 번 누르기는 그 예약만 취소(열기는 한 번 누르기가 이미 했다).
  */
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PluginHost, MenuEntry } from '../../../plugin';
 import { usePluginRegistry } from '../../../plugin';
-import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, IconPickerPopover, InlineRename, useDragLeaf, undoKey } from '../../..';
+import { isMod, Icon, NodeIcon, SectionHeader, Button, IconButton, ContextMenu, IconPickerPopover, useDragLeaf, undoKey } from '../../..';
 import { flatten, filterIds, parentOf, isDescendant, newFolderParent, violatesUnique, type Tree } from '../../nodes/model/tree';
-import { isContainerType, isSectionType, nodeHidden, iconOf, emojiOf, createIconOf, isKnownType, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
+import { isContainerType, isSectionType, nodeHidden, iconOf, emojiOf, createIconOf, createCandidates, typeMenuByType, canOpenType, canDo, canCreateType, acceptsChild, activateVerb, uniqueOf } from '../../nodes/model/types';
 import { clearDerived } from '../../nodes/model/derive';
 import { buildMainRows, type ExplorerRow } from './rows';
+import { RowItem, INDENT, BASE_PAD, type RowHandlers } from './RowItem';
 import { nodeMenu, foldCreate } from '../../node-frame/views/node-menu';
 import { TrashConfirm } from '../../node-frame/views/TrashConfirm';
-import { useExplorer, select, clickSelect, selectAllRows, toggle, cancelRename, commitRename, moveNodes, newNode, apiSetField } from '../../node-store/store';
+import { useExplorer, select, clickSelect, selectAllRows, toggle, moveNodes, newNode, apiSetField } from '../../node-store/store';
 
 /** 들여쓰기 한 단(px) — 줄 높이는 토큰(--s-row)이 쥐고, 가로 들여쓰기만 여기서 센다. */
-const INDENT = 12;
-const BASE_PAD = 6;
 /** 🗑 휴지통 구역 높이(px) — 끌어서 조절, 기기별로 host.storage 에 남긴다(쥔님 2026-11-01 22:51 *"휴지통 크기 핸들 조절 안되네"*). */
 const TRASH_MIN_H = 72;
 const TRASH_MAX_H = 520;
@@ -132,6 +131,14 @@ function resolveDrop(container: HTMLElement | null, _x: number, y: number, dragI
     return { targetId, pos, rect, destParent, index, ok };
 }
 
+/** 두 줄이 화면에 같은 결과를 내나 — 얕은 비교(실노드는 node 객체 동일성 · 유도 줄은 값 전부). RowItem memo 가 쓸 줄 객체 재사용 판정. */
+function sameRow(a: ExplorerRow, b: ExplorerRow): boolean {
+    const ka = Object.keys(a) as (keyof ExplorerRow)[];
+    const kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => (a as unknown as Record<string, unknown>)[k] === (b as unknown as Record<string, unknown>)[k]);
+}
+
 export function ExplorerView({ host }: { host: PluginHost }) {
     const { tree, selectedIds, selectedId, renamingId, renameKind, renameInitial, renamePlaceholder, purgeConfirmId, purgeAllConfirm, deleteConfirm, loading } = useExplorer();
 
@@ -159,8 +166,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     }, []);
     useEffect(() => () => clearRenameTimer(), [clearRenameTimer]);
 
-    // 휴지통 줄(루트 밖) — 맨 아래 접이식 구역. 🔴 listRef(본 나무) 밖이라 드래그 떨굴 자리에 안 걸린다.
-    const trashRows = flatten(tree, tree.trash, isContainerType, { hidden: nodeHidden });
+    // 휴지통 줄(루트 밖) — 맨 아래 접이식 구역(아래 trashRows 메모). 🔴 listRef(본 나무) 밖이라 드래그 떨굴 자리에 안 걸린다.
     const run = (id: string) => host.commands.run(id);
 
     useEffect(() => {
@@ -179,14 +185,32 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const q = query.trim().toLowerCase();
     // 🔴 루트 줄은 걷었다(쥔님 2026-11-01 22:17 정정: *"그 루트는 제일 바깥 공간 아무데나 누르면 루트 선택되게"*).
     //    루트는 줄로 그리지 않고, 「바깥 빈 공간 클릭 = 선택 해제(미선택=루트)」로 고른다(VS Code 식 · 아래 onListClick).
-    const allRows: ExplorerRow[] = q
-        ? flatten(tree, tree.root, isContainerType, {
-            expandAll: true,
-            hidden: nodeHidden,
-            // 🔴 숨긴 노드(레코드·조건부)는 검색에도 안 걸린다(「상위의 데이터」·권한 없음 · 쥔님 2026-11-02) — 안 그러면 숨은 노드가 제 부모 폴더를 「맞은 줄」로 띄운다.
-            keep: (() => { const k = filterIds(tree, tree.root, (n) => !nodeHidden(n) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
-        }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
-        : buildMainRows(tree, tree.root, undefined, nodeHidden);
+    // 🔴 줄 목록 메모화 — 입력(나무 · 검색어 · 플러그인 등록 표)이 같으면 그대로. 나무는 연산마다 새 객체(rev+1)라 tree 가 곧 「나무 버전 · 펼침 상태」다.
+    //    prevRowsRef — 나무가 바뀌어도 내용이 같은 줄은 옛 줄 객체를 재사용한다(RowItem 의 memo 가 먹으려면 줄 객체가 안 변해야 한다).
+    const prevRowsRef = useRef<Map<string, ExplorerRow>>(new Map());
+    const allRows: ExplorerRow[] = useMemo(() => {
+        const fresh: ExplorerRow[] = q
+            ? flatten(tree, tree.root, isContainerType, {
+                expandAll: true,
+                hidden: nodeHidden,
+                // 🔴 숨긴 노드(레코드·조건부)는 검색에도 안 걸린다(「상위의 데이터」·권한 없음 · 쥔님 2026-11-02) — 안 그러면 숨은 노드가 제 부모 폴더를 「맞은 줄」로 띄운다.
+                keep: (() => { const k = filterIds(tree, tree.root, (n) => !nodeHidden(n) && n.name.toLowerCase().includes(q)); return (id: string) => k.has(id); })(),
+            }).map((r) => ({ kind: 'node' as const, id: r.id, depth: r.depth, node: r.node, hasChildren: r.hasChildren }))
+            : buildMainRows(tree, tree.root, undefined, nodeHidden);
+        const prev = prevRowsRef.current;
+        const next = new Map<string, ExplorerRow>();
+        const out = fresh.map((r) => {
+            const p = prev.get(r.id);
+            const same = !!p && sameRow(p, r);
+            const use = same ? p : r;
+            next.set(r.id, use);
+            return use;
+        });
+        prevRowsRef.current = next;
+        return out;
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reg: 플러그인 켜짐/꺼짐이 타입 표(숨김·유도)를 바꾼다
+    }, [tree, q, reg]);
+    const trashRows = useMemo(() => { void reg; return flatten(tree, tree.trash, isContainerType, { hidden: nodeHidden }); }, [tree, reg]);
     // 섹션 칸 가르기 — 같은 sec 가 이어진 줄을 한 묶음으로(검색 중엔 sec 가 없어 평평한 한 묶음).
     const groups: { sec?: string; rows: ExplorerRow[] }[] = [];
     for (const r of allRows) {
@@ -194,8 +218,9 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         if (g && g.sec === r.sec) g.rows.push(r); else groups.push({ sec: r.sec, rows: [r] });
     }
     const rows: ExplorerRow[] = allRows;
+    const selSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     const selRow = selectedId ? rows.find((r) => r.id === selectedId) ?? null : null;
-    const rowsOrder = rows.map((r) => r.id);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
+    const rowsOrder = useMemo(() => rows.map((r) => r.id), [rows]);   // 보이는 줄 순서 — Shift 범위·Ctrl+A 가 쓴다
 
     // 끌리는 것 전부 — 고른 것 중 하나를 끌면 고른 전부, 아니면 그 하나만(쥔님 2026-11-02).
     const dragSetOf = (id: string): string[] => (selectedIds.includes(id) ? selectedIds : [id]);
@@ -250,6 +275,22 @@ export function ExplorerView({ host }: { host: PluginHost }) {
     const dblRow = (): void => {
         clearRenameTimer();
     };
+    // 🔴 RowItem(memo)에 줄 테 주는 핸들러 — 객체는 한 번만 만들고, 안의 함수는 ref 로 늘 최신 클로저를 부른다(안 그러면 매 렌더 새 함수라 memo 가 전부 깨진다).
+    const latest = useRef({ clickRow, dblRow });
+    latest.current = { clickRow, dblRow };
+    const rowHandlers = useMemo<RowHandlers>(() => ({
+        clickRow: (row, e) => latest.current.clickRow(row, e),
+        // 섹션 머리줄은 맨 클릭 = 접기/펴기(휴지통처럼). Ctrl·Shift·드래그 직후는 원래 길로
+        nodeClick: (row, e, secHead) => {
+            if (!secHead || isMod(e) || e.shiftKey || draggedRef.current) { latest.current.clickRow(row, e); return; }
+            clearRenameTimer(); rootRef.current?.focus(); select(row.id); toggle(row.id);
+        },
+        dblRow: () => latest.current.dblRow(),
+        hover: (id) => setHoverId(id),
+        unhover: (id) => setHoverId((cur) => (cur === id ? null : cur)),
+        iconPick: (id, rect) => setIconPick({ id, rect }),
+        menuAt: (id, r) => { clearRenameTimer(); select(id); setMenu({ x: r.left, y: r.bottom }); },
+    }), [clearRenameTimer]);
 
     // ── 바깥 빈 공간 누르기(마지막 줄 아래 바닥·빈 목록·패널 여백) = 고른 것 해제 → 「미선택=루트」 ──
     //    🔴 쥔님 2026-11-01 22:17: *"제일 바깥 공간 아무데나 누르면 루트 선택되게"*(VS Code 식).
@@ -426,139 +467,21 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
 
     // secHead — 섹션 머리줄로 그릴 때(휴지통 머리줄과 같은 꼴: 작은 글자·흐린 색·「이름 (개수)」·맨 클릭 = 접기/펴기)
-    const renderRows = (list: ExplorerRow[], secHead = false) => list.map((row) => {
-                    const isSel = selectedIds.includes(row.id);           // 고른 것 전부 강조(멀티 셀렉트)
-                    const isFocus = selectedId === row.id && selectedIds.length > 1;   // 키보드 커서 — 여럿일 때만 포커스 링
-                    const isInto = !!preview && preview.pos === 'into' && preview.targetId === row.id;
-
-                    // 🔴 유도(가상) 줄 — 회색 글자, 이름바꾸기·드래그 없음(data-row-id 는 둬 드롭에서 자동 거부된다).
-                    if (row.kind === 'virtual') {
-                        return (
-                            <div
-                                key={row.id}
-                                data-row-id={row.id}
-                                role="treeitem"
-                                aria-selected={isSel}
-                                title={row.name}
-                                onClick={(e) => clickRow(row, e)}
-                                onDoubleClick={() => dblRow()}
-                                className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
-                                    isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
-                                }`}
-                                style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
-                            >
-                                {row.hasChildren ? (
-                                    <span className="shrink-0 grid place-items-center w-4 h-4 text-muted">
-                                        <Icon name="right" size={12} className="rotate-90" />
-                                    </span>
-                                ) : (
-                                    <span className="shrink-0 w-4" />
-                                )}
-                                <Icon name={row.icon ?? 'dot'} size={15} className="shrink-0 text-muted" />
-                                <span className="flex-1 min-w-0 truncate text-body leading-none text-muted italic">
-                                    {row.name}
-                                </span>
-                            </div>
-                        );
-                    }
-
-                    const known = isKnownType(row.node.type);
-                    const isRenaming = renamingId === row.id;
-                    return (
-                        <div
-                            key={row.id}
-                            data-row-id={row.id}
-                            role="treeitem"
-                            aria-selected={isSel}
-                            aria-expanded={row.hasChildren || secHead ? !row.node.collapsed : undefined}
-                            title={row.node.name}
-                            onClick={(e) => {
-                                // 섹션 머리줄은 맨 클릭 = 접기/펴기(휴지통처럼). Ctrl·Shift·드래그 직후는 원래 길로
-                                if (!secHead || isMod(e) || e.shiftKey || draggedRef.current) { clickRow(row, e); return; }
-                                clearRenameTimer(); rootRef.current?.focus(); select(row.id); toggle(row.id);
-                            }}
-                            onDoubleClick={() => dblRow()}
-                            onMouseEnter={() => setHoverId(row.id)}
-                            onMouseLeave={() => setHoverId((h) => (h === row.id ? null : h))}
-                            aria-current={isFocus ? true : undefined}
-                            className={`flex items-center gap-1 h-row pr-2 cursor-pointer select-none transition-colors ${
-                                isSel ? 'bg-accent/15' : 'hover:bg-text/[0.04]'
-                            } ${isInto ? (preview!.ok ? 'ring-1 ring-inset ring-accent' : 'ring-1 ring-inset ring-bad') : isFocus ? 'ring-1 ring-inset ring-accent/40' : ''}`}
-                            style={{ paddingLeft: row.depth * INDENT + BASE_PAD }}
-                        >
-                            {secHead ? (
-                                <Icon name="right" size={11} className={`shrink-0 mx-0.5 text-muted transition-transform ${row.node.collapsed ? '' : 'rotate-90'}`} />
-                            ) : row.hasChildren ? (
-                                <span
-                                    role="button"
-                                    aria-label={row.node.collapsed ? '펴기' : '접기'}
-                                    onClick={(e) => { e.stopPropagation(); select(row.id); toggle(row.id); }}
-                                    className="shrink-0 grid place-items-center w-4 h-4 text-muted"
-                                >
-                                    <Icon name="right" size={12} className={`transition-transform ${row.node.collapsed ? '' : 'rotate-90'}`} />
-                                </span>
-                            ) : (
-                                <span className="shrink-0 w-4" />
-                            )}
-
-                            <span
-                                role={secHead ? undefined : 'button'}
-                                aria-label={secHead ? undefined : '아이콘 바꾸기'}
-                                className="shrink-0 grid place-items-center"
-                                onClick={secHead || !canDo(row.node.type, row.id, 'rename') ? undefined : (e) => {
-                                    e.stopPropagation(); select(row.id);
-                                    setIconPick({ id: row.id, rect: e.currentTarget.getBoundingClientRect() });
-                                }}
-                                onDoubleClick={secHead ? undefined : (e) => e.stopPropagation()}
-                            >
-                            {emojiOf(row.node)
-                                ? <NodeIcon value={emojiOf(row.node)} size={15} fallback={<Icon name={iconOf(row.node)} size={15} className="shrink-0" />} />
-                                : <Icon name={iconOf(row.node)} size={secHead ? 13 : 15} className={`shrink-0 ${known && !secHead ? '' : 'text-muted'}`} />}
-                            </span>
-
-                            {isRenaming ? (
-                                // 🔑 공통 InlineRename(Enter·Esc·blur·한글 조합 Enter 무시) — 줄의 드래그·두 번 누르기는 감싼 칸에서 막는다
-                                <span className="flex-1 min-w-0 flex" onDoubleClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
-                                    <InlineRename
-                                        key={`${row.id}:${renameInitial ?? ''}`}
-                                        value={renameInitial ?? row.node.name}
-                                        placeholder={renamePlaceholder ?? undefined}
-                                        raw={renameKind !== 'name'}
-                                        className="flex-1 !h-auto text-body leading-none py-0.5"
-                                        onCommit={commitRename}
-                                        onCancel={cancelRename}
-                                    />
-                                </span>
-                            ) : (
-                                secHead ? (
-                                    <span className="flex-1 min-w-0 truncate text-small leading-none text-muted">
-                                        {row.node.name} ({row.node.children.length})
-                                    </span>
-                                ) : (
-                                    <span className={`flex-1 min-w-0 truncate text-body leading-none ${known ? 'text-text' : 'text-muted'}`}>
-                                        {row.node.name}
-                                    </span>
-                                )
-                            )}
-
-                            {/* ⋯ 단추 — 올렸을 때(모바일은 늘) 오른쪽 끝에. 누르면 우클릭과 같은 메뉴를 그 자리에(메뉴 코드는 하나) */}
-                            {!isRenaming && (hoverId === row.id || narrow) && (
-                                <IconButton
-                                    icon="dots"
-                                    label="메뉴"
-                                    size={14}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        clearRenameTimer();
-                                        select(row.id);
-                                        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                        setMenu({ x: r.left, y: r.bottom });
-                                    }}
-                                />
-                            )}
-                        </div>
-                    );
-                });
+    const renderRows = (list: ExplorerRow[], secHead = false) => list.map((row) => (
+        <RowItem
+            key={row.id}
+            row={row}
+            h={rowHandlers}
+            secHead={secHead}
+            isSel={selSet.has(row.id)}
+            isFocus={selectedId === row.id && selectedIds.length > 1}
+            into={preview && preview.pos === 'into' && preview.targetId === row.id ? (preview.ok ? 'ok' : 'bad') : null}
+            hovered={hoverId === row.id}
+            narrow={narrow}
+            renaming={renamingId === row.id ? { kind: renameKind, initial: renameInitial, placeholder: renamePlaceholder } : null}
+            reg={reg}
+        />
+    ));
 
     return (
         <div
