@@ -48,13 +48,13 @@ registerKit({ config: kitCfg('rooms.list', 'rooms.room'), setValue: vi.fn(), add
 let root: Root | null = null;
 afterEach(() => { act(() => root?.unmount()); root = null; document.body.innerHTML = ''; initRecordNodes(null); vi.clearAllMocks(); });
 
-function open(onChange: (v: unknown) => void) {
+function open(onChange: (v: unknown) => void, rowId?: string) {
     initRecordNodes(fake);
     const el = document.createElement('div');
     document.body.appendChild(el);
     root = createRoot(el);
     const field = { key: 'f_room', label: '방', type: 'relation', config: toRooms[0].config };
-    act(() => root!.render(h(RelationCell, { field, value: [], config: field.config, editable: true, onChange } as never)));
+    act(() => root!.render(h(RelationCell, { field, value: [], config: field.config, editable: true, onChange, rowId } as never)));
     act(() => (el.querySelector('[data-rv-relation]') as HTMLElement).click());
 }
 const pick = (sel: string) => act(() => (document.querySelector(`${sel} [role="menuitem"], ${sel} button`) as HTMLElement).click());
@@ -64,6 +64,10 @@ describe('관계 칸 고르개 — 캐스팅', () => {
         open(() => {});
         const kinds = [...document.querySelectorAll('[data-rv-rel-cast]')].map((e) => `${e.getAttribute('data-rv-rel-cast')}:${e.getAttribute('data-rv-rel-cast-kind')}`);
         expect(kinds).toEqual(['c1:direct', 'c2:pick', 'c3:empty']);
+    });
+    it('제 목록의 줄(같은 학년도 다른 반)은 제 칸 후보에서 빠진다', () => {
+        open(() => {}, 'c1');
+        expect(document.querySelectorAll('[data-rv-rel-cast]').length).toBe(0);
     });
     it('하나면 반 그대로 · 여럿이면 고른 것을 넣은 칸 값에', () => {
         const onChange = vi.fn();

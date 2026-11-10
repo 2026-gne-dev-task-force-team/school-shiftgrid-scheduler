@@ -54,6 +54,12 @@ describe('관계 칸 캐스팅', () => {
         expect(ids).toEqual(expect.arrayContaining(['c1:direct', 'c2:pick', 'c3:empty', 'c4:empty']));
         expect(ids.some((x) => x.startsWith('o1'))).toBe(false);
     });
+    it('후보 — 칸이 속한 목록 자신의 줄은 빠진다(같은 목록 다른 줄 · 단건 판정도 막힘)', () => {
+        const ids = castCandidates(look, 'rl', 'yl').map((c) => c.id);
+        expect(ids).not.toContain('c1');
+        expect(castCandidate(look, 'rl', 'c2', 'yl')).toBe('block');
+        expect(castCandidate(look, 'rl', 'c2', 'ol')).toBe('pick');
+    });
     it('값 꼴 — 「줄 id」 또는 「줄 id>고른 방」 왕복', () => {
         expect(parseRelationEntry(relationEntry('c2', 'r2'))).toEqual({ id: 'c2', via: 'r2' });
         expect(parseRelationEntry(relationEntry('c1'))).toEqual({ id: 'c1' });
