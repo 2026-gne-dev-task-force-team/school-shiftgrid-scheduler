@@ -115,6 +115,21 @@ export function reviveChildren(id: string, page: Page): void {
 /** 휴지통 안(휴지통 자신·자손)인가 — 노드 시스템의 정식 판정(nodes.isTrashed). 달력·명단·컬렉션과 같은 창구. */
 export function inTrash(id: string): boolean { return api?.isTrashed(id) ?? false; }
 
+/**
+ * R3-E 무한 끼움 막기 — nodeId 를 selfId(이 페이지) 본문에 펼치면 제자리를 도나: 자기 자신이거나 조상(부모 사슬)이면 참.
+ *   🔴 페이지 펼침 미리보기는 안쪽 끼움을 다시 펼치지 않으니(PageCard) 고리는 이 둘에서만 생긴다.
+ */
+export function inlineBlocked(nodeId: string, selfId: string): boolean {
+    if (nodeId === selfId) return true;
+    if (!api) return false;
+    const seen = new Set<string>();
+    for (let p = api.parent(selfId); p && !seen.has(p); p = api.parent(p)) {
+        if (p === nodeId) return true;
+        seen.add(p);
+    }
+    return false;
+}
+
 /** 살아 있는 페이지 전부(트리 순서) — 시작 화면 목록. */
 export function livePages(): PublicNode[] {
     if (!api) return [];

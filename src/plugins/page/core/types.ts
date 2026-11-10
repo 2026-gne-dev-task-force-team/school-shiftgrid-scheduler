@@ -36,7 +36,15 @@ export interface Block {
     /** 끼워 넣기(P5)·하위 페이지(Q8) 블록 전용 — 가리키는 노드 id(끼워 넣기는 없으면 아직 고르는 중) · 그 타입이 알아듣는 보기 이름. */
     nodeId?: string;
     view?: string;
+    /**
+     * 끼워 넣기(node) 블록 전용 표시 모양(R3-E · 노션 「링크로 / 인라인으로」와 같은 결) — 없으면 card(옛 블록 그대로).
+     *   card = 한 줄 카드(타입의 embed) · inline = 본문에 펼친 보기(nodes.Embed 에 view 'inline' — 컬렉션이면 그 자리에서 편집).
+     */
+    display?: NodeDisplay;
 }
+
+/** 끼워 넣기 블록 표시 모양. */
+export type NodeDisplay = 'card' | 'inline';
 
 /** 페이지 = 블록 배열. */
 export interface Page {
