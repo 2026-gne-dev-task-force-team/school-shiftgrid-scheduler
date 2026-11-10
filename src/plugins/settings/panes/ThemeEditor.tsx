@@ -12,7 +12,7 @@ import { notifyReset } from '../reset-undo';
 import { useRef, useState, type ReactNode } from 'react';
 import {
     COLOR_TOKENS, effectiveColors, rgbToHex, hexToRgb, isTriplet,
-    useUserThemes, addUserTheme, removeUserTheme, renameUserTheme,
+    useUserThemes, addUserTheme, removeUserTheme, restoreUserTheme, renameUserTheme,
     exportThemeJSON, importThemeJSON, FOCUS_RING, Button, TextInput, InlineRename,
     type ColorToken, type ThemeControls, type UserTheme,
 } from '../../../pane-ui-system';
@@ -54,6 +54,12 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
         const prev = settings.custom;
         setSettings({ custom: undefined });
         notifyReset(host, '바꾼 색을 전부 되돌렸습니다', () => setSettings({ custom: prev }));
+    };
+
+    const deleteUserTheme = (t: UserTheme) => {
+        const at = userThemes.findIndex((x) => x.id === t.id);
+        removeUserTheme(t.id);
+        notifyReset(host, `테마 「${t.name}」을 지웠습니다`, () => restoreUserTheme(t, at));
     };
 
     const saveAsUserTheme = () => {
@@ -165,7 +171,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                 )}
                                 <Button onClick={() => setRenaming({ id: t.id, name: t.name })}>이름</Button>
                                 <Button onClick={() => doExport(t)}>내보내기</Button>
-                                <button type="button" onClick={() => removeUserTheme(t.id)}
+                                <button type="button" onClick={() => deleteUserTheme(t)}
                                     className={`h-7 px-2 rounded border border-line text-small text-bad hover:bg-bad/10
                                         ${FOCUS_RING}`}>
                                     지우기

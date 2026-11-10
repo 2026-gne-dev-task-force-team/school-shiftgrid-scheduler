@@ -11,6 +11,7 @@ import { useSyncExternalStore } from 'react';
 import { COLOR_TOKENS, THEMES, DEFAULT_THEME_ID, type ColorToken } from './tokens';
 import { isTriplet } from './color';
 import { storageKey } from '../storage';
+import { reportSettingsSaveFail } from '../layout/save-fail';
 
 export interface UserTheme {
     /** 기기 로컬 식별자 — 저장할 때 부여 */
@@ -108,7 +109,7 @@ function load(): UserTheme[] {
     } catch { return []; }
 }
 function save(list: UserTheme[]): void {
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem(themesKey(), JSON.stringify(list)); } catch { /* 조용히 */ }
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(themesKey(), JSON.stringify(list)); } catch (e) { reportSettingsSaveFail('사용자 테마', e); }
 }
 
 let store: UserTheme[] | null = null;
@@ -126,11 +127,22 @@ export function addUserTheme(t: Omit<UserTheme, 'id'>): string {
 export function removeUserTheme(id: string): void {
     commit(ensure().filter((t) => t.id !== id));
 }
+/** 지운 테마를 원래 자리에 되살린다(되돌리기용). 이미 같은 id 가 있으면 건드리지 않는다. */
+export function restoreUserTheme(t: UserTheme, index: number): void {
+    const cur = ensure();
+    if (cur.some((x) => x.id === t.id)) return;
+    const next = [...cur];
+    next.splice(Math.min(Math.max(index, 0), next.length), 0, t);
+    commit(next);
+}
 export function renameUserTheme(id: string, name: string): void {
     const n = name.trim();
     if (!n) return;
     commit(ensure().map((t) => (t.id === id ? { ...t, name: n } : t)));
 }
+
+/** 테스트용 — 지금 보관된 사용자 테마 */
+export function getUserThemesForTest(): UserTheme[] { return ensure(); }
 
 export function useUserThemes(): UserTheme[] {
     return useSyncExternalStore(
