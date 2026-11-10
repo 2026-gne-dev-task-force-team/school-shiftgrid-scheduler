@@ -4,9 +4,13 @@
  *   🔴 데이터는 받은 data 를 읽고 edit(순수 함수)로만 바꾼다 — 저장·되돌리기는 위(GridTab → nodes.ts)가 쥔다.
  *   조작: 칸 글자는 칸에서 바로 · 행 시각은 띠 위·아래 가장자리를 끌어서(5분 단위) · 열 너비는 열 머리 오른쪽 가장자리를 끌어서
  *         · 병합·행/열 넣고 빼기는 우클릭(길게 누르기) 메뉴. ⛔ 위쪽 도구 막대는 없다(T3).
- *   shortcut: 칸 범위 복사·채우기는 없다(칸 하나의 글자 복사만) — 시트 엔진을 안 쓰는 대가. 쓸 일이 생기면 그때 붙인다.
+ *   칸은 스프레드시트처럼 두 상태다(W-T): 선택(격자에 초점 — 화살표·Tab·Enter 이동 · ⇧/끌기/⇧클릭 범위 · Delete 지우기 · ⌘C/X/V TSV)
+ *         ↔ 편집(타자 시작·F2·더블클릭 — Enter 확정+아래 · Tab 확정+옆 · Esc 취소 · ⌥Enter 줄바꿈). 이동은 gridNav.ts(병합을 한 칸으로).
+ *   shortcut: 시트 엔진(useSheetCore)은 안 쓴다 — 병합·시각 띠 배치를 모르는 엔진이라. 채우기 손잡이는 없다.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { step, rangeTsv, clearRange, pasteTsv, type Pos } from '../gridNav';
 import { Button, ContextMenu, Icon, isImeEnter, useContextTrigger, type MenuEntry } from '../../../pane-ui-system';
 import {
     columnCount, rowCount, colName, getCell, isCovered, canMerge, mergeCells, unmergeCells, addRow, removeRow,
@@ -45,6 +49,33 @@ function CommitField({ value, onCommit, className, label, placeholder, multiline
         : <input {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />;
 }
 
+/** 칸 편집창 — 열릴 때 스크롤을 밀지 않고 초점·커서를 끝에 둔다(useLayoutEffect 라 한글 첫 키 조합을 그 자리에서 잇는다). ⌥Enter = 줄바꿈. */
+function CellEditor({ text, label, onChange, onKey, onBlur }: {
+    text: string; label: string; onChange: (t: string) => void;
+    onKey: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void; onBlur: () => void;
+}) {
+    const ref = useRef<HTMLTextAreaElement | null>(null);
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        el.focus({ preventScroll: true });
+        el.setSelectionRange(el.value.length, el.value.length);
+    }, []);
+    return (
+        <textarea ref={ref} value={text} aria-label={label} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.altKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    const el = e.currentTarget, a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
+                    onChange(el.value.slice(0, a) + '\n' + el.value.slice(b));
+                    return;
+                }
+                onKey(e);
+            }}
+            className="h-full w-full resize-none rounded-sm bg-panel px-1.5 py-1 text-small text-text outline-none ring-1 ring-inset ring-accent" />
+    );
+}
+
 type Live = { kind: 'row'; row: number; edge: 'start' | 'end'; value: number } | { kind: 'col'; col: number; width: number } | null;
 
 export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit: (fn: (d: TimetableData) => TimetableData) => void; onRemoved?: (title: string) => void }) {
@@ -55,6 +86,93 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
     const [menu, setMenu] = useState<{ x: number; y: number; items: MenuEntry[] } | null>(null);
     const [live, setLive] = useState<Live>(null);
     const dragRef = useRef<{ y0: number; x0: number; v0: number } | null>(null);
+
+    // ── 칸 선택 ↔ 편집(W-T) — sel.col0/row0 = 활성 칸(앵커), col1/row1 = 범위 끝 ──
+    const gridRef = useRef<HTMLDivElement | null>(null);
+    const [editing, setEditingState] = useState<{ c: number; r: number; text: string; orig: string } | null>(null);
+    const editRef = useRef(editing);
+    const setEditing = (v: typeof editing) => { editRef.current = v; setEditingState(v); };
+    const selRef = useRef(sel); selRef.current = sel;
+    const dataRef = useRef(data); dataRef.current = data;
+    const selDrag = useRef(false);
+    const editFn = useRef(edit); editFn.current = edit;
+    const focusGrid = () => gridRef.current?.focus({ preventScroll: true });
+    const reveal = (p: Pos) => gridRef.current?.querySelector<HTMLElement>(`[data-c="${p.c}"][data-r="${p.r}"]`)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const selectAt = (p: Pos) => { setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r }); reveal(p); };
+    const beginEdit = (p: Pos, typed?: string) => {
+        const orig = getCell(data, p.c, p.r)?.text ?? '';
+        setSel({ col0: p.c, row0: p.r, col1: p.c, row1: p.r });
+        setEditing({ c: p.c, r: p.r, text: typed ?? orig, orig });
+    };
+    /** 편집 확정 — 한 번 = 되돌리기 한 칸. move 가 있으면 그만큼 옮겨 선택 상태로(초점은 격자). */
+    const commitEdit = (move: [number, number] | null, cancel = false) => {
+        const e = editRef.current;
+        if (!e) return;
+        setEditing(null);
+        if (!cancel && e.text !== e.orig) edit((d) => setCellText(d, e.c, e.r, e.text));
+        if (move) { selectAt(step(data, e, move[0], move[1])); focusGrid(); }
+    };
+    const onGridKey = (e: React.KeyboardEvent) => {
+        if (e.target !== gridRef.current || editRef.current) return;
+        const k = e.key, meta = e.metaKey || e.ctrlKey;
+        const cur: Pos = sel ? { c: sel.col0, r: sel.row0 } : { c: 0, r: 0 };
+        const dirs: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+        if (!sel && (dirs[k] || k === 'Tab' || k === 'Enter')) { e.preventDefault(); selectAt(cur); return; }
+        if (dirs[k] && !meta && !e.altKey) {
+            e.preventDefault();
+            if (e.shiftKey && sel) { const end = step(data, { c: sel.col1, r: sel.row1 }, ...dirs[k]); setSel({ ...sel, col1: end.c, row1: end.r }); reveal(end); }
+            else selectAt(step(data, cur, ...dirs[k]));
+            return;
+        }
+        if (meta || e.altKey) return;   // ⌘Z 등은 위(GridTab)로 흘린다 · ⌘C/X/V 는 문서 clipboard 이벤트로
+        if (k === 'Tab') { e.preventDefault(); selectAt(step(data, cur, e.shiftKey ? -1 : 1, 0)); return; }
+        if (k === 'Enter') { e.preventDefault(); selectAt(step(data, cur, 0, e.shiftKey ? -1 : 1)); return; }
+        if (k === 'F2') { e.preventDefault(); beginEdit(cur); return; }
+        if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); if (sel) edit((d) => clearRange(d, sel)); return; }
+        if (k === 'Escape') { if (sel) setSel({ ...sel, col1: sel.col0, row1: sel.row0 }); return; }
+        // 한글 첫 글자 — 조합 키는 막지 않고 빈 편집창을 동기로 열어 그 자리에서 조합을 이어받게 한다(시트와 같은 수).
+        if (k === 'Process' || e.nativeEvent.isComposing) { flushSync(() => beginEdit(cur, '')); return; }
+        if (k.length === 1) { e.preventDefault(); beginEdit(cur, k); }
+    };
+    // 복사·잘라내기·붙여넣기 — 초점 없는 div 엔 clipboard 이벤트가 안 오므로 문서에서 받는다(격자에 초점 · 선택 상태일 때만).
+    useEffect(() => {
+        const mine = () => document.activeElement === gridRef.current && !editRef.current && selRef.current;
+        const onCopy = (e: ClipboardEvent, cut: boolean) => {
+            const s = mine();
+            if (!s) return;
+            e.clipboardData?.setData('text/plain', rangeTsv(dataRef.current, s));
+            e.preventDefault();
+            if (cut) editFn.current((d) => clearRange(d, s));
+        };
+        const onPaste = (e: ClipboardEvent) => {
+            const s = mine();
+            if (!s) return;
+            e.preventDefault();
+            const r = pasteTsv(dataRef.current, s, e.clipboardData?.getData('text/plain') ?? '');
+            if (r.data !== dataRef.current) editFn.current(() => r.data);
+            setSel(r.area);
+        };
+        const copy = (e: ClipboardEvent) => onCopy(e, false), cut = (e: ClipboardEvent) => onCopy(e, true);
+        const up = () => { selDrag.current = false; };
+        document.addEventListener('copy', copy); document.addEventListener('cut', cut); document.addEventListener('paste', onPaste);
+        window.addEventListener('mouseup', up);
+        return () => {
+            document.removeEventListener('copy', copy); document.removeEventListener('cut', cut); document.removeEventListener('paste', onPaste);
+            window.removeEventListener('mouseup', up);
+        };
+    }, []);
+    const onCellDown = (e: React.MouseEvent, c: number, r: number) => {
+        if (e.button !== 0) return;
+        if (editRef.current?.c === c && editRef.current.r === r) return;   // 편집 중인 칸 안 클릭은 글 커서 몫
+        e.preventDefault();   // 초점은 격자에 — 칸 클릭으로 스크롤이 밀리지 않게(preventScroll)
+        commitEdit(null);
+        if (e.shiftKey && sel) setSel({ ...sel, col1: c, row1: r });
+        else { setSel({ col0: c, row0: r, col1: c, row1: r }); selDrag.current = true; }
+        focusGrid();
+    };
+    const onCellOver = (c: number, r: number) => {
+        if (selDrag.current && sel && (sel.col1 !== c || sel.row1 !== r)) setSel({ ...sel, col1: c, row1: r });
+    };
 
     // ── 좌표 — 끄는 중엔 live 값으로 덮어 그린다(놓을 때 한 번만 저장) ──
     const rowStart = (r: number) => (live?.kind === 'row' && live.row === r && live.edge === 'start' ? live.value : data.rows[r].range.start);
@@ -180,7 +298,8 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
                         })}
                     </div>
 
-                    <div className="relative shrink-0" style={{ width: gridW, height: bodyH }}>
+                    <div ref={gridRef} tabIndex={0} role="grid" aria-label="시간표 칸" onKeyDown={onGridKey}
+                        className="relative shrink-0 outline-none" style={{ width: gridW, height: bodyH }}>
                         {hours.map((h) => <div key={h} className="absolute inset-x-0 border-t border-line/60" style={{ top: yOf(h * 60) }} />)}
                         {data.rows.map((row, r) => (
                             <div key={row.id} className="absolute inset-x-0 bg-text/[0.025]" style={{ top: yOf(rowStart(r)), height: yOf(rowEnd(r)) - yOf(rowStart(r)) }} />
@@ -193,16 +312,24 @@ export function TimeGrid({ data, edit, onRemoved }: { data: TimetableData; edit:
                             const top = yOf(rowStart(r)), height = yOf(rowEnd(r1)) - top;
                             const width = lefts[c1] + widthOf(c1) - lefts[c];
                             const merged = r1 > r || c1 > c;
+                            const active = sel?.col0 === c && sel.row0 === r;
+                            const single = !!sel && sel.col0 === sel.col1 && sel.row0 === sel.row1;
+                            const label = `${colName(data, c) || `열 ${c + 1}`} ${row.name || `행 ${r + 1}`} 칸`;
                             return (
                                 <div key={`${c}:${row.id}`} data-c={c} data-r={r} className="absolute p-px" style={{ left: lefts[c], width, top, height }}
-                                    onMouseDown={(e) => {
-                                        if (e.shiftKey && sel) { e.preventDefault(); setSel({ ...sel, col1: c, row1: r }); }
-                                        else setSel({ col0: c, row0: r, col1: c, row1: r });
-                                    }}>
-                                    <CommitField multiline value={cell?.text ?? ''} label={`${colName(data, c) || `열 ${c + 1}`} ${row.name || `행 ${r + 1}`} 칸`}
-                                        onCommit={(v) => edit((d) => setCellText(d, c, r, v))}
-                                        className={`h-full w-full resize-none rounded-sm px-1.5 py-1 text-small text-text outline-none focus:ring-1 focus:ring-inset focus:ring-accent
-                                            ${inSel(c, r, c1, r1) ? 'bg-accent/15' : merged ? 'bg-text/[0.05]' : 'bg-transparent'}`} />
+                                    onMouseDown={(e) => onCellDown(e, c, r)} onMouseOver={() => onCellOver(c, r)} onDoubleClick={() => beginEdit({ c, r })}>
+                                    {editing && editing.c === c && editing.r === r
+                                        ? <CellEditor text={editing.text} label={label}
+                                            onChange={(t) => setEditing({ ...editing, text: t })}
+                                            onKey={(e) => {
+                                                if (e.nativeEvent.isComposing || isImeEnter(e)) return;   // 조합 중엔 확정·이동 키를 안 받는다
+                                                if (e.key === 'Escape') { e.preventDefault(); commitEdit(null, true); selectAt({ c, r }); focusGrid(); }
+                                                else if (e.key === 'Enter' && !e.altKey) { e.preventDefault(); commitEdit([0, e.shiftKey ? -1 : 1]); }
+                                                else if (e.key === 'Tab') { e.preventDefault(); commitEdit([e.shiftKey ? -1 : 1, 0]); }
+                                            }}
+                                            onBlur={() => commitEdit(null)} />
+                                        : <div aria-label={label} className={`h-full w-full overflow-hidden whitespace-pre-wrap break-words rounded-sm px-1.5 py-1 text-small text-text
+                                            ${active ? 'ring-1 ring-inset ring-accent' : ''} ${inSel(c, r, c1, r1) && !single ? 'bg-accent/15' : merged ? 'bg-text/[0.05]' : ''}`}>{cell?.text ?? ''}</div>}
                                 </div>
                             );
                         }))}
