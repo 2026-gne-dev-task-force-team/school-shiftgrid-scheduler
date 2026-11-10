@@ -77,7 +77,7 @@ export function hasWorkspace(): boolean {
         }
         return true;
     } catch {
-        try { localStorage.removeItem(workspaceKey()); } catch { /* 조용히 */ }
+        try { localStorage.removeItem(workspaceKey()); } catch (e) { reportSettingsSaveFail('작업 공간 배치', e); }
         return false;
     }
 }
@@ -94,7 +94,7 @@ export function loadWorkspace(): Workspace {
         }
         return normalizeRaw(parsed);
     } catch {
-        try { localStorage.removeItem(workspaceKey()); } catch { /* 조용히 */ }
+        try { localStorage.removeItem(workspaceKey()); } catch (e) { reportSettingsSaveFail('작업 공간 배치', e); }
         return emptyWorkspace();
     }
 }
