@@ -10,6 +10,7 @@ import { EmptyState, Icon, isImeEnter, isoOf, type PeekHandle } from '../../../p
 import { useCalendarData } from '../useEvents';
 import { sortEvents, filterEvents, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { createEvent, renameEvent, removeEvent } from '../nodes';
+import { materialize } from '../series';
 import { useWords } from '../presets';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 // 🔴 import type 만 — 레코드 뷰 약속 타입은 레코드 뷰 꾸러미 contracts 에서(값은 host.modules.use).
@@ -124,7 +125,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                         getId={(r) => r.id}
                         viewKey="calendar.list"
                         titleKey="title"
-                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(id, String(v ?? '').trim()); }}
+                        onCellChange={(id, key, v) => { const ev = rows.find((x) => x.id === id); if (key === 'title' && ev && !ev.foreign) renameEvent(ev.occ ? materialize(ev.occ) : id, String(v ?? '').trim()); }}
                         onAddRecord={newEvent}
                         onDeleteRecords={(ids) => ids.forEach((id) => { if (!rows.find((x) => x.id === id)?.foreign) removeEvent(id); })}
                         onOpenRecord={(id) => { const ev = rows.find((x) => x.id === id); if (ev) openRow(ev); }}
@@ -155,7 +156,7 @@ export function ListView({ value, onChange, trailing, peek, selection, onSelect,
                                     <tr key={e.id} data-day={iso} tabIndex={0} onClick={() => openRow(e)} onKeyDown={(ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !isImeEnter(ev) && ev.target === ev.currentTarget) { ev.preventDefault(); openRow(e); } }} className={`cursor-pointer ${selected ? 'bg-accent/[0.12]' : 'hover:bg-text/[0.04]'}`}>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums whitespace-nowrap">{dateLabel(e.startMs)}</td>
                                         <td className="px-3 py-1.5 border-b border-line tabular-nums text-muted whitespace-nowrap">{timeLabel(e)}</td>
-                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.name || <span className="opacity-60">제목 없음</span>}</td>
+                                        <td className="px-3 py-1.5 border-b border-line truncate">{e.occ && <Icon name="redo" size={11} className="inline mr-1 text-muted" />}{e.name || <span className="opacity-60">제목 없음</span>}</td>
                                         <td className="px-3 py-1.5 border-b border-line">
                                             <span className="flex items-center gap-1.5 min-w-0">
                                                 <span className={`shrink-0 w-2 h-2 rounded-full ${paletteAt(e.colorIdx).dot}`} />
