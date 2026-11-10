@@ -10,6 +10,7 @@ import { setWorkspaceBridge, type PluginHost } from '../../pane-ui-system/plugin
 import { RecordPage } from './views/RecordPage';
 import { RecordView } from './RecordView';
 import { RecordTab, openRecordTab, registerRecordTab, RECORD_TAB_ID } from './tab-open';
+import { setPlatform } from '../../pane-ui-system/platform-keys';
 import { PeekLayer } from '../../pane-ui-system/shell/shared/PeekLayer';
 import { pagePlugin } from '../page/index';
 import { PageEditor } from '../page/views/PageView';
@@ -147,6 +148,29 @@ describe('탭으로 열기 — 여는 길', () => {
         expect(q('[data-rendered]')).toBeNull();
         expect(document.body.textContent).toContain('삭제된 문서');
         expect(titles.at(-1)).toEqual(['L1', '삭제된 문서']);
+        setWorkspaceBridge(null);
+    });
+    it('안내 문구의 클릭 표기는 플랫폼을 따른다 — 윈도우 Ctrl+클릭 · 맥 ⌘클릭', () => {
+        const nodes = { get: () => undefined, isTrashed: () => false, subscribe: () => ({ dispose() {} }) };
+        const leaf = { id: 'L9', viewId: RECORD_TAB_ID, title: '' };
+        try {
+            setPlatform('win');
+            mount(h(RecordTab, { host: fakeHost({ nodes }), leaf } as never));
+            expect(document.body.textContent).toContain('Ctrl+클릭'); expect(document.body.textContent).not.toContain('⌘');
+            document.body.innerHTML = '';
+            setPlatform('mac');
+            mount(h(RecordTab, { host: fakeHost({ nodes }), leaf } as never));
+            expect(document.body.textContent).toContain('⌘클릭');
+        } finally { setPlatform(null); }
+    });
+    it('레코드가 아예 사라지면 「삭제된 레코드」 — 휴지통의 「삭제된 문서」와 구분 · 제목도 갱신', () => {
+        const titles: Array<[string, string]> = [];
+        setWorkspaceBridge({ open: () => null, close: () => {}, setTitle: (l: string, t: string) => { titles.push([l, t]); }, setGlyph: () => {} } as never);
+        const nodes = { get: () => undefined, isTrashed: () => false, subscribe: () => ({ dispose() {} }) };
+        mount(h(RecordTab, { host: fakeHost({ nodes }), leaf: leafOf('gone') } as never));
+        expect(document.body.textContent).toContain('이 레코드는 삭제되었습니다');
+        expect(document.body.textContent).not.toContain('삭제된 문서');
+        expect(titles.at(-1)).toEqual(['L1', '삭제된 레코드']);
         setWorkspaceBridge(null);
     });
     it('제 편집 탭이 있는 노드(사용자·역할·페이지)는 노드 열기 그대로', () => {

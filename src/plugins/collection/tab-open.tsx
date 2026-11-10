@@ -12,6 +12,7 @@ import { setLeafGlyph, setLeafTitle } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
 import { EmptyState } from '../../pane-ui-system';
+import { modClickLabel } from '../../pane-ui-system/platform-keys';
 import type { NodesApi } from '../explorer/contracts/nodes';
 
 export const RECORD_TAB_ID = 'collection.record';
@@ -49,15 +50,19 @@ export function RecordTab({ host, leaf }: ViewProps & { host: PluginHost }) {
     const render = node ? renderers.get(node.type) : undefined;
     const leafId = leaf?.id;
     useEffect(() => {
-        if (!leafId || !node) return;
+        if (!leafId) return;
+        if (!node) { if (id) { setLeafTitle(leafId, '삭제된 레코드'); setLeafGlyph(leafId, undefined); } return; }   // 영구 삭제·비움 — 이전 이름을 안 남긴다
         setLeafTitle(leafId, trashed ? '삭제된 문서' : node.name || '제목 없음');
         setLeafGlyph(leafId, trashed ? undefined : node.icon);
-    }, [leafId, node?.name, node?.icon, trashed]);   // eslint-disable-line react-hooks/exhaustive-deps
+    }, [leafId, id, !node, node?.name, node?.icon, trashed]);   // eslint-disable-line react-hooks/exhaustive-deps
     if (id && trashed) {
         return <EmptyState icon="fileText" title="삭제된 문서" description="이 레코드는 휴지통에 있습니다. 복원하면 다시 열립니다." />;
     }
+    if (id && !node) {
+        return <EmptyState icon="fileText" title="삭제된 레코드" description="이 레코드는 삭제되었습니다. 휴지통에도 없어 복원할 수 없습니다." />;
+    }
     if (!id || !node || !render) {
-        return <EmptyState icon="fileText" title="열린 레코드가 없습니다" description="목록에서 줄을 ⌘클릭하거나 미리보기의 「탭으로 열기」를 누르면 여기서 엽니다." />;
+        return <EmptyState icon="fileText" title="열린 레코드가 없습니다" description={`목록에서 줄을 ${modClickLabel()}하거나 미리보기의 「탭으로 열기」를 누르면 여기서 엽니다.`} />;
     }
     return <div className="h-full overflow-auto p-4">{render(host, id)}</div>;
 }
