@@ -39,7 +39,7 @@ export const dutyPlugin = definePlugin({
                 { id: 'duty.open', title: '복무 대장 열기', icon: 'calendar', keys: 'Mod+Alt+D' },
                 { id: 'duty.openLedger', title: '대장 열기', icon: 'calendar', palette: false },
             ],
-            ribbon: [{ commandId: 'duty.open', icon: 'calendar', order: 3 }],
+            ribbon: [{ commandId: 'duty.open', icon: 'clipboardList', order: 3 }],
             // 🔴 노드 타입 둘(대장·사람) — 활성 때 applyContributes 가 노드 레지스트라(탐색기)에 통째로 넘긴다.
             nodeTypes: dutyNodeTypes,
         },
