@@ -59,7 +59,7 @@ export const calendarPlugin = definePlugin({
         //    nodeTypes(저장소·일정)를 기여하므로 requires.nodes 는 호스트 검사에서도 필수다.
         requires: { nodes: '^0.1' },
         // 저장소 = 컬렉션(P4b) — 사용자 칸·「표로 보기」·일정 표 모드가 컬렉션을 빌린다. 없으면 달력 보기만 — 있으면 쓰는 것이라 supports
-        supports: { 'collection': '^0.2', 'page-doc': '^0.1' },
+        supports: { 'collection': '^0.2', 'page-doc': '^0.1', 'selection': '^0.1' },
         // 🔴 달력은 「calendar」 약속을 채운다 — 다른 플러그인이 남의 일정을 꽂는 입구(modules.calendar).
         provides: { calendar: '0.2.0' },
         // ── 「나는 이 뷰·명령·리본·설정을 낸다」 — 순수 데이터. 함수·컴포넌트는 아래 이름으로 가리킨다 ──
