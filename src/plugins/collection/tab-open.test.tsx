@@ -133,6 +133,18 @@ describe('탭으로 열기 — 여는 길', () => {
         mount(h(RecordTab, { host, leaf: { id: 'L3', viewId: RECORD_TAB_ID, title: '' } } as never));   // params 없음 = 안내
         expect(q('[data-rendered]')).toBeNull();
     });
+    it('열기 직후 제목 칸으로 초점 — 복원(openRecordTab 안 거친 그림)은 초점을 안 뺏는다', async () => {
+        registerRecordTab('t.row', (_h, id) => h('input', { 'aria-label': '제목', 'data-t': id }));
+        const nodes = { get: (id: string) => ({ id, type: 't.row', name: id }), isTrashed: () => false, subscribe: () => ({ dispose() {} }) };
+        const host = fakeHost({ nodes });
+        mount(h(RecordTab, { host, leaf: leafOf('r9', 'L9') } as never));
+        await act(async () => { await new Promise((r) => setTimeout(r, 120)); });
+        expect(document.activeElement).toBe(document.body);
+        openRecordTab(host, 'r1');
+        mount(h(RecordTab, { host, leaf: leafOf('r1') } as never));
+        await act(async () => { await new Promise((r) => setTimeout(r, 120)); });
+        expect(document.activeElement).toBe(q('[data-t="r1"]'));
+    });
     it('제목·아이콘은 레코드를 따라가고 바뀌면 갱신 — 휴지통에 가면 「삭제된 문서」', () => {
         registerRecordTab('t.row', (_h, id) => h('p', { 'data-rendered': id }));
         const state = { name: '첫 이름', icon: '🍎', trashed: false };

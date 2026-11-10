@@ -794,7 +794,7 @@ export function RecordView<T>({
                         {reorderable && <div className="shrink-0 bg-panel2" style={{ width: 16, ...(frozen ? { position: 'sticky', left: 0, zIndex: 5 } : {}) }} />}
                         {selectable && (
                             <div className="shrink-0 grid place-items-center bg-panel2" style={{ width: SEL_W, ...(frozen ? { position: 'sticky', left: reorderable ? 16 : 0, zIndex: 5 } : {}) }}>
-                                <button type="button" role="checkbox" aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
+                                <button type="button" role="checkbox" aria-label={allChecked ? '모두 선택 해제' : '모두 선택'} aria-checked={allChecked} data-rv-check-all onClick={toggleAll}
                                     className={`hit-44 relative grid place-items-center w-4 h-4 rounded-[3px] border ${allChecked ? 'bg-accent border-accent text-bg' : 'border-line'}`}>
                                     {allChecked && <Icon name="check" size={12} />}
                                 </button>

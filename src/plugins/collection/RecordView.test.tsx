@@ -118,6 +118,17 @@ describe('🔴 IME 가드 — 조합 중 Enter 는 확정이 아니다', () => {
     });
 });
 
+describe('접근 이름', () => {
+    it('머리 전체 선택 체크박스에 aria-label — 누르면 「모두 선택 해제」', () => {
+        mount(<RecordView<Rec> fields={START} records={[{ id: 'a', f_t: 'A' }]} getId={(r) => r.id} viewKey="t.chk" titleKey="f_t" onDeleteRecords={() => {}} />);
+        const c = q('[data-rv-check-all]')!;
+        expect(c).toBeTruthy();
+        expect(c.getAttribute('aria-label')).toBe('모두 선택');
+        click(c);
+        expect(q('[data-rv-check-all]')!.getAttribute('aria-label')).toBe('모두 선택 해제');
+    });
+});
+
 describe('제목 칸 보호', () => {
     it('제목 칸 메뉴에는 칸 삭제가 없고 타입 단추가 모두 비활성', () => {
         mount(<Harness init={[]} spy={spies()} />);
