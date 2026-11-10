@@ -404,6 +404,16 @@ function createSlots(tree: Tree, parentId: string, parentType: string, seen: Set
  *   🔴 마지막에 그 부모가 accepts 로 이 타입을 받는지 한 번 더 묻는다: 안 받으면 루트에, 루트도 안 받으면 만들지 않고
  *      상태바 한 줄(메뉴만 보고 뚫는 것을 여기서 막는다 — move 의 canAccept 와 같은 결).
  */
+/**
+ * 🔑 「새 <타입>」을 지금 선택 기준으로 만들 수 있나 — 명령 팔레트(⌘P)용. 탐색기 메뉴 회색(canCreateType)과 같은 판정이다.
+ *   손님 권한에서 팔레트에만 「새 계정」이 떠 눌러야 토스트로 거절되던 것(QJ)을 숨긴다. 자리 해석은 newNode 와 같다.
+ */
+export function canNewNode(type: string): boolean {
+    const parent = isSectionType(type) ? state.tree.root : newFolderParent(state.tree, state.selectedId, isContainerType, 'selection');
+    const at = parentAccepts(parent, type) || !parentAccepts(state.tree.root, type) ? parent : state.tree.root;
+    return canCreateType(type, at);
+}
+
 export function newNode(type: string, opts?: { via?: 'selection' | 'context'; targetId?: string; openNow?: boolean }): void {
     if (state.loading) return;
     const via = opts?.via ?? 'selection';

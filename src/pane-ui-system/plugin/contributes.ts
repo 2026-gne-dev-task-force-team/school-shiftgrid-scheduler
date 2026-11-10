@@ -17,7 +17,7 @@ import {
 } from './store';
 import type {
     PluginHost, PluginImpl, DeclareInput, Contributes, Disposable, NodeTypeRegistrar,
-    ContributionRecord, PropertiesTarget, PropertiesPaneProps,
+    ContributionRecord, CommandContext, PropertiesTarget, PropertiesPaneProps,
 } from './types';
 
 /**
@@ -80,7 +80,7 @@ function registerOne(item: DeclareInput, impl: PluginImpl, host: PluginHost): Di
             if (!fn) throw new Error(`[plugin] "${owner}" 명령 "${item.id}" 의 구현("${key}")이 commands 에 없다`);
             const { kind, impl: _impl, args, ...rest } = item;
             const can = impl.enabled?.[key];
-            return track(owner, addCommand(owner, { ...rest, run: (ctx) => fn(host, ctx, args), enabled: can ? (ctx) => can(host, ctx) : undefined }));
+            return track(owner, addCommand(owner, { ...rest, run: (ctx) => fn(host, ctx, args), enabled: can ? (ctx) => can(host, ctx?.args === undefined && args !== undefined ? { ...ctx, args: args as CommandContext['args'] } : ctx) : undefined }));
         }
         case 'view': {
             const Impl = impl.components?.[item.component];

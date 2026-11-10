@@ -41,6 +41,9 @@ const SEL_W = 34;   // 선택 체크 칸 폭
 /** 하위 항목 한 단 들여쓰기 폭 — 칸선 없는 여백(Q8). 설정 「모양 › 들여쓰기 폭」이 `--indent-step` 을 고른다(K11 · 기본 좁게 12px) */
 const indentWidth = (depth: number) => `calc(var(--indent-step, 12px) * ${depth})`;
 
+/** 제목 칸에서 글자가 늘 보여야 하는 최소 폭(px) — 단추 묶음을 접는 문턱의 근거 */
+export const MIN_TITLE_TEXT_W = 64;
+
 /** 손가락 기기(hover 없음) 판정 — 행 「열기」 단추를 늘 보이게 한다 */
 function useCoarsePointer(): boolean {
     const [coarse, setCoarse] = useState(() =>
@@ -112,8 +115,15 @@ const RecordRow = memo(function RecordRow({
 }: RecordRowProps) {
     rowRenderProbe.n++;
     const gripDown = useRef<{ x: number; y: number } | null>(null);
+    // 🔑 제목 칸이 좁으면 단추 묶음을 「열기」 아이콘 하나로 접는다(QJ). 펼침 폭 = 하위추가 28 + 열기 60 + 탭열기 28,
+    //    글자는 늘 64px 이상 남긴다(그보다 좁아지면 제목이 0px 로 사라져 읽을 수 없다 — 실측 q9-a-1280-hover: 기본 170px 칸에서 ~105px 을 먹었다).
+    //    그래서 「칸 폭 − 펼침 폭 < 64」 면 접는다. 칸 폭은 이미 있는 열 폭(widths)을 쓴다(ResizeObserver 불필요 — 열 폭이 곧 칸 폭).
+    //    접힌 동안 「+」·「탭으로 열기」는 숨긴다 — 같은 동작이 행 우클릭 메뉴(rowMenuItems)에 있다.
+    const titleFi = fields.findIndex((f) => f.key === titleKey);
+    const fullToolsW = (treeOn && hasAddChild && hovered ? 28 : 0) + (hasOpen && hovered ? 60 + (hasOpenTab ? 28 : 0) : 0);
+    const compact = titleFi >= 0 && fullToolsW > 0 && widths[titleFi] - fullToolsW < MIN_TITLE_TEXT_W;
     const showOpen = hasOpen && hovered;
-    const showTree = treeOn && hovered;
+    const showTree = treeOn && hovered && !compact;
     const isTitle = (key: string) => key === titleKey;
     // 제목 칸 빈 곳(단추 말고)을 ⌘클릭·가운데 클릭 — 탭으로 열기
     const tabClick = (e: React.MouseEvent<HTMLElement>, key: string) => hasOpenTab && isTitle(key)
@@ -205,7 +215,7 @@ const RecordRow = memo(function RecordRow({
                             {icon ?? <Icon name={rowIcon} size={14} className="text-muted" />}
                         </span>
                     )}
-                    <div data-rv-cellbox style={isTitle(f.key) && !wraps[fi] && (showOpen || (showTree && hasAddChild)) ? { paddingRight: (showTree && hasAddChild ? 28 : 0) + (showOpen ? 60 : 0) + (showOpen && hasOpenTab ? 28 : 0) } : undefined}
+                    <div data-rv-cellbox style={isTitle(f.key) && !wraps[fi] && (showOpen || (showTree && hasAddChild)) ? { paddingRight: compact ? (showOpen ? 28 : 0) : (showTree && hasAddChild ? 28 : 0) + (showOpen ? 60 : 0) + (showOpen && hasOpenTab ? 28 : 0) } : undefined}
                         className="relative flex-1 min-w-0 self-stretch h-full [&:has([data-rv-editing])_[data-rv-untitled]]:hidden">
                         {/* S15: 제목이 비면 흐린 「제목 없음」(편집 중엔 빈 입력 — 위 :has 가 숨긴다) */}
                         {isTitle(f.key) && String(rawValue(r, f.key) ?? '').trim() === '' && (
@@ -230,12 +240,16 @@ const RecordRow = memo(function RecordRow({
                                 onClick={() => { if (collapsed) act.toggleCollapse(id); act.addChild(id); }} />
                         </Tooltip>
                     )}
-                    {showOpen && (
+                    {showOpen && compact && (
+                        <IconButton icon="arrowRight" label="열기" title="열기" size={13} data={{ 'data-rv-open': id }}
+                            onClick={(e) => { if (hasOpenTab && isMod(e)) act.openTab(id); else act.open(id); }} />
+                    )}
+                    {showOpen && !compact && (
                         <Button size="sm" className="shrink-0 mx-1 !h-6 whitespace-nowrap" data-rv-open={id}
                             onClick={(e) => { if (hasOpenTab && isMod(e)) act.openTab(id); else act.open(id); }}
                             onAuxClick={(e) => { if (hasOpenTab && e.button === 1) { e.preventDefault(); act.openTab(id); } }}>열기</Button>
                     )}
-                    {showOpen && hasOpenTab && (
+                    {showOpen && !compact && hasOpenTab && (
                         <Tooltip text={`탭으로 열기 (${modClickLabel()})`}>
                             <IconButton icon="arrowRight" label="탭으로 열기" title="" size={13} data={{ 'data-rv-open-tab': id }} onClick={() => act.openTab(id)} />
                         </Tooltip>

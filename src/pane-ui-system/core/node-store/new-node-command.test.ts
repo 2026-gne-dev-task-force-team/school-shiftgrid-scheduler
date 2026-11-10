@@ -25,7 +25,7 @@ const kv = vi.hoisted(() => {
 vi.mock('../../kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
 import { makeHost } from '../../plugin/host';
-import { disposeOwner, getCommand, runCommand } from '../../plugin/store';
+import { disposeOwner, getCommand, runCommand, commandEnabled } from '../../plugin/store';
 import { initStore, getState, newNode, select } from './store';
 import { __resetPersistForTest } from './persist';
 import { registerType, clearTypes } from '../nodes/model/types';
@@ -107,6 +107,21 @@ describe('new-<type> 명령 자동 등록 — create 가 있는 타입마다', (
         expect(runCommand('explorer.new-folder')).toBe(true);
         expect(getState().tree.nodes[root].children.length).toBe(1);
 
+        wiring.dispose();
+    });
+});
+
+describe('QJ — canCreate 가 막은 타입은 팔레트 명령도 꺼진다(탐색기 회색과 같은 판정)', () => {
+    it('손님(canCreate=false)이면 commandEnabled false → 팔레트 목록에서 빠지고, 허용되면 켜진다', () => {
+        let allowed = false;
+        registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } });
+        registerType({ type: 'acc.root', label: '계정', icon: 'folder', container: true, create: { label: '계정' }, canCreate: () => allowed });
+        const wiring = registerTypeCommands(host());
+
+        expect(commandEnabled('explorer.new-acc.root')).toBe(false);
+        expect(commandEnabled('explorer.new-folder')).toBe(true);   // 막히지 않은 타입은 그대로
+        allowed = true;
+        expect(commandEnabled('explorer.new-acc.root')).toBe(true);
         wiring.dispose();
     });
 });

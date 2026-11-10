@@ -68,7 +68,7 @@ describe('탭으로 열기 — 미리보기 머리', () => {
 });
 
 describe('탭으로 열기 — 목록 줄', () => {
-    const FIELDS: RecordField[] = [{ key: 't', label: '이름', type: 'text', locked: true }, { key: 'n', label: '수량', type: 'number' }];
+    const FIELDS: RecordField[] = [{ key: 't', label: '이름', type: 'text', locked: true, width: 300 }, { key: 'n', label: '수량', type: 'number' }];   // 300 = 단추 묶음이 펼쳐지는 폭(좁으면 QJ 가 「열기」 아이콘 하나로 접는다)
     const rows = [{ id: 'a', t: '첫 줄', n: 1 }];
     const cell = (fi: number) => q(`[data-rv-row="a"] [data-rv-pos="0:${fi}"]`)!;
     function setup() {
@@ -191,5 +191,30 @@ describe('탭으로 열기 — 여는 길', () => {
         openRecordTab(fakeHost({ nodes }, open), 'u1');
         expect(nodes.open).toHaveBeenCalledWith('u1');
         expect(open).not.toHaveBeenCalled();
+    });
+});
+
+describe('QJ — 제목 칸이 좁으면 단추 묶음이 「열기」 아이콘 하나로 접힌다', () => {
+    const mk = (width: number) => {
+        const FIELDS: RecordField[] = [{ key: 't', label: '이름', type: 'text', locked: true, width }];
+        const onOpen = vi.fn();
+        mount(h(RecordView<{ id: string; t: string }>, { fields: FIELDS, records: [{ id: 'a', t: '첫 줄' }], getId: (r) => r.id, viewKey: `t.qj${width}`, titleKey: 't', onOpenRecord: onOpen, onOpenRecordTab: vi.fn() }));
+        act(() => { q('[data-rv-row="a"]')!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); });
+        return onOpen;
+    };
+    it('좁은 칸(140 − 펼침 88 < 64): 아이콘 「열기」 하나뿐 · 탭열기 단추 없음 · 글자 자리(paddingRight)는 28 만', () => {
+        const onOpen = mk(140);
+        const open = q('[data-rv-open="a"]')!;
+        expect(open.getAttribute('aria-label')).toBe('열기');
+        expect(open.getAttribute('title')).toBe('열기');
+        expect(q('[data-rv-open-tab="a"]')).toBeNull();
+        expect(q('[data-rv-cellbox]')!.style.paddingRight).toBe('28px');
+        act(() => { open.click(); });
+        expect(onOpen).toHaveBeenCalledWith('a');
+    });
+    it('넓은 칸(300): 펼친 묶음(열기 글자 단추 + 탭으로 열기) 그대로', () => {
+        mk(300);
+        expect(q('[data-rv-open="a"]')!.textContent).toBe('열기');
+        expect(q('[data-rv-open-tab="a"]')).toBeTruthy();
     });
 });

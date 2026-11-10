@@ -21,7 +21,7 @@ import {
     initStore, getState, newNode, renameSelected, removeSelected, confirmRemove, cancelRemove,
     nudgeSelected, openById,
     restoreSelected, askPurge, askPurgeAll, cancelPurgeConfirm, purgeConfirmed, purgeAllConfirmed,
-    undoAction, undoAllowed, redoAction, subscribeState,
+    undoAction, undoAllowed, redoAction, subscribeState, canNewNode,
 } from '../node-store/store';
 import type { SelectionApi } from '../selection/contracts/selection';
 
@@ -189,6 +189,8 @@ export const explorerPlugin = definePlugin({
     // 🔴 「지금 되나」 판정 — explorer.undo 는 args.undoTop(알림이 실은 토큰)이 더미 맨 위와 맞을 때만(C1). args 없으면 늘 된다.
     enabled: {
         'explorer.undo': (_host, ctx) => undoAllowed(ctx?.args),
+        // 🔴 팔레트·단축키의 「새 <타입>」 — 탐색기 메뉴가 회색으로 막는 자리(손님의 「계정」 등)는 명령도 꺼진다(contributes 가 declare args 를 ctx.args 로 넘긴다)
+        newNode: (_host, ctx) => { const t = (ctx?.args as { type?: string } | undefined)?.type; return t ? canNewNode(t) : true; },
     },
     // 상태바 그림 — 스토어를 스스로 구독해 나무가 바뀔 때 다시 그린다(host 는 안 쓴다).
     renders: {
