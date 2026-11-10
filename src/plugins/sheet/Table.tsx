@@ -144,6 +144,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             changes = changes.filter((ch) => !isHeadRow(ch.r) && !isFootRow(ch.r));
         }
         const cells: TxCellChange[] = [];
+        const pasteFmt: { rowId: string; key: string; fmt: CellFmt | null }[] = [];
         const overflow = new Map<number, Record<string, string>>();
         // 붙여넣기가 열 수를 넘으면 새 열(끝에 덧붙임)을 만든다 — 같은 tx 라 ⌘Z 한 번에 되돌아간다.
         const newCols = new Map<number, { key: string; title: string }>();
@@ -158,7 +159,10 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             const col = colAt(ch.c);
             if (!col) continue;
             const id = idByView(ch.r);
-            if (id != null) cells.push({ rowId: id, key: col.key, value: ch.text });
+            if (id != null) {
+                cells.push({ rowId: id, key: col.key, value: ch.text });
+                if (fmtOn && ch.fmt !== undefined) pasteFmt.push({ rowId: id, key: col.key, fmt: (ch.fmt as CellFmt | null) });
+            }
             else {
                 const k = ch.r - rows.length;
                 const rec = overflow.get(k) ?? {};
@@ -178,7 +182,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
             ? { add: [...newCols.entries()].sort((a, b) => a[0] - b[0]).map(([c, nc]) => ({ at: c, key: nc.key, title: nc.title })) }
             : undefined;
         if (!cells.length && !rowsTx && !colsTx) return;
-        emit({ cells, source, ...(rowsTx ? { rows: rowsTx } : {}), ...(colsTx ? { cols: colsTx } : {}) }, applyingHistory.current);
+        emit({ cells, source, ...(pasteFmt.length ? { fmt: pasteFmt } : {}), ...(rowsTx ? { rows: rowsTx } : {}), ...(colsTx ? { cols: colsTx } : {}) }, applyingHistory.current);
     };
 
     /** bool 칸 뒤집기(col-types · 키보드 space/enter·체크박스 클릭). */
@@ -191,7 +195,8 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
     // ── 칸 서식(굵게·정렬·배경색) — 고른 범위 전체에 한 트랜잭션(= ⌘Z 한 칸). cellFmt 를 받은 표에서만 켜진다. ──
     const fmtOn = !!cellFmt;
     const applyFmt = (edit: (cur: CellFmt, all: CellFmt[]) => CellFmt): void => {
-        const s = core.sel;
+        // 🔴 메뉴 항목은 우클릭 순간의 렌더에 갇혀 있다 — 그때의 core.sel 은 「우클릭이 고른 칸」 이전 값이라 최신 선택을 ref 로 읽는다.
+        const s = stateRef.current.sel;
         const targets: { rowId: string; key: string; cur: CellFmt }[] = [];
         for (let r = s.r1; r <= Math.min(s.r2, rows.length - 1); r++) {
             for (let c = s.c1; c <= s.c2; c++) {
@@ -229,6 +234,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
         editInitial: (r, c, typed) => (typed != null ? typed : (r < rows.length ? rows[r].cells[colOf(c)?.key ?? ''] ?? '' : '')),
         toggle: toggleCell,
         bold: fmtOn ? toggleBold : undefined,
+        getFmt: fmtOn ? (r, c) => { const row = rows[r]; const col = colOf(c); return row && col ? fmtRef.current?.[fmtKey(row.id, col.key)] : undefined; } : undefined,
         onUndo: onUndo ?? (historyOwned ? internalUndo : undefined),
         onRedo: onRedo ?? (historyOwned ? internalRedo : undefined),
         growCols: hasAxisEdit,
@@ -620,7 +626,7 @@ export const Table = forwardRef<SheetCoreHandle, TableProps>(function Table(prop
                 { label: '가운데 정렬', onClick: () => setAlign('center') },
                 { label: '오른쪽 정렬', onClick: () => setAlign('right') },
                 { label: '정렬 없음', onClick: () => setAlign(undefined) },
-                ...TONE_CHOICES.map((t) => ({ label: t.tone ? `칸 ${t.label}` : '칸 색 없음', onClick: () => setCellTone(t.tone) })),
+                { label: '칸 색', children: TONE_CHOICES.map((t) => ({ label: t.label, onClick: () => setCellTone(t.tone) })) },
             );
         }
         items.push({ label: lb.clearRow, onClick: () => core.handle.clear() });

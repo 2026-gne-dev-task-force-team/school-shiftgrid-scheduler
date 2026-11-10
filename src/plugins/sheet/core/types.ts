@@ -8,6 +8,8 @@ export interface CellChange {
     r: number;
     c: number;
     text: string;
+    /** 붙여넣기에서만 — 앱 안 복사에 곁들인 칸 서식(null = 서식 없음으로 덮는다). 바깥 TSV 엔 없다. */
+    fmt?: unknown;
 }
 
 export interface CellPos {
@@ -39,6 +41,8 @@ export interface SheetCoreAdapter {
     toggle?: (r: number, c: number) => void;
     /** ⌘B — 고른 칸 굵게 토글. 없으면 그 키는 흘린다. */
     bold?: () => void;
+    /** 칸 서식(복사에 곁들임) — 서식 없는 표는 생략. */
+    getFmt?: (r: number, c: number) => unknown;
     onUndo?: () => void;
     onRedo?: () => void;
     /** M5 넘버스 키 — Alt+화살표(행·열 넣기) · 맨 아랫줄 Enter(행 추가). 없으면 그 키는 껍데기로 흘린다. */
