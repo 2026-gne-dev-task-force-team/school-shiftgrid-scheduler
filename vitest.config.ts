@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
     test: {
         include: ['src/**/*.test.{ts,tsx}'],
+        exclude: ['e2e/**', 'node_modules/**'],   // e2e/ 는 Playwright 가 돌린다(npm run e2e)
         environment: 'node',
         setupFiles: ['./src/test-setup.ts'],
         // 새 v2 는 아직 테스트가 없다 — 0건을 실패로 보지 않는다 (옛 테스트는 main·v1 브랜치에 있다)
