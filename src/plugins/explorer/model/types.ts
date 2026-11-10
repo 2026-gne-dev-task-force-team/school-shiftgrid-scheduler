@@ -85,9 +85,9 @@ export function emojiOf(node: Node): string | undefined {
 }
 
 /** 「새로 만들기」 줄에 그릴 아이콘 — 그 타입 자신의 아이콘(어느 것을 만드는지 한눈에).
- *  노드를 봐야 정해지는 함수 아이콘은 아직 노드가 없으니 'plus' 로 둔다. */
+ *  노드를 봐야 정해지는 함수 아이콘은 아직 노드가 없으니 createIcon(선언한 데이터 아이콘), 그것도 없으면 'plus'. */
 export function createIconOf(def: NodeTypeDef): IconName {
-    return typeof def.icon === 'function' ? 'plus' : def.icon;
+    return typeof def.icon === 'function' ? def.createIcon ?? 'plus' : def.icon;
 }
 
 /** 등록된 타입인가 — 뷰가 「모르는 타입(회색 글자)」을 가릴 때 쓴다. */

@@ -7,7 +7,7 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
 import type { NodesApi } from '../../explorer/contracts/nodes';
 import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
-import { getDbRev, getNodesApi, liveDbs, subscribeDb } from '../nodes';
+import { getDbRev, getNodesApi, liveRelationTargets, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, normalizeRelation, relationToText } from '../schema';
 import { effectiveParentId } from '../tree';
 
@@ -59,6 +59,12 @@ function liveIn(look: RelationLook, dbId: string, id: string): boolean {
 }
 
 /** 고르기 후보 — 대상 컬렉션 안 살아 있는 레코드(하위 항목 포함) + 부모 경로. 'source'·대상 없음·대상이 휴지통이면 빈 목록 */
+/** 고르기 찾기 — 이름 또는 경로 낱말로 걸린다(「3층」으로 그 안의 항목도). 빈 낱말이면 전부. */
+export function filterCandidates(all: RelationItem[], q: string): RelationItem[] {
+    const key = q.trim().toLowerCase();
+    return key ? all.filter((c) => [c.name, ...c.path].some((s) => s.toLowerCase().includes(key))) : all;
+}
+
 export function relationCandidates(look: RelationLook | null, target: RelationTarget | undefined): RelationItem[] {
     if (!look || target?.kind !== 'db') return [];
     const db = target.nodeId;
@@ -120,8 +126,7 @@ function RelationPicker({ target, ids, many, onPick, onClear }: {
     const [q, setQ] = useState('');
     const listRef = useRef<HTMLDivElement>(null);
     const all = relationCandidates(getNodesApi(), target);
-    const key = q.trim().toLowerCase();
-    const shown = key ? all.filter((c) => c.name.toLowerCase().includes(key)) : all;
+    const shown = filterCandidates(all, q);
     return (
         <div className="flex flex-col gap-1" data-rv-rel-picker>
             {/* ↑↓ 로 목록에 내려가고(MenuList 가 이어받는다) · Enter = 맨 위 항목 · Esc 는 Popover 가 닫는다 */}
@@ -201,7 +206,7 @@ export function RelationConfigEditor({ field, onChange }: { field: RecordField; 
                 가리킬 컬렉션
                 <Select value={cur} data-rv-rel-target
                     onChange={(e) => set({ target: e.target.value ? { kind: 'db', nodeId: e.target.value } : undefined })}
-                    options={[{ value: '', label: '— 고르기 —' }, ...liveDbs().map((d) => ({ value: d.id, label: d.folder ? `${d.folder} / ${d.name}` : d.name }))]} />
+                    options={[{ value: '', label: '— 고르기 —' }, ...liveRelationTargets().map((d) => ({ value: d.id, label: d.label }))]} />
             </label>
             <div className="flex items-center justify-between gap-2 text-body text-text">
                 여러 개 고르기

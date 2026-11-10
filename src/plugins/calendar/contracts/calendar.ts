@@ -62,6 +62,8 @@ export interface Calendar {
     parseIcs(text: string): CalendarItem[];
     /** 프리셋 하나 등록(0.2) — 해제하면 그 프리셋을 든 저장소는 기본 달력으로 보인다(데이터 그대로). */
     registerPreset(preset: CalendarPreset): Disposable;
+    /** 그 프리셋 저장소를 parent(없으면 맨 위) 밑에 만들고 연다 — 만든 id, 못 만들면 ''. 프리셋 꾸러미가 자기 「새 ○○」 입구를 낼 때. */
+    newPresetStore(presetId: string, parentId?: string): string;
     /**
      * 저장소(+자손 저장소) 일정의 회차들 — [from,to) 와 겹치는 것만 · 시작순. 보통 일정 + 반복 일정의 가상 회차 + 실체 회차(가상 자리를 대신).
      *   ⭐ 범위만 계산한다(먼 미래까지 펴지 않는다) · 🔴 부르기만 해서는 노드가 안 생긴다(자동 실체화 ⛔).

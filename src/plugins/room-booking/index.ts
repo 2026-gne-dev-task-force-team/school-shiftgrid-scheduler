@@ -6,9 +6,11 @@
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar, CalendarPreset } from '../calendar/contracts/calendar';
+import type { NodesApi } from '../explorer/contracts/nodes';
 import { manifest } from './manifest';
 
 const ROOM_LIST_TYPE = 'rooms.list';
+const STORE_TYPE = 'calendar.store';
 
 export const ROOM_BOOKING_PRESET: CalendarPreset = {
     id: 'room-booking.default',
@@ -34,7 +36,27 @@ export const ROOM_BOOKING_PRESET: CalendarPreset = {
 let reg: Disposable | null = null;
 
 export const roomBookingPlugin = definePlugin({
-    manifest: { ...manifest, contributes: {} },
+    // 팔레트 「새 방 예약」 — 탐색기 + 메뉴는 등록 타입만 돌아 프리셋을 모른다(저장소 우클릭에만 있던 입구를 하나 더). 루트에 만든다.
+    manifest: {
+        ...manifest,
+        contributes: {
+            commands: [
+                { id: 'room-booking.open', title: '방 예약 열기', icon: 'door' },
+                { id: 'room-booking.new', title: '새 방 예약', icon: 'door' },
+            ],
+            // 리본 「방 예약」 — 누를 때마다 새로 만들지 않는다: 있으면 첫 예약 목록을 열고, 없을 때만 만든다(쥔님 11-10 15:13)
+            ribbon: [{ commandId: 'room-booking.open', icon: 'door', order: 5 }],
+        },
+    },
+    commands: {
+        'room-booking.open': (host: PluginHost) => {
+            const nodes = host.modules.use<NodesApi>('nodes');
+            const mine = nodes?.liveByType(STORE_TYPE).find((n) => (n.data as { preset?: unknown } | undefined)?.preset === ROOM_BOOKING_PRESET.id);
+            if (mine) nodes!.open(mine.id);
+            else host.modules.use<Calendar>('calendar')?.newPresetStore(ROOM_BOOKING_PRESET.id);
+        },
+        'room-booking.new': (host: PluginHost) => { host.modules.use<Calendar>('calendar')?.newPresetStore(ROOM_BOOKING_PRESET.id); },
+    },
     lifecycle: {
         onActivate(host: PluginHost) { reg = host.modules.use<Calendar>('calendar')?.registerPreset(ROOM_BOOKING_PRESET) ?? null; },
     },
