@@ -98,10 +98,24 @@ export function normalize(tree: Tree): Tree {
 
 /** 이 노드의 부모 id — parent 칸을 안 두고 자식 배열에서 파생한다(⛔ 두 곳에서 낡지 않게). */
 export function parentOf(tree: Tree, id: string): string | null {
-    for (const n of Object.values(tree.nodes)) {
-        if (n.children.includes(id)) return n.id;
+    return parentIndex(tree).get(id) ?? null;
+}
+
+/**
+ * 부모 역색인(child → parent) — 나무 객체당 한 번만 짓는다(WeakMap). 🔴 연산은 입력 나무를 안 바꾸고 새 나무를 돌려주므로(위 머리말)
+ * 나무 객체가 곧 열쇠다 — 나무가 바뀌면 새 객체라 새 색인이 선다. 두 부모(깨진 나무)면 Object.values 순서상 먼저 나온 부모가 이긴다(예전 선형 탐색과 같은 답).
+ */
+const parentIndexCache = new WeakMap<Tree, Map<string, string>>();
+function parentIndex(tree: Tree): Map<string, string> {
+    let idx = parentIndexCache.get(tree);
+    if (!idx) {
+        idx = new Map();
+        for (const n of Object.values(tree.nodes)) {
+            for (const c of n.children) if (!idx.has(c)) idx.set(c, n.id);
+        }
+        parentIndexCache.set(tree, idx);
     }
-    return null;
+    return idx;
 }
 
 /** id 가 anc 의 자손인가(이동이 사이클을 만드는지 미리 막을 때 쓴다 · 드래그 금지 표시도 같은 판정). */
