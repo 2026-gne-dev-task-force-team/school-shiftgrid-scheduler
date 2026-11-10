@@ -15,6 +15,8 @@ import { makeNodesApi } from '../node-frame/api';
 import { followActivatedLeaf } from '../node-frame/leaf-follow';
 import { ExplorerView } from './views/ExplorerView';
 import { ExplorerStatus } from './views/ExplorerStatus';
+import { BrokenView } from './views/BrokenView';
+import { BROKEN_TYPE } from '../nodes/model/broken';
 import {
     initStore, getState, newNode, renameSelected, removeSelected, confirmRemove, cancelRemove,
     nudgeSelected, openById,
@@ -23,7 +25,8 @@ import {
 } from '../node-store/store';
 import type { SelectionApi } from '../selection/contracts/selection';
 
-const TREE_VIEW_ID = 'explorer.tree';   // host 가 'explorer.' 를 붙인다(id: 'tree')
+const TREE_VIEW_ID = 'explorer.tree';
+const BROKEN_VIEW_ID = 'explorer.broken';   // host 가 'explorer.' 를 붙인다(id: 'tree')
 
 let offSelection: (() => void) | null = null;
 /** 탐색기 선택 → 선택 알림. 고른 것이 바뀔 때만 set(같은 값은 selection 쪽이 거른다). */
@@ -113,6 +116,11 @@ export const explorerPlugin = definePlugin({
                 placement: { areas: ['left', 'right'] },
                 layout: { minWidth: 200, squeeze: 'scroll' },   // calendar 미니 패널과 같은 최소폭
                 component: 'Tree',
+            }, {
+                // 깨진 항목(저장소 레코드의 type·name·children 이상)을 열면 뜨는 안내 탭 — 항목마다 한 장(params.nodeId)
+                id: 'broken', title: '깨진 항목', icon: 'warn', defaultArea: 'center',
+                placement: { areas: ['center'] },
+                component: 'Broken',
             }],
             // 명령 14 — 대상 노드는 스토어의 「고른 노드」에서 읽는다. 🔴 new-folder 는 여기 없다(registerTypeCommands 가 folder 타입에서 자동).
             commands: [
@@ -141,6 +149,8 @@ export const explorerPlugin = definePlugin({
             nodeTypes: [
                 { type: 'folder', label: '폴더', icon: 'folder', container: true, create: { label: '폴더' } },
                 // ⭐ 섹션 — 뿌리 밑에서 탐색기를 위아래로 나누는 칸(들여쓰기 없음 · 지우면 자식은 뿌리로). 열리는 화면은 없다.
+                // 🔴 깨진 항목 — 저장소에서 읽을 때 만든다(persist). 만들기 없음 · 이름 바꾸기·옮기기 막음 · 지우기(휴지통)만.
+                { type: BROKEN_TYPE, label: '깨진 항목', icon: 'warn', openable: true, can: { rename: false, move: false }, impl: 'broken' },
                 { type: 'section', label: '섹션', icon: 'divider', container: true, section: true, create: { label: '섹션' } },
             ],
         },
@@ -148,6 +158,10 @@ export const explorerPlugin = definePlugin({
     // 🔴 뷰·상태바 구현은 이름으로 — 호스트가 꽂을 때 host(p.host)를 끼워 넣는다(안드로이드 Context).
     components: {
         Tree: (p) => createElement(ExplorerView, { host: p.host }),
+        Broken: (p) => createElement(BrokenView, { leaf: p.leaf }),
+    },
+    nodeTypes: {
+        broken: { open: (host: PluginHost, id: string) => { host.workspace.open(BROKEN_VIEW_ID, { where: 'center', reuse: true, params: { nodeId: id } }); } },
     },
     // 명령 run — 전부 여기로. host 를 쓰는 건 open-panel 뿐(나머지는 스토어 함수).
     //   🔴 reuse: true — 싱글턴을 뗐으니 리본을 또 눌러도 루트 패널은 한 장만(⚠️ reuse 는 params 를 안 본다).
