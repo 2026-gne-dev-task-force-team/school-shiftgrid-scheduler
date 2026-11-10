@@ -83,7 +83,9 @@ export function ContextMenu({ x, y, items, onClose: onCloseProp, onCommand }: {
             document.removeEventListener('pointerdown', onDown, true);
             window.removeEventListener('scroll', onScroll, true);
             window.removeEventListener('resize', close);
-            if (opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
+            // 메뉴가 일으킨 일(피크·팝오버·편집 입력)이 초점을 가져갔으면 뺏지 않는다 — BODY 로 빠졌을 때만 돌려준다
+            const a = document.activeElement;
+            if ((!a || a === document.body) && opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
         };
     }, [layer, opener]);
 

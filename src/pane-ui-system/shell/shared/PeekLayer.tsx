@@ -56,6 +56,13 @@ export function PeekLayer({ mode, closing = false, onClose, children }: { mode: 
     const [dragging, setDragging] = useState(false);
     const bar = usePeekBarState();
 
+    // 연 자리 — 렌더에서 잡는다. 닫히면(Esc·✕) 초점이 BODY 로 빠졌을 때 거기로 돌려준다(다른 곳을 눌러 옮긴 초점은 존중)
+    const [opener] = useState(() => (typeof document !== 'undefined' ? document.activeElement as HTMLElement | null : null));
+    useEffect(() => () => {
+        const a = document.activeElement;
+        if ((!a || a === document.body) && opener && opener !== document.body && opener.isConnected) opener.focus?.({ preventScroll: true });
+    }, [opener]);
+
     // Esc 로 닫는다(✕ 와 함께 유일한 닫기 길 — 바깥 클릭은 안 닫는다)
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };

@@ -4,7 +4,7 @@
  *   RecordView 는 데이터를 안 들고 있다(controlled) — 콜백을 받아 이 화면이 한 묶음(commit)으로 노드에 쓴다.
  *   ⌘Z·⇧⌘Z 는 탐색기의 되돌리기 명령을 부른다(나무 전체 스냅샷 — 이 화면의 변경도 거기 쌓인다).
  */
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ViewProps } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
@@ -43,6 +43,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     const snap = useDbSnapshot();
     const Frame = getNodesApi()?.Frame;
     const bar = useFrameToolbar();   // Frame 툴바 자리(Q12)
+    const rootRef = useRef<HTMLDivElement>(null);
 
     const onKeyDown = useCallback((e: KeyboardEvent) => {
         const tgt = e.target as HTMLElement;
@@ -80,7 +81,7 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
     };
 
     return (
-        <div className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
+        <div ref={rootRef} className="h-full flex flex-col min-h-0" data-rv-db={id} tabIndex={-1} onKeyDown={onKeyDown}>
             <Frame nodeId={id} leafId={leaf.id} toolbar={bar.slot}
                 headerExtra={snap.trashedRows > 0 && (
                     <Button size="sm" data-rv-restore-trash onClick={() => restoreTrashedRows(id, (title) => host.notify({ level: 'warn', title, key: 'collection.restore' }))}>
@@ -101,6 +102,8 @@ export function DbView({ host, peek, leaf }: ViewProps & { host: PluginHost }) {
                     onCellsChange={onCellsChange}
                     onAddRecord={() => { commit(id, { addRows: [{}] }); }}
                     onDeleteRecords={(ids) => {
+                        // 지운 행에 있던 초점이 BODY 로 빠지면 ⌘Z 가 어디서도 안 받힌다 — 이 뷰 뿌리로 옮겨 둔다(onKeyDown 이 받는다)
+                        rootRef.current?.focus({ preventScroll: true });
                         commit(id, { removeRows: ids });
                         notifyUndo(host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`);
                     }}
