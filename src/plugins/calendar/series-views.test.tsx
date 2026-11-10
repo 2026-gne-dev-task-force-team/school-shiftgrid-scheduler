@@ -27,7 +27,8 @@ import { registerType, clearTypes } from '../explorer/model/types';
 import { clearDerived } from '../explorer/model/derive';
 import { calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, ensureStore, removeEvent, restoreEvent, setCalendarHost, EVENT_TYPE } from './nodes';
 import { eventToStored } from './event-fields';
-import { isoMinuteOf, occId } from './events';
+import { barCls, isoMinuteOf, occId, type CalEvent } from './events';
+import { paletteAt } from './palette';
 import { reschedule, type SeriesData } from './series';
 import { ListView } from './views/ListView';
 import { MonthView } from './views/MonthView';
@@ -105,6 +106,17 @@ describe('C2c-1 보기 — 반복 회차', () => {
         const ghost = chips.filter((c) => c.className.includes('outline-dashed'));
         expect(ghost.length).toBe(1);
         expect(ghost[0].getAttribute('data-event-id')!.startsWith(`${id}@`)).toBe(true);
+    });
+
+    it('고스트 규칙(barCls): 가상 회차 막대는 채움 대신 연한 바탕+점선 · 실물은 채운 막대 그대로', () => {
+        const pal = paletteAt(0);
+        const occ = { eventId: 'r@x', seriesId: 'r', originalStart: 'x', start: 'x', end: 'x', allDay: true };
+        const ghost = barCls({ occ: { ...occ, virtual: true } } as CalEvent, pal);
+        const real = barCls({ occ: { ...occ, virtual: false } } as CalEvent, pal);
+        expect(ghost).toContain('outline-dashed');
+        expect(ghost).toContain(pal.soft);
+        expect(ghost).not.toContain(pal.bar);
+        expect(real).toBe(pal.bar);
     });
 
     it('월: 매주 3회 → 가상 칩 3개(id = 규칙 id@originalStart) · 규칙 일정 자신은 칩이 아니다', () => {

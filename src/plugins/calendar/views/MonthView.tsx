@@ -25,7 +25,7 @@ import {
 } from '../../../pane-ui-system';
 import { offsetToScroll } from './scroll-math';
 import { useCalendarData } from '../useEvents';
-import { buildDayIndex, ghostCls, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
+import { barCls, buildDayIndex, ghostCls, hhmm, isoMinuteOf, parseLocal, type CalEvent } from '../events';
 import { createEvent, removeEvent, getPendingCard, clearPendingCard, subscribeCardOpen } from '../nodes';
 import { paletteAt } from '../palette';
 import { useWords } from '../presets';
@@ -81,7 +81,7 @@ function EventChip({ b }: { b: WeekBar }) {
     if (e.allDay || b.multi) {
         const round = `${b.contL ? '' : 'rounded-l'} ${b.contR ? '' : 'rounded-r'}`;
         return (
-            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${pal.bar} ${ghostCls(e)}`}>
+            <div data-event-id={e.id} {...CHIP_A11Y} className={`truncate px-1 text-micro leading-4 cursor-pointer ${round} ${barCls(e, pal)}`}>
                 {!e.allDay && !b.contL && <span className="tabular-nums">{hhmm(e.startMs)} </span>}{title}
             </div>
         );
@@ -103,17 +103,18 @@ function DayBox({ c, isToday, inHead, selected }: { c: DayCell; isToday: boolean
     const bg = selected ? 'bg-accent/[0.14] ring-1 ring-inset ring-accent' : inHead ? 'bg-bg' : 'bg-panel2';
     return (
         <div data-day={c.iso} onMouseEnter={() => setHot(true)} onMouseLeave={() => setHot(false)} className={`relative min-h-0 overflow-hidden border-r border-b border-line p-1 flex flex-col ${bg}`}>
-            {hot && <IconButton icon="plus" size={13} label={`${c.m}월 ${c.d}일 새 일정`} data={{ 'data-day-add': '' }} className="absolute top-1 right-1 !w-5 !h-5" />}
-            <div className="flex shrink-0">
+            <div className="flex shrink-0 min-w-0 items-start">
                 {isToday ? (
                     <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-accent text-bg text-note font-semibold">
                         {label}
                     </span>
                 ) : (
-                    <span className={`px-1 text-note leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
+                    <span className={`min-w-0 truncate px-1 text-note leading-5 ${first ? 'font-semibold' : ''} ${inHead ? 'text-text' : 'text-muted'}`}>
                         {label}
                     </span>
                 )}
+                {/* 「+」는 숫자와 같은 줄 오른끝 — 좁은 칸에서도 숫자를 덮지 않는다(absolute 였을 땐 겹쳤다) */}
+                {hot && <IconButton icon="plus" size={13} label={`${c.m}월 ${c.d}일 새 일정`} data={{ 'data-day-add': '' }} className="ml-auto shrink-0 !w-5 !h-5" />}
             </div>
         </div>
     );
@@ -397,9 +398,9 @@ export function MonthView({ value, onChange, trailing, peek, selection, onSelect
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 달 이름(누르면 년·월 점프) · 오른쪽 이동(◀ 오늘 ▶) + 뷰 전환(trailing) */}
             <CalBar end={<>
-                    <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted"
+                    <Button size="sm" variant="plain" aria-label={words.newEvent} title={words.newEvent} className="inline-flex items-center gap-1 text-muted"
                         onClick={() => newAllDay(head.y === now.getFullYear() && head.m === now.getMonth() + 1 ? todayIso : isoOf(head.y, head.m, 1))}>
-                        <Icon name="plus" size={13} /> {words.newEvent}
+                        <Icon name="plus" size={13} /><span className="hidden sm:inline">{words.newEvent}</span>
                     </Button>
                     <IconButton icon="left" label="이전 달" onClick={() => go(-1)} />
                     <button

@@ -20,7 +20,7 @@ import { dayColumns, rangeStart, rangeLabel, hourLabel, minutesOfDay, quarterLab
 import { useDayScroller, dayAt, offsetOf } from './useDayScroller';
 import { useCalendarData } from '../useEvents';
 import { createEvent, removeEvent } from '../nodes';
-import { buildDayIndex, ghostCls, hhmm, isoMinuteOf, type CalEvent } from '../events';
+import { barCls, buildDayIndex, ghostCls, hhmm, isoMinuteOf, type CalEvent } from '../events';
 import { paletteAt } from '../palette';
 import { useWords } from '../presets';
 import { useCardPeek } from './useCardPeek';
@@ -92,7 +92,7 @@ const DayHeader = memo(function DayHeader(
             {/* 종일 띠 — 첫 일정 하나 + 나머지는 「+n」(클릭하면 그 일정 카드는 data-event-id 위임) */}
             <div className="shrink-0 px-0.5 flex items-center gap-0.5" style={{ height: ALLDAY_BAND }}>
                 {allDay.slice(0, 1).map((e) => (
-                    <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${paletteAt(e.colorIdx).bar} ${ghostCls(e)}`}>
+                    <div key={e.id} data-event-id={e.id} {...CHIP_A11Y} className={`min-w-0 flex-1 truncate rounded px-1 text-micro leading-4 cursor-pointer ${barCls(e, paletteAt(e.colorIdx))}`}>
                         {e.occ && <Icon name="redo" size={10} className="inline mr-0.5" />}{e.name || <span className="opacity-60">제목 없음</span>}
                     </div>
                 ))}
@@ -275,8 +275,8 @@ export function TimeGridView({ days, value, onChange, trailing, peek, selection,
         <div className="relative h-full flex flex-col bg-bg">
             {/* 머리줄 — 왼쪽 범위 글자 · 오른쪽 이동(◀ 오늘 ▶) + 전환 단추(trailing) */}
             <CalBar end={<>
-                    <Button size="sm" variant="plain" className="inline-flex items-center gap-1 text-muted" onClick={newToday}>
-                        <Icon name="plus" size={13} /> {words.newEvent}
+                    <Button size="sm" variant="plain" aria-label={words.newEvent} title={words.newEvent} className="inline-flex items-center gap-1 text-muted" onClick={newToday}>
+                        <Icon name="plus" size={13} /><span className="hidden sm:inline">{words.newEvent}</span>
                     </Button>
                     <IconButton icon="left" label="이전" onClick={() => go(-1)} />
                     <button
