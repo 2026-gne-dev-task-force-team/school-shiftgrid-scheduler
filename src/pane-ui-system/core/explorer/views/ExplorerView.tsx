@@ -36,6 +36,21 @@ const ROW_PX = 28;   // 높이를 아직 안 정한 섹션의 손잡이 시작�
 const clampSecH = (h: number): number => Math.min(TRASH_MAX_H * 2, Math.max(SEC_MIN_H, Number.isFinite(h) ? h : SEC_MIN_H));
 const clampTrashH = (h: number): number =>
     Math.min(TRASH_MAX_H, Math.max(TRASH_MIN_H, Number.isFinite(h) ? h : TRASH_DEFAULT_H));
+/**
+ * 「새로 만들기」 메뉴 무리 — 노드 종류 정의에 분류 필드가 없어(⛔ 도메인 꾸러미 파일 수정 금지) 탐색기가 타입 id 앞마디(= 플러그인 id)로 묶는다.
+ * 0 기본 · 1 학교 · 2 달력·예약 · 나머지(계정 등) 마지막.
+ */
+const CREATE_GROUP_PLUGINS: string[][] = [
+    ['folder', 'section', 'page', 'collection', 'sheet'],
+    ['timetable-grid', 'bell', 'people', 'staff', 'substitute', 'subjects', 'school', 'duty'],
+    ['calendar', 'calendar-subscribe', 'rooms'],
+];
+const CREATE_GROUPS = CREATE_GROUP_PLUGINS.length + 1;
+const createGroupOf = (type: string): number => {
+    const i = CREATE_GROUP_PLUGINS.findIndex((g) => g.includes(type.split('.')[0]));
+    return i < 0 ? CREATE_GROUP_PLUGINS.length : i;
+};
+
 /** 이미 고른 줄을 또 누른 뒤 이름바꾸기까지 기다리는 시간(ms) — 두 번 누르기(열기)면 그 전에 취소된다(맥 Finder 꼴). */
 const RENAME_CLICK_DELAY = 450;
 /** 빈 탐색기 처음 단추 — 앞에 낼 타입(순서). 목록에 없는 타입은 건너뛰고, 나머지는 「더 보기」. */
@@ -310,12 +325,12 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
     // ── 우클릭 메뉴 — 등록 표에서 「새로 만들기」를 짜고(⛔ 타입 비교 없음), 나머지 동작을 붙인다 ──
     // 「새 <타입>」 줄들 — 우클릭(via 'context')과 + 단추(via 'selection')가 같은 표를 쓴다. 생길 자리의 타입이 받는 것만.
-    const createItems = (via: 'selection' | 'context', opts?: { openNow?: boolean; typeOf?: Map<MenuEntry, string> }): MenuEntry[] => {
+    const createItems = (via: 'selection' | 'context', opts?: { openNow?: boolean; typeOf?: Map<MenuEntry, string>; grouped?: boolean }): MenuEntry[] => {
         const parent = newFolderParent(tree, selectedId, isContainerType, via);
         const baseType = via === 'context'
             ? (selectedId ? tree.nodes[selectedId]?.type : undefined) ?? tree.nodes[tree.root]?.type ?? 'folder'
             : tree.nodes[parent]?.type ?? 'folder';
-        const out: MenuEntry[] = [];
+        const chunks: { group: number; items: MenuEntry[] }[] = [];
         // 🔑 싱글톤이 이미 있으면 숨기지 말고 회색(비활성) + 이유를 라벨에 보인다(설계) — 생길 자리에서 판정.
         for (const def of createCandidates(baseType)) {
             const at = isSectionType(def.type) ? tree.root : parent;   // 섹션은 늘 뿌리 밑
@@ -326,9 +341,19 @@ export function ExplorerView({ host }: { host: PluginHost }) {
                 : blocked ? { label: `새 ${def.label} (만들 수 없음)`, icon, disabled: true }
                     : { label: `새 ${def.label}`, icon, onClick: () => newNode(def.type, { via, targetId: selectedId ?? undefined, openNow: opts?.openNow }) };
             opts?.typeOf?.set(entry, def.type);
-            out.push(entry);
+            const items: MenuEntry[] = [entry];
             // 변형 줄(예: 「새 방 예약」) — 타입 줄이 만들 수 있을 때만, 같은 자리에
-            if (!dup && !blocked) for (const v of def.createVariants?.(parent) ?? []) out.push({ label: `새 ${v.label}`, icon: v.icon, onClick: v.run });
+            if (!dup && !blocked) for (const v of def.createVariants?.(parent) ?? []) items.push({ label: `새 ${v.label}`, icon: v.icon, onClick: v.run });
+            chunks.push({ group: createGroupOf(def.type), items });
+        }
+        if (!opts?.grouped) return chunks.flatMap((c) => c.items);
+        // 무리별로 모으고(무리 안 순서는 그대로) 무리 사이에 구분선
+        const out: MenuEntry[] = [];
+        for (let g = 0; g < CREATE_GROUPS; g++) {
+            const inG = chunks.filter((c) => c.group === g);
+            if (!inG.length) continue;
+            if (out.length) out.push({ sep: true });
+            for (const c of inG) out.push(...c.items);
         }
         return out;
     };
@@ -338,7 +363,7 @@ export function ExplorerView({ host }: { host: PluginHost }) {
 
     const buildMenu = (): MenuEntry[] => {
         if (menu?.create) {
-            const c = createItems('selection');
+            const c = createItems('selection', { grouped: true });
             if (c.length === 0) c.push(...folderFallback('selection', tree.nodes[newFolderParent(tree, selectedId, isContainerType, 'selection')]?.type ?? 'folder'));
             return c.length ? c : [{ label: '여기에 만들 수 있는 것이 없습니다', disabled: true }];
         }
@@ -368,17 +393,22 @@ export function ExplorerView({ host }: { host: PluginHost }) {
         //    🔴 이름 바꾸기는 **하나일 때만** 활성(여럿 고르면 비활성) · 삭제는 고른 것 전부 휴지통(쥔님 2026-11-02).
         if (selNode && !inTrash) {
             const multi = selectedIds.length > 1;
-            return nodeMenu(selectedId!, {
+            const menuItems = nodeMenu(selectedId!, {
                 viaCommands: true,
                 open: !multi && canOpenType(selNode.type),
-                create: multi ? [] : createItems('context'),
+                create: multi ? [] : createItems('context', { grouped: true }),
                 move: !multi,
                 renameBlocked: multi,
                 rename: { run: () => run('explorer.rename'), commandId: 'explorer.rename' },
                 remove: { run: () => run('explorer.remove'), commandId: 'explorer.remove', label: multi ? `삭제 (${selectedIds.length}개)` : '삭제' },
             });
+            // 「열기」가 있으면 타입 menu 의 「○○ 열기」는 뺀다 — 같은 노드를 같은 open 으로 연다(각 명령이 getNodesApi().open / kit.openList → def.open).
+            if (menuItems.some((it) => !it.sep && it.label === '열기')) {
+                return menuItems.filter((it) => it.sep || it.label === '열기' || !(it.label.endsWith(' 열기') && it.commandArg?.nodeId === selectedId));
+            }
+            return menuItems;
         }
-        const items: MenuEntry[] = createItems('context');
+        const items: MenuEntry[] = createItems('context', { grouped: true });
         if (items.length === 0) items.push(...folderFallback('context', selNode ? selNode.type : (tree.nodes[tree.root]?.type ?? 'folder')));
         return items;
     };
