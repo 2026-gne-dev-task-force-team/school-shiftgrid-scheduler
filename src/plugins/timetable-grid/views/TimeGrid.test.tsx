@@ -47,7 +47,7 @@ describe('시간표 그리드(달력 주 보기 꼴)', () => {
         expect(q('[data-c="0"][data-r="1"]')!.style.top).toBe('48px');   // 10:00 = 1시간 아래
     });
 
-    it('칸에 적고 포커스를 빼면 한 번에 저장된다 · 위쪽 도구 막대는 없다', () => {
+    it('칸에 적고 포커스를 빼면 한 번에 저장된다 · 툴바 자리가 없으면 도구 줄을 안 그린다', () => {
         mount();
         fire(q('[data-c="1"][data-r="2"]')!, 'dblclick');   // 칸은 선택 상태가 기본 — 더블클릭으로 편집
         type(q('[data-c="1"][data-r="2"] textarea') as HTMLTextAreaElement, '수학');
