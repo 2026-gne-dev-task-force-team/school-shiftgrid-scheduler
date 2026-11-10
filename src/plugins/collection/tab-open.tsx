@@ -7,7 +7,7 @@
  *   ⭐ W15: 레코드마다 탭 한 장(문서처럼) — 탭 params {recordId} 가 정체성이라 같은 레코드는 그 탭으로 가고, 저장·복원도 params 로 된다.
  *      제목·아이콘은 레코드를 따라가고, 휴지통에 가면 「삭제된 문서」 안내.
  */
-import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { setLeafGlyph, setLeafTitle } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { ViewProps } from '../../pane-ui-system';
@@ -23,6 +23,14 @@ export function registerRecordTab(type: string, render: (host: PluginHost, id: s
     renderers.set(type, render);
 }
 
+/** 방금 「탭으로 열기」로 연 레코드 id — 그 탭이 그려지면 제목 칸으로 초점을 한 번 준다(새로고침 복원은 안 뺏는다) */
+let focusOnOpen: string | null = null;
+export function takeFocusOnOpen(id: string): boolean {
+    if (focusOnOpen !== id) return false;
+    focusOnOpen = null;
+    return true;
+}
+
 /** 레코드 하나를 편집 탭으로 연다 — 제 탭이 없으면 레코드마다 「레코드」 탭 한 장(같은 레코드는 그 탭으로), 있으면 노드 열기로. 열었으면 true. */
 export function openRecordTab(host: PluginHost, id: string, collectionId?: string): boolean {
     const nodes = host.modules.use<NodesApi>('nodes');
@@ -30,6 +38,7 @@ export function openRecordTab(host: PluginHost, id: string, collectionId?: strin
     if (!nodes || !node) return false;
     if (renderers.has(node.type)) {
         const params: Record<string, unknown> = collectionId ? { recordId: id, collectionId } : { recordId: id };
+        focusOnOpen = id;
         return host.workspace.open(RECORD_TAB_ID, { where: 'center', reuse: true, params, title: node.name }) != null;
     }
     nodes.open(id);
@@ -49,6 +58,19 @@ export function RecordTab({ host, leaf }: ViewProps & { host: PluginHost }) {
     const trashed = !!id && !!nodes?.isTrashed(id);
     const render = node ? renderers.get(node.type) : undefined;
     const leafId = leaf?.id;
+    const bodyRef = useRef<HTMLDivElement>(null);
+    const hasBody = !!(id && node && !trashed && render);
+    useEffect(() => {   // 🔑 탭으로 열린 직후 — 제목 칸(없으면 첫 입력)으로 초점
+        if (!id || !hasBody || !takeFocusOnOpen(id)) return;
+        let n = 0;
+        const t = window.setInterval(() => {
+            const inputs = Array.from(bodyRef.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input:not([type=checkbox]), textarea') ?? []);
+            const el = inputs.find((i) => /제목/.test(i.getAttribute('aria-label') ?? '')) ?? inputs[0];
+            if (el) { el.focus({ preventScroll: true }); }
+            if (el || ++n > 20) window.clearInterval(t);
+        }, 50);
+        return () => window.clearInterval(t);
+    }, [id, hasBody]);
     useEffect(() => {
         if (!leafId) return;
         if (!node) { if (id) { setLeafTitle(leafId, '삭제된 레코드'); setLeafGlyph(leafId, undefined); } return; }   // 영구 삭제·비움 — 이전 이름을 안 남긴다
@@ -64,5 +86,5 @@ export function RecordTab({ host, leaf }: ViewProps & { host: PluginHost }) {
     if (!id || !node || !render) {
         return <EmptyState icon="fileText" title="열린 레코드가 없습니다" description={`목록에서 줄을 ${modClickLabel()}하거나 미리보기의 「탭으로 열기」를 누르면 여기서 엽니다.`} />;
     }
-    return <div className="h-full overflow-auto p-4">{render(host, id)}</div>;
+    return <div ref={bodyRef} className="h-full overflow-auto p-4">{render(host, id)}</div>;
 }
