@@ -4,7 +4,7 @@
  *   표 손잡이 우클릭 메뉴와 같은 값을 만진다 — 한쪽에서 바꾸면 다른 쪽이 따라온다.
  */
 import { useSyncExternalStore } from 'react';
-import { Toggle } from '../../../pane-ui-system';
+import { Field, Segmented, Toggle } from '../../../pane-ui-system';
 import type { PropertiesPaneProps } from '../../../pane-ui-system/plugin';
 import type { TableStylePreset } from '../contracts/table';
 import { docOf, getTableRev, subscribeTableNodes, tableNodeOf, writeDoc } from '../nodes';
@@ -18,20 +18,12 @@ export function TableProps({ target }: PropertiesPaneProps) {
     const set = (patch: Partial<typeof doc>): void => writeDoc(target.id, { ...docOf(target.id), ...patch });
     const preset = doc.style ?? 'basic';
     const row = (label: string, on: boolean, onToggle: (v: boolean) => void) => (
-        <label className="flex items-center justify-between gap-2 text-body text-text">
-            {label}<Toggle on={on} label={label} onToggle={onToggle} />
-        </label>
+        <Field label={label} layout="row"><Toggle checked={on} label={label} onChange={onToggle} /></Field>
     );
     return (
         <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="표 스타일">
-                {STYLES.map(([p, label]) => (
-                    <button key={p} type="button" role="radio" aria-checked={p === preset} onClick={() => set({ style: p })}
-                        className={`h-btn rounded border text-small ${p === preset ? 'border-accent text-accent bg-accent/10' : 'border-edge text-muted hover:text-text'}`}>
-                        {label}
-                    </button>
-                ))}
-            </div>
+            <Segmented label="표 스타일" value={preset} onChange={(p) => set({ style: p })}
+                options={STYLES.map(([value, label]) => ({ value, label }))} />
             {row('머리 행', !!doc.headerRow, (v) => set({ headerRow: v }))}
             {row('머리 열', !!doc.headerCol, (v) => set({ headerCol: v }))}
             {row('열 머리(A·B·C…) 늘 보이기', !!doc.colTabs, (v) => set({ colTabs: v }))}

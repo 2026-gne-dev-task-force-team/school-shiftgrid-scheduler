@@ -164,6 +164,7 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                         onCancel={() => setRenaming(null)}
                                     />
                                 ) : (
+                                    // bare: 목록 줄 이름 자체가 누르는 자리(글자 링크 모양)
                                     <button type="button" onClick={() => applyUserTheme(t)}
                                         className="flex-1 min-w-0 text-left text-body text-text truncate hover:text-accent">
                                         {t.name}
@@ -171,11 +172,9 @@ export function ThemeEditor({ theme, host }: { theme: ThemeControls; host: Plugi
                                 )}
                                 <Button onClick={() => setRenaming({ id: t.id, name: t.name })}>이름</Button>
                                 <Button onClick={() => doExport(t)}>내보내기</Button>
-                                <button type="button" onClick={() => deleteUserTheme(t)}
-                                    className={`h-7 px-2 rounded border border-line text-small text-bad hover:bg-bad/10
-                                        ${FOCUS_RING}`}>
+                                <Button variant="outline" tone="danger" onClick={() => deleteUserTheme(t)}>
                                     지우기
-                                </button>
+                                </Button>
                             </div>
                         ))}
                     </div>

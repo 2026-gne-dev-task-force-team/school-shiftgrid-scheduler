@@ -6,10 +6,12 @@ import { useEffect, useRef } from 'react';
 import { FOCUS_RING } from './focus';
 import { useFieldCtx } from './Field';
 
-export function Checkbox({ checked, onChange, label, indeterminate = false, size = 'md', disabled = false, id, className = '' }: {
+export function Checkbox({ checked, onChange, label, 'aria-label': ariaLabel, indeterminate = false, size = 'md', disabled = false, id, className = '' }: {
     checked: boolean;
     onChange: (v: boolean) => void;
     label?: string;
+    /** 이름표를 안 보일 때(표 칸 등) 읽어 주는 이름 */
+    'aria-label'?: string;
     indeterminate?: boolean;
     size?: 'sm' | 'md';
     disabled?: boolean;
@@ -26,6 +28,7 @@ export function Checkbox({ checked, onChange, label, indeterminate = false, size
             type="checkbox"
             checked={checked}
             disabled={disabled}
+            aria-label={label ? undefined : ariaLabel}
             aria-describedby={f?.describedBy}
             onChange={(e) => onChange(e.target.checked)}
             className={`shrink-0 accent-accent ${size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${FOCUS_RING}`}

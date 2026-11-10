@@ -1,19 +1,19 @@
 {
   "plugins/account": {
-    "bareButton": 2,
+    "bareButton": 1,
     "arbPx": 2,
     "textPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,
     "roleToolbar": 0,
     "zRaw": 0,
-    "bareInput": 3,
+    "bareInput": 0,
     "divClick": 0,
     "ownTrash": 0,
     "enterNoIme": 1,
     "ownUndoNotice": 0,
     "bareTextarea": 0,
-    "bareLabel": 8
+    "bareLabel": 0
   },
   "plugins/calendar": {
     "bareButton": 12,
@@ -196,20 +196,20 @@
     "bareLabel": 0
   },
   "plugins/sheet": {
-    "bareButton": 3,
+    "bareButton": 2,
     "arbPx": 7,
     "textPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 5,
     "roleToolbar": 0,
     "zRaw": 0,
-    "bareInput": 3,
+    "bareInput": 2,
     "divClick": 3,
     "ownTrash": 0,
     "enterNoIme": 0,
     "ownUndoNotice": 0,
     "bareTextarea": 0,
-    "bareLabel": 1
+    "bareLabel": 0
   },
   "plugins/timetable-grid": {
     "bareButton": 0,
@@ -244,7 +244,7 @@
     "bareLabel": 0
   },
   "pane-ui-system/core/settings": {
-    "bareButton": 6,
+    "bareButton": 5,
     "arbPx": 8,
     "textPx": 0,
     "cmdIdString": 0,
@@ -273,7 +273,7 @@
     "enterNoIme": 0,
     "ownUndoNotice": 0,
     "bareTextarea": 0,
-    "bareLabel": 1
+    "bareLabel": 0
   },
   "pane-ui-system/core/properties": {
     "bareButton": 0,
@@ -310,7 +310,7 @@
   "pane-ui-system": {
     "bareButton": 26,
     "arbPx": 15,
-    "textPx": 3,
+    "textPx": 2,
     "cmdIdString": 0,
     "ctxDirect": 6,
     "roleToolbar": 0,
@@ -324,8 +324,8 @@
     "bareLabel": 0
   },
   "pane-ui-system/core/explorer": {
-    "bareButton": 5,
-    "arbPx": 2,
+    "bareButton": 1,
+    "arbPx": 0,
     "textPx": 0,
     "cmdIdString": 0,
     "ctxDirect": 0,

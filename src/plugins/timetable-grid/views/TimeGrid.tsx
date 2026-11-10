@@ -49,6 +49,7 @@ function CommitField({ value, onCommit, className, label, placeholder, multiline
         else if (e.key === 'Enter' && !e.shiftKey && !isImeEnter(e)) { e.preventDefault(); e.currentTarget.blur(); }
     };
     return multiline
+        // bare: 셀 즉석 편집 — 칸 모양 그대로 덮어써야 해서 공통 입력 부품을 안 쓴다
         ? <textarea {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />
         : <input {...common} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />;
 }
@@ -66,6 +67,7 @@ function CellEditor({ text, label, onChange, onKey, onBlur }: {
         el.setSelectionRange(el.value.length, el.value.length);
     }, []);
     return (
+        // bare: 셀 즉석 편집 — 칸 모양 그대로 덮어써야 해서 공통 입력 부품을 안 쓴다
         <textarea ref={ref} value={text} aria-label={label} onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
             onKeyDown={(e) => {
                 if (e.key === 'Enter' && isAlt(e) && !e.nativeEvent.isComposing) {
