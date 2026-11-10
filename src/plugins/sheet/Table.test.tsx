@@ -220,6 +220,21 @@ describe('R5-6 한글 IME — 조합 중 Enter 는 칸 이동·확정을 일으�
         key('Enter'); expect(h().state().editing).toBe(true);   // 조합 아닌 Enter = 편집 시작
     });
 
+    it('칸을 클릭해 고른 뒤 바로 치면 편집이 시작된다 — 영문·숫자·한글 IME 첫 글자(Process/isComposing)', () => {
+        for (const [k, mods] of [['a', {}], ['7', {}], ['Process', {}], ['ㄱ', { isComposing: true }]] as const) {
+            const ref = createRef<CtrlRef>();
+            mount(<Controlled ref={ref} initial={rows3()} features={[]} />);
+            act(() => {
+                hostEl!.querySelector('[data-rc="1:0"]')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+                window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+            });
+            expect(ref.current!.h().state().editing).toBe(false);
+            key(k, mods);
+            expect(ref.current!.h().state().editing).toBe(true);
+            act(() => root!.unmount()); hostEl!.remove(); root = null; hostEl = null;
+        }
+    });
+
     it('편집 입력칸: keyCode 229 Enter(사파리)는 확정하지 않는다', () => {
         const onTx = vi.fn();
         const ref = createRef<CtrlRef>();

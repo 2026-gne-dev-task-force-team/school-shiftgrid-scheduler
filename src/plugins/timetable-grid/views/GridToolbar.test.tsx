@@ -124,6 +124,15 @@ describe('시간표 툴바', () => {
         expect(latest.rows.length).toBe(n);
     });
 
+    it('버튼 title 이 대상·비활성 이유를 말한다', () => {
+        mount();
+        select(0, 0);
+        expect(btn('교시 삭제').title).toBe('1교시 삭제');
+        expect(q('input[aria-label="앞 쉬는 시간(분)"]')!.closest('label')!.title).toBe('첫 교시는 앞 쉬는 시간이 없습니다');
+        expect(btn('칸 지우기').title).toContain('칸의 내용');
+        expect(btn('축소').title).toBe('화면 축소');
+    });
+
     it('칸 지우기 · 확대(칸 높이가 커진다)', () => {
         mount();
         select(0, 0);   // 시트는 늘 칸 하나가 골라져 있다 — 지우기는 켜져 있다
