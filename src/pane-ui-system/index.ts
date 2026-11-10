@@ -155,7 +155,7 @@ export {
 } from './theme/tokens';
 export { hexToRgb, rgbToHex, isTriplet } from './theme/color';
 export {
-    useUserThemes, addUserTheme, removeUserTheme, renameUserTheme,
+    useUserThemes, addUserTheme, removeUserTheme, restoreUserTheme, renameUserTheme,
     exportThemeJSON, importThemeJSON, normalizeUserThemes,
     type UserTheme, type ImportResult,
 } from './theme/user-themes';

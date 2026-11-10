@@ -306,3 +306,35 @@ describe('host.storage.set — 넘치면 삼키지 않고 보고한다(scope: lo
         expect(listStorageErrors()).toHaveLength(0);
     });
 });
+
+describe('노드 스토어 — versionchange 뒤 재연결(R3-S)', () => {
+    afterEach(() => { delete (globalThis as { indexedDB?: unknown }).indexedDB; __resetKvForTest(); });
+
+    it('다른 탭이 판을 올려 연결이 닫혀도 다음 쓰기가 다시 열어 성공한다(닫힌 연결 메모를 안 쥔다)', async () => {
+        const fake = fakeIndexedDB();
+        let opens = 0;
+        let lastReq: { result?: { close?: () => void; onversionchange?: () => void } } | null = null;
+        const origOpen = fake.open.bind(fake);
+        (globalThis as { indexedDB?: unknown }).indexedDB = {
+            ...fake,
+            open(name: string, v: number) {
+                opens++;
+                const req = origOpen(name, v) as typeof lastReq;
+                lastReq = req;
+                return req;
+            },
+        };
+        __resetKvForTest();
+        expect(await nodesWrite({ put: [{ id: 'a' }] })).toBe(true);
+        expect(opens).toBe(1);
+        // 옛 탭에 versionchange — 연결을 닫는다
+        const db = lastReq!.result!;
+        let closed = 0;
+        db.close = () => { closed++; };
+        db.onversionchange!();
+        expect(closed).toBe(1);
+        // 다음 쓰기는 같은 (닫힌) 연결이 아니라 새로 연다
+        expect(await nodesWrite({ put: [{ id: 'b' }] })).toBe(true);
+        expect(opens).toBe(2);
+    });
+});

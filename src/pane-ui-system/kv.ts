@@ -62,7 +62,7 @@ function openDb(): Promise<IDBDatabase | null> {
     //    별도 사유('blocked-upgrade')로 한 건 보고만 한다(상태바 한 줄). 그래서 closure 플래그로 갈라 둔다.
     let blocked = false;
     // 열기 → 성공 직후 내구성을 한 번 잰다(그 뒤 db 를 돌려준다). openDb 가 메모이즈돼 측정도 딱 한 번.
-    dbPromise = new Promise<IDBDatabase | null>((resolve) => {
+    const thisOpen: Promise<IDBDatabase | null> = dbPromise = new Promise<IDBDatabase | null>((resolve) => {
         try {
             if (typeof indexedDB === 'undefined') { resolve(null); return; }
             const req = indexedDB.open(dbName(), DB_VERSION);
@@ -77,6 +77,8 @@ function openDb(): Promise<IDBDatabase | null> {
                 // 🔴 새 버전 탭이 열리면 옛 탭은 연결을 닫아 판올림을 막지 않는다 + 새로고침 안내.
                 db.onversionchange = () => {
                     db.close();
+                    // 🔴 닫힌 연결을 메모로 쥐고 있으면 이후 쓰기가 전부 실패한다 — 비워서 다음 호출이 다시 연다.
+                    if (dbPromise === thisOpen) dbPromise = null;
                     notify('app', { level: 'warn', key: 'db-versionchange', timeout: 0, title: '새 버전이 다른 탭에서 열렸습니다 — 새로고침' });
                 };
                 watchOtherTabs(dbName());

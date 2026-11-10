@@ -22,13 +22,13 @@ const kv = vi.hoisted(() => {
 });
 vi.mock('../../../pane-ui-system/kv', () => ({ nodesGetAll: kv.nodesGetAll, nodesWrite: kv.nodesWrite }));
 
-import { initStore } from '../../explorer/store';
+import { initStore, undoAction, undoAllowed } from '../../explorer/store';
 import { __resetPersistForTest } from '../../explorer/persist';
 import { makeNodesApi } from '../../explorer/api';
 import { registerType, clearTypes } from '../../explorer/model/types';
 import { clearDerived } from '../../explorer/model/derive';
 import { defineCollection } from '../define';
-import { pasteToTsv } from './CollectionTab';
+import { pasteToTsv, deleteWithUndo } from './CollectionTab';
 import type { CollectionConfig, CollectionKit } from '../contracts/collection';
 import { peopleNodeTypes, peopleNodeTypeImpl } from '../../people/nodes';
 import { PERSON_CONFIG } from '../../people/config';
@@ -163,5 +163,33 @@ describe('pasteToTsv — 레코드 뷰 붙여넣기를 기본 칸 순서 TSV 로
     it('보이는 칸 순서가 달라도 기본 칸 순서로 · 없는 칸은 빈 글자', () => {
         expect(pasteToTsv({ keys: ['memo', 'name'], rows: [['m1', 'n1'], ['', 'n2']] }, ['name', 'memo'])).toBe('n1\tm1\nn2\t');
         expect(pasteToTsv({ keys: ['name', null], rows: [['n', 'x']] }, ['name', 'memo'])).toBe('n\t');
+    });
+});
+
+describe('deleteWithUndo — 컬렉션 행·속성 삭제도 알림 + 되돌리기(R3-S)', () => {
+    it('행 둘을 지우면 알림이 뜨고, 알림의 되돌리기 명령 인자로 한 번에 되살아난다', () => {
+        const { api, kit, listType } = presetKit();
+        const lid = api.create(api.roots.main, { type: listType, name: '우리 반' });
+        const a = kit.addItem(lid, { name: '김하나' });
+        const b = kit.addItem(lid, { name: '이둘' });
+        const notify = vi.fn();
+        deleteWithUndo(kit, { notify } as unknown as PluginHost, '행 2개를 휴지통으로 옮겼습니다', () => { kit.removeItem(a); kit.removeItem(b); });
+        expect(kit.itemsIn(lid)).toHaveLength(0);
+        const n = notify.mock.calls.at(-1)![0];
+        expect(n.title).toBe('행 2개를 휴지통으로 옮겼습니다');
+        expect(n.action.label).toBe('되돌리기');
+        expect(n.action.commandId).toBe(api.cmd.undo);
+        expect(n.action.args.undoTop).toBe(api.undoToken());
+        expect(typeof n.action.args.undoTop).toBe('number');
+        expect(undoAllowed(n.action.args)).toBe(true);
+        undoAction();   // 알림의 되돌리기 단추가 부르는 그 함수
+        expect(kit.itemsIn(lid).map((i) => i.name).sort()).toEqual(['이둘', '김하나'].sort());
+    });
+    it('host 가 없어도 지우기는 일어난다(알림만 생략)', () => {
+        const { api, kit, listType } = presetKit();
+        const lid = api.create(api.roots.main, { type: listType, name: '우리 반' });
+        const a = kit.addItem(lid, { name: '김하나' });
+        deleteWithUndo(kit, undefined, 't', () => kit.removeItem(a));
+        expect(kit.itemsIn(lid)).toHaveLength(0);
     });
 });

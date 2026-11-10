@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * 테마 색 변환 + 사용자 테마 가져오기/내보내기 받아들이기.
  *   ① 색 변환 — "#rrggbb" ↔ "r g b" · 틀린 값 방어
@@ -5,11 +6,14 @@
  *   ③ normalizeUserThemes — 이름 없는 것은 버린다 · 모르는 base 는 기본
  *   ④ exportThemeJSON — name·base·colors 만 담는다
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { isTriplet, rgbToHex, hexToRgb } from '../color';
 import {
     importThemeJSON, exportThemeJSON, normalizeUserThemes,
+    addUserTheme, removeUserTheme, restoreUserTheme,
 } from '../user-themes';
+import { __resetSettingsSaveFailForTest } from '../../layout/save-fail';
+import { getNotifications, __resetNotifyForTest } from '../../plugin/notify';
 import { DEFAULT_THEME_ID } from '../tokens';
 
 describe('① 색 변환', () => {
@@ -100,5 +104,32 @@ describe('④ exportThemeJSON — name·base·colors 만', () => {
     it('그 세 칸만 담는다', () => {
         const s = exportThemeJSON({ name: '내 색', base: 'nord', colors: { accent: '1 2 3' } });
         expect(JSON.parse(s)).toEqual({ name: '내 색', base: 'nord', colors: { accent: '1 2 3' } });
+    });
+});
+
+describe('⑤ 사용자 테마 지우기 되돌리기 · 저장 실패 알림(R3-S)', () => {
+    beforeEach(() => { localStorage.clear(); __resetNotifyForTest(); __resetSettingsSaveFailForTest(); });
+
+    it('restoreUserTheme — 지운 테마가 원래 자리(index)로 돌아온다 · 이미 있으면 겹치지 않는다', () => {
+        const a = addUserTheme({ name: '가', base: 'light', colors: {} });
+        const b = addUserTheme({ name: '나', base: 'light', colors: {} });
+        const c = addUserTheme({ name: '다', base: 'light', colors: {} });
+        const saved = JSON.parse(localStorage.getItem(Object.keys(localStorage)[0])!) as { id: string }[];
+        expect(saved.map((t) => t.id)).toEqual([a, b, c]);
+        const mid = saved[1] as never;
+        removeUserTheme(b);
+        restoreUserTheme(mid, 1);
+        restoreUserTheme(mid, 1);   // 두 번 눌러도 한 벌
+        const after = JSON.parse(localStorage.getItem(Object.keys(localStorage)[0])!) as { id: string }[];
+        expect(after.map((t) => t.id)).toEqual([a, b, c]);
+        [a, b, c].forEach(removeUserTheme);
+    });
+
+    it('저장이 실패하면 조용히 삼키지 않고 오류 알림을 띄운다', async () => {
+        const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+        const id = addUserTheme({ name: '실패', base: 'light', colors: {} });
+        await vi.waitFor(() => { expect(getNotifications().items.some((n) => n.level === 'error' && /사용자 테마/.test(n.body ?? ''))).toBe(true); });
+        spy.mockRestore();
+        removeUserTheme(id);
     });
 });

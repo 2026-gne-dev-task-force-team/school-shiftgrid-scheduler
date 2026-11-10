@@ -21,6 +21,24 @@ export function pasteToTsv(req: PasteRequest, keys: readonly string[]): string {
     return req.rows.map((r) => keys.map((k) => { const i = req.keys.indexOf(k); return i < 0 ? '' : (r[i] ?? ''); }).join('\t')).join('\n');
 }
 
+/**
+ * 지운 직후 「되돌리기」 알림 — DbView.notifyUndo 와 같은 창구(노드 되돌리기 명령 + 방금 쌓인 더미 칸 토큰).
+ *   host 가 없으면(알림 창구 없음) 지우기만 한다. run 은 한 묶음으로 쥐어 한 번에 되돌아온다.
+ */
+export function deleteWithUndo(kit: Bridge, host: PluginHost | undefined, title: string, run: () => void): void {
+    const api = kit.nodes();
+    if (api) api.batch(run); else run();
+    if (!host) return;
+    const token = api?.undoToken() ?? null;
+    host.notify({
+        title,
+        action: api && token !== null
+            ? { label: '되돌리기', commandId: api.cmd.undo, args: { undoTop: token }, unavailable: '이미 다른 작업이 있어 되돌릴 수 없습니다' }
+            : undefined,
+        key: 'collection.removed', timeout: 8000,
+    });
+}
+
 function CollectionStart({ kit, leafId }: { kit: Bridge; leafId?: string }) {
     const { config: cfg } = kit;
     useLauncherTab(leafId, `새 ${cfg.listLabel}`);
@@ -88,7 +106,8 @@ export function CollectionTab({ kit, host, peek, leafId }: { kit: Bridge; host?:
                     onCellChange={(id, key, value) => kit.setValue(id, key, value)}
                     onFieldsChange={(next) => kit.setUserFields(activeId, next.filter((f) => !baseKeys.includes(f.key)))}
                     onAddRecord={() => { kit.addItem(activeId); }}
-                    onDeleteRecords={(ids) => ids.forEach(kit.removeItem)}
+                    onDeleteRecords={(ids) => deleteWithUndo(kit, host, `행 ${ids.length}개를 휴지통으로 옮겼습니다`, () => ids.forEach(kit.removeItem))}
+                    onDestructive={(title, run) => deleteWithUndo(kit, host, title, run)}
                     onPaste={(req) => kit.pasteItems(activeId, pasteToTsv(req, baseKeys))}
                     onReorder={kit.reorderItem}
                     tree={tree}
