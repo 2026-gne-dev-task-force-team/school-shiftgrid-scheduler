@@ -1,8 +1,8 @@
-import { h } from '../dom.ts'
+import { h, sgbRoot } from '../dom.ts'
 
 let box: HTMLElement | null = null
 const show = (text: string, x: number, y: number) => {
-  box ??= document.body.appendChild(h('div', { class: 'tip', role: 'tooltip' }))
+  box ??= (sgbRoot() ?? document.body).appendChild(h('div', { class: 'tip', role: 'tooltip' }))
   box.textContent = text
   box.style.left = `${Math.min(x + 12, innerWidth - 180)}px`
   box.style.top = `${y + 16}px`

@@ -1,7 +1,17 @@
-:root { color-scheme: dark; --bg: #0b0f17; --fg: #dbe6f5; --line: #2b3b57; --neon: #4fd1c5; --hq: #e0b341; --make: #2fbfae; --qa: #a37be0 }
-* { box-sizing: border-box }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif }
-#app { display: flex; flex-direction: column; min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom) }
+.sgb {
+  color-scheme: dark; --bg: #0b0f17; --fg: #dbe6f5; --line: #2b3b57; --neon: #4fd1c5; --hq: #e0b341; --make: #2fbfae; --qa: #a37be0;
+  --z: 2147483000; height: 32px; color: var(--fg); font: 15px/1.5 system-ui, sans-serif;
+  * { box-sizing: border-box }
+  .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 32px; display: flex; align-items: center; gap: 10px; padding: 0 12px; overflow: hidden; white-space: nowrap; background: #0f1624; color: var(--fg); border: 0; border-bottom: 1px solid var(--neon); font: 13px/1 system-ui, sans-serif; text-align: left; cursor: pointer; width: 100% }
+  .sgb-bar .sgb-name { overflow: hidden; text-overflow: ellipsis }
+  .sgb-bar .sgb-pct { color: var(--neon); font-weight: 600 }
+  .sgb-bar .sgb-caret { margin-left: auto }
+  .sgb-scrim { position: fixed; inset: 0; z-index: var(--z); background: #0008; border: 0; padding: 0 }
+  .sgb-drawer { position: fixed; top: 32px; left: 0; right: 0; z-index: calc(var(--z) + 1); height: calc(85dvh - 32px); overflow: hidden; background: var(--bg); border-bottom: 2px solid var(--neon); transform: translateY(calc(-100% - 32px)); visibility: hidden; transition: transform .25s ease, visibility 0s .25s }
+  .sgb-drawer.open { transform: none; visibility: visible; transition: transform .25s ease }
+  .sgb-scroll { height: 100%; overflow: auto; overscroll-behavior: contain }
+  .sgb-page { display: flex; flex-direction: column; min-height: 100%; padding-bottom: env(safe-area-inset-bottom) }
+@media (max-width: 767px) { .sgb-drawer { height: calc(96dvh - 32px) } }
 .grow { flex: 1 }
 .btn { min-height: 44px; min-width: 44px; padding: 0 12px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font: inherit }
 .btn.on { border-color: var(--neon); box-shadow: 0 0 8px var(--neon) }
@@ -36,13 +46,11 @@ button.chip { min-height: 44px; cursor: pointer }
 .ph { margin: auto; text-align: center; opacity: .6 }
 .detail-head { display: flex; justify-content: flex-end; gap: 6px }
 
-.tip { position: fixed; z-index: 50; max-width: 220px; padding: 6px 10px; background: #000d; border: 1px solid var(--neon); border-radius: 6px; pointer-events: none }
+.tip { position: fixed; z-index: calc(var(--z) + 5); max-width: 220px; padding: 6px 10px; background: #000d; border: 1px solid var(--neon); border-radius: 6px; pointer-events: none }
 
-.pulse { animation: pulse 1.2s }
-@keyframes pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
-.card { animation: breathe 3s ease-in-out infinite alternate }
-@keyframes breathe { to { box-shadow: 0 0 8px #4fd1c555 } }
-.calm *, .calm *::before { animation: none !important; transition: none !important }
+.pulse { animation: sgb-pulse 1.2s }
+.card { animation: sgb-breathe 3s ease-in-out infinite alternate }
+&.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important } }
 
 @media (max-width: 767px) {
@@ -64,8 +72,7 @@ button.chip { min-height: 44px; cursor: pointer }
 .lane[data-state=blocked] { background: #2a1015; border-color: #d04a5a }
 .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
 .lane-track { position: relative; height: 52px; margin-top: 6px; border-radius: 26px; background: linear-gradient(90deg, #1b2638, #121a29) }
-.ball { position: absolute; left: 0; top: 4px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--neon); background: #0b0f17; color: var(--fg); cursor: pointer; animation: roll 27s linear infinite }
-@keyframes roll { from { left: 0 } to { left: calc(100% - 44px) } }
+.ball { position: absolute; left: 0; top: 4px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--neon); background: #0b0f17; color: var(--fg); cursor: pointer; animation: sgb-roll 27s linear infinite }
 
 /* 4층 작업장 */
 .ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start }
@@ -75,8 +82,7 @@ button.chip { min-height: 44px; cursor: pointer }
 .ws-body { display: flex; flex-direction: column; gap: 8px }
 .ws-card { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 8px 8px 12px; text-align: left; color: var(--fg); font: inherit; background: #141c2b; border: 1px solid var(--line); border-left: 6px solid var(--make); border-radius: 6px; cursor: pointer }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
-.ws-card.flash { outline: 3px solid var(--neon); animation: ws-flash .4s ease-in-out 5 alternate } /* 움직임 끄기(.calm)면 animation 만 꺼져 테두리만 남는다 */
-@keyframes ws-flash { to { background: #1f4a48 } }
+.ws-card.flash { outline: 3px solid var(--neon); animation: sgb-ws-flash .4s ease-in-out 5 alternate } /* 움직임 끄기(.calm)면 animation 만 꺼져 테두리만 남는다 */
 .ws-clock { font-size: 13px } .ws-card.over .ws-clock { color: #f5c542; font-weight: 600 }
 .ws-reason { align-self: flex-start; padding: 0 8px; border-radius: 10px; background: #d04a5a33; border: 1px solid #d04a5a; font-size: 13px }
 @media (max-width: 767px) {
@@ -91,6 +97,11 @@ button.chip { min-height: 44px; cursor: pointer }
 .bp-rooms { display: flex; flex-wrap: wrap; gap: 8px }
 .bp-room { min-height: 44px; min-width: 88px; padding: 0 10px; color: var(--fg); font: inherit; background: #141c2b; border-radius: 6px; cursor: pointer; border: 2px solid var(--neon) }
 .bp-room.ghost { border-style: dashed; opacity: .45 }
-.bp-room.scaffold { border-color: #f5c542; background: repeating-linear-gradient(45deg, #141c2b 0 6px, #3a3115 6px 9px); animation: bp-blink 2.4s ease-in-out infinite }
-.calm .bp-room.scaffold { animation: none }
-@keyframes bp-blink { 50% { opacity: .55 } }
+.bp-room.scaffold { border-color: #f5c542; background: repeating-linear-gradient(45deg, #141c2b 0 6px, #3a3115 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
+&.calm .bp-room.scaffold { animation: none }
+}
+@keyframes sgb-pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
+@keyframes sgb-breathe { to { box-shadow: 0 0 8px #4fd1c555 } }
+@keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 44px) } }
+@keyframes sgb-ws-flash { to { background: #1f4a48 } }
+@keyframes sgb-bp-blink { 50% { opacity: .55 } }

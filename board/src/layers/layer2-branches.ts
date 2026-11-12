@@ -1,4 +1,4 @@
-import { h } from '../dom.ts'
+import { h, isCalm, sgbRoot } from '../dom.ts'
 import type { Branch } from '../types.ts'
 import { hitTest, project, type Seg } from './layer2-logic.ts'
 import type { LayerRenderer } from './types.ts'
@@ -27,7 +27,7 @@ export const layer2: LayerRenderer = {
     box.style.cssText = 'width:100%;height:min(60vh,360px);min-height:240px'
     host.append(box)
     const g = canvas.getContext('2d')!
-    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('calm')
+    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
 
     let w = 0, ht = 0, rot = 0, pan = 0, hover: string | null = null, raf = 0, last = 0, segs: Seg[] = []
     let dragging = false, sx = 0, sy = 0, px = 0, py = 0, moved = 0
@@ -145,7 +145,7 @@ export const layer2: LayerRenderer = {
     const onVis = () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0 } else kick() }
     document.addEventListener('visibilitychange', onVis)
     const ro = new ResizeObserver(resize); ro.observe(box)
-    const mo = new MutationObserver(kick); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    const mo = new MutationObserver(kick); mo.observe(sgbRoot() ?? document.documentElement, { attributes: true, attributeFilter: ['class'] })
     resize()
 
     return () => {
