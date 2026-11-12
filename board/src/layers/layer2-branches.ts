@@ -3,7 +3,7 @@ import type { Actor, Branch } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
-import { assignLanes, clampLeft, graphSpans } from '../lib/graph.ts'
+import { assignLanes, clampLeft, edgeLimit, graphSpans } from '../lib/graph.ts'
 
 const PAD = 20, TOP = 34, LH = 52, MIN_COL = 84, TAIL = 150 // 여백 · 줄기 높이 · 줄 간격 · 칸 최소 폭 · 오른쪽 꼬리표·칩 자리
 
@@ -46,11 +46,11 @@ export const layer2: LayerRenderer = {
       const dot = (cx: number, cy: number, r: number, fill: string, ring = bg) => {
         g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fillStyle = fill; g.fill(); g.lineWidth = 2; g.strokeStyle = ring; g.stroke()
       }
-      const label = (cls: string, left: number, top: number, kid: Node | string, hue?: number) => {
+      const label = (cls: string, left: number, top: number, kid: Node | string, hue?: number, atEnd = false) => {
         const el = h(hue === undefined ? 'span' : 'button', { class: cls }, kid)
         el.style.cssText = `left:${left}px;top:${top}px${hue === undefined ? '' : `;--hue:${hue}`}`
         inner.append(el)
-        el.style.left = `${clampLeft(left, inner.offsetWidth, el.offsetWidth)}px` // 이름표·칩 모두 오른쪽 끝에서 잘리지 않게 안으로
+        el.style.left = `${clampLeft(left, atEnd ? edgeLimit(inner.offsetWidth, box.clientWidth) : inner.offsetWidth, el.offsetWidth)}px` // 이름표·칩 모두 오른쪽 끝에서 잘리지 않게 안으로 · 줄기 끝 칩은 보이는 폭 기준(R83)
         return el
       }
       label('gg-l gg-trunk', x(0), y0 - 30, trunk?.title ?? '줄기')
@@ -60,9 +60,9 @@ export const layer2: LayerRenderer = {
       const shown = narrow ? idle.slice(0, 2) : idle, more = idle.slice(shown.length) // 좁으면 2개만 · 나머지는 「+N」(누르면 목록)
       const num = (a: Actor) => a.task_id!.replace(/^l-\w+-/, '')
       shown.forEach((a, i) =>
-        label('gg-chip', w - PAD - 90 - i * 90 - (more.length ? 44 : 0), y0 - 34, h('span', null, character(a, 'mini'), ` ${num(a)}`)))
+        label('gg-chip', w - PAD - 90 - i * 90 - (more.length ? 44 : 0), y0 - 34, h('span', null, character(a, 'mini'), ` ${num(a)}`), undefined, true))
       if (more.length) {
-        const btn = label('gg-l', w - PAD - 40, y0 - 34, `+${more.length}`, 200)
+        const btn = label('gg-l', w - PAD - 40, y0 - 34, `+${more.length}`, 200, true)
         btn.addEventListener('click', () => openDetail({ title: '줄기 끝에서 도는 일꾼', rows: idle.map((a) => [num(a), actorLabel(a, data.actors)] as [string, string]) }))
       }
 

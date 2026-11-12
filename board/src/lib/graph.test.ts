@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignLanes, clampLeft, graphSpans, type Span } from './graph.ts'
+import { assignLanes, clampLeft, edgeLimit, graphSpans, type Span } from './graph.ts'
 import { rawFixtures } from '../data.ts'
 import type { Branch, BoardEvent } from '../types.ts'
 
@@ -28,4 +28,13 @@ describe('clampLeft', () => {
   it('안에 들어오면 그대로', () => expect(clampLeft(100, 390, 40)).toBe(100))
   it('오른쪽으로 넘치면 안으로 당긴다', () => expect(clampLeft(380, 390, 40)).toBe(348))
   it('왼쪽 여백 2px 아래로는 안 간다', () => expect(clampLeft(-5, 390, 40)).toBe(2))
+})
+
+describe('edgeLimit — 줄기 끝 칩의 오른쪽 한계(R83)', () => {
+  it('그래프가 보이는 폭보다 넓으면(가로 스크롤) 보이는 폭이 한계', () => {
+    const lim = edgeLimit(520, 390) // 논리 폭 520 · 보이는 폭 390
+    const left = clampLeft(520 - 20 - 90, lim, 80) // 줄기 끝 칩이 놓이려던 자리
+    expect(left + 80).toBeLessThanOrEqual(390 - 2)
+  })
+  it('그래프가 더 좁으면 논리 폭이 한계', () => expect(edgeLimit(300, 390)).toBe(300))
 })
