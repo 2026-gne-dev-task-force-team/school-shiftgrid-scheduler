@@ -73,7 +73,7 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T08:43:01.936Z",
+      "started_at": "2026-11-12T08:45:01.975Z",
       "ended_at": null
     }
   ],
@@ -1036,7 +1036,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R2",
@@ -1051,7 +1051,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R3",
@@ -1066,7 +1066,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R4",
@@ -1081,7 +1081,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R5",
@@ -1096,7 +1096,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R6",
@@ -1111,7 +1111,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R7",
@@ -1126,7 +1126,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R8",
@@ -1141,7 +1141,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R9",
@@ -1156,7 +1156,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R10",
@@ -1171,7 +1171,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R11",
@@ -1186,7 +1186,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R12",
@@ -1201,7 +1201,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R13",
@@ -1216,7 +1216,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R14",
@@ -1231,7 +1231,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R15",
@@ -1246,7 +1246,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R16",
@@ -1261,7 +1261,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R17",
@@ -1276,7 +1276,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R18",
@@ -1291,7 +1291,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R19",
@@ -1306,7 +1306,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R20",
@@ -1321,7 +1321,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R21",
@@ -1336,7 +1336,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R22",
@@ -1351,7 +1351,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R23",
@@ -1366,7 +1366,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R24",
@@ -1381,7 +1381,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R25",
@@ -1396,7 +1396,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R26",
@@ -1411,7 +1411,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R27",
@@ -1426,7 +1426,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R28",
@@ -1441,7 +1441,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R29",
@@ -1456,7 +1456,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R30",
@@ -1471,7 +1471,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R31",
@@ -1486,7 +1486,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R32",
@@ -1501,7 +1501,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R33",
@@ -1516,7 +1516,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R34",
@@ -1531,7 +1531,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R35",
@@ -1546,7 +1546,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R36",
@@ -1561,7 +1561,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R37",
@@ -1576,7 +1576,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R38",
@@ -1591,7 +1591,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R39",
@@ -1606,7 +1606,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R40",
@@ -1621,7 +1621,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R41",
@@ -1636,7 +1636,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R42",
@@ -1651,7 +1651,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R43",
@@ -1666,7 +1666,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R44",
@@ -1681,7 +1681,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R45",
@@ -1696,7 +1696,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R46",
@@ -1711,7 +1711,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R47",
@@ -1726,7 +1726,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R48",
@@ -1741,7 +1741,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R49",
@@ -1756,7 +1756,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R50",
@@ -1771,7 +1771,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R51",
@@ -1786,7 +1786,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R52",
@@ -1801,7 +1801,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R53",
@@ -1816,7 +1816,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R54",
@@ -1831,7 +1831,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R55",
@@ -1846,7 +1846,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R56",
@@ -1861,7 +1861,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R57",
@@ -1876,7 +1876,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R58",
@@ -1891,7 +1891,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R59",
@@ -1906,7 +1906,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R60",
@@ -1921,7 +1921,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R61",
@@ -1936,7 +1936,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R62",
@@ -1951,7 +1951,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R63",
@@ -1966,7 +1966,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R64",
@@ -1981,7 +1981,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R65",
@@ -1996,7 +1996,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R66",
@@ -2011,7 +2011,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R67",
@@ -2026,7 +2026,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R68",
@@ -2041,7 +2041,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R69",
@@ -2056,7 +2056,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R70",
@@ -2071,7 +2071,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R71",
@@ -2086,7 +2086,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R72",
@@ -2101,7 +2101,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R73",
@@ -2116,7 +2116,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R74",
@@ -2131,7 +2131,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R75",
@@ -2146,7 +2146,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R76",
@@ -2161,7 +2161,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R77",
@@ -2176,7 +2176,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R78",
@@ -2191,7 +2191,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "R79",
@@ -2206,7 +2206,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-100a",
@@ -2221,7 +2221,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-100b",
@@ -2236,7 +2236,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-100c",
@@ -2251,7 +2251,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-101a",
@@ -2266,7 +2266,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-101b",
@@ -2281,7 +2281,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-101c",
@@ -2296,7 +2296,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-102a",
@@ -2311,7 +2311,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-102b",
@@ -2326,7 +2326,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-102c",
@@ -2341,7 +2341,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-103a",
@@ -2356,7 +2356,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-T-104a",
@@ -2371,7 +2371,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": "a-l-30eb8d-T-104a",
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K26",
@@ -2386,7 +2386,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K27",
@@ -2401,7 +2401,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K28",
@@ -2416,7 +2416,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K29",
@@ -2431,7 +2431,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K30",
@@ -2446,7 +2446,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K31",
@@ -2461,7 +2461,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K32",
@@ -2476,7 +2476,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K33",
@@ -2491,7 +2491,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K34",
@@ -2506,7 +2506,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K35",
@@ -2521,7 +2521,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K36",
@@ -2536,7 +2536,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K37",
@@ -2551,7 +2551,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K38",
@@ -2566,7 +2566,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K39",
@@ -2581,7 +2581,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K40",
@@ -2596,7 +2596,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K41",
@@ -2611,7 +2611,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K42",
@@ -2626,7 +2626,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K43",
@@ -2641,7 +2641,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K44",
@@ -2656,7 +2656,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K45",
@@ -2671,7 +2671,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K46",
@@ -2686,7 +2686,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K47",
@@ -2701,7 +2701,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K48",
@@ -2716,7 +2716,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K49",
@@ -2731,7 +2731,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K50",
@@ -2746,7 +2746,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K51",
@@ -2761,7 +2761,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K52",
@@ -2776,7 +2776,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-30eb8d-K53",
@@ -2791,7 +2791,67 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
+    },
+    {
+      "id": "l-30eb8d-K54",
+      "title": "🛠 시연 막힘 ① 시간표 칸이 명단과 안 이어진다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:45:01.975Z"
+    },
+    {
+      "id": "l-30eb8d-K55",
+      "title": "🛠 시연 막힘 ② 채운 시간표가 달력에 안 뜬다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:45:01.975Z"
+    },
+    {
+      "id": "l-30eb8d-K56",
+      "title": "🛠 시연 막힘 ③ 결근 → 보결 동선이 없다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:45:01.975Z"
+    },
+    {
+      "id": "l-30eb8d-K57",
+      "title": "🛠 시연 잔손질",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-V1",
@@ -2806,7 +2866,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K15",
@@ -2821,7 +2881,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K18·19",
@@ -2836,7 +2896,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K20·25",
@@ -2851,7 +2911,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K16",
@@ -2866,7 +2926,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K23",
@@ -2881,7 +2941,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K21",
@@ -2896,7 +2956,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QS",
@@ -2911,7 +2971,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-화면",
@@ -2926,7 +2986,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q28·Q7",
@@ -2941,7 +3001,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-K17",
@@ -2956,7 +3016,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QF",
@@ -2971,7 +3031,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q21·22·10",
@@ -2986,7 +3046,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QG",
@@ -3001,7 +3061,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q14·25",
@@ -3016,7 +3076,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QH",
@@ -3031,7 +3091,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q11·15",
@@ -3046,7 +3106,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QI",
@@ -3061,7 +3121,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q23+QI화면",
@@ -3076,7 +3136,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QJ",
@@ -3091,7 +3151,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q23b",
@@ -3106,7 +3166,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QK",
@@ -3121,7 +3181,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QJ화면",
@@ -3136,7 +3196,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-쉬운 모드",
@@ -3151,7 +3211,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-P0",
@@ -3166,7 +3226,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-QK화면",
@@ -3181,10 +3241,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
-      "id": "l-7cefb9-f8ba52f5",
+      "id": "l-7cefb9-48105bf2",
       "title": "v1 에서 본받을 것 목록 → 페르소나가 순위",
       "category": "코드",
       "kind": "work",
@@ -3196,7 +3256,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q30",
@@ -3211,7 +3271,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-페르소나",
@@ -3226,7 +3286,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GA",
@@ -3241,7 +3301,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GB",
@@ -3256,7 +3316,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GC",
@@ -3271,7 +3331,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GD",
@@ -3286,7 +3346,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-G화면",
@@ -3301,7 +3361,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GE",
@@ -3316,7 +3376,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-낱말",
@@ -3331,7 +3391,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GF",
@@ -3346,7 +3406,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q17b",
@@ -3361,7 +3421,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GG",
@@ -3376,7 +3436,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GH",
@@ -3391,7 +3451,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-페르소나 눈",
@@ -3406,7 +3466,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GI",
@@ -3421,7 +3481,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GJ",
@@ -3436,7 +3496,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-G화면2",
@@ -3451,7 +3511,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GK",
@@ -3466,7 +3526,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GL",
@@ -3481,7 +3541,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q17c",
@@ -3496,7 +3556,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-G화면3",
@@ -3511,7 +3571,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GM",
@@ -3526,7 +3586,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GN",
@@ -3541,7 +3601,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-GO",
@@ -3556,7 +3616,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-안내",
@@ -3571,7 +3631,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-7cefb9-Q17",
@@ -3586,7 +3646,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-바닥",
@@ -3601,7 +3661,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-반입",
@@ -3616,7 +3676,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-대조",
@@ -3631,7 +3691,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-비식별",
@@ -3646,7 +3706,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-통합 검수",
@@ -3661,7 +3721,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-재설계",
@@ -3676,7 +3736,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-설계안",
@@ -3691,7 +3751,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-🙋",
@@ -3706,7 +3766,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-재검수 S",
@@ -3721,7 +3781,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-설계안 S",
@@ -3736,10 +3796,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
-      "id": "l-337c1c-1f15d855",
+      "id": "l-337c1c-23e11820",
       "title": "검토 + 「해」",
       "category": "코드",
       "kind": "work",
@@ -3751,7 +3811,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     },
     {
       "id": "l-337c1c-구현",
@@ -3767,7 +3827,7 @@
       "reason": "blocked",
       "block_kind": "outside",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:43:01.936Z"
+      "updated_at": "2026-11-12T08:45:01.975Z"
     }
   ],
   "lanes": [
@@ -3894,10 +3954,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "build",
+      "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:43:01.368Z"
+      "checked_at": "2026-11-12T08:45:01.385Z"
     },
     {
       "id": "s-sync",
@@ -3905,7 +3965,7 @@
       "state": "down",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:43:01.368Z"
+      "checked_at": "2026-11-12T08:45:01.385Z"
     },
     {
       "id": "s-reporter",
@@ -3913,7 +3973,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:43:01.368Z"
+      "checked_at": "2026-11-12T08:45:01.385Z"
     }
   ],
   "modules": [
@@ -4473,7 +4533,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T08:43:01.936Z",
+      "ts": "2026-11-12T08:45:01.975Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
