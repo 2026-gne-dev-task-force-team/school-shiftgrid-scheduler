@@ -20,7 +20,6 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const upd = h('button', { class: 'btn upd sgb-mini', hidden: '' })
   upd.addEventListener('click', hooks.onApply)
   const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
-  fb.addEventListener('click', hooks.onFeedback)
 
   // 메뉴 — 첫 줄이 저장소 비우기. 누르면 같은 자리에서 2단계 확인(window.confirm 안 씀).
   const purge = h('button', { class: 'btn' }, '🗑 이 기기 저장소 비우기')
@@ -42,7 +41,12 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   lim.addEventListener('click', () => { drop.hidden = !drop.hidden; lim.textContent = drop.hidden ? '한도와 속도 펼치기' : '한도와 속도 접기' })
   const menu = h('div', { class: 'menu', hidden: '' }, purge, ask, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), lim)
   const more = h('button', { class: 'btn sgb-mini', 'aria-label': '더 보기' }, '⋯')
-  more.addEventListener('click', () => { menu.hidden = !menu.hidden; if (menu.hidden) askToggle(false) })
+  const closeMenu = () => { menu.hidden = true; askToggle(false) }
+  more.addEventListener('click', () => { if (menu.hidden) menu.hidden = false; else closeMenu() })
+  fb.addEventListener('click', () => { closeMenu(); hooks.onFeedback() })
+  // 바깥 클릭이면 닫는다(메뉴 안·⋯ 는 제외). 다시 그릴 때마다 새로 달리니 옛 것은 떼어 둔다.
+  const outside = (e: MouseEvent) => { const t = e.target as Node; if (!menu.hidden && !menu.contains(t) && !more.contains(t)) closeMenu() }
+  document.addEventListener('click', outside)
 
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip' }, state),
@@ -51,7 +55,8 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
-    toggle, upd, fb, more, menu, drop,
+    toggle, upd, fb, more, menu, drop, closeMenu,
+    dispose() { document.removeEventListener('click', outside) },
     showUpdate(v: VersionInfo | null) {
       upd.hidden = !v
       if (v) upd.textContent = `✨ ${v.note || '새 기능이 올라왔어요'} [지금 바꾸기]`

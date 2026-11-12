@@ -103,6 +103,11 @@ button.chip { min-height: 44px; cursor: pointer }
 .bp-room.ghost { border-style: dashed; opacity: .45 }
 .bp-room.scaffold { border-color: #f5c542; background: repeating-linear-gradient(45deg, #141c2b 0 6px, #3a3115 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
 &.calm .bp-room.scaffold { animation: none }
+/* 불편 접수 칸 — 어두운 배경에서 입력칸·select 가 보이게 테두리·배경·글자색을 준다 */
+  .detail-body label { display: block; margin: 8px 0 2px; font-size: 13px; opacity: .85 }
+  .detail-body input[type=text], .detail-body select { display: block; width: 100%; max-width: 100%; min-height: 44px; padding: 0 10px; margin-bottom: 8px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit }
+  .detail-body input[type=text]:focus, .detail-body select:focus { outline: 2px solid var(--neon); outline-offset: 1px }
+  .detail-body option { background: #141c2b; color: var(--fg) }
 }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
 @keyframes sgb-breathe { to { box-shadow: 0 0 8px #4fd1c555 } }

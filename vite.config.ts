@@ -1,11 +1,15 @@
 import { defineConfig } from 'vite'
 import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 const BOARD_VERSION_FILE = new URL('./board/public/version.json', import.meta.url)
-const BOARD_VERSION = JSON.parse(readFileSync(BOARD_VERSION_FILE, 'utf-8')) as { build: string }
+const BOARD_VERSION = JSON.parse(readFileSync(BOARD_VERSION_FILE, 'utf-8')) as { build: string; at: string; note: string }
+// 판 번호 = 짧은 커밋 해시(git 이 없으면 옛 값 preview-0). 빌드 시각은 version.json 에 같이 찍는다.
+try { BOARD_VERSION.build = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || BOARD_VERSION.build } catch { /* git 없음 */ }
+const BUILD_AT = new Date().toISOString()
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -31,7 +35,7 @@ export default defineConfig({
   plugins: [
     react(),
     // 작업현황판이 상대 경로로 읽는 version.json 을 dist 루트에 싣는다(board/public 이 원본)
-    { name: 'board-version-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: readFileSync(BOARD_VERSION_FILE, 'utf-8') }) } },
+    { name: 'board-version-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ ...BOARD_VERSION, at: BUILD_AT }) }) } },
     // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
     ...(https ? [basicSsl()] : []),
     // PWA — 폰 홈 화면에 붙이고 오프라인에서도 뜨게. 규칙 엔진·솔버가 전부 브라우저 안에서 돌아
