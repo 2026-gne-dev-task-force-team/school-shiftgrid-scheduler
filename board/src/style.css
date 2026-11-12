@@ -34,6 +34,9 @@
   .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: var(--edge) }
   .sgb-gauge i { width: 5px; height: 10px; background: var(--s3) } .sgb-gauge i.on { background: var(--neon) }
   .sgb-bar .sgb-pct { color: var(--neon-2); font-weight: 700; flex: none; font-variant-numeric: tabular-nums }
+  .sgb-editions { display: flex; flex: none; gap: 2px; align-items: center }
+  .sgb-ed { display: inline-flex; align-items: center; min-height: 22px; padding: 0 6px; border-radius: var(--r1); border: 1px solid var(--line); color: var(--fg-2); font-size: var(--fs-xs); text-decoration: none; white-space: nowrap }
+  .sgb-ed.on { background: rgb(var(--neon-rgb) / .22); color: var(--fg); font-weight: 700; border-color: rgb(var(--neon-rgb) / .6) }
   .sgb-auto { display: inline-flex; align-items: center; gap: 2px; flex: none; font-size: var(--fs-xs); color: var(--fg-2); cursor: pointer }
   .sgb-mini { min-height: 22px; height: 22px; padding: 0 8px; flex: none; font-size: var(--fs-xs); border-radius: var(--r1) }
   .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
@@ -122,6 +125,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }
+  .sgb-bar { gap: 4px; padding-left: 6px } .sgb-ed { padding: 0 5px }
   .band-clock, .sgb-bar .chip.src, .sgb-bar .chip .lbl, .sgb-gauge { display: none } /* 폰 폭: 이름(최소 「Sprint N」)이 먼저 — 출처·상태 글자·게이지는 접는다(%는 남음) */
   .sgb-bar .sgb-name { flex: 1 0 8ch }
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
