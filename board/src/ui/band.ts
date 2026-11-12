@@ -6,7 +6,8 @@ import { usagePanel } from './usage.ts'
 
 export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void }
 
-// 0층 띠 — 상태 칩 · 스프린트 진행% · 몇 시간째·남은 예상 · ✨ · ⋯ 메뉴 · ▼ 한도와 속도.
+// 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩·스프린트·진행률·경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
+// 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
 export function createBand(data: BoardData, hooks: BandHooks) {
   const now = Date.now()
   const run = data.runs[0], goal = data.goals[0]
@@ -16,32 +17,41 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const state = goal?.state === 'shipped' ? '✅ 올라감' : goal?.state === 'review' ? '🔍 살펴보는 중' : working ? '🔨 짓는 중' : '⏸ 쉬는 중'
   const elapsed = run ? fmtDur((now - Date.parse(run.started_at)) / 60000) : ''
 
-  const upd = h('button', { class: 'btn upd', hidden: '' })
+  const upd = h('button', { class: 'btn upd sgb-mini', hidden: '' })
   upd.addEventListener('click', hooks.onApply)
+  const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
+  fb.addEventListener('click', hooks.onFeedback)
+
+  // 메뉴 — 첫 줄이 저장소 비우기. 누르면 같은 자리에서 2단계 확인(window.confirm 안 씀).
+  const purge = h('button', { class: 'btn' }, '🗑 이 기기 저장소 비우기')
+  const ask = h('div', { class: 'menu-ask', hidden: '' },
+    h('span', null, '이 기기에 남은 저장 자료를 비웁니다. 서버 자료는 안전하고, 다시 로그인해야 합니다.'))
+  const yes = h('button', { class: 'btn' }, '비우기')
+  const no = h('button', { class: 'btn' }, '취소')
+  ask.append(yes, no)
+  const askToggle = (on: boolean) => { ask.hidden = !on; purge.hidden = on }
+  purge.addEventListener('click', () => askToggle(true))
+  no.addEventListener('click', () => askToggle(false))
+  yes.addEventListener('click', () => { askToggle(false); hooks.onPurge() })
+
   const calm = h('input', { type: 'checkbox' })
   calm.checked = hooks.calm
   calm.addEventListener('change', () => hooks.onCalm(calm.checked))
-  const purge = h('button', { class: 'btn' }, '이 기기 저장소 비우기')
-  purge.addEventListener('click', hooks.onPurge)
-  const fb = h('button', { class: 'btn' }, '불편 접수')
-  fb.addEventListener('click', hooks.onFeedback)
-  const menu = h('div', { class: 'menu', hidden: '' }, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), purge)
-  const more = h('button', { class: 'btn', 'aria-label': '더 보기' }, '⋯')
-  more.addEventListener('click', () => { menu.hidden = !menu.hidden })
   const drop = h('div', { class: 'band-drop', hidden: '' }, usagePanel(data.usage))
-  const down = h('button', { class: 'btn', 'aria-label': '한도와 속도 펼치기' }, '▼')
-  down.addEventListener('click', () => { drop.hidden = !drop.hidden; down.textContent = drop.hidden ? '▼' : '▲' })
+  const lim = h('button', { class: 'btn' }, '한도와 속도 펼치기')
+  lim.addEventListener('click', () => { drop.hidden = !drop.hidden; lim.textContent = drop.hidden ? '한도와 속도 펼치기' : '한도와 속도 접기' })
+  const menu = h('div', { class: 'menu', hidden: '' }, purge, ask, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), lim)
+  const more = h('button', { class: 'btn sgb-mini', 'aria-label': '더 보기' }, '⋯')
+  more.addEventListener('click', () => { menu.hidden = !menu.hidden; if (menu.hidden) askToggle(false) })
 
-  const el = h('header', { class: 'band' },
-    h('div', { class: 'band-row' },
-      h('span', { class: 'chip' }, state),
-      h('span', { class: 'band-goal' }, goal ? `스프린트 ${goal.sprint} · ${goal.title} · ${goal.progress}%` : ''),
-      h('span', { class: 'band-clock' }, `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}`),
-      upd, h('span', { class: 'grow' }), fb, more, down),
-    menu, drop)
+  const toggle = h('span', { class: 'sgb-toggle' },
+    h('span', { class: 'chip' }, state),
+    h('span', { class: 'sgb-name' }, goal ? `스프린트 ${goal.sprint} · ${goal.title}` : '작업현황판'),
+    h('span', { class: 'sgb-pct' }, goal ? `${goal.progress}%` : ''),
+    h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
-    el,
+    toggle, upd, fb, more, menu, drop,
     showUpdate(v: VersionInfo | null) {
       upd.hidden = !v
       if (v) upd.textContent = `✨ ${v.note || '새 기능이 올라왔어요'} [지금 바꾸기]`
