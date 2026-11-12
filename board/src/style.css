@@ -57,3 +57,28 @@ button.chip { min-height: 44px; cursor: pointer }
   .detail[data-layout=sheet] { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 45dvh; overflow: auto; border-radius: 14px 14px 0 0; background: #0b0f17 }
   .detail[data-layout=sheet].full { height: 92dvh }
 }
+
+/* 3층 레인 */
+.lanes { display: flex; flex-direction: column; gap: 10px }
+.lane { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0f1624 }
+.lane[data-state=blocked] { background: #2a1015; border-color: #d04a5a }
+.lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
+.lane-track { position: relative; height: 52px; margin-top: 6px; border-radius: 26px; background: linear-gradient(90deg, #1b2638, #121a29) }
+.ball { position: absolute; left: 0; top: 4px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--neon); background: #0b0f17; color: var(--fg); cursor: pointer; animation: roll 27s linear infinite }
+@keyframes roll { from { left: 0 } to { left: calc(100% - 44px) } }
+
+/* 4층 작업장 */
+.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start }
+.ws-col { border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-height: 160px }
+.ws-head { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600 }
+.ws-badge { padding: 0 8px; border-radius: 10px; background: var(--neon); color: #000 }
+.ws-body { display: flex; flex-direction: column; gap: 8px }
+.ws-card { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 8px 8px 12px; text-align: left; color: var(--fg); font: inherit; background: #141c2b; border: 1px solid var(--line); border-left: 6px solid var(--make); border-radius: 6px; cursor: pointer }
+.ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
+.ws-clock { font-size: 13px } .ws-card.over .ws-clock { color: #f5c542; font-weight: 600 }
+.ws-reason { align-self: flex-start; padding: 0 8px; border-radius: 10px; background: #d04a5a33; border: 1px solid #d04a5a; font-size: 13px }
+@media (max-width: 767px) {
+  .ws { display: flex; overflow-x: auto; scroll-snap-type: x mandatory }
+  .ws-col { flex: 0 0 88%; scroll-snap-align: start }
+  .ws-head { min-height: 44px; align-items: center }
+}
