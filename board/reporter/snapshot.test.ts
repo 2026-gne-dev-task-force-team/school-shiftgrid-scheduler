@@ -120,20 +120,37 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(rest.actors.map((a: Actor) => [a.id, a.state])).toEqual([['a-lead', 'idle']])
   })
 
-  it('문지기가 적은 도는 에이전트를 캐릭터로 · 끝난 것·낡은 것은 빼고', () => {
+  it('문지기가 적은 도는 에이전트를 캐릭터로 · 끝난 것·낡은 것·✅ 일감·닫힌 세션은 work 가 아니다', () => {
     const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
     const t0 = at.getTime()
     writeFileSync(gatePath, JSON.stringify({ sessions: {}, actors: {
-      u1: { id: 'a-11111111', task: 'T-2a', started: t0 - 60e3, ended: null },
-      u2: { id: 'a-22222222', task: null, started: t0 - 60e3, ended: null },
-      u3: { id: 'a-33333333', task: null, started: t0 - 60e3, ended: t0 },
-      u4: { id: 'a-44444444', task: null, started: t0 - 4 * 3600e3, ended: null },
-      's-x': { id: 'a-55555555', kind: 'session', role: '세션', started: t0 - 60e3, ended: null },
+      u1: { id: 'a-11111111', task: 'T-2a', started: t0 - 60e3, ended: null }, // 도는 중이지만 레인 표에서 ✅
+      u2: { id: 'a-22222222', task: null, started: t0 - 60e3, ended: null }, // 도는 에이전트
+      u3: { id: 'a-33333333', task: null, started: t0 - 120e3, ended: t0 }, // 끝남
+      u4: { id: 'a-44444444', task: null, started: t0 - 2.5 * 3600e3, ended: null }, // 2시간 넘게 안 끝남 = 세션째 죽음
+      u5: { id: 'a-66666666', task: null, started: t0 - 5 * 3600e3, ended: t0 - 4 * 3600e3 }, // 오래전에 끝남 = 싣지 않음
+      's-x': { id: 'a-55555555', kind: 'session', role: '세션', started: t0 - 60e3, ended: null }, // 갓 말 건 세션
+      's-y': { id: 'a-77777777', kind: 'session', role: '세션', started: t0 - 120e3, idle: t0 - 60e3, ended: null }, // 턴이 끝난 세션
+      's-z': { id: 'a-88888888', kind: 'session', role: '세션', started: t0 - 30 * 60e3, ended: null }, // 20분 조용
+      's-w': { id: 'a-99999999', kind: 'session', role: '세션', started: t0 - 300e3, ended: t0 - 60e3 }, // 닫힌 세션
     } }))
     const d = build({ now: at, gatePath, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
-    expect(d.actors.map((a: Actor) => [a.id, a.name, a.state, a.task_id])).toEqual([
-      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'work', 'T-2a'], ['a-22222222', '일손', 'work', null], ['a-55555555', '대화 세션', 'work', null]])
-    expect(actorLabel(d.actors[3], d.actors)).toBe('대화 세션')
+    const row = (a: Actor) => [a.id, a.name, a.state, a.task_id]
+    expect(d.actors.map(row)).toEqual([
+      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'done', 'T-2a'], ['a-22222222', '일손', 'work', null], ['a-33333333', '일손', 'done', null],
+      ['a-44444444', '일손', 'done', null], ['a-55555555', '대화 세션', 'work', null], ['a-77777777', '대화 세션', 'idle', null],
+      ['a-88888888', '대화 세션', 'done', null], ['a-99999999', '대화 세션', 'done', null]])
+    expect(actorLabel(d.actors.find((a: Actor) => a.id === 'a-55555555'), d.actors)).toBe('대화 세션 1') // 같은 이름이 여럿이면 번호
+  })
+
+  it('에이전트 하나 띄웠다 끝낸 뒤 스냅샷에서 work 아님', () => {
+    const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
+    const t0 = at.getTime()
+    const put = (a: object) => writeFileSync(gatePath, JSON.stringify({ sessions: {}, actors: { u1: a } }))
+    put({ id: 'a-11111111', task: null, started: t0 - 60e3, ended: null })
+    expect(build({ now: at, gatePath, md: lane('', '') }).actors.filter((a: Actor) => a.state === 'work').map((a: Actor) => a.id)).toEqual(['a-lead', 'a-11111111'])
+    put({ id: 'a-11111111', task: null, started: t0 - 60e3, ended: t0 })
+    expect(build({ now: at, gatePath, md: lane('', '') }).actors.filter((a: Actor) => a.state === 'work')).toEqual([])
   })
 
   it('진행률 = 지금 스프린트 표의 ✅ 수 / 전체 — 그 스프린트 안 덧줄만 센다', () => {
