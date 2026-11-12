@@ -24,7 +24,7 @@ create table if not exists board.actors (
   dept text not null check (dept in ('hq','make','qa')),
   team text not null check (board.plain(team)),
   role text not null check (board.plain(role)),
-  state text not null check (state in ('work','idle','blocked','done')),
+  state text not null check (state in ('work','idle','wait','blocked','off','done')),
   task_id text,
   branch_id text,
   account text not null check (account in ('org','personal')),
@@ -33,6 +33,9 @@ create table if not exists board.actors (
   ended_at timestamptz
 );
 alter table board.actors add column if not exists tok_total int; -- 누적 토큰(기록을 못 이은 캐릭터는 비어 있다)
+-- 캐릭터 다섯 상태(work·idle·wait·blocked·off) + 옛 done. 이미 만든 표의 옛 check 를 갈아 끼운다(멱등).
+alter table board.actors drop constraint if exists actors_state_check;
+alter table board.actors add constraint actors_state_check check (state in ('work','idle','wait','blocked','off','done'));
 
 create table if not exists board.tasks (
   id text primary key,
