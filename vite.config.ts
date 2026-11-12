@@ -11,6 +11,8 @@ const BOARD_VERSION = JSON.parse(readFileSync(BOARD_VERSION_FILE, 'utf-8')) as {
 try { BOARD_VERSION.build = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || BOARD_VERSION.build } catch { /* git 없음 */ }
 // 새 판 알림 문구 = 그 커밋 제목(고정 「처음 판」이 판마다 뜨지 않게).
 try { BOARD_VERSION.note = execSync('git log -1 --format=%s', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || BOARD_VERSION.note } catch { /* git 없음 */ }
+// 판 이름표(설치 이름·탭 제목·배지)는 site.config.json 의 edition 한 곳에서 온다
+const EDITION = JSON.parse(readFileSync(new URL('./site.config.json', import.meta.url), 'utf-8')).edition as { appName: string; shortName: string; badge: string }
 const BUILD_AT = new Date().toISOString()
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -40,6 +42,8 @@ export default defineConfig({
     react(),
     // 작업현황판이 상대 경로로 읽는 version.json 을 dist 루트에 싣는다(board/public 이 원본)
     { name: 'board-version-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ ...BOARD_VERSION, at: BUILD_AT }) }) } },
+    // 탭 제목·홈 화면 이름을 판 이름표로 바꾼다(index.html 의 값은 자리 표시)
+    { name: 'edition-title', transformIndexHtml: (html: string) => html.replace(/<title>[^<]*<\/title>/, `<title>${EDITION.appName}</title>`).replace(/(apple-mobile-web-app-title" content=")[^"]*/, `$1${EDITION.shortName}`) },
     // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
     ...(https ? [basicSsl()] : []),
     // PWA — 폰 홈 화면에 붙이고 오프라인에서도 뜨게. 규칙 엔진·솔버가 전부 브라우저 안에서 돌아
@@ -52,8 +56,8 @@ export default defineConfig({
       devOptions: { enabled: https },
       includeAssets: ['favicon.svg', 'icons.svg', 'icons/*.png'],
       manifest: {
-        name: '시간표 짜기 (1.2v 미리보기)',
-        short_name: '시간표 1.2v',
+        name: EDITION.appName,
+        short_name: EDITION.shortName,
         description: '규칙을 데이터로 받는 초등 시간표 도구',
         lang: 'ko',
         start_url: './',
