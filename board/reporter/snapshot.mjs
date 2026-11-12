@@ -41,12 +41,10 @@ export function publicTitle(what) {
 }
 
 const tidy = (t) => t.replace(/\s+/g, ' ').replace(/(\s*[·—]\s*)+/g, ' · ').replace(/^[\s·—:,]+|[\s·—:,]+$/g, '')
-/** 목표 줄 → 공개 부분. 남는 한글이 거의 없으면(인용뿐) 인용 안 글을 담백 검사해 쓴다 — 걸리면 빈 값. */
+/** 목표 줄 → 공개 부분. 인용뿐이면 빈 값(호출부가 스프린트 제목으로 대신) — 쥔님 말 원문은 공개 판에 싣지 않는다. */
 export function publicGoal(goal) {
   const t = tidy(strip(goal))
-  if ((t.match(/[가-힣]/g) ?? []).length >= 4) return clean(t.slice(0, 200))
-  const quoted = tidy([...goal.matchAll(/"([^"]*)"/g)].map((m) => m[1]).join(' · '))
-  return (quoted.match(/[가-힣]/g) ?? []).length < 4 ? '' : clean(quoted.slice(0, 200))
+  return (t.match(/[가-힣]/g) ?? []).length >= 4 ? clean(t.slice(0, 200)) : ''
 }
 
 const TEAM = [[/메인|지휘/, '지휘'], [/화면/, '화면'], [/품질|검사|시험|맨눈/, '검사'], [/설계/, '설계']]
