@@ -5,6 +5,8 @@ import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, sho
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
+import { taskDetail } from '../lib/task-detail.ts'
+import { taskDetailView } from '../ui/task-detail-view.ts'
 
 // 구역 가구 — 도트 rect 몇 개(18×10 격자). 서류함·돋보기 탁자·책상·상자 더미.
 const W = '#C8A06A', D = '#8A6A3E', P = '#F3E6D3', G = '#9AA5AD'
@@ -69,18 +71,18 @@ export const layer4: LayerRenderer = {
       el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${t.title}`), ...(a ? [character(a, 'mini')] : []))
     }
 
+    const openTask = (id: string) => {
+      const c = cur(id)
+      const m = taskDetail(c, data)
+      openDetail({ title: c.title, wide: true, rows: [], extra: taskDetailView(m, c, [['시간', `${minutesIn(c, now()) ?? 0}분째 / 짐작 ${c.est_min}분`], ...(c.block_kind ? [['막힌 이유', `${BLOCK_NAME[c.block_kind]} — ${blockText(c, tasks)}`] as [string, string]] : [])], openTask) })
+    }
     const layout = (animate: boolean) => {
       const first = new Map([...cards].map(([id, el]) => [id, el.getBoundingClientRect()]))
       for (const t of tasks) {
         let el = cards.get(t.id)
         if (!el) {
           el = h('button', { 'data-id': t.id })
-          el.addEventListener('click', () => {
-            const c = cur(t.id)
-            openDetail({ title: c.title, rows: [['머리표', KIND_ICON[c.kind] ?? c.kind], ['분류', c.category], ['팀', c.team],
-              ['상태', REASON_NAME[c.reason] ?? c.reason], ['시간', `${minutesIn(c, now()) ?? 0}분째 / 짐작 ${c.est_min}분`],
-              ...(c.block_kind ? [['막힌 이유', `${BLOCK_NAME[c.block_kind]} — ${blockText(c, tasks)}`] as [string, string]] : [])] })
-          })
+          el.addEventListener('click', () => openTask(t.id))
           tip(el, () => `${cur(t.id).title} · ${REASON_NAME[cur(t.id).reason] ?? cur(t.id).reason}`)
           el.style.setProperty('--i', String(cards.size))
           cards.set(t.id, el)

@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { appOfLane, build, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
+import { appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -281,14 +281,13 @@ describe('보고꾼 — 요청함 R 카드', () => {
   const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), requestMd: REQ })
   const r = Object.fromEntries(d.tasks.filter((t: { id: string }) => t.id.startsWith('R')).map((t: { id: string }) => [t.id, t]))
 
-  it('R 줄마다 카드 하나 · 제목은 처방의 굵은 글 · 원문 인용은 안 실린다', () => {
+  it('R 줄마다 카드 하나 · 제목은 처방의 굵은 글 · 원문은 ask 칸으로 따로 실린다', () => {
     expect(parseRequests(REQ).map((x: { id: string }) => x.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'])
     expect(r.R1.title).toBe('탭 이름을 쉽게 바꾼다 (→ T-2a)')
     expect(r.R2.title).toBe('처음 보는 사람이 읽게 (→ T-9z)')
     expect(r.R3.title.length).toBeLessThanOrEqual(40)
     expect(r.R3.title.endsWith('…')).toBe(true)
     expect(r.R6.title).toBe('요청 R6') // 경로가 걸려 비면 번호 제목
-    expect(JSON.stringify(d)).not.toMatch(/비밀스러운|둘째|셋째/)
     expect(findDirty(d)).toBeNull()
     expect(requestTitle('**탭**', 'R9')).toBe('탭')
     expect(requestTitle('**탭** 이름을 쉽게 바꾼다. 둘째 문장', 'R9')).toBe('탭 이름을 쉽게 바꾼다') // 굵은 글 8자 미만 → 첫 문장
@@ -511,4 +510,53 @@ describe('감독관 캐릭터 (T-9zb)', () => {
   })
   it('오래되면 쉼', () => expect(world(30)).toMatchObject({ state: 'idle' }))
   it('노트가 없으면 안 싣는다', () => expect(world(null)).toBeUndefined())
+})
+
+describe('보고꾼 — 카드 상세 칸(R71)', () => {
+  const long = '긴 설명 문장이 계속 이어진다. '.repeat(60) // 약 900자
+  const REQ = `| # | 받은 시각 | 쥔님 원문 | 태스크로 풀면 | 종류 | 상태 |
+|---|---|---|---|---|---|
+| R1 | 11-12 14:23 | *"카드가 자세하지 않다. 홍길동 선생님이 말했다. 경로는 D:\\x\\y 에서 봤다. 내용을 알고 싶다"* | **상세를 만든다** ${long} 완료 정의: 상세에 원문이 보인다. 빈 칸은 숨는다 | 고침 | → T-2a |
+| R2 | 11-12 14:30 | *"둘째"* | 다른 일 R1 과 닮았다 | 앱 | 📥 대기 |
+`
+  const d = build({ now: new Date('2026-11-12T08:00:00Z'), md: lane('| T-2a | 상세 시트 만들기 | 코드 | 5 | 🔄 |', '| 11-12 14:40 | T-2a 시작 | | |'), requestMd: REQ })
+  const t = (id: string) => d.tasks.find((x: { id: string }) => x.id === id)
+
+  it('500자 넘는 칸이 안 잘린다 · 완료 조건은 따로', () => {
+    expect(t('R1').body.length).toBeGreaterThan(500)
+    expect(t('R1').body.endsWith('이어진다.')).toBe(true)
+    expect(t('R1').done).toBe('상세에 원문이 보인다.\n빈 칸은 숨는다')
+    expect(t('R1').body).not.toMatch(/완료 정의/)
+    expect(splitDetail('그냥 설명')).toEqual({ body: '그냥 설명' })
+    expect(splitDetail('')).toEqual({})
+  })
+
+  it('원래 요청 · 받은 시각 · 이력', () => {
+    expect(t('R1').askedAt).toBe('2026-11-12T14:23:00+09:00')
+    expect(t('R1').kind).toBe('bug')
+    expect(t('R1').history.map((e: { text: string }) => e.text)).toEqual(['접수', '착수']) // 접수 + 이어진 T 의 로그
+    expect(t('T-2a').history.map((e: { text: string }) => e.text)).toEqual(['착수'])
+  })
+
+  it('실명·경로가 든 문장은 걸러지고 나머지는 남는다', () => {
+    expect(t('R1').ask).toBe('카드가 자세하지 않다.\n내용을 알고 싶다')
+    expect(JSON.stringify(d)).not.toMatch(/홍길동|D:/)
+    expect(findDirty(d)).toBeNull()
+  })
+
+  it('설정 실명 목록(redactNames)은 꼴 규칙에 안 걸리는 이름도 거른다 · 칸이 없으면 꼴 규칙만', () => {
+    const md = REQ.replace('경로는', '가나다가 말했다. 경로는')
+    const ask = (names?: string[]) => build({ now: new Date('2026-11-12T08:00:00Z'), md: lane('| T-2a | 가 | 코드 | 5 | 🔄 |', ''), requestMd: md, ...(names ? { redactNames: names } : {}) }).tasks.find((x: { id: string }) => x.id === 'R1').ask
+    expect(ask()).toContain('가나다가 말했다.')
+    expect(ask(['가나다'])).toBe('카드가 자세하지 않다.\n내용을 알고 싶다')
+    expect(ask()).toContain('가나다가 말했다.') // 다음 build 에 앞 설정이 새지 않는다
+  })
+
+  it('R↔T 연결이 양쪽에서 보인다(R↔R 도)', () => {
+    expect(t('R1').links.sort()).toEqual(['R2', 'T-2a'])
+    expect(t('T-2a').links).toEqual(['R1'])
+    expect(t('R2').links).toEqual(['R1'])
+    const x = linkTasks([{ id: 'R9' }, { id: 'T-1' }], [['R9', 'T-1'], ['R9', 'T-없음'], ['R9', 'R9']])
+    expect(x).toEqual([{ id: 'R9', links: ['T-1'] }, { id: 'T-1', links: ['R9'] }])
+  })
 })

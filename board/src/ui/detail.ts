@@ -16,6 +16,7 @@ export function createDetail() {
     setLayout(l: DetailLayout) { el.dataset.layout = l },
     open(c: DetailContent) {
       body.replaceChildren(h('h3', null, c.title), ...c.rows.map(([k, v]) => h('p', null, h('b', null, `${k} `), v)), ...(c.extra ? [c.extra] : []))
+      el.classList.toggle('full', !!c.wide)
       el.hidden = false
     },
   }

@@ -290,3 +290,14 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
     --chip-s: 45%; --chip-l: 22%; --chip-l-hover: 28%; --chip-bd-l: 62%; --chip-bd-l-hover: 70%; --gg-fg-l: 78%; --gg-ring-l: 70%; --branch-l: 62%;
   }
 }
+
+/* 카드 상세(지라 꼴, R71) — 좁은 칸은 옆칸이 위, 넓게(↕) 열면 본문 | 옆칸 두 줄 */
+.td { display: flex; flex-direction: column-reverse; gap: var(--sp3) }
+.td-sec h4 { margin: var(--sp3) 0 4px; font-size: var(--fs-sm); color: var(--fg-2) }
+.td-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-sm); line-height: 1.55 }
+.td-hist { margin: 0; padding-left: 18px; font-size: var(--fs-sm) } .td-hist time { color: var(--fg-2) }
+.td-side { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px var(--sp2); font-size: var(--fs-sm); align-content: start }
+.td-side dt { color: var(--fg-2) } .td-side dd { margin: 0; overflow-wrap: anywhere }
+.td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start } .td-link { text-align: left }
+.detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 6dvh; left: 50%; transform: translateX(-50%); width: min(960px, 94vw); max-height: 88dvh; overflow: auto }
+@media (min-width: 768px) { .detail.full .td { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: start } .detail.full .td-main { order: 1 } .detail.full .td-side { order: 2 } }

@@ -1,7 +1,7 @@
 // 층 렌더러 인터페이스 — 층 2~5 판은 자기 파일(layerN-*.ts)의 render 하나만 채운다.
 import type { BoardData } from '../types.ts'
 
-export interface DetailContent { title: string; rows: [label: string, value: string][]; extra?: HTMLElement }
+export interface DetailContent { title: string; rows: [label: string, value: string][]; extra?: HTMLElement; wide?: boolean /* 지라 꼴 상세 — 넓게 연다 */ }
 
 export interface LayerCtx {
   data: BoardData
