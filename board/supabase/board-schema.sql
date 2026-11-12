@@ -49,6 +49,7 @@ create table if not exists board.tasks (
   lane_id text not null,
   "column" text not null check ("column" in ('wait','work','done')),
   reason text not null check (reason in ('new','dep','checking','blocked','review','done','closed')),
+  app text not null default '1.2v' check (app in ('v1','1.2v','v2')), -- 어느 판 일감(T-9g)
   actor_id text,
   updated_at timestamptz not null default now(),
   blocked_by text,
@@ -153,7 +154,8 @@ create table if not exists board.feedback (
   -- 사람 글이라 「3/4교시」 같은 / 는 받는다(plain 대신 @·\·비밀 꼴만 거른다).
   text text not null check (char_length(btrim(text)) between 1 and 200 and text !~ '[\\@]' and text !~* '\msk-|eyJ'),
   place text not null default '' check (char_length(place) <= 30 and board.plain(place)),
-  ts timestamptz not null default now()
+  ts timestamptz not null default now(),
+  app text not null default '1.2v' check (app in ('v1','1.2v','v2'))
 );
 
 -- RLS 켜기
@@ -187,7 +189,7 @@ create policy board_feedback_insert on board.feedback for insert to authenticate
 grant usage on schema board to anon, authenticated, service_role;
 grant select on all tables in schema board to anon, authenticated;
 grant all on all tables in schema board to service_role;
-grant insert (text, place) on board.feedback to authenticated; -- id·ts 는 기본값
+grant insert (text, place, app) on board.feedback to authenticated; -- id·ts 는 기본값
 
 -- Realtime (이미 등록돼 있으면 건너뜀)
 do $$

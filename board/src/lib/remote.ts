@@ -25,8 +25,8 @@ async function get(env: Required<Env>, table: string, f: typeof fetch): Promise<
 export async function fetchRemote(env: Env = envNow(), f: typeof fetch = fetch): Promise<Remote | null> {
   if (!env.url || !env.key) return null
   const e = env as Required<Env>
-  const fbP = get(e, 'feedback', f).then((rows) => (rows as { id: string; text: string; place?: string; ts: string }[])
-    .map((r): Feedback => ({ id: r.id, text: r.text, where: r.place ?? '', ts: r.ts }))).catch((): Feedback[] => [])
+  const fbP = get(e, 'feedback', f).then((rows) => (rows as { id: string; text: string; place?: string; ts: string; app?: string }[])
+    .map((r): Feedback => ({ id: r.id, text: r.text, where: r.place ?? '', ts: r.ts, app: r.app }))).catch((): Feedback[] => [])
   let tables: BoardData | null = null
   try {
     const rows = await Promise.all(TABLES.map((n) => get(e, n, f)))

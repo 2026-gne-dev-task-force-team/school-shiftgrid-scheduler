@@ -10,6 +10,7 @@ import usage from '../fixtures/usage.json'
 import runs from '../fixtures/runs.json'
 import sprints from '../fixtures/sprints.json'
 import { feedbackRows, loadFeedback, loadHidden } from './lib/feedback.ts'
+import { DEFAULT_APP, filterByApp, type AppId } from './lib/app.ts'
 import type { Remote } from './lib/remote.ts'
 import type { BoardData } from './types.ts'
 
@@ -27,9 +28,9 @@ function shift(v: unknown, d: number): unknown {
   return v
 }
 
-export function loadData(now = Date.now(), remote?: Remote | null): BoardData {
+export function loadData(now = Date.now(), remote?: Remote | null, app: AppId = DEFAULT_APP): BoardData {
   const d: BoardData = { ...(remote?.tables ?? shift(rawFixtures, now - BASE) as BoardData),
     source: remote?.tables ? 'server' : 'mock', serverFeedback: (remote?.feedback ?? []).filter((f) => !loadHidden().includes(f.id)) }
   const fb = feedbackRows(loadFeedback(), d.lanes[0]?.id ?? '')
-  return { ...d, tasks: [...d.tasks, ...fb.tasks], events: [...d.events, ...fb.events] }
+  return filterByApp({ ...d, tasks: [...d.tasks, ...fb.tasks], events: [...d.events, ...fb.events] }, app)
 }

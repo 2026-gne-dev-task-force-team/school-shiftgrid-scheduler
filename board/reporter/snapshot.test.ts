@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
+import { appOfLane, build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -381,5 +381,16 @@ describe('보고꾼 — 레인 폴더 읽기', () => {
     const a = d.actors.find((x: { id: string }) => x.id === t.actor_id)
     expect(a).toMatchObject({ state: 'work', task_id: t.id, branch_id: null })
     expect(mine('가 레인').filter((x: { actor_id: string | null }) => x.actor_id)).toHaveLength(1) // ⬜ 에는 안 붙는다
+  })
+})
+
+describe('판 구분 app 칸 (T-9g)', () => {
+  it('레인 이름에 적힌 판 낱말만 읽고, 아니면 1.2v', () => {
+    expect(appOfLane('시간표 v2')).toBe('v2')
+    expect(appOfLane('시간표 V1 맥')).toBe('v1')
+    expect(appOfLane('1.2v 구현')).toBe('1.2v')
+    expect(appOfLane('코드 맥')).toBe('1.2v')
+    expect(appOfLane('rev2x')).toBe('1.2v') // 낱말 안쪽은 안 읽는다
+    expect(appOfLane(undefined)).toBe('1.2v')
   })
 })

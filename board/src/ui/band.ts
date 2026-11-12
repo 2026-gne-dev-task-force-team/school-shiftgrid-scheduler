@@ -5,9 +5,10 @@ import { currentSprint, sprintLabel } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
+import { editionOfApp, type AppId } from '../lib/app.ts'
 import { EDITIONS, currentEdition } from '../lib/editions.ts'
 
-export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void; auto?: boolean; onAuto?(on: boolean): void }
+export interface BandHooks { app?: AppId; onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void; auto?: boolean; onAuto?(on: boolean): void }
 
 // 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩 · 자료 출처 · Sprint N · 목표 · 진행률% · 경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
@@ -28,7 +29,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const auto = h('label', { class: 'sgb-auto', title: '켜 두면 새 판이 오는 즉시 [지금 바꾸기]를 저절로 합니다. 글을 치는 중이면 끝난 뒤에 합니다.' }, autoBox, ' 자동')
   const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
   // 판 칩 — 평범한 링크 이동(서비스워커 건드리지 않음). 지금 판은 눌린 모양.
-  const curEd = currentEdition(location.pathname)
+  const curEd = hooks.app ? editionOfApp(hooks.app) : currentEdition(location.pathname) // 판 이름(data-app)이 주소보다 앞선다
   const editions = h('nav', { class: 'sgb-editions', 'aria-label': '판 바꾸기' },
     ...EDITIONS.map((e) => h('a', { class: e.id === curEd ? 'sgb-ed on' : 'sgb-ed', href: e.path, title: e.hint, 'data-edition': e.id, ...(e.id === curEd ? { 'aria-current': 'page' } : {}) }, e.label)))
 
