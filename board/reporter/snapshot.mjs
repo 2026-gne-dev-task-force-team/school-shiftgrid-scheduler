@@ -533,7 +533,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     for (const x of mentions(`${r.what} ${r.state}`, RID)) edges.push([r.id, x])
     const history = [...(askedAt ? [{ ts: askedAt, text: '접수' }] : []), ...(link ? (byId.get(link)?.history ?? []) : [])]
     return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: kindOfType(r.type), target: targetOf({ id: r.id, title, type: r.type, lane: '현황판 만들기' }), team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
-      est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso, ...(ask ? { ask } : {}), ...(askedAt ? { askedAt } : {}), ...splitDetail(r.what),
+      est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso, ...(ask ? { ask } : {}), ...(askedAt ? { askedAt } : {}), ...(/^\s*\*?"/.test(r.ask ?? '') ? { direct: true } : {}), ...splitDetail(r.what),
       ...(history.length ? { history } : {}) }
   })
 
