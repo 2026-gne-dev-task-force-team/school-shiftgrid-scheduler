@@ -3,8 +3,8 @@
 // 두 기기가 같이 돌면 나중에 끝난 쪽이 이긴다(엉키지 않음, 마지막 값이 남음).
 // 로그엔 응답 코드와 표별 줄 수만. TOKEN 은 변수로만 받고 찍지 않는다.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { toSql, TABLES } from './to-sql.mjs'
 
 export class NoCredential extends Error {}
@@ -42,15 +42,25 @@ export async function sink(snap, { token, ref, fetchImpl = fetch }) {
   return { ok: res.ok, status: res.status, counts, message }
 }
 
-// 로그 한 줄 + 종료코드(0 성공 · 1 실패 · 3 자격 없음). 값은 찍지 않는다.
+// 직전 싣기 결과를 이 기기 로컬 파일에 남긴다(레포 밖) — 시각·결과·응답 코드만. 값·토큰·경로·본문은 안 담는다. 쓰기 실패는 싣기를 깨지 않는다.
+export function writeSinkState(path, rec) {
+  if (!path) return
+  try { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, JSON.stringify(rec)) } catch { /* 상태 기록 실패는 무시 */ }
+}
+
+// 로그 한 줄 + 종료코드(0 성공 · 1 실패 · 3 자격 없음). 값은 찍지 않는다. opts.statePath 가 있으면 결과를 그 파일에 남긴다.
 export async function sinkAndLog(snap, opts, log = console.log) {
+  const { statePath, now = () => new Date(), ...sinkOpts } = opts
+  const save = (result, status = null) => writeSinkState(statePath, { at: now().toISOString(), result, status })
   try {
-    const r = await sink(snap, opts)
+    const r = await sink(snap, sinkOpts)
     log(`싣기 응답 ${r.status} · ${r.counts}${r.message ? ` · ${r.message}` : ''}`)
+    save(r.ok ? 'ok' : 'fail', r.status)
     return r.ok ? 0 : 1
   } catch (e) {
-    if (e instanceof NoCredential) { log(e.message); return 3 }
+    if (e instanceof NoCredential) { log(e.message); save('nocred'); return 3 }
     log(`싣기 실패: ${e instanceof Error ? e.message : 'fetch 오류'}`.slice(0, 300))
+    save('fail')
     return 1
   }
 }

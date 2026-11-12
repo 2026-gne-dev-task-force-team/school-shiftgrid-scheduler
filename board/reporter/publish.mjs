@@ -24,7 +24,7 @@ const snap = build({
   usagePath: arg('--usage', cfg.usage),
   gatePath: arg('--gate', cfg.gate),
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
-  services: await checkServices(repoDir),
+  services: await checkServices(repoDir, new Date(), cfg.sinkState),
 })
 const dirty = findDirty(snap)
 if (dirty) throw new Error(`담백 검사 실패: ${dirty}`)
@@ -33,4 +33,4 @@ for (const t of TABLES) console.log(`${t}\t${snap[t].length}`)
 if (dry) process.exit(0)
 
 // 2. 이 기기에서 바로 싣기
-process.exit(await sinkAndLog(snap, { token: readToken(), ref: readRef(cfg) }))
+process.exit(await sinkAndLog(snap, { token: readToken(), ref: readRef(cfg), statePath: cfg.sinkState }))

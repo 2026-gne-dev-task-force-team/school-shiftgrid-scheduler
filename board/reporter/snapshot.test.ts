@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, runState, serviceState } from './snapshot.mjs'
+import { build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -247,12 +247,23 @@ describe('보고꾼 — 서비스·모듈', () => {
     expect(serviceState({ status: 404 }, 'abc1234')).toBe('down')
   })
 
-  it('자료 싣기 판정', () => {
-    expect(runState({ status: 'completed', conclusion: 'success' })).toBe('ok')
-    expect(runState({ status: 'in_progress', conclusion: null })).toBe('build')
-    expect(runState({ status: 'queued', conclusion: null })).toBe('build')
-    expect(runState({ status: 'completed', conclusion: 'failure' })).toBe('down')
-    expect(runState(undefined)).toBe('down')
+  it('자료 싣기 판정: 직전 싣기 기록으로 성공·실패·자격 없음·멈춤·기록 없음', () => {
+    const now = new Date('2026-11-12T05:00:00Z')
+    const at = (min: number) => new Date(now.getTime() - min * 60e3).toISOString()
+    expect(sinkService({ at: at(1), result: 'ok', status: 200 }, now)).toMatchObject({ state: 'ok', name: '자료 싣기 · 성공 · 응답 200', checked_at: at(1) })
+    expect(sinkService({ at: at(1), result: 'fail', status: 400 }, now)).toMatchObject({ state: 'down', name: '자료 싣기 · 실패 · 응답 400' })
+    expect(sinkService({ at: at(1), result: 'fail', status: null }, now)).toMatchObject({ state: 'down', name: '자료 싣기 · 실패' })
+    expect(sinkService({ at: at(1), result: 'nocred', status: null }, now)).toMatchObject({ state: 'plan', name: '자료 싣기 · 자격 없음' })
+    expect(sinkService({ at: at(45), result: 'ok', status: 200 }, now)).toMatchObject({ state: 'down', name: '자료 싣기 · 멈춤 · 응답 200' })
+    expect(sinkService(null, now)).toMatchObject({ state: 'plan', name: '자료 싣기 · 기록 없음' })
+    expect(sinkService({ at: 'x', result: 'ok' }, now).state).toBe('plan')
+  })
+
+  it('자료 싣기 칸은 담백 검사를 통과한다(경로·값 없음)', () => {
+    const now = new Date('2026-11-12T05:00:00Z')
+    for (const rec of [{ at: now.toISOString(), result: 'ok', status: 200 }, { at: now.toISOString(), result: 'nocred', status: null }, null]) {
+      expect(findDirty(sinkService(rec, now))).toBeNull()
+    }
   })
 })
 

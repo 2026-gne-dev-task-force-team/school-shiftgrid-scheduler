@@ -26,4 +26,4 @@ const data = build({
 writeFileSync(out, JSON.stringify(data, null, 2))
 for (const [k, v] of Object.entries(data)) console.log(`${k}\t${v.length}`)
 console.log('담백 검사로 버린 줄', JSON.stringify(dropped))
-if (process.argv.includes('--sink')) process.exit(await sinkAndLog(data, { token: readToken(), ref: readRef(cfg) }))
+if (process.argv.includes('--sink')) process.exit(await sinkAndLog(data, { token: readToken(), ref: readRef(cfg), statePath: cfg.sinkState }))
