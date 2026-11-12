@@ -4,6 +4,8 @@
 import { webPlatform } from './legacy/platform'
 import type { Platform } from './legacy/platform'
 import type { Doc } from './legacy/types/doc'
+import { replaceFlow, windowDeps } from './replace'
+import type { ReplaceDeps } from './replace'
 
 /** 꾸러미 쪽 「doc 칸」 어댑터. 진짜 서버 PUT(설계 ① 12절)이 붙을 자리는 이 인터페이스 하나다. */
 export interface DocStore {
@@ -48,7 +50,10 @@ export function createMemoryDocStore(): DocStore {
   }
 }
 
-export function createBundlePlatform(store: DocStore = createMemoryDocStore()): Platform {
+export function createBundlePlatform(
+  store: DocStore = createMemoryDocStore(),
+  replaceDeps?: Partial<ReplaceDeps>,
+): Platform {
   return {
     kind: 'web',
     // autosave 는 저장이 아니라 dirty 표시 — 실제 저장은 saveDoc/모아 보내기가 한다. 던지지 않는다.
@@ -68,8 +73,14 @@ export function createBundlePlatform(store: DocStore = createMemoryDocStore()): 
     // 파일 내려받기 계열은 v1 웹 구현 그대로(선생님 앱 호환 파일)
     saveDocAs: (doc) => webPlatform.saveDocAs(doc),
     exportFile: (name, data, mime) => webPlatform.exportFile(name, data, mime),
-    // TODO(P10c): 파일 → 검사 → 「칸을 이 파일로 바꿀까요」 확인 → 자동 받기 순서로 감싼다
-    openDoc: () => webPlatform.openDoc(),
+    // P10c: 파일 → 검사 → 확인 → 지금 판 자동 받기 → 바꾸기(replace.tsx). 막히거나 취소면 null
+    async openDoc() {
+      const deps = {
+        ...windowDeps(() => store.doc, () => webPlatform.openDoc(), (d) => webPlatform.saveDocAs(d)),
+        ...replaceDeps,
+      }
+      return (await replaceFlow(deps)).file
+    },
     importFile: (accept) => webPlatform.importFile(accept),
     print: () => webPlatform.print(),
     recentFiles: async () => [],
