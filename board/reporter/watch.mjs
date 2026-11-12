@@ -1,6 +1,6 @@
 // 상주 감시꾼 — 원천 파일이 바뀌면 3초 모아 한 번 싣는다(publish.mjs 의 「2분 시계」를 「바뀌면 즉시」로).
 // node board/reporter/watch.mjs   (의존성 0 · fs.watch recursive — macOS·Windows)
-// · 같으면 안 싣는다: 직전 성공 스냅숏의 해시(매번 바뀌는 시각 칸 뺀 것)를 last-hash.json(last-sink.json 옆)에 두고 비교.
+// · 같으면 안 싣는다: 직전 성공 스냅숏의 해시(VOLATILE 로 명시한 매번 바뀌는 시각 칸만 뺀 것)를 last-hash.json(last-sink.json 옆)에 두고 비교.
 // · 2분 타이머는 예비(놓친 변화 따라잡기) — 같은 규칙(해시 같으면 건너뜀).
 // · 해시가 같아도 마지막 성공 싣기가 20분 넘었으면 한 번 싣는다 — 「자료 싣기」 표지(sinkService)는 30분 넘게 기록이 없으면 「멈춤」으로 읽는다.
 // · 두 기기가 같이 돌면 나중에 끝난 쪽이 이김(sink.mjs 그대로).
@@ -19,10 +19,18 @@ export const BACKUP_MS = 120000
 export const MAXWAIT_MS = 15000 // 바뀜이 끊이지 않아도 첫 바뀜 뒤 이만큼 지나면 싣는다(3초 모으기가 굶지 않게)
 export const HEARTBEAT_MS = 20 * 60e3
 
-/** 해시용 직렬화 — 매번 바뀌는 칸(checked_at · 지금 시각 그대로인 문자열)을 뺀다. 나머지 시각(레인 노트에서 온 것·한도 reset)은 실제 변화라 둔다. */
-export function snapshotHash(snap, nowIso) {
-  const text = JSON.stringify(snap, (k, v) => (k === 'checked_at' ? undefined : v === nowIso ? '~now' : v))
-  return createHash('sha256').update(text).digest('hex')
+/** 해시에서 뺄 칸 — 표 이름 → 칸 이름. build 가 「지금 시각」을 넣는 칸만 명시한다(값 꼴로 거르지 않는다 — 실제 변화를 지울 수 있다).
+ *  services.checked_at · usage.ts(매번 now) · tasks.updated_at(요청함·다른 레인 줄은 now) · actors.started_at(다른 레인·막힘 캐릭터는 now). 나머지는 자료라 둔다. */
+export const VOLATILE = { services: ['checked_at'], usage: ['ts'], tasks: ['updated_at'], actors: ['started_at'] }
+
+/** 해시용 직렬화 — 스냅숏 전체에서 VOLATILE 칸만 빼고 해시한다. */
+export function snapshotHash(snap) {
+  const slim = {}
+  for (const [table, rows] of Object.entries(snap)) {
+    const drop = VOLATILE[table]
+    slim[table] = drop && Array.isArray(rows) ? rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !drop.includes(k)))) : rows
+  }
+  return createHash('sha256').update(JSON.stringify(slim)).digest('hex')
 }
 
 export const hashPath = (cfg) => join(dirname(cfg.sinkState), 'last-hash.json')
@@ -36,7 +44,7 @@ export async function runCycle({ makeSnap, sinkFn, readRec, writeRec, now = () =
   const snap = await makeSnap(at)
   const dirty = findDirty(snap)
   if (dirty) { log(`담백 검사 실패: ${dirty}`); return 1 }
-  const hash = snapshotHash(snap, nowIso)
+  const hash = snapshotHash(snap)
   const rec = readRec()
   if (rec?.hash === hash && at.getTime() - Date.parse(rec.at) < HEARTBEAT_MS) { log('같음 — 건너뜀'); return 'skip' }
   const code = await sinkFn(snap)

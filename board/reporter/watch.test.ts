@@ -109,16 +109,25 @@ describe('runCycle — 같으면 안 싣기', () => {
 })
 
 describe('snapshotHash', () => {
-  it('시각 칸(지금 시각 · checked_at)만 다른 스냅숏은 같은 해시', () => {
-    const s = (n: string) => ({ usage: [{ ts: n, pct_5h: 1 }], services: [{ id: 's', checked_at: n + 'x' }], tasks: [{ updated_at: n }] })
-    expect(snapshotHash(s('A'), 'A')).toBe(snapshotHash(s('B'), 'B'))
-    expect(snapshotHash({ ...s('A'), tasks: [{ updated_at: 'C' }] }, 'A')).not.toBe(snapshotHash(s('A'), 'A'))
+  it('명시한 시각 칸(checked_at · usage.ts · tasks.updated_at · actors.started_at)만 다른 스냅숏은 같은 해시', () => {
+    const s = (n: string) => ({ usage: [{ ts: n, pct_5h: 1 }], services: [{ id: 's', checked_at: n }], tasks: [{ id: 'T-1', updated_at: n }], actors: [{ id: 'a', started_at: n }] })
+    expect(snapshotHash(s('A'))).toBe(snapshotHash(s('B')))
   })
-  it('실제 build() 를 시각만 달리 두 번 돌려도 해시가 같다', () => {
-    const md = '# 레인\n'
-    const mkb = (now: Date) => build({ md, requestMd: '', now, repoDir: '', usagePath: '', gatePath: '', laneRoot: '', tokens: {}, services: [] })
-    const t1 = new Date('2026-11-12T01:00:00Z'); const t2 = new Date('2026-11-12T01:05:00Z')
-    expect(snapshotHash(mkb(t1), t1.toISOString())).toBe(snapshotHash(mkb(t2), t2.toISOString()))
+  it('명시 안 한 칸은 시각처럼 생겨도 실제 변화다(값 꼴로 거르지 않는다)', () => {
+    const s = (n: string) => ({ branches: [{ id: 'b', updated_at: n }], tasks: [{ id: 'T-1', column: 'work' }] })
+    expect(snapshotHash(s('2026-11-12T01:00:00Z'))).not.toBe(snapshotHash(s('2026-11-12T01:05:00Z')))
+    expect(snapshotHash({ ...s('A'), tasks: [{ id: 'T-1', column: 'done' }] })).not.toBe(snapshotHash(s('A')))
+  })
+  const lane = (state: string) => `## 스프린트 1 — 시험 (10:00~)\n\n| 태스크 | 무엇 | 팀 | est_min | 상태 |\n|---|---|---|---|---|\n| T-1a | 감시꾼 시험 | 코드 | 5 | ${state} |\n\n## 진행 로그 (맨 위가 최신)\n\n| 시각 | 판 | 결과 |\n|---|---|---|\n| 11-12 10:05 | T-1a 시작 | 🔄 |\n`
+  const mkb = (md: string, now: Date) => build({ md, requestMd: '', now, repoDir: '', usagePath: '', gatePath: '', laneRoot: '', tokens: {}, services: [{ id: 's', name: 'x', state: 'ok', url: '', task_id: null, checked_at: now.toISOString() }] })
+  const t1 = new Date('2026-11-12T01:00:00Z'); const t2 = new Date('2026-11-12T01:05:00Z')
+  it('실제 build(): 표 상태 칸 하나가 바뀌면 해시가 다르다', () => {
+    const a = mkb(lane('🔄 10:00'), t1)
+    expect(a.tasks.find((t: { id: string }) => t.id === 'T-1a')).toBeTruthy()
+    expect(snapshotHash(mkb(lane('✅ 10:30'), t2))).not.toBe(snapshotHash(a))
+  })
+  it('실제 build(): 시각만 다르면 해시가 같다', () => {
+    expect(snapshotHash(mkb(lane('🔄 10:00'), t1))).toBe(snapshotHash(mkb(lane('🔄 10:00'), t2)))
   })
 })
 
