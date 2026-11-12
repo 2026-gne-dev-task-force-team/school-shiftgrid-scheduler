@@ -489,6 +489,17 @@ describe('T-9u 읽기 고침', () => {
     const ids = build({ now: at, md: lane('', ''), repoDir: repo }).branches.map((b: { id: string }) => b.id)
     expect(ids).toEqual(['b-trunk', 'b-zz'])
   })
+  it('R14 줄기 행에 커밋·부모 관계를 싣는다(짧은 해시 · 가지 이름표)', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'repo-'))
+    const g = (...a: string[]) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'pipe' })
+    g('init', '-q', '-b', '1.2v-preview'); g('commit', '-q', '--allow-empty', '-m', 'first')
+    g('checkout', '-q', '-b', '1.2v-preview-zz'); g('commit', '-q', '--allow-empty', '-m', 'on branch')
+    const tr = build({ now: at, md: lane('', ''), repoDir: repo }).branches.find((b: { trunk: boolean }) => b.trunk)
+    expect(tr.graph).toHaveLength(2)
+    expect(tr.graph[0]).toMatchObject({ subject: 'on branch', refs: [{ name: '1.2v-preview-zz', branch_id: 'b-zz' }] })
+    expect(tr.graph[0].parents).toEqual([tr.graph[1].sha])
+    expect(tr.graph[0].sha).toHaveLength(8)
+  })
 })
 
 describe('감독관 캐릭터 (T-9zb)', () => {
