@@ -25,3 +25,8 @@ export function currentSprint(d: { sprints: Sprint[]; tasks: Task[] }): { sprint
   const sprint = newest.find((s) => !s.ended) ?? newest[0]
   return sprint ? { sprint, pct: sprintProgress(sprint, d.tasks).pct } : null
 }
+
+/** 안내판 상태 말: 끝난 줄=ARRIVED, 시작했고 아직 안 끝남=BOARDING, 시작 전(또는 began 깨짐)=SCHEDULED. */
+export type FlightStatus = 'ARRIVED' | 'BOARDING' | 'SCHEDULED'
+export const flightStatus = (s: Sprint, now: number = Date.now()): FlightStatus =>
+  s.ended ? 'ARRIVED' : Date.parse(s.began) <= now ? 'BOARDING' : 'SCHEDULED'

@@ -122,6 +122,33 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
   .detail[data-layout=sheet].full { height: 92dvh }
 }
 
+/* 스프린트 — 공항 출발 안내판(어두운 판 하나). 칸은 위·아래 반쪽이 rotateX 로 넘어간다. 끄기는 위 .calm 규칙이 animation 을 멎게 한다 */
+.fid { padding: var(--sp3); background: #15120a; color: #ffd24a; border-radius: var(--r2); box-shadow: var(--sh2); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; min-width: 0 }
+.fid-row { padding: 6px 0; border-top: 1px solid #3a3320 } .fid-row:first-child { border-top: 0 }
+.fid-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; width: 100%; padding: 2px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer }
+.fid-line:focus-visible { outline: 2px solid #ffd24a; outline-offset: 2px }
+.fid-dest { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis }
+.fid-no, .fid-t, .fid-st, .fid-pct, .fid-dest { white-space: nowrap }
+.fid-st[data-st=ARRIVED] { color: #6fe39a } .fid-st[data-st=SCHEDULED] { color: #9fb4c9 } .fid-st[data-st=BOARDING] { color: #ffb020 }
+.fid-st { min-width: 9ch }
+.fid-pct { min-width: 4ch; text-align: right }
+.fl-g { display: inline-flex; gap: 1px }
+.fl { position: relative; display: inline-block; width: 1.05ch; height: 1.7em; line-height: 1.7em; text-align: center; font-weight: 700; perspective: 120px }
+.fl .t, .fl .b { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: #26200f; backface-visibility: hidden }
+.fl .t { top: 0; transform-origin: bottom; border-radius: 2px 2px 0 0; border-bottom: 1px solid #000 } .fl .b { bottom: 0; transform-origin: top; border-radius: 0 0 2px 2px }
+.fl .t > span, .fl .b > span { display: block; height: 1.7em }
+.fl .b > span { transform: translateY(-50%) }
+.fl.w { width: 1.9ch }
+.fl.go .t { animation: sgb-flt .16s ease-in backwards var(--d, 0ms) } .fl.go .b { animation: sgb-flb .16s ease-out backwards calc(var(--d, 0ms) + .16s) }
+.fid .row { color: #d9c88a } .fid .chip { color: var(--fg) } .fid-row > p { margin: 4px 0 0; font: var(--fs-sm)/1.45 var(--font); color: #d9c88a }
+.fid-row > div:last-child { font: var(--fs-sm)/1.45 var(--font); color: #d9c88a }
+@media (max-width: 767px) {
+  .fid { padding: var(--sp2) 8px; font-size: 11px }
+  .fid-line { grid-template-columns: auto auto auto auto; gap: 6px; justify-content: space-between }
+  .fid-dest { display: none } .fid-st { min-width: 0 }
+  .fl { width: .95ch } .fl.w { width: 1.75ch }
+}
+
 /* 3층 레인 */
 .lanes { display: flex; flex-direction: column; gap: var(--sp3) }
 .lane { border: 1px solid var(--line); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) }
@@ -179,6 +206,8 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 }
 @keyframes sgb-pop { from { opacity: 0; transform: translateY(var(--dy, 10px)) scale(.94) } }
 @keyframes sgb-in { from { opacity: 0; transform: translateX(calc(var(--dy, 10px) * 1.4)) } }
+@keyframes sgb-flt { from { transform: rotateX(90deg) } }
+@keyframes sgb-flb { from { transform: rotateX(-90deg) } }
 @keyframes sgb-fill { from { width: 0 } }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(14 124 114 / .35); background: rgb(14 124 114 / .14) } }
 @keyframes sgb-breathe { to { border-color: #c4b48e } }
