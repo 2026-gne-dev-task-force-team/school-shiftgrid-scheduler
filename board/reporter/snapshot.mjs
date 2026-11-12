@@ -236,7 +236,7 @@ export function readModules(layersDir = new URL('../src/layers/', import.meta.ur
   ]
 }
 
-const PREVIEW = 'https://2026-gne-dev-task-force-team.github.io/school-shiftgrid-scheduler/preview/'
+const PREVIEW = 'https://2026-gne-dev-task-force-team.github.io/school-shiftgrid-scheduler/v1.2/'
 /** 화면 호스팅 판정 — res: { status, build } 또는 null(실패). head: 줄기 짧은 해시. */
 export function serviceState(res, head) {
   if (!res || res.status !== 200) return 'down'

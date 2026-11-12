@@ -1,4 +1,5 @@
 name: Deploy to GitHub Pages
+# 배포는 main 의 deploy.yml — 이 사본은 안 쓰인다
 
 # 한 사이트에 두 판을 나란히 올린다.
 #   루트   = v1 브랜치 (김은지 선생님이 쓰시는 판 · 동결 · 주소가 바뀌면 안 된다)
