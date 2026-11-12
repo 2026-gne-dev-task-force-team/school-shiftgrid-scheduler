@@ -11,7 +11,8 @@ export const isNewer = (local: string, remote: VersionInfo | null): boolean => !
 
 export async function fetchVersion(): Promise<VersionInfo | null> {
   try {
-    const r = await fetch('version.json', { cache: 'no-store' })
+    // 쿼리로 매번 다른 주소 — Pages 는 max-age=600 이라 CDN 이 옛 version.json 을 10분까지 준다(no-store 는 브라우저 캐시만 건너뜀)
+    const r = await fetch(`version.json?t=${Date.now()}`, { cache: 'no-store' })
     return r.ok ? parseVersion(await r.json()) : null
   } catch { return null }
 }
