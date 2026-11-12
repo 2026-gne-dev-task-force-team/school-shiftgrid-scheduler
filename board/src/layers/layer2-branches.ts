@@ -3,7 +3,7 @@ import type { Actor, Branch } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
-import { assignLanes, graphSpans } from '../lib/graph.ts'
+import { assignLanes, clampLeft, graphSpans } from '../lib/graph.ts'
 
 const PAD = 20, TOP = 34, LH = 52, MIN_COL = 84, TAIL = 150 // 여백 · 줄기 높이 · 줄 간격 · 칸 최소 폭 · 오른쪽 꼬리표·칩 자리
 
@@ -50,7 +50,7 @@ export const layer2: LayerRenderer = {
         const el = h(hue === undefined ? 'span' : 'button', { class: cls }, kid)
         el.style.cssText = `left:${left}px;top:${top}px${hue === undefined ? '' : `;--hue:${hue}`}`
         inner.append(el)
-        if (hue !== undefined) el.style.left = `${Math.max(2, Math.min(left, inner.offsetWidth - el.offsetWidth - 2))}px` // 오른쪽 끝에서 잘리지 않게 안으로
+        el.style.left = `${clampLeft(left, inner.offsetWidth, el.offsetWidth)}px` // 이름표·칩 모두 오른쪽 끝에서 잘리지 않게 안으로
         return el
       }
       label('gg-l gg-trunk', x(0), y0 - 30, trunk?.title ?? '줄기')

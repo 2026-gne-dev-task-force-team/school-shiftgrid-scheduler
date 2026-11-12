@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignLanes, graphSpans, type Span } from './graph.ts'
+import { assignLanes, clampLeft, graphSpans, type Span } from './graph.ts'
 import { rawFixtures } from '../data.ts'
 import type { Branch, BoardEvent } from '../types.ts'
 
@@ -22,4 +22,10 @@ describe('시간 칸', () => {
     const b4 = spans.find((s) => s.id === 'b4')!
     expect(b4.open).toBe(false); expect(b4.from).toBeLessThan(b4.to)
   })
+})
+
+describe('clampLeft', () => {
+  it('안에 들어오면 그대로', () => expect(clampLeft(100, 390, 40)).toBe(100))
+  it('오른쪽으로 넘치면 안으로 당긴다', () => expect(clampLeft(380, 390, 40)).toBe(348))
+  it('왼쪽 여백 2px 아래로는 안 간다', () => expect(clampLeft(-5, 390, 40)).toBe(2))
 })
