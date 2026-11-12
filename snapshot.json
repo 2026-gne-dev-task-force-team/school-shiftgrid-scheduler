@@ -602,7 +602,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T15:25:32+09:00"
+      "updated_at": "2026-11-12T15:46:38+09:00"
     },
     {
       "id": "b-T-2f",
@@ -679,10 +679,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "ok",
+      "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:43:01.913Z"
+      "checked_at": "2026-11-12T06:47:01.969Z"
     },
     {
       "id": "s-sync",
@@ -690,7 +690,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:43:01.913Z"
+      "checked_at": "2026-11-12T06:47:01.969Z"
     },
     {
       "id": "s-reporter",
@@ -698,7 +698,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:43:01.913Z"
+      "checked_at": "2026-11-12T06:47:01.969Z"
     }
   ],
   "modules": [
@@ -711,56 +711,56 @@
     },
     {
       "id": "m-tab-layer1-glance",
-      "name": "한눈",
+      "name": "Overview",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-layer2-branches",
-      "name": "가지",
+      "name": "Branch",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-layer3-lanes",
-      "name": "레인",
+      "name": "Lanes",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-layer4-workshop",
-      "name": "작업장",
+      "name": "Board",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-layer5-blueprint",
-      "name": "집",
+      "name": "Blueprint",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-inbox",
-      "name": "접수함",
+      "name": "Inbox",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-sprints",
-      "name": "스프린트",
+      "name": "Sprint",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
       "id": "m-tab-guide",
-      "name": "안내",
+      "name": "Guide",
       "parent": "m-screen",
       "state": "built",
       "task_id": null
@@ -1069,7 +1069,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:43:02.445Z",
+      "ts": "2026-11-12T06:47:02.574Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
