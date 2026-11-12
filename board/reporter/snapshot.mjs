@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain } from './plain.mjs'
+import { appModules } from './app-modules.mjs'
 
 const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
 const TID = new RegExp(ID, 'g')
@@ -391,7 +392,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,
-    services, modules: readModules(),
+    services, modules: appModules(parseRequests(rmd), readModules()),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
   }
   const dirty = findDirty(data)

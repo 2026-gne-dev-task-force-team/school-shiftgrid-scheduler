@@ -16,7 +16,7 @@ export const layer5: LayerRenderer = {
     for (const hs of houses) {
       const rooms = hs.rooms.map((m) => {
         const b = h('button', { class: `bp-room ${lineOf(m.state)}`, 'data-id': m.id }, m.name)
-        b.addEventListener('click', () => openDetail({ title: m.name, rows: [['상태', STATE_NAME[m.state]], ['연결된 일감', taskTitle(m.task_id)]] }))
+        b.addEventListener('click', () => openDetail({ title: m.name, rows: [['상태', STATE_NAME[m.state]], ['연결된 일감', taskTitle(m.task_id)], ...(m.note ? [['번호·설계 절', m.note] as [string, string]] : [])] }))
         tip(b, () => `${m.name} · ${STATE_NAME[m.state]}`)
         return b
       })

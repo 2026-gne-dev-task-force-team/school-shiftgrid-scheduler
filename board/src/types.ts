@@ -18,7 +18,7 @@ export interface Task {
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }
 export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string }
 export interface Service { id: string; name: string; state: 'ok' | 'build' | 'down' | 'plan'; url: string; task_id: string | null; checked_at: string }
-export interface Module { id: string; name: string; parent: string | null; state: 'plan' | 'build' | 'built'; task_id: string | null }
+export interface Module { id: string; name: string; parent: string | null; state: 'plan' | 'build' | 'built'; task_id: string | null; note?: string | null }
 export interface Goal { id: string; title: string; progress: number; state: 'work' | 'pause' | 'review' | 'shipped'; sprint: number }
 export interface BoardEvent { id: string; ts: string; kind: string; subject_type: string; subject_id: string; actor_id: string | null; text: string }
 export interface Usage { account: Account; ts: string; pct_5h: number; pct_7d: number; reset_5h_at: string; reset_7d_at: string; tok_per_min: number }
