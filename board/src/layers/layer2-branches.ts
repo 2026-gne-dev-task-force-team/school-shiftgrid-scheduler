@@ -66,7 +66,7 @@ export const layer2: LayerRenderer = {
           for (let i = 1; i <= n; i++) dot(mid + ((head - mid) * i) / n, yl, 5, col)
           g.setLineDash([4, 5]); g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(head + 8, yl); g.lineTo(head + cw * 0.5, yl); g.stroke(); g.setLineDash([]) // 끝이 열림
           const a = actor(b)
-          if (a) label('gg-chip', head + cw * 0.5 + 4, yl - 12, character(a, 'chip'))
+          if (a) label('gg-chip', head + 10, yl - 21, character(a, 'mini')) // 가지 끝(머리 점) 옆
         } else dot(x(s.to), y0, 7, col, neon) // 합침 점은 크게
         const btn = label('gg-l', mid + 4, yl + 6, b.title, hueOf(b))
         btn.dataset.id = b.id
