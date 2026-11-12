@@ -217,11 +217,15 @@ function readUsage(usagePath, nowIso, home) {
 // 퇴근한 것은 지우지 않고 마지막 활동 날(KST)이 지나기 전까지 싣는다(자정에 뺀다) — 그림이 숙소에 흐리게 모은다.
 export const SESSION_QUIET_MS = 20 * 60e3
 export const AGENT_STALE_MS = 2 * 3600e3
+// 기록 파일 신호: 이 안에 쓰였으면 살아 있다(세션 SESSION_QUIET_MS 와 같은 20분) · 문지기 시각보다 이만큼 넘게 뒤여야 「그 뒤 새 움직임」으로 친다(Stop·SessionEnd 직후 마무리 쓰기 흡수).
+export const ACTIVE_SLACK_MS = 30e3
+// 퇴근 소음: 오늘(KST) 안이어도 마지막 활동이 3시간 넘은 퇴근은 싣지 않는다 — 문지기 주석의 「3시간 넘으면 끊긴 것」과 같은 척도, 화면엔 최근 퇴근만 숙소에 남긴다.
+export const OFF_KEEP_MS = 3 * 3600e3
 const kstDay = (ms) => Math.floor((ms + 9 * 3600e3) / 86400e3)
 /** 퇴근을 싣는 기한 — 마지막 활동한 날 KST 자정까지(다음 날 0시부터 뺀다). */
-export const keepOff = (last, now) => kstDay(last) === kstDay(now)
+export const keepOff = (last, now) => kstDay(last) === kstDay(now) && now - last <= OFF_KEEP_MS
 // 문지기 파일은 프로필 폴더(.claude · .claude-*)마다 따로 쓰이고 세션·에이전트는 서로 다른 프로필에서 돈다 → 있는 것을 전부 합친다(키 충돌은 mtime 새 파일이 이김).
-function readGate(gatePath, now, tokens = {}, home) {
+function readGate(gatePath, now, tokens = {}, home, activity = {}) {
   const files = claudeVariants(gatePath, { home })
   if (!files.length) return []
   try {
@@ -235,8 +239,12 @@ function readGate(gatePath, now, tokens = {}, home) {
         const quiet = isSession ? SESSION_QUIET_MS : AGENT_STALE_MS
         const resting = typeof a.idle === 'number' && a.idle >= a.started
         let last = Math.max(a.started, typeof a.ended === 'number' ? a.ended : 0, resting ? a.idle : 0)
+        const seen = activity[a.id] // 기록 파일 마지막 움직임(없으면 undefined)
+        const fresh = (isSession || !a.ended) && typeof seen === 'number' && now - seen < SESSION_QUIET_MS && seen > last + ACTIVE_SLACK_MS // 문지기가 아는 마지막 일보다 뒤에, 최근에 쓰였다
         let state = 'work'
-        if (a.ended) state = 'off'
+        if (fresh) { last = seen; return { ...a, ended: null, idle: undefined, state, last } } // 낱말 없는 이어 말하기·끝났다 다시 열린 세션도 일함
+        if (!isSession && !a.ended && typeof seen === 'number' && now - seen >= SESSION_QUIET_MS) { state = 'off'; last = seen } // 에이전트 기록이 20분 조용 = 죽음(PostToolUse 못 옴)
+        else if (a.ended) state = 'off'
         else if (resting) { state = now - a.idle >= SESSION_QUIET_MS ? 'off' : 'idle'; if (state === 'off') last = a.idle + SESSION_QUIET_MS }
         else if (now - a.started >= quiet) { state = 'off'; last = a.started + quiet } // 문턱을 넘은 때부터 퇴근
         return { ...a, state, last }
@@ -342,7 +350,7 @@ export function dedupeKeys(data, onWarn = () => {}) {
 }
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -397,7 +405,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
-  const live = readGate(gatePath, now.getTime(), tokens, home)
+  const live = readGate(gatePath, now.getTime(), tokens, home, activity)
   const working = tasks.filter((t) => t.column === 'work')
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',

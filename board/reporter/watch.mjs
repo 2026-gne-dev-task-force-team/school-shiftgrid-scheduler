@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { build, checkServices } from './snapshot.mjs'
 import { findDirty } from './plain.mjs'
 import { loadConfig } from './config.mjs'
-import { tokensByToolUse } from './tokens.mjs'
+import { tokensByToolUse, activityByGateId } from './tokens.mjs'
 import { readToken, readRef, sinkAndLog } from './sink.mjs'
 import { claudeCandidates } from './claude-home.mjs'
 
@@ -139,7 +139,7 @@ async function main() {
     makeSnap: async (now) => build({
       lanePath: cfg.lane, requestPath: cfg.requests, laneRoot: cfg.laneRoot, repoDir, now,
       onWarn: (d, why) => console.warn('경고', d, why),
-      usagePath: cfg.usage, gatePath: cfg.gate, tokens: tokensByToolUse(cfg.projects),
+      usagePath: cfg.usage, gatePath: cfg.gate, tokens: tokensByToolUse(cfg.projects), activity: activityByGateId(cfg.projects),
       services: await checkServices(repoDir, now, cfg.sinkState),
     }),
     sinkFn: (snap) => sinkAndLog(snap, { token: readToken(), ref: readRef(cfg), statePath: cfg.sinkState }, log),
