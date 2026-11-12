@@ -27,7 +27,10 @@ export interface Task {
   history?: { ts: string; text: string }[] // 접수·착수·끝 같은 시각
 }
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }
-export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string }
+/** 커밋 그래프의 한 점 — sha 는 짧은 해시. refs 는 그 커밋을 끝으로 하는 가지 이름표. */
+export interface GraphCommit { sha: string; parents: string[]; subject: string; at: string; refs: { name: string; branch_id: string | null }[] }
+/** graph 는 줄기 행에만 실린다(새것→옛것 · 최근 N개). */
+export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string; graph?: GraphCommit[] | null }
 export interface Service { id: string; name: string; state: 'ok' | 'build' | 'down' | 'plan'; url: string; task_id: string | null; checked_at: string }
 export interface Module { id: string; name: string; parent: string | null; state: 'plan' | 'build' | 'built'; task_id: string | null; note?: string | null }
 export interface Goal { id: string; title: string; progress: number; state: 'work' | 'pause' | 'review' | 'shipped'; sprint: number }

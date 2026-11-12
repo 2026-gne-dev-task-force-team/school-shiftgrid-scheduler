@@ -1,6 +1,121 @@
 [
-  {"id":"b1","title":"줄기","trunk":true,"ahead":0,"state":"live","actor_id":null,"task_id":null,"updated_at":"2026-01-01T09:30:00Z"},
-  {"id":"b2","title":"보결 화면 틀","trunk":false,"ahead":3,"state":"live","actor_id":"a3","task_id":"t1","updated_at":"2026-01-01T09:55:00Z"},
-  {"id":"b3","title":"자료 칸 정하기","trunk":false,"ahead":2,"state":"live","actor_id":"a4","task_id":"t2","updated_at":"2026-01-01T09:50:00Z"},
-  {"id":"b4","title":"가짜 자료 만들기","trunk":false,"ahead":0,"state":"merged","actor_id":"a4","task_id":"t6","updated_at":"2026-01-01T09:10:00Z"}
+ {
+  "id": "b1",
+  "title": "줄기",
+  "trunk": true,
+  "ahead": 0,
+  "state": "live",
+  "actor_id": null,
+  "task_id": null,
+  "updated_at": "2026-01-01T09:30:00Z",
+  "graph": [
+   {
+    "sha": "c9a1f003",
+    "parents": [
+     "c8b2e002"
+    ],
+    "subject": "보결 화면 틀 잡기",
+    "at": "2026-01-01T09:55:00Z",
+    "refs": [
+     {
+      "name": "1.2v-preview-sg1",
+      "branch_id": "b2"
+     }
+    ]
+   },
+   {
+    "sha": "c8b2e002",
+    "parents": [
+     "c7d3d001"
+    ],
+    "subject": "보결 칸 나누기",
+    "at": "2026-01-01T09:52:00Z",
+    "refs": []
+   },
+   {
+    "sha": "c5e4a005",
+    "parents": [
+     "c4f5b004"
+    ],
+    "subject": "자료 칸 정하기 둘째",
+    "at": "2026-01-01T09:50:00Z",
+    "refs": [
+     {
+      "name": "1.2v-preview-sg2",
+      "branch_id": "b3"
+     }
+    ]
+   },
+   {
+    "sha": "c6f7c006",
+    "parents": [
+     "c7d3d001",
+     "c3a6c003"
+    ],
+    "subject": "가짜 자료 가지 합침",
+    "at": "2026-01-01T09:30:00Z",
+    "refs": [
+     {
+      "name": "1.2v-preview",
+      "branch_id": "b1"
+     }
+    ]
+   },
+   {
+    "sha": "c4f5b004",
+    "parents": [
+     "c7d3d001"
+    ],
+    "subject": "자료 칸 정하기",
+    "at": "2026-01-01T09:25:00Z",
+    "refs": []
+   },
+   {
+    "sha": "c3a6c003",
+    "parents": [
+     "c7d3d001"
+    ],
+    "subject": "가짜 자료 만들기",
+    "at": "2026-01-01T09:10:00Z",
+    "refs": []
+   },
+   {
+    "sha": "c7d3d001",
+    "parents": [],
+    "subject": "처음 틀",
+    "at": "2026-01-01T08:40:00Z",
+    "refs": []
+   }
+  ]
+ },
+ {
+  "id": "b2",
+  "title": "보결 화면 틀",
+  "trunk": false,
+  "ahead": 3,
+  "state": "live",
+  "actor_id": "a3",
+  "task_id": "t1",
+  "updated_at": "2026-01-01T09:55:00Z"
+ },
+ {
+  "id": "b3",
+  "title": "자료 칸 정하기",
+  "trunk": false,
+  "ahead": 2,
+  "state": "live",
+  "actor_id": "a4",
+  "task_id": "t2",
+  "updated_at": "2026-01-01T09:50:00Z"
+ },
+ {
+  "id": "b4",
+  "title": "가짜 자료 만들기",
+  "trunk": false,
+  "ahead": 0,
+  "state": "merged",
+  "actor_id": "a4",
+  "task_id": "t6",
+  "updated_at": "2026-01-01T09:10:00Z"
+ }
 ]

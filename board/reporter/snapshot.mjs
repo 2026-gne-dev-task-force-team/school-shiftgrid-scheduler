@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import tls from 'node:tls'
-import { clean, findDirty, isPlain, publicText, setRedactNames } from './plain.mjs'
+import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { claudeVariants, newestOf } from './claude-home.mjs'
@@ -204,6 +204,22 @@ function gitBranches(repoDir) {
       let merged = true
       try { git('merge-base', '--is-ancestor', name, trunk[0]) } catch { merged = false }
       return { suffix: name.slice(trunk[0].length + 1), at, subject, ahead: +git('rev-list', '--count', `${trunk[0]}..${name}`), merged }
+    })
+  } catch { return [] }
+}
+
+/** 줄기·가지 최근 커밋 N개와 부모 관계 — 세로 커밋 그래프용. 해시는 짧은 것만(긴 16진은 담백 검사에 걸린다). 새것→옛것. */
+export const GRAPH_LIMIT = 60
+export function gitGraph(repoDir, limit = GRAPH_LIMIT) {
+  if (!repoDir || !existsSync(repoDir)) return []
+  try {
+    const out = execFileSync('git', ['-C', repoDir, 'log', '--branches=1.2v-preview*', '--date-order', '-n', String(limit), '--abbrev=8', '--decorate=short',
+      '--format=%h%x09%p%x09%cI%x09%D%x09%s'], { encoding: 'utf-8' })
+    return out.split('\n').filter(Boolean).map((l) => {
+      const [sha, parents, at, deco, ...subj] = l.split('\t')
+      const names = deco.split(', ').map((d) => d.replace(/^HEAD -> /, '').trim()).filter((d) => d && d !== 'HEAD' && !d.startsWith('tag: ') && !d.includes('/'))
+      const sub = subj.join(' ')
+      return { sha, parents: parents.split(' ').filter(Boolean), at, names, subject: isPlainText(sub) ? sub.slice(0, 80) : '' }
     })
   } catch { return [] }
 }
@@ -456,6 +472,13 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     }
     branches.push({ id: `b-${t.id}`, title: t.title, trunk: false, ahead: b.ahead, state: b.merged && t.column !== 'work' ? 'merged' : 'live', // 막 딴 판 가지(앞선 0)는 일감이 도는 동안 열린 가지
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
+  }
+
+  // 커밋 그래프 — 줄기 행에 싣는다(서버 branches 에 graph 칸이 있어야 실린다 · 없으면 판이 가지 정보로 얼개를 만든다)
+  const trunkRow = branches.find((b) => b.trunk)
+  if (trunkRow) {
+    const idOf = (name) => name === '1.2v-preview' ? 'b-trunk' : [`b-T-${name.slice(13)}`, `b-${name.slice(13)}`].find((id) => branches.some((b) => b.id === id)) ?? null
+    trunkRow.graph = gitGraph(repoDir).map(({ names, ...c }) => ({ ...c, refs: names.filter((n) => isPlain(n)).map((n) => ({ name: n, branch_id: idOf(n) })) }))
   }
 
   const live = readGate(gatePath, now.getTime(), tokens, home, activity)

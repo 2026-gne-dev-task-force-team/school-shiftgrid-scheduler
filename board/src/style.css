@@ -97,6 +97,12 @@ button.chip:hover { background: hsl(var(--hue) var(--chip-s) var(--chip-l-hover)
 .gg-in { position: relative }
 .gg-in canvas { position: absolute; inset: 0 }
 .gg-l, .gg-chip { position: absolute; white-space: nowrap; line-height: 20px }
+.gg-v-in { overflow: visible }
+.gg-dotb { position: absolute; width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer } .gg-dotb:hover, .gg-dotb:focus-visible { outline: 2px solid var(--neon); outline-offset: -4px }
+.gg-msg { position: absolute; display: flex; align-items: center; gap: 6px; height: 20px; font: 12px var(--font); color: var(--fg-2); min-width: 0 }
+.gg-msg .gg-l { position: static; flex: none }
+.gg-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap } .gg-sha { flex: none; margin-left: auto; font: 11px ui-monospace, monospace; opacity: .6 }
+.gg-chip { pointer-events: none; image-rendering: pixelated }
 .gg-l { --hue: 200; padding: 2px 8px; border: 0; border-radius: var(--r1); background: var(--gg-bg); color: hsl(var(--hue) 70% var(--gg-fg-l)); font: 600 12px var(--font) }
 button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%) } /* 보이는 크기는 그대로, 누르는 영역만 44px */ button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% var(--gg-ring-l)) }
 .gg-trunk { color: var(--neon) }
