@@ -20,6 +20,25 @@
       "ended_at": null
     },
     {
+      "id": "a-T-7y",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "자료 나르기",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": "T-7y",
+      "branch_id": "b-T-7y",
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T16:51:00+09:00",
+      "ended_at": null
+    },
+    {
       "id": "a-T-2n-3",
       "parent_id": "a-lead",
       "kind": "helper",
@@ -907,12 +926,12 @@
       "team": "자료팀",
       "sprint": 7,
       "est_min": 8,
-      "started_at": "2026-11-12T15:45:00+09:00",
+      "started_at": "2026-11-12T16:51:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
+      "column": "work",
       "reason": "new",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:45:00+09:00"
+      "actor_id": "a-T-7y",
+      "updated_at": "2026-11-12T16:51:00+09:00"
     },
     {
       "id": "T-7z",
@@ -972,7 +991,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R2",
@@ -987,7 +1006,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R3",
@@ -1002,7 +1021,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R4",
@@ -1017,7 +1036,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R5",
@@ -1032,7 +1051,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R6",
@@ -1047,7 +1066,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R7",
@@ -1062,7 +1081,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R8",
@@ -1077,7 +1096,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R9",
@@ -1092,7 +1111,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R10",
@@ -1107,7 +1126,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R11",
@@ -1122,7 +1141,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R12",
@@ -1137,7 +1156,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R13",
@@ -1152,7 +1171,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R14",
@@ -1167,7 +1186,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R15",
@@ -1182,7 +1201,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R16",
@@ -1197,7 +1216,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R17",
@@ -1212,7 +1231,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R18",
@@ -1227,7 +1246,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R19",
@@ -1242,7 +1261,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R20",
@@ -1257,7 +1276,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R21",
@@ -1272,7 +1291,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R22",
@@ -1287,7 +1306,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R23",
@@ -1302,7 +1321,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R24",
@@ -1317,7 +1336,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R25",
@@ -1332,7 +1351,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R26",
@@ -1347,7 +1366,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R27",
@@ -1362,7 +1381,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R28",
@@ -1377,7 +1396,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R29",
@@ -1392,7 +1411,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R30",
@@ -1407,7 +1426,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R31",
@@ -1422,7 +1441,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R32",
@@ -1437,7 +1456,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R33",
@@ -1452,7 +1471,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R34",
@@ -1467,7 +1486,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R35",
@@ -1482,7 +1501,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R36",
@@ -1497,7 +1516,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R37",
@@ -1512,7 +1531,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R38",
@@ -1527,7 +1546,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R39",
@@ -1539,10 +1558,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
+      "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R40",
@@ -1557,7 +1576,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R41",
@@ -1572,7 +1591,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R42",
@@ -1584,10 +1603,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
+      "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R43",
@@ -1602,7 +1621,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R44",
@@ -1617,7 +1636,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R45",
@@ -1632,7 +1651,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R46",
@@ -1647,7 +1666,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R47",
@@ -1662,7 +1681,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R48",
@@ -1677,7 +1696,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R49",
@@ -1692,7 +1711,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R50",
@@ -1707,7 +1726,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R51",
@@ -1722,7 +1741,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R52",
@@ -1737,7 +1756,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R53",
@@ -1752,7 +1771,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R54",
@@ -1767,7 +1786,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R55",
@@ -1782,7 +1801,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R56",
@@ -1797,7 +1816,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R57",
@@ -1812,7 +1831,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R58",
@@ -1827,7 +1846,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R59",
@@ -1842,7 +1861,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R60",
@@ -1857,7 +1876,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R61",
@@ -1872,7 +1891,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R62",
@@ -1887,7 +1906,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R63",
@@ -1902,7 +1921,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R64",
@@ -1917,7 +1936,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R65",
@@ -1932,7 +1951,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "R66",
@@ -1947,7 +1966,52 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
+    },
+    {
+      "id": "l-30eb8d-T-100a",
+      "title": "현황판 배포본 preview 화면 검수",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "work",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:53:02.745Z"
+    },
+    {
+      "id": "l-30eb8d-T-100b",
+      "title": "시간표 앱 배포본 화면 검수",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "work",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:53:02.745Z"
+    },
+    {
+      "id": "l-30eb8d-T-100c",
+      "title": "코드 검사",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "work",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-V1",
@@ -1962,7 +2026,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K15",
@@ -1977,7 +2041,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K18·19",
@@ -1992,7 +2056,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K20·25",
@@ -2007,7 +2071,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K16",
@@ -2022,7 +2086,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K23",
@@ -2037,7 +2101,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K21",
@@ -2052,7 +2116,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QS",
@@ -2067,7 +2131,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-화면",
@@ -2082,7 +2146,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q28·Q7",
@@ -2097,7 +2161,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-K17",
@@ -2112,7 +2176,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QF",
@@ -2127,7 +2191,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q21·22·10",
@@ -2142,7 +2206,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QG",
@@ -2157,7 +2221,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q14·25",
@@ -2172,7 +2236,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QH",
@@ -2187,7 +2251,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q11·15",
@@ -2202,7 +2266,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QI",
@@ -2217,7 +2281,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q23+QI화면",
@@ -2232,7 +2296,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QJ",
@@ -2247,7 +2311,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q23b",
@@ -2262,7 +2326,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QK",
@@ -2277,7 +2341,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QJ화면",
@@ -2292,7 +2356,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-쉬운 모드",
@@ -2307,7 +2371,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-P0",
@@ -2322,7 +2386,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-QK화면",
@@ -2337,10 +2401,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
-      "id": "l-7cefb9-53c1a8a9",
+      "id": "l-7cefb9-717ddfc8",
       "title": "v1 에서 본받을 것 목록 → 페르소나가 순위",
       "category": "코드",
       "kind": "work",
@@ -2352,7 +2416,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q30",
@@ -2367,7 +2431,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-페르소나",
@@ -2382,7 +2446,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GA",
@@ -2397,7 +2461,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GB",
@@ -2412,7 +2476,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GC",
@@ -2427,7 +2491,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GD",
@@ -2442,7 +2506,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-G화면",
@@ -2457,7 +2521,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GE",
@@ -2472,7 +2536,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-낱말",
@@ -2487,7 +2551,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GF",
@@ -2502,7 +2566,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q17b",
@@ -2517,7 +2581,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GG",
@@ -2532,7 +2596,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GH",
@@ -2547,7 +2611,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-페르소나 눈",
@@ -2562,7 +2626,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GI",
@@ -2577,7 +2641,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GJ",
@@ -2592,7 +2656,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-G화면2",
@@ -2607,7 +2671,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GK",
@@ -2622,7 +2686,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GL",
@@ -2637,7 +2701,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q17c",
@@ -2652,7 +2716,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-G화면3",
@@ -2667,7 +2731,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GM",
@@ -2682,7 +2746,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GN",
@@ -2697,7 +2761,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-GO",
@@ -2712,7 +2776,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-안내",
@@ -2727,7 +2791,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-7cefb9-Q17",
@@ -2742,7 +2806,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-바닥",
@@ -2757,7 +2821,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-반입",
@@ -2772,7 +2836,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-대조",
@@ -2787,7 +2851,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-비식별",
@@ -2802,7 +2866,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-통합 검수",
@@ -2817,7 +2881,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-재설계",
@@ -2832,7 +2896,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-설계안",
@@ -2847,7 +2911,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-🙋",
@@ -2862,7 +2926,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-재검수 S",
@@ -2877,7 +2941,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-설계안 S",
@@ -2892,10 +2956,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
-      "id": "l-337c1c-e21d2528",
+      "id": "l-337c1c-19ba6bef",
       "title": "검토 + 「해」",
       "category": "코드",
       "kind": "work",
@@ -2907,7 +2971,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     },
     {
       "id": "l-337c1c-구현",
@@ -2923,7 +2987,7 @@
       "reason": "blocked",
       "block_kind": "outside",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:51:02.727Z"
+      "updated_at": "2026-11-12T07:53:02.745Z"
     }
   ],
   "lanes": [
@@ -2937,6 +3001,12 @@
       "id": "l-754dc4",
       "title": "검수",
       "state": "idle",
+      "actor_id": null
+    },
+    {
+      "id": "l-30eb8d",
+      "title": "검수",
+      "state": "work",
       "actor_id": null
     },
     {
@@ -2967,7 +3037,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T16:47:20+09:00"
+      "updated_at": "2026-11-12T16:51:36+09:00"
     },
     {
       "id": "b-T-2f",
@@ -3038,6 +3108,16 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
+    },
+    {
+      "id": "b-T-7y",
+      "title": "「지금 바꾸기」 뒤 알림 안 사라짐",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": "a-T-7y",
+      "task_id": "T-7y",
+      "updated_at": "2026-11-12T16:51:36+09:00"
     }
   ],
   "services": [
@@ -3047,7 +3127,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:51:02.157Z"
+      "checked_at": "2026-11-12T07:53:02.129Z"
     },
     {
       "id": "s-sync",
@@ -3055,7 +3135,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:51:02.157Z"
+      "checked_at": "2026-11-12T07:53:02.129Z"
     },
     {
       "id": "s-reporter",
@@ -3063,7 +3143,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:51:02.157Z"
+      "checked_at": "2026-11-12T07:53:02.129Z"
     }
   ],
   "modules": [
@@ -3169,6 +3249,15 @@
     }
   ],
   "events": [
+    {
+      "id": "e-5b1cf8c0",
+      "ts": "2026-11-12T16:51:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7y",
+      "actor_id": "a-lead",
+      "text": "「지금 바꾸기」 뒤 알림 안 사라짐 시작"
+    },
     {
       "id": "e-e4e59e76",
       "ts": "2026-11-12T16:47:00+09:00",
@@ -3614,7 +3703,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:51:02.727Z",
+      "ts": "2026-11-12T07:53:02.745Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
