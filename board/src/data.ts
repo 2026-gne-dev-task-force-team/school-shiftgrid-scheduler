@@ -42,6 +42,6 @@ export function loadData(now = Date.now(), remote?: Remote | null, app: AppId = 
   else base = { ...EMPTY, source: 'failed' }
   const d: BoardData = { ...base, serverFeedback: (remote?.feedback ?? []).filter((f) => !loadHidden().includes(f.id)) }
   if (d.source === 'loading' || d.source === 'failed') return filterByApp(d, app) // 빈 칸 — 로컬 접수 카드도 얹지 않는다
-  const fb = feedbackRows(loadFeedback(), d.lanes[0]?.id ?? '')
+  const fb = feedbackRows([...loadFeedback(), ...(d.serverFeedback ?? [])], d.lanes[0]?.id ?? '')
   return filterByApp({ ...d, tasks: [...d.tasks, ...fb.tasks], events: [...d.events, ...fb.events] }, app)
 }

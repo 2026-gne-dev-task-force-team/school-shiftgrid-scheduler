@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { APPS, appOf, asApp, editionOfApp, filterByApp, isInjected, readApp, versionCheckOn } from './app.ts'
-import { addFeedback, feedbackRows, loadFeedback } from './feedback.ts'
+import { addFeedback, feedbackRows, loadFeedback, setReview } from './feedback.ts'
 import { loadData } from '../data.ts'
 import type { BoardData, Task } from '../types.ts'
 
@@ -32,18 +32,19 @@ describe('판 구분 data-app', () => {
     expect(readApp(el('v2'))).toBe('v2')
     expect(readApp(el('v3'))).toBe('1.2v')
     expect(editionOfApp('1.2v')).toBe('v12')
-    expect(feedbackRows([{ id: 'f', text: 'x', where: '', ts: '2026-01-01T00:00:00Z' }], 'l').tasks[0].app).toBe('1.2v')
+    expect(feedbackRows([{ id: 'f', text: 'x', where: '', ts: '2026-01-01T00:00:00Z', reviewed_at: '2026-01-02T00:00:00Z', direction: 'd' }], 'l').tasks[0].app).toBe('1.2v')
   })
   it('접수에 app 이 실리고 그 판에서만 보인다', () => {
     const s = mem()
     expect(addFeedback('v2 불편', '막대', s, 1, 'v2')).toEqual({ ok: true })
     addFeedback('기본 불편', '막대', s, 2)
     expect(loadFeedback(s).map((f) => f.app)).toEqual(['v2', '1.2v'])
+    setReview('fb1', '방향', s); setReview('fb2', '방향', s)
     vi.stubGlobal('localStorage', { ...s, removeItem() {} })
     {
       const mine = (a: 'v1' | '1.2v' | 'v2') => loadData(Date.now(), null, a).tasks.filter((x) => x.kind === 'bug' && x.id.startsWith('fb')).map((x) => x.title)
-      expect(mine('v2')).toEqual(['v2 불편'])
-      expect(mine('1.2v')).toEqual(['기본 불편'])
+      expect(mine('v2')).toEqual(['방향 · v2 불편'])
+      expect(mine('1.2v')).toEqual(['방향 · 기본 불편'])
       expect(mine('v1')).toEqual([])
     }
   })

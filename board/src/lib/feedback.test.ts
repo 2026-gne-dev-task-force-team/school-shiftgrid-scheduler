@@ -16,9 +16,16 @@ describe('불편 접수', () => {
     expect(addFeedback('버튼이 안 눌려요', '막대', s)).toEqual({ ok: true })
     expect(addFeedback('글씨가 작아요', '4 Board', s).ok).toBe(true)
     expect(JSON.parse(s.m.get(FEEDBACK_KEY)!)).toHaveLength(2)
-    const { tasks, events } = feedbackRows(loadFeedback(s), 'l1')
-    expect(tasks[0]).toMatchObject({ kind: 'bug', column: 'wait' })
-    expect(events[0].text).toBe('🐞 불편 하나가 접수됐다')
+    expect(feedbackRows(loadFeedback(s), 'l1').tasks).toHaveLength(0) // 접수만으로는 카드 0
+    const at = '2026-01-01T00:00:00Z'
+    const mk = (o: object) => [{ id: 'x', text: '글', where: '막대', ts: at, ...o }]
+    expect(feedbackRows(mk({ reviewed_at: at, direction: '   ' }), 'l').tasks).toHaveLength(0) // 방향 빈 검토
+    expect(feedbackRows(mk({ direction: '이렇게' }), 'l').tasks).toHaveLength(0) // reviewed_at 없음(칸 없는 서버)
+    expect(feedbackRows(mk({ reviewed_at: null, direction: null }), 'l').tasks).toHaveLength(0)
+    const { tasks, events } = feedbackRows(mk({ reviewed_at: at, direction: '이렇게' }), 'l1')
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0]).toMatchObject({ kind: 'bug', column: 'wait', title: '이렇게 · 글' })
+    expect(events[0].text).toBe('🐞 검토된 불편 하나가 일감이 됐다')
   })
   it('담백하지 않은 글 · 빈 글 · 200자 초과는 이유와 함께 거절', () => {
     const s = store()

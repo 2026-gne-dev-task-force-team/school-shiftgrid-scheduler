@@ -38,6 +38,7 @@ describe('R42 지운 불편', () => {
   it('지우면 Board 자료(카드·흐름 줄)에서 빠진다', () => {
     const s = mem(); vi.stubGlobal('localStorage', s)
     addFeedback('지울 것', '막대', s, 1000)
+    s.setItem('board.feedback', JSON.stringify(loadFeedback(s).map((f) => ({ ...f, reviewed_at: '2026-01-02T00:00:00Z', direction: '방향' }))))
     const has = () => { const d = loadData(); return [d.tasks.some((t) => t.id === 'fb1000'), d.events.some((e) => e.subject_id === 'fb1000')] }
     expect(has()).toEqual([true, true])
     removeFeedback('fb1000', s)
