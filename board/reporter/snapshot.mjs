@@ -3,7 +3,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { clean, findDirty } from './plain.mjs'
+import { clean, findDirty, isPlain } from './plain.mjs'
 
 const TID = /T-\d+[a-z]+/g
 
@@ -18,9 +18,15 @@ export function kstIso(text, year, day) {
 }
 
 const cells = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
+/** 백틱 안 낱말 — 경로·가지 이름·파일명·커밋 꼴이면 빈 값, 아니면 낱말 그대로. 끝 「/」 하나(한 칸 폴더 이름)는 낱말로 본다. */
+export function codeWord(w) {
+  const t = w.trim().replace(/^([A-Za-z0-9_.-]+)\/$/, '$1')
+  const shaped = !isPlain(t) || /\.[A-Za-z0-9]{1,5}\b/.test(t) || /^[0-9a-f]{7,40}$/i.test(t) || /^[a-z0-9.]+(-[a-z0-9.]+)+$/i.test(t)
+  return shaped ? '' : t
+}
 const strip = (s) => s
   .replace(/\*"[^"]*"\*|"[^"]*"/g, '') // 인용
-  .replace(/`[^`]*`/g, '') // 백틱
+  .replace(/`([^`]*)`/g, (_, w) => codeWord(w)) // 백틱 — 기호만 걷고 걸리는 낱말만 뺀다
   .replace(/\[\[[^\]]*\]\]/g, '') // 위키링크
   .replace(/\([^)]*\)/g, '') // 괄호 꼬리
   .replace(/\*\*/g, '')
@@ -34,13 +40,16 @@ export function publicTitle(what) {
   return clean(t.slice(0, 40).trim())
 }
 
-/** 목표 줄 → 공개 부분. 남는 한글이 거의 없으면 빈 값. */
+const tidy = (t) => t.replace(/\s+/g, ' ').replace(/(\s*[·—]\s*)+/g, ' · ').replace(/^[\s·—:,]+|[\s·—:,]+$/g, '')
+/** 목표 줄 → 공개 부분. 남는 한글이 거의 없으면(인용뿐) 인용 안 글을 담백 검사해 쓴다 — 걸리면 빈 값. */
 export function publicGoal(goal) {
-  const t = strip(goal).replace(/\s+/g, ' ').replace(/(\s*[·—]\s*)+/g, ' · ').replace(/^[\s·—:,]+|[\s·—:,]+$/g, '')
-  return (t.match(/[가-힣]/g) ?? []).length < 4 ? '' : clean(t.slice(0, 200))
+  const t = tidy(strip(goal))
+  if ((t.match(/[가-힣]/g) ?? []).length >= 4) return clean(t.slice(0, 200))
+  const quoted = tidy([...goal.matchAll(/"([^"]*)"/g)].map((m) => m[1]).join(' · '))
+  return (quoted.match(/[가-힣]/g) ?? []).length < 4 ? '' : clean(quoted.slice(0, 200))
 }
 
-const TEAM = [[/화면/, '화면'], [/품질|검사|시험|맨눈/, '검사'], [/설계/, '설계']]
+const TEAM = [[/메인|지휘/, '지휘'], [/화면/, '화면'], [/품질|검사|시험|맨눈/, '검사'], [/설계/, '설계']]
 export const categoryOf = (team) => TEAM.find(([r]) => r.test(team))?.[1] ?? '코드'
 export function columnOf(state) {
   if (/^\s*✅/.test(state)) return { column: 'done', reason: 'done' }
@@ -110,8 +119,9 @@ function readUsage(usagePath, nowIso) {
 }
 
 const fixture = (name) => JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf-8'))
-const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['코드', '코드팀', '코드', 'make', 160, 'teal', 'box'],
-  설계: ['설계', '설계팀', '설계', 'make', 190, 'teal', 'ruler'], 검사: ['시험', '시험팀', '시험', 'qa', 275, 'violet', 'check'] }
+// 분류 → 캐릭터(이름·팀·역할 = actor.ts ROLES 낱말). 코드 판은 지금 자료·보고를 만드니 「자료 나르기」. 지휘 분류는 따로 캐릭터를 안 만들고 지휘가 맡는다.
+const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['자료 나르기', '자료팀', '자료', 'make', 160, 'teal', 'box'],
+  설계: ['설계', '설계팀', '설계', 'make', 190, 'teal', 'ruler'], 검사: ['시험', '시험팀', '시험', 'qa', 275, 'violet', 'check'], 지휘: ['지휘', '지휘', '지휘', 'hq', 40, 'amber', 'flag'] }
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
@@ -135,7 +145,7 @@ export function build({ lanePath, repoDir, usagePath, now = new Date(), md, onDr
       const category = categoryOf(r.team)
       tasks.push({ id: r.id, title, category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
-        actor_id: col.column === 'work' ? `a-${r.id}` : null, updated_at: hits.at(-1)?.ts ?? began })
+        actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began })
       mine.push(tasks.at(-1))
     }
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
@@ -160,28 +170,34 @@ export function build({ lanePath, repoDir, usagePath, now = new Date(), md, onDr
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
+  const working = tasks.filter((t) => t.column === 'work')
+  const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
-    state: 'work', task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
-  const actors = [lead, ...tasks.filter((t) => t.column === 'work').map((t) => {
+    state: working.length ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+  const actors = [lead, ...working.filter((t) => t.category !== '지휘').map((t) => {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     return { id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work', task_id: t.id,
       branch_id: branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null, account: 'org', tok_per_min: 0, started_at: t.started_at ?? nowIso, ended_at: null }
   })]
 
+  // 사건 = 태스크 id 가 있는 줄만(「{제목} 끝/시작/막힘/다시」) + 가장 최근 📌 줄 하나(「방향 바뀜」). 같은 글이 잇달면 하나로 접는다.
   const events = []
+  const lastPin = logAt.findLast((l) => /📌/.test(l.pan))
   for (const l of logAt) {
-    const t = l.ids.map((id) => byId.get(id)).find(Boolean)
-    const more = l.ids.filter((id) => byId.has(id)).length - 1
-    const name = t ? `${t.title}${more > 0 ? ` 외 ${more}` : ''}` : ''
-    const mark = `${l.pan} ${l.result}`.trim()
-    let kind = 'actor.state'; let text = '지휘 정리'
-    if (t && /^\s*❌/.test(l.result)) { kind = 'task.reject'; text = `${name} 다시` }
-    else if (t && (/✅/.test(l.pan) || /^\s*✅/.test(l.result))) { kind = 'task.move'; text = `${name} 끝` }
-    else if (t && /🔄/.test(mark)) { kind = 'task.move'; text = `${name} 시작` }
-    else if (/📌/.test(l.pan)) { kind = 'goal.progress'; text = '방향 정리' }
-    else if (/⏸/.test(l.pan)) { text = '잠시 멈춤' }
-    if (!clean(text)) { onDrop('events', l.at); continue }
-    events.push({ id: `e-${hash(l.at + l.pan)}`, ts: l.ts, kind, subject_type: t ? 'task' : 'actor', subject_id: t ? t.id : lead.id, actor_id: lead.id, text })
+    const known = l.ids.filter((id) => byId.has(id))
+    const add = (kind, subject_type, subject_id, text, key) => {
+      if (!clean(text)) { onDrop('events', l.at); return }
+      if (events.at(-1)?.text === text) return
+      events.push({ id: `e-${hash(l.at + l.pan + key)}`, ts: l.ts, kind, subject_type, subject_id, actor_id: lead.id, text })
+    }
+    if (known.length) {
+      const t = byId.get(known[0])
+      const name = `${t.title}${known.length > 1 ? ` 외 ${known.length - 1}` : ''}`
+      const mark = `${l.pan} ${l.result}`
+      const verb = /^\s*❌/.test(l.result) ? '다시' : /✅|머지/.test(l.pan) || /^\s*✅/.test(l.result) ? '끝' : /⏸|⛔|막힘/.test(mark) ? '막힘' : '시작'
+      add(verb === '다시' ? 'task.reject' : 'task.move', 'task', t.id, `${name} ${verb}`, '')
+    }
+    if (l === lastPin) add('goal.progress', 'actor', lead.id, '방향 바뀜', '📌')
   }
 
   // shortcut: 서비스·모듈은 아직 실원천이 없어 fixtures 를 싣는다(가짜 일감 연결은 끊음) — 원천이 생기면 바꾼다

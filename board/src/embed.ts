@@ -30,6 +30,7 @@ let menuHost: HTMLElement
 let poll = 0
 let band: ReturnType<typeof createBand> | null = null
 let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
+let latest: VersionInfo | null = null // 띠에 띄운 새 판
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
@@ -47,7 +48,7 @@ function render(notice = false): void {
   const bnd = band = createBand(data, {
     calm: calmOn(),
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
-    onApply: () => void applyUpdate(__BUILD__),
+    onApply: () => void applyUpdate(latest?.build ?? __BUILD__), // 새 판 번호로 열어야 옛 index.html 사본을 피한다
     // 접수 창은 서랍 안 상세 칸에 뜨니, 닫힌 서랍이면 먼저 연다.
     onFeedback: () => { setDrawer(true); openFeedback(detail.open, () => render(true)) },
     async onPurge() { // 확인은 메뉴 안 2단계가 이미 받았다
@@ -95,7 +96,8 @@ function render(notice = false): void {
 
   const check = async () => {
     const v: VersionInfo | null = await fetchVersion()
-    bnd.showUpdate(isNewer(__BUILD__, v) ? v : null)
+    latest = isNewer(__BUILD__, v) ? v : null
+    bnd.showUpdate(latest)
   }
   void check()
   poll = window.setInterval(check, 60_000)
