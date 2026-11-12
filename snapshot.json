@@ -92,7 +92,7 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T08:19:02.791Z",
+      "started_at": "2026-11-12T08:21:02.815Z",
       "ended_at": null
     },
     {
@@ -111,7 +111,7 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T08:19:02.791Z",
+      "started_at": "2026-11-12T08:21:02.815Z",
       "ended_at": null
     },
     {
@@ -130,7 +130,7 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T08:19:02.791Z",
+      "started_at": "2026-11-12T08:21:02.815Z",
       "ended_at": null
     }
   ],
@@ -1078,7 +1078,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R2",
@@ -1093,7 +1093,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R3",
@@ -1108,7 +1108,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R4",
@@ -1123,7 +1123,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R5",
@@ -1138,7 +1138,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R6",
@@ -1153,7 +1153,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R7",
@@ -1168,7 +1168,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R8",
@@ -1183,7 +1183,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R9",
@@ -1198,7 +1198,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R10",
@@ -1213,7 +1213,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R11",
@@ -1228,7 +1228,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R12",
@@ -1243,7 +1243,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R13",
@@ -1258,7 +1258,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R14",
@@ -1273,7 +1273,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R15",
@@ -1288,7 +1288,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R16",
@@ -1303,7 +1303,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R17",
@@ -1318,7 +1318,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R18",
@@ -1333,7 +1333,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R19",
@@ -1348,7 +1348,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R20",
@@ -1363,7 +1363,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R21",
@@ -1378,7 +1378,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R22",
@@ -1393,7 +1393,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R23",
@@ -1408,7 +1408,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R24",
@@ -1423,7 +1423,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R25",
@@ -1438,7 +1438,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R26",
@@ -1453,7 +1453,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R27",
@@ -1468,7 +1468,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R28",
@@ -1483,7 +1483,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R29",
@@ -1498,7 +1498,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R30",
@@ -1513,7 +1513,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R31",
@@ -1528,7 +1528,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R32",
@@ -1543,7 +1543,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R33",
@@ -1558,7 +1558,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R34",
@@ -1573,7 +1573,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R35",
@@ -1588,7 +1588,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R36",
@@ -1603,7 +1603,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R37",
@@ -1618,7 +1618,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R38",
@@ -1633,7 +1633,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R39",
@@ -1648,7 +1648,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R40",
@@ -1663,7 +1663,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R41",
@@ -1678,7 +1678,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R42",
@@ -1693,7 +1693,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R43",
@@ -1708,7 +1708,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R44",
@@ -1723,7 +1723,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R45",
@@ -1738,7 +1738,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R46",
@@ -1753,7 +1753,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R47",
@@ -1768,7 +1768,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R48",
@@ -1783,7 +1783,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R49",
@@ -1798,7 +1798,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R50",
@@ -1813,7 +1813,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R51",
@@ -1828,7 +1828,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R52",
@@ -1843,7 +1843,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R53",
@@ -1858,7 +1858,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R54",
@@ -1873,7 +1873,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R55",
@@ -1888,7 +1888,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R56",
@@ -1903,7 +1903,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R57",
@@ -1918,7 +1918,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R58",
@@ -1933,7 +1933,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R59",
@@ -1948,7 +1948,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R60",
@@ -1963,7 +1963,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R61",
@@ -1978,7 +1978,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R62",
@@ -1993,7 +1993,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R63",
@@ -2008,7 +2008,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R64",
@@ -2023,7 +2023,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R65",
@@ -2038,7 +2038,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R66",
@@ -2053,7 +2053,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R67",
@@ -2068,7 +2068,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R68",
@@ -2083,7 +2083,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R69",
@@ -2098,7 +2098,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R70",
@@ -2113,7 +2113,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R71",
@@ -2128,7 +2128,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R72",
@@ -2143,7 +2143,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R73",
@@ -2158,7 +2158,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "R74",
@@ -2173,7 +2173,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-100a",
@@ -2188,7 +2188,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-100b",
@@ -2203,7 +2203,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-100c",
@@ -2218,7 +2218,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-101a",
@@ -2233,7 +2233,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": "a-l-30eb8d-T-101a",
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-101b",
@@ -2248,7 +2248,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": "a-l-30eb8d-T-101b",
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-30eb8d-T-101c",
@@ -2263,7 +2263,352 @@
       "column": "work",
       "reason": "new",
       "actor_id": "a-l-30eb8d-T-101c",
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K26",
+      "title": "📊 360 막대 잘림",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K27",
+      "title": "📊 Board 카드 번호에 레인 접두사가 그대로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K28",
+      "title": "📊 R34·R35·R36 재검",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K29",
+      "title": "📊 Inbox 접수 뒤 「Board 에서 보기」 안내가 거짓말",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K30",
+      "title": "🛠 390 첫 화면에 시작 안내가 없다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K31",
+      "title": "🛠 노트 굵게가 안 끝난다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K32",
+      "title": "🛠 속성 패널 아이콘 칸 「—」 무반응",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K33",
+      "title": "🛠 390 탐색기 서랍이 안 닫힌다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K34",
+      "title": "🛠 끌기 핸들이 평소엔 안 보인다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K35",
+      "title": "🛠 흔들리는 테스트 + 잔손질",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K36",
+      "title": "📊 보고꾼이 「무엇·상태」 칸 없는 표를 통째로 안 읽는다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K37",
+      "title": "📊 제목에 가 들면 그 일감이 사라진다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K38",
+      "title": "📊 → T-… 상태가 「작업 중」으로 잘못 뜬다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K39",
+      "title": "📊 보고꾼 잔손질 셋",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K40",
+      "title": "📊 서랍 키보드 길이 끊긴다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K41",
+      "title": "📊 Overview 「남은 일감 2개」가 무엇을 세는지 모른다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K42",
+      "title": "📊 Guide 가 지금 판과 안 맞는다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K43",
+      "title": "📊 카드 상세 시트가 비어 보인다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K44",
+      "title": "🛠 반복 일정: 원본과 회차가 똑같이 생겼다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K45",
+      "title": "🛠 같은 일이 표면마다 다르게 된다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K46",
+      "title": "🛠 자식 든 폴더도 확인 없이 지워진다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K47",
+      "title": "🛠 플러그인 끄기 뒤 화면이 남는다",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
+    },
+    {
+      "id": "l-30eb8d-K48",
+      "title": "🛠 잔손질 둘",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-30eb8d",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-V1",
@@ -2278,7 +2623,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K15",
@@ -2293,7 +2638,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K18·19",
@@ -2308,7 +2653,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K20·25",
@@ -2323,7 +2668,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K16",
@@ -2338,7 +2683,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K23",
@@ -2353,7 +2698,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K21",
@@ -2368,7 +2713,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QS",
@@ -2383,7 +2728,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-화면",
@@ -2398,7 +2743,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q28·Q7",
@@ -2413,7 +2758,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-K17",
@@ -2428,7 +2773,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QF",
@@ -2443,7 +2788,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q21·22·10",
@@ -2458,7 +2803,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QG",
@@ -2473,7 +2818,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q14·25",
@@ -2488,7 +2833,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QH",
@@ -2503,7 +2848,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q11·15",
@@ -2518,7 +2863,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QI",
@@ -2533,7 +2878,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q23+QI화면",
@@ -2548,7 +2893,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QJ",
@@ -2563,7 +2908,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q23b",
@@ -2578,7 +2923,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QK",
@@ -2593,7 +2938,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QJ화면",
@@ -2608,7 +2953,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-쉬운 모드",
@@ -2623,7 +2968,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-P0",
@@ -2638,7 +2983,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-QK화면",
@@ -2653,10 +2998,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
-      "id": "l-7cefb9-b2340157",
+      "id": "l-7cefb9-46f3d00f",
       "title": "v1 에서 본받을 것 목록 → 페르소나가 순위",
       "category": "코드",
       "kind": "work",
@@ -2668,7 +3013,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q30",
@@ -2683,7 +3028,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-페르소나",
@@ -2698,7 +3043,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GA",
@@ -2713,7 +3058,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GB",
@@ -2728,7 +3073,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GC",
@@ -2743,7 +3088,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GD",
@@ -2758,7 +3103,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-G화면",
@@ -2773,7 +3118,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GE",
@@ -2788,7 +3133,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-낱말",
@@ -2803,7 +3148,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GF",
@@ -2818,7 +3163,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q17b",
@@ -2833,7 +3178,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GG",
@@ -2848,7 +3193,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GH",
@@ -2863,7 +3208,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-페르소나 눈",
@@ -2878,7 +3223,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GI",
@@ -2893,7 +3238,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GJ",
@@ -2908,7 +3253,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-G화면2",
@@ -2923,7 +3268,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GK",
@@ -2938,7 +3283,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GL",
@@ -2953,7 +3298,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q17c",
@@ -2968,7 +3313,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-G화면3",
@@ -2983,7 +3328,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GM",
@@ -2998,7 +3343,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GN",
@@ -3013,7 +3358,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-GO",
@@ -3028,7 +3373,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-안내",
@@ -3043,7 +3388,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-7cefb9-Q17",
@@ -3058,7 +3403,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-바닥",
@@ -3073,7 +3418,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-반입",
@@ -3088,7 +3433,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-대조",
@@ -3103,7 +3448,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-비식별",
@@ -3118,7 +3463,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-통합 검수",
@@ -3133,7 +3478,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-재설계",
@@ -3148,7 +3493,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-설계안",
@@ -3163,7 +3508,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-🙋",
@@ -3178,7 +3523,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-재검수 S",
@@ -3193,7 +3538,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-설계안 S",
@@ -3208,10 +3553,10 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
-      "id": "l-337c1c-c678b457",
+      "id": "l-337c1c-0583444f",
       "title": "검토 + 「해」",
       "category": "코드",
       "kind": "work",
@@ -3223,7 +3568,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     },
     {
       "id": "l-337c1c-구현",
@@ -3239,7 +3584,7 @@
       "reason": "blocked",
       "block_kind": "outside",
       "actor_id": null,
-      "updated_at": "2026-11-12T08:19:02.791Z"
+      "updated_at": "2026-11-12T08:21:02.815Z"
     }
   ],
   "lanes": [
@@ -3257,7 +3602,7 @@
     },
     {
       "id": "l-30eb8d",
-      "title": "검수",
+      "title": "검수 2",
       "state": "work",
       "actor_id": null
     },
@@ -3379,7 +3724,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:19:02.208Z"
+      "checked_at": "2026-11-12T08:21:02.262Z"
     },
     {
       "id": "s-sync",
@@ -3387,7 +3732,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:19:02.208Z"
+      "checked_at": "2026-11-12T08:21:02.262Z"
     },
     {
       "id": "s-reporter",
@@ -3395,7 +3740,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T08:19:02.208Z"
+      "checked_at": "2026-11-12T08:21:02.262Z"
     }
   ],
   "modules": [
@@ -3955,7 +4300,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T08:19:02.791Z",
+      "ts": "2026-11-12T08:21:02.815Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
