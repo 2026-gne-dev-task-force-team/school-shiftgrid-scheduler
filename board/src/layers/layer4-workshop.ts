@@ -1,4 +1,4 @@
-import { h } from '../dom.ts'
+import { h, isCalm } from '../dom.ts'
 import { KIND_ICON } from '../ui/chip.ts'
 import type { Task } from '../types.ts'
 import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
@@ -9,7 +9,7 @@ export const layer4: LayerRenderer = {
   id: 'layer4', floor: 4, tab: '작업장',
   render(host, { data, openDetail, tip }) {
     const tasks: Task[] = data.tasks.map((t) => ({ ...t }))
-    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('calm')
+    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
     const cols = new Map<Col, { body: HTMLElement; badge: HTMLElement }>()
     const board = h('div', { class: 'ws' })
     for (const c of COLS) {
