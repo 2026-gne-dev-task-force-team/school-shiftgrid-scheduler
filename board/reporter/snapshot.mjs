@@ -145,6 +145,19 @@ export function readLanes(root, onWarn = () => {}, onInfo = () => {}) {
   })
 }
 
+export const SUPERVISOR_FRESH_MS = 10 * 60e3
+/** 레인 폴더의 감독 노트 → { state, line }. 노트가 없거나 못 읽으면 null. 한 줄이 담백 검사에 걸리면 빈 글. */
+export function readSupervisor(root, now) {
+  const f = root ? join(root, '감독', '레인 감독.md') : ''
+  if (!f || !existsSync(f)) return null
+  try {
+    const md = readFileSync(f, 'utf-8')
+    const sec = /^## 요약\s*\r?\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(md)
+    const line = (sec?.[1] ?? '').split(/\r?\n/).map((l) => l.trim()).find(Boolean) ?? ''
+    return { state: now.getTime() - statSync(f).mtimeMs <= SUPERVISOR_FRESH_MS ? 'work' : 'idle', line: clean(line) }
+  } catch { return null }
+}
+
 /** 요청함 노트 → R 줄(번호·처방·상태 칸). 쥔님 원문 칸은 읽지도 않는다. 칸 순서: # · 시각 · 원문 · 처방 · 종류 · 상태. */
 export function parseRequests(md) {
   const rows = []
@@ -448,6 +461,10 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
       state: g.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
       ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null })
+  // 감독관 = 레인 폴더 `감독/레인 감독.md`(순찰이 5분마다 덮어씀). 노트가 있을 때만 — 일함(mtime 10분 안) · 쉼, 한 줄 = `## 요약` 줄.
+  const sup = readSupervisor(laneRoot, now)
+  if (sup) actors.push({ id: 'a-supervisor', parent_id: lead.id, kind: 'helper', name: '감독관', hue: 40, eye: 'teal', prop: '', dept: 'hq', team: sup.line, role: '감독',
+    state: sup.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   // 가지 ↔ 캐릭터: 그 가지 일감(T-<id>)을 맡은 캐릭터
   for (const b of branches) if (!b.trunk) b.actor_id = actors.find((a) => a.branch_id === b.id)?.id ?? null
 

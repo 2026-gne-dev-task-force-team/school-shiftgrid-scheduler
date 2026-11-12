@@ -9,11 +9,12 @@ import { readLanes, parseLane, parseLaneNote } from '../reporter/snapshot.mjs'
 
 export const DEFAULTS = { stuckMin: 30, idleHours: 3, urgentMin: 15, pickedHours: 1, parallelMin: 30, commits: 30 }
 const KST = 9 * 3600e3
+const FUTURE_SLACK = 15 * 60e3
 const p2 = (n) => String(n).padStart(2, '0')
 const cells = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
 const home = (p) => (typeof p === 'string' && (p === '~' || p.startsWith('~/')) ? join(homedir(), p.slice(1)) : p)
 
-/** 「11-12 14:23」·「14:23」 → 시각(ms). 시각만이면 now 의 날짜(KST), 미래가 되면 하루 전. 못 읽으면 null. */
+/** 「11-12 14:23」·「14:23」 → 시각(ms). 시각만이면 now 의 날짜(KST) — 15분 이내 미래는 시계 차·먼저 적기라 오늘로 두고, 그보다 미래면 하루 전. 못 읽으면 null. */
 export function parseAt(text, now) {
   const m = /(?:(\d{1,2})-(\d{1,2})\s+)?(\d{1,2}):(\d{2})/.exec(text ?? '')
   if (!m) return null
@@ -21,10 +22,10 @@ export function parseAt(text, now) {
   const mo = m[1] ? +m[1] : k.getUTCMonth() + 1
   const d = m[2] ? +m[2] : k.getUTCDate()
   let t = Date.UTC(k.getUTCFullYear(), mo - 1, d, +m[3], +m[4]) - KST
-  if (!m[1] && t > now.getTime()) t -= 86400e3
+  if (!m[1] && t > now.getTime() + FUTURE_SLACK) t -= 86400e3
   return t
 }
-const mins = (now, t) => Math.floor((now.getTime() - t) / 60e3)
+const mins = (now, t) => Math.max(0, Math.floor((now.getTime() - t) / 60e3)) // 몇 분 미래(시계 차)는 경과 0
 const span = (m) => (m >= 120 ? `${(m / 60).toFixed(1)}시간` : `${m}분`)
 const grade = (m, limit) => (m <= limit ? '✅' : m > limit * 2 ? '❌' : '⚠️')
 const hhmm = (now) => { const k = new Date(now.getTime() + KST); return `${p2(k.getUTCHours())}:${p2(k.getUTCMinutes())}` }

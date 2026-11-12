@@ -491,3 +491,24 @@ describe('T-9u 읽기 고침', () => {
     expect(ids).toEqual(['b-trunk', 'b-zz'])
   })
 })
+
+describe('감독관 캐릭터 (T-9zb)', () => {
+  const NOW = new Date('2026-11-12T13:30:00Z')
+  const note = '---\ntitle: 레인 감독\n---\n\n## 요약\n\n⚠️ 1 · ❌ 2 · 순찰 시각 22:30\n\n## ❌\n\n없음\n'
+  const world = (ageMin: number | null) => {
+    const root = mkdtempSync(join(tmpdir(), 'sup-'))
+    if (ageMin != null) {
+      mkdirSync(join(root, '감독'))
+      const f = join(root, '감독', '레인 감독.md')
+      writeFileSync(f, note)
+      const t = new Date(NOW.getTime() - ageMin * 60e3)
+      utimesSync(f, t, t)
+    }
+    return build({ now: NOW, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: root }).actors.find((a: { role: string }) => a.role === '감독')
+  }
+  it('노트 mtime 10분 안이면 일함 · 한 줄은 요약 줄', () => {
+    expect(world(3)).toMatchObject({ name: '감독관', role: '감독', state: 'work', team: '⚠️ 1 · ❌ 2 · 순찰 시각 22:30' })
+  })
+  it('오래되면 쉼', () => expect(world(30)).toMatchObject({ state: 'idle' }))
+  it('노트가 없으면 안 싣는다', () => expect(world(null)).toBeUndefined())
+})

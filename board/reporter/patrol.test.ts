@@ -53,6 +53,19 @@ describe('1 멈춘 판', () => {
   })
 })
 
+describe('날짜 없는 시각이 미래', () => {
+  it('5분 미래(22:35) → 오늘, 경과 0 ✅', () => {
+    const l = by(run(world({ lane: row('T-1', '🔄 22:35') })), '멈춘 판')[0]
+    expect(l.verdict).toBe('✅')
+    expect(l.basis).not.toContain('24.0')
+  })
+  it('2시간 미래(00:30) → 전날 22시간 ❌', () => {
+    const l = by(run(world({ lane: row('T-1', '🔄 00:30') })), '멈춘 판')[0]
+    expect(l).toMatchObject({ verdict: '❌' })
+    expect(l.basis).toContain('22.0시간')
+  })
+})
+
 describe('2 방치 📥', () => {
   it('방금 들어온 📥 는 ✅', () => expect(by(run(world({ lane: row('T-1', '✅'), rs: '| R1 | 11-12 22:00 | 원문 | 처방 | 앱 | 📥 대기 |' })), '방치 📥')[0].verdict).toBe('✅'))
   it('6시간 된 R 은 ❌, 집은 카드에 있으면 뺀다', () => {

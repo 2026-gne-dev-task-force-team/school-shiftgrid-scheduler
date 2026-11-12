@@ -28,6 +28,11 @@ describe('캐릭터', () => {
     expect(propOf({ prop: '', role: '설계' })).toBe('ruler')
     expect(characterSvg({ ...A, prop: 'lens' })).not.toBe(characterSvg(A))
   })
+  it('감독 소품 scope 는 lens 와 다른 모양', () => {
+    expect(propOf({ prop: '', role: '감독' })).toBe('scope')
+    expect(characterSvg({ ...A, prop: 'scope' })).not.toBe(characterSvg({ ...A, prop: 'lens' }))
+    expect(characterSvg({ ...A, prop: 'scope' })).not.toBe(characterSvg(A))
+  })
   it('이름(역할 이름 규칙)은 aria-label 로, 이스케이프', () => {
     expect(characterSvg({ ...A, name: '지휘<a"b>' })).toContain('aria-label="지휘&#60;a&#34;b&#62;"')
     expect(characterSvg(A)).toContain('aria-label="지휘"') // 자연 낱말 이름은 역할로

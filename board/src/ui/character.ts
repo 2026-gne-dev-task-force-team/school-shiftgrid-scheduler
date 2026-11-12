@@ -11,7 +11,7 @@ const BODY = '#D97757', INK = '#2B1710', PAPER = '#F3E6D3'
 const EYE: Record<string, string> = { amber: '#F0A830', teal: '#2FBFAE', violet: '#A37BE0', blue: '#5B9BE8', green: '#7BC86C', rose: '#E86A8C' }
 const PALETTE = Object.values(EYE)
 const BAND: Record<string, string> = { hq: '#E0B341', make: '#2FBFAE', qa: '#A37BE0' }
-const ROLE_PROP: Record<string, string> = { 지휘: 'flag', 살림: 'steth', 설계: 'ruler', 화면: 'brush', 자료: 'box', 시험: 'check', 맨눈: 'lens' }
+const ROLE_PROP: Record<string, string> = { 지휘: 'flag', 살림: 'steth', 설계: 'ruler', 화면: 'brush', 자료: 'box', 시험: 'check', 맨눈: 'lens', 감독: 'scope' }
 type R = [x: number, y: number, w: number, h: number, fill: string]
 // 소품 = 몸 오른쪽(x14~16) 2~4칸 픽셀 물건
 const PROPS: Record<string, R[]> = {
@@ -22,6 +22,7 @@ const PROPS: Record<string, R[]> = {
   box: [[14, 5, 3, 3, PAPER], [14, 6, 3, 1, '#C8A06A']],
   check: [[14, 3, 3, 5, PAPER], [14, 5, 1, 1, '#2F9E58'], [15, 6, 1, 1, '#2F9E58'], [16, 4, 1, 2, '#2F9E58']],
   lens: [[14, 4, 3, 3, '#BFE3F2'], [16, 7, 1, 1, INK]],
+  scope: [[14, 2, 3, 1, INK], [13, 3, 1, 3, INK], [17, 3, 1, 3, INK], [14, 6, 3, 1, INK], [14, 3, 3, 3, '#BFE3F2'], [16, 7, 1, 1, INK], [15, 8, 1, 1, INK]], // 둥근 테 + 비스듬 손잡이
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
