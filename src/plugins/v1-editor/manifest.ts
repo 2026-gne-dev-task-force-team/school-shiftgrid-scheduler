@@ -1,6 +1,6 @@
 /**
  * 「시간표 짜기(편성)」 신분증 — v1 편성 화면을 legacy/ 사본 iframe 으로 띄운다(설계 ① 2-1 · P10a). id 는 폴더명과 같다(구조 검사 ⑧).
- * ⚠️ 아직 site.config.json·app/plugins.ts 에 안 올렸다 — 읽기 격자(v1-editor.grid)·판 화면은 index.ts 에 선언했다. 올리려면 app/plugins.ts CATALOG·site.config.json·site-config 시험의 v1-editor 예외를 한꺼번에 고쳐야 한다(src/app — 이 꾸러미 밖).
+ * ✅ T-8p8(R51): app/plugins.ts CATALOG·site.config.json 에 올렸다(기본 켜짐 — 설정에서 끌 수 있다). 화면 셋: edit·grid·versions(index.ts).
  */
 import type { PluginManifest } from '../../pane-ui-system/plugin';
 
