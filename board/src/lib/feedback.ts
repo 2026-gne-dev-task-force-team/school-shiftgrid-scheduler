@@ -6,7 +6,7 @@ export const MAX_LEN = 200
 export type Status = 'new' | 'review' | 'fixed' | 'closed'
 export const STATUSES: Status[] = ['new', 'review', 'fixed', 'closed']
 export const STATUS_NAME: Record<Status, string> = { new: '접수', review: '검토', fixed: '고침', closed: '닫힘' }
-export interface Feedback { id: string; text: string; where: string; ts: string; status?: Status; app?: string } // status 없는 옛 자료 = 접수
+export interface Feedback { id: string; text: string; where: string; ts: string; status?: Status; app?: string; reviewed_at?: string | null; direction?: string | null } // status 없는 옛 자료 = 접수
 export const statusOf = (f: Feedback): Status => (f.status && STATUSES.includes(f.status) ? f.status : 'new')
 type Store = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -41,6 +41,19 @@ export function setStatus(id: string, status: Status, s: Store | undefined = glo
   s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).map((f) => (f.id === id ? { ...f, status } : f))))
 }
 
+export const MAX_DIRECTION = 200
+/** 쥔님이 검토를 넘겼나 — reviewed_at 이 있고 방향 한 줄이 비지 않을 때만. 칸이 없는 서버 행(undefined)은 미검토. */
+export const isReviewed = (f: Feedback): boolean => !!f.reviewed_at && !!f.direction?.trim()
+
+/** 이 기기 접수의 검토 저장. 방향이 비면 거절한다. */
+export function setReview(id: string, direction: string, s: Store | undefined = globalThis.localStorage, now = Date.now()): { ok: true } | { ok: false; reason: string } {
+  const d = direction.trim()
+  if (!d) return { ok: false, reason: '방향을 한 줄 적어 주세요.' }
+  if (!s) return { ok: false, reason: '이 기기에 저장할 수 없어요.' }
+  s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).map((f) => (f.id === id ? { ...f, reviewed_at: new Date(now).toISOString(), direction: d.slice(0, MAX_DIRECTION) } : f))))
+  return { ok: true }
+}
+
 export function removeFeedback(id: string, s: Store | undefined = globalThis.localStorage): void {
   if (s) s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).filter((f) => f.id !== id)))
 }
@@ -71,11 +84,12 @@ export function mergeInbox(local: Feedback[], server: Feedback[]): InboxItem[] {
 const place = (st: Status): Pick<Task, 'column' | 'reason'> =>
   st === 'closed' ? { column: 'done', reason: 'done' } : st === 'new' ? { column: 'wait', reason: 'new' } : { column: 'work', reason: 'new' }
 
-/** 접수된 불편을 🐞 카드(상태 따라 열)와 흐름 줄로 바꾼다 — 자료 불러올 때 합친다. */
-export function feedbackRows(fbs: Feedback[], laneId: string): { tasks: Task[]; events: BoardEvent[] } {
+/** 쥔님이 검토·방향을 준 접수만 🐞 카드(상태 따라 열)와 흐름 줄이 된다 — 접수만으로는 Inbox 에만 있다. */
+export function feedbackRows(all: Feedback[], laneId: string): { tasks: Task[]; events: BoardEvent[] } {
+  const fbs = all.filter(isReviewed)
   return {
-    tasks: fbs.map((f) => ({ id: f.id, title: f.text, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
+    tasks: fbs.map((f) => ({ id: f.id, title: `${f.direction!.trim()} · ${f.text}`, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
       started_at: null, lane_id: laneId, app: f.app ?? DEFAULT_APP, actor_id: null, updated_at: f.ts, ...place(statusOf(f)) })),
-    events: fbs.map((f) => ({ id: `e${f.id}`, ts: f.ts, kind: 'feedback.add', subject_type: 'task', subject_id: f.id, actor_id: null, text: '🐞 불편 하나가 접수됐다' })),
+    events: fbs.map((f) => ({ id: `e${f.id}`, ts: f.ts, kind: 'feedback.add', subject_type: 'task', subject_id: f.id, actor_id: null, text: '🐞 검토된 불편 하나가 일감이 됐다' })),
   }
 }

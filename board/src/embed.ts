@@ -110,9 +110,9 @@ function render(notice = false): void {
     show(restoreTab(curTab, LAYERS.length))
   }
   if (notice && data.source !== 'loading' && data.source !== 'failed') {
-    const go = h('button', { class: 'btn' }, 'Board 에서 보기')
+    const go = h('button', { class: 'btn' }, 'Inbox 에서 보기')
     go.addEventListener('click', () => {
-      show(LAYERS.findIndex((l) => l.floor === 4))
+      show(LAYERS.findIndex((l) => l.floor === 6))
       detail.el.hidden = true // 폰 바텀시트가 카드를 가리지 않게
       const card = stage.el.querySelector<HTMLElement>(`[data-id="${loadFeedback().at(-1)?.id}"]`)
       if (!card) return
@@ -120,7 +120,7 @@ function render(notice = false): void {
       card.classList.add('flash')
       setTimeout(() => card.classList.remove('flash'), 2000)
     })
-    detail.open({ title: '접수됐어요', rows: [], extra: go })
+    detail.open({ title: '접수됐어요 — 쥔님 검토 뒤 Board 에 올라가요', rows: [], extra: go })
   }
 
   const check = async () => {

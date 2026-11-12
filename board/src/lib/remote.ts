@@ -25,8 +25,8 @@ async function get(env: Required<Env>, table: string, f: typeof fetch): Promise<
 export async function fetchRemote(env: Env = envNow(), f: typeof fetch = fetch): Promise<Remote | null> {
   if (!env.url || !env.key) return null
   const e = env as Required<Env>
-  const fbP = get(e, 'feedback', f).then((rows) => (rows as { id: string; text: string; place?: string; ts: string; app?: string }[])
-    .map((r): Feedback => ({ id: r.id, text: r.text, where: r.place ?? '', ts: r.ts, app: r.app }))).catch((): Feedback[] => [])
+  const fbP = get(e, 'feedback', f).then((rows) => (rows as { id: string; text: string; place?: string; ts: string; app?: string; reviewed_at?: string | null; direction?: string | null }[])
+    .map((r): Feedback => ({ id: r.id, text: r.text, where: r.place ?? '', ts: r.ts, app: r.app, reviewed_at: r.reviewed_at, direction: r.direction }))).catch((): Feedback[] => [])
   let tables: BoardData | null = null
   try {
     const rows = await Promise.all(TABLES.map((n) => get(e, n, f)))
@@ -60,4 +60,27 @@ export function sourceChip(source: BoardData['source'], staleAt: number | undefi
     case 'stale': return `서버 못 읽음 · ${agoText(now, staleAt ?? now)} 값`
     default: return 'Mock data'
   }
+}
+
+export const ADMIN_TOKEN_KEY = 'board.adminToken' // 쥔님 기기에만 붙여 넣는 관리자 로그인 토큰 — 없으면 anon 키로 시도하고 서버가 막는다
+const NO_COLUMN = '서버에 검토 칸이 아직 없음(SQL 필요)'
+
+/** 서버 접수의 검토 저장 — board.feedback update(reviewed_at=now, direction). 실패하면 이유 한 줄. */
+export async function reviewRemote(id: string, direction: string, env: Env = envNow(), f: typeof fetch = fetch, token = globalThis.localStorage?.getItem(ADMIN_TOKEN_KEY) ?? '', now = Date.now()): Promise<{ ok: true; reviewed_at: string; direction: string } | { ok: false; reason: string }> {
+  const d = direction.trim()
+  if (!d) return { ok: false, reason: '방향을 한 줄 적어 주세요.' }
+  if (!env.url || !env.key) return { ok: false, reason: '서버 주소가 없어요.' }
+  const reviewed_at = new Date(now).toISOString()
+  try {
+    const r = await f(`${env.url}/rest/v1/feedback?id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { apikey: env.key, Authorization: 'Bearer ' + (token || env.key), 'Content-Profile': 'board', 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ reviewed_at, direction: d.slice(0, 200) }),
+    })
+    if (r.status === 400 || r.status === 404) return { ok: false, reason: NO_COLUMN }
+    if (!r.ok) return { ok: false, reason: `저장 못 함(${r.status}) — 관리자 로그인이 필요해요.` }
+    const rows = await r.json().catch(() => [])
+    if (Array.isArray(rows) && !rows.length) return { ok: false, reason: '저장 못 함 — 관리자 권한이 없어요.' }
+    return { ok: true, reviewed_at, direction: d.slice(0, 200) }
+  } catch { return { ok: false, reason: '서버에 닿지 못했어요.' } }
 }

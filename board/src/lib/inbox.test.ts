@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { addFeedback, FEEDBACK_KEY, feedbackRows, loadFeedback, mergeInbox, removeFeedback, setStatus, statusOf } from './feedback.ts'
-import { fetchRemote } from './remote.ts'
+import { addFeedback, FEEDBACK_KEY, feedbackRows, loadFeedback, mergeInbox, removeFeedback, setReview, setStatus, statusOf } from './feedback.ts'
+import { fetchRemote, reviewRemote } from './remote.ts'
 
 function store(init?: string) {
   const m = new Map<string, string>(init ? [[FEEDBACK_KEY, init]] : [])
@@ -11,6 +11,9 @@ describe('접수 상태', () => {
   it('옛 자료(상태 없음)는 접수로 읽고, 바꾸면 저장되고 카드 열이 따라간다', () => {
     const s = store(JSON.stringify([{ id: 'a', text: '옛', where: '막대', ts: '2026-01-01T00:00:00Z' }]))
     expect(statusOf(loadFeedback(s)[0])).toBe('new')
+    expect(feedbackRows(loadFeedback(s), 'l').tasks).toHaveLength(0)
+    expect(setReview('a', '  ', s).ok).toBe(false)
+    expect(setReview('a', '이 방향으로', s).ok).toBe(true)
     expect(feedbackRows(loadFeedback(s), 'l').tasks[0].column).toBe('wait')
     setStatus('a', 'review', s)
     expect(feedbackRows(loadFeedback(s), 'l').tasks[0].column).toBe('work')
@@ -68,5 +71,30 @@ describe('remote', () => {
     const r = await fetchRemote(env, ok(['tasks']))
     expect(r!.tables).toBeNull()
     expect(r!.feedback).toHaveLength(1)
+  })
+})
+
+describe('reviewRemote', () => {
+  const env = { url: 'https://x.test', key: 'k' }
+  const res = (status: number, body: unknown = []) => vi.fn(async () => ({ ok: status < 300, status, json: async () => body }) as Response) as unknown as typeof fetch
+  it('방향 빈 값은 요청 없이 거절', async () => {
+    const f = res(200)
+    expect((await reviewRemote('s1', ' ', env, f, '')).ok).toBe(false)
+    expect(f).not.toHaveBeenCalled()
+  })
+  it('성공 — PATCH board 프로필, 토큰 사용', async () => {
+    const f = res(200, [{ id: 's1' }])
+    const r = await reviewRemote('s1', '방향', env, f, 'TOK', 0)
+    expect(r).toEqual({ ok: true, reviewed_at: '1970-01-01T00:00:00.000Z', direction: '방향' })
+    const [u, init] = (f as unknown as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(u).toContain('feedback?id=eq.s1'); expect(init.method).toBe('PATCH')
+    expect(init.headers.Authorization).toBe('Bearer TOK'); expect(init.headers['Content-Profile']).toBe('board')
+  })
+  it('칸이 없는 서버(400)는 SQL 필요 한 줄', async () => {
+    const r = await reviewRemote('s1', '방향', env, res(400), '')
+    expect(r).toEqual({ ok: false, reason: '서버에 검토 칸이 아직 없음(SQL 필요)' })
+  })
+  it('권한 없음(빈 결과)은 실패', async () => {
+    expect((await reviewRemote('s1', '방향', env, res(200, []), '')).ok).toBe(false)
   })
 })
