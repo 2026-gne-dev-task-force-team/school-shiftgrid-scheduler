@@ -2,7 +2,11 @@ import type { BoardEvent, Task } from '../types.ts'
 
 export const FEEDBACK_KEY = 'board.feedback' // board. 접두사 → 저장소 비우기가 같이 지운다
 export const MAX_LEN = 200
-export interface Feedback { id: string; text: string; where: string; ts: string }
+export type Status = 'new' | 'review' | 'fixed' | 'closed'
+export const STATUSES: Status[] = ['new', 'review', 'fixed', 'closed']
+export const STATUS_NAME: Record<Status, string> = { new: '접수', review: '검토', fixed: '고침', closed: '닫힘' }
+export interface Feedback { id: string; text: string; where: string; ts: string; status?: Status } // status 없는 옛 자료 = 접수
+export const statusOf = (f: Feedback): Status => (f.status && STATUSES.includes(f.status) ? f.status : 'new')
 type Store = Pick<Storage, 'getItem' | 'setItem'>
 
 export function loadFeedback(s: Store | undefined = globalThis.localStorage): Feedback[] {
@@ -31,11 +35,33 @@ export function addFeedback(text: string, where: string, s: Store | undefined = 
   return { ok: true }
 }
 
-/** 접수된 불편을 기다림 열의 🐞 카드와 흐름 줄로 바꾼다 — 자료 불러올 때 합친다. */
+export function setStatus(id: string, status: Status, s: Store | undefined = globalThis.localStorage): void {
+  if (!s || !STATUSES.includes(status)) return
+  s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).map((f) => (f.id === id ? { ...f, status } : f))))
+}
+
+export function removeFeedback(id: string, s: Store | undefined = globalThis.localStorage): void {
+  if (s) s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).filter((f) => f.id !== id)))
+}
+
+export interface InboxItem extends Feedback { origin: 'local' | 'server'; status: Status }
+
+/** 이 기기 접수 + 서버 접수를 한 목록으로 — 최신순. */
+export function mergeInbox(local: Feedback[], server: Feedback[]): InboxItem[] {
+  return [...local.map((f) => ({ ...f, origin: 'local' as const, status: statusOf(f) })),
+    ...server.map((f) => ({ ...f, origin: 'server' as const, status: statusOf(f) }))]
+    .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts))
+}
+
+/** 검토·고침 = 작업 열, 닫힘 = 끝 열. */
+const place = (st: Status): Pick<Task, 'column' | 'reason'> =>
+  st === 'closed' ? { column: 'done', reason: 'done' } : st === 'new' ? { column: 'wait', reason: 'new' } : { column: 'work', reason: 'new' }
+
+/** 접수된 불편을 🐞 카드(상태 따라 열)와 흐름 줄로 바꾼다 — 자료 불러올 때 합친다. */
 export function feedbackRows(fbs: Feedback[], laneId: string): { tasks: Task[]; events: BoardEvent[] } {
   return {
     tasks: fbs.map((f) => ({ id: f.id, title: f.text, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
-      started_at: null, lane_id: laneId, column: 'wait', reason: 'new', actor_id: null, updated_at: f.ts })),
+      started_at: null, lane_id: laneId, actor_id: null, updated_at: f.ts, ...place(statusOf(f)) })),
     events: fbs.map((f) => ({ id: `e${f.id}`, ts: f.ts, kind: 'feedback.add', subject_type: 'task', subject_id: f.id, actor_id: null, text: '🐞 불편 하나가 접수됐다' })),
   }
 }

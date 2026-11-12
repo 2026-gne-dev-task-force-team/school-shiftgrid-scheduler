@@ -9,6 +9,7 @@ import events from '../fixtures/events.json'
 import usage from '../fixtures/usage.json'
 import runs from '../fixtures/runs.json'
 import { feedbackRows, loadFeedback } from './lib/feedback.ts'
+import type { Remote } from './lib/remote.ts'
 import type { BoardData } from './types.ts'
 
 export const rawFixtures = { actors, tasks, lanes, branches, services, modules, goals, events, usage, runs }
@@ -25,8 +26,9 @@ function shift(v: unknown, d: number): unknown {
   return v
 }
 
-export function loadData(now = Date.now()): BoardData {
-  const d = shift(rawFixtures, now - BASE) as BoardData
+export function loadData(now = Date.now(), remote?: Remote | null): BoardData {
+  const d: BoardData = { ...(remote?.tables ?? shift(rawFixtures, now - BASE) as BoardData),
+    source: remote?.tables ? 'server' : 'mock', serverFeedback: remote?.feedback ?? [] }
   const fb = feedbackRows(loadFeedback(), d.lanes[0]?.id ?? '')
   return { ...d, tasks: [...d.tasks, ...fb.tasks], events: [...d.events, ...fb.events] }
 }
