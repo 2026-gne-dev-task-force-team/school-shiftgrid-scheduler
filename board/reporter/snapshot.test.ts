@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
@@ -270,5 +270,29 @@ describe('보고꾼 — 번호·칸 이름·상태·끝난 카드', () => {
     const d = build({ now: new Date('2026-11-12T10:00:00Z'), md })
     const c = d.tasks.find((x: { id: string }) => x.id === 'T-7c')
     expect(minutesIn(c, Date.parse('2026-11-12T10:00:00Z'))).toBe(4)
+  })
+})
+
+describe('보고꾼 — 레인 폴더 읽기', () => {
+  const root = mkdtempSync(join(tmpdir(), 'lanes-'))
+  const mk = (dir: string, file: string, body: string) => { mkdirSync(join(root, dir), { recursive: true }); writeFileSync(join(root, dir, file), body) }
+  mk('가 레인', '레인 가 레인.md', '**지금**: 🛑 멈춤\n\n| 칸 | 판 | 무엇 | 상태 |\n|---|---|---|---|\n| 1 | 첫판 | 바닥 깔기 · 뒷말 | ✅ |\n| 2 | 둘판 | 벽 세우기 | 🔄 |\n| 3 | 셋판 | a/b/c 경로만 | ⬜ |\n')
+  mk('나 레인', '레인 나 레인.md', '| 태스크 | 무엇 | 팀 | est_min | 상태 |\n|---|---|---|---|---|\n| T-1a | 지붕 얹기 | 코드 | 5 | ⬜ |\n')
+  mk('닫힘', '레인 닫힘.md', '| 판 | 무엇 | 상태 |\n|---|---|---|\n| x | 닫힌 일 | ✅ |\n')
+  mk('요청함', '레인 요청함.md', '| 판 | 무엇 | 상태 |\n|---|---|---|\n| x | 요청 일 | ✅ |\n')
+  mk('표 없음', '레인 표 없음.md', '글만')
+  const warns: string[] = []
+  const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: root, onWarn: (n: string) => warns.push(n) })
+  const mine = (title: string) => d.tasks.filter((t: { lane_id: string }) => t.lane_id === d.lanes.find((l: { title: string }) => l.title === title)?.id)
+
+  it('lane 은 지금 판 + 폴더 둘(닫힘·요청함 제외) · 태스크 수 · 경고', () => {
+    expect(d.lanes.map((l: { title: string }) => l.title)).toEqual(['현황판 만들기', '가 레인', '나 레인', '표 없음'])
+    expect(mine('가 레인').length).toBe(2) // 경로만 있는 줄은 담백 검사로 빠진다
+    expect(mine('나 레인').map((t: { id: string }) => t.id)).toHaveLength(1)
+    expect(d.tasks.some((t: { title: string }) => /닫힌|요청 일/.test(t.title))).toBe(false)
+    expect(warns).toEqual(['표 없음'])
+    expect(d.lanes[1].state).toBe('work') // 🔄 가 있으면 멈춤 문구보다 우선
+    expect(d.sprints.flatMap((s: { task_ids: string[] }) => s.task_ids)).toEqual(['T-1a', 'T-2a']) // 스프린트엔 안 섞인다
+    expect(findDirty(d)).toBeNull()
   })
 })

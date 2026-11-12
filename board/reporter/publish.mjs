@@ -21,6 +21,8 @@ const tryGit = (cwd, ...a) => { try { return execFileSync('git', ['-C', cwd, ...
 const snap = build({
   lanePath: arg('--lane', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/작업현황판/레인 작업현황판.md'),
   requestPath: arg('--requests', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/요청함/레인 요청함.md'),
+  laneRoot: arg('--lane-root', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인'),
+  onWarn: (d, why) => console.warn('경고', d, why),
   repoDir,
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
   gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),
