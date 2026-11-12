@@ -6,6 +6,7 @@ import { LAYERS } from './layers/registry.ts'
 import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
 import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
+import { isTyping, loadAuto, saveAuto, shouldAutoApply } from './lib/autoupdate.ts'
 import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
 import { fetchRemote, type Remote } from './lib/remote.ts'
@@ -34,6 +35,7 @@ let band: ReturnType<typeof createBand> | null = null
 let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
 let live: boolean | undefined // 실시간 소켓 상태. undefined = 소켓을 안 쓴다(키 없음·목업)
 let latest: VersionInfo | null = null // 띠에 띄운 새 판
+let runCheck: () => Promise<void> = async () => {} // 새 판 확인을 지금 한 번 — 체크박스를 켰을 때·입력이 끝났을 때도 부른다
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 let detailEl: HTMLElement | null = null
 let setDrawer: (on: boolean) => void = () => {}
@@ -58,6 +60,8 @@ function render(notice = false): void {
     theme,
     onTheme(t: Theme) { saveTheme(localStorage, t); root!.dataset.theme = t },
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
+    auto: loadAuto(localStorage),
+    onAuto(on) { saveAuto(localStorage, on); void runCheck() },
     onApply: () => void applyUpdate(latest?.build ?? __BUILD__), // 새 판 번호로 열어야 옛 index.html 사본을 피한다
     // 접수 창은 서랍 안 상세 칸에 뜨니, 닫힌 서랍이면 먼저 연다.
     onFeedback: () => { setDrawer(true); openFeedback(detail.open, () => render(true)) },
@@ -86,7 +90,7 @@ function render(notice = false): void {
 
   const caret = h('button', { class: 'btn sgb-mini sgb-caret', 'aria-label': '작업현황판 열고 닫기' },
     root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼')
-  barEl.replaceChildren(bnd.toggle, bnd.upd, bnd.fb, bnd.more, caret)
+  barEl.replaceChildren(bnd.toggle, bnd.upd, bnd.auto, bnd.fb, bnd.more, caret)
   menuHost.replaceChildren(bnd.menu)
   page.replaceChildren(bnd.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
   show(restoreTab(curTab, LAYERS.length))
@@ -108,7 +112,10 @@ function render(notice = false): void {
     const v: VersionInfo | null = await fetchVersion()
     latest = isNewer(__BUILD__, v, loadSeen()) ? v : null
     bnd.showUpdate(latest)
+    // 자동 바꾸기 — 앱에 「안 올라간 변경」 신호가 없어 입력 포커스만 본다. 미뤄진 건 다음 확인(1분·탭 복귀·입력 끝)이 다시 묻는다.
+    if (shouldAutoApply({ on: loadAuto(localStorage), local: __BUILD__, latest, seen: loadSeen(), typing: isTyping(document.activeElement) })) void applyUpdate(latest!.build)
   }
+  runCheck = check
   void check()
   poll = window.setInterval(check, 60_000)
   document.onvisibilitychange = () => { if (!document.hidden) void check() }
@@ -136,6 +143,7 @@ export function mountBoard(host?: HTMLElement): void {
     const t = escTarget(e.key, !!band && !band.menu.hidden, !!detailEl && !detailEl.hidden, drawer.classList.contains('open'))
     if (t === 'menu') band!.closeMenu(); else if (t === 'detail') detailEl!.hidden = true; else if (t === 'drawer') set(false)
   })
+  document.addEventListener('focusout', () => setTimeout(() => { if (loadAuto(localStorage)) void runCheck() }, 0)) // 입력이 끝나면 미뤄 둔 자동 바꾸기를 다시 묻는다
   window.addEventListener(FEEDBACK_CHANGED, () => render()) // Inbox 에서 지우기·상태 바꾸기 → Board·흐름 줄도 즉시
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
