@@ -8,6 +8,7 @@ export interface Actor {
   id: string; parent_id: string | null; kind: 'lead' | 'helper'; name: string; hue: number; eye: string; prop: string
   dept: Dept; team: string; role: string; state: ActorState
   task_id: string | null; branch_id: string | null; account: Account; tok_per_min: number
+  tok_total?: number // 에이전트가 쓴 토큰 누적 — 기록을 못 이은 캐릭터는 없다(화면 「—」)
   started_at: string; ended_at: string | null
 }
 export type BlockKind = 'dep' | 'decide' | 'check' | 'outside' // 막힌 까닭: 정해진 낱말만(자유 글 칸 없음)

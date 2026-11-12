@@ -2,7 +2,7 @@ import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
-import { actorLabel, actorWhat, stateCounts } from '../lib/actor.ts'
+import { actorLabel, actorTokens, actorWhat, stateCounts } from '../lib/actor.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -29,9 +29,10 @@ export const layer1: LayerRenderer = {
         const name = actorLabel(a, data.actors), what = actorWhat(a, data.tasks)
         const c = chip({ icon: character(a), label: a.task_id ? `${name} · ${a.task_id}` : name, hue: a.hue, id: a.id, onClick: () => openDetail({
           title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
-            ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))]],
+            ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))],
+            ['쓴 토큰', actorTokens(a)]],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })
-        tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]}`)
+        tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]} · 토큰 ${actorTokens(a)}`)
         c.title = `${name} — ${what}`
         row.append(c)
       }
