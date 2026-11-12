@@ -104,7 +104,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important } }
 
 @media (max-width: 767px) {
-  .band-clock { display: none }
+  .band-clock, .sgb-bar .chip.src:not(.mock) { display: none } /* 폰 폭에선 출처 칩이 「서」로 잘려 제목을 밀어낸다 — 목업일 때만 남긴다 */
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
   .stage { flex: 1; padding: var(--sp2); border-radius: var(--r2) }
   .card { padding: var(--sp3) }
