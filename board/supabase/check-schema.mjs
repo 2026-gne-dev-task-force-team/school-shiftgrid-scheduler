@@ -1,4 +1,5 @@
 // board-schema.sql 을 PGlite(진짜 Postgres WASM)에 두 번 돌려 보고(멱등), 거절·허용 사례를 잰다.
+// 돌리기: 레포 밖 빈 폴더에서 `npm i @electric-sql/pglite` 후 `node <이 파일> <board-schema.sql 경로>` (레포 의존성엔 안 넣는다).
 import { PGlite } from '@electric-sql/pglite'
 import { readFileSync } from 'node:fs'
 
