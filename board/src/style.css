@@ -162,10 +162,12 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
   .card select { min-height: 30px; padding: 0 9px; background: var(--bg); color: var(--fg); border: 1px solid var(--line-2); border-radius: var(--r2); font: inherit }
   .detail-body [role=alert] { color: var(--bad); font-weight: 600 }
   .detail-body option { background: var(--s2); color: var(--fg) }
-  /* 캐릭터 — 일함=통통 · 막힘=고개 갸웃 · 쉼=눈 반쯤(그림 자체). 움직임 끄기는 위 calm·reduced-motion 규칙이 멈춘다 */
+  /* 캐릭터 — 일함=다리 두 프레임 걷기+깜빡 · 막힘=고개 갸웃 · 쉼=눈 반쯤(그림 자체). 움직임 끄기는 위 calm·reduced-motion 규칙이 멈춘다 */
   .chr { flex: none; display: inline-block; vertical-align: middle; overflow: visible; filter: drop-shadow(0 1px 1px rgb(60 45 20 / .3)) }
-  .chr .chr-b { transform-box: view-box; transform-origin: 32px 58px }
-  .chr[data-state=work] .chr-b { animation: sgb-chr-bob 1.4s ease-in-out infinite }
+  .chr .chr-b { transform-box: view-box; transform-origin: 7px 10px }
+  .chr[data-state=work] .chr-l1 { animation: sgb-chr-step .5s steps(1) infinite }
+  .chr[data-state=work] .chr-l2 { animation: sgb-chr-step .5s steps(1) infinite reverse }
+  .chr[data-state=work] .chr-e { transform-box: fill-box; transform-origin: center; animation: sgb-chr-blink 3.6s steps(1) infinite }
   .chr[data-state=blocked] .chr-b { animation: sgb-chr-tilt 3s ease-in-out infinite }
   .chr[data-state=done] { opacity: .6 }
   .feed-line .chr { margin-right: 8px }
@@ -176,8 +178,9 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 @keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 40px) } }
 @keyframes sgb-ws-flash { to { background: #cdeee9 } }
 @keyframes sgb-bp-blink { 50% { opacity: .55 } }
-@keyframes sgb-chr-bob { 50% { transform: translateY(-2.5px) } }
-@keyframes sgb-chr-tilt { 0%, 100% { transform: rotate(0) } 35%, 65% { transform: rotate(-11deg) } }
+@keyframes sgb-chr-step { 50% { transform: translateY(-1px) } }
+@keyframes sgb-chr-blink { 94% { transform: scaleY(.3) } 97% { transform: none } }
+@keyframes sgb-chr-tilt { 0%, 100% { transform: rotate(0) } 35%, 65% { transform: rotate(-9deg) } }
 /* 폰: 손가락으로 누르는 것은 44px 아래로 내리지 않는다 */
 @media (max-width: 767px) {
   .sgb .btn, .sgb button.chip, .sgb .feed-line, .sgb .bp-room, .sgb .detail-body input[type=text], .sgb .detail-body select, .sgb .card select, .sgb .tabs .btn { min-height: 44px }
