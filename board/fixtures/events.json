@@ -1,0 +1,10 @@
+[
+  {"id":"e1","ts":"2026-01-01T09:40:00Z","kind":"actor.spawn","subject_type":"actor","subject_id":"a3","actor_id":"a3","text":"🌱 솔이 일을 시작했다"},
+  {"id":"e2","ts":"2026-01-01T09:46:00Z","kind":"branch.create","subject_type":"branch","subject_id":"b2","actor_id":"a3","text":"🌿 솔이 가지를 땄다"},
+  {"id":"e3","ts":"2026-01-01T09:30:00Z","kind":"actor.end","subject_type":"actor","subject_id":"a7","actor_id":"a7","text":"✅ 조약이 확인을 마쳤다"},
+  {"id":"e4","ts":"2026-01-01T09:50:00Z","kind":"branch.push","subject_type":"branch","subject_id":"b3","actor_id":"a4","text":"⬆ 톨이 올렸다"},
+  {"id":"e5","ts":"2026-01-01T09:10:00Z","kind":"branch.merge","subject_type":"branch","subject_id":"b4","actor_id":"a4","text":"🔀 톨의 가지가 줄기로 합쳐졌다"},
+  {"id":"e6","ts":"2026-01-01T09:30:00Z","kind":"actor.state","subject_type":"actor","subject_id":"a5","actor_id":"a5","text":"⏸ 물결이 확인을 기다린다"},
+  {"id":"e7","ts":"2026-01-01T09:56:00Z","kind":"task.move","subject_type":"task","subject_id":"t4","actor_id":"a6","text":"📦 이끼가 카드를 작업대로 옮겼다"},
+  {"id":"e8","ts":"2026-01-01T09:55:00Z","kind":"goal.progress","subject_type":"goal","subject_id":"g1","actor_id":null,"text":"📈 목표 60%"}
+]

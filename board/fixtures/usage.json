@@ -1,0 +1,6 @@
+[
+  {"account":"org","ts":"2026-01-01T09:30:00Z","pct_5h":20,"pct_7d":30,"reset_5h_at":"2026-01-01T12:00:00Z","reset_7d_at":"2026-01-05T09:00:00Z","tok_per_min":1000},
+  {"account":"org","ts":"2026-01-01T10:00:00Z","pct_5h":32,"pct_7d":30.6,"reset_5h_at":"2026-01-01T12:00:00Z","reset_7d_at":"2026-01-05T09:00:00Z","tok_per_min":1850},
+  {"account":"personal","ts":"2026-01-01T09:30:00Z","pct_5h":10,"pct_7d":55,"reset_5h_at":"2026-01-01T13:00:00Z","reset_7d_at":"2026-01-06T09:00:00Z","tok_per_min":800},
+  {"account":"personal","ts":"2026-01-01T10:00:00Z","pct_5h":14,"pct_7d":55.3,"reset_5h_at":"2026-01-01T13:00:00Z","reset_7d_at":"2026-01-06T09:00:00Z","tok_per_min":700}
+]

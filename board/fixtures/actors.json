@@ -1,0 +1,9 @@
+[
+  {"id":"a1","parent_id":null,"kind":"lead","name":"모래","hue":40,"eye":"amber","prop":"flag","dept":"hq","team":"지휘","role":"지휘","state":"work","task_id":null,"branch_id":null,"account":"org","tok_per_min":1200,"started_at":"2026-01-01T07:50:00Z","ended_at":null},
+  {"id":"a2","parent_id":null,"kind":"lead","name":"바람","hue":50,"eye":"amber","prop":"steth","dept":"hq","team":"살림","role":"살림","state":"idle","task_id":null,"branch_id":null,"account":"org","tok_per_min":150,"started_at":"2026-01-01T07:50:00Z","ended_at":null},
+  {"id":"a3","parent_id":"a1","kind":"helper","name":"솔","hue":175,"eye":"teal","prop":"brush","dept":"make","team":"화면팀","role":"화면","state":"work","task_id":"t1","branch_id":"b2","account":"org","tok_per_min":900,"started_at":"2026-01-01T09:40:00Z","ended_at":null},
+  {"id":"a4","parent_id":"a1","kind":"helper","name":"톨","hue":160,"eye":"teal","prop":"box","dept":"make","team":"자료팀","role":"자료","state":"work","task_id":"t2","branch_id":"b3","account":"personal","tok_per_min":700,"started_at":"2026-01-01T09:20:00Z","ended_at":null},
+  {"id":"a5","parent_id":"a1","kind":"helper","name":"물결","hue":190,"eye":"teal","prop":"ruler","dept":"make","team":"설계팀","role":"설계","state":"blocked","task_id":"t3","branch_id":null,"account":"personal","tok_per_min":0,"started_at":"2026-01-01T09:00:00Z","ended_at":null},
+  {"id":"a6","parent_id":"a1","kind":"helper","name":"이끼","hue":275,"eye":"violet","prop":"check","dept":"qa","team":"시험팀","role":"시험","state":"work","task_id":"t4","branch_id":null,"account":"org","tok_per_min":500,"started_at":"2026-01-01T09:50:00Z","ended_at":null},
+  {"id":"a7","parent_id":"a1","kind":"helper","name":"조약","hue":290,"eye":"violet","prop":"lens","dept":"qa","team":"맨눈팀","role":"맨눈","state":"done","task_id":null,"branch_id":null,"account":"org","tok_per_min":0,"started_at":"2026-01-01T08:30:00Z","ended_at":"2026-01-01T09:30:00Z"}
+]
