@@ -1,8 +1,6 @@
 // Actions 안에서 돈다(가지 board-data): snapshot.json → SQL → Supabase Management API.
 // 로그엔 응답 코드와 표별 줄 수만. 값(TOKEN·REF)은 찍지 않는다.
 // publish.mjs 가 아래 import 줄을 to-sql.mjs 본문으로 갈아 끼워 자립 파일로 만든다.
-// 스냅숏(BoardData 꼴) → board 표를 통째로 갈아 끼우는 SQL 한 덩이. 의존성 없음(apply.mjs 에 그대로 붙는다).
-// 표 이름은 아래 고정 목록만 쓴다(입력 키에서 안 받는다). feedback 은 사람이 쓰는 표라 건드리지 않는다.
 export const TABLES = ['actors', 'tasks', 'lanes', 'branches', 'services', 'modules', 'goals', 'events', 'usage', 'runs', 'sprints']
 
 export function toSql(snap) {
