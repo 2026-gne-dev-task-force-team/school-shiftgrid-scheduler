@@ -12,6 +12,8 @@ export interface SlotSource {
      * 어긋나면 `{ ok:false, conflict:true }`(서버라면 409 「방금 다른 분이 올렸습니다」).
      */
     saveSlot(row: SubSlotRow, opts?: { ifMatch?: string | null }): Promise<SaveResult>;
+    /** 줄 지우기(관리 「삭제」) — ifMatch = 있는 줄의 updatedAt 이 같아야 함. 어긋나면 `{ ok:false, conflict:true }`. */
+    deleteSlot(row: SubSlotRow, opts?: { ifMatch?: string }): Promise<{ ok: true } | { ok: false; conflict: true }>;
 }
 export type SaveResult = { ok: true; row: SubSlotRow } | { ok: false; conflict: true };
 
@@ -31,6 +33,12 @@ export function memorySource(rows: SubSlotRow[]): SlotSource {
             if (i >= 0) store.splice(i, 1);
             store.push({ ...row });
             return { ok: true, row: { ...row } };
+        },
+        deleteSlot: async (row, opts = {}) => {
+            const i = store.findIndex((r) => r.id === row.id && r.projectId === row.projectId);
+            if (i < 0 || (opts.ifMatch !== undefined && store[i].updatedAt !== opts.ifMatch)) return { ok: false, conflict: true };
+            store.splice(i, 1);
+            return { ok: true };
         },
     };
 }
