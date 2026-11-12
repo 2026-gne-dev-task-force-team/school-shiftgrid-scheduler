@@ -17,6 +17,6 @@ export interface TableResult {
 export interface ReadOptions {
   /** 파일 이름(확장자 힌트) */
   name?: string
-  /** xlsx 시트 — 이름 또는 0부터 번호. 기본 첫 시트 */
+  /** xlsx 시트 · hwpx 표 — 이름 또는 0부터 번호. 기본 첫 것 */
   sheet?: string | number
 }

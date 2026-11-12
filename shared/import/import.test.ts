@@ -80,12 +80,105 @@ describe('xlsx', () => {
   })
 })
 
-describe('hwp·hwpx 는 아직 못 읽음', () => {
+describe('hwp 는 아직 못 읽음', () => {
   it('판별만 하고 경고', () => {
     const hwp = new Uint8Array(64); hwp.set([0xd0, 0xcf, 0x11, 0xe0])
     const r = readTable(hwp, { name: 'a.hwp' })
     expect(r.kind).toBe('hwp'); expect(r.rows).toEqual([]); expect(r.warnings[0]).toContain('P25c')
+  })
+})
+
+// 최소 hwpx — mimetype 이 첫 항목인 zip
+const P = (t: string) => `<hp:p><hp:run><hp:t>${t}</hp:t></hp:run></hp:p>`
+const TC = (col: number, row: number, body: string, cs = 1, rs = 1) =>
+  `<hp:tc><hp:subList>${body}</hp:subList><hp:cellAddr colAddr="${col}" rowAddr="${row}"/><hp:cellSpan colSpan="${cs}" rowSpan="${rs}"/></hp:tc>`
+const TBL = (trs: string[]) => `<hp:p><hp:run><hp:tbl>${trs.map((t) => `<hp:tr>${t}</hp:tr>`).join('')}</hp:tbl></hp:run></hp:p>`
+const section = (inner: string) => `<?xml version="1.0"?><hs:sec xmlns:hs="a" xmlns:hp="b">${inner}</hs:sec>`
+// 무압축(stored) zip 을 손으로 쓴다 — 항목 순서를 우리가 정해야 mimetype 이 첫 항목이 된다
+const crcTable = Array.from({ length: 256 }, (_, n) => {
+  let c = n
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+  return c >>> 0
+})
+const crc32 = (d: Uint8Array) => {
+  let c = 0xffffffff
+  for (const x of d) c = crcTable[(c ^ x) & 0xff] ^ (c >>> 8)
+  return (c ^ 0xffffffff) >>> 0
+}
+const zipStored = (files: [string, Uint8Array][]): Uint8Array => {
+  const parts: Uint8Array[] = [], central: Uint8Array[] = []
+  let off = 0
+  for (const [name, data] of files) {
+    const nm = enc(name), crc = crc32(data)
+    const lh = new DataView(new ArrayBuffer(30))
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true)
+    lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true)
+    lh.setUint16(26, nm.length, true)
+    const ch = new DataView(new ArrayBuffer(46))
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true)
+    ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true)
+    ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true)
+    parts.push(new Uint8Array(lh.buffer), nm, data)
+    central.push(new Uint8Array(ch.buffer), nm)
+    off += 30 + nm.length + data.length
+  }
+  const cdSize = central.reduce((n, x) => n + x.length, 0)
+  const end = new DataView(new ArrayBuffer(22))
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true)
+  end.setUint32(12, cdSize, true); end.setUint32(16, off, true)
+  const all = [...parts, ...central, new Uint8Array(end.buffer)]
+  const out = new Uint8Array(all.reduce((n, x) => n + x.length, 0))
+  let o = 0
+  for (const x of all) { out.set(x, o); o += x.length }
+  return out
+}
+const hwpxBytes = (sections: string[]): Uint8Array =>
+  zipStored([['mimetype', enc('application/hwp+zip')], ...sections.map((x, i): [string, Uint8Array] => [`Contents/section${i}.xml`, enc(x)])])
+
+describe('hwpx', () => {
+  const t1 = TBL([
+    TC(0, 0, P('과목')) + TC(1, 0, P('시수')) + TC(2, 0, P('비고')),
+    TC(0, 1, P('국어')) + TC(1, 1, P('4')) + TC(2, 1, P('첫줄') + P('둘째 &amp; 줄')),
+    TC(0, 2, P('합계 병합'), 2) + TC(2, 2, P('x')),
+  ])
+  it('2×3 표 · 병합 펼침 · 칸 안 두 문단은 줄바꿈', () => {
+    const bytes = hwpxBytes([section(t1)])
+    expect(detectKind(bytes, 'a.hwpx')).toBe('hwpx')
+    const r = readTable(bytes, { name: 'a.hwpx' })
+    expect(r.kind).toBe('hwpx')
+    expect(r.rows).toEqual([
+      ['과목', '시수', '비고'],
+      ['국어', '4', '첫줄\n둘째 & 줄'],
+      ['합계 병합', '합계 병합', 'x'],
+    ])
+    expect(r.sheets).toEqual(['표 1 (3×3)'])
+    expect(r.warnings).toEqual([])
+  })
+  it('세로 병합(rowSpan)도 펼친다', () => {
+    const t = TBL([TC(0, 0, P('A'), 1, 2) + TC(1, 0, P('b')), TC(1, 1, P('c'))])
+    expect(readTable(hwpxBytes([section(t)])).rows).toEqual([['A', 'b'], ['A', 'c']])
+  })
+  it('표 둘(구역 둘)에서 번호·이름으로 고른다 · 없는 번호는 경고 후 첫 표', () => {
+    const t2 = TBL([TC(0, 0, P('둘째표'))])
+    const bytes = hwpxBytes([section(t1), section(t2)])
+    const r = readTable(bytes, { sheet: 1 })
+    expect(r.rows).toEqual([['둘째표']])
+    expect(r.sheets?.length).toBe(2)
+    expect(readTable(bytes, { sheet: r.sheets?.[1] }).rows).toEqual([['둘째표']])
+    const miss = readTable(bytes, { sheet: 9 })
+    expect(miss.rows[0][0]).toBe('과목')
+    expect(miss.warnings.length).toBe(1)
+  })
+  it('표 없는 문서 → 경고 · 깨진 zip 은 던지지 않고 경고', () => {
+    const r = readTable(hwpxBytes([section(P('본문뿐'))]))
+    expect(r.rows).toEqual([])
+    expect(r.warnings[0]).toContain('표가 없음')
     const x = new Uint8Array(60); x.set([0x50, 0x4b, 0x03, 0x04]); x.set(enc('mimetype'), 30)
-    expect(readTable(x).warnings[0]).toContain('P25b')
+    const bad = readTable(x)
+    expect(bad.kind).toBe('hwpx'); expect(bad.rows).toEqual([]); expect(bad.warnings.length).toBe(1)
+  })
+  it('중첩 표는 바깥 칸 글자로 합친다', () => {
+    const t = TBL([TC(0, 0, P('바깥') + TBL([TC(0, 0, P('안'))])) + TC(1, 0, P('옆'))])
+    expect(readTable(hwpxBytes([section(t)])).rows).toEqual([['바깥\n안', '옆']])
   })
 })
