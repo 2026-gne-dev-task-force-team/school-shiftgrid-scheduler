@@ -363,7 +363,11 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
   const seen = new Set()
-  const laneRows = readLanes(laneRoot, onWarn).map((ln) => {
+  const lanesRaw = readLanes(laneRoot, onWarn)
+  const bare = (n) => clean(n.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인'
+  const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
+  const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
+  const laneRows = lanesRaw.map((ln) => {
     const id = `l-${hash(ln.name).slice(0, 6)}`
     const mine = ln.rows.flatMap((r) => {
       const title = publicTitle(r.what)
@@ -375,7 +379,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
         ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso }]
     })
     const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
-    return { lane: { id, title: clean(ln.name.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인', state, actor_id: null }, tasks: mine }
+    return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine }
   })
 
   // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다.
