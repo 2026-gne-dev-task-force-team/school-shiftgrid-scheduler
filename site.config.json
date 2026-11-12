@@ -1,0 +1,9 @@
+{
+  "storagePrefix": "shiftgrid.v1_2",
+  "legacyStoragePrefixes": [],
+  "plugins": [
+    "page", "collection", "sheet", "calendar", "account",
+    "people", "rooms", "room-booking", "substitute", "school",
+    "subjects", "staff", "bell", "duty", "timetable-grid"
+  ]
+}
