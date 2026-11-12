@@ -2,6 +2,7 @@ import './style.css'
 import { loadData } from './data.ts'
 import { h } from './dom.ts'
 import { LAYERS } from './layers/registry.ts'
+import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
 import { applyUpdate, clearThisDevice } from './lib/purge.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
@@ -21,7 +22,8 @@ const calmOn = () => {
 const applyCalm = (on: boolean) => document.documentElement.classList.toggle('calm', on)
 
 let poll = 0
-function mount(): void {
+let curTab = 0 // 다시 그려도 보던 탭을 되살린다
+function mount(notice = false): void {
   clearInterval(poll)
   const app = document.getElementById('app')!
   const data = loadData()
@@ -36,7 +38,7 @@ function mount(): void {
     calm: calmOn(),
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(__BUILD__),
-    onFeedback: () => openFeedback(detail.open, mount),
+    onFeedback: () => openFeedback(detail.open, () => mount(true)),
     async onPurge() {
       if (!confirm('이 기기에 남은 이 앱의 저장 자료를 비웁니다.\n서버 자료는 안전합니다. 다시 로그인해야 합니다.')) return
       await clearThisDevice()
@@ -46,6 +48,7 @@ function mount(): void {
 
   const tabs = h('nav', { class: 'tabs' })
   const show = (i: number) => {
+    curTab = i
     tabs.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', i === j))
     stage.show(LAYERS[i], ctx)
   }
@@ -60,7 +63,12 @@ function mount(): void {
   syncLayout()
 
   app.replaceChildren(band.el, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
-  show(0)
+  show(restoreTab(curTab, LAYERS.length))
+  if (notice) {
+    const go = h('button', { class: 'btn' }, '작업장에서 보기')
+    go.addEventListener('click', () => show(LAYERS.findIndex((l) => l.floor === 4)))
+    detail.open({ title: '접수됐어요', rows: [], extra: go })
+  }
 
   const check = async () => {
     const v: VersionInfo | null = await fetchVersion()
