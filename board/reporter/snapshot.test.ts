@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
 import { build, columnOf, publicGoal, publicTitle } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
@@ -104,6 +107,20 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(work.actors[0].task_id).toBe('T-2p')
     const rest = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
     expect(rest.actors.map((a: Actor) => [a.id, a.state])).toEqual([['a-lead', 'idle']])
+  })
+
+  it('문지기가 적은 도는 에이전트를 캐릭터로 · 끝난 것·낡은 것은 빼고', () => {
+    const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
+    const t0 = at.getTime()
+    writeFileSync(gatePath, JSON.stringify({ sessions: {}, actors: {
+      u1: { id: 'a-11111111', task: 'T-2a', started: t0 - 60e3, ended: null },
+      u2: { id: 'a-22222222', task: null, started: t0 - 60e3, ended: null },
+      u3: { id: 'a-33333333', task: 'T-2a', started: t0 - 60e3, ended: t0 },
+      u4: { id: 'a-44444444', task: null, started: t0 - 4 * 3600e3, ended: null },
+    } }))
+    const d = build({ now: at, gatePath, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
+    expect(d.actors.map((a: Actor) => [a.id, a.name, a.state, a.task_id])).toEqual([
+      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'work', 'T-2a'], ['a-22222222', '일손', 'work', null]])
   })
 
   it('진행률 = 지금 스프린트 표의 ✅ 수 / 전체 — 그 스프린트 안 덧줄만 센다', () => {

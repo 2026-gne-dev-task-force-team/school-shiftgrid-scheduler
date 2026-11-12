@@ -116,6 +116,15 @@ function readUsage(usagePath, nowIso) {
   } catch { return [] }
 }
 
+// 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트」. 3시간 넘게 안 끝난 것은 끊긴 것으로 친다.
+function readGate(gatePath, now) {
+  if (!gatePath || !existsSync(gatePath)) return []
+  try {
+    return Object.values(JSON.parse(readFileSync(gatePath, 'utf-8')).actors ?? {})
+      .filter((a) => !a.ended && typeof a.started === 'number' && now - a.started < 3 * 3600e3 && /^a-[0-9a-f]{8}$/.test(a.id))
+  } catch { return [] }
+}
+
 const fixture = (name) => JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf-8'))
 // 분류 → 캐릭터(이름·팀·역할 = actor.ts ROLES 낱말). 코드 판은 지금 자료·보고를 만드니 「자료 나르기」. 지휘 분류는 따로 캐릭터를 안 만들고 지휘가 맡는다.
 const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['자료 나르기', '자료팀', '자료', 'make', 160, 'teal', 'box'],
@@ -123,7 +132,7 @@ const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175,
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, repoDir, usagePath, now = new Date(), md, onDrop = () => {} }) {
+export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date(), md, onDrop = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -168,15 +177,27 @@ export function build({ lanePath, repoDir, usagePath, now = new Date(), md, onDr
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
+  const live = readGate(gatePath, now.getTime())
   const working = tasks.filter((t) => t.column === 'work')
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
-    state: working.length ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+    state: working.length || live.length ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
   const actors = [lead, ...working.filter((t) => t.category !== '지휘').map((t) => {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     return { id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work', task_id: t.id,
       branch_id: branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null, account: 'org', tok_per_min: 0, started_at: t.started_at ?? nowIso, ended_at: null }
   })]
+  // 실제로 도는 에이전트: 판 표에 그 일감 캐릭터가 있으면 「지금 일함」으로, 없으면 새로 세운다(일감 모르면 일손).
+  for (const g of live) {
+    const t = byId.get(g.task ?? '')
+    const at = new Date(g.started).toISOString()
+    const mine = t && actors.find((a) => a.task_id === t.id && a.kind === 'helper')
+    if (mine) { mine.state = 'work'; mine.started_at = at; continue }
+    const [name, team, role, dept, hue, eye, prop] = ACTOR[t && t.category !== '지휘' ? t.category : '코드']
+    actors.push({ id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
+      state: 'work', task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
+      account: 'org', tok_per_min: 0, started_at: at, ended_at: null })
+  }
 
   // 사건 = 태스크 id 가 있는 줄만(「{제목} 끝/시작/막힘/다시」) + 가장 최근 📌 줄 하나(「방향 바뀜」). 같은 글이 잇달면 하나로 접는다.
   const events = []

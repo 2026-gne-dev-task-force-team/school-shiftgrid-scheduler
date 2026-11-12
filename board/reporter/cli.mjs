@@ -14,6 +14,7 @@ const data = build({
   lanePath: arg('--lane', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/작업현황판/레인 작업현황판.md'),
   repoDir: arg('--repo', fileURLToPath(new URL('../..', import.meta.url))),
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
+  gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
 })
 writeFileSync(out, JSON.stringify(data, null, 2))
