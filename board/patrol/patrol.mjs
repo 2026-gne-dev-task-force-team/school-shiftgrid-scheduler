@@ -1,6 +1,6 @@
-// 감독관 순찰 — 레인 표 · 요청함 · 집은 카드 · git 로그를 읽어 채점 줄로 낸다. 읽기만(파일 쓰기 · 네트워크 · 남의 코드 수정 없음). 설정 값(경로 외)은 출력하지 않는다.
-// 쓰임: node board/patrol/patrol.mjs --config board/reporter/config.mac.json [--branch 1.2v-preview] [--repo .] [--json] [--parallel] [--now ISO]
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+// 감독관 순찰 — 레인 표 · 요청함 · 집은 카드 · git 로그를 읽어 채점 줄로 낸다. 원천은 읽기만(네트워크 · 남의 코드 수정 없음) — 쓰는 건 --write 로 지정한 노트 하나뿐. 설정 값(경로 외)은 출력하지 않는다.
+// 쓰임: node board/patrol/patrol.mjs --config board/reporter/config.mac.json [--branch 1.2v-preview] [--repo .] [--json] [--parallel] [--now ISO] [--write 노트.md]
+import { readFileSync, readdirSync, existsSync, statSync, writeFileSync, renameSync, mkdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
@@ -186,16 +186,45 @@ export function render({ lines, summary }) {
   return ['| 시각 | 항목 | 대상 | 판정 | 근거 |', '|---|---|---|---|---|', ...lines.map((l) => `| ${l.at} | ${l.item} | ${esc(l.target)} | ${l.verdict} | ${esc(l.basis)} |`), '', summary].join('\n')
 }
 
+/** 노트 꼴(--write) — 요약 · ❌ · ⚠️ 목록. 「순찰 시각」은 비교에서 빼려고 한 줄 끝에 둔다. */
+export function renderNote({ lines, warn, fail }, now) {
+  const list = (v) => {
+    const xs = lines.filter((l) => l.verdict === v)
+    return xs.length ? xs.map((l) => `- ${l.item} ${l.target} — ${l.basis}`) : ['없음']
+  }
+  const k = new Date(now.getTime() + KST)
+  const stamp = `${k.getUTCFullYear()}-${p2(k.getUTCMonth() + 1)}-${p2(k.getUTCDate())} ${hhmm(now)}`
+  return [
+    '---', 'title: 레인 감독', 'tags: [시간표, 감독관]', '공개등급: 내부', '층: 현황', `최종점검: ${stamp}`, '---', '',
+    '> 🔍 감독관 순찰 — 자동 생성(5분마다 덮어씀). ⛔ 손으로 고치지 말 것.', '',
+    '## 요약', '', `⚠️ ${warn} · ❌ ${fail} · 순찰 시각 ${hhmm(now)}`, '',
+    '## ❌', '', ...list('❌'), '', '## ⚠️', '', ...list('⚠️'), '',
+  ].join('\n')
+}
+/** 비교용 본문 — frontmatter 와 「순찰 시각」을 뺀다. */
+const noteBody = (t) => t.replace(/^---\n[\s\S]*?\n---\n/, '').replace(/ · 순찰 시각 .*$/m, '')
+/** 직전 파일과 본문이 같으면 안 쓴다. 쓸 땐 임시 파일 → rename. 썼으면 true. */
+export function writeNote(file, text) {
+  if (existsSync(file) && noteBody(readFileSync(file, 'utf-8')) === noteBody(text)) return false
+  mkdirSync(dirname(file), { recursive: true })
+  const tmp = `${file}.tmp-${process.pid}`
+  writeFileSync(tmp, text)
+  renameSync(tmp, file)
+  return true
+}
+
 function main(argv) {
   const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d }
   const file = arg('--config')
-  if (!file) { console.error('사용: patrol.mjs --config <config.json> [--branch B] [--repo DIR] [--json] [--parallel] [--now ISO]'); process.exit(2) }
+  if (!file) { console.error('사용: patrol.mjs --config <config.json> [--branch B] [--repo DIR] [--json] [--parallel] [--now ISO] [--write 노트.md]'); process.exit(2) }
   const cfg = JSON.parse(readFileSync(home(file), 'utf-8')) // 경로 3개만 쓴다 — 나머지 값은 읽어도 안 낸다
   const num = (k, d) => (arg(k) != null ? +arg(k) : d)
   const r = patrol({ lane: cfg.lane, requests: cfg.requests, laneRoot: cfg.laneRoot }, {
     now: arg('--now') ? new Date(arg('--now')) : new Date(), branch: arg('--branch', '1.2v-preview'), repo: arg('--repo', process.cwd()), parallel: argv.includes('--parallel'),
     stuckMin: num('--stuck-min', DEFAULTS.stuckMin), idleHours: num('--idle-hours', DEFAULTS.idleHours),
   })
+  const out = arg('--write')
+  if (out) { writeNote(home(out), renderNote(r, new Date(arg('--now') ?? Date.now()))); return }
   console.log(argv.includes('--json') ? JSON.stringify(r, null, 2) : render(r))
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) main(process.argv.slice(2))
