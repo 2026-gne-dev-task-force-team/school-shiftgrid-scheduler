@@ -20,18 +20,18 @@
       "ended_at": null
     },
     {
-      "id": "a-27315023",
+      "id": "a-T-2n-3",
       "parent_id": "a-lead",
       "kind": "helper",
-      "name": "일손",
-      "hue": 160,
+      "name": "설계",
+      "hue": 190,
       "eye": "teal",
-      "prop": "box",
+      "prop": "ruler",
       "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
+      "team": "설계팀",
+      "role": "설계",
       "state": "work",
-      "task_id": null,
+      "task_id": "T-2n-3",
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
@@ -39,18 +39,18 @@
       "ended_at": null
     },
     {
-      "id": "a-3c7711be",
+      "id": "a-T-2n-4",
       "parent_id": "a-lead",
       "kind": "helper",
-      "name": "일손",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
+      "name": "시험",
+      "hue": 275,
+      "eye": "violet",
+      "prop": "check",
+      "dept": "qa",
+      "team": "시험팀",
+      "role": "시험",
       "state": "work",
-      "task_id": null,
+      "task_id": "T-2n-4",
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
@@ -585,19 +585,304 @@
       "updated_at": "2026-11-12T15:06:00+09:00"
     },
     {
+      "id": "T-2n-1",
+      "title": "v1 편성기 순서 실측",
+      "category": "설계",
+      "kind": "work",
+      "team": "설계팀",
+      "sprint": 6,
+      "est_min": 20,
+      "started_at": "2026-11-12T15:33:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:33:00+09:00"
+    },
+    {
+      "id": "T-2n-2",
+      "title": "v2 꾸러미 재저울질",
+      "category": "설계",
+      "kind": "work",
+      "team": "설계팀",
+      "sprint": 6,
+      "est_min": 30,
+      "started_at": "2026-11-12T15:33:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:33:00+09:00"
+    },
+    {
+      "id": "T-2n-3",
+      "title": "① 2절· 고침",
+      "category": "설계",
+      "kind": "work",
+      "team": "설계팀",
+      "sprint": 6,
+      "est_min": 30,
+      "started_at": "2026-11-12T15:36:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:36:00+09:00"
+    },
+    {
+      "id": "T-2n-4",
+      "title": "재검수",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 6,
+      "est_min": 15,
+      "started_at": "2026-11-12T15:38:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:38:00+09:00"
+    },
+    {
+      "id": "T-2n-5",
+      "title": "재검수 고칠 거리 6",
+      "category": "설계",
+      "kind": "work",
+      "team": "설계팀",
+      "sprint": 6,
+      "est_min": 10,
+      "started_at": "2026-11-12T15:40:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:40:00+09:00"
+    },
+    {
+      "id": "T-2n-6",
+      "title": "③ 인증·API 에 installed 칸",
+      "category": "설계",
+      "kind": "work",
+      "team": "설계팀",
+      "sprint": 6,
+      "est_min": 5,
+      "started_at": "2026-11-12T15:41:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:41:00+09:00"
+    },
+    {
+      "id": "T-7a",
+      "title": "탭·칩 낱말을 개발자 말로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:47:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:47:00+09:00"
+    },
+    {
+      "id": "T-7b",
+      "title": "밝은 배경",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:49:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:49:00+09:00"
+    },
+    {
+      "id": "T-7c",
+      "title": "캐릭터를 Claude Code 도트 마스코트 꼴로 다시",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:52:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:52:00+09:00"
+    },
+    {
+      "id": "T-7d",
+      "title": "움직임이 실제로 보이게",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:54:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:54:00+09:00"
+    },
+    {
+      "id": "T-7g",
+      "title": "요청함 R 줄 → Board 카드",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:57:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:57:00+09:00"
+    },
+    {
+      "id": "T-7e",
+      "title": "Branch 그래프에 캐릭터",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:00:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:00:00+09:00"
+    },
+    {
+      "id": "T-7f",
+      "title": "Sprint 탭 공항 출발 안내판",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:04:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:04:00+09:00"
+    },
+    {
+      "id": "T-7h",
+      "title": "Board 를 2D 도트 RPG 방으로",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:07:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:10:00+09:00"
+    },
+    {
+      "id": "T-7q",
+      "title": "배포본 화면 검수",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:15:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:15:00+09:00"
+    },
+    {
+      "id": "T-7r",
+      "title": "7q 결함 고침",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:19:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:19:00+09:00"
+    },
+    {
+      "id": "T-7s",
+      "title": "보고꾼: 번호 못 읽어 스프린트 6 일감 0",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T16:23:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:23:00+09:00"
+    },
+    {
+      "id": "T-7t",
+      "title": "카드·캐릭터에 태스크 번호",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:45:00+09:00"
+    },
+    {
+      "id": "T-7u",
+      "title": "360 막대 이름 잘림",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:45:00+09:00"
+    },
+    {
       "id": "R1",
       "title": "「집」이 가장 안 읽힌다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R2",
@@ -605,14 +890,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R3",
@@ -620,14 +905,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R4",
@@ -635,14 +920,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R5",
@@ -650,14 +935,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R6",
@@ -665,14 +950,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R7",
@@ -680,14 +965,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R8",
@@ -695,14 +980,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R9",
@@ -710,14 +995,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R10",
@@ -725,14 +1010,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R11",
@@ -740,14 +1025,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R12",
@@ -755,14 +1040,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R13",
@@ -770,14 +1055,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R14",
@@ -785,14 +1070,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R15",
@@ -800,14 +1085,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R16",
@@ -815,14 +1100,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R17",
@@ -830,14 +1115,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R18",
@@ -845,14 +1130,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R19",
@@ -860,14 +1145,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R20",
@@ -875,14 +1160,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R21",
@@ -890,14 +1175,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R22",
@@ -905,14 +1190,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R23",
@@ -920,14 +1205,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R24",
@@ -935,14 +1220,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
+      "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R25",
@@ -950,14 +1235,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R26",
@@ -965,14 +1250,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
+      "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R27",
@@ -980,14 +1265,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     },
     {
       "id": "R28",
@@ -995,14 +1280,14 @@
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
-      "sprint": 6,
+      "sprint": 7,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
+      "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:23:02.587Z"
+      "updated_at": "2026-11-12T07:25:02.623Z"
     }
   ],
   "lanes": [
@@ -1013,88 +1298,7 @@
       "actor_id": "a-lead"
     }
   ],
-  "branches": [
-    {
-      "id": "b-trunk",
-      "title": "줄기",
-      "trunk": true,
-      "ahead": 0,
-      "state": "live",
-      "actor_id": null,
-      "task_id": null,
-      "updated_at": "2026-11-12T16:19:09+09:00"
-    },
-    {
-      "id": "b-T-2f",
-      "title": "고침",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-2f",
-      "updated_at": "2026-11-12T12:09:22+09:00"
-    },
-    {
-      "id": "b-T-5a",
-      "title": "캐릭터",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-5a",
-      "updated_at": "2026-11-12T14:27:14+09:00"
-    },
-    {
-      "id": "b-T-5b",
-      "title": "이름·탭 설명",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-5b",
-      "updated_at": "2026-11-12T14:33:29+09:00"
-    },
-    {
-      "id": "b-T-5c",
-      "title": "가지 모양",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-5c",
-      "updated_at": "2026-11-12T14:39:35+09:00"
-    },
-    {
-      "id": "b-T-6a",
-      "title": "보고꾼",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-6a",
-      "updated_at": "2026-11-12T14:48:42+09:00"
-    },
-    {
-      "id": "b-T-6b",
-      "title": "나르기",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-6b",
-      "updated_at": "2026-11-12T14:54:02+09:00"
-    },
-    {
-      "id": "b-T-6e",
-      "title": "실자료 다듬기",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-6e",
-      "updated_at": "2026-11-12T15:01:02+09:00"
-    }
-  ],
+  "branches": [],
   "services": [
     {
       "id": "s-host",
@@ -1102,7 +1306,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:23:02.018Z"
+      "checked_at": "2026-11-12T07:25:02.040Z"
     },
     {
       "id": "s-sync",
@@ -1110,7 +1314,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:23:02.018Z"
+      "checked_at": "2026-11-12T07:25:02.040Z"
     },
     {
       "id": "s-reporter",
@@ -1118,7 +1322,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:23:02.018Z"
+      "checked_at": "2026-11-12T07:25:02.040Z"
     }
   ],
   "modules": [
@@ -1216,14 +1420,158 @@
   ],
   "goals": [
     {
-      "id": "g6",
-      "title": "1.2v 설계 고침 · v1 단점 물려받기 막기",
-      "progress": 0,
+      "id": "g7",
+      "title": "요청함 R1~R20 소화",
+      "progress": 85,
       "state": "work",
-      "sprint": 6
+      "sprint": 7
     }
   ],
   "events": [
+    {
+      "id": "e-c3b30dca",
+      "ts": "2026-11-12T16:23:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7s",
+      "actor_id": "a-lead",
+      "text": "보고꾼: 번호 못 읽어 스프린트 6 일감 0 시작"
+    },
+    {
+      "id": "e-ea5b3cba",
+      "ts": "2026-11-12T16:19:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7r",
+      "actor_id": "a-lead",
+      "text": "7q 결함 고침 끝"
+    },
+    {
+      "id": "e-360e3bf8",
+      "ts": "2026-11-12T16:15:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7q",
+      "actor_id": "a-lead",
+      "text": "배포본 화면 검수 끝"
+    },
+    {
+      "id": "e-13cf4bc0",
+      "ts": "2026-11-12T16:07:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7h",
+      "actor_id": "a-lead",
+      "text": "Board 를 2D 도트 RPG 방으로 끝"
+    },
+    {
+      "id": "e-0aa1ae25",
+      "ts": "2026-11-12T16:04:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7f",
+      "actor_id": "a-lead",
+      "text": "Sprint 탭 공항 출발 안내판 끝"
+    },
+    {
+      "id": "e-cb999f1f",
+      "ts": "2026-11-12T16:00:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7e",
+      "actor_id": "a-lead",
+      "text": "Branch 그래프에 캐릭터 끝"
+    },
+    {
+      "id": "e-c9124b40",
+      "ts": "2026-11-12T15:57:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7g",
+      "actor_id": "a-lead",
+      "text": "요청함 R 줄 → Board 카드 끝"
+    },
+    {
+      "id": "e-d3aba9e0",
+      "ts": "2026-11-12T15:54:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7d",
+      "actor_id": "a-lead",
+      "text": "움직임이 실제로 보이게 끝"
+    },
+    {
+      "id": "e-f4c389f5",
+      "ts": "2026-11-12T15:52:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7c",
+      "actor_id": "a-lead",
+      "text": "캐릭터를 Claude Code 도트 마스코트 꼴로 다시 끝"
+    },
+    {
+      "id": "e-90571b63",
+      "ts": "2026-11-12T15:49:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7b",
+      "actor_id": "a-lead",
+      "text": "밝은 배경 끝"
+    },
+    {
+      "id": "e-0d0b3200",
+      "ts": "2026-11-12T15:47:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7a",
+      "actor_id": "a-lead",
+      "text": "탭·칩 낱말을 개발자 말로 끝"
+    },
+    {
+      "id": "e-6d584ba1",
+      "ts": "2026-11-12T15:41:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2n-6",
+      "actor_id": "a-lead",
+      "text": "③ 인증·API 에 installed 칸 끝"
+    },
+    {
+      "id": "e-208b8262",
+      "ts": "2026-11-12T15:40:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2n-5",
+      "actor_id": "a-lead",
+      "text": "재검수 고칠 거리 6 끝"
+    },
+    {
+      "id": "e-242301f1",
+      "ts": "2026-11-12T15:38:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2n-4",
+      "actor_id": "a-lead",
+      "text": "재검수 끝"
+    },
+    {
+      "id": "e-a8be1cd2",
+      "ts": "2026-11-12T15:36:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2n-3",
+      "actor_id": "a-lead",
+      "text": "① 2절· 고침 끝"
+    },
+    {
+      "id": "e-98e83078",
+      "ts": "2026-11-12T15:33:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2n-1",
+      "actor_id": "a-lead",
+      "text": "v1 편성기 순서 실측 외 1 끝"
+    },
     {
       "id": "e-6df03cb2",
       "ts": "2026-11-12T15:28:00+09:00",
@@ -1489,7 +1837,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:23:02.587Z",
+      "ts": "2026-11-12T07:25:02.623Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -1499,11 +1847,11 @@
   ],
   "runs": [
     {
-      "id": "r6",
-      "started_at": "2026-11-12T15:30:00+09:00",
+      "id": "r7",
+      "started_at": "2026-11-12T15:45:00+09:00",
       "ended_at": null,
-      "sprint": 6,
-      "goal_id": "g6"
+      "sprint": 7,
+      "goal_id": "g7"
     }
   ],
   "sprints": [
@@ -1622,9 +1970,44 @@
       "title": "1.2v 설계 고침 · v1 단점 물려받기 막기",
       "goal": "1.2v 설계 고침 · v1 단점 물려받기 막기",
       "began": "2026-11-12T15:30:00+09:00",
+      "ended": "2026-11-12T15:41:00+09:00",
+      "task_ids": [
+        "T-2n-1",
+        "T-2n-2",
+        "T-2n-3",
+        "T-2n-4",
+        "T-2n-5",
+        "T-2n-6"
+      ],
+      "est_min": 110,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    },
+    {
+      "id": 7,
+      "title": "요청함 R1~R20 소화",
+      "goal": "요청함 R1~R20 소화",
+      "began": "2026-11-12T15:45:00+09:00",
       "ended": null,
-      "task_ids": [],
-      "est_min": 0,
+      "task_ids": [
+        "T-7a",
+        "T-7b",
+        "T-7c",
+        "T-7d",
+        "T-7g",
+        "T-7e",
+        "T-7f",
+        "T-7h",
+        "T-7q",
+        "T-7r",
+        "T-7s",
+        "T-7t",
+        "T-7u"
+      ],
+      "est_min": 104,
       "actual_min": 0,
       "review": "",
       "passed": null,
