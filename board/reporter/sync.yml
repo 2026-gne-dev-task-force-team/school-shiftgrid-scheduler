@@ -1,0 +1,31 @@
+name: 현황판 자료 싣기
+
+# 가지 board-data 의 snapshot.json 을 Supabase board 표에 통째로 갈아 끼운다(한 트랜잭션).
+# 원본은 1.2v-preview 의 board/reporter/sync.yml — publish.mjs 가 board-data 의 .github/workflows/ 로 복사한다.
+# 값은 Actions 안에서만 쓴다 — 로그엔 응답 코드와 표별 줄 수만 남긴다.
+on:
+  push:
+    branches: [board-data]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 싣기
+        run: node apply.mjs
