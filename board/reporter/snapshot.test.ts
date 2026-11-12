@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { build, columnOf, publicGoal, publicTitle } from './snapshot.mjs'
+import { build, columnOf, publicGoal, publicTitle, runState, serviceState } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -142,5 +142,40 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(publicGoal('쥔님 14:42 *"요청할건 실제 데이터가 먼저다"*')).toBe('') // 쥔님 말 원문은 공개 판에 안 싣는다
     expect(publicGoal('쥔님 *"D:\\x 에 있는 것 고쳐라"*')).toBe('')
     expect(build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') }).sprints[1].goal).toBe('지금')
+  })
+})
+
+describe('보고꾼 — 서비스·모듈', () => {
+  const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') })
+
+  it('모듈: 화면·자료 묶음 아래 실제 탭과 자료 부품', () => {
+    const name = (id: string | null) => d.modules.find((m: { id: string }) => m.id === id)?.name
+    const under = (p: string) => d.modules.filter((m: { parent: string | null }) => m.parent === p).map((m: { name: string }) => m.name)
+    expect(name('m-screen')).toBe('화면')
+    expect(under('m-screen')).toEqual(expect.arrayContaining(['한눈', '가지', '레인', '작업장', '집', '스프린트', '접수함', '안내']))
+    expect(under('m-data')).toEqual(['보고꾼', '나르기', '문지기 훅'])
+    expect(d.modules.every((m: { state: string; task_id: unknown }) => m.state === 'built' && m.task_id === null)).toBe(true)
+  })
+
+  it('서비스: 안 넘기면 빈 배열 · 넘기면 그대로', () => {
+    expect(d.services).toEqual([])
+    const services = [{ id: 's-reporter', name: '보고꾼', state: 'ok', url: '', task_id: null, checked_at: at.toISOString() }]
+    expect(build({ now: at, services, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') }).services).toEqual(services)
+  })
+
+  it('화면 호스팅 판정: 같은 판 ok · 다른 판 build · 실패 down', () => {
+    expect(serviceState({ status: 200, build: 'abc1234' }, 'abc1234')).toBe('ok')
+    expect(serviceState({ status: 200, build: 'abc12345' }, 'abc1234')).toBe('ok')
+    expect(serviceState({ status: 200, build: 'def5678' }, 'abc1234')).toBe('build')
+    expect(serviceState(null, 'abc1234')).toBe('down')
+    expect(serviceState({ status: 404 }, 'abc1234')).toBe('down')
+  })
+
+  it('자료 싣기 판정', () => {
+    expect(runState({ status: 'completed', conclusion: 'success' })).toBe('ok')
+    expect(runState({ status: 'in_progress', conclusion: null })).toBe('build')
+    expect(runState({ status: 'queued', conclusion: null })).toBe('build')
+    expect(runState({ status: 'completed', conclusion: 'failure' })).toBe('down')
+    expect(runState(undefined)).toBe('down')
   })
 })
