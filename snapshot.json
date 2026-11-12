@@ -597,7 +597,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R2",
@@ -612,7 +612,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R3",
@@ -627,7 +627,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R4",
@@ -642,7 +642,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R5",
@@ -657,7 +657,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R6",
@@ -672,7 +672,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R7",
@@ -687,7 +687,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R8",
@@ -702,7 +702,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R9",
@@ -717,7 +717,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R10",
@@ -732,7 +732,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R11",
@@ -747,7 +747,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R12",
@@ -762,7 +762,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R13",
@@ -777,7 +777,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R14",
@@ -792,7 +792,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R15",
@@ -807,7 +807,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R16",
@@ -822,7 +822,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R17",
@@ -837,7 +837,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R18",
@@ -852,7 +852,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R19",
@@ -867,7 +867,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R20",
@@ -882,7 +882,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R21",
@@ -897,7 +897,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R22",
@@ -912,7 +912,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R23",
@@ -927,7 +927,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R24",
@@ -942,7 +942,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R25",
@@ -957,7 +957,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
     },
     {
       "id": "R26",
@@ -972,7 +972,22 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:11:03.073Z"
+      "updated_at": "2026-11-12T07:13:02.729Z"
+    },
+    {
+      "id": "R27",
+      "title": "R21 재검수를 격리 MCP로",
+      "category": "지휘",
+      "kind": "work",
+      "team": "지휘",
+      "sprint": 6,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:13:02.729Z"
     }
   ],
   "lanes": [
@@ -1069,10 +1084,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "build",
+      "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:11:02.279Z"
+      "checked_at": "2026-11-12T07:13:02.105Z"
     },
     {
       "id": "s-sync",
@@ -1080,7 +1095,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:11:02.279Z"
+      "checked_at": "2026-11-12T07:13:02.105Z"
     },
     {
       "id": "s-reporter",
@@ -1088,7 +1103,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:11:02.279Z"
+      "checked_at": "2026-11-12T07:13:02.105Z"
     }
   ],
   "modules": [
@@ -1459,7 +1474,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:11:03.073Z",
+      "ts": "2026-11-12T07:13:02.729Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
