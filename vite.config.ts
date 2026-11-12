@@ -9,6 +9,8 @@ const BOARD_VERSION_FILE = new URL('./board/public/version.json', import.meta.ur
 const BOARD_VERSION = JSON.parse(readFileSync(BOARD_VERSION_FILE, 'utf-8')) as { build: string; at: string; note: string }
 // 판 번호 = 짧은 커밋 해시(git 이 없으면 옛 값 preview-0). 빌드 시각은 version.json 에 같이 찍는다.
 try { BOARD_VERSION.build = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || BOARD_VERSION.build } catch { /* git 없음 */ }
+// 새 판 알림 문구 = 그 커밋 제목(고정 「처음 판」이 판마다 뜨지 않게).
+try { BOARD_VERSION.note = execSync('git log -1 --format=%s', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || BOARD_VERSION.note } catch { /* git 없음 */ }
 const BUILD_AT = new Date().toISOString()
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
