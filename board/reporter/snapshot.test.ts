@@ -296,6 +296,13 @@ describe('보고꾼 — 레인 폴더 읽기', () => {
     expect(findDirty(d)).toBeNull()
   })
 
+  it('기기 낱말을 걷으면 이름이 겹치는 레인은 번호로 구별한다', () => {
+    const r2 = mkdtempSync(join(tmpdir(), 'lanes2-'))
+    for (const n of ['검수', '맥 검수']) { mkdirSync(join(r2, n)); writeFileSync(join(r2, n, `레인 ${n}.md`), '| 판 | 무엇 | 상태 |\n|---|---|---|\n| 1 | 일 | ⬜ |\n') }
+    const t = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: r2 }).lanes.map((l: { title: string }) => l.title)
+    expect(t).toEqual(['현황판 만들기', '검수', '검수 2'])
+  })
+
   it('다른 레인의 🔄 태스크에도 번호로 부르는 캐릭터가 붙는다', () => {
     const t = mine('가 레인').find((x: { column: string }) => x.column === 'work')
     const a = d.actors.find((x: { id: string }) => x.id === t.actor_id)

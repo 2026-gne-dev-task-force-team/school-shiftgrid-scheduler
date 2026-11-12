@@ -1,5 +1,5 @@
 import { h } from '../dom.ts'
-import type { Branch } from '../types.ts'
+import type { Actor, Branch } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
@@ -56,8 +56,15 @@ export const layer2: LayerRenderer = {
       label('gg-l gg-trunk', x(0), y0 - 30, trunk?.title ?? '줄기')
       // 도는 에이전트인데 자기 열린 가지가 없으면 줄기 끝에 「T-번호」와 함께 선다
       const open = new Set(spans.filter((s) => s.open).map((s) => s.id))
-      data.actors.filter((a) => a.state === 'work' && a.task_id && !open.has(a.branch_id ?? '')).forEach((a, i) =>
-        label('gg-chip', w - PAD - 90 - i * 90, y0 - 34, h('span', null, character(a, 'mini'), ` ${a.task_id!.replace(/^l-\w+-/, '')}`)))
+      const idle = data.actors.filter((a) => a.state === 'work' && a.task_id && !open.has(a.branch_id ?? ''))
+      const shown = narrow ? idle.slice(0, 2) : idle, more = idle.slice(shown.length) // 좁으면 2개만 · 나머지는 「+N」(누르면 목록)
+      const num = (a: Actor) => a.task_id!.replace(/^l-\w+-/, '')
+      shown.forEach((a, i) =>
+        label('gg-chip', w - PAD - 90 - i * 90 - (more.length ? 44 : 0), y0 - 34, h('span', null, character(a, 'mini'), ` ${num(a)}`)))
+      if (more.length) {
+        const btn = label('gg-l', w - PAD - 40, y0 - 34, `+${more.length}`, 200)
+        btn.addEventListener('click', () => openDetail({ title: '줄기 끝에서 도는 일꾼', rows: idle.map((a) => [num(a), actorLabel(a, data.actors)] as [string, string]) }))
+      }
 
       for (const s of spans) {
         const b = by.get(s.id)!, yl = y(lane.get(s.id)!), col = `hsl(${hueOf(b)} 70% 40%)`
