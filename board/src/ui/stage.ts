@@ -9,9 +9,11 @@ export function createStage() {
     el,
     show(r: LayerRenderer, ctx: LayerCtx) {
       if (cleanup) cleanup()
-      el.replaceChildren()
+      // 층이 host.replaceChildren 을 해도 부제가 안 지워지게 층은 안쪽 칸(display:contents)에 그린다.
+      const host = h('div', { class: 'stage-host' })
+      el.replaceChildren(...(r.desc ? [h('p', { class: 'tab-desc' }, r.desc)] : []), host)
       el.dataset.layer = r.id
-      cleanup = r.render(el, ctx)
+      cleanup = r.render(host, ctx)
     },
     pulse(id: string) {
       el.querySelectorAll<HTMLElement>('[data-id]').forEach((n) => {

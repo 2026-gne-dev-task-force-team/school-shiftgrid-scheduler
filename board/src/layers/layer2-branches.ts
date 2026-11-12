@@ -3,6 +3,7 @@ import type { Branch } from '../types.ts'
 import { hitTest, project, type Seg } from './layer2-logic.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
+import { actorLabel, actorWhat } from '../lib/actor.ts'
 
 interface Look { vis: boolean; grow: number; merge: number } // 보임 · 자라는 정도 · 줄기로 합쳐지는 정도
 const REPLAY_MS = 17000 // 목업: events 의 가지 따기·합치기를 이 간격으로 한 건씩 재생
@@ -18,7 +19,7 @@ export const layer2: LayerRenderer = {
     const by = new Map(work.map((b) => [b.id, b]))
     const look = new Map<string, Look>(work.map((b) => [b.id, { vis: b.state === 'live', grow: 1, merge: 0 }]))
     const hueOf = (b: Branch) => data.actors.find((a) => a.id === b.actor_id)?.hue ?? 200
-    const who = (b: Branch) => data.actors.find((a) => a.id === b.actor_id)?.name ?? '—'
+    const who = (b: Branch) => ((a) => a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '—')(data.actors.find((a) => a.id === b.actor_id))
     const replay = data.events.filter((e) => e.subject_type === 'branch' && (e.kind === 'branch.create' || e.kind === 'branch.merge'))
       .sort((a, b) => a.ts.localeCompare(b.ts))
 

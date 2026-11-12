@@ -63,9 +63,10 @@ function render(notice = false): void {
     stage.show(LAYERS[i], ctx)
   }
   LAYERS.forEach((l, i) => {
-    const b = h('button', { class: 'btn' }, l.floor === 6 ? l.tab : `${l.floor} ${l.tab}`)
+    const did = `sgb-tab-desc-${l.id}`
+    const b = h('button', { class: 'btn', title: l.desc ?? '', 'aria-describedby': did }, l.floor === 6 ? l.tab : `${l.floor} ${l.tab}`)
     b.addEventListener('click', () => show(i))
-    tabs.append(b)
+    tabs.append(b, h('span', { id: did, hidden: '' }, l.desc ?? ''))
   })
 
   const syncLayout = () => { detail.setLayout(phone.matches ? 'sheet' : 'side') }

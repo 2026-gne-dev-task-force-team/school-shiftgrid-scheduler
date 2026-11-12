@@ -1,6 +1,6 @@
 import { h } from '../dom.ts'
 import { fmtDur } from '../lib/forecast.ts'
-import { currentSprint } from '../lib/sprints.ts'
+import { currentSprint, sprintLabel } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
@@ -52,7 +52,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip' }, state),
     h('span', { class: 'chip src', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
-    h('span', { class: 'sgb-name' }, cur ? `스프린트 ${cur.sprint.id} · ${cur.sprint.title}` : '작업현황판'),
+    h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-pct' }, cur ? `${cur.pct}%` : ''),
     h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 

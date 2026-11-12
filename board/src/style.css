@@ -32,7 +32,10 @@ button.chip { min-height: 44px; cursor: pointer }
 
 .tabs { display: flex; gap: 8px; padding: 6px 12px; overflow-x: auto; scroll-snap-type: x mandatory }
 .tabs .btn { scroll-snap-align: start; white-space: nowrap }
-@media (max-width: 767px) { .tabs { flex-wrap: wrap; overflow-x: visible } .tabs .btn { flex: none } }
+/* 폰: 줄바꿈 허용 · 패딩 축소 — 글자가 버튼 밖으로 넘치지 않게(360px 에서 7개 모두 넘쳤다) */
+@media (max-width: 767px) { .tabs { flex-wrap: wrap; overflow-x: visible; gap: 6px; padding: 6px 8px } .tabs .btn { flex: 0 1 auto; width: auto; max-width: 100%; padding: 4px 8px; white-space: normal; word-break: keep-all; line-height: 1.2; height: auto } }
+.stage-host { display: contents }
+.tab-desc { margin: 0; font-size: 12px; opacity: .75; text-wrap: pretty }
 
 .body { flex: 1; display: grid; grid-template-columns: 240px 1fr 300px; gap: 12px; padding: 12px; min-height: 0 }
 .feed, .stage, .detail { background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-width: 0 }
