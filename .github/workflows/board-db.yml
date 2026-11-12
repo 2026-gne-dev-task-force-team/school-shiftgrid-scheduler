@@ -1,0 +1,72 @@
+name: 현황판 서랍 SQL 적용
+
+# board-schema.sql 을 Supabase 본 프로젝트에 넣고(멱등) API 에 board 스키마를 연다.
+# 값은 Actions 안에서만 쓴다 — 로그·알림에는 「있음/없음」과 응답 코드만 남긴다.
+# 철수는 SQL 파일 끝의 두 줄(publication drop · drop schema board cascade).
+on:
+  push:
+    branches: [1.2v-preview]
+    paths: [board/supabase/board-schema.sql, .github/workflows/board-db.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    env:
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      ANON: ${{ secrets.SUPABASE_ANON_KEY }}
+      HAS_DB_URL: ${{ secrets.SUPABASE_DB_URL != '' }}
+      HAS_AGE: ${{ vars.AGE_PUBLIC_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 레포 값 — 이름만
+        run: |
+          has() { [ -n "$1" ] && echo 있음 || echo 없음; }
+          echo "::notice title=레포 값::변수 SUPABASE_PROJECT_REF $(has "$REF") · AGE_PUBLIC_KEY $([ "$HAS_AGE" = true ] && echo 있음 || echo 없음) / 시크릿 SUPABASE_ACCESS_TOKEN $(has "$TOKEN") · SUPABASE_ANON_KEY $(has "$ANON") · SUPABASE_DB_URL $([ "$HAS_DB_URL" = true ] && echo 있음 || echo 없음)"
+
+      - name: SQL 넣기
+        if: env.REF != '' && env.TOKEN != ''
+        run: |
+          set -u
+          jq -Rs '{query: .}' board/supabase/board-schema.sql > q.json
+          code=$(curl -sS -o out.json -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' --data @q.json)
+          msg=$(jq -r 'if type=="object" then (.message // .error // "") else "" end' out.json 2>/dev/null | head -c 300)
+          echo "::notice title=SQL 넣기::응답 $code ${msg}"
+          case "$code" in 2*) ;; *) exit 1;; esac
+
+      - name: API 에 board 열기
+        if: env.REF != '' && env.TOKEN != ''
+        run: |
+          set -u
+          api="https://api.supabase.com/v1/projects/$REF/postgrest"
+          cur=$(curl -sS "$api" -H "Authorization: Bearer $TOKEN" | jq -r '.db_schema // empty')
+          [ -n "$cur" ] || { echo "::error title=board 열기::현재 db_schema 를 못 읽음"; exit 1; }
+          if printf '%s' "$cur" | tr -d ' ' | tr ',' '\n' | grep -qx board; then
+            echo "::notice title=board 열기::이미 열려 있음 ($cur)"
+          else
+            new="$cur, board"
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$api" -H "Authorization: Bearer $TOKEN" \
+              -H 'Content-Type: application/json' --data "$(jq -n --arg s "$new" '{db_schema: $s}')")
+            echo "::notice title=board 열기::응답 $code ($cur → $new)"
+            case "$code" in 2*) ;; *) exit 1;; esac
+          fi
+
+      - name: 공개 키로 읽어 보기
+        if: env.REF != '' && env.ANON != ''
+        run: |
+          sleep 15 # PostgREST 가 스키마 설정을 다시 읽는 틈
+          out=""
+          for t in tasks lanes feedback; do
+            c=$(curl -sS -o /dev/null -w '%{http_code}' "https://$REF.supabase.co/rest/v1/$t?select=*&limit=1" \
+              -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H 'Accept-Profile: board')
+            out="$out $t=$c"
+          done
+          echo "::notice title=공개 읽기::$out"
