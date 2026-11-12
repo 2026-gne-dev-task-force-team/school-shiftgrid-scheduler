@@ -29,6 +29,7 @@ let menuHost: HTMLElement
 let poll = 0
 let band: ReturnType<typeof createBand> | null = null
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
+let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
   band?.dispose()
@@ -45,7 +46,8 @@ function render(notice = false): void {
     calm: calmOn(),
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(__BUILD__),
-    onFeedback: () => openFeedback(detail.open, () => render(true)),
+    // 접수 창은 서랍 안 상세 칸에 뜨니, 닫힌 서랍이면 먼저 연다.
+    onFeedback: () => { setDrawer(true); openFeedback(detail.open, () => render(true)) },
     async onPurge() { // 확인은 메뉴 안 2단계가 이미 받았다
       await clearThisDevice()
       render()
@@ -112,6 +114,7 @@ export function mountBoard(host?: HTMLElement): void {
     barEl.querySelector('.sgb-caret')!.textContent = on ? '▲' : '▼'
     saveOpen(localStorage, on)
   }
+  setDrawer = set
   barEl.addEventListener('click', (e) => { if ((e.target as Element).closest('.sgb-toggle, .sgb-caret')) set(!drawer.classList.contains('open')) })
   scrim.addEventListener('click', () => set(false))
   document.addEventListener('keydown', (e) => {
