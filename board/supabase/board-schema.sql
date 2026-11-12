@@ -32,6 +32,7 @@ create table if not exists board.actors (
   started_at timestamptz not null,
   ended_at timestamptz
 );
+alter table board.actors add column if not exists tok_total int; -- 누적 토큰(기록을 못 이은 캐릭터는 비어 있다)
 
 create table if not exists board.tasks (
   id text primary key,
