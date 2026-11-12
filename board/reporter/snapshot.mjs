@@ -99,10 +99,15 @@ export function parseRequests(md) {
   return rows
 }
 
-/** 처방 칸 → 제목: 굵은 글이 있으면 그것, 없으면 첫 마디. 40자 넘으면 말줄임. 걸러져 비면 「요청 R번호」. */
+/** 처방 칸 → 제목: 굵은 글이 8자 이상이면 그것, 아니면 처방 첫 문장(마크다운 걷고, 담백 검사에 걸려 비면 다음 문장). 40자 넘으면 말줄임. 다 비면 「요청 R번호」. */
 export function requestTitle(what, id) {
+  const pub = (s) => publicTitle(s.replace(/\p{Extended_Pictographic}/gu, '').replace(/️/g, ''))
   const bold = /\*\*([^*]+)\*\*/.exec(what)
-  const t = publicTitle((bold ? bold[1] : what).replace(/\p{Extended_Pictographic}/gu, '').replace(/️/g, ''))
+  let t = bold ? pub(bold[1]) : ''
+  if (t.length < 8) {
+    const first = what.replace(/\*\*/g, '').split(/(?<=[.!?])\s+|\n/).map((s) => pub(s).replace(/[.!?]+$/, '').trim()).find((s) => /[가-힣A-Za-z0-9]{2}/.test(s))
+    if (first && first.length > t.length) t = first
+  }
   return t ? (t.length >= 40 ? `${t.slice(0, 39)}…` : t) : `요청 ${id}`
 }
 
@@ -269,6 +274,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   })]
   // 실제로 도는 에이전트: 판 표에 그 일감 캐릭터가 있으면 「지금 일함」으로, 없으면 새로 세운다(일감 모르면 일손).
   for (const g of live) {
+    if (g.kind === 'session') continue
     const t = byId.get(g.task ?? '')
     const at = new Date(g.started).toISOString()
     const mine = t && actors.find((a) => a.task_id === t.id && a.kind === 'helper')
@@ -278,6 +284,13 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       state: 'work', task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
       account: 'org', tok_per_min: 0, started_at: at, ended_at: null })
   }
+
+  // 문지기가 적은 `#시간표앱` 세션 자체 — 에이전트 없이도 캐릭터 하나(하는 일은 모르니 「대화 세션」)
+  for (const g of live.filter((x) => x.kind === 'session'))
+    actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
+      state: 'work', task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(), ended_at: null })
+  // 가지 ↔ 캐릭터: 그 가지 일감(T-<id>)을 맡은 캐릭터
+  for (const b of branches) if (!b.trunk) b.actor_id = actors.find((a) => a.branch_id === b.id)?.id ?? null
 
   // 사건 = 태스크 id 가 있는 줄만(「{제목} 끝/시작/막힘/다시」) + 가장 최근 📌 줄 하나(「방향 바뀜」). 같은 글이 잇달면 하나로 접는다.
   const events = []

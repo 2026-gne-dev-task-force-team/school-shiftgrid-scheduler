@@ -117,10 +117,12 @@ describe('보고꾼 — 실자료 다듬기', () => {
       u2: { id: 'a-22222222', task: null, started: t0 - 60e3, ended: null },
       u3: { id: 'a-33333333', task: null, started: t0 - 60e3, ended: t0 },
       u4: { id: 'a-44444444', task: null, started: t0 - 4 * 3600e3, ended: null },
+      's-x': { id: 'a-55555555', kind: 'session', role: '세션', started: t0 - 60e3, ended: null },
     } }))
     const d = build({ now: at, gatePath, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
     expect(d.actors.map((a: Actor) => [a.id, a.name, a.state, a.task_id])).toEqual([
-      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'work', 'T-2a'], ['a-22222222', '일손', 'work', null]])
+      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'work', 'T-2a'], ['a-22222222', '일손', 'work', null], ['a-55555555', '대화 세션', 'work', null]])
+    expect(actorLabel(d.actors[3], d.actors)).toBe('대화 세션')
   })
 
   it('진행률 = 지금 스프린트 표의 ✅ 수 / 전체 — 그 스프린트 안 덧줄만 센다', () => {
@@ -203,6 +205,8 @@ describe('보고꾼 — 요청함 R 카드', () => {
     expect(JSON.stringify(d)).not.toMatch(/비밀스러운|둘째|셋째/)
     expect(findDirty(d)).toBeNull()
     expect(requestTitle('**탭**', 'R9')).toBe('탭')
+    expect(requestTitle('**탭** 이름을 쉽게 바꾼다. 둘째 문장', 'R9')).toBe('탭 이름을 쉽게 바꾼다') // 굵은 글 8자 미만 → 첫 문장
+    expect(requestTitle('**탭** `a/b.ts`. 다음 문장이 대신 쓰인다', 'R9')).toBe('다음 문장이 대신 쓰인다') // 첫 문장이 걸려 비면 다음 문장
   })
 
   it('상태 매핑: → T 는 그 태스크를 따르고(없으면 진행) · 대기·끝·진행', () => {
