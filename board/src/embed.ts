@@ -7,6 +7,7 @@ import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
 import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
 import { applyUpdate, clearThisDevice } from './lib/purge.ts'
+import { fetchRemote, type Remote } from './lib/remote.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
 import { createDetail } from './ui/detail.ts'
@@ -28,12 +29,13 @@ let barEl: HTMLElement
 let menuHost: HTMLElement
 let poll = 0
 let band: ReturnType<typeof createBand> | null = null
+let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
   band?.dispose()
-    const data = loadData()
+  const data = loadData(Date.now(), remote)
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
 
@@ -124,6 +126,7 @@ export function mountBoard(host?: HTMLElement): void {
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   render()
+  void fetchRemote().then((r) => { if (r) { remote = r; render() } })
   // 처음 열림은 그대로 되살린다(슬라이드 없이).
   if (loadOpen(localStorage)) { drawer.style.transition = 'none'; set(true); void drawer.offsetWidth; drawer.style.transition = '' }
 }

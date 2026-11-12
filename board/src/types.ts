@@ -1,3 +1,4 @@
+import type { Feedback } from './lib/feedback.ts'
 // fixtures 칸 이름 = 설계 상세 3절 · 운전 규약 8절 그대로.
 export type Dept = 'hq' | 'make' | 'qa'
 export type Account = 'org' | 'personal'
@@ -25,4 +26,5 @@ export interface Run { id: string; started_at: string; ended_at: string | null; 
 export interface BoardData {
   actors: Actor[]; tasks: Task[]; lanes: Lane[]; branches: Branch[]; services: Service[]; modules: Module[]
   goals: Goal[]; events: BoardEvent[]; usage: Usage[]; runs: Run[]
+  source?: 'mock' | 'server'; serverFeedback?: Feedback[] // loadData 가 채운다
 }
