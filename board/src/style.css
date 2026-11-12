@@ -2,10 +2,16 @@
   color-scheme: dark; --bg: #0b0f17; --fg: #dbe6f5; --line: #2b3b57; --neon: #4fd1c5; --hq: #e0b341; --make: #2fbfae; --qa: #a37be0;
   --z: 2147483000; height: 32px; color: var(--fg); font: 15px/1.5 system-ui, sans-serif;
   * { box-sizing: border-box }
-  .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 32px; display: flex; align-items: center; gap: 10px; padding: 0 12px; overflow: hidden; white-space: nowrap; background: #0f1624; color: var(--fg); border: 0; border-bottom: 1px solid var(--neon); font: 13px/1 system-ui, sans-serif; text-align: left; cursor: pointer; width: 100% }
-  .sgb-bar .sgb-name { overflow: hidden; text-overflow: ellipsis }
-  .sgb-bar .sgb-pct { color: var(--neon); font-weight: 600 }
-  .sgb-bar .sgb-caret { margin-left: auto }
+  .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; overflow: hidden; white-space: nowrap; background: #0f1624; color: var(--fg); border-bottom: 1px solid var(--neon); font: 13px/1 system-ui, sans-serif }
+  .sgb-bar .sgb-toggle { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; height: 100%; cursor: pointer }
+  .sgb-bar .chip { min-height: 22px; padding: 0 8px; flex: none }
+  .sgb-bar .sgb-name, .sgb-bar .band-clock { overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+  .sgb-bar .band-clock { flex: 0 5 auto; opacity: .8 }
+  .sgb-bar .sgb-pct { color: var(--neon); font-weight: 600; flex: none }
+  .sgb-mini { min-height: 26px; height: 26px; padding: 0 8px; flex: none; font-size: 12px }
+  .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
+  .sgb-menuhost .menu { position: fixed; top: 33px; right: 6px; z-index: calc(var(--z) + 3); max-width: calc(100vw - 12px) }
+  .menu-ask { display: flex; flex-wrap: wrap; gap: 6px; max-width: 260px; font-size: 13px }
   .sgb-scrim { position: fixed; inset: 0; z-index: var(--z); background: #0008; border: 0; padding: 0 }
   .sgb-drawer { position: fixed; top: 32px; left: 0; right: 0; z-index: calc(var(--z) + 1); height: calc(85dvh - 32px); overflow: hidden; background: var(--bg); border-bottom: 2px solid var(--neon); transform: translateY(calc(-100% - 32px)); visibility: hidden; transition: transform .25s ease, visibility 0s .25s }
   .sgb-drawer.open { transform: none; visibility: visible; transition: transform .25s ease }
@@ -18,8 +24,6 @@
 .chip { --hue: 200; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid hsl(var(--hue) 70% 55%); background: hsl(var(--hue) 50% 20% / .6); color: var(--fg); font: inherit }
 button.chip { min-height: 44px; cursor: pointer }
 
-.band { position: relative; border-bottom: 1px solid var(--neon); background: #0f1624; padding-top: env(safe-area-inset-top) }
-.band-row { display: flex; align-items: center; gap: 12px; padding: 4px 12px; flex-wrap: wrap }
 .upd { border-color: #f5c542; color: #f5c542 }
 .menu { position: absolute; right: 12px; top: 100%; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: #0f1624; border: 1px solid var(--line); border-radius: 8px }
 .band-drop { padding: 8px 12px }

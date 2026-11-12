@@ -24,7 +24,8 @@ const calmOn = () => {
 
 let root: HTMLElement | null = null
 let page: HTMLElement
-let barEl: HTMLButtonElement
+let barEl: HTMLElement
+let menuHost: HTMLElement
 let poll = 0
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 function render(notice = false): void {
@@ -43,8 +44,7 @@ function render(notice = false): void {
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(__BUILD__),
     onFeedback: () => openFeedback(detail.open, () => render(true)),
-    async onPurge() {
-      if (!confirm('이 기기에 남은 이 앱의 저장 자료를 비웁니다.\n서버 자료는 안전합니다. 다시 로그인해야 합니다.')) return
+    async onPurge() { // 확인은 메뉴 안 2단계가 이미 받았다
       await clearThisDevice()
       render()
     },
@@ -66,14 +66,11 @@ function render(notice = false): void {
   phone.onchange = syncLayout
   syncLayout()
 
-  const working = data.actors.filter((a) => a.state === 'work').length
-  const goal = data.goals[0]
-  barEl.replaceChildren(
-    h('span', { class: 'sgb-name' }, goal ? `스프린트 ${goal.sprint} · ${goal.title}` : '작업현황판'),
-    h('span', { class: 'sgb-pct' }, goal ? `${goal.progress}%` : ''),
-    h('span', null, `진행 중 ${working}`),
-    h('span', { class: 'sgb-caret' }, root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼'))
-  page.replaceChildren(band.el, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
+  const caret = h('button', { class: 'btn sgb-mini sgb-caret', 'aria-label': '작업현황판 열고 닫기' },
+    root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼')
+  barEl.replaceChildren(band.toggle, band.upd, band.fb, band.more, caret)
+  menuHost.replaceChildren(band.menu)
+  page.replaceChildren(band.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
   show(restoreTab(curTab, LAYERS.length))
   if (notice) {
     const go = h('button', { class: 'btn' }, '작업장에서 보기')
@@ -102,7 +99,8 @@ function render(notice = false): void {
 export function mountBoard(host?: HTMLElement): void {
   if (root) return
   root = h('div', { class: 'sgb' })
-  barEl = h('button', { class: 'sgb-bar', 'aria-label': '작업현황판 열고 닫기' })
+  barEl = h('div', { class: 'sgb-bar' })
+  menuHost = h('div', { class: 'sgb-menuhost' }) // 막대는 overflow 가 잘리니 메뉴는 막대 밖에 둔다
   page = h('div', { class: 'sgb-page' })
   const scrim = h('button', { class: 'sgb-scrim', 'aria-label': '서랍 닫기', hidden: '' })
   const drawer = h('div', { class: 'sgb-drawer' }, h('div', { class: 'sgb-scroll' }, page))
@@ -112,10 +110,10 @@ export function mountBoard(host?: HTMLElement): void {
     barEl.querySelector('.sgb-caret')!.textContent = on ? '▲' : '▼'
     saveOpen(localStorage, on)
   }
-  barEl.addEventListener('click', () => set(!drawer.classList.contains('open')))
+  barEl.addEventListener('click', (e) => { if ((e.target as Element).closest('.sgb-toggle, .sgb-caret')) set(!drawer.classList.contains('open')) })
   scrim.addEventListener('click', () => set(false))
   document.addEventListener('keydown', (e) => { if (closesOnKey(e.key, drawer.classList.contains('open'))) set(false) })
-  root.append(barEl, scrim, drawer)
+  root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   render()
   // 처음 열림은 그대로 되살린다(슬라이드 없이).
