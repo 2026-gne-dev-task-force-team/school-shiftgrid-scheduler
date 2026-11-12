@@ -34,3 +34,6 @@ export function graphSpans(branches: Branch[], events: BoardEvent[]): { spans: S
   })
   return { spans, cols: all.length }
 }
+
+/** 이름표·칩의 left 를 그래프 안쪽으로 가둔다 — 오른쪽 끝에서 잘리지 않게(폭이 더 크면 왼쪽 2px 우선). */
+export const clampLeft = (left: number, boxW: number, elW: number, edge = 2): number => Math.max(edge, Math.min(left, boxW - elW - edge))
