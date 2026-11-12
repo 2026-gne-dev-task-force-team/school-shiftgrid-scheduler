@@ -28,12 +28,14 @@ export const layer4: LayerRenderer = {
   render(host, { data, openDetail, tip }) {
     const tasks: Task[] = data.tasks.map((t) => ({ ...t }))
     const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
+    const nReq = data.tasks.filter((t) => /^R\d/.test(t.id) && colOf(t) === 'wait').length
+    const reqNote = h('small', { class: 'ws-req' }, nReq ? `요청 ${nReq} · 일감 ${data.tasks.filter((t) => !/^R\d/.test(t.id) && colOf(t) === 'wait').length}` : '')
     const cols = new Map<Col, { body: HTMLElement; badge: HTMLElement }>()
     const board = h('div', { class: 'ws' })
     for (const c of COLS) {
       const badge = h('span', { class: 'ws-badge', hidden: '' })
       const body = h('div', { class: 'ws-body' })
-      board.append(h('section', { class: 'ws-col', 'data-col': c.id }, h('header', { class: 'ws-head' }, h('span', null, c.name, h('small', null, ` ${EN[c.id]}`)), badge), furn(c.id), body))
+      board.append(h('section', { class: 'ws-col', 'data-col': c.id }, h('header', { class: 'ws-head' }, h('span', null, c.name, h('small', null, ` ${EN[c.id]}`)), ...(c.id === 'wait' ? [reqNote] : []), badge), furn(c.id), body))
       cols.set(c.id, { body, badge })
     }
     // 쉬는 캐릭터는 복도를 왔다갔다 — 사람마다 거리·속도·지연이 다르다(calm 이면 CSS 가 멎는다)
@@ -62,7 +64,7 @@ export const layer4: LayerRenderer = {
       const st = m === null && t.column === 'done' ? 'done' : showReason(t) ? 'blocked' : isOver(t, now()) ? 'over' : t.column === 'done' ? 'done' : 'ok'
       const more = [a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
       el.title = more
-      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), h('b', null, `${KIND_ICON[t.kind] ?? '•'} ${t.title}`), ...(a ? [character(a, 'mini')] : []))
+      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${t.title}`), ...(a ? [character(a, 'mini')] : []))
     }
 
     const layout = (animate: boolean) => {

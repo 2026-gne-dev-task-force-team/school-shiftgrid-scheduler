@@ -17,7 +17,7 @@ const SECTIONS: [string, string[]][] = [
     '제작부 — 설계대로 만든다',
     '품질부 — 검수하고 시험한다',
   ]],
-  ['어디까지 가나', ['바퀴 1 Mock data → 바퀴 2 진짜 자료 → 바퀴 3 실시간·알림 → 바퀴 4 앱 위 띠']],
+  ['어디까지 가나', ['바퀴 1 가짜 자료 → 바퀴 2 진짜 자료 → 바퀴 3 실시간·알림 → 바퀴 4 앱 위 띠']],
 ]
 
 export const sourceNote = (src: 'mock' | 'server' | undefined) => src === 'server' ? '지금은 진짜 자료(Live data)로 그립니다.' : '지금은 가짜 자료로 그린 Mock data 입니다.'

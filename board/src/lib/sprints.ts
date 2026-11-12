@@ -8,6 +8,9 @@ export function sprintProgress(s: Sprint, tasks: Task[]): { done: number; total:
   return { done, total: mine.length, pct: mine.length ? Math.round((done / mine.length) * 100) : 0 }
 }
 
+/** 지금 스프린트의 남은 일감 수(스프린트 태스크 기준 — 요청함 R 카드는 안 센다). 막대·Overview 가 같이 쓴다. */
+export const sprintLeft = (d: { sprints: Sprint[]; tasks: Task[] }): number => ((c) => (c ? ((p) => p.total - p.done)(sprintProgress(c.sprint, d.tasks)) : 0))(currentSprint(d))
+
 /** 시작이 늦은 줄(최신)이 위. began 이 비거나 깨졌으면(NaN) 0 으로 치고, 같으면 번호 큰 쪽이 위. */
 export const sprintsNewestFirst = (list: Sprint[]): Sprint[] =>
   [...list].sort((a, b) => (Date.parse(b.began) || 0) - (Date.parse(a.began) || 0) || b.id - a.id)

@@ -133,8 +133,9 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .fid-row { padding: 6px 0; border-top: 1px solid #3a3320 } .fid-row:first-child { border-top: 0 }
 .fid-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 12px; width: 100%; padding: 2px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer }
 .fid-line:focus-visible { outline: 2px solid #ffd24a; outline-offset: 2px }
-.fid-dest { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis }
-.fid-no, .fid-t, .fid-st, .fid-pct, .fid-dest { white-space: nowrap }
+.fid-dest { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; word-break: keep-all; overflow-wrap: anywhere } /* 낱말 중간에서 안 자르고 3줄까지 */
+.fid-name { display: none }
+.fid-no, .fid-t, .fid-st, .fid-pct { white-space: nowrap }
 .fid-st[data-st=ARRIVED] { color: #6fe39a } .fid-st[data-st=SCHEDULED] { color: #9fb4c9 } .fid-st[data-st=BOARDING] { color: #ffb020 }
 .fid-st { min-width: 9ch }
 .fid-pct { min-width: 4ch; text-align: right }
@@ -151,7 +152,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @media (max-width: 767px) {
   .fid { padding: var(--sp2) 8px; font-size: 11px }
   .fid-line { grid-template-columns: auto auto auto auto; gap: 6px; justify-content: space-between }
-  .fid-dest { display: none } .fid-st { min-width: 0 }
+  .fid-dest { grid-column: 1 / -1; grid-row: 2; display: block } .fid-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap } .fid-goal { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; color: #d9c88a } .fid-st { min-width: 0 }
   .fl { width: .95ch } .fl.w { width: 1.75ch }
 }
 
