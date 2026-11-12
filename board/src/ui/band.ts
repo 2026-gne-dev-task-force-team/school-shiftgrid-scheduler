@@ -53,6 +53,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'chip' }, state),
     h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? 'Live data' : 'Mock data'),
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
+    h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),
     h('span', { class: 'sgb-pct', title: 'Sprint 진행률' }, cur ? `${cur.pct}%` : ''),
     h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 

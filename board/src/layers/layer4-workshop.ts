@@ -14,14 +14,15 @@ const FURN: Record<Col, [number, number, number, number, string][]> = {
   check: [[2, 5, 14, 3, W], [3, 8, 1, 2, D], [14, 8, 1, 2, D], [6, 2, 4, 3, '#BFE3F2'], [9, 4, 3, 2, '#2B1710'], [12, 3, 2, 2, P]],
   done: [[1, 5, 6, 5, W], [2, 6, 4, 1, D], [8, 6, 6, 4, W], [9, 7, 4, 1, D], [4, 1, 6, 4, W], [5, 2, 4, 1, D], [14, 3, 3, 6, '#7BC86C']],
 }
-const EN: Record<Col, string> = { check: 'Review', wait: 'Inbox', work: 'Desks', done: 'Crates' }
+const DONE_MAX = 6
+const EN: Record<Col, string> = { check: 'Review', wait: 'Backlog', work: 'Doing', done: 'Done' }
 const furn = (c: Col) => {
   const t = document.createElement('template')
   t.innerHTML = `<svg class="ws-furn" aria-hidden="true" viewBox="0 0 18 10" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${FURN[c].map(([x, y, w, hh, f]) => `<rect x="${x}" y="${y}" width="${w}" height="${hh}" fill="${f}"/>`).join('')}</svg>`
   return t.content.firstElementChild!
 }
 
-// 4층 작업장 — 확인 중 · 기다림 · 작업 · 끝. 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
+// 4층 작업장 — 기다림 · 작업 · 확인 중 · 끝(최근 6장만, 나머지는 +N more). 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
 export const layer4: LayerRenderer = {
   id: 'layer4', floor: 4, tab: 'Board',
   render(host, { data, openDetail, tip }) {
@@ -43,6 +44,9 @@ export const layer4: LayerRenderer = {
     })
     host.append(board, walk)
 
+    let expanded = false
+    const more = h('button', { class: 'ws-more' })
+    more.addEventListener('click', () => { expanded = !expanded; layout(false) })
     const cards = new Map<string, HTMLElement>()
     const home = new Map<string, Col>() // 처음 있던 열 — 다른 열로 간 카드는 그 열 머리에 +N 배지(폰)
     const now = () => Date.now()
@@ -80,13 +84,19 @@ export const layer4: LayerRenderer = {
         fill(el, t)
         cols.get(colOf(t))!.body.append(el)
       }
+      // 끝 열은 최근(updated_at) 6장만 보이고 나머지는 접는다
+      const done = tasks.filter((t) => colOf(t) === 'done').sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+      done.forEach((t, i) => { cards.get(t.id)!.hidden = !expanded && i >= DONE_MAX })
+      more.hidden = done.length <= DONE_MAX
+      more.textContent = expanded ? '접기' : `+${done.length - DONE_MAX} more`
+      cols.get('done')!.body.append(more)
       const moved = new Map<Col, number>()
       for (const t of tasks) if (home.get(t.id) !== colOf(t)) moved.set(colOf(t), (moved.get(colOf(t)) ?? 0) + 1)
       for (const [id, c] of cols) { const n = moved.get(id) ?? 0; c.badge.hidden = n === 0; c.badge.textContent = `+${n}` }
       if (!animate || reduce()) return
       for (const [id, el] of cards) {
         const a = first.get(id), b = el.getBoundingClientRect()
-        if (!a || (a.left === b.left && a.top === b.top)) continue
+        if (!a || el.hidden || (a.left === b.left && a.top === b.top)) continue
         el.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }],
           { duration: 1600, easing: 'ease-in-out' })
       }

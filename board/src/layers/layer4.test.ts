@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blockText, colOf, isOver, minutesIn } from './layer4-logic.ts'
+import { COLS, blockText, colOf, isOver, minutesIn } from './layer4-logic.ts'
 import type { Task } from '../types.ts'
 
 const T = (o: Partial<Task>): Task => ({ id: 'x', title: 't', category: '코드', kind: 'work', team: 'a', sprint: 1, est_min: 20,
@@ -28,4 +28,7 @@ describe('막힌 까닭 문장', () => {
     expect(blockText(T({ block_kind: 'outside' }), all)).toBe('바깥 답을 기다린다')
   })
   it('낱말이 없으면 null', () => expect(blockText(T({}), all)).toBeNull())
+})
+describe('열 순서', () => {
+  it('기다림 → 작업 → 확인 중 → 끝', () => expect(COLS.map((c) => c.id)).toEqual(['wait', 'work', 'check', 'done']))
 })
