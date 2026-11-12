@@ -7,12 +7,14 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, watch as fsWatch, writeFileSync } from 'node:fs'
 import { dirname, basename, join, resolve } from 'node:path'
+import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { build, checkServices } from './snapshot.mjs'
 import { findDirty } from './plain.mjs'
 import { loadConfig } from './config.mjs'
 import { tokensByToolUse } from './tokens.mjs'
 import { readToken, readRef, sinkAndLog } from './sink.mjs'
+import { claudeCandidates } from './claude-home.mjs'
 
 export const DEBOUNCE_MS = 3000
 export const BACKUP_MS = 120000
@@ -119,7 +121,10 @@ export function sourceTargets(cfg, repoDir, exists = existsSync, dirTest = isDir
   const add = (dir, recursive, filter) => { if (dir && exists(dir) && !dirs.has(dir)) { dirs.add(dir); out.push({ dir, recursive, filter }) } }
   add(cfg.laneRoot, true, md) // 레인 폴더(레인 노트·요청함·작업현황판·「집은 카드」 표 포함)
   for (const f of [cfg.lane, cfg.requests]) if (f && !String(f).startsWith(String(cfg.laneRoot ?? '\0'))) add(dirname(f), false, (n) => n === nfc(basename(f)) || n === '')
-  for (const f of [cfg.usage, cfg.gate]) add(f && dirname(f), false, (n) => n === nfc(basename(f)) || n === '') // 한도 파일 · 문지기 actors.json
+  for (const f of [cfg.usage, cfg.gate]) { // 한도 파일 · 문지기 actors.json — 경로가 `~/.claude/…` 면 `.claude-*` 형제 프로필의 같은 상대경로도 본다(있는 폴더만)
+    if (!f) continue
+    for (const x of claudeCandidates(f, { home: homedir() })) add(dirname(x), false, (n) => n === nfc(basename(x)) || n === '')
+  }
   const heads = gitHeadsDir(repoDir, dirTest, readText) // 가지 목록(줄기·가지 커밋 시각)
   if (heads) add(heads, true)
   return out

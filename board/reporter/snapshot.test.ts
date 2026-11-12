@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
@@ -354,16 +355,19 @@ describe('보고꾼 — 레인 폴더 읽기', () => {
   mk('닫힘', '레인 닫힘.md', '| 판 | 무엇 | 상태 |\n|---|---|---|\n| x | 닫힌 일 | ✅ |\n')
   mk('요청함', '레인 요청함.md', '| 판 | 무엇 | 상태 |\n|---|---|---|\n| x | 요청 일 | ✅ |\n')
   mk('표 없음', '레인 표 없음.md', '글만')
+  mk('표만 있음', '레인 표만 있음.md', '| 판 | 무엇 | 상태 |\n|---|---|---|\n| 구현 | 설명 줄 | ⬜ |\n') // 번호 칸이 없는 표 — 못 읽음(경고)
   const warns: string[] = []
-  const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: root, onWarn: (n: string) => warns.push(n) })
+  const infos: string[] = []
+  const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: root, onWarn: (n: string) => warns.push(n), onInfo: (n: string) => infos.push(n) })
   const mine = (title: string) => d.tasks.filter((t: { lane_id: string }) => t.lane_id === d.lanes.find((l: { title: string }) => l.title === title)?.id)
 
   it('lane 은 지금 판 + 폴더 둘(닫힘·요청함 제외) · 태스크 수 · 경고', () => {
-    expect(d.lanes.map((l: { title: string }) => l.title)).toEqual(['현황판 만들기', '가 레인', '나 레인', '표 없음'])
+    expect(d.lanes.map((l: { title: string }) => l.title)).toEqual(['현황판 만들기', '가 레인', '나 레인', '표 없음', '표만 있음'])
     expect(mine('가 레인').length).toBe(2) // 경로만 있는 줄은 담백 검사로 빠진다
     expect(mine('나 레인').map((t: { id: string }) => t.id)).toHaveLength(1)
     expect(d.tasks.some((t: { title: string }) => /닫힌|요청 일/.test(t.title))).toBe(false)
-    expect(warns).toEqual(['표 없음'])
+    expect(infos).toEqual(['표 없음']) // 표 자체가 없으면 정보일 뿐
+    expect(warns).toEqual(['표만 있음']) // 표는 있는데 못 읽으면 경고
     expect(d.lanes[1].state).toBe('work') // 🔄 가 있으면 멈춤 문구보다 우선
     expect(d.sprints.flatMap((s: { task_ids: string[] }) => s.task_ids)).toEqual(['T-1a', 'T-2a']) // 스프린트엔 안 섞인다
     expect(findDirty(d)).toBeNull()
@@ -416,5 +420,57 @@ describe('기본키 중복 막이 (T-9j U5)', () => {
     expect(d.sprints).toHaveLength(1)
     expect(d.lanes).toHaveLength(1)
     expect(warns).toHaveLength(3)
+  })
+})
+
+describe('T-9u 읽기 고침', () => {
+  const lane8 = (head: string) => `## 스프린트 7 — 앞 (10:00~11:00)\n\n| 태스크 | 무엇 | 팀 | est_min | 상태 |\n|---|---|---|---|---|\n| T-7a | 가 | 코드 | 5 | ✅ |\n\n## ${head}\n\n| 태스크 | 무엇 | 팀 | est_min | 상태 |\n|---|---|---|---|---|\n| T-8a | 나 | 코드 | 5 | 🔄 |\n`
+  it('U9① 스프린트 머리 괄호 꼬리를 받는다 · 못 읽으면 경고', () => {
+    const d = build({ now: at, md: lane8('스프린트 8 — 다음 (18:26~ 맥)') })
+    expect(d.sprints.map((s: { id: number }) => s.id)).toEqual([7, 8])
+    expect(d.goals[0].sprint).toBe(8)
+    const w: string[] = []
+    build({ now: at, md: lane8('스프린트 9 — 깨진 머리'), onWarn: (t: string) => w.push(t) })
+    expect(w).toEqual(['스프린트'])
+  })
+  const home = mkdtempSync(join(tmpdir(), 'home-'))
+  const put = (rel: string, body: unknown, ageMin: number) => { const f = join(home, rel); mkdirSync(join(f, '..'), { recursive: true }); writeFileSync(f, JSON.stringify(body)); const t = new Date(at.getTime() - ageMin * 60e3); utimesSync(f, t, t) }
+  const lim = (p: number, updated?: number) => ({ ...(updated ? { updated } : {}), limits: { five_hour: { pct: p, resets_at: 1794500000 }, seven_day: { pct: 1, resets_at: 1794600000 } } })
+  it('U9③ 한도는 .claude-b 처럼 mtime 최신 형제를 고르고, 시각은 파일 잰 시각 · 낡으면 stale', () => {
+    put('.claude/rate-limits.json', lim(10), 300)
+    put('.claude-b/rate-limits.json', lim(77, at.getTime() - 5 * 60e3), 5)
+    const u = build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage[0]
+    expect(u).toMatchObject({ pct_5h: 77, ts: new Date(at.getTime() - 5 * 60e3).toISOString() })
+    expect(u.stale).toBeUndefined()
+    put('.claude-b/rate-limits.json', lim(77, at.getTime() - 60 * 60e3), 60)
+    expect(build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage[0].stale).toBe(true)
+  })
+  const act = (id: string, kind?: string) => ({ id, ...(kind ? { kind, role: '세션' } : { lead: 'a-00000000', task: 'T-2a' }), started: at.getTime() - 60e3, ended: null })
+  it('U9③ 문지기는 프로필 폴더들을 합친다', () => {
+    put('.claude/board/actors.json', { actors: { x: act('a-11111111', 'session') } }, 5)
+    put('.claude-b/board/actors.json', { actors: { y: act('a-22222222', 'session') } }, 1)
+    const d = build({ now: at, md: lane('', ''), home, gatePath: join(home, '.claude/board/actors.json') })
+    expect(d.actors.map((a: Actor) => a.id)).toEqual(expect.arrayContaining(['a-11111111', 'a-22222222']))
+  })
+  it('U8③ 지휘는 살아 있는 세션이 없으면 퇴근(off), 문지기를 못 읽으면 쉼', () => {
+    const lead = (o: object) => build({ now: at, md: lane('', ''), ...o }).actors.find((a: Actor) => a.id === 'a-lead')
+    expect(lead({}).state).toBe('idle')
+    const h2 = mkdtempSync(join(tmpdir(), 'home2-'))
+    mkdirSync(join(h2, '.claude/board'), { recursive: true })
+    writeFileSync(join(h2, '.claude/board/actors.json'), JSON.stringify({ actors: { x: { ...act('a-33333333', 'session'), ended: at.getTime() - 1000 } } }))
+    expect(lead({ home: h2, gatePath: join(h2, '.claude/board/actors.json') }).state).toBe('off')
+  })
+  it('U8② 번호 칸 없는 판 표 · 「11~」 자리표시는 일감이 아니다', async () => {
+    // @ts-expect-error — mjs
+    const { parseLaneNote } = await import('./snapshot.mjs')
+    const md = '| 판 | 무엇 | 상태 |\n|---|---|---|\n| 구현 | 설명 | ⬜ |\n\n| 칸 | 판 | 무엇 | 상태 |\n|---|---|---|---|\n| 3 | 짓기 | 가 | ✅ |\n| 11~ | 구현 | 나 | ⛔ |\n'
+    expect(parseLaneNote(md).rows.map((r: { id: string }) => r.id)).toEqual(['짓기'])
+  })
+  it('U9② 레인 표에 일감이 없는 가지도 싣는다', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'repo-'))
+    const g = (...a: string[]) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'pipe' })
+    g('init', '-q', '-b', '1.2v-preview'); g('commit', '-q', '--allow-empty', '-m', 'x'); g('branch', '1.2v-preview-zz')
+    const ids = build({ now: at, md: lane('', ''), repoDir: repo }).branches.map((b: { id: string }) => b.id)
+    expect(ids).toEqual(['b-trunk', 'b-zz'])
   })
 })
