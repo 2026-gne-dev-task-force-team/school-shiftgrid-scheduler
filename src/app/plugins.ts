@@ -32,33 +32,27 @@ import { dutyPlugin } from '../plugins/duty';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 import { paneTestPlugin } from '../plugins/pane-test';
+import { INSTALLED_PLUGIN_IDS } from './site-config';
 
 
 // 🔴 코어 넷(settings·explorer·selection·properties)은 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
 // 📌 2026-11-01 21:47 쥔님: Pane UI Test 는 런타임 등록 해지(paneTestPlugin 을 뺐다 · 코드·폴더는 그대로).
+// 카탈로그 = 「설치할 수 있는 것」(정적 번들). 무엇이 깔리나·순서는 site.config.json 의 plugins 가 정한다(활성 순서가 골든).
+const CATALOG: Record<string, PluginModule> = {
+    page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, calendar: calendarPlugin, account: accountPlugin,
+    people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
+    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin,
+};
+
 export const PLUGINS: PluginModule[] = [
-    // ── 플랫폼 층(manifest.layer 'platform') — 노드·본문·속성·설정의 바닥. 위 코어 둘은 끌 수 없다
-    // 🍳 이사 중: core/ 로 간 코어는 CORE_PLUGINS 한 줄로 오고(core/index.ts 에 한 줄씩 더한다), 아직 plugins/ 에 있는 코어는 아래에 직접 선다.
-    //    활성 순서(골든)가 settings → explorer → selection → properties 라 아직 이사 안 한 둘이 core 를 감싼다 — 이사 판마다 해당 줄을 지우고 core 배럴에 더한다.
-    ...CORE_PLUGINS,         // core/ 폴더의 코어 — settings → explorer → selection → properties → icon-pack-basic(골든 순서)
-    pagePlugin,              // 페이지 꾸러미 — 노션식 블록 페이지(문서 본문)
-    collectionPlugin,        // 컬렉션 꾸러미 — collection 약속 + 컬렉션 노드 화면(속성 레지스트리)
-    sheetPlugin,             // 시트 꾸러미 — 격자 엔진(table 약속) + 시트 노드
-    // ── 범용 앱 층('app') — 끌 수 있다
-    calendarPlugin,          // 달력 꾸러미 — calendar 약속 · 구독은 달력 안(calendar/subscribe/)
-    accountPlugin,           // 계정 꾸러미 — identity·credential·permit
-    // ── 학교 도메인 층('domain') — 끌 수 있다
-    peoplePlugin,            // 사람 명단 꾸러미
-    roomsPlugin,             // 방 목록 꾸러미
-    roomBookingPlugin,       // 방 예약 꾸러미 — 달력 프리셋 한 장
-    substitutePlugin,        // 보결 명단 꾸러미
-    schoolPlugin,            // 학교 정보 꾸러미
-    subjectsPlugin,          // 과목 꾸러미
-    staffPlugin,             // 교직원 명단 꾸러미
-    bellPlugin,              // 일과표 꾸러미 — clock 약속(학년별 교시 ↔ 실제 시각)
-    dutyPlugin,              // 복무 꾸러미 — duty 약속(그 날·그 교시 빠지는 사람)
-    timetableGridPlugin,     // 시간표 꾸러미(시트 확장)
-    // 🧪 개발 전용 — 개발 서버에서 주소 끝에 `?pane-test` 를 붙여 열면 Pane UI Test(부품 견본 포함)가 켜진다. 배포본·일반 화면엔 안 뜬다.
+    // 코어(core/)는 늘 설치 — settings → explorer → selection → properties → icon-pack-basic(골든 순서)
+    ...CORE_PLUGINS,
+    ...INSTALLED_PLUGIN_IDS.map((id) => {
+        const m = CATALOG[id];
+        if (!m) throw new Error('site.config.json plugins 에 카탈로그에 없는 꾸러미: ' + id);
+        return m;
+    }),
+    // 🧪 개발 전용 — 개발 서버에서 주소 끝에 `?pane-test` 를 붙여 열면 Pane UI Test 가 켜진다. 배포본·일반 화면엔 안 뜬다.
     ...(import.meta.env.DEV && typeof window !== 'undefined' && window.location.search.includes('pane-test') ? [paneTestPlugin] : []),
 ];
