@@ -1,12 +1,12 @@
 import './style.css'
 import { loadData } from './data.ts'
 import { h, isCalm } from './dom.ts'
-import { loadFeedback } from './lib/feedback.ts'
+import { FEEDBACK_CHANGED, loadFeedback } from './lib/feedback.ts'
 import { LAYERS } from './layers/registry.ts'
 import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
 import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
-import { applyUpdate, clearThisDevice } from './lib/purge.ts'
+import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { fetchRemote, type Remote } from './lib/remote.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
@@ -98,7 +98,7 @@ function render(notice = false): void {
 
   const check = async () => {
     const v: VersionInfo | null = await fetchVersion()
-    latest = isNewer(__BUILD__, v) ? v : null
+    latest = isNewer(__BUILD__, v, loadSeen()) ? v : null
     bnd.showUpdate(latest)
   }
   void check()
@@ -128,6 +128,7 @@ export function mountBoard(host?: HTMLElement): void {
     const t = escTarget(e.key, !!band && !band.menu.hidden, !!detailEl && !detailEl.hidden, drawer.classList.contains('open'))
     if (t === 'menu') band!.closeMenu(); else if (t === 'detail') detailEl!.hidden = true; else if (t === 'drawer') set(false)
   })
+  window.addEventListener(FEEDBACK_CHANGED, () => render()) // Inbox 에서 지우기·상태 바꾸기 → Board·흐름 줄도 즉시
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   render()
