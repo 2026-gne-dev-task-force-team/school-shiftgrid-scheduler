@@ -4,7 +4,7 @@ import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
 
-export interface BandHooks { onApply(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void }
+export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void }
 
 // 0층 띠 — 상태 칩 · 스프린트 진행% · 몇 시간째·남은 예상 · ✨ · ⋯ 메뉴 · ▼ 한도와 속도.
 export function createBand(data: BoardData, hooks: BandHooks) {
@@ -23,6 +23,8 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   calm.addEventListener('change', () => hooks.onCalm(calm.checked))
   const purge = h('button', { class: 'btn' }, '이 기기 저장소 비우기')
   purge.addEventListener('click', hooks.onPurge)
+  const fb = h('button', { class: 'btn' }, '불편 접수')
+  fb.addEventListener('click', hooks.onFeedback)
   const menu = h('div', { class: 'menu', hidden: '' }, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), purge)
   const more = h('button', { class: 'btn', 'aria-label': '더 보기' }, '⋯')
   more.addEventListener('click', () => { menu.hidden = !menu.hidden })
@@ -35,7 +37,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
       h('span', { class: 'chip' }, state),
       h('span', { class: 'band-goal' }, goal ? `스프린트 ${goal.sprint} · ${goal.title} · ${goal.progress}%` : ''),
       h('span', { class: 'band-clock' }, `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}`),
-      upd, h('span', { class: 'grow' }), more, down),
+      upd, h('span', { class: 'grow' }), fb, more, down),
     menu, drop)
 
   return {
