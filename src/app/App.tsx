@@ -10,14 +10,12 @@
 import { RootErrorBoundary } from '../pane-ui-system'
 import { Workbench } from './Workbench'
 import { CredentialDialog } from '../plugins/account'
-import { EditionBadge } from './EditionBadge'
 
 export default function App() {
   return (
     <RootErrorBoundary>
       <Workbench />
       <CredentialDialog />
-      <EditionBadge />
     </RootErrorBoundary>
   )
 }

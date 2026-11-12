@@ -6,6 +6,7 @@
  *    창틀은 viewId 가 무엇인지 모른다. 무엇을 그릴지는 플러그인이 host.views.register 로 꽂고,
  *    앱은 appHost 로만 읽는다(registerView 직접 호출 0). 뷰 id 엔 플러그인 접두사가 붙어 있다(scheduler.week 등).
  */
+import { EditionBadge } from './EditionBadge';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     useNarrow, usePanels, SidePanel, Rail,
@@ -419,6 +420,7 @@ export function Workbench() {
     const frameStatus: StatusItem[] = [
         ...(frameAlert ? [{ id: 'frame:storage-error', side: 'right' as const, node: <StorageErrorStatus /> }] : []),
         { id: 'frame:notify', side: 'right', node: <NotifyStatus /> },
+        { id: 'frame:edition', side: 'left', node: <EditionBadge /> },
     ];
 
     return (
