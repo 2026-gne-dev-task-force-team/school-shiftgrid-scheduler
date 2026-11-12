@@ -11,12 +11,50 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "idle",
+      "state": "work",
       "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
+      "ended_at": null
+    },
+    {
+      "id": "a-27315023",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "일손",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": null,
+      "branch_id": null,
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T06:33:14.303Z",
+      "ended_at": null
+    },
+    {
+      "id": "a-4e8807e8",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "일손",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": null,
+      "branch_id": null,
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T06:33:54.401Z",
       "ended_at": null
     }
   ],
@@ -644,7 +682,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:33:01.976Z"
+      "checked_at": "2026-11-12T06:35:01.906Z"
     },
     {
       "id": "s-sync",
@@ -652,7 +690,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:33:01.976Z"
+      "checked_at": "2026-11-12T06:35:01.906Z"
     },
     {
       "id": "s-reporter",
@@ -660,7 +698,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:33:01.976Z"
+      "checked_at": "2026-11-12T06:35:01.906Z"
     }
   ],
   "modules": [
@@ -1031,8 +1069,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:33:02.570Z",
-      "pct_5h": 52,
+      "ts": "2026-11-12T06:35:02.501Z",
+      "pct_5h": 53,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
