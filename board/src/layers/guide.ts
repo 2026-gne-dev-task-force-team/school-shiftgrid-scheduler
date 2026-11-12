@@ -20,10 +20,12 @@ const SECTIONS: [string, string[]][] = [
   ['어디까지 가나', ['바퀴 1 Mock data → 바퀴 2 진짜 자료 → 바퀴 3 실시간·알림 → 바퀴 4 앱 위 띠']],
 ]
 
+export const sourceNote = (src: 'mock' | 'server' | undefined) => src === 'server' ? '지금은 진짜 자료(Live data)로 그립니다.' : '지금은 가짜 자료로 그린 Mock data 입니다.'
+
 export const guide: LayerRenderer = {
   id: 'guide', floor: 6, tab: 'Guide',
-  render(host) {
-    host.append(h('p', { class: 'card' }, h('b', null, '지금은 가짜 자료로 그린 Mock data 입니다.')))
+  render(host, { data }) {
+    host.append(h('p', { class: 'card' }, h('b', null, sourceNote(data.source))))
     for (const [title, lines] of SECTIONS) {
       host.append(h('section', { class: 'card' }, h('b', null, title), ...lines.map((l) => h('p', null, l))))
     }
