@@ -586,7 +586,7 @@
     },
     {
       "id": "R1",
-      "title": "「집」이 가장 안 읽힌다 (→ T-7a)",
+      "title": "「집」이 가장 안 읽힌다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -594,14 +594,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R2",
-      "title": "현황판 겉모습을 예쁘게 + 작은 움직임을 곳곳에 (→ T-7d)",
+      "title": "현황판 겉모습을 예쁘게 + 작은 움직임을 곳곳에",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -609,10 +609,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R3",
@@ -627,11 +627,11 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R4",
-      "title": "작업장 탭을 칸반 표가 아니라 2D 도트 RPG 마을처럼 (→ T-7h)",
+      "title": "작업장 탭을 칸반 표가 아니라 2D 도트 RPG 마을처럼",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -639,14 +639,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R5",
-      "title": "맨 위 막대를 처음 보는 사람이 한 번에 읽게 (→ T-7a)",
+      "title": "맨 위 막대를 처음 보는 사람이 한 번에 읽게",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -654,14 +654,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R6",
-      "title": "스프린트를 공항 출발 안내판처럼 (→ T-7f)",
+      "title": "스프린트를 공항 출발 안내판처럼",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -669,14 +669,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R7",
-      "title": "현황판 전체 결 (→ T-7h)",
+      "title": "현황판 전체 결",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -684,14 +684,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R8",
-      "title": "작업장 카드를 오밀조밀하게 (→ T-7b)",
+      "title": "작업장 카드를 오밀조밀하게",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -699,14 +699,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R9",
-      "title": "T-5a 캐릭터 꼴이 틀렸다 (→ T-7c)",
+      "title": "T-5a 캐릭터 꼴이 틀렸다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -714,14 +714,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R10",
-      "title": "현황판 UI 전부 컴팩트하게 (→ T-7b)",
+      "title": "현황판 UI 전부 컴팩트하게",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -729,14 +729,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R11",
-      "title": "작업장만이 아니라 현황판 전체를 2D 도트 RPG 결로 (→ T-7h)",
+      "title": "작업장만이 아니라 현황판 전체를 2D 도트 RPG 결로",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -744,14 +744,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R12",
-      "title": "현황판에 뜨는 세션·에이전트 이름을 뜻이 통하게 다시 짓는다 (→ T-7e)",
+      "title": "현황판에 뜨는 세션·에이전트 이름을 뜻이 통하게 다시 짓는다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -759,14 +759,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R13",
-      "title": "「가지」 탭에 그 가지에서 일하는 클로드를 붙인다 (→ T-7e)",
+      "title": "「가지」 탭에 그 가지에서 일하는 클로드를 붙인다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -774,10 +774,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R14",
@@ -792,71 +792,71 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R15",
-      "title": "현황판 배경을 밝게 (→ T-7b)",
+      "title": "현황판 배경을 밝게",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
       "sprint": 6,
-      "est_min": 0,
-      "started_at": null,
-      "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
-    },
-    {
-      "id": "R16",
-      "title": "지금 배포본에서 움직이는 게 하나도 안 보인다 (→ T-7d)",
-      "category": "지휘",
-      "kind": "work",
-      "team": "지휘",
-      "sprint": 6,
-      "est_min": 0,
-      "started_at": null,
-      "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
-    },
-    {
-      "id": "R17",
-      "title": "개발 용어를 억지 한글로 바꾸지 않는다 (→ T-7a)",
-      "category": "지휘",
-      "kind": "work",
-      "team": "지휘",
-      "sprint": 6,
-      "est_min": 0,
-      "started_at": null,
-      "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
-    },
-    {
-      "id": "R18",
-      "title": "이 올린 요청이 현황판 어디에도 안 뜬다 (→ T-6a)",
-      "category": "지휘",
-      "kind": "work",
-      "team": "지휘",
-      "sprint": 5,
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
+    },
+    {
+      "id": "R16",
+      "title": "지금 배포본에서 움직이는 게 하나도 안 보인다",
+      "category": "지휘",
+      "kind": "work",
+      "team": "지휘",
+      "sprint": 6,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:11:03.073Z"
+    },
+    {
+      "id": "R17",
+      "title": "개발 용어를 억지 한글로 바꾸지 않는다",
+      "category": "지휘",
+      "kind": "work",
+      "team": "지휘",
+      "sprint": 6,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:11:03.073Z"
+    },
+    {
+      "id": "R18",
+      "title": "이 올린 요청이 현황판 어디에도 안 뜬다",
+      "category": "지휘",
+      "kind": "work",
+      "team": "지휘",
+      "sprint": 6,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R19",
-      "title": "탭마다 「이 탭은 무엇을 보여 주나」 한두 줄 설명 (→ T-7a)",
+      "title": "탭마다 「이 탭은 무엇을 보여 주나」 한두 줄 설명",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -864,14 +864,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R20",
-      "title": "#시간표앱 이 붙은 세션은 에이전트를 안 띄워도 캐릭터 하나로 뜬다 (→ T-7e)",
+      "title": "#시간표앱 이 붙은 세션은 에이전트를 안 띄워도 캐릭터 하나로 뜬다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -879,10 +879,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R21",
@@ -897,7 +897,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R22",
@@ -912,7 +912,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R23",
@@ -927,7 +927,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R24",
@@ -942,7 +942,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R25",
@@ -957,7 +957,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     },
     {
       "id": "R26",
@@ -972,7 +972,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:09:02.751Z"
+      "updated_at": "2026-11-12T07:11:03.073Z"
     }
   ],
   "lanes": [
@@ -992,7 +992,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T16:07:18+09:00"
+      "updated_at": "2026-11-12T16:10:24+09:00"
     },
     {
       "id": "b-T-2f",
@@ -1069,10 +1069,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "ok",
+      "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:09:02.134Z"
+      "checked_at": "2026-11-12T07:11:02.279Z"
     },
     {
       "id": "s-sync",
@@ -1080,7 +1080,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:09:02.134Z"
+      "checked_at": "2026-11-12T07:11:02.279Z"
     },
     {
       "id": "s-reporter",
@@ -1088,7 +1088,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:09:02.134Z"
+      "checked_at": "2026-11-12T07:11:02.279Z"
     }
   ],
   "modules": [
@@ -1459,7 +1459,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:09:02.751Z",
+      "ts": "2026-11-12T07:11:03.073Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
