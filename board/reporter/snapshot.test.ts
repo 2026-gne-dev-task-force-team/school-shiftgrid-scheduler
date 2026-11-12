@@ -295,4 +295,11 @@ describe('보고꾼 — 레인 폴더 읽기', () => {
     expect(d.sprints.flatMap((s: { task_ids: string[] }) => s.task_ids)).toEqual(['T-1a', 'T-2a']) // 스프린트엔 안 섞인다
     expect(findDirty(d)).toBeNull()
   })
+
+  it('다른 레인의 🔄 태스크에도 번호로 부르는 캐릭터가 붙는다', () => {
+    const t = mine('가 레인').find((x: { column: string }) => x.column === 'work')
+    const a = d.actors.find((x: { id: string }) => x.id === t.actor_id)
+    expect(a).toMatchObject({ state: 'work', task_id: t.id, branch_id: null })
+    expect(mine('가 레인').filter((x: { actor_id: string | null }) => x.actor_id)).toHaveLength(1) // ⬜ 에는 안 붙는다
+  })
 })
