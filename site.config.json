@@ -10,6 +10,6 @@
   "plugins": [
     "page", "collection", "sheet", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
-    "subjects", "staff", "bell", "duty", "timetable-grid", "ops-check", "ops-sub", "v1-editor"
+    "subjects", "staff", "bell", "duty", "timetable-grid", "ops-check", "ops-sub", "ops-room", "v1-editor"
   ]
 }
