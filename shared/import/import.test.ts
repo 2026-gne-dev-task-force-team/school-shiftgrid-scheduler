@@ -1,3 +1,4 @@
+import { deflateRawSync } from 'node:zlib'
 import * as XLSX from 'xlsx'
 import { describe, expect, it } from 'vitest'
 import { detectKind, readTable } from './index.ts'
@@ -80,11 +81,75 @@ describe('xlsx', () => {
   })
 })
 
-describe('hwp 는 아직 못 읽음', () => {
-  it('판별만 하고 경고', () => {
+// 최소 hwp — OLE(FileHeader + BodyText/Section0..n). 레코드는 규격대로 합성
+const rec = (tag: number, level: number, data: Uint8Array): Uint8Array => {
+  const big = data.length >= 0xfff
+  const out = new Uint8Array((big ? 8 : 4) + data.length)
+  const dv = new DataView(out.buffer)
+  dv.setUint32(0, (tag | (level << 10) | ((big ? 0xfff : data.length) << 20)) >>> 0, true)
+  if (big) dv.setUint32(4, data.length, true)
+  out.set(data, big ? 8 : 4)
+  return out
+}
+const u16s = (...v: number[]) => { const o = new Uint8Array(v.length * 2); const dv = new DataView(o.buffer); v.forEach((x, i) => dv.setUint16(i * 2, x, true)); return o }
+const text = (t: string) => u16s(...Array.from(t, (c) => c.charCodeAt(0)), 13)
+const cat = (...a: Uint8Array[]) => { const o = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let p = 0; for (const x of a) { o.set(x, p); p += x.length } return o }
+const para = (level: number, t: string) => cat(rec(0x42, level, new Uint8Array(22)), rec(0x43, level + 1, text(t)))
+const cellRec = (level: number, col: number, row: number, cs: number, rs: number, paras: string[]) =>
+  cat(rec(0x48, level, cat(u16s(paras.length, 0, 0, 0), u16s(col, row, cs, rs, 0, 0, 0, 0))), ...paras.map((p) => para(level, p)))
+const tblCtrl = (level: number, rows: number, cols: number, ...cells: Uint8Array[]) => {
+  const id = new Uint8Array(4); new DataView(id.buffer).setUint32(0, 0x74626c20, true)
+  return cat(rec(0x47, level, id), rec(0x4d, level + 1, cat(new Uint8Array(4), u16s(rows, cols))), ...cells)
+}
+// 2×2 표 — 첫 줄은 가로 병합 한 칸, 둘째 줄 첫 칸은 문단 둘
+const table2x2 = () => cat(para(0, '본문'), tblCtrl(1, 2, 2,
+  cellRec(2, 0, 0, 2, 1, ['합계']), cellRec(2, 0, 1, 1, 1, ['가', '나']), cellRec(2, 1, 1, 1, 1, ['다'])), para(0, '끝'))
+const hwpBytes = (sections: Uint8Array[], opts: { compress?: boolean; attrs?: number } = {}): Uint8Array => {
+  const cfb = XLSX.CFB.utils.cfb_new()
+  const fh = new Uint8Array(256); fh.set(enc('HWP Document File'))
+  new DataView(fh.buffer).setUint32(36, opts.attrs ?? (opts.compress ? 1 : 0), true)
+  XLSX.CFB.utils.cfb_add(cfb, 'FileHeader', fh)
+  sections.forEach((sec, i) => XLSX.CFB.utils.cfb_add(cfb, `BodyText/Section${i}`, opts.compress ? new Uint8Array(deflateRawSync(sec)) : sec))
+  return new Uint8Array(XLSX.CFB.write(cfb, { type: 'array' }) as ArrayBuffer)
+}
+
+describe('hwp', () => {
+  it('판별 · 비압축 — 병합 펼침 + 칸 안 두 문단', () => {
+    const bytes = hwpBytes([table2x2()])
+    expect(detectKind(bytes, 'a.hwp')).toBe('hwp')
+    const r = readTable(bytes, { name: 'a.hwp' })
+    expect(r.kind).toBe('hwp'); expect(r.warnings).toEqual([])
+    expect(r.rows).toEqual([['합계', '합계'], ['가\n나', '다']])
+    expect(r.sheets).toEqual(['표 1 (2×2)'])
+  })
+  it('압축 판도 같은 값', () => {
+    expect(readTable(hwpBytes([table2x2()], { compress: true })).rows).toEqual([['합계', '합계'], ['가\n나', '다']])
+  })
+  it('표 여럿(구역 둘) — sheet 로 고르기, 못 찾으면 첫 표 + 경고', () => {
+    const t2 = cat(tblCtrl(1, 1, 1, cellRec(2, 0, 0, 1, 1, ['둘째'])))
+    const bytes = hwpBytes([table2x2(), t2])
+    expect(readTable(bytes, { sheet: 1 }).rows).toEqual([['둘째']])
+    const r = readTable(bytes, { sheet: '없음' })
+    expect(r.rows[0]).toEqual(['합계', '합계']); expect(r.warnings.length).toBe(1)
+  })
+  it('중첩 표는 바깥 칸 글자로 합침', () => {
+    const inner = tblCtrl(4, 1, 1, cellRec(5, 0, 0, 1, 1, ['안']))
+    const outer = tblCtrl(1, 1, 2, cat(cellRec(2, 0, 0, 1, 1, ['바깥']).subarray(0), rec(0x47, 3, new Uint8Array(4)), inner), cellRec(2, 1, 0, 1, 1, ['옆']))
+    expect(readTable(hwpBytes([outer])).rows).toEqual([['바깥\n안', '옆']])
+  })
+  it('탭·확장 컨트롤은 8 WCHAR 건너뜀', () => {
+    const t = u16s(65, 2, 0, 0, 0, 0, 0, 0, 0, 66, 9, 0, 0, 0, 0, 0, 0, 0, 67, 13)
+    const bytes = hwpBytes([tblCtrl(1, 1, 1, cat(rec(0x48, 2, cat(u16s(1, 0, 0, 0), u16s(0, 0, 1, 1, 0, 0, 0, 0))), rec(0x42, 2, new Uint8Array(22)), rec(0x43, 3, t)))])
+    expect(readTable(bytes).rows).toEqual([['AB\tC']])
+  })
+  it('표 없는 문서 · 암호 비트 · 깨진 파일은 경고', () => {
+    const none = readTable(hwpBytes([para(0, '본문뿐')]))
+    expect(none.rows).toEqual([]); expect(none.warnings[0]).toContain('표가 없음')
+    const pw = readTable(hwpBytes([table2x2()], { attrs: 2 }))
+    expect(pw.rows).toEqual([]); expect(pw.warnings[0]).toContain('암호')
     const hwp = new Uint8Array(64); hwp.set([0xd0, 0xcf, 0x11, 0xe0])
-    const r = readTable(hwp, { name: 'a.hwp' })
-    expect(r.kind).toBe('hwp'); expect(r.rows).toEqual([]); expect(r.warnings[0]).toContain('P25c')
+    const bad = readTable(hwp, { name: 'a.hwp' })
+    expect(bad.kind).toBe('hwp'); expect(bad.rows).toEqual([]); expect(bad.warnings.length).toBe(1)
   })
 })
 

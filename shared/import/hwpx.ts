@@ -17,8 +17,8 @@ const attr = (a: string, name: string): number | undefined => {
   return m ? Number(m[1]) : undefined
 }
 
-interface Cell { row?: number; col?: number; rowSpan: number; colSpan: number; paras: string[] }
-interface Tbl { cells: Cell[][] }
+export interface Cell { row?: number; col?: number; rowSpan: number; colSpan: number; paras: string[] }
+export interface Tbl { cells: Cell[][] }
 
 /** section XML 한 장에서 표 목록 — 정규식 토크나이저(DOMParser 는 node 시험 환경에 없다). 중첩 표는 바깥 칸 글자로 합친다. */
 export function parseSectionTables(xml: string): string[][][] {
@@ -82,7 +82,7 @@ export function parseSectionTables(xml: string): string[][][] {
 }
 
 /** 칸 배치 — cellAddr 가 있으면 그 자리, 없으면 앞 칸 다음 빈 자리. 병합은 왼쪽 위 값을 범위 전체에 펼친다. */
-function finishTable(t: Tbl): string[][] {
+export function finishTable(t: Tbl): string[][] {
   const grid: string[][] = []
   const taken = new Set<string>()
   t.cells.forEach((cells, ri) => {
@@ -123,6 +123,11 @@ export function readHwpx(bytes: Uint8Array, pick: string | number = 0): HwpxTabl
     if (content) tables.push(...parseSectionTables(new TextDecoder('utf-8').decode(content)))
   }
   if (tables.length === 0) return { rows: [], sheet: '', sheets: [], warnings: ['문서에 표가 없음'] }
+  return pickTable(tables, pick)
+}
+
+/** 표 여럿 중 고르기 — hwpx·hwp 공용. 이름 또는 0부터 번호, 못 찾으면 첫 표 + 경고. */
+export function pickTable(tables: string[][][], pick: string | number = 0): HwpxTable {
   const sheets = tables.map((t, i) => `표 ${i + 1} (${t.length}×${t.reduce((w, r) => Math.max(w, r.length), 0)})`)
   const warnings: string[] = []
   let idx = typeof pick === 'number' ? pick : sheets.indexOf(pick)
