@@ -1,5 +1,4 @@
 import type { BoardEvent, Task } from '../types.ts'
-import { isPlain } from './plain.ts'
 
 export const FEEDBACK_KEY = 'board.feedback' // board. 접두사 → 저장소 비우기가 같이 지운다
 export const MAX_LEN = 200
@@ -10,12 +9,21 @@ export function loadFeedback(s: Store | undefined = globalThis.localStorage): Fe
   try { const v = JSON.parse(s?.getItem(FEEDBACK_KEY) ?? '[]'); return Array.isArray(v) ? v : [] } catch { return [] }
 }
 
+/** 서버 board.feedback.text check 와 같은 규칙(board-schema.sql). 길이는 코드포인트, btrim 은 공백(U+0020)만. */
+export function checkFeedback(text: string): { ok: true; text: string } | { ok: false; reason: string } {
+  const t = text.replace(/^ +| +$/g, '')
+  if (!t) return { ok: false, reason: '내용을 한 줄 적어 주세요.' }
+  if ([...t].length > MAX_LEN) return { ok: false, reason: `${MAX_LEN}자까지 적을 수 있어요.` }
+  if (/[\\@]/.test(t)) return { ok: false, reason: '역슬래시와 @ 는 적을 수 없어요.' }
+  if (/(?<![A-Za-z0-9_])(sk-|eyJ)/i.test(t)) return { ok: false, reason: '열쇠 꼴(sk-, eyJ)은 적을 수 없어요.' }
+  return { ok: true, text: t }
+}
+
 /** 접수. 거절이면 이유 한 줄을 돌려준다. */
 export function addFeedback(text: string, where: string, s: Store | undefined = globalThis.localStorage, now = Date.now()): { ok: true } | { ok: false; reason: string } {
-  const t = text.trim()
-  if (!t) return { ok: false, reason: '내용을 한 줄 적어 주세요.' }
-  if (t.length > MAX_LEN) return { ok: false, reason: `${MAX_LEN}자까지 적을 수 있어요.` }
-  if (!isPlain(t)) return { ok: false, reason: '열쇠·경로·이메일 꼴은 적을 수 없어요.' }
+  const r = checkFeedback(text)
+  if (!r.ok) return r
+  const t = r.text
   if (!s) return { ok: false, reason: '이 기기에 저장할 수 없어요.' }
   const all = loadFeedback(s)
   all.push({ id: `fb${now}`, text: t, where, ts: new Date(now).toISOString() })

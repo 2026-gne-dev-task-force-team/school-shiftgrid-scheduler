@@ -22,11 +22,15 @@ describe('불편 접수', () => {
   })
   it('담백하지 않은 글 · 빈 글 · 200자 초과는 이유와 함께 거절', () => {
     const s = store()
-    for (const bad of ['sk-abc123', 'C:/x', 'me@korea.kr', '  ', 'a'.repeat(MAX_LEN + 1)]) {
+    for (const bad of ['키 sk-abc', 'SK-abc', 'eyJhbGci', 'a@b.kr', 'C:\\x', '  ', '', 'a'.repeat(MAX_LEN + 1)]) {
       const r = addFeedback(bad, '막대', s)
       expect(r.ok).toBe(false)
     }
     expect(s.m.size).toBe(0)
+  })
+  it('서버 규칙과 같게 허용', () => {
+    const s = store()
+    for (const ok of ['3/4교시 칸이 좁아요', 'task-board 정리', 'a'.repeat(MAX_LEN)]) expect(addFeedback(ok, '막대', s).ok).toBe(true)
   })
   it('저장소 비우기 뒤 사라진다', () => {
     const s = store()
