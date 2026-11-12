@@ -1,6 +1,6 @@
 // 이 PC 에서 돈다: 스냅숏 생성 → 담백 검사 → 고아 가지 board-data 작업 폴더에 snapshot.json · apply.mjs · sync.yml 을 쓰고
 // 바뀐 게 있을 때만 커밋 + push. push 되면 sync.yml(Actions)이 Supabase 에 싣는다.
-// node board/reporter/publish.mjs [--dry] [--dir <작업 폴더>] [--lane <노트>] [--usage <json>]
+// node board/reporter/publish.mjs [--dry] [--dir <작업 폴더>] [--lane <노트>] [--requests <요청함 노트>] [--usage <json>]
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -20,6 +20,7 @@ const tryGit = (cwd, ...a) => { try { return execFileSync('git', ['-C', cwd, ...
 // 1. 스냅숏 + 최종 담백 검사
 const snap = build({
   lanePath: arg('--lane', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/작업현황판/레인 작업현황판.md'),
+  requestPath: arg('--requests', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/요청함/레인 요청함.md'),
   repoDir,
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
   gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),

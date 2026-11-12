@@ -89,6 +89,32 @@ export function parseLane(md) {
   return { sprints, log }
 }
 
+/** 요청함 노트 → R 줄(번호·처방·상태 칸). 쥔님 원문 칸은 읽지도 않는다. 칸 순서: # · 시각 · 원문 · 처방 · 종류 · 상태. */
+export function parseRequests(md) {
+  const rows = []
+  for (const line of (md ?? '').split(/\r?\n/)) {
+    const c = line.startsWith('|') ? cells(line) : null
+    if (c && c.length >= 6 && /^R\d+$/.test(c[0])) rows.push({ id: c[0], what: c[3], state: c[5] })
+  }
+  return rows
+}
+
+/** 처방 칸 → 제목: 굵은 글이 있으면 그것, 없으면 첫 마디. 40자 넘으면 말줄임. 걸러져 비면 「요청 R번호」. */
+export function requestTitle(what, id) {
+  const bold = /\*\*([^*]+)\*\*/.exec(what)
+  const t = publicTitle((bold ? bold[1] : what).replace(/\p{Extended_Pictographic}/gu, '').replace(/️/g, ''))
+  return t ? (t.length >= 40 ? `${t.slice(0, 39)}…` : t) : `요청 ${id}`
+}
+
+/** 상태 칸 → 칸. 「→ T-…」 는 그 태스크(지휘 표에 있으면 그 상태, 없으면 진행)를 따른다. */
+export function requestColumn(state, byId) {
+  const link = /→[^|]*?(T-\d+[a-z]+)/.exec(state)
+  if (link) { const t = byId.get(link[1]); return { link: link[1], sprint: t?.sprint, col: t ? { column: t.column, reason: t.reason } : { column: 'work', reason: 'new' } } }
+  if (/^\s*✅/.test(state)) return { col: { column: 'done', reason: 'done' } }
+  if (/^\s*🔨/.test(state)) return { col: { column: 'work', reason: 'new' } }
+  return { col: { column: 'wait', reason: 'new' } } // 📥 대기 · 그 밖
+}
+
 function gitBranches(repoDir) {
   if (!repoDir || !existsSync(repoDir)) return []
   const git = (...a) => execFileSync('git', ['-C', repoDir, ...a], { encoding: 'utf-8' }).trim()
@@ -186,7 +212,7 @@ const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175,
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date(), md, services = [], onDrop = () => {} }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, now = new Date(), md, services = [], onDrop = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -273,8 +299,17 @@ export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date()
     if (l === lastPin) add('goal.progress', 'actor', lead.id, '방향 바뀜', '📌')
   }
 
+  // 요청함 R 줄 → 카드. 지휘 일감·스프린트 진행률 셈이 끝난 뒤에 붙인다(그 셈에 안 섞인다). id 는 R번호라 T 태스크와 안 겹친다.
+  const rmd = requestMd ?? (requestPath && existsSync(requestPath) ? readFileSync(requestPath, 'utf-8') : '')
+  const reqTasks = parseRequests(rmd).map((r) => {
+    const { col, link, sprint } = requestColumn(r.state, byId)
+    const title = requestTitle(r.what, r.id)
+    return { id: r.id, title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: 'work', team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
+      est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso }
+  })
+
   const data = {
-    actors, tasks, lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }], branches,
+    actors, tasks: [...tasks, ...reqTasks], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }], branches,
     services, modules: readModules(),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
   }
