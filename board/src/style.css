@@ -3,36 +3,43 @@
   color-scheme: light;
   --bg: #e6f0f7; --s1: #faf6ec; --s2: #fffdf7; --s3: #efe5cf; --line: #d5c8aa; --line-2: #b3a483;
   --fg: #1b2530; --fg-2: #404c5a; --fg-3: #52606f;
-  --neon: #0e7c72; --neon-2: #0a6158; --neon-soft: rgb(14 124 114 / .12); --warn: #865700; --bad: #b3202d;
+  --neon: #0e7c72; --neon-2: #0a6158; --neon-soft: rgb(var(--neon-rgb) / .12); --warn: #865700; --bad: #b3202d;
   --hq: #8a6200; --make: #0b7468; --qa: #6a43b0;
+  /* 어두운 벌과 짝으로 바뀌는 값 — 하드코딩 색은 전부 여기로 모았다 */
+  --edge: #2b2418; --edge-rgb: 43 36 24; --sh-rgb: 60 45 20; --neon-rgb: 14 124 114; --warn-rgb: 134 87 0; --bad-rgb: 179 32 45;
+  --bar-bg: rgb(250 246 236 / .94); --scrim: rgb(40 50 60 / .35); --gg-bg: rgb(255 253 247 / .85); --upd-bg: rgb(242 193 78 / .25);
+  --blocked-bg: #fbe9ea; --breathe: #c4b48e; --flash: #cdeee9; --scaffold: #f0dfa8;
+  --floor: #e3c28f; --floor-rgb: 120 80 30; --floor-edge: #5a4630; --floor-edge-rgb: 90 70 48; --wall: #7a6a8a;
+  --chip-s: 70%; --chip-l: 90%; --chip-l-hover: 85%; --chip-bd-l: 42%; --chip-bd-l-hover: 38%; --gg-fg-l: 30%; --gg-ring-l: 38%; --branch-l: 40%;
   --sp1: 3px; --sp2: 6px; --sp3: 9px; --sp4: 12px;
   --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px;
   --r1: 5px; --r2: 8px; --r3: 12px;
-  --sh1: 0 1px 2px rgb(60 45 20 / .15);
-  --sh2: 0 4px 12px -8px rgb(60 45 20 / .35);
-  --sh3: 0 20px 40px -16px rgb(60 45 20 / .4), 0 2px 6px rgb(60 45 20 / .2);
+  --sh1: 0 1px 2px rgb(var(--sh-rgb) / .15);
+  --sh2: 0 4px 12px -8px rgb(var(--sh-rgb) / .35);
+  --sh3: 0 20px 40px -16px rgb(var(--sh-rgb) / .4), 0 2px 6px rgb(var(--sh-rgb) / .2);
   --ease: cubic-bezier(.2, .7, .2, 1);
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   --z: 2147483000; height: 28px; color: var(--fg); font: var(--fs-md)/1.45 var(--font); letter-spacing: -.005em; word-break: keep-all; overflow-wrap: break-word; -webkit-font-smoothing: antialiased;
   * { box-sizing: border-box }
   :focus-visible { outline: 2px solid var(--neon); outline-offset: 2px }
   b, h3 { font-weight: 650 }
-  .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; overflow: hidden; white-space: nowrap; background: rgb(250 246 236 / .94); backdrop-filter: blur(10px) saturate(1.2); color: var(--fg); border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 rgb(14 124 114 / .25); font: 500 var(--fs-sm)/1 var(--font) }
+  .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; overflow: hidden; white-space: nowrap; background: var(--bar-bg); backdrop-filter: blur(10px) saturate(1.2); color: var(--fg); border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 rgb(var(--neon-rgb) / .25); font: 500 var(--fs-sm)/1 var(--font) }
   .sgb-bar .sgb-toggle { flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; height: 100%; cursor: pointer }
   .sgb-bar .chip { min-height: 20px; padding: 0 7px; flex: none; font-size: var(--fs-xs) }
   .sgb-bar .sgb-name, .sgb-bar .band-clock { overflow: hidden; text-overflow: ellipsis; min-width: 0 }
   .sgb-bar .sgb-name { font-weight: 600 }
   .sgb-bar .band-clock { flex: 0 5 auto; color: var(--fg-2); font-variant-numeric: tabular-nums }
   .sgb-bar .chip.src { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 20px }
-  .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: #2b2418 }
+  .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: var(--edge) }
   .sgb-gauge i { width: 5px; height: 10px; background: var(--s3) } .sgb-gauge i.on { background: var(--neon) }
   .sgb-bar .sgb-pct { color: var(--neon-2); font-weight: 700; flex: none; font-variant-numeric: tabular-nums }
   .sgb-mini { min-height: 22px; height: 22px; padding: 0 8px; flex: none; font-size: var(--fs-xs); border-radius: var(--r1) }
   .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
   .sgb-menuhost .menu { position: fixed; top: 31px; right: 6px; z-index: calc(var(--z) + 3); max-width: calc(100vw - 12px) }
+  .menu-theme { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--fg-2) } .menu-theme .btn { min-height: 26px; padding: 0 8px }
   .menu-ask { display: flex; flex-wrap: wrap; gap: 6px; max-width: 260px; font-size: var(--fs-sm); color: var(--fg-2) }
-  .sgb-scrim { position: fixed; inset: 0; z-index: var(--z); background: rgb(40 50 60 / .35); backdrop-filter: blur(2px); border: 0; padding: 0 }
-  .sgb-drawer { position: fixed; top: 28px; left: 0; right: 0; z-index: calc(var(--z) + 1); height: calc(85dvh - 28px); overflow: hidden; background: radial-gradient(1200px 400px at 20% -10%, rgb(14 124 114 / .08), transparent 60%), var(--bg); border-bottom: 1px solid rgb(14 124 114 / .45); border-radius: 0 0 var(--r3) var(--r3); box-shadow: var(--sh3); transform: translateY(calc(-100% - 28px)); visibility: hidden; transition: transform .32s var(--ease), visibility 0s .32s }
+  .sgb-scrim { position: fixed; inset: 0; z-index: var(--z); background: var(--scrim); backdrop-filter: blur(2px); border: 0; padding: 0 }
+  .sgb-drawer { position: fixed; top: 28px; left: 0; right: 0; z-index: calc(var(--z) + 1); height: calc(85dvh - 28px); overflow: hidden; background: radial-gradient(1200px 400px at 20% -10%, rgb(var(--neon-rgb) / .08), transparent 60%), var(--bg); border-bottom: 1px solid rgb(var(--neon-rgb) / .45); border-radius: 0 0 var(--r3) var(--r3); box-shadow: var(--sh3); transform: translateY(calc(-100% - 28px)); visibility: hidden; transition: transform .32s var(--ease), visibility 0s .32s }
   .sgb-drawer.open { transform: none; visibility: visible; transition: transform .4s cubic-bezier(.34, 1.4, .64, 1) } /* 살짝 튕김 */
   .sgb-scroll { height: 100%; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent }
   .sgb-page { display: flex; flex-direction: column; min-height: 100%; padding-bottom: env(safe-area-inset-bottom) }
@@ -41,31 +48,31 @@
 .btn { min-height: 30px; min-width: 30px; padding: 0 10px; background: var(--s2); color: var(--fg); border: 1px solid var(--line); border-radius: var(--r2); box-shadow: var(--sh1); cursor: pointer; font: inherit; font-weight: 500; transition: background .15s, border-color .15s, color .15s }
 .btn:hover { background: var(--s3); border-color: var(--line-2) }
 .btn:active { transform: translateY(1px) }
-.btn.on { background: var(--neon-soft); border-color: rgb(14 124 114 / .6); color: var(--neon-2); box-shadow: 0 0 0 1px rgb(14 124 114 / .15), var(--sh1) }
-.chip { --hue: 200; display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid hsl(var(--hue) 45% 42% / .6); background: hsl(var(--hue) 70% 90% / .8); color: var(--fg); font: inherit; font-weight: 500; transition: background .15s, border-color .15s, transform .15s var(--ease) }
+.btn.on { background: var(--neon-soft); border-color: rgb(var(--neon-rgb) / .6); color: var(--neon-2); box-shadow: 0 0 0 1px rgb(var(--neon-rgb) / .15), var(--sh1) }
+.chip { --hue: 200; display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 8px; border-radius: 999px; border: 1px solid hsl(var(--hue) 45% var(--chip-bd-l) / .6); background: hsl(var(--hue) var(--chip-s) var(--chip-l) / .8); color: var(--fg); font: inherit; font-weight: 500; transition: background .15s, border-color .15s, transform .15s var(--ease) }
 button.chip { min-height: 30px; padding: 0 10px 0 6px; cursor: pointer }
-button.chip:hover { background: hsl(var(--hue) 70% 85%); border-color: hsl(var(--hue) 55% 38% / .8); transform: translateY(-1px) }
+button.chip:hover { background: hsl(var(--hue) var(--chip-s) var(--chip-l-hover)); border-color: hsl(var(--hue) 55% var(--chip-bd-l-hover) / .8); transform: translateY(-1px) }
 
-.upd { border-color: rgb(134 87 0 / .6); color: var(--warn); background: rgb(242 193 78 / .25) }
+.upd { border-color: rgb(var(--warn-rgb) / .6); color: var(--warn); background: var(--upd-bg) }
 .menu { position: absolute; right: 12px; top: 100%; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: var(--sp2); background: var(--s1); border: 1px solid var(--line-2); border-radius: var(--r3); box-shadow: var(--sh3) }
 .menu .btn { justify-content: flex-start; text-align: left; display: flex; align-items: center; gap: 6px; box-shadow: none }
 .band-drop { padding: var(--sp3) var(--sp4) 0 }
 [hidden] { display: none !important }
 
-.tabs { display: flex; gap: var(--sp1); margin: var(--sp3) var(--sp4) 0; padding: var(--sp2) var(--sp3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; background: var(--s1); border: 2px solid #2b2418; border-radius: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(43 36 24 / .35) }
+.tabs { display: flex; gap: var(--sp1); margin: var(--sp3) var(--sp4) 0; padding: var(--sp2) var(--sp3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; background: var(--s1); border: 2px solid var(--edge); border-radius: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(var(--edge-rgb) / .35) }
 .tn, .tabs .btn.on::before { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace }
 .tabs .btn.on::before { content: "▶"; margin-right: 4px; color: var(--neon-2); animation: sgb-cursor 1s steps(1) infinite }
 .tabs .btn { scroll-snap-align: start; white-space: nowrap; background: transparent; border-color: transparent; box-shadow: none; color: var(--fg-2) }
 .tabs .btn:hover { background: var(--s2); color: var(--fg) }
-.tabs .btn.on { background: var(--neon-soft); border-color: rgb(14 124 114 / .45); color: var(--neon-2) }
+.tabs .btn.on { background: var(--neon-soft); border-color: rgb(var(--neon-rgb) / .45); color: var(--neon-2) }
 /* 폰: 줄바꿈 허용 · 패딩 축소 — 글자가 버튼 밖으로 넘치지 않게(360px 에서 7개 모두 넘쳤다) */
 @media (max-width: 767px) { .tabs { flex-wrap: wrap; overflow-x: visible; gap: 4px; padding: 8px } .tabs .btn { flex: 0 1 auto; width: auto; max-width: 100%; padding: 4px 8px; white-space: normal; word-break: keep-all; line-height: 1.2; height: auto } }
 .stage-host { display: contents }
-.tab-desc { margin: 0; min-height: 2.4em; padding: var(--sp2) var(--sp3); font-size: var(--fs-sm); color: var(--fg); text-wrap: pretty; background: var(--s2); border: 2px solid #2b2418; box-shadow: inset 0 0 0 2px var(--s3) }
+.tab-desc { margin: 0; min-height: 2.4em; padding: var(--sp2) var(--sp3); font-size: var(--fs-sm); color: var(--fg); text-wrap: pretty; background: var(--s2); border: 2px solid var(--edge); box-shadow: inset 0 0 0 2px var(--s3) }
 
 .body { flex: 1; display: grid; grid-template-columns: 220px 1fr 280px; gap: var(--sp4); padding: var(--sp4); min-height: 0 }
 .body:has(> .detail[hidden]) { grid-template-columns: 220px 1fr } /* 상세가 닫혀 있으면 빈 300px 칸을 무대에 돌려준다 */
-.feed, .stage, .detail { background: var(--s1); border: 2px solid #2b2418; border-radius: 0; padding: var(--sp3); min-width: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(43 36 24 / .3) }
+.feed, .stage, .detail { background: var(--s1); border: 2px solid var(--edge); border-radius: 0; padding: var(--sp3); min-width: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(var(--edge-rgb) / .3) }
 .feed-list, .recent { list-style: none; margin: 0; padding: 0 }
 .feed-list { display: flex; flex-direction: column; gap: 1px; margin-top: var(--sp2) }
 .feed-line { text-wrap: pretty; word-break: keep-all;display: flex; align-items: center; width: 100%; min-height: 28px; padding: 3px 6px; text-align: left; background: none; border: 0; border-radius: var(--r2); color: var(--fg); font: inherit; font-size: var(--fs-sm); line-height: 1.35; cursor: pointer; transition: background .15s }
@@ -85,15 +92,15 @@ button.chip:hover { background: hsl(var(--hue) 70% 85%); border-color: hsl(var(-
 .gg-in { position: relative }
 .gg-in canvas { position: absolute; inset: 0 }
 .gg-l, .gg-chip { position: absolute; white-space: nowrap; line-height: 20px }
-.gg-l { --hue: 200; padding: 2px 8px; border: 0; border-radius: var(--r1); background: rgb(255 253 247 / .85); color: hsl(var(--hue) 70% 30%); font: 600 12px var(--font) }
-button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%) } /* 보이는 크기는 그대로, 누르는 영역만 44px */ button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% 38%) }
+.gg-l { --hue: 200; padding: 2px 8px; border: 0; border-radius: var(--r1); background: var(--gg-bg); color: hsl(var(--hue) 70% var(--gg-fg-l)); font: 600 12px var(--font) }
+button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%) } /* 보이는 크기는 그대로, 누르는 영역만 44px */ button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% var(--gg-ring-l)) }
 .gg-trunk { color: var(--neon) }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp2); margin-top: var(--sp2) }
 .row .dept { min-width: 68px; font-size: var(--fs-sm); font-weight: 600 }
 .row[data-dept=hq] .dept { color: var(--hq) } .row[data-dept=make] .dept { color: var(--make) } .row[data-dept=qa] .dept { color: var(--qa) }
 .usage { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp3) }
 .meter { margin-top: var(--sp3) } .meter > span { font-weight: 600; font-variant-numeric: tabular-nums } .meter small, .card small { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--fg-3) }
-.bar { height: 6px; margin-top: 4px; background: var(--bg); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgb(60 45 20 / .25) }
+.bar { height: 6px; margin-top: 4px; background: var(--bg); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgb(var(--sh-rgb) / .25) }
 .bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--make), var(--neon-2)); transition: width .6s var(--ease); animation: sgb-fill .7s var(--ease) backwards .1s }
 .ph { margin: auto; text-align: center; color: var(--fg-3) }
 .detail-head { display: flex; justify-content: flex-end; gap: 6px }
@@ -118,13 +125,13 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
   .stage { flex: 1; padding: var(--sp2); border-radius: var(--r2) }
   .card { padding: var(--sp3) }
-  .feed { order: 3; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-height: 52px; padding: var(--sp1) var(--sp2); overflow: hidden; border-radius: var(--r3) var(--r3) 0 0; background: var(--s1); box-shadow: 0 -8px 24px -8px rgb(60 45 20 / .35) }
+  .feed { order: 3; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-height: 52px; padding: var(--sp1) var(--sp2); overflow: hidden; border-radius: var(--r3) var(--r3) 0 0; background: var(--s1); box-shadow: 0 -8px 24px -8px rgb(var(--sh-rgb) / .35) }
   .feed.open { max-height: 55dvh; overflow: auto }
   .feed-list { margin-top: 0 }
   .feed-toggle { display: inline-block }
   .feed-list li:not(:first-child) { display: none } .feed.open .feed-list li { display: block }
   .feed-head b { display: none } .feed-head { position: absolute; right: 4px; top: 2px }
-  .detail[data-layout=sheet] { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 45dvh; overflow: auto; border-radius: var(--r3) var(--r3) 0 0; background: var(--s1); box-shadow: 0 -12px 32px -8px rgb(60 45 20 / .4) }
+  .detail[data-layout=sheet] { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 45dvh; overflow: auto; border-radius: var(--r3) var(--r3) 0 0; background: var(--s1); box-shadow: 0 -12px 32px -8px rgb(var(--sh-rgb) / .4) }
   .detail[data-layout=sheet].full { height: 92dvh }
 }
 
@@ -159,18 +166,18 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 /* 3층 레인 */
 .lanes { display: flex; flex-direction: column; gap: var(--sp3) }
 .lane { border: 1px solid var(--line); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) }
-.lane[data-state=blocked] { background: #fbe9ea; border-color: rgb(179 32 45 / .6) }
+.lane[data-state=blocked] { background: var(--blocked-bg); border-color: rgb(var(--bad-rgb) / .6) }
 .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
-.lane-track { position: relative; height: 44px; margin-top: var(--sp2); border-radius: 22px; background: linear-gradient(90deg, var(--s3), var(--s1)); box-shadow: inset 0 1px 3px rgb(60 45 20 / .25) }
-.ball { position: absolute; left: 0; top: 2px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(14 124 114 / .7); background: var(--bg); color: var(--fg); box-shadow: var(--sh1); cursor: pointer; animation: sgb-roll 27s linear infinite }
+.lane-track { position: relative; height: 44px; margin-top: var(--sp2); border-radius: 22px; background: linear-gradient(90deg, var(--s3), var(--s1)); box-shadow: inset 0 1px 3px rgb(var(--sh-rgb) / .25) }
+.ball { position: absolute; left: 0; top: 2px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(var(--neon-rgb) / .7); background: var(--bg); color: var(--fg); box-shadow: var(--sh1); cursor: pointer; animation: sgb-roll 27s linear infinite }
 
 /* 4층 작업장 */
-.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-items: stretch; border: 3px solid #5a4630; border-top: 22px solid #7a6a8a; border-radius: var(--r1); overflow: hidden; background-color: #e3c28f; background-image: linear-gradient(90deg, rgb(120 80 30 / .18) 2px, transparent 2px), linear-gradient(rgb(120 80 30 / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
-.ws-col { position: relative; padding: var(--sp1) var(--sp2) var(--sp2); min-height: 220px; border-right: 2px dashed rgb(90 70 48 / .35) }
+.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-items: stretch; border: 3px solid var(--floor-edge); border-top: 22px solid var(--wall); border-radius: var(--r1); overflow: hidden; background-color: var(--floor); background-image: linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px), linear-gradient(rgb(var(--floor-rgb) / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
+.ws-col { position: relative; padding: var(--sp1) var(--sp2) var(--sp2); min-height: 220px; border-right: 2px dashed rgb(var(--floor-edge-rgb) / .35) }
 .ws-col:last-child { border-right: 0 }
 .ws-head small { font-weight: 400; opacity: .7 }
 .ws-furn { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
-.ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid #5a4630; border-radius: var(--r1); background: #e3c28f linear-gradient(90deg, rgb(120 80 30 / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
+.ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid var(--floor-edge); border-radius: var(--r1); background: var(--floor) linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
 .ws-dorm { display: flex; justify-content: flex-end; align-items: center; gap: var(--sp2); margin-top: 4px; padding: 2px 8px; border: 2px dashed var(--fg-3); border-radius: var(--r1); opacity: .75 }
 .ws-dorm b { font-size: 11px; color: var(--fg-2); margin-right: auto }
@@ -187,12 +194,12 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-card:hover { transform: translateY(-1px); border-color: var(--line-2) }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
 .ws-card.flash { outline: 3px solid var(--neon); animation: sgb-ws-flash .4s ease-in-out 5 alternate } /* 움직임 끄기(.calm)면 animation 만 꺼져 테두리만 남는다 */
-.ws-more { min-height: 26px; padding: 0 6px; font: inherit; font-size: var(--fs-sm); font-weight: 650; color: var(--neon-2); background: var(--s2); border: 2px solid #2b2418; border-radius: 0; cursor: pointer }
+.ws-more { min-height: 26px; padding: 0 6px; font: inherit; font-size: var(--fs-sm); font-weight: 650; color: var(--neon-2); background: var(--s2); border: 2px solid var(--edge); border-radius: 0; cursor: pointer }
 .ws-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--make) }
 .ws-dot[data-s=blocked] { background: var(--bad) } .ws-dot[data-s=over] { background: var(--warn) } .ws-dot[data-s=done] { background: var(--fg-3) }
 @media (max-width: 767px) {
   .ws { display: flex; flex-direction: column }
-  .ws-col { min-height: 0; border-right: 0; border-bottom: 2px dashed rgb(90 70 48 / .35) }
+  .ws-col { min-height: 0; border-right: 0; border-bottom: 2px dashed rgb(var(--floor-edge-rgb) / .35) }
   .ws-furn { max-width: 120px; margin: 0 0 var(--sp1) }
   .ws-card, .ws-more { min-height: 44px }
   .ws-head { min-height: 36px; align-items: center }
@@ -200,11 +207,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .bp-bar { display: flex; align-items: center; gap: var(--sp2); margin-bottom: var(--sp2) }
 .bp-view { overflow: auto; touch-action: pan-x pan-y; max-height: 60vh }
 .bp-canvas { transform-origin: 0 0; display: flex; flex-wrap: wrap; gap: var(--sp4); width: max-content; max-width: 100% }
-.bp-house { border: 1px solid rgb(14 124 114 / .55); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) } .bp-house header { font-weight: 650; margin-bottom: var(--sp2) }
+.bp-house { border: 1px solid rgb(var(--neon-rgb) / .55); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) } .bp-house header { font-weight: 650; margin-bottom: var(--sp2) }
 .bp-rooms { display: flex; flex-wrap: wrap; gap: var(--sp2) }
-.bp-room { min-height: 30px; min-width: 76px; padding: 0 9px; color: var(--fg); font: inherit; background: var(--s3); border-radius: var(--r1); cursor: pointer; border: 1px solid rgb(14 124 114 / .7) }
+.bp-room { min-height: 30px; min-width: 76px; padding: 0 9px; color: var(--fg); font: inherit; background: var(--s3); border-radius: var(--r1); cursor: pointer; border: 1px solid rgb(var(--neon-rgb) / .7) }
 .bp-room.ghost { border-style: dashed; opacity: .5 }
-.bp-room.scaffold { border-color: var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, #f0dfa8 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
+.bp-room.scaffold { border-color: var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, var(--scaffold) 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
 &.calm .bp-room.scaffold { animation: none }
 /* 불편 접수 칸 — 어두운 배경에서 입력칸·select 가 보이게 테두리·배경·글자색을 준다 */
   .detail-body label { display: block; margin: var(--sp3) 0 4px; font-size: var(--fs-sm); color: var(--fg-2) }
@@ -214,7 +221,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .detail-body [role=alert] { color: var(--bad); font-weight: 600 }
   .detail-body option { background: var(--s2); color: var(--fg) }
   /* 캐릭터 — 일함=다리 두 프레임 걷기+깜빡 · 막힘=고개 갸웃 · 쉼=눈 반쯤(그림 자체). 움직임 끄기는 위 calm·reduced-motion 규칙이 멈춘다 */
-  .chr { flex: none; display: inline-block; vertical-align: middle; overflow: visible; filter: drop-shadow(0 1px 1px rgb(60 45 20 / .3)) }
+  .chr { flex: none; display: inline-block; vertical-align: middle; overflow: visible; filter: drop-shadow(0 1px 1px rgb(var(--sh-rgb) / .3)) }
   .chr .chr-b { transform-box: view-box; transform-origin: 7px 10px }
   .chr[data-state=work] .chr-l1 { animation: sgb-chr-step .5s steps(1) infinite }
   .chr[data-state=work] .chr-l2 { animation: sgb-chr-step .5s steps(1) infinite reverse }
@@ -234,10 +241,10 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @keyframes sgb-flt { from { transform: rotateX(90deg) } }
 @keyframes sgb-flb { from { transform: rotateX(-90deg) } }
 @keyframes sgb-fill { from { width: 0 } }
-@keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(14 124 114 / .35); background: rgb(14 124 114 / .14) } }
-@keyframes sgb-breathe { to { border-color: #c4b48e } }
+@keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(var(--neon-rgb) / .35); background: rgb(var(--neon-rgb) / .14) } }
+@keyframes sgb-breathe { to { border-color: var(--breathe) } }
 @keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 40px) } }
-@keyframes sgb-ws-flash { to { background: #cdeee9 } }
+@keyframes sgb-ws-flash { to { background: var(--flash) } }
 @keyframes sgb-bp-blink { 50% { opacity: .55 } }
 @keyframes sgb-chr-z { 50% { transform: translateY(-1px); opacity: .55 } }
 @keyframes sgb-chr-step { 50% { transform: translateY(-1px) } }
@@ -247,4 +254,32 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @media (max-width: 767px) {
   .sgb .btn, .sgb button.chip, .sgb .feed-line, .sgb .bp-room, .sgb .detail-body input[type=text], .sgb .detail-body select, .sgb .card select, .sgb .tabs .btn { min-height: 44px }
   .sgb .btn, .sgb button.chip { min-width: 44px }
+}
+
+/* 어두운 벌 — 변수만 바꾼다. 도트 캐릭터 몸통(산호색)은 SVG 안 색이라 그대로. data-theme: light | dark | auto(기기 따라) */
+.sgb[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f151c; --s1: #161e28; --s2: #1c2733; --s3: #263443; --line: #314051; --line-2: #4d5f74;
+  --fg: #e8eef4; --fg-2: #c0ccd8; --fg-3: #a2b0be;
+  --neon: #3fd0c2; --neon-2: #62e2d5; --warn: #e6b04a; --bad: #ff8590;
+  --hq: #e6b04a; --make: #3fd0c2; --qa: #b9a0f5;
+  --edge: #05080c; --edge-rgb: 0 0 0; --sh-rgb: 0 0 0; --neon-rgb: 63 208 194; --warn-rgb: 230 176 74; --bad-rgb: 255 133 144;
+  --bar-bg: rgb(22 30 40 / .94); --scrim: rgb(0 0 0 / .55); --gg-bg: rgb(28 39 51 / .9); --upd-bg: rgb(230 176 74 / .18);
+  --blocked-bg: #3a1d22; --breathe: #3d5066; --flash: #1f4a47; --scaffold: #4a3f1c;
+  --floor: #3a2f25; --floor-rgb: 0 0 0; --floor-edge: #1c1610; --floor-edge-rgb: 0 0 0; --wall: #4a4260;
+  --chip-s: 45%; --chip-l: 22%; --chip-l-hover: 28%; --chip-bd-l: 62%; --chip-bd-l-hover: 70%; --gg-fg-l: 78%; --gg-ring-l: 70%; --branch-l: 62%;
+}
+@media (prefers-color-scheme: dark) {
+  .sgb[data-theme="auto"] {
+    color-scheme: dark;
+    --bg: #0f151c; --s1: #161e28; --s2: #1c2733; --s3: #263443; --line: #314051; --line-2: #4d5f74;
+    --fg: #e8eef4; --fg-2: #c0ccd8; --fg-3: #a2b0be;
+    --neon: #3fd0c2; --neon-2: #62e2d5; --warn: #e6b04a; --bad: #ff8590;
+    --hq: #e6b04a; --make: #3fd0c2; --qa: #b9a0f5;
+    --edge: #05080c; --edge-rgb: 0 0 0; --sh-rgb: 0 0 0; --neon-rgb: 63 208 194; --warn-rgb: 230 176 74; --bad-rgb: 255 133 144;
+    --bar-bg: rgb(22 30 40 / .94); --scrim: rgb(0 0 0 / .55); --gg-bg: rgb(28 39 51 / .9); --upd-bg: rgb(230 176 74 / .18);
+    --blocked-bg: #3a1d22; --breathe: #3d5066; --flash: #1f4a47; --scaffold: #4a3f1c;
+    --floor: #3a2f25; --floor-rgb: 0 0 0; --floor-edge: #1c1610; --floor-edge-rgb: 0 0 0; --wall: #4a4260;
+    --chip-s: 45%; --chip-l: 22%; --chip-l-hover: 28%; --chip-bd-l: 62%; --chip-bd-l-hover: 70%; --gg-fg-l: 78%; --gg-ring-l: 70%; --branch-l: 62%;
+  }
 }

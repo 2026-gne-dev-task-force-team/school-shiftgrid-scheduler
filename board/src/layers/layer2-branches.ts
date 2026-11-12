@@ -67,7 +67,7 @@ export const layer2: LayerRenderer = {
       }
 
       for (const s of spans) {
-        const b = by.get(s.id)!, yl = y(lane.get(s.id)!), col = `hsl(${hueOf(b)} 70% 40%)`
+        const b = by.get(s.id)!, yl = y(lane.get(s.id)!), col = `hsl(${hueOf(b)} 70% ${v('--branch-l', '40%')})`
         const fx = x(s.from), mid = fx + cw / 2, head = Math.max(x(s.to), mid)
         g.strokeStyle = col; g.lineWidth = 3
         g.beginPath(); g.moveTo(fx, y0); g.bezierCurveTo(fx + cw * 0.3, y0, mid - cw * 0.2, yl, mid, yl)
@@ -93,7 +93,11 @@ export const layer2: LayerRenderer = {
     }
 
     const ro = new ResizeObserver(draw); ro.observe(box)
+    // 화면 밝기가 바뀌면(스위치 · 기기 설정) canvas 색을 새 변수값으로 다시 그린다
+    const root = box.closest('.sgb'), mq = matchMedia('(prefers-color-scheme: dark)'), mo = new MutationObserver(draw)
+    if (root) mo.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
+    mq.addEventListener('change', draw)
     draw()
-    return () => ro.disconnect()
+    return () => { ro.disconnect(); mo.disconnect(); mq.removeEventListener('change', draw) }
   },
 }

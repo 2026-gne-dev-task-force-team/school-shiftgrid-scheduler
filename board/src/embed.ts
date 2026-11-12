@@ -7,6 +7,7 @@ import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
 import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
 import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
+import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
 import { fetchRemote, type Remote } from './lib/remote.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
@@ -40,6 +41,8 @@ function render(notice = false): void {
   const data = loadData(Date.now(), remote)
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
+  const theme = loadTheme(localStorage)
+  root!.dataset.theme = theme // CSS 가 light·dark·auto(@media 로 기기 따라)를 가른다
 
   const stage = createStage()
   const detail = createDetail()
@@ -49,6 +52,8 @@ function render(notice = false): void {
 
   const bnd = band = createBand(data, {
     calm: calmOn(),
+    theme,
+    onTheme(t: Theme) { saveTheme(localStorage, t); root!.dataset.theme = t },
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(latest?.build ?? __BUILD__), // 새 판 번호로 열어야 옛 index.html 사본을 피한다
     // 접수 창은 서랍 안 상세 칸에 뜨니, 닫힌 서랍이면 먼저 연다.
