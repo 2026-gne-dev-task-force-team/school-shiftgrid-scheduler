@@ -37,6 +37,13 @@ export function actorWhat(a: Who & Pick<Actor, 'task_id'>, tasks: Pick<Task, 'id
   return t ? `${what} · 지금: ${t.id} ${t.title}` : what
 }
 
+/** 에이전트가 쓴 토큰 한 줄 — 「누적 N · 분당 M」. 기록을 못 이은 캐릭터(값 없음)는 「—」. */
+export function actorTokens(a: Partial<Pick<Actor, 'tok_total' | 'tok_per_min'>>): string {
+  if (typeof a.tok_total !== 'number') return '—'
+  const n = (v: number) => v.toLocaleString('ko-KR')
+  return `누적 ${n(a.tok_total)} · 분당 ${n(a.tok_per_min ?? 0)}`
+}
+
 /** 상태별 수 — 일함 · 쉼 · 대기 · 막힘 · 퇴근(옛 done 포함). 0 인 것도 낱말로 남는다. */
 export function stateCounts(actors: { state: string }[]): [state: string, n: number][] {
   const n = (...ss: string[]) => actors.filter((a) => ss.includes(a.state)).length

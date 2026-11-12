@@ -197,10 +197,11 @@ export const AGENT_STALE_MS = 2 * 3600e3
 const kstDay = (ms) => Math.floor((ms + 9 * 3600e3) / 86400e3)
 /** 퇴근을 싣는 기한 — 마지막 활동한 날 KST 자정까지(다음 날 0시부터 뺀다). */
 export const keepOff = (last, now) => kstDay(last) === kstDay(now)
-function readGate(gatePath, now) {
+function readGate(gatePath, now, tokens = {}) {
   if (!gatePath || !existsSync(gatePath)) return []
   try {
-    return Object.values(JSON.parse(readFileSync(gatePath, 'utf-8')).actors ?? {})
+    return Object.entries(JSON.parse(readFileSync(gatePath, 'utf-8')).actors ?? {})
+      .map(([key, a]) => ({ ...a, tok: tokens[key] }))
       .filter((a) => typeof a.started === 'number' && /^a-[0-9a-f]{8}$/.test(a.id))
       .map((a) => {
         const isSession = a.kind === 'session'
@@ -278,7 +279,7 @@ const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175,
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {} }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -324,7 +325,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
-  const live = readGate(gatePath, now.getTime())
+  const live = readGate(gatePath, now.getTime(), tokens)
   const working = tasks.filter((t) => t.column === 'work')
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
@@ -335,20 +336,30 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       branch_id: branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null, account: 'org', tok_per_min: 0, started_at: t.started_at ?? nowIso, ended_at: null }
   })]
   // 실제로 도는 에이전트: 판 표에 그 일감 캐릭터가 있으면 「지금 일함」으로, 없으면 새로 세운다(일감 모르면 일손).
+  const spent = new Map() // 캐릭터 → 그 캐릭터가 맡은 에이전트들의 쓴 토큰 합·구간(같은 일감 에이전트가 여럿이면 한 캐릭터로 합친다)
+  const credit = (actor, g) => {
+    if (typeof g.tok !== 'number') return
+    const e = spent.get(actor) ?? { total: 0, from: g.started, to: 0 }
+    e.total += g.tok; e.from = Math.min(e.from, g.started); e.to = Math.max(e.to, g.state === 'off' ? g.last : now.getTime())
+    spent.set(actor, e)
+  }
   for (const g of live) {
     if (g.kind === 'session') continue
     const t = byId.get(g.task ?? '')
     const at = new Date(g.started).toISOString()
     const mine = t && actors.find((a) => a.task_id === t.id && a.kind === 'helper')
-    if (mine) { if (g.state === 'work') { mine.state = 'work'; mine.started_at = at } continue } // 끝난 에이전트는 레인 표의 🔄 줄을 못 끈다(표가 말한다)
+    if (mine) { credit(mine, g); if (g.state === 'work') { mine.state = 'work'; mine.started_at = at } continue } // 끝난 에이전트는 레인 표의 🔄 줄을 못 끈다(표가 말한다)
     const dup = actors.find((a) => a.id === (t ? `a-${t.id}` : g.id)) // 같은 일감 에이전트가 여럿(끝난 것+도는 것)이면 한 캐릭터로 — 도는 쪽이 이긴다
-    if (dup) { if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
+    if (dup) { credit(dup, g); if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t && t.category !== '지휘' ? t.category : '코드']
-    actors.push({ id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
+    const fresh = { id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
       state: t?.column === 'done' ? 'off' : g.state, // 레인 표에서 ✅ 인 일감의 캐릭터는 퇴근
       task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
-      account: 'org', tok_per_min: 0, started_at: at, ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null })
+      account: 'org', tok_per_min: 0, started_at: at, ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null }
+    actors.push(fresh); credit(fresh, g)
   }
+  // 토큰 = 누적(tok_total) · 분당(tok_per_min = 누적 ÷ 일한 분, 1분 미만은 1분으로). 기록을 못 이은 캐릭터는 두 칸 다 빠진다(화면 「—」).
+  for (const [a, e] of spent) { a.tok_total = e.total; a.tok_per_min = Math.round(e.total / Math.max(1, (e.to - e.from) / 60000)) }
 
   // 문지기가 적은 `#시간표앱` 세션 자체 — 에이전트 없이도 캐릭터 하나(하는 일은 모르니 「대화 세션」)
   for (const g of live.filter((x) => x.kind === 'session'))

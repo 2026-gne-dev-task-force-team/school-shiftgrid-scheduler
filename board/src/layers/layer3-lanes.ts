@@ -1,7 +1,7 @@
 import { h } from '../dom.ts'
 import { chip, KIND_ICON, STATE_ICON } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
-import { actorLabel, actorWhat } from '../lib/actor.ts'
+import { actorLabel, actorTokens, actorWhat } from '../lib/actor.ts'
 import type { Actor } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -16,7 +16,7 @@ export const layer3: LayerRenderer = {
     for (const l of data.lanes) {
       // 레인 담당 + 이 레인 일감을 지금 맡아 도는 캐릭터들
       const who = data.actors.filter((x) => x.id === l.actor_id || (x.state === 'work' && data.tasks.find((t) => t.id === x.task_id)?.lane_id === l.id))
-      const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}`; c.title = t; tip(c, () => t); return c })(
+      const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)} · 토큰 ${actorTokens(a)}`; c.title = t; tip(c, () => t); return c })(
         chip({ icon: character(a), label: tagged(a), hue: a.hue, id: a.id })))
       const head = h('div', { class: 'lane-head' }, h('b', null, l.title),
         ...(chips.length ? chips : [h('span', null, '—')]),

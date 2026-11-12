@@ -5,6 +5,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from './snapshot.mjs'
+import { tokensByToolUse } from './tokens.mjs'
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d }
 const out = arg('--out')
@@ -17,6 +18,7 @@ const data = build({
   repoDir: arg('--repo', fileURLToPath(new URL('../..', import.meta.url))),
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
   gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),
+  tokens: tokensByToolUse(arg('--projects', join(homedir(), '.claude', 'projects'))),
   onWarn: (dir, why) => console.warn('경고', dir, why),
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
 })
