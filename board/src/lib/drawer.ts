@@ -8,3 +8,5 @@ export const saveOpen = (s: Store, on: boolean): void => s.setItem(OPEN_KEY, on 
 export const escTarget = (key: string, menuOpen: boolean, detailOpen: boolean, drawerOpen: boolean): 'menu' | 'detail' | 'drawer' | null =>
   key !== 'Escape' ? null : menuOpen ? 'menu' : detailOpen ? 'detail' : drawerOpen ? 'drawer' : null
 export const closesOnKey = (key: string, open: boolean): boolean => open && key === 'Escape'
+// 첫 방문 서랍 — 저장값이 있으면 그대로. 없으면 단독 실행(1.2v)은 열고, 주입된 v1·v2 는 닫아 둔다.
+export const seedOpen = (s: Store, injected: boolean): void => { if (s.getItem(OPEN_KEY) === null) saveOpen(s, !injected) }

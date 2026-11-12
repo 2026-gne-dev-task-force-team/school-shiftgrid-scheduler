@@ -8,6 +8,10 @@ export const asApp = (v: unknown): AppId => (APPS as readonly unknown[]).include
 export const appOf = (x: { app?: unknown }): AppId => asApp(x.app)
 /** 마운트 자리(없으면 문서 루트)의 data-app 을 읽는다. */
 export const readApp = (host?: Element | null): AppId => asApp((host ?? document.documentElement)?.getAttribute?.('data-app'))
+/** 다른 앱(v1·v2) 페이지에 주입된 자리인가 — 1.2v(단독 실행)만 아니다. */
+export const isInjected = (a: AppId): boolean => a !== DEFAULT_APP
+/** 판 확인(version.json)은 단독 실행에서만 — 주입된 v1·v2 는 그 판 자기 갱신 장치가 따로 있고, 상대 경로 version.json 은 그 판 자신의 것이라 가짜 「새 판」이 뜬다. */
+export const versionCheckOn = (a: AppId): boolean => !isInjected(a)
 /** 막대 판 칩 id(v12) ↔ 판 이름(1.2v). */
 export const editionOfApp = (a: AppId): 'v1' | 'v12' | 'v2' => (a === '1.2v' ? 'v12' : a)
 

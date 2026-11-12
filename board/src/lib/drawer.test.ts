@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closesOnKey, escTarget, loadOpen, saveOpen } from './drawer.ts'
+import { closesOnKey, escTarget, loadOpen, saveOpen, seedOpen } from './drawer.ts'
 
 const mem = () => {
   const m = new Map<string, string>()
@@ -24,5 +24,16 @@ describe('서랍 열림 기억', () => {
     expect(closesOnKey('Escape', true)).toBe(true)
     expect(closesOnKey('Escape', false)).toBe(false)
     expect(closesOnKey('a', true)).toBe(false)
+  })
+})
+
+describe('첫 방문 서랍', () => {
+  it('단독 실행(1.2v)은 열고 주입된 v1·v2 는 닫는다', () => {
+    const a = mem(); seedOpen(a, false); expect(loadOpen(a)).toBe(true)
+    const b = mem(); seedOpen(b, true); expect(loadOpen(b)).toBe(false)
+  })
+  it('저장값이 있으면 그 값을 지킨다', () => {
+    const a = mem(); saveOpen(a, false); seedOpen(a, false); expect(loadOpen(a)).toBe(false)
+    const b = mem(); saveOpen(b, true); seedOpen(b, true); expect(loadOpen(b)).toBe(true)
   })
 })
