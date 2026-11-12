@@ -6,7 +6,7 @@ name: Deploy to GitHub Pages
 # 어느 브랜치에 푸시하든 둘 다 다시 빌드해서 통째로 올린다 — 한쪽만 올리면 다른 쪽이 사라진다.
 on:
   push:
-    branches: [main, v1]
+    branches: [main, v1, 1.2v-preview]
   workflow_dispatch: # 수동 실행 허용
 
 # Pages 배포에 필요한 권한
@@ -57,6 +57,19 @@ jobs:
         env:
           VITE_FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_DISPATCH_TOKEN }}
 
+      # ── 현황판 (/preview/board/) ───────────────────────────────
+      # shortcut: 이 칸은 1.2v-preview 가지의 deploy.yml 에만 있다 — main/v1 push 때는 /preview/ 가 빠진다. main 에 옮기면 상시가 된다.
+      # preview 앱은 아직 main 과 같은 코드라 올리지 않는다(/v2/ 와 같은 출처·같은 저장소 키를 쓰게 된다).
+      - uses: actions/checkout@v4
+        with:
+          ref: 1.2v-preview
+          path: preview
+          persist-credentials: false
+      - run: npm ci
+        working-directory: preview
+      - run: npx vite build board
+        working-directory: preview
+
       # ── 합치기 ─────────────────────────────────────────────────
       # v1 빌드를 루트에 깔고, 그 위에 v2 빌드를 /v2/ 로 넣는다.
       - name: 두 판을 한 폴더로
@@ -66,6 +79,9 @@ jobs:
           cp -R v1/dist/. site/
           mkdir -p site/v2
           cp -R v2/dist/. site/v2/
+          mkdir -p site/preview/board
+          cp -R preview/board/dist/. site/preview/board/
+          test -f site/preview/board/index.html
           # 올라가는 게 맞는지 눈으로 확인할 수 있게 남긴다
           echo "── 루트(v1) ──"; ls site | head -20
           echo "── /v2/ ──";     ls site/v2 | head -20
