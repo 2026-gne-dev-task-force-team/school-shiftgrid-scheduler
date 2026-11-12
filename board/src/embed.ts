@@ -41,7 +41,7 @@ function render(notice = false): void {
 
   const stage = createStage()
   const detail = createDetail()
-  const feed = createFeedLog(data.events, (id) => stage.pulse(id))
+  const feed = createFeedLog(data.events, (id) => stage.pulse(id), data.actors)
   const ctx: LayerCtx = { data, openDetail: detail.open, tip: attachTip }
 
   const bnd = band = createBand(data, {

@@ -112,9 +112,20 @@ button.chip { min-height: 44px; cursor: pointer }
   .card select { min-height: 44px; padding: 0 12px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit }
   .detail-body [role=alert] { color: #d04a5a; font-weight: 600 }
   .detail-body option { background: #141c2b; color: var(--fg) }
+  /* 캐릭터 — 일함=통통 · 막힘=고개 갸웃 · 쉼=눈 반쯤(그림 자체). 움직임 끄기는 위 calm·reduced-motion 규칙이 멈춘다 */
+  .chr { flex: none; display: inline-block; vertical-align: middle; overflow: visible }
+  .chr .chr-b { transform-box: view-box; transform-origin: 32px 58px }
+  .chr[data-state=work] .chr-b { animation: sgb-chr-bob 1.4s ease-in-out infinite }
+  .chr[data-state=blocked] .chr-b { animation: sgb-chr-tilt 3s ease-in-out infinite }
+  .chr[data-state=done] { opacity: .6 }
+  .feed-line .chr { margin-right: 6px }
+  .ws-card small { display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px }
+  .chr-card { display: flex; justify-content: center; padding: 8px 0 }
 }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
 @keyframes sgb-breathe { to { box-shadow: 0 0 8px #4fd1c555 } }
 @keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 44px) } }
 @keyframes sgb-ws-flash { to { background: #1f4a48 } }
 @keyframes sgb-bp-blink { 50% { opacity: .55 } }
+@keyframes sgb-chr-bob { 50% { transform: translateY(-2.5px) } }
+@keyframes sgb-chr-tilt { 0%, 100% { transform: rotate(0) } 35%, 65% { transform: rotate(-11deg) } }

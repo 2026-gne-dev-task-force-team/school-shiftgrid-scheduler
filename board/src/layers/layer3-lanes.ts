@@ -1,5 +1,6 @@
 import { h } from '../dom.ts'
 import { chip, KIND_ICON, STATE_ICON } from '../ui/chip.ts'
+import { character } from '../ui/character.ts'
 import type { LayerRenderer } from './types.ts'
 
 const STATE_TEXT: Record<string, string> = { work: '하는 중', blocked: '확인 중', idle: '쉬는 중', done: '끝' }
@@ -12,7 +13,7 @@ export const layer3: LayerRenderer = {
     for (const l of data.lanes) {
       const a = data.actors.find((x) => x.id === l.actor_id)
       const head = h('div', { class: 'lane-head' }, h('b', null, l.title),
-        a ? chip({ icon: '🎳', label: a.name, hue: a.hue, id: a.id }) : h('span', null, '—'),
+        a ? chip({ icon: character(a), label: a.name, hue: a.hue, id: a.id }) : h('span', null, '—'),
         h('span', null, `${STATE_ICON[l.state] ?? '⏸'} ${STATE_TEXT[l.state] ?? l.state}`))
       const track = h('div', { class: 'lane-track' })
       data.tasks.filter((t) => t.lane_id === l.id && t.column !== 'done').forEach((t, i) => {
