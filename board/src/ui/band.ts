@@ -6,7 +6,7 @@ import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
 
-export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void }
+export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void; auto?: boolean; onAuto?(on: boolean): void }
 
 // 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩 · 자료 출처 · Sprint N · 목표 · 진행률% · 경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
@@ -21,6 +21,10 @@ export function createBand(data: BoardData, hooks: BandHooks) {
 
   const upd = h('button', { class: 'btn upd sgb-mini', hidden: '' })
   upd.addEventListener('click', hooks.onApply)
+  const autoBox = h('input', { type: 'checkbox', 'aria-label': '새 판이 오면 자동으로 바꾸기' })
+  autoBox.checked = !!hooks.auto
+  autoBox.addEventListener('change', () => hooks.onAuto?.(autoBox.checked))
+  const auto = h('label', { class: 'sgb-auto', title: '켜 두면 새 판이 오는 즉시 [지금 바꾸기]를 저절로 합니다. 글을 치는 중이면 끝난 뒤에 합니다.' }, autoBox, ' 자동')
   const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
 
   // 메뉴 — 첫 줄이 저장소 비우기. 누르면 같은 자리에서 2단계 확인(window.confirm 안 씀).
@@ -78,7 +82,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
-    toggle, setLive, upd, fb, more, menu, drop, closeMenu,
+    toggle, setLive, upd, auto, fb, more, menu, drop, closeMenu,
     dispose() { document.removeEventListener('click', outside) },
     showUpdate(v: VersionInfo | null) {
       upd.hidden = !v

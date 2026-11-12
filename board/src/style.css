@@ -34,6 +34,7 @@
   .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: var(--edge) }
   .sgb-gauge i { width: 5px; height: 10px; background: var(--s3) } .sgb-gauge i.on { background: var(--neon) }
   .sgb-bar .sgb-pct { color: var(--neon-2); font-weight: 700; flex: none; font-variant-numeric: tabular-nums }
+  .sgb-auto { display: inline-flex; align-items: center; gap: 2px; flex: none; font-size: var(--fs-xs); color: var(--fg-2); cursor: pointer }
   .sgb-mini { min-height: 22px; height: 22px; padding: 0 8px; flex: none; font-size: var(--fs-xs); border-radius: var(--r1) }
   .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
   .sgb-menuhost .menu { position: fixed; top: 31px; right: 6px; z-index: calc(var(--z) + 3); max-width: calc(100vw - 12px) }
