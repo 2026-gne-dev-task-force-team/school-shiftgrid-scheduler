@@ -127,6 +127,14 @@ jobs:
           grep -q 'data-board-injected' site/index.html
           grep -q 'data-board-injected' site/v2/index.html
 
+      # ── 옛 자산 보존 ───────────────────────────────────────────
+      # 지금 공개 중인 각 판(루트·/v1.2/·/v2/)의 index 가 부르는 assets/ 파일 중 새 산출물에 없는 것만 합친다
+      # (묵은 index 가 옛 해시 파일을 불러도 404 백지가 안 나게). 공개 사이트를 받는 방식이라 artifact 보관 기간·run id 에 안 묶인다.
+      # index 에서 닿는 것만 받으므로 직전 한 판까지만 남는다. sw.js 프리캐시는 새 판 그대로. 실패해도 배포는 계속한다.
+      - name: 직전 판 자산 보존
+        continue-on-error: true
+        run: node v2/deploy/keep-prev-assets.mjs site "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true # Pages가 꺼져 있으면 워크플로가 자동 활성화
