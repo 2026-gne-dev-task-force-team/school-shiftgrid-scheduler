@@ -9,7 +9,7 @@ const PAD = 20, TOP = 34, LH = 52, MIN_COL = 84, TAIL = 150 // 여백 · 줄기 
 
 // 2층 가지 — 깃 그래프(왼→오른 시간). 선·점은 canvas, 이름표·캐릭터 칩은 그 위 DOM(눌러 상세 · 글자 안 잘림). 좁으면 가로 스크롤.
 export const layer2: LayerRenderer = {
-  id: 'layer2', floor: 2, tab: '가지',
+  id: 'layer2', floor: 2, tab: 'Branch',
   render(host, { data, openDetail, tip }) {
     const trunk = data.branches.find((b) => b.trunk)
     const by = new Map(data.branches.map((b) => [b.id, b]))

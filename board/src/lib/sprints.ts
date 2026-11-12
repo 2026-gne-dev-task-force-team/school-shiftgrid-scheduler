@@ -17,7 +17,7 @@ export const reviewLabel = (s: Sprint): string => (s.passed === true ? '검수 �
 
 /** 막대 글: 「스프린트 N · 제목」 — 지금 스프린트(currentSprint), 없으면 판 이름. */
 export const sprintLabel = (d: { sprints: Sprint[]; tasks: Task[] }): string =>
-  ((c) => (c ? `스프린트 ${c.sprint.id} · ${c.sprint.title}` : '작업현황판'))(currentSprint(d))
+  ((c) => (c ? `Sprint ${c.sprint.id} · ${c.sprint.title}` : '작업현황판'))(currentSprint(d))
 
 /** 지금 스프린트: ended 없는 줄(여럿이면 가장 늦게 시작한 것), 없으면 가장 최신. 진행률은 sprintProgress. 스프린트가 없으면 null. */
 export function currentSprint(d: { sprints: Sprint[]; tasks: Task[] }): { sprint: Sprint; pct: number } | null {

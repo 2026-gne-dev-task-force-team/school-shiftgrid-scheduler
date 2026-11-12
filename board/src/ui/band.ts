@@ -7,7 +7,7 @@ import { usagePanel } from './usage.ts'
 
 export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void }
 
-// 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩·스프린트·진행률·경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
+// 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩 · 자료 출처 · Sprint N · 목표 · 진행률% · 경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
 export function createBand(data: BoardData, hooks: BandHooks) {
   const now = Date.now()
@@ -15,7 +15,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const working = data.actors.filter((a) => a.state === 'work').length
   const remain = data.tasks.filter((t) => t.column !== 'done').reduce((s, t) => s + t.est_min, 0)
   const mid = remain / Math.max(1, working)
-  const state = goal?.state === 'shipped' ? '✅ 올라감' : goal?.state === 'review' ? '🔍 살펴보는 중' : working ? '🔨 짓는 중' : '⏸ 쉬는 중'
+  const state = goal?.state === 'shipped' ? '✅ Shipped' : goal?.state === 'review' ? '🔍 In review' : working ? '🔨 Building' : '⏸ Idle'
   const elapsed = run ? fmtDur((now - Date.parse(run.started_at)) / 60000) : ''
 
   const upd = h('button', { class: 'btn upd sgb-mini', hidden: '' })
@@ -51,10 +51,10 @@ export function createBand(data: BoardData, hooks: BandHooks) {
 
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip' }, state),
-    h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
+    h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? 'Live data' : 'Mock data'),
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
-    h('span', { class: 'sgb-pct' }, cur ? `${cur.pct}%` : ''),
-    h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
+    h('span', { class: 'sgb-pct', title: 'Sprint 진행률' }, cur ? `${cur.pct}%` : ''),
+    h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
     toggle, upd, fb, more, menu, drop, closeMenu,

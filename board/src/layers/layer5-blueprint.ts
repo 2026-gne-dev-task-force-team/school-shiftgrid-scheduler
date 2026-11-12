@@ -2,11 +2,11 @@ import { h } from '../dom.ts'
 import { clampZoom, groupHouses, lineOf, roomCount } from './layer5-logic.ts'
 import type { LayerRenderer } from './types.ts'
 
-const STATE_NAME = { plan: '계획', build: '짓는 중', built: '지음' }
+const STATE_NAME = { plan: 'Plan', build: 'Building', built: 'Built' }
 
 // 5층 설계도 집 — 집 = 부모 모듈, 방 = 자식. 선 종류가 상태(유령·비계·실선). 확대는 휠·버튼·두 손가락.
 export const layer5: LayerRenderer = {
-  id: 'layer5', floor: 5, tab: '집',
+  id: 'layer5', floor: 5, tab: 'Blueprint',
   render(host, { data, openDetail, tip }) {
     const houses = groupHouses(data.modules)
     const { total, built } = roomCount(houses)

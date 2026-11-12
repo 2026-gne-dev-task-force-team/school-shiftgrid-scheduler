@@ -6,7 +6,7 @@ const fmt = (ts: string) => new Date(ts).toLocaleString('ko-KR', { month: 'numer
 
 // 접수함 — 이 기기 접수(localStorage) + 서버 접수를 한 목록으로. 상태 바꾸기·지우기는 이 기기 접수만.
 export const inbox: LayerRenderer = {
-  id: 'inbox', floor: 6, tab: '접수함',
+  id: 'inbox', floor: 6, tab: 'Inbox',
   render(host, { data }) {
     const draw = () => {
       const items = mergeInbox(loadFeedback(), data.serverFeedback ?? [])

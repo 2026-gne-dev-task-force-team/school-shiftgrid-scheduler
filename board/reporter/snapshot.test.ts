@@ -152,7 +152,7 @@ describe('보고꾼 — 서비스·모듈', () => {
     const name = (id: string | null) => d.modules.find((m: { id: string }) => m.id === id)?.name
     const under = (p: string) => d.modules.filter((m: { parent: string | null }) => m.parent === p).map((m: { name: string }) => m.name)
     expect(name('m-screen')).toBe('화면')
-    expect(under('m-screen')).toEqual(expect.arrayContaining(['한눈', '가지', '레인', '작업장', '집', '스프린트', '접수함', '안내']))
+    expect(under('m-screen')).toEqual(expect.arrayContaining(['Overview', 'Branch', 'Lanes', 'Board', 'Blueprint', 'Sprint', 'Inbox', 'Guide']))
     expect(under('m-data')).toEqual(['보고꾼', '나르기', '문지기 훅'])
     expect(d.modules.every((m: { state: string; task_id: unknown }) => m.state === 'built' && m.task_id === null)).toBe(true)
   })

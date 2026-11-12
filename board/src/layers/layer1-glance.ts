@@ -8,12 +8,12 @@ import type { LayerRenderer } from './types.ts'
 
 // 1층 한눈에 — 목표 · 부서별 지금 몇 명 · 한도와 속도 · 최근 로그.
 export const layer1: LayerRenderer = {
-  id: 'layer1', floor: 1, tab: '한눈',
+  id: 'layer1', floor: 1, tab: 'Overview',
   render(host, { data, openDetail, tip }) {
     const g = currentSprint(data)
     const left = data.tasks.filter((t) => t.column !== 'done').length
     host.append(h('section', { class: 'card' }, h('b', null, '목표'),
-      g && h('p', null, `스프린트 ${g.sprint.id} · ${g.sprint.title} — ${g.pct}% · 남은 일감 ${left}개`)))
+      g && h('p', null, `Sprint ${g.sprint.id} · ${g.sprint.title} — ${g.pct}% · 남은 일감 ${left}개`)))
 
     const depts = h('section', { class: 'card' }, h('b', null, '부서별 지금 몇 명'))
     for (const d of ['hq', 'make', 'qa'] as const) {

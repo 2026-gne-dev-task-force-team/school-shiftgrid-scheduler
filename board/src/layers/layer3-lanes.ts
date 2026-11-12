@@ -8,7 +8,7 @@ const STATE_TEXT: Record<string, string> = { work: '하는 중', blocked: '확�
 
 // 3층 레인 — 레인마다 한 줄(공개 제목 · 맡은 캐릭터 · 상태). 일감 공이 머리에서 핀 쪽으로 천천히 굴러간다.
 export const layer3: LayerRenderer = {
-  id: 'layer3', floor: 3, tab: '레인',
+  id: 'layer3', floor: 3, tab: 'Lanes',
   render(host, { data, openDetail, tip }) {
     const box = h('div', { class: 'lanes' })
     for (const l of data.lanes) {
