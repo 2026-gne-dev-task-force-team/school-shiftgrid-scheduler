@@ -2,9 +2,11 @@ import type { Feedback } from './lib/feedback.ts'
 // fixtures 칸 이름 = 설계 상세 3절 · 운전 규약 8절 그대로.
 export type Dept = 'hq' | 'make' | 'qa'
 export type Account = 'org' | 'personal'
+// 일함 work · 쉼 idle · 대기 wait · 막힘 blocked · 퇴근 off. done 은 옛 자료 호환(퇴근과 같게 그린다).
+export type ActorState = 'work' | 'idle' | 'wait' | 'blocked' | 'off' | 'done'
 export interface Actor {
   id: string; parent_id: string | null; kind: 'lead' | 'helper'; name: string; hue: number; eye: string; prop: string
-  dept: Dept; team: string; role: string; state: 'work' | 'idle' | 'blocked' | 'done'
+  dept: Dept; team: string; role: string; state: ActorState
   task_id: string | null; branch_id: string | null; account: Account; tok_per_min: number
   started_at: string; ended_at: string | null
 }

@@ -109,7 +109,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
 /* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
-@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
+@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }
@@ -172,8 +172,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-furn { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
 .ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid #5a4630; border-radius: var(--r1); background: #e3c28f linear-gradient(90deg, rgb(120 80 30 / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
+.ws-dorm { display: flex; justify-content: flex-end; align-items: center; gap: var(--sp2); margin-top: 4px; padding: 2px 8px; border: 2px dashed var(--fg-3); border-radius: var(--r1); opacity: .75 }
+.ws-dorm b { font-size: 11px; color: var(--fg-2); margin-right: auto }
+.sum-states { display: flex; gap: var(--sp3); flex-wrap: wrap; margin: var(--sp2) 0; font-size: 13px }
 .ws-bang { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--bad); border-radius: 8px 8px 8px 2px; box-shadow: 0 1px 0 rgb(0 0 0 / .3) }
-.ws-col[data-col=work] .ws-card .chr { animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
+.ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
 .ws-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp1); padding: 1px 3px; font-weight: 650; font-size: var(--fs-sm); color: var(--fg-2) }
 .ws-badge { padding: 0 6px; border-radius: 999px; background: var(--neon-soft); color: var(--neon-2); font-variant-numeric: tabular-nums }
 .ws-body { display: flex; flex-direction: column; gap: 3px }
@@ -217,7 +220,10 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .chr[data-state=work] .chr-l2 { animation: sgb-chr-step .5s steps(1) infinite reverse }
   .chr[data-state=work] .chr-e { transform-box: fill-box; transform-origin: center; animation: sgb-chr-blink 3.6s steps(1) infinite }
   .chr[data-state=blocked] .chr-b { animation: sgb-chr-tilt 3s ease-in-out infinite }
-  .chr[data-state=done] { opacity: .6 }
+  .chr[data-state=done], .chr[data-state=off] { opacity: .6 }
+  .chr-z rect { fill: var(--fg-2) }
+  .chr-bang rect { fill: var(--bad) }
+  .chr[data-state=idle] .chr-z { animation: sgb-chr-z 2.4s ease-in-out infinite }
   .feed-line .chr { margin-right: 8px }
   .chr-card { display: flex; justify-content: center; padding: var(--sp3) 0; margin-top: var(--sp2); border-radius: var(--r2); background: radial-gradient(circle at 50% 60%, rgb(217 119 87 / .18), transparent 70%) }
 }
@@ -233,6 +239,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 40px) } }
 @keyframes sgb-ws-flash { to { background: #cdeee9 } }
 @keyframes sgb-bp-blink { 50% { opacity: .55 } }
+@keyframes sgb-chr-z { 50% { transform: translateY(-1px); opacity: .55 } }
 @keyframes sgb-chr-step { 50% { transform: translateY(-1px) } }
 @keyframes sgb-chr-blink { 94% { transform: scaleY(.3) } 97% { transform: none } }
 @keyframes sgb-chr-tilt { 0%, 100% { transform: rotate(0) } 35%, 65% { transform: rotate(-9deg) } }

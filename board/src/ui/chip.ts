@@ -13,4 +13,7 @@ export function chip(o: ChipOpts): HTMLElement {
 
 export const KIND_ICON: Record<string, string> = { work: '🔨', cr: '📐', bug: '🐞', decide: '🙋', review: '👀' }
 export const DEPT_NAME: Record<string, string> = { hq: '본부', make: '제작부', qa: '품질부' }
-export const STATE_ICON: Record<string, string> = { work: '🔨', idle: '⏸', blocked: '⛔', done: '✅' }
+export const STATE_ICON: Record<string, string> = { work: '🔨', idle: '💤', wait: '⏳', blocked: '⛔', off: '🏠', done: '🏠' }
+export const STATE_NAME: Record<string, string> = { work: '일함', idle: '쉼', wait: '대기', blocked: '막힘', off: '퇴근', done: '퇴근' }
+/** 퇴근(옛 done 포함) 인가 — 숙소에 모이고 흐리게 그린다. */
+export const isOff = (s: string): boolean => s === 'off' || s === 'done'

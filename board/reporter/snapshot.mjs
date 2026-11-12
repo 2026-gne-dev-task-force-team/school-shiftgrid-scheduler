@@ -188,12 +188,15 @@ function readUsage(usagePath, nowIso) {
   } catch { return [] }
 }
 
-// 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트·세션」 → 각각 state(work|idle|done)를 매겨 돌려준다.
+// 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트·세션」 → 각각 state(work|idle|off)를 매겨 돌려준다.
+// 일함 work · 쉼 idle(세션은 살아 있는데 턴 끝 · 20분 안) · 퇴근 off(ended · 쉼이 20분 넘음 · 조용한 세션 20분 · 에이전트 2시간 넘게 ended 없음).
 // 문턱 근거: 세션은 프롬프트 뒤 20분 조용하면 닫힌 것으로 본다(Stop·SessionEnd 가 안 온 기기 대비) · 에이전트는 started 뒤 2시간 넘게 ended 가 없으면 세션째 죽은 것(PostToolUse 가 안 온다).
-// 끝난 것도 지우지 않고 done 으로 한 시간 동안 싣는다(그림이 idle·done 을 그린다). 한 시간 지나면 뺀다.
+// 퇴근한 것은 지우지 않고 마지막 활동 날(KST)이 지나기 전까지 싣는다(자정에 뺀다) — 그림이 숙소에 흐리게 모은다.
 export const SESSION_QUIET_MS = 20 * 60e3
 export const AGENT_STALE_MS = 2 * 3600e3
-const KEEP_DONE_MS = 3600e3
+const kstDay = (ms) => Math.floor((ms + 9 * 3600e3) / 86400e3)
+/** 퇴근을 싣는 기한 — 마지막 활동한 날 KST 자정까지(다음 날 0시부터 뺀다). */
+export const keepOff = (last, now) => kstDay(last) === kstDay(now)
 function readGate(gatePath, now) {
   if (!gatePath || !existsSync(gatePath)) return []
   try {
@@ -202,16 +205,18 @@ function readGate(gatePath, now) {
       .map((a) => {
         const isSession = a.kind === 'session'
         const quiet = isSession ? SESSION_QUIET_MS : AGENT_STALE_MS
-        let last = Math.max(a.started, typeof a.ended === 'number' ? a.ended : 0, typeof a.idle === 'number' ? a.idle : 0)
+        const resting = typeof a.idle === 'number' && a.idle >= a.started
+        let last = Math.max(a.started, typeof a.ended === 'number' ? a.ended : 0, resting ? a.idle : 0)
         let state = 'work'
-        if (a.ended) state = 'done'
-        else if (isSession && typeof a.idle === 'number' && a.idle >= a.started) state = 'idle'
-        else if (now - a.started >= quiet) { state = 'done'; last = a.started + quiet } // 문턱을 넘은 때부터 done 으로 한 시간
+        if (a.ended) state = 'off'
+        else if (resting) { state = now - a.idle >= SESSION_QUIET_MS ? 'off' : 'idle'; if (state === 'off') last = a.idle + SESSION_QUIET_MS }
+        else if (now - a.started >= quiet) { state = 'off'; last = a.started + quiet } // 문턱을 넘은 때부터 퇴근
         return { ...a, state, last }
       })
-      .filter((a) => a.state === 'work' || now - a.last < KEEP_DONE_MS)
+      .filter((a) => a.state !== 'off' || keepOff(a.last, now))
   } catch { return [] }
 }
+const isBlockedState = (state) => /^\s*[⛔⏸🙋]/u.test(state)
 
 // 모듈 = 이 현황판 자체의 부품. 화면 탭은 registry.ts 의 import 순서대로 각 파일의 tab 낱말을 읽는다(브라우저 TS 라 import 안 함).
 export function readModules(layersDir = new URL('../src/layers/', import.meta.url)) {
@@ -340,16 +345,16 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     if (dup) { if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t && t.category !== '지휘' ? t.category : '코드']
     actors.push({ id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
-      state: t?.column === 'done' ? 'done' : g.state, // 레인 표에서 ✅ 인 일감의 캐릭터는 일하는 중이 아니다
+      state: t?.column === 'done' ? 'off' : g.state, // 레인 표에서 ✅ 인 일감의 캐릭터는 퇴근
       task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
-      account: 'org', tok_per_min: 0, started_at: at, ended_at: typeof g.ended === 'number' ? new Date(g.ended).toISOString() : null })
+      account: 'org', tok_per_min: 0, started_at: at, ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null })
   }
 
   // 문지기가 적은 `#시간표앱` 세션 자체 — 에이전트 없이도 캐릭터 하나(하는 일은 모르니 「대화 세션」)
   for (const g of live.filter((x) => x.kind === 'session'))
     actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
       state: g.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
-      ended_at: typeof g.ended === 'number' ? new Date(g.ended).toISOString() : null })
+      ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null })
   // 가지 ↔ 캐릭터: 그 가지 일감(T-<id>)을 맡은 캐릭터
   for (const b of branches) if (!b.trunk) b.actor_id = actors.find((a) => a.branch_id === b.id)?.id ?? null
 
@@ -388,6 +393,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const bare = (n) => clean(n.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인'
   const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
   const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
+  const laneBlocked = [] // 다른 레인 표에서 ⛔/⏸/🙋 인 일감
   const laneRows = lanesRaw.map((ln) => {
     const id = `l-${hash(ln.name).slice(0, 6)}`
     const mine = ln.rows.flatMap((r) => {
@@ -396,6 +402,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       if (!isPlain(tid) || seen.has(tid)) tid = `${id}-${hash(tid + seen.size)}`
       if (!title) { onDrop('tasks', tid); return [] }
       seen.add(tid)
+      if (isBlockedState(r.state)) laneBlocked.push({ id: tid, title })
       return [{ id: tid, title, category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
         ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso }]
     })
@@ -407,6 +414,16 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work')) {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     actors.push({ id: t.actor_id, parent_id: lead.id, kind: 'helper', name: `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'work',
+      task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
+  }
+
+  // 막힘: 맡은 태스크가 레인 표에서 ⛔/⏸/🙋 — 지금 판 표의 줄 + 다른 레인 표의 줄을 번호로 부르는 캐릭터(도는 에이전트가 이미 맡았으면 일함이 이긴다)
+  const stuck = [...(raw.find((x) => x.id === cur?.id)?.rows ?? []).filter((r) => isBlockedState(r.state) && byId.has(r.id)).map((r) => byId.get(r.id)),
+    ...laneBlocked.map((b) => ({ id: b.id, category: '코드' }))]
+  for (const t of stuck) {
+    if (actors.some((a) => a.task_id === t.id)) continue
+    const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category === '지휘' ? '코드' : t.category]
+    actors.push({ id: `a-${t.id}`, parent_id: lead.id, kind: 'helper', name: t.category === '지휘' ? name : `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'blocked',
       task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   }
 

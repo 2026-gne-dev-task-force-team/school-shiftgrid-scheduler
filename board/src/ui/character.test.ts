@@ -32,4 +32,21 @@ describe('캐릭터', () => {
     expect(characterSvg({ ...A, name: '지휘<a"b>' })).toContain('aria-label="지휘&#60;a&#34;b&#62;"')
     expect(characterSvg(A)).toContain('aria-label="지휘"') // 자연 낱말 이름은 역할로
   })
+  it('상태마다 꼴이 다르다: 쉼 Z · 막힘 ! · 퇴근 흐림 표지 · 일함은 표지 없음', () => {
+    const v = (state: Actor['state']) => characterSvg({ ...A, state })
+    expect(v('idle')).toContain('chr-z'); expect(v('idle')).not.toContain('chr-bang')
+    expect(v('blocked')).toContain('chr-bang'); expect(v('blocked')).not.toContain('chr-z')
+    expect(v('work')).not.toMatch(/chr-z|chr-bang/); expect(v('off')).toContain('data-state="off"')
+    expect(v('off')).not.toBe(v('work')); expect(v('wait')).toContain('data-state="wait"')
+    expect(v('wait')).not.toMatch(/chr-z|chr-bang/)
+    expect(v('off')).toBe(v('done').replace('data-state="done"', 'data-state="off"')) // 옛 done = 퇴근 꼴
+  })
+})
+
+describe('상태별 수', () => {
+  it('일함·쉼·대기·막힘·퇴근을 따로 센다(옛 done 은 퇴근)', async () => {
+    const { stateCounts } = await import('../lib/actor.ts')
+    const s = ['work', 'work', 'idle', 'blocked', 'off', 'done'].map((state) => ({ state }))
+    expect(stateCounts(s)).toEqual([['work', 2], ['idle', 1], ['wait', 0], ['blocked', 1], ['off', 2]])
+  })
 })
