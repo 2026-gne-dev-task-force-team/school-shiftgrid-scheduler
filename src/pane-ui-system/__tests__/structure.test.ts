@@ -21,6 +21,7 @@ function walk(dir: string): string[] {
         const p = join(dir, e.name);
         if (e.isDirectory()) {
             if (e.name === '__tests__' || e.name === 'node_modules') continue;
+            if (e.name === 'legacy' && dir.endsWith('v1-editor')) continue;   // v1 편성기 사본은 검사에서 뺀다(설계 ① 2-1 · 손대지 않는 사본)
             out = out.concat(walk(p));
         } else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) {
             out.push(p);
