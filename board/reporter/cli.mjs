@@ -1,10 +1,11 @@
-// node board/reporter/cli.mjs --out <파일> [--lane <노트>] [--requests <요청함 노트>] [--lane-root <레인 뿌리>] [--repo <폴더>] [--usage <json>]
-// 스냅숏 JSON 을 저장하고 표마다 줄 수만 찍는다(값은 안 찍는다).
+// node board/reporter/cli.mjs --out <파일> [--lane <노트>] [--requests <요청함 노트>] [--lane-root <레인 뿌리>] [--repo <폴더>] [--usage <json>] [--sink]
+// 스냅숏 JSON 을 저장하고 표마다 줄 수만 찍는다(값은 안 찍는다). --sink 를 주면 이 기기에서 바로 Supabase 에 싣는다(git 안 씀).
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { build } from './snapshot.mjs'
 import { tokensByToolUse } from './tokens.mjs'
 import { loadConfig } from './config.mjs'
+import { readToken, readRef, sinkAndLog } from './sink.mjs'
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d }
 const cfg = loadConfig()
@@ -25,3 +26,4 @@ const data = build({
 writeFileSync(out, JSON.stringify(data, null, 2))
 for (const [k, v] of Object.entries(data)) console.log(`${k}\t${v.length}`)
 console.log('담백 검사로 버린 줄', JSON.stringify(dropped))
+if (process.argv.includes('--sink')) process.exit(await sinkAndLog(data, { token: readToken(), ref: readRef(cfg) }))

@@ -1,3 +1,4 @@
+# 폐기 — T-9a 이후 안 씀. 현황판 자료는 git 을 거치지 않고 보고꾼(sink.mjs)이 Supabase 에 직접 싣는다. 가지 board-data 삭제는 쥔님 결정.
 name: 현황판 자료 싣기
 
 # 가지 board-data 의 snapshot.json 을 Supabase board 표에 통째로 갈아 끼운다(한 트랜잭션).

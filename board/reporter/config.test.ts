@@ -13,7 +13,7 @@ describe('loadConfig', () => {
   })
   it('설정 파일이 없는 OS 는 윈도우 기본값', () => {
     const c = loadConfig({}, 'win32', 'file:///nonexistent/x.mjs')
-    expect(c.dir).toBe('D:/gne-dev-task/sg-board-data')
+    expect(c.ref).toBe('')
     expect(c.usage).toBe(join(homedir(), '.claude/rate-limits.json'))
   })
   it('BOARD_REPORTER_CONFIG 가 가리키는 파일이 없으면 던진다', () => {
