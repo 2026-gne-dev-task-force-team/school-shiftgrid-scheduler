@@ -862,6 +862,21 @@
       "team": "화면팀",
       "sprint": 7,
       "est_min": 8,
+      "started_at": "2026-11-12T16:29:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:29:00+09:00"
+    },
+    {
+      "id": "T-7v",
+      "title": "배포본 실자료 재검",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 7,
+      "est_min": 8,
       "started_at": "2026-11-12T15:45:00+09:00",
       "lane_id": "l1",
       "column": "wait",
@@ -882,7 +897,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R2",
@@ -897,7 +912,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R3",
@@ -912,7 +927,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R4",
@@ -927,7 +942,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R5",
@@ -942,7 +957,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R6",
@@ -957,7 +972,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R7",
@@ -972,7 +987,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R8",
@@ -987,7 +1002,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R9",
@@ -1002,7 +1017,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R10",
@@ -1017,7 +1032,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R11",
@@ -1032,7 +1047,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R12",
@@ -1047,7 +1062,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R13",
@@ -1062,7 +1077,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R14",
@@ -1077,7 +1092,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R15",
@@ -1092,7 +1107,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R16",
@@ -1107,7 +1122,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R17",
@@ -1122,7 +1137,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R18",
@@ -1137,7 +1152,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R19",
@@ -1152,7 +1167,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R20",
@@ -1167,7 +1182,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R21",
@@ -1182,7 +1197,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R22",
@@ -1197,11 +1212,11 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R23",
-      "title": "스프린트 6 일감이 현황판에 0개 (→ T-7s)",
+      "title": "스프린트 6 일감이 현황판에 0개",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1212,11 +1227,11 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R24",
-      "title": "캐릭터·카드에 태스크 번호가 하나도 안 보인다 (→ T-7t)",
+      "title": "캐릭터·카드에 태스크 번호가 하나도 안 보인다",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1227,11 +1242,11 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R25",
-      "title": "작업장 칸이 실제와 어긋남 (→ T-7s)",
+      "title": "작업장 칸이 실제와 어긋남",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1242,11 +1257,11 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R26",
-      "title": "안내 탭 첫 줄이 아직 「가짜 자료로 그린 목업」 (→ T-7u)",
+      "title": "안내 탭 첫 줄이 아직 「가짜 자료로 그린 목업」",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1254,10 +1269,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R27",
@@ -1272,11 +1287,11 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     },
     {
       "id": "R28",
-      "title": "360 캐릭터·카드 시트가 Esc 로 안 닫힘 (→ T-7u)",
+      "title": "360 캐릭터·카드 시트가 Esc 로 안 닫힘",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1284,10 +1299,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:29:03.813Z"
+      "updated_at": "2026-11-12T07:31:02.677Z"
     }
   ],
   "lanes": [
@@ -1307,7 +1322,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T16:24:48+09:00"
+      "updated_at": "2026-11-12T16:29:30+09:00"
     },
     {
       "id": "b-T-2f",
@@ -1378,26 +1393,16 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
-    },
-    {
-      "id": "b-T-7u",
-      "title": "360 막대 이름 잘림",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-7u",
-      "updated_at": "2026-11-12T16:24:48+09:00"
     }
   ],
   "services": [
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "ok",
+      "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:29:02.227Z"
+      "checked_at": "2026-11-12T07:31:02.098Z"
     },
     {
       "id": "s-sync",
@@ -1405,7 +1410,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:29:02.227Z"
+      "checked_at": "2026-11-12T07:31:02.098Z"
     },
     {
       "id": "s-reporter",
@@ -1413,7 +1418,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:29:02.227Z"
+      "checked_at": "2026-11-12T07:31:02.098Z"
     }
   ],
   "modules": [
@@ -1513,12 +1518,21 @@
     {
       "id": "g7",
       "title": "요청함 R1~R20 소화",
-      "progress": 92,
+      "progress": 93,
       "state": "work",
       "sprint": 7
     }
   ],
   "events": [
+    {
+      "id": "e-f6064528",
+      "ts": "2026-11-12T16:29:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7u",
+      "actor_id": "a-lead",
+      "text": "360 막대 이름 잘림 시작"
+    },
     {
       "id": "e-f9e6cc74",
       "ts": "2026-11-12T16:25:00+09:00",
@@ -1937,7 +1951,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:29:03.813Z",
+      "ts": "2026-11-12T07:31:02.677Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -2105,9 +2119,10 @@
         "T-7r",
         "T-7s",
         "T-7t",
-        "T-7u"
+        "T-7u",
+        "T-7v"
       ],
-      "est_min": 104,
+      "est_min": 112,
       "actual_min": 0,
       "review": "",
       "passed": null,
