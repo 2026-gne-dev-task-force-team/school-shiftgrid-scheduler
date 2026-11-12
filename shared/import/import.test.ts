@@ -138,7 +138,7 @@ describe('hwp', () => {
     expect(readTable(hwpBytes([outer])).rows).toEqual([['바깥\n안', '옆']])
   })
   it('탭·확장 컨트롤은 8 WCHAR 건너뜀', () => {
-    const t = u16s(65, 2, 0, 0, 0, 0, 0, 0, 0, 66, 9, 0, 0, 0, 0, 0, 0, 0, 67, 13)
+    const t = u16s(65, 2, 120, 120, 120, 120, 120, 120, 2, 66, 9, 120, 120, 120, 120, 120, 120, 9, 67, 13)
     const bytes = hwpBytes([tblCtrl(1, 1, 1, cat(rec(0x48, 2, cat(u16s(1, 0, 0, 0), u16s(0, 0, 1, 1, 0, 0, 0, 0))), rec(0x42, 2, new Uint8Array(22)), rec(0x43, 3, t)))])
     expect(readTable(bytes).rows).toEqual([['AB\tC']])
   })
