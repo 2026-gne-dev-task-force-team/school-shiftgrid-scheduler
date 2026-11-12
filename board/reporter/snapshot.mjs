@@ -1,8 +1,9 @@
 // 보고꾼 — 레인 노트 · git 가지 · 사용량 파일 → 공개해도 되는 스냅숏(BoardData 꼴, types.ts).
 // build() 는 네트워크 없음(서비스는 publish 가 checkServices 로 재서 넘긴다). 원천은 읽기만. 자유 글은 넣지 않고 담백 틀로 조립한다.
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { join } from 'node:path'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain } from './plain.mjs'
 
@@ -93,6 +94,38 @@ export function parseLane(md) {
     }
   }
   return { sprints, log }
+}
+
+/** 레인 노트 하나 → 「지금」 줄 · 표 줄(머리글에 「무엇」·「상태」와 「태스크」 또는 「판」 칸이 있는 표만). 쥔님 원문·세션 이름은 읽어도 싣지 않는다. */
+export function parseLaneNote(md) {
+  let now = ''
+  const rows = []
+  let head = null
+  for (const line of md.split(/\r?\n/)) {
+    const n = /^\*\*지금\*\*:\s*(.*)$/.exec(line)
+    if (n) now = n[1]
+    if (!line.startsWith('|')) { head = null; continue }
+    const c = cells(line)
+    const key = c.includes('태스크') ? '태스크' : c.includes('판') ? '판' : null
+    if (key && c.includes('무엇') && c.includes('상태')) { head = { c, key }; continue }
+    if (!head || /^:?-+:?$/.test(c[0])) continue
+    const at = (name) => c[head.c.indexOf(name)] ?? ''
+    if (at(head.key)) rows.push({ id: at(head.key), what: at('무엇'), state: at('상태') })
+  }
+  return { now, rows }
+}
+
+const LANE_SKIP = new Set(['닫힘', '요청함', '작업현황판']) // 작업현황판은 lanePath 로 따로 읽는다(l1)
+/** 레인 뿌리 아래 폴더마다 「레인 *.md」 를 읽는다(읽기만). onWarn(폴더, 까닭) — 못 읽은 것. */
+export function readLanes(root, onWarn = () => {}) {
+  if (!root || !existsSync(root)) return []
+  return readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory() && !LANE_SKIP.has(d.name)).sort((a, b) => a.name.localeCompare(b.name)).flatMap((d) => {
+    const f = readdirSync(join(root, d.name)).find((n) => /^레인 .*\.md$/.test(n))
+    if (!f) { onWarn(d.name, '레인 노트 없음'); return [] }
+    const note = parseLaneNote(readFileSync(join(root, d.name, f), 'utf-8'))
+    if (!note.rows.length) onWarn(d.name, '읽을 표 없음')
+    return [{ name: d.name, ...note }]
+  })
 }
 
 /** 요청함 노트 → R 줄(번호·처방·상태 칸). 쥔님 원문 칸은 읽지도 않는다. 칸 순서: # · 시각 · 원문 · 처방 · 종류 · 상태. */
@@ -223,7 +256,7 @@ const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175,
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, now = new Date(), md, services = [], onDrop = () => {} }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -328,8 +361,25 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso }
   })
 
+  // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
+  const seen = new Set()
+  const laneRows = readLanes(laneRoot, onWarn).map((ln) => {
+    const id = `l-${hash(ln.name).slice(0, 6)}`
+    const mine = ln.rows.flatMap((r) => {
+      const title = publicTitle(r.what)
+      let tid = `${id}-${r.id}`
+      if (!isPlain(tid) || seen.has(tid)) tid = `${id}-${hash(tid + seen.size)}`
+      if (!title) { onDrop('tasks', tid); return [] }
+      seen.add(tid)
+      return [{ id: tid, title, category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
+        ...columnOf(r.state), actor_id: null, updated_at: nowIso }]
+    })
+    const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
+    return { lane: { id, title: clean(ln.name.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인', state, actor_id: null }, tasks: mine }
+  })
+
   const data = {
-    actors, tasks: [...tasks, ...reqTasks], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }], branches,
+    actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,
     services, modules: readModules(),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
   }
