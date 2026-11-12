@@ -6,10 +6,33 @@ import type { SubSlotRow } from './types';
 
 export interface SlotSource {
     loadSlots(date: string): Promise<SubSlotRow[]>;
+    /**
+     * 줄 하나 저장 — 열쇠(프로젝트·날짜·반·시작 시각)가 같은 줄이 있으면 그 줄을 지우고 새로 쓴다(설계 5-1 「지우고 새로」).
+     * ifMatch: 생략 = 무조건 · `null` = 그 열쇠가 비어 있어야 함 · 문자열 = 있는 줄의 updatedAt 이 같아야 함.
+     * 어긋나면 `{ ok:false, conflict:true }`(서버라면 409 「방금 다른 분이 올렸습니다」).
+     */
+    saveSlot(row: SubSlotRow, opts?: { ifMatch?: string | null }): Promise<SaveResult>;
 }
+export type SaveResult = { ok: true; row: SubSlotRow } | { ok: false; conflict: true };
+
+const sameKey = (a: SubSlotRow, b: SubSlotRow) =>
+    a.projectId === b.projectId && a.date === b.date && a.trackName === b.trackName && a.startMin === b.startMin;
 
 export function memorySource(rows: SubSlotRow[]): SlotSource {
-    return { loadSlots: async (date) => rows.filter((r) => r.date === date).map((r) => ({ ...r })) };
+    const store = rows.map((r) => ({ ...r }));
+    return {
+        loadSlots: async (date) => store.filter((r) => r.date === date).map((r) => ({ ...r })),
+        saveSlot: async (row, opts = {}) => {
+            const i = store.findIndex((r) => sameKey(r, row));
+            const { ifMatch } = opts;
+            if (ifMatch !== undefined) {
+                if (ifMatch === null ? i >= 0 : i < 0 || store[i].updatedAt !== ifMatch) return { ok: false, conflict: true };
+            }
+            if (i >= 0) store.splice(i, 1);
+            store.push({ ...row });
+            return { ok: true, row: { ...row } };
+        },
+    };
 }
 
 /** 미리보기용 가짜 줄 — 실서버가 붙기 전까지 화면이 이걸 읽는다. */
