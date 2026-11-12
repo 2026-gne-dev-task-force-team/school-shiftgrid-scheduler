@@ -124,6 +124,6 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(publicTitle('`a11fb51` 되돌리기')).toBe('되돌리기')
     expect(publicGoal('쥔님 14:42 *"요청할건 실제 데이터가 먼저다"*')).toBe('') // 쥔님 말 원문은 공개 판에 안 싣는다
     expect(publicGoal('쥔님 *"D:\\x 에 있는 것 고쳐라"*')).toBe('')
-    expect(build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') }).sprints[1].goal).toBe('실제 데이터가 먼저다')
+    expect(build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') }).sprints[1].goal).toBe('지금')
   })
 })
