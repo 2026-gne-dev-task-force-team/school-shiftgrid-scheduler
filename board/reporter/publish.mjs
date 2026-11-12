@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { build } from './snapshot.mjs'
+import { build, checkServices } from './snapshot.mjs'
 import { findDirty } from './plain.mjs'
 import { TABLES } from './to-sql.mjs'
 
@@ -23,6 +23,7 @@ const snap = build({
   repoDir,
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
   gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),
+  services: await checkServices(repoDir),
 })
 const dirty = findDirty(snap)
 if (dirty) throw new Error(`담백 검사 실패: ${dirty}`)

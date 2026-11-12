@@ -1,8 +1,9 @@
 // 보고꾼 — 레인 노트 · git 가지 · 사용량 파일 → 공개해도 되는 스냅숏(BoardData 꼴, types.ts).
-// 네트워크 없음. 원천은 읽기만. 자유 글은 넣지 않고 담백 틀로 조립한다.
+// build() 는 네트워크 없음(서비스는 publish 가 checkServices 로 재서 넘긴다). 원천은 읽기만. 자유 글은 넣지 않고 담백 틀로 조립한다.
 import { readFileSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import tls from 'node:tls'
 import { clean, findDirty, isPlain } from './plain.mjs'
 
 const TID = /T-\d+[a-z]+/g
@@ -125,14 +126,67 @@ function readGate(gatePath, now) {
   } catch { return [] }
 }
 
-const fixture = (name) => JSON.parse(readFileSync(new URL(`../fixtures/${name}.json`, import.meta.url), 'utf-8'))
+// 모듈 = 이 현황판 자체의 부품. 화면 탭은 registry.ts 의 import 순서대로 각 파일의 tab 낱말을 읽는다(브라우저 TS 라 import 안 함).
+export function readModules(layersDir = new URL('../src/layers/', import.meta.url)) {
+  const at = (f) => new URL(f, layersDir)
+  const read = (f) => { try { return readFileSync(at(f), 'utf-8') } catch { return '' } }
+  const tabs = [...read('registry.ts').matchAll(/from '\.\/([\w-]+)\.ts'/g)]
+    .map(([, f]) => [f, /\btab:\s*'([^']+)'/.exec(read(`${f}.ts`))?.[1]]).filter(([, t]) => t)
+  const m = (id, name, parent) => ({ id, name, parent, state: 'built', task_id: null })
+  const here = (f) => existsSync(new URL(f, import.meta.url))
+  return [
+    m('m-screen', '화면', null), ...tabs.map(([f, t]) => m(`m-tab-${f}`, t, 'm-screen')),
+    m('m-data', '자료', null),
+    ...(here('./snapshot.mjs') ? [m('m-reporter', '보고꾼', 'm-data')] : []),
+    ...(here('./publish.mjs') && here('./sync.yml') ? [m('m-publish', '나르기', 'm-data')] : []),
+    m('m-gate', '문지기 훅', 'm-data'), // 볼트 쪽이라 여기선 존재 확인 못 함
+  ]
+}
+
+const PREVIEW = 'https://2026-gne-dev-task-force-team.github.io/school-shiftgrid-scheduler/preview/'
+const RUNS = 'https://api.github.com/repos/2026-gne-dev-task-force-team/school-shiftgrid-scheduler/actions/runs?branch=board-data&per_page=1'
+/** 화면 호스팅 판정 — res: { status, build } 또는 null(실패). head: 줄기 짧은 해시. */
+export function serviceState(res, head) {
+  if (!res || res.status !== 200) return 'down'
+  const b = String(res.build ?? '')
+  return head && b && (b.startsWith(head) || head.startsWith(b)) ? 'ok' : 'build' // 짧은 해시 길이가 기기마다 달 수 있다
+}
+/** 자료 싣기 판정 — 최신 Actions run 하나(또는 null). */
+export function runState(run) {
+  if (!run) return 'down'
+  if (run.status !== 'completed') return 'build'
+  return run.conclusion === 'success' ? 'ok' : 'down'
+}
+/** 공개 창구만 재서 Service[] — 어떤 오류도 던지지 않는다. */
+export async function checkServices(repoDir, now = new Date()) {
+  const checked_at = now.toISOString()
+  // 기관망이 github.io 인증서를 중간에서 다시 서명한다 — node 기본 CA 로는 SELF_SIGNED_CERT_IN_CHAIN 이라 OS 인증서 저장소도 믿는다(curl·브라우저와 같게)
+  try { tls.setDefaultCACertificates([...new Set([...tls.getCACertificates('default'), ...tls.getCACertificates('system')])]) } catch { /* 옛 node */ }
+  const get = async (url, headers) => {
+    try {
+      const r = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
+      return { status: r.status, body: r.ok ? await r.json() : null }
+    } catch { return null }
+  }
+  let head = ''
+  try { head = execFileSync('git', ['-C', repoDir, 'rev-parse', '--short', '1.2v-preview'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() } catch { /* git 없음 */ }
+  const [ver, runs] = await Promise.all([get(`${PREVIEW}version.json?t=${now.getTime()}`), get(RUNS, { 'User-Agent': 'board-reporter', Accept: 'application/vnd.github+json' })])
+  // url 은 비운다 — 담백 검사가 「/」 를 거르고(공개 판), 화면도 url 을 안 쓴다
+  const s = (id, name, state) => ({ id, name, state, url: '', task_id: null, checked_at })
+  return [
+    s('s-host', '화면 호스팅', serviceState(ver && { status: ver.status, build: ver.body?.build }, head)),
+    s('s-sync', '자료 싣기', runState(runs?.status === 200 ? runs.body?.workflow_runs?.[0] : null)),
+    s('s-reporter', '보고꾼', 'ok'),
+  ]
+}
+
 // 분류 → 캐릭터(이름·팀·역할 = actor.ts ROLES 낱말). 코드 판은 지금 자료·보고를 만드니 「자료 나르기」. 지휘 분류는 따로 캐릭터를 안 만들고 지휘가 맡는다.
 const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['자료 나르기', '자료팀', '자료', 'make', 160, 'teal', 'box'],
   설계: ['설계', '설계팀', '설계', 'make', 190, 'teal', 'ruler'], 검사: ['시험', '시험팀', '시험', 'qa', 275, 'violet', 'check'], 지휘: ['지휘', '지휘', '지휘', 'hq', 40, 'amber', 'flag'] }
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date(), md, onDrop = () => {} }) {
+export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date(), md, services = [], onDrop = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -219,11 +273,9 @@ export function build({ lanePath, repoDir, usagePath, gatePath, now = new Date()
     if (l === lastPin) add('goal.progress', 'actor', lead.id, '방향 바뀜', '📌')
   }
 
-  // shortcut: 서비스·모듈은 아직 실원천이 없어 fixtures 를 싣는다(가짜 일감 연결은 끊음) — 원천이 생기면 바꾼다
   const data = {
     actors, tasks, lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }], branches,
-    services: fixture('services').map((s) => ({ ...s, task_id: null, checked_at: nowIso })),
-    modules: fixture('modules').map((m) => ({ ...m, task_id: null })),
+    services, modules: readModules(),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
   }
   const dirty = findDirty(data)
