@@ -127,7 +127,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
 /* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
-@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
+@media (prefers-reduced-motion: reduce) { --dy: 0px; .ws-roamer, .ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: none } .lane-chip.flash { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }
@@ -180,8 +180,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .lane { border: 1px solid var(--line); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) }
 .lane[data-state=blocked] { background: var(--blocked-bg); border-color: rgb(var(--bad-rgb) / .6) }
 .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
-.lane-track { position: relative; height: 44px; margin-top: var(--sp2); border-radius: 22px; background: linear-gradient(90deg, var(--s3), var(--s1)); box-shadow: inset 0 1px 3px rgb(var(--sh-rgb) / .25) }
-.ball { position: absolute; left: 0; top: 2px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(var(--neon-rgb) / .7); background: var(--bg); color: var(--fg); box-shadow: var(--sh1); cursor: pointer; animation: sgb-roll 27s linear infinite }
+.lane-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--sp2) }
+.lane-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 28px; padding: 0 8px; font: inherit; font-size: var(--fs-sm); color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.lc-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3) }
+.lane-chip[data-s=work] .lc-dot { background: var(--neon) } .lane-chip[data-s=blocked] .lc-dot { background: var(--bad) }
+.lane-chip.flash { animation: sgb-pulse 1.2s } /* 상태가 바뀐 칩만 한 번. .calm·움직임 줄이기면 아래 규칙이 끈다 */
 
 /* 4층 작업장 */
 .ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-items: stretch; border: 3px solid var(--floor-edge); border-top: 22px solid var(--wall); border-radius: var(--r1); overflow: hidden; background-color: var(--floor); background-image: linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px), linear-gradient(rgb(var(--floor-rgb) / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
@@ -257,7 +260,6 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @keyframes sgb-fill { from { width: 0 } }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(var(--neon-rgb) / .35); background: rgb(var(--neon-rgb) / .14) } }
 @keyframes sgb-breathe { to { border-color: var(--breathe) } }
-@keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 40px) } }
 @keyframes sgb-ws-flash { to { background: var(--flash) } }
 @keyframes sgb-bp-blink { 50% { opacity: .55 } }
 @keyframes sgb-chr-z { 50% { transform: translateY(-1px); opacity: .55 } }
