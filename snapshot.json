@@ -20,6 +20,25 @@
       "ended_at": null
     },
     {
+      "id": "a-T-7w",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "자료 나르기",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": "T-7w",
+      "branch_id": null,
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "ended_at": null
+    },
+    {
       "id": "a-T-2n-3",
       "parent_id": "a-lead",
       "kind": "helper",
@@ -877,11 +896,26 @@
       "team": "화면팀",
       "sprint": 7,
       "est_min": 8,
+      "started_at": "2026-11-12T16:44:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:44:00+09:00"
+    },
+    {
+      "id": "T-7w",
+      "title": "T-7v 결함 고침",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
       "started_at": "2026-11-12T15:45:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
+      "column": "work",
       "reason": "new",
-      "actor_id": null,
+      "actor_id": "a-T-7w",
       "updated_at": "2026-11-12T15:45:00+09:00"
     },
     {
@@ -897,7 +931,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R2",
@@ -912,7 +946,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R3",
@@ -927,7 +961,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R4",
@@ -942,7 +976,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R5",
@@ -957,7 +991,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R6",
@@ -972,7 +1006,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R7",
@@ -987,7 +1021,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R8",
@@ -1002,7 +1036,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R9",
@@ -1017,7 +1051,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R10",
@@ -1032,7 +1066,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R11",
@@ -1047,7 +1081,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R12",
@@ -1062,7 +1096,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R13",
@@ -1077,7 +1111,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R14",
@@ -1092,7 +1126,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R15",
@@ -1107,7 +1141,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R16",
@@ -1122,7 +1156,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R17",
@@ -1137,7 +1171,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R18",
@@ -1152,7 +1186,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R19",
@@ -1167,7 +1201,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R20",
@@ -1182,7 +1216,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R21",
@@ -1197,7 +1231,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R22",
@@ -1212,7 +1246,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R23",
@@ -1227,7 +1261,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R24",
@@ -1242,7 +1276,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R25",
@@ -1257,7 +1291,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R26",
@@ -1272,7 +1306,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R27",
@@ -1287,7 +1321,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R28",
@@ -1302,7 +1336,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R29",
@@ -1317,7 +1351,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R30",
@@ -1332,7 +1366,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R31",
@@ -1347,7 +1381,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R32",
@@ -1362,7 +1396,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R33",
@@ -1377,7 +1411,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R34",
@@ -1392,7 +1426,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R35",
@@ -1407,7 +1441,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R36",
@@ -1422,7 +1456,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R37",
@@ -1437,7 +1471,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R38",
@@ -1452,7 +1486,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R39",
@@ -1467,7 +1501,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R40",
@@ -1482,7 +1516,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R41",
@@ -1497,7 +1531,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R42",
@@ -1512,7 +1546,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R43",
@@ -1527,7 +1561,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R44",
@@ -1542,7 +1576,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R45",
@@ -1557,7 +1591,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R46",
@@ -1572,7 +1606,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R47",
@@ -1587,7 +1621,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R48",
@@ -1602,7 +1636,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R49",
@@ -1617,7 +1651,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R50",
@@ -1632,7 +1666,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R51",
@@ -1647,7 +1681,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R52",
@@ -1662,7 +1696,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R53",
@@ -1677,7 +1711,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R54",
@@ -1692,7 +1726,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R55",
@@ -1707,7 +1741,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R56",
@@ -1722,7 +1756,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R57",
@@ -1737,7 +1771,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R58",
@@ -1752,7 +1786,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R59",
@@ -1767,7 +1801,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R60",
@@ -1782,7 +1816,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R61",
@@ -1797,7 +1831,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R62",
@@ -1812,7 +1846,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R63",
@@ -1827,7 +1861,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R64",
@@ -1842,7 +1876,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R65",
@@ -1857,7 +1891,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     },
     {
       "id": "R66",
@@ -1872,7 +1906,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:43:02.809Z"
+      "updated_at": "2026-11-12T07:45:02.829Z"
     }
   ],
   "lanes": [
@@ -1972,7 +2006,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:43:02.165Z"
+      "checked_at": "2026-11-12T07:45:02.216Z"
     },
     {
       "id": "s-sync",
@@ -1980,7 +2014,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:43:02.165Z"
+      "checked_at": "2026-11-12T07:45:02.216Z"
     },
     {
       "id": "s-reporter",
@@ -1988,7 +2022,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:43:02.165Z"
+      "checked_at": "2026-11-12T07:45:02.216Z"
     }
   ],
   "modules": [
@@ -2094,6 +2128,15 @@
     }
   ],
   "events": [
+    {
+      "id": "e-66a3bea8",
+      "ts": "2026-11-12T16:44:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7v",
+      "actor_id": "a-lead",
+      "text": "배포본 실자료 재검 시작"
+    },
     {
       "id": "e-f6064528",
       "ts": "2026-11-12T16:29:00+09:00",
@@ -2521,7 +2564,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:43:02.809Z",
+      "ts": "2026-11-12T07:45:02.829Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -2690,9 +2733,10 @@
         "T-7s",
         "T-7t",
         "T-7u",
-        "T-7v"
+        "T-7v",
+        "T-7w"
       ],
-      "est_min": 112,
+      "est_min": 120,
       "actual_min": 0,
       "review": "",
       "passed": null,
