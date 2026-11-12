@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 # 한 사이트에 두 판을 나란히 올린다.
 #   루트   = v1 브랜치 (김은지 선생님이 쓰시는 판 · 동결 · 주소가 바뀌면 안 된다)
 #   /v2/   = main 브랜치 (대개편 중)
-#   /preview/board/ = 1.2v-preview 가지의 board/ (현황판)
+#   /preview/ = 1.2v-preview 가지 (미리보기 앱 + 맨 위 현황판 막대)
 # 어느 브랜치에 푸시하든 셋 다 다시 빌드해서 통째로 올린다 — 한쪽만 올리면 다른 쪽이 사라진다.
 # 배포 환경(github-pages)은 main 만 허락한다 — 1.2v-preview 는 board-kick.yml 이 이 워크플로를 main 으로 돌려 달라고 신호만 보낸다.
 on:
@@ -59,8 +59,9 @@ jobs:
         env:
           VITE_FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_DISPATCH_TOKEN }}
 
-      # ── 현황판 (/preview/board/) ───────────────────────────────
-      # preview 앱은 아직 main 과 같은 코드라 올리지 않는다(/v2/ 와 같은 출처·같은 저장소 키를 쓰게 된다).
+      # ── 1.2v 미리보기 (/preview/) — 맨 위 막대가 현황판 서랍이다 ─────
+      # 저장소 이름표는 그 가지에서 shiftgrid.v1_2 로 갈라 /v2/ 와 안 섞인다.
+      # tsc -b 는 로컬 검사로 갈음 — 여기서 깨지면 v1·v2 배포까지 막힌다.
       - uses: actions/checkout@v4
         with:
           ref: 1.2v-preview
@@ -68,7 +69,7 @@ jobs:
           persist-credentials: false
       - run: npm ci
         working-directory: preview
-      - run: npx vite build board
+      - run: npx vite build
         working-directory: preview
 
       # ── 합치기 ─────────────────────────────────────────────────
@@ -81,8 +82,10 @@ jobs:
           mkdir -p site/v2
           cp -R v2/dist/. site/v2/
           mkdir -p site/preview/board
-          cp -R preview/board/dist/. site/preview/board/
-          test -f site/preview/board/index.html
+          cp -R preview/dist/. site/preview/
+          test -f site/preview/index.html
+          # 옛 주소 /preview/board/ 는 앱으로 넘긴다(현황판은 앱 맨 위 막대에 산다)
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../"><a href="../">1.2v 미리보기로</a>' > site/preview/board/index.html
           # 올라가는 게 맞는지 눈으로 확인할 수 있게 남긴다
           echo "── 루트(v1) ──"; ls site | head -20
           echo "── /v2/ ──";     ls site/v2 | head -20
