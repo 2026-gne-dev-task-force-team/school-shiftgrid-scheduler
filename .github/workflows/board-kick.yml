@@ -6,7 +6,6 @@ name: 현황판 배포 신호
 on:
   push:
     branches: [1.2v-preview]
-    paths: ['board/**']
 
 permissions:
   actions: write
