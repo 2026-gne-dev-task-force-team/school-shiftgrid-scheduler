@@ -172,4 +172,35 @@ describe('칸 PUT 큐', () => {
         expect(calls).toEqual(['"1.1"', '"1.2"']);
         expect(q.status()).toEqual({ kind: 'saved' });
     });
+
+    it('resolve server → 서버 값·ETag 로 맞추고 막힘이 풀려 다음 변경이 나간다', async () => {
+        const { q, calls } = setup(c => c.part === 'a' && c.ifMatch === '"1.1"' ? { status: 412, body: { s: 1 } } : ok(4));
+        q.seed('a', '"1.1"');
+        q.edit('a', { mine: 1 });
+        await tick(PUT_DEBOUNCE_MS);
+        expect(q.partInfo('a').state).toBe('conflict');
+        await q.resolve('a', { etag: '"1.3"', value: { s: 1 }, keep: 'server' });
+        expect(q.partInfo('a')).toMatchObject({ state: 'clean', etag: '"1.3"' });
+        expect(q.status()).toEqual({ kind: 'saved' });
+        expect(calls).toHaveLength(1);
+        q.edit('a', { next: 1 });
+        await tick(PUT_DEBOUNCE_MS); await q.flush();
+        expect(calls).toHaveLength(2);
+        expect(calls[1]).toMatchObject({ ifMatch: '"1.3"', body: { next: 1 } });
+    });
+
+    it('resolve mine → 서버 ETag 로 내 값을 다시 PUT · 막힘이 풀린다', async () => {
+        const { q, calls } = setup(c => c.ifMatch === '"1.1"' ? { status: 412, body: { s: 1 } } : ok(4));
+        q.seed('a', '"1.1"');
+        q.edit('a', { mine: 1 });
+        await tick(PUT_DEBOUNCE_MS);
+        await q.resolve('a', { etag: '"1.3"', value: { mine: 1 }, keep: 'mine' });
+        expect(calls).toHaveLength(2);
+        expect(calls[1]).toMatchObject({ ifMatch: '"1.3"', body: { mine: 1 } });
+        expect(q.partInfo('a')).toMatchObject({ state: 'clean', etag: '"1.4"' });
+        q.edit('a', { next: 1 });
+        await tick(PUT_DEBOUNCE_MS); await q.flush();
+        expect(calls).toHaveLength(3);
+        expect(calls[2].ifMatch).toBe('"1.4"');
+    });
 });
