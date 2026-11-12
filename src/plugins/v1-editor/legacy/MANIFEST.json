@@ -73,5 +73,8 @@
     "ui/screens/basic/DemandStatusPanel.tsx": "9b04dba20fb255f46b51633c596f67dc4e1c925182caa4c09afbe15eaac3118f",
     "ui/screens/basic/DemandTable.tsx": "9f481549b65528f21181027567e7200ab3fd92055a6c78b4e71f3e8f40a4be64",
     "ui/screens/basic/ExcelBar.tsx": "f013357b0ca39e71a1720542026b8bfa9d4bd286a8152d06d926c4c83ea32d73"
+  },
+  "outside": {
+    "docs/사용설명서.md": "b1592048bc3cc7269615aa6f1ff34fc69926f74beaeb90940b4ac1bde9617cbe"
   }
 }

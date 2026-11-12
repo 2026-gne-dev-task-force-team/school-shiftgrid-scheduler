@@ -23,6 +23,24 @@ describe('v1-editor legacy 사본', () => {
   it('legacy 차이 0 — 파일 목록·해시가 MANIFEST(v1 원본 해시)와 같다', () => {
     expect(walk(legacy)).toEqual(manifest.files)
   })
+  it('사본 밖 자산(outside)이 MANIFEST 해시와 같다', () => {
+    const out = (manifest as { outside?: Record<string, string> }).outside ?? {}
+    expect(Object.keys(out).length).toBeGreaterThan(0)
+    for (const [n, h] of Object.entries(out)) expect(createHash('sha256').update(readFileSync(join(here, n))).digest('hex')).toBe(h)
+  })
+  it('legacy 소스의 상대 import 는 사본 안이거나 outside 로 나르는 파일만 가리킨다(?raw 포함)', () => {
+    const out = Object.keys((manifest as { outside?: Record<string, string> }).outside ?? {}).map((o) => join(here, o))
+    const re = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]*)['"]/g
+    const bad: string[] = []
+    for (const n of Object.keys(manifest.files)) {
+      if (!/\.(tsx?|jsx?|css)$/.test(n)) continue
+      for (const m of readFileSync(join(legacy, n), 'utf8').matchAll(re)) {
+        const abs = join(legacy, n, '..', m[1].replace(/\?.*$/, ''))
+        if (!abs.startsWith(legacy) && !out.includes(abs)) bad.push(`${n} -> ${m[1]}`)
+      }
+    }
+    expect(bad).toEqual([])
+  })
   it('원본 v1 가지에서 온 사본이다(source 기록)', () => {
     expect(manifest.source).toMatch(/^v1@[0-9a-f]{40}$/)
     expect(Object.keys(manifest.files).length).toBeGreaterThan(50)
