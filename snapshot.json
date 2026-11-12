@@ -602,7 +602,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T15:49:43+09:00"
+      "updated_at": "2026-11-12T15:52:21+09:00"
     },
     {
       "id": "b-T-2f",
@@ -679,10 +679,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "ok",
+      "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:51:01.915Z"
+      "checked_at": "2026-11-12T06:53:01.921Z"
     },
     {
       "id": "s-sync",
@@ -690,7 +690,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:51:01.915Z"
+      "checked_at": "2026-11-12T06:53:01.921Z"
     },
     {
       "id": "s-reporter",
@@ -698,7 +698,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:51:01.915Z"
+      "checked_at": "2026-11-12T06:53:01.921Z"
     }
   ],
   "modules": [
@@ -1069,7 +1069,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:51:02.486Z",
+      "ts": "2026-11-12T06:53:02.517Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
