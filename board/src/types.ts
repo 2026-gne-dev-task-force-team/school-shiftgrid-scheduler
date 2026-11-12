@@ -16,6 +16,7 @@ export interface Task {
   id: string; title: string; category: string; kind: 'work' | 'cr' | 'bug' | 'decide' | 'review'; team: string; sprint: number
   est_min: number; started_at: string | null; lane_id: string; column: 'wait' | 'work' | 'done'; reason: string
   actor_id: string | null; updated_at: string
+  app?: string // 어느 판 일감인가(v1·1.2v·v2) — 없는 옛 자료는 1.2v
   blocked_by?: string; block_kind?: BlockKind // 막힌 일의 까닭 — 앞 일 id · 낱말
 }
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }

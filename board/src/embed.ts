@@ -1,4 +1,5 @@
 import './style.css'
+import { DEFAULT_APP, readApp, type AppId } from './lib/app.ts'
 import { loadData } from './data.ts'
 import { h, isCalm } from './dom.ts'
 import { FEEDBACK_CHANGED, loadFeedback } from './lib/feedback.ts'
@@ -26,6 +27,7 @@ const calmOn = () => {
   return s === '1' // 사용자가 직접 켤 때만 — 시스템 설정·폰 폭으로 자동으로 켜지 않는다
 }
 
+let app: AppId = DEFAULT_APP // 마운트 자리의 data-app
 let root: HTMLElement | null = null
 let page: HTMLElement
 let barEl: HTMLElement
@@ -42,7 +44,7 @@ let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
   band?.dispose()
-  const data = loadData(Date.now(), remote)
+  const data = loadData(Date.now(), remote, app)
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
   const theme = loadTheme(localStorage)
@@ -55,6 +57,7 @@ function render(notice = false): void {
   const ctx: LayerCtx = { data, openDetail: detail.open, tip: attachTip }
 
   const bnd = band = createBand(data, {
+    app,
     calm: calmOn(),
     live,
     theme,
@@ -64,7 +67,7 @@ function render(notice = false): void {
     onAuto(on) { saveAuto(localStorage, on); void runCheck() },
     onApply: () => void applyUpdate(latest?.build ?? __BUILD__), // 새 판 번호로 열어야 옛 index.html 사본을 피한다
     // 접수 창은 서랍 안 상세 칸에 뜨니, 닫힌 서랍이면 먼저 연다.
-    onFeedback: () => { setDrawer(true); openFeedback(detail.open, () => render(true)) },
+    onFeedback: () => { setDrawer(true); openFeedback(detail.open, () => render(true), app) },
     async onPurge() { // 확인은 메뉴 안 2단계가 이미 받았다
       await clearThisDevice()
       render()
@@ -124,6 +127,7 @@ function render(notice = false): void {
 // 앱 맨 위에 끼우는 막대 + 위 서랍. host 를 안 주면 body 맨 앞에 붙는다. 두 번 불러도 한 번만 붙는다.
 export function mountBoard(host?: HTMLElement): void {
   if (root) return
+  app = readApp(host)
   root = h('div', { class: 'sgb' })
   barEl = h('div', { class: 'sgb-bar' })
   menuHost = h('div', { class: 'sgb-menuhost' }) // 막대는 overflow 가 잘리니 메뉴는 막대 밖에 둔다

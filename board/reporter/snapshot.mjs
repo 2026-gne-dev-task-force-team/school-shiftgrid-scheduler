@@ -116,6 +116,12 @@ export function parseLaneNote(md) {
   return { now, rows }
 }
 
+/** 레인 폴더 이름에 판 이름(v1 · 1.2v · v2)이 낱말로 적혀 있으면 그 판, 아니면 1.2v. 이름에서 짐작하지 않는다 — 적힌 낱말만 읽는다. */
+export function appOfLane(name) {
+  const m = /(?<![\w.])(v1|1\.2v|v2)(?![\w.])/i.exec(name ?? '')
+  return m ? m[1].toLowerCase() : '1.2v'
+}
+
 const LANE_SKIP = new Set(['닫힘', '요청함', '작업현황판']) // 작업현황판은 lanePath 로 따로 읽는다(l1)
 /** 레인 뿌리 아래 폴더마다 「레인 *.md」 를 읽는다(읽기만). onWarn(폴더, 까닭) — 못 읽은 것. */
 export function readLanes(root, onWarn = () => {}) {
@@ -308,7 +314,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       const hits = logAt.filter((l) => l.ids.includes(r.id))
       const col = columnOf(r.state)
       const category = categoryOf(r.team)
-      tasks.push({ id: r.id, title, category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
+      tasks.push({ id: r.id, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
         actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began })
       mine.push(tasks.at(-1))
@@ -405,7 +411,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const reqTasks = parseRequests(rmd).map((r) => {
     const { col, link, sprint } = requestColumn(r.state, byId)
     const title = requestTitle(r.what, r.id)
-    return { id: r.id, title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: 'work', team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
+    return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: 'work', team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
       est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso }
   })
 
@@ -425,7 +431,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       if (!title) { onDrop('tasks', tid); return [] }
       seen.add(tid)
       if (isBlockedState(r.state)) laneBlocked.push({ id: tid, title })
-      return [{ id: tid, title, category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
+      return [{ id: tid, title, app: appOfLane(ln.name), category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
         ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso }]
     })
     const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'

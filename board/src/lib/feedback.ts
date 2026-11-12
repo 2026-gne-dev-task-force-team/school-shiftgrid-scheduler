@@ -1,11 +1,12 @@
 import type { BoardEvent, Task } from '../types.ts'
+import { DEFAULT_APP, type AppId } from './app.ts'
 
 export const FEEDBACK_KEY = 'board.feedback' // board. 접두사 → 저장소 비우기가 같이 지운다
 export const MAX_LEN = 200
 export type Status = 'new' | 'review' | 'fixed' | 'closed'
 export const STATUSES: Status[] = ['new', 'review', 'fixed', 'closed']
 export const STATUS_NAME: Record<Status, string> = { new: '접수', review: '검토', fixed: '고침', closed: '닫힘' }
-export interface Feedback { id: string; text: string; where: string; ts: string; status?: Status } // status 없는 옛 자료 = 접수
+export interface Feedback { id: string; text: string; where: string; ts: string; status?: Status; app?: string } // status 없는 옛 자료 = 접수
 export const statusOf = (f: Feedback): Status => (f.status && STATUSES.includes(f.status) ? f.status : 'new')
 type Store = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -24,13 +25,13 @@ export function checkFeedback(text: string): { ok: true; text: string } | { ok: 
 }
 
 /** 접수. 거절이면 이유 한 줄을 돌려준다. */
-export function addFeedback(text: string, where: string, s: Store | undefined = globalThis.localStorage, now = Date.now()): { ok: true } | { ok: false; reason: string } {
+export function addFeedback(text: string, where: string, s: Store | undefined = globalThis.localStorage, now = Date.now(), app: AppId = DEFAULT_APP): { ok: true } | { ok: false; reason: string } {
   const r = checkFeedback(text)
   if (!r.ok) return r
   const t = r.text
   if (!s) return { ok: false, reason: '이 기기에 저장할 수 없어요.' }
   const all = loadFeedback(s)
-  all.push({ id: `fb${now}`, text: t, where, ts: new Date(now).toISOString() })
+  all.push({ id: `fb${now}`, text: t, where, ts: new Date(now).toISOString(), app })
   s.setItem(FEEDBACK_KEY, JSON.stringify(all))
   return { ok: true }
 }
@@ -74,7 +75,7 @@ const place = (st: Status): Pick<Task, 'column' | 'reason'> =>
 export function feedbackRows(fbs: Feedback[], laneId: string): { tasks: Task[]; events: BoardEvent[] } {
   return {
     tasks: fbs.map((f) => ({ id: f.id, title: f.text, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
-      started_at: null, lane_id: laneId, actor_id: null, updated_at: f.ts, ...place(statusOf(f)) })),
+      started_at: null, lane_id: laneId, app: f.app ?? DEFAULT_APP, actor_id: null, updated_at: f.ts, ...place(statusOf(f)) })),
     events: fbs.map((f) => ({ id: `e${f.id}`, ts: f.ts, kind: 'feedback.add', subject_type: 'task', subject_id: f.id, actor_id: null, text: '🐞 불편 하나가 접수됐다' })),
   }
 }
