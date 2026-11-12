@@ -8,6 +8,7 @@ import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
 import { createDetail } from './ui/detail.ts'
 import { createFeedLog } from './ui/feedlog.ts'
+import { openFeedback } from './ui/feedback.ts'
 import { createStage } from './ui/stage.ts'
 import { attachTip } from './ui/tip.ts'
 
@@ -35,6 +36,7 @@ function mount(): void {
     calm: calmOn(),
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(__BUILD__),
+    onFeedback: () => openFeedback(detail.open, mount),
     async onPurge() {
       if (!confirm('이 기기에 남은 이 앱의 저장 자료를 비웁니다.\n서버 자료는 안전합니다. 다시 로그인해야 합니다.')) return
       await clearThisDevice()
@@ -48,7 +50,7 @@ function mount(): void {
     stage.show(LAYERS[i], ctx)
   }
   LAYERS.forEach((l, i) => {
-    const b = h('button', { class: 'btn' }, `${l.floor} ${l.tab}`)
+    const b = h('button', { class: 'btn' }, l.floor === 6 ? l.tab : `${l.floor} ${l.tab}`)
     b.addEventListener('click', () => show(i))
     tabs.append(b)
   })
