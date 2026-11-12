@@ -2,7 +2,6 @@ import { h } from '../dom.ts'
 import { chip, KIND_ICON, STATE_ICON } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { actorLabel, actorTokens, actorWhat } from '../lib/actor.ts'
-import type { Actor } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 import { changedChips, laneChips, type ChipState } from './layer3-logic.ts'
 
@@ -15,12 +14,11 @@ export const layer3: LayerRenderer = {
   id: 'layer3', floor: 3, tab: 'Lanes',
   render(host, { data, openDetail, tip }) {
     const box = h('div', { class: 'lanes' })
-    const tagged = (a: Actor) => { const l = actorLabel(a, data.actors), n = a.task_id?.replace(/^l-\w+-/, ''); return n && !l.includes(n) ? `${l} ${n}` : l } // 맡은 태스크 번호
     for (const l of data.lanes) {
       // 레인 담당 + 이 레인 일감을 지금 맡아 도는 캐릭터들
       const who = data.actors.filter((x) => x.id === l.actor_id || (x.state === 'work' && data.tasks.find((t) => t.id === x.task_id)?.lane_id === l.id))
       const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)} · 토큰 ${actorTokens(a)}`; c.title = t; tip(c, () => t); return c })(
-        chip({ icon: character(a), label: tagged(a), hue: a.hue, id: a.id })))
+        chip({ icon: character(a), label: actorLabel(a, data.actors), hue: a.hue, id: a.id })))
       const head = h('div', { class: 'lane-head' }, h('b', null, l.title),
         ...(chips.length ? chips : [h('span', null, '—')]),
         h('span', null, `${STATE_ICON[l.state] ?? '⏸'} ${STATE_TEXT[l.state] ?? l.state}`))
