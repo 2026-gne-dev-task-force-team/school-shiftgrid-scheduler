@@ -56,25 +56,6 @@
       "tok_per_min": 0,
       "started_at": "2026-11-12T06:36:25.303Z",
       "ended_at": null
-    },
-    {
-      "id": "a-68cbba50",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "일손",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
-      "state": "work",
-      "task_id": null,
-      "branch_id": null,
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T06:40:39.810Z",
-      "ended_at": null
     }
   ],
   "tasks": [
@@ -701,7 +682,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:41:02.033Z"
+      "checked_at": "2026-11-12T06:43:01.913Z"
     },
     {
       "id": "s-sync",
@@ -709,7 +690,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:41:02.033Z"
+      "checked_at": "2026-11-12T06:43:01.913Z"
     },
     {
       "id": "s-reporter",
@@ -717,7 +698,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:41:02.033Z"
+      "checked_at": "2026-11-12T06:43:01.913Z"
     }
   ],
   "modules": [
@@ -1088,7 +1069,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:41:02.838Z",
+      "ts": "2026-11-12T06:43:02.445Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
