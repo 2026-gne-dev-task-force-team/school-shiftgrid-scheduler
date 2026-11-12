@@ -214,7 +214,7 @@ describe('보고꾼 — 서비스·모듈', () => {
     expect(roots).toEqual(expect.arrayContaining(['h-shared', 'h-link', 'h-editor', 'h-sub', 'h-room', 'h-check']))
     expect(name('h-link')).toBe('server-link 서버 연결')
     expect(under('h-link')).toEqual(['P5 로컬 사본', 'P6 칸 PUT 큐', 'P7 412 버튼 둘', 'P8 조작 재생', 'P9 끊김 잠금·연결 상태'])
-    expect(under('h-board')).toEqual(expect.arrayContaining(['Overview', 'Branch', 'Lanes', 'Board', 'Blueprint', 'Sprint', 'Inbox', 'Guide', '보고꾼', '나르기', '문지기 훅']))
+    expect(under('h-board')).toEqual(expect.arrayContaining(['Overview', 'Branch', 'Lanes', 'Board', 'Blueprint', 'Sprint', 'Inbox', 'Guide', '보고꾼', '직접 싣기', '문지기 훅']))
     expect(d.modules.some((m: { id: string }) => m.id === 'm-screen' || m.id === 'm-data')).toBe(false) // 옛 자기 모듈 뿌리는 없다
     expect(d.modules.find((m: { id: string }) => m.id === 'm-p14')?.note).toBe('P14 · R56 · 설계 ① 통합 구조 16절 판 쪼개기 초안')
   })
