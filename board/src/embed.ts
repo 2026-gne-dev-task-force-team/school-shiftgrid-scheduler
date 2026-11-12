@@ -9,6 +9,7 @@ import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
 import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
 import { fetchRemote, type Remote } from './lib/remote.ts'
+import { connectRealtime } from './lib/realtime.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
 import { createDetail } from './ui/detail.ts'
@@ -31,6 +32,7 @@ let menuHost: HTMLElement
 let poll = 0
 let band: ReturnType<typeof createBand> | null = null
 let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
+let live: boolean | undefined // 실시간 소켓 상태. undefined = 소켓을 안 쓴다(키 없음·목업)
 let latest: VersionInfo | null = null // 띠에 띄운 새 판
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 let detailEl: HTMLElement | null = null
@@ -52,6 +54,7 @@ function render(notice = false): void {
 
   const bnd = band = createBand(data, {
     calm: calmOn(),
+    live,
     theme,
     onTheme(t: Theme) { saveTheme(localStorage, t); root!.dataset.theme = t },
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
@@ -137,7 +140,12 @@ export function mountBoard(host?: HTMLElement): void {
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   render()
-  void fetchRemote().then((r) => { if (r) { remote = r; render() } })
+  const refresh = () => fetchRemote().then((r) => { if (r) { remote = r; render() } })
+  void refresh()
+  // 실시간 소켓이 있으면 바뀜 알림에 다시 읽고, 소켓이 끊긴 동안은 1분 주기 읽기가 받친다. 키가 없으면 둘 다 안 한다.
+  const rt = connectRealtime({ url: import.meta.env.VITE_SUPABASE_URL, key: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    onChange: () => void refresh(), onStatus(on) { live = on; band?.setLive(on) } })
+  if (rt) { live = false; band?.setLive(false); setInterval(() => { if (!live && !document.hidden) void refresh() }, 60_000) }
   // 처음 열림은 그대로 되살린다(슬라이드 없이).
   if (loadOpen(localStorage)) { drawer.style.transition = 'none'; set(true); void drawer.offsetWidth; drawer.style.transition = '' }
 }

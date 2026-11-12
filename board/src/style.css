@@ -30,6 +30,7 @@
   .sgb-bar .sgb-name { font-weight: 600 }
   .sgb-bar .band-clock { flex: 0 5 auto; color: var(--fg-2); font-variant-numeric: tabular-nums }
   .sgb-bar .chip.src { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 20px }
+  .sgb-bar .chip.live[hidden] { display: none } .sgb-bar .chip.live.off { opacity: .6 }
   .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: var(--edge) }
   .sgb-gauge i { width: 5px; height: 10px; background: var(--s3) } .sgb-gauge i.on { background: var(--neon) }
   .sgb-bar .sgb-pct { color: var(--neon-2); font-weight: 700; flex: none; font-variant-numeric: tabular-nums }
