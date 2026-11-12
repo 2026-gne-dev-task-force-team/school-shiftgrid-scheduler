@@ -10,18 +10,13 @@ export function project(ids: string[], rot: number, r: number): Proj[] {
   })
 }
 
-/** 누르기 판정: 앞면(cos>0) 가지만 · 여럿이 겹치면 가장 앞(cos 큰 것). tol 은 앞면 기준 반높이(px), 뒤로 갈수록 좁아진다. */
-export function hitTest(segs: Seg[], px: number, py: number, tol = 14): string | null {
+/** 누르기 판정: 앞면(cos>0) 가지만 · 여럿이 겹치면 가장 앞(cos 큰 것). seg 는 이름표+선 둘레 상자(가운데 y), tol 은 그 반높이(px) — 24px 이상, 폰 44px 이상. */
+export function hitTest(segs: Seg[], px: number, py: number, tol = 12): string | null {
   let best: Seg | null = null
   for (const s of segs) {
     if (s.cos <= 0) continue
-    if (px < s.x1 || px > s.x2 || Math.abs(py - s.y) > tol * s.cos + 4) continue
+    if (px < s.x1 || px > s.x2 || Math.abs(py - s.y) > tol) continue
     if (!best || s.cos > best.cos) best = s
   }
   return best ? best.id : null
-}
-
-/** 라벨을 쓸 가지: 앞쪽(cos 큰 순) max 개만. 폰은 5. */
-export function labelIds(ps: Proj[], max = 5): Set<string> {
-  return new Set([...ps].filter((p) => p.cos > 0).sort((a, b) => b.cos - a.cos).slice(0, max).map((p) => p.id))
 }

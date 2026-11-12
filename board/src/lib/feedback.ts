@@ -26,7 +26,7 @@ export function addFeedback(text: string, where: string, s: Store | undefined = 
 /** 접수된 불편을 기다림 열의 🐞 카드와 흐름 줄로 바꾼다 — 자료 불러올 때 합친다. */
 export function feedbackRows(fbs: Feedback[], laneId: string): { tasks: Task[]; events: BoardEvent[] } {
   return {
-    tasks: fbs.map((f) => ({ id: f.id, title: `🐞 ${f.text}`, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
+    tasks: fbs.map((f) => ({ id: f.id, title: f.text, category: f.where, kind: 'bug', team: '접수', sprint: 0, est_min: 0,
       started_at: null, lane_id: laneId, column: 'wait', reason: 'new', actor_id: null, updated_at: f.ts })),
     events: fbs.map((f) => ({ id: `e${f.id}`, ts: f.ts, kind: 'feedback.add', subject_type: 'task', subject_id: f.id, actor_id: null, text: '🐞 불편 하나가 접수됐다' })),
   }

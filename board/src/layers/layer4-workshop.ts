@@ -1,7 +1,7 @@
 import { h } from '../dom.ts'
 import { KIND_ICON } from '../ui/chip.ts'
 import type { Task } from '../types.ts'
-import { COLS, REASON_NAME, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
+import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
 import type { LayerRenderer } from './types.ts'
 
 // 4층 작업장 — 확인 중 · 기다림 · 작업 · 끝. 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
@@ -34,7 +34,7 @@ export const layer4: LayerRenderer = {
         h('b', null, `${KIND_ICON[t.kind] ?? '•'} ${t.title}`),
         h('small', null, `${t.category} · ${t.team}`),
         m !== null && h('span', { class: 'ws-clock' }, `${m}분째 / 짐작 ${t.est_min}분`),
-        showReason(t) && h('span', { class: 'ws-reason' }, `⛔ ${REASON_NAME[t.reason] ?? t.reason}`),
+        showReason(t) && h('span', { class: 'ws-reason' }, `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}`),
       ].filter((k) => k !== false))
     }
 
@@ -47,7 +47,8 @@ export const layer4: LayerRenderer = {
           el.addEventListener('click', () => {
             const c = cur(t.id)
             openDetail({ title: c.title, rows: [['머리표', KIND_ICON[c.kind] ?? c.kind], ['분류', c.category], ['팀', c.team],
-              ['상태', REASON_NAME[c.reason] ?? c.reason], ['시간', `${minutesIn(c, now()) ?? 0}분째 / 짐작 ${c.est_min}분`]] })
+              ['상태', REASON_NAME[c.reason] ?? c.reason], ['시간', `${minutesIn(c, now()) ?? 0}분째 / 짐작 ${c.est_min}분`],
+              ...(c.block_kind ? [['막힌 이유', `${BLOCK_NAME[c.block_kind]} — ${blockText(c, tasks)}`] as [string, string]] : [])] })
           })
           tip(el, () => `${cur(t.id).title} · ${REASON_NAME[cur(t.id).reason] ?? cur(t.id).reason}`)
           cards.set(t.id, el)
