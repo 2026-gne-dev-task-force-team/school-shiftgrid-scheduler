@@ -4,6 +4,8 @@ import config from '../../site.config.json';
 /** 🔴 브라우저 저장소 키는 전부 이 접두사로 붙는다(main.tsx 가 setStoragePrefix 로 한 번 건다). 다른 곳에 접두사 리터럴 금지. */
 export const STORAGE_PREFIX: string = config.storagePrefix;
 export const INSTALLED_PLUGIN_IDS: readonly string[] = config.plugins;
+/** 판 이름표 — 설치 이름(manifest)·탭 제목(title)·화면 배지가 전부 여기서 나온다(site.config.json 의 edition 이 정본). */
+export const EDITION = config.edition;
 const LEGACY_PREFIXES: readonly string[] = config.legacyStoragePrefixes;
 
 /**

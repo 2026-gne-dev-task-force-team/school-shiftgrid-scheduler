@@ -1,6 +1,12 @@
 {
   "storagePrefix": "shiftgrid.v1_2",
   "legacyStoragePrefixes": [],
+  "edition": {
+    "label": "1.2v",
+    "appName": "시간표 짜기 1.2v",
+    "shortName": "시간표 1.2v",
+    "badge": "1.2v 미리보기 — v1 + 운영 앱 합치는 중"
+  },
   "plugins": [
     "page", "collection", "sheet", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
