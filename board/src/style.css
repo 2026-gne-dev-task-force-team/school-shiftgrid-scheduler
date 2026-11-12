@@ -24,6 +24,8 @@
   .sgb-bar .sgb-name { font-weight: 600 }
   .sgb-bar .band-clock { flex: 0 5 auto; color: var(--fg-2); font-variant-numeric: tabular-nums }
   .sgb-bar .chip.src { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 20px }
+  .sgb-gauge { display: inline-flex; gap: 1px; flex: none; padding: 1px; background: #2b2418 }
+  .sgb-gauge i { width: 5px; height: 10px; background: var(--s3) } .sgb-gauge i.on { background: var(--neon) }
   .sgb-bar .sgb-pct { color: var(--neon-2); font-weight: 700; flex: none; font-variant-numeric: tabular-nums }
   .sgb-mini { min-height: 22px; height: 22px; padding: 0 8px; flex: none; font-size: var(--fs-xs); border-radius: var(--r1) }
   .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
@@ -50,18 +52,20 @@ button.chip:hover { background: hsl(var(--hue) 70% 85%); border-color: hsl(var(-
 .band-drop { padding: var(--sp3) var(--sp4) 0 }
 [hidden] { display: none !important }
 
-.tabs { display: flex; gap: var(--sp1); padding: var(--sp2) var(--sp4) var(--sp1); overflow-x: auto; scroll-snap-type: x mandatory; border-bottom: 1px solid var(--line); scrollbar-width: none }
+.tabs { display: flex; gap: var(--sp1); margin: var(--sp3) var(--sp4) 0; padding: var(--sp2) var(--sp3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; background: var(--s1); border: 2px solid #2b2418; border-radius: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(43 36 24 / .35) }
+.tn, .tabs .btn.on::before { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace }
+.tabs .btn.on::before { content: "▶"; margin-right: 4px; color: var(--neon-2); animation: sgb-cursor 1s steps(1) infinite }
 .tabs .btn { scroll-snap-align: start; white-space: nowrap; background: transparent; border-color: transparent; box-shadow: none; color: var(--fg-2) }
 .tabs .btn:hover { background: var(--s2); color: var(--fg) }
 .tabs .btn.on { background: var(--neon-soft); border-color: rgb(14 124 114 / .45); color: var(--neon-2) }
 /* 폰: 줄바꿈 허용 · 패딩 축소 — 글자가 버튼 밖으로 넘치지 않게(360px 에서 7개 모두 넘쳤다) */
 @media (max-width: 767px) { .tabs { flex-wrap: wrap; overflow-x: visible; gap: 4px; padding: 8px } .tabs .btn { flex: 0 1 auto; width: auto; max-width: 100%; padding: 4px 8px; white-space: normal; word-break: keep-all; line-height: 1.2; height: auto } }
 .stage-host { display: contents }
-.tab-desc { margin: 0; font-size: var(--fs-sm); color: var(--fg-2); text-wrap: pretty }
+.tab-desc { margin: 0; min-height: 2.4em; padding: var(--sp2) var(--sp3); font-size: var(--fs-sm); color: var(--fg); text-wrap: pretty; background: var(--s2); border: 2px solid #2b2418; box-shadow: inset 0 0 0 2px var(--s3) }
 
 .body { flex: 1; display: grid; grid-template-columns: 220px 1fr 280px; gap: var(--sp4); padding: var(--sp4); min-height: 0 }
 .body:has(> .detail[hidden]) { grid-template-columns: 220px 1fr } /* 상세가 닫혀 있으면 빈 300px 칸을 무대에 돌려준다 */
-.feed, .stage, .detail { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r3); padding: var(--sp3); min-width: 0; box-shadow: var(--sh1) }
+.feed, .stage, .detail { background: var(--s1); border: 2px solid #2b2418; border-radius: 0; padding: var(--sp3); min-width: 0; box-shadow: inset 0 0 0 2px var(--s2), 2px 2px 0 rgb(43 36 24 / .3) }
 .feed-list, .recent { list-style: none; margin: 0; padding: 0 }
 .feed-list { display: flex; flex-direction: column; gap: 1px; margin-top: var(--sp2) }
 .feed-line { text-wrap: pretty; word-break: keep-all;display: flex; align-items: center; width: 100%; min-height: 28px; padding: 3px 6px; text-align: left; background: none; border: 0; border-radius: var(--r2); color: var(--fg); font: inherit; font-size: var(--fs-sm); line-height: 1.35; cursor: pointer; transition: background .15s }
@@ -108,6 +112,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 @media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
 
 @media (max-width: 767px) {
+  .sgb-gauge i { width: 3px }
   .band-clock, .sgb-bar .chip.src:not(.mock) { display: none } /* 폰 폭에선 출처 칩이 「서」로 잘려 제목을 밀어낸다 — 목업일 때만 남긴다 */
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
   .stage { flex: 1; padding: var(--sp2); border-radius: var(--r2) }
@@ -166,8 +171,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ws-walk { position: relative; height: 34px; margin-top: 4px; border-radius: var(--r1); background: rgb(90 70 48 / .12); overflow: hidden }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
 .ws-bang { position: absolute; top: -12px; right: 6px; min-width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--bad); border-radius: 8px 8px 8px 2px; box-shadow: 0 1px 0 rgb(0 0 0 / .3) }
-.ws-col[data-col=work] .ws-card { flex-direction: column; align-items: flex-start }
-.ws-col[data-col=work] .ws-card .chr { order: -1; animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
+.ws-col[data-col=work] .ws-card .chr { animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
 .ws-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp1); padding: 1px 3px; font-weight: 650; font-size: var(--fs-sm); color: var(--fg-2) }
 .ws-badge { padding: 0 6px; border-radius: 999px; background: var(--neon-soft); color: var(--neon-2); font-variant-numeric: tabular-nums }
 .ws-body { display: flex; flex-direction: column; gap: 3px }
@@ -177,13 +181,14 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ws-card:hover { transform: translateY(-1px); border-color: var(--line-2) }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
 .ws-card.flash { outline: 3px solid var(--neon); animation: sgb-ws-flash .4s ease-in-out 5 alternate } /* 움직임 끄기(.calm)면 animation 만 꺼져 테두리만 남는다 */
+.ws-more { min-height: 26px; padding: 0 6px; font: inherit; font-size: var(--fs-sm); font-weight: 650; color: var(--neon-2); background: var(--s2); border: 2px solid #2b2418; border-radius: 0; cursor: pointer }
 .ws-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--make) }
 .ws-dot[data-s=blocked] { background: var(--bad) } .ws-dot[data-s=over] { background: var(--warn) } .ws-dot[data-s=done] { background: var(--fg-3) }
 @media (max-width: 767px) {
   .ws { display: flex; flex-direction: column }
   .ws-col { min-height: 0; border-right: 0; border-bottom: 2px dashed rgb(90 70 48 / .35) }
   .ws-furn { max-width: 120px; margin: 0 0 var(--sp1) }
-  .ws-card { min-height: 44px }
+  .ws-card, .ws-more { min-height: 44px }
   .ws-head { min-height: 36px; align-items: center }
 }
 .bp-bar { display: flex; align-items: center; gap: var(--sp2); margin-bottom: var(--sp2) }
@@ -213,6 +218,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
   .feed-line .chr { margin-right: 8px }
   .chr-card { display: flex; justify-content: center; padding: var(--sp3) 0; margin-top: var(--sp2); border-radius: var(--r2); background: radial-gradient(circle at 50% 60%, rgb(217 119 87 / .18), transparent 70%) }
 }
+@keyframes sgb-cursor { 50% { opacity: 0 } }
 @keyframes sgb-roam { to { transform: translateX(var(--dist, 100px)) } }
 @keyframes sgb-pop { from { opacity: 0; transform: translateY(var(--dy, 10px)) scale(.94) } }
 @keyframes sgb-in { from { opacity: 0; transform: translateX(calc(var(--dy, 10px) * 1.4)) } }

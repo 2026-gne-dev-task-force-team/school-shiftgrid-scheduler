@@ -2,7 +2,7 @@ import type { BlockKind, Task } from '../types.ts'
 
 export type Col = 'check' | 'wait' | 'work' | 'done'
 export const COLS: { id: Col; name: string }[] = [
-  { id: 'check', name: '확인 중' }, { id: 'wait', name: '기다림' }, { id: 'work', name: '작업' }, { id: 'done', name: '끝' },
+  { id: 'wait', name: '기다림' }, { id: 'work', name: '작업' }, { id: 'check', name: '확인 중' }, { id: 'done', name: '끝' },
 ]
 export const REASON_NAME: Record<string, string> = {
   new: '새 일', dep: '앞 일 기다림', checking: '확인 중', blocked: '막힘', review: '살펴보는 중', done: '끝', closed: '닫힘',

@@ -65,7 +65,7 @@ function render(notice = false): void {
   }
   LAYERS.forEach((l, i) => {
     const did = `sgb-tab-desc-${l.id}`
-    const b = h('button', { class: 'btn', title: l.desc ?? '', 'aria-describedby': did }, l.floor === 6 ? l.tab : `${l.floor} ${l.tab}`)
+    const b = h('button', { class: 'btn', title: l.desc ?? '', 'aria-describedby': did }, ...(l.floor === 6 ? [l.tab] : [h('span', { class: 'tn' }, String(l.floor)), ` ${l.tab}`]))
     b.addEventListener('click', () => show(i))
     tabs.append(b, h('span', { id: did, hidden: '' }, l.desc ?? ''))
   })
