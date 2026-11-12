@@ -4,6 +4,6 @@
   "plugins": [
     "page", "collection", "sheet", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
-    "subjects", "staff", "bell", "duty", "timetable-grid"
+    "subjects", "staff", "bell", "duty", "timetable-grid", "ops-check"
   ]
 }

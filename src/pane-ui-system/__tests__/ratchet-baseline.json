@@ -418,5 +418,21 @@
     "ownUndoNotice": 0,
     "bareTextarea": 0,
     "bareLabel": 0
+  },
+  "plugins/ops-check": {
+    "bareButton": 0,
+    "arbPx": 0,
+    "textPx": 0,
+    "cmdIdString": 0,
+    "ctxDirect": 0,
+    "roleToolbar": 0,
+    "zRaw": 0,
+    "bareInput": 1,
+    "divClick": 0,
+    "ownTrash": 0,
+    "enterNoIme": 0,
+    "ownUndoNotice": 0,
+    "bareTextarea": 0,
+    "bareLabel": 0
   }
 }
