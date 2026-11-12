@@ -7,6 +7,7 @@ import { character } from '../ui/character.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { taskDetail } from '../lib/task-detail.ts'
 import { taskDetailView } from '../ui/task-detail-view.ts'
+import { tagChips } from '../ui/tag-chips.ts'
 
 // 구역 가구 — 도트 rect 몇 개(18×10 격자). 서류함·돋보기 탁자·책상·상자 더미.
 const W = '#C8A06A', D = '#8A6A3E', P = '#F3E6D3', G = '#9AA5AD'
@@ -68,7 +69,7 @@ export const layer4: LayerRenderer = {
       const st = m === null && t.column === 'done' ? 'done' : showReason(t) ? 'blocked' : isOver(t, now()) ? 'over' : t.column === 'done' ? 'done' : 'ok'
       const more = [a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
       el.title = more
-      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${t.title}`), ...(a ? [character(a, 'mini')] : []))
+      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), ...tagChips(t), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${t.title}`), ...(a ? [character(a, 'mini')] : []))
     }
 
     const openTask = (id: string) => {

@@ -560,3 +560,20 @@ describe('보고꾼 — 카드 상세 칸(R71)', () => {
     expect(x).toEqual([{ id: 'R9', links: ['T-1'] }, { id: 'T-1', links: ['R9'] }])
   })
 })
+
+describe('태스크 꼬리표 target (T-9zf R73)', () => {
+  const REQ = `| # | 받은 시각 | 쥔님 원문 | 태스크로 풀면 | 종류 | 상태 |
+|---|---|---|---|---|---|
+| R1 | 11-12 14:23 | *"가"* | **보고꾼이 카드를 읽게 한다** | 🐞 (장치) | 📥 대기 |
+| R2 | 11-12 14:24 | *"나"* | **말머리가 아무것도 없는 처방 문장** | 🔨 | 📥 대기 |
+`
+  const d = build({ now: at, md: lane('| T-2a | 앱 P24 정책 | 코드 | 5 | ✅ |\n| T-2b | 품질 | 검사 | 5 | 🔨 |', ''), requestMd: REQ })
+  const by = Object.fromEntries(d.tasks.map((t: { id: string }) => [t.id, t]))
+  it('T 줄 · R 줄 모두 target 이 붙고, 못 뽑으면 미분류', () => {
+    expect(by['T-2a'].target).toBe('1.2v 앱')
+    expect(by['T-2b'].target).toBe('검수')
+    expect(by.R1.target).toBe('장치')
+    expect(by.R1.kind).toBe('bug') // 🐞 도 유형으로 읽는다
+    expect(by.R2.target).toBe('현황판') // 요청함은 현황판 요청함 — 레인 이름 단서
+  })
+})
