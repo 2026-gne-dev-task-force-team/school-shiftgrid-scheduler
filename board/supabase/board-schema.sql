@@ -10,7 +10,7 @@ create schema if not exists board;
 -- 담백 검사: 경로(/ \)·이메일(@)·비밀 값 꼴(sk- · eyJ)이 들어 있으면 false.
 create or replace function board.plain(t text) returns boolean
 language sql immutable as $$
-  select t is null or (t !~ '[/\\@]' and t !~* 'sk-|eyJ')
+  select t is null or (t !~ '[/\\@]' and t !~* '\msk-|eyJ') -- \m = 낱말 시작(task- 같은 낱말 안쪽은 통과)
 $$;
 
 create table if not exists board.actors (
@@ -128,7 +128,8 @@ create table if not exists board.runs (
 -- 불편 접수 (feedback.ts 의 Feedback: id · text · where · ts). `where` 는 예약어라 place.
 create table if not exists board.feedback (
   id text primary key default ('fb' || (extract(epoch from clock_timestamp()) * 1000)::bigint),
-  text text not null check (char_length(btrim(text)) between 1 and 200 and board.plain(text)),
+  -- 사람 글이라 「3/4교시」 같은 / 는 받는다(plain 대신 @·\·비밀 꼴만 거른다).
+  text text not null check (char_length(btrim(text)) between 1 and 200 and text !~ '[\\@]' and text !~* '\msk-|eyJ'),
   place text not null default '' check (char_length(place) <= 30 and board.plain(place)),
   ts timestamptz not null default now()
 );
