@@ -298,7 +298,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     if (!b.suffix) { branches.push({ id: 'b-trunk', title: '줄기', trunk: true, ahead: 0, state: 'live', actor_id: null, task_id: null, updated_at: b.at }); continue }
     const t = byId.get(`T-${b.suffix}`)
     if (!t) continue // 태스크 없는 가지(임시 가지 등)는 싣지 않는다
-    branches.push({ id: `b-${t.id}`, title: t.title, trunk: false, ahead: b.ahead, state: b.merged ? 'merged' : 'live',
+    branches.push({ id: `b-${t.id}`, title: t.title, trunk: false, ahead: b.ahead, state: b.merged && t.column !== 'work' ? 'merged' : 'live', // 막 딴 판 가지(앞선 0)는 일감이 도는 동안 열린 가지
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
@@ -372,11 +372,18 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       if (!title) { onDrop('tasks', tid); return [] }
       seen.add(tid)
       return [{ id: tid, title, category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
-        ...columnOf(r.state), actor_id: null, updated_at: nowIso }]
+        ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso }]
     })
     const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
     return { lane: { id, title: clean(ln.name.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인', state, actor_id: null }, tasks: mine }
   })
+
+  // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다.
+  for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work')) {
+    const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
+    actors.push({ id: t.actor_id, parent_id: lead.id, kind: 'helper', name: `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'work',
+      task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
+  }
 
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,

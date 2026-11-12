@@ -12,10 +12,12 @@ export const layer3: LayerRenderer = {
   render(host, { data, openDetail, tip }) {
     const box = h('div', { class: 'lanes' })
     for (const l of data.lanes) {
-      const a = data.actors.find((x) => x.id === l.actor_id)
+      // 레인 담당 + 이 레인 일감을 지금 맡아 도는 캐릭터들
+      const who = data.actors.filter((x) => x.id === l.actor_id || (x.state === 'work' && data.tasks.find((t) => t.id === x.task_id)?.lane_id === l.id))
+      const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}`; c.title = t; tip(c, () => t); return c })(
+        chip({ icon: character(a), label: actorLabel(a, data.actors), hue: a.hue, id: a.id })))
       const head = h('div', { class: 'lane-head' }, h('b', null, l.title),
-        a ? ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}`; c.title = t; tip(c, () => t); return c })(
-          chip({ icon: character(a), label: actorLabel(a, data.actors), hue: a.hue, id: a.id })) : h('span', null, '—'),
+        ...(chips.length ? chips : [h('span', null, '—')]),
         h('span', null, `${STATE_ICON[l.state] ?? '⏸'} ${STATE_TEXT[l.state] ?? l.state}`))
       const mine = data.tasks.filter((t) => t.lane_id === l.id), done = mine.filter((t) => t.column === 'done').length
       const pct = mine.length ? Math.round((done / mine.length) * 100) : 0
