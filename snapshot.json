@@ -20,25 +20,6 @@
       "ended_at": null
     },
     {
-      "id": "a-T-7w",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "자료 나르기",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
-      "state": "work",
-      "task_id": "T-7w",
-      "branch_id": "b-T-7w",
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T15:45:00+09:00",
-      "ended_at": null
-    },
-    {
       "id": "a-T-2n-3",
       "parent_id": "a-lead",
       "kind": "helper",
@@ -911,11 +892,71 @@
       "team": "자료팀",
       "sprint": 7,
       "est_min": 8,
+      "started_at": "2026-11-12T16:47:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T16:47:00+09:00"
+    },
+    {
+      "id": "T-7y",
+      "title": "「지금 바꾸기」 뒤 알림 안 사라짐",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
       "started_at": "2026-11-12T15:45:00+09:00",
       "lane_id": "l1",
-      "column": "work",
+      "column": "wait",
       "reason": "new",
-      "actor_id": "a-T-7w",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:45:00+09:00"
+    },
+    {
+      "id": "T-7z",
+      "title": "Lanes·Board 에 일하는 캐릭터 안 보임",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:45:00+09:00"
+    },
+    {
+      "id": "T-7p1",
+      "title": "1.2v 앱 P1 접두사·설치 목록",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:45:00+09:00"
+    },
+    {
+      "id": "T-7p2",
+      "title": "1.2v 앱 P2 덩어리 판별",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 7,
+      "est_min": 8,
+      "started_at": "2026-11-12T15:45:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
       "updated_at": "2026-11-12T15:45:00+09:00"
     },
     {
@@ -931,7 +972,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R2",
@@ -946,7 +987,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R3",
@@ -961,7 +1002,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R4",
@@ -976,7 +1017,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R5",
@@ -991,7 +1032,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R6",
@@ -1006,7 +1047,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R7",
@@ -1021,7 +1062,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R8",
@@ -1036,7 +1077,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R9",
@@ -1051,7 +1092,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R10",
@@ -1066,7 +1107,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R11",
@@ -1081,7 +1122,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R12",
@@ -1096,7 +1137,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R13",
@@ -1111,7 +1152,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R14",
@@ -1126,7 +1167,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R15",
@@ -1141,7 +1182,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R16",
@@ -1156,7 +1197,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R17",
@@ -1171,7 +1212,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R18",
@@ -1186,7 +1227,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R19",
@@ -1201,7 +1242,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R20",
@@ -1216,7 +1257,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R21",
@@ -1231,7 +1272,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R22",
@@ -1246,7 +1287,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R23",
@@ -1261,7 +1302,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R24",
@@ -1276,7 +1317,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R25",
@@ -1291,7 +1332,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R26",
@@ -1306,7 +1347,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R27",
@@ -1321,7 +1362,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R28",
@@ -1336,7 +1377,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R29",
@@ -1351,7 +1392,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R30",
@@ -1366,7 +1407,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R31",
@@ -1381,7 +1422,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R32",
@@ -1396,7 +1437,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R33",
@@ -1411,11 +1452,11 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R34",
-      "title": "Lanes·Board 탭에 돌아다니며 일하는 캐릭터가 안 보인다",
+      "title": "Lanes·Board 탭에 돌아다니며 일하는 캐릭터가 안 보인다 (→ T-7z)",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1426,11 +1467,11 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R35",
-      "title": "Branch 탭: 에이전트가 맡은 가지 끝에 서 있어야",
+      "title": "Branch 탭: 에이전트가 맡은 가지 끝에 서 있어야 (→ T-7z)",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1441,7 +1482,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R36",
@@ -1456,7 +1497,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R37",
@@ -1471,7 +1512,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R38",
@@ -1486,11 +1527,11 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R39",
-      "title": "「지금 바꾸기」를 눌러 새로고침돼도 알림이 안 사라짐",
+      "title": "「지금 바꾸기」를 눌러 새로고침돼도 알림이 안 사라짐 (→ T-7y)",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1501,7 +1542,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R40",
@@ -1516,11 +1557,11 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R41",
-      "title": "현황판 태스크가 실제보다 훨씬 적다",
+      "title": "현황판 태스크가 실제보다 훨씬 적다 (→ T-7x)",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1528,14 +1569,14 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
+      "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R42",
-      "title": "Inbox 에서 지운 불편이 Board 카드로 남는다",
+      "title": "Inbox 에서 지운 불편이 Board 카드로 남는다 (→ T-7y)",
       "category": "지휘",
       "kind": "work",
       "team": "지휘",
@@ -1546,7 +1587,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R43",
@@ -1561,7 +1602,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R44",
@@ -1576,7 +1617,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R45",
@@ -1591,7 +1632,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R46",
@@ -1606,7 +1647,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R47",
@@ -1621,7 +1662,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R48",
@@ -1636,7 +1677,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R49",
@@ -1651,7 +1692,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R50",
@@ -1666,7 +1707,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R51",
@@ -1681,7 +1722,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R52",
@@ -1696,7 +1737,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R53",
@@ -1711,7 +1752,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R54",
@@ -1726,7 +1767,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R55",
@@ -1741,7 +1782,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R56",
@@ -1756,7 +1797,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R57",
@@ -1771,7 +1812,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R58",
@@ -1786,7 +1827,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R59",
@@ -1801,7 +1842,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R60",
@@ -1816,7 +1857,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R61",
@@ -1831,7 +1872,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R62",
@@ -1846,7 +1887,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R63",
@@ -1861,7 +1902,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R64",
@@ -1876,7 +1917,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R65",
@@ -1891,7 +1932,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     },
     {
       "id": "R66",
@@ -1906,7 +1947,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:47:02.715Z"
+      "updated_at": "2026-11-12T07:49:02.690Z"
     }
   ],
   "lanes": [
@@ -1926,7 +1967,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T16:29:30+09:00"
+      "updated_at": "2026-11-12T16:47:20+09:00"
     },
     {
       "id": "b-T-2f",
@@ -1997,16 +2038,6 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
-    },
-    {
-      "id": "b-T-7w",
-      "title": "T-7v 결함 고침",
-      "trunk": false,
-      "ahead": 1,
-      "state": "live",
-      "actor_id": "a-T-7w",
-      "task_id": "T-7w",
-      "updated_at": "2026-11-12T16:46:36+09:00"
     }
   ],
   "services": [
@@ -2016,7 +2047,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:47:02.141Z"
+      "checked_at": "2026-11-12T07:49:02.158Z"
     },
     {
       "id": "s-sync",
@@ -2024,7 +2055,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:47:02.141Z"
+      "checked_at": "2026-11-12T07:49:02.158Z"
     },
     {
       "id": "s-reporter",
@@ -2032,7 +2063,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:47:02.141Z"
+      "checked_at": "2026-11-12T07:49:02.158Z"
     }
   ],
   "modules": [
@@ -2132,12 +2163,21 @@
     {
       "id": "g7",
       "title": "요청함 R1~R20 소화",
-      "progress": 93,
+      "progress": 79,
       "state": "work",
       "sprint": 7
     }
   ],
   "events": [
+    {
+      "id": "e-e4e59e76",
+      "ts": "2026-11-12T16:47:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7w",
+      "actor_id": "a-lead",
+      "text": "T-7v 결함 고침 시작"
+    },
     {
       "id": "e-66a3bea8",
       "ts": "2026-11-12T16:44:00+09:00",
@@ -2574,7 +2614,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:47:02.715Z",
+      "ts": "2026-11-12T07:49:02.690Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -2744,9 +2784,13 @@
         "T-7t",
         "T-7u",
         "T-7v",
-        "T-7w"
+        "T-7w",
+        "T-7y",
+        "T-7z",
+        "T-7p1",
+        "T-7p2"
       ],
-      "est_min": 120,
+      "est_min": 152,
       "actual_min": 0,
       "review": "",
       "passed": null,
