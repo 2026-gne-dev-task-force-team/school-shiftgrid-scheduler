@@ -237,7 +237,7 @@ export function readModules(layersDir = new URL('../src/layers/', import.meta.ur
     m('m-screen', '화면', null), ...tabs.map(([f, t]) => m(`m-tab-${f}`, t, 'm-screen')),
     m('m-data', '자료', null),
     ...(here('./snapshot.mjs') ? [m('m-reporter', '보고꾼', 'm-data')] : []),
-    ...(here('./publish.mjs') && here('./sync.yml') ? [m('m-publish', '나르기', 'm-data')] : []),
+    ...(here('./sink.mjs') ? [m('m-publish', '직접 싣기', 'm-data')] : []),
     m('m-gate', '문지기 훅', 'm-data'), // 볼트 쪽이라 여기선 존재 확인 못 함
   ]
 }
