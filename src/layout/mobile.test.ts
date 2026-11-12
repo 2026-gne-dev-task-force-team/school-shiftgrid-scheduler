@@ -5,6 +5,12 @@ describe('firstPaneForNarrow', () => {
     it('보결 설치면 보결 첫 판', () => {
         expect(firstPaneForNarrow({ installed: ['rooms', 'substitute', 'v1-editor'] })).toEqual({ plugin: 'substitute', view: 'sheet' });
     });
+    it('ops-sub 가 있으면 「내 것」 판이 첫 판', () => {
+        expect(firstPaneForNarrow({ installed: ['rooms', 'substitute', 'ops-sub'] })).toEqual({ plugin: 'ops-sub', view: 'mine' });
+    });
+    it('ops-sub 가 has 거짓이면 보결 sheet', () => {
+        expect(firstPaneForNarrow({ installed: ['substitute', 'ops-sub'], has: (id) => id !== 'ops-sub' })).toEqual({ plugin: 'substitute', view: 'sheet' });
+    });
     it('보결 없으면 v1-editor 를 뺀 첫 설치 판', () => {
         expect(firstPaneForNarrow({ installed: ['v1-editor', 'rooms', 'people'] })).toEqual({ plugin: 'rooms' });
     });
