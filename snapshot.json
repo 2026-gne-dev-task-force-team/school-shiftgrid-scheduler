@@ -32,10 +32,10 @@
       "role": "자료",
       "state": "work",
       "task_id": "T-6g",
-      "branch_id": "b-T-6g",
+      "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T06:22:37.818Z",
+      "started_at": "2026-11-12T14:42:00+09:00",
       "ended_at": null
     }
   ],
@@ -583,7 +583,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T15:19:09+09:00"
+      "updated_at": "2026-11-12T15:25:32+09:00"
     },
     {
       "id": "b-T-2f",
@@ -654,113 +654,124 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
-    },
-    {
-      "id": "b-T-6g",
-      "title": "서비스·모듈도 실자료",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": "a-T-6g",
-      "task_id": "T-6g",
-      "updated_at": "2026-11-12T15:19:09+09:00"
     }
   ],
   "services": [
     {
-      "id": "s1",
+      "id": "s-host",
       "name": "화면 호스팅",
-      "state": "ok",
-      "url": "",
-      "task_id": null,
-      "checked_at": "2026-11-12T06:25:01.852Z"
-    },
-    {
-      "id": "s2",
-      "name": "자료 서버",
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:25:01.852Z"
+      "checked_at": "2026-11-12T06:27:01.903Z"
     },
     {
-      "id": "s3",
-      "name": "메일",
-      "state": "plan",
+      "id": "s-sync",
+      "name": "자료 싣기",
+      "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:25:01.852Z"
+      "checked_at": "2026-11-12T06:27:01.903Z"
+    },
+    {
+      "id": "s-reporter",
+      "name": "보고꾼",
+      "state": "ok",
+      "url": "",
+      "task_id": null,
+      "checked_at": "2026-11-12T06:27:01.903Z"
     }
   ],
   "modules": [
     {
-      "id": "m1",
-      "name": "화면 바탕",
+      "id": "m-screen",
+      "name": "화면",
       "parent": null,
       "state": "built",
       "task_id": null
     },
     {
-      "id": "m1a",
-      "name": "위 띠",
-      "parent": "m1",
+      "id": "m-tab-layer1-glance",
+      "name": "한눈",
+      "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
-      "id": "m1b",
-      "name": "층 탭",
-      "parent": "m1",
+      "id": "m-tab-layer2-branches",
+      "name": "가지",
+      "parent": "m-screen",
       "state": "built",
       "task_id": null
     },
     {
-      "id": "m2",
-      "name": "보결 판",
+      "id": "m-tab-layer3-lanes",
+      "name": "레인",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-tab-layer4-workshop",
+      "name": "작업장",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-tab-layer5-blueprint",
+      "name": "집",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-tab-inbox",
+      "name": "접수함",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-tab-sprints",
+      "name": "스프린트",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-tab-guide",
+      "name": "안내",
+      "parent": "m-screen",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m-data",
+      "name": "자료",
       "parent": null,
-      "state": "build",
-      "task_id": null
-    },
-    {
-      "id": "m2a",
-      "name": "보결 목록",
-      "parent": "m2",
       "state": "built",
       "task_id": null
     },
     {
-      "id": "m2b",
-      "name": "보결 짝짓기",
-      "parent": "m2",
-      "state": "build",
+      "id": "m-reporter",
+      "name": "보고꾼",
+      "parent": "m-data",
+      "state": "built",
       "task_id": null
     },
     {
-      "id": "m2c",
-      "name": "보결 알림",
-      "parent": "m2",
-      "state": "plan",
+      "id": "m-publish",
+      "name": "나르기",
+      "parent": "m-data",
+      "state": "built",
       "task_id": null
     },
     {
-      "id": "m3",
-      "name": "로그인 문",
-      "parent": null,
-      "state": "plan",
-      "task_id": null
-    },
-    {
-      "id": "m3a",
-      "name": "로그인 화면",
-      "parent": "m3",
-      "state": "plan",
-      "task_id": null
-    },
-    {
-      "id": "m3b",
-      "name": "서버 연결",
-      "parent": "m3",
-      "state": "plan",
+      "id": "m-gate",
+      "name": "문지기 훅",
+      "parent": "m-data",
+      "state": "built",
       "task_id": null
     }
   ],
@@ -1030,8 +1041,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:25:01.852Z",
-      "pct_5h": 46,
+      "ts": "2026-11-12T06:27:02.467Z",
+      "pct_5h": 47,
       "pct_7d": 9,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
