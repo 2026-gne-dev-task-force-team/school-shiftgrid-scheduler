@@ -5,7 +5,7 @@ import { loadFeedback } from './lib/feedback.ts'
 import { LAYERS } from './layers/registry.ts'
 import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
-import { closesOnKey, loadOpen, saveOpen } from './lib/drawer.ts'
+import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
 import { applyUpdate, clearThisDevice } from './lib/purge.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
@@ -27,9 +27,11 @@ let page: HTMLElement
 let barEl: HTMLElement
 let menuHost: HTMLElement
 let poll = 0
+let band: ReturnType<typeof createBand> | null = null
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
 function render(notice = false): void {
   clearInterval(poll)
+  band?.dispose()
     const data = loadData()
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
@@ -39,7 +41,7 @@ function render(notice = false): void {
   const feed = createFeedLog(data.events, (id) => stage.pulse(id))
   const ctx: LayerCtx = { data, openDetail: detail.open, tip: attachTip }
 
-  const band = createBand(data, {
+  const bnd = band = createBand(data, {
     calm: calmOn(),
     onCalm(on) { localStorage.setItem(CALM_KEY, on ? '1' : '0'); applyCalm(on) },
     onApply: () => void applyUpdate(__BUILD__),
@@ -68,9 +70,9 @@ function render(notice = false): void {
 
   const caret = h('button', { class: 'btn sgb-mini sgb-caret', 'aria-label': '작업현황판 열고 닫기' },
     root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼')
-  barEl.replaceChildren(band.toggle, band.upd, band.fb, band.more, caret)
-  menuHost.replaceChildren(band.menu)
-  page.replaceChildren(band.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
+  barEl.replaceChildren(bnd.toggle, bnd.upd, bnd.fb, bnd.more, caret)
+  menuHost.replaceChildren(bnd.menu)
+  page.replaceChildren(bnd.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
   show(restoreTab(curTab, LAYERS.length))
   if (notice) {
     const go = h('button', { class: 'btn' }, '작업장에서 보기')
@@ -88,7 +90,7 @@ function render(notice = false): void {
 
   const check = async () => {
     const v: VersionInfo | null = await fetchVersion()
-    band.showUpdate(isNewer(__BUILD__, v) ? v : null)
+    bnd.showUpdate(isNewer(__BUILD__, v) ? v : null)
   }
   void check()
   poll = window.setInterval(check, 60_000)
@@ -112,7 +114,10 @@ export function mountBoard(host?: HTMLElement): void {
   }
   barEl.addEventListener('click', (e) => { if ((e.target as Element).closest('.sgb-toggle, .sgb-caret')) set(!drawer.classList.contains('open')) })
   scrim.addEventListener('click', () => set(false))
-  document.addEventListener('keydown', (e) => { if (closesOnKey(e.key, drawer.classList.contains('open'))) set(false) })
+  document.addEventListener('keydown', (e) => {
+    const t = escTarget(e.key, !!band && !band.menu.hidden, drawer.classList.contains('open'))
+    if (t === 'menu') band!.closeMenu(); else if (t === 'drawer') set(false)
+  })
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   render()
