@@ -7,13 +7,15 @@ import { build } from './snapshot.mjs'
 import { tokensByToolUse, activityByGateId } from './tokens.mjs'
 import { loadConfig } from './config.mjs'
 import { tagsReport } from './tags.mjs'
+import { audit, formatAudit } from './fill-audit.mjs'
 import { readToken, readRef, sinkAndLog } from './sink.mjs'
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d }
 const cfg = loadConfig()
 const out = arg('--out')
 const tagsOnly = process.argv.includes('--tags-report') // 읽기 전용 — 파일도 DB 도 안 건드리고 대상×유형 개수표만 찍는다
-if (!out && !tagsOnly) { console.error('쓰는 법: node board/reporter/cli.mjs --out <파일>'); process.exit(2) }
+const auditOnly = process.argv.includes('--audit') // 읽기 전용 — 방금 뽑은 자료의 탭별 빈칸 수만 찍는다(파일·DB 안 건드림)
+if (!out && !tagsOnly && !auditOnly) { console.error('쓰는 법: node board/reporter/cli.mjs --out <파일>'); process.exit(2) }
 const dropped = {}
 const data = build({
   lanePath: arg('--lane', cfg.lane),
@@ -30,6 +32,7 @@ const data = build({
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
 })
 if (tagsOnly) { console.log(tagsReport(data.tasks)); process.exit(0) }
+if (auditOnly) { console.log(formatAudit(audit(data))); if (!out) process.exit(0) }
 writeFileSync(out, JSON.stringify(data, null, 2))
 for (const [k, v] of Object.entries(data)) console.log(`${k}\t${v.length}`)
 console.log('담백 검사로 버린 줄', JSON.stringify(dropped))
