@@ -9,6 +9,7 @@ import { clean, findDirty, isPlain, publicText, setRedactNames } from './plain.m
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { claudeVariants, newestOf } from './claude-home.mjs'
+import { bodyFromLinks, bodyFromLog, branchTitle, sprintNext, sprintReview } from './fill.mjs'
 
 const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
 const TID = new RegExp(ID, 'g')
@@ -194,15 +195,15 @@ function gitBranches(repoDir) {
   if (!repoDir || !existsSync(repoDir)) return []
   const git = (...a) => execFileSync('git', ['-C', repoDir, ...a], { encoding: 'utf-8' }).trim()
   try {
-    const refs = git('for-each-ref', '--format=%(refname:short)\t%(committerdate:iso-strict)', 'refs/heads/1.2v-preview*')
+    const refs = git('for-each-ref', '--format=%(refname:short)\t%(committerdate:iso-strict)\t%(contents:subject)', 'refs/heads/1.2v-preview*')
       .split('\n').filter(Boolean).map((l) => l.split('\t'))
     const trunk = refs.find(([n]) => n === '1.2v-preview')
     if (!trunk) return []
-    return refs.map(([name, at]) => {
+    return refs.map(([name, at, subject]) => {
       if (name === trunk[0]) return { suffix: null, at, ahead: 0, merged: false }
       let merged = true
       try { git('merge-base', '--is-ancestor', name, trunk[0]) } catch { merged = false }
-      return { suffix: name.slice(trunk[0].length + 1), at, ahead: +git('rev-list', '--count', `${trunk[0]}..${name}`), merged }
+      return { suffix: name.slice(trunk[0].length + 1), at, subject, ahead: +git('rev-list', '--count', `${trunk[0]}..${name}`), merged }
     })
   } catch { return [] }
 }
@@ -425,6 +426,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
         actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began, ...splitDetail(r.what),
         ...(hits.length ? { history: hits.map((l) => ({ ts: l.ts, text: HIST_LABEL[verbOf(l)] })).filter((e, i, a) => e.text !== a[i - 1]?.text).slice(-20) } : {}) })
       for (const rid of mentions(`${r.what} ${r.state}`, RID)) edges.push([tid, rid])
+      tasks[tasks.length - 1] = bodyFromLog(tasks.at(-1), hits, codeWord) // 표 설명이 거름에 비면 진행 로그 결과 칸으로 채운다
       mine.push(tasks.at(-1))
     }
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
@@ -432,7 +434,9 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       ended: allDone ? mine.map((t) => t.updated_at).sort().at(-1) : null, task_ids: mine.map((t) => t.id),
       est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: allDone ? true : null, // 규칙: 레인 노트 스프린트 절 태스크가 전부 ✅ 면 통과, 아니면 진행 중(null)
        missed: '', next: '' })
+    sprints.at(-1).review = sprintReview(mine)
   }
+  sprintNext(sprints).forEach((n, i) => { sprints[i].next = n })
   const byId = new Map(tasks.map((t) => [t.id, t]))
   const cur = [...sprints].reverse().find((s) => !s.ended) ?? sprints.at(-1)
   const curTasks = cur ? cur.task_ids.map((id) => byId.get(id)) : []
@@ -447,7 +451,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     const t = byId.get(`T-${b.suffix}`)
     if (!t) { // 레인 표에 일감이 없는 가지도 지금 있는 것은 싣는다(이름 낱말이 담백해야 — 아니면 뺀다)
       const title = clean(`가지 ${b.suffix}`)
-      if (title && isPlain(b.suffix)) branches.push({ id: `b-${b.suffix}`, title, trunk: false, ahead: b.ahead, state: b.merged ? 'merged' : 'live', actor_id: null, task_id: null, updated_at: b.at })
+      if (title && isPlain(b.suffix)) branches.push({ id: `b-${b.suffix}`, title: branchTitle(b.subject, codeWord) ?? title, trunk: false, ahead: b.ahead, state: b.merged ? 'merged' : 'live', actor_id: null, task_id: null, updated_at: b.at })
       continue
     }
     branches.push({ id: `b-${t.id}`, title: t.title, trunk: false, ahead: b.ahead, state: b.merged && t.column !== 'work' ? 'merged' : 'live', // 막 딴 판 가지(앞선 0)는 일감이 도는 동안 열린 가지
@@ -583,6 +587,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
   }
   linkTasks(data.tasks, edges)
+  bodyFromLinks(data.tasks)
   dedupeKeys(data, onWarn)
   const dirty = findDirty(data)
   if (dirty) throw new Error(`담백 검사 실패: ${dirty}`)
