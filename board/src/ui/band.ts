@@ -51,7 +51,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
 
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip' }, state),
-    h('span', { class: 'chip src', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
+    h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-pct' }, cur ? `${cur.pct}%` : ''),
     h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
