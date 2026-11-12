@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
+import { targetOf } from './tags.mjs'
 import { claudeVariants, newestOf } from './claude-home.mjs'
 
 const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
@@ -375,7 +376,7 @@ export function publicAsk(s) {
   return publicText((s ?? '').replace(/^\s*\*?"|"\*?\s*$/g, '').replace(/\*"|"\*/g, ''), codeWord)
 }
 /** 요청함 「종류」 칸 → 유형(kind). 모르는 낱말은 일(work). */
-export const kindOfType = (t) => (/고침|결함|버그|bug/i.test(t ?? '') ? 'bug' : /설계|cr/i.test(t ?? '') ? 'cr' : /검수|검사|review/i.test(t ?? '') ? 'review' : 'work')
+export const kindOfType = (t) => (/고침|결함|버그|bug|🐞/i.test(t ?? '') ? 'bug' : /설계|cr|📐/i.test(t ?? '') ? 'cr' : /검수|검사|review|👀|🔍/i.test(t ?? '') ? 'review' : 'work')
 const verbOf = (l) => {
   const mark = `${l.pan} ${l.result}`
   return /^\s*❌/.test(l.result) ? '다시' : /✅|머지/.test(l.pan) || /^\s*✅/.test(l.result) ? '끝' : /⏸|⛔|막힘/.test(mark) ? '막힘' : '시작'
@@ -419,7 +420,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       for (let n = 2; taskIds.has(tid); n++) tid = `${r.id}~${n}`
       if (tid !== r.id) onWarn('tasks', `id 중복 ${r.id} — 뒤 줄을 ${tid} 로 살림`)
       taskIds.add(tid)
-      tasks.push({ id: tid, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
+      tasks.push({ id: tid, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', target: targetOf({ id: r.id, title, category: r.team, lane: '현황판 만들기' }), team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
         actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began, ...splitDetail(r.what),
         ...(hits.length ? { history: hits.map((l) => ({ ts: l.ts, text: HIST_LABEL[verbOf(l)] })).filter((e, i, a) => e.text !== a[i - 1]?.text).slice(-20) } : {}) })
@@ -531,7 +532,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     for (const x of mentions(`${r.what} ${r.state}`, TID)) edges.push([r.id, x])
     for (const x of mentions(`${r.what} ${r.state}`, RID)) edges.push([r.id, x])
     const history = [...(askedAt ? [{ ts: askedAt, text: '접수' }] : []), ...(link ? (byId.get(link)?.history ?? []) : [])]
-    return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: kindOfType(r.type), team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
+    return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: kindOfType(r.type), target: targetOf({ id: r.id, title, type: r.type, lane: '현황판 만들기' }), team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
       est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso, ...(ask ? { ask } : {}), ...(askedAt ? { askedAt } : {}), ...splitDetail(r.what),
       ...(history.length ? { history } : {}) }
   })
@@ -552,7 +553,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       if (!title) { onDrop('tasks', tid); return [] }
       seen.add(tid)
       if (isBlockedState(r.state)) laneBlocked.push({ id: tid, title })
-      return [{ id: tid, title, app: appOfLane(ln.name), category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
+      return [{ id: tid, title, app: appOfLane(ln.name), category: '코드', kind: 'work', target: targetOf({ id: r.id, title, lane: ln.name }), team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
         ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }]
     })
     const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'

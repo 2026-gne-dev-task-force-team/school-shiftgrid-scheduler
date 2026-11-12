@@ -30,6 +30,7 @@ export function taskDetail(t: Task, data: Pick<BoardData, 'tasks' | 'actors' | '
   const branch = data.branches.find((b) => b.task_id === t.id)
   const side: TaskDetailModel['side'] = [
     ['유형', KIND_LABEL[t.kind] ?? t.kind],
+    ...(t.target ? [['대상', t.target] as [string, string]] : []),
     ['상태', t.column === 'wait' || t.column === 'work' ? `${COLUMN_NAME[t.column]} · ${REASON_NAME[t.reason] ?? t.reason}` : '끝'],
     ...(actor ? [['맡은 캐릭터', actor.name] as [string, string]] : []),
     ['분류 · 팀', `${t.category} · ${t.team}`],
