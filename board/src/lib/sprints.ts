@@ -13,3 +13,10 @@ export const sprintsNewestFirst = (list: Sprint[]): Sprint[] => [...list].sort((
 
 /** 검수 칩 글: 통과 / 검수 대기(결과 아직 없음). */
 export const reviewLabel = (s: Sprint): string => (s.passed === true ? '검수 통과' : s.passed === false ? '검수 보완' : '검수 대기')
+
+/** 지금 스프린트: ended 없는 줄(여럿이면 가장 늦게 시작한 것), 없으면 가장 최신. 진행률은 sprintProgress. 스프린트가 없으면 null. */
+export function currentSprint(d: { sprints: Sprint[]; tasks: Task[] }): { sprint: Sprint; pct: number } | null {
+  const newest = sprintsNewestFirst(d.sprints)
+  const sprint = newest.find((s) => !s.ended) ?? newest[0]
+  return sprint ? { sprint, pct: sprintProgress(sprint, d.tasks).pct } : null
+}

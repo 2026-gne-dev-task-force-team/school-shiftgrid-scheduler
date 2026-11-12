@@ -3,10 +3,11 @@
   --z: 2147483000; height: 32px; color: var(--fg); font: 15px/1.5 system-ui, sans-serif;
   * { box-sizing: border-box }
   .sgb-bar { position: fixed; top: 0; left: 0; right: 0; z-index: calc(var(--z) + 2); height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; overflow: hidden; white-space: nowrap; background: #0f1624; color: var(--fg); border-bottom: 1px solid var(--neon); font: 13px/1 system-ui, sans-serif }
-  .sgb-bar .sgb-toggle { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; height: 100%; cursor: pointer }
+  .sgb-bar .sgb-toggle { flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 10px; height: 100%; cursor: pointer }
   .sgb-bar .chip { min-height: 22px; padding: 0 8px; flex: none }
   .sgb-bar .sgb-name, .sgb-bar .band-clock { overflow: hidden; text-overflow: ellipsis; min-width: 0 }
   .sgb-bar .band-clock { flex: 0 5 auto; opacity: .8 }
+  .sgb-bar .chip.src { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 22px }
   .sgb-bar .sgb-pct { color: var(--neon); font-weight: 600; flex: none }
   .sgb-mini { min-height: 26px; height: 26px; padding: 0 8px; flex: none; font-size: 12px }
   .sgb-bar .upd { max-width: 34%; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto }
@@ -31,11 +32,12 @@ button.chip { min-height: 44px; cursor: pointer }
 
 .tabs { display: flex; gap: 8px; padding: 6px 12px; overflow-x: auto; scroll-snap-type: x mandatory }
 .tabs .btn { scroll-snap-align: start; white-space: nowrap }
+@media (max-width: 767px) { .tabs { flex-wrap: wrap; overflow-x: visible } .tabs .btn { flex: none } }
 
 .body { flex: 1; display: grid; grid-template-columns: 240px 1fr 300px; gap: 12px; padding: 12px; min-height: 0 }
 .feed, .stage, .detail { background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-width: 0 }
 .feed-list, .recent { list-style: none; margin: 0; padding: 0 }
-.feed-line { display: block; width: 100%; min-height: 44px; text-align: left; background: none; border: 0; color: var(--fg); font: inherit; cursor: pointer }
+.feed-line { text-wrap: pretty; display: block; width: 100%; min-height: 44px; text-align: left; background: none; border: 0; color: var(--fg); font: inherit; cursor: pointer }
 .feed-head { display: flex; justify-content: space-between; align-items: center }
 .feed-toggle { display: none }
 .stage { display: flex; flex-direction: column; gap: 12px; overflow: auto }
@@ -107,6 +109,8 @@ button.chip { min-height: 44px; cursor: pointer }
   .detail-body label { display: block; margin: 8px 0 2px; font-size: 13px; opacity: .85 }
   .detail-body input[type=text], .detail-body select { display: block; width: 100%; max-width: 100%; min-height: 44px; padding: 0 10px; margin-bottom: 8px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit }
   .detail-body input[type=text]:focus, .detail-body select:focus { outline: 2px solid var(--neon); outline-offset: 1px }
+  .card select { min-height: 44px; padding: 0 12px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; font: inherit }
+  .detail-body [role=alert] { color: #d04a5a; font-weight: 600 }
   .detail-body option { background: #141c2b; color: var(--fg) }
 }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
