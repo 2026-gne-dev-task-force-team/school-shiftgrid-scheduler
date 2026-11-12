@@ -2,6 +2,7 @@ import { h, isCalm, sgbRoot } from '../dom.ts'
 import type { Branch } from '../types.ts'
 import { hitTest, project, type Seg } from './layer2-logic.ts'
 import type { LayerRenderer } from './types.ts'
+import { character } from '../ui/character.ts'
 
 interface Look { vis: boolean; grow: number; merge: number } // 보임 · 자라는 정도 · 줄기로 합쳐지는 정도
 const REPLAY_MS = 17000 // 목업: events 의 가지 따기·합치기를 이 간격으로 한 건씩 재생
@@ -137,7 +138,8 @@ export const layer2: LayerRenderer = {
       if (!dragging) return
       dragging = false; canvas.style.cursor = 'grab'
       const [x, y] = at(e), id = moved < 6 ? hitTest(segs, x, y, tol()) : null, b = id ? by.get(id) : null
-      if (b) openDetail({ title: b.title, rows: [['앞선 커밋', `${b.ahead}개`], ['맡은 캐릭터', who(b)], ['상태', b.state === 'live' ? '작업 중' : '줄기에 합쳐짐']] })
+      if (b) openDetail({ title: b.title, rows: [['앞선 커밋', `${b.ahead}개`], ['맡은 캐릭터', who(b)], ['상태', b.state === 'live' ? '작업 중' : '줄기에 합쳐짐']],
+        extra: ((a) => a ? h('div', { class: 'chr-card' }, character(a, 'card')) : undefined)(data.actors.find((x) => x.id === b.actor_id)) })
       kick()
     })
     canvas.addEventListener('wheel', (e) => { e.preventDefault(); rot += e.deltaY * 0.003; kick() }, { passive: false })
