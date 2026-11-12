@@ -15,6 +15,8 @@ export interface LayerRenderer {
   id: string
   floor: 1 | 2 | 3 | 4 | 5 | 6
   tab: string
+  /** 탭 설명 한 줄 — registry.ts 가 채운다. */
+  desc?: string
   /** host 안에 그린다. 정리 함수를 돌려주면 층을 떠날 때 불린다. 반짝일 물건엔 data-id 를 단다(로그 줄 누르면 반짝). */
   render(host: HTMLElement, ctx: LayerCtx): void | (() => void)
 }

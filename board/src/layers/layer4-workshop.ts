@@ -4,6 +4,7 @@ import type { Task } from '../types.ts'
 import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
+import { actorLabel, actorWhat } from '../lib/actor.ts'
 
 // 4층 작업장 — 확인 중 · 기다림 · 작업 · 끝. 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
 export const layer4: LayerRenderer = {
@@ -34,7 +35,7 @@ export const layer4: LayerRenderer = {
       const a = data.actors.find((x) => x.id === t.actor_id)
       el.replaceChildren(...[
         h('b', null, `${KIND_ICON[t.kind] ?? '•'} ${t.title}`),
-        h('small', null, ...(a ? [character(a), ` ${a.name} · `] : []), `${t.category} · ${t.team}`),
+        h('small', a ? { title: `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` } : null, ...(a ? [character(a), ` ${actorLabel(a, data.actors)} · `] : []), `${t.category} · ${t.team}`),
         m !== null && h('span', { class: 'ws-clock' }, `${m}분째 / 짐작 ${t.est_min}분`),
         showReason(t) && h('span', { class: 'ws-reason' }, `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}`),
       ].filter((k) => k !== false))

@@ -8,11 +8,16 @@ export function sprintProgress(s: Sprint, tasks: Task[]): { done: number; total:
   return { done, total: mine.length, pct: mine.length ? Math.round((done / mine.length) * 100) : 0 }
 }
 
-/** 시작이 늦은 줄(최신)이 위. */
-export const sprintsNewestFirst = (list: Sprint[]): Sprint[] => [...list].sort((a, b) => Date.parse(b.began) - Date.parse(a.began))
+/** 시작이 늦은 줄(최신)이 위. began 이 비거나 깨졌으면(NaN) 0 으로 치고, 같으면 번호 큰 쪽이 위. */
+export const sprintsNewestFirst = (list: Sprint[]): Sprint[] =>
+  [...list].sort((a, b) => (Date.parse(b.began) || 0) - (Date.parse(a.began) || 0) || b.id - a.id)
 
 /** 검수 칩 글: 통과 / 검수 대기(결과 아직 없음). */
 export const reviewLabel = (s: Sprint): string => (s.passed === true ? '검수 통과' : s.passed === false ? '검수 보완' : '검수 대기')
+
+/** 막대 글: 「스프린트 N · 제목」 — 지금 스프린트(currentSprint), 없으면 판 이름. */
+export const sprintLabel = (d: { sprints: Sprint[]; tasks: Task[] }): string =>
+  ((c) => (c ? `스프린트 ${c.sprint.id} · ${c.sprint.title}` : '작업현황판'))(currentSprint(d))
 
 /** 지금 스프린트: ended 없는 줄(여럿이면 가장 늦게 시작한 것), 없으면 가장 최신. 진행률은 sprintProgress. 스프린트가 없으면 null. */
 export function currentSprint(d: { sprints: Sprint[]; tasks: Task[] }): { sprint: Sprint; pct: number } | null {

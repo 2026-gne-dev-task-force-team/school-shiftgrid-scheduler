@@ -2,6 +2,7 @@ import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { currentSprint } from '../lib/sprints.ts'
+import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -19,11 +20,13 @@ export const layer1: LayerRenderer = {
       const here = data.actors.filter((a) => a.dept === d && a.state !== 'done')
       const row = h('div', { class: 'row', 'data-dept': d }, h('span', { class: 'dept' }, `${DEPT_NAME[d]} ${here.length}명`))
       for (const a of here) {
-        const c = chip({ icon: character(a), label: a.name, hue: a.hue, id: a.id, onClick: () => openDetail({
-          title: a.name, rows: [['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${a.state}`],
+        const name = actorLabel(a, data.actors), what = actorWhat(a, data.tasks)
+        const c = chip({ icon: character(a), label: name, hue: a.hue, id: a.id, onClick: () => openDetail({
+          title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${a.state}`],
             ['맡은 일', data.tasks.find((t) => t.id === a.task_id)?.title ?? '—']],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })
-        tip(c, () => `${a.name} · ${a.team} · ${STATE_ICON[a.state]}`)
+        tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]}`)
+        c.title = `${name} — ${what}`
         row.append(c)
       }
       depts.append(row)

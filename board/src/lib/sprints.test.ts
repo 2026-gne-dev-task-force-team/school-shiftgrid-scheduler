@@ -1,7 +1,44 @@
 import { describe, expect, it } from 'vitest'
 import { rawFixtures } from '../data.ts'
 import type { BoardData } from '../types.ts'
-import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint } from './sprints.ts'
+import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel } from './sprints.ts'
+import { LAYERS } from '../layers/registry.ts'
+import { actorLabel, actorWhat } from './actor.ts'
+
+describe('막대의 지금 스프린트', () => {
+  it('막대 글은 목표(goals)가 아니라 열린 스프린트 3이다', () => {
+    expect(sprintLabel(d)).toBe('스프린트 3 · 불편 접수함 · 진짜 자료 · 품질')
+    expect(sprintLabel({ sprints: [], tasks: d.tasks })).toBe('작업현황판')
+  })
+  it('began 이 깨진 서버 줄이 섞여도 번호 큰 열린 줄', () => {
+    const l = d.sprints.map((s) => ({ ...s, began: '', ended: s.id === 1 ? s.ended : null }))
+    expect(sprintLabel({ sprints: l, tasks: d.tasks })).toMatch(/^스프린트 3 /)
+  })
+})
+
+describe('캐릭터 이름 = 하는 일', () => {
+  const base = d.actors[5] // 시험
+  it('자연 낱말·빈 이름이면 역할에서 만든다', () => {
+    expect(d.actors.map((a) => actorLabel(a, d.actors))).toEqual(['지휘', '살림지기', '화면 다듬기', '자료 나르기', '설계', '시험', '맨눈 점검'])
+    expect(actorLabel({ ...base, name: '이끼' })).toBe('시험')
+    expect(actorLabel({ ...base, name: '' })).toBe('시험')
+  })
+  it('같은 역할 둘이면 번호, 역할로 시작하는 이름은 그대로', () => {
+    const two = [{ ...base, id: 'x1', name: '' }, { ...base, id: 'x2', name: '솔' }]
+    expect(two.map((a) => actorLabel(a, two))).toEqual(['시험 1', '시험 2'])
+    expect(actorLabel({ ...base, name: '시험·달력' }, two)).toBe('시험·달력')
+  })
+  it('한 줄 설명 = 역할 설명 + 맡은 일감', () => {
+    const t = d.tasks.find((x) => x.id === base.task_id)!
+    expect(actorWhat(base, d.tasks)).toBe(`자동 시험을 돌려 고장을 찾는다 · 지금: ${t.title}`)
+  })
+})
+
+describe('탭 설명', () => {
+  it('모든 탭에 설명이 있다', () => {
+    expect(LAYERS.filter((l) => !l.desc).map((l) => l.id)).toEqual([])
+  })
+})
 
 const d = rawFixtures as unknown as BoardData
 

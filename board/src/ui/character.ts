@@ -1,4 +1,5 @@
 import type { Actor } from '../types.ts'
+import { actorLabel } from '../lib/actor.ts'
 
 // 캐릭터 = 모두 같은 테라코타 꼴. 눈 색·소품·머리띠 색만 다르다(눈 색↔기기 짝은 판에 안 싣는다).
 type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'dept' | 'role' | 'state'>
@@ -37,7 +38,7 @@ export function characterSvg(a: Who, size: CharSize = 'chip'): string {
   // 쉼·끝 = 눈꺼풀이 반쯤 내려온다
   const lid = (x: number) => `<path d="M${x - 5.8} 38V31.2h11.6V38Q${x} 35.4 ${x - 5.8} 38Z" fill="${BODY}"/><path d="M${x - 5.2} 37.6Q${x} 35.2 ${x + 5.2} 37.6" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/>`
   const sleepy = a.state === 'idle' || a.state === 'done'
-  return `<svg class="chr" data-state="${a.state}" data-size="${size}" role="img" aria-label="${esc(a.name)}" width="${px}" height="${px}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">` +
+  return `<svg class="chr" data-state="${a.state}" data-size="${size}" role="img" aria-label="${esc(actorLabel(a))}" width="${px}" height="${px}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">` +
     `<ellipse cx="32" cy="59.5" rx="17" ry="2.6" fill="#000" fill-opacity=".28"/>` +
     `<g class="chr-b">` +
     `<ellipse cx="24" cy="55.5" rx="5.5" ry="3.2" fill="${SHADE}"/><ellipse cx="40" cy="55.5" rx="5.5" ry="3.2" fill="${SHADE}"/>` +
