@@ -620,6 +620,16 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
+    },
+    {
+      "id": "b-T-6f",
+      "title": "진짜 캐릭터",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6f",
+      "updated_at": "2026-11-12T15:02:20+09:00"
     }
   ],
   "services": [
@@ -629,7 +639,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:03:01.767Z"
+      "checked_at": "2026-11-12T06:05:01.790Z"
     },
     {
       "id": "s2",
@@ -637,7 +647,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:03:01.767Z"
+      "checked_at": "2026-11-12T06:05:01.790Z"
     },
     {
       "id": "s3",
@@ -645,7 +655,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:03:01.767Z"
+      "checked_at": "2026-11-12T06:05:01.790Z"
     }
   ],
   "modules": [
@@ -959,8 +969,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:03:01.767Z",
-      "pct_5h": 34,
+      "ts": "2026-11-12T06:05:01.790Z",
+      "pct_5h": 36,
       "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
