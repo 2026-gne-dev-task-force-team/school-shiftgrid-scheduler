@@ -18,25 +18,6 @@
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
       "ended_at": null
-    },
-    {
-      "id": "a-T-6b",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "코드",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "코드팀",
-      "role": "코드",
-      "state": "work",
-      "task_id": "T-6b",
-      "branch_id": "b-T-6b",
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T14:42:00+09:00",
-      "ended_at": null
     }
   ],
   "tasks": [
@@ -483,12 +464,12 @@
       "team": "코드팀",
       "sprint": 5,
       "est_min": 12,
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "started_at": "2026-11-12T14:58:00+09:00",
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": "a-T-6b",
-      "updated_at": "2026-11-12T14:42:00+09:00"
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:58:00+09:00"
     },
     {
       "id": "T-6c",
@@ -498,12 +479,12 @@
       "team": "코드팀",
       "sprint": 5,
       "est_min": 5,
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "started_at": "2026-11-12T14:58:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T14:42:00+09:00"
+      "updated_at": "2026-11-12T14:58:00+09:00"
     },
     {
       "id": "T-6d",
@@ -513,6 +494,36 @@
       "team": "코드팀",
       "sprint": 5,
       "est_min": 5,
+      "started_at": "2026-11-12T14:58:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:58:00+09:00"
+    },
+    {
+      "id": "T-6e",
+      "title": "실자료 다듬기",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 12,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:42:00+09:00"
+    },
+    {
+      "id": "T-6f",
+      "title": "진짜 캐릭터",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 15,
       "started_at": "2026-11-12T14:42:00+09:00",
       "lane_id": "l1",
       "column": "wait",
@@ -596,9 +607,19 @@
       "trunk": false,
       "ahead": 0,
       "state": "merged",
-      "actor_id": "a-T-6b",
+      "actor_id": null,
       "task_id": "T-6b",
       "updated_at": "2026-11-12T14:54:02+09:00"
+    },
+    {
+      "id": "b-T-6e",
+      "title": "실자료 다듬기",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6e",
+      "updated_at": "2026-11-12T14:54:26+09:00"
     }
   ],
   "services": [
@@ -608,7 +629,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:54:37.005Z"
+      "checked_at": "2026-11-12T05:57:01.952Z"
     },
     {
       "id": "s2",
@@ -616,7 +637,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:54:37.005Z"
+      "checked_at": "2026-11-12T05:57:01.952Z"
     },
     {
       "id": "s3",
@@ -624,7 +645,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:54:37.005Z"
+      "checked_at": "2026-11-12T05:57:01.952Z"
     }
   ],
   "modules": [
@@ -703,12 +724,21 @@
     {
       "id": "g5",
       "title": "실제 자료가 현황판에",
-      "progress": 25,
+      "progress": 67,
       "state": "work",
       "sprint": 5
     }
   ],
   "events": [
+    {
+      "id": "e-c76e14a9",
+      "ts": "2026-11-12T14:58:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-6b",
+      "actor_id": "a-lead",
+      "text": "나르기 외 2 끝"
+    },
     {
       "id": "e-c7695505",
       "ts": "2026-11-12T14:49:00+09:00",
@@ -1028,8 +1058,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T05:54:37.005Z",
-      "pct_5h": 29,
+      "ts": "2026-11-12T05:57:01.952Z",
+      "pct_5h": 22,
       "pct_7d": 7,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
@@ -1144,9 +1174,11 @@
         "T-6a",
         "T-6b",
         "T-6c",
-        "T-6d"
+        "T-6d",
+        "T-6e",
+        "T-6f"
       ],
-      "est_min": 37,
+      "est_min": 64,
       "actual_min": 0,
       "review": "",
       "passed": null,
