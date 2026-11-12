@@ -509,12 +509,12 @@
       "team": "자료팀",
       "sprint": 5,
       "est_min": 12,
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "started_at": "2026-11-12T15:02:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T14:42:00+09:00"
+      "updated_at": "2026-11-12T15:02:00+09:00"
     },
     {
       "id": "T-6f",
@@ -549,7 +549,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T14:54:26+09:00"
+      "updated_at": "2026-11-12T15:02:20+09:00"
     },
     {
       "id": "b-T-2f",
@@ -615,11 +615,11 @@
       "id": "b-T-6e",
       "title": "실자료 다듬기",
       "trunk": false,
-      "ahead": 1,
-      "state": "live",
+      "ahead": 0,
+      "state": "merged",
       "actor_id": null,
       "task_id": "T-6e",
-      "updated_at": "2026-11-12T14:54:26+09:00"
+      "updated_at": "2026-11-12T15:01:02+09:00"
     }
   ],
   "services": [
@@ -629,7 +629,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:01:01.792Z"
+      "checked_at": "2026-11-12T06:03:01.767Z"
     },
     {
       "id": "s2",
@@ -637,7 +637,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:01:01.792Z"
+      "checked_at": "2026-11-12T06:03:01.767Z"
     },
     {
       "id": "s3",
@@ -645,7 +645,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:01:01.792Z"
+      "checked_at": "2026-11-12T06:03:01.767Z"
     }
   ],
   "modules": [
@@ -724,12 +724,21 @@
     {
       "id": "g5",
       "title": "실제 자료가 현황판에",
-      "progress": 67,
+      "progress": 83,
       "state": "work",
       "sprint": 5
     }
   ],
   "events": [
+    {
+      "id": "e-83c81e47",
+      "ts": "2026-11-12T15:02:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-6e",
+      "actor_id": "a-lead",
+      "text": "실자료 다듬기 끝"
+    },
     {
       "id": "e-c76e14a9",
       "ts": "2026-11-12T14:58:00+09:00",
@@ -950,8 +959,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:01:01.792Z",
-      "pct_5h": 32,
+      "ts": "2026-11-12T06:03:01.767Z",
+      "pct_5h": 34,
       "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
@@ -1017,7 +1026,7 @@
     {
       "id": 3,
       "title": "불편 접수함 · 진짜 자료 · 품질",
-      "goal": "불편 접수함 처리하고, 그밖에 QA 개선거리 있으면 하고, 퀄리티 개선 작업도하고 · 임시깃 만들어서 거기서 작업하고 한꺼번에 반영해라",
+      "goal": "불편 접수함 · 진짜 자료 · 품질",
       "began": "2026-11-12T13:07:00+09:00",
       "ended": "2026-11-12T14:16:00+09:00",
       "task_ids": [
@@ -1059,7 +1068,7 @@
     {
       "id": 5,
       "title": "실제 자료가 현황판에",
-      "goal": "요청할건 최우선적으로 실제 데이터가 현황판에 적용되는게 제일 먼저다",
+      "goal": "실제 자료가 현황판에",
       "began": "2026-11-12T14:42:00+09:00",
       "ended": null,
       "task_ids": [
