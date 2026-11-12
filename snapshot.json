@@ -847,12 +847,12 @@
       "team": "자료팀",
       "sprint": 7,
       "est_min": 8,
-      "started_at": "2026-11-12T15:45:00+09:00",
+      "started_at": "2026-11-12T16:25:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T15:45:00+09:00"
+      "updated_at": "2026-11-12T16:25:00+09:00"
     },
     {
       "id": "T-7u",
@@ -882,7 +882,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R2",
@@ -897,7 +897,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R3",
@@ -912,7 +912,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R4",
@@ -927,7 +927,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R5",
@@ -942,7 +942,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R6",
@@ -957,7 +957,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R7",
@@ -972,7 +972,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R8",
@@ -987,7 +987,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R9",
@@ -1002,7 +1002,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R10",
@@ -1017,7 +1017,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R11",
@@ -1032,7 +1032,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R12",
@@ -1047,7 +1047,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R13",
@@ -1062,7 +1062,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R14",
@@ -1077,7 +1077,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R15",
@@ -1092,7 +1092,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R16",
@@ -1107,7 +1107,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R17",
@@ -1122,7 +1122,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R18",
@@ -1137,7 +1137,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R19",
@@ -1152,7 +1152,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R20",
@@ -1167,7 +1167,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R21",
@@ -1182,7 +1182,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R22",
@@ -1197,7 +1197,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R23",
@@ -1212,7 +1212,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R24",
@@ -1224,10 +1224,10 @@
       "est_min": 0,
       "started_at": null,
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R25",
@@ -1242,7 +1242,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R26",
@@ -1257,7 +1257,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R27",
@@ -1272,7 +1272,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     },
     {
       "id": "R28",
@@ -1287,7 +1287,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:25:02.623Z"
+      "updated_at": "2026-11-12T07:27:02.969Z"
     }
   ],
   "lanes": [
@@ -1298,15 +1298,106 @@
       "actor_id": "a-lead"
     }
   ],
-  "branches": [],
+  "branches": [
+    {
+      "id": "b-trunk",
+      "title": "줄기",
+      "trunk": true,
+      "ahead": 0,
+      "state": "live",
+      "actor_id": null,
+      "task_id": null,
+      "updated_at": "2026-11-12T16:24:48+09:00"
+    },
+    {
+      "id": "b-T-2f",
+      "title": "고침",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-2f",
+      "updated_at": "2026-11-12T12:09:22+09:00"
+    },
+    {
+      "id": "b-T-5a",
+      "title": "캐릭터",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5a",
+      "updated_at": "2026-11-12T14:27:14+09:00"
+    },
+    {
+      "id": "b-T-5b",
+      "title": "이름·탭 설명",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5b",
+      "updated_at": "2026-11-12T14:33:29+09:00"
+    },
+    {
+      "id": "b-T-5c",
+      "title": "가지 모양",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5c",
+      "updated_at": "2026-11-12T14:39:35+09:00"
+    },
+    {
+      "id": "b-T-6a",
+      "title": "보고꾼",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6a",
+      "updated_at": "2026-11-12T14:48:42+09:00"
+    },
+    {
+      "id": "b-T-6b",
+      "title": "나르기",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6b",
+      "updated_at": "2026-11-12T14:54:02+09:00"
+    },
+    {
+      "id": "b-T-6e",
+      "title": "실자료 다듬기",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6e",
+      "updated_at": "2026-11-12T15:01:02+09:00"
+    },
+    {
+      "id": "b-T-7u",
+      "title": "360 막대 이름 잘림",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-7u",
+      "updated_at": "2026-11-12T16:24:48+09:00"
+    }
+  ],
   "services": [
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "build",
+      "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:25:02.040Z"
+      "checked_at": "2026-11-12T07:27:02.353Z"
     },
     {
       "id": "s-sync",
@@ -1314,7 +1405,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:25:02.040Z"
+      "checked_at": "2026-11-12T07:27:02.353Z"
     },
     {
       "id": "s-reporter",
@@ -1322,7 +1413,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:25:02.040Z"
+      "checked_at": "2026-11-12T07:27:02.353Z"
     }
   ],
   "modules": [
@@ -1422,12 +1513,21 @@
     {
       "id": "g7",
       "title": "요청함 R1~R20 소화",
-      "progress": 85,
+      "progress": 92,
       "state": "work",
       "sprint": 7
     }
   ],
   "events": [
+    {
+      "id": "e-f9e6cc74",
+      "ts": "2026-11-12T16:25:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-7t",
+      "actor_id": "a-lead",
+      "text": "카드·캐릭터에 태스크 번호 시작"
+    },
     {
       "id": "e-c3b30dca",
       "ts": "2026-11-12T16:23:00+09:00",
@@ -1837,7 +1937,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:25:02.623Z",
+      "ts": "2026-11-12T07:27:02.969Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -1874,14 +1974,14 @@
       "est_min": 145,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
     {
       "id": 2,
       "title": "앱 위 막대 + 위 서랍",
-      "goal": "1.2v 미리보기 앱 맨 위 얇은 상태 막대 · 누르면 위에서 서랍이 내려와 앱을 덮는다 · 다시 누르면 접힘 · 서랍 안 = 층 탭 + 불편 접수 · 미리보기 앱은 저장소 이름표를 와 갈라서 올린다",
+      "goal": "1.2v 미리보기 앱 맨 위 얇은 상태 막대 · 누르면 위에서 서랍이 내려와 앱을 덮는다 · 다시 누르면 접힘 · 서랍 안 = 층 탭 + 불편 접수 · 미리보기 앱은 저장소 이름표를 v2 와 갈라서 올린다",
       "began": "2026-11-12T11:47:00+09:00",
       "ended": "2026-11-12T12:18:00+09:00",
       "task_ids": [
@@ -1897,7 +1997,7 @@
       "est_min": 100,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
@@ -1919,7 +2019,7 @@
       "est_min": 67,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
@@ -1939,7 +2039,7 @@
       "est_min": 62,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
@@ -1961,7 +2061,7 @@
       "est_min": 74,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
@@ -1982,7 +2082,7 @@
       "est_min": 110,
       "actual_min": 0,
       "review": "",
-      "passed": null,
+      "passed": true,
       "missed": "",
       "next": ""
     },
