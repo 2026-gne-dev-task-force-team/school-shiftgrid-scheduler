@@ -12,7 +12,7 @@ export const REASON_NAME: Record<string, string> = {
 export const colOf = (t: Task): Col => (t.column === 'wait' && t.reason === 'checking' ? 'check' : t.column)
 
 export const minutesIn = (t: Task, now: number): number | null =>
-  t.started_at === null ? null : Math.max(0, Math.floor((now - Date.parse(t.started_at)) / 60000))
+  t.started_at === null ? null : Math.max(0, Math.floor(((t.column === 'done' ? Math.max(Date.parse(t.updated_at), Date.parse(t.started_at)) : now) - Date.parse(t.started_at)) / 60000))
 
 // 짐작(est_min)을 넘긴 일만 true — 끝난 카드·시작 전 카드는 아니다.
 export const isOver = (t: Task, now: number): boolean => {

@@ -220,3 +220,43 @@ describe('보고꾼 — 요청함 R 카드', () => {
     expect(new Set(d.tasks.map((t: { id: string }) => t.id)).size).toBe(d.tasks.length)
   })
 })
+
+describe('보고꾼 — 번호·칸 이름·상태·끝난 카드', () => {
+  const md = `## 스프린트 6 — 설계 (15:30~)
+| 태스크 | 무엇 | 팀 | est_min | 상태 |
+|---|---|---|---|---|
+| T-2n-6 | 인증 칸 | 설계 sonnet | 5 | ✅ |
+
+## 스프린트 7 — 소화 (15:45~18:00)
+| 태스크 | 요청 | 무엇 | 팀 | est_min | 상태 |
+|---|---|---|---|---|---|
+| T-7h1 | R4 | 방 그리기 | 화면 sonnet | 8 | 🔨 |
+| T-7a | R1 | 탭 낱말 | 코드 sonnet | 8 | 👀 검수 |
+| T-7b | R2 | 막힌 일 | 코드 sonnet | 8 | ⛔ 대기 |
+| T-7c | R3 | 끝난 일 | 코드 sonnet | 8 | ✅ |
+
+## 진행 로그 (맨 위가 최신)
+| 시각 | 판 | 결과 | 비고 |
+|---|---|---|---|
+| 11-12 15:50 | T-7c ✅ | 머지 | |
+| 11-12 15:46 | T-7c | 🔄 착수 | |
+`
+  it('T-2n-6 · T-7h1 번호, 요청 칸이 낀 표도 칸 이름으로 읽는다', () => {
+    const d = build({ now: new Date('2026-11-12T10:00:00Z'), md })
+    const t = (id: string) => d.tasks.find((x: { id: string }) => x.id === id)
+    expect(t('T-2n-6')).toMatchObject({ sprint: 6, title: '인증 칸', est_min: 5, column: 'done' })
+    expect(t('T-7h1')).toMatchObject({ sprint: 7, title: '방 그리기', est_min: 8, team: '화면팀' })
+  })
+  it('상태 기호 → 칸', () => {
+    expect(columnOf('🔨 중')).toMatchObject({ column: 'work' })
+    expect(columnOf('👀 검수')).toMatchObject({ column: 'wait', reason: 'checking' })
+    expect(columnOf('검수 대기')).toMatchObject({ reason: 'checking' })
+    expect(columnOf('⛔ 막힘')).toMatchObject({ reason: 'blocked' })
+  })
+  it('끝난 카드는 끝 시각에서 경과가 멈춘다', async () => {
+    const { minutesIn } = await import('../src/layers/layer4-logic.ts')
+    const d = build({ now: new Date('2026-11-12T10:00:00Z'), md })
+    const c = d.tasks.find((x: { id: string }) => x.id === 'T-7c')
+    expect(minutesIn(c, Date.parse('2026-11-12T10:00:00Z'))).toBe(4)
+  })
+})
