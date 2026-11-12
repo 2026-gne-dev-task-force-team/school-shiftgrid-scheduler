@@ -25,6 +25,6 @@
     "noFallthroughCasesInSwitch": true
   },
   // 검사 파일은 node API(fs·path·process)를 쓴다 — 별도 tsconfig.test.json 에서 node 타입으로 본다
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "include": ["src", "shared"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "shared/**/*.test.ts"]
 }

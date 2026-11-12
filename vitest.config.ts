@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 // vite.config.ts(웹 빌드 설정)를 import 하지 않고 독립 설정으로 둔다 — 테스트엔 PWA 플러그인 등이 필요 없다.
 export default defineConfig({
     test: {
-        include: ['src/**/*.test.{ts,tsx}'],
+        include: ['src/**/*.test.{ts,tsx}', 'shared/**/*.test.ts'],
         exclude: ['e2e/**', 'node_modules/**'],   // e2e/ 는 Playwright 가 돌린다(npm run e2e)
         environment: 'node',
         setupFiles: ['./src/test-setup.ts'],
