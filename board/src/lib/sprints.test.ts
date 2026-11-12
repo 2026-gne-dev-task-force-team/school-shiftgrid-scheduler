@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rawFixtures } from '../data.ts'
 import type { BoardData } from '../types.ts'
-import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel } from './sprints.ts'
+import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel, flightStatus } from './sprints.ts'
 import { LAYERS } from '../layers/registry.ts'
 import { actorLabel, actorWhat } from './actor.ts'
 
@@ -70,5 +70,15 @@ describe('지금 스프린트', () => {
     const all = d.sprints.map((s) => ({ ...s, ended: '2026-11-13T00:00:00+09:00' }))
     expect(currentSprint({ sprints: all, tasks: d.tasks })!.sprint.id).toBe(3)
     expect(currentSprint({ sprints: [], tasks: d.tasks })).toBeNull()
+  })
+})
+
+describe('안내판 상태 말', () => {
+  const s = d.sprints[0]!
+  it('끝=ARRIVED · 진행=BOARDING · 시작 전=SCHEDULED', () => {
+    const t = Date.parse(s.began)
+    expect(flightStatus({ ...s, ended: '2026-11-13T00:00:00+09:00' }, t)).toBe('ARRIVED')
+    expect(flightStatus({ ...s, ended: null }, t + 1)).toBe('BOARDING')
+    expect(flightStatus({ ...s, ended: null }, t - 1)).toBe('SCHEDULED')
   })
 })

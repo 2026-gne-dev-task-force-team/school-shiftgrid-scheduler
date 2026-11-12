@@ -1,5 +1,5 @@
 import { h } from '../dom.ts'
-import { reviewLabel, sprintProgress, sprintsNewestFirst } from '../lib/sprints.ts'
+import { flightStatus, reviewLabel, sprintProgress, sprintsNewestFirst } from '../lib/sprints.ts'
 import { chip } from '../ui/chip.ts'
 import type { Sprint } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
@@ -8,19 +8,44 @@ const COL_NAME = { wait: '기다림', work: '하는 중', done: '끝' } as const
 const COL_HUE = { wait: 45, work: 200, done: 140 } as const
 const hm = (ts: string) => new Date(ts).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
 const hmOnly = (ts: string) => new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+const hhmm = (ts: string) => { const d = new Date(ts); return Number.isNaN(+d) ? '--/-- --:--' : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
 const span = (s: Sprint) => `${hm(s.began)} ~ ${s.ended ? hmOnly(s.ended) : '진행 중'}`
+
+// 플랩 칸: 글자마다 위·아래 반쪽 두 장. 바뀐 글자(또는 탭을 새로 연 첫 그림)만 .go 로 촤르륵 넘어간다. 움직임은 CSS 가 하고 .calm 이 끈다.
+// shortcut: 이전 글자는 모듈 변수에, 1.5초 넘게 쉬었다 그리면 「새로 열림」으로 본다 — 층이 열림/갱신을 알려 주면 그걸로 바꾼다.
+const seen = new Map<string, string>()
+let lastAt = 0
+const flap = (key: string, text: string, fresh: boolean, base: number): HTMLElement => {
+  const old = fresh ? '' : (seen.get(key) ?? '')
+  seen.set(key, text)
+  const g = h('span', { class: 'fl-g', role: 'text', 'aria-label': text })
+  ;[...text].forEach((c, i) => {
+    const half = (k: string) => h('span', { class: k }, h('span', null, c))
+    const cell = h('span', { class: `fl${c.charCodeAt(0) > 0x2e80 ? ' w' : ''}${c === old[i] ? '' : ' go'}`, 'aria-hidden': 'true' }, half('t'), half('b'))
+    cell.style.setProperty('--d', `${Math.min((base + i) * 22, 600)}ms`)
+    g.append(cell)
+  })
+  return g
+}
 
 // 스프린트 — 한 줄에 번호·목표·기간·진행률·검수 칩, 누르면 태스크·시간·검수·회고가 펼쳐진다.
 export const sprints: LayerRenderer = {
   id: 'sprints', floor: 6, tab: 'Sprint',
   render(host, { data }) {
     if (!data.sprints?.length) { host.replaceChildren(h('p', { class: 'card' }, '아직 스프린트 기록이 없습니다')); return }
-    host.replaceChildren(...sprintsNewestFirst(data.sprints).map((s) => {
+    const now = Date.now(), fresh = now - lastAt > 1500
+    lastAt = now
+    const board = h('div', { class: 'fid' })
+    board.append(...sprintsNewestFirst(data.sprints).map((s, r) => {
       const p = sprintProgress(s, data.tasks)
-      const head = h('button', { class: 'feed-line', 'aria-expanded': 'false' }, h('b', null, `${s.id}. ${s.title}`),
-        h('small', null, `${s.goal} · ${span(s)}`))
-      const bar = h('div', { class: 'bar' }, h('i'))
-      bar.querySelector('i')!.style.width = `${p.pct}%`
+      const st = flightStatus(s, now), k = `${s.id}`
+      const goal = s.goal.length > 18 ? `${s.goal.slice(0, 17)}…` : s.goal
+      const head = h('button', { class: 'fid-line', 'aria-expanded': 'false', title: `${s.title} — ${span(s)}` },
+        h('span', { class: 'fid-no' }, flap(`${k}:no`, `Sprint ${s.id}`, fresh, r)),
+        h('span', { class: 'fid-dest' }, flap(`${k}:goal`, goal, fresh, r + 2)),
+        h('span', { class: 'fid-t' }, flap(`${k}:t`, hhmm(s.began), fresh, r + 4)),
+        h('span', { class: 'fid-st', 'data-st': st }, flap(`${k}:st`, st, fresh, r + 6)),
+        h('span', { class: 'fid-pct' }, flap(`${k}:pct`, `${p.pct}%`, fresh, r + 8)))
       const label = reviewLabel(s)
       const top = h('div', { class: 'row' }, h('span', null, `진행 ${p.pct}% (${p.done}/${p.total})`),
         chip({ icon: s.passed ? '✅' : '⏳', label, hue: s.passed ? 140 : 45 }))
@@ -33,7 +58,8 @@ export const sprints: LayerRenderer = {
         h('p', null, s.ended ? `회고 — 빠뜨림 ${s.missed || '없음'} · 짐작/실제 ${s.est_min}/${s.actual_min}분 · 다음엔 ${s.next || '—'}` : '회고 — 끝난 뒤에 적습니다'))
       body.hidden = true
       head.addEventListener('click', () => { body.hidden = !body.hidden; head.setAttribute('aria-expanded', String(!body.hidden)) })
-      return h('section', { class: 'card', 'data-id': `sprint-${s.id}` }, head, bar, top, body)
+      return h('section', { class: 'fid-row', 'data-id': `sprint-${s.id}` }, head, top, body)
     }))
+    host.replaceChildren(board)
   },
 }
