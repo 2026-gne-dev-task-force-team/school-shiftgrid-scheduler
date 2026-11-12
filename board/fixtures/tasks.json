@@ -1,11 +1,11 @@
 [
   {"id":"t1","title":"보결 화면 틀","category":"화면","kind":"work","team":"화면팀","sprint":1,"est_min":20,"started_at":"2026-01-01T09:46:00Z","lane_id":"l1","column":"work","reason":"new","actor_id":"a3","updated_at":"2026-01-01T09:55:00Z"},
   {"id":"t2","title":"자료 칸 정하기","category":"설계","kind":"work","team":"자료팀","sprint":1,"est_min":30,"started_at":"2026-01-01T09:25:00Z","lane_id":"l2","column":"work","reason":"new","actor_id":"a4","updated_at":"2026-01-01T09:50:00Z"},
-  {"id":"t3","title":"로그인 문 고르기","category":"설계","kind":"decide","team":"설계팀","sprint":1,"est_min":15,"started_at":"2026-01-01T09:05:00Z","lane_id":"l2","column":"wait","reason":"checking","actor_id":"a5","updated_at":"2026-01-01T09:30:00Z"},
+  {"id":"t3","title":"로그인 문 고르기","category":"설계","kind":"decide","team":"설계팀","sprint":1,"est_min":15,"started_at":"2026-01-01T09:05:00Z","lane_id":"l2","column":"wait","reason":"checking","actor_id":"a5","updated_at":"2026-01-01T09:30:00Z","block_kind":"decide"},
   {"id":"t4","title":"띠 검사 쓰기","category":"검사","kind":"review","team":"시험팀","sprint":1,"est_min":25,"started_at":"2026-01-01T09:52:00Z","lane_id":"l1","column":"work","reason":"new","actor_id":"a6","updated_at":"2026-01-01T09:56:00Z"},
-  {"id":"t5","title":"한눈에 칸 모양","category":"화면","kind":"work","team":"화면팀","sprint":1,"est_min":40,"started_at":null,"lane_id":"l1","column":"wait","reason":"dep","actor_id":null,"updated_at":"2026-01-01T09:00:00Z"},
+  {"id":"t5","title":"한눈에 칸 모양","category":"화면","kind":"work","team":"화면팀","sprint":1,"est_min":40,"started_at":null,"lane_id":"l1","column":"wait","reason":"dep","actor_id":null,"updated_at":"2026-01-01T09:00:00Z","blocked_by":"t1","block_kind":"dep"},
   {"id":"t6","title":"가짜 자료 만들기","category":"코드","kind":"work","team":"자료팀","sprint":1,"est_min":20,"started_at":"2026-01-01T08:00:00Z","lane_id":"l2","column":"done","reason":"done","actor_id":"a4","updated_at":"2026-01-01T09:10:00Z"},
   {"id":"t7","title":"맨눈 확인 한 바퀴","category":"검사","kind":"bug","team":"맨눈팀","sprint":1,"est_min":30,"started_at":"2026-01-01T08:35:00Z","lane_id":"l1","column":"done","reason":"closed","actor_id":"a7","updated_at":"2026-01-01T09:30:00Z"}
 ,
-  {"id":"t8","title":"보결 알림 보내기","category":"코드","kind":"work","team":"자료팀","sprint":1,"est_min":30,"started_at":"2026-01-01T09:20:00Z","lane_id":"l2","column":"wait","reason":"blocked","actor_id":null,"updated_at":"2026-01-01T09:40:00Z"}
+  {"id":"t8","title":"보결 알림 보내기","category":"코드","kind":"work","team":"자료팀","sprint":1,"est_min":30,"started_at":"2026-01-01T09:20:00Z","lane_id":"l2","column":"wait","reason":"blocked","actor_id":null,"updated_at":"2026-01-01T09:40:00Z","blocked_by":"t2","block_kind":"dep"}
 ]

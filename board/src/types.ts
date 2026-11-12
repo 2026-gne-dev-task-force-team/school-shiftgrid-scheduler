@@ -7,10 +7,12 @@ export interface Actor {
   task_id: string | null; branch_id: string | null; account: Account; tok_per_min: number
   started_at: string; ended_at: string | null
 }
+export type BlockKind = 'dep' | 'decide' | 'check' | 'outside' // 막힌 까닭: 정해진 낱말만(자유 글 칸 없음)
 export interface Task {
   id: string; title: string; category: string; kind: 'work' | 'cr' | 'bug' | 'decide' | 'review'; team: string; sprint: number
   est_min: number; started_at: string | null; lane_id: string; column: 'wait' | 'work' | 'done'; reason: string
   actor_id: string | null; updated_at: string
+  blocked_by?: string; block_kind?: BlockKind // 막힌 일의 까닭 — 앞 일 id · 낱말
 }
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }
 export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string }

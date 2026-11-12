@@ -1,6 +1,6 @@
 import { h } from '../dom.ts'
 import type { Branch } from '../types.ts'
-import { hitTest, labelIds, project, type Seg } from './layer2-logic.ts'
+import { hitTest, project, type Seg } from './layer2-logic.ts'
 import type { LayerRenderer } from './types.ts'
 
 interface Look { vis: boolean; grow: number; merge: number } // 보임 · 자라는 정도 · 줄기로 합쳐지는 정도
@@ -45,7 +45,7 @@ export const layer2: LayerRenderer = {
       g.clearRect(0, 0, w, ht)
       const cy = ht / 2, ids = work.map((b) => b.id), bw = w - PAD * 2
       const ps = project(ids, rot, ht * R_FRAC).sort((a, b) => a.cos - b.cos)
-      const labels = labelIds(ps, innerWidth < 768 ? 5 : 8)
+      const fs = innerWidth < 768 ? 15 : 14
       segs = []
       const pass = (list: typeof ps) => {
         for (const p of list) {
@@ -68,12 +68,15 @@ export const layer2: LayerRenderer = {
             g.beginPath(); g.arc(fx + 40 + (x2 - fx - 40) * t, y + (cy - y) * t * t, 4 * sc, 0, 7); g.fill()
           }
           g.fillStyle = col; g.beginPath(); g.arc(x2, y, 5 * sc, 0, 7); g.fill() // 가지 끝 점 = 캐릭터 자리
-          if (labels.has(p.id)) { // 글자도 원통 표면: 크기·눌림이 cos 를 따른다
-            g.shadowBlur = 0; g.fillStyle = '#dbe6f5'; g.font = `${Math.round(13 * sc)}px system-ui`
-            g.translate(fx + 48, y - 8 * sc); g.scale(1, Math.max(0.4, p.cos)); g.fillText(`${b.title} · ${who(b)}`, 0, 0)
-          }
           g.restore()
-          if (p.cos > 0) segs.push({ id: p.id, x1: fx + 40, x2, y, cos: p.cos })
+          if (p.cos > 0) { // 앞면: 이름표를 또렷하게(원통 크기 무관 고정 글자) — 과녁은 선+이름표 상자
+            const tx = fx + 48
+            g.save(); g.font = `${fs}px system-ui`; g.lineJoin = 'round'
+            const w2 = g.measureText(b.title).width
+            g.strokeStyle = '#0b0f17'; g.lineWidth = 4; g.strokeText(b.title, tx, y - 6)
+            g.fillStyle = '#fff'; g.fillText(b.title, tx, y - 6); g.restore()
+            segs.push({ id: p.id, x1: fx + 40, x2: Math.max(x2, tx + w2), y: y - 5, cos: p.cos })
+          }
         }
       }
       pass(ps.filter((p) => p.cos < 0))
@@ -108,6 +111,7 @@ export const layer2: LayerRenderer = {
     const timer = replay.length ? window.setInterval(step, REPLAY_MS) : 0
 
     // 끌기: 세로 = θ(원통 돌리기) · 가로 = 시간 쪽으로 밀기 · 휠 = 돌리기
+    const tol = () => (innerWidth < 768 ? 22 : 12) // 과녁 반높이: PC 24px · 폰 44px
     const at = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const }
     const setHover = (id: string | null, e: PointerEvent) => {
       if (id === hover) return
@@ -121,10 +125,10 @@ export const layer2: LayerRenderer = {
     canvas.addEventListener('pointerdown', (e) => {
       dragging = true; moved = 0; sx = px = e.clientX; sy = py = e.clientY
       canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'
-      const [x, y] = at(e); hover = hitTest(segs, x, y); kick()
+      const [x, y] = at(e); hover = hitTest(segs, x, y, tol()); kick()
     })
     canvas.addEventListener('pointermove', (e) => {
-      if (!dragging) { const [x, y] = at(e); if (e.pointerType === 'mouse') setHover(hitTest(segs, x, y), e); return }
+      if (!dragging) { const [x, y] = at(e); if (e.pointerType === 'mouse') setHover(hitTest(segs, x, y, tol()), e); return }
       rot += (e.clientY - py) * 0.012
       pan = Math.max(-w * 0.2, Math.min(w * 0.2, pan + (e.clientX - px)))
       moved = Math.max(moved, Math.hypot(e.clientX - sx, e.clientY - sy)); px = e.clientX; py = e.clientY; kick()
@@ -132,7 +136,7 @@ export const layer2: LayerRenderer = {
     canvas.addEventListener('pointerup', (e) => {
       if (!dragging) return
       dragging = false; canvas.style.cursor = 'grab'
-      const [x, y] = at(e), id = moved < 6 ? hitTest(segs, x, y) : null, b = id ? by.get(id) : null
+      const [x, y] = at(e), id = moved < 6 ? hitTest(segs, x, y, tol()) : null, b = id ? by.get(id) : null
       if (b) openDetail({ title: b.title, rows: [['앞선 커밋', `${b.ahead}개`], ['맡은 캐릭터', who(b)], ['상태', b.state === 'live' ? '작업 중' : '줄기에 합쳐짐']] })
       kick()
     })

@@ -75,6 +75,8 @@ button.chip { min-height: 44px; cursor: pointer }
 .ws-body { display: flex; flex-direction: column; gap: 8px }
 .ws-card { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 8px 8px 8px 12px; text-align: left; color: var(--fg); font: inherit; background: #141c2b; border: 1px solid var(--line); border-left: 6px solid var(--make); border-radius: 6px; cursor: pointer }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
+.ws-card.flash { outline: 3px solid var(--neon); animation: ws-flash .4s ease-in-out 5 alternate } /* 움직임 끄기(.calm)면 animation 만 꺼져 테두리만 남는다 */
+@keyframes ws-flash { to { background: #1f4a48 } }
 .ws-clock { font-size: 13px } .ws-card.over .ws-clock { color: #f5c542; font-weight: 600 }
 .ws-reason { align-self: flex-start; padding: 0 8px; border-radius: 10px; background: #d04a5a33; border: 1px solid #d04a5a; font-size: 13px }
 @media (max-width: 767px) {

@@ -1,6 +1,7 @@
 import './style.css'
 import { loadData } from './data.ts'
 import { h } from './dom.ts'
+import { loadFeedback } from './lib/feedback.ts'
 import { LAYERS } from './layers/registry.ts'
 import { restoreTab } from './layers/layer5-logic.ts'
 import type { LayerCtx } from './layers/types.ts'
@@ -66,7 +67,15 @@ function mount(notice = false): void {
   show(restoreTab(curTab, LAYERS.length))
   if (notice) {
     const go = h('button', { class: 'btn' }, '작업장에서 보기')
-    go.addEventListener('click', () => show(LAYERS.findIndex((l) => l.floor === 4)))
+    go.addEventListener('click', () => {
+      show(LAYERS.findIndex((l) => l.floor === 4))
+      detail.el.hidden = true // 폰 바텀시트가 카드를 가리지 않게
+      const card = stage.el.querySelector<HTMLElement>(`[data-id="${loadFeedback().at(-1)?.id}"]`)
+      if (!card) return
+      card.scrollIntoView({ block: 'nearest', inline: 'center', behavior: document.documentElement.classList.contains('calm') ? 'auto' : 'smooth' })
+      card.classList.add('flash')
+      setTimeout(() => card.classList.remove('flash'), 2000)
+    })
     detail.open({ title: '접수됐어요', rows: [], extra: go })
   }
 
