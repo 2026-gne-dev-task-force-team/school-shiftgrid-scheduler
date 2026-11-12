@@ -11,50 +11,12 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "work",
+      "state": "idle",
       "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
-      "ended_at": null
-    },
-    {
-      "id": "a-12495c52",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "일손",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
-      "state": "work",
-      "task_id": null,
-      "branch_id": null,
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T06:29:55.812Z",
-      "ended_at": null
-    },
-    {
-      "id": "a-1d3db7df",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "일손",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
-      "state": "work",
-      "task_id": null,
-      "branch_id": null,
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T06:30:08.898Z",
       "ended_at": null
     }
   ],
@@ -682,7 +644,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:31:01.990Z"
+      "checked_at": "2026-11-12T06:33:01.976Z"
     },
     {
       "id": "s-sync",
@@ -690,7 +652,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:31:01.990Z"
+      "checked_at": "2026-11-12T06:33:01.976Z"
     },
     {
       "id": "s-reporter",
@@ -698,7 +660,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:31:01.990Z"
+      "checked_at": "2026-11-12T06:33:01.976Z"
     }
   ],
   "modules": [
@@ -1069,9 +1031,9 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:31:02.701Z",
-      "pct_5h": 41,
-      "pct_7d": 8,
+      "ts": "2026-11-12T06:33:02.570Z",
+      "pct_5h": 52,
+      "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
       "tok_per_min": 0
