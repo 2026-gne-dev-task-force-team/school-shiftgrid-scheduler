@@ -1,5 +1,7 @@
 import { h } from '../dom.ts'
 import { clampZoom, groupHouses, lineOf, roomCount } from './layer5-logic.ts'
+import { attachActors } from './layer5-match.ts'
+import { character } from '../ui/character.ts'
 import type { LayerRenderer } from './types.ts'
 
 const STATE_NAME = { plan: 'Plan', build: 'Building', built: 'Built' }
@@ -12,16 +14,19 @@ export const layer5: LayerRenderer = {
     const { total, built } = roomCount(houses)
     const taskTitle = (id: string | null) => data.tasks.find((t) => t.id === id)?.title ?? '없음'
 
+    const { byRoom, lost } = attachActors(data.actors, data.modules, data.tasks)
+    const crew = (id: string) => (byRoom.get(id) ?? []).map((a) => h('span', { class: 'bp-crew', title: a.name }, character(a, 'mini')))
     const canvas = h('div', { class: 'bp-canvas' })
     for (const hs of houses) {
       const rooms = hs.rooms.map((m) => {
         const b = h('button', { class: `bp-room ${lineOf(m.state)}`, 'data-id': m.id }, m.name)
         b.addEventListener('click', () => openDetail({ title: m.name, rows: [['상태', STATE_NAME[m.state]], ['연결된 일감', taskTitle(m.task_id)], ...(m.note ? [['번호·설계 절', m.note] as [string, string]] : [])] }))
         tip(b, () => `${m.name} · ${STATE_NAME[m.state]}`)
-        return b
+        return h('span', { class: 'bp-slot' }, b, ...crew(m.id))
       })
-      canvas.append(h('section', { class: 'bp-house' }, h('header', null, hs.root.name), h('div', { class: 'bp-rooms' }, ...rooms)))
+      canvas.append(h('section', { class: 'bp-house' }, h('header', null, hs.root.name, ...crew(hs.root.id)), h('div', { class: 'bp-rooms' }, ...rooms)))
     }
+    if (lost.length) canvas.append(h('section', { class: 'bp-house bp-lost' }, h('header', null, '어느 칸인지 모름'), h('div', { class: 'bp-rooms' }, ...lost.map((a) => h('span', { class: 'bp-crew', title: `${a.name} · ${a.task_id ?? ''}` }, character(a, 'mini'))))))
 
     let zoom = 1
     const apply = () => { canvas.style.transform = `scale(${zoom})` }

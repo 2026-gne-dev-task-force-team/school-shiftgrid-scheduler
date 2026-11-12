@@ -211,6 +211,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .bp-house { border: 1px solid rgb(var(--neon-rgb) / .55); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) } .bp-house header { font-weight: 650; margin-bottom: var(--sp2) }
 .bp-rooms { display: flex; flex-wrap: wrap; gap: var(--sp2) }
 .bp-room { min-height: 30px; min-width: 76px; padding: 0 9px; color: var(--fg); font: inherit; background: var(--s3); border-radius: var(--r1); cursor: pointer; border: 1px solid rgb(var(--neon-rgb) / .7) }
+.bp-slot { display: inline-flex; align-items: center; gap: 4px } .bp-crew { display: inline-flex }
 .bp-room.ghost { border-style: dashed; opacity: .5 }
 .bp-room.scaffold { border-color: var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, var(--scaffold) 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
 &.calm .bp-room.scaffold { animation: none }
