@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import tls from 'node:tls'
-import { clean, findDirty, isPlain } from './plain.mjs'
+import { clean, findDirty, isPlain, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
 import { claudeVariants, newestOf } from './claude-home.mjs'
 
@@ -158,12 +158,12 @@ export function readSupervisor(root, now) {
   } catch { return null }
 }
 
-/** 요청함 노트 → R 줄(번호·처방·상태 칸). 쥔님 원문 칸은 읽지도 않는다. 칸 순서: # · 시각 · 원문 · 처방 · 종류 · 상태. */
+/** 요청함 노트 → R 줄(번호·처방·상태·시각·원문·종류 칸). 원문은 읽어 두되 싣기 전에 build 가 publicText 로 거른다. 칸 순서: # · 시각 · 원문 · 처방 · 종류 · 상태. */
 export function parseRequests(md) {
   const rows = []
   for (const line of (md ?? '').split(/\r?\n/)) {
     const c = line.startsWith('|') ? cells(line) : null
-    if (c && c.length >= 6 && /^R\d+$/.test(c[0])) rows.push({ id: c[0], what: c[3], state: c[5] })
+    if (c && c.length >= 6 && /^R\d+$/.test(c[0])) rows.push({ id: c[0], what: c[3], state: c[5], at: c[1], ask: c[2], type: c[4] })
   }
   return rows
 }
@@ -362,8 +362,40 @@ export function dedupeKeys(data, onWarn = () => {}) {
   return data
 }
 
+
+/** 설명 글에서 「완료 정의:」 뒤를 떼어 { body, done } 으로 — 칸 전문을 담백 거름(publicText)에 건다(자르지 않는다). 둘 다 없으면 칸을 안 둔다. */
+export function splitDetail(text) {
+  const m = /완료 ?정의\s*[:：]/.exec(text ?? '')
+  const [a, b] = m ? [text.slice(0, m.index), text.slice(m.index + m[0].length)] : [text ?? '', '']
+  const body = publicText(a, codeWord), done = publicText(b, codeWord)
+  return { ...(body ? { body } : {}), ...(done ? { done } : {}) }
+}
+/** 쥔님 원문 칸 → 따옴표(*"…"*)를 걷고 거른 글. */
+export function publicAsk(s) {
+  return publicText((s ?? '').replace(/^\s*\*?"|"\*?\s*$/g, '').replace(/\*"|"\*/g, ''), codeWord)
+}
+/** 요청함 「종류」 칸 → 유형(kind). 모르는 낱말은 일(work). */
+export const kindOfType = (t) => (/고침|결함|버그|bug/i.test(t ?? '') ? 'bug' : /설계|cr/i.test(t ?? '') ? 'cr' : /검수|검사|review/i.test(t ?? '') ? 'review' : 'work')
+const verbOf = (l) => {
+  const mark = `${l.pan} ${l.result}`
+  return /^\s*❌/.test(l.result) ? '다시' : /✅|머지/.test(l.pan) || /^\s*✅/.test(l.result) ? '끝' : /⏸|⛔|막힘/.test(mark) ? '막힘' : '시작'
+}
+const HIST_LABEL = { 시작: '착수', 끝: '끝', 막힘: '막힘', 다시: '다시' }
+const mentions = (text, re) => [...new Set(String(text ?? '').match(re) ?? [])]
+const RID = /\bR\d+\b/g
+/** 서로 이어진 태스크 번호(R↔T · R↔R · T↔R)를 양쪽에 넣는다. 없는 번호·제 번호는 버린다. */
+export function linkTasks(tasks, edges) {
+  const ids = new Set(tasks.map((t) => t.id))
+  const m = new Map()
+  const add = (a, b) => { if (a !== b && ids.has(a) && ids.has(b)) { (m.get(a) ?? m.set(a, new Set()).get(a)).add(b); (m.get(b) ?? m.set(b, new Set()).get(b)).add(a) } }
+  for (const [a, b] of edges) add(a, b)
+  for (const t of tasks) if (m.has(t.id)) t.links = [...m.get(t.id)]
+  return tasks
+}
+
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {} }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [] }) {
+  setRedactNames(redactNames)
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
@@ -371,6 +403,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const logAt = log.map((r) => ({ ...r, ts: kstIso(r.at, year), ids: r.pan.match(TID) ?? [] })).filter((r) => r.ts).reverse() // 옛→새
 
   const tasks = []
+  const edges = [] // 번호끼리 이은 줄(R↔T)
   const sprints = []
   const taskIds = new Set() // 레인 표 번호 재사용 — 스프린트 task_ids 도 같은 새 id 를 가리키게 여기서 먼저 꼬리를 붙인다
   for (const s of raw) {
@@ -388,7 +421,9 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       taskIds.add(tid)
       tasks.push({ id: tid, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
-        actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began })
+        actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began, ...splitDetail(r.what),
+        ...(hits.length ? { history: hits.map((l) => ({ ts: l.ts, text: HIST_LABEL[verbOf(l)] })).filter((e, i, a) => e.text !== a[i - 1]?.text).slice(-20) } : {}) })
+      for (const rid of mentions(`${r.what} ${r.state}`, RID)) edges.push([tid, rid])
       mine.push(tasks.at(-1))
     }
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
@@ -481,8 +516,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     if (known.length) {
       const t = byId.get(known[0])
       const name = `${t.title}${known.length > 1 ? ` 외 ${known.length - 1}` : ''}`
-      const mark = `${l.pan} ${l.result}`
-      const verb = /^\s*❌/.test(l.result) ? '다시' : /✅|머지/.test(l.pan) || /^\s*✅/.test(l.result) ? '끝' : /⏸|⛔|막힘/.test(mark) ? '막힘' : '시작'
+      const verb = verbOf(l)
       add(verb === '다시' ? 'task.reject' : 'task.move', 'task', t.id, `${name} ${verb}`, '')
     }
     if (l === lastPin) add('goal.progress', 'actor', lead.id, '방향 바뀜', '📌')
@@ -493,8 +527,13 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const reqTasks = parseRequests(rmd).map((r) => {
     const { col, link, sprint } = requestColumn(r.state, byId)
     const title = requestTitle(r.what, r.id)
-    return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: 'work', team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
-      est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso }
+    const ask = publicAsk(r.ask), askedAt = kstIso(r.at, year)
+    for (const x of mentions(`${r.what} ${r.state}`, TID)) edges.push([r.id, x])
+    for (const x of mentions(`${r.what} ${r.state}`, RID)) edges.push([r.id, x])
+    const history = [...(askedAt ? [{ ts: askedAt, text: '접수' }] : []), ...(link ? (byId.get(link)?.history ?? []) : [])]
+    return { id: r.id, app: '1.2v', title: link ? `${title} (→ ${link})` : title, category: '지휘', kind: kindOfType(r.type), team: ACTOR['지휘'][1], sprint: sprint ?? cur?.id ?? 0,
+      est_min: 0, started_at: null, lane_id: 'l1', ...col, actor_id: null, updated_at: nowIso, ...(ask ? { ask } : {}), ...(askedAt ? { askedAt } : {}), ...splitDetail(r.what),
+      ...(history.length ? { history } : {}) }
   })
 
   // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
@@ -514,7 +553,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       seen.add(tid)
       if (isBlockedState(r.state)) laneBlocked.push({ id: tid, title })
       return [{ id: tid, title, app: appOfLane(ln.name), category: '코드', kind: 'work', team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
-        ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso }]
+        ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }]
     })
     const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
     return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine }
@@ -542,6 +581,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     services, modules: appModules(parseRequests(rmd), readModules()),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
   }
+  linkTasks(data.tasks, edges)
   dedupeKeys(data, onWarn)
   const dirty = findDirty(data)
   if (dirty) throw new Error(`담백 검사 실패: ${dirty}`)

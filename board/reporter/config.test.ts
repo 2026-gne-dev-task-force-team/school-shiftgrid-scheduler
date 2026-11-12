@@ -21,6 +21,9 @@ describe('loadConfig', () => {
     expect(c.ref).toBe('')
     expect(c.usage).toBe(join(homedir(), '.claude/rate-limits.json'))
   })
+  it('redactNames 는 선택 칸 — 없으면 빈 목록', () => {
+    expect(loadConfig({}, 'win32', 'file:///nonexistent/x.mjs').redactNames).toEqual([])
+  })
   it('BOARD_REPORTER_CONFIG 가 가리키는 파일이 없으면 던진다', () => {
     expect(() => loadConfig({ BOARD_REPORTER_CONFIG: '/nonexistent/c.json' }, 'darwin')).toThrow()
   })

@@ -1,6 +1,6 @@
 // 기기별 경로 설정 — 경로만 담는다(비밀 ⛔). 값은 `config.<기기>.json`(win · mac) 이나 BOARD_REPORTER_CONFIG 가 가리키는 파일에서 읽고,
 // 없으면 윈도우 업무 PC 기본값. 값 앞의 `~` 는 홈 폴더로 풀린다(공개 자료에 사용자 이름이 안 들어가게).
-// 키: sinkState(싣개가 직전 결과를 남기는 파일 — 레포 밖) · lane · requests · laneRoot · usage · gate · projects · ref(Supabase 프로젝트 REF — 비밀 아님, 값은 쥔님이 넣는다)
+// 키: sinkState(싣개가 직전 결과를 남기는 파일 — 레포 밖) · lane · requests · laneRoot · usage · gate · projects · ref(Supabase 프로젝트 REF — 비밀 아님, 값은 쥔님이 넣는다) · redactNames(선택 — 긴 글에서 거를 실명 문자열 목록)
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
@@ -33,6 +33,7 @@ export function loadConfig(env = process.env, os = platform(), dirUrl = import.m
   else if (env.BOARD_REPORTER_CONFIG) throw new Error(`설정 파일 없음: ${file}`)
   const out = {}
   for (const k of Object.keys(DEFAULTS)) out[k] = expandHome(over[k] ?? DEFAULTS[k])
+  out.redactNames = Array.isArray(over.redactNames) ? over.redactNames.filter((x) => typeof x === 'string') : [] // 선택 칸 — 긴 글에서 거를 실명 목록(로컬 설정)
   out.sinkState = expandHome(over.sinkState ?? defaultSinkState(env, os))
   return out
 }

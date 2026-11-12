@@ -18,6 +18,11 @@ export interface Task {
   actor_id: string | null; updated_at: string
   app?: string // 어느 판 일감인가(v1·1.2v·v2) — 없는 옛 자료는 1.2v
   blocked_by?: string; block_kind?: BlockKind // 막힌 일의 까닭 — 앞 일 id · 낱말
+  // 상세(R71) — 모두 선택. 보고꾼이 담백 거름을 건 전문을 싣는다. 없으면 상세에서 숨긴다.
+  ask?: string; askedAt?: string // 원래 요청(쥔님 원문) · 받은 시각
+  body?: string; done?: string // 설명 전문 · 「완료 정의」 뒤
+  links?: string[] // 이어진 태스크 번호(R↔T)
+  history?: { ts: string; text: string }[] // 접수·착수·끝 같은 시각
 }
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }
 export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string }
