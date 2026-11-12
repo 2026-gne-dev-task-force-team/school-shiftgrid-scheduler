@@ -32,6 +32,8 @@ export default defineConfig({
   // GitHub Pages는 .../<repo>/ 하위 경로로 서빙되므로 상대 경로로 자산을 참조.
   // 레포 이름에 종속되지 않아 안전 (단일 페이지 앱 기준).
   base: './',
+  // 다중 입구 — 본 앱(index.html) + v1 편성기 iframe 입구(v1-editor.html, 설계 ① 2-1)
+  build: { rollupOptions: { input: { main: fileURLToPath(new URL('./index.html', import.meta.url)), 'v1-editor': fileURLToPath(new URL('./v1-editor.html', import.meta.url)) } } },
   // VITE_HTTPS=1 일 때만 HTTPS — basicSsl 플러그인이 자가서명 인증서를 server.https 에 채운다
   server: https ? { https: {} } : undefined,
   plugins: [

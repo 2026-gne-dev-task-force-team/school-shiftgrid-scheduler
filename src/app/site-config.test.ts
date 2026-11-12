@@ -8,7 +8,7 @@ const SRC = resolve(process.cwd(), 'src');
 function walk(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
         const p = join(dir, e.name);
-        if (e.isDirectory()) return e.name === 'node_modules' ? [] : walk(p);
+        if (e.isDirectory()) return e.name === 'node_modules' || (e.name === 'legacy' && dir.endsWith('v1-editor')) ? [] : walk(p);   // legacy = v1 편성기 사본(검사 밖)
         return /\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [p] : [];
     });
 }
@@ -31,9 +31,9 @@ describe('1.2v 구조 — 접두사·설치 목록', () => {
         expect(config.storagePrefix).toBe('shiftgrid.v1_2');
     });
 
-    it('(b) site.config.json plugins 가 src/plugins/ 폴더와 1:1 (pane-test 는 개발 전용이라 제외)', () => {
+    it('(b) site.config.json plugins 가 src/plugins/ 폴더와 1:1 (pane-test 는 개발 전용, v1-editor 는 P10 꾸러미 등록 전이라 제외)', () => {
         const dirs = readdirSync(join(SRC, 'plugins'), { withFileTypes: true })
-            .filter((e) => e.isDirectory() && e.name !== '__tests__' && e.name !== 'pane-test').map((e) => e.name).sort();
+            .filter((e) => e.isDirectory() && e.name !== '__tests__' && e.name !== 'pane-test' && e.name !== 'v1-editor').map((e) => e.name).sort();
         expect([...config.plugins].sort()).toEqual(dirs);
         expect(new Set(config.plugins).size).toBe(config.plugins.length);
     });

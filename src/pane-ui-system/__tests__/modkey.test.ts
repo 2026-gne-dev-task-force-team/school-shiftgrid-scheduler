@@ -10,7 +10,7 @@ const ROOT = resolve(process.cwd(), 'src');
 function walk(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
         const p = join(dir, e.name);
-        if (e.isDirectory()) return e.name === '__tests__' || e.name === 'node_modules' ? [] : walk(p);
+        if (e.isDirectory()) return e.name === '__tests__' || e.name === 'node_modules' || (e.name === 'legacy' && dir.endsWith('v1-editor')) ? [] : walk(p);
         return /\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [p] : [];
     });
 }
