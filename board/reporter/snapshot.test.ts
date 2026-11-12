@@ -460,6 +460,23 @@ describe('T-9u 읽기 고침', () => {
     writeFileSync(join(h2, '.claude/board/actors.json'), JSON.stringify({ actors: { x: { ...act('a-33333333', 'session'), ended: at.getTime() - 1000 } } }))
     expect(lead({ home: h2, gatePath: join(h2, '.claude/board/actors.json') }).state).toBe('off')
   })
+  it('T-9x U8 기록 파일 신호: 낱말 없는 이어 말하기 세션은 일함 · 죽은 에이전트는 퇴근 · 3시간 넘은 퇴근은 안 싣는다', () => {
+    const t0 = at.getTime()
+    const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
+    writeFileSync(gatePath, JSON.stringify({ actors: {
+      s1: { id: 'a-aaaaaaaa', kind: 'session', started: t0 - 3600e3, ended: null }, // 한 시간 전 낱말 → 문지기만으론 퇴근
+      s2: { id: 'a-bbbbbbbb', kind: 'session', started: t0 - 3600e3, idle: t0 - 1800e3, ended: t0 - 1700e3 }, // 닫혔다가 다시 열림
+      s3: { id: 'a-cccccccc', kind: 'session', started: t0 - 4 * 3600e3, ended: t0 - 3.5 * 3600e3 }, // 같은 날이지만 3시간 넘은 퇴근
+      u1: { id: 'a-dddddddd', task: null, started: t0 - 1800e3, ended: null }, // 도는 척하지만 기록이 조용
+      u2: { id: 'a-eeeeeeee', task: null, started: t0 - 1800e3, ended: null }, // 기록이 방금까지 쓰임
+    } }))
+    const st = (activity: object) => Object.fromEntries(build({ now: at, gatePath, md: lane('', ''), activity }).actors.map((a: Actor) => [a.id, a.state]))
+    expect(st({})).toMatchObject({ 'a-aaaaaaaa': 'off', 'a-bbbbbbbb': 'off', 'a-dddddddd': 'work' })
+    expect(st({})).not.toHaveProperty('a-cccccccc')
+    const act = { 'a-aaaaaaaa': t0 - 60e3, 'a-bbbbbbbb': t0 - 60e3, 'a-dddddddd': t0 - 25 * 60e3, 'a-eeeeeeee': t0 - 10e3 }
+    expect(st(act)).toMatchObject({ 'a-aaaaaaaa': 'work', 'a-bbbbbbbb': 'work', 'a-dddddddd': 'off', 'a-eeeeeeee': 'work' })
+    expect(st({ 'a-aaaaaaaa': t0 - 40 * 60e3 })['a-aaaaaaaa']).toBe('off')
+  })
   it('U8② 번호 칸 없는 판 표 · 「11~」 자리표시는 일감이 아니다', async () => {
     // @ts-expect-error — mjs
     const { parseLaneNote } = await import('./snapshot.mjs')

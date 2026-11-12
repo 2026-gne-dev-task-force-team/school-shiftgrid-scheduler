@@ -49,3 +49,24 @@ describe('캐릭터에 싣기', () => {
     expect(actorTokens(b)).toBe('—')
   })
 })
+
+describe('activityByGateId', () => {
+  it('세션·에이전트 기록 mtime 을 문지기 id(a-sha1 8자)로 돌려준다', async () => {
+    // @ts-expect-error — mjs
+    const { activityByGateId } = await import('./tokens.mjs')
+    const { createHash } = await import('node:crypto')
+    const { utimesSync } = await import('node:fs')
+    const root = mkdtempSync(join(tmpdir(), 'proj-'))
+    const id = (s: string) => `a-${createHash('sha1').update(s).digest('hex').slice(0, 8)}`
+    mkdirSync(join(root, 'p', 'sess1', 'subagents'), { recursive: true })
+    writeFileSync(join(root, 'p', 'sess1.jsonl'), '{}')
+    writeFileSync(join(root, 'p', 'sess1', 'subagents', 'agent-x.meta.json'), JSON.stringify({ toolUseId: 'tu1' }))
+    writeFileSync(join(root, 'p', 'sess1', 'subagents', 'agent-x.jsonl'), '{}')
+    writeFileSync(join(root, 'p', 'old.jsonl'), '{}')
+    utimesSync(join(root, 'p', 'old.jsonl'), 1, 1)
+    const now = Date.now()
+    const a = activityByGateId(root, now)
+    expect(Object.keys(a).sort()).toEqual([id('sess1'), id('tu1')].sort())
+    expect(now - a[id('sess1')]).toBeLessThan(5000)
+  })
+})

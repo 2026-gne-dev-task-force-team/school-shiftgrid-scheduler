@@ -6,7 +6,7 @@ import { build, checkServices } from './snapshot.mjs'
 import { findDirty } from './plain.mjs'
 import { TABLES } from './to-sql.mjs'
 import { loadConfig } from './config.mjs'
-import { tokensByToolUse } from './tokens.mjs'
+import { tokensByToolUse, activityByGateId } from './tokens.mjs'
 import { readToken, readRef, sinkAndLog } from './sink.mjs'
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d }
@@ -24,6 +24,7 @@ const snap = build({
   usagePath: arg('--usage', cfg.usage),
   gatePath: arg('--gate', cfg.gate),
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
+  activity: activityByGateId(arg('--projects', cfg.projects)),
   services: await checkServices(repoDir, new Date(), cfg.sinkState),
 })
 const dirty = findDirty(snap)

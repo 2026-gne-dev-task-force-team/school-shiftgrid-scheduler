@@ -3,7 +3,7 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { build } from './snapshot.mjs'
-import { tokensByToolUse } from './tokens.mjs'
+import { tokensByToolUse, activityByGateId } from './tokens.mjs'
 import { loadConfig } from './config.mjs'
 import { readToken, readRef, sinkAndLog } from './sink.mjs'
 
@@ -20,6 +20,7 @@ const data = build({
   usagePath: arg('--usage', cfg.usage),
   gatePath: arg('--gate', cfg.gate),
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
+  activity: activityByGateId(arg('--projects', cfg.projects)),
   onWarn: (dir, why) => console.warn('경고', dir, why),
   onInfo: (dir, why) => console.log('정보', dir, why),
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
