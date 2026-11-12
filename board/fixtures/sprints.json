@@ -1,0 +1,5 @@
+[
+  {"id":1,"title":"목업 뼈대","goal":"현황판 목업의 뼈대를 세우고 눈으로 확인한다","began":"2026-11-12T10:55:00+09:00","ended":"2026-11-12T11:19:00+09:00","task_ids":["T-1a","T-1p","T-1f","T-1c","T-1b","T-1d","T-1e","T-1g"],"est_min":85,"actual_min":24,"review":"맨눈 점검 10/15 → 고친 뒤 상 0건","passed":null,"missed":"","next":""},
+  {"id":2,"title":"앱 위 막대 + 위 서랍","goal":"시간표 앱 맨 위에 막대를 달고, 눌러 내려오는 서랍을 만든다","began":"2026-11-12T11:47:00+09:00","ended":"2026-11-12T12:18:00+09:00","task_ids":["T-2a","T-2b","T-2p","T-2c","T-2s","T-2e","T-2f","T-2g"],"est_min":95,"actual_min":31,"review":"재점검 6/6 통과","passed":true,"missed":"","next":""},
+  {"id":3,"title":"불편 접수함 · 진짜 자료 · 품질","goal":"불편을 받는 접수함을 열고, 진짜 자료로 바꾸고, 품질을 끌어올린다","began":"2026-11-12T13:07:00+09:00","ended":null,"task_ids":["T-4a","T-4p","T-2m","T-4e","T-4f"],"est_min":125,"actual_min":0,"review":"","passed":null,"missed":"","next":""}
+]

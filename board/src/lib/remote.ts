@@ -1,7 +1,7 @@
 import type { BoardData } from '../types.ts'
 import type { Feedback } from './feedback.ts'
 
-const TABLES = ['actors', 'tasks', 'lanes', 'branches', 'services', 'modules', 'goals', 'events', 'usage', 'runs'] as const
+const TABLES = ['actors', 'tasks', 'lanes', 'branches', 'services', 'modules', 'goals', 'events', 'usage', 'runs', 'sprints'] as const
 export interface Remote { tables: BoardData | null; feedback: Feedback[] } // tables null = 목업을 쓴다
 export interface Env { url?: string; key?: string }
 
