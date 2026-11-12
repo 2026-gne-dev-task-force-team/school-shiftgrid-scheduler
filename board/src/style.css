@@ -1,0 +1,59 @@
+:root { color-scheme: dark; --bg: #0b0f17; --fg: #dbe6f5; --line: #2b3b57; --neon: #4fd1c5; --hq: #e0b341; --make: #2fbfae; --qa: #a37be0 }
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif }
+#app { display: flex; flex-direction: column; min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom) }
+.grow { flex: 1 }
+.btn { min-height: 44px; min-width: 44px; padding: 0 12px; background: #141c2b; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font: inherit }
+.btn.on { border-color: var(--neon); box-shadow: 0 0 8px var(--neon) }
+.chip { --hue: 200; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid hsl(var(--hue) 70% 55%); background: hsl(var(--hue) 50% 20% / .6); color: var(--fg); font: inherit }
+button.chip { min-height: 44px; cursor: pointer }
+
+.band { position: relative; border-bottom: 1px solid var(--neon); background: #0f1624; padding-top: env(safe-area-inset-top) }
+.band-row { display: flex; align-items: center; gap: 12px; padding: 4px 12px; flex-wrap: wrap }
+.upd { border-color: #f5c542; color: #f5c542 }
+.menu { position: absolute; right: 12px; top: 100%; z-index: 5; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: #0f1624; border: 1px solid var(--line); border-radius: 8px }
+.band-drop { padding: 8px 12px }
+[hidden] { display: none !important }
+
+.tabs { display: flex; gap: 8px; padding: 6px 12px; overflow-x: auto; scroll-snap-type: x mandatory }
+.tabs .btn { scroll-snap-align: start; white-space: nowrap }
+
+.body { flex: 1; display: grid; grid-template-columns: 240px 1fr 300px; gap: 12px; padding: 12px; min-height: 0 }
+.feed, .stage, .detail { background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-width: 0 }
+.feed-list, .recent { list-style: none; margin: 0; padding: 0 }
+.feed-line { display: block; width: 100%; min-height: 44px; text-align: left; background: none; border: 0; color: var(--fg); font: inherit; cursor: pointer }
+.feed-head { display: flex; justify-content: space-between; align-items: center }
+.feed-toggle { display: none }
+.stage { display: flex; flex-direction: column; gap: 12px; overflow: auto }
+.card { padding: 10px; border: 1px solid var(--line); border-radius: 8px }
+.card > p { margin: 4px 0 0 }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px }
+.row[data-dept=hq] .dept { color: var(--hq) } .row[data-dept=make] .dept { color: var(--make) } .row[data-dept=qa] .dept { color: var(--qa) }
+.usage { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px }
+.meter { margin-top: 6px } .meter small, .card small { display: block; opacity: .75 }
+.bar { height: 10px; background: #1b2638; border-radius: 5px; overflow: hidden }
+.bar i { display: block; height: 100%; background: var(--neon) }
+.ph { margin: auto; text-align: center; opacity: .6 }
+.detail-head { display: flex; justify-content: flex-end; gap: 6px }
+
+.tip { position: fixed; z-index: 50; max-width: 220px; padding: 6px 10px; background: #000d; border: 1px solid var(--neon); border-radius: 6px; pointer-events: none }
+
+.pulse { animation: pulse 1.2s }
+@keyframes pulse { 30% { box-shadow: 0 0 14px 4px var(--neon); background: #4fd1c533 } }
+.card { animation: breathe 3s ease-in-out infinite alternate }
+@keyframes breathe { to { box-shadow: 0 0 8px #4fd1c555 } }
+.calm *, .calm *::before { animation: none !important; transition: none !important }
+@media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important } }
+
+@media (max-width: 767px) {
+  .band-clock { display: none }
+  .body { display: flex; flex-direction: column; padding: 8px; padding-bottom: 60px }
+  .stage { flex: 1 }
+  .feed { order: 3; position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-height: 52px; overflow: hidden; border-radius: 10px 10px 0 0; background: #0b0f17 }
+  .feed.open { max-height: 55dvh; overflow: auto }
+  .feed-toggle { display: inline-block }
+  .feed-list li:not(:first-child) { display: none } .feed.open .feed-list li { display: block }
+  .feed-head b { display: none } .feed-head { position: absolute; right: 4px; top: 2px }
+  .detail[data-layout=sheet] { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; height: 45dvh; overflow: auto; border-radius: 14px 14px 0 0; background: #0b0f17 }
+  .detail[data-layout=sheet].full { height: 92dvh }
+}

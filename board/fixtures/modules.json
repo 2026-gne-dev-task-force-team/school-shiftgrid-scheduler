@@ -1,0 +1,5 @@
+[
+  {"id":"m1","name":"화면 바탕","parent":null,"state":"built","task_id":"t6"},
+  {"id":"m2","name":"보결 판","parent":null,"state":"build","task_id":"t1"},
+  {"id":"m3","name":"로그인 문","parent":null,"state":"plan","task_id":"t3"}
+]

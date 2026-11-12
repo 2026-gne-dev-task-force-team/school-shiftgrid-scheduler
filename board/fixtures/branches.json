@@ -1,0 +1,6 @@
+[
+  {"id":"b1","title":"줄기","trunk":true,"ahead":0,"state":"live","actor_id":null,"task_id":null,"updated_at":"2026-01-01T09:30:00Z"},
+  {"id":"b2","title":"보결 화면 틀","trunk":false,"ahead":3,"state":"live","actor_id":"a3","task_id":"t1","updated_at":"2026-01-01T09:55:00Z"},
+  {"id":"b3","title":"자료 칸 정하기","trunk":false,"ahead":2,"state":"live","actor_id":"a4","task_id":"t2","updated_at":"2026-01-01T09:50:00Z"},
+  {"id":"b4","title":"가짜 자료 만들기","trunk":false,"ahead":0,"state":"merged","actor_id":"a4","task_id":"t6","updated_at":"2026-01-01T09:10:00Z"}
+]

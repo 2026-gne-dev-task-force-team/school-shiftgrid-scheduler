@@ -1,0 +1,5 @@
+[
+  {"id":"s1","name":"화면 호스팅","state":"ok","url":"","task_id":null,"checked_at":"2026-01-01T09:58:00Z"},
+  {"id":"s2","name":"자료 서버","state":"build","url":"","task_id":"t2","checked_at":"2026-01-01T09:58:00Z"},
+  {"id":"s3","name":"메일","state":"plan","url":"","task_id":null,"checked_at":"2026-01-01T09:58:00Z"}
+]
