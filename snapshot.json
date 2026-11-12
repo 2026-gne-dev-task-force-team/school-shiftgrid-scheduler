@@ -11,7 +11,7 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "work",
+      "state": "idle",
       "task_id": null,
       "branch_id": null,
       "account": "org",
@@ -39,9 +39,9 @@
     {
       "id": "T-1p",
       "title": "주소",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 1,
       "est_min": 5,
       "started_at": "2026-11-12T11:05:00+09:00",
@@ -143,7 +143,7 @@
     },
     {
       "id": "T-2a",
-      "title": "끼우는 물건으로",
+      "title": "board 를 끼우는 물건으로",
       "category": "화면",
       "kind": "work",
       "team": "화면팀",
@@ -174,9 +174,9 @@
     {
       "id": "T-2p",
       "title": "배포",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 2,
       "est_min": 5,
       "started_at": "2026-11-12T11:58:00+09:00",
@@ -203,10 +203,10 @@
     },
     {
       "id": "T-2s",
-      "title": "서랍 SQL",
+      "title": "board 서랍 SQL",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 2,
       "est_min": 15,
       "started_at": "2026-11-12T12:01:00+09:00",
@@ -236,7 +236,7 @@
       "title": "고침",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 2,
       "est_min": 10,
       "started_at": "2026-11-12T12:11:00+09:00",
@@ -278,10 +278,10 @@
     },
     {
       "id": "T-4p",
-      "title": "deploy.yml 미리보기 빌드에",
-      "category": "코드",
+      "title": "deploy.yml 미리보기 빌드에 VITE_SUPABASE_URL·VI",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 3,
       "est_min": 5,
       "started_at": "2026-11-12T14:09:00+09:00",
@@ -294,9 +294,9 @@
     {
       "id": "T-4s",
       "title": "서랍 SQL 본 프로젝트 적용",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 3,
       "est_min": 5,
       "started_at": "2026-11-12T14:09:00+09:00",
@@ -309,9 +309,9 @@
     {
       "id": "T-2k",
       "title": "레포 값 파악",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 3,
       "est_min": 2,
       "started_at": "2026-11-12T14:09:00+09:00",
@@ -386,7 +386,7 @@
       "title": "이름·탭 설명",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 4,
       "est_min": 12,
       "started_at": "2026-11-12T14:36:00+09:00",
@@ -429,9 +429,9 @@
     {
       "id": "T-5e",
       "title": "배포본 재점검",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 4,
       "est_min": 5,
       "started_at": "2026-11-12T14:21:00+09:00",
@@ -446,7 +446,7 @@
       "title": "보고꾼",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 5,
       "est_min": 15,
       "started_at": "2026-11-12T14:49:00+09:00",
@@ -461,7 +461,7 @@
       "title": "나르기",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 5,
       "est_min": 12,
       "started_at": "2026-11-12T14:58:00+09:00",
@@ -474,9 +474,9 @@
     {
       "id": "T-6c",
       "title": "첫 실주행",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 5,
       "est_min": 5,
       "started_at": "2026-11-12T14:58:00+09:00",
@@ -489,9 +489,9 @@
     {
       "id": "T-6d",
       "title": "자동 반복",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 5,
       "est_min": 5,
       "started_at": "2026-11-12T14:58:00+09:00",
@@ -506,7 +506,7 @@
       "title": "실자료 다듬기",
       "category": "코드",
       "kind": "work",
-      "team": "코드팀",
+      "team": "자료팀",
       "sprint": 5,
       "est_min": 12,
       "started_at": "2026-11-12T14:42:00+09:00",
@@ -519,9 +519,9 @@
     {
       "id": "T-6f",
       "title": "진짜 캐릭터",
-      "category": "코드",
+      "category": "지휘",
       "kind": "work",
-      "team": "코드팀",
+      "team": "지휘",
       "sprint": 5,
       "est_min": 15,
       "started_at": "2026-11-12T14:42:00+09:00",
@@ -615,8 +615,8 @@
       "id": "b-T-6e",
       "title": "실자료 다듬기",
       "trunk": false,
-      "ahead": 0,
-      "state": "merged",
+      "ahead": 1,
+      "state": "live",
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T14:54:26+09:00"
@@ -629,7 +629,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:59:01.770Z"
+      "checked_at": "2026-11-12T06:01:01.792Z"
     },
     {
       "id": "s2",
@@ -637,7 +637,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:59:01.770Z"
+      "checked_at": "2026-11-12T06:01:01.792Z"
     },
     {
       "id": "s3",
@@ -645,7 +645,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T05:59:01.770Z"
+      "checked_at": "2026-11-12T06:01:01.792Z"
     }
   ],
   "modules": [
@@ -749,22 +749,31 @@
       "text": "보고꾼 끝"
     },
     {
-      "id": "e-66ed7c65",
+      "id": "e-9ae135fa",
       "ts": "2026-11-12T14:43:00+09:00",
       "kind": "goal.progress",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "방향 바뀜"
+    },
+    {
+      "id": "e-66ed7c65",
+      "ts": "2026-11-12T14:43:00+09:00",
+      "kind": "task.move",
       "subject_type": "task",
       "subject_id": "T-5c",
       "actor_id": "a-lead",
-      "text": "방향 정리"
+      "text": "가지 모양 끝"
     },
     {
       "id": "e-8121157e",
       "ts": "2026-11-12T14:40:00+09:00",
-      "kind": "actor.state",
+      "kind": "task.move",
       "subject_type": "task",
       "subject_id": "T-5c",
       "actor_id": "a-lead",
-      "text": "잠시 멈춤"
+      "text": "가지 모양 막힘"
     },
     {
       "id": "e-11856458",
@@ -783,24 +792,6 @@
       "subject_id": "T-5a",
       "actor_id": "a-lead",
       "text": "캐릭터 끝"
-    },
-    {
-      "id": "e-11450da8",
-      "ts": "2026-11-12T14:21:00+09:00",
-      "kind": "goal.progress",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "방향 정리"
-    },
-    {
-      "id": "e-5f279e95",
-      "ts": "2026-11-12T14:19:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
     },
     {
       "id": "e-770358f9",
@@ -830,33 +821,6 @@
       "text": "서랍 SQL 본 프로젝트 적용 외 3 끝"
     },
     {
-      "id": "e-c49389d6",
-      "ts": "2026-11-12T12:31:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-907a9136",
-      "ts": "2026-11-12T12:27:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-f92ee573",
-      "ts": "2026-11-12T12:20:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
       "id": "e-89758754",
       "ts": "2026-11-12T12:18:00+09:00",
       "kind": "task.move",
@@ -864,15 +828,6 @@
       "subject_id": "T-2g",
       "actor_id": "a-lead",
       "text": "재점검 끝"
-    },
-    {
-      "id": "e-2d4849c4",
-      "ts": "2026-11-12T12:13:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
     },
     {
       "id": "e-ef68e526",
@@ -917,7 +872,7 @@
       "subject_type": "task",
       "subject_id": "T-2a",
       "actor_id": "a-lead",
-      "text": "끼우는 물건으로 끝"
+      "text": "board 를 끼우는 물건으로 끝"
     },
     {
       "id": "e-f59d6c5b",
@@ -926,16 +881,7 @@
       "subject_type": "task",
       "subject_id": "T-2a",
       "actor_id": "a-lead",
-      "text": "끼우는 물건으로 시작"
-    },
-    {
-      "id": "e-906fbe8f",
-      "ts": "2026-11-12T11:38:00+09:00",
-      "kind": "goal.progress",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "방향 정리"
+      "text": "board 를 끼우는 물건으로 시작"
     },
     {
       "id": "e-faa128b2",
@@ -958,11 +904,11 @@
     {
       "id": "e-5634261a",
       "ts": "2026-11-12T11:17:00+09:00",
-      "kind": "actor.state",
+      "kind": "task.move",
       "subject_type": "task",
       "subject_id": "T-1e",
       "actor_id": "a-lead",
-      "text": "지휘 정리"
+      "text": "품질 시작"
     },
     {
       "id": "e-b82d9048",
@@ -985,11 +931,11 @@
     {
       "id": "e-b3b58e21",
       "ts": "2026-11-12T11:05:00+09:00",
-      "kind": "goal.progress",
+      "kind": "task.move",
       "subject_type": "task",
       "subject_id": "T-1p",
       "actor_id": "a-lead",
-      "text": "방향 정리"
+      "text": "주소 시작"
     },
     {
       "id": "e-7229a51d",
@@ -999,68 +945,14 @@
       "subject_id": "T-1a",
       "actor_id": "a-lead",
       "text": "뼈대 끝"
-    },
-    {
-      "id": "e-1dcd6840",
-      "ts": "2026-11-12T10:54:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-3a607ece",
-      "ts": "2026-11-12T10:45:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-96773afd",
-      "ts": "2026-11-12T10:18:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-b67cef84",
-      "ts": "2026-11-12T10:05:00+09:00",
-      "kind": "goal.progress",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "방향 정리"
-    },
-    {
-      "id": "e-7c374812",
-      "ts": "2026-11-12T09:54:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
-    },
-    {
-      "id": "e-121761fd",
-      "ts": "2026-11-12T09:52:00+09:00",
-      "kind": "actor.state",
-      "subject_type": "actor",
-      "subject_id": "a-lead",
-      "actor_id": "a-lead",
-      "text": "지휘 정리"
     }
   ],
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T05:59:01.770Z",
-      "pct_5h": 31,
-      "pct_7d": 7,
+      "ts": "2026-11-12T06:01:01.792Z",
+      "pct_5h": 32,
+      "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
       "tok_per_min": 0
@@ -1125,7 +1017,7 @@
     {
       "id": 3,
       "title": "불편 접수함 · 진짜 자료 · 품질",
-      "goal": "불편 접수함 · 진짜 자료 · 품질",
+      "goal": "불편 접수함 처리하고, 그밖에 QA 개선거리 있으면 하고, 퀄리티 개선 작업도하고 · 임시깃 만들어서 거기서 작업하고 한꺼번에 반영해라",
       "began": "2026-11-12T13:07:00+09:00",
       "ended": "2026-11-12T14:16:00+09:00",
       "task_ids": [
@@ -1167,7 +1059,7 @@
     {
       "id": 5,
       "title": "실제 자료가 현황판에",
-      "goal": "실제 자료가 현황판에",
+      "goal": "요청할건 최우선적으로 실제 데이터가 현황판에 적용되는게 제일 먼저다",
       "began": "2026-11-12T14:42:00+09:00",
       "ended": null,
       "task_ids": [
