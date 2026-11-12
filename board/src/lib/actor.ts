@@ -34,5 +34,5 @@ export function actorLabel(a: Who, all: Who[] = []): string {
 export function actorWhat(a: Who & Pick<Actor, 'task_id'>, tasks: Pick<Task, 'id' | 'title'>[] = []): string {
   const what = roleOf(a)?.[2] ?? `${baseOf(a)} 일을 맡는다`
   const t = tasks.find((x) => x.id === a.task_id)
-  return t ? `${what} · 지금: ${t.title}` : what
+  return t ? `${what} · 지금: ${t.id} ${t.title}` : what
 }
