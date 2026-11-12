@@ -34,6 +34,7 @@ import { collectionPlugin } from '../plugins/collection';
 import { opsCheckPlugin } from '../plugins/ops-check';
 import { opsSubPlugin } from '../plugins/ops-sub';
 import { opsRoomPlugin } from '../plugins/ops-room';
+import { opsDaysPlugin } from '../plugins/ops-days';
 import { v1EditorPlugin } from '../plugins/v1-editor';
 import { paneTestPlugin } from '../plugins/pane-test';
 import { INSTALLED_PLUGIN_IDS } from './site-config';
@@ -46,7 +47,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 const CATALOG: Record<string, PluginModule> = {
     page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, calendar: calendarPlugin, account: accountPlugin,
     people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
-    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'v1-editor': v1EditorPlugin,
+    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'v1-editor': v1EditorPlugin,
 };
 
 export const PLUGINS: PluginModule[] = [
