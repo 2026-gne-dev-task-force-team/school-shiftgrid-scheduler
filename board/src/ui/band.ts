@@ -5,6 +5,7 @@ import { currentSprint, sprintLabel } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
+import { EDITIONS, currentEdition } from '../lib/editions.ts'
 
 export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void; auto?: boolean; onAuto?(on: boolean): void }
 
@@ -26,6 +27,10 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   autoBox.addEventListener('change', () => hooks.onAuto?.(autoBox.checked))
   const auto = h('label', { class: 'sgb-auto', title: '켜 두면 새 판이 오는 즉시 [지금 바꾸기]를 저절로 합니다. 글을 치는 중이면 끝난 뒤에 합니다.' }, autoBox, ' 자동')
   const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
+  // 판 칩 — 평범한 링크 이동(서비스워커 건드리지 않음). 지금 판은 눌린 모양.
+  const curEd = currentEdition(location.pathname)
+  const editions = h('nav', { class: 'sgb-editions', 'aria-label': '판 바꾸기' },
+    ...EDITIONS.map((e) => h('a', { class: e.id === curEd ? 'sgb-ed on' : 'sgb-ed', href: e.path, title: e.hint, 'data-edition': e.id, ...(e.id === curEd ? { 'aria-current': 'page' } : {}) }, e.label)))
 
   // 메뉴 — 첫 줄이 저장소 비우기. 누르면 같은 자리에서 2단계 확인(window.confirm 안 씀).
   const purge = h('button', { class: 'btn' }, '🗑 이 기기 저장소 비우기')
@@ -82,7 +87,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
-    toggle, setLive, upd, auto, fb, more, menu, drop, closeMenu,
+    toggle, editions, setLive, upd, auto, fb, more, menu, drop, closeMenu,
     dispose() { document.removeEventListener('click', outside) },
     showUpdate(v: VersionInfo | null) {
       upd.hidden = !v
