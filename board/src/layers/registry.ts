@@ -4,7 +4,8 @@ import { layer3 } from './layer3-lanes.ts'
 import { layer4 } from './layer4-workshop.ts'
 import { layer5 } from './layer5-blueprint.ts'
 import { inbox } from './inbox.ts'
+import { sprints } from './sprints.ts'
 import { guide } from './guide.ts'
 import type { LayerRenderer } from './types.ts'
 
-export const LAYERS: LayerRenderer[] = [layer1, layer2, layer3, layer4, layer5, inbox, guide]
+export const LAYERS: LayerRenderer[] = [layer1, layer2, layer3, layer4, layer5, sprints, inbox, guide]

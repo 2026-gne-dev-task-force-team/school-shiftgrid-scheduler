@@ -1,5 +1,5 @@
 -- 작업현황판 board 스키마 (바퀴 2 — 진짜 자료)
--- 무엇: 현황판 자료 표 11개 + 읽기 공개/쓰기 제한 정책 + Realtime 등록. 멱등(여러 번 돌려도 된다).
+-- 무엇: 현황판 자료 표 12개 + 읽기 공개/쓰기 제한 정책 + Realtime 등록. 멱등(여러 번 돌려도 된다).
 -- 어디서: Supabase 대시보드 → SQL Editor 에 통째로 붙여 Run 한 번.
 -- 돌린 뒤: Settings → API → Exposed schemas 에 `board` 를 추가하고 저장.
 -- 담백 원칙: 기기·모델·토큰 실값·사람 실명·이메일·계정 id 칸 없음. 글 칸은 board.plain() 검사를 통과해야 한다.
@@ -125,6 +125,22 @@ create table if not exists board.runs (
   goal_id text
 );
 
+-- 스프린트 한 줄 (types.ts 의 Sprint). task_ids 는 tasks.id 모음(FK 없음). began·ended 는 실기록 시각.
+create table if not exists board.sprints (
+  id int primary key,
+  title text not null check (board.plain(title) and char_length(title) <= 100),
+  goal text not null default '' check (board.plain(goal) and char_length(goal) <= 200),
+  began timestamptz not null,
+  ended timestamptz,
+  task_ids text[] not null default '{}',
+  est_min int not null default 0,
+  actual_min int not null default 0,
+  review text not null default '' check (board.plain(review) and char_length(review) <= 200),
+  passed boolean, -- null = 검수 대기
+  missed text not null default '' check (board.plain(missed) and char_length(missed) <= 200),
+  next text not null default '' check (board.plain(next) and char_length(next) <= 200)
+);
+
 -- 불편 접수 (feedback.ts 의 Feedback: id · text · where · ts). `where` 는 예약어라 place.
 create table if not exists board.feedback (
   id text primary key default ('fb' || (extract(epoch from clock_timestamp()) * 1000)::bigint),
@@ -145,13 +161,14 @@ alter table board.goals    enable row level security;
 alter table board.events   enable row level security;
 alter table board.usage    enable row level security;
 alter table board.runs     enable row level security;
+alter table board.sprints  enable row level security;
 alter table board.feedback enable row level security;
 
 -- 읽기: 전 표 공개
 do $$
 declare t text;
 begin
-  foreach t in array array['actors','tasks','lanes','branches','services','modules','goals','events','usage','runs','feedback'] loop
+  foreach t in array array['actors','tasks','lanes','branches','services','modules','goals','events','usage','runs','sprints','feedback'] loop
     execute format('drop policy if exists board_read on board.%I', t);
     execute format('create policy board_read on board.%I for select to anon, authenticated using (true)', t);
   end loop;

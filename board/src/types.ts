@@ -23,8 +23,13 @@ export interface Goal { id: string; title: string; progress: number; state: 'wor
 export interface BoardEvent { id: string; ts: string; kind: string; subject_type: string; subject_id: string; actor_id: string | null; text: string }
 export interface Usage { account: Account; ts: string; pct_5h: number; pct_7d: number; reset_5h_at: string; reset_7d_at: string; tok_per_min: number }
 export interface Run { id: string; started_at: string; ended_at: string | null; sprint: number; goal_id: string }
+// 스프린트 한 줄 — began·ended 는 실기록 시각이라 일부러 *_at 이 아니다(data.ts 의 「지금」 밀기에서 빠진다).
+export interface Sprint {
+  id: number; title: string; goal: string; began: string; ended: string | null; task_ids: string[]
+  est_min: number; actual_min: number; review: string; passed: boolean | null; missed: string; next: string
+}
 export interface BoardData {
   actors: Actor[]; tasks: Task[]; lanes: Lane[]; branches: Branch[]; services: Service[]; modules: Module[]
-  goals: Goal[]; events: BoardEvent[]; usage: Usage[]; runs: Run[]
+  goals: Goal[]; events: BoardEvent[]; usage: Usage[]; runs: Run[]; sprints: Sprint[]
   source?: 'mock' | 'server'; serverFeedback?: Feedback[] // loadData 가 채운다
 }

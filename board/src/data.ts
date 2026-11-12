@@ -8,11 +8,12 @@ import goals from '../fixtures/goals.json'
 import events from '../fixtures/events.json'
 import usage from '../fixtures/usage.json'
 import runs from '../fixtures/runs.json'
+import sprints from '../fixtures/sprints.json'
 import { feedbackRows, loadFeedback } from './lib/feedback.ts'
 import type { Remote } from './lib/remote.ts'
 import type { BoardData } from './types.ts'
 
-export const rawFixtures = { actors, tasks, lanes, branches, services, modules, goals, events, usage, runs }
+export const rawFixtures = { actors, tasks, lanes, branches, services, modules, goals, events, usage, runs, sprints }
 
 const BASE = Date.parse('2026-01-01T10:00:00Z') // fixtures 의 「지금」
 
