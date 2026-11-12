@@ -39,7 +39,7 @@ export const layer2: LayerRenderer = {
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.lineCap = 'round'; g.lineJoin = 'round'
       inner.querySelectorAll('.gg-l,.gg-chip').forEach((el) => el.remove())
 
-      const neon = v('--neon', '#4fd1c5'), bg = v('--bg', '#0b0f17'), y0 = y(0)
+      const neon = v('--neon', '#0e7c72'), bg = v('--bg', '#e6f0f7'), y0 = y(0)
       g.strokeStyle = neon; g.lineWidth = 4
       g.beginPath(); g.moveTo(x(0), y0); g.lineTo(w - PAD, y0); g.stroke()
       const dot = (cx: number, cy: number, r: number, fill: string, ring = bg) => {
@@ -53,7 +53,7 @@ export const layer2: LayerRenderer = {
       label('gg-l gg-trunk', x(0), y0 - 30, trunk?.title ?? '줄기')
 
       for (const s of spans) {
-        const b = by.get(s.id)!, yl = y(lane.get(s.id)!), col = `hsl(${hueOf(b)} 70% 58%)`
+        const b = by.get(s.id)!, yl = y(lane.get(s.id)!), col = `hsl(${hueOf(b)} 70% 40%)`
         const fx = x(s.from), mid = fx + cw / 2, head = Math.max(x(s.to), mid)
         g.strokeStyle = col; g.lineWidth = 3
         g.beginPath(); g.moveTo(fx, y0); g.bezierCurveTo(fx + cw * 0.3, y0, mid - cw * 0.2, yl, mid, yl)

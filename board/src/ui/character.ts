@@ -3,8 +3,8 @@ import { actorLabel } from '../lib/actor.ts'
 
 // 캐릭터 = 모두 같은 테라코타 꼴. 눈 색·소품·머리띠 색만 다르다(눈 색↔기기 짝은 판에 안 싣는다).
 type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'dept' | 'role' | 'state'>
-export type CharSize = 'chip' | 'card'
-const PX: Record<CharSize, number> = { chip: 24, card: 56 }
+export type CharSize = 'mini' | 'chip' | 'card'
+const PX: Record<CharSize, number> = { mini: 18, chip: 24, card: 56 }
 
 const BODY = '#D97757', SHADE = '#B85C3E', INK = '#4A2618', PAPER = '#F3E6D3'
 const EYE: Record<string, string> = { amber: '#F0A830', teal: '#2FBFAE', violet: '#A37BE0', blue: '#5B9BE8', green: '#7BC86C', rose: '#E86A8C' }
