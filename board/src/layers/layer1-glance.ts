@@ -21,9 +21,9 @@ export const layer1: LayerRenderer = {
       const row = h('div', { class: 'row', 'data-dept': d }, h('span', { class: 'dept' }, `${DEPT_NAME[d]} ${here.length}명`))
       for (const a of here) {
         const name = actorLabel(a, data.actors), what = actorWhat(a, data.tasks)
-        const c = chip({ icon: character(a), label: name, hue: a.hue, id: a.id, onClick: () => openDetail({
+        const c = chip({ icon: character(a), label: a.task_id ? `${name} · ${a.task_id}` : name, hue: a.hue, id: a.id, onClick: () => openDetail({
           title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${a.state}`],
-            ['맡은 일', data.tasks.find((t) => t.id === a.task_id)?.title ?? '—']],
+            ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))]],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })
         tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]}`)
         c.title = `${name} — ${what}`

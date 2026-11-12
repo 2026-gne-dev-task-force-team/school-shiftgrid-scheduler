@@ -30,7 +30,7 @@ describe('캐릭터 이름 = 하는 일', () => {
   })
   it('한 줄 설명 = 역할 설명 + 맡은 일감', () => {
     const t = d.tasks.find((x) => x.id === base.task_id)!
-    expect(actorWhat(base, d.tasks)).toBe(`자동 시험을 돌려 고장을 찾는다 · 지금: ${t.title}`)
+    expect(actorWhat(base, d.tasks)).toBe(`자동 시험을 돌려 고장을 찾는다 · 지금: ${t.id} ${t.title}`)
   })
 })
 
