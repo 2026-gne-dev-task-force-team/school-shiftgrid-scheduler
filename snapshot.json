@@ -524,12 +524,12 @@
       "team": "지휘",
       "sprint": 5,
       "est_min": 15,
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "started_at": "2026-11-12T15:06:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T14:42:00+09:00"
+      "updated_at": "2026-11-12T15:06:00+09:00"
     }
   ],
   "lanes": [
@@ -549,7 +549,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T15:02:20+09:00"
+      "updated_at": "2026-11-12T15:06:17+09:00"
     },
     {
       "id": "b-T-2f",
@@ -592,6 +592,16 @@
       "updated_at": "2026-11-12T14:39:35+09:00"
     },
     {
+      "id": "b-T-5d",
+      "title": "고급 다듬기",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5d",
+      "updated_at": "2026-11-12T15:06:17+09:00"
+    },
+    {
       "id": "b-T-6a",
       "title": "보고꾼",
       "trunk": false,
@@ -620,16 +630,6 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
-    },
-    {
-      "id": "b-T-6f",
-      "title": "진짜 캐릭터",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": null,
-      "task_id": "T-6f",
-      "updated_at": "2026-11-12T15:02:20+09:00"
     }
   ],
   "services": [
@@ -639,7 +639,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:05:01.790Z"
+      "checked_at": "2026-11-12T06:07:01.789Z"
     },
     {
       "id": "s2",
@@ -647,7 +647,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:05:01.790Z"
+      "checked_at": "2026-11-12T06:07:01.789Z"
     },
     {
       "id": "s3",
@@ -655,7 +655,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:05:01.790Z"
+      "checked_at": "2026-11-12T06:07:01.789Z"
     }
   ],
   "modules": [
@@ -732,14 +732,23 @@
   ],
   "goals": [
     {
-      "id": "g5",
-      "title": "실제 자료가 현황판에",
-      "progress": 83,
+      "id": "g4",
+      "title": "클로드 캐릭터 · 고급스럽게",
+      "progress": 60,
       "state": "work",
-      "sprint": 5
+      "sprint": 4
     }
   ],
   "events": [
+    {
+      "id": "e-7dcf0324",
+      "ts": "2026-11-12T15:06:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-6f",
+      "actor_id": "a-lead",
+      "text": "진짜 캐릭터 끝"
+    },
     {
       "id": "e-83c81e47",
       "ts": "2026-11-12T15:02:00+09:00",
@@ -969,8 +978,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:05:01.790Z",
-      "pct_5h": 36,
+      "ts": "2026-11-12T06:07:01.789Z",
+      "pct_5h": 38,
       "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
@@ -979,11 +988,11 @@
   ],
   "runs": [
     {
-      "id": "r5",
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "id": "r4",
+      "started_at": "2026-11-12T14:21:00+09:00",
       "ended_at": null,
-      "sprint": 5,
-      "goal_id": "g5"
+      "sprint": 4,
+      "goal_id": "g4"
     }
   ],
   "sprints": [
@@ -1080,7 +1089,7 @@
       "title": "실제 자료가 현황판에",
       "goal": "실제 자료가 현황판에",
       "began": "2026-11-12T14:42:00+09:00",
-      "ended": null,
+      "ended": "2026-11-12T15:06:00+09:00",
       "task_ids": [
         "T-6a",
         "T-6b",
