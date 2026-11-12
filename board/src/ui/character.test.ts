@@ -11,6 +11,14 @@ describe('캐릭터', () => {
     const t = characterSvg({ ...A, eye: 'teal' })
     expect(t).toContain('#2FBFAE'); expect(t).not.toBe(characterSvg(A))
   })
+  it('도트 격자: 산호 몸통·rect 만·crispEdges', () => {
+    const v = characterSvg(A)
+    expect(v).toContain('shape-rendering="crispEdges"'); expect(v).toContain('#D97757'); expect(v).not.toMatch(/<(path|circle|ellipse)/)
+  })
+  it('머리띠 색 = 부서, 쉼이면 눈이 한 줄', () => {
+    expect(characterSvg(A)).toContain('#E0B341'); expect(characterSvg({ ...A, dept: 'qa' })).toContain('#A37BE0')
+    expect(characterSvg({ ...A, state: 'idle' })).not.toBe(characterSvg(A))
+  })
   it('눈 색이 비면 이름 해시로 늘 같은 색', () => {
     expect(eyeColor({ name: '솔', eye: '' })).toBe(eyeColor({ name: '솔', eye: '' }))
     expect(eyeColor({ name: '솔', eye: '#123456' })).toBe('#123456')
