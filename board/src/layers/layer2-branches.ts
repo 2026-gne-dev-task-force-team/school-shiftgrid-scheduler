@@ -76,8 +76,10 @@ export const layer2: LayerRenderer = {
           extra: ((a) => a ? h('div', { class: 'chr-card' }, character(a, 'card')) : undefined)(actor(b)),
         }))
       }
+      if (!seen && box.clientWidth) { box.scrollLeft = box.scrollWidth; seen = true } // 좁은 폭은 최신(오른쪽 끝)부터 보인다 — 처음 한 번만, 그 뒤 스크롤은 사람 몫
     }
 
+    let seen = false
     const ro = new ResizeObserver(draw); ro.observe(box)
     draw()
     return () => ro.disconnect()
