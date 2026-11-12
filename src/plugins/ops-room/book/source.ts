@@ -9,6 +9,8 @@ export type DeleteResult = { ok: true } | { ok: false; conflict: 'etag' | 'missi
 
 export interface RoomSource {
     loadPart(): Promise<RoomsPart>;
+    /** `rooms` 칸 PUT(관리 역할) — 방·고정·차단 세 묶음을 통째로 쓴다. 시간표 배치(timetable)는 읽기 전용이라 건드리지 않는다. */
+    savePart(next: Pick<RoomsPart, 'rooms' | 'fixed' | 'blocks'>): Promise<void>;
     loadReservations(date: string): Promise<ReservationRow[]>;
     /** ifMatch: 생략 = 자리 번호만 유일 검사 · 문자열 = 있는 행의 createdAt 이 같아야(덮어쓰기). */
     saveReservation(row: ReservationRow, opts?: { ifMatch?: string }): Promise<SaveResult>;
@@ -16,10 +18,12 @@ export interface RoomSource {
     deleteReservation(id: string, opts?: { ifMatch?: string }): Promise<DeleteResult>;
 }
 
-export function memoryRoomSource(part: RoomsPart, rows: ReservationRow[] = []): RoomSource {
+export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = []): RoomSource {
+    let part = initial; // 참조를 그대로 둔다(시험이 배치를 나중에 얹는다)
     const store = rows.map((r) => ({ ...r }));
     return {
         loadPart: async () => structuredClone(part),
+        savePart: async (next) => { part = { ...part, rooms: structuredClone(next.rooms), fixed: structuredClone(next.fixed), blocks: structuredClone(next.blocks) }; },
         loadReservations: async (date) => store.filter((r) => r.date === date).map((r) => ({ ...r })),
         saveReservation: async (row, opts = {}) => {
             const same = (r: ReservationRow) => r.roomId === row.roomId && r.date === row.date && r.startMin === row.startMin;
