@@ -7,7 +7,8 @@ export function parseVersion(x: unknown): VersionInfo | null {
   return { build: o.build, at: String(o.at ?? ''), note: String(o.note ?? '') }
 }
 
-export const isNewer = (local: string, remote: VersionInfo | null): boolean => !!remote && remote.build !== local
+/** seen = [지금 바꾸기]를 이미 누른 판 — 갱신이 끝내 안 돼도 같은 판 알림은 한 번만. */
+export const isNewer = (local: string, remote: VersionInfo | null, seen = ''): boolean => !!remote && remote.build !== local && remote.build !== seen
 
 export async function fetchVersion(): Promise<VersionInfo | null> {
   try {

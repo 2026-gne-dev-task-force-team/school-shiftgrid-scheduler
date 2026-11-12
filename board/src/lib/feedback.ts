@@ -44,6 +44,19 @@ export function removeFeedback(id: string, s: Store | undefined = globalThis.loc
   if (s) s.setItem(FEEDBACK_KEY, JSON.stringify(loadFeedback(s).filter((f) => f.id !== id)))
 }
 
+/** 서버 사본은 지우지 않고 이 기기에서만 숨긴다. */
+export const HIDDEN_KEY = 'board.feedback.hidden'
+export function loadHidden(s: Store | undefined = globalThis.localStorage): string[] {
+  try { const v = JSON.parse(s?.getItem(HIDDEN_KEY) ?? '[]'); return Array.isArray(v) ? v : [] } catch { return [] }
+}
+export function hideFeedback(id: string, s: Store | undefined = globalThis.localStorage): void {
+  if (s) s.setItem(HIDDEN_KEY, JSON.stringify([...new Set([...loadHidden(s), id])]))
+}
+
+/** 접수가 바뀌면 불러 현황판 전체(Board·흐름 줄)를 다시 그리게 한다. */
+export const FEEDBACK_CHANGED = 'board:feedback-changed'
+export const notifyFeedbackChanged = (): void => void globalThis.dispatchEvent?.(new Event(FEEDBACK_CHANGED))
+
 export interface InboxItem extends Feedback { origin: 'local' | 'server'; status: Status }
 
 /** 이 기기 접수 + 서버 접수를 한 목록으로 — 최신순. */
