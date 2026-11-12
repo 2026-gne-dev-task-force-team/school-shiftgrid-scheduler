@@ -4,6 +4,8 @@ import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
+const BOARD_VERSION_FILE = new URL('./board/public/version.json', import.meta.url)
+const BOARD_VERSION = JSON.parse(readFileSync(BOARD_VERSION_FILE, 'utf-8')) as { build: string }
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -15,7 +17,8 @@ const https = process.env.VITE_HTTPS === '1'
 
 // 웹(GitHub Pages) 빌드 설정. 일렉트론 판은 2026-10-31 걷어냈다 — 이제 이 설정 하나뿐이다.
 export default defineConfig({
-  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
+  // board 전용 전역 __BUILD__ — 작업현황판이 version.json 과 비교한다. board/public/version.json 의 build 와 같은 값이라 「새 판」 알림이 헛으로 안 뜬다.
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION), __BUILD__: JSON.stringify(BOARD_VERSION.build) },
   // 🔴 워크트리마다 의존성 캐시를 따로 둔다. 워크트리들이 node_modules 를 심링크로 같이 쓰면
   //    기본 캐시(node_modules/.vite)도 하나라서, 한 서버가 재최적화할 때 다른 서버의 deps 를
   //    지워 「504 Outdated Optimize Dep」이 난다 (2026-11-08 실측). 폴더 이름으로 칸을 가른다.
@@ -27,6 +30,8 @@ export default defineConfig({
   server: https ? { https: {} } : undefined,
   plugins: [
     react(),
+    // 작업현황판이 상대 경로로 읽는 version.json 을 dist 루트에 싣는다(board/public 이 원본)
+    { name: 'board-version-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: readFileSync(BOARD_VERSION_FILE, 'utf-8') }) } },
     // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
     ...(https ? [basicSsl()] : []),
     // PWA — 폰 홈 화면에 붙이고 오프라인에서도 뜨게. 규칙 엔진·솔버가 전부 브라우저 안에서 돌아
@@ -39,8 +44,8 @@ export default defineConfig({
       devOptions: { enabled: https },
       includeAssets: ['favicon.svg', 'icons.svg', 'icons/*.png'],
       manifest: {
-        name: '시간표 짜기',
-        short_name: '시간표',
+        name: '시간표 짜기 (1.2v 미리보기)',
+        short_name: '시간표 1.2v',
         description: '규칙을 데이터로 받는 초등 시간표 도구',
         lang: 'ko',
         start_url: './',
