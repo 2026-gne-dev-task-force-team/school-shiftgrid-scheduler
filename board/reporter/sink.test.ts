@@ -78,7 +78,7 @@ describe('싣기 결과 상태 파일', () => {
     await sinkAndLog(snap, { token: 'SECRET', ref: 'R', fetchImpl: fakeFetch(200), statePath: p, now }, () => {})
     expect(read(p)).toEqual({ at: '2026-11-12T05:00:00.000Z', result: 'ok', status: 200 })
     await sinkAndLog(snap, { token: 'SECRET', ref: 'R', fetchImpl: fakeFetch(400, { message: 'bad' }), statePath: p, now }, () => {})
-    expect(read(p)).toMatchObject({ result: 'fail', status: 400 })
+    expect(read(p)).toMatchObject({ result: 'fail', status: 400, message: 'bad' })
     await sinkAndLog(snap, { token: null, ref: 'R', statePath: p, now }, () => {})
     expect(read(p)).toMatchObject({ result: 'nocred', status: null })
     expect(readFileSync(p, 'utf-8')).not.toContain('SECRET')
