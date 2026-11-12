@@ -1,5 +1,12 @@
 [
   {"id":"m1","name":"화면 바탕","parent":null,"state":"built","task_id":"t6"},
+  {"id":"m1a","name":"위 띠","parent":"m1","state":"built","task_id":"t6"},
+  {"id":"m1b","name":"층 탭","parent":"m1","state":"built","task_id":"t6"},
   {"id":"m2","name":"보결 판","parent":null,"state":"build","task_id":"t1"},
-  {"id":"m3","name":"로그인 문","parent":null,"state":"plan","task_id":"t3"}
+  {"id":"m2a","name":"보결 목록","parent":"m2","state":"built","task_id":"t1"},
+  {"id":"m2b","name":"보결 짝짓기","parent":"m2","state":"build","task_id":"t1"},
+  {"id":"m2c","name":"보결 알림","parent":"m2","state":"plan","task_id":null},
+  {"id":"m3","name":"로그인 문","parent":null,"state":"plan","task_id":"t3"},
+  {"id":"m3a","name":"로그인 화면","parent":"m3","state":"plan","task_id":"t3"},
+  {"id":"m3b","name":"서버 연결","parent":"m3","state":"plan","task_id":null}
 ]

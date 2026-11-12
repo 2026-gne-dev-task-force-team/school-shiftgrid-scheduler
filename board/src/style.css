@@ -82,3 +82,13 @@ button.chip { min-height: 44px; cursor: pointer }
   .ws-col { flex: 0 0 88%; scroll-snap-align: start }
   .ws-head { min-height: 44px; align-items: center }
 }
+.bp-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px }
+.bp-view { overflow: auto; touch-action: pan-x pan-y; max-height: 60vh }
+.bp-canvas { transform-origin: 0 0; display: flex; flex-wrap: wrap; gap: 16px; width: max-content; max-width: 100% }
+.bp-house { border: 2px solid var(--neon); border-radius: 8px; padding: 8px } .bp-house header { font-weight: 600; margin-bottom: 6px }
+.bp-rooms { display: flex; flex-wrap: wrap; gap: 8px }
+.bp-room { min-height: 44px; min-width: 88px; padding: 0 10px; color: var(--fg); font: inherit; background: #141c2b; border-radius: 6px; cursor: pointer; border: 2px solid var(--neon) }
+.bp-room.ghost { border-style: dashed; opacity: .45 }
+.bp-room.scaffold { border-color: #f5c542; background: repeating-linear-gradient(45deg, #141c2b 0 6px, #3a3115 6px 9px); animation: bp-blink 2.4s ease-in-out infinite }
+.calm .bp-room.scaffold { animation: none }
+@keyframes bp-blink { 50% { opacity: .55 } }
