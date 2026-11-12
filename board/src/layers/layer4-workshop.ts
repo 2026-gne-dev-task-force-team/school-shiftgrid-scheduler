@@ -33,12 +33,10 @@ export const layer4: LayerRenderer = {
       el.className = 'ws-card' + (isOver(t, now()) ? ' over' : '')
       el.dataset.dept = dept(t.team)
       const a = data.actors.find((x) => x.id === t.actor_id)
-      el.replaceChildren(...[
-        h('b', null, `${KIND_ICON[t.kind] ?? '•'} ${t.title}`),
-        h('small', a ? { title: `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` } : null, ...(a ? [character(a), ` ${actorLabel(a, data.actors)} · `] : []), `${t.category} · ${t.team}`),
-        m !== null && h('span', { class: 'ws-clock' }, `${m}분째 / 짐작 ${t.est_min}분`),
-        showReason(t) && h('span', { class: 'ws-reason' }, `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}`),
-      ].filter((k) => k !== false))
+      const st = m === null && t.column === 'done' ? 'done' : showReason(t) ? 'blocked' : isOver(t, now()) ? 'over' : t.column === 'done' ? 'done' : 'ok'
+      const more = [a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
+      el.title = more
+      el.replaceChildren(h('i', { class: 'ws-dot', 'data-s': st }), h('b', null, `${KIND_ICON[t.kind] ?? '•'} ${t.title}`), ...(a ? [character(a, 'mini')] : []))
     }
 
     const layout = (animate: boolean) => {
