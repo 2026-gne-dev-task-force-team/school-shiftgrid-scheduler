@@ -6,6 +6,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { RoomPanel } from './RoomPanel';
+import { RoomManagePanel } from './manage';
 
 export const opsRoomPlugin = definePlugin({
     manifest: {
@@ -13,14 +14,16 @@ export const opsRoomPlugin = definePlugin({
         contributes: {
             views: [
                 { id: 'book', title: '특별실 예약', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Book' },
+                { id: 'manage', title: '특별실 관리', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Manage' },
             ],
-            commands: [{ id: 'ops-room.open-book', title: '특별실 예약 열기', icon: 'list' }],
+            commands: [{ id: 'ops-room.open-book', title: '특별실 예약 열기', icon: 'list' }, { id: 'ops-room.open-manage', title: '특별실 관리 열기', icon: 'list' }],
             ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }],
         },
     },
-    components: { Book: () => createElement(RoomPanel) },
+    components: { Book: () => createElement(RoomPanel), Manage: () => createElement(RoomManagePanel) },
     commands: {
         'ops-room.open-book': (host: PluginHost) => { host.workspace.open('ops-room.book', { where: 'center' }); },
+        'ops-room.open-manage': (host: PluginHost) => { host.workspace.open('ops-room.manage', { where: 'center' }); },
     },
 });
 
