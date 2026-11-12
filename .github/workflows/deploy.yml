@@ -4,6 +4,7 @@ name: Deploy to GitHub Pages
 #   루트   = v1 브랜치 (김은지 선생님이 쓰시는 판 · 동결 · 주소가 바뀌면 안 된다)
 #   /v2/   = main 브랜치 (대개편 중)
 #   /v1.2/ = 1.2v-preview 가지 (1.2v 앱 + 맨 위 현황판 막대)
+#   /board/ = 현황판 독립 번들(1.2v-preview 의 board/) — v1·v2 페이지에 deploy/inject-board.mjs 가 주입
 #   /preview/ = 옛 1.2v 주소 — deploy/redirect-preview/ 의 넘겨주기 페이지 + 스스로 해제하는 서비스워커
 # 어느 브랜치에 푸시하든 셋 다 다시 빌드해서 통째로 올린다 — 한쪽만 올리면 다른 쪽이 사라진다.
 # 배포 환경(github-pages)은 main 만 허락한다 — 1.2v-preview 는 board-kick.yml 이 이 워크플로를 main 으로 돌려 달라고 신호만 보낸다.
@@ -76,6 +77,12 @@ jobs:
           # 현황판이 board 표를 읽는 공개(anon) 키 — 비어 있으면 막대는 목업으로 돈다
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_REF && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_REF) || '' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      # 현황판 독립 번들 한 벌(board/vite.config.ts · base './') — v1·v2 페이지에 주입한다. 같은 공개 키.
+      - run: npx vite build --config board/vite.config.ts
+        working-directory: preview
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_REF && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_REF) || '' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       # ── 합치기 ─────────────────────────────────────────────────
       # v1 빌드를 루트에 깔고, 그 위에 v2 빌드를 /v2/ 로 넣는다.
@@ -101,6 +108,24 @@ jobs:
           echo "── /v2/ ──";     ls site/v2 | head -20
           test -f site/index.html
           test -f site/v2/index.html
+
+      # ── 현황판 주입 (v1·v2 에도 각자 막대) ─────────────────────
+      - name: 현황판을 v1·v2 에 주입
+        run: |
+          set -eu
+          mkdir -p site/board
+          cp -R preview/board/dist/. site/board/
+          test -f site/board/index.html
+          node v2/deploy/inject-board.mjs site
+          # 주입 결과 검사 — 파일·태그·판 이름표가 빌드 트리에 있어야 한다
+          JS=$(grep -o 'assets/[^"]*\.js' site/board/index.html | head -1)
+          test -f "site/board/$JS"
+          grep -q 'data-app="v1"' site/index.html
+          grep -q "src=\"./board/$JS\"" site/index.html
+          grep -q 'data-app="v2"' site/v2/index.html
+          grep -q "src=\"../board/$JS\"" site/v2/index.html
+          grep -q 'data-board-injected' site/index.html
+          grep -q 'data-board-injected' site/v2/index.html
 
       - uses: actions/configure-pages@v5
         with:
