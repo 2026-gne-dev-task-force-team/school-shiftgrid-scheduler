@@ -115,7 +115,7 @@ describe('보고꾼 — 실자료 다듬기', () => {
     writeFileSync(gatePath, JSON.stringify({ sessions: {}, actors: {
       u1: { id: 'a-11111111', task: 'T-2a', started: t0 - 60e3, ended: null },
       u2: { id: 'a-22222222', task: null, started: t0 - 60e3, ended: null },
-      u3: { id: 'a-33333333', task: 'T-2a', started: t0 - 60e3, ended: t0 },
+      u3: { id: 'a-33333333', task: null, started: t0 - 60e3, ended: t0 },
       u4: { id: 'a-44444444', task: null, started: t0 - 4 * 3600e3, ended: null },
     } }))
     const d = build({ now: at, gatePath, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
