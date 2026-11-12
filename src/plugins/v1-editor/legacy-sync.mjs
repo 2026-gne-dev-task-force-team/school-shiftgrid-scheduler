@@ -6,7 +6,7 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, rmSync, writeFileSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -15,6 +15,8 @@ const REPO = join(HERE, '..', '..', '..')
 const [mode, ref = 'v1'] = process.argv.slice(2)
 const sha = (b) => createHash('sha256').update(b).digest('hex')
 const isTest = (p) => /\.test\.tsx?$/.test(p)
+// 사본 밖 자산 — legacy/ 의 상대 import 가 가리키는 v1 레포 루트 파일. HERE(v1-editor/) 아래 같은 상대 경로에 둔다(legacy/ 밖).
+const OUTSIDE = ['docs/사용설명서.md']
 const git = (...a) => execFileSync('git', a, { cwd: REPO, maxBuffer: 1 << 28 })
 
 function fromGit() {
@@ -32,10 +34,34 @@ function walk(dir, base = dir, acc = {}) {
   return acc
 }
 
+// legacy/ 안 소스의 상대 import 가 legacy/ 밖을 가리키면 그 대상이 OUTSIDE(사본이 나르는 파일)여야 한다 — 아니면 빌드가 깨진다.
+function escapes(files) {
+  const bad = []
+  const re = /(?:from\s+|import\s*\(\s*|import\s+)['"](\.[^'"]*)['"]/g
+  for (const [n, buf] of Object.entries(files)) {
+    if (!/\.(tsx?|jsx?|mjs|css)$/.test(n)) continue
+    for (const m of buf.toString('utf8').matchAll(re)) {
+      const abs = resolve(LEGACY, dirname(n), m[1].replace(/\?.*$/, ''))
+      const rel = relative(LEGACY, abs)
+      if (rel.startsWith('..') && !OUTSIDE.some((o) => resolve(HERE, o) === abs)) bad.push(`escape ${n} -> ${m[1]}`)
+    }
+  }
+  return bad
+}
+const outsideFromGit = (commit) => Object.fromEntries(OUTSIDE.map((o) => [o, git('show', `${commit}:${o}`)]))
+
 if (mode === 'sync') {
   const files = fromGit()
   rmSync(LEGACY, { recursive: true, force: true })
-  const manifest = { source: `v1@${git('rev-parse', ref).toString().trim()}`, files: {} }
+  const commit = git('rev-parse', ref).toString().trim()
+  const manifest = { source: `v1@${commit}`, files: {}, outside: {} }
+  const bad = escapes(files)
+  if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
+  for (const [o, buf] of Object.entries(outsideFromGit(commit))) {
+    mkdirSync(dirname(join(HERE, o)), { recursive: true })
+    writeFileSync(join(HERE, o), buf)
+    manifest.outside[o] = sha(buf)
+  }
   for (const [n, buf] of Object.entries(files).sort(([a], [b]) => (a < b ? -1 : 1))) {
     mkdirSync(dirname(join(LEGACY, n)), { recursive: true })
     writeFileSync(join(LEGACY, n), buf)
@@ -46,7 +72,13 @@ if (mode === 'sync') {
   console.log(`sync ${Object.keys(files).length} files from ${manifest.source}`)
 } else if (mode === 'verify') {
   const want = fromGit(), have = walk(LEGACY)
-  const diff = []
+  const diff = escapes(have)
+  const commit = git('rev-parse', ref).toString().trim()
+  for (const [o, buf] of Object.entries(outsideFromGit(commit))) {
+    let cur
+    try { cur = readFileSync(join(HERE, o)) } catch { diff.push(`missing outside ${o}`); continue }
+    if (sha(cur) !== sha(buf)) diff.push(`changed outside ${o}`)
+  }
   for (const n of new Set([...Object.keys(want), ...Object.keys(have)])) {
     if (!(n in have)) diff.push(`missing ${n}`)
     else if (!(n in want)) diff.push(`extra ${n}`)
