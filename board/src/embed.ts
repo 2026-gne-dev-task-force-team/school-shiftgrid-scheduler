@@ -1,5 +1,5 @@
 import './style.css'
-import { DEFAULT_APP, readApp, type AppId } from './lib/app.ts'
+import { DEFAULT_APP, readApp, versionCheckOn, type AppId } from './lib/app.ts'
 import { loadData } from './data.ts'
 import { h, isCalm } from './dom.ts'
 import { FEEDBACK_CHANGED, loadFeedback } from './lib/feedback.ts'
@@ -112,6 +112,7 @@ function render(notice = false): void {
   }
 
   const check = async () => {
+    if (!versionCheckOn(app)) return // v1·v2 주입 자리: 판 확인 끔(app.ts versionCheckOn)
     const v: VersionInfo | null = await fetchVersion()
     latest = isNewer(__BUILD__, v, loadSeen()) ? v : null
     bnd.showUpdate(latest)

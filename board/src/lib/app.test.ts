@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { APPS, appOf, asApp, editionOfApp, filterByApp, readApp } from './app.ts'
+import { APPS, appOf, asApp, editionOfApp, filterByApp, isInjected, readApp, versionCheckOn } from './app.ts'
 import { addFeedback, feedbackRows, loadFeedback } from './feedback.ts'
 import { loadData } from '../data.ts'
 import type { BoardData, Task } from '../types.ts'
@@ -46,5 +46,13 @@ describe('판 구분 data-app', () => {
       expect(mine('1.2v')).toEqual(['기본 불편'])
       expect(mine('v1')).toEqual([])
     }
+  })
+})
+
+describe('주입 자리 구분', () => {
+  it('v1·v2 는 주입, 1.2v·없음·엉뚱은 단독 — 판 확인은 단독에서만', () => {
+    expect(['v1', 'v2'].map((a) => isInjected(asApp(a)))).toEqual([true, true])
+    expect([undefined, '1.2v', 'zz'].map((a) => isInjected(asApp(a)))).toEqual([false, false, false])
+    expect(versionCheckOn('v1')).toBe(false); expect(versionCheckOn('v2')).toBe(false); expect(versionCheckOn('1.2v')).toBe(true)
   })
 })
