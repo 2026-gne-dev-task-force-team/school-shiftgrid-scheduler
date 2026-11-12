@@ -32,6 +32,7 @@ import { dutyPlugin } from '../plugins/duty';
 import { pagePlugin } from '../plugins/page';
 import { collectionPlugin } from '../plugins/collection';
 import { opsCheckPlugin } from '../plugins/ops-check';
+import { opsSubPlugin } from '../plugins/ops-sub';
 import { v1EditorPlugin } from '../plugins/v1-editor';
 import { paneTestPlugin } from '../plugins/pane-test';
 import { INSTALLED_PLUGIN_IDS } from './site-config';
@@ -44,7 +45,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 const CATALOG: Record<string, PluginModule> = {
     page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, calendar: calendarPlugin, account: accountPlugin,
     people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
-    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'ops-check': opsCheckPlugin, 'v1-editor': v1EditorPlugin,
+    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'v1-editor': v1EditorPlugin,
 };
 
 export const PLUGINS: PluginModule[] = [
