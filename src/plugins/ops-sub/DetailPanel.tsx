@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, EmptyState } from '../../pane-ui-system';
 import { getSlotSource, getViewer, type SlotSource, type SubSlotRow, type Viewer } from './list';
-import { buildDetail, takeSlot } from './detail';
+import { buildDetail, cancelTake, takeSlot, useSelection } from './detail';
 
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
@@ -24,6 +24,11 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
         setMsg(r.ok ? '맡았습니다.' : r.message);
         await reload();
     };
+    const cancel = async () => {
+        const r = await cancelTake(src, rowId, date, v, { today: now(), now: () => new Date().toISOString(), expectUpdatedAt: row?.updatedAt });
+        setMsg(r.ok ? '맡기를 취소했습니다.' : r.message);
+        await reload();
+    };
     const b = d.row.body;
     return (
         <div className="p-4 max-w-xl flex flex-col gap-2 text-small">
@@ -35,8 +40,14 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
             {d.cannotTakeWhy && !d.row.take && <p className="text-muted">{d.cannotTakeWhy}</p>}
             {msg && <p role="status">{msg}</p>}
             {d.canTake && <div><Button variant="solid" tone="accent" onClick={() => void take()}>맡기</Button></div>}
+            {d.canCancel && <div><Button variant="outline" tone="danger" onClick={() => void cancel()}>맡기 취소</Button></div>}
         </div>
     );
 }
 
-export function DetailPanel() { return <DetailView date={today()} rowId="d1" />; }
+/** 목록에서 고른 줄을 보인다 — 고른 게 없으면 안내만(고정 줄 없음). */
+export function DetailPanel() {
+    const sel = useSelection();
+    if (!sel) return <EmptyState icon="ban" title="고른 보결이 없습니다" description="보결 목록에서 줄을 누르면 여기에 상세가 열립니다." />;
+    return <DetailView key={`${sel.date}/${sel.rowId}`} date={sel.date} rowId={sel.rowId} />;
+}
