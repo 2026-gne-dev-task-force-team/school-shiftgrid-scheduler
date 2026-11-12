@@ -106,7 +106,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 60ms), sgb-breathe 4s ease-in-out infinite alternate }
 .card:nth-child(2) { --i: 1 } .card:nth-child(3) { --i: 2 } .card:nth-child(4) { --i: 3 } .card:nth-child(n+5) { --i: 4 }
 .stage-host > :not(.card) { animation: sgb-in .28s var(--ease) backwards } /* 탭이 바뀌면 내용이 살짝 미끄러져 들어온다 */
-.ws-card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 40ms) }
+.ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
 /* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
 @media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
@@ -168,9 +168,9 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ws-col:last-child { border-right: 0 }
 .ws-head small { font-weight: 400; opacity: .7 }
 .ws-furn { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
-.ws-walk { position: relative; height: 34px; margin-top: 4px; border-radius: var(--r1); background: rgb(90 70 48 / .12); overflow: hidden }
+.ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid #5a4630; border-radius: var(--r1); background: #e3c28f linear-gradient(90deg, rgb(120 80 30 / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
-.ws-bang { position: absolute; top: -12px; right: 6px; min-width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--bad); border-radius: 8px 8px 8px 2px; box-shadow: 0 1px 0 rgb(0 0 0 / .3) }
+.ws-bang { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--bad); border-radius: 8px 8px 8px 2px; box-shadow: 0 1px 0 rgb(0 0 0 / .3) }
 .ws-col[data-col=work] .ws-card .chr { animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
 .ws-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp1); padding: 1px 3px; font-weight: 650; font-size: var(--fs-sm); color: var(--fg-2) }
 .ws-badge { padding: 0 6px; border-radius: 999px; background: var(--neon-soft); color: var(--neon-2); font-variant-numeric: tabular-nums }

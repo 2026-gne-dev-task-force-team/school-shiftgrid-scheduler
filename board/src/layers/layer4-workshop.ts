@@ -42,7 +42,8 @@ export const layer4: LayerRenderer = {
       const w = h('span', { class: 'ws-roamer', style: `--dist:${90 + (i * 53) % 140}px;--dur:${9 + (i * 3) % 7}s;--dly:${-i * 2.3}s;left:${10 + (i * 37) % 50}%` }, character(a, 'mini'))
       walk.append(w)
     })
-    host.append(board, walk)
+    host.append(board)
+    if (walk.childElementCount) host.append(walk) // 쉬는 캐릭터가 없으면 빈 복도를 그리지 않는다
 
     let expanded = false
     const more = h('button', { class: 'ws-more' })

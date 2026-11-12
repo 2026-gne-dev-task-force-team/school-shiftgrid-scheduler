@@ -29,8 +29,9 @@ export const layer2: LayerRenderer = {
     const y = (l: number) => TOP + l * LH
 
     const draw = () => {
-      const cw = Math.max(MIN_COL, (box.clientWidth - PAD * 2 - TAIL) / (cols + 1))
-      const w = PAD * 2 + (cols + 1) * cw + TAIL, dpr = devicePixelRatio || 1
+      const narrow = box.clientWidth < 500, tail = narrow ? 64 : TAIL, minCol = narrow ? 40 : MIN_COL // 폰은 꼬리·칸을 줄여 한 화면에 여러 가지
+      const cw = Math.max(minCol, (box.clientWidth - PAD * 2 - tail) / (cols + 1))
+      const w = PAD * 2 + (cols + 1) * cw + tail, dpr = devicePixelRatio || 1
       const x = (c: number) => PAD + c * cw
       const css = getComputedStyle(box), v = (n: string, d: string) => css.getPropertyValue(n).trim() || d
       inner.style.width = `${w}px`
@@ -48,7 +49,9 @@ export const layer2: LayerRenderer = {
       const label = (cls: string, left: number, top: number, kid: Node | string, hue?: number) => {
         const el = h(hue === undefined ? 'span' : 'button', { class: cls }, kid)
         el.style.cssText = `left:${left}px;top:${top}px${hue === undefined ? '' : `;--hue:${hue}`}`
-        inner.append(el); return el
+        inner.append(el)
+        if (hue !== undefined) el.style.left = `${Math.max(2, Math.min(left, inner.offsetWidth - el.offsetWidth - 2))}px` // 오른쪽 끝에서 잘리지 않게 안으로
+        return el
       }
       label('gg-l gg-trunk', x(0), y0 - 30, trunk?.title ?? '줄기')
 
