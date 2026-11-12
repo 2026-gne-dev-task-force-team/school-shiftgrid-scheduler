@@ -1,5 +1,6 @@
 import { h } from '../dom.ts'
 import { fmtDur } from '../lib/forecast.ts'
+import { currentSprint } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
@@ -10,7 +11,7 @@ export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): voi
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
 export function createBand(data: BoardData, hooks: BandHooks) {
   const now = Date.now()
-  const run = data.runs[0], goal = data.goals[0]
+  const run = data.runs[0], goal = data.goals[0], cur = currentSprint(data)
   const working = data.actors.filter((a) => a.state === 'work').length
   const remain = data.tasks.filter((t) => t.column !== 'done').reduce((s, t) => s + t.est_min, 0)
   const mid = remain / Math.max(1, working)
@@ -50,9 +51,9 @@ export function createBand(data: BoardData, hooks: BandHooks) {
 
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip' }, state),
-    h('span', { class: 'chip', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
-    h('span', { class: 'sgb-name' }, goal ? `스프린트 ${goal.sprint} · ${goal.title}` : '작업현황판'),
-    h('span', { class: 'sgb-pct' }, goal ? `${goal.progress}%` : ''),
+    h('span', { class: 'chip src', title: '자료 출처' }, data.source === 'server' ? '서버 자료' : '목업 자료'),
+    h('span', { class: 'sgb-name' }, cur ? `스프린트 ${cur.sprint.id} · ${cur.sprint.title}` : '작업현황판'),
+    h('span', { class: 'sgb-pct' }, cur ? `${cur.pct}%` : ''),
     h('span', { class: 'band-clock' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {

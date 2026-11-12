@@ -8,7 +8,7 @@ export const WHERE = ['막대', '1 한눈', '2 가지', '3 길', '4 작업장', 
 export function openFeedback(open: (c: DetailContent) => void, onDone: () => void): void {
   const text = h('input', { type: 'text', maxlength: String(MAX_LEN), 'aria-label': '불편한 점 한 줄' })
   const where = h('select', { 'aria-label': '어디서' }, ...WHERE.map((w) => h('option', null, w)))
-  const msg = h('p', { role: 'status' })
+  const msg = h('p', { role: 'alert' })
   const go = h('button', { class: 'btn' }, '접수')
   go.addEventListener('click', () => {
     const r = addFeedback(text.value, where.value)
