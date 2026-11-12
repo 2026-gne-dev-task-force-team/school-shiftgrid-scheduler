@@ -30,6 +30,8 @@ import {
     type WorkspaceEvent, type PluginHost, type IconName,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
+import { firstPaneForNarrow } from '../layout/mobile';
+import { INSTALLED_PLUGIN_IDS } from './site-config';
 import { canPlace, canSplit, isSingleton, leafTitle } from '../pane-ui-system/view-registry';   // 자리 제한·제목 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
 import './notify-view';   // 알림 패널 뷰(app.notify)
@@ -81,6 +83,10 @@ export function pruneBlankLeaves(ws: Workspace): Workspace {
     return drop.reduce((w, l) => closeLeaf(w, l.id), ws);
 }
 
+function isBlankWorkspace(ws: Workspace): boolean {
+    return ws.floating.length === 0 && (['left', 'center', 'right'] as const).every((a) => !ws[a] || flatten(ws[a]!).length === 0);
+}
+
 export function Workbench() {
     const narrow = useNarrow();
     const panels = usePanels(narrow);
@@ -117,6 +123,17 @@ export function Workbench() {
     panelsRef.current = panels;
 
     useEffect(() => { saveWorkspace(ws); }, [ws]);
+
+    // 📱 모바일 첫 판(T-9p24) — 좁은 화면으로 처음 뜨고 판이 비어 있을 때만 정책 함수 결과로 연다(저장된 판은 건드리지 않는다).
+    useEffect(() => {
+        if (!narrow || !isBlankWorkspace(wsRef.current)) return;
+        const pick = firstPaneForNarrow({ installed: [...INSTALLED_PLUGIN_IDS] });
+        if (pick === 'home') return;
+        const views = appHost.views.list().map((v) => v.id);
+        const id = pick.view ? `${pick.plugin}.${pick.view}` : views.find((v) => v.startsWith(pick.plugin + '.'));
+        if (id) openView(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // 🔴 작업대 이벤트 — 트리 변화를 재서 플러그인에 쏜다(open/close/activate). 모든 경로를 잡는다
     //    (리본·+·드래그 무엇으로 열든). 플러그인 상태바가 이걸로 센다.
