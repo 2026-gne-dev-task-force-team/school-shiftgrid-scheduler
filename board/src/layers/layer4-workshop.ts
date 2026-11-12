@@ -52,6 +52,7 @@ export const layer4: LayerRenderer = {
               ...(c.block_kind ? [['막힌 이유', `${BLOCK_NAME[c.block_kind]} — ${blockText(c, tasks)}`] as [string, string]] : [])] })
           })
           tip(el, () => `${cur(t.id).title} · ${REASON_NAME[cur(t.id).reason] ?? cur(t.id).reason}`)
+          el.style.setProperty('--i', String(cards.size))
           cards.set(t.id, el)
           home.set(t.id, colOf(t))
         }
