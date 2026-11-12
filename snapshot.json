@@ -11,31 +11,12 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "work",
+      "state": "idle",
       "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
-      "ended_at": null
-    },
-    {
-      "id": "a-T-5d",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "화면 다듬기",
-      "hue": 175,
-      "eye": "teal",
-      "prop": "brush",
-      "dept": "make",
-      "team": "화면팀",
-      "role": "화면",
-      "state": "work",
-      "task_id": "T-5d",
-      "branch_id": "b-T-5d",
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T06:07:27.408Z",
       "ended_at": null
     }
   ],
@@ -438,12 +419,12 @@
       "team": "화면팀",
       "sprint": 4,
       "est_min": 15,
-      "started_at": "2026-11-12T14:21:00+09:00",
+      "started_at": "2026-11-12T15:14:00+09:00",
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": "a-T-5d",
-      "updated_at": "2026-11-12T14:21:00+09:00"
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:14:00+09:00"
     },
     {
       "id": "T-5e",
@@ -568,7 +549,7 @@
       "state": "live",
       "actor_id": null,
       "task_id": null,
-      "updated_at": "2026-11-12T15:06:17+09:00"
+      "updated_at": "2026-11-12T15:12:01+09:00"
     },
     {
       "id": "b-T-2f",
@@ -611,16 +592,6 @@
       "updated_at": "2026-11-12T14:39:35+09:00"
     },
     {
-      "id": "b-T-5d",
-      "title": "고급 다듬기",
-      "trunk": false,
-      "ahead": 0,
-      "state": "merged",
-      "actor_id": "a-T-5d",
-      "task_id": "T-5d",
-      "updated_at": "2026-11-12T15:06:17+09:00"
-    },
-    {
       "id": "b-T-6a",
       "title": "보고꾼",
       "trunk": false,
@@ -658,7 +629,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:11:03.029Z"
+      "checked_at": "2026-11-12T06:13:01.815Z"
     },
     {
       "id": "s2",
@@ -666,7 +637,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:11:03.029Z"
+      "checked_at": "2026-11-12T06:13:01.815Z"
     },
     {
       "id": "s3",
@@ -674,7 +645,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:11:03.029Z"
+      "checked_at": "2026-11-12T06:13:01.815Z"
     }
   ],
   "modules": [
@@ -753,12 +724,21 @@
     {
       "id": "g4",
       "title": "클로드 캐릭터 · 고급스럽게",
-      "progress": 60,
+      "progress": 80,
       "state": "work",
       "sprint": 4
     }
   ],
   "events": [
+    {
+      "id": "e-4321176c",
+      "ts": "2026-11-12T15:14:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-5d",
+      "actor_id": "a-lead",
+      "text": "고급 다듬기 끝"
+    },
     {
       "id": "e-7dcf0324",
       "ts": "2026-11-12T15:06:00+09:00",
@@ -997,8 +977,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:11:03.029Z",
-      "pct_5h": 39,
+      "ts": "2026-11-12T06:13:01.815Z",
+      "pct_5h": 41,
       "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
