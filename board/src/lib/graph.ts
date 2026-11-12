@@ -37,3 +37,6 @@ export function graphSpans(branches: Branch[], events: BoardEvent[]): { spans: S
 
 /** 이름표·칩의 left 를 그래프 안쪽으로 가둔다 — 오른쪽 끝에서 잘리지 않게(폭이 더 크면 왼쪽 2px 우선). */
 export const clampLeft = (left: number, boxW: number, elW: number, edge = 2): number => Math.max(edge, Math.min(left, boxW - elW - edge))
+
+/** 줄기 끝에 붙는 칩의 오른쪽 한계 — 그래프 논리 폭이 보이는 폭보다 넓으면(가로 스크롤) 보이는 폭이 한계다(R83). */
+export const edgeLimit = (innerW: number, viewW: number): number => Math.min(innerW, viewW)
