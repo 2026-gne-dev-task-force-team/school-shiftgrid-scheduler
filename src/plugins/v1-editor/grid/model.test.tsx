@@ -101,6 +101,11 @@ describe('읽기 격자 — 날짜별 변경 얹기 스냅숏', () => {
     `)
   })
 
+  it('보결은 시간이 겹치는 그 교시에만 붙는다(앞 교시 보결이 뒤 교시로 번지지 않는다)', () => {
+    const g = buildGrid(sampleDoc(), WED, { substitutes: [{ trackName: '1-1', startMin: 540, endMin: 580, takerName: '오보결' }] })
+    expect(g.ok && g.rows[0]!.cells.map((c) => c.status)).toEqual(['sub', 'normal', 'none'])
+  })
+
   it('학교 전체 쉼 · 주말 · 시간표 없는 날은 표가 없다', () => {
     expect(buildGrid(sampleDoc(), WED, { calendar: [{ kind: '재량휴업', targetKind: 'all', targetValue: '' }] })).toEqual({ ok: false, reason: 'school-off', offReason: '재량휴업' })
     expect(buildGrid(sampleDoc(), '2026-11-14')).toEqual({ ok: false, reason: 'weekend', date: '2026-11-14' })

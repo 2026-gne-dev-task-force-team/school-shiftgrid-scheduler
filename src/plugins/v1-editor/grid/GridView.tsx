@@ -5,7 +5,7 @@ import { toHHMM } from '../../../../shared/clock'
 import { buildGrid, type DayOverlay, type GridCell, type GridTable } from './model'
 import type { Doc } from '../legacy/types/doc'
 
-export const STATUS_LABEL: Record<GridCell['status'], string> = { normal: '', homeroom: '', changed: '변경', sub: '보결', off: '없음', none: '' }
+const STATUS_LABEL: Record<GridCell['status'], string> = { normal: '', homeroom: '', changed: '변경', sub: '보결', off: '없음', none: '' }
 
 function Cell({ c }: { c: GridCell }) {
   if (c.status === 'none') return <td data-status="none" />
