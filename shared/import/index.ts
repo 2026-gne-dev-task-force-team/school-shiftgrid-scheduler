@@ -1,6 +1,7 @@
 import { decodeText, parseCsv } from './csv.ts'
 import { detectKind } from './kind.ts'
 import type { ReadOptions, TableResult } from './types.ts'
+import { readHwp } from './hwp.ts'
 import { readHwpx } from './hwpx.ts'
 import { readXlsx } from './xlsx.ts'
 
@@ -18,7 +19,7 @@ export function tidyRows(raw: string[][]): string[][] {
   return rows.map((r) => Array.from({ length: width }, (_, i) => r[i] ?? ''))
 }
 
-/** 표 읽기 공통 입구 — 종류를 판별해 같은 꼴로 돌려준다. 못 읽는 것은 rows 빈 채 경고. 깨진 xlsx·hwpx 도 던지지 않고 경고. */
+/** 표 읽기 공통 입구 — 종류를 판별해 같은 꼴로 돌려준다. 못 읽는 것은 rows 빈 채 경고. 깨진 xlsx·hwpx·hwp 도 던지지 않고 경고. */
 export function readTable(bytes: Uint8Array, opts: ReadOptions = {}): TableResult {
   const kind = detectKind(bytes, opts.name)
   switch (kind) {
@@ -42,8 +43,14 @@ export function readTable(bytes: Uint8Array, opts: ReadOptions = {}): TableResul
         return { kind, rows: [], warnings: [`hwpx 를 읽지 못함(깨진 파일?): ${e instanceof Error ? e.message : String(e)}`] }
       }
     }
-    case 'hwp':
-      return { kind, rows: [], warnings: ['hwp 는 아직 못 읽음(P25c)'] }
+    case 'hwp': {
+      try {
+        const t = readHwp(bytes, opts.sheet)
+        return { kind, rows: tidyRows(t.rows), sheet: t.sheet, sheets: t.sheets, warnings: t.warnings }
+      } catch (e) {
+        return { kind, rows: [], warnings: [`hwp 를 읽지 못함(깨진 파일?): ${e instanceof Error ? e.message : String(e)}`] }
+      }
+    }
     default:
       return { kind, rows: [], warnings: ['알 수 없는 파일 꼴(비었거나 바이너리)'] }
   }
