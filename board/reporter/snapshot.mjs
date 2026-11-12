@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain } from './plain.mjs'
 
-const TID = /T-\d+[a-z]+/g
+const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
+const TID = new RegExp(ID, 'g')
 
 /** 「11-12 14:36」·「14:36」 → ISO(+09:00). date 는 「MM-DD」, 없으면 day 인자. */
 export function kstIso(text, year, day) {
@@ -52,7 +53,8 @@ const TEAM = [[/메인|지휘/, '지휘'], [/화면/, '화면'], [/품질|검사
 export const categoryOf = (team) => TEAM.find(([r]) => r.test(team))?.[1] ?? '코드'
 export function columnOf(state) {
   if (/^\s*✅/.test(state)) return { column: 'done', reason: 'done' }
-  if (/^\s*🔄/.test(state)) return { column: 'work', reason: 'new' }
+  if (/^\s*[🔄🔨]/u.test(state)) return { column: 'work', reason: 'new' }
+  if (/^\s*(👀|검수)/u.test(state)) return { column: 'wait', reason: 'checking' }
   if (/^\s*⛔/.test(state)) return { column: 'wait', reason: 'blocked', block_kind: 'outside' }
   return { column: 'wait', reason: 'new' }
 }
@@ -63,10 +65,12 @@ export function parseLane(md) {
   const log = []
   let cur = null
   let inLog = false
+  let head = null
   for (const line of md.split(/\r?\n/)) {
     const h = /^## (.*)$/.exec(line)
     if (h) {
-      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?\)\s*$/.exec(h[1])
+      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?(?:\d{1,2}:\d{2})?\)\s*$/.exec(h[1])
+      head = null
       cur = s ? { id: +s[1], title: s[2], began: s[3], goal: '', rows: [] } : null
       if (cur) sprints.push(cur)
       inLog = h[1].startsWith('진행 로그')
@@ -76,8 +80,10 @@ export function parseLane(md) {
       const g = /^- \*\*목표\*\*:\s*(.*)$/.exec(line)
       if (g) cur.goal = g[1]
       const c = line.startsWith('|') ? cells(line) : null
-      if (c && c.length >= 5 && /^T-\d+[a-z]+$/.test(c[0])) cur.rows.push({ id: c[0], what: c[1], team: c[2], est: c[3], state: c[4] })
-      const late = /^(T-\d+[a-z]+) ✅/.exec(line) // 표 밖 「T-5c ✅ …」 덧줄
+      if (c && c[0] === '태스크') head = c // 칸 이름으로 찾는다(표마다 칸 수가 다르다)
+      const at = (name, i) => c[head ? head.indexOf(name) : i] ?? ''
+      if (c && c.length >= 5 && new RegExp(`^${ID}$`).test(c[0])) cur.rows.push({ id: c[0], what: at('무엇', 1), team: at('팀', 2), est: at('est_min', 3), state: at('상태', 4) })
+      const late = new RegExp(`^(${ID}) ✅`).exec(line) // 표 밖 「T-5c ✅ …」 덧줄
       const row = late && cur.rows.find((r) => r.id === late[1])
       if (row) row.state = '✅'
     }
@@ -113,7 +119,7 @@ export function requestTitle(what, id) {
 
 /** 상태 칸 → 칸. 「→ T-…」 는 그 태스크(지휘 표에 있으면 그 상태, 없으면 진행)를 따른다. */
 export function requestColumn(state, byId) {
-  const link = /→[^|]*?(T-\d+[a-z]+)/.exec(state)
+  const link = new RegExp(`→[^|]*?(${ID})`).exec(state)
   if (link) { const t = byId.get(link[1]); return { link: link[1], sprint: t?.sprint, col: t ? { column: t.column, reason: t.reason } : { column: 'work', reason: 'new' } } }
   if (/^\s*✅/.test(state)) return { col: { column: 'done', reason: 'done' } }
   if (/^\s*🔨/.test(state)) return { col: { column: 'work', reason: 'new' } }
