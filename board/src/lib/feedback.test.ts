@@ -14,7 +14,7 @@ describe('불편 접수', () => {
   it('board.feedback 에 쌓이고 bug·wait 카드와 흐름 줄이 된다', () => {
     const s = store()
     expect(addFeedback('버튼이 안 눌려요', '막대', s)).toEqual({ ok: true })
-    expect(addFeedback('글씨가 작아요', '4 작업장', s).ok).toBe(true)
+    expect(addFeedback('글씨가 작아요', '4 Board', s).ok).toBe(true)
     expect(JSON.parse(s.m.get(FEEDBACK_KEY)!)).toHaveLength(2)
     const { tasks, events } = feedbackRows(loadFeedback(s), 'l1')
     expect(tasks[0]).toMatchObject({ kind: 'bug', column: 'wait' })

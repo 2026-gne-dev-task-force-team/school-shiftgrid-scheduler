@@ -12,7 +12,7 @@ const span = (s: Sprint) => `${hm(s.began)} ~ ${s.ended ? hmOnly(s.ended) : '진
 
 // 스프린트 — 한 줄에 번호·목표·기간·진행률·검수 칩, 누르면 태스크·시간·검수·회고가 펼쳐진다.
 export const sprints: LayerRenderer = {
-  id: 'sprints', floor: 6, tab: '스프린트',
+  id: 'sprints', floor: 6, tab: 'Sprint',
   render(host, { data }) {
     if (!data.sprints?.length) { host.replaceChildren(h('p', { class: 'card' }, '아직 스프린트 기록이 없습니다')); return }
     host.replaceChildren(...sprintsNewestFirst(data.sprints).map((s) => {

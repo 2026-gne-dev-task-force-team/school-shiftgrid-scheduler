@@ -81,7 +81,7 @@ function render(notice = false): void {
   page.replaceChildren(bnd.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
   show(restoreTab(curTab, LAYERS.length))
   if (notice) {
-    const go = h('button', { class: 'btn' }, '작업장에서 보기')
+    const go = h('button', { class: 'btn' }, 'Board 에서 보기')
     go.addEventListener('click', () => {
       show(LAYERS.findIndex((l) => l.floor === 4))
       detail.el.hidden = true // 폰 바텀시트가 카드를 가리지 않게

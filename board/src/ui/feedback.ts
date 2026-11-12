@@ -2,7 +2,7 @@ import { h } from '../dom.ts'
 import type { DetailContent } from '../layers/types.ts'
 import { addFeedback, MAX_LEN } from '../lib/feedback.ts'
 
-export const WHERE = ['막대', '1 한눈', '2 가지', '3 길', '4 작업장', '5 설계도', '안내', '그 밖']
+export const WHERE = ['막대', '1 Overview', '2 Branch', '3 Lanes', '4 Board', '5 Blueprint', 'Sprint', 'Inbox', 'Guide', '그 밖']
 
 // 불편 접수 폼 — 기존 상세 칸(PC 옆 칸 · 폰 바텀시트)에 넣는다.
 export function openFeedback(open: (c: DetailContent) => void, onDone: () => void): void {

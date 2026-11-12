@@ -7,12 +7,12 @@ import { actorLabel, actorWhat } from './actor.ts'
 
 describe('막대의 지금 스프린트', () => {
   it('막대 글은 목표(goals)가 아니라 열린 스프린트 3이다', () => {
-    expect(sprintLabel(d)).toBe('스프린트 3 · 불편 접수함 · 진짜 자료 · 품질')
+    expect(sprintLabel(d)).toBe('Sprint 3 · 불편 접수함 · 진짜 자료 · 품질')
     expect(sprintLabel({ sprints: [], tasks: d.tasks })).toBe('작업현황판')
   })
   it('began 이 깨진 서버 줄이 섞여도 번호 큰 열린 줄', () => {
     const l = d.sprints.map((s) => ({ ...s, began: '', ended: s.id === 1 ? s.ended : null }))
-    expect(sprintLabel({ sprints: l, tasks: d.tasks })).toMatch(/^스프린트 3 /)
+    expect(sprintLabel({ sprints: l, tasks: d.tasks })).toMatch(/^Sprint 3 /)
   })
 })
 

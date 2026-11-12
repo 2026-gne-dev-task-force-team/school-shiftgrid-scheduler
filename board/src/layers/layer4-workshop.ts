@@ -8,7 +8,7 @@ import { actorLabel, actorWhat } from '../lib/actor.ts'
 
 // 4층 작업장 — 확인 중 · 기다림 · 작업 · 끝. 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
 export const layer4: LayerRenderer = {
-  id: 'layer4', floor: 4, tab: '작업장',
+  id: 'layer4', floor: 4, tab: 'Board',
   render(host, { data, openDetail, tip }) {
     const tasks: Task[] = data.tasks.map((t) => ({ ...t }))
     const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
