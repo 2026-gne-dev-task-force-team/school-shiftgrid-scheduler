@@ -20,18 +20,18 @@
       "ended_at": null
     },
     {
-      "id": "a-T-2n-3",
+      "id": "a-27315023",
       "parent_id": "a-lead",
       "kind": "helper",
-      "name": "설계",
-      "hue": 190,
+      "name": "일손",
+      "hue": 160,
       "eye": "teal",
-      "prop": "ruler",
+      "prop": "box",
       "dept": "make",
-      "team": "설계팀",
-      "role": "설계",
+      "team": "자료팀",
+      "role": "자료",
       "state": "work",
-      "task_id": "T-2n-3",
+      "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
@@ -39,18 +39,18 @@
       "ended_at": null
     },
     {
-      "id": "a-T-2n-4",
+      "id": "a-3c7711be",
       "parent_id": "a-lead",
       "kind": "helper",
-      "name": "시험",
-      "hue": 275,
-      "eye": "violet",
-      "prop": "check",
-      "dept": "qa",
-      "team": "시험팀",
-      "role": "시험",
+      "name": "일손",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
       "state": "work",
-      "task_id": "T-2n-4",
+      "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
@@ -585,96 +585,6 @@
       "updated_at": "2026-11-12T15:06:00+09:00"
     },
     {
-      "id": "T-2n-1",
-      "title": "v1 편성기 순서 실측",
-      "category": "설계",
-      "kind": "work",
-      "team": "설계팀",
-      "sprint": 6,
-      "est_min": 20,
-      "started_at": "2026-11-12T15:33:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:33:00+09:00"
-    },
-    {
-      "id": "T-2n-2",
-      "title": "v2 꾸러미 재저울질",
-      "category": "설계",
-      "kind": "work",
-      "team": "설계팀",
-      "sprint": 6,
-      "est_min": 30,
-      "started_at": "2026-11-12T15:33:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:33:00+09:00"
-    },
-    {
-      "id": "T-2n-3",
-      "title": "① 2절· 고침",
-      "category": "설계",
-      "kind": "work",
-      "team": "설계팀",
-      "sprint": 6,
-      "est_min": 30,
-      "started_at": "2026-11-12T15:36:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:36:00+09:00"
-    },
-    {
-      "id": "T-2n-4",
-      "title": "재검수",
-      "category": "검사",
-      "kind": "review",
-      "team": "시험팀",
-      "sprint": 6,
-      "est_min": 15,
-      "started_at": "2026-11-12T15:38:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:38:00+09:00"
-    },
-    {
-      "id": "T-2n-5",
-      "title": "재검수 고칠 거리 6",
-      "category": "설계",
-      "kind": "work",
-      "team": "설계팀",
-      "sprint": 6,
-      "est_min": 10,
-      "started_at": "2026-11-12T15:40:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:40:00+09:00"
-    },
-    {
-      "id": "T-2n-6",
-      "title": "③ 인증·API 에 installed 칸",
-      "category": "설계",
-      "kind": "work",
-      "team": "설계팀",
-      "sprint": 6,
-      "est_min": 5,
-      "started_at": "2026-11-12T15:41:00+09:00",
-      "lane_id": "l1",
-      "column": "done",
-      "reason": "done",
-      "actor_id": null,
-      "updated_at": "2026-11-12T15:41:00+09:00"
-    },
-    {
       "id": "R1",
       "title": "「집」이 가장 안 읽힌다",
       "category": "지휘",
@@ -687,7 +597,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R2",
@@ -702,7 +612,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R3",
@@ -717,7 +627,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R4",
@@ -732,7 +642,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R5",
@@ -747,7 +657,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R6",
@@ -762,7 +672,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R7",
@@ -777,7 +687,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R8",
@@ -792,7 +702,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R9",
@@ -807,7 +717,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R10",
@@ -822,7 +732,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R11",
@@ -837,7 +747,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R12",
@@ -852,7 +762,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R13",
@@ -867,7 +777,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R14",
@@ -882,7 +792,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R15",
@@ -897,7 +807,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R16",
@@ -912,7 +822,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R17",
@@ -927,7 +837,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R18",
@@ -942,7 +852,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R19",
@@ -957,7 +867,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R20",
@@ -972,7 +882,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R21",
@@ -987,7 +897,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R22",
@@ -1002,7 +912,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R23",
@@ -1017,7 +927,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R24",
@@ -1032,7 +942,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R25",
@@ -1047,7 +957,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R26",
@@ -1062,7 +972,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R27",
@@ -1077,7 +987,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     },
     {
       "id": "R28",
@@ -1092,7 +1002,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:21:02.646Z"
+      "updated_at": "2026-11-12T07:23:02.587Z"
     }
   ],
   "lanes": [
@@ -1192,7 +1102,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:21:02.040Z"
+      "checked_at": "2026-11-12T07:23:02.018Z"
     },
     {
       "id": "s-sync",
@@ -1200,7 +1110,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:21:02.040Z"
+      "checked_at": "2026-11-12T07:23:02.018Z"
     },
     {
       "id": "s-reporter",
@@ -1208,7 +1118,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:21:02.040Z"
+      "checked_at": "2026-11-12T07:23:02.018Z"
     }
   ],
   "modules": [
@@ -1308,57 +1218,12 @@
     {
       "id": "g6",
       "title": "1.2v 설계 고침 · v1 단점 물려받기 막기",
-      "progress": 100,
-      "state": "shipped",
+      "progress": 0,
+      "state": "work",
       "sprint": 6
     }
   ],
   "events": [
-    {
-      "id": "e-6d584ba1",
-      "ts": "2026-11-12T15:41:00+09:00",
-      "kind": "task.move",
-      "subject_type": "task",
-      "subject_id": "T-2n-6",
-      "actor_id": "a-lead",
-      "text": "③ 인증·API 에 installed 칸 끝"
-    },
-    {
-      "id": "e-208b8262",
-      "ts": "2026-11-12T15:40:00+09:00",
-      "kind": "task.move",
-      "subject_type": "task",
-      "subject_id": "T-2n-5",
-      "actor_id": "a-lead",
-      "text": "재검수 고칠 거리 6 끝"
-    },
-    {
-      "id": "e-242301f1",
-      "ts": "2026-11-12T15:38:00+09:00",
-      "kind": "task.move",
-      "subject_type": "task",
-      "subject_id": "T-2n-4",
-      "actor_id": "a-lead",
-      "text": "재검수 끝"
-    },
-    {
-      "id": "e-a8be1cd2",
-      "ts": "2026-11-12T15:36:00+09:00",
-      "kind": "task.move",
-      "subject_type": "task",
-      "subject_id": "T-2n-3",
-      "actor_id": "a-lead",
-      "text": "① 2절· 고침 끝"
-    },
-    {
-      "id": "e-98e83078",
-      "ts": "2026-11-12T15:33:00+09:00",
-      "kind": "task.move",
-      "subject_type": "task",
-      "subject_id": "T-2n-1",
-      "actor_id": "a-lead",
-      "text": "v1 편성기 순서 실측 외 1 끝"
-    },
     {
       "id": "e-6df03cb2",
       "ts": "2026-11-12T15:28:00+09:00",
@@ -1624,7 +1489,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:21:02.646Z",
+      "ts": "2026-11-12T07:23:02.587Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -1636,7 +1501,7 @@
     {
       "id": "r6",
       "started_at": "2026-11-12T15:30:00+09:00",
-      "ended_at": "2026-11-12T15:41:00+09:00",
+      "ended_at": null,
       "sprint": 6,
       "goal_id": "g6"
     }
@@ -1757,16 +1622,9 @@
       "title": "1.2v 설계 고침 · v1 단점 물려받기 막기",
       "goal": "1.2v 설계 고침 · v1 단점 물려받기 막기",
       "began": "2026-11-12T15:30:00+09:00",
-      "ended": "2026-11-12T15:41:00+09:00",
-      "task_ids": [
-        "T-2n-1",
-        "T-2n-2",
-        "T-2n-3",
-        "T-2n-4",
-        "T-2n-5",
-        "T-2n-6"
-      ],
-      "est_min": 110,
+      "ended": null,
+      "task_ids": [],
+      "est_min": 0,
       "actual_min": 0,
       "review": "",
       "passed": null,
