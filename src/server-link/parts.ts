@@ -168,6 +168,34 @@ export function createPartQueue(opts: PartQueueOptions) {
             schedule(part, s);
             emit();
         },
+        /**
+         * 412 로 막힌 칸을 푼다 — `etag` 는 서버 판의 ETag.
+         *   `server`: 그 칸을 서버 값(`value`)·ETag 로 맞추고 dirty 를 지운다.
+         *   `mine`: ETag 만 서버 것으로 바꾸고 내 값(`value` 없으면 들고 있던 값)을 다시 보낸다(강제 덮어쓰기 아님 — 다시 If-Match 를 건다).
+         */
+        async resolve(part: string, r: { etag: string; value?: unknown; keep: 'server' | 'mine' }): Promise<void> {
+            const s = slot(part);
+            if (s.timer !== undefined) { clearT(s.timer); s.timer = undefined; }
+            s.conflict = undefined; s.error = undefined;
+            s.etag = r.etag;
+            if (r.keep === 'server') {
+                s.body = r.value;
+                s.dirty = false; s.sentSeq = s.seq;
+                const { cache, id } = opts;
+                if (cache && id) chain(async () => {
+                    await cache.writePart(id, part, { version: versionOf(r.etag), body: r.value });
+                    await cache.clearDirty(id, part);
+                });
+                emit();
+                return;
+            }
+            if ('value' in r) s.body = r.value;
+            s.seq++; s.dirty = true;
+            const { cache, id } = opts;
+            if (cache && id) { const version = versionOf(s.etag); const body = s.body; chain(() => cache.markDirty(id, part, { version, body })); }
+            emit();
+            await send(part);
+        },
         /** 모아 둔 것을 지금 바로 보낸다(Ctrl+S). 보낸 것이 끝나면 풀린다. */
         async flush(): Promise<void> {
             if (retryTimer !== undefined) { clearT(retryTimer); retryTimer = undefined; }
