@@ -3,6 +3,7 @@
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { V1EditorFrame } from './frame';
 import { VersionedGrid, VersionsPanel } from './versions';
@@ -28,7 +29,18 @@ export const v1EditorPlugin = definePlugin({
                 layout: { minWidth: 280, squeeze: 'scroll' },
                 component: 'Versions',
             }],
+            commands: [
+                { id: 'v1-editor.open-edit', title: 'v1 편성기 열기', icon: 'edit' },
+                { id: 'v1-editor.open-grid', title: '시간표 읽기 격자 열기', icon: 'table' },
+                { id: 'v1-editor.open-versions', title: '판·적용 기간 열기', icon: 'table' },
+            ],
+            ribbon: [{ commandId: 'v1-editor.open-edit', icon: 'edit', order: 10 }],
         },
+    },
+    commands: {
+        'v1-editor.open-edit': (host: PluginHost) => { host.workspace.open('v1-editor.edit', { where: 'center' }); },
+        'v1-editor.open-grid': (host: PluginHost) => { host.workspace.open('v1-editor.grid', { where: 'center' }); },
+        'v1-editor.open-versions': (host: PluginHost) => { host.workspace.open('v1-editor.versions', { where: 'center' }); },
     },
     components: {
         Edit: () => createElement(V1EditorFrame),
