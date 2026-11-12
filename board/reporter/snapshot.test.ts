@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { appOfLane, build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
+import { appOfLane, build, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -392,5 +392,29 @@ describe('판 구분 app 칸 (T-9g)', () => {
     expect(appOfLane('코드 맥')).toBe('1.2v')
     expect(appOfLane('rev2x')).toBe('1.2v') // 낱말 안쪽은 안 읽는다
     expect(appOfLane(undefined)).toBe('1.2v')
+  })
+})
+
+describe('기본키 중복 막이 (T-9j U5)', () => {
+  it('레인 표에 같은 id 두 줄 → id 유일 · 경고 1 · 행 수 보존', () => {
+    const md = MD.replace('| T-2a | 막대 · 서랍', '| T-1a | 막대 · 서랍')
+    const warns: string[] = []
+    const base = build({ md: MD, now: new Date('2026-11-12T03:00:00Z') })
+    const d = build({ md, now: new Date('2026-11-12T03:00:00Z'), onWarn: (t: string, w: string) => warns.push(`${t}:${w}`) })
+    const ids = d.tasks.map((t: { id: string }) => t.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toContain('T-1a~2')
+    expect(d.tasks.length).toBe(base.tasks.length)
+    expect(warns.filter((w) => w.startsWith('tasks:'))).toHaveLength(1)
+    expect(d.sprints[1].task_ids).toEqual(['T-1a~2'])
+  })
+  it('dedupeKeys — 표마다 각자 키로 처리', () => {
+    const warns: string[] = []
+    const d = dedupeKeys({ tasks: [{ id: 'x' }, { id: 'x' }, { id: 'x~2' }], usage: [{ account: 'a', ts: 1 }, { account: 'a', ts: 1 }, { account: 'b', ts: 1 }], sprints: [{ id: 1 }, { id: 1 }], lanes: [{ id: 'l' }] }, (t: string, w: string) => warns.push(t + w))
+    expect(d.tasks.map((t: { id: string }) => t.id)).toEqual(['x', 'x~3', 'x~2'])
+    expect(d.usage).toHaveLength(2)
+    expect(d.sprints).toHaveLength(1)
+    expect(d.lanes).toHaveLength(1)
+    expect(warns).toHaveLength(3)
   })
 })

@@ -295,6 +295,31 @@ const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175,
   설계: ['설계', '설계팀', '설계', 'make', 190, 'teal', 'ruler'], 검사: ['시험', '시험팀', '시험', 'qa', 275, 'violet', 'check'], 지휘: ['지휘', '지휘', '지휘', 'hq', 40, 'amber', 'flag'] }
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
+// 표마다 기본키(대부분 id · usage 는 account+ts)가 겹치면 싣기 SQL 이 통째로 400 이 된다 — 뒤 줄 id 에 `~2` 꼬리를 붙여 둘 다 살린다.
+// 꼬리를 못 붙이는 표(키가 숫자·복합: sprints·usage)는 첫 줄만 남긴다. 다른 표가 그 id 를 가리키면 첫 줄로 이어진다(원래 id 가 첫 줄 것이라서).
+const KEYS = { usage: ['account', 'ts'], sprints: ['id'] }
+export function dedupeKeys(data, onWarn = () => {}) {
+  for (const [table, rows] of Object.entries(data)) {
+    if (!Array.isArray(rows)) continue
+    const key = KEYS[table] ?? ['id']
+    const tail = key.length === 1 && typeof rows.find((r) => r?.[key[0]] != null)?.[key[0]] === 'string'
+    const seen = new Set(rows.map((r) => key.map((k) => r?.[k]).join('\u0000')))
+    const used = new Set()
+    data[table] = rows.flatMap((r) => {
+      const k = key.map((c) => r?.[c]).join('\u0000')
+      if (!used.has(k)) { used.add(k); return [r] }
+      if (!tail) { onWarn(table, `키 중복 ${k.replace('\u0000', '/')} — 뒤 줄 버림`); return [] }
+      let n = 2
+      while (seen.has(`${r[key[0]]}~${n}`)) n++
+      const id = `${r[key[0]]}~${n}`
+      seen.add(id); used.add(id)
+      onWarn(table, `id 중복 ${r[key[0]]} — 뒤 줄을 ${id} 로 살림`)
+      return [{ ...r, [key[0]]: id }]
+    })
+  }
+  return data
+}
+
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
 export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {} }) {
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
@@ -305,6 +330,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   const tasks = []
   const sprints = []
+  const taskIds = new Set() // 레인 표 번호 재사용 — 스프린트 task_ids 도 같은 새 id 를 가리키게 여기서 먼저 꼬리를 붙인다
   for (const s of raw) {
     const began = kstIso(s.began, year, day) ?? nowIso
     const mine = []
@@ -314,7 +340,11 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       const hits = logAt.filter((l) => l.ids.includes(r.id))
       const col = columnOf(r.state)
       const category = categoryOf(r.team)
-      tasks.push({ id: r.id, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
+      let tid = r.id
+      for (let n = 2; taskIds.has(tid); n++) tid = `${r.id}~${n}`
+      if (tid !== r.id) onWarn('tasks', `id 중복 ${r.id} — 뒤 줄을 ${tid} 로 살림`)
+      taskIds.add(tid)
+      tasks.push({ id: tid, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
         actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began })
       mine.push(tasks.at(-1))
@@ -460,6 +490,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     services, modules: appModules(parseRequests(rmd), readModules()),
     goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
   }
+  dedupeKeys(data, onWarn)
   const dirty = findDirty(data)
   if (dirty) throw new Error(`담백 검사 실패: ${dirty}`)
   return data
