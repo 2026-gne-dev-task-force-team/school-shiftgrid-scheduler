@@ -58,7 +58,7 @@
       "ended_at": null
     },
     {
-      "id": "a-b2b891d3",
+      "id": "a-68cbba50",
       "parent_id": "a-lead",
       "kind": "helper",
       "name": "일손",
@@ -73,7 +73,7 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T06:38:31.806Z",
+      "started_at": "2026-11-12T06:40:39.810Z",
       "ended_at": null
     }
   ],
@@ -701,7 +701,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:39:01.999Z"
+      "checked_at": "2026-11-12T06:41:02.033Z"
     },
     {
       "id": "s-sync",
@@ -709,7 +709,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:39:01.999Z"
+      "checked_at": "2026-11-12T06:41:02.033Z"
     },
     {
       "id": "s-reporter",
@@ -717,7 +717,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:39:01.999Z"
+      "checked_at": "2026-11-12T06:41:02.033Z"
     }
   ],
   "modules": [
@@ -1088,8 +1088,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:39:02.636Z",
-      "pct_5h": 55,
+      "ts": "2026-11-12T06:41:02.838Z",
+      "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
