@@ -1,6 +1,6 @@
 // 기기별 경로 설정 — 경로만 담는다(비밀 ⛔). 값은 `config.<기기>.json`(win · mac) 이나 BOARD_REPORTER_CONFIG 가 가리키는 파일에서 읽고,
 // 없으면 윈도우 업무 PC 기본값. 값 앞의 `~` 는 홈 폴더로 풀린다(공개 자료에 사용자 이름이 안 들어가게).
-// 키: lane · requests · laneRoot · usage · gate · projects · ref(Supabase 프로젝트 REF — 비밀 아님, 값은 쥔님이 넣는다)
+// 키: sinkState(싣개가 직전 결과를 남기는 파일 — 레포 밖) · lane · requests · laneRoot · usage · gate · projects · ref(Supabase 프로젝트 REF — 비밀 아님, 값은 쥔님이 넣는다)
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
@@ -18,6 +18,13 @@ const DEFAULTS = {
 
 export const expandHome = (p) => (typeof p === 'string' && (p === '~' || p.startsWith('~/')) ? join(homedir(), p.slice(1)) : p)
 
+// 기본 자리 — 맥 ~/Library/Caches/board-reporter/last-sink.json · 윈 %LOCALAPPDATA%/board-reporter/last-sink.json · 그 밖 ~/.cache/board-reporter/
+export function defaultSinkState(env = process.env, os = platform()) {
+  if (os === 'win32' && env.LOCALAPPDATA) return join(env.LOCALAPPDATA, 'board-reporter', 'last-sink.json')
+  if (os === 'darwin') return join(homedir(), 'Library', 'Caches', 'board-reporter', 'last-sink.json')
+  return join(homedir(), '.cache', 'board-reporter', 'last-sink.json')
+}
+
 export function loadConfig(env = process.env, os = platform(), dirUrl = import.meta.url) {
   const key = os === 'darwin' ? 'mac' : os === 'win32' ? 'win' : os
   const file = env.BOARD_REPORTER_CONFIG || fileURLToPath(new URL(`./config.${key}.json`, dirUrl))
@@ -26,5 +33,6 @@ export function loadConfig(env = process.env, os = platform(), dirUrl = import.m
   else if (env.BOARD_REPORTER_CONFIG) throw new Error(`설정 파일 없음: ${file}`)
   const out = {}
   for (const k of Object.keys(DEFAULTS)) out[k] = expandHome(over[k] ?? DEFAULTS[k])
+  out.sinkState = expandHome(over.sinkState ?? defaultSinkState(env, os))
   return out
 }

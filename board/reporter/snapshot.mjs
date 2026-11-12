@@ -237,38 +237,49 @@ export function readModules(layersDir = new URL('../src/layers/', import.meta.ur
 }
 
 const PREVIEW = 'https://2026-gne-dev-task-force-team.github.io/school-shiftgrid-scheduler/preview/'
-const RUNS = 'https://api.github.com/repos/2026-gne-dev-task-force-team/school-shiftgrid-scheduler/actions/runs?branch=board-data&per_page=1'
 /** 화면 호스팅 판정 — res: { status, build } 또는 null(실패). head: 줄기 짧은 해시. */
 export function serviceState(res, head) {
   if (!res || res.status !== 200) return 'down'
   const b = String(res.build ?? '')
   return head && b && (b.startsWith(head) || head.startsWith(b)) ? 'ok' : 'build' // 짧은 해시 길이가 기기마다 달 수 있다
 }
-/** 자료 싣기 판정 — 최신 Actions run 하나(또는 null). */
-export function runState(run) {
-  if (!run) return 'down'
-  if (run.status !== 'completed') return 'build'
-  return run.conclusion === 'success' ? 'ok' : 'down'
+const SINK_STALE_MS = 30 * 60e3 // 보고꾼은 2분마다 돈다 — 30분 넘게 기록이 안 갱신되면 멈춘 것으로 본다
+/** 자료 싣기 판정 — 직전 싣기 기록 { at, result: 'ok'|'fail'|'nocred', status } (없으면 null). 이름에 결과를 적는다(경로·값 없음). */
+export function sinkService(rec, now = new Date()) {
+  const base = '자료 싣기'
+  const at = rec && Number.isFinite(Date.parse(rec.at)) ? new Date(rec.at) : null
+  if (!rec || !at) return { name: `${base} · 기록 없음`, state: 'plan', checked_at: now.toISOString() }
+  const checked_at = at.toISOString()
+  if (rec.result === 'nocred') return { name: `${base} · 자격 없음`, state: 'plan', checked_at }
+  const code = Number.isInteger(rec.status) ? ` ${rec.status}` : ''
+  if (rec.result === 'fail') return { name: `${base} · 실패${code ? ` · 응답${code}` : ''}`, state: 'down', checked_at }
+  if (rec.result === 'ok' && now.getTime() - at.getTime() > SINK_STALE_MS) return { name: `${base} · 멈춤 · 응답${code}`, state: 'down', checked_at }
+  return rec.result === 'ok' ? { name: `${base} · 성공 · 응답${code}`, state: 'ok', checked_at } : { name: `${base} · 기록 없음`, state: 'plan', checked_at }
 }
-/** 공개 창구만 재서 Service[] — 어떤 오류도 던지지 않는다. */
-export async function checkServices(repoDir, now = new Date()) {
+/** 싣개가 남긴 로컬 상태 파일을 읽는다 — 없거나 깨졌으면 null. */
+export function readSinkState(path) {
+  try { return path ? JSON.parse(readFileSync(path, 'utf-8')) : null } catch { return null }
+}
+/** 공개 창구 + 직전 싣기 기록(로컬 파일)으로 Service[] — 어떤 오류도 던지지 않는다. */
+export async function checkServices(repoDir, now = new Date(), sinkStatePath = '') {
   const checked_at = now.toISOString()
   // 기관망이 github.io 인증서를 중간에서 다시 서명한다 — node 기본 CA 로는 SELF_SIGNED_CERT_IN_CHAIN 이라 OS 인증서 저장소도 믿는다(curl·브라우저와 같게)
   try { tls.setDefaultCACertificates([...new Set([...tls.getCACertificates('default'), ...tls.getCACertificates('system')])]) } catch { /* 옛 node */ }
-  const get = async (url, headers) => {
+  const get = async (url) => {
     try {
-      const r = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
+      const r = await fetch(url, { signal: AbortSignal.timeout(5000) })
       return { status: r.status, body: r.ok ? await r.json() : null }
     } catch { return null }
   }
   let head = ''
   try { head = execFileSync('git', ['-C', repoDir, 'rev-parse', '--short', '1.2v-preview'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() } catch { /* git 없음 */ }
-  const [ver, runs] = await Promise.all([get(`${PREVIEW}version.json?t=${now.getTime()}`), get(RUNS, { 'User-Agent': 'board-reporter', Accept: 'application/vnd.github+json' })])
+  const ver = await get(`${PREVIEW}version.json?t=${now.getTime()}`)
   // url 은 비운다 — 담백 검사가 「/」 를 거르고(공개 판), 화면도 url 을 안 쓴다
-  const s = (id, name, state) => ({ id, name, state, url: '', task_id: null, checked_at })
+  const s = (id, name, state, at = checked_at) => ({ id, name, state, url: '', task_id: null, checked_at: at })
+  const sync = sinkService(readSinkState(sinkStatePath), now)
   return [
     s('s-host', '화면 호스팅', serviceState(ver && { status: ver.status, build: ver.body?.build }, head)),
-    s('s-sync', '자료 싣기', runState(runs?.status === 200 ? runs.body?.workflow_runs?.[0] : null)),
+    s('s-sync', sync.name, sync.state, sync.checked_at),
     s('s-reporter', '보고꾼', 'ok'),
   ]
 }

@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
 import { NoCredential, readToken, sink, sinkAndLog } from './sink.mjs'
 // @ts-expect-error — 같은 이유
@@ -62,5 +65,31 @@ describe('readToken', () => {
   it('아무 데도 없으면 null', () => {
     expect(readToken({ env: {}, os: 'darwin', ...none })).toBeNull()
     expect(readToken({ env: {}, os: 'win32', ...none })).toBeNull()
+  })
+})
+
+describe('싣기 결과 상태 파일', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sink-state-'))
+  const now = () => new Date('2026-11-12T05:00:00Z')
+  const read = (p: string) => JSON.parse(readFileSync(p, 'utf-8'))
+
+  it('성공·실패·자격 없음 결과를 시각·결과·응답 코드만으로 남긴다(토큰 없음)', async () => {
+    const p = join(dir, 'a', 'last-sink.json') // 폴더가 없어도 만든다
+    await sinkAndLog(snap, { token: 'SECRET', ref: 'R', fetchImpl: fakeFetch(200), statePath: p, now }, () => {})
+    expect(read(p)).toEqual({ at: '2026-11-12T05:00:00.000Z', result: 'ok', status: 200 })
+    await sinkAndLog(snap, { token: 'SECRET', ref: 'R', fetchImpl: fakeFetch(400, { message: 'bad' }), statePath: p, now }, () => {})
+    expect(read(p)).toMatchObject({ result: 'fail', status: 400 })
+    await sinkAndLog(snap, { token: null, ref: 'R', statePath: p, now }, () => {})
+    expect(read(p)).toMatchObject({ result: 'nocred', status: null })
+    expect(readFileSync(p, 'utf-8')).not.toContain('SECRET')
+  })
+
+  it('fetch 가 던지면 fail · 상태 자리가 쓸 수 없어도 종료코드는 그대로', async () => {
+    const p = join(dir, 'b.json')
+    const boom = async () => { throw new Error('net down') }
+    expect(await sinkAndLog(snap, { token: 'T', ref: 'R', fetchImpl: boom, statePath: p, now }, () => {})).toBe(1)
+    expect(read(p)).toMatchObject({ result: 'fail', status: null })
+    expect(await sinkAndLog(snap, { token: 'T', ref: 'R', fetchImpl: fakeFetch(200), statePath: join(p, 'x', 'y.json'), now }, () => {})).toBe(0)
+    expect(existsSync(join(p, 'x'))).toBe(false)
   })
 })
