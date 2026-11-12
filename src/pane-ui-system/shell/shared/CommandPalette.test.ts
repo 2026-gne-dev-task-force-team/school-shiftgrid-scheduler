@@ -26,4 +26,10 @@ describe('paletteCommands', () => {
         expect(paletteCommands(listCommands(), '패널', names).map((c) => c.id)).toEqual(['pk.open-panel']);
         expect(paletteCommands(listCommands(), '탐색기', names).map((c) => c.id)).toEqual(['pk.open-panel']);
     });
+
+    it('keywords 낱말로도 걸린다 — 엉뚱한 낱말엔 안 걸린다', () => {
+        offs.push(addCommand('pk', { id: 'pk.kw', title: '시간표 읽기 격자 열기', run: () => {}, keywords: ['v1', '격자'] }));
+        expect(paletteCommands(listCommands(), 'V1', names).map((c) => c.id)).toEqual(['pk.kw']);
+        expect(paletteCommands(listCommands(), '엉뚱', names)).toHaveLength(0);
+    });
 });

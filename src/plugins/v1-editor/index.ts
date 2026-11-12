@@ -30,9 +30,9 @@ export const v1EditorPlugin = definePlugin({
                 component: 'Versions',
             }],
             commands: [
-                { id: 'v1-editor.open-edit', title: 'v1 편성기 열기', icon: 'edit' },
-                { id: 'v1-editor.open-grid', title: '시간표 읽기 격자 열기', icon: 'table' },
-                { id: 'v1-editor.open-versions', title: '판·적용 기간 열기', icon: 'table' },
+                { id: 'v1-editor.open-edit', title: 'v1 편성기 열기', icon: 'edit', keywords: ['v1', '편성', '편성기'] },
+                { id: 'v1-editor.open-grid', title: '시간표 읽기 격자 열기', icon: 'table', keywords: ['v1', '격자', '시간표', '읽기'] },
+                { id: 'v1-editor.open-versions', title: '판·적용 기간 열기', icon: 'table', keywords: ['v1', '판', '기간', '적용', '시간표'] },
             ],
             ribbon: [{ commandId: 'v1-editor.open-edit', icon: 'edit', order: 10 }],
         },

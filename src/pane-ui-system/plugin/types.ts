@@ -167,6 +167,8 @@ export interface CommandDef {
     description?: string;
     /** false = 명령 팔레트에 안 보인다(「삭제 확인」처럼 다른 화면 안에서만 쓰는 내부 단계 명령). 기본 보인다. */
     palette?: boolean;
+    /** 팔레트 검색 낱말·별칭 — 제목에 없어도 이 낱말로 걸린다(예: 「v1」). 없으면 제목·꾸러미 이름만 본다. */
+    keywords?: string[];
     /** 지금 이 맥락으로 부를 수 있나 — false 면 runCommand 가 안 부르고 단추는 회색(알림 「되돌리기」가 낡았을 때 등). 없으면 늘 된다. */
     enabled?(ctx?: CommandContext): boolean;
 }

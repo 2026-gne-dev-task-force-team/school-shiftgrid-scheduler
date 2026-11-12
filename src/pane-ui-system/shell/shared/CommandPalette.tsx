@@ -20,7 +20,7 @@ type Cmd = CommandDef & { owner: string };
 export function paletteCommands(list: Cmd[], q: string, ownerName: (owner: string) => string): Cmd[] {
     const s = q.trim().toLowerCase();
     return list.filter((c) => c.palette !== false && commandEnabled(c.id)
-        && (!s || c.title.toLowerCase().includes(s) || ownerName(c.owner).toLowerCase().includes(s)));
+        && (!s || c.title.toLowerCase().includes(s) || (c.keywords ?? []).some((k) => k.toLowerCase().includes(s)) || ownerName(c.owner).toLowerCase().includes(s)));
 }
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
