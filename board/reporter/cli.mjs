@@ -21,6 +21,7 @@ const data = build({
   gatePath: arg('--gate', cfg.gate),
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
   onWarn: (dir, why) => console.warn('경고', dir, why),
+  onInfo: (dir, why) => console.log('정보', dir, why),
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
 })
 writeFileSync(out, JSON.stringify(data, null, 2))

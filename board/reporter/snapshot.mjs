@@ -1,12 +1,13 @@
 // 보고꾼 — 레인 노트 · git 가지 · 사용량 파일 → 공개해도 되는 스냅숏(BoardData 꼴, types.ts).
 // build() 는 네트워크 없음(서비스는 publish 가 checkServices 로 재서 넘긴다). 원천은 읽기만. 자유 글은 넣지 않고 담백 틀로 조립한다.
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
+import { claudeVariants, newestOf } from './claude-home.mjs'
 
 const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
 const TID = new RegExp(ID, 'g')
@@ -62,7 +63,7 @@ export function columnOf(state) {
 }
 
 /** 레인 노트 → 스프린트·태스크 줄(원문 칸) · 진행 로그 줄. */
-export function parseLane(md) {
+export function parseLane(md, onWarn = () => {}) {
   const sprints = []
   const log = []
   let cur = null
@@ -71,7 +72,8 @@ export function parseLane(md) {
   for (const line of md.split(/\r?\n/)) {
     const h = /^## (.*)$/.exec(line)
     if (h) {
-      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?(?:\d{1,2}:\d{2})?\)\s*$/.exec(h[1])
+      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?(?:\d{1,2}:\d{2})?[^)]*\)\s*$/.exec(h[1]) // 괄호 안 꼬리(「~ 맥」 등)는 받는다
+      if (!s && /^스프린트 \d+/.test(h[1])) onWarn('스프린트', `머리를 못 읽음 — ${h[1].replace(/\s+/g, ' ').slice(0, 30)}`)
       head = null
       cur = s ? { id: +s[1], title: s[2], began: s[3], goal: '', rows: [] } : null
       if (cur) sprints.push(cur)
@@ -98,22 +100,30 @@ export function parseLane(md) {
 }
 
 /** 레인 노트 하나 → 「지금」 줄 · 표 줄(머리글에 「무엇」·「상태」와 「태스크」 또는 「판」 칸이 있는 표만). 쥔님 원문·세션 이름은 읽어도 싣지 않는다. */
+const NUM_COLS = ['칸', '번호', '#', 'ID', 'id']
+const NUM_CELL = new RegExp(`^(?:\\d+[A-Za-z]?(?:-[A-Za-z0-9]+)?|${ID})$`) // 「5」·「2-C」·「T-101a」 — 「11~」 같은 자리표시는 번호가 아니다
 export function parseLaneNote(md) {
   let now = ''
   const rows = []
   let head = null
+  let headSeen = false // 상태 칸이 있는 표 머리를 봤나(못 읽은 표와 표 없음을 가르는 값)
   for (const line of md.split(/\r?\n/)) {
     const n = /^\*\*지금\*\*:\s*(.*)$/.exec(line)
     if (n) now = n[1]
     if (!line.startsWith('|')) { head = null; continue }
     const c = cells(line)
     const key = c.includes('태스크') ? '태스크' : c.includes('판') ? '판' : null
-    if (key && c.includes('무엇') && c.includes('상태')) { head = { c, key }; continue }
+    if (c.includes('상태') && c.includes('무엇')) headSeen = true
+    // 상태 칸 + 번호(ID) 칸이 있는 표만 — 태스크 칸이 곧 번호이고, 판 표는 칸/번호/# 칸이 따로 있어야 한다(모델 배분 같은 설명 표는 안 읽는다)
+    const numCol = NUM_COLS.find((n) => c.includes(n))
+    if (key && c.includes('무엇') && c.includes('상태') && (key === '태스크' || numCol)) { head = { c, key, numCol }; continue }
     if (!head || /^:?-+:?$/.test(c[0])) continue
     const at = (name) => c[head.c.indexOf(name)] ?? ''
-    if (at(head.key)) rows.push({ id: at(head.key), what: at('무엇'), state: at('상태') })
+    if (!at(head.key)) continue
+    if (head.key === '판' && !NUM_CELL.test(at(head.numCol))) continue
+    rows.push({ id: at(head.key), what: at('무엇'), state: at('상태') })
   }
-  return { now, rows }
+  return { now, rows, headSeen }
 }
 
 /** 레인 폴더 이름에 판 이름(v1 · 1.2v · v2)이 낱말로 적혀 있으면 그 판, 아니면 1.2v. 이름에서 짐작하지 않는다 — 적힌 낱말만 읽는다. */
@@ -124,13 +134,13 @@ export function appOfLane(name) {
 
 const LANE_SKIP = new Set(['닫힘', '요청함', '작업현황판']) // 작업현황판은 lanePath 로 따로 읽는다(l1)
 /** 레인 뿌리 아래 폴더마다 「레인 *.md」 를 읽는다(읽기만). onWarn(폴더, 까닭) — 못 읽은 것. */
-export function readLanes(root, onWarn = () => {}) {
+export function readLanes(root, onWarn = () => {}, onInfo = () => {}) {
   if (!root || !existsSync(root)) return []
   return readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory() && !LANE_SKIP.has(d.name)).sort((a, b) => a.name.localeCompare(b.name)).flatMap((d) => {
     const f = readdirSync(join(root, d.name)).find((n) => /^레인 .*\.md$/.test(n))
     if (!f) { onWarn(d.name, '레인 노트 없음'); return [] }
     const note = parseLaneNote(readFileSync(join(root, d.name, f), 'utf-8'))
-    if (!note.rows.length) onWarn(d.name, '읽을 표 없음')
+    if (!note.rows.length) (note.headSeen ? onWarn : onInfo)(d.name, note.headSeen ? '표는 있는데 줄을 못 읽음' : '읽을 표 없음') // 표 자체가 없으면 정보일 뿐
     return [{ name: d.name, ...note }]
   })
 }
@@ -183,14 +193,21 @@ function gitBranches(repoDir) {
   } catch { return [] }
 }
 
-function readUsage(usagePath, nowIso) {
-  if (!usagePath || !existsSync(usagePath)) return []
+export const USAGE_STALE_MS = 30 * 60e3
+/** 한도 — 파일은 `.claude`·`.claude-*` 중 mtime 최신. ts 는 「싣는 시각」이 아니라 파일 안 잰 시각(updated)·없으면 파일 mtime. 30분 넘게 낡았으면 stale: true(SQL 은 모르는 칸을 버린다). */
+function readUsage(usagePath, nowIso, home) {
+  const f = newestOf(usagePath, { home })
+  if (!f) return []
   try {
-    const l = JSON.parse(readFileSync(usagePath, 'utf-8')).limits ?? {}
+    const j = JSON.parse(readFileSync(f, 'utf-8'))
+    const l = j.limits ?? {}
     const at = (v) => (typeof v === 'number' ? new Date(v < 1e12 ? v * 1000 : v).toISOString() : nowIso)
     if (typeof l.five_hour?.pct !== 'number' || typeof l.seven_day?.pct !== 'number') return []
-    return [{ account: 'org', ts: nowIso, pct_5h: l.five_hour.pct, pct_7d: l.seven_day.pct,
-      reset_5h_at: at(l.five_hour.resets_at), reset_7d_at: at(l.seven_day.resets_at), tok_per_min: 0 }]
+    const ms = typeof j.updated === 'number' ? (j.updated < 1e12 ? j.updated * 1000 : j.updated) : statSync(f).mtimeMs
+    const ts = new Date(ms).toISOString()
+    const row = { account: 'org', ts, pct_5h: l.five_hour.pct, pct_7d: l.seven_day.pct,
+      reset_5h_at: at(l.five_hour.resets_at), reset_7d_at: at(l.seven_day.resets_at), tok_per_min: 0 }
+    return [Date.parse(nowIso) - ms > USAGE_STALE_MS ? { ...row, stale: true } : row]
   } catch { return [] }
 }
 
@@ -203,10 +220,14 @@ export const AGENT_STALE_MS = 2 * 3600e3
 const kstDay = (ms) => Math.floor((ms + 9 * 3600e3) / 86400e3)
 /** 퇴근을 싣는 기한 — 마지막 활동한 날 KST 자정까지(다음 날 0시부터 뺀다). */
 export const keepOff = (last, now) => kstDay(last) === kstDay(now)
-function readGate(gatePath, now, tokens = {}) {
-  if (!gatePath || !existsSync(gatePath)) return []
+// 문지기 파일은 프로필 폴더(.claude · .claude-*)마다 따로 쓰이고 세션·에이전트는 서로 다른 프로필에서 돈다 → 있는 것을 전부 합친다(키 충돌은 mtime 새 파일이 이김).
+function readGate(gatePath, now, tokens = {}, home) {
+  const files = claudeVariants(gatePath, { home })
+  if (!files.length) return []
   try {
-    return Object.entries(JSON.parse(readFileSync(gatePath, 'utf-8')).actors ?? {})
+    const merged = {}
+    for (const f of files) { try { Object.assign(merged, JSON.parse(readFileSync(f, 'utf-8')).actors ?? {}) } catch { /* 깨진 파일 하나는 건너뜀 */ } }
+    return Object.entries(merged)
       .map(([key, a]) => ({ ...a, tok: tokens[key] }))
       .filter((a) => typeof a.started === 'number' && /^a-[0-9a-f]{8}$/.test(a.id))
       .map((a) => {
@@ -321,8 +342,8 @@ export function dedupeKeys(data, onWarn = () => {}) {
 }
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {} }) {
-  const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'))
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home }) {
+  const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
   const day = log[0]?.at.split(' ')[0] // 맨 위가 최신 — 스프린트 제목 시각엔 날짜가 없어 이 날로 본다
@@ -367,16 +388,22 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const b of gitBranches(repoDir)) {
     if (!b.suffix) { branches.push({ id: 'b-trunk', title: '줄기', trunk: true, ahead: 0, state: 'live', actor_id: null, task_id: null, updated_at: b.at }); continue }
     const t = byId.get(`T-${b.suffix}`)
-    if (!t) continue // 태스크 없는 가지(임시 가지 등)는 싣지 않는다
+    if (!t) { // 레인 표에 일감이 없는 가지도 지금 있는 것은 싣는다(이름 낱말이 담백해야 — 아니면 뺀다)
+      const title = clean(`가지 ${b.suffix}`)
+      if (title && isPlain(b.suffix)) branches.push({ id: `b-${b.suffix}`, title, trunk: false, ahead: b.ahead, state: b.merged ? 'merged' : 'live', actor_id: null, task_id: null, updated_at: b.at })
+      continue
+    }
     branches.push({ id: `b-${t.id}`, title: t.title, trunk: false, ahead: b.ahead, state: b.merged && t.column !== 'work' ? 'merged' : 'live', // 막 딴 판 가지(앞선 0)는 일감이 도는 동안 열린 가지
       actor_id: t.actor_id, task_id: t.id, updated_at: b.at })
   }
 
-  const live = readGate(gatePath, now.getTime(), tokens)
+  const live = readGate(gatePath, now.getTime(), tokens, home)
   const working = tasks.filter((t) => t.column === 'work')
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
-    state: working.length || live.some((g) => g.state === 'work') ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+    // 지휘 세션 신호 = 문지기 actors 의 살아 있는 세션(kind session · off 아님). 일감·일하는 에이전트가 있으면 work, 세션만 쉬면 idle, 문지기를 읽었는데 살아 있는 게 없으면 off(퇴근), 문지기를 못 읽으면 모르니 idle.
+    state: working.length || live.some((g) => g.state === 'work') ? 'work' : live.some((g) => g.state !== 'off') || !live.length ? 'idle' : 'off', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+  if (lead.state === 'off') lead.ended_at = nowIso
   const actors = [lead, ...working.filter((t) => t.category !== '지휘').map((t) => {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     return { id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work', task_id: t.id,
@@ -447,7 +474,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
   const seen = new Set()
-  const lanesRaw = readLanes(laneRoot, onWarn)
+  const lanesRaw = readLanes(laneRoot, onWarn, onInfo)
   const bare = (n) => clean(n.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인'
   const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
   const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
@@ -488,7 +515,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,
     services, modules: appModules(parseRequests(rmd), readModules()),
-    goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso), runs, sprints,
+    goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
   }
   dedupeKeys(data, onWarn)
   const dirty = findDirty(data)
