@@ -6,7 +6,7 @@ import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
 
-export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void }
+export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; live?: boolean; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void }
 
 // 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩 · 자료 출처 · Sprint N · 목표 · 진행률% · 경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
@@ -59,16 +59,26 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const outside = (e: MouseEvent) => { const t = e.target as Node; if (!menu.hidden && !menu.contains(t) && !more.contains(t)) closeMenu() }
   document.addEventListener('click', outside)
 
+  const liveChip = h('span', { class: 'chip src live' })
+  const setLive = (on: boolean | undefined) => {
+    liveChip.hidden = on === undefined
+    liveChip.classList.toggle('off', !on)
+    liveChip.textContent = on ? '실시간 ●' : '실시간 ○'
+    liveChip.title = on ? '바뀌면 바로 갱신됩니다' : '실시간 연결이 끊겨 1분마다 읽습니다'
+  }
+  setLive(hooks.live)
+
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip', title: state }, state.slice(0, state.indexOf(' ')), h('span', { class: 'lbl' }, state.slice(state.indexOf(' ')))),
     h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? 'Live data' : 'Mock data'),
+    liveChip,
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),
     h('span', { class: 'sgb-pct', title: 'Sprint 진행률' }, cur ? `${cur.pct}%` : ''),
     h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
 
   return {
-    toggle, upd, fb, more, menu, drop, closeMenu,
+    toggle, setLive, upd, fb, more, menu, drop, closeMenu,
     dispose() { document.removeEventListener('click', outside) },
     showUpdate(v: VersionInfo | null) {
       upd.hidden = !v
