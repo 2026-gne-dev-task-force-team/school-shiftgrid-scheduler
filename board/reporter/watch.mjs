@@ -6,7 +6,7 @@
 // · 두 기기가 같이 돌면 나중에 끝난 쪽이 이김(sink.mjs 그대로).
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, watch as fsWatch, writeFileSync } from 'node:fs'
-import { dirname, basename, join } from 'node:path'
+import { dirname, basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build, checkServices } from './snapshot.mjs'
 import { findDirty } from './plain.mjs'
@@ -16,6 +16,7 @@ import { readToken, readRef, sinkAndLog } from './sink.mjs'
 
 export const DEBOUNCE_MS = 3000
 export const BACKUP_MS = 120000
+export const MAXWAIT_MS = 15000 // 바뀜이 끊이지 않아도 첫 바뀜 뒤 이만큼 지나면 싣는다(3초 모으기가 굶지 않게)
 export const HEARTBEAT_MS = 20 * 60e3
 
 /** 해시용 직렬화 — 매번 바뀌는 칸(checked_at · 지금 시각 그대로인 문자열)을 뺀다. 나머지 시각(레인 노트에서 온 것·한도 reset)은 실제 변화라 둔다. */
@@ -44,8 +45,9 @@ export async function runCycle({ makeSnap, sinkFn, readRec, writeRec, now = () =
 }
 
 /** 감시 제어: 바뀜 → 마지막 바뀜 뒤 debounceMs 에 한 번 · 실행 중 바뀜 → 끝나고 한 번 더 · 예비 타이머. 시계·감시는 주입(시험용). */
-export function createWatcher({ targets, exec, watch = fsWatch, debounceMs = DEBOUNCE_MS, backupMs = BACKUP_MS, log = console.log }) {
+export function createWatcher({ targets, exec, watch = fsWatch, debounceMs = DEBOUNCE_MS, backupMs = BACKUP_MS, maxWaitMs = MAXWAIT_MS, log = console.log }) {
   let timer = null
+  let firstTouch = 0
   let backup = null
   let running = false
   let again = false
@@ -59,14 +61,20 @@ export function createWatcher({ targets, exec, watch = fsWatch, debounceMs = DEB
   }
   function touch() {
     if (timer) clearTimeout(timer)
-    timer = setTimeout(() => { timer = null; void fire() }, debounceMs)
+    else firstTouch = Date.now()
+    const wait = Math.max(0, Math.min(debounceMs, firstTouch + maxWaitMs - Date.now()))
+    timer = setTimeout(() => { timer = null; void fire() }, wait)
   }
   return {
     touch, fire,
     start() {
       for (const t of targets) {
         try {
-          const h = watch(t.dir, { recursive: !!t.recursive }, (_ev, name) => { if (!t.filter || t.filter(name == null ? '' : String(name))) touch() })
+          const h = watch(t.dir, { recursive: !!t.recursive }, (_ev, name) => {
+            // 맥 파일명은 NFD 로 올 수 있다 — 설정 경로(NFC)와 맞게 NFC 로 고쳐 비교한다
+            const n = name == null ? '' : String(name).normalize('NFC')
+            if (!t.filter || t.filter(n)) { if (!timer && !running) log(`바뀜 감지 — ${n || '(이름 없음)'}`); touch() }
+          })
           h.on?.('error', (e) => log(`감시 오류 ${t.dir}: ${e.message}`))
           handles.push(h)
         } catch (e) { log(`감시 못 걸음 ${t.dir}: ${e instanceof Error ? e.message : e}`.slice(0, 300)) }
@@ -80,16 +88,32 @@ export function createWatcher({ targets, exec, watch = fsWatch, debounceMs = DEB
 const isDir = (p) => { try { return statSync(p).isDirectory() } catch { return false } }
 
 /** 감시 원천 — snapshot 이 읽는 자리 그대로(설정에서 가져온다). 토큰 로그(projects)는 대화마다 쉼 없이 바뀌어 감시하지 않고 예비 타이머가 줍는다. */
-export function sourceTargets(cfg, repoDir, exists = existsSync, dirTest = isDir) {
+/** 가지 목록 자리 — 일반 레포는 .git/refs/heads, 워크트리(.git 이 「gitdir: …」 파일)는 공용 git 폴더(commondir)의 refs/heads. 없으면 null. */
+export function gitHeadsDir(repoDir, dirTest = isDir, readText = (p) => readFileSync(p, 'utf-8')) {
+  const direct = join(repoDir, '.git', 'refs', 'heads')
+  if (dirTest(direct)) return direct
+  try {
+    const m = /^gitdir:\s*(.+)$/m.exec(readText(join(repoDir, '.git')))
+    if (!m) return null
+    const gitdir = resolve(repoDir, m[1].trim())
+    let common = gitdir
+    try { common = resolve(gitdir, readText(join(gitdir, 'commondir')).trim()) } catch { /* commondir 없으면 gitdir 자체 */ }
+    const heads = join(common, 'refs', 'heads')
+    return dirTest(heads) ? heads : null
+  } catch { return null }
+}
+
+export function sourceTargets(cfg, repoDir, exists = existsSync, dirTest = isDir, readText) {
+  const nfc = (x) => String(x).normalize('NFC')
   const md = (n) => n.endsWith('.md') || n === ''
   const out = []
   const dirs = new Set()
   const add = (dir, recursive, filter) => { if (dir && exists(dir) && !dirs.has(dir)) { dirs.add(dir); out.push({ dir, recursive, filter }) } }
   add(cfg.laneRoot, true, md) // 레인 폴더(레인 노트·요청함·작업현황판·「집은 카드」 표 포함)
-  for (const f of [cfg.lane, cfg.requests]) if (f && !String(f).startsWith(String(cfg.laneRoot ?? '\0'))) add(dirname(f), false, (n) => n === basename(f) || n === '')
-  for (const f of [cfg.usage, cfg.gate]) add(f && dirname(f), false, (n) => n === basename(f) || n === '') // 한도 파일 · 문지기 actors.json
-  const heads = join(repoDir, '.git', 'refs', 'heads') // 가지 목록(줄기·가지 커밋 시각)
-  if (dirTest(heads)) add(heads, true)
+  for (const f of [cfg.lane, cfg.requests]) if (f && !String(f).startsWith(String(cfg.laneRoot ?? '\0'))) add(dirname(f), false, (n) => n === nfc(basename(f)) || n === '')
+  for (const f of [cfg.usage, cfg.gate]) add(f && dirname(f), false, (n) => n === nfc(basename(f)) || n === '') // 한도 파일 · 문지기 actors.json
+  const heads = gitHeadsDir(repoDir, dirTest, readText) // 가지 목록(줄기·가지 커밋 시각)
+  if (heads) add(heads, true)
   return out
 }
 
@@ -112,7 +136,7 @@ async function main() {
   }).then((r) => { if (r !== 'skip' && r !== 0) log(`결과 코드 ${r}`) })
   const targets = sourceTargets(cfg, repoDir)
   const w = createWatcher({ targets, exec, log })
-  log(`감시 시작 — 원천 ${targets.length}곳`)
+  log(`감시 시작 — 원천 ${targets.length}곳: ${targets.map((t) => t.dir).join(' | ')}`)
   w.start()
   void w.fire() // 시작하자마자 한 번
   for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { w.stop(); process.exit(0) })

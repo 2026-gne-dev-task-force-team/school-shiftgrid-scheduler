@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { createWatcher, runCycle, snapshotHash, sourceTargets, HEARTBEAT_MS } from './watch.mjs'
+import { createWatcher, gitHeadsDir, runCycle, snapshotHash, sourceTargets, HEARTBEAT_MS } from './watch.mjs'
 // @ts-expect-error — 위와 같음
 import { build } from './snapshot.mjs'
 
@@ -43,6 +43,28 @@ describe('감시 제어(가짜 감시·가짜 시계)', () => {
     expect(exec).toHaveBeenCalledTimes(0)
     await vi.advanceTimersByTimeAsync(120000)
     expect(exec).toHaveBeenCalledTimes(1)
+    w.stop()
+  })
+  it('NFD 로 온 한글 파일명도 NFC 필터에 맞는다(맥 파일명)', async () => {
+    const fs = fakeFs(); const exec = vi.fn(async () => {})
+    const want = '레인 요청함.md'.normalize('NFC')
+    const w = createWatcher({ targets: [{ dir: '/x', filter: (n: string) => n === want }], exec, watch: fs.watch, log: () => {} }); w.start()
+    fs.emit('레인 요청함.md'.normalize('NFD')); await vi.advanceTimersByTimeAsync(3000)
+    expect(exec).toHaveBeenCalledTimes(1)
+    w.stop()
+  })
+  it('바뀜이 2초마다 끊임없이 와도 첫 바뀜 뒤 15초엔 싣는다(굶지 않음)', async () => {
+    const fs = fakeFs(); const exec = vi.fn(async () => {})
+    const w = createWatcher({ targets: [{ dir: '/x' }], exec, watch: fs.watch, log: () => {} }); w.start()
+    for (let i = 0; i < 8; i++) { fs.emit(); await vi.advanceTimersByTimeAsync(2000) }
+    expect(exec).toHaveBeenCalledTimes(1)
+    w.stop()
+  })
+  it('바뀜을 감지하면 로그에 남긴다(무반응처럼 안 보이게)', async () => {
+    const fs = fakeFs(); const log = vi.fn()
+    const w = createWatcher({ targets: [{ dir: '/x' }], exec: async () => {}, watch: fs.watch, log }); w.start()
+    fs.emit('작업현황판/a.md')
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('바뀜 감지'))
     w.stop()
   })
   it('실행 오류가 나도 감시는 산다', async () => {
@@ -107,5 +129,21 @@ describe('sourceTargets', () => {
     expect(t.map((x: { dir: string }) => x.dir)).toEqual(['/v/레인', '/h/.claude', '/h/.claude/board', '/repo/.git/refs/heads'])
     expect(t[1].filter('rate-limits.json')).toBe(true); expect(t[1].filter('other.json')).toBe(false)
     expect(t[0].filter('x.md')).toBe(true); expect(t[0].filter('x.png')).toBe(false)
+  })
+  it('NFD 로 오는 레인 밖 파일명도 걸린다', () => {
+    const cfg = { laneRoot: '/v/레인', lane: '/o/레인 작업현황판.md', requests: '/o/요청.md' }
+    const t = sourceTargets(cfg, '/repo', () => true, () => false)
+    expect(t[1].filter('레인 작업현황판.md'.normalize('NFC'))).toBe(true)
+  })
+})
+
+describe('gitHeadsDir — 워크트리', () => {
+  it('.git 이 파일이면 commondir 의 refs/heads 를 가리킨다', () => {
+    const files: Record<string, string> = { '/w/.git': 'gitdir: /main/.git/worktrees/w\n', '/main/.git/worktrees/w/commondir': '../..\n' }
+    const read = (p: string) => { if (p in files) return files[p]; throw new Error('nf') }
+    expect(gitHeadsDir('/w', (p: string) => p === '/main/.git/refs/heads', read)).toBe('/main/.git/refs/heads')
+  })
+  it('git 이 없으면 null', () => {
+    expect(gitHeadsDir('/w', () => false, () => { throw new Error('nf') })).toBeNull()
   })
 })
