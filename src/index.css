@@ -183,7 +183,8 @@ html[data-density="compact"] {
 @layer base {
   html, body, #root { height: 100%; }
   /* 폰 브라우저의 100% 는 주소창을 뺀 높이가 아니다 — dvh 는 주소창이 접히는 것까지 따라온다 */
-  #root { height: 100dvh; }
+  /* 맨 위 작업현황판 막대(32px)가 앱을 밀어 내린 만큼 뺀다 — 안 빼면 아래가 잘린다 */
+  #root { height: calc(100dvh - 32px); }
   body {
     margin: 0;
     overflow: hidden;              /* 가로로 안 늘어난다 — 안쪽 영역이 각자 스크롤한다 */
