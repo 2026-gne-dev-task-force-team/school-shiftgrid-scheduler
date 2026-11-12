@@ -1,7 +1,7 @@
 import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
-import { currentSprint } from '../lib/sprints.ts'
+import { currentSprint, sprintLeft } from '../lib/sprints.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
@@ -11,7 +11,7 @@ export const layer1: LayerRenderer = {
   id: 'layer1', floor: 1, tab: 'Overview',
   render(host, { data, openDetail, tip }) {
     const g = currentSprint(data)
-    const left = data.tasks.filter((t) => t.column !== 'done').length
+    const left = sprintLeft(data)
     host.append(h('section', { class: 'card' }, h('b', null, '목표'),
       g && h('p', null, `Sprint ${g.sprint.id} · ${g.sprint.title} — ${g.pct}% · 남은 일감 ${left}개`)))
 

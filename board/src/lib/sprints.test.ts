@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rawFixtures } from '../data.ts'
 import type { BoardData } from '../types.ts'
-import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel, flightStatus } from './sprints.ts'
+import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel, flightStatus, sprintLeft } from './sprints.ts'
 import { LAYERS } from '../layers/registry.ts'
 import { actorLabel, actorWhat } from './actor.ts'
 
@@ -80,5 +80,13 @@ describe('안내판 상태 말', () => {
     expect(flightStatus({ ...s, ended: '2026-11-13T00:00:00+09:00' }, t)).toBe('ARRIVED')
     expect(flightStatus({ ...s, ended: null }, t + 1)).toBe('BOARDING')
     expect(flightStatus({ ...s, ended: null }, t - 1)).toBe('SCHEDULED')
+  })
+})
+
+describe('sprintLeft', () => {
+  it('지금 스프린트의 태스크만 센다 — 요청함 R 카드는 안 섞인다', () => {
+    const mk = (id: string, column: 'wait' | 'done') => ({ id, column }) as never
+    const sp = { id: 7, title: 't', goal: 'g', began: '2026-11-12T00:00:00Z', ended: null, task_ids: ['T-1', 'T-2'] } as never
+    expect(sprintLeft({ sprints: [sp], tasks: [mk('T-1', 'done'), mk('T-2', 'wait'), mk('R1', 'wait'), mk('R2', 'wait')] })).toBe(1)
   })
 })

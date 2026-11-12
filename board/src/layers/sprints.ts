@@ -39,10 +39,9 @@ export const sprints: LayerRenderer = {
     board.append(...sprintsNewestFirst(data.sprints).map((s, r) => {
       const p = sprintProgress(s, data.tasks)
       const st = flightStatus(s, now), k = `${s.id}`
-      const goal = s.goal.length > 18 ? `${s.goal.slice(0, 17)}…` : s.goal
       const head = h('button', { class: 'fid-line', 'aria-expanded': 'false', title: `${s.title} — ${span(s)}` },
         h('span', { class: 'fid-no' }, flap(`${k}:no`, `Sprint ${s.id}`, fresh, r)),
-        h('span', { class: 'fid-dest' }, flap(`${k}:goal`, goal, fresh, r + 2)),
+        h('span', { class: 'fid-dest' }, h('b', { class: 'fid-name' }, s.title), h('span', { class: 'fid-goal' }, s.goal)),
         h('span', { class: 'fid-t' }, flap(`${k}:t`, hhmm(s.began), fresh, r + 4)),
         h('span', { class: 'fid-st', 'data-st': st }, flap(`${k}:st`, st, fresh, r + 6)),
         h('span', { class: 'fid-pct' }, flap(`${k}:pct`, `${p.pct}%`, fresh, r + 8)))
