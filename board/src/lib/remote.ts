@@ -35,3 +35,29 @@ export async function fetchRemote(env: Env = envNow(), f: typeof fetch = fetch):
   } catch { /* 목업으로 */ }
   return { tables, feedback: await fbP }
 }
+
+// 마지막으로 서버에서 읽은 표 — 못 읽을 때 「n분 전 값」으로 보이려고 들고 있는다(목업이 아니다).
+export const LAST_KEY = 'board.lastRemote'
+export interface Last { at: number; tables: BoardData }
+type Store = Pick<Storage, 'getItem' | 'setItem'>
+export function saveLast(s: Store, v: Last): void { try { s.setItem(LAST_KEY, JSON.stringify(v)) } catch { /* 용량 초과 — 없어도 된다 */ } }
+export function loadLast(s: Store): Last | null {
+  try {
+    const v = JSON.parse(s.getItem(LAST_KEY) ?? 'null') as Last | null
+    return v && typeof v.at === 'number' && v.tables && Array.isArray(v.tables.tasks) && Array.isArray(v.tables.lanes) ? v : null
+  } catch { return null }
+}
+export function agoText(now: number, at: number): string {
+  const m = Math.max(0, Math.floor((now - at) / 60000))
+  return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`
+}
+/** 칩에 쓰는 자료 출처 글. */
+export function sourceChip(source: BoardData['source'], staleAt: number | undefined, now: number): string {
+  switch (source) {
+    case 'server': return 'Live data'
+    case 'loading': return '불러오는 중…'
+    case 'failed': return '서버 못 읽음'
+    case 'stale': return `서버 못 읽음 · ${agoText(now, staleAt ?? now)} 값`
+    default: return 'Mock data'
+  }
+}
