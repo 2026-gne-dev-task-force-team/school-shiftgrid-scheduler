@@ -22,6 +22,9 @@ await ok('feedback 비밀 꼴', `insert into board.feedback(text) values ('키 s
 await ok('tasks 제목 task-board', `insert into board.tasks(id,title,category,kind,team,lane_id,"column",reason) values ('t1','task-board 정리','코드','work','제작','l1','wait','new')`, true)
 await ok('tasks 제목 경로', `insert into board.tasks(id,title,category,kind,team,lane_id,"column",reason) values ('t2','D:\\x 고침','코드','work','제작','l1','wait','new')`, false)
 await ok('tasks block_kind 엉뚱', `insert into board.tasks(id,title,category,kind,team,lane_id,"column",reason,block_kind) values ('t3','가','코드','work','제작','l1','wait','new','zzz')`, false)
+const actorIns = (id, state) => `insert into board.actors(id,kind,name,hue,eye,prop,dept,team,role,state,account,started_at) values ('${id}','helper','가',10,'amber','','make','팀','역','${state}','org','2026-11-12T10:55:00+09:00')`
+for (const st of ['work', 'idle', 'wait', 'blocked', 'off', 'done']) await ok(`actors 상태 ${st}`, actorIns('a-' + st, st), true)
+await ok('actors 상태 엉뚱', actorIns('a-zzz', 'zzz'), false)
 await ok('sprints 정상', `insert into board.sprints(id,title,goal,began,task_ids) values (1,'뼈대','목표','2026-11-12T10:55:00+09:00','{T-1a}')`, true)
 await ok('sprints 경로 글', `insert into board.sprints(id,title,began) values (2,'D:\\x 고침','2026-11-12T10:55:00+09:00')`, false)
 // 권한: anon 은 읽기만, authenticated 는 feedback text·place 만 insert
