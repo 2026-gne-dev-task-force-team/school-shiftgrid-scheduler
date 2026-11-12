@@ -187,12 +187,28 @@ function readUsage(usagePath, nowIso) {
   } catch { return [] }
 }
 
-// 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트」. 3시간 넘게 안 끝난 것은 끊긴 것으로 친다.
+// 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트·세션」 → 각각 state(work|idle|done)를 매겨 돌려준다.
+// 문턱 근거: 세션은 프롬프트 뒤 20분 조용하면 닫힌 것으로 본다(Stop·SessionEnd 가 안 온 기기 대비) · 에이전트는 started 뒤 2시간 넘게 ended 가 없으면 세션째 죽은 것(PostToolUse 가 안 온다).
+// 끝난 것도 지우지 않고 done 으로 한 시간 동안 싣는다(그림이 idle·done 을 그린다). 한 시간 지나면 뺀다.
+export const SESSION_QUIET_MS = 20 * 60e3
+export const AGENT_STALE_MS = 2 * 3600e3
+const KEEP_DONE_MS = 3600e3
 function readGate(gatePath, now) {
   if (!gatePath || !existsSync(gatePath)) return []
   try {
     return Object.values(JSON.parse(readFileSync(gatePath, 'utf-8')).actors ?? {})
-      .filter((a) => !a.ended && typeof a.started === 'number' && now - a.started < 3 * 3600e3 && /^a-[0-9a-f]{8}$/.test(a.id))
+      .filter((a) => typeof a.started === 'number' && /^a-[0-9a-f]{8}$/.test(a.id))
+      .map((a) => {
+        const isSession = a.kind === 'session'
+        const quiet = isSession ? SESSION_QUIET_MS : AGENT_STALE_MS
+        let last = Math.max(a.started, typeof a.ended === 'number' ? a.ended : 0, typeof a.idle === 'number' ? a.idle : 0)
+        let state = 'work'
+        if (a.ended) state = 'done'
+        else if (isSession && typeof a.idle === 'number' && a.idle >= a.started) state = 'idle'
+        else if (now - a.started >= quiet) { state = 'done'; last = a.started + quiet } // 문턱을 넘은 때부터 done 으로 한 시간
+        return { ...a, state, last }
+      })
+      .filter((a) => a.state === 'work' || now - a.last < KEEP_DONE_MS)
   } catch { return [] }
 }
 
@@ -306,7 +322,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const working = tasks.filter((t) => t.column === 'work')
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
-    state: working.length || live.length ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+    state: working.length || live.some((g) => g.state === 'work') ? 'work' : 'idle', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
   const actors = [lead, ...working.filter((t) => t.category !== '지휘').map((t) => {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     return { id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work', task_id: t.id,
@@ -318,17 +334,21 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     const t = byId.get(g.task ?? '')
     const at = new Date(g.started).toISOString()
     const mine = t && actors.find((a) => a.task_id === t.id && a.kind === 'helper')
-    if (mine) { mine.state = 'work'; mine.started_at = at; continue }
+    if (mine) { if (g.state === 'work') { mine.state = 'work'; mine.started_at = at } continue } // 끝난 에이전트는 레인 표의 🔄 줄을 못 끈다(표가 말한다)
+    const dup = actors.find((a) => a.id === (t ? `a-${t.id}` : g.id)) // 같은 일감 에이전트가 여럿(끝난 것+도는 것)이면 한 캐릭터로 — 도는 쪽이 이긴다
+    if (dup) { if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t && t.category !== '지휘' ? t.category : '코드']
     actors.push({ id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
-      state: 'work', task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
-      account: 'org', tok_per_min: 0, started_at: at, ended_at: null })
+      state: t?.column === 'done' ? 'done' : g.state, // 레인 표에서 ✅ 인 일감의 캐릭터는 일하는 중이 아니다
+      task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
+      account: 'org', tok_per_min: 0, started_at: at, ended_at: typeof g.ended === 'number' ? new Date(g.ended).toISOString() : null })
   }
 
   // 문지기가 적은 `#시간표앱` 세션 자체 — 에이전트 없이도 캐릭터 하나(하는 일은 모르니 「대화 세션」)
   for (const g of live.filter((x) => x.kind === 'session'))
     actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
-      state: 'work', task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(), ended_at: null })
+      state: g.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
+      ended_at: typeof g.ended === 'number' ? new Date(g.ended).toISOString() : null })
   // 가지 ↔ 캐릭터: 그 가지 일감(T-<id>)을 맡은 캐릭터
   for (const b of branches) if (!b.trunk) b.actor_id = actors.find((a) => a.branch_id === b.id)?.id ?? null
 
