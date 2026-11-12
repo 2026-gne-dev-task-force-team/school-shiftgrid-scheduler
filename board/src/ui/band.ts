@@ -1,11 +1,12 @@
 import { h } from '../dom.ts'
+import { THEMES, THEME_LABEL, type Theme } from '../lib/theme.ts'
 import { fmtDur } from '../lib/forecast.ts'
 import { currentSprint, sprintLabel } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
 import { usagePanel } from './usage.ts'
 
-export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void }
+export interface BandHooks { onApply(): void; onFeedback(): void; onPurge(): void; calm: boolean; onCalm(on: boolean): void; theme: Theme; onTheme(t: Theme): void }
 
 // 막대(.sgb-bar)의 내용 — 토글 쪽(상태 칩 · 자료 출처 · Sprint N · 목표 · 진행률% · 경과/남은 예상) · 새 버전 · 불편 접수 · ⋯ 메뉴.
 // 옛 띠의 ▼(한도와 속도)는 ⋯ 메뉴의 항목으로 옮겼고, 펼쳐지는 패널(drop)은 서랍 맨 위에 끼운다.
@@ -37,10 +38,19 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const calm = h('input', { type: 'checkbox' })
   calm.checked = hooks.calm
   calm.addEventListener('change', () => hooks.onCalm(calm.checked))
+  const theme = h('div', { class: 'menu-theme', role: 'group', 'aria-label': '화면' }, h('span', null, '화면:'),
+    ...THEMES.map((t) => {
+      const b = h('button', { class: t === hooks.theme ? 'btn on' : 'btn', 'data-theme-pick': t, 'aria-pressed': String(t === hooks.theme) }, THEME_LABEL[t])
+      b.addEventListener('click', () => {
+        theme.querySelectorAll('button').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)) })
+        hooks.onTheme(t)
+      })
+      return b
+    }))
   const drop = h('div', { class: 'band-drop', hidden: '' }, usagePanel(data.usage))
   const lim = h('button', { class: 'btn' }, '한도와 속도 펼치기')
   lim.addEventListener('click', () => { drop.hidden = !drop.hidden; lim.textContent = drop.hidden ? '한도와 속도 펼치기' : '한도와 속도 접기' })
-  const menu = h('div', { class: 'menu', hidden: '' }, purge, ask, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), lim)
+  const menu = h('div', { class: 'menu', hidden: '' }, purge, ask, h('label', { class: 'btn' }, calm, ' 움직임 끄기'), theme, lim)
   const more = h('button', { class: 'btn sgb-mini', 'aria-label': '더 보기' }, '⋯')
   const closeMenu = () => { menu.hidden = true; askToggle(false) }
   more.addEventListener('click', () => { if (menu.hidden) menu.hidden = false; else closeMenu() })
