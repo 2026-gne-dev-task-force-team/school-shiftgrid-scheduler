@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>kr.gne.board-patrol</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/mellbrown/.nvm/versions/node/v22.22.2/bin/node</string>
+    <string>/Users/mellbrown/Desktop/gne-dev-task/sg-merge/board/patrol/patrol.mjs</string>
+    <string>--config</string>
+    <string>/Users/mellbrown/Desktop/gne-dev-task/sg-merge/board/reporter/config.mac.json</string>
+    <string>--repo</string>
+    <string>/Users/mellbrown/Desktop/gne-dev-task/sg-merge</string>
+    <string>--parallel</string>
+    <string>--write</string>
+    <string>/Users/mellbrown/subnauticaz/subnauticaz/계획/판/시간표 작업판/레인/감독/레인 감독.md</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/mellbrown/Desktop/gne-dev-task/sg-merge</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/Users/mellbrown/.nvm/versions/node/v22.22.2/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+  </dict>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/mellbrown/Library/Logs/board-patrol.log</string>
+  <key>StandardErrorPath</key><string>/Users/mellbrown/Library/Logs/board-patrol.log</string>
+</dict>
+</plist>

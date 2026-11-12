@@ -1,10 +1,10 @@
 // @ts-nocheck — 순찰(patrol.mjs) 시험: 가짜 레인 폴더·요청함·집은 카드·임시 git 으로 항목마다 ✅/❌.
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, statSync, readFileSync, readdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { patrol, parseAt, render } from '../patrol/patrol.mjs'
+import { join, dirname } from 'node:path'
+import { patrol, parseAt, render, renderNote, writeNote } from '../patrol/patrol.mjs'
 
 const NOW = new Date('2026-11-12T22:30:00+09:00')
 const laneMd = (rows: string) => `# 레인\n\n## 스프린트 1 — 시험 (21:00~)\n\n| 태스크 | 무엇 | 팀 | est_min | 상태 |\n|---|---|---|---|---|\n${rows}\n`
@@ -109,4 +109,33 @@ describe('요약·표', () => {
     expect(render(r).split('\n')[0]).toBe('| 시각 | 항목 | 대상 | 판정 | 근거 |')
   })
   it('다 멀쩡하면 이상 없음', () => expect(run(world({ lane: row('T-1', '✅') })).summary).toContain('이상 없음'))
+})
+
+describe('--write 노트', () => {
+  const dirOf = () => mkdtempSync(join(tmpdir(), 'patrol-note-'))
+  const bad = () => run(world({ lane: row('T-1', '🔄 20:00') }), { parallel: true })
+  it('frontmatter 칸 · 머리 줄 · 절 셋', () => {
+    const t = renderNote(bad(), NOW)
+    const [, fm, body] = t.split('---\n')
+    expect(fm).toBe('title: 레인 감독\ntags: [시간표, 감독관]\n공개등급: 내부\n층: 현황\n최종점검: 2026-11-12 22:30\n')
+    expect(body).toContain('> 🔍 감독관 순찰 — 자동 생성(5분마다 덮어씀). ⛔ 손으로 고치지 말 것.')
+    expect(t).toMatch(/## 요약\n\n⚠️ \d+ · ❌ 1 · 순찰 시각 22:30\n\n## ❌\n\n- 멈춘 판 T-1/)
+    expect(t).toContain('## ⚠️')
+    const ok = renderNote(run(world({ lane: row('T-1', '✅') })), NOW)
+    expect(ok).toMatch(/## ❌\n\n없음\n\n## ⚠️\n\n없음/)
+  })
+  it('같은 결과면 안 쓰고(mtime 그대로) 다르면 쓴다 · 임시 파일은 안 남는다', () => {
+    const f = join(dirOf(), '레인 감독.md')
+    expect(writeNote(f, renderNote(bad(), NOW))).toBe(true)
+    const old = new Date('2026-01-01T00:00:00Z')
+    utimesSync(f, old, old)
+    // 시각만 다른 같은 결과
+    expect(writeNote(f, renderNote(bad(), new Date(NOW.getTime() + 300e3)))).toBe(false)
+    expect(statSync(f).mtimeMs).toBe(old.getTime())
+    // 다른 결과
+    expect(writeNote(f, renderNote(run(world({ lane: row('T-1', '✅') })), NOW))).toBe(true)
+    expect(statSync(f).mtimeMs).not.toBe(old.getTime())
+    expect(readFileSync(f, 'utf-8')).toContain('## ❌\n\n없음')
+    expect(readdirSync(dirname(f))).toEqual(['레인 감독.md'])
+  })
 })
