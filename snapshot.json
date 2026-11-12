@@ -39,7 +39,7 @@
       "ended_at": null
     },
     {
-      "id": "a-4e8807e8",
+      "id": "a-3c7711be",
       "parent_id": "a-lead",
       "kind": "helper",
       "name": "일손",
@@ -54,7 +54,26 @@
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
-      "started_at": "2026-11-12T06:33:54.401Z",
+      "started_at": "2026-11-12T06:36:25.303Z",
+      "ended_at": null
+    },
+    {
+      "id": "a-40c4b7ee",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "일손",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": null,
+      "branch_id": null,
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T06:36:45.638Z",
       "ended_at": null
     }
   ],
@@ -682,7 +701,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:35:01.906Z"
+      "checked_at": "2026-11-12T06:37:01.968Z"
     },
     {
       "id": "s-sync",
@@ -690,7 +709,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:35:01.906Z"
+      "checked_at": "2026-11-12T06:37:01.968Z"
     },
     {
       "id": "s-reporter",
@@ -698,7 +717,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:35:01.906Z"
+      "checked_at": "2026-11-12T06:37:01.968Z"
     }
   ],
   "modules": [
@@ -1069,8 +1088,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:35:02.501Z",
-      "pct_5h": 53,
+      "ts": "2026-11-12T06:37:02.597Z",
+      "pct_5h": 54,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
@@ -1080,7 +1099,7 @@
   "runs": [
     {
       "id": "r6",
-      "started_at": "2026-11-12T15:35:00+09:00",
+      "started_at": "2026-11-12T15:30:00+09:00",
       "ended_at": null,
       "sprint": 6,
       "goal_id": "g6"
@@ -1201,7 +1220,7 @@
       "id": 6,
       "title": "1.2v 설계 고침 · v1 단점 물려받기 막기",
       "goal": "1.2v 설계 고침 · v1 단점 물려받기 막기",
-      "began": "2026-11-12T15:35:00+09:00",
+      "began": "2026-11-12T15:30:00+09:00",
       "ended": null,
       "task_ids": [],
       "est_min": 0,
