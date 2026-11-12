@@ -1,0 +1,1157 @@
+{
+  "actors": [
+    {
+      "id": "a-lead",
+      "parent_id": null,
+      "kind": "lead",
+      "name": "지휘",
+      "hue": 40,
+      "eye": "amber",
+      "prop": "flag",
+      "dept": "hq",
+      "team": "지휘",
+      "role": "지휘",
+      "state": "work",
+      "task_id": null,
+      "branch_id": null,
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T10:55:00+09:00",
+      "ended_at": null
+    },
+    {
+      "id": "a-T-6b",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "코드",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "코드팀",
+      "role": "코드",
+      "state": "work",
+      "task_id": "T-6b",
+      "branch_id": "b-T-6b",
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "ended_at": null
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-1a",
+      "title": "뼈대",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 25,
+      "started_at": "2026-11-12T11:00:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:00:00+09:00"
+    },
+    {
+      "id": "T-1p",
+      "title": "주소",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 1,
+      "est_min": 5,
+      "started_at": "2026-11-12T11:05:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:40:00+09:00"
+    },
+    {
+      "id": "T-1f",
+      "title": "📐 안내 칸",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 20,
+      "started_at": "2026-11-12T11:10:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:10:00+09:00"
+    },
+    {
+      "id": "T-1c",
+      "title": "3층 레인",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 20,
+      "started_at": "2026-11-12T11:10:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:10:00+09:00"
+    },
+    {
+      "id": "T-1b",
+      "title": "2층 원통 canvas",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 20,
+      "started_at": "2026-11-12T11:16:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:16:00+09:00"
+    },
+    {
+      "id": "T-1d",
+      "title": "5층 설계도 집 + 🐞1 접수 뒤 탭 돌아감",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 15,
+      "started_at": "2026-11-12T11:16:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:16:00+09:00"
+    },
+    {
+      "id": "T-1e",
+      "title": "품질",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 1,
+      "est_min": 25,
+      "started_at": "2026-11-12T11:17:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:17:00+09:00"
+    },
+    {
+      "id": "T-1g",
+      "title": "QA 상 결함 넷",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 1,
+      "est_min": 15,
+      "started_at": "2026-11-12T11:19:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:19:00+09:00"
+    },
+    {
+      "id": "T-2a",
+      "title": "끼우는 물건으로",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 2,
+      "est_min": 20,
+      "started_at": "2026-11-12T11:47:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:52:00+09:00"
+    },
+    {
+      "id": "T-2b",
+      "title": "미리보기 앱에 얹기",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 2,
+      "est_min": 20,
+      "started_at": "2026-11-12T11:58:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:58:00+09:00"
+    },
+    {
+      "id": "T-2p",
+      "title": "배포",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 2,
+      "est_min": 5,
+      "started_at": "2026-11-12T11:58:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T11:58:00+09:00"
+    },
+    {
+      "id": "T-2c",
+      "title": "개선",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 2,
+      "est_min": 15,
+      "started_at": "2026-11-12T12:01:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T12:01:00+09:00"
+    },
+    {
+      "id": "T-2s",
+      "title": "서랍 SQL",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 2,
+      "est_min": 15,
+      "started_at": "2026-11-12T12:01:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T12:01:00+09:00"
+    },
+    {
+      "id": "T-2e",
+      "title": "가볍게 화면 점검",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 2,
+      "est_min": 10,
+      "started_at": "2026-11-12T12:06:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T12:06:00+09:00"
+    },
+    {
+      "id": "T-2f",
+      "title": "고침",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 2,
+      "est_min": 10,
+      "started_at": "2026-11-12T12:11:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T12:11:00+09:00"
+    },
+    {
+      "id": "T-2g",
+      "title": "재점검",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 2,
+      "est_min": 5,
+      "started_at": "2026-11-12T12:18:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T12:18:00+09:00"
+    },
+    {
+      "id": "T-4a",
+      "title": "접수함",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 3,
+      "est_min": 20,
+      "started_at": "2026-11-12T13:07:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T13:07:00+09:00"
+    },
+    {
+      "id": "T-4p",
+      "title": "deploy.yml 미리보기 빌드에",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 3,
+      "est_min": 5,
+      "started_at": "2026-11-12T14:09:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:09:00+09:00"
+    },
+    {
+      "id": "T-4s",
+      "title": "서랍 SQL 본 프로젝트 적용",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 3,
+      "est_min": 5,
+      "started_at": "2026-11-12T14:09:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:09:00+09:00"
+    },
+    {
+      "id": "T-2k",
+      "title": "레포 값 파악",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 3,
+      "est_min": 2,
+      "started_at": "2026-11-12T14:09:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:09:00+09:00"
+    },
+    {
+      "id": "T-2m",
+      "title": "「스프린트」 탭",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 3,
+      "est_min": 15,
+      "started_at": "2026-11-12T14:09:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:09:00+09:00"
+    },
+    {
+      "id": "T-4e",
+      "title": "화면 QA",
+      "category": "검사",
+      "kind": "review",
+      "team": "시험팀",
+      "sprint": 3,
+      "est_min": 10,
+      "started_at": "2026-11-12T14:13:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:13:00+09:00"
+    },
+    {
+      "id": "T-4f",
+      "title": "QA·품질 고침",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 3,
+      "est_min": 10,
+      "started_at": "2026-11-12T14:16:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:16:00+09:00"
+    },
+    {
+      "id": "T-5a",
+      "title": "캐릭터",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 4,
+      "est_min": 15,
+      "started_at": "2026-11-12T14:29:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:29:00+09:00"
+    },
+    {
+      "id": "T-5b",
+      "title": "이름·탭 설명",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 4,
+      "est_min": 12,
+      "started_at": "2026-11-12T14:36:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:36:00+09:00"
+    },
+    {
+      "id": "T-5c",
+      "title": "가지 모양",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 4,
+      "est_min": 15,
+      "started_at": "2026-11-12T14:40:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:43:00+09:00"
+    },
+    {
+      "id": "T-5d",
+      "title": "고급 다듬기",
+      "category": "화면",
+      "kind": "work",
+      "team": "화면팀",
+      "sprint": 4,
+      "est_min": 15,
+      "started_at": "2026-11-12T14:21:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:21:00+09:00"
+    },
+    {
+      "id": "T-5e",
+      "title": "배포본 재점검",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 4,
+      "est_min": 5,
+      "started_at": "2026-11-12T14:21:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:21:00+09:00"
+    },
+    {
+      "id": "T-6a",
+      "title": "보고꾼",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 15,
+      "started_at": "2026-11-12T14:49:00+09:00",
+      "lane_id": "l1",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:49:00+09:00"
+    },
+    {
+      "id": "T-6b",
+      "title": "나르기",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 12,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "lane_id": "l1",
+      "column": "work",
+      "reason": "new",
+      "actor_id": "a-T-6b",
+      "updated_at": "2026-11-12T14:42:00+09:00"
+    },
+    {
+      "id": "T-6c",
+      "title": "첫 실주행",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 5,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:42:00+09:00"
+    },
+    {
+      "id": "T-6d",
+      "title": "자동 반복",
+      "category": "코드",
+      "kind": "work",
+      "team": "코드팀",
+      "sprint": 5,
+      "est_min": 5,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "lane_id": "l1",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T14:42:00+09:00"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "l1",
+      "title": "현황판 만들기",
+      "state": "work",
+      "actor_id": "a-lead"
+    }
+  ],
+  "branches": [
+    {
+      "id": "b-trunk",
+      "title": "줄기",
+      "trunk": true,
+      "ahead": 0,
+      "state": "live",
+      "actor_id": null,
+      "task_id": null,
+      "updated_at": "2026-11-12T14:54:26+09:00"
+    },
+    {
+      "id": "b-T-2f",
+      "title": "고침",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-2f",
+      "updated_at": "2026-11-12T12:09:22+09:00"
+    },
+    {
+      "id": "b-T-5a",
+      "title": "캐릭터",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5a",
+      "updated_at": "2026-11-12T14:27:14+09:00"
+    },
+    {
+      "id": "b-T-5b",
+      "title": "이름·탭 설명",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5b",
+      "updated_at": "2026-11-12T14:33:29+09:00"
+    },
+    {
+      "id": "b-T-5c",
+      "title": "가지 모양",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-5c",
+      "updated_at": "2026-11-12T14:39:35+09:00"
+    },
+    {
+      "id": "b-T-6a",
+      "title": "보고꾼",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": null,
+      "task_id": "T-6a",
+      "updated_at": "2026-11-12T14:48:42+09:00"
+    },
+    {
+      "id": "b-T-6b",
+      "title": "나르기",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": "a-T-6b",
+      "task_id": "T-6b",
+      "updated_at": "2026-11-12T14:54:02+09:00"
+    }
+  ],
+  "services": [
+    {
+      "id": "s1",
+      "name": "화면 호스팅",
+      "state": "ok",
+      "url": "",
+      "task_id": null,
+      "checked_at": "2026-11-12T05:54:37.005Z"
+    },
+    {
+      "id": "s2",
+      "name": "자료 서버",
+      "state": "build",
+      "url": "",
+      "task_id": null,
+      "checked_at": "2026-11-12T05:54:37.005Z"
+    },
+    {
+      "id": "s3",
+      "name": "메일",
+      "state": "plan",
+      "url": "",
+      "task_id": null,
+      "checked_at": "2026-11-12T05:54:37.005Z"
+    }
+  ],
+  "modules": [
+    {
+      "id": "m1",
+      "name": "화면 바탕",
+      "parent": null,
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m1a",
+      "name": "위 띠",
+      "parent": "m1",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m1b",
+      "name": "층 탭",
+      "parent": "m1",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m2",
+      "name": "보결 판",
+      "parent": null,
+      "state": "build",
+      "task_id": null
+    },
+    {
+      "id": "m2a",
+      "name": "보결 목록",
+      "parent": "m2",
+      "state": "built",
+      "task_id": null
+    },
+    {
+      "id": "m2b",
+      "name": "보결 짝짓기",
+      "parent": "m2",
+      "state": "build",
+      "task_id": null
+    },
+    {
+      "id": "m2c",
+      "name": "보결 알림",
+      "parent": "m2",
+      "state": "plan",
+      "task_id": null
+    },
+    {
+      "id": "m3",
+      "name": "로그인 문",
+      "parent": null,
+      "state": "plan",
+      "task_id": null
+    },
+    {
+      "id": "m3a",
+      "name": "로그인 화면",
+      "parent": "m3",
+      "state": "plan",
+      "task_id": null
+    },
+    {
+      "id": "m3b",
+      "name": "서버 연결",
+      "parent": "m3",
+      "state": "plan",
+      "task_id": null
+    }
+  ],
+  "goals": [
+    {
+      "id": "g5",
+      "title": "실제 자료가 현황판에",
+      "progress": 25,
+      "state": "work",
+      "sprint": 5
+    }
+  ],
+  "events": [
+    {
+      "id": "e-c7695505",
+      "ts": "2026-11-12T14:49:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-6a",
+      "actor_id": "a-lead",
+      "text": "보고꾼 끝"
+    },
+    {
+      "id": "e-66ed7c65",
+      "ts": "2026-11-12T14:43:00+09:00",
+      "kind": "goal.progress",
+      "subject_type": "task",
+      "subject_id": "T-5c",
+      "actor_id": "a-lead",
+      "text": "방향 정리"
+    },
+    {
+      "id": "e-8121157e",
+      "ts": "2026-11-12T14:40:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "task",
+      "subject_id": "T-5c",
+      "actor_id": "a-lead",
+      "text": "잠시 멈춤"
+    },
+    {
+      "id": "e-11856458",
+      "ts": "2026-11-12T14:36:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-5b",
+      "actor_id": "a-lead",
+      "text": "이름·탭 설명 끝"
+    },
+    {
+      "id": "e-db48e487",
+      "ts": "2026-11-12T14:29:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-5a",
+      "actor_id": "a-lead",
+      "text": "캐릭터 끝"
+    },
+    {
+      "id": "e-11450da8",
+      "ts": "2026-11-12T14:21:00+09:00",
+      "kind": "goal.progress",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "방향 정리"
+    },
+    {
+      "id": "e-5f279e95",
+      "ts": "2026-11-12T14:19:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-770358f9",
+      "ts": "2026-11-12T14:16:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-4f",
+      "actor_id": "a-lead",
+      "text": "QA·품질 고침 끝"
+    },
+    {
+      "id": "e-dfdbcbb5",
+      "ts": "2026-11-12T14:13:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-4e",
+      "actor_id": "a-lead",
+      "text": "화면 QA 끝"
+    },
+    {
+      "id": "e-92a4cbd3",
+      "ts": "2026-11-12T14:09:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-4s",
+      "actor_id": "a-lead",
+      "text": "서랍 SQL 본 프로젝트 적용 외 3 끝"
+    },
+    {
+      "id": "e-c49389d6",
+      "ts": "2026-11-12T12:31:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-907a9136",
+      "ts": "2026-11-12T12:27:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-f92ee573",
+      "ts": "2026-11-12T12:20:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-89758754",
+      "ts": "2026-11-12T12:18:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2g",
+      "actor_id": "a-lead",
+      "text": "재점검 끝"
+    },
+    {
+      "id": "e-2d4849c4",
+      "ts": "2026-11-12T12:13:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-ef68e526",
+      "ts": "2026-11-12T12:11:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2f",
+      "actor_id": "a-lead",
+      "text": "고침 끝"
+    },
+    {
+      "id": "e-48499439",
+      "ts": "2026-11-12T12:06:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2e",
+      "actor_id": "a-lead",
+      "text": "가볍게 화면 점검 끝"
+    },
+    {
+      "id": "e-db62aa20",
+      "ts": "2026-11-12T12:01:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2c",
+      "actor_id": "a-lead",
+      "text": "개선 외 1 끝"
+    },
+    {
+      "id": "e-baf01ddc",
+      "ts": "2026-11-12T11:58:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2b",
+      "actor_id": "a-lead",
+      "text": "미리보기 앱에 얹기 외 1 끝"
+    },
+    {
+      "id": "e-cb8aae09",
+      "ts": "2026-11-12T11:52:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2a",
+      "actor_id": "a-lead",
+      "text": "끼우는 물건으로 끝"
+    },
+    {
+      "id": "e-f59d6c5b",
+      "ts": "2026-11-12T11:47:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-2a",
+      "actor_id": "a-lead",
+      "text": "끼우는 물건으로 시작"
+    },
+    {
+      "id": "e-906fbe8f",
+      "ts": "2026-11-12T11:38:00+09:00",
+      "kind": "goal.progress",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "방향 정리"
+    },
+    {
+      "id": "e-faa128b2",
+      "ts": "2026-11-12T11:40:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-1p",
+      "actor_id": "a-lead",
+      "text": "주소 끝"
+    },
+    {
+      "id": "e-9c1266ad",
+      "ts": "2026-11-12T11:19:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-1g",
+      "actor_id": "a-lead",
+      "text": "QA 상 결함 넷 끝"
+    },
+    {
+      "id": "e-5634261a",
+      "ts": "2026-11-12T11:17:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "task",
+      "subject_id": "T-1e",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-b82d9048",
+      "ts": "2026-11-12T11:16:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-1b",
+      "actor_id": "a-lead",
+      "text": "2층 원통 canvas 외 1 끝"
+    },
+    {
+      "id": "e-836e6d4c",
+      "ts": "2026-11-12T11:10:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-1f",
+      "actor_id": "a-lead",
+      "text": "📐 안내 칸 외 1 끝"
+    },
+    {
+      "id": "e-b3b58e21",
+      "ts": "2026-11-12T11:05:00+09:00",
+      "kind": "goal.progress",
+      "subject_type": "task",
+      "subject_id": "T-1p",
+      "actor_id": "a-lead",
+      "text": "방향 정리"
+    },
+    {
+      "id": "e-7229a51d",
+      "ts": "2026-11-12T11:00:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-1a",
+      "actor_id": "a-lead",
+      "text": "뼈대 끝"
+    },
+    {
+      "id": "e-1dcd6840",
+      "ts": "2026-11-12T10:54:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-3a607ece",
+      "ts": "2026-11-12T10:45:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-96773afd",
+      "ts": "2026-11-12T10:18:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-b67cef84",
+      "ts": "2026-11-12T10:05:00+09:00",
+      "kind": "goal.progress",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "방향 정리"
+    },
+    {
+      "id": "e-7c374812",
+      "ts": "2026-11-12T09:54:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    },
+    {
+      "id": "e-121761fd",
+      "ts": "2026-11-12T09:52:00+09:00",
+      "kind": "actor.state",
+      "subject_type": "actor",
+      "subject_id": "a-lead",
+      "actor_id": "a-lead",
+      "text": "지휘 정리"
+    }
+  ],
+  "usage": [
+    {
+      "account": "org",
+      "ts": "2026-11-12T05:54:37.005Z",
+      "pct_5h": 29,
+      "pct_7d": 7,
+      "reset_5h_at": "2026-11-12T09:40:00.000Z",
+      "reset_7d_at": "2026-11-18T23:00:00.000Z",
+      "tok_per_min": 0
+    }
+  ],
+  "runs": [
+    {
+      "id": "r5",
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "ended_at": null,
+      "sprint": 5,
+      "goal_id": "g5"
+    }
+  ],
+  "sprints": [
+    {
+      "id": 1,
+      "title": "목업 뼈대",
+      "goal": "서버 없이 가짜 자료로 0~5층이 한 문법으로 뜨고, PC · 폰에서 시나리오 6 중 ①~④를 처음 보는 사람이 해낸다.",
+      "began": "2026-11-12T10:55:00+09:00",
+      "ended": "2026-11-12T11:40:00+09:00",
+      "task_ids": [
+        "T-1a",
+        "T-1p",
+        "T-1f",
+        "T-1c",
+        "T-1b",
+        "T-1d",
+        "T-1e",
+        "T-1g"
+      ],
+      "est_min": 145,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    },
+    {
+      "id": 2,
+      "title": "앱 위 막대 + 위 서랍",
+      "goal": "1.2v 미리보기 앱 맨 위 얇은 상태 막대 · 누르면 위에서 서랍이 내려와 앱을 덮는다 · 다시 누르면 접힘 · 서랍 안 = 층 탭 + 불편 접수 · 미리보기 앱은 저장소 이름표를 와 갈라서 올린다",
+      "began": "2026-11-12T11:47:00+09:00",
+      "ended": "2026-11-12T12:18:00+09:00",
+      "task_ids": [
+        "T-2a",
+        "T-2b",
+        "T-2p",
+        "T-2c",
+        "T-2s",
+        "T-2e",
+        "T-2f",
+        "T-2g"
+      ],
+      "est_min": 100,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    },
+    {
+      "id": 3,
+      "title": "불편 접수함 · 진짜 자료 · 품질",
+      "goal": "불편 접수함 · 진짜 자료 · 품질",
+      "began": "2026-11-12T13:07:00+09:00",
+      "ended": "2026-11-12T14:16:00+09:00",
+      "task_ids": [
+        "T-4a",
+        "T-4p",
+        "T-4s",
+        "T-2k",
+        "T-2m",
+        "T-4e",
+        "T-4f"
+      ],
+      "est_min": 67,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    },
+    {
+      "id": 4,
+      "title": "클로드 캐릭터 · 고급스럽게",
+      "goal": "이모지 사람 칩을 같은 클로드 꼴 그림 캐릭터로 · 전체 마감 품질",
+      "began": "2026-11-12T14:21:00+09:00",
+      "ended": null,
+      "task_ids": [
+        "T-5a",
+        "T-5b",
+        "T-5c",
+        "T-5d",
+        "T-5e"
+      ],
+      "est_min": 62,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    },
+    {
+      "id": 5,
+      "title": "실제 자료가 현황판에",
+      "goal": "실제 자료가 현황판에",
+      "began": "2026-11-12T14:42:00+09:00",
+      "ended": null,
+      "task_ids": [
+        "T-6a",
+        "T-6b",
+        "T-6c",
+        "T-6d"
+      ],
+      "est_min": 37,
+      "actual_min": 0,
+      "review": "",
+      "passed": null,
+      "missed": "",
+      "next": ""
+    }
+  ]
+}
