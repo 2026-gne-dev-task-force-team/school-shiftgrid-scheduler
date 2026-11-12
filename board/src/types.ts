@@ -35,5 +35,5 @@ export interface Sprint {
 export interface BoardData {
   actors: Actor[]; tasks: Task[]; lanes: Lane[]; branches: Branch[]; services: Service[]; modules: Module[]
   goals: Goal[]; events: BoardEvent[]; usage: Usage[]; runs: Run[]; sprints: Sprint[]
-  source?: 'mock' | 'server'; serverFeedback?: Feedback[] // loadData 가 채운다
+  source?: 'mock' | 'server' | 'loading' | 'failed' | 'stale'; staleAt?: number; serverFeedback?: Feedback[] // loadData 가 채운다. loading·failed = 서버 키는 있는데 아직/못 읽음(표는 빈 채), stale = 못 읽어 마지막 성공 값(staleAt)
 }

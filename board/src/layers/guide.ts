@@ -1,5 +1,6 @@
 import { h } from '../dom.ts'
 import type { LayerRenderer } from './types.ts'
+import type { BoardData } from '../types.ts'
 
 const SECTIONS: [string, string[]][] = [
   ['이 판은 무엇인가', ['시간표 앱을 만드는 작업이 어디까지 왔는지 한 화면에서 보여 주는 현황판입니다.']],
@@ -20,7 +21,7 @@ const SECTIONS: [string, string[]][] = [
   ['어디까지 가나', ['바퀴 1 가짜 자료 → 바퀴 2 진짜 자료 → 바퀴 3 실시간·알림 → 바퀴 4 앱 위 띠']],
 ]
 
-export const sourceNote = (src: 'mock' | 'server' | undefined) => src === 'server' ? '지금은 진짜 자료(Live data)로 그립니다.' : '지금은 가짜 자료로 그린 Mock data 입니다.'
+export const sourceNote = (src: BoardData['source']) => src === 'server' ? '지금은 진짜 자료(Live data)로 그립니다.' : src === 'stale' ? '서버를 못 읽어 마지막으로 읽은 진짜 자료를 보여 줍니다.' : '지금은 가짜 자료로 그린 Mock data 입니다.'
 
 export const guide: LayerRenderer = {
   id: 'guide', floor: 6, tab: 'Guide',

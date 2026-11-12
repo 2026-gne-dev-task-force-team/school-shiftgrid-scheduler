@@ -10,7 +10,7 @@ import { escTarget, loadOpen, saveOpen } from './lib/drawer.ts'
 import { isTyping, loadAuto, saveAuto, shouldAutoApply } from './lib/autoupdate.ts'
 import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
-import { fetchRemote, type Remote } from './lib/remote.ts'
+import { agoText, fetchRemote, loadLast, saveLast, type Last, type Remote } from './lib/remote.ts'
 import { connectRealtime } from './lib/realtime.ts'
 import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
@@ -35,6 +35,10 @@ let menuHost: HTMLElement
 let poll = 0
 let band: ReturnType<typeof createBand> | null = null
 let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
+const keyed = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) // 키가 있으면 목업은 화면에 안 낸다
+let settled = false // 첫 서버 읽기가 끝났나(성공이든 실패든)
+let last: Last | null = null // 마지막 성공 자료
+let refresh: () => Promise<void> = async () => {}
 let live: boolean | undefined // 실시간 소켓 상태. undefined = 소켓을 안 쓴다(키 없음·목업)
 let latest: VersionInfo | null = null // 띠에 띄운 새 판
 let runCheck: () => Promise<void> = async () => {} // 새 판 확인을 지금 한 번 — 체크박스를 켰을 때·입력이 끝났을 때도 부른다
@@ -44,7 +48,7 @@ let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
   band?.dispose()
-  const data = loadData(Date.now(), remote, app)
+  const data = loadData(Date.now(), remote, app, { keyed, settled, last })
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
   const theme = loadTheme(localStorage)
@@ -95,9 +99,17 @@ function render(notice = false): void {
     root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼')
   barEl.replaceChildren(bnd.editions, bnd.toggle, bnd.upd, bnd.auto, bnd.fb, bnd.more, caret)
   menuHost.replaceChildren(bnd.menu)
-  page.replaceChildren(bnd.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
-  show(restoreTab(curTab, LAYERS.length))
-  if (notice) {
+  if (data.source === 'loading' || data.source === 'failed') { // 보여 줄 서버 자료가 아직 없다 — 숫자 칸을 아예 안 그린다
+    const msg = data.source === 'loading' ? '불러오는 중…' : '서버 못 읽음 · 마지막 성공 자료 없음'
+    const retry = h('button', { class: 'btn' }, '다시 읽기')
+    retry.addEventListener('click', () => void refresh())
+    page.replaceChildren(bnd.drop, h('div', { class: 'card sgb-status', role: 'status' }, h('b', null, msg), ...(data.source === 'failed' ? [' ', retry] : [])))
+  } else {
+    const note = data.source === 'stale' ? [h('div', { class: 'card sgb-status', role: 'status' }, `서버 못 읽음 · 마지막 성공 ${agoText(Date.now(), data.staleAt ?? 0)} 값입니다.`)] : []
+    page.replaceChildren(bnd.drop, ...note, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
+    show(restoreTab(curTab, LAYERS.length))
+  }
+  if (notice && data.source !== 'loading' && data.source !== 'failed') {
     const go = h('button', { class: 'btn' }, 'Board 에서 보기')
     go.addEventListener('click', () => {
       show(LAYERS.findIndex((l) => l.floor === 4))
@@ -152,8 +164,16 @@ export function mountBoard(host?: HTMLElement): void {
   window.addEventListener(FEEDBACK_CHANGED, () => render()) // Inbox 에서 지우기·상태 바꾸기 → Board·흐름 줄도 즉시
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
+  last = keyed ? loadLast(localStorage) : null
   render()
-  const refresh = () => fetchRemote().then((r) => { if (r) { remote = r; render() } })
+  refresh = () => fetchRemote().then((r) => {
+    if (!r) return
+    const now = Date.now()
+    if (r.tables) { last = { at: now, tables: r.tables }; saveLast(localStorage, last) }
+    remote = r // tables null 이면 loadData 가 last(n분 전 값)나 빈 상태를 쓴다 — 목업으로 돌아가지 않는다
+    settled = true
+    render()
+  })
   void refresh()
   // 실시간 소켓이 있으면 바뀜 알림에 다시 읽고, 소켓이 끊긴 동안은 1분 주기 읽기가 받친다. 키가 없으면 둘 다 안 한다.
   const rt = connectRealtime({ url: import.meta.env.VITE_SUPABASE_URL, key: import.meta.env.VITE_SUPABASE_ANON_KEY,

@@ -4,6 +4,7 @@ import { fmtDur } from '../lib/forecast.ts'
 import { currentSprint, sprintLabel } from '../lib/sprints.ts'
 import type { VersionInfo } from '../lib/version.ts'
 import type { BoardData } from '../types.ts'
+import { sourceChip } from '../lib/remote.ts'
 import { usagePanel } from './usage.ts'
 import { editionOfApp, type AppId } from '../lib/app.ts'
 import { EDITIONS, currentEdition } from '../lib/editions.ts'
@@ -80,7 +81,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
 
   const toggle = h('span', { class: 'sgb-toggle' },
     h('span', { class: 'chip', title: state }, state.slice(0, state.indexOf(' ')), h('span', { class: 'lbl' }, state.slice(state.indexOf(' ')))),
-    h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? 'Live data' : 'Mock data'),
+    h('span', { class: data.source === 'server' ? 'chip src' : data.source === 'mock' ? 'chip src mock' : 'chip src off', title: '자료 출처' }, sourceChip(data.source, data.staleAt, now)),
     liveChip,
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),
