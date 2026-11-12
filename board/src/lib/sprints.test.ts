@@ -52,7 +52,7 @@ describe('스프린트', () => {
   })
   it('최신이 위, 검수 칩 글', () => {
     expect(sprintsNewestFirst(d.sprints).map((s) => s.id)).toEqual([3, 2, 1])
-    expect(d.sprints.map(reviewLabel)).toEqual(['검수 대기', '검수 통과', '검수 대기'])
+    expect(d.sprints.map(reviewLabel)).toEqual(['끝', '검수 통과', '진행 중'])
   })
 })
 

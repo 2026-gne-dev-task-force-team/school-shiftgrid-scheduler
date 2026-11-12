@@ -17,6 +17,10 @@ export const layer3: LayerRenderer = {
         a ? ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}`; c.title = t; tip(c, () => t); return c })(
           chip({ icon: character(a), label: actorLabel(a, data.actors), hue: a.hue, id: a.id })) : h('span', null, '—'),
         h('span', null, `${STATE_ICON[l.state] ?? '⏸'} ${STATE_TEXT[l.state] ?? l.state}`))
+      const mine = data.tasks.filter((t) => t.lane_id === l.id), done = mine.filter((t) => t.column === 'done').length
+      const pct = mine.length ? Math.round((done / mine.length) * 100) : 0
+      const prog = h('div', { class: 'lane-prog' }, h('small', null, `끝 ${done}/${mine.length} · ${pct}%`),
+        h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': String(pct), 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('i', { style: `width:${pct}%` })))
       const track = h('div', { class: 'lane-track' })
       data.tasks.filter((t) => t.lane_id === l.id && t.column !== 'done').forEach((t, i) => {
         const ball = h('button', { class: 'ball', 'data-id': t.id, 'aria-label': t.title, style: `animation-delay:${-i * 9}s` }, KIND_ICON[t.kind] ?? '●')
@@ -24,7 +28,7 @@ export const layer3: LayerRenderer = {
         tip(ball, () => t.title)
         track.append(ball)
       })
-      box.append(h('div', { class: 'lane', 'data-state': l.state, 'data-id': l.id }, head, track))
+      box.append(h('div', { class: 'lane', 'data-state': l.state, 'data-id': l.id }, head, prog, track))
     }
     host.append(box)
   },

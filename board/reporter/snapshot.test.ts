@@ -51,6 +51,17 @@ describe('보고꾼', () => {
     expect(d.actors.map((a: { id: string }) => a.id)).toEqual(['a-lead', 'a-T-1b'])
   })
 
+  it('스프린트 결과 — 태스크가 전부 ✅ 면 통과, 아니면 null(진행 중)', () => {
+    const one = (st: string) => build({ md: `## 스프린트 1 — 가 (10:00~)
+
+| 태스크 | 무엇 | 팀 | est_min | 상태 |
+|---|---|---|---|---|
+| T-1a | 뼈대 | 코드 | 5 | ${st} |
+`, now: new Date('2026-11-12T03:00:00Z') }).sprints[0].passed
+    expect(one('✅')).toBe(true)
+    expect(one('🔄')).toBeNull()
+  })
+
   it('사건은 담백 틀 글만 싣는다', () => {
     expect(d.events.map((e: { text: string }) => e.text)).toEqual(['뼈대 끝', '방향 바뀜'])
     expect(findDirty(d)).toBeNull()
@@ -141,6 +152,7 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(publicTitle('`1.2v-preview` 가지 정리')).toBe('가지 정리')
     expect(publicTitle('`board-schema.sql` 적용')).toBe('적용')
     expect(publicTitle('`a11fb51` 되돌리기')).toBe('되돌리기')
+    expect(publicGoal('앱(`/preview/`)을 `/v2/` 와 갈라서 올린다')).toBe('앱을 v2 와 갈라서 올린다') // 백틱 안 낱말은 남는다(슬래시만 걷음)
     expect(publicGoal('쥔님 14:42 *"요청할건 실제 데이터가 먼저다"*')).toBe('') // 쥔님 말 원문은 공개 판에 안 싣는다
     expect(publicGoal('쥔님 *"D:\\x 에 있는 것 고쳐라"*')).toBe('')
     expect(build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') }).sprints[1].goal).toBe('지금')

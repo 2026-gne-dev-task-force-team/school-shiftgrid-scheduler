@@ -12,8 +12,8 @@ export function sprintProgress(s: Sprint, tasks: Task[]): { done: number; total:
 export const sprintsNewestFirst = (list: Sprint[]): Sprint[] =>
   [...list].sort((a, b) => (Date.parse(b.began) || 0) - (Date.parse(a.began) || 0) || b.id - a.id)
 
-/** 검수 칩 글: 통과 / 검수 대기(결과 아직 없음). */
-export const reviewLabel = (s: Sprint): string => (s.passed === true ? '검수 통과' : s.passed === false ? '검수 보완' : '검수 대기')
+/** 검수 칩 글: 통과 / 보완 / 결과 없음이면 끝났는지로 「끝」·「진행 중」. */
+export const reviewLabel = (s: Sprint): string => (s.passed === true ? '검수 통과' : s.passed === false ? '검수 보완' : s.ended ? '끝' : '진행 중')
 
 /** 막대 글: 「스프린트 N · 제목」 — 지금 스프린트(currentSprint), 없으면 판 이름. */
 export const sprintLabel = (d: { sprints: Sprint[]; tasks: Task[] }): string =>

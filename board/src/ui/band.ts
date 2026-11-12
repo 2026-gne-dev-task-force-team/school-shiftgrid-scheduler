@@ -50,7 +50,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   document.addEventListener('click', outside)
 
   const toggle = h('span', { class: 'sgb-toggle' },
-    h('span', { class: 'chip' }, state),
+    h('span', { class: 'chip', title: state }, state.slice(0, state.indexOf(' ')), h('span', { class: 'lbl' }, state.slice(state.indexOf(' ')))),
     h('span', { class: data.source === 'server' ? 'chip src' : 'chip src mock', title: '자료 출처' }, data.source === 'server' ? 'Live data' : 'Mock data'),
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),

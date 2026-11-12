@@ -86,7 +86,7 @@ button.chip:hover { background: hsl(var(--hue) 70% 85%); border-color: hsl(var(-
 .gg-in canvas { position: absolute; inset: 0 }
 .gg-l, .gg-chip { position: absolute; white-space: nowrap; line-height: 20px }
 .gg-l { --hue: 200; padding: 2px 8px; border: 0; border-radius: var(--r1); background: rgb(255 253 247 / .85); color: hsl(var(--hue) 70% 30%); font: 600 12px var(--font) }
-button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% 38%) }
+button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%) } /* 보이는 크기는 그대로, 누르는 영역만 44px */ button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% 38%) }
 .gg-trunk { color: var(--neon) }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp2); margin-top: var(--sp2) }
 .row .dept { min-width: 68px; font-size: var(--fs-sm); font-weight: 600 }
@@ -113,7 +113,8 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }
-  .band-clock, .sgb-bar .chip.src:not(.mock) { display: none } /* 폰 폭에선 출처 칩이 「서」로 잘려 제목을 밀어낸다 — 목업일 때만 남긴다 */
+  .band-clock, .sgb-bar .chip.src, .sgb-bar .chip .lbl, .sgb-gauge { display: none } /* 폰 폭: 이름(최소 「Sprint N」)이 먼저 — 출처·상태 글자·게이지는 접는다(%는 남음) */
+  .sgb-bar .sgb-name { flex: 1 0 8ch }
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
   .stage { flex: 1; padding: var(--sp2); border-radius: var(--r2) }
   .card { padding: var(--sp3) }
