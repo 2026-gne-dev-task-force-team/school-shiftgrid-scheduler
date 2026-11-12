@@ -8,6 +8,8 @@ import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { taskDetail } from '../lib/task-detail.ts'
 import { taskDetailView } from '../ui/task-detail-view.ts'
 import { tagChips } from '../ui/tag-chips.ts'
+import { filterBar } from '../ui/filter-bar.ts'
+import { filterTasks, fromSearch, toSearch, type Filter } from '../lib/filter.ts'
 
 // 구역 가구 — 도트 rect 몇 개(18×10 격자). 서류함·돋보기 탁자·책상·상자 더미.
 const W = '#C8A06A', D = '#8A6A3E', P = '#F3E6D3', G = '#9AA5AD'
@@ -33,13 +35,14 @@ export const layer4: LayerRenderer = {
     const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
     const nReq = data.tasks.filter((t) => /^R\d/.test(t.id) && colOf(t) === 'wait').length
     const reqNote = h('small', { class: 'ws-req' }, nReq ? `요청 ${nReq} · 일감 ${data.tasks.filter((t) => !/^R\d/.test(t.id) && colOf(t) === 'wait').length}` : '')
-    const cols = new Map<Col, { body: HTMLElement; badge: HTMLElement }>()
+    const cols = new Map<Col, { body: HTMLElement; badge: HTMLElement; count: HTMLElement }>()
     const board = h('div', { class: 'ws' })
     for (const c of COLS) {
       const badge = h('span', { class: 'ws-badge', hidden: '' })
+      const count = h('span', { class: 'ws-count', hidden: '' })
       const body = h('div', { class: 'ws-body' })
-      board.append(h('section', { class: 'ws-col', 'data-col': c.id }, h('header', { class: 'ws-head' }, h('span', null, c.name, h('small', null, ` ${EN[c.id]}`)), ...(c.id === 'wait' ? [reqNote] : []), badge), furn(c.id), body))
-      cols.set(c.id, { body, badge })
+      board.append(h('section', { class: 'ws-col', 'data-col': c.id }, h('header', { class: 'ws-head' }, h('span', null, c.name, h('small', null, ` ${EN[c.id]}`)), ...(c.id === 'wait' ? [reqNote] : []), count, badge), furn(c.id), body))
+      cols.set(c.id, { body, badge, count })
     }
     // 쉬는 캐릭터는 복도를 왔다갔다 — 사람마다 거리·속도·지연이 다르다(calm 이면 CSS 가 멎는다)
     const walk = h('div', { class: 'ws-walk', 'aria-hidden': 'true' })
@@ -47,7 +50,13 @@ export const layer4: LayerRenderer = {
       const w = h('span', { class: 'ws-roamer', style: `--dist:${90 + (i * 53) % 140}px;--dur:${9 + (i * 3) % 7}s;--dly:${-i * 2.3}s;left:${10 + (i * 37) % 50}%` }, character(a, 'mini'))
       walk.append(w)
     })
-    host.append(board)
+    let filter: Filter = fromSearch(location.search)
+    const bar = filterBar(data, filter, (f) => {
+      filter = f
+      history.replaceState(null, '', `${location.pathname}${toSearch(f)}${location.hash}`)
+      layout(false)
+    })
+    host.append(bar, board)
     if (walk.childElementCount) host.append(walk) // 쉬는 캐릭터가 없으면 빈 복도를 그리지 않는다
     const off = data.actors.filter((a) => isOff(a.state)) // 퇴근한 캐릭터는 가장자리 숙소에 흐리게 모인다(걷지 않는다)
     if (off.length) host.append(h('div', { class: 'ws-dorm', 'aria-label': '숙소' }, h('b', null, `🏠 숙소 ${off.length}`), ...off.map((a) => { const c = character(a, 'mini'); c.setAttribute('title', `${actorLabel(a, data.actors)} — 퇴근`); return c })))
@@ -94,9 +103,18 @@ export const layer4: LayerRenderer = {
       }
       // 끝 열은 최근(updated_at) 6장만 보이고 나머지는 접는다
       const done = tasks.filter((t) => colOf(t) === 'done').sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-      done.forEach((t, i) => { cards.get(t.id)!.hidden = !expanded && i >= DONE_MAX })
-      more.hidden = done.length <= DONE_MAX
-      more.textContent = expanded ? '접기' : `+${done.length - DONE_MAX} more`
+      const pass = new Set(filterTasks(tasks, filter).map((t) => t.id))
+      const filtering = pass.size !== tasks.length
+      for (const t of tasks) cards.get(t.id)!.hidden = !pass.has(t.id)
+      const doneShown = done.filter((t) => pass.has(t.id))
+      doneShown.forEach((t, i) => { cards.get(t.id)!.hidden = !expanded && i >= DONE_MAX })
+      more.hidden = doneShown.length <= DONE_MAX
+      more.textContent = expanded ? '접기' : `+${doneShown.length - DONE_MAX} more`
+      for (const [id, c] of cols) {
+        const all = tasks.filter((t) => colOf(t) === id)
+        c.count.hidden = !filtering
+        c.count.textContent = `${all.filter((t) => pass.has(t.id)).length}/${all.length}`
+      }
       cols.get('done')!.body.append(more)
       const moved = new Map<Col, number>()
       for (const t of tasks) if (home.get(t.id) !== colOf(t)) moved.set(colOf(t), (moved.get(colOf(t)) ?? 0) + 1)

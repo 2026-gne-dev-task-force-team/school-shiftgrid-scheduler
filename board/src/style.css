@@ -302,3 +302,20 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start } .td-link { text-align: left }
 .detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 6dvh; left: 50%; transform: translateX(-50%); width: min(960px, 94vw); max-height: 88dvh; overflow: auto }
 @media (min-width: 768px) { .detail.full .td { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: start } .detail.full .td-main { order: 1 } .detail.full .td-side { order: 2 } }
+
+/* Board 검색·필터(R72) */
+.fb { margin-bottom: var(--sp2); font-size: var(--fs-sm) }
+.fb-top { display: flex; gap: var(--sp2); align-items: center }
+.fb-q { flex: 1; min-width: 0; min-height: 30px; padding: 2px 8px; font: inherit; color: var(--fg); background: var(--s2); border: 1px solid var(--line-2); border-radius: var(--r1) }
+.fb-toggle, .fb-clear, .fb-chip { min-height: 28px; padding: 0 8px; font: inherit; color: var(--fg-2); background: var(--s2); border: 1px solid var(--line-2); border-radius: 999px; cursor: pointer }
+.fb-toggle { display: none }
+.fb-chip.on { color: var(--fg); background: var(--neon-soft); border-color: var(--neon-2) }
+.fb-panel { display: flex; flex-direction: column; gap: 4px; margin-top: var(--sp1) }
+.fb-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center }
+.fb-row b { min-width: 52px; font-weight: 650; color: var(--fg-2) }
+.ws-count { margin-left: auto; padding: 0 6px; font-variant-numeric: tabular-nums; color: var(--neon-2) }
+@media (max-width: 480px) {
+  .fb-toggle { display: inline-block; min-height: 44px }
+  .fb-clear, .fb-chip { min-height: 36px }
+  .fb:not(.open) .fb-panel { display: none }
+}

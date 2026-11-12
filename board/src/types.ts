@@ -20,6 +20,7 @@ export interface Task {
   app?: string // 어느 판 일감인가(v1·1.2v·v2) — 없는 옛 자료는 1.2v
   blocked_by?: string; block_kind?: BlockKind // 막힌 일의 까닭 — 앞 일 id · 낱말
   // 상세(R71) — 모두 선택. 보고꾼이 담백 거름을 건 전문을 싣는다. 없으면 상세에서 숨긴다.
+  direct?: boolean // 요청함 R 줄 중 쥔님 원문(따옴표 인용)이 달린 것 — 보고꾼이 싣는다. 필터 「쥔님 직접 지시만」
   ask?: string; askedAt?: string // 원래 요청(쥔님 원문) · 받은 시각
   body?: string; done?: string // 설명 전문 · 「완료 정의」 뒤
   links?: string[] // 이어진 태스크 번호(R↔T)
