@@ -11,12 +11,31 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "idle",
+      "state": "work",
       "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
+      "ended_at": null
+    },
+    {
+      "id": "a-T-6g",
+      "parent_id": "a-lead",
+      "kind": "helper",
+      "name": "자료 나르기",
+      "hue": 160,
+      "eye": "teal",
+      "prop": "box",
+      "dept": "make",
+      "team": "자료팀",
+      "role": "자료",
+      "state": "work",
+      "task_id": "T-6g",
+      "branch_id": "b-T-6g",
+      "account": "org",
+      "tok_per_min": 0,
+      "started_at": "2026-11-12T06:22:37.818Z",
       "ended_at": null
     }
   ],
@@ -434,12 +453,12 @@
       "team": "지휘",
       "sprint": 4,
       "est_min": 5,
-      "started_at": "2026-11-12T14:21:00+09:00",
+      "started_at": "2026-11-12T15:22:00+09:00",
       "lane_id": "l1",
-      "column": "wait",
-      "reason": "new",
+      "column": "done",
+      "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T14:21:00+09:00"
+      "updated_at": "2026-11-12T15:22:00+09:00"
     },
     {
       "id": "T-6a",
@@ -515,6 +534,21 @@
       "reason": "done",
       "actor_id": null,
       "updated_at": "2026-11-12T15:02:00+09:00"
+    },
+    {
+      "id": "T-6g",
+      "title": "서비스·모듈도 실자료",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 5,
+      "est_min": 10,
+      "started_at": "2026-11-12T14:42:00+09:00",
+      "lane_id": "l1",
+      "column": "work",
+      "reason": "new",
+      "actor_id": "a-T-6g",
+      "updated_at": "2026-11-12T14:42:00+09:00"
     },
     {
       "id": "T-6f",
@@ -620,6 +654,16 @@
       "actor_id": null,
       "task_id": "T-6e",
       "updated_at": "2026-11-12T15:01:02+09:00"
+    },
+    {
+      "id": "b-T-6g",
+      "title": "서비스·모듈도 실자료",
+      "trunk": false,
+      "ahead": 0,
+      "state": "merged",
+      "actor_id": "a-T-6g",
+      "task_id": "T-6g",
+      "updated_at": "2026-11-12T15:19:09+09:00"
     }
   ],
   "services": [
@@ -629,7 +673,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:21:01.838Z"
+      "checked_at": "2026-11-12T06:23:01.821Z"
     },
     {
       "id": "s2",
@@ -637,7 +681,7 @@
       "state": "build",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:21:01.838Z"
+      "checked_at": "2026-11-12T06:23:01.821Z"
     },
     {
       "id": "s3",
@@ -645,7 +689,7 @@
       "state": "plan",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:21:01.838Z"
+      "checked_at": "2026-11-12T06:23:01.821Z"
     }
   ],
   "modules": [
@@ -722,14 +766,23 @@
   ],
   "goals": [
     {
-      "id": "g4",
-      "title": "클로드 캐릭터 · 고급스럽게",
-      "progress": 80,
+      "id": "g5",
+      "title": "실제 자료가 현황판에",
+      "progress": 86,
       "state": "work",
-      "sprint": 4
+      "sprint": 5
     }
   ],
   "events": [
+    {
+      "id": "e-1906a186",
+      "ts": "2026-11-12T15:22:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-5e",
+      "actor_id": "a-lead",
+      "text": "배포본 재점검 끝"
+    },
     {
       "id": "e-4321176c",
       "ts": "2026-11-12T15:14:00+09:00",
@@ -977,7 +1030,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:21:01.838Z",
+      "ts": "2026-11-12T06:23:01.821Z",
       "pct_5h": 42,
       "pct_7d": 8,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
@@ -987,11 +1040,11 @@
   ],
   "runs": [
     {
-      "id": "r4",
-      "started_at": "2026-11-12T14:21:00+09:00",
+      "id": "r5",
+      "started_at": "2026-11-12T14:42:00+09:00",
       "ended_at": null,
-      "sprint": 4,
-      "goal_id": "g4"
+      "sprint": 5,
+      "goal_id": "g5"
     }
   ],
   "sprints": [
@@ -1068,7 +1121,7 @@
       "title": "클로드 캐릭터 · 고급스럽게",
       "goal": "이모지 사람 칩을 같은 클로드 꼴 그림 캐릭터로 · 전체 마감 품질",
       "began": "2026-11-12T14:21:00+09:00",
-      "ended": null,
+      "ended": "2026-11-12T15:22:00+09:00",
       "task_ids": [
         "T-5a",
         "T-5b",
@@ -1088,16 +1141,17 @@
       "title": "실제 자료가 현황판에",
       "goal": "실제 자료가 현황판에",
       "began": "2026-11-12T14:42:00+09:00",
-      "ended": "2026-11-12T15:06:00+09:00",
+      "ended": null,
       "task_ids": [
         "T-6a",
         "T-6b",
         "T-6c",
         "T-6d",
         "T-6e",
+        "T-6g",
         "T-6f"
       ],
-      "est_min": 64,
+      "est_min": 74,
       "actual_min": 0,
       "review": "",
       "passed": null,
