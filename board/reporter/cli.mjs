@@ -1,4 +1,4 @@
-// node board/reporter/cli.mjs --out <파일> [--lane <노트>] [--repo <폴더>] [--usage <json>]
+// node board/reporter/cli.mjs --out <파일> [--lane <노트>] [--requests <요청함 노트>] [--repo <폴더>] [--usage <json>]
 // 스냅숏 JSON 을 저장하고 표마다 줄 수만 찍는다(값은 안 찍는다).
 import { writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -12,6 +12,7 @@ if (!out) { console.error('쓰는 법: node board/reporter/cli.mjs --out <파일
 const dropped = {}
 const data = build({
   lanePath: arg('--lane', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/작업현황판/레인 작업현황판.md'),
+  requestPath: arg('--requests', 'D:/문서/subnauticaz/계획/판/시간표 작업판/레인/요청함/레인 요청함.md'),
   repoDir: arg('--repo', fileURLToPath(new URL('../..', import.meta.url))),
   usagePath: arg('--usage', join(homedir(), '.claude', 'rate-limits.json')),
   gatePath: arg('--gate', join(homedir(), '.claude', 'board', 'actors.json')),

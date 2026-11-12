@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { build, columnOf, publicGoal, publicTitle, runState, serviceState } from './snapshot.mjs'
+import { build, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, runState, serviceState } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -177,5 +177,42 @@ describe('보고꾼 — 서비스·모듈', () => {
     expect(runState({ status: 'queued', conclusion: null })).toBe('build')
     expect(runState({ status: 'completed', conclusion: 'failure' })).toBe('down')
     expect(runState(undefined)).toBe('down')
+  })
+})
+
+describe('보고꾼 — 요청함 R 카드', () => {
+  const REQ = `| # | 받은 시각 | 쥔님 원문 | 태스크로 풀면 | 종류 | 상태 |
+|---|---|---|---|---|---|
+| R1 | 11-12 14:23 | *"비밀스러운 쥔님 말"* | 🔴 **탭 이름을 쉽게 바꾼다** — 뒤 설명 | 고침 | → T-2a (8593146e 스프린트 2) |
+| R2 | 11-12 14:25 | *"둘째"* | 처음 보는 사람이 읽게 · 뒷말 | 고침 | → T-9z (없는 일) |
+| R3 | 11-12 14:26 | *"셋째"* | **아주 아주 긴 제목이 계속 이어져서 마흔 글자를 훌쩍 넘어가 버리는 경우의 처방 문장** | 고침 | 📥 대기 |
+| R4 | 11-12 14:27 | *"넷째"* | **끝난 일** | 고침 | ✅ 15:56 배포 |
+| R5 | 11-12 14:28 | *"다섯째"* | **하는 중** | 고침 | 🔨 진행 |
+| R6 | 11-12 14:29 | *"여섯째"* | **D:\\x 경로 board/src** | 고침 | 📥 대기 |
+`
+  const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), requestMd: REQ })
+  const r = Object.fromEntries(d.tasks.filter((t: { id: string }) => t.id.startsWith('R')).map((t: { id: string }) => [t.id, t]))
+
+  it('R 줄마다 카드 하나 · 제목은 처방의 굵은 글 · 원문 인용은 안 실린다', () => {
+    expect(parseRequests(REQ).map((x: { id: string }) => x.id)).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6'])
+    expect(r.R1.title).toBe('탭 이름을 쉽게 바꾼다 (→ T-2a)')
+    expect(r.R2.title).toBe('처음 보는 사람이 읽게 (→ T-9z)')
+    expect(r.R3.title.length).toBeLessThanOrEqual(40)
+    expect(r.R3.title.endsWith('…')).toBe(true)
+    expect(r.R6.title).toBe('요청 R6') // 경로가 걸려 비면 번호 제목
+    expect(JSON.stringify(d)).not.toMatch(/비밀스러운|둘째|셋째/)
+    expect(findDirty(d)).toBeNull()
+    expect(requestTitle('**탭**', 'R9')).toBe('탭')
+  })
+
+  it('상태 매핑: → T 는 그 태스크를 따르고(없으면 진행) · 대기·끝·진행', () => {
+    expect(r.R1).toMatchObject({ column: 'done', sprint: 2 }) // 따라간 T-2a 의 스프린트
+    expect(r.R2.column).toBe('work')
+    expect([r.R3.column, r.R4.column, r.R5.column]).toEqual(['wait', 'done', 'work'])
+  })
+
+  it('요청 카드는 스프린트 진행률·태스크 id 와 안 섞인다', () => {
+    expect(d.sprints.flatMap((s: { task_ids: string[] }) => s.task_ids)).toEqual(['T-1a', 'T-2a'])
+    expect(new Set(d.tasks.map((t: { id: string }) => t.id)).size).toBe(d.tasks.length)
   })
 })
