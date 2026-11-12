@@ -71,6 +71,10 @@ jobs:
         working-directory: preview
       - run: npx vite build
         working-directory: preview
+        env:
+          # 현황판이 board 표를 읽는 공개(anon) 키 — 비어 있으면 막대는 목업으로 돈다
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_PROJECT_REF && format('https://{0}.supabase.co', vars.SUPABASE_PROJECT_REF) || '' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       # ── 합치기 ─────────────────────────────────────────────────
       # v1 빌드를 루트에 깔고, 그 위에 v2 빌드를 /v2/ 로 넣는다.
