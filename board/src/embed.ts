@@ -20,7 +20,7 @@ const CALM_KEY = 'board.calm'
 const phone = matchMedia('(max-width: 767px)')
 const calmOn = () => {
   const s = localStorage.getItem(CALM_KEY)
-  return s === null ? matchMedia('(prefers-reduced-motion: reduce)').matches || phone.matches : s === '1'
+  return s === '1' // 사용자가 직접 켤 때만 — 시스템 설정·폰 폭으로 자동으로 켜지 않는다
 }
 
 let root: HTMLElement | null = null

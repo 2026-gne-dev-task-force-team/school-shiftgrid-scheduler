@@ -31,7 +31,7 @@
   .menu-ask { display: flex; flex-wrap: wrap; gap: 6px; max-width: 260px; font-size: var(--fs-sm); color: var(--fg-2) }
   .sgb-scrim { position: fixed; inset: 0; z-index: var(--z); background: rgb(40 50 60 / .35); backdrop-filter: blur(2px); border: 0; padding: 0 }
   .sgb-drawer { position: fixed; top: 28px; left: 0; right: 0; z-index: calc(var(--z) + 1); height: calc(85dvh - 28px); overflow: hidden; background: radial-gradient(1200px 400px at 20% -10%, rgb(14 124 114 / .08), transparent 60%), var(--bg); border-bottom: 1px solid rgb(14 124 114 / .45); border-radius: 0 0 var(--r3) var(--r3); box-shadow: var(--sh3); transform: translateY(calc(-100% - 28px)); visibility: hidden; transition: transform .32s var(--ease), visibility 0s .32s }
-  .sgb-drawer.open { transform: none; visibility: visible; transition: transform .32s var(--ease) }
+  .sgb-drawer.open { transform: none; visibility: visible; transition: transform .4s cubic-bezier(.34, 1.4, .64, 1) } /* 살짝 튕김 */
   .sgb-scroll { height: 100%; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent }
   .sgb-page { display: flex; flex-direction: column; min-height: 100%; padding-bottom: env(safe-area-inset-bottom) }
 @media (max-width: 767px) { .sgb-drawer { height: calc(96dvh - 28px) } }
@@ -90,7 +90,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .usage { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp3) }
 .meter { margin-top: var(--sp3) } .meter > span { font-weight: 600; font-variant-numeric: tabular-nums } .meter small, .card small { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--fg-3) }
 .bar { height: 6px; margin-top: 4px; background: var(--bg); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgb(60 45 20 / .25) }
-.bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--make), var(--neon-2)); transition: width .6s var(--ease) }
+.bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--make), var(--neon-2)); transition: width .6s var(--ease); animation: sgb-fill .7s var(--ease) backwards .1s }
 .ph { margin: auto; text-align: center; color: var(--fg-3) }
 .detail-head { display: flex; justify-content: flex-end; gap: 6px }
 .detail-body h3 { margin: var(--sp2) 0; font-size: var(--fs-lg) }
@@ -99,9 +99,13 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .tip { position: fixed; z-index: calc(var(--z) + 5); max-width: 220px; padding: 4px 8px; background: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r1); box-shadow: var(--sh3); font-size: var(--fs-sm); pointer-events: none }
 
 .pulse { animation: sgb-pulse 1.2s }
-.card { animation: sgb-breathe 4s ease-in-out infinite alternate }
+.card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 60ms), sgb-breathe 4s ease-in-out infinite alternate }
+.card:nth-child(2) { --i: 1 } .card:nth-child(3) { --i: 2 } .card:nth-child(4) { --i: 3 } .card:nth-child(n+5) { --i: 4 }
+.stage-host > :not(.card) { animation: sgb-in .28s var(--ease) backwards } /* 탭이 바뀌면 내용이 살짝 미끄러져 들어온다 */
+.ws-card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 40ms) }
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
-@media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important } }
+/* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
+@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
 
 @media (max-width: 767px) {
   .band-clock, .sgb-bar .chip.src:not(.mock) { display: none } /* 폰 폭에선 출처 칩이 「서」로 잘려 제목을 밀어낸다 — 목업일 때만 남긴다 */
@@ -173,6 +177,9 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
   .feed-line .chr { margin-right: 8px }
   .chr-card { display: flex; justify-content: center; padding: var(--sp3) 0; margin-top: var(--sp2); border-radius: var(--r2); background: radial-gradient(circle at 50% 60%, rgb(217 119 87 / .18), transparent 70%) }
 }
+@keyframes sgb-pop { from { opacity: 0; transform: translateY(var(--dy, 10px)) scale(.94) } }
+@keyframes sgb-in { from { opacity: 0; transform: translateX(calc(var(--dy, 10px) * 1.4)) } }
+@keyframes sgb-fill { from { width: 0 } }
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(14 124 114 / .35); background: rgb(14 124 114 / .14) } }
 @keyframes sgb-breathe { to { border-color: #c4b48e } }
 @keyframes sgb-roll { from { left: 0 } to { left: calc(100% - 40px) } }
