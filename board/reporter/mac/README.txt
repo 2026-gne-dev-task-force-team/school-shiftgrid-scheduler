@@ -20,6 +20,6 @@ T-9a 부터 git 을 쓰지 않는다 — 스냅숏을 만들어 이 맥에서 �
 
 업무 PC(윈도우) 메모:
   board-reporter.vbs 는 레포 밖(D:\gne-dev-task\)이라 여기서 못 고친다. 업무 PC 가 이 커밋을 받으면
-  publish.mjs 에 git push 가 없어져 board-data 로 더 이상 안 올라간다(싣기는 Supabase 로 직접).
+  publish.mjs 는 git push 없이 sink.mjs 로 Supabase 에 직접 싣는다.
   키 자리: %LOCALAPPDATA%\board-reporter\token (한 줄 파일, 사용자 폴더 밖 노출 없이) 또는 환경변수 BOARD_SUPABASE_TOKEN.
   REF 는 config.win.json 의 "ref" 칸(없으면 환경변수 BOARD_SUPABASE_REF).
