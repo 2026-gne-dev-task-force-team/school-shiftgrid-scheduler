@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>kr.gne.board-watcher</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__HOME__/.nvm/versions/node/v22.22.2/bin/node</string>
+    <string>__HOME__/Desktop/gne-dev-task/sg-merge/board/reporter/watch.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>__HOME__/Desktop/gne-dev-task/sg-merge</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>__HOME__/.nvm/versions/node/v22.22.2/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+  </dict>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/board-watcher.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/board-watcher.log</string>
+</dict>
+</plist>
