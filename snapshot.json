@@ -11,31 +11,12 @@
       "dept": "hq",
       "team": "지휘",
       "role": "지휘",
-      "state": "work",
+      "state": "idle",
       "task_id": null,
       "branch_id": null,
       "account": "org",
       "tok_per_min": 0,
       "started_at": "2026-11-12T10:55:00+09:00",
-      "ended_at": null
-    },
-    {
-      "id": "a-T-6g",
-      "parent_id": "a-lead",
-      "kind": "helper",
-      "name": "자료 나르기",
-      "hue": 160,
-      "eye": "teal",
-      "prop": "box",
-      "dept": "make",
-      "team": "자료팀",
-      "role": "자료",
-      "state": "work",
-      "task_id": "T-6g",
-      "branch_id": null,
-      "account": "org",
-      "tok_per_min": 0,
-      "started_at": "2026-11-12T14:42:00+09:00",
       "ended_at": null
     }
   ],
@@ -543,12 +524,12 @@
       "team": "자료팀",
       "sprint": 5,
       "est_min": 10,
-      "started_at": "2026-11-12T14:42:00+09:00",
+      "started_at": "2026-11-12T15:28:00+09:00",
       "lane_id": "l1",
-      "column": "work",
-      "reason": "new",
-      "actor_id": "a-T-6g",
-      "updated_at": "2026-11-12T14:42:00+09:00"
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T15:28:00+09:00"
     },
     {
       "id": "T-6f",
@@ -660,10 +641,10 @@
     {
       "id": "s-host",
       "name": "화면 호스팅",
-      "state": "build",
+      "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:27:01.903Z"
+      "checked_at": "2026-11-12T06:29:01.922Z"
     },
     {
       "id": "s-sync",
@@ -671,7 +652,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:27:01.903Z"
+      "checked_at": "2026-11-12T06:29:01.922Z"
     },
     {
       "id": "s-reporter",
@@ -679,7 +660,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T06:27:01.903Z"
+      "checked_at": "2026-11-12T06:29:01.922Z"
     }
   ],
   "modules": [
@@ -779,12 +760,21 @@
     {
       "id": "g5",
       "title": "실제 자료가 현황판에",
-      "progress": 86,
-      "state": "work",
+      "progress": 100,
+      "state": "shipped",
       "sprint": 5
     }
   ],
   "events": [
+    {
+      "id": "e-6df03cb2",
+      "ts": "2026-11-12T15:28:00+09:00",
+      "kind": "task.move",
+      "subject_type": "task",
+      "subject_id": "T-6g",
+      "actor_id": "a-lead",
+      "text": "서비스·모듈도 실자료 끝"
+    },
     {
       "id": "e-1906a186",
       "ts": "2026-11-12T15:22:00+09:00",
@@ -1041,8 +1031,8 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T06:27:02.467Z",
-      "pct_5h": 47,
+      "ts": "2026-11-12T06:29:02.505Z",
+      "pct_5h": 48,
       "pct_7d": 9,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
       "reset_7d_at": "2026-11-18T23:00:00.000Z",
@@ -1053,7 +1043,7 @@
     {
       "id": "r5",
       "started_at": "2026-11-12T14:42:00+09:00",
-      "ended_at": null,
+      "ended_at": "2026-11-12T15:28:00+09:00",
       "sprint": 5,
       "goal_id": "g5"
     }
@@ -1152,7 +1142,7 @@
       "title": "실제 자료가 현황판에",
       "goal": "실제 자료가 현황판에",
       "began": "2026-11-12T14:42:00+09:00",
-      "ended": null,
+      "ended": "2026-11-12T15:28:00+09:00",
       "task_ids": [
         "T-6a",
         "T-6b",
