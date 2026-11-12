@@ -105,7 +105,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ws-card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 40ms) }
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
 /* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
-@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
+@media (prefers-reduced-motion: reduce) { --dy: 0px; .ball, .ws-roamer, .ws-col[data-col=work] .ws-card .chr { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
 
 @media (max-width: 767px) {
   .band-clock, .sgb-bar .chip.src:not(.mock) { display: none } /* 폰 폭에선 출처 칩이 「서」로 잘려 제목을 밀어낸다 — 목업일 때만 남긴다 */
@@ -158,13 +158,21 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ball { position: absolute; left: 0; top: 2px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(14 124 114 / .7); background: var(--bg); color: var(--fg); box-shadow: var(--sh1); cursor: pointer; animation: sgb-roll 27s linear infinite }
 
 /* 4층 작업장 */
-.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp2); align-items: start }
-.ws-col { border: 1px solid var(--line); border-radius: var(--r2); padding: var(--sp1) var(--sp2) var(--sp2); min-height: 120px; background: var(--s2) }
+.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-items: stretch; border: 3px solid #5a4630; border-top: 22px solid #7a6a8a; border-radius: var(--r1); overflow: hidden; background-color: #e3c28f; background-image: linear-gradient(90deg, rgb(120 80 30 / .18) 2px, transparent 2px), linear-gradient(rgb(120 80 30 / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
+.ws-col { position: relative; padding: var(--sp1) var(--sp2) var(--sp2); min-height: 220px; border-right: 2px dashed rgb(90 70 48 / .35) }
+.ws-col:last-child { border-right: 0 }
+.ws-head small { font-weight: 400; opacity: .7 }
+.ws-furn { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
+.ws-walk { position: relative; height: 34px; margin-top: 4px; border-radius: var(--r1); background: rgb(90 70 48 / .12); overflow: hidden }
+.ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
+.ws-bang { position: absolute; top: -12px; right: 6px; min-width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--bad); border-radius: 8px 8px 8px 2px; box-shadow: 0 1px 0 rgb(0 0 0 / .3) }
+.ws-col[data-col=work] .ws-card { flex-direction: column; align-items: flex-start }
+.ws-col[data-col=work] .ws-card .chr { order: -1; animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
 .ws-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp1); padding: 1px 3px; font-weight: 650; font-size: var(--fs-sm); color: var(--fg-2) }
 .ws-badge { padding: 0 6px; border-radius: 999px; background: var(--neon-soft); color: var(--neon-2); font-variant-numeric: tabular-nums }
 .ws-body { display: flex; flex-direction: column; gap: 3px }
 /* 카드 = 상태 점 · 제목 한 줄(말줄임) · 얼굴. 시간·사유는 마우스를 올리면 뜨는 말풍선과 상세에 있다 */
-.ws-card { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 6px; text-align: left; color: var(--fg); font: inherit; font-size: var(--fs-sm); background: var(--s3); border: 1px solid var(--line); border-left: 3px solid var(--make); border-radius: var(--r1); box-shadow: var(--sh1); cursor: pointer; transition: transform .15s var(--ease), border-color .15s }
+.ws-card { position: relative; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 6px; text-align: left; color: var(--fg); font: inherit; font-size: var(--fs-sm); background: var(--s3); border: 1px solid var(--line); border-left: 3px solid var(--make); border-radius: var(--r1); box-shadow: var(--sh1); cursor: pointer; transition: transform .15s var(--ease), border-color .15s }
 .ws-card > b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550 }
 .ws-card:hover { transform: translateY(-1px); border-color: var(--line-2) }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
@@ -172,8 +180,9 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
 .ws-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--make) }
 .ws-dot[data-s=blocked] { background: var(--bad) } .ws-dot[data-s=over] { background: var(--warn) } .ws-dot[data-s=done] { background: var(--fg-3) }
 @media (max-width: 767px) {
-  .ws { display: flex; overflow-x: auto; scroll-snap-type: x mandatory }
-  .ws-col { flex: 0 0 88%; scroll-snap-align: start }
+  .ws { display: flex; flex-direction: column }
+  .ws-col { min-height: 0; border-right: 0; border-bottom: 2px dashed rgb(90 70 48 / .35) }
+  .ws-furn { max-width: 120px; margin: 0 0 var(--sp1) }
   .ws-card { min-height: 44px }
   .ws-head { min-height: 36px; align-items: center }
 }
@@ -204,6 +213,7 @@ button.gg-l { cursor: pointer } button.gg-l:hover, button.gg-l:focus-visible { o
   .feed-line .chr { margin-right: 8px }
   .chr-card { display: flex; justify-content: center; padding: var(--sp3) 0; margin-top: var(--sp2); border-radius: var(--r2); background: radial-gradient(circle at 50% 60%, rgb(217 119 87 / .18), transparent 70%) }
 }
+@keyframes sgb-roam { to { transform: translateX(var(--dist, 100px)) } }
 @keyframes sgb-pop { from { opacity: 0; transform: translateY(var(--dy, 10px)) scale(.94) } }
 @keyframes sgb-in { from { opacity: 0; transform: translateX(calc(var(--dy, 10px) * 1.4)) } }
 @keyframes sgb-flt { from { transform: rotateX(90deg) } }
