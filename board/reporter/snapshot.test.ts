@@ -179,13 +179,31 @@ describe('보고꾼 — 실자료 다듬기', () => {
 describe('보고꾼 — 서비스·모듈', () => {
   const d = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', '') })
 
-  it('모듈: 화면·자료 묶음 아래 실제 탭과 자료 부품', () => {
+  it('모듈: 시간표 앱(1.2v) 집·방 + 맨 끝 현황판 집 하나', () => {
     const name = (id: string | null) => d.modules.find((m: { id: string }) => m.id === id)?.name
     const under = (p: string) => d.modules.filter((m: { parent: string | null }) => m.parent === p).map((m: { name: string }) => m.name)
-    expect(name('m-screen')).toBe('화면')
-    expect(under('m-screen')).toEqual(expect.arrayContaining(['Overview', 'Branch', 'Lanes', 'Board', 'Blueprint', 'Sprint', 'Inbox', 'Guide']))
-    expect(under('m-data')).toEqual(['보고꾼', '나르기', '문지기 훅'])
-    expect(d.modules.every((m: { state: string; task_id: unknown }) => m.state === 'built' && m.task_id === null)).toBe(true)
+    const roots = d.modules.filter((m: { parent: string | null }) => !m.parent).map((m: { id: string }) => m.id)
+    expect(roots.at(-1)).toBe('h-board')
+    expect(roots).toEqual(expect.arrayContaining(['h-shared', 'h-link', 'h-editor', 'h-sub', 'h-room', 'h-check']))
+    expect(name('h-link')).toBe('server-link 서버 연결')
+    expect(under('h-link')).toEqual(['P5 로컬 사본', 'P6 칸 PUT 큐', 'P7 412 버튼 둘', 'P8 조작 재생', 'P9 끊김 잠금·연결 상태'])
+    expect(under('h-board')).toEqual(expect.arrayContaining(['Overview', 'Branch', 'Lanes', 'Board', 'Blueprint', 'Sprint', 'Inbox', 'Guide', '보고꾼', '나르기', '문지기 훅']))
+    expect(d.modules.some((m: { id: string }) => m.id === 'm-screen' || m.id === 'm-data')).toBe(false) // 옛 자기 모듈 뿌리는 없다
+    expect(d.modules.find((m: { id: string }) => m.id === 'm-p14')?.note).toBe('P14 · R56 · 설계 ① 통합 구조 16절 판 쪼개기 초안')
+  })
+
+  it('모듈 상태: 요청함 ✅ → Built · ◐🔄 → Building · 📥 → Plan', () => {
+    const req = (id: string, st: string) => `| ${id} | 11-12 16:40 | *"x"* | **1.2v 구현 ${id} 처방 글자** | 앱 | ${st} |`
+    const md = ['| # | 시각 | 원문 | 처방 | 종류 | 상태 |', '|---|---|---|---|---|---|', req('R43', '✅ T-7p1 7bf78e5'), req('R53', '🔄 T-8p2'), req('R56', '◐ T-7p7 앞 절반'), req('R57', '📥 대기')].join('\n')
+    const m = build({ now: at, md: lane('| T-2a | 가 | 코드 | 5 | ⬜ |', ''), requestMd: md }).modules
+    const st = (id: string) => m.find((x: { id: string }) => x.id === id)
+    expect(st('m-p1').state).toBe('built')
+    expect(st('m-p1').task_id).toBe('R43')
+    expect(st('m-p12').state).toBe('build')
+    expect(st('m-p14').state).toBe('build')
+    expect(st('m-p5').state).toBe('plan')
+    expect(st('m-p0').task_id).toBeNull() // 요청함 번호 없는 판은 계획
+    expect(st('h-shared').state).toBe('build') // 집 = 방이 다 지어지면 Built · 하나라도 시작했으면 Building
   })
 
   it('서비스: 안 넘기면 빈 배열 · 넘기면 그대로', () => {

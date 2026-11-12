@@ -83,8 +83,10 @@ create table if not exists board.modules (
   name text not null check (board.plain(name)),
   parent text,
   state text not null check (state in ('plan','build','built')),
-  task_id text
+  task_id text,
+  note text check (note is null or board.plain(note))
 );
+alter table board.modules add column if not exists note text check (note is null or board.plain(note));
 
 create table if not exists board.goals (
   id text primary key,

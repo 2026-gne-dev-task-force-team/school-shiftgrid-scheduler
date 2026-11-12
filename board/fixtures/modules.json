@@ -1,12 +1,9 @@
 [
-  {"id":"m1","name":"화면 바탕","parent":null,"state":"built","task_id":"t6"},
-  {"id":"m1a","name":"위 띠","parent":"m1","state":"built","task_id":"t6"},
-  {"id":"m1b","name":"층 탭","parent":"m1","state":"built","task_id":"t6"},
-  {"id":"m2","name":"보결 판","parent":null,"state":"build","task_id":"t1"},
-  {"id":"m2a","name":"보결 목록","parent":"m2","state":"built","task_id":"t1"},
-  {"id":"m2b","name":"보결 짝짓기","parent":"m2","state":"build","task_id":"t1"},
-  {"id":"m2c","name":"보결 알림","parent":"m2","state":"plan","task_id":null},
-  {"id":"m3","name":"로그인 문","parent":null,"state":"plan","task_id":"t3"},
-  {"id":"m3a","name":"로그인 화면","parent":"m3","state":"plan","task_id":"t3"},
-  {"id":"m3b","name":"서버 연결","parent":"m3","state":"plan","task_id":null}
+  {"id":"h-shared","name":"shared 공용","parent":null,"state":"build","task_id":"t6","note":"설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"m-p2","name":"P2 덩어리 판별","parent":"h-shared","state":"built","task_id":"t6","note":"P2 · R44 · 설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"m-p12","name":"P12 후보 엔진·대조 틀","parent":"h-shared","state":"build","task_id":"t1","note":"P12 · R53 · 설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"m-p13a","name":"P13a 1,820 맞추기 앞 절반","parent":"h-shared","state":"plan","task_id":null,"note":"P13a · R54 · 설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"h-link","name":"server-link 서버 연결","parent":null,"state":"plan","task_id":"t3","note":"설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"m-p5","name":"P5 로컬 사본","parent":"h-link","state":"plan","task_id":"t3","note":"P5 · R57 · 설계 ① 통합 구조 16절 판 쪼개기 초안"},
+  {"id":"m-p6","name":"P6 칸 PUT 큐","parent":"h-link","state":"plan","task_id":null,"note":"P6 · R58 · 설계 ① 통합 구조 16절 판 쪼개기 초안"}
 ]
