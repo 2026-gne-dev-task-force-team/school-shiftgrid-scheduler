@@ -36,3 +36,9 @@ export function actorWhat(a: Who & Pick<Actor, 'task_id'>, tasks: Pick<Task, 'id
   const t = tasks.find((x) => x.id === a.task_id)
   return t ? `${what} · 지금: ${t.id} ${t.title}` : what
 }
+
+/** 상태별 수 — 일함 · 쉼 · 대기 · 막힘 · 퇴근(옛 done 포함). 0 인 것도 낱말로 남는다. */
+export function stateCounts(actors: { state: string }[]): [state: string, n: number][] {
+  const n = (...ss: string[]) => actors.filter((a) => ss.includes(a.state)).length
+  return [['work', n('work')], ['idle', n('idle')], ['wait', n('wait')], ['blocked', n('blocked')], ['off', n('off', 'done')]]
+}

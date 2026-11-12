@@ -38,14 +38,18 @@ const outline = ([x, y, w, h]: R) => rect([x - 1, y - 1, w + 2, h + 2, INK])
 /** 같은 입력 → 같은 SVG 문자열(시험·정적 견본용). */
 export function characterSvg(a: Who, size: CharSize = 'chip'): string {
   const eye = eyeColor(a), band = BAND[a.dept] ?? BAND.make, prop = propOf(a), px = PX[size]
-  const sleepy = a.state === 'idle' || a.state === 'done' // 쉼·끝 = 눈이 반쯤 감긴다(한 줄)
+  const sleepy = a.state === 'idle' || a.state === 'off' || a.state === 'done' // 쉼·퇴근 = 눈이 반쯤 감긴다(한 줄)
+  const cls = (c: string, rs: R[]) => `<g class="${c}">${rs.map(rect).join('')}</g>`
+  // 쉼 = 머리 옆 작은 Z · 막힘 = 머리 위 !(색은 CSS 변수가 입힌다)
+  const mark = a.state === 'idle' ? cls('chr-z', [[12, -3, 3, 1, ''], [13, -2, 1, 1, ''], [12, -1, 3, 1, '']])
+    : a.state === 'blocked' ? cls('chr-bang', [[6, -4, 2, 3, ''], [6, 0, 2, 1, '']]) : ''
   const shell: R[] = [[3, 1, 8, 1, band], [2, 2, 10, 6, BODY], [1, 4, 1, 2, BODY], [12, 4, 1, 2, BODY], ...(prop ? PROPS[prop] : [])]
   const legs = (xs: number[]) => xs.map((x): R => [x, 8, 1, 2, BODY])
   const eyes = (x: number) => sleepy ? [[x, 5, 2, 1, INK] as R] : [[x, 4, 2, 2, INK] as R, [x, 4, 1, 1, eye] as R]
   const leg = (cls: string, xs: number[]) => `<g class="${cls}">${legs(xs).map(outline).join('')}${legs(xs).map(rect).join('')}</g>`
   return `<svg class="chr" data-state="${a.state}" data-size="${size}" role="img" aria-label="${esc(actorLabel(a))}" width="${px}" height="${Math.round(px * GH / GW)}" viewBox="0 0 ${GW} ${GH}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">` +
     `<g class="chr-b">${shell.map(outline).join('')}${leg('chr-l1', [3, 8])}${leg('chr-l2', [5, 10])}${shell.map(rect).join('')}` +
-    `<g class="chr-e">${[4, 8].flatMap(eyes).map(rect).join('')}</g></g></svg>`
+    `<g class="chr-e">${[4, 8].flatMap(eyes).map(rect).join('')}</g></g>${mark}</svg>`
 }
 
 export function character(a: Who, size: CharSize = 'chip'): Element {

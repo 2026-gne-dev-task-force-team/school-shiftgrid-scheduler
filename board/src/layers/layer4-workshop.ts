@@ -1,5 +1,5 @@
 import { h, isCalm } from '../dom.ts'
-import { KIND_ICON } from '../ui/chip.ts'
+import { KIND_ICON, isOff } from '../ui/chip.ts'
 import type { Task } from '../types.ts'
 import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
 import type { LayerRenderer } from './types.ts'
@@ -40,12 +40,14 @@ export const layer4: LayerRenderer = {
     }
     // 쉬는 캐릭터는 복도를 왔다갔다 — 사람마다 거리·속도·지연이 다르다(calm 이면 CSS 가 멎는다)
     const walk = h('div', { class: 'ws-walk', 'aria-hidden': 'true' })
-    data.actors.filter((a) => a.state === 'idle' || a.state === 'done').forEach((a, i) => {
+    data.actors.filter((a) => a.state === 'idle').forEach((a, i) => {
       const w = h('span', { class: 'ws-roamer', style: `--dist:${90 + (i * 53) % 140}px;--dur:${9 + (i * 3) % 7}s;--dly:${-i * 2.3}s;left:${10 + (i * 37) % 50}%` }, character(a, 'mini'))
       walk.append(w)
     })
     host.append(board)
     if (walk.childElementCount) host.append(walk) // 쉬는 캐릭터가 없으면 빈 복도를 그리지 않는다
+    const off = data.actors.filter((a) => isOff(a.state)) // 퇴근한 캐릭터는 가장자리 숙소에 흐리게 모인다(걷지 않는다)
+    if (off.length) host.append(h('div', { class: 'ws-dorm', 'aria-label': '숙소' }, h('b', null, `🏠 숙소 ${off.length}`), ...off.map((a) => { const c = character(a, 'mini'); c.setAttribute('title', `${actorLabel(a, data.actors)} — 퇴근`); return c })))
 
     let expanded = false
     const more = h('button', { class: 'ws-more' })

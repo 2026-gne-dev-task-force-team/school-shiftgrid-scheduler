@@ -1,10 +1,15 @@
 import { h } from '../dom.ts'
-import { chip, DEPT_NAME, STATE_ICON } from '../ui/chip.ts'
+import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
-import { actorLabel, actorWhat } from '../lib/actor.ts'
+import { actorLabel, actorWhat, stateCounts } from '../lib/actor.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
+
+/** 상태별 수 — 일함 · 쉼 · 대기 · 막힘 · 퇴근을 따로 센다(0 인 것도 보인다). */
+export function stateSummary(actors: { state: string }[]): HTMLElement {
+  return h('div', { class: 'sum-states' }, ...stateCounts(actors).map(([s, c]) => h('span', { 'data-state': s }, `${STATE_ICON[s]} ${STATE_NAME[s]} ${c}`)))
+}
 
 // 1층 한눈에 — 목표 · 부서별 지금 몇 명 · 한도와 속도 · 최근 로그.
 export const layer1: LayerRenderer = {
@@ -16,13 +21,14 @@ export const layer1: LayerRenderer = {
       g && h('p', null, `Sprint ${g.sprint.id} · ${g.sprint.title} — ${g.pct}% · 남은 일감 ${left}개`)))
 
     const depts = h('section', { class: 'card' }, h('b', null, '부서별 지금 몇 명'))
+    depts.append(stateSummary(data.actors))
     for (const d of ['hq', 'make', 'qa'] as const) {
-      const here = data.actors.filter((a) => a.dept === d && a.state !== 'done')
+      const here = data.actors.filter((a) => a.dept === d && !isOff(a.state))
       const row = h('div', { class: 'row', 'data-dept': d }, h('span', { class: 'dept' }, `${DEPT_NAME[d]} ${here.length}명`))
       for (const a of here) {
         const name = actorLabel(a, data.actors), what = actorWhat(a, data.tasks)
         const c = chip({ icon: character(a), label: a.task_id ? `${name} · ${a.task_id}` : name, hue: a.hue, id: a.id, onClick: () => openDetail({
-          title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${a.state}`],
+          title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${a.team}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
             ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))]],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })
         tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]}`)
