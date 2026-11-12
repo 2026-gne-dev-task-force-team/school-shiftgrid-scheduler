@@ -37,7 +37,7 @@ if (!existsSync(join(dir, '.git'))) {
 
 // 3. 쓸 파일 셋. apply.mjs 는 to-sql 본문을 끼워 자립시킨다.
 const here = (f) => readFileSync(new URL(f, import.meta.url), 'utf-8')
-const IMPORT = "import { toSql, TABLES } from './to-sql.mjs'\n"
+const IMPORT = "import { toSql, TABLES } from './to-sql.mjs'" // 줄끝 없이 — 체크아웃이 CRLF 로 바꿔도 맞는다
 const applySrc = here('./apply.mjs')
 if (!applySrc.includes(IMPORT)) throw new Error('apply.mjs 의 to-sql import 줄을 못 찾음')
 
@@ -51,7 +51,7 @@ try { old = JSON.parse(readFileSync(snapPath, 'utf-8')) } catch { /* 처음 */ }
 const files = {
   'snapshot.json': old && strip(old) === strip(snap) ? null : JSON.stringify(snap, null, 2) + '\n',
   // 함수 치환 — 문자열 치환이면 to-sql 안의 「$'」 를 특수 패턴으로 먹는다
-  'apply.mjs': applySrc.replace(IMPORT, () => here('./to-sql.mjs').replace(/^\/\/.*\n/gm, '') + '\n'),
+  'apply.mjs': applySrc.replace(IMPORT, () => here('./to-sql.mjs').replace(/^\/\/.*\n/gm, '').trimEnd()),
   '.github/workflows/sync.yml': here('./sync.yml'),
 }
 const changed = Object.entries(files).filter(([f, body]) => {
