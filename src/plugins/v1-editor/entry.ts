@@ -1,11 +1,13 @@
 // v1 편성기 iframe 입구 — 설계 ① 2-1 · P10a. v1-editor.html 이 이 파일을 싣는다.
 // legacy 는 손대지 않는 사본이라 main.tsx 대신 여기서 같은 순서로 띄운다(테마 → 렌더).
-// P10b 에서 legacy 를 동적 import 하기 전에 `window.platform = bundlePlatform` 을 꽂는다 — 지금은 v1 웹 platform 그대로.
+// legacy 를 동적 import 하기 전에 window.platform 을 꾸러미 구현으로 꽂는다(P10b).
 import { createElement, StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './legacy/index.css'
+import { installBundlePlatform } from './bundle-platform'
 
 export async function mountV1Editor(root: HTMLElement): Promise<void> {
+  installBundlePlatform()
   const [{ default: App }, { applyTheme, getTheme }] = await Promise.all([
     import('./legacy/App.tsx'),
     import('./legacy/ui/help/theme'),
