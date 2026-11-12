@@ -90,7 +90,7 @@ function render(notice = false): void {
 
   const caret = h('button', { class: 'btn sgb-mini sgb-caret', 'aria-label': '작업현황판 열고 닫기' },
     root!.querySelector('.sgb-drawer')!.classList.contains('open') ? '▲' : '▼')
-  barEl.replaceChildren(bnd.toggle, bnd.upd, bnd.auto, bnd.fb, bnd.more, caret)
+  barEl.replaceChildren(bnd.editions, bnd.toggle, bnd.upd, bnd.auto, bnd.fb, bnd.more, caret)
   menuHost.replaceChildren(bnd.menu)
   page.replaceChildren(bnd.drop, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
   show(restoreTab(curTab, LAYERS.length))
