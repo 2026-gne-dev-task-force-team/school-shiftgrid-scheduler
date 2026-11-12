@@ -22,7 +22,7 @@ export function kstIso(text, year, day) {
 const cells = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
 /** 백틱 안 낱말 — 경로·가지 이름·파일명·커밋 꼴이면 빈 값, 아니면 낱말 그대로. 끝 「/」 하나(한 칸 폴더 이름)는 낱말로 본다. */
 export function codeWord(w) {
-  const t = w.trim().replace(/^([A-Za-z0-9_.-]+)\/$/, '$1')
+  const t = w.trim().replace(/^\/?([A-Za-z0-9_.-]+)\/$|^\/([A-Za-z0-9_.-]+)$/, '$1$2')
   const shaped = !isPlain(t) || /\.[A-Za-z0-9]{1,5}\b/.test(t) || /^[0-9a-f]{7,40}$/i.test(t) || /^[a-z0-9.]+(-[a-z0-9.]+)+$/i.test(t)
   return shaped ? '' : t
 }
@@ -249,7 +249,8 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
     sprints.push({ id: s.id, title: clean(s.title) || `스프린트 ${s.id}`, goal: publicGoal(s.goal) || clean(s.title), began,
       ended: allDone ? mine.map((t) => t.updated_at).sort().at(-1) : null, task_ids: mine.map((t) => t.id),
-      est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: null, missed: '', next: '' })
+      est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: allDone ? true : null, // 규칙: 레인 노트 스프린트 절 태스크가 전부 ✅ 면 통과, 아니면 진행 중(null)
+       missed: '', next: '' })
   }
   const byId = new Map(tasks.map((t) => [t.id, t]))
   const cur = [...sprints].reverse().find((s) => !s.ended) ?? sprints.at(-1)

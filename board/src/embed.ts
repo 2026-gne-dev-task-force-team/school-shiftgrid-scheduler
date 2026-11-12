@@ -32,6 +32,7 @@ let band: ReturnType<typeof createBand> | null = null
 let remote: Remote | null = null // 원격이 오면 담아 두고 다시 그린다
 let latest: VersionInfo | null = null // 띠에 띄운 새 판
 let curTab = 0 // 다시 그려도 보던 탭을 되살린다
+let detailEl: HTMLElement | null = null
 let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
@@ -42,6 +43,7 @@ function render(notice = false): void {
 
   const stage = createStage()
   const detail = createDetail()
+  detailEl = detail.el
   const feed = createFeedLog(data.events, (id) => stage.pulse(id), data.actors)
   const ctx: LayerCtx = { data, openDetail: detail.open, tip: attachTip }
 
@@ -123,8 +125,8 @@ export function mountBoard(host?: HTMLElement): void {
   barEl.addEventListener('click', (e) => { if ((e.target as Element).closest('.sgb-toggle, .sgb-caret')) set(!drawer.classList.contains('open')) })
   scrim.addEventListener('click', () => set(false))
   document.addEventListener('keydown', (e) => {
-    const t = escTarget(e.key, !!band && !band.menu.hidden, drawer.classList.contains('open'))
-    if (t === 'menu') band!.closeMenu(); else if (t === 'drawer') set(false)
+    const t = escTarget(e.key, !!band && !band.menu.hidden, !!detailEl && !detailEl.hidden, drawer.classList.contains('open'))
+    if (t === 'menu') band!.closeMenu(); else if (t === 'detail') detailEl!.hidden = true; else if (t === 'drawer') set(false)
   })
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
