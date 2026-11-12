@@ -972,7 +972,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R2",
@@ -987,7 +987,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R3",
@@ -1002,7 +1002,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R4",
@@ -1017,7 +1017,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R5",
@@ -1032,7 +1032,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R6",
@@ -1047,7 +1047,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R7",
@@ -1062,7 +1062,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R8",
@@ -1077,7 +1077,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R9",
@@ -1092,7 +1092,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R10",
@@ -1107,7 +1107,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R11",
@@ -1122,7 +1122,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R12",
@@ -1137,7 +1137,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R13",
@@ -1152,7 +1152,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R14",
@@ -1167,7 +1167,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R15",
@@ -1182,7 +1182,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R16",
@@ -1197,7 +1197,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R17",
@@ -1212,7 +1212,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R18",
@@ -1227,7 +1227,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R19",
@@ -1242,7 +1242,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R20",
@@ -1257,7 +1257,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R21",
@@ -1272,7 +1272,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R22",
@@ -1287,7 +1287,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R23",
@@ -1302,7 +1302,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R24",
@@ -1317,7 +1317,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R25",
@@ -1332,7 +1332,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R26",
@@ -1347,7 +1347,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R27",
@@ -1362,7 +1362,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R28",
@@ -1377,7 +1377,7 @@
       "column": "done",
       "reason": "done",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R29",
@@ -1392,7 +1392,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R30",
@@ -1407,7 +1407,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R31",
@@ -1422,7 +1422,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R32",
@@ -1437,7 +1437,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R33",
@@ -1452,7 +1452,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R34",
@@ -1467,7 +1467,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R35",
@@ -1482,7 +1482,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R36",
@@ -1497,7 +1497,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R37",
@@ -1512,7 +1512,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R38",
@@ -1527,7 +1527,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R39",
@@ -1542,7 +1542,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R40",
@@ -1557,7 +1557,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R41",
@@ -1572,7 +1572,7 @@
       "column": "work",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R42",
@@ -1587,7 +1587,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R43",
@@ -1602,7 +1602,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R44",
@@ -1617,7 +1617,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R45",
@@ -1632,7 +1632,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R46",
@@ -1647,7 +1647,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R47",
@@ -1662,7 +1662,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R48",
@@ -1677,7 +1677,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R49",
@@ -1692,7 +1692,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R50",
@@ -1707,7 +1707,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R51",
@@ -1722,7 +1722,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R52",
@@ -1737,7 +1737,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R53",
@@ -1752,7 +1752,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R54",
@@ -1767,7 +1767,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R55",
@@ -1782,7 +1782,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R56",
@@ -1797,7 +1797,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R57",
@@ -1812,7 +1812,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R58",
@@ -1827,7 +1827,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R59",
@@ -1842,7 +1842,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R60",
@@ -1857,7 +1857,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R61",
@@ -1872,7 +1872,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R62",
@@ -1887,7 +1887,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R63",
@@ -1902,7 +1902,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R64",
@@ -1917,7 +1917,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R65",
@@ -1932,7 +1932,7 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
     },
     {
       "id": "R66",
@@ -1947,7 +1947,983 @@
       "column": "wait",
       "reason": "new",
       "actor_id": null,
-      "updated_at": "2026-11-12T07:49:02.690Z"
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-V1",
+      "title": "품질 검토 + ③ → v1 머지·push",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K15",
+      "title": "설정 › 플러그인 목록",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K18·19",
+      "title": "탐색기에서 노드 아이콘 바꾸기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K20·25",
+      "title": "컬렉션 열 설명 ⓘ",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K16",
+      "title": "코어 모듈 무게 표 → 재편 안",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K23",
+      "title": "우클릭 메뉴 틀",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K21",
+      "title": "빈 표 자리 「어떻게 쓰나」 틀 + K25 죽은 bornRow 걷기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QS",
+      "title": "톱니 우회 되돌리고 검사를 주인 파일 제외로 정확히",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-화면",
+      "title": "K15·K18·K19①·K20·K21·K23 맨눈",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q28·Q7",
+      "title": "QA 바퀴 3",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-K17",
+      "title": "단순 검수 → 브라우저 자동 테스트",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QF",
+      "title": "Q28 발견 고침",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q21·22·10",
+      "title": "QA 바퀴 3",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QG",
+      "title": "Q21-1 깨진 노드",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q14·25",
+      "title": "QA 바퀴 3",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QH",
+      "title": "Q14 잔 결함",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q11·15",
+      "title": "QA 바퀴 3",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QI",
+      "title": "Q15 컬렉션 칸",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q23+QI화면",
+      "title": "QA 바퀴 3",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QJ",
+      "title": "좁은 제목 칸 호버 단추",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q23b",
+      "title": "Q23 나머지",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QK",
+      "title": "사용자 바꾸면 권한 밖 탭 닫기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QJ화면",
+      "title": "QJ 접힘 1280·390",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-쉬운 모드",
+      "title": "📌 마지막 패키징",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-P0",
+      "title": "페르소나 브리프",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-QK화면",
+      "title": "역할자→이름만 전환 때 잠금 화면",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-53c1a8a9",
+      "title": "v1 에서 본받을 것 목록 → 페르소나가 순위",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q30",
+      "title": "오래·많이 쓰기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-페르소나",
+      "title": "페르소나가 다음 판 순서 고르기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GA",
+      "title": "시작 화면에 첫 환영 카드 + 「지금 할 일」 한 줄",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GB",
+      "title": "빈 화면 문구 한 꼴",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GC",
+      "title": "탐색기 폴더 펴기 882ms → 줄 목록 메모화",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GD",
+      "title": "꺼진 단추 「먼저 ~하세요」 툴팁",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-G화면",
+      "title": "GA 환영 카드",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GE",
+      "title": "빈 표 문구를 보이는 폭 가운데로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-낱말",
+      "title": "쉬운 모드 낱말",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GF",
+      "title": "달력 휴지통 판정을 부모 역색인 한 번으로 → 펴기 766ms 목표 <1",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q17b",
+      "title": "Q17 재측정",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GG",
+      "title": "노트 ⌘B 단축키",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GH",
+      "title": "첫 로드 1.2초",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-페르소나 눈",
+      "title": "G화면·GE 스샷 + 를 눈으로 1차 검토",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GI",
+      "title": "「지금 할 일」을 환영 카드 안으로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GJ",
+      "title": "노트 굵은 글 끝 Enter 가 쪼갬",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-G화면2",
+      "title": "GD 꺼진 단추 툴팁",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GK",
+      "title": "화면 글 끝맺음 통일",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GL",
+      "title": "전체 실행 때만 시간 초과",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q17c",
+      "title": "Q17b ➖ 묶음",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-G화면3",
+      "title": "GK 끝맺음 화면 훑기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GM",
+      "title": "⌘W 탭 닫기",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GN",
+      "title": "시트 칸 서식",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-GO",
+      "title": "시트 칸 우클릭 메뉴 흐림 원인",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-안내",
+      "title": "사용자 사용법 안내 설계 → 페르소나 검토 → 구현",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-7cefb9-Q17",
+      "title": "기준 앱 대조 목록",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-7cefb9",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-바닥",
+      "title": "메모리 상한",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-반입",
+      "title": "노션 2-2 표의 페이지를 노트로 옮김",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-대조",
+      "title": "레포 v1·v2 실물과 설계 ① 대조",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-비식별",
+      "title": "실명 zip 을 비식별 사본으로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-통합 검수",
+      "title": "4절 기준표 7항",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-재설계",
+      "title": "❌ 갈래만",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-설계안",
+      "title": "용 한 장",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-🙋",
+      "title": "검토 + 「해」",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-재검수 S",
+      "title": "바뀐 다섯 장 한 번에",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-설계안 S",
+      "title": "다시 씀",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "done",
+      "reason": "done",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-e21d2528",
+      "title": "검토 + 「해」",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "wait",
+      "reason": "new",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
+    },
+    {
+      "id": "l-337c1c-구현",
+      "title": "상세 설계의 판 쪼개기대로",
+      "category": "코드",
+      "kind": "work",
+      "team": "자료팀",
+      "sprint": 0,
+      "est_min": 0,
+      "started_at": null,
+      "lane_id": "l-337c1c",
+      "column": "wait",
+      "reason": "blocked",
+      "block_kind": "outside",
+      "actor_id": null,
+      "updated_at": "2026-11-12T07:51:02.727Z"
     }
   ],
   "lanes": [
@@ -1956,6 +2932,30 @@
       "title": "현황판 만들기",
       "state": "work",
       "actor_id": "a-lead"
+    },
+    {
+      "id": "l-754dc4",
+      "title": "검수",
+      "state": "idle",
+      "actor_id": null
+    },
+    {
+      "id": "l-7cefb9",
+      "title": "저녁 운전",
+      "state": "idle",
+      "actor_id": null
+    },
+    {
+      "id": "l-953237",
+      "title": "보결",
+      "state": "idle",
+      "actor_id": null
+    },
+    {
+      "id": "l-337c1c",
+      "title": "v1·v2 설계",
+      "state": "idle",
+      "actor_id": null
     }
   ],
   "branches": [
@@ -2047,7 +3047,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:49:02.158Z"
+      "checked_at": "2026-11-12T07:51:02.157Z"
     },
     {
       "id": "s-sync",
@@ -2055,7 +3055,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:49:02.158Z"
+      "checked_at": "2026-11-12T07:51:02.157Z"
     },
     {
       "id": "s-reporter",
@@ -2063,7 +3063,7 @@
       "state": "ok",
       "url": "",
       "task_id": null,
-      "checked_at": "2026-11-12T07:49:02.158Z"
+      "checked_at": "2026-11-12T07:51:02.157Z"
     }
   ],
   "modules": [
@@ -2614,7 +3614,7 @@
   "usage": [
     {
       "account": "org",
-      "ts": "2026-11-12T07:49:02.690Z",
+      "ts": "2026-11-12T07:51:02.727Z",
       "pct_5h": 57,
       "pct_7d": 10,
       "reset_5h_at": "2026-11-12T09:40:00.000Z",
