@@ -4,7 +4,7 @@
  */
 import { substituteCandidates, type CandInput, type SubQuery, type SubResult } from './candidates'
 
-export interface CanonCase { dayIndex: number; start: string | number; end: string | number; self: string; A: string[]; B: string[]; C: string[]; X: string[] }
+export interface CanonCase { dayIndex: number; start: string | number; end: string | number; self: string | null; A: string[]; B: string[]; C: string[]; X: string[] }
 export interface CanonDiff { index: number; group: 'A' | 'B' | 'C' | 'X'; missing: string[]; extra: string[] }
 export interface CanonReport { total: number; mismatched: number; skipped: number; diffs: CanonDiff[] }
 
@@ -21,16 +21,18 @@ export function compareGroup(expected: string[], actual: string[]): { missing: s
   return { missing, extra: rest }
 }
 
-export function runCanon(cases: CanonCase[], adapter: CanonAdapter): CanonReport {
+/** range: 건 번호 [from,to) — 앞 절반·뒤 절반을 나눠 돌린다. 빼면 전부 */
+export function runCanon(cases: CanonCase[], adapter: CanonAdapter, range?: { from: number; to: number }): CanonReport {
   const rep: CanonReport = { total: 0, mismatched: 0, skipped: 0, diffs: [] }
   cases.forEach((c, index) => {
+    if (range && (index < range.from || index >= range.to)) return
     let built: ReturnType<CanonAdapter> = null
     try { built = adapter(c, index) } catch { built = null }
     if (!built) { rep.skipped++; return }
     rep.total++
     const r: SubResult = substituteCandidates(built.input, built.query)
     const names = (xs: { id: string }[]) => xs.map((x) => built!.nameOf(x.id))
-    const got = { A: names(r.A), B: names(r.B), C: names(r.C), X: names(r.excluded) }
+    const got = { A: names(r.A), B: names(r.B), C: names(r.C), X: names(r.excluded.filter((e) => e.code === 'homeroom-with-aux')) } // X = 보조 인력만 든 반(그 밖의 제외는 정답지에 없다)
     let bad = false
     for (const g of ['A', 'B', 'C', 'X'] as const) {
       const d = compareGroup(c[g] ?? [], got[g])
