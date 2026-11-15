@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { Badge, Button, EmptyState } from '../../pane-ui-system';
 import type { Severity } from '../../../shared/check/index.ts';
-import { runCheck, type CheckView } from './run';
+import { runCheck, isBundleText, type CheckView } from './run';
+import { adoptBundle } from '../../../shared/bundle/store.ts';
 
 const MARK: Record<Severity, string> = { error: '❌', warn: '⚠️', info: 'ℹ️' };
 
@@ -31,6 +32,8 @@ export function CheckResult({ view }: { view: CheckView }) {
 export function CheckPanel() {
     const [view, setView] = useState<CheckView | null>(null);
     const [name, setName] = useState('');
+    const [text, setText] = useState('');
+    const [applied, setApplied] = useState('');
     const fileRef = useRef<HTMLInputElement>(null);
     return (
         <div className="p-4 flex flex-col gap-3 max-w-3xl">
@@ -42,13 +45,20 @@ export function CheckPanel() {
                     onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        setName(f.name);
-                        setView(runCheck(await f.text()));
+                        const t = await f.text();
+                        setName(f.name); setText(t); setApplied('');
+                        setView(runCheck(t));
                         e.target.value = '';
                     }}
                 />
             </div>
-            {view ? <><p className="text-small text-muted">{name}</p><CheckResult view={view} /></>
+            {view ? <><p className="text-small text-muted">{name}</p><CheckResult view={view} />
+                {isBundleText(text) && (applied
+                    ? <p className="text-small">{applied}</p>
+                    : <div><Button onClick={async () => {
+                        const r = await adoptBundle(text);
+                        setApplied(r.ok ? '적용됨' : `적용하지 못했습니다 — ${r.reason}`);
+                    }}>이 번들로 쓰기</Button></div>)}</>
                 : <p className="text-small text-muted">파일을 고르면 여기에 검사 결과가 나옵니다.</p>}
         </div>
     );

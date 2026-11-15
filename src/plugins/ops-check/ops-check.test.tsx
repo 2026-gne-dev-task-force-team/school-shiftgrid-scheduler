@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement as h } from 'react';
-import { runCheck } from './run';
+import { runCheck, isBundleText } from './run';
 import { CheckResult } from './CheckPanel';
 
 // 가짜 v1 문서(코드로 만든다 — 실자료·실명 없음). 51반, 어떤 규칙에도 안 걸린다.
@@ -32,5 +32,14 @@ describe('ops-check 화면', () => {
     it('깨진 JSON·빈 파일은 사람 말', () => {
         expect(html('{"a":')).toContain('깨진 파일');
         expect(html('  ')).toContain('빈 파일');
+    });
+});
+
+describe('번들 판정(「이 번들로 쓰기」 버튼 조건)', () => {
+    it('번들만 true — v1·깨진·빈 파일은 false', () => {
+        expect(isBundleText(JSON.stringify({ bundleVersion: 1, parts: {}, versions: {} }))).toBe(true);
+        expect(isBundleText(JSON.stringify(v1()))).toBe(false);
+        expect(isBundleText('{"a":')).toBe(false);
+        expect(isBundleText('')).toBe(false);
     });
 });
