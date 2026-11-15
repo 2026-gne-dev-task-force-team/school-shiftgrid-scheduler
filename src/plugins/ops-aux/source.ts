@@ -38,5 +38,7 @@ export function demoAux(): AuxPart {
         conditions: [{ id: 's1:3', staffId: 's1', dow: 3, workStartMin: 540, workEndMin: 630, periods: null }],
         base: [{ id: 's1:3:540', staffId: 's1', dow: 3, startMin: 540, endMin: 580, classKey: '1-1' }],
         day: [],
+        exceptions: [],
+        monthClose: [],
     };
 }
