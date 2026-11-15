@@ -31,7 +31,7 @@ export const opsSubPlugin = definePlugin({
             ribbon: [{ commandId: 'ops-sub.open-list', icon: 'list', order: 12 }, { commandId: 'ops-sub.open-mine', icon: 'list', order: 8 }],
         },
     },
-    components: { List: ({ host }) => createElement(ListPanel, { onOpen: () => { host.workspace.open('ops-sub.detail', { where: 'center' }); } }), Mine: () => createElement(MinePanel), Register: () => createElement(RegisterPanel), Detail: () => createElement(DetailPanel), Admin: () => createElement(AdminPanel) },
+    components: { List: ({ host }) => createElement(ListPanel, { onOpen: () => { host.workspace.open('ops-sub.detail', { where: 'center' }); }, onRegister: () => { host.commands.run('ops-sub.open-register'); } }), Mine: () => createElement(MinePanel), Register: () => createElement(RegisterPanel), Detail: () => createElement(DetailPanel), Admin: () => createElement(AdminPanel) },
     commands: {
         'ops-sub.open-list': (host: PluginHost) => { host.workspace.open('ops-sub.list', { where: 'center' }); },
         'ops-sub.open-mine': (host: PluginHost) => { host.workspace.open('ops-sub.mine', { where: 'center' }); },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, EmptyState, isImeEnter } from '../../pane-ui-system';
+import { Badge, Button, EmptyState, isImeEnter } from '../../pane-ui-system';
 import { setSelection } from './detail';
 import { absentLabel, applyVisibility, getSlotSource, getViewer, groupByDateAndTime, mineOf, type VisibleRow } from './list';
 
@@ -54,17 +54,22 @@ export function MineView({ rows, personRef }: { rows: VisibleRow[]; personRef: s
     const block = (title: string, list: VisibleRow[]) => list.length > 0 && (
         <section className="flex flex-col gap-1">
             <h3 className="text-small text-muted">{title}</h3>
-            <ul className="flex flex-col gap-1">{list.map((r) => <li key={r.id} className="text-small">{r.date} {hhmm(r.startMin)} · <RowLine r={r} /></li>)}</ul>
+            <ul className="flex flex-col gap-1">{list.map((r) => <li key={r.id} className="text-small">{r.date} {hhmm(r.startMin)} · <ul className="inline-flex"><RowLine r={r} /></ul></li>)}</ul>
         </section>
     );
     return <div className="flex flex-col gap-3">{block('내가 맡은 보결', m.taking)}{block('내가 빠진 보결', m.absent)}</div>;
 }
 
 /** 줄을 누르면 그 줄을 고른 것으로 적고(onOpen) 상세 화면을 연다 — 여는 손은 플러그인(host)이 준다. */
-export function ListPanel({ onOpen }: { onOpen?: () => void }) {
+export function ListPanel({ onOpen, onRegister }: { onOpen?: () => void; onRegister?: () => void }) {
     const rows = useRows();
     const pick = (r: VisibleRow) => { setSelection({ date: r.date, rowId: r.id }); onOpen?.(); };
-    return <div className="p-4 max-w-3xl">{rows === null ? <p className="text-small text-muted">불러오는 중…</p> : <ListView rows={rows} onOpen={pick} />}</div>;
+    return (
+        <div className="p-4 max-w-3xl flex flex-col gap-3">
+            {onRegister && <div className="flex justify-end"><Button tone="accent" onClick={onRegister}>올리기</Button></div>}
+            {rows === null ? <p className="text-small text-muted">불러오는 중…</p> : <ListView rows={rows} onOpen={pick} />}
+        </div>
+    );
 }
 export function MinePanel() {
     const rows = useRows();
