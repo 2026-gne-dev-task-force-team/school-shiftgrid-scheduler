@@ -1,6 +1,6 @@
 /**
  * 화면 사정 — 「좁은 화면인가」와 패널 상태(폭·접힘·세로 분할)를 한 자리에서 쥔다.
- * ⚠️ 창 폭을 render 중에 읽지 않는다(매 프레임 다시 그린다) — matchMedia 구독으로 바뀔 때만 깨운다.
+ * ⚠️ 창 폭을 render 중에 읽지 않는다(매 프레임 다시 그린다) — matchMedia 구독(+ resize 다시 재기)으로 바뀔 때만 깨운다.
  *
  * (출처: 옛 v2 `src/v2/ui/useScreen.ts` — leftSplit 조절을 더했다.)
  */
@@ -20,9 +20,16 @@ export function useNarrow(): boolean {
         if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
         const mq = window.matchMedia(`(max-width: ${NARROW_PX - 1}px)`);
         const h = (e: MediaQueryListEvent) => setNarrow(e.matches);
-        mq.addEventListener('change', h);
+        // 🔴 resize 로도 다시 잰다 — change 가 안 오는 길(옛 사파리는 addListener 만 · 자동화 도구 창 크기 바꾸기)에서
+        //    1280→390 으로 줄여도 넓은 판이 반쪽으로 남았다(T-10ag). 값이 같으면 React 가 다시 안 그린다.
+        const r = () => setNarrow(mq.matches);
+        if (typeof mq.addEventListener === 'function') mq.addEventListener('change', h);
+        window.addEventListener('resize', r);
         setNarrow(mq.matches);
-        return () => mq.removeEventListener('change', h);
+        return () => {
+            if (typeof mq.removeEventListener === 'function') mq.removeEventListener('change', h);
+            window.removeEventListener('resize', r);
+        };
     }, []);
     return narrow;
 }

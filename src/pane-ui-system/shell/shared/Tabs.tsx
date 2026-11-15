@@ -34,6 +34,18 @@ const prefersReduced = () =>
  *    ⛔ rAF 가 아니라 setTimeout 으로 0 을 건다 — 숨은 탭에서도 타이머는 돈다(rAF 는 멈춘다).
  *    첫 그림은 제 폭(잰 값=자연 폭)이라 튐이 없다. overflow 숨김은 .tab-collapse 가(index.css).
  */
+/**
+ * 탭 줄 안에서만 활성 탭을 가로로 끌어온다.
+ * 🔴 ⛔ scrollIntoView 금지 — 조상 전부(overflow:hidden 인 창틀 줄·문서까지)를 같이 굴려
+ *    리본 아래 단추를 누르면 화면 전체가 위로 밀리고, 좁은 창에선 창틀이 옆으로 밀려 반쪽만 보였다(T-10ag 화면 훑기).
+ */
+function revealInStrip(strip: HTMLElement, el: HTMLElement): void {
+    const s = strip.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (r.left < s.left) strip.scrollLeft -= s.left - r.left;
+    else if (r.right > s.right) strip.scrollLeft += Math.min(r.right - s.right, r.left - s.left);
+}
+
 function CollapsingTab({ children }: { children: ReactNode }) {
     const ref = useRef<HTMLDivElement>(null);
     const [style, setStyle] = useState<CSSProperties>({});
@@ -91,7 +103,7 @@ export function Tabs({
         if (!c || !activeId) return;
         const sel = (window.CSS && CSS.escape) ? CSS.escape(activeId) : activeId.replace(/"/g, '\\"');
         const el = c.querySelector<HTMLElement>(`[data-row-id="${sel}"]`);
-        el?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+        if (el) revealInStrip(c, el);
     }, [activeId, tabs.length]);
 
     // 🔴 ③ 나가는 탭 애니메이션 — props.tabs 가 진실이지만, 빠진 탭을 잠깐 남겨 폭이 줄며 사라지게 한다(쥔님 2026-11-01).

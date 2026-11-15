@@ -20,7 +20,7 @@ import {
     type WorkspaceHandlers, type Workspace, type AreaKey, type Leaf, type Node,
     leaf, uid, findLeaf, findLeafByView, findLeafByViewParams, firstTabs, flatten, loadWorkspace, saveWorkspace, openLeaf,
     closeLeaf, activateLeaf, splitAt, resize, addLeafToTabs,
-    keyLabel, closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
+    keyLabel, isMacPlatform, closeOthers, closeToRight, moveLeaf, moveTabWithin, renameLeaf, withLeafGlyph, areaOfLeaf,
     type MovePos,
 } from '../pane-ui-system';
 import {
@@ -185,17 +185,33 @@ export function Workbench() {
         return lf.id;
     }, []);
 
+    // 🔴 리본 강조(T-10ag 「근태를 열었는데 강조가 내 보결에」) — 리본 항목은 명령이라 무슨 뷰를 여는지 창틀이 모른다.
+    //    리본을 누르는 순간(onRun) 짝을 기다리다가, 그 사이 openView 로 들어온 뷰를 그 리본에 짝짓는다.
+    //    강조 = 지금 초점 탭(없으면 가운데 활성 탭)의 뷰에 짝지어진 리본. 비동기로 여는 명령은 짝이 안 생긴다(강조 없음).
+    const ribbonPending = useRef<string | null>(null);
+    const ribbonOfView = useRef(new Map<string, string>());
+    const onRibbonRun = useCallback((id: string) => {
+        ribbonPending.current = id;
+        window.setTimeout(() => { if (ribbonPending.current === id) ribbonPending.current = null; }, 0);
+    }, []);
+    const openViewTracked = useCallback((viewId: string, o?: WorkspaceOpenOptions): string | null => {
+        const r = ribbonPending.current;
+        const id = openView(viewId, o);
+        if (r && id) { ribbonOfView.current.set(viewId, r); ribbonPending.current = null; }
+        return id;
+    }, [openView]);
+
     // 🔴 작업대 다리 — 플러그인의 host.workspace.open/close 가 이리로 들어온다(host 는 React 밖에 산다).
     //    open 은 위 openView 그대로 — 뷰가 제 안에서 탭을 띄우든 리본이 열든 같은 판정을 거친다.
     useEffect(() => {
         setWorkspaceBridge({
-            open: (viewId: string, o?: WorkspaceOpenOptions) => openView(viewId, o),
+            open: (viewId: string, o?: WorkspaceOpenOptions) => openViewTracked(viewId, o),
             close: (leafId: string) => setWs((w) => closeLeaf(w, leafId)),
             setTitle: (leafId: string, title: string) => setWs((w) => renameLeaf(w, leafId, title)),
             setGlyph: (leafId: string, glyph: string | undefined) => setWs((w) => withLeafGlyph(w, leafId, glyph)),
         });
         return () => setWorkspaceBridge(null);
-    }, [openView]);
+    }, [openView, openViewTracked]);
 
     // 🔴 시작 화면(설정 「창틀 > 시작 화면」, 쥔님 2026-11-09) — 켤 때 한 번, 고른 뷰가 안 떠 있으면 연다.
     //    이미 떠 있으면 손대지 않는다(활성 탭도 안 바꾼다). 꺼진 플러그인 뷰는 openView 가 null 로 건너뛴다.
@@ -314,6 +330,7 @@ export function Workbench() {
         };
 
         runs['frame.palette.k'] = () => setPalette((v) => !v);
+        runs['frame.palette.ctrlk'] = () => setPalette((v) => !v);
         const disp: Disposable[] = [
             add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x', 'Mod+W'),
             add(FRAME_COMMAND.reopenTab, '닫은 탭 다시 열기', () => { handlersRef.current.onReopen(); }, undefined, 'Mod+Shift+T'),
@@ -335,6 +352,9 @@ export function Workbench() {
             add(FRAME_COMMAND.palette, '명령 팔레트', () => setPalette((v) => !v), 'search', 'Mod+P'),
             // ⌘K / Ctrl+K 도 같은 팔레트 — 팔레트 목록엔 중복으로 안 보이게 숨긴다(keyMap 은 명령 하나에 키 하나)
             fh.declare({ kind: 'command', id: 'frame.palette.k', title: `명령 팔레트 (${keyLabel('Mod+K')})`, keys: 'Mod+K', palette: false }),
+            // 🔴 맥에서 Ctrl+K 도 팔레트(T-10ag 「⌘K·Ctrl+K 무반응」) — 맥의 Mod 는 ⌘ 라 Ctrl+K 는 아무 명령도 안 쥐고 있었다.
+            //    윈도우는 Mod+K 가 곧 Ctrl+K 라 따로 안 건다(같은 키 둘이면 겹침 ⚠️ 이 뜬다).
+            ...(isMacPlatform() ? [fh.declare({ kind: 'command', id: 'frame.palette.ctrlk', title: `명령 팔레트 (${keyLabel('Ctrl+K')})`, keys: 'Ctrl+K', palette: false })] : []),
         ];
         return () => { for (const d of disp) d.dispose(); };
     }, [openView]);
@@ -421,6 +441,12 @@ export function Workbench() {
     const titleActions: TitleAction[] = [];
     const showTitleBar = pane.settings.showTitleBar;
 
+    // 리본 강조 — 초점 탭(사라졌으면 가운데 활성 탭)의 뷰를 낸 리본
+    const centerTabs = firstTabs(ws.center);
+    const shownLeaf = (focus ? findLeaf(ws, focus) : null)
+        ?? (centerTabs ? centerTabs.children.find((c) => c.id === centerTabs.activeId) ?? null : null);
+    const activeRibbon = shownLeaf ? ribbonOfView.current.get(shownLeaf.viewId) ?? null : null;
+
     // 🔴 상태바 — 좁은 화면은 설정값(showStatusBar)과 별개로 기본 숨김(statusBarNarrow 로 켠다, 쥔님).
     const showStatus = narrow ? pane.settings.statusBarNarrow : pane.settings.showStatusBar;
     // 🔴 ⭐ 상태바 항목은 이제 앱이 아니라 플러그인이 꽂는다(스케줄러의 「카드 N」). 스토어에서 읽어 그린다.
@@ -441,21 +467,22 @@ export function Workbench() {
     ];
 
     return (
-        <div className="flex flex-col h-full w-full overflow-hidden">
+        // 🔴 overflow-clip(hidden 아님) — hidden 은 프로그램 스크롤(초점·scrollIntoView)을 받아 화면 전체가 밀린다(T-10ag)
+        <div className="flex flex-col h-full w-full overflow-clip">
             <SkipLink />
             {/* 🔴 상단 타이틀바 — 전체 폭 한 줄(리본·사이드바·가운데 위). 앱 이름·액션은 앱이 넘긴다 */}
             {showTitleBar && <TitleBar title="시간표 짜기" actions={titleActions} />}
 
             {/* 🔴 리본을 상단에(엑셀식) — 설정 「창틀 › 리본을 상단에」. 같은 Rail 을 가로로 눕힌다(쥔님 13:39) */}
             {!narrow && pane.settings.ribbonPosition === 'top' && (
-                <Rail orientation="horizontal" onOpenView={openView} onOpenSettings={openSettings} />
+                <Rail orientation="horizontal" onOpenView={openViewTracked} onOpenSettings={openSettings} activeId={activeRibbon} onRun={onRibbonRun} />
             )}
 
             {/* 틀 가운데 줄 — 리본·사이드바·가운데·사이드바가 가로로 */}
-            <div className="flex flex-1 min-h-0 w-full overflow-hidden">
+            <div className="flex flex-1 min-h-0 w-full overflow-clip">
             {/* 왼쪽 아이콘 레일 — 넓은 화면에서만(리본이 상단이면 여기엔 없다). 좁으면 설정은 탭 줄 ⚙ 로 연다 */}
             {!narrow && pane.settings.ribbonPosition !== 'top' && (
-                <Rail onOpenView={openView} onOpenSettings={openSettings} />
+                <Rail onOpenView={openViewTracked} onOpenSettings={openSettings} activeId={activeRibbon} onRun={onRibbonRun} />
             )}
 
             {/* 왼쪽 사이드바 — 가운데와 같은 패널 트리(W3) */}
