@@ -20,7 +20,7 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
     if (!d) return <EmptyState icon="ban" title="보결을 볼 수 없습니다" description="없어졌거나 볼 수 있는 범위 밖입니다." />;
 
     const take = async () => {
-        const r = await takeSlot(src, rowId, date, v, { today: now(), now: () => new Date().toISOString(), takerName: v.personRef ?? '', expectUpdatedAt: row?.updatedAt });
+        const r = await takeSlot(src, rowId, date, v, { today: now(), now: () => new Date().toISOString(), takerName: v.name ?? v.personRef ?? '', expectUpdatedAt: row?.updatedAt });
         setMsg(r.ok ? '맡았습니다.' : r.message);
         await reload();
     };
@@ -35,8 +35,8 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
             <h3>{d.row.date} {d.timeText} · {d.row.trackName} <Badge tone={d.row.status === '확정' ? 'neutral' : 'danger'}>{d.row.status}</Badge></h3>
             <p>{d.absentKind} 결근 · {b.absentName}</p>
             <p>사유 {b.reason || '-'}{b.memo && ` · 메모 ${b.memo}`}</p>
-            <p>올린 이 {b.registeredByName}</p>
-            {d.row.take && <p>맡은 이 {d.row.take.takerName}</p>}
+            <p>올린 이 {b.registeredByName || '알 수 없음'}</p>
+            {d.row.take && <p>맡은 이 {d.row.take.takerName || '알 수 없음'}</p>}
             {d.cannotTakeWhy && !d.row.take && <p className="text-muted">{d.cannotTakeWhy}</p>}
             {msg && <p role="status">{msg}</p>}
             {d.canTake && <div><Button variant="solid" tone="accent" onClick={() => void take()}>맡기</Button></div>}

@@ -8,7 +8,7 @@ const blank = (): RegisterInput => ({ date: today(), start: '', end: '', trackNa
 
 const liveCtx = (): RegisterCtx => {
     const v = getViewer();
-    return { projectId: v.projectId, userId: v.userId ?? '', userName: '', now: () => new Date().toISOString(), newId: () => crypto.randomUUID() };
+    return { projectId: v.projectId, userId: v.userId ?? '', userName: v.name ?? '', now: () => new Date().toISOString(), newId: () => crypto.randomUUID() };
 };
 
 /** 보결 등록 — 입력 칸 · 「등록」 · 같은 칸이 있으면 인라인 되묻기 줄(덮을까요? 덮어쓰기/취소). */
@@ -24,7 +24,7 @@ export function RegisterView({ source, ctx, initial }: { source?: SlotSource; ct
         const r: RegisterResult = await registerSlot(source ?? getSlotSource(), input, ctx ?? liveCtx(), { overwrite });
         setMsgs([]); setAsk(null); setDone(null);
         if ('needsConfirm' in r) setAsk(r.message);
-        else if (r.ok) setDone(r.replaced ? '덮어서 등록했습니다.' : '등록했습니다.');
+        else if (r.ok) { setForm({ ...blank(), date: form.date }); setDone(r.replaced ? '덮어서 등록했습니다.' : '등록됨'); }
         else setMsgs('errors' in r ? r.errors : [r.message]);
     };
 
