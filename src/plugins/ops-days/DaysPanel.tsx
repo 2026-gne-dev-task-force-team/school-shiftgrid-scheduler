@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { getBundle, subscribeBundle } from '../../../shared/bundle/store.ts';
 import { Button, Field, TextInput } from '../../pane-ui-system';
-import { addChange, applyDaysOps, delChange } from './ops';
+import { addChange, applyDaysOps, canApplyClassSubjects, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
 import { ClassImportView } from './import/ClassImportView';
 import { demoDays, memoryDaysSource, saveClassSubjects, type DaysSource } from './source';
@@ -47,7 +47,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
         return (
             <div className="flex flex-col">
                 <div className="p-4 pb-0"><Button variant="ghost" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
-                <ClassImportView loadFile={loadFile} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { await saveClassSubjects(src, next); await reload(); }} />
+                <ClassImportView loadFile={loadFile} applyDenied={canApplyClassSubjects(v) ? undefined : '교무·관리자만 반영할 수 있습니다'} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { if (!canApplyClassSubjects(v)) return; await saveClassSubjects(src, next); await reload(); }} />
             </div>
         );
     }

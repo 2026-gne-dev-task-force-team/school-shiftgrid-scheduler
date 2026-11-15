@@ -9,12 +9,14 @@ const readBytes = async (f: File): Promise<Uint8Array> => new Uint8Array(await f
  * 담임 과목 불러오기 — 파일 고르기 → 결과 판(성공 반·❌ 이유·어긋남·건너뜀) → 반영.
  * 시간 틀(frame)과 지금 저장분(current)은 부르는 쪽이 준다. 반영하면 onApply 에 새 목록 전체를 넘긴다(저장은 부르는 쪽 몫).
  */
-export function ClassImportView({ frame, current, onApply, loadFile }: {
+export function ClassImportView({ frame, current, onApply, loadFile, applyDenied }: {
     frame: TimeFrame;
     current: ClassSubject[];
     onApply: (next: ClassSubject[]) => void | Promise<void>;
     /** 시험용 — 파일 → 바이트 */
     loadFile?: (f: File) => Promise<Uint8Array>;
+    /** 반영을 막는 이유(있으면 「이대로 반영」이 비활성 + 이유 한 줄). 미리보기는 그대로 된다. */
+    applyDenied?: string;
 }) {
     const [name, setName] = useState<string | null>(null);
     const [result, setResult] = useState<ClassPreviewResult | null>(null);
@@ -28,6 +30,7 @@ export function ClassImportView({ frame, current, onApply, loadFile }: {
         catch (e) { setResult({ ok: false, reason: '파일을 읽지 못했습니다: ' + (e instanceof Error ? e.message : String(e)), warnings: [] }); }
     };
     const apply = async (p: ClassPreview) => {
+        if (applyDenied) return;
         const r = applyClassImport(frame, current, p.classes.map((c) => ({ trackName: c.trackName, cells: c.cells })));
         if (!r.ok) { setMsg('❌ ' + r.error); return; }
         await onApply(r.next);
@@ -58,7 +61,8 @@ export function ClassImportView({ frame, current, onApply, loadFile }: {
                             {c.skipped.map((s, i) => <div key={'s' + i}>건너뜀 {DAYS[s.dayIndex]} {s.start} 「{s.text}」 — {s.why}</div>)}
                         </div>
                     ))}
-                    <Button variant="solid" tone="accent" onClick={() => void apply(result.preview)}>이대로 반영</Button>
+                    <Button variant="solid" tone="accent" disabled={!!applyDenied} onClick={() => void apply(result.preview)}>이대로 반영</Button>
+                    {applyDenied && <p className="text-small">{applyDenied}</p>}
                 </div>
             )}
         </div>
