@@ -47,7 +47,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
     if (tab === 'import') {
         return (
             <div className="flex flex-col">
-                <div className="p-4 pb-0"><Button variant="ghost" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
+                <div className="p-4 pb-0"><Button variant="outline" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
                 <ClassImportView loadFile={loadFile} applyDenied={canApplyClassSubjects(v) ? undefined : '교무·관리자만 반영할 수 있습니다'} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { if (!canApplyClassSubjects(v)) return; await saveClassSubjects(src, next); await reload(); }} />
             </div>
         );
@@ -55,7 +55,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
 
     return (
         <div className="p-4 max-w-xl flex flex-col gap-3">
-            <Button variant="ghost" onClick={() => setTab('import')}>담임 과목 불러오기</Button>
+            <Button variant="outline" onClick={() => setTab('import')}>담임 과목 불러오기</Button>
             <Field label="월"><TextInput value={month} onChange={(e) => setMonth(e.target.value)} placeholder="2026-11" /></Field>
             {msg && <p role="alert" className="text-small">{msg}</p>}
             <h3 className="text-small">학사 일정 {events.length}건</h3>
@@ -69,10 +69,10 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
                             <>
                                 <span>정말 지울까요?</span>
                                 <Button variant="solid" tone="danger" onClick={() => { setPendingDel(null); void run([delChange(c.id)]); }}>{`${c.classKey} ${c.period}교시 지우기 확인`}</Button>
-                                <Button variant="ghost" onClick={() => setPendingDel(null)}>지우기 취소</Button>
+                                <Button variant="outline" onClick={() => setPendingDel(null)}>지우기 취소</Button>
                             </>
                         )
-                        : <Button variant="ghost" onClick={() => setPendingDel(c.id)}>{`${c.classKey} ${c.period}교시 지우기`}</Button>}
+                        : <Button variant="outline" tone="danger" onClick={() => setPendingDel(c.id)}>{`${c.classKey} ${c.period}교시 지우기`}</Button>}
                 </div>
             ))}
             <h3 className="text-small">변경 넣기</h3>

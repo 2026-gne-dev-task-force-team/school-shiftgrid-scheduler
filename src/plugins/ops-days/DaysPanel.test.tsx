@@ -17,6 +17,7 @@ describe('학사 화면', () => {
         expect(host.textContent).toContain('[휴업] 개교기념일');
         expect(host.textContent).toContain('시간표 변경 1건');
         const click = (label: string) => act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === label)?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        for (const t of ['3-2 4교시 지우기', '담임 과목 불러오기']) { const el = [...host.querySelectorAll('button')].find((x) => x.textContent === t) as HTMLButtonElement; expect(el.className).toContain('border-'); expect(el.className).not.toContain('border-transparent'); }
         await click('3-2 4교시 지우기');
         expect(host.textContent).toContain('정말 지울까요?');
         expect((await src.load()).changes).toHaveLength(1); // 되묻기만 — 아직 안 지웠다

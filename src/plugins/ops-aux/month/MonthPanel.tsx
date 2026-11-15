@@ -39,8 +39,8 @@ export function MonthView({ source, viewer, initialYm, newId }: { source?: AuxSo
                 <div key={r.staffId} className="flex flex-wrap gap-2 items-center text-small">
                     <span>{nameOf(r.staffId)} 근무 {r.work} · 예외 {r.exceptions} · 정정 후 {r.after}{r.closed ? ' [마감]' : ''}</span>
                     {r.closed
-                        ? <Button variant="ghost" onClick={() => void run([reopenMonth(`${r.staffId}:${ym}`)])}>{`${nameOf(r.staffId)} 마감 해제`}</Button>
-                        : <Button variant="ghost" onClick={() => void run([closeMonth({ id: `${r.staffId}:${ym}`, staffId: r.staffId, ym })])}>{`${nameOf(r.staffId)} 마감`}</Button>}
+                        ? <Button variant="outline" onClick={() => void run([reopenMonth(`${r.staffId}:${ym}`)])}>{`${nameOf(r.staffId)} 마감 해제`}</Button>
+                        : <Button variant="outline" onClick={() => void run([closeMonth({ id: `${r.staffId}:${ym}`, staffId: r.staffId, ym })])}>{`${nameOf(r.staffId)} 마감`}</Button>}
                 </div>
             ))}
             <h3 className="text-small">예외 {excs.length}건</h3>
