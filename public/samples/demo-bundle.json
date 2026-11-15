@@ -1,0 +1,589 @@
+{
+  "bundleVersion": 1,
+  "versions": {},
+  "parts": {
+    "doc": {
+      "specs": [
+        {
+          "id": "sp1",
+          "activeDays": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "slots": [
+            {
+              "index": 0,
+              "label": "1교시",
+              "start": "08:50",
+              "end": "09:30"
+            },
+            {
+              "index": 1,
+              "label": "2교시",
+              "start": "09:40",
+              "end": "10:20"
+            },
+            {
+              "index": 2,
+              "label": "3교시",
+              "start": "10:30",
+              "end": "11:10"
+            },
+            {
+              "index": 3,
+              "label": "4교시",
+              "start": "11:20",
+              "end": "12:00"
+            },
+            {
+              "index": 4,
+              "label": "점심",
+              "start": "12:00",
+              "end": "12:50",
+              "assignable": false,
+              "kind": "lunch"
+            }
+          ],
+          "lessonsPerDay": [
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "t71",
+          "name": "7-1",
+          "grade": 7,
+          "specId": "sp1"
+        },
+        {
+          "id": "t72",
+          "name": "7-2",
+          "grade": 7,
+          "specId": "sp1"
+        },
+        {
+          "id": "t81",
+          "name": "8-1",
+          "grade": 8,
+          "specId": "sp1"
+        }
+      ],
+      "timetables": [
+        {
+          "id": "tt1",
+          "specId": "sp1",
+          "startDate": "2026-03-01",
+          "priority": 1
+        }
+      ],
+      "assignments": [
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 0,
+          "slotIndex": 0,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 0,
+          "slotIndex": 1,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 0,
+          "slotIndex": 2,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 0,
+          "slotIndex": 3,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 1,
+          "slotIndex": 0,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 1,
+          "slotIndex": 1,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 1,
+          "slotIndex": 2,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 1,
+          "slotIndex": 3,
+          "activityId": "a1",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 2,
+          "slotIndex": 0,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 2,
+          "slotIndex": 1,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 2,
+          "slotIndex": 2,
+          "activityId": "a1",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 2,
+          "slotIndex": 3,
+          "activityId": "a2",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 3,
+          "slotIndex": 0,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 3,
+          "slotIndex": 1,
+          "activityId": "a1",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 3,
+          "slotIndex": 2,
+          "activityId": "a2",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 3,
+          "slotIndex": 3,
+          "activityId": "a3",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 4,
+          "slotIndex": 0,
+          "activityId": "a1",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 4,
+          "slotIndex": 1,
+          "activityId": "a2",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 4,
+          "slotIndex": 2,
+          "activityId": "a3",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t71",
+          "dayIndex": 4,
+          "slotIndex": 3,
+          "activityId": "a4",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 0,
+          "slotIndex": 0,
+          "activityId": "a2",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 0,
+          "slotIndex": 1,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 0,
+          "slotIndex": 2,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 0,
+          "slotIndex": 3,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 1,
+          "slotIndex": 0,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 1,
+          "slotIndex": 1,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 1,
+          "slotIndex": 2,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 1,
+          "slotIndex": 3,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 2,
+          "slotIndex": 0,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 2,
+          "slotIndex": 1,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 2,
+          "slotIndex": 2,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 2,
+          "slotIndex": 3,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 3,
+          "slotIndex": 0,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 3,
+          "slotIndex": 1,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 3,
+          "slotIndex": 2,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 3,
+          "slotIndex": 3,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 4,
+          "slotIndex": 0,
+          "activityId": "a2",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 4,
+          "slotIndex": 1,
+          "activityId": "a3",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 4,
+          "slotIndex": 2,
+          "activityId": "a4",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t72",
+          "dayIndex": 4,
+          "slotIndex": 3,
+          "activityId": "a1",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 0,
+          "slotIndex": 0,
+          "activityId": "a3",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 0,
+          "slotIndex": 1,
+          "activityId": "a4",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 0,
+          "slotIndex": 2,
+          "activityId": "a1",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 0,
+          "slotIndex": 3,
+          "activityId": "a2",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 1,
+          "slotIndex": 0,
+          "activityId": "a4",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 1,
+          "slotIndex": 1,
+          "activityId": "a1",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 1,
+          "slotIndex": 2,
+          "activityId": "a2",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 1,
+          "slotIndex": 3,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 2,
+          "slotIndex": 0,
+          "activityId": "a1",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 2,
+          "slotIndex": 1,
+          "activityId": "a2",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 2,
+          "slotIndex": 2,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 2,
+          "slotIndex": 3,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 3,
+          "slotIndex": 0,
+          "activityId": "a2",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 3,
+          "slotIndex": 1,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 3,
+          "slotIndex": 2,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 3,
+          "slotIndex": 3,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 4,
+          "slotIndex": 0,
+          "activityId": "a3",
+          "agentId": "교사02"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 4,
+          "slotIndex": 1,
+          "activityId": "a4",
+          "agentId": "교사03"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 4,
+          "slotIndex": 2,
+          "activityId": "a1",
+          "agentId": "교사01"
+        },
+        {
+          "timetableId": "tt1",
+          "trackId": "t81",
+          "dayIndex": 4,
+          "slotIndex": 3,
+          "activityId": "a2",
+          "agentId": "교사02"
+        }
+      ],
+      "activities": [
+        {
+          "id": "a1",
+          "name": "과학"
+        },
+        {
+          "id": "a2",
+          "name": "체육"
+        },
+        {
+          "id": "a3",
+          "name": "음악"
+        },
+        {
+          "id": "a4",
+          "name": "영어"
+        }
+      ]
+    }
+  }
+}

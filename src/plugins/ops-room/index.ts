@@ -17,7 +17,7 @@ export const opsRoomPlugin = definePlugin({
                 { id: 'manage', title: '특별실 관리', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Manage' },
             ],
             commands: [{ id: 'ops-room.open-book', title: '특별실 예약 열기', icon: 'list' }, { id: 'ops-room.open-manage', title: '특별실 관리 열기', icon: 'list' }],
-            ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }],
+            ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }, { commandId: 'ops-room.open-manage', icon: 'list', order: 10 }],
         },
     },
     components: { Book: () => createElement(RoomPanel), Manage: () => createElement(RoomManagePanel) },
