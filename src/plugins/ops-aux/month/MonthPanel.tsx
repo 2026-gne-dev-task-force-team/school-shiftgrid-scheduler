@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Button, Field, Select, TextInput } from '../../../pane-ui-system';
 import { addExc, applyAuxOps, closeMonth, reopenMonth } from '../ops';
-import { demoAux, memoryAuxSource, type AuxSource } from '../source';
+import { defaultAuxSource, type AuxSource } from '../source';
 import type { AuxExceptionKind, AuxPart, AuxViewer } from '../types';
 import { monthTotals } from './total';
 
-const fallback = memoryAuxSource(demoAux());
 const demoViewer: AuxViewer = { userId: 'u-a', role: '근태담당' };
 const KINDS: AuxExceptionKind[] = ['결근', '지각', '조퇴', '추가', '정정'];
 
 /** 월 정산 최소 꼴 — 보조별 합계(정정 후 따로) · 마감/해제 · 예외 더하기. */
 export function MonthView({ source, viewer, initialYm, newId }: { source?: AuxSource; viewer?: AuxViewer; initialYm?: string; newId?: () => string }) {
-    const src = source ?? fallback;
+    const src = source ?? defaultAuxSource;
     const v = viewer ?? demoViewer;
     const [ym, setYm] = useState(initialYm ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
     const [part, setPart] = useState<AuxPart | null>(null);
