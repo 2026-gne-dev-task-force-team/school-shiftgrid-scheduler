@@ -8,6 +8,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IDBFactory, IDBKeyRange as FakeKeyRange } from 'fake-indexeddb';
 import type { PluginHost } from '../../plugin';
+// 🔴 미리 데우기 — 탭 모듈 그래프를 수집 단계(시간 제한 없음)에서 한 번 변환해 둔다.
+//    없으면 첫 시험의 openTab 이 그래프 전체 변환 값(단독 ~700ms)을 5초 제한 안에서 치르고,
+//    전체 실행처럼 변환기가 붐비면 5009ms 로 떨어졌다. 아래 vi.resetModules 뒤 import 는 변환 캐시를 다시 쓴다.
+import './store';
+import './persist';
+import '../../cross-tab';
+import '../../kv';
+import '../../theme/useTheme';
+import '../../theme/settings';
 
 /** BroadcastChannel 모의 — 같은 이름의 다른 인스턴스에 비동기로 나른다. paused 면 쌓아 뒀다 resume 때 나른다. */
 class FakeBC {
