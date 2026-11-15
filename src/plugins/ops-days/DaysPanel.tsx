@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { getBundle, subscribeBundle } from '../../../shared/bundle/store.ts';
 import { Button, Field, TextInput } from '../../pane-ui-system';
 import { addChange, applyDaysOps, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
@@ -24,6 +25,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
     const [month, setMonth] = useState(initialMonth ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
     const [part, setPart] = useState<DaysPart | null>(null);
     const tab = useSyncExternalStore(subTab, () => tabNow);
+    const bundle = useSyncExternalStore(subscribeBundle, getBundle);   // 번들이 늦게 들어와도 시간 틀을 다시 뽑는다
     const [msg, setMsg] = useState<string | null>(null);
     const [f, setF] = useState({ date: `${month}-01`, classKey: '', period: '1', subject: '' });
     const reload = async () => setPart(await src.load());
@@ -45,7 +47,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
         return (
             <div className="flex flex-col">
                 <div className="p-4 pb-0"><Button variant="ghost" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
-                <ClassImportView loadFile={loadFile} frame={daysFrame(part)} current={part?.classSubjects ?? []} onApply={async (next) => { await saveClassSubjects(src, next); await reload(); }} />
+                <ClassImportView loadFile={loadFile} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { await saveClassSubjects(src, next); await reload(); }} />
             </div>
         );
     }

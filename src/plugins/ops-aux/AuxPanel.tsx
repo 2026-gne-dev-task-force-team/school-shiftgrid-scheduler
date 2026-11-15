@@ -21,6 +21,9 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
     const id = () => (newId ? newId() : crypto.randomUUID());
     const reload = async () => setPart(await src.load());
     useEffect(() => { void reload(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // 번들이 화면보다 늦게 들어와도(기동 restore) 수업 칸 기준 판정을 다시 그린다.
+    const [, bump] = useState(0);
+    useEffect(() => src.subscribe?.(() => bump((n) => n + 1)), [src]);
 
     const run = async (ops: Parameters<typeof applyAuxOps>[2]) => {
         const server = await src.load();
