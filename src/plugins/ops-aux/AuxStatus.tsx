@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { reassignNeededCount } from './ops';
 import { defaultAuxSource, type AuxSource } from './source';
+import { isImeEnter } from '../../pane-ui-system';
 
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
@@ -19,7 +20,7 @@ export function AuxStatus({ source, today, onOpen }: AuxStatusProps = {}) {
     if (n === 0) return null;
     return (
         <span role="button" tabIndex={0} data-testid="aux-status" onClick={onOpen} title="근태 열기"
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(); } }}
+            onKeyDown={(e) => { if (isImeEnter(e)) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(); } }}
             className="tabular-nums select-none cursor-pointer hover:underline focus-visible:underline">재배정 필요 {n}건</span>
     );
 }
