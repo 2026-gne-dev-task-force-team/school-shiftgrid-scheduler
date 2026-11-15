@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { demoDays, memoryDaysSource } from './source';
+import { demoDays, localDaysSource, memoryDaysSource } from './source';
 import { DaysView, resetDaysTab } from './DaysPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,7 +16,15 @@ describe('학사 화면', () => {
         await act(async () => createRoot(host).render(createElement(DaysView, { source: src, viewer: { userId: 'u-a', role: '교사' }, initialMonth: '2026-11' })));
         expect(host.textContent).toContain('[휴업] 개교기념일');
         expect(host.textContent).toContain('시간표 변경 1건');
-        await act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === '3-2 4교시 지우기')?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        const click = (label: string) => act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === label)?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        await click('3-2 4교시 지우기');
+        expect(host.textContent).toContain('정말 지울까요?');
+        expect((await src.load()).changes).toHaveLength(1); // 되묻기만 — 아직 안 지웠다
+        await click('지우기 취소');
+        expect(host.textContent).not.toContain('정말 지울까요?');
+        expect((await src.load()).changes).toHaveLength(1);
+        await click('3-2 4교시 지우기');
+        await click('3-2 4교시 지우기 확인');
         expect((await src.load()).changes).toHaveLength(0);
     });
 });
@@ -92,5 +100,29 @@ describe('창 크기 변화', () => {
         document.body.appendChild(host);
         await act(async () => createRoot(host).render(createElement(DaysView, { source: memoryDaysSource(demoDays()), initialMonth: '2026-11' })));
         expect(host.querySelector('.flex-wrap')?.textContent).toContain('과목');
+    });
+});
+
+describe('학사 영속 — 다시 만들어도 남는다', () => {
+    it('변경을 넣고 지운 뒤 창구·패널을 새로 만들어도 바뀐 값이 남고, 데모 시드가 덮지 않는다', async () => {
+        localStorage.clear();
+        const mount = async () => {
+            const src = localDaysSource(demoDays);
+            const host = document.createElement('div');
+            document.body.appendChild(host);
+            await act(async () => createRoot(host).render(createElement(DaysView, { source: src, viewer: { userId: 'u-a', role: '교사' }, initialMonth: '2026-11', newId: () => 'n1' })));
+            return host;
+        };
+        const click = (host: HTMLElement, label: string) => act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === label)?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        let host = await mount();
+        await click(host, '3-2 4교시 지우기');
+        await click(host, '3-2 4교시 지우기 확인');
+        expect(host.textContent).toContain('시간표 변경 0건');
+        await click(host, '변경 넣기');
+        document.body.innerHTML = ''; // 새로고침·창 크기 변화로 다시 붙는다
+        host = await mount();
+        expect((await localDaysSource(demoDays).load()).changes.map((c) => c.id)).not.toContain('c1');
+        expect(host.textContent).not.toContain('3-2 4교시');
+        localStorage.clear();
     });
 });

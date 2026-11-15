@@ -16,6 +16,29 @@ export function memoryDaysSource(initial: DaysPart): DaysSource {
     };
 }
 
+const LS_KEY = 'plugin.ops-days.part';
+
+/**
+ * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경·지운 변경이 남는다.
+ * 저장된 값이 없을 때만 seed(데모)를 쓴다. 저장소가 죽거나 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ */
+export function localDaysSource(seed: () => DaysPart, key: string = LS_KEY): DaysSource {
+    const read = (): DaysPart => {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const p = JSON.parse(raw) as DaysPart;
+                if (p && Array.isArray(p.calendar) && Array.isArray(p.changes)) return p;
+            }
+        } catch { /* 깨진 값·저장소 막힘 — seed */ }
+        return seed();
+    };
+    return {
+        load: async () => structuredClone(read()),
+        save: async (next) => { try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* 조용히 */ } },
+    };
+}
+
 /** 반영 — 담임 과목만 갈아 쓰고 나머지 칸은 서버 지금 값 그대로. */
 export async function saveClassSubjects(src: DaysSource, next: ClassSubject[]): Promise<void> {
     await src.save({ ...(await src.load()), classSubjects: next });
