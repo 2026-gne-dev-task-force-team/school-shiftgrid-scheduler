@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Field, Select, TextInput } from '../../../pane-ui-system';
 import type { Room, RoomFixed } from '../book';
 import { applyRoomImport, DAYS, previewRoomFile, type RoomPreview, type RoomPreviewResult } from './roomImport';
-import type { TimeFrame } from '../../ops-days/import/frame';
+import type { TimeFrame } from '../../../../shared/import/frame.ts';
 
 const readBytes = async (f: File): Promise<Uint8Array> => new Uint8Array(await f.arrayBuffer());
 

@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { fixedDuplicates } from '../../../../shared/room-rules.ts';
-import { magicFrame } from '../../ops-days/import/magicFrame';
+import { magicFrame } from '../../../../shared/import/magicFrame.ts';
 import type { Room, RoomFixed } from '../book';
 import { applyRoomImport, cleanLabel, previewRoomFile, roomNameOf, roomTemplateCsv, type RoomPreview } from './roomImport';
 import { csvBytes, hwpBytes, hwpxBytes, xlsxBytes } from './synth';
@@ -30,7 +30,7 @@ describe('작은 규칙', () => {
         expect(cleanLabel('6G')).toBe('6학년');
         expect(cleanLabel('방과후(댄스)*운동장: 예약제로 운영')).toBe('방과후(댄스)');
     });
-    it('줄 머리 → 시각: 시간 틀 규칙(ops-days 것을 그대로 쓴다)', () => {
+    it('줄 머리 → 시각: 시간 틀 규칙(shared 것을 그대로 쓴다)', () => {
         expect(frame.resolve('4(3,4학년)')).toMatchObject({ start: '12:20', reason: '3학년 시간 틀' });
         expect(frame.resolve('4(1,2,5,6학년) 11:30-12:10 (※3,4학년 점심)')).toMatchObject({ start: '11:30', reason: '줄 머리의 시각' });
         expect(frame.resolve('2')).toMatchObject({ start: '09:50', reason: '모든 학년이 같은 시각' });

@@ -6,13 +6,13 @@
  *     (2) 한글 문서·엑셀 — 학교가 이미 만든 특별실 시간표(hwp·hwpx·xlsx)를 그대로 올린다. 표를 찾아 읽는다.
  *   미리보기에서 방마다 「기존 방에 넣기 / 새 방 만들기 / 건너뛰기」를 고르고, 더해지고 바뀌고 지워지는 것을 본 뒤 반영한다.
  *   반영은 그 방의 「주간 고정 사용」을 파일 내용으로 통째로 바꾼다(시간표 배치는 다른 묶음이라 건드리지 않는다).
- *   시간 틀(줄 머리 → 시각)은 ops-days 의 것을 그대로 쓴다.
+ *   시간 틀(줄 머리 → 시각)은 shared/import 의 것을 그대로 쓴다.
  */
 import { readTable } from '../../../../shared/import/index.ts';
 import type { TableKind } from '../../../../shared/import/index.ts';
 import { fixedDuplicates } from '../../../../shared/room-rules.ts';
-import { DAYS, findDayRow, gridColumns, type RowInfo } from '../../ops-days/import/classImport';
-import type { TimeFrame } from '../../ops-days/import/frame';
+import { DAYS, findDayRow, gridColumns, type RowInfo } from '../../../../shared/import/grid.ts';
+import type { TimeFrame } from '../../../../shared/import/frame.ts';
 import type { Room, RoomFixed } from '../book';
 
 export { DAYS };
