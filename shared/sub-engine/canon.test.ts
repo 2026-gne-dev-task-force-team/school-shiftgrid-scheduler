@@ -3,7 +3,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { compareGroup, parseCanon, runCanon, type CanonAdapter, type CanonCase } from './canon'
 import { sample } from './sample'
-import { makeGridAdapter } from './canon-input'
+import { makeGridAdapter, bareGrid, normalizeGrid } from './canon-input'
+import { substituteCandidates, whyNot } from './candidates'
 
 /** 맨손 표본 정답지 — 정답지 파일(OPS_FIXTURE_DIR)이 없는 곳에서도 틀이 돈다는 걸 재는 용도 */
 const NAMES: Record<string, string> = { 'homeroom:1-1': '김일', 'homeroom:3-1': '이삼', S1: '영어전담', S2: '음악전담', N1: '사서', vp: '교감샘', 'aux:9': '튜터' }
@@ -47,5 +48,56 @@ describe('1,820 대조 틀', () => {
     if (has) writeFileSync(join(__dirname, '../../test/canon.record.json'), JSON.stringify(record, null, 2) + '\n')
     if (has) { expect(fixtureCases).toHaveLength(1820); expect(rep).toMatchObject({ total: 910, skipped: 0, mismatched: 0 }) }
     else expect(rep.total).toBe(2)
+  })
+
+  const dir = process.env.OPS_FIXTURE_DIR
+  const f = dir ? join(dir, '보결_정답지_2026-2학기.json') : ''
+  const g = dir ? join(dir, '가상학교초_2026-2학기.shiftgrid.json') : ''
+  const has = !!f && existsSync(f) && existsSync(g)
+  const load = () => ({ cases: parseCanon(JSON.parse(readFileSync(f, 'utf8'))), grid: JSON.parse(readFileSync(g, 'utf8')) as unknown })
+
+  it('정답지 전체 1,820건 어긋남 0 (없으면 건너뜀)', () => {
+    if (!has) return
+    const { cases, grid } = load()
+    expect(runCanon(cases, makeGridAdapter(grid))).toMatchObject({ total: 1820, skipped: 0, mismatched: 0 })
+  })
+  it('담임 뺀 판 · 정규화 전후: 담임 배치를 모두 빼도(이름도 「N」으로) 1,820건이 같다', () => {
+    if (!has) return
+    const { cases, grid } = load()
+    const bare = bareGrid(grid)
+    expect((bare as { assignments: unknown[] }).assignments.length).toBe(189)
+    for (const src of [bare, normalizeGrid(bare)]) expect(runCanon(cases, makeGridAdapter(src))).toMatchObject({ total: 1820, skipped: 0, mismatched: 0 })
+  })
+  it('whyNot: 표본에서 빠진 교사는 문장이 있고 후보는 빈 목록', () => {
+    const q = { trackName: '1-1', startMin: 540, endMin: 580, absentId: 'S1' }
+    const r = substituteCandidates(sample(), q)
+    const inRes = new Set([...r.A, ...r.B, ...r.C, ...r.D].map((c) => c.id))
+    for (const p of sample().people) expect(whyNot(sample(), q, p.id).length === 0, p.id).toBe(inRes.has(p.id))
+  })
+  it('whyNot: 정답지 전수 — 후보면 빈 목록, 아니면 문장 있음 · 쌍 1,820×사람 (없으면 건너뜀)', () => {
+    if (!has) return
+    const { cases, grid } = load()
+    const ad = makeGridAdapter(grid)
+    let checked = 0, said = 0
+    cases.forEach((c, i) => {
+      const b = ad(c, i)!
+      const r = substituteCandidates(b.input, b.query)
+      const inRes = new Set([...r.A, ...r.B, ...r.C, ...r.D].map((x) => x.id))
+      for (const p of b.input.people) {
+        const w = whyNot(b.input, b.query, p.id)
+        checked++
+        if (w.length) said++
+        if ((w.length === 0) !== inRes.has(p.id)) throw new Error('어긋남 ' + i + ' ' + p.id)
+      }
+    })
+    expect(checked).toBeGreaterThan(1820 * 10)
+    expect(said).toBeGreaterThan(0)
+  })
+  it('whyNot: 수업 중인 전담은 「그 시각 수업 있음 반」', () => {
+    const inp = sample()
+    const q = { trackName: '1-1', startMin: 540, endMin: 580, absentId: null }
+    const t = inp.tracks.find((x) => x.lessons.some((l) => (l.teacherIds ?? []).length && l.startMin < 580 && 540 < l.endMin))
+    const id = t?.lessons.find((l) => (l.teacherIds ?? []).length && l.startMin < 580 && 540 < l.endMin)?.teacherIds?.[0]
+    if (id) expect(whyNot(inp, q, id)[0]).toBe('그 시각 수업 있음 ' + t!.name)
   })
 })
