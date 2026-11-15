@@ -53,4 +53,22 @@ describe('근태 패널 탭', () => {
         expect(host.textContent).toContain('예외 더하기');
         expect(host.textContent).not.toContain('명부 2명');
     });
+    const toMonth = async () => {
+        const host = await mount(<AuxPanel source={memoryAuxSource(demoAux())} viewer={{ userId: 'u', role: '근태담당' }} />);
+        await act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === '월 정산')?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(host.textContent).toContain('예외 더하기');
+        return host;
+    };
+    it('이미 「월 정산」 탭인 패널에서 배지 길을 타면 「배정」 탭으로 바뀐다', async () => {
+        const host = await toMonth();
+        const el = opsAuxPlugin.renders!.AuxStatus({ commands: { run: () => true } } as never) as ReactElement<{ onOpen: () => void }>;
+        await act(async () => { el.props.onOpen(); });
+        expect(host.textContent).toContain('명부 2명');
+    });
+    it('일반 열기(명령만)는 탭을 바꾸지 않는다', async () => {
+        const host = await toMonth();
+        await act(async () => { opsAuxPlugin.commands!['ops-aux.open']({ workspace: { open: () => {} } } as never); });
+        expect(host.textContent).toContain('예외 더하기');
+        expect(host.textContent).not.toContain('명부 2명');
+    });
 });

@@ -7,6 +7,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { AuxPanel } from './AuxPanel';
+import { requestAssignTab } from './auxTab';
 import { AuxStatus, type AuxStatusProps } from './AuxStatus';
 
 export { reassignNeededCount } from './ops';
@@ -22,7 +23,7 @@ export const opsAuxPlugin = definePlugin({
         },
     },
     components: { Aux: () => createElement(AuxPanel) },
-    renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { onOpen: () => { host.commands.run('ops-aux.open'); } }) },
+    renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { onOpen: () => { host.commands.run('ops-aux.open'); requestAssignTab(); } }) },
     commands: { 'ops-aux.open': (host: PluginHost) => { host.workspace.open('ops-aux.aux', { where: 'center' }); } },
 });
 
