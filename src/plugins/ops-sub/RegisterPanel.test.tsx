@@ -73,3 +73,17 @@ async function setup2(src = memorySource([])) {
     };
     return { src, host, click };
 }
+
+describe('안내와 동작', () => {
+    it('빠지는 사람 칸 안내는 이름을 적으라고 하고, 비우면 막힌다(안내와 동작이 같다)', async () => {
+        const src = memorySource([]);
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        await act(async () => createRoot(host).render(createElement(RegisterView, { source: src, ctx, initial: { ...initial, absentName: '' } })));
+        expect(host.textContent).not.toContain('비워 두면');
+        const b = [...host.querySelectorAll('button')].find((x) => x.textContent === '등록');
+        await act(async () => { b?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(host.querySelector('[role=alert]')?.textContent).toContain('빠지는 사람을 골라');
+        expect((await src.loadSlots('2026-11-12')).length).toBe(0);
+    });
+});

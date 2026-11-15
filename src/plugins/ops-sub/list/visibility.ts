@@ -42,3 +42,9 @@ export function applyVisibility(rows: SubSlotRow[], v: Viewer): VisibleRow[] {
     }
     return out;
 }
+
+/** 빠지는 사람 이름 — 비었거나 id 그대로 들어 있으면 「알 수 없음」(올린 이·맡은 이와 같은 방식). */
+export const absentLabel = (b: { absentName: string; absentRef: string }): string => {
+    const n = b.absentName.trim();
+    return n === '' || n === b.absentRef.trim() ? '알 수 없음' : n;
+};

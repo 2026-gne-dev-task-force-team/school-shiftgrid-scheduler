@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, EmptyState, isImeEnter } from '../../pane-ui-system';
 import { setSelection } from './detail';
-import { applyVisibility, getSlotSource, getViewer, groupByDateAndTime, mineOf, type VisibleRow } from './list';
+import { absentLabel, applyVisibility, getSlotSource, getViewer, groupByDateAndTime, mineOf, type VisibleRow } from './list';
 
 const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
@@ -22,9 +22,9 @@ export function RowLine({ r, onOpen }: { r: VisibleRow; onOpen?: (r: VisibleRow)
         <li className={`text-small flex items-baseline gap-2${onOpen ? ' cursor-pointer' : ''}`} {...open}>
             <span>{r.trackName}</span>
             <Badge tone={r.status === '확정' ? 'neutral' : 'danger'}>{r.status}</Badge>
-            <span>{r.body.absentName}</span>
+            <span>{absentLabel(r.body)}</span>
             <span className="text-muted">{r.body.reason}</span>
-            {r.take && <span>→ {r.take.takerName}</span>}
+            {r.take && <span>→ {r.take.takerName || '알 수 없음'}</span>}
         </li>
     );
 }
