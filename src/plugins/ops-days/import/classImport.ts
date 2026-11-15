@@ -8,15 +8,16 @@
  */
 import { readTable } from '../../../../shared/import/index.ts';
 import type { TableKind } from '../../../../shared/import/index.ts';
-import type { TimeFrame } from './frame';
+import type { TimeFrame } from '../../../../shared/import/frame.ts';
 
-export const DAYS = ['월', '화', '수', '목', '금'];
+import { DAYS, findDayRow, gridColumns, type RowInfo } from '../../../../shared/import/grid.ts';
+export { DAYS, findDayRow, gridColumns };
+export type { RowInfo };
 const SKIP = new Set(['', '점심', '—', '-', '–', '하교']);
 
 /** 저장되는 담임 칸 과목 한 칸 */
 export interface ClassSubject { trackName: string; dayIndex: number; start: string; subject: string }
 export interface ClassCell { dayIndex: number; start: string; subject: string }
-export interface RowInfo { label: string; owner?: string; start: string | null; reason: string; options?: { start: string; grades: number[] }[]; hasContent?: boolean }
 export interface ClassPreviewItem {
     trackName: string;
     homeroomName: string | null;
@@ -98,24 +99,6 @@ function buildPreview(frame: TimeFrame, raw: Raw, current: CurrentMap): ClassPre
 }
 
 // ─────────────────────────────────────── 표 모양 둘: 학급 표(한글 원본 꼴) · 양식(요일×시각 줄, 반 열)
-
-/** 요일 줄(월~금이 다섯 번 이상 나오는 첫 줄, 위쪽 4줄 안) */
-export function findDayRow(g: string[][]): number {
-    for (let r = 0; r < Math.min(4, g.length); r++) if (g[r].filter((x) => DAYS.includes(x.trim())).length >= 5) return r;
-    return -1;
-}
-
-/** 열마다 (주인 머리 글자, 요일). 주인 머리는 요일 줄 바로 위 줄에서 왼쪽으로 가장 가까운 글자(병합 칸) */
-export function gridColumns(g: string[][], dayRow: number): ({ key: string; dayIndex: number } | null)[] {
-    const head = dayRow > 0 ? g[dayRow - 1] : [];
-    return g[dayRow].map((v, c) => {
-        const di = DAYS.indexOf(v.trim());
-        if (c === 0 || di < 0) return null;
-        let key = '';
-        for (let k = c; k >= 1; k--) if (head[k]?.trim()) { key = head[k].trim(); break; }
-        return { key: key || '열' + Math.ceil(c / 5), dayIndex: di };
-    });
-}
 
 /** 데이터 줄을 돌며 칸마다 (열, 시각, 글자). 줄 머리가 빈 줄은 위 줄에 이어 붙는다(한 칸 여러 줄) */
 function walkGrid(g: string[][], dayRow: number, frame: TimeFrame, ownerOf: (key: string) => string | null, onCell: (key: string, dayIndex: number, start: string, text: string) => void): RowInfo[] {
