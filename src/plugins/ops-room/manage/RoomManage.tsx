@@ -3,10 +3,13 @@ import type { Op } from '../../../server-link/replay';
 import { Button, Field, Textarea, TextInput } from '../../../pane-ui-system';
 import { getRoomSource, getViewer, isManager, type Room, type RoomSource, type RoomsPart, type Viewer } from '../book';
 import { parseRoomsCsv, roomsToCsv, type RoomCsvPreview } from './csv';
+import { RoomImportView } from '../import/RoomImportView';
+import { roomFrame } from '../import/roomFrame';
+import type { TimeFrame } from '../../../../shared/import/frame.ts';
 import { addBlock, addRoom, applyRoomOps, delBlock, delRoom, editRoom, opsFromRooms } from './ops';
 
 /** 방 관리(관리 역할만) — 방 추가·고침·끄기·지우기 · 차단 · CSV 내보내기/불러오기(미리보기 뒤 확정). */
-export function RoomManageView({ source, viewer, newId }: { source?: RoomSource; viewer?: Viewer; newId?: () => string }) {
+export function RoomManageView({ source, viewer, newId, frame }: { source?: RoomSource; viewer?: Viewer; newId?: () => string; frame?: TimeFrame }) {
     const src = source ?? getRoomSource();
     const v = viewer ?? getViewer();
     const mk = newId ?? (() => crypto.randomUUID());
@@ -17,6 +20,7 @@ export function RoomManageView({ source, viewer, newId }: { source?: RoomSource;
     const [edit, setEdit] = useState<Record<string, { name: string; capacity: string }>>({});
     const [csv, setCsv] = useState('');
     const [preview, setPreview] = useState<RoomCsvPreview | null>(null);
+    const [importing, setImporting] = useState(false);
     const reload = async () => setPart(await src.loadPart());
     useEffect(() => { void reload(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -48,6 +52,16 @@ export function RoomManageView({ source, viewer, newId }: { source?: RoomSource;
         void run(ops, `불러왔습니다(${ops.length}건).`).then(() => setPreview(null));
     };
     const plan = preview && !preview.headerError && part ? opsFromRooms(part.rooms, preview.rooms) : null;
+
+    if (importing && part) {
+        return (
+            <div className="flex flex-col">
+                <div className="p-4 pb-0"><Button variant="ghost" onClick={() => setImporting(false)}>돌아가기</Button></div>
+                <RoomImportView frame={frame ?? roomFrame()} rooms={part.rooms} fixed={part.fixed} newId={newId}
+                    onApply={async (n) => { await src.savePart({ rooms: n.rooms, fixed: n.fixed, blocks: part.blocks }); await reload(); }} />
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 max-w-xl flex flex-col gap-3">
@@ -84,6 +98,7 @@ export function RoomManageView({ source, viewer, newId }: { source?: RoomSource;
                 <Field label="사유"><TextInput value={block.reason} onChange={(e) => setBlock((s) => ({ ...s, reason: e.target.value }))} /></Field>
                 <Button variant="solid" onClick={() => void run([addBlock({ id: mk(), roomId: block.roomId, startDate: block.start, endDate: block.end, fromMin: null, toMin: null, reason: block.reason })], '차단했습니다.')}>차단 더하기</Button>
             </div>
+            <Button variant="ghost" onClick={() => setImporting(true)}>고정 사용 불러오기</Button>
             <h3 className="text-small">CSV</h3>
             <Button variant="ghost" onClick={() => part && setCsv(roomsToCsv(part.rooms))}>CSV 내보내기</Button>
             <Textarea aria-label="CSV 내용" rows={6} value={csv} onChange={(e) => { setCsv(e.target.value); setPreview(null); }} />
