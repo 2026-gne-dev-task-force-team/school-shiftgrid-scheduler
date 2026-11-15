@@ -2,8 +2,16 @@
 import type { DayLesson } from '../../../shared/aux-engine/assign.ts';
 import type { Bundle } from '../../../shared/bundle/types.ts';
 import { toMin } from '../../../shared/clock.ts';
-import type { Doc } from '../v1-editor/legacy/types/doc';
-import type { CalendarEvent, TimetableChange } from '../ops-days/types';
+
+// 남의 플러그인 타입을 끌지 않는다 — 아래는 이 변환기가 실제로 읽는 필드만 담은 좁은 입력 타입(구조적 타이핑으로 번들 값이 그대로 들어온다).
+interface CalendarEvent { kind: string; date: string; endDate?: string }
+interface TimetableChange { date: string; classKey: string; period: number; subject: string }
+interface Slot { index: number; label: string; start: string; end: string; assignable?: boolean; kind?: string }
+interface Spec { id: string; activeDays: number[]; slots: Slot[]; lessonsPerDay?: number[] }
+interface Track { id: string; name: string; grade?: number | null; specId?: string }
+interface Timetable { id: string; specId: string; startDate: string; endDate?: string; priority: number }
+interface Assignment { timetableId: string; trackId: string; dayIndex: number; slotIndex: number; activityId?: string }
+interface Doc { specs: Spec[]; tracks: Track[]; timetables: Timetable[]; assignments: Assignment[]; activities: { id: string; name: string }[] }
 
 const dayIndexOf = (date: string): number => (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7; // 0=월
 const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
@@ -14,7 +22,7 @@ export function lessonsFromBundle(bundle: Bundle | null | undefined): ((date: st
     if (!doc || !Array.isArray(doc.tracks) || !Array.isArray(doc.specs) || !Array.isArray(doc.timetables)) return null;
     const calendar = arr<CalendarEvent>(bundle?.parts.calendar);
     const changes = arr<TimetableChange>(bundle?.parts.changes);
-    const specs = doc.specs, tracks = doc.tracks, assignments = arr<NonNullable<Doc['assignments']>[number]>(doc.assignments);
+    const specs = doc.specs, tracks = doc.tracks, assignments = arr<Assignment>(doc.assignments);
     const nameOf = (id?: string) => doc.activities?.find((a) => a.id === id)?.name ?? null;
 
     return (date) => {
