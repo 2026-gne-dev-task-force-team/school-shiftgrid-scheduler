@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toHHMM, toMin } from '../../../shared/clock.ts';
 import { Button, Field, Select, TextInput } from '../../pane-ui-system';
-import { addDay, addStaff, applyAuxOps, delDay, deactivateStaff, judgeDay, reassignNeededCount } from './ops';
+import { addDay, addStaff, applyAuxOps, delDay, deactivateStaff, judgeDay, reactivateStaff, reassignNeededCount } from './ops';
 import { MonthView } from './month/MonthPanel';
 import { defaultAuxSource, type AuxSource } from './source';
 import type { AuxPart, AuxViewer } from './types';
@@ -18,6 +18,7 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
     const [part, setPart] = useState<AuxPart | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
     const [name, setName] = useState('');
+    const [pendingRest, setPendingRest] = useState<string | null>(null);
     const [f, setF] = useState({ staffId: '', classKey: '', start: '09:00' });
     const id = () => (newId ? newId() : crypto.randomUUID());
     const reload = async () => setPart(await src.load());
@@ -49,13 +50,21 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
             {msg && <p role="alert" className="text-small">{msg}</p>}
             <h3 className="text-small">명부 {staff.length}명</h3>
             {staff.map((s) => (
-                <div key={s.id} className="flex gap-2 items-center text-small">
+                <div key={s.id} className="flex flex-wrap gap-2 items-center text-small">
                     <span>{s.name} ({s.kind}){s.active ? '' : ' [쉼]'}</span>
-                    {s.active && <Button variant="ghost" onClick={() => void run([deactivateStaff(s)])}>{`${s.name} 쉬게 하기`}</Button>}
+                    {s.active && pendingRest !== s.id && <Button variant="ghost" onClick={() => setPendingRest(s.id)}>{`${s.name} 쉬게 하기`}</Button>}
+                    {s.active && pendingRest === s.id && (
+                        <>
+                            <span>정말 쉬게 할까요?</span>
+                            <Button variant="solid" tone="danger" onClick={() => { setPendingRest(null); void run([deactivateStaff(s)]); }}>{`${s.name} 쉬게 하기 확인`}</Button>
+                            <Button variant="outline" onClick={() => setPendingRest(null)}>쉬게 하기 취소</Button>
+                        </>
+                    )}
+                    {!s.active && <Button variant="outline" onClick={() => void run([reactivateStaff(s)])}>{`${s.name} 되돌리기`}</Button>}
                 </div>
             ))}
-            <div className="flex gap-2">
-                <Field label="새 보조 이름"><TextInput value={name} onChange={(e) => setName(e.target.value)} /></Field>
+            <div data-testid="form-row" className="flex flex-wrap gap-2 items-end">
+                <Field label="새 보조 이름" className="min-w-0"><TextInput value={name} onChange={(e) => setName(e.target.value)} /></Field>
                 <Button variant="solid" tone="accent" onClick={() => void run([addStaff({ id: id(), name, kind: '기타', unit: 'period', active: true, allowedActivities: [], targetTracks: [] })])}>명부에 넣기</Button>
             </div>
             <Field label="날짜"><TextInput value={date} onChange={(e) => setDate(e.target.value)} placeholder="2026-11-19" /></Field>
@@ -67,12 +76,12 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
                 </div>
             ))}
             <h3 className="text-small">이 날 배정하기</h3>
-            <div className="flex gap-2">
-                <Field label="보조">
+            <div data-testid="form-row" className="flex flex-wrap gap-2">
+                <Field label="보조" className="min-w-0">
                     <Select value={f.staffId || (staff[0]?.id ?? '')} onChange={(e) => setF({ ...f, staffId: e.target.value })} options={staff.filter((x) => x.active).map((x) => ({ value: x.id, label: x.name }))} />
                 </Field>
-                <Field label="반"><TextInput value={f.classKey} onChange={(e) => setF({ ...f, classKey: e.target.value })} /></Field>
-                <Field label="시작"><TextInput value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></Field>
+                <Field label="반" className="min-w-0"><TextInput value={f.classKey} onChange={(e) => setF({ ...f, classKey: e.target.value })} /></Field>
+                <Field label="시작" className="min-w-0"><TextInput value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} /></Field>
             </div>
             <Button variant="solid" tone="accent" onClick={() => void assign()}>배정하기</Button>
         </div>
