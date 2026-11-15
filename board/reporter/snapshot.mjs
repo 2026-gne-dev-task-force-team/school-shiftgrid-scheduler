@@ -24,7 +24,8 @@ export function kstIso(text, year, day) {
   return `${year}-${p(mo)}-${p(d)}T${p(m[3])}:${m[4]}:00+09:00`
 }
 
-const cells = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim())
+// 칸 안의 `\|`(표 안 위키링크 별칭 `[[노트#절\|별칭]]`)는 칸 나눔이 아니다 — 나누면 뒤 칸이 한 칸씩 밀려 설명이 비고 상태가 틀린다(T-10e)
+export const cells = (line) => line.trim().replace(/^\||(?<!\\)\|$/g, '').split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'))
 /** 백틱 안 낱말 — 경로·가지 이름·파일명·커밋 꼴이면 빈 값, 아니면 낱말 그대로. 끝 「/」 하나(한 칸 폴더 이름)는 낱말로 본다. */
 export function codeWord(w) {
   const t = w.trim().replace(/^\/?([A-Za-z0-9_.-]+)\/$|^\/([A-Za-z0-9_.-]+)$/, '$1$2')

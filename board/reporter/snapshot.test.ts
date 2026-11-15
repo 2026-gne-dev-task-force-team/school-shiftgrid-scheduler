@@ -294,6 +294,14 @@ describe('보고꾼 — 요청함 R 카드', () => {
     expect(requestTitle('**탭** `a/b.ts`. 다음 문장이 대신 쓰인다', 'R9')).toBe('다음 문장이 대신 쓰인다') // 첫 문장이 걸려 비면 다음 문장
   })
 
+  it('칸 안 `\\|`(표 안 위키링크 별칭)는 칸 경계가 아니다 — 뒤 칸이 밀리지 않는다(T-10e)', () => {
+    const md = '| R7 | 11-12 16:40 | *"원문"* | **처방 제목입니다** — 설계 [[노트#절\\|별칭]] | 🛠 앱 | ✅ T-7p1 끝 |'
+    const [row] = parseRequests(md)
+    expect(row.type).toBe('🛠 앱')
+    expect(row.state).toBe('✅ T-7p1 끝')
+    expect(row.what).toContain('[[노트#절|별칭]]')
+  })
+
   it('상태 매핑: → T 는 그 태스크를 따르고(없으면 진행) · 대기·끝·진행', () => {
     expect(r.R1).toMatchObject({ column: 'done', sprint: 2 }) // 따라간 T-2a 의 스프린트
     expect(r.R2.column).toBe('work')
