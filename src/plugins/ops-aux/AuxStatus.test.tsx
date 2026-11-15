@@ -23,6 +23,22 @@ describe('상태바 배지', () => {
         const none = await mount(<AuxStatus source={memoryAuxSource(demoAux())} today="2026-11-15" />);
         expect(none.textContent).toBe('');
     });
+    it('배지를 누르면(클릭·Enter) 열기가 불린다', async () => {
+        const bad = demoAux(); bad.base[0].classKey = '3-2';
+        let opened = 0;
+        const host = await mount(<AuxStatus source={memoryAuxSource(bad)} today="2026-11-15" onOpen={() => { opened++; }} />);
+        const b = host.querySelector('[role="button"][data-testid="aux-status"]')!;
+        await act(async () => { b.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(opened).toBe(1);
+        await act(async () => { b.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); });
+        expect(opened).toBe(2);
+    });
+    it('상태바 render 가 host.commands.run(ops-aux.open) 으로 잇는다', async () => {
+        const ran: string[] = [];
+        const el = opsAuxPlugin.renders!.AuxStatus({ commands: { run: (id: string) => { ran.push(id); return true; } } } as never) as ReactElement<{ onOpen: () => void }>;
+        el.props.onOpen();
+        expect(ran).toEqual(['ops-aux.open']);
+    });
     it('플러그인이 상태바 오른쪽에 배지를 건다', () => {
         const sb = opsAuxPlugin.manifest.contributes?.statusBar;
         expect(sb?.[0]).toMatchObject({ id: 'ops-aux.badge', side: 'right', render: 'AuxStatus' });
