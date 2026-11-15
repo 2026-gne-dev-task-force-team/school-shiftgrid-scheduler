@@ -1,6 +1,7 @@
 /** 근태 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다. 지금은 메모리 가짜 어댑터. */
 import type { DayLesson } from '../../../shared/aux-engine/assign.ts';
 import type { Bundle } from '../../../shared/bundle/types.ts';
+import { getBundle, subscribeBundle } from '../../../shared/bundle/store.ts';
 import { lessonsFromBundle } from './lessons';
 import type { AuxPart } from './types';
 
@@ -40,8 +41,13 @@ export function demoLessons(date: string): DayLesson[] {
     return [L('1-1', 1, 540, '국어'), L('3-2', 3, 540, '수학', date !== '2026-11-19'), L('1-1', 1, 590, '수학'), L('3-2', 3, 590, '국어', date !== '2026-11-19')];
 }
 
-/** 화면·상태바 배지가 같이 쓰는 기본 창구(앱이 번들을 읽어 붙이기 전까지 가짜). */
-export const defaultAuxSource: AuxSource = memoryAuxSource(demoAux());
+/** 화면·상태바 배지가 같이 쓰는 기본 창구(수업 칸은 앱 번들에서 — 번들이 없으면 demo). */
+const baseAuxSource = memoryAuxSource(demoAux(), (date) => lessonsOnOf(getBundle())(date));
+export const defaultAuxSource: AuxSource = {
+    ...baseAuxSource,
+    // 앱 번들이 바뀌어도 상태바 배지가 다시 센다.
+    subscribe: (fn) => { const a = baseAuxSource.subscribe!(fn); const b = subscribeBundle(fn); return () => { a(); b(); }; },
+};
 
 export function demoAux(): AuxPart {
     return {
