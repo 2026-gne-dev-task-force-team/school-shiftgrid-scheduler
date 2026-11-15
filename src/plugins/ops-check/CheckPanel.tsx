@@ -2,11 +2,13 @@ import { useRef, useState } from 'react';
 import { Badge, Button, EmptyState } from '../../pane-ui-system';
 import type { Severity } from '../../../shared/check/index.ts';
 import { runCheck, isBundleText, type CheckView } from './run';
+import { plainText, foldRows } from './plain';
 import { adoptBundle } from '../../../shared/bundle/store.ts';
 
 const MARK: Record<Severity, string> = { error: '❌', warn: '⚠️', info: 'ℹ️' };
 
 export function CheckResult({ view }: { view: CheckView }) {
+    const [detail, setDetail] = useState(false);
     if (view.kind === 'unreadable') return <EmptyState icon="ban" title={view.message} description="JSON 파일을 다시 골라 주세요." />;
     const n = (s: Severity) => view.issues.filter((i) => i.severity === s).length;
     return (
@@ -15,15 +17,18 @@ export function CheckResult({ view }: { view: CheckView }) {
             {view.issues.length === 0
                 ? <p className="text-small">✅ 통과 — 걸린 규칙이 없습니다.</p>
                 : <p className="text-small text-muted">❌ {n('error')} · ⚠️ {n('warn')} · ℹ️ {n('info')}</p>}
+            {view.issues.length > 0 && <div><Button onClick={() => setDetail(!detail)}>{detail ? '자세히 접기' : '자세히'}</Button></div>}
             <ul className="flex flex-col gap-1">
-                {view.issues.map((i, k) => (
-                    <li key={k} className="text-small flex items-baseline gap-2">
-                        <span>{MARK[i.severity]}</span>
-                        <Badge tone={i.severity === 'error' ? 'danger' : 'neutral'}>{i.id}</Badge>
-                        <span className="text-muted">{i.where}</span>
-                        <span>{i.message}</span>
-                    </li>
-                ))}
+                {foldRows(view.issues, detail).map((r, k) => r.kind === 'rest'
+                    ? <li key={k} className="text-small text-muted flex items-baseline gap-2"><span>➕</span><span>그 밖에 {r.n}건</span></li>
+                    : (
+                        <li key={k} className="text-small flex items-baseline gap-2" title={`${r.issue.id} · ${r.issue.where}`}>
+                            <span>{MARK[r.issue.severity]}</span>
+                            {detail && <Badge tone={r.issue.severity === 'error' ? 'danger' : 'neutral'}>{r.issue.id}</Badge>}
+                            {detail && <span className="text-muted">{r.issue.where}</span>}
+                            <span>{plainText(r.issue)}</span>
+                        </li>
+                    ))}
             </ul>
         </div>
     );
