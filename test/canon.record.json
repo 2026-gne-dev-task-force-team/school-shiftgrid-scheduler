@@ -1,6 +1,8 @@
 {
-  "fixtureRead": 0,
-  "sampleTotal": 2,
+  "fixtureRead": 1820,
+  "frontTotal": 910,
+  "frontMismatched": 0,
+  "sampleTotal": 0,
   "sampleMismatched": 0,
   "diffs": []
 }

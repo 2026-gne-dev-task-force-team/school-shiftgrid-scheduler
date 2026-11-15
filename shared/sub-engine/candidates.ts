@@ -34,13 +34,17 @@ const overlap = (aS: number, aE: number, bS: number, bE: number) => aS < bE && b
 export function substituteCandidates(input: CandInput, q: SubQuery): SubResult {
   const res: SubResult = { A: [], B: [], C: [], D: [], excluded: [] }
   const target = input.tracks.find((t) => t.name === q.trackName)
-  if (!target || q.endMin <= q.startMin) return res // 반이 없거나 빈 시각 — 후보 없음(던지지 않는다)
+  if ((!target && q.trackName !== '') || q.endMin <= q.startMin) return res // 없는 반이거나 빈 시각 — 후보 없음(던지지 않는다). 반 이름이 빈 글자면 「자기 반 없음」 질의
 
-  const ownHomeroomId = 'homeroom:' + target.name
+
+  const ownHomeroomId = target ? 'homeroom:' + target.name : ''
   const homeroomAbsent = q.absentId == null || q.absentId === ownHomeroomId
   // 점심 급식지도 중인 학년: 그 학년 점심이 질의 시각과 겹치면 그 학년 담임은 조용히 빠진다
   const lunchGrades = new Set<number>()
   for (const t of input.tracks) if (t.grade != null && t.lunch && overlap(q.startMin, q.endMin, t.lunch.startMin, t.lunch.endMin)) lunchGrades.add(t.grade)
+
+  const lunchSlots: { s: number; e: number }[] = []
+  for (const t of input.tracks) if (t.lunch && !lunchSlots.some((w) => w.s === t.lunch!.startMin && w.e === t.lunch!.endMin)) lunchSlots.push({ s: t.lunch.startMin, e: t.lunch.endMin })
 
   const exclude = (p: { id: string; name: string; kind: string }, code: ExcludeCode, detail?: string) => res.excluded.push({ id: p.id, name: p.name, kind: p.kind, code, detail })
   const takenBy = (id: string) => input.taken.find((x) => x.personId === id && overlap(q.startMin, q.endMin, x.startMin, x.endMin))
@@ -89,8 +93,11 @@ export function substituteCandidates(input: CandInput, q: SubQuery): SubResult {
     if (teaching) continue
     if (busy) { exclude(p, 'busy', busy.reason); continue }
     if (p.kind === '비교과') { cand('D', 'non-subject'); continue }
-    // 전담: 질의 시각이 자기 수업 반의 점심과 겹치면 점심을 못 먹게 된다
-    const lunchMiss = input.tracks.some((t) => t.lunch != null && overlap(q.startMin, q.endMin, t.lunch.startMin, t.lunch.endMin) && t.lessons.some((l) => (l.teacherIds ?? []).includes(p.id) && overlap(t.lunch!.startMin - 60, t.lunch!.endMin + 60, l.startMin, l.endMin)))
+    // 전담 점심: 질의가 학교 점심 칸(학년별 점심의 합집합) 중 하나와 겹치면, 나머지 점심 칸 가운데 수업·고정·확정 보결이 안 걸린 칸이 하나는 남아야 밥을 먹는다
+    const lunchMiss = lunchSlots.some((w) => overlap(q.startMin, q.endMin, w.s, w.e)) && !lunchSlots.some((w) => !overlap(q.startMin, q.endMin, w.s, w.e)
+      && !input.tracks.some((t) => t.lessons.some((l) => (l.teacherIds ?? []).includes(p.id) && overlap(w.s, w.e, l.startMin, l.endMin)))
+      && !input.busy.some((b) => b.personId === p.id && overlap(w.s, w.e, b.startMin, b.endMin))
+      && !input.taken.some((x) => x.personId === p.id && overlap(w.s, w.e, x.startMin, x.endMin)))
     if (lunchMiss) { exclude(p, 'lunch-miss'); continue }
     cand('C', 'specialist')
   }
