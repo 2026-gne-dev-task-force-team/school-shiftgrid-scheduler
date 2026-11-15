@@ -26,3 +26,17 @@ export function loadBundle(raw: unknown): { ok: true; bundle: Bundle } | { ok: f
   if (r.kind === 'bundle') { setBundle(r.bundle); return { ok: true, bundle: r.bundle } }
   return { ok: false, reason: r.kind === 'broken' ? r.reason : r.kind === 'empty' ? '빈 자료' : 'v1 파일(번들 아님)' }
 }
+
+type Persist = (b: Bundle | null) => unknown
+let persist: Persist | null = null
+
+/** 번들을 기기에 저장하는 길을 앱이 기동 때 건다(플러그인이 src/app 을 안 부르고 저장하게). */
+export function setBundlePersist(fn: Persist | null): void { persist = fn }
+
+/** 판별해 번들이면 앱에 넣고 저장 길로도 보낸다. 번들이 아니면 아무것도 안 바꾼다. 저장이 죽어도 넣기는 유지하고 이유를 돌려준다. */
+export async function adoptBundle(raw: unknown): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const r = loadBundle(raw)
+  if (!r.ok) return r
+  try { await persist?.(r.bundle) } catch { return { ok: false, reason: '저장하지 못했습니다(이번 실행에서는 쓰입니다)' } }
+  return { ok: true }
+}

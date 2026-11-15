@@ -13,3 +13,6 @@ export function runCheck(text: string): CheckView {
     const issues = s.kind === 'v1' ? checkV1(s.raw) : checkBundle(s.bundle);
     return { kind: 'result', format: s.kind, issues, blocking: hasBlocking(issues) };
 }
+
+/** 파일 텍스트가 번들인가(「이 번들로 쓰기」 버튼을 보일지). */
+export const isBundleText = (text: string): boolean => sniff(text).kind === 'bundle';
