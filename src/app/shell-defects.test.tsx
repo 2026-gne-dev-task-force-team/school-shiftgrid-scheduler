@@ -10,7 +10,7 @@
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { activateAll } from '../pane-ui-system/plugin';
 import { setPlatform } from '../pane-ui-system/platform-keys';
 import { PLUGINS } from './plugins';
@@ -155,5 +155,82 @@ describe('⑤ 리본 「v1 편성기」 → 가운데에 탭', () => {
         // 가운데 탭 줄에 그 탭이 서고 활성이다
         expect(host.querySelector('#main-content [data-tabbar] [data-row-id="v1-editor.edit"]')).not.toBeNull();
         expect(host.querySelector('#main-content [data-pane-active="v1-editor.edit"]')).not.toBeNull();
+    });
+});
+
+describe('⑥ 1280→390 창 줄이기 — 첫 그림부터 좁은 판(T-10ao 05 반쪽 화면)', () => {
+    // 붙박이 패널(aside)·덮는 서랍(fixed inset-0)이 남아 있으면 탐색기·본문·속성이 겹친다
+    const asides = () => host.querySelectorAll('aside').length;
+    const drawers = () => host.querySelectorAll('.fixed.inset-0').length;
+    it('줄인 바로 그 그림에 붙박이 패널도, 미끄러져 나가는 서랍도 없다 · 늘리면 붙박이로 돌아온다', () => {
+        mount();
+        act(() => { ribbonBtn('v1 편성기')!.click(); });
+        expect(asides()).toBe(2);
+        width = 390;
+        act(() => { window.dispatchEvent(new Event('resize')); });   // 타이머를 기다리지 않는다(숨은 탭에선 안 돈다)
+        expect(rail()).toBeNull();
+        expect(asides()).toBe(0);
+        expect(drawers()).toBe(0);
+        width = 1280;
+        act(() => { window.dispatchEvent(new Event('resize')); });
+        expect(rail()).not.toBeNull();
+        const open = [...host.querySelectorAll<HTMLElement>('aside')].filter((a) => a.style.width !== '0px');
+        expect(open.length).toBe(2);
+        expect(drawers()).toBe(0);
+    });
+});
+
+describe('⑦ 탭이 많을 때 새 탭을 탭 줄 안으로 끌어온다(T-10ao 02)', () => {
+    // jsdom 은 배치를 안 한다 — 탭 줄은 0~600px, 탭은 차례대로 150px 씩이라고 흉내 낸다(scrollLeft 만큼 왼쪽으로 밀린다)
+    const TAB = 150, STRIP = 600;
+    const restore: (() => void)[] = [];
+    beforeEach(() => {
+        const rect = Element.prototype.getBoundingClientRect;
+        const sl = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollLeft');
+        const store = new WeakMap<Element, number>();
+        Object.defineProperty(Element.prototype, 'scrollLeft', {
+            configurable: true,
+            get(this: Element) { return store.get(this) ?? 0; },
+            set(this: Element, v: number) { store.set(this, Math.max(0, v)); },
+        });
+        Element.prototype.getBoundingClientRect = function (this: Element) {
+            const strip = this.closest('[data-tabbar]') as HTMLElement | null;
+            const box = (l: number, w: number) => ({ left: l, right: l + w, width: w, top: 0, bottom: 30, height: 30, x: l, y: 0, toJSON() {} }) as DOMRect;
+            if (this.hasAttribute('data-tabbar')) return box(0, STRIP);
+            if (strip && this.hasAttribute('data-row-id')) {
+                const i = [...strip.querySelectorAll('[data-row-id]')].indexOf(this);
+                return box(i * TAB - strip.scrollLeft, TAB);
+            }
+            return rect.call(this);
+        };
+        restore.push(() => {
+            Element.prototype.getBoundingClientRect = rect;
+            if (sl) Object.defineProperty(Element.prototype, 'scrollLeft', sl);
+            else delete (Element.prototype as { scrollLeft?: number }).scrollLeft;
+        });
+    });
+    afterEach(() => { while (restore.length) restore.pop()!(); });
+
+    it('탭 여럿 뒤 리본으로 새 탭 → 탭 줄 보이는 자리로 끌어온다', () => {
+        localStorage.clear(); sessionStorage.clear();   // 앞 시험의 배치(세션 저장소에도 둔다)가 남으면 「새 탭」이 안 선다
+        mount();
+        for (const l of ['달력', '데이터 검사', '근태', '학사', '보결 명단', '시트', '일과표', '노트', '과목', '보결 목록', '특별실 예약']) {
+            act(() => { ribbonBtn(l)?.click(); });
+        }
+        const strip = host.querySelector<HTMLElement>('#main-content [data-tabbar]')!;
+        const rows = () => [...strip.querySelectorAll<HTMLElement>('[data-row-id]')];
+        expect(rows().length).toBeGreaterThan(STRIP / TAB);
+        // 끝 탭을 고른 뒤(새 탭은 활성 탭 바로 뒤에 선다) 사람이 탭 줄을 맨 앞으로 되감아 둔다 — 새 탭이 줄 밖에 서는 판
+        act(() => { rows().at(-1)!.click(); });
+        strip.scrollLeft = 0;
+        // ⚠️ 앞 리본 가운데 하나가 v1 편성기 탭을 이미 연다 — 아직 안 연 리본(컬렉션)으로 「새 탭」을 세운다
+        const before = new Set(rows());
+        act(() => { ribbonBtn('컬렉션')!.click(); });
+        const tab = rows().find((e) => !before.has(e))!;
+        expect(tab).toBeTruthy();
+        expect(rows().indexOf(tab)).toBeGreaterThanOrEqual(STRIP / TAB);   // 정말 줄 밖에 선 탭이다
+        const r = tab.getBoundingClientRect();
+        expect(r.left).toBeGreaterThanOrEqual(0);
+        expect(r.right).toBeLessThanOrEqual(STRIP);
     });
 });

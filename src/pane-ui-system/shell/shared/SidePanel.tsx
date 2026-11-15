@@ -36,7 +36,21 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
 
     // 나갈 때도 밀려 나가게 — 언마운트를 애니메이션 끝까지 미룬다. closing = 렌더는 됐는데 open 이 꺼진 사이
     const [rendered, setRendered] = useState(open);
-    const closing = rendered && !open;
+    // 🔴 판(넓은↔좁은)이 바뀌면 여닫기 애니메이션을 타지 않고 지금 열림으로 바로 맞춘다 — 렌더 중에 고친다.
+    //    안 그러면 붙박이였던 패널이 좁은 판 첫 그림에서 서랍으로 떴다가 미끄러져 나가는 사이(숨은 탭이면 멈춘 채)
+    //    본문을 반쪽 덮었다(T-10ao 05). entered 도 같이(아래 선언) 맞춘다.
+    const [layoutNarrow, setLayoutNarrow] = useState(narrow);
+    const [entered, setEntered] = useState(open);   // 좁은 화면 전용: 0↔1 미끄러짐의 목표 위치
+    let shownRendered = rendered;
+    let shownEntered = entered;
+    if (narrow !== layoutNarrow) {
+        setLayoutNarrow(narrow);
+        setRendered(open);
+        setEntered(open);
+        shownRendered = open;
+        shownEntered = open;
+    }
+    const closing = shownRendered && !open;
     useEffect(() => {
         if (open) { setRendered(true); return; }
         if (!rendered) return;
@@ -60,7 +74,6 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
     // 🔴 가장자리에서 안쪽으로 끌면 손가락을 따라 열리고, 열린 서랍을 바깥으로 끌면 닫힌다.
     //    세로 스크롤과 안 싸우게 10px 데드존으로 축을 잠근 뒤에만 가로를 가져간다(layout/mobile).
     //    놓는 순간 절반(settleOpen)을 넘었으면 확정, 아니면 되돌아간다 — 그 사이(settling) 짧게 미끄러진다.
-    const [entered, setEntered] = useState(open);   // 좁은 화면 전용: 0↔1 미끄러짐의 목표 위치
     const [drag, setDrag] = useState<{ progress: number; settling: boolean } | null>(null);
     const gesture = useRef<{ opening: boolean; startX: number; startY: number; width: number; axis: SwipeAxis; id: number } | null>(null);
     const settleTimer = useRef<number | null>(null);
@@ -122,7 +135,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
     // ── 좁은 화면 서랍(③ 스와이프 + 미끄러짐) ──
     if (drawer && narrow) {
         const dragging = drag != null;
-        const visible = rendered || dragging;
+        const visible = shownRendered || dragging;
         // 닫혀 있는 동안 가장자리 20px 띠로 여는 스와이프를 받는다(드래그 중에도 떠 있어 포인터 캡처가 안 끊긴다)
         const band = !open && (
             <div
@@ -137,7 +150,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
         );
         if (!visible) return band || null;
 
-        const progress = dragging ? drag.progress : (entered ? 1 : 0);
+        const progress = dragging ? drag.progress : (shownEntered ? 1 : 0);
         const off = isLeft ? (progress - 1) * 100 : (1 - progress) * 100;
         // 손가락을 따라가는 동안엔 전환을 끈다(즉각) · 확정 중(settling)·단추 여닫기엔 켠다(미끄러짐)
         const smooth = !dragging || drag.settling;
@@ -173,7 +186,7 @@ export function SidePanel({ side, open, pinned, width, minWidth, maxWidth, narro
     // ── 덮는 서랍(넓은 화면 고정 풀림) ──
     if (drawer) {
         // 🔴 접힌 사이드바는 폭 0 으로 완전히 사라진다 — 레일(28px) 없음(W6). 다시 펴는 길은 가운데 탭 줄 양 끝의 ◧/◨
-        if (!rendered) return null;
+        if (!shownRendered) return null;
         const w = narrow ? 'min(86vw, 330px)' : width;
         const panelAnim = closing
             ? (isLeft ? 'drawer-out-left' : 'drawer-out-right')

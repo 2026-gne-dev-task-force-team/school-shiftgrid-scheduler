@@ -96,15 +96,6 @@ export function Tabs({
      */
     sidebar?: boolean;
 }) {
-    // 🔴 넘쳐서 스크롤되는 탭 줄에서 활성 탭을 늘 보이게 끌어온다(항목 11 — 새 탭/전환이 화면 밖으로 가지 않게)
-    const scrollRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        const c = scrollRef.current;
-        if (!c || !activeId) return;
-        const sel = (window.CSS && CSS.escape) ? CSS.escape(activeId) : activeId.replace(/"/g, '\\"');
-        const el = c.querySelector<HTMLElement>(`[data-row-id="${sel}"]`);
-        if (el) revealInStrip(c, el);
-    }, [activeId, tabs.length]);
 
     // 🔴 ③ 나가는 탭 애니메이션 — props.tabs 가 진실이지만, 빠진 탭을 잠깐 남겨 폭이 줄며 사라지게 한다(쥔님 2026-11-01).
     //    ⭐ 재조정은 "지금 그려진 view"(cur)를 기준으로 한다 — ⛔ props 로만 새로 지으면, 중간에 끼는 다른 렌더
@@ -137,6 +128,19 @@ export function Tabs({
         });
     }, [tabs, scheduleExit]);
     useEffect(() => { const timers = exitTimers.current; return () => { for (const t of timers.values()) window.clearTimeout(t); }; }, []);
+
+    // 🔴 넘쳐서 스크롤되는 탭 줄에서 활성 탭을 늘 보이게 끌어온다(항목 11 — 새 탭/전환이 화면 밖으로 가지 않게)
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const c = scrollRef.current;
+        if (!c || !activeId) return;
+        const sel = (window.CSS && CSS.escape) ? CSS.escape(activeId) : activeId.replace(/"/g, '\\"');
+        const el = c.querySelector<HTMLElement>(`[data-row-id="${sel}"]`);
+        if (el) revealInStrip(c, el);
+        // 🔴 view 를 따라 다시 잰다 — DOM 은 props.tabs 가 아니라 view 로 그린다. view 는 한 박자 늦게(아래 effect) 따라오므로
+        //    activeId·tabs.length 만 보면 새 탭이 아직 DOM 에 없어 못 찾고, view 가 따라온 뒤엔 다시 안 돈다
+        //    → 탭 12개쯤에서 「v1 편성기」 새 탭이 x≈1892(탭 줄 밖)에 남았다(T-10ao 화면 재검).
+    }, [activeId, view]);
 
     return (
         // 🔴 탭 줄은 한 단 어둡다(bg-panel2) — 활성 탭만 에디터 바탕(bg-bg)이라 그 대비로 경계가 읽힌다.
