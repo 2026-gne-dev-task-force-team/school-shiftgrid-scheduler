@@ -61,6 +61,6 @@ export function getSlotSource(): SlotSource { return current; }
 
 /** 지금 보는 사람 — 🔴 진짜 계정이 붙기 전 자리표(이 파일 한 곳). 미리보기는 교사 한 명. */
 import type { Viewer } from './visibility';
-let viewer: Viewer = { loggedIn: true, projectId: 'p1', userId: 'u-demo', personRef: 'T-demo', role: '교사' };
+let viewer: Viewer = { loggedIn: true, projectId: 'p1', userId: 'u-demo', personRef: 'T-demo', role: '교사', name: '가짜교사' };
 export function setViewer(v: Viewer): void { viewer = v; }
 export function getViewer(): Viewer { return viewer; }

@@ -28,7 +28,7 @@ export const opsSubPlugin = definePlugin({
                 { id: 'ops-sub.open-detail', title: '보결 상세 열기', icon: 'list' },
                 { id: 'ops-sub.open-admin', title: '보결 관리 열기', icon: 'list' },
             ],
-            ribbon: [{ commandId: 'ops-sub.open-mine', icon: 'list', order: 8 }],
+            ribbon: [{ commandId: 'ops-sub.open-list', icon: 'list', order: 12 }, { commandId: 'ops-sub.open-mine', icon: 'list', order: 8 }],
         },
     },
     components: { List: ({ host }) => createElement(ListPanel, { onOpen: () => { host.workspace.open('ops-sub.detail', { where: 'center' }); } }), Mine: () => createElement(MinePanel), Register: () => createElement(RegisterPanel), Detail: () => createElement(DetailPanel), Admin: () => createElement(AdminPanel) },

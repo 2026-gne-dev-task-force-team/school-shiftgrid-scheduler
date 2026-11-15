@@ -68,3 +68,22 @@ describe('맡기 취소 · 목록 연결', () => {
         setSelection(null);
     });
 });
+
+describe('이름 칸', () => {
+    it('올린 이 이름이 보이고, 자료에 없으면 「알 수 없음」', async () => {
+        const { host } = await setup();
+        expect(host.textContent).toContain('올린 이 가짜올림');
+        const rows = demoRows(date); rows[0] = { ...rows[0], body: { ...rows[0].body, registeredByName: '' } };
+        const b = await setup(memorySource(rows));
+        expect(b.host.textContent).toContain('올린 이 알 수 없음');
+    });
+    it('내가 맡으면 맡은 이가 내부 id 가 아니라 내 이름으로 보인다', async () => {
+        const host = document.createElement('div'); document.body.appendChild(host);
+        const src = memorySource(demoRows(date));
+        await act(async () => createRoot(host).render(createElement(DetailView, { source: src, viewer: { ...viewer, name: '가짜교사' }, date, rowId: 'd1', now: () => date })));
+        const btn = [...host.querySelectorAll('button')].find((x) => x.textContent === '맡기');
+        await act(async () => { btn?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(host.textContent).toContain('맡은 이 가짜교사');
+        expect(host.textContent).not.toContain('T-a');
+    });
+});

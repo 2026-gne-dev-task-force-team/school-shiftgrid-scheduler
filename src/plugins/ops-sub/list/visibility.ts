@@ -15,6 +15,8 @@ export interface Viewer {
     userId: string | null;
     personRef: string | null;
     role: Role;
+    /** 보는 사람 이름(있으면) — 올린 이·맡은 이 이름칸에 쓴다. 없으면 이름을 모른다. */
+    name?: string;
 }
 
 export type VisibleRow = Omit<SubSlotRow, 'body' | 'take'> & {

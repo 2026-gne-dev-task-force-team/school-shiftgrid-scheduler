@@ -45,4 +45,31 @@ describe('보결 등록 화면', () => {
         expect((await src.loadSlots('2026-11-12'))[0].body.reason).toBe('새 사유');
         expect(host.textContent).toContain('덮어서 등록');
     });
+    it('새 칸 등록이 성공하면 입력칸이 비고 「등록됨」이 보인다', async () => {
+        const { src, host, click } = await setup2();
+        await click('등록');
+        expect(host.textContent).toContain('등록됨');
+        expect((host.querySelector('input[placeholder="1-1"]') as HTMLInputElement).value).toBe('');
+        expect((host.querySelector('input[placeholder="09:40"]') as HTMLInputElement).value).toBe('');
+        expect((await src.loadSlots('2026-11-12')).length).toBe(1);
+    });
+    it('같은 내용을 두 번 올리면 중복 줄이 생기지 않고 되묻는다', async () => {
+        const first = await setup2();
+        await first.click('등록');
+        const again = await setup2(first.src);
+        await again.click('등록');
+        expect(again.host.querySelector('[role=alertdialog]')?.textContent).toContain('덮을까요');
+        expect((await first.src.loadSlots('2026-11-12')).length).toBe(1);
+    });
 });
+
+async function setup2(src = memorySource([])) {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    await act(async () => createRoot(host).render(createElement(RegisterView, { source: src, ctx, initial })));
+    const click = async (label: string) => {
+        const b = [...host.querySelectorAll('button')].find((x) => x.textContent === label);
+        await act(async () => { b?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    };
+    return { src, host, click };
+}
