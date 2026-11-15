@@ -56,23 +56,25 @@ export function usePanels(narrow: boolean): Panels {
         wideOpen.current = { left: p.leftOpen, right: p.rightOpen };
         return narrow ? { ...p, leftOpen: false, rightOpen: false } : p;
     });
-    const wasNarrow = useRef(narrow);
-
-    // 넓은 화면 ↔ 좁은 화면을 오갈 때의 열림 상태 갈아끼우기
-    useEffect(() => {
-        if (narrow === wasNarrow.current) return;
-        wasNarrow.current = narrow;
-        setState((s) => {
-            if (narrow) {
-                wideOpen.current = { left: s.leftOpen, right: s.rightOpen };
-                return { ...s, leftOpen: false, rightOpen: false };
-            }
-            return { ...s, leftOpen: wideOpen.current.left, rightOpen: wideOpen.current.right };
-        });
-    }, [narrow]);
+    // 넓은 화면 ↔ 좁은 화면을 오갈 때의 열림 상태 갈아끼우기.
+    // 🔴 effect 가 아니라 렌더 중에 바로 고친다(React 「prop 바뀜에 state 맞추기」 꼴) — effect 로 하면 좁은 판 첫 그림에서
+    //    두 서랍이 열린 채 덮였다가 닫히는 미끄러짐을 탄다. 숨은 탭에선 그 전환·타이머가 멈춰 양옆 패널과 본문이
+    //    반쪽씩 겹친 채 남았다(T-10ao 화면 재검 05).
+    const [wasNarrow, setWasNarrow] = useState(narrow);
+    let shown = state;
+    if (narrow !== wasNarrow) {
+        if (narrow) {
+            wideOpen.current = { left: state.leftOpen, right: state.rightOpen };
+            shown = { ...state, leftOpen: false, rightOpen: false };
+        } else {
+            shown = { ...state, leftOpen: wideOpen.current.left, rightOpen: wideOpen.current.right };
+        }
+        setWasNarrow(narrow);
+        setState(shown);
+    }
 
     // 넓은 화면의 값만 보관한다(좁은 화면의 서랍 여닫기는 그때뿐이다)
-    useEffect(() => { if (!narrow) savePanels(state); }, [state, narrow]);
+    useEffect(() => { if (!narrow && narrow === wasNarrow) savePanels(state); }, [state, narrow, wasNarrow]);
 
     const setWidth = useCallback((side: 'left' | 'right', w: number) => {
         setState((s) => (side === 'left' ? { ...s, leftW: w } : { ...s, rightW: w }));
@@ -88,5 +90,5 @@ export function usePanels(narrow: boolean): Panels {
         setState((s) => (side === 'left' ? { ...s, leftPinned: pinned } : { ...s, rightPinned: pinned }));
     }, []);
 
-    return { state, setWidth, toggle, setPinned };
+    return { state: shown, setWidth, toggle, setPinned };
 }

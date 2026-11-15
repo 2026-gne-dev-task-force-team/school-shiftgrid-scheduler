@@ -147,9 +147,14 @@ export function makeHost(pluginId: string, impl?: PluginImpl, manifest?: PluginM
                     return { dispose() { /* 없음 */ } };
                 }
                 const mq = window.matchMedia(`(max-width: ${NARROW_PX - 1}px)`);
-                const h = (e: MediaQueryListEvent) => fn(e.matches);
+                // 🔴 resize 로도 다시 잰다(useNarrow 와 같은 까닭 — change 가 안 오는 길). 값이 바뀔 때만 알린다
+                let last = mq.matches;
+                const emit = (m: boolean) => { if (m !== last) { last = m; fn(m); } };
+                const h = (e: MediaQueryListEvent) => emit(e.matches);
+                const r = () => emit(mq.matches);
                 mq.addEventListener('change', h);
-                return track(pluginId, { dispose() { mq.removeEventListener('change', h); } });
+                window.addEventListener('resize', r);
+                return track(pluginId, { dispose() { mq.removeEventListener('change', h); window.removeEventListener('resize', r); } });
             },
         },
 
