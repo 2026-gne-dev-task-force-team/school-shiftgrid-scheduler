@@ -11,7 +11,7 @@ interface Grid {
   agents: { id: string; name: string; role: string }[]
   specs: { id: string; lessonsPerDay?: Record<string, number>; slots: Slot[] }[]
   tracks: { name: string; specId: string; grade: number | null }[]
-  assignments: { trackId?: string; dayIndex: number; slotIndex: number; agentId: string; label?: string }[]
+  assignments: { trackId?: string; dayIndex: number; slotIndex: number; agentId: string; coAgentId?: string; label?: string }[]
   weeklyBlocks: { dayIndex: number; from: string; to: string; targets: { kind: string; id: string }[]; name?: string }[]
 }
 
@@ -39,6 +39,7 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
       const perDay = spec?.lessonsPerDay?.[String(dayIndex)]
       const idx = new Set((perDay == null ? lessonSlots : lessonSlots.slice(0, perDay)).map((s) => s.index))
       const cell = new Map<number, string[]>()
+      const coCell = new Map<number, string[]>() // 보조·협력 인력(coAgentId) — 담임 칸이면 coIds, 전담 칸이면 그 전담과 함께 수업 중
       for (const a of g.assignments) {
         if (a.trackId !== idOfTrack.get(t.name) || a.dayIndex !== dayIndex) continue
         if (!slots.some((x) => x.index === a.slotIndex)) continue
@@ -46,9 +47,10 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
         const ids = cell.get(a.slotIndex) ?? []
         if (a.agentId !== '__homeroom__') ids.push(a.agentId)
         cell.set(a.slotIndex, ids)
+        if (a.coAgentId && a.coAgentId !== '__homeroom__') coCell.set(a.slotIndex, [...(coCell.get(a.slotIndex) ?? []), a.coAgentId])
       }
       const lessons: CandLesson[] = [...idx].map((i) => slots.find((x) => x.index === i)!).sort((x, y) => toMin(x.start) - toMin(y.start))
-        .map((s) => ({ startMin: toMin(s.start), endMin: toMin(s.end), subject: null, coIds: [], teacherIds: cell.get(s.index) ?? [] }))
+        .map((s) => ({ startMin: toMin(s.start), endMin: toMin(s.end), subject: null, coIds: coCell.get(s.index) ?? [], teacherIds: cell.get(s.index) ?? [] }))
       return { name: t.name, grade: t.grade, lessons, lunch: lunch ? { startMin: toMin(lunch.start), endMin: toMin(lunch.end) } : null }
     })
     const people: CandInput['people'] = [
