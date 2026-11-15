@@ -13,6 +13,7 @@ import { IconButton } from '../../primitives/IconButton';
 import type { DragBind } from '../../interactive/useDragLeaf';
 import type { IconName } from '../../primitives/Icon';
 import { isAlt } from '../../platform-keys';
+import { tabWidthCls } from './tab-width';
 
 export interface TabItem {
     id: string;
@@ -176,7 +177,7 @@ export function Tabs({
                 }}
             >
                 {view.map((t, i) => {
-                    const baseCls = sidebar ? 'min-w-0 max-w-[160px] shrink' : 'min-w-[96px] max-w-[200px] shrink-0';
+                    const baseCls = tabWidthCls(sidebar);
                     const variant = sidebar ? 'sidetab' as const : 'tab' as const;
                     // 🔴 나가는 탭 — 폭이 줄며 사라진다. 상호작용·식별자는 뗀다(드롭이 사라지는 탭을 겨냥하지 않게)
                     if (t.exiting) {

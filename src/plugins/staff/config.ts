@@ -1,7 +1,7 @@
 /**
  * 교직원 명단 = 컬렉션 설정 한 장 — 목록 노드(staff.list) + 그 안의 교직원 노드(staff.member).
  *   기본 칸(잠금)은 이름 하나 · 나머지는 새 명단에 심는 칸(substitute 와 같은 방식 — 메모를 끝으로 보내 칸 순서를 맞춘다).
- *   칸 순서 = 이름 · 구분 · 티어 · 담당 학년 · 담당 과목 · 담임 반 · 사람 · 메모.
+ *   칸 순서 = 이름 · 구분 · 등급 · 담당 학년 · 담당 과목 · 담임 반 · 사람 · 메모.
  *   🔴 구분 value 는 보결 명단(substitute)과 똑같다 — 나중에 보결 명단을 이 명단으로 갈아 낄 때 값 이사가 없게.
  *   ⛔ 사람(people) 명단과는 별개 컬렉션 — 「사람」 칸으로 사람 명단의 사람을 **선택적으로** 가리킬 뿐이다.
  */
@@ -23,7 +23,7 @@ export const newListFields = (): RecordField[] => [
         ],
     },
     {
-        key: 'f_tier', label: '티어', type: 'select',
+        key: 'f_tier', label: '등급', type: 'select',
         description: '보직 부장은 1, 일반 선생님은 2, 지원인력은 3으로 나눕니다. 선택지는 고칠 수 있습니다.',
         options: [
             { value: '1', label: '1 보직(부장)', color: 'red' },
@@ -67,5 +67,5 @@ export const STAFF_CONFIG: CollectionConfig = {
     newListFields,
     description: '학교 교원·직원을 모아 두는 명단입니다. 구분·학년·과목·담임 반을 적어 둡니다.',
     unit: '명',
-    text: { startDescription: '새로 만들거나, 만들어 둔 교직원 명단을 고르세요.', startHint: '이름·구분·티어·학년·과목·담임 반·사람·메모 칸이 든 빈 명단이 바로 열립니다' },
+    text: { startDescription: '새로 만들거나, 만들어 둔 교직원 명단을 고르세요.', startHint: '이름·구분·등급·학년·과목·담임 반·사람·메모 칸이 든 빈 명단이 바로 열립니다' },
 };
