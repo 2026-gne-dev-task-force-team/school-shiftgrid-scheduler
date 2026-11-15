@@ -17,6 +17,9 @@ export const delChange = (id: string): Op => ({ op: 'del', list: 'changes', key:
 
 const MANAGERS: DaysRole[] = ['관리자', '교감', '교무', '근태담당'];
 
+/** 담임 과목 불러오기 「반영」 — 교무·교감·관리자만(근태담당·교사는 미리보기까지). */
+export const canApplyClassSubjects = (v: DaysViewer): boolean => v.role === '관리자' || v.role === '교감' || v.role === '교무';
+
 /** 조작 하나를 이 사람이 해도 되나 — 안 되면 이유, 되면 null. `owners` = 지금까지 알려진 changes 항목 id → 만든 사람. */
 export function whyDenied(v: DaysViewer, op: Op, owners: Map<string, string>): string | null {
     if (MANAGERS.includes(v.role)) return null;

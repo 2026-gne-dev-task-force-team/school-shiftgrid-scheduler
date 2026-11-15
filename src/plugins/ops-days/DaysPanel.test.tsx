@@ -28,7 +28,7 @@ describe('담임 과목 불러오기 달기', () => {
         expect((await src.load()).classSubjects).toBeUndefined(); // 옛 자료
         const host = document.createElement('div');
         document.body.appendChild(host);
-        await act(async () => createRoot(host).render(createElement(DaysView, { source: src, initialMonth: '2026-11', loadFile: async () => new TextEncoder().encode(csv) })));
+        await act(async () => createRoot(host).render(createElement(DaysView, { source: src, viewer: { userId: 'u-m', role: '교무' }, initialMonth: '2026-11', loadFile: async () => new TextEncoder().encode(csv) })));
         const click = (label: string) => act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === label)?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         await click('담임 과목 불러오기');
         const input = host.querySelector('input[type=file]') as HTMLInputElement;
@@ -40,6 +40,35 @@ describe('담임 과목 불러오기 달기', () => {
         expect(after.classSubjects).toEqual([{ trackName: '3-2', dayIndex: 0, start: '09:00', subject: '주문외우기' }]);
         expect(after.changes).toHaveLength(1);
         expect(after.calendar).toHaveLength(2);
+    });
+});
+
+describe('담임 과목 반영 권한', () => {
+    const csv = '요일,시각,3-2\r\n월,09:00~09:40,주문외우기\r\n';
+    const open = async (role: '교사' | '교무') => {
+        const src = memoryDaysSource(demoDays());
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        await act(async () => createRoot(host).render(createElement(DaysView, { source: src, viewer: { userId: 'u-x', role }, initialMonth: '2026-11', loadFile: async () => new TextEncoder().encode(csv) })));
+        const btn = (label: string) => [...host.querySelectorAll('button')].find((x) => x.textContent === label) as HTMLButtonElement | undefined;
+        await act(async () => { btn('담임 과목 불러오기')?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        const input = host.querySelector('input[type=file]') as HTMLInputElement;
+        Object.defineProperty(input, 'files', { value: [new File(['x'], 'a.csv')] });
+        await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })); });
+        return { src, host, btn };
+    };
+    it('교사는 미리보기는 보이고 반영 단추는 비활성 + 이유 한 줄, 저장되지 않는다', async () => {
+        const { src, host, btn } = await open('교사');
+        expect(host.textContent).toContain('학급 1반');
+        expect(btn('이대로 반영')?.disabled).toBe(true);
+        expect(host.textContent).toContain('교무·관리자만 반영할 수 있습니다');
+        await act(async () => { btn('이대로 반영')?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect((await src.load()).classSubjects).toBeUndefined();
+    });
+    it('교무는 반영 단추가 살아 있다', async () => {
+        const { btn, host } = await open('교무');
+        expect(btn('이대로 반영')?.disabled).toBe(false);
+        expect(host.textContent).not.toContain('교무·관리자만 반영할 수 있습니다');
     });
 });
 
