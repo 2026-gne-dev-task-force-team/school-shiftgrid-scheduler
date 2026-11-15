@@ -1,4 +1,5 @@
 /** 학사 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다. 지금은 메모리 가짜 어댑터. */
+import type { ClassSubject } from './import/classImport';
 import type { DaysPart } from './types';
 
 export interface DaysSource {
@@ -13,6 +14,11 @@ export function memoryDaysSource(initial: DaysPart): DaysSource {
         load: async () => structuredClone(part),
         save: async (next) => { part = structuredClone(next); },
     };
+}
+
+/** 반영 — 담임 과목만 갈아 쓰고 나머지 칸은 서버 지금 값 그대로. */
+export async function saveClassSubjects(src: DaysSource, next: ClassSubject[]): Promise<void> {
+    await src.save({ ...(await src.load()), classSubjects: next });
 }
 
 export function demoDays(): DaysPart {

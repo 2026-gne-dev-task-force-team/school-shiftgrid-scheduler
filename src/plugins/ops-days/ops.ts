@@ -60,7 +60,7 @@ export interface ApplyOutcome { next: DaysPart; replayed: ReplayResult; errors: 
 /** 서버 판에 조작을 입힌다. 권한·충돌·칸 규칙 중 하나라도 걸리면 `errors` 가 비지 않는다(그땐 PUT 하지 않는다). */
 export function applyDaysOps(viewer: DaysViewer, server: DaysPart, ops: Op[]): ApplyOutcome {
     const replayed = replay(toLists(server), ops, keyOf);
-    const next: DaysPart = { calendar: replayed.result.calendar as CalendarEvent[], changes: replayed.result.changes as TimetableChange[] };
+    const next: DaysPart = { calendar: replayed.result.calendar as CalendarEvent[], changes: replayed.result.changes as TimetableChange[], ...(server.classSubjects ? { classSubjects: server.classSubjects } : {}) };
     const denied = checkPermission(viewer, server, ops);
     const errors = denied.length > 0 ? denied : replayed.conflicts.length > 0 ? ['서버 값이 달라져 충돌한 조작이 있습니다.'] : checkDays(next);
     return { next, replayed, errors };

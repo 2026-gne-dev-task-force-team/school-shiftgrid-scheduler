@@ -20,3 +20,25 @@ describe('학사 화면', () => {
         expect((await src.load()).changes).toHaveLength(0);
     });
 });
+
+describe('담임 과목 불러오기 달기', () => {
+    const csv = '요일,시각,3-2\r\n월,09:00~09:40,주문외우기\r\n';
+    it('패널에서 화면이 열리고, 반영하면 classSubjects 가 저장되어 다시 읽힌다(다른 칸은 그대로)', async () => {
+        const src = memoryDaysSource(demoDays());
+        expect((await src.load()).classSubjects).toBeUndefined(); // 옛 자료
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        await act(async () => createRoot(host).render(createElement(DaysView, { source: src, initialMonth: '2026-11', loadFile: async () => new TextEncoder().encode(csv) })));
+        const click = (label: string) => act(async () => { [...host.querySelectorAll('button')].find((x) => x.textContent === label)?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        await click('담임 과목 불러오기');
+        const input = host.querySelector('input[type=file]') as HTMLInputElement;
+        expect(input).not.toBeNull();
+        Object.defineProperty(input, 'files', { value: [new File(['x'], 'a.csv')] });
+        await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })); });
+        await click('이대로 반영');
+        const after = await src.load();
+        expect(after.classSubjects).toEqual([{ trackName: '3-2', dayIndex: 0, start: '09:00', subject: '주문외우기' }]);
+        expect(after.changes).toHaveLength(1);
+        expect(after.calendar).toHaveLength(2);
+    });
+});
