@@ -1,5 +1,7 @@
 /** 근태 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다. 지금은 메모리 가짜 어댑터. */
 import type { DayLesson } from '../../../shared/aux-engine/assign.ts';
+import type { Bundle } from '../../../shared/bundle/types.ts';
+import { lessonsFromBundle } from './lessons';
 import type { AuxPart } from './types';
 
 export interface AuxSource {
@@ -8,14 +10,23 @@ export interface AuxSource {
     save(next: AuxPart): Promise<void>;
     /** 그날의 수업 칸 — 시간표·변경·학사일정에서 만들어 준다(이 판은 가짜). */
     lessonsOn(date: string): DayLesson[];
+    /** 자료가 바뀌면 부른다(상태바 배지가 다시 센다). 부르는 쪽이 돌려받은 함수로 끈다. */
+    subscribe?(fn: () => void): () => void;
+}
+
+/** 번들이 있으면 거기서 수업 칸을 만들고, 없거나 시간표가 비었을 때만 demo 로 떨어진다. */
+export function lessonsOnOf(bundle?: Bundle | null): (date: string) => DayLesson[] {
+    return lessonsFromBundle(bundle) ?? demoLessons;
 }
 
 export function memoryAuxSource(initial: AuxPart, lessonsOn: (date: string) => DayLesson[] = demoLessons): AuxSource {
     let part = structuredClone(initial);
+    const subs = new Set<() => void>();
     return {
         load: async () => structuredClone(part),
-        save: async (next) => { part = structuredClone(next); },
+        save: async (next) => { part = structuredClone(next); subs.forEach((f) => f()); },
         lessonsOn,
+        subscribe: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
     };
 }
 
@@ -28,6 +39,9 @@ export function demoLessons(date: string): DayLesson[] {
     if (dow === 0 || dow === 6) return [];
     return [L('1-1', 1, 540, '국어'), L('3-2', 3, 540, '수학', date !== '2026-11-19'), L('1-1', 1, 590, '수학'), L('3-2', 3, 590, '국어', date !== '2026-11-19')];
 }
+
+/** 화면·상태바 배지가 같이 쓰는 기본 창구(앱이 번들을 읽어 붙이기 전까지 가짜). */
+export const defaultAuxSource: AuxSource = memoryAuxSource(demoAux());
 
 export function demoAux(): AuxPart {
     return {

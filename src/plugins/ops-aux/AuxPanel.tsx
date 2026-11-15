@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import { toHHMM, toMin } from '../../../shared/clock.ts';
 import { Button, Field, Select, TextInput } from '../../pane-ui-system';
 import { addDay, addStaff, applyAuxOps, delDay, deactivateStaff, judgeDay, reassignNeededCount } from './ops';
-import { demoAux, memoryAuxSource, type AuxSource } from './source';
+import { MonthView } from './month/MonthPanel';
+import { defaultAuxSource, type AuxSource } from './source';
 import type { AuxPart, AuxViewer } from './types';
 
-const fallback = memoryAuxSource(demoAux());
 const demoViewer: AuxViewer = { userId: 'u-a', role: '근태담당' };
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
 /** 근태 — 명부 목록 + 날짜 하나의 배정(재배정 필요 표시) · 근태담당만 고친다. */
 export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSource; viewer?: AuxViewer; initialDate?: string; newId?: () => string }) {
-    const src = source ?? fallback;
+    const src = source ?? defaultAuxSource;
     const v = viewer ?? demoViewer;
     const [date, setDate] = useState(initialDate ?? todayKst());
     const [part, setPart] = useState<AuxPart | null>(null);
@@ -75,4 +75,16 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
     );
 }
 
-export function AuxPanel() { return <AuxView />; }
+/** 탭 둘 — 배정(AuxView) · 월 정산(MonthView). */
+export function AuxPanel({ source, viewer }: { source?: AuxSource; viewer?: AuxViewer } = {}) {
+    const [tab, setTab] = useState<'assign' | 'month'>('assign');
+    return (
+        <div>
+            <div className="flex gap-2 px-4 pt-3">
+                <Button variant={tab === 'assign' ? 'solid' : 'ghost'} onClick={() => setTab('assign')}>배정</Button>
+                <Button variant={tab === 'month' ? 'solid' : 'ghost'} onClick={() => setTab('month')}>월 정산</Button>
+            </div>
+            {tab === 'assign' ? <AuxView source={source} viewer={viewer} /> : <MonthView source={source} viewer={viewer} />}
+        </div>
+    );
+}
