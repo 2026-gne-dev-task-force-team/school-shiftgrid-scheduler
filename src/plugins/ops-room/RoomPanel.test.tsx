@@ -21,6 +21,8 @@ describe('특별실 예약 화면', () => {
         expect(host.textContent).toContain('예약했습니다');
         expect((await src.loadReservations('2026-11-16')).length).toBe(1);
         expect(host.textContent).toContain('내 예약 1건');
+        expect(host.textContent).toMatch(/운동장 · \d\d:\d\d~\d\d:\d\d · 1-1/);
+        expect(host.textContent).not.toMatch(/\d번\)/);
         await click('취소');
         expect((await src.loadReservations('2026-11-16')).length).toBe(0);
     });
