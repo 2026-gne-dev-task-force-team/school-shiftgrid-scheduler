@@ -8,7 +8,7 @@ import { AuxView } from './AuxPanel';
 import { defaultAuxSource } from './source';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-afterEach(() => { setBundle(null); document.body.innerHTML = ''; });
+afterEach(() => { setBundle(null); document.body.innerHTML = ''; localStorage.clear(); });
 
 // 목요일(2026-11-19) 한 칸짜리 합성 번들 — 반 7-1 만 있다(데모의 1-1 은 없다).
 const bundle = (): Bundle => ({

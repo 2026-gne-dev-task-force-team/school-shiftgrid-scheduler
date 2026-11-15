@@ -31,6 +31,35 @@ export function memoryAuxSource(initial: AuxPart, lessonsOn: (date: string) => D
     };
 }
 
+const LS_KEY = 'plugin.ops-aux.part';
+
+/**
+ * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경이 남는다.
+ * 저장된 값이 없을 때만 seed(데모)를 쓴다. 저장소가 막히거나 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ */
+export function localAuxSource(seed: () => AuxPart, lessonsOn: (date: string) => DayLesson[] = demoLessons, key: string = LS_KEY): AuxSource {
+    const subs = new Set<() => void>();
+    const read = (): AuxPart => {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const p = JSON.parse(raw) as AuxPart;
+                if (p && Array.isArray(p.staff) && Array.isArray(p.day) && Array.isArray(p.exceptions)) return p;
+            }
+        } catch { /* 깨진 값·저장소 막힘 — seed */ }
+        return seed();
+    };
+    return {
+        load: async () => structuredClone(read()),
+        save: async (next) => {
+            try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* 조용히 */ }
+            subs.forEach((f) => f());
+        },
+        lessonsOn,
+        subscribe: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
+    };
+}
+
 const L = (trackName: string, grade: number, startMin: number, subject: string, available = true): DayLesson =>
     ({ trackName, grade, label: '', startMin, endMin: startMin + 40, subject, available, ...(available ? {} : { unavailableReason: '체험학습' }) });
 
@@ -42,7 +71,7 @@ export function demoLessons(date: string): DayLesson[] {
 }
 
 /** 화면·상태바 배지가 같이 쓰는 기본 창구(수업 칸은 앱 번들에서 — 번들이 없으면 demo). */
-const baseAuxSource = memoryAuxSource(demoAux(), (date) => lessonsOnOf(getBundle())(date));
+const baseAuxSource = localAuxSource(demoAux, (date) => lessonsOnOf(getBundle())(date));
 export const defaultAuxSource: AuxSource = {
     ...baseAuxSource,
     // 앱 번들이 바뀌어도 상태바 배지가 다시 센다.

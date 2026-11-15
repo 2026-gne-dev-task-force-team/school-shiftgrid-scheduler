@@ -15,6 +15,8 @@ export const addStaff = (s: AuxStaff): Op => ({ op: 'add', list: 'staff', key: s
 export const editStaff = (before: AuxStaff, after: AuxStaff): Op => ({ op: 'set', list: 'staff', key: before.id, item: after, base: before });
 /** 명부에서 지우지 않고 쉬게 한다(기록 보존). */
 export const deactivateStaff = (s: AuxStaff): Op => editStaff(s, { ...s, active: false });
+/** 쉬게 한 보조를 다시 켠다(「쉬게 하기」 되돌리기). */
+export const reactivateStaff = (s: AuxStaff): Op => editStaff(s, { ...s, active: true });
 export const addCondition = (c: AuxCondition): Op => ({ op: 'add', list: 'conditions', key: c.id, item: c });
 export const editCondition = (before: AuxCondition, after: AuxCondition): Op => ({ op: 'set', list: 'conditions', key: before.id, item: after, base: before });
 export const delCondition = (id: string): Op => ({ op: 'del', list: 'conditions', key: id });
