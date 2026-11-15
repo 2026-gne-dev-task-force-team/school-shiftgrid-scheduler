@@ -28,7 +28,7 @@ import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { flatten } from '../../pane-ui-system/core/nodes/model/tree';
 import { buildMainRows } from '../../pane-ui-system/core/explorer/views/rows';
 import { defineCollection } from '../collection/define';
-import { staffNodeTypes, staffNodeTypeImpl, LIST_TYPE, MEMBER_TYPE, getKit, setKit } from './nodes';
+import { staffNodeTypes, staffNodeTypeImpl, LIST_TYPE, MEMBER_TYPE, getKit, setKit, migrateLegacyLabels } from './nodes';
 import { STAFF_CONFIG } from './config';
 import { staffApi } from './api';
 
@@ -153,5 +153,24 @@ describe('설정 — 기본 칸은 이름, 새 명단에 심는 칸 일곱', () 
         expect(fields.find((x) => x.key === 'f_tier')!.options?.map((o) => o.value)).toEqual(['1', '2', '3']);
         expect(fields.find((x) => x.key === 'f_grades')!.options?.map((o) => o.label)).toEqual(['1학년', '2학년', '3학년', '4학년', '5학년', '6학년']);
         expect(api.byType(LIST_TYPE).map((n) => n.id)).toContain(lid);
+    });
+});
+
+describe('옛 라벨 이사 — 저장된 「티어」는 「등급」으로, 사용자가 바꾼 이름은 그대로', () => {
+    const labelOf = (api: ReturnType<typeof wire>, id: string) =>
+        ((api.get(id)!.data as { fields: { key: string; label: string }[] }).fields.find((f) => f.key === 'f_tier')!.label);
+    const mk = (api: ReturnType<typeof wire>, label: string) => {
+        const fields = STAFF_CONFIG.newListFields!().map((f) => (f.key === 'f_tier' ? { ...f, label } : f));
+        return api.create(api.roots.main, { type: LIST_TYPE, name: '명단' + label, data: { fields } });
+    };
+    it('옛 라벨은 옮기고 사용자 라벨은 둔다', () => {
+        const api = wire();
+        const a = mk(api, '티어');
+        const b = mk(api, '직급');
+        migrateLegacyLabels(api);
+        expect(labelOf(api, a)).toBe('등급');
+        expect(labelOf(api, b)).toBe('직급');
+        migrateLegacyLabels(api);
+        expect(labelOf(api, a)).toBe('등급');
     });
 });
