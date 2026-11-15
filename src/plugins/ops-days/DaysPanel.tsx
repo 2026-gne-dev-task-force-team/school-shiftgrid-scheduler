@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button, Field, TextInput } from '../../pane-ui-system';
 import { addChange, applyDaysOps, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
@@ -9,13 +9,21 @@ import type { DaysPart, DaysViewer } from './types';
 const fallback = memoryDaysSource(demoDays());
 const demoViewer: DaysViewer = { userId: 'u-a', role: '교사' };
 
+// 보기 상태(학사/불러오기)는 모듈에 둔다 — 창 폭에 따라 바깥이 이 화면을 다시 마운트해도 안 날아가게.
+type DaysTab = 'days' | 'import';
+let tabNow: DaysTab = 'days';
+const tabSubs = new Set<() => void>();
+const setTab = (t: DaysTab) => { tabNow = t; tabSubs.forEach((f) => f()); };
+const subTab = (f: () => void) => { tabSubs.add(f); return () => { tabSubs.delete(f); }; };
+export const resetDaysTab = () => setTab('days');
+
 /** 학사 — 월(YYYY-MM) 고르면 그 달 일정·변경을 날짜순 목록으로 · 교사는 변경 넣기·내 것 지우기. */
 export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { source?: DaysSource; viewer?: DaysViewer; initialMonth?: string; newId?: () => string; loadFile?: (f: File) => Promise<Uint8Array> }) {
     const src = source ?? fallback;
     const v = viewer ?? demoViewer;
     const [month, setMonth] = useState(initialMonth ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
     const [part, setPart] = useState<DaysPart | null>(null);
-    const [tab, setTab] = useState<'days' | 'import'>('days');
+    const tab = useSyncExternalStore(subTab, () => tabNow);
     const [msg, setMsg] = useState<string | null>(null);
     const [f, setF] = useState({ date: `${month}-01`, classKey: '', period: '1', subject: '' });
     const reload = async () => setPart(await src.load());
@@ -57,7 +65,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
                 </div>
             ))}
             <h3 className="text-small">변경 넣기</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 <Field label="날짜"><TextInput value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} /></Field>
                 <Field label="반"><TextInput value={f.classKey} onChange={(e) => setF({ ...f, classKey: e.target.value })} /></Field>
                 <Field label="교시"><TextInput value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} /></Field>
