@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Op } from '../../../server-link/replay';
 import { Button, Field, Textarea, TextInput } from '../../../pane-ui-system';
-import { getRoomSource, getViewer, isManager, type Room, type RoomSource, type RoomsPart, type Viewer } from '../book';
+import { getRoomSource, getViewer, isManager, isMockRoomSource, setViewer, type Room, type RoomSource, type RoomsPart, type Viewer } from '../book';
 import { parseRoomsCsv, roomsToCsv, type RoomCsvPreview } from './csv';
 import { RoomImportView } from '../import/RoomImportView';
 import { roomFrame } from '../import/roomFrame';
@@ -11,7 +11,10 @@ import { addBlock, addRoom, applyRoomOps, delBlock, delRoom, editRoom, opsFromRo
 /** 방 관리(관리 역할만) — 방 추가·고침·끄기·지우기 · 차단 · CSV 내보내기/불러오기(미리보기 뒤 확정). */
 export function RoomManageView({ source, viewer, newId, frame }: { source?: RoomSource; viewer?: Viewer; newId?: () => string; frame?: TimeFrame }) {
     const src = source ?? getRoomSource();
+    const [, bump] = useState(0);
     const v = viewer ?? getViewer();
+    const mock = !source && !viewer && isMockRoomSource(src);
+    const asRole = (role: Viewer['role']) => { setViewer({ ...getViewer(), role }); bump((n) => n + 1); };
     const mk = newId ?? (() => crypto.randomUUID());
     const [part, setPart] = useState<RoomsPart | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
@@ -24,7 +27,14 @@ export function RoomManageView({ source, viewer, newId, frame }: { source?: Room
     const reload = async () => setPart(await src.loadPart());
     useEffect(() => { void reload(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!isManager(v)) return <p className="p-4 text-small" role="alert">방 관리는 교무·교감·관리자만 할 수 있습니다.</p>;
+    if (!isManager(v)) {
+        return (
+            <div className="p-4 flex flex-col gap-2 items-start">
+                <p className="text-small" role="alert">방 관리는 교무·교감·관리자만 할 수 있습니다.</p>
+                {mock && <Button variant="ghost" onClick={() => asRole('교무')}>체험: 교무로 보기</Button>}
+            </div>
+        );
+    }
 
     /** 서버 판을 새로 읽어 조작을 입히고, 규칙에 걸리지 않으면 쓴다. */
     const run = async (ops: Op[], done: string) => {
@@ -65,6 +75,7 @@ export function RoomManageView({ source, viewer, newId, frame }: { source?: Room
 
     return (
         <div className="p-4 max-w-xl flex flex-col gap-3">
+            {mock && <div><Button variant="ghost" onClick={() => asRole('교사')}>교사로 돌아가기</Button></div>}
             {msg && <p role="alert" className="text-small">{msg}</p>}
             <h3 className="text-small">방 {part?.rooms.length ?? 0}개</h3>
             {part?.rooms.map((r) => {

@@ -57,6 +57,9 @@ export function demoPart(): RoomsPart {
 }
 
 let current: RoomSource = memoryRoomSource(demoPart());
+const mockSource = current;
+/** 기본 가짜 자료(mock)를 쓰는 중인가 — setRoomSource 로 진짜 서버 자료를 꽂으면 거짓. */
+export function isMockRoomSource(s: RoomSource = current): boolean { return s === mockSource; }
 export function setRoomSource(s: RoomSource): void { current = s; }
 export function getRoomSource(): RoomSource { return current; }
 

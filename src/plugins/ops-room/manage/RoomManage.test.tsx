@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { demoPart, memoryRoomSource } from '../book';
+import { demoPart, memoryRoomSource, setRoomSource, setViewer, getRoomSource } from '../book';
 import { RoomManageView } from './RoomManage';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -23,6 +23,30 @@ const type = async (el: HTMLInputElement | HTMLTextAreaElement, value: string) =
         el.dispatchEvent(new Event('input', { bubbles: true }));
     });
 };
+
+describe('방 관리 화면 — 체험 역할 전환', () => {
+    const teacher = { loggedIn: true, projectId: 'p1', userId: 'u-demo', role: '교사' as const };
+    afterEach(() => setViewer(teacher));
+    it('mock 이면 버튼이 보이고 누르면 고정 사용 불러오기가 보인다', async () => {
+        setViewer(teacher);
+        const host = await mount({});
+        expect(host.textContent).not.toContain('고정 사용 불러오기');
+        await click(host, '체험: 교무로 보기');
+        expect(host.textContent).toContain('고정 사용 불러오기');
+        await click(host, '교사로 돌아가기');
+        expect(host.textContent).toContain('교무·교감·관리자만');
+    });
+    it('mock 이 아니면(진짜 자료 꽂힘) 버튼이 없다', async () => {
+        const orig = getRoomSource();
+        setRoomSource(memoryRoomSource(demoPart()));
+        try {
+            setViewer(teacher);
+            const host = await mount({});
+            expect(host.textContent).toContain('교무·교감·관리자만');
+            expect(host.textContent).not.toContain('체험: 교무로 보기');
+        } finally { setRoomSource(orig); }
+    });
+});
 
 describe('방 관리 화면', () => {
     it('교사에겐 막혀 있다', async () => {
