@@ -10,8 +10,11 @@
 import { RootErrorBoundary } from '../pane-ui-system'
 import { Workbench } from './Workbench'
 import { CredentialDialog } from '../plugins/account'
+import { useEffect } from 'react'
+import { restoreBundle } from './bundle'
 
 export default function App() {
+  useEffect(() => { void restoreBundle() }, [])   // 저장된 번들을 한 번 읽어 넣는다(없으면 조용히)
   return (
     <RootErrorBoundary>
       <Workbench />
