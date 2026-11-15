@@ -4,10 +4,10 @@ import { Button, Field, TextInput } from '../../pane-ui-system';
 import { addChange, applyDaysOps, canApplyClassSubjects, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
 import { ClassImportView } from './import/ClassImportView';
-import { demoDays, memoryDaysSource, saveClassSubjects, type DaysSource } from './source';
+import { demoDays, localDaysSource, saveClassSubjects, type DaysSource } from './source';
 import type { DaysPart, DaysViewer } from './types';
 
-const fallback = memoryDaysSource(demoDays());
+const fallback = localDaysSource(demoDays);
 const demoViewer: DaysViewer = { userId: 'u-a', role: '교사' };
 
 // 보기 상태(학사/불러오기)는 모듈에 둔다 — 창 폭에 따라 바깥이 이 화면을 다시 마운트해도 안 날아가게.
@@ -26,6 +26,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
     const [part, setPart] = useState<DaysPart | null>(null);
     const tab = useSyncExternalStore(subTab, () => tabNow);
     const bundle = useSyncExternalStore(subscribeBundle, getBundle);   // 번들이 늦게 들어와도 시간 틀을 다시 뽑는다
+    const [pendingDel, setPendingDel] = useState<string | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
     const [f, setF] = useState({ date: `${month}-01`, classKey: '', period: '1', subject: '' });
     const reload = async () => setPart(await src.load());
@@ -63,7 +64,15 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
             {changes.map((c) => (
                 <div key={c.id} className="flex gap-2 items-center text-small">
                     <span>{c.date} {c.classKey} {c.period}교시 {c.subject}</span>
-                    <Button variant="ghost" onClick={() => void run([delChange(c.id)])}>{`${c.classKey} ${c.period}교시 지우기`}</Button>
+                    {pendingDel === c.id
+                        ? (
+                            <>
+                                <span>정말 지울까요?</span>
+                                <Button variant="solid" tone="danger" onClick={() => { setPendingDel(null); void run([delChange(c.id)]); }}>{`${c.classKey} ${c.period}교시 지우기 확인`}</Button>
+                                <Button variant="ghost" onClick={() => setPendingDel(null)}>지우기 취소</Button>
+                            </>
+                        )
+                        : <Button variant="ghost" onClick={() => setPendingDel(c.id)}>{`${c.classKey} ${c.period}교시 지우기`}</Button>}
                 </div>
             ))}
             <h3 className="text-small">변경 넣기</h3>
