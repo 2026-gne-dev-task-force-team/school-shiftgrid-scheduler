@@ -18,12 +18,12 @@ export interface RoomSource {
     deleteReservation(id: string, opts?: { ifMatch?: string }): Promise<DeleteResult>;
 }
 
-export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = []): RoomSource {
+export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = [], onChange?: (part: RoomsPart, rows: ReservationRow[]) => void): RoomSource {
     let part = initial; // 참조를 그대로 둔다(시험이 배치를 나중에 얹는다)
     const store = rows.map((r) => ({ ...r }));
     return {
         loadPart: async () => structuredClone(part),
-        savePart: async (next) => { part = { ...part, rooms: structuredClone(next.rooms), fixed: structuredClone(next.fixed), blocks: structuredClone(next.blocks) }; },
+        savePart: async (next) => { part = { ...part, rooms: structuredClone(next.rooms), fixed: structuredClone(next.fixed), blocks: structuredClone(next.blocks) }; onChange?.(part, store); },
         loadReservations: async (date) => store.filter((r) => r.date === date).map((r) => ({ ...r })),
         saveReservation: async (row, opts = {}) => {
             const same = (r: ReservationRow) => r.roomId === row.roomId && r.date === row.date && r.startMin === row.startMin;
@@ -33,6 +33,7 @@ export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = []
             if (store.some((r) => r.id !== row.id && same(r) && r.trackName === row.trackName)) return { ok: false, conflict: 'track' };
             if (mine >= 0) store.splice(mine, 1);
             store.push({ ...row });
+            onChange?.(part, store);
             return { ok: true, row: { ...row } };
         },
         deleteReservation: async (id, opts = {}) => {
@@ -40,6 +41,7 @@ export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = []
             if (i < 0) return { ok: false, conflict: 'missing' };
             if (opts.ifMatch !== undefined && store[i].createdAt !== opts.ifMatch) return { ok: false, conflict: 'etag' };
             store.splice(i, 1);
+            onChange?.(part, store);
             return { ok: true };
         },
     };
@@ -56,7 +58,28 @@ export function demoPart(): RoomsPart {
     };
 }
 
-let current: RoomSource = memoryRoomSource(demoPart());
+const LS_KEY = 'plugin.ops-room.part';
+
+/**
+ * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 방·예약이 남는다.
+ * 저장된 값이 없거나 깨졌을 때만 seed(데모)를 쓴다. 저장소가 막혀도 던지지 않는다.
+ */
+export function localRoomSource(seed: () => RoomsPart, key: string = LS_KEY): RoomSource {
+    let part: RoomsPart | null = null;
+    let rows: ReservationRow[] = [];
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+            const p = JSON.parse(raw) as { part?: RoomsPart; rows?: ReservationRow[] };
+            if (p && p.part && Array.isArray(p.part.rooms) && Array.isArray(p.rows)) { part = p.part; rows = p.rows; }
+        }
+    } catch { /* 깨진 값·저장소 막힘 — seed */ }
+    return memoryRoomSource(part ?? seed(), rows, (pt, rs) => {
+        try { localStorage.setItem(key, JSON.stringify({ part: pt, rows: rs })); } catch { /* 조용히 */ }
+    });
+}
+
+let current: RoomSource = localRoomSource(demoPart);
 const mockSource = current;
 /** 기본 가짜 자료(mock)를 쓰는 중인가 — setRoomSource 로 진짜 서버 자료를 꽂으면 거짓. */
 export function isMockRoomSource(s: RoomSource = current): boolean { return s === mockSource; }
