@@ -62,6 +62,9 @@ describe('방 관리 화면', () => {
         await click(host, '방 더하기');
         expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('미술실');
         await click(host, '미술실 지우기');
+        expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('미술실'); // 첫 눌림은 되묻기만
+        expect(host.textContent).toContain('정말 지울까요?');
+        await click(host, '미술실 지우기 확인');
         expect((await src.loadPart()).rooms.map((r) => r.name)).not.toContain('미술실');
 
         await type(host.querySelector('textarea') as HTMLTextAreaElement, 'id,name,capacity,resourceKey,active,sort,note\n,음악실,3,,true,5,\n,망가진,0,,true,6,\n');
@@ -70,6 +73,24 @@ describe('방 관리 화면', () => {
         expect(host.textContent).toContain('넣을 방 1');
         await click(host, '불러오기');
         expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('음악실');
+    });
+    it('지우기 취소하면 그대로 남고, 줄·폼은 줄바꿈 클래스가 걸려 있다', async () => {
+        const src = memoryRoomSource(demoPart());
+        const host = await mount({ source: src, viewer: mgr });
+        const n = (await src.loadPart()).rooms.length;
+        const first = (await src.loadPart()).rooms[0].name;
+        await click(host, `${first} 지우기`);
+        await click(host, '지우기 취소');
+        expect((await src.loadPart()).rooms.length).toBe(n);
+        expect(host.textContent).not.toContain('정말 지울까요?');
+        for (const el of host.querySelectorAll('[data-testid=room-row],[data-testid=form-row]')) expect(el.className).toContain('flex-wrap');
+        expect(host.querySelectorAll('[data-testid=form-row]').length).toBe(2);
+    });
+    it('방 더하기만 파란 주 단추, 나머지는 테두리 보조 꼴', async () => {
+        const host = await mount({ source: memoryRoomSource(demoPart()), viewer: mgr });
+        const btn = (t: string) => [...host.querySelectorAll('button')].find((x) => x.textContent === t) as HTMLButtonElement;
+        expect(btn('방 더하기').className).toContain('bg-accent');
+        for (const t of ['차단 더하기', 'CSV 내보내기', '미리보기', '고정 사용 불러오기']) { expect(btn(t).className).toContain('border-line'); expect(btn(t).className).not.toContain('border-transparent'); }
     });
     const pickFile = async (host: HTMLElement, text: string) => {
         const input = host.querySelector('input[type=file]') as HTMLInputElement;

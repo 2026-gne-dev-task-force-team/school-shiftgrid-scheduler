@@ -36,7 +36,7 @@ export function RoomView({ source, ctx, initial }: { source?: RoomSource; ctx?: 
     return (
         <div className="p-4 max-w-xl flex flex-col gap-3">
             <Field label="날짜"><TextInput value={form.date} onChange={(e) => set('date')(e.target.value)} placeholder="2026-11-12" /></Field>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 <Field label="시작"><TextInput value={form.start} onChange={(e) => set('start')(e.target.value)} /></Field>
                 <Field label="끝"><TextInput value={form.end} onChange={(e) => set('end')(e.target.value)} /></Field>
             </div>
@@ -45,16 +45,16 @@ export function RoomView({ source, ctx, initial }: { source?: RoomSource; ctx?: 
             <h3 className="text-small">빈 방</h3>
             {free.length === 0 && <p className="text-small">자리가 남은 방이 없습니다.</p>}
             {free.map(({ room, cell }) => (
-                <div key={room.id} className="flex gap-2 items-center text-small">
+                <div key={room.id} className="flex flex-wrap gap-2 items-center text-small">
                     <span>{room.name} (빈자리 {cell?.kind === 'open' ? cell.free : 0})</span>
                     <Button variant="solid" tone="accent" onClick={() => void book(room.id)}>{`${room.name} 예약`}</Button>
                 </div>
             ))}
             <h3 className="text-small">그날 예약 {visible.length}건 · 내 예약 {myRows.length}건</h3>
             {visible.map((r) => (
-                <div key={r.id} className="flex gap-2 items-center text-small">
-                    <span>{part?.rooms.find((x) => x.id === r.roomId)?.name} {mm(r.startMin)} {r.trackName} 반 ({r.slotNo}번)</span>
-                    {canCancel(rows.find((x) => x.id === r.id) as ReservationRow, c.viewer) && <Button variant="ghost" onClick={() => void cancel(rows.find((x) => x.id === r.id) as ReservationRow)}>취소</Button>}
+                <div key={r.id} className="flex flex-wrap gap-2 items-center text-small">
+                    <span>{`${part?.rooms.find((x) => x.id === r.roomId)?.name ?? ""} · ${mm(r.startMin)}~${mm(r.endMin)} · ${r.trackName}`}</span>
+                    {canCancel(rows.find((x) => x.id === r.id) as ReservationRow, c.viewer) && <Button variant="outline" onClick={() => void cancel(rows.find((x) => x.id === r.id) as ReservationRow)}>취소</Button>}
                 </div>
             ))}
         </div>
