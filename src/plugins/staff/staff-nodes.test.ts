@@ -141,11 +141,11 @@ describe('설정 — 기본 칸은 이름, 새 명단에 심는 칸 일곱', () 
         expect(STAFF_CONFIG.tree).toBeUndefined();
     });
 
-    it('새 명단(createList) — 칸 순서 이름·구분·티어·담당 학년·담당 과목·담임 반·사람·메모 · 구분 value 는 보결 명단과 같다', () => {
+    it('새 명단(createList) — 칸 순서 이름·구분·등급·담당 학년·담당 과목·담임 반·사람·메모 · 구분 value 는 보결 명단과 같다', () => {
         const api = wire();
         const lid = getKit()!.createList()!;
         const fields = [...STAFF_CONFIG.baseFields, ...getKit()!.userFieldsOf(lid)];
-        expect(fields.map((x) => x.label)).toEqual(['이름', '구분', '티어', '담당 학년', '담당 과목', '담임 반', '사람', '메모']);
+        expect(fields.map((x) => x.label)).toEqual(['이름', '구분', '등급', '담당 학년', '담당 과목', '담임 반', '사람', '메모']);
         expect(fields.map((x) => x.type)).toEqual(['text', 'select', 'select', 'multi', 'relation', 'relation', 'relation', 'text']);
         const kind = fields.find((x) => x.key === 'f_kind')!;
         expect(kind.locked).toBe(true);
