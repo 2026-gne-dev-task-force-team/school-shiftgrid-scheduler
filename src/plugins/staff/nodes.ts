@@ -24,7 +24,31 @@ export function initStaff(host: PluginHost): Disposable | null {
     const rv = host.modules.use<RecordViewApi>('collection');
     const nodes = host.modules.use<NodesApi>('nodes');
     kit = rv ? rv.defineCollection(STAFF_CONFIG) : null;
-    return kit?.init(nodes ?? null) ?? null;
+    const off = kit?.init(nodes ?? null) ?? null;
+    if (!nodes) return off;
+    // 칸 정의는 명단 노드에 복사돼 저장된다 — 옛 라벨로 저장된 명단은 불러온 뒤(노드가 바뀔 때마다·멱등) 한 번 옮긴다.
+    migrateLegacyLabels(nodes);
+    const sub = nodes.subscribe(() => migrateLegacyLabels(nodes));
+    return { dispose: () => { sub.dispose(); off?.dispose(); } };
+}
+
+/** 칸 key → 옛 기본 라벨. 저장된 라벨이 정확히 옛 기본값일 때만 새 기본 라벨로 바꾼다(사용자가 바꾼 이름은 안 건드림). */
+const LEGACY_LABELS: Record<string, string> = { f_tier: '티어' };
+
+/** 명단 노드의 저장된 칸 라벨 중 옛 기본값을 config 의 새 라벨로 옮긴다. 바꿀 게 없으면 아무것도 안 쓴다. */
+export function migrateLegacyLabels(nodes: NodesApi): void {
+    const current = new Map(newListFields().map((f) => [f.key, f.label]));
+    for (const n of nodes.byType(LIST_TYPE)) {
+        const data = n.data as { fields?: unknown } | undefined;
+        if (!data || !Array.isArray(data.fields)) continue;
+        let changed = false;
+        const fields = data.fields.map((f: { key?: string; label?: string }) => {
+            const next = f && f.key ? current.get(f.key) : undefined;
+            if (next && f.key && f.label === LEGACY_LABELS[f.key] && f.label !== next) { changed = true; return { ...f, label: next }; }
+            return f;
+        });
+        if (changed) nodes.setData(n.id, { ...data, fields });
+    }
 }
 
 /**
