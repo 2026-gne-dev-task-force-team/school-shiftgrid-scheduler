@@ -52,7 +52,7 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
             {staff.map((s) => (
                 <div key={s.id} className="flex flex-wrap gap-2 items-center text-small">
                     <span>{s.name} ({s.kind}){s.active ? '' : ' [쉼]'}</span>
-                    {s.active && pendingRest !== s.id && <Button variant="ghost" onClick={() => setPendingRest(s.id)}>{`${s.name} 쉬게 하기`}</Button>}
+                    {s.active && pendingRest !== s.id && <Button variant="outline" tone="danger" onClick={() => setPendingRest(s.id)}>{`${s.name} 쉬게 하기`}</Button>}
                     {s.active && pendingRest === s.id && (
                         <>
                             <span>정말 쉬게 할까요?</span>
@@ -72,7 +72,7 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
             {judged.map((j) => (
                 <div key={`${j.from}:${j.staffId}:${j.startMin}`} className="flex gap-2 items-center text-small">
                     <span>{toHHMM(j.startMin)} {nameOf(j.staffId)} → {j.classKey}{j.ok ? '' : ` [재배정 필요: ${j.reason}]`}</span>
-                    {j.from === 'day' && <Button variant="ghost" onClick={() => void run([delDay(part?.day.find((d) => d.date === date && d.staffId === j.staffId && d.startMin === j.startMin)?.id ?? '')])}>{`${nameOf(j.staffId)} ${toHHMM(j.startMin)} 빼기`}</Button>}
+                    {j.from === 'day' && <Button variant="outline" onClick={() => void run([delDay(part?.day.find((d) => d.date === date && d.staffId === j.staffId && d.startMin === j.startMin)?.id ?? '')])}>{`${nameOf(j.staffId)} ${toHHMM(j.startMin)} 빼기`}</Button>}
                 </div>
             ))}
             <h3 className="text-small">이 날 배정하기</h3>

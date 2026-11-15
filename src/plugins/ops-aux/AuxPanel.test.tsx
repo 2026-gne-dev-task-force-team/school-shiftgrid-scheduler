@@ -17,6 +17,8 @@ describe('근태 화면', () => {
         await act(async () => createRoot(host).render(createElement(AuxView, { source: src, viewer: { userId: 'u-a', role: '근태담당' }, initialDate: '2026-11-19' })));
         expect(host.textContent).toContain('명부 2명');
         expect(host.textContent).toContain('강사01 → 1-1');
+        const rest = [...host.querySelectorAll('button')].find((x) => x.textContent === '강사01 쉬게 하기') as HTMLButtonElement;
+        expect(rest.className).toContain('border-'); expect(rest.className).not.toContain('border-transparent'); // 글자처럼 보이지 않는 단추 꼴
         await act(async () => { click(host, '강사01 쉬게 하기'); });
         expect((await src.load()).staff[0].active).toBe(true); // 확인 전에는 안 쉰다
         expect(host.textContent).toContain('정말 쉬게 할까요?');
