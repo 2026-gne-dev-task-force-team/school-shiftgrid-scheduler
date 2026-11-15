@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, EmptyState, Field, TextInput } from '../../pane-ui-system';
-import { getSlotSource, getViewer, type SlotSource, type SubSlotRow, type Viewer } from './list';
+import { absentLabel, getSlotSource, getViewer, type SlotSource, type SubSlotRow, type Viewer } from './list';
 import { isManager } from './list';
 import { adminOptions, runAdmin, type AdminAction } from './admin';
 
@@ -45,7 +45,7 @@ export function AdminView({ source, viewer, date: initDate, now = today }: { sou
                 const mine = pending?.rowId === row.id ? pending : null;
                 return (
                     <div key={row.id} className="border-b pb-2 flex flex-col gap-1">
-                        <p>{row.trackName} · {row.body.absentName} <Badge tone={row.status === '확정' ? 'neutral' : 'danger'}>{row.status}</Badge>{row.take && ` · ${row.take.takerName}`}</p>
+                        <p>{row.trackName} · {absentLabel(row.body)} <Badge tone={row.status === '확정' ? 'neutral' : 'danger'}>{row.status}</Badge>{row.take && ` · ${row.take.takerName}`}</p>
                         {row.date < now() && opts.length === 0 && <p className="text-muted">지난 날 보결은 관리자만 처리할 수 있습니다.</p>}
                         {mine ? (
                             <div role="alertdialog" className="flex flex-col gap-1">

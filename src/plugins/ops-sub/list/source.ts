@@ -20,11 +20,12 @@ export type SaveResult = { ok: true; row: SubSlotRow } | { ok: false; conflict: 
 const sameKey = (a: SubSlotRow, b: SubSlotRow) =>
     a.projectId === b.projectId && a.date === b.date && a.trackName === b.trackName && a.startMin === b.startMin;
 
-export function memorySource(rows: SubSlotRow[]): SlotSource {
-    const store = rows.map((r) => ({ ...r }));
+/** 줄 묶음을 읽고 쓰는 창구 — 읽기·쓰기 손만 갈아 끼우면 메모리든 기기 저장소든 같은 규칙이다. */
+function storeSource(read: () => SubSlotRow[], write: (rows: SubSlotRow[]) => void): SlotSource {
     return {
-        loadSlots: async (date) => store.filter((r) => r.date === date).map((r) => ({ ...r })),
+        loadSlots: async (date) => read().filter((r) => r.date === date).map((r) => ({ ...r })),
         saveSlot: async (row, opts = {}) => {
+            const store = read();
             const i = store.findIndex((r) => sameKey(r, row));
             const { ifMatch } = opts;
             if (ifMatch !== undefined) {
@@ -32,15 +33,43 @@ export function memorySource(rows: SubSlotRow[]): SlotSource {
             }
             if (i >= 0) store.splice(i, 1);
             store.push({ ...row });
+            write(store);
             return { ok: true, row: { ...row } };
         },
         deleteSlot: async (row, opts = {}) => {
+            const store = read();
             const i = store.findIndex((r) => r.id === row.id && r.projectId === row.projectId);
             if (i < 0 || (opts.ifMatch !== undefined && store[i].updatedAt !== opts.ifMatch)) return { ok: false, conflict: true };
             store.splice(i, 1);
+            write(store);
             return { ok: true };
         },
     };
+}
+
+export function memorySource(rows: SubSlotRow[]): SlotSource {
+    const store = rows.map((r) => ({ ...r }));
+    return storeSource(() => store, () => undefined);
+}
+
+const LS_KEY = 'plugin.ops-sub.part';
+
+/**
+ * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 올린 보결·지운 보결이 남는다.
+ * 저장된 값이 없을 때만 seed(데모)를 쓴다. 저장소가 죽거나 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ */
+export function localSlotSource(seed: () => SubSlotRow[], key: string = LS_KEY): SlotSource {
+    const read = (): SubSlotRow[] => {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const p = JSON.parse(raw) as unknown;
+                if (Array.isArray(p)) return p as SubSlotRow[];
+            }
+        } catch { /* 깨진 값·저장소 막힘 — seed */ }
+        return seed();
+    };
+    return storeSource(read, (rows) => { try { localStorage.setItem(key, JSON.stringify(rows)); } catch { /* 조용히 */ } });
 }
 
 /** 미리보기용 가짜 줄 — 실서버가 붙기 전까지 화면이 이걸 읽는다. */
@@ -55,7 +84,8 @@ export function demoRows(date: string): SubSlotRow[] {
     ];
 }
 
-let current: SlotSource = memorySource([]);
+const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+let current: SlotSource = localSlotSource(() => demoRows(todayKst()));
 export function setSlotSource(s: SlotSource): void { current = s; }
 export function getSlotSource(): SlotSource { return current; }
 
