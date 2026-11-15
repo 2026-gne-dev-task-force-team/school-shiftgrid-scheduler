@@ -6,10 +6,10 @@
 import type { CandInput, CandLesson, CandTrack } from './candidates'
 import type { CanonAdapter, CanonCase } from './canon'
 
-interface Slot { index: number; start: string; end: string; kind: string }
+interface Slot { index: number; label?: string; start: string; end: string; kind?: string; assignable?: boolean }
 interface Grid {
   agents: { id: string; name: string; role: string }[]
-  specs: { id: string; slots: Slot[] }[]
+  specs: { id: string; lessonsPerDay?: Record<string, number>; slots: Slot[] }[]
   tracks: { name: string; specId: string; grade: number | null }[]
   assignments: { trackId?: string; dayIndex: number; slotIndex: number; agentId: string; label?: string }[]
   weeklyBlocks: { dayIndex: number; from: string; to: string; targets: { kind: string; id: string }[]; name?: string }[]
@@ -33,14 +33,22 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
     const tracks: CandTrack[] = g.tracks.map((t) => {
       const spec = g.specs.find((s) => s.id === t.specId)
       const slots = spec?.slots ?? []
-      const lunch = slots.find((s) => s.kind === 'lunch')
-      const lessons: CandLesson[] = []
+      const lunch = slots.find((s) => s.kind === 'lunch') ?? slots.find((s) => (s.label ?? '').includes('점심'))
+      // 그날 수업 칸 = 수업 슬롯(lessonsPerDay 반영) + 배치가 있는 슬롯. 배치가 없는 수업 칸은 담임 수업(빈 칸 = 담임)
+      const lessonSlots = slots.filter((s) => s.assignable !== false && (s.kind ?? 'lesson') === 'lesson')
+      const perDay = spec?.lessonsPerDay?.[String(dayIndex)]
+      const idx = new Set((perDay == null ? lessonSlots : lessonSlots.slice(0, perDay)).map((s) => s.index))
+      const cell = new Map<number, string[]>()
       for (const a of g.assignments) {
         if (a.trackId !== idOfTrack.get(t.name) || a.dayIndex !== dayIndex) continue
-        const s = slots.find((x) => x.index === a.slotIndex)
-        if (!s) continue
-        lessons.push({ startMin: toMin(s.start), endMin: toMin(s.end), subject: a.label ?? null, coIds: [], teacherIds: a.agentId === '__homeroom__' ? [] : [a.agentId] })
+        if (!slots.some((x) => x.index === a.slotIndex)) continue
+        idx.add(a.slotIndex)
+        const ids = cell.get(a.slotIndex) ?? []
+        if (a.agentId !== '__homeroom__') ids.push(a.agentId)
+        cell.set(a.slotIndex, ids)
       }
+      const lessons: CandLesson[] = [...idx].map((i) => slots.find((x) => x.index === i)!).sort((x, y) => toMin(x.start) - toMin(y.start))
+        .map((s) => ({ startMin: toMin(s.start), endMin: toMin(s.end), subject: null, coIds: [], teacherIds: cell.get(s.index) ?? [] }))
       return { name: t.name, grade: t.grade, lessons, lunch: lunch ? { startMin: toMin(lunch.start), endMin: toMin(lunch.end) } : null }
     })
     const people: CandInput['people'] = [
@@ -62,5 +70,35 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
     if (!input) { input = build(c.dayIndex); cache.set(c.dayIndex, input) }
     const nameOf = (id: string) => (id.startsWith('homeroom:') ? id.slice('homeroom:'.length) : agentName.get(id) ?? id)
     return { input, query: { trackName: c.self ?? '', startMin: toMin(c.start), endMin: toMin(c.end), absentId: c.self == null ? null : 'homeroom:' + c.self }, nameOf }
+  }
+}
+
+/** 편성 앱 확정본 모양 만들기 — 담임 배치(`__homeroom__`)를 모두 빼고 수업 슬롯 이름을 「N」·빈 글자로 바꾼다(운영 앱 시험과 같다). 원본은 안 고친다. */
+export function bareGrid(json: unknown): unknown {
+  const g = json as Grid
+  return {
+    ...g,
+    assignments: g.assignments.filter((a) => a.agentId !== '__homeroom__'),
+    specs: g.specs.map((s) => ({ ...s, slots: s.slots.map((sl, i) => ({ ...sl, label: sl.kind === 'lunch' ? '점심' : i % 2 ? String(parseInt(sl.label ?? '')) : '' })) })),
+  }
+}
+
+/** 정규화 — 수업 슬롯 이름을 「N교시」로(「3」→「3교시」 · 빈 이름 → 순서대로), kind 가 없으면 점심/수업으로 추정. 운영 앱 normalizeShiftgridDoc 과 같은 뜻. */
+export function normalizeGrid(json: unknown): unknown {
+  const g = json as Grid
+  return {
+    ...g,
+    specs: g.specs.map((sp) => {
+      let n = 0
+      const slots = [...sp.slots].sort((a, b) => a.index - b.index).map((s) => {
+        const label = (s.label ?? '').trim()
+        const kind = s.kind ?? (label.includes('점심') ? 'lunch' : s.assignable ? 'lesson' : 'other')
+        if (!s.assignable || kind !== 'lesson') return { ...s, label, kind }
+        n++
+        const m = /^\s*(\d+)\s*(교시)?\s*$/.exec(label)
+        return { ...s, kind, label: m ? m[1] + '교시' : label === '' ? n + '교시' : label }
+      })
+      return { ...sp, slots }
+    }),
   }
 }
