@@ -1,14 +1,15 @@
 /**
  * 근태 칸 조작 + 권한 + 재배정 판정(1.2v 설계 ① 7절). 쓰는 사람은 근태담당 하나(`requireRole('근태담당')`).
  * 날짜별 배정(day)을 넣을 때 엔진 `checkAssignment` 가 걸리면 거부하고, 이미 들어 있는 배정이
- * 나중에 어긋나면(수업·일정이 바뀜) 「재배정 필요」로 센다. 재생은 `replay` 한 곳. 월 마감(exceptions·monthClose)은 P23.
+ * 나중에 어긋나면(수업·일정이 바뀜) 「재배정 필요」로 센다. 재생은 `replay` 한 곳. 월 마감(exceptions·monthClose)은 month/ — 마감 판정은 `judgeAuxChange`.
  */
 import { checkAssignment, type AuxProfile, type DayLesson, type Occupied } from '../../../shared/aux-engine/assign.ts';
 import { replay, type Op, type ReplayResult } from '../../server-link/replay';
-import type { AuxBase, AuxCondition, AuxDay, AuxPart, AuxStaff, AuxViewer } from './types';
+import { judgeAuxChange } from './month/judge';
+import type { AuxBase, AuxCondition, AuxDay, AuxException, AuxMonthClose, AuxPart, AuxStaff, AuxViewer } from './types';
 
 export const keyOf = (_list: string, item: unknown): string => (item as { id: string }).id;
-const toLists = (p: AuxPart): Record<string, unknown[]> => ({ staff: p.staff, conditions: p.conditions, base: p.base, day: p.day });
+const toLists = (p: AuxPart): Record<string, unknown[]> => ({ staff: p.staff, conditions: p.conditions, base: p.base, day: p.day, exceptions: p.exceptions, monthClose: p.monthClose });
 
 export const addStaff = (s: AuxStaff): Op => ({ op: 'add', list: 'staff', key: s.id, item: s });
 export const editStaff = (before: AuxStaff, after: AuxStaff): Op => ({ op: 'set', list: 'staff', key: before.id, item: after, base: before });
@@ -28,6 +29,12 @@ export const delDay = (id: string): Op => ({ op: 'del', list: 'day', key: id });
 export function whyDenied(v: AuxViewer): string | null {
     return v.role === '근태담당' ? null : '근태는 근태담당만 고칠 수 있습니다.';
 }
+/** 마감 조작 — 마감(add)은 근태담당, 해제(monthClose 줄 삭제)는 관리자만 이 문으로 들어온다. */
+export const addExc = (e: AuxException): Op => ({ op: 'add', list: 'exceptions', key: e.id, item: e });
+export const editExc = (before: AuxException, after: AuxException): Op => ({ op: 'set', list: 'exceptions', key: before.id, item: after, base: before });
+export const delExc = (id: string): Op => ({ op: 'del', list: 'exceptions', key: id });
+export const closeMonth = (m: AuxMonthClose): Op => ({ op: 'add', list: 'monthClose', key: m.id, item: m });
+export const reopenMonth = (id: string): Op => ({ op: 'del', list: 'monthClose', key: id });
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const dowOf = (date: string): number => (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
@@ -51,6 +58,19 @@ export function checkAux(p: AuxPart): string[] {
         if (!ids.has(d.staffId)) bad.push('날짜별 배정의 보조 인력이 명부에 없습니다.');
         if (!DATE.test(d.date)) bad.push('날짜별 배정 날짜 꼴이 맞지 않습니다.');
         if (d.endMin <= d.startMin) bad.push('날짜별 배정 종료가 시작보다 이릅니다.');
+    }
+    const YM = /^\d{4}-\d{2}$/;
+    const KINDS = ['결근', '지각', '조퇴', '추가', '정정'];
+    for (const e of p.exceptions) {
+        if (!ids.has(e.staffId)) bad.push('예외의 보조 인력이 명부에 없습니다.');
+        if (!DATE.test(e.date)) bad.push('예외 날짜 꼴이 맞지 않습니다.');
+        if (!KINDS.includes(e.kind)) bad.push('예외 종류가 맞지 않습니다.');
+        if (!Number.isFinite(e.amount)) bad.push('예외 양이 숫자가 아닙니다.');
+        if (e.kind === '정정' && (e.amount === 0 || !e.note.trim())) bad.push('정정은 0 이 아닌 양과 사유가 필요합니다.');
+    }
+    for (const m of p.monthClose) {
+        if (!ids.has(m.staffId)) bad.push('마감의 보조 인력이 명부에 없습니다.');
+        if (!YM.test(m.ym)) bad.push('마감 년월 꼴이 맞지 않습니다.');
     }
     return bad;
 }
@@ -100,20 +120,25 @@ export function reassignNeededCount(p: AuxPart, from: string, lessonsOn: (date: 
     return n;
 }
 
-export interface ApplyOutcome { next: AuxPart; replayed: ReplayResult; errors: string[] }
+/** `status` — 서버가 줄 코드(403 권한 · 409 마감). 그 밖의 거부는 없음. */
+export interface ApplyOutcome { next: AuxPart; replayed: ReplayResult; errors: string[]; status?: 403 | 409 }
 
 /** 서버 판에 조작을 입힌다. 권한·충돌·칸 규칙·날짜별 배정 판정 중 하나라도 걸리면 `errors` 가 비지 않는다(그땐 PUT 하지 않는다). */
 export function applyAuxOps(viewer: AuxViewer, server: AuxPart, ops: Op[], lessonsOn: (date: string) => DayLesson[]): ApplyOutcome {
     const replayed = replay(toLists(server), ops, keyOf);
     const r = replayed.result;
-    const next: AuxPart = { staff: r.staff as AuxStaff[], conditions: r.conditions as AuxCondition[], base: r.base as AuxBase[], day: r.day as AuxDay[] };
-    const denied = whyDenied(viewer);
-    if (denied) return { next, replayed, errors: [denied] };
+    const next: AuxPart = { staff: r.staff as AuxStaff[], conditions: r.conditions as AuxCondition[], base: r.base as AuxBase[], day: r.day as AuxDay[], exceptions: r.exceptions as AuxException[], monthClose: r.monthClose as AuxMonthClose[] };
+    // 관리자는 마감 해제(monthClose 줄 삭제)만 이 문으로 들어온다.
+    const releaseOnly = ops.length > 0 && ops.every((o) => o.list === 'monthClose' && o.op === 'del');
+    const denied = viewer.role === '관리자' && releaseOnly ? null : whyDenied(viewer);
+    if (denied) return { next, replayed, errors: [denied], status: 403 };
     if (replayed.conflicts.length > 0) return { next, replayed, errors: ['서버 값이 달라져 충돌한 조작이 있습니다.'] };
     const rules = checkAux(next);
     if (rules.length > 0) return { next, replayed, errors: rules };
     // 이번에 넣거나 고친 날짜별 배정만 엔진으로 잰다(옛 배정이 어긋난 것까지 막지는 않는다 — 그건 「재배정 필요」 표시 몫).
     const touched = new Set(ops.filter((o) => o.list === 'day' && o.op !== 'del').map((o) => o.key));
+    const closed = judgeAuxChange(server, next, viewer.role);
+    if (!closed.ok) return { next, replayed, errors: [closed.reason], status: closed.status };
     const errors: string[] = [];
     for (const d of next.day) {
         if (!touched.has(d.id) || d.classKey === '') continue;
