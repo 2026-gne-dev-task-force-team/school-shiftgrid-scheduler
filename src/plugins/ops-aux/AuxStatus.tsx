@@ -5,7 +5,8 @@ import { defaultAuxSource, type AuxSource } from './source';
 
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
-export function AuxStatus({ source, today }: { source?: AuxSource; today?: string } = {}) {
+export interface AuxStatusProps { source?: AuxSource; today?: string; onOpen?: () => void }
+export function AuxStatus({ source, today, onOpen }: AuxStatusProps = {}) {
     const src = source ?? defaultAuxSource;
     const [n, setN] = useState(0);
     useEffect(() => {
@@ -16,5 +17,9 @@ export function AuxStatus({ source, today }: { source?: AuxSource; today?: strin
         return () => { live = false; off?.(); };
     }, [src, today]);
     if (n === 0) return null;
-    return <span data-testid="aux-status" className="tabular-nums select-none">재배정 필요 {n}건</span>;
+    return (
+        <span role="button" tabIndex={0} data-testid="aux-status" onClick={onOpen} title="근태 열기"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen?.(); } }}
+            className="tabular-nums select-none cursor-pointer hover:underline focus-visible:underline">재배정 필요 {n}건</span>
+    );
 }

@@ -5,6 +5,7 @@ import { addDay, addStaff, applyAuxOps, delDay, deactivateStaff, judgeDay, reass
 import { MonthView } from './month/MonthPanel';
 import { defaultAuxSource, type AuxSource } from './source';
 import type { AuxPart, AuxViewer } from './types';
+import { onAssignTabRequest } from './auxTab';
 
 const demoViewer: AuxViewer = { userId: 'u-a', role: '근태담당' };
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
@@ -81,6 +82,7 @@ export function AuxView({ source, viewer, initialDate, newId }: { source?: AuxSo
 /** 탭 둘 — 배정(AuxView) · 월 정산(MonthView). */
 export function AuxPanel({ source, viewer }: { source?: AuxSource; viewer?: AuxViewer } = {}) {
     const [tab, setTab] = useState<'assign' | 'month'>('assign');
+    useEffect(() => onAssignTabRequest(() => setTab('assign')), []);
     return (
         <div>
             <div className="flex gap-2 px-4 pt-3">
