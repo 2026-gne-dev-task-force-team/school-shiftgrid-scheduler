@@ -47,4 +47,38 @@ describe('방 관리 화면', () => {
         await click(host, '불러오기');
         expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('음악실');
     });
+    const pickFile = async (host: HTMLElement, text: string) => {
+        const input = host.querySelector('input[type=file]') as HTMLInputElement;
+        const file = new File([text], 'a.csv');
+        (file as { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer = async () => new TextEncoder().encode(text).buffer as ArrayBuffer; // jsdom File 에 없다
+        Object.defineProperty(input, 'files', { value: [file], configurable: true });
+        await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })); });
+        return text;
+    };
+    const csv = '요일,시각,과학실\r\n월,09:00~09:40,5-3 과학\r\n';
+    it('고정 사용 불러오기 화면이 열리고, 반영하면 저장되어 다시 읽힌다', async () => {
+        const src = memoryRoomSource(demoPart());
+        const host = await mount({ source: src, viewer: mgr, newId: () => 'n1' });
+        await click(host, '고정 사용 불러오기');
+        expect(host.querySelector('input[type=file]')).not.toBeNull();
+        expect(host.textContent).not.toContain('방 더하기');
+        await pickFile(host, csv);
+        await click(host, '이대로 반영');
+        const part = await src.loadPart();
+        expect(part.fixed.map((f) => [f.roomId, f.label])).toEqual([['r-sci', '5-3 과학']]);
+        await click(host, '돌아가기');
+        expect(host.textContent).toContain('방 더하기');
+    });
+    it('겹침이면 저장이 안 바뀐다', async () => {
+        const part = demoPart();
+        const f = { id: 'f1', roomId: 'r-yard', dayIndex: 0, startMin: 540, endMin: 580, label: 'x' };
+        part.fixed = [f, { ...f, id: 'f2' }];
+        const src = memoryRoomSource(part);
+        const host = await mount({ source: src, viewer: mgr, newId: () => 'n1' });
+        await click(host, '고정 사용 불러오기');
+        await pickFile(host, csv);
+        await click(host, '이대로 반영');
+        expect(host.textContent).toContain('겹칩니다');
+        expect((await src.loadPart()).fixed.map((x) => x.id)).toEqual(['f1', 'f2']);
+    });
 });
