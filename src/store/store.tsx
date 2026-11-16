@@ -101,6 +101,14 @@ function withDefaultRules(d: Doc): Doc {
     } catch { return d; }
 }
 
+/**
+ * 새 학교 — 「새 학교 만들기」와 앱 첫 실행 빈 학교에만 쓴다. 기본 교과 14개를 미리 넣는다(R105 ②).
+ * ⛔ 파일 열기·자동 보관본 이어 하기·Electron 열기·샘플에는 쓰지 않는다(옛 파일에 과목이 끼어든다).
+ */
+function newSchoolDoc(): Doc {
+    return withDefaultRules(ops.withBasicActivities(emptyDoc()));
+}
+
 // ── 컨텍스트 ──────────────────────────────────────────────────
 interface StoreValue {
     doc: Doc;
@@ -181,7 +189,10 @@ interface Actions {
     syncTracks: (tracks: Track[]) => void;
     syncAgents: (agents: Agent[]) => void;
     syncActivities: (activities: Activity[]) => void;
-    syncResources: (resources: Resource[]) => void;
+    syncResources: (resources: Resource[], newActivities?: Activity[]) => void;
+    /** 안 쓰는 과목 정리 — 고른 것 중 지금도 안 쓰인 것만 뺀다(R105 ③) */
+    removeUnusedActivities: (ids: string[]) => void;
+    renameActivity: (id: string, name: string) => void;
     applyDemandSheet: (p: { newAgents: Agent[]; newActivities: Activity[]; newTracks: Track[]; demands: Demand[] }) => void;
     makeTracksByGrade: (counts: Record<number, number>, specId: string) => void;
     saveBoard: (name: string) => void;
@@ -194,7 +205,7 @@ const Ctx = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
     const [hist, dispatch] = useReducer(histReducer, undefined, () => ({
-        past: [], present: withDefaultRules(emptyDoc()), future: [], dirty: false,
+        past: [], present: newSchoolDoc(), future: [], dirty: false,
     }));
     const doc = hist.present;
 
@@ -321,7 +332,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         syncTracks: (tracks) => commit((d) => ops.syncTracks(d, tracks)),
         syncAgents: (agents) => commit((d) => ops.syncAgents(d, agents)),
         syncActivities: (activities) => commit((d) => ops.syncActivities(d, activities)),
-        syncResources: (resources) => commit((d) => ops.syncResources(d, resources)),
+        syncResources: (resources, newActivities) => commit((d) => ops.syncResources(d, resources, newActivities)),
+        removeUnusedActivities: (ids) => commit((d) => ops.removeUnusedActivities(d, ids)),
+        renameActivity: (id, name) => commit((d) => ops.renameActivity(d, id, name)),
         applyDemandSheet: (p) => commit((d) => ops.applyDemandSheet(d, p)),
         makeTracksByGrade: (counts, specId) => commit((d) => ops.makeTracksByGrade(d, counts, specId)),
         saveBoard: (name) => commit((d) => ops.saveBoard(d, name, { hard: diag.hardCount, soft: diag.softWeight })),
@@ -332,7 +345,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     // ── 파일 ──────────────────────────────────────────────────
     const newDoc = useCallback(() => {
-        dispatch({ t: 'reset', doc: withDefaultRules(emptyDoc()) });
+        dispatch({ t: 'reset', doc: newSchoolDoc() });
         setPath(undefined); setScreen('basic');
     }, []);
     const loadSample = useCallback(() => {

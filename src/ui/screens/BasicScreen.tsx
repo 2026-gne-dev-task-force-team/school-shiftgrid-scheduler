@@ -1,4 +1,4 @@
-/** 기초자료 — 학교·시간 틀·반·교사·과목·특별실·시수표. 오른쪽에 배정/필요 현황(sticky) */
+/** 기초자료 — 학교·시간 틀·반·교사·특별실·시수표(과목 탭은 없앴다 · 과목은 시수표·특별실 칸에서 치고, 「과목 정리」에서 고친다 · R105). 오른쪽에 배정/필요 현황(sticky) */
 import { useRef, useState } from 'react';
 import { useStore } from '../../store/store';
 import { uid } from '../../store/ids';
@@ -29,10 +29,10 @@ function SheetToolbar({ title, api, helpKey }: { title: string; api: SheetApi | 
 }
 const undoRedo = (st: ReturnType<typeof useStore>) => ({ onUndo: st.undo, onRedo: st.redo });
 
-type Sub = 'school' | 'specs' | 'tracks' | 'agents' | 'activities' | 'resources' | 'demands';
+type Sub = 'school' | 'specs' | 'tracks' | 'agents' | 'resources' | 'demands';
 const SUBS: { id: Sub; label: string }[] = [
     { id: 'school', label: '학교' }, { id: 'specs', label: L.spec }, { id: 'tracks', label: L.track },
-    { id: 'agents', label: L.agentTab }, { id: 'activities', label: L.activity }, { id: 'resources', label: L.resource },
+    { id: 'agents', label: L.agentTab }, { id: 'resources', label: L.resource },
     { id: 'demands', label: L.demandTable },
 ];
 
@@ -73,7 +73,6 @@ export default function BasicScreen() {
                     {sub === 'specs' && <SpecsSection />}
                     {sub === 'tracks' && <TracksSection />}
                     {sub === 'agents' && <AgentsSection />}
-                    {sub === 'activities' && <ActivitiesSection />}
                     {sub === 'resources' && <ResourcesSection />}
                     {sub === 'demands' && <DemandTable />}
                 </div>
@@ -445,36 +444,6 @@ function AgentsSection() {
     );
 }
 
-// ── 과목 ──────────────────────────────────────────────────────
-function ActivitiesSection() {
-    const st = useStore();
-    const [api, setApi] = useState<SheetApi | null>(null);
-    const apiCb = useRef((a: SheetApi) => setApi(a)).current;
-
-    const rows: SheetRow[] = st.doc.activities.map((a) => ({
-        _id: a.id, name: a.name, color: (a.attr?.color as string | undefined) ?? '',
-    }));
-    const columns: SheetColumn[] = [
-        { key: 'name', title: '이름', type: 'text', width: 160, validate: (v) => (!String(v).trim() ? '과목 이름을 적어 주세요' : undefined) },
-        { key: 'color', title: '색(옵션)', type: 'text', width: 120, placeholder: '#5b8def' },
-    ];
-    const commit = (next: SheetRow[]) => {
-        const activities: Activity[] = next.map((r, i) => {
-            const ex = st.doc.activities.find((a) => a.id === r._id);
-            return { kind: 'activity', id: r._id, name: String(r.name ?? ''), attr: { ...ex?.attr, color: String(r.color) || (ex?.attr?.color as string) || colorFor(i) } };
-        });
-        st.act.syncActivities(activities);
-    };
-    const newRow = (): SheetRow => ({ _id: uid('act'), name: '', color: '' });
-
-    return (
-        <div className="space-y-3">
-            <SheetToolbar title={L.activity} api={api} helpKey="sheetActivities" />
-            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={320} {...undoRedo(st)} />
-        </div>
-    );
-}
-
 // ── 특별실 ────────────────────────────────────────────────────
 function ResourcesSection() {
     const st = useStore();
@@ -490,18 +459,28 @@ function ResourcesSection() {
         { key: 'name', title: '이름', type: 'text', width: 150, validate: (v) => (!String(v).trim() ? '특별실 이름을 적어 주세요' : undefined) },
         { key: 'cap', title: L.capacity, type: 'number', width: 90, help: '같은 시각에 들어갈 수 있는 반의 수입니다(과학실이 2개면 2).' },
         {
-            key: 'acts', title: L.activity, type: 'multiselect', options: actNames, width: 260, placeholder: '과목을 고르세요',
-            validate: (v) => { const bad = (Array.isArray(v) ? v : []).filter((n) => !actNames.includes(n)); return bad.length ? `과목 목록에 없음: ${bad.join(', ')}` : undefined; },
+            // 과목 탭이 없어져 여기서도 새 과목을 만든다(R105 ④) — 쉼표로 나열 · 없는 이름은 저장할 때 새 과목
+            key: 'acts', title: L.activity, type: 'list', suggest: actNames, width: 260, placeholder: '예: 과학, 실과',
+            note: (v) => { const fresh = (Array.isArray(v) ? v : []).map((n) => String(n).trim()).filter((n) => n && !actNames.includes(n)); return fresh.length ? `‘${fresh.join(', ')}’ 과목을 새로 만듭니다` : undefined; },
         },
     ];
     const commit = (next: SheetRow[]) => {
         const actByName = new Map(st.doc.activities.map((a) => [a.name, a.id]));
+        const newActivities: Activity[] = [];
+        const ensure = (raw: string): string | undefined => {
+            const n = raw.trim();
+            if (!n) return undefined;
+            const ex = actByName.get(n);
+            if (ex) return ex;
+            const a: Activity = { kind: 'activity', id: uid('act'), name: n, attr: { color: colorFor(st.doc.activities.length + newActivities.length) } };
+            actByName.set(n, a.id); newActivities.push(a); return a.id;
+        };
         const resources: Resource[] = next.map((r, i) => {
             const ex = st.doc.resources.find((x) => x.id === r._id);
-            const ids = (Array.isArray(r.acts) ? r.acts : []).map((n) => actByName.get(n)).filter((x): x is string => !!x);
+            const ids = [...new Set((Array.isArray(r.acts) ? r.acts : []).map((n) => ensure(String(n))).filter((x): x is string => !!x))];
             return { kind: 'resource', id: r._id, name: String(r.name ?? ''), capacity: Number(r.cap) || 1, attr: ex?.attr ?? { color: colorFor(i) }, activityIds: ids.length ? ids : undefined };
         });
-        st.act.syncResources(resources);
+        st.act.syncResources(resources, newActivities);
     };
     const newRow = (): SheetRow => ({ _id: uid('r'), name: '', cap: 1, acts: [] });
 

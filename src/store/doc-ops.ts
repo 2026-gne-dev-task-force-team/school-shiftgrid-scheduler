@@ -46,6 +46,65 @@ export const updateActivity = (d: Doc, id: string, patch: Partial<Activity>): Do
 export const removeActivity = (d: Doc, id: string): Doc =>
     ({ ...d, activities: d.activities.filter((x) => x.id !== id) });
 
+/**
+ * 초등 기본 교과 14개 — 새 학교에만 미리 넣는다(R105).
+ *  · 표기는 손이 치는 줄임말(바생·슬생·즐생·창체). 시수표 과목 칸에 없는 이름을 치면 새 과목이 생기니
+ *    「슬기로운 생활」/「슬생」 두 벌이 안 생기게 선생님들이 실제로 치는 이름을 쓴다.
+ *  · 순서는 교육과정 시간 배당 표 순서(교과 → 1·2학년 통합교과 → 창체).
+ *  ⛔ emptyDoc() 에 넣지 않는다 — migrateDoc 이 그것을 바탕으로 옛 파일을 올리므로 옛 파일에 14개가 끼어든다.
+ */
+export const BASIC_ACTIVITY_NAMES = [
+    '국어', '사회', '도덕', '수학', '과학', '실과', '체육', '음악', '미술', '영어',
+    '바생', '슬생', '즐생', '창체',
+] as const;
+
+/** 새 학교 만들기 길(store newDoc · 첫 실행 빈 학교)에서만 부른다. 이미 있는 이름은 건너뛴다 */
+export function withBasicActivities(d: Doc): Doc {
+    const have = new Set(d.activities.map((a) => a.name));
+    const add: Activity[] = [];
+    for (const name of BASIC_ACTIVITY_NAMES) {
+        if (have.has(name)) continue;
+        add.push({ kind: 'activity', id: uid('act'), name, attr: { color: colorFor(d.activities.length + add.length) } });
+    }
+    return add.length ? { ...d, activities: [...d.activities, ...add] } : d;
+}
+
+/**
+ * 과목이 「쓰인」 곳 — 시수표(수요) · 배치(고정 수업 포함) · 특별실 과목 · 저장한 판(boards[].assignments).
+ * 「안 쓰는 과목 정리」가 이 밖의 과목만 지울 후보로 본다.
+ */
+export function usedActivityIds(d: Doc): Set<string> {
+    const used = new Set<string>();
+    for (const dm of d.demands) if (dm.activityId) used.add(dm.activityId);
+    for (const a of d.assignments) if (a.activityId) used.add(a.activityId);
+    for (const r of d.resources) for (const id of r.activityIds ?? []) used.add(id);
+    for (const b of d.boards) for (const a of b.assignments) if (a.activityId) used.add(a.activityId);
+    return used;
+}
+/** 지울 후보 — 어디에도 안 쓰인 과목 (미리보기용) */
+export function unusedActivities(d: Doc): Activity[] {
+    const used = usedActivityIds(d);
+    return d.activities.filter((a) => !used.has(a.id));
+}
+/**
+ * 안 쓰는 과목 정리 — 고른 것 가운데 **지금도 안 쓰인 것만** 과목 목록에서 뺀다.
+ * ⛔ syncActivities 를 쓰지 않는다(그건 시수 줄까지 지운다). 참조가 없으니 다른 목록은 손대지 않는다.
+ */
+export function removeUnusedActivities(d: Doc, ids: string[]): Doc {
+    const used = usedActivityIds(d);
+    const drop = new Set(ids.filter((id) => !used.has(id)));
+    if (drop.size === 0) return d;
+    return { ...d, activities: d.activities.filter((a) => !drop.has(a.id)) };
+}
+/** 과목 이름 고치기 — 빈 이름·다른 과목과 같은 이름은 무시한다(두 벌 방지). 참조는 id 라 그대로 따라온다 */
+export function renameActivity(d: Doc, id: string, name: string): Doc {
+    const n = name.trim();
+    const cur = d.activities.find((a) => a.id === id);
+    if (!cur || !n || cur.name === n) return d;
+    if (d.activities.some((a) => a.id !== id && a.name === n)) return d;
+    return updateActivity(d, id, { name: n });
+}
+
 export function addResource(d: Doc, name: string, extra?: Partial<Resource>): Doc {
     const r: Resource = { kind: 'resource', id: uid('r'), name, capacity: 1, attr: { color: colorFor(d.resources.length) }, ...extra };
     return { ...d, resources: [...d.resources, r] };
@@ -267,11 +326,17 @@ export function syncActivities(d: Doc, activities: Activity[]): Doc {
         assignments: d.assignments.map((a) => (a.activityId && !keep.has(a.activityId) ? { ...a, activityId: undefined } : a)),
     };
 }
-/** 특별실 목록 교체. 없어진 특별실을 쓰던 수요·배치의 참조는 정리한다 */
-export function syncResources(d: Doc, resources: Resource[]): Doc {
+/**
+ * 특별실 목록 교체. 없어진 특별실을 쓰던 수요·배치의 참조는 정리한다.
+ * newActivities: 특별실 과목 칸에 새로 친 과목(과목 탭이 없어져 여기서도 만든다 · R105 ④) — 같은 한 번(undo)에 들인다.
+ */
+export function syncResources(d: Doc, resources: Resource[], newActivities: Activity[] = []): Doc {
     const keep = new Set(resources.map((r) => r.id));
+    const has = (id: string) => d.activities.some((a) => a.id === id);
+    const addActs = newActivities.filter((a) => !has(a.id));
     return {
         ...d,
+        ...(addActs.length ? { activities: [...d.activities, ...addActs] } : {}),
         resources,
         demands: d.demands.map((dm) => (dm.resourceId && !keep.has(dm.resourceId) ? { ...dm, resourceId: undefined, roomHours: undefined } : dm)),
         assignments: d.assignments.map((a) => (a.resourceId && !keep.has(a.resourceId) ? { ...a, resourceId: undefined } : a)),

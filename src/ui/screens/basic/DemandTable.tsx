@@ -15,6 +15,7 @@ import { L } from '../../help/terms';
 import { RICH } from '../../help/richContent';
 import Sheet, { type SheetColumn, type SheetRow, type SheetApi, type CellValue } from '../../parts/Sheet';
 import { Info, Button, Mark } from '../../parts/ui';
+import ActivitiesTidy from './ActivitiesTidy';
 
 // ── 도우미 ────────────────────────────────────────────────────
 function classNumOf(t: Track | undefined): number {
@@ -149,7 +150,8 @@ function unfold(doc: Doc, rows: SheetRow[]) {
 export default function DemandTable() {
     const st = useStore();
     const { doc } = st;
-    const ready = doc.agents.length > 0 || doc.activities.length > 0 || doc.tracks.length > 0;
+    // 과목은 새 학교에 기본 14개가 미리 들어 있어(R105) 과목 수로는 못 가른다 — 반·교사 기준
+    const ready = doc.tracks.length > 0 && doc.agents.length > 0;
 
     const [rows, setRows] = useState<SheetRow[]>(() => fold(doc));
     const [api, setApi] = useState<SheetApi | null>(null);
@@ -256,6 +258,7 @@ export default function DemandTable() {
                 <Button icon="plus" onClick={() => api?.addRow()}>행 추가</Button>
                 <Button icon="trash" onClick={() => api?.deleteSelectedRows()}>선택 행 삭제</Button>
                 <Info help={RICH.demandTable} />
+                <ActivitiesTidy />
             </div>
             {!ready && <p className="text-[13px] text-warn"><Mark kind="warn" /> 먼저 「반」과 「교사」 탭을 채워 주세요. 과목 이름은 여기서 쳐도 바로 만들어집니다.</p>}
             <div data-tour="demand-sheet">
