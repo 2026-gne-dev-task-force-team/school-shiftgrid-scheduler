@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, sinkService } from './snapshot.mjs'
+import { appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, siteState, checkServices, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -266,6 +266,35 @@ describe('보고꾼 — 서비스·모듈', () => {
     expect(serviceState({ status: 200, build: 'def5678' }, 'abc1234')).toBe('build')
     expect(serviceState(null, 'abc1234')).toBe('down')
     expect(serviceState({ status: 404 }, 'abc1234')).toBe('down')
+  })
+
+  it('v1·v2 사이트 판정: index 안 열리면 down · version.json 없으면 낡음 모름(ok) · 있으면 해시 비교', () => {
+    const idx = { status: 200 }
+    expect(siteState(null, null, 'abc1234')).toBe('down')
+    expect(siteState({ status: 404 }, { status: 200, build: 'abc1234' }, 'abc1234')).toBe('down')
+    expect(siteState(idx, { status: 404 }, 'abc1234')).toBe('ok')
+    expect(siteState(idx, null, 'abc1234')).toBe('ok')
+    expect(siteState(idx, { status: 200, build: 'abc1234' }, 'abc1234')).toBe('ok')
+    expect(siteState(idx, { status: 200, build: 'def5678' }, 'abc1234')).toBe('build')
+  })
+
+  it('checkServices: 흉내 fetch 로 v1·v2 칸을 싣는다(1.2v 칸은 그대로)', async () => {
+    const seen: string[] = []
+    const fake = async (url: string) => {
+      seen.push(url)
+      const u = url.split('?')[0]
+      if (u.endsWith('/v1.2/version.json')) return { status: 200, ok: true, json: async () => ({ build: 'zzz' }) }
+      if (u.endsWith('/v2/')) return { status: 500, ok: false, json: async () => ({}) }
+      if (u.endsWith('/school-shiftgrid-scheduler/')) return { status: 200, ok: true, json: async () => ({}) }
+      return { status: 404, ok: false, json: async () => ({}) }
+    }
+    const r = await checkServices('.', new Date('2026-11-16T00:00:00Z'), '', fake as never)
+    const st = Object.fromEntries(r.map((x: { id: string, state: string }) => [x.id, x.state]))
+    expect(st['s-host']).toBe('build')
+    expect(st['s-host-v1']).toBe('ok')
+    expect(st['s-host-v2']).toBe('down')
+    expect(st['s-reporter']).toBe('ok')
+    expect(seen.every((u) => u.startsWith('https://2026-gne-dev-task-force-team.github.io/'))).toBe(true)
   })
 
   it('자료 싣기 판정: 직전 싣기 기록으로 성공·실패·자격 없음·멈춤·기록 없음', () => {
