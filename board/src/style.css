@@ -100,7 +100,7 @@ button.chip:hover { background: hsl(var(--hue) var(--chip-s) var(--chip-l-hover)
 .gg-v-in { overflow: visible }
 .gg-dotb { position: absolute; width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer } .gg-dotb:hover, .gg-dotb:focus-visible { outline: 2px solid var(--neon); outline-offset: -4px }
 .gg-msg { position: absolute; display: flex; align-items: center; gap: 6px; height: 20px; font: 12px var(--font); color: var(--fg-2); min-width: 0 }
-.gg-msg .gg-l { position: static; flex: none }
+.gg-msg .gg-l { position: static; flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis }
 .gg-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap } .gg-sha { flex: none; margin-left: auto; font: 11px ui-monospace, monospace; opacity: .6 }
 .gg-chip { pointer-events: none; image-rendering: pixelated }
 .gg-l { --hue: 200; padding: 2px 8px; border: 0; border-radius: var(--r1); background: var(--gg-bg); color: hsl(var(--hue) 70% var(--gg-fg-l)); font: 600 12px var(--font) }
