@@ -3,7 +3,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import tls from 'node:tls'
 import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
@@ -63,6 +63,22 @@ export function columnOf(state) {
   if (/^\s*(👀|검수)/u.test(state)) return { column: 'wait', reason: 'checking' }
   if (/^\s*⛔/.test(state)) return { column: 'wait', reason: 'blocked', block_kind: 'outside' }
   return { column: 'wait', reason: 'new' }
+}
+// 가짜 막힘(R102④): 「⛔ 고칠 것 없음」 류는 막힘이 아니라 끝이다.
+const NOTHING_LEFT = /(?:고칠|할|손댈|남은)\s*(?:것|게|일)\s*없|해당\s*없|필요\s*없/
+/** 상태 칸 → 칸. columnOf 에 더해 ↪(넘김)은 끝 · 「⛔ … → T-번호」 는 그 번호 상태를 따른다(stateOf 가 모르는 번호면 대기) · 「⛔ 고칠 것 없음」 류는 끝. */
+export function columnOfLinked(state, stateOf = () => undefined, depth = 0) {
+  const s = String(state ?? '')
+  if (/^\s*↪/u.test(s)) return { column: 'done', reason: 'done' }
+  if (/^\s*⛔/u.test(s)) {
+    const link = new RegExp(`→[^|]*?(${ID})`).exec(s)
+    if (link) {
+      const next = depth < 5 ? stateOf(link[1]) : undefined
+      return next === undefined ? { column: 'wait', reason: 'new' } : columnOfLinked(next, stateOf, depth + 1)
+    }
+    if (NOTHING_LEFT.test(s)) return { column: 'done', reason: 'done' }
+  }
+  return columnOf(s)
 }
 
 /** 레인 노트 → 스프린트·태스크 줄(원문 칸) · 진행 로그 줄. */
@@ -131,20 +147,74 @@ export function parseLaneNote(md) {
 
 /** 레인 폴더 이름에 판 이름(v1 · 1.2v · v2)이 낱말로 적혀 있으면 그 판, 아니면 1.2v. 이름에서 짐작하지 않는다 — 적힌 낱말만 읽는다. */
 export function appOfLane(name) {
-  const m = /(?<![\w.])(v1|1\.2v|v2)(?![\w.])/i.exec(name ?? '')
-  return m ? m[1].toLowerCase() : '1.2v'
+  return appsOfLane(name)[0]
+}
+/** 레인 이름에 적힌 판 낱말을 전부(적힌 순서 · 겹침 없이). 「v1·v2 설계」 → ['v1', 'v2'] — 둘 다 든 레인의 카드는 두 판에 다 싣는다(R101). 없으면 ['1.2v']. */
+export function appsOfLane(name) {
+  const got = [...new Set([...String(name ?? '').matchAll(/(?<![\w.])(v1|1\.2v|v2)(?![\w.])/gi)].map((m) => m[1].toLowerCase()))]
+  return got.length ? got : ['1.2v']
+}
+/** 카드 줄 「무엇」 칸 맨 앞의 판 표시 — `[v2] …` · `(v1) …` · `v2: …` · `v2 · …`. 있으면 레인 이름보다 이게 이긴다. 본문 중간의 판 낱말은 안 읽는다(언급일 뿐). */
+export function appOfRow(what) {
+  const m = /^\s*(?:\*\*)?(?:[[(（]\s*(v1|1\.2v|v2)\s*[\])）]|(v1|1\.2v|v2)\s*(?::|\s·))/i.exec(String(what ?? ''))
+  return m ? (m[1] ?? m[2]).toLowerCase() : null
+}
+
+/** 레인 노트의 로그 절(머리에 「로그」 · 「기록」) → [{ at: 'MM-DD HH:MM', pan, result }]. 표 `| 시각 | 판 | 결과 | 비고 |` 꼴과 `- HH:MM …` 줄 꼴을 다 읽는다.
+ * 날짜 없는 시각은 앞서 본 날짜(`- 11-16 11:41 …` 줄 · `### 11-16` 머리)를 잇고, 줄 꼴에서 시각이 거꾸로 가면 다음 날로 넘긴다. 날짜를 하나도 못 본 줄은 버린다(옛 일을 오늘로 잘못 싣지 않게). */
+export function parseLaneLog(md, year = new Date().getUTCFullYear()) {
+  const out = []
+  const p = (v) => String(v).padStart(2, '0')
+  const plusDay = (md) => { const [m, d] = md.split('-').map(Number); const t = new Date(Date.UTC(year, m - 1, d + 1)); return `${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())}` }
+  let inLog = false, day = null, prev = -1
+  const stamp = (date, hm, bullet) => {
+    const mins = hm.split(':').reduce((h, m) => +h * 60 + +m)
+    if (date) { const [m, d] = date.split('-'); day = `${p(m)}-${p(d)}` }
+    else if (!day) return null
+    else if (bullet && mins < prev) day = plusDay(day)
+    prev = mins
+    return `${day} ${p(hm.split(':')[0])}:${hm.split(':')[1]}`
+  }
+  for (const line of String(md ?? '').split(/\r?\n/)) {
+    const h = /^(#{2,3})\s+(.*)$/.exec(line)
+    if (h) {
+      if (h[1] === '##') { inLog = /로그|^\W*기록/u.test(h[2]); day = null; prev = -1 }
+      const d = /(?:\d{4}-)?(\d{1,2}-\d{1,2})(?!\d)/.exec(h[2])
+      if (inLog && h[1] === '###' && d) { day = d[1].split('-').map((x) => p(x)).join('-'); prev = -1 }
+      continue
+    }
+    if (!inLog) continue
+    if (line.startsWith('|')) {
+      const c = cells(line)
+      const m = /^(?:\d{4}-)?(?:(\d{1,2}-\d{1,2})\s+)?(\d{1,2}:\d{2})$/.exec(c[0] ?? '')
+      const at = m && stamp(m[1], m[2], false)
+      if (at) out.push({ at, pan: c[1] ?? '', result: c[2] ?? '' })
+      continue
+    }
+    const b = /^- (?:~~)?(?:\d{4}-)?(?:(\d{1,2}-\d{1,2})\s+)?(\d{1,2}:\d{2})(?!\d)\s*(.*)$/.exec(line)
+    const at = b && stamp(b[1], b[2], true)
+    if (at) out.push({ at, pan: b[3], result: '' })
+  }
+  return out
+}
+
+export const LANE_FRESH_MS = 60 * 60e3 // 레인 폴더 노트가 이만큼 넘게 안 바뀌면 그 레인 표의 🔄·🔨·⛔ 줄 캐릭터는 퇴근(R102①)
+/** 폴더 안 .md 들 중 가장 늦은 수정 시각(ms). 못 읽으면 0. */
+function newestMd(dir) {
+  try { return Math.max(0, ...readdirSync(dir).filter((n) => n.endsWith('.md')).map((n) => statSync(join(dir, n)).mtimeMs)) } catch { return 0 }
 }
 
 const LANE_SKIP = new Set(['닫힘', '요청함', '작업현황판']) // 작업현황판은 lanePath 로 따로 읽는다(l1)
-/** 레인 뿌리 아래 폴더마다 「레인 *.md」 를 읽는다(읽기만). onWarn(폴더, 까닭) — 못 읽은 것. */
+/** 레인 뿌리 아래 폴더마다 「레인 *.md」 를 읽는다(읽기만). onWarn(폴더, 까닭) — 못 읽은 것. 돌려주는 줄엔 로그 줄(md 원문 · build 가 거른다)과 폴더 노트 최신 수정 시각(mtime)도 붙는다. */
 export function readLanes(root, onWarn = () => {}, onInfo = () => {}) {
   if (!root || !existsSync(root)) return []
   return readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory() && !LANE_SKIP.has(d.name)).sort((a, b) => a.name.localeCompare(b.name)).flatMap((d) => {
     const f = readdirSync(join(root, d.name)).find((n) => /^레인 .*\.md$/.test(n))
     if (!f) { onWarn(d.name, '레인 노트 없음'); return [] }
-    const note = parseLaneNote(readFileSync(join(root, d.name, f), 'utf-8'))
+    const md = readFileSync(join(root, d.name, f), 'utf-8')
+    const note = parseLaneNote(md)
     if (!note.rows.length) (note.headSeen ? onWarn : onInfo)(d.name, note.headSeen ? '표는 있는데 줄을 못 읽음' : '읽을 표 없음') // 표 자체가 없으면 정보일 뿐
-    return [{ name: d.name, ...note }]
+    return [{ name: d.name, ...note, md, mtime: newestMd(join(root, d.name)) }]
   })
 }
 
@@ -186,11 +256,27 @@ export function requestTitle(what, id) {
 /** 상태 칸 → 칸. 「→ T-…」 는 그 태스크(지휘 표에 있으면 그 상태, 없으면 진행)를 따른다. */
 export function requestColumn(state, byId) {
   const link = new RegExp(`→[^|]*?(${ID})`).exec(state)
+  if (link && /^\s*✅/u.test(state)) return { link: link[1], sprint: byId.get(link[1])?.sprint, col: { column: 'done', reason: 'done' } } // 「✅ → T-…」 는 끝이 이긴다
   if (link) { const t = byId.get(link[1]); return { link: link[1], sprint: t?.sprint, col: t ? { column: t.column, reason: t.reason } : { column: 'work', reason: 'new' } } }
   if (/^\s*✅/.test(state)) return { col: { column: 'done', reason: 'done' } }
   if (/^\s*🔨/.test(state)) return { col: { column: 'work', reason: 'new' } }
   return { col: { column: 'wait', reason: 'new' } } // 📥 대기 · 그 밖
 }
+
+/** 「집은 카드」 노트(R84) → Map(번호 → 상태 글). 줄 꼴 `- R84 · → T-10bh · 세션 · 11:55` · `- U10 · 🔨 세션 · 11:55` · `- R30 · ✅ 0fcb463 (…) · 23:41`.
+ * 같은 번호가 여럿이면 **마지막 줄**이 이긴다(덧붙이기만 하는 노트). 둘째 칸에 ✅ 가 들었으면(`→ T-10i ✅ 9523348`) 끝으로 본다. R · U · K 다 읽는다. */
+export function parsePicked(md) {
+  const out = new Map()
+  for (const line of String(md ?? '').split(/\r?\n/)) {
+    const m = /^\s*-\s+([RUK]\d+)\s+·\s+(.+?)(?:\s+·\s|$)/u.exec(line)
+    if (!m) continue
+    out.set(m[1], /✅/u.test(m[2]) ? `✅ ${m[2]}` : m[2])
+  }
+  return out
+}
+/** 요청함 줄에 집은 카드 상태를 덮는다(집은 줄이 있으면 그게 Board 카드 상태 — 요청함 표 상태 칸보다 우선). */
+export const PICKED_NOTE = '집은 카드.md' // 요청함 노트와 같은 폴더
+export const withPicked = (rows, picked) => rows.map((r) => (picked.has(r.id) ? { ...r, state: picked.get(r.id) } : r))
 
 function gitBranches(repoDir) {
   if (!repoDir || !existsSync(repoDir)) return []
@@ -285,6 +371,8 @@ function readGate(gatePath, now, tokens = {}, home, activity = {}) {
   } catch { return [] }
 }
 const isBlockedState = (state) => /^\s*[⛔⏸🙋]/u.test(state)
+/** 막힘 캐릭터를 세울 줄인가 — ⏸·🙋 거나, ⛔ 를 풀어도(→ 넘긴 번호 · 고칠 것 없음) 여전히 막힘인 것(R102④). */
+const isStuck = (state, stateOf) => isBlockedState(state) && (/^\s*[⏸🙋]/u.test(state) || columnOfLinked(state, stateOf).reason === 'blocked')
 
 // 모듈 = 이 현황판 자체의 부품. 화면 탭은 registry.ts 의 import 순서대로 각 파일의 tab 낱말을 읽는다(브라우저 TS 라 import 안 함).
 export function readModules(layersDir = new URL('../src/layers/', import.meta.url)) {
@@ -413,13 +501,21 @@ export function linkTasks(tasks, edges) {
 }
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [] }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [], pickedPath, pickedMd }) {
   setRedactNames(redactNames)
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
   const day = log[0]?.at.split(' ')[0] // 맨 위가 최신 — 스프린트 제목 시각엔 날짜가 없어 이 날로 본다
   const logAt = log.map((r) => ({ ...r, ts: kstIso(r.at, year), ids: r.pan.match(TID) ?? [] })).filter((r) => r.ts).reverse() // 옛→새
+  // 레인 폴더는 먼저 읽는다 — 「⛔ … → T-번호」 를 다른 레인 표 번호로도 풀어야 해서(R102④)
+  const lanesRaw = readLanes(laneRoot, onWarn, onInfo)
+  const rawState = new Map()
+  for (const r of [...raw.flatMap((s) => s.rows), ...lanesRaw.flatMap((l) => l.rows)]) if (!rawState.has(r.id)) rawState.set(r.id, r.state)
+  const stateOf = (id) => rawState.get(id)
+  // 레인 노트가 LANE_FRESH_MS 넘게 안 바뀌었으면 사람이 없다 — 표가 🔄·⛔ 라도 캐릭터는 안 세운다(R102①). 지금 판 노트는 파일로 읽을 때만 잰다.
+  const isFresh = (ms) => !ms || now.getTime() - ms <= LANE_FRESH_MS
+  const l1Fresh = !lanePath || !existsSync(lanePath) || isFresh(statSync(lanePath).mtimeMs)
 
   const tasks = []
   const edges = [] // 번호끼리 이은 줄(R↔T)
@@ -432,7 +528,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       const title = publicTitle(r.what)
       if (!title) { onDrop('tasks', r.id); continue }
       const hits = logAt.filter((l) => l.ids.includes(r.id))
-      const col = columnOf(r.state)
+      const col = columnOfLinked(r.state, stateOf)
       const category = categoryOf(r.team)
       let tid = r.id
       for (let n = 2; taskIds.has(tid); n++) tid = `${r.id}~${n}`
@@ -440,7 +536,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       taskIds.add(tid)
       tasks.push({ id: tid, title, app: '1.2v', category, kind: category === '검사' ? 'review' : 'work', target: targetOf({ id: r.id, title, category: r.team, lane: '현황판 만들기' }), team: ACTOR[category][1], sprint: s.id,
         est_min: parseInt(r.est, 10) || 0, started_at: hits[0]?.ts ?? began, lane_id: 'l1', ...col,
-        actor_id: col.column !== 'work' ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began, ...splitDetail(r.what),
+        actor_id: col.column !== 'work' || !l1Fresh ? null : category === '지휘' ? 'a-lead' : `a-${r.id}`, updated_at: hits.at(-1)?.ts ?? began, ...splitDetail(r.what),
         ...(hits.length ? { history: hits.map((l) => ({ ts: l.ts, text: HIST_LABEL[verbOf(l)] })).filter((e, i, a) => e.text !== a[i - 1]?.text).slice(-20) } : {}) })
       for (const rid of mentions(`${r.what} ${r.state}`, RID)) edges.push([tid, rid])
       tasks[tasks.length - 1] = bodyFromLog(tasks.at(-1), hits, codeWord) // 표 설명이 거름에 비면 진행 로그 결과 칸으로 채운다
@@ -483,7 +579,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   }
 
   const live = readGate(gatePath, now.getTime(), tokens, home, activity)
-  const working = tasks.filter((t) => t.column === 'work')
+  const working = l1Fresh ? tasks.filter((t) => t.column === 'work') : [] // 노트가 묵었으면 🔄 줄은 카드로만 남고 캐릭터는 없다(R102①)
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
     // 지휘 세션 신호 = 문지기 actors 의 살아 있는 세션(kind session · off 아님). 일감·일하는 에이전트가 있으면 work, 세션만 쉬면 idle, 문지기를 읽었는데 살아 있는 게 없으면 off(퇴근), 문지기를 못 읽으면 모르니 idle.
@@ -553,8 +649,14 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   // 요청함 R 줄 → 카드. 지휘 일감·스프린트 진행률 셈이 끝난 뒤에 붙인다(그 셈에 안 섞인다). id 는 R번호라 T 태스크와 안 겹친다.
   const rmd = requestMd ?? (requestPath && existsSync(requestPath) ? readFileSync(requestPath, 'utf-8') : '')
-  const reqTasks = parseRequests(rmd).map((r) => {
-    const { col, link, sprint } = requestColumn(r.state, byId)
+  // 「집은 카드」(R84) — 요청함 옆 노트. 운전·검수 세션은 요청함 상태 칸 대신 여기에 덧붙인다 → 같은 번호의 마지막 줄이 카드 상태.
+  const pickedFile = pickedPath ?? (requestPath ? join(dirname(requestPath), PICKED_NOTE) : '')
+  const picked = parsePicked(pickedMd ?? (pickedFile && existsSync(pickedFile) ? readFileSync(pickedFile, 'utf-8') : ''))
+  const requests = withPicked(parseRequests(rmd), picked)
+  // 「→ T-번호」 는 지금 판 표에 없으면 다른 레인 표 번호로도 찾는다
+  const linkById = new Map([...[...rawState.keys()].map((id) => [id, columnOfLinked(stateOf(id), stateOf)]), ...byId])
+  const reqTasks = requests.map((r) => {
+    const { col, link, sprint } = requestColumn(r.state, linkById)
     const title = requestTitle(r.what, r.id)
     const ask = publicAsk(r.ask), askedAt = kstIso(r.at, year)
     for (const x of mentions(`${r.what} ${r.state}`, TID)) edges.push([r.id, x])
@@ -567,37 +669,62 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
   const seen = new Set()
-  const lanesRaw = readLanes(laneRoot, onWarn, onInfo)
   const bare = (n) => clean(n.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인'
   const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
   const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
   const laneBlocked = [] // 다른 레인 표에서 ⛔/⏸/🙋 인 일감
   const laneRows = lanesRaw.map((ln) => {
     const id = `l-${hash(ln.name).slice(0, 6)}`
+    const fresh = isFresh(ln.mtime)
+    const laneApps = appsOfLane(ln.name)
+    const byRaw = new Map() // 표 번호 → 카드(로그 줄의 번호를 잇는다)
     const mine = ln.rows.flatMap((r) => {
       const title = publicTitle(r.what)
       let tid = `${id}-${r.id}`
       if (!isPlain(tid) || seen.has(tid)) tid = `${id}-${hash(tid + seen.size)}`
       if (!title) { onDrop('tasks', tid); return [] }
       seen.add(tid)
-      if (isBlockedState(r.state)) laneBlocked.push({ id: tid, title })
-      return [{ id: tid, title, app: appOfLane(ln.name), category: '코드', kind: 'work', target: targetOf({ id: r.id, title, lane: ln.name }), team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
-        ...columnOf(r.state), actor_id: columnOf(r.state).column === 'work' ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }]
+      const col = columnOfLinked(r.state, stateOf)
+      if (fresh && isStuck(r.state, stateOf)) laneBlocked.push({ id: tid, title })
+      // 판: 줄 머리의 판 표시가 이기고, 없으면 레인 이름의 판 전부(「v1·v2 설계」 는 두 판에 다 — 둘째부터 id 꼬리 ~판)
+      const apps = appOfRow(r.what) ? [appOfRow(r.what)] : laneApps
+      const out = apps.map((app, i) => ({ id: i ? `${tid}~${app}` : tid, title, app, category: '코드', kind: 'work', target: targetOf({ id: r.id, title, lane: ln.name }), team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
+        ...col, actor_id: col.column === 'work' && fresh && !i ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }))
+      if (!byRaw.has(r.id)) byRaw.set(r.id, out[0])
+      return out
     })
-    const state = mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
-    return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine }
+    const state = fresh && mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
+    return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine, ln, byRaw }
   })
 
-  // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다.
-  for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work')) {
+  // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다. 노트가 묵은 레인은 actor_id 가 없어 안 세운다.
+  for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work' && x.actor_id)) {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     actors.push({ id: t.actor_id, parent_id: lead.id, kind: 'helper', name: `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'work',
       task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   }
 
   // 막힘: 맡은 태스크가 레인 표에서 ⛔/⏸/🙋 — 지금 판 표의 줄 + 다른 레인 표의 줄을 번호로 부르는 캐릭터(도는 에이전트가 이미 맡았으면 일함이 이긴다)
-  const stuck = [...(raw.find((x) => x.id === cur?.id)?.rows ?? []).filter((r) => isBlockedState(r.state) && byId.has(r.id)).map((r) => byId.get(r.id)),
+  const stuck = [...(l1Fresh ? raw.find((x) => x.id === cur?.id)?.rows ?? [] : []).filter((r) => isStuck(r.state, stateOf) && byId.has(r.id)).map((r) => byId.get(r.id)),
     ...laneBlocked.map((b) => ({ id: b.id, category: '코드' }))]
+
+  // 다른 레인의 로그 절(R102②) — 표 꼴 · `- HH:MM` 줄 꼴 다. 줄에 그 레인 표 번호 · 지금 판 번호 · R번호가 있으면 「{제목} 끝/시작/막힘/다시」, 없으면 「{레인} 기록」(원문은 안 싣는다).
+  const reqById = new Map(reqTasks.map((t) => [t.id, t]))
+  const LOG_ID = new RegExp(`${ID}|\\b[RK]\\d+\\b`, 'g')
+  const laneEvents = []
+  for (const { lane, ln, byRaw } of laneRows) {
+    parseLaneLog(ln.md, year).forEach((l, i) => {
+      const ts = kstIso(l.at, year)
+      if (!ts || Date.parse(ts) > now.getTime() + 5 * 60e3) return // 앞날 시각 = 날짜 짐작이 틀린 줄 — 버린다
+      const t = mentions(`${l.pan} ${l.result}`, LOG_ID).map((x) => byRaw.get(x) ?? byId.get(x) ?? reqById.get(x)).find(Boolean)
+      const verb = verbOf(l)
+      const text = t ? `${t.title} ${verb}` : `${lane.title} 기록`
+      if (!clean(text)) { onDrop('events', l.at); return }
+      laneEvents.push({ id: `e-${hash(`${ln.name}|${l.at}|${i}`)}`, ts, kind: t ? (verb === '다시' ? 'task.reject' : 'task.move') : 'lane.log', subject_type: t ? 'task' : 'lane', subject_id: t ? t.id : lane.id, actor_id: lead.id, text })
+    })
+  }
+  // 모든 레인을 한 줄로 — 최신순(같은 시각이면 지금 판 줄이 앞)
+  const allEvents = [...events.reverse(), ...laneEvents].sort((a, b) => b.ts.localeCompare(a.ts))
   for (const t of stuck) {
     if (actors.some((a) => a.task_id === t.id)) continue
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category === '지휘' ? '코드' : t.category]
@@ -607,8 +734,8 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
 
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,
-    services, modules: appModules(parseRequests(rmd), readModules()),
-    goals, events: events.reverse().slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
+    services, modules: appModules(requests, readModules()),
+    goals, events: allEvents.slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
   }
   linkTasks(data.tasks, edges)
   bodyFromLinks(data.tasks)
