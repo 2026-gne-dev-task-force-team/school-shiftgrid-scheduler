@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { V1_EDITOR_SRC } from './frame'
 
@@ -9,11 +9,13 @@ const here = __dirname
 const root = join(here, '..', '..', '..')
 const legacy = join(here, 'legacy')
 
+const rel = (p: string) => p.split(sep).join('/')
+
 function walk(dir: string, base = dir, acc: Record<string, string> = {}) {
   for (const e of readdirSync(dir)) {
     const p = join(dir, e)
     if (statSync(p).isDirectory()) walk(p, base, acc)
-    else if (e !== 'MANIFEST.json' && e !== 'PATCHES') acc[p.slice(base.length + 1)] = createHash('sha256').update(readFileSync(p)).digest('hex')
+    else if (e !== 'MANIFEST.json' && e !== 'PATCHES') acc[rel(p.slice(base.length + 1))] = createHash('sha256').update(readFileSync(p)).digest('hex')
   }
   return acc
 }
@@ -72,7 +74,7 @@ describe('legacy 안 fetch(', () => {
       for (const e of readdirSync(dir)) {
         const p = join(dir, e)
         if (statSync(p).isDirectory()) scan(p)
-        else if (/\.tsx?$/.test(e) && /\bfetch\(/.test(readFileSync(p, 'utf8'))) hits.push(p.slice(legacy.length + 1))
+        else if (/\.tsx?$/.test(e) && /\bfetch\(/.test(readFileSync(p, 'utf8'))) hits.push(rel(p.slice(legacy.length + 1)))
       }
     }
     scan(legacy)
