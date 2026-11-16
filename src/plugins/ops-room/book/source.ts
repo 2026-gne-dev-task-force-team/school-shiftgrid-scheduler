@@ -1,10 +1,13 @@
 /**
  * 특별실 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다. 지금은 메모리 가짜 어댑터.
  * 유일 둘(설계 6-2): (방,날짜,시작,자리번호) · (방,날짜,시작,반). 서버라면 DB 가 막는다.
+ * 🔴 자리 번호를 차례로 넣어 보는 반복은 saveReservation 한 곳(R111) — 후보는 정본 `freeSlots` 로 고른다. 화면은 번호를 보내지 않는다.
  */
-import type { ReservationRow, RoomsPart, Viewer } from './types';
+import { freeSlots } from '../../../../shared/room-rules.ts';
+import type { ReservationRequest, ReservationRow, RoomsPart, Viewer } from './types';
 
-export type SaveResult = { ok: true; row: ReservationRow } | { ok: false; conflict: 'slot' | 'track' | 'etag' };
+/** full = 후보를 다 넣어 봤는데 자리가 없다 · track = 같은 반이 이미 그 칸 · etag = 덮어쓰려던 행이 바뀜 */
+export type SaveResult = { ok: true; row: ReservationRow } | { ok: false; conflict: 'full' | 'track' | 'etag' };
 export type DeleteResult = { ok: true } | { ok: false; conflict: 'etag' | 'missing' };
 
 export interface RoomSource {
@@ -12,8 +15,8 @@ export interface RoomSource {
     /** `rooms` 칸 PUT(관리 역할) — 방·고정·차단 세 묶음을 통째로 쓴다. 시간표 배치(timetable)는 읽기 전용이라 건드리지 않는다. */
     savePart(next: Pick<RoomsPart, 'rooms' | 'fixed' | 'blocks'>): Promise<void>;
     loadReservations(date: string): Promise<ReservationRow[]>;
-    /** ifMatch: 생략 = 자리 번호만 유일 검사 · 문자열 = 있는 행의 createdAt 이 같아야(덮어쓰기). */
-    saveReservation(row: ReservationRow, opts?: { ifMatch?: string }): Promise<SaveResult>;
+    /** 자리 번호는 여기서 고른다(빈 번호를 작은 수부터 넣어 보고 유일 위반이면 다음). ifMatch: 문자열 = 있는 행의 createdAt 이 같아야(덮어쓰기). */
+    saveReservation(row: ReservationRequest, opts?: { ifMatch?: string }): Promise<SaveResult>;
     /** ifMatch: 지우려던 행의 createdAt(etag). 그 사이 바뀌었으면 etag 충돌. */
     deleteReservation(id: string, opts?: { ifMatch?: string }): Promise<DeleteResult>;
 }
@@ -25,16 +28,26 @@ export function memoryRoomSource(initial: RoomsPart, rows: ReservationRow[] = []
         loadPart: async () => structuredClone(part),
         savePart: async (next) => { part = { ...part, rooms: structuredClone(next.rooms), fixed: structuredClone(next.fixed), blocks: structuredClone(next.blocks) }; onChange?.(part, store); },
         loadReservations: async (date) => store.filter((r) => r.date === date).map((r) => ({ ...r })),
-        saveReservation: async (row, opts = {}) => {
-            const same = (r: ReservationRow) => r.roomId === row.roomId && r.date === row.date && r.startMin === row.startMin;
-            const mine = store.findIndex((r) => r.id === row.id);
+        saveReservation: async (req, opts = {}) => {
+            const same = (r: ReservationRow) => r.id !== req.id && r.roomId === req.roomId && r.date === req.date && r.startMin === req.startMin;
+            const capacity = part.rooms.find((r) => r.id === req.roomId)?.capacity ?? 0;
+            // 서버 함수처럼: 후보를 먼저 고르고(이 사이 남이 끼어들 수 있다) …
+            const candidates = freeSlots(capacity, store.filter(same).map((r) => r.slotNo));
+            await Promise.resolve();
+            const mine = store.findIndex((r) => r.id === req.id);
             if (opts.ifMatch !== undefined && (mine < 0 || store[mine].createdAt !== opts.ifMatch)) return { ok: false, conflict: 'etag' };
-            if (store.some((r) => r.id !== row.id && same(r) && r.slotNo === row.slotNo)) return { ok: false, conflict: 'slot' };
-            if (store.some((r) => r.id !== row.id && same(r) && r.trackName === row.trackName)) return { ok: false, conflict: 'track' };
-            if (mine >= 0) store.splice(mine, 1);
-            store.push({ ...row });
-            onChange?.(part, store);
-            return { ok: true, row: { ...row } };
+            // … 차례로 넣어 본다. 유일(방,날짜,시작,자리) 위반이면 다음 번호, 유일(방,날짜,시작,반) 위반이면 끝.
+            for (const slotNo of candidates) {
+                if (store.some((r) => same(r) && r.slotNo === slotNo)) continue;
+                if (store.some((r) => same(r) && r.trackName === req.trackName)) return { ok: false, conflict: 'track' };
+                const row: ReservationRow = { ...req, slotNo };
+                const at = store.findIndex((r) => r.id === req.id);
+                if (at >= 0) store.splice(at, 1);
+                store.push({ ...row });
+                onChange?.(part, store);
+                return { ok: true, row: { ...row } };
+            }
+            return { ok: false, conflict: 'full' };
         },
         deleteReservation: async (id, opts = {}) => {
             const i = store.findIndex((r) => r.id === id);

@@ -46,7 +46,7 @@ export function RoomView({ source, ctx, initial }: { source?: RoomSource; ctx?: 
             {free.length === 0 && <p className="text-small">자리가 남은 방이 없습니다.</p>}
             {free.map(({ room, cell }) => (
                 <div key={room.id} className="flex flex-wrap gap-2 items-center text-small">
-                    <span>{room.name} (빈자리 {cell?.kind === 'open' ? cell.free : 0})</span>
+                    <span>{room.name} (빈자리 {cell.free})</span>
                     <Button variant="solid" tone="accent" onClick={() => void book(room.id)}>{`${room.name} 예약`}</Button>
                 </div>
             ))}

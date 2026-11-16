@@ -5,6 +5,8 @@
  *   교시는 학년 기준으로 고르고(화면), 충돌은 시각(분)으로 본다(여기). 시각은 분 정수.
  *   취소는 본인과 교감·교무·관리자만. 지나간 날짜는 아무도 못 지운다(관리자도).
  * 운영 앱 rooms.ts 의 roomDay·reserve·취소·빈 방 찾기·timeLabels 에서 DB·HTTP 를 걷어 낸 것.
+ * 🔴 판정 정본은 이 파일 하나(R111) — 플러그인 `src/plugins/ops-room/book/` 은 꼴만 옮겨 여기를 부른다. 자리 번호를 차례로 넣어 보는 반복은 저장 창구(`book/source.ts` saveReservation) 한 곳.
+ * 서버 단계(이 레포엔 supabase/ 마이그레이션 없음): 마이그레이션에 유일 제약 둘 UNIQUE(room,date,start_min,slot_no)·UNIQUE(room,date,start_min,track) + CHECK(slot_no>=1) · 예약 함수는 이 모듈(decideReserve·freeSlots)을 불러 후보 번호를 차례로 INSERT, 유일 위반이면 다음 번호.
  */
 import { seoulDay, toHHMM } from './clock.ts'
 import { can, type Role } from './roles.ts'
@@ -64,6 +66,8 @@ export function mondayOf(date: string): string {
   const d = new Date(dateMs(date))
   return isoOf(dateMs(date) - ((d.getUTCDay() + 6) % 7) * 86400000)
 }
+/** 요일 번호 0=월 (달력 날짜 계산, UTC) */
+export const dayIndexOf = (date: string): number => (new Date(dateMs(date)).getUTCDay() + 6) % 7
 export const addDays = (date: string, n: number): string => isoOf(dateMs(date) + n * 86400000)
 
 /** 한 방의 한 날짜 칸들. 칸마다 고정·차단·예약·빈자리 (6-1) */
@@ -105,11 +109,18 @@ export function overlapWarnings(cells: Cell[]): { startMin: number; count: numbe
 
 export type ReserveRequest = { date: string; startMin: number; trackName: string; note?: string }
 export type ReserveVerdict =
-  | { ok: true; slotNo: number; endMin: number }
+  | { ok: true; slotNos: number[]; endMin: number }
   | { ok: false; status: 400 | 404 | 409; error: string }
 
-/** 예약 판정 순서 (6-2): 방 → 지난 날 → 쉬는 날 → 칸 시각 → 차단 → 고정 → 같은 반 → 빈 자리 번호(1부터) → 없으면 409.
- *  inp.room 이 null 이면(없는 방) 404. 자리 번호는 그 칸의 기존 예약이 쓴 번호를 뺀 가장 작은 수 */
+/** 정원 안에서 아직 안 쓴 자리 번호(작은 수부터). 판정(decideReserve)과 저장 창구가 같은 함수를 쓴다 */
+export function freeSlots(capacity: number, taken: Iterable<number>): number[] {
+  const used = new Set(taken), out: number[] = []
+  for (let slotNo = 1; slotNo <= capacity; slotNo++) if (!used.has(slotNo)) out.push(slotNo)
+  return out
+}
+
+/** 예약 판정 순서 (6-2): 방 → 지난 날 → 쉬는 날 → 칸 시각 → 차단 → 고정 → 같은 반 → 빈 자리 번호 후보 → 없으면 409.
+ *  inp.room 이 null 이면(없는 방) 404. 후보는 그 칸의 기존 예약이 쓴 번호를 뺀 수 전부(작은 수부터) — 저장 창구가 차례로 넣어 보고 유일 위반이면 다음 */
 export function decideReserve(inp: Omit<RoomDayInput, 'room' | 'date' | 'dayIndex'> & { room: Room | null; dayIndex: number }, req: ReserveRequest): ReserveVerdict {
   const fail = (status: 400 | 404 | 409, error: string): ReserveVerdict => ({ ok: false, status, error })
   const { room } = inp
@@ -120,10 +131,12 @@ export function decideReserve(inp: Omit<RoomDayInput, 'room' | 'date' | 'dayInde
   const cell = day.cells.find((c) => c.startMin === req.startMin)
   if (!cell) return fail(400, toHHMM(req.startMin) + ' 는 수업 시각이 아닙니다')
   if (cell.blocked) return fail(409, '그 시각은 막혀 있습니다 (' + cell.blocked + ')')
-  if (cell.fixed.length) return fail(409, '고정 수업이 있는 칸입니다 (' + cell.fixed.map((f) => f.label).join(', ') + ')')
+  const labels = cell.fixed.map((f) => f.label).filter(Boolean)
+  if (cell.fixed.length) return fail(409, '고정 수업이 있는 칸입니다' + (labels.length ? ' (' + labels.join(', ') + ')' : ''))
   if (cell.reservations.some((r) => r.trackName === req.trackName)) return fail(409, req.trackName + ' 은 이미 이 칸을 예약했습니다')
   const taken = new Set((inp.reservations ?? []).filter((r) => r.roomId === room.id && r.date === req.date && r.startMin === req.startMin).map((r) => r.slotNo))
-  for (let slot = 1; slot <= room.capacity; slot++) if (!taken.has(slot)) return { ok: true, slotNo: slot, endMin: cell.endMin }
+  const slotNos = freeSlots(room.capacity, taken)
+  if (slotNos.length) return { ok: true, slotNos, endMin: cell.endMin }
   return fail(409, '그 시각 ' + room.name + ' 은 자리가 없습니다')
 }
 
