@@ -343,15 +343,31 @@ const kstDay = (ms) => Math.floor((ms + 9 * 3600e3) / 86400e3)
 /** 퇴근을 싣는 기한 — 마지막 활동한 날 KST 자정까지(다음 날 0시부터 뺀다). */
 export const keepOff = (last, now) => kstDay(last) === kstDay(now) && now - last <= OFF_KEEP_MS
 // 문지기 파일은 프로필 폴더(.claude · .claude-*)마다 따로 쓰이고 세션·에이전트는 서로 다른 프로필에서 돈다 → 있는 것을 전부 합친다(키 충돌은 mtime 새 파일이 이김).
-function readGate(gatePath, now, tokens = {}, home, activity = {}) {
+/** 다른 기기 거울 — 레인 폴더의 `현황판 관리/캐릭터/<기기>.json`(문지기 board-gate.js mirror). 폴더가 없거나 파일이 깨졌으면 조용히 빈손(fail-open). */
+export const MIRROR_SUB = ['현황판 관리', '캐릭터']
+function readMirrors(laneRoot) {
+  const out = []
+  if (!laneRoot) return out
+  try {
+    const dir = join(laneRoot, ...MIRROR_SUB)
+    for (const n of readdirSync(dir).filter((x) => x.endsWith('.json')).sort()) {
+      try { out.push({ device: n.replace(/\.json$/, ''), actors: JSON.parse(readFileSync(join(dir, n), 'utf-8')).actors ?? {} }) } catch { /* 깨진 파일 하나는 건너뜀 */ }
+    }
+  } catch { /* 폴더 없음 */ }
+  return out
+}
+function readGate(gatePath, now, tokens = {}, home, activity = {}, laneRoot) {
   const files = claudeVariants(gatePath, { home })
-  if (!files.length) return []
+  const mirrors = readMirrors(laneRoot)
+  if (!files.length && !mirrors.length) return []
   try {
     const merged = {}
-    for (const f of files) { try { Object.assign(merged, JSON.parse(readFileSync(f, 'utf-8')).actors ?? {}) } catch { /* 깨진 파일 하나는 건너뜀 */ } }
+    for (const m of mirrors) for (const [k, a] of Object.entries(m.actors)) if (a && typeof a === 'object') merged[k] = { ...a, device: m.device } // 거울이 바탕 — 같은 키는 아래 자기 기기 기록이 덮는다
+    for (const f of files) { try { for (const [k, a] of Object.entries(JSON.parse(readFileSync(f, 'utf-8')).actors ?? {})) merged[k] = { device: merged[k]?.device, ...a } } catch { /* 깨진 파일 하나는 건너뜀 */ } }
+    const seen = new Set() // 키는 달라도 같은 id(거울 ↔ 자기 기록)는 한 번만
     return Object.entries(merged)
       .map(([key, a]) => ({ ...a, tok: tokens[key] }))
-      .filter((a) => typeof a.started === 'number' && /^a-[0-9a-f]{8}$/.test(a.id))
+      .filter((a) => typeof a.started === 'number' && /^a-[0-9a-f]{8}$/.test(a.id) && !seen.has(a.id) && seen.add(a.id))
       .map((a) => {
         const isSession = a.kind === 'session'
         const quiet = isSession ? SESSION_QUIET_MS : AGENT_STALE_MS
@@ -578,7 +594,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     trunkRow.graph = gitGraph(repoDir).map(({ names, ...c }) => ({ ...c, refs: names.filter((n) => isPlain(n)).map((n) => ({ name: n, branch_id: idOf(n) })) }))
   }
 
-  const live = readGate(gatePath, now.getTime(), tokens, home, activity)
+  const live = readGate(gatePath, now.getTime(), tokens, home, activity, laneRoot)
   const working = l1Fresh ? tasks.filter((t) => t.column === 'work') : [] // 노트가 묵었으면 🔄 줄은 카드로만 남고 캐릭터는 없다(R102①)
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',

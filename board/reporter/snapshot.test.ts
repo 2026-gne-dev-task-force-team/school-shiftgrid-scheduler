@@ -171,6 +171,26 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(ids('2026-11-12T20:00:00Z')).not.toContain('a-aaaaaaaa')
   })
 
+  it('다른 기기 거울(현황판 관리/캐릭터/*.json)을 합친다 · 같은 id 한 번 · 깨진 파일·없는 폴더 무시', () => {
+    const t0 = at.getTime()
+    const root = mkdtempSync(join(tmpdir(), 'lane-'))
+    const mir = join(root, '현황판 관리', '캐릭터')
+    mkdirSync(mir, { recursive: true })
+    writeFileSync(join(mir, 'NAS.json'), JSON.stringify({ actors: {
+      sn: { id: 'a-aaaaaaaa', kind: 'session', role: '세션', started: t0 - 60e3, ended: null },
+      ag: { id: 'a-bbbbbbbb', lead: 'a-aaaaaaaa', task: null, started: t0 - 60e3, ended: null } } }))
+    writeFileSync(join(mir, '맥.json'), JSON.stringify({ actors: { mk: { id: 'a-cccccccc', kind: 'session', role: '세션', started: t0 - 60e3, ended: null } } }))
+    writeFileSync(join(mir, '깨짐.json'), '{ 깨진')
+    const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
+    writeFileSync(gatePath, JSON.stringify({ actors: { own: { id: 'a-cccccccc', kind: 'session', role: '세션', started: t0 - 60e3, ended: null } } })) // 자기 기기 기록 = 맥 거울과 같은 id
+    const ids = (g: string, r: string) => build({ now: at, gatePath: g, laneRoot: r, md: lane('', '') }).actors.map((a: Actor) => a.id).filter((i: string) => i !== 'a-lead')
+    const got = ids(gatePath, root)
+    expect(got.sort()).toEqual(['a-aaaaaaaa', 'a-bbbbbbbb', 'a-cccccccc'])
+    expect(new Set(got).size).toBe(got.length)
+    expect(ids(join(tmpdir(), 'nope', 'actors.json'), root).sort()).toEqual(['a-aaaaaaaa', 'a-bbbbbbbb', 'a-cccccccc']) // 자기 기록 없어도 거울만으로
+    expect(ids(gatePath, join(tmpdir(), 'no-lane-root'))).toEqual(['a-cccccccc']) // 폴더 없음 = 자기 것만
+  })
+
   it('에이전트 하나 띄웠다 끝낸 뒤 스냅샷에서 work 아님', () => {
     const gatePath = join(mkdtempSync(join(tmpdir(), 'gate-')), 'actors.json')
     const t0 = at.getTime()
