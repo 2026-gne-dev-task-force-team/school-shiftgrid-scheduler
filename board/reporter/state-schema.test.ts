@@ -19,3 +19,31 @@ describe('actors.state 허용 목록 = 화면 타입', () => {
     expect(list(alter![1])).toEqual(list(t![1]))
   })
 })
+
+// 사고(T-10cs · R118): 보고꾼이 사건 종류 'lane.log' 를 내기 시작했는데 서버 events_kind_check 목록엔 없어 싣기 400.
+// 보고꾼·화면이 사건을 만드는 자리(`kind: … subject_type` 객체 · `add(종류, 대상, …)` 호출)의 종류 글자를 긁어 스키마 목록 안에 있는지 본다.
+describe('events.kind 허용 목록 ⊇ 코드가 내는 사건 종류', () => {
+  const sql = read('../supabase/board-schema.sql')
+  const kinds = (s: string) => [...s.matchAll(/'([a-z]+(?:\.[a-z]+)?)'/g)].map((m) => m[1])
+  const inline = sql.match(/create table if not exists board\.events[\s\S]*?\n\);/)?.[0].match(/kind text not null check \(kind in \(([^)]*)\)\)/)
+  const alter = sql.match(/add constraint events_kind_check check \(kind in \(([^)]*)\)\)/)
+
+  it('표 정의의 목록과 갈아 끼움 줄의 목록이 같은 집합', () => {
+    expect(inline, '표 정의의 kind check 를 못 찾음').toBeTruthy()
+    expect(alter, 'events_kind_check 갈아 끼움 줄을 못 찾음').toBeTruthy()
+    expect(kinds(inline![1]).sort()).toEqual(kinds(alter![1]).sort())
+  })
+
+  it('snapshot.mjs · feedback.ts 가 만드는 종류가 전부 목록에 있다', () => {
+    const allowed = new Set(kinds(alter![1]))
+    const src = read('./snapshot.mjs') + '\n' + read('../src/lib/feedback.ts')
+    const spans = [
+      ...[...src.matchAll(/\bkind:\s*([^\n]*?)\bsubject_type\b/g)].map((m) => m[1]),
+      ...[...src.matchAll(/\badd\(([^\n]*?'),\s*'[a-z]+',/g)].map((m) => m[1]),
+    ]
+    const made = [...new Set(spans.flatMap(kinds))].sort()
+    // 긁개가 눈멀지 않았는지 — 알려진 종류 넷은 반드시 잡혀야 한다
+    for (const k of ['lane.log', 'task.move', 'goal.progress', 'feedback.add']) expect(made, `긁개가 ${k} 를 못 잡음`).toContain(k)
+    expect(made.filter((k) => !allowed.has(k)), '스키마 events_kind_check 에 없는 사건 종류').toEqual([])
+  })
+})

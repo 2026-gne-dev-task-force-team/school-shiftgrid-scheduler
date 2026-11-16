@@ -107,7 +107,7 @@ create table if not exists board.events (
   ts timestamptz not null default now(),
   kind text not null check (kind in ('actor.spawn','actor.end','actor.state','task.move','task.reject',
     'branch.create','branch.commit','branch.push','branch.merge','service.state','module.state',
-    'goal.progress','release','feedback.add')),
+    'goal.progress','release','feedback.add','lane.log')),
   subject_type text not null check (board.plain(subject_type)),
   subject_id text not null,
   actor_id text,
