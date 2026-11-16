@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseLog } from './src/app/changelog.ts'
 // 앱 버전(package.json)을 화면·의견 창구가 읽을 수 있게 넣는다
 const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version as string
 const BOARD_VERSION_FILE = new URL('./board/public/version.json', import.meta.url)
@@ -14,6 +15,9 @@ try { BOARD_VERSION.note = execSync('git log -1 --format=%s', { stdio: ['ignore'
 // 판 이름표(설치 이름·탭 제목·배지)는 site.config.json 의 edition 한 곳에서 온다
 const EDITION = JSON.parse(readFileSync(new URL('./site.config.json', import.meta.url), 'utf-8')).edition as { appName: string; shortName: string; badge: string }
 const BUILD_AT = new Date().toISOString()
+// 업데이트 이력(R79) — 커밋 제목의 T/R 번호에서 뽑는다. git 이 없으면 빈 목록.
+let CHANGELOG: ReturnType<typeof parseLog> = []
+try { CHANGELOG = parseLog(execSync('git log -300 --format=%h%x09%aI%x09%s', { stdio: ['ignore', 'pipe', 'ignore'] }).toString()) } catch { /* git 없음 */ }
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -42,6 +46,8 @@ export default defineConfig({
     react(),
     // 작업현황판이 상대 경로로 읽는 version.json 을 dist 루트에 싣는다(board/public 이 원본)
     { name: 'board-version-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ ...BOARD_VERSION, at: BUILD_AT }) }) } },
+    // 앱 안 「업데이트 이력」이 상대 경로로 읽는 changelog.json (판 번호·시각·바뀐 것 목록)
+    { name: 'changelog-json', generateBundle() { this.emitFile({ type: 'asset', fileName: 'changelog.json', source: JSON.stringify({ build: BOARD_VERSION.build, at: BUILD_AT, entries: CHANGELOG }) }) } },
     // 탭 제목·홈 화면 이름을 판 이름표로 바꾼다(index.html 의 값은 자리 표시)
     { name: 'edition-title', transformIndexHtml: (html: string) => html.replace(/<title>[^<]*<\/title>/, `<title>${EDITION.appName}</title>`).replace(/(apple-mobile-web-app-title" content=")[^"]*/, `$1${EDITION.shortName}`) },
     // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
