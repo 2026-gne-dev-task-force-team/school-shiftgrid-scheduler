@@ -12,7 +12,7 @@ describe('v1 서비스워커 범위 (빌드 산출 sw.js)', () => {
 
     beforeAll(() => {
         outDir = mkdtempSync(join(tmpdir(), 'sw-scope-'));
-        execFileSync('npx', ['vite', 'build', '--outDir', outDir, '--emptyOutDir'], { stdio: 'pipe' });
+        execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['vite', 'build', '--outDir', outDir, '--emptyOutDir'], { stdio: 'pipe', shell: process.platform === 'win32' });
         const sw = readFileSync(join(outDir, 'sw.js'), 'utf8');
         const m = sw.match(/denylist:\s*\[(.*?)\]\s*[,}]/s);
         if (!m) throw new Error('sw.js 에서 denylist 를 못 찾았다');
@@ -22,7 +22,7 @@ describe('v1 서비스워커 범위 (빌드 산출 sw.js)', () => {
 
     const denied = (p: string) => denylist.some((r) => r.test(p));
 
-    it.each(['/preview/', '/v1.2/', '/v2/', '/subnauticaz/preview/', '/x/v1.2/index.html'])('%s 는 v1 이 가로채지 않는다', (p) => {
+    it.each(['/preview/', '/v1.2/', '/v2/', '/board/', '/subnauticaz/board/index.html', '/subnauticaz/preview/', '/x/v1.2/index.html'])('%s 는 v1 이 가로채지 않는다', (p) => {
         expect(denied(p)).toBe(true);
     });
 
