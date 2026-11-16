@@ -29,3 +29,12 @@ describe('이름 앞 코드', () => {
   })
   it('코드가 없으면 그대로', () => expect(splitCode('자료 싣기')).toEqual({ code: '', text: '자료 싣기' }))
 })
+
+// R88: 칩 글자를 흐리게 하는 opacity 를 되살리지 않게 지킨다(.bp-room 규칙에 opacity 금지 · 세 상태에 기호)
+describe('설계도 칩 가독성', async () => {
+  const { readFileSync } = await import('node:fs')
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8')
+  const rules = css.split('\n').filter((l) => l.includes('.bp-room'))
+  it('opacity 없음', () => expect(rules.filter((l) => /opacity\s*:/.test(l))).toEqual([]))
+  it('세 상태 기호', () => { for (const c of ['solid', 'ghost', 'scaffold']) expect(rules.some((l) => l.includes(`.bp-room.${c}::before`))).toBe(true) })
+})

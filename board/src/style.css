@@ -226,10 +226,13 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .bp-house { border: 1px solid rgb(var(--neon-rgb) / .55); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) } .bp-house header { font-weight: 650; margin-bottom: var(--sp2) }
 .bp-rooms { display: flex; flex-wrap: wrap; gap: var(--sp2) }
 .bp-room { min-height: 30px; min-width: 76px; padding: 0 9px; color: var(--fg); font: inherit; background: var(--s3); border-radius: var(--r1); cursor: pointer; border: 1px solid rgb(var(--neon-rgb) / .7) }
-.bp-code { margin-left: 6px; font-size: .75em; color: var(--muted, #8a8f98) }
+.bp-code { margin-left: 6px; font-size: .75em; color: var(--fg-3) }
 .bp-slot { display: inline-flex; align-items: center; gap: 4px } .bp-crew { display: inline-flex }
-.bp-room.ghost { border-style: dashed; opacity: .5 }
-.bp-room.scaffold { border-color: var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, var(--scaffold) 6px 9px); animation: sgb-bp-blink 2.4s ease-in-out infinite }
+/* R88: 상태는 색·테두리·기호로 가른다(흐리게 하는 opacity 는 글자까지 죽이므로 쓰지 않는다) */
+.bp-room::before { margin-right: 5px; font-weight: 700 }
+.bp-room.solid { background: rgb(var(--neon-rgb) / .22); border: 2px solid var(--neon); color: var(--fg); font-weight: 650 } .bp-room.solid::before { content: "✓"; color: var(--neon-2) }
+.bp-room.ghost { border-style: dashed; background: var(--s2); color: var(--fg-2) } .bp-room.ghost::before { content: "○" }
+.bp-room.scaffold { border: 2px solid var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, var(--scaffold) 6px 9px); color: var(--fg); animation: sgb-bp-blink 2.4s ease-in-out infinite } .bp-room.scaffold::before { content: "◐"; color: var(--warn) }
 &.calm .bp-room.scaffold { animation: none }
 /* 불편 접수 칸 — 어두운 배경에서 입력칸·select 가 보이게 테두리·배경·글자색을 준다 */
   .detail-body label { display: block; margin: var(--sp3) 0 4px; font-size: var(--fs-sm); color: var(--fg-2) }
@@ -262,7 +265,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @keyframes sgb-pulse { 30% { box-shadow: 0 0 0 2px var(--neon), 0 0 14px 2px rgb(var(--neon-rgb) / .35); background: rgb(var(--neon-rgb) / .14) } }
 @keyframes sgb-breathe { to { border-color: var(--breathe) } }
 @keyframes sgb-ws-flash { to { background: var(--flash) } }
-@keyframes sgb-bp-blink { 50% { opacity: .55 } }
+@keyframes sgb-bp-blink { 50% { box-shadow: 0 0 0 3px rgb(var(--warn-rgb) / .35) } }
 @keyframes sgb-chr-z { 50% { transform: translateY(-1px); opacity: .55 } }
 @keyframes sgb-chr-step { 50% { transform: translateY(-1px) } }
 @keyframes sgb-chr-blink { 94% { transform: scaleY(.3) } 97% { transform: none } }
