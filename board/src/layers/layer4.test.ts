@@ -30,5 +30,5 @@ describe('막힌 까닭 문장', () => {
   it('낱말이 없으면 null', () => expect(blockText(T({}), all)).toBeNull())
 })
 describe('열 순서', () => {
-  it('기다림 → 작업 → 확인 중 → 끝', () => expect(COLS.map((c) => c.id)).toEqual(['wait', 'work', 'check', 'done']))
+  it('리뷰 → 작업 → 기다림 → 끝(위에서 아래)', () => expect(COLS.map((c) => c.id)).toEqual(['check', 'work', 'wait', 'done']))
 })

@@ -187,11 +187,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .lane-chip.flash { animation: sgb-pulse 1.2s } /* 상태가 바뀐 칩만 한 번. .calm·움직임 줄이기면 아래 규칙이 끈다 */
 
 /* 4층 작업장 */
-.ws { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-items: stretch; border: 3px solid var(--floor-edge); border-top: 22px solid var(--wall); border-radius: var(--r1); overflow: hidden; background-color: var(--floor); background-image: linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px), linear-gradient(rgb(var(--floor-rgb) / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
-.ws-col { position: relative; padding: var(--sp1) var(--sp2) var(--sp2); min-height: 220px; border-right: 2px dashed rgb(var(--floor-edge-rgb) / .35) }
-.ws-col:last-child { border-right: 0 }
+.ws { display: flex; flex-direction: column; gap: 0; align-items: stretch; border: 3px solid var(--floor-edge); border-top: 22px solid var(--wall); border-radius: var(--r1); overflow: hidden; background-color: var(--floor); background-image: linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px), linear-gradient(rgb(var(--floor-rgb) / .18) 2px, transparent 2px); background-size: 32px 32px; image-rendering: pixelated }
+.ws-col { position: relative; padding: var(--sp1) var(--sp2) var(--sp2); min-height: 0; border-bottom: 2px dashed rgb(var(--floor-edge-rgb) / .35) }
+.ws-col:last-child { border-bottom: 0 }
 .ws-head small { font-weight: 400; opacity: .7 }
-.ws-furn { display: block; width: 100%; max-width: 180px; height: auto; margin: 0 auto var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
+.ws-furn { display: block; width: 100%; max-width: 72px; height: auto; margin: 0 0 var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
 .ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid var(--floor-edge); border-radius: var(--r1); background: var(--floor) linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
 .ws-dorm { display: flex; justify-content: flex-end; align-items: center; gap: var(--sp2); margin-top: 4px; padding: 2px 8px; border: 2px dashed var(--fg-3); border-radius: var(--r1); opacity: .75 }
@@ -201,7 +201,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: sgb-roam 2.4s ease-in-out infinite alternate; --dist: 6px }
 .ws-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp1); padding: 1px 3px; font-weight: 650; font-size: var(--fs-sm); color: var(--fg-2) }
 .ws-badge { padding: 0 6px; border-radius: 999px; background: var(--neon-soft); color: var(--neon-2); font-variant-numeric: tabular-nums }
-.ws-body { display: flex; flex-direction: column; gap: 3px }
+.ws-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 3px } /* 구역 안은 바둑판 — 위에서 아래로 리뷰·작업·기다림·끝 */
+.ws-body > .ws-more { grid-column: 1 / -1; justify-self: start }
 /* 카드 = 상태 점 · 제목 한 줄(말줄임) · 얼굴. 시간·사유는 마우스를 올리면 뜨는 말풍선과 상세에 있다 */
 .ws-card { position: relative; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 6px; text-align: left; color: var(--fg); font: inherit; font-size: var(--fs-sm); background: var(--s3); border: 1px solid var(--line); border-left: 3px solid var(--make); border-radius: var(--r1); box-shadow: var(--sh1); cursor: pointer; transition: transform .15s var(--ease), border-color .15s }
 .ws-card .tag { flex: none; padding: 0 5px; border-radius: 999px; font-size: var(--fs-xs); line-height: 16px; white-space: nowrap; color: var(--fg); border: 1px solid hsl(var(--hue) 45% var(--chip-bd-l) / .6); background: hsl(var(--hue) var(--chip-s) var(--chip-l) / .8) } .ws-card .tag.muted { opacity: .55; border-style: dashed }
@@ -214,9 +215,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--make) }
 .ws-dot[data-s=blocked] { background: var(--bad) } .ws-dot[data-s=over] { background: var(--warn) } .ws-dot[data-s=done] { background: var(--fg-3) }
 @media (max-width: 767px) {
-  .ws { display: flex; flex-direction: column }
-  .ws-col { min-height: 0; border-right: 0; border-bottom: 2px dashed rgb(var(--floor-edge-rgb) / .35) }
-  .ws-furn { max-width: 120px; margin: 0 0 var(--sp1) }
+  .ws-body { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .ws-card, .ws-more { min-height: 44px }
   .ws-head { min-height: 36px; align-items: center }
 }
