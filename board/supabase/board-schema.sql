@@ -113,6 +113,11 @@ create table if not exists board.events (
   actor_id text,
   text text not null check (board.plain(text) and char_length(text) <= 200)
 );
+-- 사건 종류에 lane.log(레인 진행 로그 한 줄 · 보고꾼 snapshot.mjs 가 싣는다) 추가. 이미 만든 표의 옛 check 를 갈아 끼운다(멱등).
+alter table board.events drop constraint if exists events_kind_check;
+alter table board.events add constraint events_kind_check check (kind in ('actor.spawn','actor.end','actor.state','task.move','task.reject',
+  'branch.create','branch.commit','branch.push','branch.merge','service.state','module.state',
+  'goal.progress','release','feedback.add','lane.log'));
 
 create table if not exists board.usage (
   account text not null check (account in ('org','personal')),
