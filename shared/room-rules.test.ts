@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { toMin } from './clock.ts'
 import {
-  addDays, decideCancel, decideReserve, fixedDuplicates, freeRooms, mondayOf, myReservations, overlapWarnings, roomDay, timeLabels, todayOf,
+  addDays, decideCancel, decideReserve, fixedDuplicates, freeSlots, freeRooms, mondayOf, myReservations, overlapWarnings, roomDay, timeLabels, todayOf,
   type Reservation, type Room, type RoomBlock, type RoomDayInput, type RoomFixed,
 } from './room-rules.ts'
 
@@ -79,7 +79,7 @@ describe('예약 판정', () => {
   })
   it('선착순: 첫 예약은 자리 1, 둘째는 자리 없음, 같은 반 중복도 409', () => {
     const a = reserve(science, MON, '09:50', '3-1')
-    expect(a).toMatchObject({ ok: true, slotNo: 1, endMin: at('10:30') })
+    expect(a).toMatchObject({ ok: true, slotNos: [1], endMin: at('10:30') })
     const held = [R(science, at('09:50'), 1, '3-1', 'gamja')]
     const b = reserve(science, MON, '09:50', '4-2', held)
     expect(b).toMatchObject({ ok: false, status: 409 })
@@ -91,10 +91,10 @@ describe('예약 판정', () => {
   })
   it('정원 2 운동장은 둘까지, 셋째는 409 · 빈 자리 번호부터 채운다', () => {
     const one = [R(field, at('09:50'), 1, '3-1', 'gamja')]
-    expect(reserve(field, MON, '09:50', '4-2', one)).toMatchObject({ ok: true, slotNo: 2 })
+    expect(reserve(field, MON, '09:50', '4-2', one)).toMatchObject({ ok: true, slotNos: [2] })
     expect(reserve(field, MON, '09:50', '4-3', [...one, R(field, at('09:50'), 2, '4-2', 'goguma')])).toMatchObject({ ok: false, status: 409 })
     // 1번이 취소돼 2번만 남았으면 새 예약은 1번
-    expect(reserve(field, MON, '09:50', '4-3', [R(field, at('09:50'), 2, '4-2', 'goguma')])).toMatchObject({ ok: true, slotNo: 1 })
+    expect(reserve(field, MON, '09:50', '4-3', [R(field, at('09:50'), 2, '4-2', 'goguma')])).toMatchObject({ ok: true, slotNos: [1] })
   })
   it('차단된 칸은 사유와 함께 409, 풀리면 통과', () => {
     const blocks: RoomBlock[] = [{ id: 'b', roomId: 'r1', startDate: MON, endDate: MON, fromMin: at('13:10'), toMin: at('14:40'), reason: '방과후' }]
@@ -104,9 +104,15 @@ describe('예약 판정', () => {
     expect(reserve(science, MON, '12:20', '3-1', [], { blocks }).ok).toBe(true)
     expect(reserve(science, MON, '13:10', '3-1').ok).toBe(true)
   })
+  it('freeSlots: 정원 안 빈 번호 전부, 작은 수부터', () => {
+    expect(freeSlots(3, [2])).toEqual([1, 3])
+    expect(freeSlots(2, [1, 2])).toEqual([])
+    expect(freeSlots(0, [])).toEqual([])
+    expect(reserve(field, MON, '09:50', '4-2')).toMatchObject({ ok: true, slotNos: [1, 2] })
+  })
   it('동시에 여럿이 같은 칸을 판정하면 같은 자리 1이 나온다(→ DB 유일 제약이 한 명만 통과시킨다)', () => {
     const v = ['6-1', '6-2', '6-3', '6-4', '6-5'].map((tn) => reserve(science, MON, '10:40', tn))
-    expect(v.every((x) => x.ok && x.slotNo === 1)).toBe(true)
+    expect(v.every((x) => x.ok && x.slotNos[0] === 1)).toBe(true)
   })
 })
 

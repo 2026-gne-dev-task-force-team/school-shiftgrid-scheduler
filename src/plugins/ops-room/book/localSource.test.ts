@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { demoPart, localRoomSource } from './source';
-import type { ReservationRow } from './types';
+import type { ReservationRequest } from './types';
 
 beforeEach(() => { localStorage.clear(); });
 
-const row = (over: Partial<ReservationRow> = {}): ReservationRow => ({
-    id: 'x1', roomId: 'r-sci', date: '2026-11-19', startMin: 540, endMin: 580, slotNo: 1, trackName: '1-1', createdAt: 't1', ...over,
-} as ReservationRow);
+const row = (over: Partial<ReservationRequest> = {}): ReservationRequest => ({
+    id: 'x1', roomId: 'r-sci', date: '2026-11-19', startMin: 540, endMin: 580, trackName: '1-1', createdAt: 't1', ...over,
+} as ReservationRequest);
 
 describe('localRoomSource — 다시 만들어도 값이 남는다', () => {
     it('예약 하나를 넣은 뒤 창구를 새로 만들어도 남는다', async () => {

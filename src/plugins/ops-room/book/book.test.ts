@@ -13,7 +13,7 @@ describe('특별실 QA', () => {
         part.fixed.push({ id: 'f1', roomId: 'r-sci', dayIndex: 0, startMin: 580, endMin: 620, label: '동아리' });
         const src = memoryRoomSource(part);
         const r = await bookRoom(src, input({ roomId: 'r-sci' }), ctx());
-        expect(r).toMatchObject({ ok: false, status: 409, message: '고정 수업이 있는 칸' });
+        expect(r).toMatchObject({ ok: false, status: 409, message: expect.stringContaining('고정 수업이 있는 칸') });
         expect(freeRooms(part, '2026-11-16', 580, 620, []).map((x) => x.room.id)).toEqual(['r-yard']);
         // 시간표 배치도 같다
         part.timetable.push({ id: 't1', roomId: 'r-yard', dayIndex: 0, startMin: 590, endMin: 630, label: '' });
@@ -24,7 +24,7 @@ describe('특별실 QA', () => {
         const slots: number[] = [];
         for (const t of ['1-1', '1-2', '1-3']) { const r = await bookRoom(src, input({ trackName: t }), ctx()); expect(r.ok).toBe(true); if (r.ok) slots.push(r.row.slotNo); }
         expect(slots).toEqual([1, 2, 3]);
-        expect(await bookRoom(src, input({ trackName: '1-4' }), ctx())).toMatchObject({ ok: false, status: 409, message: '자리 없음' });
+        expect(await bookRoom(src, input({ trackName: '1-4' }), ctx())).toMatchObject({ ok: false, status: 409, message: expect.stringContaining('자리가 없습니다') });
         const src2 = memoryRoomSource(demoPart());
         await bookRoom(src2, input(), ctx());
         expect(await bookRoom(src2, input(), ctx())).toMatchObject({ ok: false, status: 409 });
@@ -35,6 +35,26 @@ describe('특별실 QA', () => {
         expect(rs.filter((r) => r.ok).length).toBe(2);
         const rows = await src.loadReservations('2026-11-16');
         expect(new Set(rows.map((r) => r.slotNo)).size).toBe(2);
+    });
+    it('R111 동시 정원+2건: 정원만큼만 성공 · 자리 번호 서로 다름 · 나머지 409', async () => {
+        const src = memoryRoomSource(demoPart()); // 운동장 정원 3
+        const rs = await Promise.all(['1-1', '1-2', '1-3', '1-4', '1-5'].map((t) => bookRoom(src, input({ trackName: t }), ctx())));
+        const ok = rs.flatMap((r) => (r.ok ? [r.row.slotNo] : []));
+        expect(ok.sort()).toEqual([1, 2, 3]);
+        expect(rs.filter((r) => !r.ok).map((r) => !r.ok && r.status)).toEqual([409, 409]);
+        expect((await src.loadReservations('2026-11-16')).length).toBe(3);
+    });
+    it('R111 같은 반 동시 두 번 → 하나만', async () => {
+        const src = memoryRoomSource(demoPart());
+        const rs = await Promise.all([bookRoom(src, input(), ctx()), bookRoom(src, input(), ctx())]);
+        expect(rs.filter((r) => r.ok).length).toBe(1);
+        expect(rs.find((r) => !r.ok)).toMatchObject({ status: 409 });
+    });
+    it('R111 저장 창구가 자리를 고른다 — 빈 번호(2만 차 있으면 1)부터, 화면은 번호를 안 보낸다', async () => {
+        const src = memoryRoomSource(demoPart(), [{ id: 'a', projectId: 'p1', roomId: 'r-yard', date: '2026-11-16', startMin: 580, endMin: 620, slotNo: 2, trackName: '9-9', createdAt: 'c', body: { userId: 'u-z', userName: '가짜을', note: '' } }]);
+        const r = await bookRoom(src, input(), ctx());
+        expect(r.ok && r.row.slotNo).toBe(1);
+        expect((await bookRoom(src, input({ trackName: '1-2' }), ctx())).ok && 3).toBe(3);
     });
     it('지난 날: 어제 예약·취소 둘 다 400 (관리자도)', async () => {
         const src = memoryRoomSource(demoPart(), [{ id: 'old', projectId: 'p1', roomId: 'r-yard', date: '2026-11-11', startMin: 580, endMin: 620, slotNo: 1, trackName: '3-1', createdAt: 'c', body: { userId: 'u-a', userName: '가짜갑', note: '' } }]);
