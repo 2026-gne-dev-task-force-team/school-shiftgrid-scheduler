@@ -32,7 +32,7 @@ const undoRedo = (st: ReturnType<typeof useStore>) => ({ onUndo: st.undo, onRedo
 type Sub = 'school' | 'specs' | 'tracks' | 'agents' | 'activities' | 'resources' | 'demands';
 const SUBS: { id: Sub; label: string }[] = [
     { id: 'school', label: '학교' }, { id: 'specs', label: L.spec }, { id: 'tracks', label: L.track },
-    { id: 'agents', label: L.agent }, { id: 'activities', label: L.activity }, { id: 'resources', label: L.resource },
+    { id: 'agents', label: L.agentTab }, { id: 'activities', label: L.activity }, { id: 'resources', label: L.resource },
     { id: 'demands', label: L.demandTable },
 ];
 
@@ -287,7 +287,7 @@ function TracksSection() {
         { key: 'grade', title: '학년', type: 'number', width: 70, sortable: true, validate: (v) => (v === '' ? '학년을 적어 주세요' : (Number(v) < 1 || Number(v) > 6 ? '1~6 사이' : undefined)) },
         { key: 'cls', title: '반', type: 'number', width: 70, validate: (v) => (v === '' ? '반 번호를 적어 주세요' : undefined) },
         { key: 'name', title: '이름(자동)', type: 'text', width: 100, readOnly: true, compute: (row) => `${row.grade ?? ''}-${row.cls ?? ''}` },
-        { key: 'homeroom', title: L.homeroomName, type: 'text', width: 120, placeholder: '(선택)' },
+        { key: 'homeroom', title: L.homeroomName, type: 'text', width: 120, placeholder: '담임 이름은 여기에' },
         {
             key: 'spec', title: L.spec, type: 'select', options: specNames, width: 170,
             validate: (v, row) => {
@@ -436,9 +436,9 @@ function AgentsSection() {
 
     return (
         <div className="space-y-3">
-            <SheetToolbar title={L.agent} api={api} helpKey="sheetAgents" />
+            <SheetToolbar title={L.agentTab} api={api} helpKey="sheetAgents" />
             <p className="text-[12px] text-muted rounded-md bg-panel2 border border-line px-2.5 py-1.5">
-                담임은 여기 넣지 않습니다. 시수표의 교사 칸에서 「담임」을 고르세요. 전담·강사의 담당 반은 시수표에서 정합니다.
+                담임은 여기 넣지 않습니다. 시수표의 교사 칸에서 「담임」을 고르세요. 전담·강사의 담당 반은 시수표에서 정합니다. 보건·영양 선생님도 수업이 있으면 여기에 넣습니다.
             </p>
             <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={660} {...undoRedo(st)} />
         </div>

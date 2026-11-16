@@ -40,6 +40,7 @@ export const L = {
     spec: '시간 틀',
     track: '반',
     agent: '교사',
+    agentTab: '전담·강사',   // 기초자료 탭 이름(저장 값 role '비교과' 는 그대로)
     activity: '과목',
     resource: '특별실',
     demandTable: '시수표',
