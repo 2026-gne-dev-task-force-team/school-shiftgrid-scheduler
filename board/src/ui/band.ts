@@ -19,7 +19,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const working = data.actors.filter((a) => a.state === 'work').length
   const remain = data.tasks.filter((t) => t.column !== 'done').reduce((s, t) => s + t.est_min, 0)
   const mid = remain / Math.max(1, working)
-  const state = goal?.state === 'shipped' ? '✅ Shipped' : goal?.state === 'review' ? '🔍 In review' : working ? '🔨 Building' : '⏸ Idle'
+  const state = goal?.state === 'shipped' ? '✅ 배포됨' : goal?.state === 'review' ? '🔍 검수 중' : working ? '🔨 만드는 중' : '⏸ 쉬는 중'
   const elapsed = run ? fmtDur((now - Date.parse(run.started_at)) / 60000) : ''
 
   const upd = h('button', { class: 'btn upd sgb-mini', hidden: '' })

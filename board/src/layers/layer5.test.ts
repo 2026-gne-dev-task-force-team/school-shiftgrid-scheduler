@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampZoom, groupHouses, lineOf, restoreTab, roomCount } from './layer5-logic.ts'
+import { clampZoom, groupHouses, lineOf, restoreTab, roomCount, splitCode } from './layer5-logic.ts'
 import type { Module } from '../types.ts'
 
 const M = (id: string, parent: string | null, state: Module['state']): Module => ({ id, name: id, parent, state, task_id: null })
@@ -21,4 +21,11 @@ describe('선 종류', () => {
 describe('탭 기억', () => {
   it('보던 탭 유지', () => expect(restoreTab(3, 6)).toBe(3))
   it('범위 밖·비정수는 0', () => { expect(restoreTab(9, 6)).toBe(0); expect(restoreTab(1.5, 6)).toBe(0); expect(restoreTab(-1, 6)).toBe(0) })
+})
+describe('이름 앞 코드', () => {
+  it('코드는 꼬리표로, 뜻은 앞으로', () => {
+    expect(splitCode('P10a iframe 입구')).toEqual({ code: 'P10a', text: 'iframe 입구' })
+    expect(splitCode('P7 412 버튼 둘')).toEqual({ code: 'P7', text: '412 버튼 둘' })
+  })
+  it('코드가 없으면 그대로', () => expect(splitCode('자료 싣기')).toEqual({ code: '', text: '자료 싣기' }))
 })

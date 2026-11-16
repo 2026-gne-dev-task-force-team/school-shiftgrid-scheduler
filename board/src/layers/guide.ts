@@ -6,11 +6,11 @@ const SECTIONS: [string, string[]][] = [
   ['이 판은 무엇인가', ['시간표 앱을 만드는 작업이 어디까지 왔는지 한 화면에서 보여 주는 현황판입니다.']],
   ['구조', [
     '0층 띠 — 상태 · 진행률 · 남은 예상 · 한도와 속도',
-    '1층 Overview — 목표 · 부서별 인원 · 한도 · 최근 흐름',
-    '2층 Branch — 코드 가지와 합쳐진 것',
-    '3층 Lanes — 일감이 가는 길(레인)',
-    '4층 Board — 기다림 · 하는 중 · 끝 칸의 일감 카드',
-    '5층 Blueprint — 서비스와 부품의 짜임',
+    '1층 한눈에 — 목표 · 부서별 인원 · 한도 · 최근 흐름',
+    '2층 갈래 — 코드 가지와 합쳐진 것',
+    '3층 작업길 — 일감이 가는 길(레인)',
+    '4층 일감판 — 기다림 · 하는 중 · 끝 칸의 일감 카드',
+    '5층 설계도 — 서비스와 부품의 짜임',
   ]],
   ['작업이 어떻게 도나', ['접수 또는 백로그 → 검토·설계 → 구현 → 검수 → QA → 병합·배포']],
   ['누가 무엇을 하나', [
@@ -24,7 +24,7 @@ const SECTIONS: [string, string[]][] = [
 export const sourceNote = (src: BoardData['source']) => src === 'server' ? '지금은 진짜 자료(Live data)로 그립니다.' : src === 'stale' ? '서버를 못 읽어 마지막으로 읽은 진짜 자료를 보여 줍니다.' : '지금은 가짜 자료로 그린 Mock data 입니다.'
 
 export const guide: LayerRenderer = {
-  id: 'guide', floor: 6, tab: 'Guide',
+  id: 'guide', floor: 6, tab: '안내',
   render(host, { data }) {
     host.append(h('p', { class: 'card' }, h('b', null, sourceNote(data.source))))
     for (const [title, lines] of SECTIONS) {

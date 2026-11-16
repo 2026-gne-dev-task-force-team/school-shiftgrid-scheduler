@@ -20,7 +20,7 @@ export function filterBar(data: BoardData, init: Filter, onChange: (f: Filter) =
     ['status', '상태', COLS.map((c) => [c.id, c.name])],
     ['target', '대상', targets.map((t) => [t, t])],
     ['lane', '레인', lanes.map((l) => [l.id, l.title])],
-    ['who', '캐릭터', who.map((a) => [a.id, actorLabel(a, data.actors)])],
+    ['who', '캐릭터', who.map((a) => [a.id, actorLabel(a, data.actors, data.tasks)])],
   ]
   const input = h('input', { type: 'search', class: 'fb-q', placeholder: '번호 · 제목 · 원문 · 설명 검색 (띄어쓰기 = 모두 포함)', 'aria-label': '태스크 검색' })
   input.value = f.q

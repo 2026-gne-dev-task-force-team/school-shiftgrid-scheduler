@@ -10,7 +10,7 @@ const PAD = 16, TOP = 30, RH = 40, LW = 26, TEXT_W = 280, DOT = 5 // 여백 · �
 // 2층 가지 — 개발자가 보는 커밋 그래프(위가 최신 · 레일마다 색 · 점=커밋). 선·점은 canvas(도트풍: 네모 점·매끈 안 함),
 // 눌리는 점·이름표·캐릭터는 그 위 DOM. 좁으면 가로 스크롤.
 export const layer2: LayerRenderer = {
-  id: 'layer2', floor: 2, tab: 'Branch',
+  id: 'layer2', floor: 2, tab: '갈래',
   render(host, { data, openDetail, tip }) {
     const trunk = data.branches.find((b) => b.trunk)
     const by = new Map(data.branches.map((b) => [b.id, b]))
@@ -19,7 +19,7 @@ export const layer2: LayerRenderer = {
     const { nodes, edges, lanes } = layoutGraph(commits, trunkTip)
     const at = new Map(nodes.map((n) => [n.sha, n]))
     const actor = (b: Branch) => data.actors.find((a) => a.id === b.actor_id)
-    const who = (b: Branch) => ((a) => a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '—')(actor(b))
+    const who = (b: Branch) => ((a) => a ? `${actorLabel(a, data.actors, data.tasks)} — ${actorWhat(a, data.tasks)}` : '—')(actor(b))
 
     const canvas = h('canvas', { role: 'img', 'aria-label': '커밋 그래프 — 위가 최신, 가지가 줄기에서 갈라지고 합쳐진 모습' })
     const inner = h('div', { class: 'gg-in gg-v-in' }, canvas)

@@ -20,14 +20,29 @@ const roleOf = (a: Who) => ROLES.find(([k]) => (a.role ?? '').includes(k)) ?? RO
 const baseOf = (a: Who) => roleOf(a)?.[1] ?? ((a.role || a.team || '').replace(/팀$/, '') || '도우미')
 
 /** 이름표 한 줄 — 역할 + (있으면) 맡은 태스크 번호. 예: `지휘` · `화면팀 T-7z` · `감독관`. 순수 함수. */
-export function nameTag(a: Who): string {
+export function nameTag(a: Who, tasks: Pick<Task, 'id' | 'title'>[] = []): string {
   const n = (a.task_id ?? '').replace(/^l-\w+-/, '')
-  return n ? `${baseOf(a)} ${n}` : baseOf(a)
+  // 번호 대신 하는 일 — 일감 제목을 알면 그것을, 모르면 번호를 쓴다
+  const w = n ? shortWork(tasks.find((t) => t.id === n || t.id === a.task_id)?.title ?? '') : ''
+  return n ? `${baseOf(a)} ${w || n}` : baseOf(a)
+}
+
+/** 일감 제목에서 앞 번호·코드를 걷고 짧게 — 「T-10x (R5) 자료 나르기」 → 「자료 나르기」. 남은 게 없으면 빈 문자열. */
+export function shortWork(title: string, max = 12): string {
+  const t = title.replace(/^(?:T-\w+|[A-Z]{1,2}\d+[a-z]?)\s*/, '').replace(/^(?:\(R\d+\)|R\d+)\s*/, '').trim()
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t
+}
+
+/** 칩용 — 이름표 글(번호 뺀 것) + 맡은 태스크 번호는 따로 꼬리표로. 번호가 없으면 tag 는 빈 문자열. */
+export function actorChip(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): { label: string; tag: string } {
+  const full = actorLabel(a, all, tasks)
+  const tag = (a.task_id ?? '').replace(/^l-w+-/, '')
+  return tag && full.endsWith(` ${tag}`) ? { label: full.slice(0, -tag.length - 1), tag } : { label: full, tag }
 }
 
 /** 화면에 보일 이름표. 태스크 번호 없는 같은 이름표가 둘 이상이면 뒤에 1·2 번호. */
-export function actorLabel(a: Who, all: Who[] = []): string {
-  const tag = nameTag(a)
+export function actorLabel(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): string {
+  const tag = nameTag(a, tasks)
   if (a.task_id) return tag
   const twins = all.filter((x) => !x.task_id && nameTag(x) === tag)
   if (twins.length < 2) return tag
@@ -41,6 +56,10 @@ export function actorWhat(a: Who & Pick<Actor, 'task_id'>, tasks: Pick<Task, 'id
   const t = tasks.find((x) => x.id === a.task_id)
   return t ? `${what} · 지금: ${t.id} ${t.title}` : what
 }
+
+/** 감독관 team 줄 「⚠️ 7 · ❌ 31 · 순찰 14:02」 → 「주의 7건 · 실패 31건 · 점검 14:02」. 모르는 꼴은 그대로. */
+export const teamText = (team: string | undefined): string =>
+  (team ?? '').replace(/⚠️?\s*(\d+)/g, '주의 $1건').replace(/❌\s*(\d+)/g, '실패 $1건').replace(/순찰/g, '점검')
 
 /** 에이전트가 쓴 토큰 한 줄 — 「누적 N · 분당 M」. 기록을 못 이은 캐릭터(값 없음)는 「—」. */
 export function actorTokens(a: Partial<Pick<Actor, 'tok_total' | 'tok_per_min'>>): string {

@@ -8,6 +8,7 @@ import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { taskDetail } from '../lib/task-detail.ts'
 import { taskDetailView } from '../ui/task-detail-view.ts'
 import { tagChips } from '../ui/tag-chips.ts'
+import { splitCode } from './layer5-logic.ts'
 import { filterBar } from '../ui/filter-bar.ts'
 import { filterTasks, fromSearch, toSearch, type Filter } from '../lib/filter.ts'
 
@@ -29,7 +30,7 @@ const furn = (c: Col) => {
 
 // 4층 작업장 — 기다림 · 작업 · 확인 중 · 끝(최근 6장만, 나머지는 +N more). 카드가 열을 옮기면 FLIP 으로 천천히 날아간다.
 export const layer4: LayerRenderer = {
-  id: 'layer4', floor: 4, tab: 'Board',
+  id: 'layer4', floor: 4, tab: '일감판',
   render(host, { data, openDetail, tip }) {
     const tasks: Task[] = data.tasks.map((t) => ({ ...t }))
     const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
@@ -59,7 +60,7 @@ export const layer4: LayerRenderer = {
     host.append(bar, board)
     if (walk.childElementCount) host.append(walk) // 쉬는 캐릭터가 없으면 빈 복도를 그리지 않는다
     const off = data.actors.filter((a) => isOff(a.state)) // 퇴근한 캐릭터는 가장자리 숙소에 흐리게 모인다(걷지 않는다)
-    if (off.length) host.append(h('div', { class: 'ws-dorm', 'aria-label': '숙소' }, h('b', null, `🏠 숙소 ${off.length}`), ...off.map((a) => { const c = character(a, 'mini'); c.setAttribute('title', `${actorLabel(a, data.actors)} — 퇴근`); return c })))
+    if (off.length) host.append(h('div', { class: 'ws-dorm', 'aria-label': '숙소' }, h('b', null, `🏠 숙소 ${off.length}`), ...off.map((a) => { const c = character(a, 'mini'); c.setAttribute('title', `${actorLabel(a, data.actors, data.tasks)} — 퇴근`); return c })))
 
     let expanded = false
     const more = h('button', { class: 'ws-more' })
@@ -76,9 +77,9 @@ export const layer4: LayerRenderer = {
       el.dataset.dept = dept(t.team)
       const a = data.actors.find((x) => x.id === t.actor_id)
       const st = m === null && t.column === 'done' ? 'done' : showReason(t) ? 'blocked' : isOver(t, now()) ? 'over' : t.column === 'done' ? 'done' : 'ok'
-      const more = [a ? `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
+      const more = [a ? `${actorLabel(a, data.actors, data.tasks)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
       el.title = more
-      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), ...tagChips(t), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${t.title}`), ...(a ? [character(a, 'mini')] : []))
+      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), ...tagChips(t), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${splitCode(t.title).text}`), ...(splitCode(t.title).code ? [h('small', { class: 'bp-code' }, splitCode(t.title).code)] : []), ...(a ? [character(a, 'mini')] : []))
     }
 
     const openTask = (id: string) => {
