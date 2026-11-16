@@ -3,7 +3,7 @@ import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
 import { actorChip, actorLabel, actorTokens, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
-import { plainLog, wheelTitle } from '../ui/code-tag.ts'
+import { eventText, plainLog, wheelTitle } from '../ui/code-tag.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -42,7 +42,7 @@ export const layer1: LayerRenderer = {
     host.append(depts, h('section', { class: 'card' }, h('b', null, '한도와 속도'), usagePanel(data.usage)))
 
     const log = h('ul', { class: 'recent' })
-    for (const e of [...data.events].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 5)) log.append(h('li', { 'data-id': e.subject_id }, ...plainLog(e.text)))
+    for (const e of [...data.events].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 5)) log.append(h('li', { 'data-id': e.subject_id }, ...plainLog(eventText(e.text))))
     host.append(h('section', { class: 'card' }, h('b', null, '최근 로그'), log))
   },
 }

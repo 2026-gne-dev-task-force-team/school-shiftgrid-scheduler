@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { plainLog, wheelTitle, named } from './code-tag.ts'
+import { plainLog, wheelTitle, named, eventText } from './code-tag.ts'
 import { actorChip } from '../lib/actor.ts'
 
 const show = (xs: (string | HTMLElement)[]) => xs.map((x) => (typeof x === 'string' ? x : `[${x.textContent}]`)).join('')
@@ -24,5 +24,16 @@ describe('code-tag', () => {
     expect(actorChip(a)).toEqual({ label: '시험팀', tag: 'T-7z' })
     expect(actorChip(a, [], [{ id: 'T-7z', title: 'T-7z (R5) 칸 연결' }])).toEqual({ label: '시험팀 칸 연결', tag: 'T-7z' })
     expect(actorChip({ name: 'x', role: '지휘' })).toEqual({ label: '지휘', tag: '' })
+  })
+  it('R90 — 이름표에 번호 두 번·번호 아닌 꼬리 없음', () => {
+    const a = { name: 'x', role: '자료', task_id: 'T-8p1' }
+    expect(actorChip(a, [], [{ id: 'T-8p1', title: 'T-8p1 자료 나르기 T-8p1 · T-8p1' }])).toEqual({ label: '자료팀 자료 나르기', tag: 'T-8p1' })
+    expect(actorChip(a, [], [{ id: 'T-8p1', title: 'T-8p1 자료 나르기 28' }]).label).toBe('자료팀 자료 나르기')
+    expect(actorChip({ name: 'x', role: '자료', task_id: '28' })).toEqual({ label: '자료팀', tag: '' })
+  })
+  it('R90 — 가지 이름만 있는 줄은 뜻으로', () => {
+    expect(eventText('main 끝')).toBe('줄기에 합침')
+    expect(eventText('p-T-10bu 끝')).toBe('가지를 줄기에 합침')
+    expect(eventText('벽 세우기 일 끝')).toBe('벽 세우기 일 끝')
   })
 })

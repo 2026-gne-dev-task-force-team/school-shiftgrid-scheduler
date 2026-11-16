@@ -19,24 +19,32 @@ type Who = Pick<Actor, 'name' | 'role'> & Partial<Pick<Actor, 'id' | 'team' | 't
 const roleOf = (a: Who) => ROLES.find(([k]) => (a.role ?? '').includes(k)) ?? ROLES.find(([k]) => (a.team ?? '').includes(k))
 const baseOf = (a: Who) => roleOf(a)?.[1] ?? ((a.role || a.team || '').replace(/팀$/, '') || '도우미')
 
+/** 맡은 태스크 번호 — 「l-xx-T-8p1」 → 「T-8p1」. T-번호 꼴이 아니면 빈 문자열(숫자만 있는 꼬리는 번호가 아니다). */
+export const taskNo = (id?: string): string => {
+  const n = (id ?? '').replace(/^l-\w+-/, '')
+  return /^T-\w+$/.test(n) ? n : ''
+}
+
 /** 이름표 한 줄 — 역할 + (있으면) 맡은 태스크 번호. 예: `지휘` · `화면팀 T-7z` · `감독관`. 순수 함수. */
 export function nameTag(a: Who, tasks: Pick<Task, 'id' | 'title'>[] = []): string {
-  const n = (a.task_id ?? '').replace(/^l-\w+-/, '')
-  // 번호 대신 하는 일 — 일감 제목을 알면 그것을, 모르면 번호를 쓴다
+  const n = taskNo(a.task_id)
+  // 번호 대신 하는 일 — 일감 제목을 알면 그것을, 모르면 번호를 쓴다. 번호 꼴(T-…)이 아닌 꼬리(「28」)는 버린다
   const w = n ? shortWork(tasks.find((t) => t.id === n || t.id === a.task_id)?.title ?? '') : ''
   return n ? `${baseOf(a)} ${w || n}` : baseOf(a)
 }
 
 /** 일감 제목에서 앞 번호·코드를 걷고 짧게 — 「T-10x (R5) 자료 나르기」 → 「자료 나르기」. 남은 게 없으면 빈 문자열. */
 export function shortWork(title: string, max = 12): string {
-  const t = title.replace(/^(?:T-\w+|[A-Z]{1,2}\d+[a-z]?)\s*/, '').replace(/^(?:\(R\d+\)|R\d+)\s*/, '').trim()
+  const t = title.replace(/^(?:T-\w+|[A-Z]{1,2}\d+[a-z]?)\s*/, '').replace(/^(?:\(R\d+\)|R\d+)\s*/, '')
+    .replace(/\s*·?\s*\bT-\w+\b/g, '').replace(/\s*\(R\d+\)/g, '') // 가운데·꼬리에 또 붙은 번호(「자료 나르기 T-8p1 · T-8p1」)
+    .replace(/(?:\s*·)+\s*$/, '').replace(/\s+\d+$/, '').trim() // 번호 아닌 숫자 꼬리(「자료 나르기 28」)
   return t.length > max ? `${t.slice(0, max - 1)}…` : t
 }
 
 /** 칩용 — 이름표 글(번호 뺀 것) + 맡은 태스크 번호는 따로 꼬리표로. 번호가 없으면 tag 는 빈 문자열. */
 export function actorChip(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): { label: string; tag: string } {
   const full = actorLabel(a, all, tasks)
-  const tag = (a.task_id ?? '').replace(/^l-w+-/, '')
+  const tag = taskNo(a.task_id)
   return tag && full.endsWith(` ${tag}`) ? { label: full.slice(0, -tag.length - 1), tag } : { label: full, tag }
 }
 

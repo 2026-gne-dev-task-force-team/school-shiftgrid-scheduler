@@ -41,3 +41,13 @@ export function wheelTitle(title: string): (string | HTMLElement)[] {
   }
   return [keep.filter(Boolean).join(' · '), ...tags.map(tag)]
 }
+
+/**
+ * 흐름·최근 로그 줄 — 가지 이름 하나만 있는 「main 끝」 같은 줄은 무슨 일인지 모른다. 「줄기에 합침」 처럼 뜻으로 바꾼다.
+ * 가지 이름 = 공백 없는 영문·숫자·기호 낱말(main · p-T-10bu · 1.2v-preview). 한글이 든 「벽 세우기 일 끝」 은 그대로.
+ */
+export function eventText(text: string): string {
+  const m = /^([A-Za-z0-9][\w./-]*)\s+끝$/.exec(text.trim())
+  if (!m) return text
+  return m[1] === 'main' ? '줄기에 합침' : '가지를 줄기에 합침'
+}
