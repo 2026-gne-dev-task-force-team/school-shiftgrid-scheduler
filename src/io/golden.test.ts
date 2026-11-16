@@ -74,7 +74,8 @@ function compare(file: string, actual: string) {
         return;
     }
     expect(existsSync(path), `정답 파일 없음: ${file} — UPDATE_GOLDEN=1 로 만든다`).toBe(true);
-    expect(actual).toBe(readFileSync(path, 'utf8'));
+    // 윈도우 git(core.autocrlf)이 정답 파일을 CRLF 로 꺼낼 수 있다 — 줄 끝은 맞춰 비교한다
+    expect(actual).toBe(readFileSync(path, 'utf8').replace(/\r\n/g, '\n'));
 }
 
 describe('정답 자료 (골든) — 불러오기 · 점검 · 내보내기', () => {
