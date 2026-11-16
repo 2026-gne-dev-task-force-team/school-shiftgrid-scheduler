@@ -70,14 +70,14 @@ describe('담임 과목 반영 권한', () => {
         const { src, host, btn } = await open('교사');
         expect(host.textContent).toContain('학급 1반');
         expect(btn('이대로 반영')?.disabled).toBe(true);
-        expect(host.textContent).toContain('교무·관리자만 반영할 수 있습니다');
+        expect(host.textContent).toContain('교무·교감·관리자만 반영할 수 있습니다');
         await act(async () => { btn('이대로 반영')?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect((await src.load()).classSubjects).toBeUndefined();
     });
     it('교무는 반영 단추가 살아 있다', async () => {
         const { btn, host } = await open('교무');
         expect(btn('이대로 반영')?.disabled).toBe(false);
-        expect(host.textContent).not.toContain('교무·관리자만 반영할 수 있습니다');
+        expect(host.textContent).not.toContain('교무·교감·관리자만 반영할 수 있습니다');
     });
 });
 

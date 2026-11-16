@@ -73,5 +73,5 @@ export function ListPanel({ onOpen, onRegister }: { onOpen?: () => void; onRegis
 }
 export function MinePanel() {
     const rows = useRows();
-    return <div className="p-4 max-w-3xl">{rows === null ? <p className="text-small text-muted">불러오는 중…</p> : <MineView rows={rows} personRef={getViewer().personRef} />}</div>;
+    return <div className="p-4 max-w-3xl">{rows === null ? <p className="text-small text-muted">불러오는 중…</p> : <MineView rows={rows} personRef={getViewer().personRef ?? null} />}</div>;
 }

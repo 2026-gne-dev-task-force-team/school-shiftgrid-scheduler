@@ -3,7 +3,8 @@
  * 열쇠 = 항목 id. 묶음 셋: rooms · fixed · blocks.
  */
 import { replay, sameValue, type Op, type ReplayResult } from '../../../server-link/replay';
-import type { Room, RoomBlock, RoomFixed, RoomsPart } from '../book';
+import { canWrite, rolesOf } from '../../../../shared/roles.ts';
+import type { Room, RoomBlock, RoomFixed, RoomsPart, Viewer } from '../book';
 
 export type RoomsCore = Pick<RoomsPart, 'rooms' | 'fixed' | 'blocks'>;
 export const keyOf = (_list: string, item: unknown): string => (item as { id: string }).id;
@@ -58,10 +59,11 @@ export function checkRooms(p: RoomsCore): string[] {
 
 export interface ApplyOutcome { next: RoomsCore; replayed: ReplayResult; errors: string[] }
 
-/** 서버 판에 조작을 입힌다. 충돌이 있거나 칸 규칙에 걸리면 `errors` 가 비지 않는다(그땐 PUT 하지 않는다). */
-export function applyRoomOps(server: RoomsCore, ops: Op[]): ApplyOutcome {
+/** 서버 판에 조작을 입힌다. 권한(권한표 `rooms` 칸)·충돌·칸 규칙 중 하나라도 걸리면 `errors` 가 비지 않는다(그땐 PUT 하지 않는다). */
+export function applyRoomOps(viewer: Viewer, server: RoomsCore, ops: Op[]): ApplyOutcome {
     const replayed = replay(toLists(server), ops, keyOf);
     const next: RoomsCore = { rooms: replayed.result.rooms as Room[], fixed: replayed.result.fixed as RoomFixed[], blocks: replayed.result.blocks as RoomBlock[] };
-    const errors = replayed.conflicts.length > 0 ? ['서버 값이 달라져 충돌한 조작이 있습니다.'] : checkRooms(next);
+    const denied = ops.some((o) => !canWrite(rolesOf(viewer), 'rooms', o.list));
+    const errors = denied ? ['방 관리는 교무·교감·관리자만 할 수 있습니다.'] : replayed.conflicts.length > 0 ? ['서버 값이 달라져 충돌한 조작이 있습니다.'] : checkRooms(next);
     return { next, replayed, errors };
 }

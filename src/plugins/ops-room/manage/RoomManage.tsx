@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Op } from '../../../server-link/replay';
 import { Button, Field, Textarea, TextInput } from '../../../pane-ui-system';
-import { getRoomSource, getViewer, isManager, isMockRoomSource, setViewer, type Room, type RoomSource, type RoomsPart, type Viewer } from '../book';
+import { getRoomSource, getViewer, isManager, isMockRoomSource, setViewer, type Room, type Role, type RoomSource, type RoomsPart, type Viewer } from '../book';
 import { parseRoomsCsv, roomsToCsv, type RoomCsvPreview } from './csv';
 import { RoomImportView } from '../import/RoomImportView';
 import { roomFrame } from '../import/roomFrame';
@@ -14,7 +14,7 @@ export function RoomManageView({ source, viewer, newId, frame }: { source?: Room
     const [, bump] = useState(0);
     const v = viewer ?? getViewer();
     const mock = !source && !viewer && isMockRoomSource(src);
-    const asRole = (role: Viewer['role']) => { setViewer({ ...getViewer(), role }); bump((n) => n + 1); };
+    const asRole = (role: Role) => { setViewer({ ...getViewer(), role: undefined, roles: [role] }); bump((n) => n + 1); };
     const mk = newId ?? (() => crypto.randomUUID());
     const [part, setPart] = useState<RoomsPart | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export function RoomManageView({ source, viewer, newId, frame }: { source?: Room
     /** 서버 판을 새로 읽어 조작을 입히고, 규칙에 걸리지 않으면 쓴다. */
     const run = async (ops: Op[], done: string) => {
         const server = await src.loadPart();
-        const out = applyRoomOps(server, ops);
+        const out = applyRoomOps(v, server, ops);
         if (out.errors.length > 0) { setMsg(out.errors.join(' ')); await reload(); return; }
         await src.savePart(out.next);
         setMsg(done);

@@ -8,7 +8,7 @@ const blank = (): RegisterInput => ({ date: today(), start: '', end: '', trackNa
 
 const liveCtx = (): RegisterCtx => {
     const v = getViewer();
-    return { projectId: v.projectId, userId: v.userId ?? '', userName: v.name ?? '', now: () => new Date().toISOString(), newId: () => crypto.randomUUID() };
+    return { projectId: v.projectId ?? '', userId: v.userId ?? '', userName: v.name ?? '', now: () => new Date().toISOString(), newId: () => crypto.randomUUID() };
 };
 
 /** 보결 등록 — 입력 칸 · 「등록」 · 같은 칸이 있으면 인라인 되묻기 줄(덮을까요? 덮어쓰기/취소). */

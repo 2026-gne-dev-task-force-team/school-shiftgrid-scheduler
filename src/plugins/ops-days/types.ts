@@ -2,8 +2,8 @@ import type { ClassSubject } from './import/classImport';
 /**
  * 학사 꼴(1.2v 설계 ① 3·12절) — `calendar`(학사 일정) · `changes`(시간표 변경) 두 목록 칸. ⛔ 실명 금지(시험은 가짜 이름).
  */
-export type DaysRole = '관리자' | '교감' | '교무' | '근태담당' | '교사';
-export interface DaysViewer { userId: string; role: DaysRole }
+/** 보는 사람·역할 꼴은 권한표 한 장(`shared/roles.ts`)의 것을 쓴다(옛 이름 유지). */
+export type { Role as DaysRole, Viewer as DaysViewer } from '../../../shared/roles.ts';
 /** kind `all` = 그날 학교가 쉼(휴업일) · `event` = 행사. */
 export interface CalendarEvent { id: string; date: string; endDate: string; kind: 'all' | 'event'; title: string }
 export interface TimetableChange { id: string; date: string; classKey: string; period: number; subject: string; note: string; createdBy: string }

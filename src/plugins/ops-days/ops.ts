@@ -1,9 +1,10 @@
 /**
- * 학사 칸 조작 + 권한(1.2v 설계 ① 3·12절). 교사는 `changes` 에 add·del 만(del 은 자기 것만),
- * `calendar` 는 근태담당·교무·교감·관리자. 재생은 `replay` 한 곳.
+ * 학사 칸 조작 + 권한(1.2v 설계 ① 3·12절). 칸별 쓰기 역할은 권한표(`shared/roles.ts` `LIST_WRITE.days`).
+ * 표에 없는 교사는 `changes` 에 add·del 만(del 은 자기 것만 — 「본인이면 된다」는 여기 남는다). 재생은 `replay` 한 곳.
  */
 import { replay, type Op, type ReplayResult } from '../../server-link/replay';
-import type { CalendarEvent, DaysRole, DaysPart, DaysViewer, TimetableChange } from './types';
+import { canWrite, rolesOf, viewerCan } from '../../../shared/roles.ts';
+import type { CalendarEvent, DaysPart, DaysViewer, TimetableChange } from './types';
 
 export const keyOf = (_list: string, item: unknown): string => (item as { id: string }).id;
 const toLists = (p: DaysPart): Record<string, unknown[]> => ({ calendar: p.calendar, changes: p.changes });
@@ -15,14 +16,13 @@ export const addChange = (c: TimetableChange): Op => ({ op: 'add', list: 'change
 export const editChange = (before: TimetableChange, after: TimetableChange): Op => ({ op: 'set', list: 'changes', key: before.id, item: after, base: before });
 export const delChange = (id: string): Op => ({ op: 'del', list: 'changes', key: id });
 
-const MANAGERS: DaysRole[] = ['관리자', '교감', '교무', '근태담당'];
-
-/** 담임 과목 불러오기 「반영」 — 교무·교감·관리자만(근태담당·교사는 미리보기까지). */
-export const canApplyClassSubjects = (v: DaysViewer): boolean => v.role === '관리자' || v.role === '교감' || v.role === '교무';
+/** 담임 과목 불러오기 「반영」 — 권한표 `days.classSubjects`(교무·교감·관리자 · 근태담당·교사는 미리보기까지). */
+export const canApplyClassSubjects = (v: DaysViewer): boolean => viewerCan(v, 'days.classSubjects');
+export const CLASS_SUBJECTS_DENIED = '교무·교감·관리자만 반영할 수 있습니다';
 
 /** 조작 하나를 이 사람이 해도 되나 — 안 되면 이유, 되면 null. `owners` = 지금까지 알려진 changes 항목 id → 만든 사람. */
 export function whyDenied(v: DaysViewer, op: Op, owners: Map<string, string>): string | null {
-    if (MANAGERS.includes(v.role)) return null;
+    if (canWrite(rolesOf(v), 'days', op.list)) return null;
     if (op.list !== 'changes') return '학사 일정은 교사가 고칠 수 없습니다.';
     if (op.op === 'set') return '교사는 시간표 변경을 고칠 수 없습니다(지우고 다시 넣기).';
     if (op.op === 'add') return (op.item as TimetableChange).createdBy === v.userId ? null : '남의 이름으로 넣을 수 없습니다.';

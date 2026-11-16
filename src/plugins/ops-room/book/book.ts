@@ -44,7 +44,7 @@ export async function bookRoom(src: RoomSource, input: BookInput, ctx: BookCtx):
     if (cell.kind === 'blocked') return bad(409, cell.why);
     for (let slotNo = 1; slotNo <= room.capacity; slotNo++) {
         const row: ReservationRow = {
-            id: ctx.newId(), projectId: ctx.viewer.projectId, roomId: room.id, date: input.date, startMin: s, endMin: e, slotNo,
+            id: ctx.newId(), projectId: ctx.viewer.projectId ?? '', roomId: room.id, date: input.date, startMin: s, endMin: e, slotNo,
             trackName: track, createdAt: ctx.now(), body: { userId: ctx.viewer.userId ?? '', userName: ctx.userName, note: input.note },
         };
         const r = await src.saveReservation(row);

@@ -73,3 +73,13 @@ describe('지난 날 줄', () => {
         expect(adminOptions(r, viewer('관리자'), today)).toEqual(['delete', 'revert', 'assign', 'force'].filter((a) => a !== 'assign'));
     });
 });
+
+describe('여러 역할(roles[]) — 하나라도 맞으면 그 조작이 열린다(R112)', () => {
+    it('교사 겸 보결관리자는 강제 지정 · 교감 겸 보결관리자는 지정·강제 지정 둘 다 · 교사만은 없음', () => {
+        const row = mk('s1', today);
+        const v = (roles: Viewer['roles']): Viewer => ({ loggedIn: true, projectId: 'p1', userId: 'u-m', personRef: 'T-m', roles });
+        expect(adminOptions(row, v(['교사', '보결관리자']), today)).toEqual(['delete', 'force']);
+        expect(adminOptions(row, v(['교감', '보결관리자']), today)).toEqual(['delete', 'assign', 'force']);
+        expect(adminOptions(row, v(['교사']), today)).toEqual([]);
+    });
+});

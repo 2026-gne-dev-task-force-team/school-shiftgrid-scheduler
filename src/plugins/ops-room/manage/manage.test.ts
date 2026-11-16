@@ -3,6 +3,7 @@ import { replay, type Op } from '../../../server-link/replay';
 import { demoPart, memoryRoomSource, type Room } from '../book';
 import { addBlock, addRoom, applyRoomOps, delRoom, editRoom, keyOf, opsFromRooms, parseCsv, parseRoomsCsv, roomsToCsv } from './index';
 
+const MGR = { userId: 'u-m', roles: ['교무'] } as const;
 const room = (o: Partial<Room> & { id: string }): Room => ({ name: o.id, capacity: 2, resourceKey: null, active: true, sort: 9, note: '', ...o });
 let n = 0;
 const nid = () => `gen${++n}`;
@@ -12,12 +13,12 @@ describe('ops.rooms 재생', () => {
         const base = demoPart();
         const sci = base.rooms[0];
         const ops: Op[] = [addRoom(room({ id: 'r-lab', name: '실험실' })), editRoom(sci, { ...sci, capacity: 4 }), delRoom('r-yard')];
-        const direct = applyRoomOps(base, ops);
+        const direct = applyRoomOps(MGR, base, ops);
         expect(direct.errors).toEqual([]);
         expect(direct.next.rooms.map((r) => [r.id, r.capacity])).toEqual([['r-sci', 4], ['r-lab', 2]]);
         // 서버에 다른 사람이 방 하나를 더했다 → 재생해도 내 조작이 그대로 입혀지고 남의 방도 산다
         const server = { ...base, rooms: [...base.rooms, room({ id: 'r-other', name: '음악실' })] };
-        const again = applyRoomOps(server, ops);
+        const again = applyRoomOps(MGR, server, ops);
         expect(again.errors).toEqual([]);
         expect(again.next.rooms.map((r) => r.id).sort()).toEqual(['r-lab', 'r-other', 'r-sci']);
         // 같은 조작을 두 번 재생해도 결과가 같다(이미 들어감·이미 지워짐은 건너뜀)
@@ -29,20 +30,27 @@ describe('ops.rooms 재생', () => {
         const base = demoPart();
         const sci = base.rooms[0];
         const server = { ...base, rooms: [{ ...sci, name: '새과학실' }, base.rooms[1]] };
-        const out = applyRoomOps(server, [editRoom(sci, { ...sci, capacity: 5 })]);
+        const out = applyRoomOps(MGR, server, [editRoom(sci, { ...sci, capacity: 5 })]);
         expect(out.replayed.conflicts.length).toBe(1);
         expect(out.errors.length).toBe(1);
     });
     it('칸 규칙: 정원 범위 · 이름 겹침 · 없는 방 차단 · 차단 날짜 순서', () => {
         const base = demoPart();
-        expect(applyRoomOps(base, [addRoom(room({ id: 'x', capacity: 21 }))]).errors[0]).toContain('1~20');
-        expect(applyRoomOps(base, [addRoom(room({ id: 'x', name: '과학실' }))]).errors[0]).toContain('겹칩니다');
+        expect(applyRoomOps(MGR, base, [addRoom(room({ id: 'x', capacity: 21 }))]).errors[0]).toContain('1~20');
+        expect(applyRoomOps(MGR, base, [addRoom(room({ id: 'x', name: '과학실' }))]).errors[0]).toContain('겹칩니다');
         const b = { id: 'b', roomId: 'nope', startDate: '2026-11-20', endDate: '2026-11-19', fromMin: null, toMin: null, reason: '' };
-        expect(applyRoomOps(base, [addBlock(b)]).errors.length).toBe(2);
+        expect(applyRoomOps(MGR, base, [addBlock(b)]).errors.length).toBe(2);
+    });
+    it('권한: 방 칸 쓰기는 교무·교감·관리자만 — 교사·근태담당·보결관리자는 거부 · 교사 겸 교무는 됨', () => {
+        const op = [addRoom(room({ id: 'r-p', name: '도서실' }))];
+        for (const r of ['교무', '교감', '관리자'] as const) expect(applyRoomOps({ userId: 'u', roles: [r] }, demoPart(), op).errors).toEqual([]);
+        for (const r of ['교사', '근태담당', '보결관리자'] as const) expect(applyRoomOps({ userId: 'u', roles: [r] }, demoPart(), op).errors[0]).toContain('교무·교감·관리자만');
+        expect(applyRoomOps({ userId: 'u', roles: ['교사', '교무'] }, demoPart(), op).errors).toEqual([]);
+        expect(applyRoomOps({ userId: 'u', role: '교감' }, demoPart(), op).errors).toEqual([]); // 옛 role 하나짜리
     });
     it('저장소에 쓰면 다시 읽는다', async () => {
         const src = memoryRoomSource(demoPart());
-        const out = applyRoomOps(await src.loadPart(), [addRoom(room({ id: 'r-new', name: '미술실' }))]);
+        const out = applyRoomOps(MGR, await src.loadPart(), [addRoom(room({ id: 'r-new', name: '미술실' }))]);
         await src.savePart(out.next);
         expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('미술실');
     });

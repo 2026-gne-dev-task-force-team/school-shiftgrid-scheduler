@@ -6,6 +6,7 @@
  */
 import type { SlotSource } from '../list/source';
 import type { SubSlotRow } from '../list/types';
+import { viewerCan } from '../../../../shared/roles.ts';
 import { isManager, type Viewer } from '../list/visibility';
 
 export type AdminAction = 'delete' | 'revert' | 'assign' | 'force';
@@ -21,7 +22,8 @@ export interface AdminCtx {
     target?: { ref: string; name: string };
 }
 
-const isAdmin = (v: Viewer) => v.loggedIn && v.role === '관리자';
+/** 지난 날 처리 — 권한표 `sub.past`(관리자만). */
+const pastOk = (v: Viewer) => v.loggedIn === true && viewerCan(v, 'sub.past');
 const past = (row: SubSlotRow, today: string) => row.date < today;
 const PAST_ADMIN_ONLY = '지난 날 보결은 관리자만 처리할 수 있습니다.';
 
@@ -31,18 +33,18 @@ export function whyNotAdmin(action: AdminAction, row: SubSlotRow, v: Viewer, tod
     if (row.projectId !== v.projectId) return { code: 403, message: '볼 수 없는 보결입니다.' };
     switch (action) {
         case 'delete':
-            if (past(row, today) && !isAdmin(v)) return { code: 403, message: PAST_ADMIN_ONLY };
+            if (past(row, today) && !pastOk(v)) return { code: 403, message: PAST_ADMIN_ONLY };
             return null;
         case 'revert':
             if (row.status !== '확정' || !row.take) return { code: 409, message: '맡은 보결이 아니어서 되돌릴 수 없습니다.' };
-            if (past(row, today) && !isAdmin(v)) return { code: 403, message: PAST_ADMIN_ONLY };
+            if (past(row, today) && !pastOk(v)) return { code: 403, message: PAST_ADMIN_ONLY };
             return null;
         case 'assign':
-            if (v.role !== '교감' && v.role !== '교무' && !isAdmin(v)) return { code: 403, message: '지정은 교감·교무만 할 수 있습니다.' };
+            if (!viewerCan(v, 'sub.assign')) return { code: 403, message: '지정은 교감·교무만 할 수 있습니다.' };
             if (past(row, today)) return { code: 409, message: '지난 날 보결은 지정할 수 없습니다.' };
             return null;
         case 'force':
-            if (v.role !== '보결관리자' && !isAdmin(v)) return { code: 403, message: '강제 지정은 보결관리자만 할 수 있습니다.' };
+            if (!viewerCan(v, 'sub.force')) return { code: 403, message: '강제 지정은 보결관리자만 할 수 있습니다.' };
             return null;
     }
 }

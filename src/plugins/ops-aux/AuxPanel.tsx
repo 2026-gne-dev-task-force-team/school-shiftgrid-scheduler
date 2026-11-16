@@ -7,7 +7,7 @@ import { defaultAuxSource, type AuxSource } from './source';
 import type { AuxPart, AuxViewer } from './types';
 import { onAssignTabRequest } from './auxTab';
 
-const demoViewer: AuxViewer = { userId: 'u-a', role: '근태담당' };
+const demoViewer: AuxViewer = { userId: 'u-a', roles: ['근태담당'] };
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
 /** 근태 — 명부 목록 + 날짜 하나의 배정(재배정 필요 표시) · 근태담당만 고친다. */
