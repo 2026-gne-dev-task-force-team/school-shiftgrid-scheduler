@@ -2,20 +2,24 @@ import { describe, expect, it } from 'vitest'
 import { rawFixtures } from '../data.ts'
 import type { BoardData } from '../types.ts'
 import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel, flightStatus, sprintLeft } from './sprints.ts'
+import { teamText } from './actor.ts'
 import { LAYERS } from '../layers/registry.ts'
 import { actorLabel, actorWhat, nameTag } from './actor.ts'
 
 describe('막대의 지금 스프린트', () => {
   it('막대 글은 목표(goals)가 아니라 열린 스프린트 3이다', () => {
-    expect(sprintLabel(d)).toBe('Sprint 3 · 불편 접수함 · 진짜 자료 · 품질')
+    expect(sprintLabel(d)).toBe('한 바퀴 3 · 불편 접수함 · 진짜 자료 · 품질')
     expect(sprintLabel({ sprints: [], tasks: d.tasks })).toBe('작업현황판')
   })
   it('began 이 깨진 서버 줄이 섞여도 번호 큰 열린 줄', () => {
     const l = d.sprints.map((s) => ({ ...s, began: '', ended: s.id === 1 ? s.ended : null }))
-    expect(sprintLabel({ sprints: l, tasks: d.tasks })).toMatch(/^Sprint 3 /)
+    expect(sprintLabel({ sprints: l, tasks: d.tasks })).toMatch(/^한 바퀴 3 /)
   })
 })
 
+describe('감독관 줄 풀이', () => {
+  it('기호를 말로', () => expect(teamText('⚠️ 7 · ❌ 31 · 순찰 14:02')).toBe('주의 7건 · 실패 31건 · 점검 14:02'))
+})
 describe('캐릭터 이름표 = 역할 · 태스크 번호', () => {
   const base = d.actors[5] // 시험
   it('역할 낱말만 쓴다 — 자료의 name 은 무시', () => {
@@ -28,6 +32,7 @@ describe('캐릭터 이름표 = 역할 · 태스크 번호', () => {
     expect(nameTag({ ...base, task_id: 'T-7z' })).toBe('시험팀 T-7z')
     expect(nameTag({ ...base, task_id: 'l-ab12cd-T-7z' })).toBe('시험팀 T-7z')
     expect(nameTag({ name: '지휘', role: '지휘', team: '지휘', task_id: null })).toBe('지휘')
+    expect(nameTag({ ...base, task_id: 'T-7z' }, [{ id: 'T-7z', title: 'T-7z (R5) 칸 연결' }])).toBe('시험팀 칸 연결')
   })
   it('감독관·대화는 team 이 문장이어도 role 로 정한다', () => {
     expect(nameTag({ name: '감독관', role: '감독', team: '시험 화면 막힘 2건' })).toBe('감독관')

@@ -11,14 +11,14 @@ const STATE_TEXT: Record<string, string> = { work: '하는 중', blocked: '확�
 
 // 3층 레인 — 레인마다 한 줄(공개 제목 · 맡은 캐릭터 · 상태). 일감은 가만히 있는 작은 칩(번호 · 상태 점)이고, 새로 생기거나 상태가 바뀔 때만 한 번 반짝인다.
 export const layer3: LayerRenderer = {
-  id: 'layer3', floor: 3, tab: 'Lanes',
+  id: 'layer3', floor: 3, tab: '작업길',
   render(host, { data, openDetail, tip }) {
     const box = h('div', { class: 'lanes' })
     for (const l of data.lanes) {
       // 레인 담당 + 이 레인 일감을 지금 맡아 도는 캐릭터들
       const who = data.actors.filter((x) => x.id === l.actor_id || (x.state === 'work' && data.tasks.find((t) => t.id === x.task_id)?.lane_id === l.id))
-      const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors)} — ${actorWhat(a, data.tasks)} · 토큰 ${actorTokens(a)}`; c.title = t; tip(c, () => t); return c })(
-        chip({ icon: character(a), label: actorLabel(a, data.actors), hue: a.hue, id: a.id })))
+      const chips = who.map((a) => ((c) => { const t = `${actorLabel(a, data.actors, data.tasks)} — ${actorWhat(a, data.tasks)} · 토큰 ${actorTokens(a)}`; c.title = t; tip(c, () => t); return c })(
+        chip({ icon: character(a), label: actorLabel(a, data.actors, data.tasks), hue: a.hue, id: a.id })))
       const head = h('div', { class: 'lane-head' }, h('b', null, l.title),
         ...(chips.length ? chips : [h('span', null, '—')]),
         h('span', null, `${STATE_ICON[l.state] ?? '⏸'} ${STATE_TEXT[l.state] ?? l.state}`))

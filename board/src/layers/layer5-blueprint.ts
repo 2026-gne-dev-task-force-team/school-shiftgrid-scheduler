@@ -1,14 +1,15 @@
 import { h } from '../dom.ts'
-import { clampZoom, groupHouses, lineOf, roomCount } from './layer5-logic.ts'
+import { clampZoom, groupHouses, lineOf, roomCount, splitCode } from './layer5-logic.ts'
 import { attachActors } from './layer5-match.ts'
+import { named } from '../ui/code-tag.ts'
 import { character } from '../ui/character.ts'
 import type { LayerRenderer } from './types.ts'
 
-const STATE_NAME = { plan: 'Plan', build: 'Building', built: 'Built' }
+const STATE_NAME = { plan: '계획', build: '짓는 중', built: '완성' }
 
 // 5층 설계도 집 — 집 = 부모 모듈, 방 = 자식. 선 종류가 상태(유령·비계·실선). 확대는 휠·버튼·두 손가락.
 export const layer5: LayerRenderer = {
-  id: 'layer5', floor: 5, tab: 'Blueprint',
+  id: 'layer5', floor: 5, tab: '설계도',
   render(host, { data, openDetail, tip }) {
     const houses = groupHouses(data.modules)
     const { total, built } = roomCount(houses)
@@ -19,12 +20,12 @@ export const layer5: LayerRenderer = {
     const canvas = h('div', { class: 'bp-canvas' })
     for (const hs of houses) {
       const rooms = hs.rooms.map((m) => {
-        const b = h('button', { class: `bp-room ${lineOf(m.state)}`, 'data-id': m.id }, m.name)
-        b.addEventListener('click', () => openDetail({ title: m.name, rows: [['상태', STATE_NAME[m.state]], ['연결된 일감', taskTitle(m.task_id)], ...(m.note ? [['번호·설계 절', m.note] as [string, string]] : [])] }))
-        tip(b, () => `${m.name} · ${STATE_NAME[m.state]}`)
+        const b = h('button', { class: `bp-room ${lineOf(m.state)}`, 'data-id': m.id }, ...named(m.name))
+        b.addEventListener('click', () => openDetail({ title: splitCode(m.name).text, rows: [['상태', STATE_NAME[m.state]], ['연결된 일감', taskTitle(m.task_id)], ...(m.note ? [['번호·설계 절', m.note] as [string, string]] : [])] }))
+        tip(b, () => `${splitCode(m.name).text} · ${STATE_NAME[m.state]}`)
         return h('span', { class: 'bp-slot' }, b, ...crew(m.id))
       })
-      canvas.append(h('section', { class: 'bp-house' }, h('header', null, hs.root.name, ...crew(hs.root.id)), h('div', { class: 'bp-rooms' }, ...rooms)))
+      canvas.append(h('section', { class: 'bp-house' }, h('header', null, ...named(hs.root.name), ...crew(hs.root.id)), h('div', { class: 'bp-rooms' }, ...rooms)))
     }
     if (lost.length) canvas.append(h('section', { class: 'bp-house bp-lost' }, h('header', null, '어느 칸인지 모름'), h('div', { class: 'bp-rooms' }, ...lost.map((a) => h('span', { class: 'bp-crew', title: `${a.name} · ${a.task_id ?? ''}` }, character(a, 'mini'))))))
 

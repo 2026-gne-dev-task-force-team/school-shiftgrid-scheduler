@@ -19,3 +19,9 @@ export const clampZoom = (z: number) => Math.min(3, Math.max(0.5, z))
 
 /** 접수 뒤 다시 그릴 때 보던 탭을 되살린다 — 범위를 벗어나면 0. */
 export const restoreTab = (saved: number, count: number) => (Number.isInteger(saved) && saved >= 0 && saved < count ? saved : 0)
+
+/** 「P10a iframe 입구」 → 코드 `P10a` 와 뜻 `iframe 입구` 로 가른다. 코드가 앞에 없으면 code 는 빈 문자열. */
+export function splitCode(name: string): { code: string; text: string } {
+  const m = /^((?:[A-Z]{1,2}\d+[a-z]?|T-\d+[a-z]*)(?:\s*\(R\d+\))?)\s+(\S.*)$/.exec(name.trim())
+  return m ? { code: m[1], text: m[2] } : { code: '', text: name }
+}

@@ -110,7 +110,7 @@ function render(notice = false): void {
     show(restoreTab(curTab, LAYERS.length))
   }
   if (notice && data.source !== 'loading' && data.source !== 'failed') {
-    const go = h('button', { class: 'btn' }, 'Inbox 에서 보기')
+    const go = h('button', { class: 'btn' }, '접수함에서 보기')
     go.addEventListener('click', () => {
       show(LAYERS.findIndex((l) => l.floor === 6))
       detail.el.hidden = true // 폰 바텀시트가 카드를 가리지 않게
@@ -161,7 +161,7 @@ export function mountBoard(host?: HTMLElement): void {
     if (t === 'menu') band!.closeMenu(); else if (t === 'detail') detailEl!.hidden = true; else if (t === 'drawer') set(false)
   })
   document.addEventListener('focusout', () => setTimeout(() => { if (loadAuto(localStorage)) void runCheck() }, 0)) // 입력이 끝나면 미뤄 둔 자동 바꾸기를 다시 묻는다
-  window.addEventListener(FEEDBACK_CHANGED, () => render()) // Inbox 에서 지우기·상태 바꾸기 → Board·흐름 줄도 즉시
+  window.addEventListener(FEEDBACK_CHANGED, () => render()) // 접수함에서 지우기·상태 바꾸기 → 일감판·흐름 줄도 즉시
   root.append(barEl, menuHost, scrim, drawer)
   if (host) host.append(root); else document.body.prepend(root)
   last = keyed ? loadLast(localStorage) : null
