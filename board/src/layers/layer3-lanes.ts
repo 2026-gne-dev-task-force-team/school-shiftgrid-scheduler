@@ -3,7 +3,7 @@ import { chip, KIND_ICON, STATE_ICON } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { actorChip, actorLabel, actorTokens, actorWhat } from '../lib/actor.ts'
 import type { LayerRenderer } from './types.ts'
-import { changedChips, laneChips, type ChipState } from './layer3-logic.ts'
+import { changedChips, laneChips, rowDetails, rowTitle, type ChipState } from './layer3-logic.ts'
 
 const seen = new Map<string, Map<string, ChipState>>() // 레인별 직전 칩 상태 — 바뀐 것만 반짝이려고
 
@@ -12,7 +12,7 @@ const STATE_TEXT: Record<string, string> = { work: '하는 중', blocked: '확�
 // 3층 레인 — 레인마다 한 줄(공개 제목 · 맡은 캐릭터 · 상태). 일감은 가만히 있는 작은 칩(번호 · 상태 점)이고, 새로 생기거나 상태가 바뀔 때만 한 번 반짝인다.
 export const layer3: LayerRenderer = {
   id: 'layer3', floor: 3, tab: '작업길',
-  render(host, { data, openDetail, tip }) {
+  render(host, { data, tip }) {
     const box = h('div', { class: 'lanes' })
     for (const l of data.lanes) {
       // 레인 담당 + 이 레인 일감을 지금 맡아 도는 캐릭터들
@@ -29,10 +29,12 @@ export const layer3: LayerRenderer = {
       const chipsNow = laneChips(data.tasks, l.id), flashed = changedChips(seen.get(l.id), chipsNow)
       seen.set(l.id, new Map(chipsNow.map((c) => [c.id, c.state])))
       const track = h('div', { class: 'lane-chips' }, ...chipsNow.map((c) => {
-        const el = h('button', { class: 'lane-chip' + (flashed.has(c.id) ? ' flash' : ''), 'data-id': c.id, 'data-s': c.state, 'aria-label': c.title }, h('i', { class: 'lc-dot' }), c.id)
-        el.addEventListener('click', () => { const t = data.tasks.find((x) => x.id === c.id)!; openDetail({ title: t.title, rows: [['레인', l.title], ['분류', t.category], ['팀', t.team]] }) })
-        tip(el, () => `${KIND_ICON[c.kind] ?? '●'} ${c.title}`)
-        return el
+        const t = data.tasks.find((x) => x.id === c.id)!, ti = rowTitle(t)
+        const sum = h('summary', { class: 'lane-chip' + (flashed.has(c.id) ? ' flash' : ''), 'data-id': c.id, 'data-s': c.state, 'aria-label': `${c.id} ${ti.text}` },
+          h('i', { class: 'lc-dot' }), h('span', { class: 'lc-id' }, c.id), h('span', { class: 'lc-title' + (ti.empty ? ' empty' : '') }, ti.text))
+        tip(sum, () => `${KIND_ICON[c.kind] ?? '●'} ${ti.text}`)
+        const dl = h('dl', { class: 'lane-detail' }, ...rowDetails(t).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v)]))
+        return h('details', { class: 'lane-row' }, sum, dl)
       }))
       box.append(h('div', { class: 'lane', 'data-state': l.state, 'data-id': l.id }, head, prog, track))
     }

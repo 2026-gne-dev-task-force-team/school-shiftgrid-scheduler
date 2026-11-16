@@ -180,10 +180,13 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .lane { border: 1px solid var(--line); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) }
 .lane[data-state=blocked] { background: var(--blocked-bg); border-color: rgb(var(--bad-rgb) / .6) }
 .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
-.lane-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--sp2) }
+.lane-chips { display: flex; flex-direction: column; gap: 4px; margin-top: var(--sp2) }
 .lane-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 28px; padding: 0 8px; font: inherit; font-size: var(--fs-sm); color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .lc-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3) }
 .lane-chip[data-s=work] .lc-dot { background: var(--neon) } .lane-chip[data-s=blocked] .lc-dot { background: var(--bad) }
+.lane-row { min-width: 0 } .lane-row > summary { list-style: none; display: flex; width: 100% } .lane-row > summary::-webkit-details-marker { display: none }
+.lc-id { font-weight: 600 } .lc-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 } .lc-title.empty { opacity: .5 }
+.lane-detail { margin: 4px 0 6px 12px; font-size: var(--fs-sm); display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px } .lane-detail dt { opacity: .6 } .lane-detail dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere }
 .lane-chip.flash { animation: sgb-pulse 1.2s } /* 상태가 바뀐 칩만 한 번. .calm·움직임 줄이기면 아래 규칙이 끈다 */
 
 /* 4층 작업장 */
