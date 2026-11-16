@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { characterSvg, eyeColor, propOf } from './character.ts'
+import { bodyColor, characterSvg, eyeColor, propOf } from './character.ts'
 import type { Actor } from '../types.ts'
 
 const A = { name: '모래', eye: 'amber', prop: 'flag', dept: 'hq', role: '지휘', state: 'work' } satisfies Partial<Actor> as Pick<Actor, 'name' | 'eye' | 'prop' | 'dept' | 'role' | 'state'>
@@ -13,7 +13,7 @@ describe('캐릭터', () => {
   })
   it('도트 격자: 산호 몸통·rect 만·crispEdges', () => {
     const v = characterSvg(A)
-    expect(v).toContain('shape-rendering="crispEdges"'); expect(v).toContain('#D97757'); expect(v).not.toMatch(/<(path|circle|ellipse)/)
+    expect(v).toContain('shape-rendering="crispEdges"'); expect(v).toContain(bodyColor(A)); expect(v).not.toMatch(/<(path|circle|ellipse)/)
   })
   it('머리띠 색 = 부서, 쉼이면 눈이 한 줄', () => {
     expect(characterSvg(A)).toContain('#E0B341'); expect(characterSvg({ ...A, dept: 'qa' })).toContain('#A37BE0')
@@ -34,7 +34,7 @@ describe('캐릭터', () => {
     expect(characterSvg({ ...A, prop: 'scope' })).not.toBe(characterSvg(A))
   })
   it('이름(역할 이름 규칙)은 aria-label 로, 이스케이프', () => {
-    expect(characterSvg({ ...A, role: '<a"b>', team: '' })).toContain('aria-label="&#60;a&#34;b&#62;"')
+    expect(characterSvg({ ...A, role: '<a"b>' })).toContain('aria-label="&#60;a&#34;b&#62;"')
     expect(characterSvg(A)).toContain('aria-label="지휘"') // 자연 낱말 이름은 역할로
   })
   it('상태마다 꼴이 다르다: 쉼 Z · 막힘 ! · 퇴근 흐림 표지 · 일함은 표지 없음', () => {
@@ -45,6 +45,20 @@ describe('캐릭터', () => {
     expect(v('off')).not.toBe(v('work')); expect(v('wait')).toContain('data-state="wait"')
     expect(v('wait')).not.toMatch(/chr-z|chr-bang/)
     expect(v('off')).toBe(v('done').replace('data-state="done"', 'data-state="off"')) // 옛 done = 퇴근 꼴
+  })
+})
+
+describe('R69 구별', () => {
+  it('몸통 색조가 이름마다 갈래지고 같은 이름은 같다', () => {
+    const names = ['모래', '솔', '별', '달', '강', '숲', '돌', '샘']
+    expect(new Set(names.map((name) => bodyColor({ name }))).size).toBeGreaterThan(1)
+    expect(bodyColor({ name: '솔' })).toBe(bodyColor({ name: '솔' }))
+    const n = names.find((x) => bodyColor({ name: x }) !== bodyColor(A))!
+    expect(characterSvg({ ...A, name: n })).not.toBe(characterSvg(A))
+  })
+  it('역할 여덟이 다 다른 SVG', () => {
+    const rs = ['지휘', '살림', '설계', '화면', '자료', '시험', '맨눈', '감독']
+    expect(new Set(rs.map((role) => characterSvg({ ...A, prop: '', role }))).size).toBe(8)
   })
 })
 
