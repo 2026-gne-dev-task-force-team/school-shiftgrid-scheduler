@@ -2,8 +2,8 @@
  * 근태 꼴(1.2v 설계 ① 7절) — `aux` 칸 중 staff·conditions·base·day 묶음. exceptions·monthClose 는 month/ (P23).
  * ⛔ 실명 금지(시험은 `강사01` 꼴). 시각은 분 정수(startMin).
  */
-export type AuxRole = '관리자' | '교감' | '교무' | '근태담당' | '교사';
-export interface AuxViewer { userId: string; role: AuxRole }
+/** 보는 사람·역할 꼴은 권한표 한 장(`shared/roles.ts`)의 것을 쓴다(옛 이름 유지). */
+export type { Role as AuxRole, Viewer as AuxViewer } from '../../../shared/roles.ts';
 export type AuxKind = '기초학력' | '한국어' | '디지털튜터' | '자원봉사' | '기타';
 export interface AuxStaff { id: string; name: string; kind: AuxKind; unit: 'clock' | 'period'; active: boolean; allowedActivities: string[]; targetTracks: string[] }
 /** 요일(0=월~4=금)별 근무 — 시각 단위면 시작·종료 분, 교시 단위면 교시 수. id = `${staffId}:${dow}`. */

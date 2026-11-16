@@ -1,6 +1,7 @@
 /** 학사 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다. 지금은 메모리 가짜 어댑터. */
 import type { ClassSubject } from './import/classImport';
-import type { DaysPart } from './types';
+import { canApplyClassSubjects, CLASS_SUBJECTS_DENIED } from './ops';
+import type { DaysPart, DaysViewer } from './types';
 
 export interface DaysSource {
     load(): Promise<DaysPart>;
@@ -40,8 +41,11 @@ export function localDaysSource(seed: () => DaysPart, key: string = LS_KEY): Day
 }
 
 /** 반영 — 담임 과목만 갈아 쓰고 나머지 칸은 서버 지금 값 그대로. */
-export async function saveClassSubjects(src: DaysSource, next: ClassSubject[]): Promise<void> {
+/** 담임 과목 저장 — 권한표 `days.classSubjects` 가 아니면 쓰지 않고 거부 이유를 돌려준다(되면 null). */
+export async function saveClassSubjects(src: DaysSource, next: ClassSubject[], viewer: DaysViewer): Promise<string | null> {
+    if (!canApplyClassSubjects(viewer)) return CLASS_SUBJECTS_DENIED;
     await src.save({ ...(await src.load()), classSubjects: next });
+    return null;
 }
 
 export function demoDays(): DaysPart {

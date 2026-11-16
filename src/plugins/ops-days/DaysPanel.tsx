@@ -1,14 +1,14 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { getBundle, subscribeBundle } from '../../../shared/bundle/store.ts';
 import { Button, Field, TextInput } from '../../pane-ui-system';
-import { addChange, applyDaysOps, canApplyClassSubjects, delChange } from './ops';
+import { addChange, applyDaysOps, canApplyClassSubjects, CLASS_SUBJECTS_DENIED, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
 import { ClassImportView } from './import/ClassImportView';
 import { demoDays, localDaysSource, saveClassSubjects, type DaysSource } from './source';
 import type { DaysPart, DaysViewer } from './types';
 
 const fallback = localDaysSource(demoDays);
-const demoViewer: DaysViewer = { userId: 'u-a', role: '교사' };
+const demoViewer: DaysViewer = { userId: 'u-a', roles: ['교사'] };
 
 // 보기 상태(학사/불러오기)는 모듈에 둔다 — 창 폭에 따라 바깥이 이 화면을 다시 마운트해도 안 날아가게.
 type DaysTab = 'days' | 'import';
@@ -39,7 +39,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
         else { await src.save(r.next); setMsg('반영했습니다.'); }
         await reload();
     };
-    const add = () => run([addChange({ id: newId ? newId() : crypto.randomUUID(), date: f.date, classKey: f.classKey, period: Number(f.period), subject: f.subject, note: '', createdBy: v.userId })]);
+    const add = () => run([addChange({ id: newId ? newId() : crypto.randomUUID(), date: f.date, classKey: f.classKey, period: Number(f.period), subject: f.subject, note: '', createdBy: v.userId ?? '' })]);
 
     const events = (part?.calendar ?? []).filter((e) => e.date.startsWith(month) || e.endDate.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date));
     const changes = (part?.changes ?? []).filter((c) => c.date.startsWith(month)).sort((a, b) => a.date.localeCompare(b.date) || a.period - b.period);
@@ -48,7 +48,7 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
         return (
             <div className="flex flex-col">
                 <div className="p-4 pb-0"><Button variant="outline" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
-                <ClassImportView loadFile={loadFile} applyDenied={canApplyClassSubjects(v) ? undefined : '교무·관리자만 반영할 수 있습니다'} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { if (!canApplyClassSubjects(v)) return; await saveClassSubjects(src, next); await reload(); }} />
+                <ClassImportView loadFile={loadFile} applyDenied={canApplyClassSubjects(v) ? undefined : CLASS_SUBJECTS_DENIED} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { if (await saveClassSubjects(src, next, v)) return; await reload(); }} />
             </div>
         );
     }

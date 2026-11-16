@@ -7,6 +7,7 @@
  * 운영 앱 rooms.ts 의 roomDay·reserve·취소·빈 방 찾기·timeLabels 에서 DB·HTTP 를 걷어 낸 것.
  */
 import { seoulDay, toHHMM } from './clock.ts'
+import { can, type Role } from './roles.ts'
 
 export interface Room { id: string; name: string; capacity: number; resourceKey: string | null; active: boolean; sort: number; note: string }
 /** 동아리 등 주간 고정 사용. 요일 0=월 */
@@ -126,14 +127,12 @@ export function decideReserve(inp: Omit<RoomDayInput, 'room' | 'date' | 'dayInde
   return fail(409, '그 시각 ' + room.name + ' 은 자리가 없습니다')
 }
 
-export const MANAGER_ROLES = ['관리자', '교무', '교감'] as const
 export type CancelVerdict = { ok: true } | { ok: false; status: 400 | 403 | 404; error: string }
 
-/** 취소: 없는 예약 404 → 남의 것(관리자·교무·교감 제외) 403 → 지난 날 400(관리자 예외 없음) */
-export function decideCancel(res: Pick<Reservation, 'userId' | 'date'> | null, user: { id: string; roles: string[] }, today: string): CancelVerdict {
+/** 취소: 없는 예약 404 → 남의 것(권한표 `room.cancelAny` 제외) 403 → 지난 날 400(관리자 예외 없음) */
+export function decideCancel(res: Pick<Reservation, 'userId' | 'date'> | null, user: { id: string; roles: readonly Role[] }, today: string): CancelVerdict {
   if (!res) return { ok: false, status: 404, error: '없는 예약입니다' }
-  const manager = user.roles.some((k) => (MANAGER_ROLES as readonly string[]).includes(k))
-  if (res.userId !== user.id && !manager) return { ok: false, status: 403, error: '남의 예약은 취소할 수 없습니다' }
+  if (res.userId !== user.id && !can(user.roles, 'room.cancelAny')) return { ok: false, status: 403, error: '남의 예약은 취소할 수 없습니다' }
   if (res.date < today) return { ok: false, status: 400, error: '지나간 예약은 취소할 수 없습니다' }
   return { ok: true }
 }

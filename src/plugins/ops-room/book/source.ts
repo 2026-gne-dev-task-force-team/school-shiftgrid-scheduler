@@ -87,6 +87,6 @@ export function setRoomSource(s: RoomSource): void { current = s; }
 export function getRoomSource(): RoomSource { return current; }
 
 /** 지금 보는 사람 — 🔴 진짜 계정이 붙기 전 자리표(이 파일 한 곳). */
-let viewer: Viewer = { loggedIn: true, projectId: 'p1', userId: 'u-demo', role: '교사' };
+let viewer: Viewer = { loggedIn: true, projectId: 'p1', userId: 'u-demo', roles: ['교사'] };
 export function setViewer(v: Viewer): void { viewer = v; }
 export function getViewer(): Viewer { return viewer; }

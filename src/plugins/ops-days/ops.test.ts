@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Op } from '../../server-link/replay';
-import { addChange, addEvent, applyDaysOps, delChange, delEvent, editChange, editEvent } from './ops';
-import { demoDays } from './source';
+import { addChange, addEvent, applyDaysOps, canApplyClassSubjects, delChange, delEvent, editChange, editEvent } from './ops';
+import { demoDays, memoryDaysSource, saveClassSubjects } from './source';
 import type { CalendarEvent, DaysRole, TimetableChange } from './types';
 
 const ev: CalendarEvent = { id: 'e9', date: '2026-12-01', endDate: '2026-12-01', kind: 'event', title: '가짜 행사' };
@@ -49,5 +49,24 @@ describe('재생 · 칸 규칙', () => {
         const v = { userId: 'u-a', role: '관리자' as const };
         expect(applyDaysOps(v, demoDays(), [addEvent({ ...ev, endDate: '2026-11-30' })]).errors[0]).toContain('끝 날짜');
         expect(applyDaysOps(v, demoDays(), [addChange({ ...mine, period: 11 })]).errors[0]).toContain('교시');
+    });
+});
+
+describe('여러 역할(roles[]) · 담임 과목 저장 권한(R112)', () => {
+    it('교사 겸 교무는 학사 일정을 고치고 담임 과목을 반영한다', async () => {
+        const v = { userId: 'u-a', roles: ['교사', '교무'] as const };
+        expect(applyDaysOps(v, server(), [addEvent(ev)]).errors).toEqual([]);
+        expect(canApplyClassSubjects(v)).toBe(true);
+        const src = memoryDaysSource(demoDays());
+        expect(await saveClassSubjects(src, [], v)).toBeNull();
+        expect((await src.load()).classSubjects).toEqual([]);
+    });
+    it('저장 함수가 직접 거부한다 — 교사·근태담당은 쓰지 않고 이유를 돌려준다', async () => {
+        for (const r of ['교사', '근태담당'] as const) {
+            const src = memoryDaysSource(demoDays());
+            expect(await saveClassSubjects(src, [], { userId: 'u-a', roles: [r] })).toContain('교무·교감·관리자만');
+            expect((await src.load()).classSubjects).toBeUndefined();
+        }
+        for (const r of ['교무', '교감', '관리자'] as const) expect(await saveClassSubjects(memoryDaysSource(demoDays()), [], { userId: 'u-a', role: r })).toBeNull();
     });
 });

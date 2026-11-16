@@ -5,7 +5,8 @@
  */
 import type { SlotSource } from '../list/source';
 import type { SubSlotRow } from '../list/types';
-import { applyVisibility, isManager, type Viewer, type VisibleRow } from '../list/visibility';
+import { viewerCan } from '../../../../shared/roles.ts';
+import { applyVisibility, type Viewer, type VisibleRow } from '../list/visibility';
 
 export interface DetailView {
     row: VisibleRow;
@@ -27,7 +28,7 @@ export const absentKindOf = (ref: string): '담임' | '지정' => (ref.startsWit
 export function whyNotTake(row: SubSlotRow, v: Viewer, today: string, sameTime: SubSlotRow[] = []): { code: 403 | 409; message: string } | null {
     if (row.date < today) return { code: 409, message: '지난 날 보결은 맡을 수 없습니다.' };
     if (row.status !== '대기') return { code: 409, message: '이미 다른 분이 맡은 보결입니다.' };
-    if (!v.loggedIn || v.personRef === null) return { code: 403, message: '계정에 교사 연결이 없어 맡을 수 없습니다.' };
+    if (!v.loggedIn || v.personRef == null) return { code: 403, message: '계정에 교사 연결이 없어 맡을 수 없습니다.' };
     if (row.body.absentRef === v.personRef) return { code: 403, message: '내가 빠지는 보결은 맡을 수 없습니다.' };
     const clash = sameTime.find((o) => o.id !== row.id && o.take?.takerRef === v.personRef && o.startMin < row.endMin && row.startMin < o.endMin);
     if (clash) return { code: 409, message: `같은 시각에 ${clash.trackName} 보결을 이미 맡았습니다.` };
@@ -36,13 +37,13 @@ export function whyNotTake(row: SubSlotRow, v: Viewer, today: string, sameTime: 
 
 /**
  * 맡기 취소 가능 여부(설계 ① 5-1 「취소」) — 확정 아님 409 → 지난 날은 관리자만 403 → 맡은 본인·관리 4역할만 403. null = 가능.
- * 「지난 날은 관리자만」: 역할이 정확히 `관리자` 일 때만(교감·교무·보결관리자는 지난 날 불가).
+ * 「지난 날은 관리자만」: 권한표 `sub.past`(교감·교무·보결관리자는 지난 날 불가). 남의 것 취소는 `sub.cancelAny`.
  */
 export function whyNotCancel(row: SubSlotRow, v: Viewer, today: string): { code: 403 | 409; message: string } | null {
     if (row.status !== '확정' || !row.take) return { code: 409, message: '맡은 보결이 아니어서 취소할 수 없습니다.' };
-    if (row.date < today && !(v.loggedIn && v.role === '관리자')) return { code: 403, message: '지난 날 보결은 관리자만 취소할 수 있습니다.' };
-    const mine = v.personRef !== null && row.take.takerRef === v.personRef;
-    if (!v.loggedIn || !(mine || isManager(v))) return { code: 403, message: '맡은 본인이나 관리 역할만 취소할 수 있습니다.' };
+    if (row.date < today && !(v.loggedIn && viewerCan(v, 'sub.past'))) return { code: 403, message: '지난 날 보결은 관리자만 취소할 수 있습니다.' };
+    const mine = v.personRef != null && row.take.takerRef === v.personRef;
+    if (!v.loggedIn || !(mine || viewerCan(v, 'sub.cancelAny'))) return { code: 403, message: '맡은 본인이나 관리 역할만 취소할 수 있습니다.' };
     return null;
 }
 
@@ -54,7 +55,7 @@ export function buildDetail(row: SubSlotRow, v: Viewer, today: string, sameTime:
     return {
         row: vis, absentKind: absentKindOf(row.body.absentRef), timeText: `${hhmm(row.startMin)}~${hhmm(row.endMin)}`,
         canTake: why === null, cannotTakeWhy: why?.message ?? null, canCancel: whyNotCancel(row, v, today) === null,
-        showAudit: vis.body.registeredBy !== null || isManager(v),
+        showAudit: vis.body.registeredBy !== null || viewerCan(v, 'sub.seeAudit'),
     };
 }
 

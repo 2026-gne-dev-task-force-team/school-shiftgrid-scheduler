@@ -5,7 +5,7 @@ import { defaultAuxSource, type AuxSource } from '../source';
 import type { AuxExceptionKind, AuxPart, AuxViewer } from '../types';
 import { monthTotals } from './total';
 
-const demoViewer: AuxViewer = { userId: 'u-a', role: '근태담당' };
+const demoViewer: AuxViewer = { userId: 'u-a', roles: ['근태담당'] };
 const KINDS: AuxExceptionKind[] = ['결근', '지각', '조퇴', '추가', '정정'];
 
 /** 월 정산 최소 꼴 — 보조별 합계(정정 후 따로) · 마감/해제 · 예외 더하기. */

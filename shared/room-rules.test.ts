@@ -128,7 +128,7 @@ describe('빈 방 · 내 예약 · 취소', () => {
   it('취소: 남의 것은 403, 교무·관리자·교감은 됨, 본인은 됨, 지난 날은 관리자도 400, 없으면 404', () => {
     const x = { userId: 'goguma', date: MON }
     expect(decideCancel(x, { id: 'gamja', roles: ['교사'] }, TODAY)).toMatchObject({ ok: false, status: 403 })
-    for (const role of ['교무', '관리자', '교감']) expect(decideCancel(x, { id: 'a', roles: [role] }, TODAY).ok).toBe(true)
+    for (const role of ['교무', '관리자', '교감'] as const) expect(decideCancel(x, { id: 'a', roles: [role] }, TODAY).ok).toBe(true)
     expect(decideCancel(x, { id: 'goguma', roles: ['교사'] }, TODAY).ok).toBe(true)
     expect(decideCancel({ ...x, date: '2026-10-19' }, { id: 'a', roles: ['관리자'] }, TODAY)).toMatchObject({ ok: false, status: 400 })
     expect(decideCancel(null, { id: 'a', roles: ['관리자'] }, TODAY)).toMatchObject({ ok: false, status: 404 })

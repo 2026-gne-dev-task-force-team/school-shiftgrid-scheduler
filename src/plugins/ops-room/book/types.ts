@@ -12,5 +12,5 @@ export interface ReservationRow {
     id: string; projectId: string; roomId: string; date: string; startMin: number; endMin: number;
     slotNo: number; trackName: string; createdAt: string; body: ReservationBody;
 }
-export type Role = '관리자' | '교감' | '교무' | '교사';
-export interface Viewer { loggedIn: boolean; projectId: string; userId: string | null; role: Role }
+/** 보는 사람·역할 꼴은 권한표 한 장(`shared/roles.ts`)의 것을 쓴다. */
+export type { Role, Viewer } from '../../../../shared/roles.ts';
