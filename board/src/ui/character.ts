@@ -2,7 +2,7 @@ import type { Actor } from '../types.ts'
 import { actorLabel } from '../lib/actor.ts'
 
 // 캐릭터 = Claude Code 도트 마스코트(산호 몸통·검은 눈·옆 팔·다리 넷). 눈 칸 색·소품·머리띠 색·몸통 색조(이름 해시 넷)가 다르다(눈 색↔기기 짝은 판에 안 싣는다).
-type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'dept' | 'role' | 'state'>
+type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'race' | 'dept' | 'role' | 'state'>
 export type CharSize = 'mini' | 'chip' | 'card'
 const PX: Record<CharSize, number> = { mini: 27, chip: 36, card: 90 } // 가로 px — 격자 18×11 이라 한 칸 1.5~5px
 const GW = 18, GH = 11
@@ -25,6 +25,15 @@ const PROPS: Record<string, R[]> = {
   scope: [[14, 2, 3, 1, INK], [13, 3, 1, 3, INK], [17, 3, 1, 3, INK], [14, 6, 3, 1, INK], [14, 3, 3, 3, '#BFE3F2'], [16, 7, 1, 1, INK], [15, 8, 1, 1, INK]], // 둥근 테 + 비스듬 손잡이
 }
 
+// 종족 소품(R74) = 몸·역할 소품(오른쪽 x13~)과 안 겹치는 자리의 1~2칸 점. 값만 본다(없거나 모르면 사람 = 소품 없음)
+const RACE_PROP: Record<string, R[]> = {
+  elf: [[1, 1, 1, 1, BODY], [12, 1, 1, 1, BODY]], // 머리 양옆 뾰족 귀 끝
+  dwarf: [[6, 8, 2, 2, '#8A5A3C']], // 다리 사이 수염
+  orc: [[5, 6, 1, 1, '#FFFFFF'], [8, 6, 1, 1, '#FFFFFF']], // 입 자리 엄니
+  ghost: [[3, 0, 3, 1, '#EDEDF7']], // 머리 위 희미한 고리
+}
+export const raceProp = (a: Pick<Actor, 'race'>): R[] => RACE_PROP[a.race ?? ''] ?? []
+
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 const hash = (s: string) => [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7)
 export function eyeColor(a: Pick<Actor, 'name' | 'eye'>): string {
@@ -45,7 +54,7 @@ export function characterSvg(a: Who, size: CharSize = 'chip'): string {
   // 쉼 = 머리 옆 작은 Z · 막힘 = 머리 위 !(색은 CSS 변수가 입힌다)
   const mark = a.state === 'idle' ? cls('chr-z', [[12, -3, 3, 1, ''], [13, -2, 1, 1, ''], [12, -1, 3, 1, '']])
     : a.state === 'blocked' ? cls('chr-bang', [[6, -4, 2, 3, ''], [6, 0, 2, 1, '']]) : ''
-  const shell: R[] = [[3, 1, 8, 1, band], [2, 2, 10, 6, body], [1, 4, 1, 2, body], [12, 4, 1, 2, body], ...(prop ? PROPS[prop] : [])]
+  const shell: R[] = [[3, 1, 8, 1, band], [2, 2, 10, 6, body], [1, 4, 1, 2, body], [12, 4, 1, 2, body], ...(prop ? PROPS[prop] : []), ...raceProp(a)]
   const legs = (xs: number[]) => xs.map((x): R => [x, 8, 1, 2, body])
   const eyes = (x: number) => sleepy ? [[x, 5, 2, 1, INK] as R] : [[x, 4, 2, 2, INK] as R, [x, 4, 1, 1, eye] as R]
   const leg = (cls: string, xs: number[]) => `<g class="${cls}">${legs(xs).map(outline).join('')}${legs(xs).map(rect).join('')}</g>`

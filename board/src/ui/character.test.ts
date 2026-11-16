@@ -62,6 +62,22 @@ describe('R69 구별', () => {
   })
 })
 
+describe('R74 종족', () => {
+  it('종족 넷은 서로·사람과 다르고, 없거나 모르는 값은 사람과 같다', () => {
+    const v = (race?: string) => characterSvg({ ...A, race })
+    expect(new Set(['elf', 'dwarf', 'orc', 'ghost', undefined].map(v)).size).toBe(5)
+    expect(v('???')).toBe(v(undefined)); expect(v('human')).toBe(v())
+  })
+  it('소품만 얹는다 — 역할 소품은 그대로 함께 보이고 크기도 안 키운다', () => {
+    const base = characterSvg({ ...A, role: '지휘' })
+    for (const race of ['elf', 'dwarf', 'orc', 'ghost']) {
+      const s = characterSvg({ ...A, role: '지휘', race })
+      expect(s).toContain('fill="#E5484D"')
+      expect(s.length - base.length).toBeLessThan(260)
+    }
+  })
+})
+
 describe('상태별 수', () => {
   it('일함·쉼·대기·막힘·퇴근을 따로 센다(옛 done 은 퇴근)', async () => {
     const { stateCounts } = await import('../lib/actor.ts')

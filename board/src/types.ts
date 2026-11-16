@@ -6,6 +6,7 @@ export type Account = 'org' | 'personal'
 export type ActorState = 'work' | 'idle' | 'wait' | 'blocked' | 'off' | 'done'
 export interface Actor {
   id: string; parent_id: string | null; kind: 'lead' | 'helper'; name: string; hue: number; eye: string; prop: string
+  race?: string // 종족(R74) — elf·dwarf·orc·ghost 중 하나, 없거나 모르면 사람(소품 없음). 값만 싣는다 — 어느 기기인지는 자료에 없다
   dept: Dept; team: string; role: string; state: ActorState
   task_id: string | null; branch_id: string | null; account: Account; tok_per_min: number
   tok_total?: number // 에이전트가 쓴 토큰 누적 — 기록을 못 이은 캐릭터는 없다(화면 「—」)
