@@ -34,6 +34,8 @@ export function loadConfig(env = process.env, os = platform(), dirUrl = import.m
   const out = {}
   for (const k of Object.keys(DEFAULTS)) out[k] = expandHome(over[k] ?? DEFAULTS[k])
   out.redactNames = Array.isArray(over.redactNames) ? over.redactNames.filter((x) => typeof x === 'string') : [] // 선택 칸 — 긴 글에서 거를 실명 목록(로컬 설정)
+  // 선택 칸 — 설정 슬롯 폴더 이름 → 계정(`{".claude":"org",".claude-b":"personal"}`). 없으면 `.claude` 기관 · 나머지 개인
+  out.usageAccounts = over.usageAccounts && typeof over.usageAccounts === 'object' ? { ...over.usageAccounts } : {}
   out.sinkState = expandHome(over.sinkState ?? defaultSinkState(env, os))
   return out
 }

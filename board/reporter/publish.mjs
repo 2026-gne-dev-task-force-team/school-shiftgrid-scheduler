@@ -26,6 +26,7 @@ const snap = build({
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
   activity: activityByGateId(arg('--projects', cfg.projects)),
   redactNames: cfg.redactNames,
+  usageAccounts: cfg.usageAccounts,
   services: await checkServices(repoDir, new Date(), cfg.sinkState),
 })
 const dirty = findDirty(snap)
