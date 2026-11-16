@@ -9,5 +9,7 @@ export default defineConfig({
         setupFiles: ['./src/test-setup.ts'],
         // 새 v2 는 아직 테스트가 없다 — 0건을 실패로 보지 않는다 (옛 테스트는 main·v1 브랜치에 있다)
         passWithNoTests: true,
+        // 윈도우 병렬 전체 실행에서 기본 5초를 넘는 시험이 있다 — 전역으로 늘린다
+        testTimeout: 20000,
     },
 });

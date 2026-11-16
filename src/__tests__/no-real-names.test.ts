@@ -43,5 +43,5 @@ describe('실명 거름', () => {
       if (findBanned(readFileSync(abs, 'utf8')) > 0) bad.push(f);
     }
     expect(bad, '실명이 든 파일(내용은 출력하지 않음)').toEqual([]);
-  }, 60_000); // 윈도우는 git ls-files + 전수 읽기가 느려 병렬 부하에서 기본 5초를 넘는다
+  }, 60_000); // 전역 제한시간으로도 모자란 하나만 남김 — 윈도우는 git ls-files + 전수 읽기가 느려 병렬 부하에서 기본 5초를 넘는다
 });
