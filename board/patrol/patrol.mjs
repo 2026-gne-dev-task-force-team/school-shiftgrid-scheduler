@@ -7,7 +7,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readLanes, parseLane, parseLaneNote } from '../reporter/snapshot.mjs'
 
-export const DEFAULTS = { stuckMin: 30, idleHours: 3, urgentMin: 15, pickedHours: 1, parallelMin: 30, commits: 30 }
+export const DEFAULTS = { stuckMin: 30, idleHours: 3, staleHours: 24, urgentMin: 15, pickedHours: 1, parallelMin: 30, commits: 30 }
 const KST = 9 * 3600e3
 const FUTURE_SLACK = 15 * 60e3
 const p2 = (n) => String(n).padStart(2, '0')
@@ -83,25 +83,40 @@ export function parsePicked(md, now) {
   return map
 }
 
-/** 2. 방치 📥 — R 줄이 📥 대기로 idleHours 넘음 · 🚨 U 줄은 집은 카드에 🔨 없이 urgentMin 넘음. */
+/** 2. 방치 📥 — R 줄이 📥 대기로 idleHours 넘음 · 🚨 U 줄은 집은 카드에 🔨 없이 urgentMin 넘음. 집은 카드에 🔨 나 ✅ 줄이 있으면 집힌·닫힌 것. staleHours 넘게 묵은 R 은 줄마다 되풀이하지 않고 ⚠️ 한 줄로 묶는다. */
 export function idleRequests({ rs, us }, picked, now, o) {
   const bad = []
+  const stale = []
   let n = 0
+  const taken = (id) => { const e = picked.get(id); return !!(e?.claimed || e?.done) }
   for (const r of rs) {
-    if (!/^\s*📥/u.test(r.state) || r.at == null || picked.get(r.id)?.claimed) continue
+    if (!/^\s*📥/u.test(r.state) || r.at == null || taken(r.id)) continue
     n++
     const m = mins(now, r.at)
     const v = grade(m, o.idleHours * 60)
-    if (v !== '✅') bad.push({ target: r.id, verdict: v, basis: `📥 ${span(m)} 째 안 집힘 (기준 ${o.idleHours}시간)` })
+    if (v === '✅') continue
+    if (m > o.staleHours * 60) stale.push({ id: r.id, m })
+    else bad.push({ target: r.id, verdict: v, basis: `📥 ${span(m)} 째 안 집힘 (기준 ${o.idleHours}시간)` })
+  }
+  if (stale.length) {
+    const ids = stale.map((x) => x.id)
+    const max = Math.max(...stale.map((x) => x.m))
+    bad.push({ target: `묵은 R ${stale.length}건`, verdict: '⚠️', basis: `${ids.slice(0, 5).join('·')}${ids.length > 5 ? ' 외' : ''} — ${o.staleHours}시간 넘게 📥 (최장 ${span(max)})` })
   }
   for (const u of us) {
-    if (u.state !== '📥' || u.at == null || picked.get(u.id)?.claimed) continue
+    if (u.state !== '📥' || u.at == null || taken(u.id)) continue
     n++
     const m = mins(now, u.at)
     const v = grade(m, o.urgentMin)
     if (v !== '✅') bad.push({ target: `🚨 ${u.id}`, verdict: v, basis: `집은 카드에 🔨 없이 ${span(m)} (기준 ${o.urgentMin}분)` })
   }
   return fold('방치 📥', n, bad, null, `📥 ${n}건 모두 기준 안`)
+}
+
+/** 레인 표 0줄 — 표 머리가 `태스크·무엇·상태` 꼴이 아니면 보고꾼이 0줄로 읽고 넘어간다. 조용히 두지 않고 ⚠️. */
+export function emptyLanes(names) {
+  const bad = names.filter((x) => x.rows === 0).map((x) => ({ target: x.lane, verdict: '⚠️', basis: '레인 표 0줄 — 표 머리가 `태스크·무엇·상태` 꼴인지 확인' }))
+  return fold('레인 표 0줄', names.length, bad, null, `레인 ${names.length}곳 모두 표 줄 있음`)
 }
 
 /** 4. 집은 카드에 🔨 만 남음 — 🔨 줄은 있는데 ✅ 줄이 없는 U 번호가 pickedHours 넘음. */
@@ -154,7 +169,9 @@ export function patrol(cfg, { now = new Date(), branch = '1.2v-preview', repo = 
   const laneRoot = home(cfg.laneRoot)
   const laneRows = []
   const groups = []
+  const counts = []
   const addNote = (name, file, rows) => {
+    counts.push({ lane: name, rows: rows.length })
     for (const r of rows) laneRows.push({ lane: name, ...r })
     const sp = parseLane(read(file)).sprints.filter((s) => s.rows.length)
     const mtime = file && existsSync(file) ? statSync(file).mtimeMs : now.getTime()
@@ -174,6 +191,7 @@ export function patrol(cfg, { now = new Date(), branch = '1.2v-preview', repo = 
     ...idleRequests(backlog, picked, now, o),
     ...(commits ? unnumberedCommits(commits) : [{ item: '번호 없는 커밋', target: branch, verdict: '⚠️', basis: '가지를 못 읽음(git log 실패)' }]),
     ...lingeringPicks(picked, now, o),
+    ...emptyLanes(counts),
     ...(parallel ? idleParallel(groups, now, o.parallelMin) : []),
   ].map((l) => ({ at: hhmm(now), ...l }))
   const warn = lines.filter((l) => l.verdict === '⚠️').length

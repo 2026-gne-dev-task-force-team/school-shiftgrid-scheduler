@@ -115,6 +115,31 @@ describe('5 놀고 있는 병렬', () => {
   })
 })
 
+describe('R99 오탐·경고 피로', () => {
+  it('① 집은 카드에 ✅ 줄만 있는 🚨 U · R 은 닫힘 — 방치로 안 셈', () => {
+    const us = '- 🚨 U1 · 22:00 · **할 일** · 📥'
+    const rs = '| R1 | 11-12 16:00 | 원문 | 처방 | 앱 | 📥 대기 |'
+    const l = by(run(world({ lane: row('T-1', '✅'), us, rs, picked: '- U1 · ✅ 운용 · 22:20\n- R1 · ✅ 끝 · 17:00' })), '방치 📥')
+    expect(l).toHaveLength(1)
+    expect(l[0].verdict).toBe('✅')
+  })
+  it('② 24시간 넘게 묵은 R 은 ⚠️ 한 줄로 묶고, 3~24시간은 따로 ❌', () => {
+    const rs = ['| R1 | 11-09 10:00 | 원문 | 처방 | 앱 | 📥 대기 |', '| R2 | 11-09 11:00 | 원문 | 처방 | 앱 | 📥 대기 |', '| R3 | 11-12 16:00 | 원문 | 처방 | 앱 | 📥 대기 |'].join('\n')
+    const l = by(run(world({ lane: row('T-1', '✅'), rs })), '방치 📥')
+    expect(l.map((x) => [x.target, x.verdict])).toEqual([['R3', '❌'], ['묵은 R 2건', '⚠️']])
+    expect(l[1].basis).toContain('R1·R2')
+  })
+  it('③ 표 머리가 틀려 0줄인 레인은 ⚠️ · 멀쩡하면 ✅', () => {
+    const w = world({ lane: row('T-1', '✅') })
+    const d = join(dirname(dirname(w.cfg.requests)), '틀린 레인')
+    mkdirSync(d)
+    writeFileSync(join(d, '레인 틀린.md'), ['# 레인', '', '| 번호 | 할 일 | 진행 |', '|---|---|---|', '| 1 | 가 | 나 |', ''].join('\n'))
+    const l = by(run(w), '레인 표 0줄')
+    expect(l.map((x) => [x.target, x.verdict])).toEqual([['틀린 레인', '⚠️']])
+    expect(by(run(world({ lane: row('T-1', '✅') })), '레인 표 0줄')[0].verdict).toBe('✅')
+  })
+})
+
 describe('요약·표', () => {
   it('요약 꼴과 표 머리', () => {
     const r = run(world({ lane: row('T-1', '🔄 20:00') }))
