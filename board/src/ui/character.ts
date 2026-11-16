@@ -32,6 +32,9 @@ const RACE_PROP: Record<string, R[]> = {
   orc: [[5, 6, 1, 1, '#FFFFFF'], [8, 6, 1, 1, '#FFFFFF']], // 입 자리 엄니
   ghost: [[3, 0, 3, 1, '#EDEDF7']], // 머리 위 희미한 고리
 }
+// 종족 → 「기기 · 종족」 글(T-10ca). 짝은 보고꾼 race.mjs 와 같다. 값이 없으면 빈 글(기기를 모른다).
+const RACE_TEXT: Record<string, string> = { elf: '맥 · 엘프', dwarf: '업무 PC · 드워프', orc: '씽크패드 · 오크', ghost: 'NAS · 유령' }
+export const raceText = (a: Pick<Actor, 'race'>): string => RACE_TEXT[a.race ?? ''] ?? ''
 export const raceProp = (a: Pick<Actor, 'race'>): R[] => RACE_PROP[a.race ?? ''] ?? []
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
