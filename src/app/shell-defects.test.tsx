@@ -121,7 +121,7 @@ describe('③ 리본 강조는 지금 열린 패널을 따른다', () => {
         act(() => { b.click(); });
         expect(b.getAttribute('aria-current')).toBe('page');
         expect(a.getAttribute('aria-current')).toBeNull();
-    });
+    }, 30_000); // 리본 전부를 눌러 보는 시험 — 윈도우 jsdom 은 병렬 부하에서 기본 5초를 넘는다
 });
 
 describe('④ ⌘K·Ctrl+K 로 명령 팔레트', () => {

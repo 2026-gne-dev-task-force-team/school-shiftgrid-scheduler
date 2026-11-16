@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
 import { defaultSinkState, loadConfig } from './config.mjs'
+
+// 없는 설정 자리 — OS 마다 절대 경로 꼴이 달라 pathToFileURL 로 만든다
+const NO_CFG = pathToFileURL(join(tmpdir(), 'board-nonexistent-cfg', 'x.mjs')).href
 
 describe('loadConfig', () => {
   it('싣기 상태 파일 기본 자리는 기기별 로컬 캐시(레포 밖) · 설정으로 바꿀 수 있다', () => {
@@ -17,12 +21,12 @@ describe('loadConfig', () => {
     expect(c.lane.includes('작업현황판')).toBe(true)
   })
   it('설정 파일이 없는 OS 는 윈도우 기본값', () => {
-    const c = loadConfig({}, 'win32', 'file:///nonexistent/x.mjs')
+    const c = loadConfig({}, 'win32', NO_CFG)
     expect(c.ref).toBe('')
     expect(c.usage).toBe(join(homedir(), '.claude/rate-limits.json'))
   })
   it('redactNames 는 선택 칸 — 없으면 빈 목록', () => {
-    expect(loadConfig({}, 'win32', 'file:///nonexistent/x.mjs').redactNames).toEqual([])
+    expect(loadConfig({}, 'win32', NO_CFG).redactNames).toEqual([])
   })
   it('BOARD_REPORTER_CONFIG 가 가리키는 파일이 없으면 던진다', () => {
     expect(() => loadConfig({ BOARD_REPORTER_CONFIG: '/nonexistent/c.json' }, 'darwin')).toThrow()

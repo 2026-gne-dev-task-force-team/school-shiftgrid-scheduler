@@ -4,6 +4,9 @@ import { createWatcher, gitHeadsDir, runCycle, snapshotHash, sourceTargets, HEAR
 // @ts-expect-error — 위와 같음
 import { build } from './snapshot.mjs'
 
+// 윈도우 경로(역슬래시·드라이브 글자)를 POSIX 꼴로 눕혀 비교한다 — 코드는 실제 OS 경로 규칙을 그대로 쓴다
+const posix = (p: string) => p.replace(/^[A-Za-z]:/, '').replace(/\\/g, '/')
+
 type Cb = (ev: string, name: string | null) => void
 const fakeFs = () => {
   const cbs: Cb[] = []
@@ -135,7 +138,7 @@ describe('sourceTargets', () => {
   it('설정의 자리들을 가져온다(레인 폴더 안 파일은 따로 안 건다 · 한도·문지기는 파일명 필터)', () => {
     const cfg = { laneRoot: '/v/레인', lane: '/v/레인/작업현황판/a.md', requests: '/v/레인/요청함/b.md', usage: '/h/.claude/rate-limits.json', gate: '/h/.claude/board/actors.json' }
     const t = sourceTargets(cfg, '/repo', () => true, () => true)
-    expect(t.map((x: { dir: string }) => x.dir)).toEqual(['/v/레인', '/h/.claude', '/h/.claude/board', '/repo/.git/refs/heads'])
+    expect(t.map((x: { dir: string }) => posix(x.dir))).toEqual(['/v/레인', '/h/.claude', '/h/.claude/board', '/repo/.git/refs/heads', '/v/레인/현황판 관리/캐릭터'])
     expect(t[1].filter('rate-limits.json')).toBe(true); expect(t[1].filter('other.json')).toBe(false)
     expect(t[0].filter('x.md')).toBe(true); expect(t[0].filter('x.png')).toBe(false)
   })
@@ -149,8 +152,8 @@ describe('sourceTargets', () => {
 describe('gitHeadsDir — 워크트리', () => {
   it('.git 이 파일이면 commondir 의 refs/heads 를 가리킨다', () => {
     const files: Record<string, string> = { '/w/.git': 'gitdir: /main/.git/worktrees/w\n', '/main/.git/worktrees/w/commondir': '../..\n' }
-    const read = (p: string) => { if (p in files) return files[p]; throw new Error('nf') }
-    expect(gitHeadsDir('/w', (p: string) => p === '/main/.git/refs/heads', read)).toBe('/main/.git/refs/heads')
+    const read = (p: string) => { if (posix(p) in files) return files[posix(p)]; throw new Error('nf') }
+    expect(posix(gitHeadsDir('/w', (p: string) => posix(p) === '/main/.git/refs/heads', read))).toBe('/main/.git/refs/heads')
   })
   it('git 이 없으면 null', () => {
     expect(gitHeadsDir('/w', () => false, () => { throw new Error('nf') })).toBeNull()

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { loadData } from '../data.ts'
 import { loadTheme, saveTheme, isDark, type Theme } from '../lib/theme.ts'
@@ -54,7 +55,7 @@ const lum = (hex: string) => {
   return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!
 }
 const contrast = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x! + 0.05) / (y! + 0.05) }
-const css = readFileSync('src/style.css', 'utf8')
+const css = readFileSync(join(__dirname, '..', 'style.css'), 'utf8')
 const block = (head: string) => { const i = css.indexOf(head); return css.slice(i, css.indexOf('}', i)) }
 const vars = (src: string) => Object.fromEntries([...src.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1]!, m[2]!]))
 
