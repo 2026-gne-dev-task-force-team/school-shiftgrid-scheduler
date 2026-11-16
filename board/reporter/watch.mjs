@@ -127,6 +127,7 @@ export function sourceTargets(cfg, repoDir, exists = existsSync, dirTest = isDir
   }
   const heads = gitHeadsDir(repoDir, dirTest, readText) // 가지 목록(줄기·가지 커밋 시각)
   if (heads) add(heads, true)
+  if (cfg.laneRoot) add(join(cfg.laneRoot, '현황판 관리', '캐릭터'), false, (n) => n.endsWith('.json') || n === '') // 다른 기기 캐릭터 거울
   return out
 }
 
