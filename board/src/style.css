@@ -317,6 +317,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start } .td-link { text-align: left }
 .detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 6dvh; left: 50%; transform: translateX(-50%); width: min(960px, 94vw); max-height: 88dvh; overflow: auto }
 @media (min-width: 768px) { .detail.full .td { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: start } .detail.full .td-main { order: 1 } .detail.full .td-side { order: 2 } }
+/* T-10cc: 옆 상세는 스크롤을 따라온다(데스크톱만 — 폰은 바텀시트라 해당 없음). 격자 칸 안에서 키가 늘어나면 붙을 자리가 없어 align-self: start */
+@media (min-width: 768px) { .detail[data-layout=side]:not(.full) { position: sticky; top: 36px; align-self: start; max-height: calc(100dvh - 36px - var(--sp4)); overflow-y: auto } }
 
 /* Board 검색·필터(R72) */
 .fb { margin-bottom: var(--sp2); font-size: var(--fs-sm) }
