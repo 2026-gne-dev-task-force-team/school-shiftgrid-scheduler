@@ -126,8 +126,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .stage-host > :not(.card) { animation: sgb-in .28s var(--ease) backwards } /* 탭이 바뀌면 내용이 살짝 미끄러져 들어온다 */
 .ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
-/* 시스템 「움직임 줄이기」: 큰 이동(날기·미끄러짐·회전 굴림)만 멎고 깜빡임·페이드·색은 남긴다. 다 멎게 하는 건 사용자가 켠 .calm 뿐 */
-@media (prefers-reduced-motion: reduce) { --dy: 0px; .ws-roamer, .ws-col[data-col=work] .ws-card .chr[data-state=work] { animation: none } .lane-chip.flash { animation: none } .sgb-drawer, .sgb-drawer.open { transition: none } }
+/* 시스템 「움직임 줄이기」: .calm 과 같게 애니메이션·전환을 전부 끈다(요청 R89 「다 끔」) */
+@media (prefers-reduced-motion: reduce) { --dy: 0px; & *, & *::before, & *::after, & .sgb-drawer { animation: none !important; transition: none !important } }
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }

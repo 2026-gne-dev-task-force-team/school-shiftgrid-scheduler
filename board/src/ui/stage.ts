@@ -15,12 +15,12 @@ export function createStage() {
       const host = h('div', { class: 'stage-host' })
       const desc = r.desc ? h('p', { class: 'tab-desc', 'aria-label': r.desc }, r.desc) : null
       el.replaceChildren(...(desc ? [desc] : []), host)
-      // 대화창 타자 효과 — 0.6초 안에 끝(20틱), 움직임 끄기·시스템 줄이기면 즉시
+      // 대화창 타자 효과 — 0.5초 안에 끝(20틱×24ms=0.48초), 움직임 끄기·시스템 줄이기면 즉시
       if (desc && r.desc && !isCalm() && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         const full = r.desc, step = Math.ceil(full.length / 20)
         let n = 0
         desc.textContent = ''
-        typing = setInterval(() => { n += step; desc.textContent = full.slice(0, n); if (n >= full.length) clearInterval(typing) }, 30)
+        typing = setInterval(() => { n += step; desc.textContent = full.slice(0, n); if (n >= full.length) clearInterval(typing) }, 24)
       }
       el.dataset.layer = r.id
       cleanup = r.render(host, ctx)
