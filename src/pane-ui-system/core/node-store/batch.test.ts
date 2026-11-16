@@ -98,7 +98,12 @@ describe('🙋1 실측 — 2,000행', () => {
 
         // 묶음 없이 같은 일(비교 대상) — 200행만 쟀다가 2,000 으로 외삽하지 않고 그대로 2,000 을 센다
         console.log(`[🙋1 실측] 묶음 2000행 생성 ${tCreate.toFixed(0)}ms · 셀 수정 100번 ${tEdit100.toFixed(0)}ms(1번 ${(tEdit100 / 100).toFixed(1)}ms) · ⌘Z ${tUndo.toFixed(1)}ms · ⌘⇧Z ${tRedo.toFixed(1)}ms · 힙 ${h0.toFixed(0)}→${h1.toFixed(0)}→${h2.toFixed(0)}MB (gc ${typeof (globalThis as { gc?: unknown }).gc === 'function' ? '켬' : '끔'})`);
-        expect(tCreate).toBeLessThan(15000);
-        expect(tUndo).toBeLessThan(500);
+        // 시간: 기본은 같은 시험 안 기준선 대비(되돌리기는 스냅샷 교체라 2,000행 생성보다 훨씬 싸야 한다), PERF_STRICT=1 이면 절대값.
+        if (process.env.PERF_STRICT === '1') {
+            expect(tCreate).toBeLessThan(15000);
+            expect(tUndo).toBeLessThan(500);
+        } else {
+            expect(tUndo).toBeLessThan(Math.max(tCreate, 100));
+        }
     }, 60000);
 });
