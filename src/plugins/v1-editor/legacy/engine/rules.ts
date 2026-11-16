@@ -9,6 +9,7 @@ import type {
 import { isHomeroomAgent } from '../types/schema';
 import type { ClockRange, EngineContext, EngineRule } from './api';
 import { hm } from './context';
+import { pooledCapacity } from './resource-pool';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const CONSEC_GAP = 15; // 이 분 이내로 붙으면 '연속 수업'으로 본다
@@ -180,12 +181,7 @@ const noOverlapResource: EngineRule = {
         }
         for (const [actId, list] of byAct) {
             const referenced = new Set(list.map((a) => a.resourceId!));
-            let pooledCap = 0;
-            for (const r of ctx.doc.resources) {
-                const serves = !r.activityIds || r.activityIds.length === 0 || r.activityIds.includes(actId);
-                if (serves || referenced.has(r.id)) pooledCap += r.capacity ?? 1;
-            }
-            if (pooledCap <= 0) pooledCap = 1;
+            const pooledCap = pooledCapacity(ctx.doc.resources, actId, referenced);
             // 요일별로 동시 사용 최대치 검사
             const byDay = new Map<number, Assignment[]>();
             for (const a of list) (byDay.get(a.dayIndex) ?? byDay.set(a.dayIndex, []).get(a.dayIndex)!).push(a);
