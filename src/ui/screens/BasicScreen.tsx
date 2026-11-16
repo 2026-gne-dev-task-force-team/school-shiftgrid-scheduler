@@ -5,6 +5,7 @@ import { uid } from '../../store/ids';
 import { colorFor } from '../../store/doc-ops';
 import type { MakeSpecInput } from '../../engine/api';
 import { makeSpec } from '../../engine/api';
+import { isBookingOnly, resourcesInUse, withBookingOnly } from '../../engine/resource-pool';
 import type { Agent, Activity, Resource, Track, TimetableSpec } from '../../types/schema';
 import { assignableSlots, lessonCountForDay, activeDays, DAY_LABEL } from '../lib';
 import { L } from '../help/terms';
@@ -481,34 +482,47 @@ function ResourcesSection() {
     const [api, setApi] = useState<SheetApi | null>(null);
     const apiCb = useRef((a: SheetApi) => setApi(a)).current;
     const actNames = st.doc.activities.map((a) => a.name);
+    const [warn, setWarn] = useState('');
 
     const rows: SheetRow[] = st.doc.resources.map((r) => ({
         _id: r.id, name: r.name, cap: r.capacity ?? 1,
         acts: (r.activityIds ?? []).map((id) => st.doc.activities.find((a) => a.id === id)?.name ?? id),
+        booking: isBookingOnly(r),
     }));
     const columns: SheetColumn[] = [
         { key: 'name', title: '이름', type: 'text', width: 150, validate: (v) => (!String(v).trim() ? '특별실 이름을 적어 주세요' : undefined) },
         { key: 'cap', title: L.capacity, type: 'number', width: 90, help: '같은 시각에 들어갈 수 있는 반의 수입니다(과학실이 2개면 2).' },
         {
             key: 'acts', title: L.activity, type: 'multiselect', options: actNames, width: 260, placeholder: '과목을 고르세요',
+            help: '과목을 비우면 모든 과목이 함께 쓰는 방으로 봅니다. 도서실·다목적실처럼 예약만 받는 방은 「예약만 받는 방」을 켜세요.',
             validate: (v) => { const bad = (Array.isArray(v) ? v : []).filter((n) => !actNames.includes(n)); return bad.length ? `과목 목록에 없음: ${bad.join(', ')}` : undefined; },
         },
+        { key: 'booking', title: '예약만 받는 방', type: 'bool', width: 120, help: '켜면 과목 칸이 비어 있어도 과목 정원에 저절로 더하지 않습니다. 시수표에서 이 방을 직접 고른 수업만 씁니다.' },
     ];
     const commit = (next: SheetRow[]) => {
         const actByName = new Map(st.doc.activities.map((a) => [a.name, a.id]));
+        const used = resourcesInUse(st.doc);
+        const refused: string[] = [];
         const resources: Resource[] = next.map((r, i) => {
             const ex = st.doc.resources.find((x) => x.id === r._id);
             const ids = (Array.isArray(r.acts) ? r.acts : []).map((n) => actByName.get(n)).filter((x): x is string => !!x);
-            return { kind: 'resource', id: r._id, name: String(r.name ?? ''), capacity: Number(r.cap) || 1, attr: ex?.attr ?? { color: colorFor(i) }, activityIds: ids.length ? ids : undefined };
+            const name = String(r.name ?? '');
+            let booking = !!r.booking;
+            // 이미 시수표·고정 수업이 고른 방은 「예약만」으로 바꾸지 않는다 — 경고하고 막는다(R106 ④)
+            if (booking && !(ex && isBookingOnly(ex)) && used.has(r._id)) { booking = false; refused.push(name || r._id); }
+            // 켰을 때만 attr.bookingOnly 칸을 적고 끄면 지운다 — 안 바뀐 방은 attr 를 그대로 둔다(옛 파일 내보내기가 안 바뀌게)
+            return { kind: 'resource', id: r._id, name, capacity: Number(r.cap) || 1, attr: withBookingOnly(ex?.attr ?? { color: colorFor(i) }, booking), activityIds: ids.length ? ids : undefined };
         });
+        setWarn(refused.length ? `${refused.join('·')}: 시수표나 고정 수업이 이미 이 방을 고르고 있어 「예약만 받는 방」으로 바꾸지 않았습니다. 그 수업의 특별실을 먼저 비워 주세요.` : '');
         st.act.syncResources(resources);
     };
-    const newRow = (): SheetRow => ({ _id: uid('r'), name: '', cap: 1, acts: [] });
+    const newRow = (): SheetRow => ({ _id: uid('r'), name: '', cap: 1, acts: [], booking: false });
 
     return (
         <div className="space-y-3">
             <SheetToolbar title={L.resource} api={api} helpKey="sheetResources" />
-            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={520} {...undoRedo(st)} />
+            <Sheet columns={columns} rows={rows} onCommit={commit} newRow={newRow} onApi={apiCb} minWidth={640} {...undoRedo(st)} />
+            {warn && <p className="text-[11px] text-warn"><Mark kind="warn" /> {warn}</p>}
         </div>
     );
 }
