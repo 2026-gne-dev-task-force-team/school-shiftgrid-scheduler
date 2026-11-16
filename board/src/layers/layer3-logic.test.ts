@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import type { Task } from '../types.ts'
-import { changedChips, chipState, laneChips } from './layer3-logic.ts'
+import { changedChips, chipState, laneChips, NO_TITLE, rowDetails, rowTitle } from './layer3-logic.ts'
 
 const T = (id: string, o: Partial<Task> = {}): Task => ({ id, title: id, category: '', kind: 'work', team: '', sprint: 1, est_min: 5, started_at: null, lane_id: 'a', column: 'wait', reason: '', actor_id: null, updated_at: '', ...o }) as Task
 
@@ -19,4 +19,14 @@ it('바뀐 칩 — 첫 그림은 없음 · 새로 생김·상태 바뀜만', () 
   const prev = new Map<string, 'blocked' | 'work' | 'wait'>([['a', 'wait'], ['b', 'wait']])
   expect([...changedChips(prev, chips)]).toEqual(['b'])
   expect([...changedChips(new Map(), chips)].sort()).toEqual(['a', 'b'])
+})
+it('줄 제목 — 있으면 그대로 · 비면 (설명 없음)', () => {
+  expect(rowTitle(T('a', { title: ' 제목 ' }))).toEqual({ text: '제목', empty: false })
+  expect(rowTitle(T('a', { title: '  ' }))).toEqual({ text: NO_TITLE, empty: true })
+})
+it('세부 — 값 있는 칸만, 상태는 항상', () => {
+  expect(rowDetails(T('a'))).toEqual([['상태', '대기']])
+  const r = rowDetails(T('a', { body: 'B', ask: 'Q', done: 'D', column: 'work' }))
+  expect(r.map((x) => x[0])).toEqual(['무엇', '왜(요청)', '완료 정의', '상태'])
+  expect(r[3][1]).toBe('하는 중')
 })

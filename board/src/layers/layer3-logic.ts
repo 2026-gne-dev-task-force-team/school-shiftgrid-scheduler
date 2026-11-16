@@ -23,3 +23,22 @@ export function changedChips(prev: Map<string, ChipState> | undefined, chips: La
   if (prev) for (const c of chips) if (prev.get(c.id) !== c.state) out.add(c.id)
   return out
 }
+
+export const NO_TITLE = '(설명 없음)'
+const STATE_WORD: Record<ChipState, string> = { blocked: '확인 중', work: '하는 중', wait: '대기' }
+
+/** 줄 제목 — 비면 「(설명 없음)」과 empty 표시. */
+export const rowTitle = (t: Pick<Task, 'title'>): { text: string; empty: boolean } => {
+  const x = (t.title ?? '').trim()
+  return x ? { text: x, empty: false } : { text: NO_TITLE, empty: true }
+}
+
+/** 펼침 세부 — 자료에 값이 있는 칸만(무엇 · 왜 · 완료 정의 · 상태). R71 상세와 같은 칸을 쓴다. */
+export function rowDetails(t: Task): [string, string][] {
+  const out: [string, string][] = []
+  if (t.body) out.push(['무엇', t.body])
+  if (t.ask) out.push(['왜(요청)', t.ask])
+  if (t.done) out.push(['완료 정의', t.done])
+  out.push(['상태', STATE_WORD[chipState(t)] + (t.reason ? ` · ${t.reason}` : '')])
+  return out
+}
