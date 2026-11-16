@@ -9,7 +9,7 @@ import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } fr
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { raceOfDevice } from './race.mjs'
-import { claudeVariants, newestOf } from './claude-home.mjs'
+import { claudeVariants } from './claude-home.mjs'
 import { bodyFromLinks, bodyFromLog, branchTitle, sprintNext, sprintReview } from './fill.mjs'
 
 const ID = String.raw`T-\d+[A-Za-z0-9]*(?:-[A-Za-z0-9]+)*` // T-7a · T-2n-6 · T-7h1
@@ -313,21 +313,31 @@ export function gitGraph(repoDir, limit = GRAPH_LIMIT) {
 }
 
 export const USAGE_STALE_MS = 30 * 60e3
-/** 한도 — 파일은 `.claude`·`.claude-*` 중 mtime 최신. ts 는 「싣는 시각」이 아니라 파일 안 잰 시각(updated)·없으면 파일 mtime. 30분 넘게 낡았으면 stale: true(SQL 은 모르는 칸을 버린다). */
-function readUsage(usagePath, nowIso, home) {
-  const f = newestOf(usagePath, { home })
-  if (!f) return []
-  try {
-    const j = JSON.parse(readFileSync(f, 'utf-8'))
-    const l = j.limits ?? {}
-    const at = (v) => (typeof v === 'number' ? new Date(v < 1e12 ? v * 1000 : v).toISOString() : nowIso)
-    if (typeof l.five_hour?.pct !== 'number' || typeof l.seven_day?.pct !== 'number') return []
-    const ms = typeof j.updated === 'number' ? (j.updated < 1e12 ? j.updated * 1000 : j.updated) : statSync(f).mtimeMs
-    const ts = new Date(ms).toISOString()
-    const row = { account: 'org', ts, pct_5h: l.five_hour.pct, pct_7d: l.seven_day.pct,
-      reset_5h_at: at(l.five_hour.resets_at), reset_7d_at: at(l.seven_day.resets_at), tok_per_min: 0 }
-    return [Date.parse(nowIso) - ms > USAGE_STALE_MS ? { ...row, stale: true } : row]
-  } catch { return [] }
+/** 설정 슬롯 폴더 이름(`.claude`·`.claude-b`…) → 계정. 한도 파일 안에는 계정 칸이 없다(실측: updated·limits·source 뿐) — 어느 슬롯 파일인가로만 가른다.
+ * 기본: `.claude` 는 기관, 나머지 슬롯은 개인. 로컬 설정 `usageAccounts` 로 덮어쓴다. */
+export const DEFAULT_USAGE_ACCOUNT = (slot) => (slot === '.claude' ? 'org' : 'personal')
+export const slotOf = (f) => String(f).split(/[\\/]/).find((seg) => /^\.claude(-[\w-]+)?$/.test(seg)) ?? '.claude'
+
+/** 한도 — 슬롯(`.claude`·`.claude-*`)마다 파일을 읽어 계정별로 가른다. 한 계정에 슬롯이 여럿이면 mtime 최신 것. ts 는 「싣는 시각」이 아니라 파일 안 잰 시각(updated)·없으면 파일 mtime. 30분 넘게 낡았으면 stale: true(SQL 은 모르는 칸을 버린다). */
+function readUsage(usagePath, nowIso, home, usageAccounts = {}) {
+  const best = {}
+  for (const f of claudeVariants(usagePath, { home })) {
+    try {
+      const j = JSON.parse(readFileSync(f, 'utf-8'))
+      const l = j.limits ?? {}
+      const at = (v) => (typeof v === 'number' ? new Date(v < 1e12 ? v * 1000 : v).toISOString() : nowIso)
+      if (typeof l.five_hour?.pct !== 'number' || typeof l.seven_day?.pct !== 'number') continue
+      const ms = typeof j.updated === 'number' ? (j.updated < 1e12 ? j.updated * 1000 : j.updated) : statSync(f).mtimeMs
+      const slot = slotOf(f)
+      const account = usageAccounts[slot] === 'org' || usageAccounts[slot] === 'personal' ? usageAccounts[slot] : DEFAULT_USAGE_ACCOUNT(slot)
+      if (best[account] && best[account].ms >= ms) continue
+      // tok_per_min: 한도 파일엔 토큰이 없다 → 0(화면은 0 이면 「토큰 속도」 줄을 감추고 한도 %의 기울기로 속도를 말한다)
+      const row = { account, ts: new Date(ms).toISOString(), pct_5h: l.five_hour.pct, pct_7d: l.seven_day.pct,
+        reset_5h_at: at(l.five_hour.resets_at), reset_7d_at: at(l.seven_day.resets_at), tok_per_min: 0 }
+      best[account] = { ms, row: Date.parse(nowIso) - ms > USAGE_STALE_MS ? { ...row, stale: true } : row }
+    } catch { /* 깨진 슬롯 파일은 건너뛴다 */ }
+  }
+  return ['org', 'personal'].filter((a) => best[a]).map((a) => best[a].row)
 }
 
 // 문지기 훅(볼트 배포/hooks/board-gate.js)이 적는 「지금 도는 에이전트·세션」 → 각각 state(work|idle|off)를 매겨 돌려준다.
@@ -535,7 +545,7 @@ export function linkTasks(tasks, edges) {
 }
 
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
-export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [], pickedPath, pickedMd }) {
+export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [], usageAccounts = {}, pickedPath, pickedMd }) {
   setRedactNames(redactNames)
   const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
@@ -770,7 +780,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,
     services, modules: appModules(requests, readModules()),
-    goals, events: allEvents.slice(0, 50), usage: readUsage(usagePath, nowIso, home), runs, sprints,
+    goals, events: allEvents.slice(0, 50), usage: readUsage(usagePath, nowIso, home, usageAccounts), runs, sprints,
   }
   linkTasks(data.tasks, edges)
   bodyFromLinks(data.tasks)

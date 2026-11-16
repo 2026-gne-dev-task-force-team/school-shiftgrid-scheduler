@@ -140,7 +140,7 @@ async function main() {
     makeSnap: async (now) => build({
       lanePath: cfg.lane, requestPath: cfg.requests, laneRoot: cfg.laneRoot, repoDir, now,
       onWarn: (d, why) => console.warn('경고', d, why),
-      usagePath: cfg.usage, gatePath: cfg.gate, tokens: tokensByToolUse(cfg.projects), activity: activityByGateId(cfg.projects), redactNames: cfg.redactNames,
+      usagePath: cfg.usage, gatePath: cfg.gate, tokens: tokensByToolUse(cfg.projects), activity: activityByGateId(cfg.projects), redactNames: cfg.redactNames, usageAccounts: cfg.usageAccounts,
       services: await checkServices(repoDir, now, cfg.sinkState),
     }),
     sinkFn: (snap) => sinkAndLog(snap, { token: readToken(), ref: readRef(cfg), statePath: cfg.sinkState }, log),

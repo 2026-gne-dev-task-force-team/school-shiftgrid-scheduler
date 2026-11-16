@@ -492,14 +492,24 @@ describe('T-9u 읽기 고침', () => {
   const home = mkdtempSync(join(tmpdir(), 'home-'))
   const put = (rel: string, body: unknown, ageMin: number) => { const f = join(home, rel); mkdirSync(join(f, '..'), { recursive: true }); writeFileSync(f, JSON.stringify(body)); const t = new Date(at.getTime() - ageMin * 60e3); utimesSync(f, t, t) }
   const lim = (p: number, updated?: number) => ({ ...(updated ? { updated } : {}), limits: { five_hour: { pct: p, resets_at: 1794500000 }, seven_day: { pct: 1, resets_at: 1794600000 } } })
-  it('U9③ 한도는 .claude-b 처럼 mtime 최신 형제를 고르고, 시각은 파일 잰 시각 · 낡으면 stale', () => {
+  it('U9③ 한도는 .claude-b 처럼 슬롯 형제를 읽고(개인), 시각은 파일 잰 시각 · 낡으면 stale', () => {
     put('.claude/rate-limits.json', lim(10), 300)
     put('.claude-b/rate-limits.json', lim(77, at.getTime() - 5 * 60e3), 5)
-    const u = build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage[0]
+    const u = build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage.find((x: { account: string }) => x.account === 'personal')
     expect(u).toMatchObject({ pct_5h: 77, ts: new Date(at.getTime() - 5 * 60e3).toISOString() })
     expect(u.stale).toBeUndefined()
     put('.claude-b/rate-limits.json', lim(77, at.getTime() - 60 * 60e3), 60)
-    expect(build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage[0].stale).toBe(true)
+    expect(build({ now: at, md: lane('', ''), home, usagePath: join(home, '.claude/rate-limits.json') }).usage.find((x: { account: string }) => x.account === 'personal').stale).toBe(true)
+  })
+  it('T-10cd 한도는 슬롯별로 읽어 기관·개인으로 가른다 — 기본 .claude=기관 · 나머지=개인 · 같은 계정 슬롯이 여럿이면 최신', () => {
+    const h3 = mkdtempSync(join(tmpdir(), 'home3-'))
+    const w = (rel: string, p: number, ageMin: number) => { const f = join(h3, rel); mkdirSync(join(f, '..'), { recursive: true }); writeFileSync(f, JSON.stringify(lim(p))); const t = new Date(at.getTime() - ageMin * 60e3); utimesSync(f, t, t) }
+    w('.claude/rate-limits.json', 11, 5); w('.claude-b/rate-limits.json', 22, 3); w('.claude-d/rate-limits.json', 33, 1)
+    const usagePath = join(h3, '.claude/rate-limits.json')
+    const u = build({ now: at, md: lane('', ''), home: h3, usagePath }).usage
+    expect(u.map((x: { account: string; pct_5h: number }) => [x.account, x.pct_5h])).toEqual([['org', 11], ['personal', 33]])
+    const u2 = build({ now: at, md: lane('', ''), home: h3, usagePath, usageAccounts: { '.claude-d': 'org', '.claude-b': 'personal' } }).usage
+    expect(u2.map((x: { account: string; pct_5h: number }) => [x.account, x.pct_5h])).toEqual([['org', 33], ['personal', 22]])
   })
   const act = (id: string, kind?: string) => ({ id, ...(kind ? { kind, role: '세션' } : { lead: 'a-00000000', task: 'T-2a' }), started: at.getTime() - 60e3, ended: null })
   it('U9③ 문지기는 프로필 폴더들을 합친다', () => {

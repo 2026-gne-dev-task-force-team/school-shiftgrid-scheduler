@@ -27,6 +27,7 @@ const data = build({
   tokens: tokensByToolUse(arg('--projects', cfg.projects)),
   activity: activityByGateId(arg('--projects', cfg.projects)),
   redactNames: cfg.redactNames,
+  usageAccounts: cfg.usageAccounts,
   onWarn: (dir, why) => console.warn('경고', dir, why),
   onInfo: (dir, why) => console.log('정보', dir, why),
   onDrop: (table) => { dropped[table] = (dropped[table] ?? 0) + 1 },
