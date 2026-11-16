@@ -133,11 +133,11 @@ const agents: Agent[] = [
     { kind: 'agent', id: 'a-music', name: '슬기', role: '전담', tier: 2 },  // 음악
     { kind: 'agent', id: 'a-art', name: '푸름', role: '전담', tier: 2 },    // 미술
     { kind: 'agent', id: 'a-tech', name: '샛별', role: '전담', tier: 2 },   // 실과
-    { kind: 'agent', id: 'a-sports', name: '마루', role: '비교과', tier: 3 }, // 스포츠강사 (1·2학년 체육 협력)
+    { kind: 'agent', id: 'a-sports', name: '마루', role: '비교과', tier: 3 }, // 스포츠강사 (1·2학년 즐생 신체 활동 협력)
     { kind: 'agent', id: 'a-native', name: '노을', role: '비교과', tier: 3 }, // 원어민 (3학년 영어 협력수업)
 ];
 
-// ──────────────────────────────────────────────── 5. 과목 (6 + 담임 고정용 창체)
+// ──────────────────────────────────────────────── 5. 과목 (6 + 1·2학년 즐생 + 담임 고정용 창체)
 
 const activities: Activity[] = [
     { kind: 'activity', id: 'act-eng', name: '영어' },
@@ -146,6 +146,8 @@ const activities: Activity[] = [
     { kind: 'activity', id: 'act-music', name: '음악' },
     { kind: 'activity', id: 'act-art', name: '미술' },
     { kind: 'activity', id: 'act-tech', name: '실과' },
+    // 1·2학년엔 체육 교과가 없다 — 스포츠강사 수업은 통합교과 「즐생」(R105 ⑥)
+    { kind: 'activity', id: 'act-joy', name: '즐생' },
     { kind: 'activity', id: 'act-changje', name: '창체' },
 ];
 
@@ -153,7 +155,7 @@ const activities: Activity[] = [
 
 const resources: Resource[] = [
     { kind: 'resource', id: 'r-science', name: '과학실', capacity: 2, activityIds: ['act-sci'] },
-    { kind: 'resource', id: 'r-gym', name: '체육관', capacity: 1, activityIds: ['act-pe'] },
+    { kind: 'resource', id: 'r-gym', name: '체육관', capacity: 1, activityIds: ['act-pe', 'act-joy'] },
     // 체육 총 48시수 > 주간 칸 30 이라 공간이 둘이어야 한다 — 같은 과목의 방은 cap 이 합산된다(과학실 2와 같은 규칙)
     { kind: 'resource', id: 'r-field', name: '운동장', capacity: 1, activityIds: ['act-pe'] },
     { kind: 'resource', id: 'r-music', name: '음악실', capacity: 1, activityIds: ['act-music'] },
@@ -172,7 +174,7 @@ const timetableIdOfGrade = (grade: number) => grade <= 2 ? 'tt-1-2' : grade <= 4
 // ──────────────────────────────────────────────── 8. 수요 (시수표)
 //     3~6학년: 영어3 · 과학3(과학실2, 순배) · 체육3(체육관) · 음악2(음악실) · 미술2(연강)
 //     5·6학년만: 실과2(컴퓨터실)
-//     1·2학년: 체육2(체육관, 스포츠강사 coteach)
+//     1·2학년: 즐생2(체육관, 스포츠강사 coteach)
 
 const demands: Demand[] = [];
 let dseq = 0;
@@ -213,7 +215,7 @@ for (let grade = 3; grade <= 6; grade++) {
 for (let grade = 1; grade <= 2; grade++) {
     for (const t of tracksOfGrade(grade)) {
         demands.push({
-            id: nextDemandId(), agentId: 'a-sports', trackId: t.id, activityId: 'act-pe', count: 2,
+            id: nextDemandId(), agentId: 'a-sports', trackId: t.id, activityId: 'act-joy', count: 2,
             resourceId: 'r-gym',
         });
     }
@@ -268,7 +270,7 @@ export function sampleDoc(): Doc {
  * 총 시수 합 (2026-09-28 v3 계산):
  *   3·4학년 6반 × 13시간(영3+과3+체3+음2+미2)           = 78
  *   5·6학년 6반 × 15시간(위 13 + 실과2)                 = 90
- *   1·2학년 6반 × 2시간(체육, 스포츠강사)                = 12
+ *   1·2학년 6반 × 2시간(즐생, 스포츠강사)                = 12
  *   3학년 3반 × 1시간(담임 체육 · HOMEROOM)              = 3
  *   ────────────────────────────────────────────────
  *   합계 183시간 (Demand 75건) — 창체 고정 배치 18건은 별도(Demand 아님)
