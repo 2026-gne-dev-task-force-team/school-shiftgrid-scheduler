@@ -27,7 +27,7 @@ export const TOUR_STEPS: TourStep[] = [
         example: '예: 기초자료 → 자동 배정 → 인쇄까지 왼쪽 탭을 위에서 아래로 밟습니다.',
         figure: 'flow' },
     { tour: 'basic-subtabs', screen: 'basic', title: '기초자료',
-        body: ['먼저 학교의 바탕이 되는 자료를 채웁니다.', '시간 틀·반·교사·과목·특별실을 여기서 만듭니다.'],
+        body: ['먼저 학교의 바탕이 되는 자료를 채웁니다.', '시간 틀·반·교사·특별실을 여기서 만듭니다. 과목은 기본 교과가 미리 들어 있습니다.'],
         example: '예: 5·6학년 시간 틀을 6교시로 만들고 6-1·6-2·6-3 반을 넣습니다.',
         figure: 'homeroom' },
     { tour: 'demand-sheet', screen: 'basic', pre: '[data-tour="basic-demands"]', title: '시수표',
