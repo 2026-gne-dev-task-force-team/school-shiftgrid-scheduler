@@ -8,6 +8,7 @@ import tls from 'node:tls'
 import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
+import { raceOfDevice } from './race.mjs'
 import { claudeVariants, newestOf } from './claude-home.mjs'
 import { bodyFromLinks, bodyFromLog, branchTitle, sprintNext, sprintReview } from './fill.mjs'
 
@@ -631,20 +632,21 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     e.total += g.tok; e.from = Math.min(e.from, g.started); e.to = Math.max(e.to, g.state === 'off' ? g.last : now.getTime())
     spent.set(actor, e)
   }
+  const withRace = (a, g) => { const r = raceOfDevice(g.device); if (r && !a.race) a.race = r } // 종족 = 그 캐릭터가 도는 기기(T-10ca) — 모르면 칸 없음(사람)
   for (const g of live) {
     if (g.kind === 'session') continue
     const t = byId.get(g.task ?? '')
     const at = new Date(g.started).toISOString()
     const mine = t && actors.find((a) => a.task_id === t.id && a.kind === 'helper')
-    if (mine) { credit(mine, g); if (g.state === 'work') { mine.state = 'work'; mine.started_at = at } continue } // 끝난 에이전트는 레인 표의 🔄 줄을 못 끈다(표가 말한다)
+    if (mine) { credit(mine, g); withRace(mine, g); if (g.state === 'work') { mine.state = 'work'; mine.started_at = at } continue } // 끝난 에이전트는 레인 표의 🔄 줄을 못 끈다(표가 말한다)
     const dup = actors.find((a) => a.id === (t ? `a-${t.id}` : g.id)) // 같은 일감 에이전트가 여럿(끝난 것+도는 것)이면 한 캐릭터로 — 도는 쪽이 이긴다
-    if (dup) { credit(dup, g); if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
+    if (dup) { credit(dup, g); withRace(dup, g); if (g.state === 'work' && t?.column !== 'done') dup.state = 'work'; continue }
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t && t.category !== '지휘' ? t.category : '코드']
     const fresh = { id: t ? `a-${t.id}` : g.id, parent_id: lead.id, kind: 'helper', name: t ? name : '일손', hue, eye, prop, dept, team, role,
       state: t?.column === 'done' ? 'off' : g.state, // 레인 표에서 ✅ 인 일감의 캐릭터는 퇴근
       task_id: t?.id ?? null, branch_id: t && branches.some((b) => b.id === `b-${t.id}`) ? `b-${t.id}` : null,
       account: 'org', tok_per_min: 0, started_at: at, ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null }
-    actors.push(fresh); credit(fresh, g)
+    withRace(fresh, g); actors.push(fresh); credit(fresh, g)
   }
   // 토큰 = 누적(tok_total) · 분당(tok_per_min = 누적 ÷ 일한 분, 1분 미만은 1분으로). 기록을 못 이은 캐릭터는 두 칸 다 빠진다(화면 「—」).
   for (const [a, e] of spent) { a.tok_total = e.total; a.tok_per_min = Math.round(e.total / Math.max(1, (e.to - e.from) / 60000)) }
@@ -653,7 +655,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const g of live.filter((x) => x.kind === 'session'))
     actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
       state: g.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
-      ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null })
+      ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null, ...(raceOfDevice(g.device) ? { race: raceOfDevice(g.device) } : {}) })
   // 감독관 = 레인 폴더 `감독/레인 감독.md`(순찰이 5분마다 덮어씀). 노트가 있을 때만 — 일함(mtime 10분 안) · 쉼, 한 줄 = `## 요약` 줄.
   const sup = readSupervisor(laneRoot, now)
   if (sup) actors.push({ id: 'a-supervisor', parent_id: lead.id, kind: 'helper', name: '감독관', hue: 40, eye: 'teal', prop: '', dept: 'hq', team: sup.line, role: '감독',

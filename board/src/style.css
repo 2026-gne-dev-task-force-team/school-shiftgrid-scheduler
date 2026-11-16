@@ -225,6 +225,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .bp-house { border: 1px solid rgb(var(--neon-rgb) / .55); border-radius: var(--r2); padding: var(--sp3); background: var(--s2); box-shadow: var(--sh2) } .bp-house header { font-weight: 650; margin-bottom: var(--sp2) }
 .bp-rooms { display: flex; flex-wrap: wrap; gap: var(--sp2) }
 .bp-room { min-height: 30px; min-width: 76px; padding: 0 9px; color: var(--fg); font: inherit; background: var(--s3); border-radius: var(--r1); cursor: pointer; border: 1px solid rgb(var(--neon-rgb) / .7) }
+.chr-race { margin-left: 6px; font-size: .7em; color: var(--fg-3); white-space: nowrap }
 .bp-code { margin-left: 6px; font-size: .75em; color: var(--fg-3) }
 .bp-slot { display: inline-flex; align-items: center; gap: 4px } .bp-crew { display: inline-flex }
 /* R88: 상태는 색·테두리·기호로 가른다(흐리게 하는 opacity 는 글자까지 죽이므로 쓰지 않는다) */

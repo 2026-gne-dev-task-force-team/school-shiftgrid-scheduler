@@ -1,6 +1,6 @@
 import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
-import { character } from '../ui/character.ts'
+import { character, raceText } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
 import { actorChip, actorLabel, actorTokens, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
 import { eventText, plainLog, wheelTitle } from '../ui/code-tag.ts'
@@ -31,10 +31,11 @@ export const layer1: LayerRenderer = {
         const c = chip({ icon: character(a), ...actorChip(a, data.actors, data.tasks), hue: a.hue, id: a.id, onClick: () => openDetail({
           title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${teamText(a.team)}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
             ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))],
-            ['쓴 토큰', actorTokens(a)]],
+            ['쓴 토큰', actorTokens(a)], ...(raceText(a) ? [['기기 · 종족', raceText(a)] as [string, string]] : [])],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })
         tip(c, () => `${name} — ${what} · ${STATE_ICON[a.state]} · 토큰 ${actorTokens(a)}`)
         c.title = `${name} — ${what}`
+        if (raceText(a)) c.append(h('small', { class: 'chr-race' }, raceText(a)))
         row.append(c)
       }
       depts.append(row)
