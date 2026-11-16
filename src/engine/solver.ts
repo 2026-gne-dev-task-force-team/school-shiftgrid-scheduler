@@ -10,6 +10,7 @@ import type {
 } from './api';
 import { buildContext, hm } from './context';
 import { evaluateAll } from './evaluate';
+import { pooledCapacity } from './resource-pool';
 
 /**
  * 교사 가용성 키 — 담임(HOMEROOM)은 반별로 갈라(`__homeroom__:<trackId>`) 다른 반 담임끼리 충돌로 잡지 않는다.
@@ -342,9 +343,7 @@ function hardScan(ctx: EngineContext, doc: Doc, list: Assignment[], ownerById: M
         for (let i = 0; i < list.length; i++) { const a = list[i]; if (!a.resourceId || !a.activityId) continue; (byAct.get(a.activityId) ?? byAct.set(a.activityId, []).get(a.activityId)!).push(i); }
         for (const [actId, idxs] of byAct) {
             const referenced = new Set(idxs.map((i) => list[i].resourceId!));
-            let cap = 0;
-            for (const r of ctx.doc.resources) { const serves = !r.activityIds || r.activityIds.length === 0 || r.activityIds.includes(actId); if (serves || referenced.has(r.id)) cap += r.capacity ?? 1; }
-            if (cap <= 0) cap = 1;
+            const cap = pooledCapacity(ctx.doc.resources, actId, referenced);
             for (const i of idxs) {
                 const ca = clocks[i]; if (!ca) continue;
                 let sim = 0; for (const j of idxs) { const cb = clocks[j]; if (cb && ctx.overlaps(ca, cb)) sim++; }
@@ -494,9 +493,15 @@ function solveCandidate(doc: Doc, ctx: EngineContext, vars: Var[], kept: Assignm
     const agentBusy = new Map<string, { d: number; s: number; e: number }[]>();
     const resBusy = new Map<string, { d: number; s: number; e: number }[]>(); // key = activityId (과목별 합산)
     const capCache = new Map<string, number>();
+    // 직접 고른 방(referenced)도 채점(hardScan)·규칙과 같이 합산에 넣는다 — 변수·고정 배치가 고른 방을 과목별로 모은다(R106)
+    const referencedByAct = new Map<string, Set<string>>();
+    for (const x of [...vars, ...kept]) {
+        if (!x.resourceId || !x.activityId) continue;
+        (referencedByAct.get(x.activityId) ?? referencedByAct.set(x.activityId, new Set()).get(x.activityId)!).add(x.resourceId);
+    }
     const capOf = (actId: string): number => {
         let c = capCache.get(actId);
-        if (c == null) { c = 0; for (const r of ctx.doc.resources) if (!r.activityIds || !r.activityIds.length || r.activityIds.includes(actId)) c += r.capacity ?? 1; if (c <= 0) c = 1; capCache.set(actId, c); }
+        if (c == null) { c = pooledCapacity(ctx.doc.resources, actId, referencedByAct.get(actId) ?? new Set()); capCache.set(actId, c); }
         return c;
     };
     const slotTime = (trackId: string, day: number, idx: number) => {
