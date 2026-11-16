@@ -44,7 +44,7 @@ export function shortWork(title: string, max = 12): string {
 /** 칩용 — 이름표 글(번호 뺀 것) + 맡은 태스크 번호는 따로 꼬리표로. 번호가 없으면 tag 는 빈 문자열. */
 export function actorChip(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): { label: string; tag: string } {
   const full = actorLabel(a, all, tasks)
-  const tag = taskNo(a.task_id)
+  const tag = taskNo(a.task_id ?? undefined)
   return tag && full.endsWith(` ${tag}`) ? { label: full.slice(0, -tag.length - 1), tag } : { label: full, tag }
 }
 
