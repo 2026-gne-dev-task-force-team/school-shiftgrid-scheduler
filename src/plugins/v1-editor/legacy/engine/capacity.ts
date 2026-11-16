@@ -8,6 +8,7 @@ import type { CapacityIssue } from './api';
 import { buildContext, hm } from './context';
 import type { EngineContext } from './api';
 import { isHomeroomAgent } from '../types/schema';
+import { resourcePool, pooledCapacity } from './resource-pool';
 
 const agentRef = (id: string) => ({ kind: 'agent' as const, id });
 const trackRef = (id: string) => ({ kind: 'track' as const, id });
@@ -74,9 +75,8 @@ export function checkCapacity(doc: Doc): CapacityIssue[] {
     }
     for (const [actId, g] of byAct) {
         if (g.need === 0) continue;
-        const pool = doc.resources.filter((r) =>
-            !r.activityIds || r.activityIds.length === 0 || r.activityIds.includes(actId) || g.referenced.has(r.id));
-        const pooledCap = Math.max(1, pool.reduce((s, r) => s + (r.capacity ?? 1), 0));
+        const pool = resourcePool(doc.resources, actId, g.referenced);
+        const pooledCap = pooledCapacity(doc.resources, actId, g.referenced);
         const capacity = unionCells(ctx, g.tracks).length * pooledCap;
         if (g.need > capacity) {
             const first = pool.find((r) => g.referenced.has(r.id)) ?? pool[0];
