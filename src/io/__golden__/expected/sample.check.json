@@ -1,0 +1,1674 @@
+{
+ "hardCount": 75,
+ "softWeight": 0,
+ "rules": [
+  {
+   "ruleId": "rule-demand-count",
+   "templateId": "demand-count",
+   "label": "시수 부족·초과",
+   "kind": "hard",
+   "bucket": null,
+   "count": 75,
+   "fixableCount": 75,
+   "subjectCount": 11,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한별 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "빛나 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "가람 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-eng2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sci2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "한결 교사 시수 0/3",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-pe2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "슬기 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-music"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "푸름 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-art"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "샛별 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-tech"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "마루 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "a-sports"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "아라 담임 시수 0/1",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "__homeroom__"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "여울 담임 시수 0/1",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "__homeroom__"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "초록 담임 시수 0/1",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "__homeroom__"
+     },
+     "ruleId": "rule-demand-count"
+    }
+   ]
+  }
+ ],
+ "daysByRule": {
+  "rule-demand-count": []
+ },
+ "demandStatus": [
+  {
+   "demandId": "d-1",
+   "agentId": "a-eng",
+   "trackId": "t-3-1",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-2",
+   "agentId": "a-sci",
+   "trackId": "t-3-1",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-3",
+   "agentId": "a-pe",
+   "trackId": "t-3-1",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-4",
+   "agentId": "a-music",
+   "trackId": "t-3-1",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-5",
+   "agentId": "a-art",
+   "trackId": "t-3-1",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-6",
+   "agentId": "a-eng",
+   "trackId": "t-3-2",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-7",
+   "agentId": "a-sci",
+   "trackId": "t-3-2",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-8",
+   "agentId": "a-pe",
+   "trackId": "t-3-2",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-9",
+   "agentId": "a-music",
+   "trackId": "t-3-2",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-10",
+   "agentId": "a-art",
+   "trackId": "t-3-2",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-11",
+   "agentId": "a-eng",
+   "trackId": "t-3-3",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-12",
+   "agentId": "a-sci",
+   "trackId": "t-3-3",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-13",
+   "agentId": "a-pe",
+   "trackId": "t-3-3",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-14",
+   "agentId": "a-music",
+   "trackId": "t-3-3",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-15",
+   "agentId": "a-art",
+   "trackId": "t-3-3",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-16",
+   "agentId": "a-eng",
+   "trackId": "t-4-1",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-17",
+   "agentId": "a-sci",
+   "trackId": "t-4-1",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-18",
+   "agentId": "a-pe",
+   "trackId": "t-4-1",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-19",
+   "agentId": "a-music",
+   "trackId": "t-4-1",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-20",
+   "agentId": "a-art",
+   "trackId": "t-4-1",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-21",
+   "agentId": "a-eng",
+   "trackId": "t-4-2",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-22",
+   "agentId": "a-sci",
+   "trackId": "t-4-2",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-23",
+   "agentId": "a-pe",
+   "trackId": "t-4-2",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-24",
+   "agentId": "a-music",
+   "trackId": "t-4-2",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-25",
+   "agentId": "a-art",
+   "trackId": "t-4-2",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-26",
+   "agentId": "a-eng",
+   "trackId": "t-4-3",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-27",
+   "agentId": "a-sci",
+   "trackId": "t-4-3",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-28",
+   "agentId": "a-pe",
+   "trackId": "t-4-3",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-29",
+   "agentId": "a-music",
+   "trackId": "t-4-3",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-30",
+   "agentId": "a-art",
+   "trackId": "t-4-3",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-31",
+   "agentId": "a-eng2",
+   "trackId": "t-5-1",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-32",
+   "agentId": "a-sci2",
+   "trackId": "t-5-1",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-33",
+   "agentId": "a-pe2",
+   "trackId": "t-5-1",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-34",
+   "agentId": "a-music",
+   "trackId": "t-5-1",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-35",
+   "agentId": "a-art",
+   "trackId": "t-5-1",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-36",
+   "agentId": "a-tech",
+   "trackId": "t-5-1",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-37",
+   "agentId": "a-eng2",
+   "trackId": "t-5-2",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-38",
+   "agentId": "a-sci2",
+   "trackId": "t-5-2",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-39",
+   "agentId": "a-pe2",
+   "trackId": "t-5-2",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-40",
+   "agentId": "a-music",
+   "trackId": "t-5-2",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-41",
+   "agentId": "a-art",
+   "trackId": "t-5-2",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-42",
+   "agentId": "a-tech",
+   "trackId": "t-5-2",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-43",
+   "agentId": "a-eng2",
+   "trackId": "t-5-3",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-44",
+   "agentId": "a-sci2",
+   "trackId": "t-5-3",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-45",
+   "agentId": "a-pe2",
+   "trackId": "t-5-3",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-46",
+   "agentId": "a-music",
+   "trackId": "t-5-3",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-47",
+   "agentId": "a-art",
+   "trackId": "t-5-3",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-48",
+   "agentId": "a-tech",
+   "trackId": "t-5-3",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-49",
+   "agentId": "a-eng2",
+   "trackId": "t-6-1",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-50",
+   "agentId": "a-sci2",
+   "trackId": "t-6-1",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-51",
+   "agentId": "a-pe2",
+   "trackId": "t-6-1",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-52",
+   "agentId": "a-music",
+   "trackId": "t-6-1",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-53",
+   "agentId": "a-art",
+   "trackId": "t-6-1",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-54",
+   "agentId": "a-tech",
+   "trackId": "t-6-1",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-55",
+   "agentId": "a-eng2",
+   "trackId": "t-6-2",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-56",
+   "agentId": "a-sci2",
+   "trackId": "t-6-2",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-57",
+   "agentId": "a-pe2",
+   "trackId": "t-6-2",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-58",
+   "agentId": "a-music",
+   "trackId": "t-6-2",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-59",
+   "agentId": "a-art",
+   "trackId": "t-6-2",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-60",
+   "agentId": "a-tech",
+   "trackId": "t-6-2",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-61",
+   "agentId": "a-eng2",
+   "trackId": "t-6-3",
+   "activityId": "act-eng",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-62",
+   "agentId": "a-sci2",
+   "trackId": "t-6-3",
+   "activityId": "act-sci",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-63",
+   "agentId": "a-pe2",
+   "trackId": "t-6-3",
+   "activityId": "act-pe",
+   "need": 3,
+   "placed": 0,
+   "remaining": 3
+  },
+  {
+   "demandId": "d-64",
+   "agentId": "a-music",
+   "trackId": "t-6-3",
+   "activityId": "act-music",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-65",
+   "agentId": "a-art",
+   "trackId": "t-6-3",
+   "activityId": "act-art",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-66",
+   "agentId": "a-tech",
+   "trackId": "t-6-3",
+   "activityId": "act-tech",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-67",
+   "agentId": "a-sports",
+   "trackId": "t-1-1",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-68",
+   "agentId": "a-sports",
+   "trackId": "t-1-2",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-69",
+   "agentId": "a-sports",
+   "trackId": "t-1-3",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-70",
+   "agentId": "a-sports",
+   "trackId": "t-2-1",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-71",
+   "agentId": "a-sports",
+   "trackId": "t-2-2",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-72",
+   "agentId": "a-sports",
+   "trackId": "t-2-3",
+   "activityId": "act-pe",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  },
+  {
+   "demandId": "d-73",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-1",
+   "activityId": "act-pe",
+   "need": 1,
+   "placed": 0,
+   "remaining": 1
+  },
+  {
+   "demandId": "d-74",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-2",
+   "activityId": "act-pe",
+   "need": 1,
+   "placed": 0,
+   "remaining": 1
+  },
+  {
+   "demandId": "d-75",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-3",
+   "activityId": "act-pe",
+   "need": 1,
+   "placed": 0,
+   "remaining": 1
+  }
+ ]
+}

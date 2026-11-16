@@ -1,0 +1,481 @@
+{
+ "meta": {
+  "name": "옛판초",
+  "term": "2026학년도 1학기",
+  "schemaVersion": 3
+ },
+ "agents": [
+  {
+   "kind": "agent",
+   "id": "hr2",
+   "name": "바다",
+   "role": "담임 겸 전담",
+   "homeroomTrackIds": [
+    "t2"
+   ]
+  },
+  {
+   "kind": "agent",
+   "id": "e1",
+   "name": "이든",
+   "role": "전담",
+   "tier": 1,
+   "homeroomTrackIds": [
+    "t1"
+   ]
+  },
+  {
+   "kind": "agent",
+   "id": "e2",
+   "name": "가람",
+   "role": "전담",
+   "tier": 2,
+   "coteach": true
+  }
+ ],
+ "activities": [
+  {
+   "kind": "activity",
+   "id": "act-eng",
+   "name": "영어"
+  },
+  {
+   "kind": "activity",
+   "id": "act-pe",
+   "name": "체육"
+  }
+ ],
+ "resources": [
+  {
+   "kind": "resource",
+   "id": "gym",
+   "name": "체육관",
+   "capacity": 1,
+   "activityIds": [
+    "act-pe"
+   ]
+  }
+ ],
+ "specs": [
+  {
+   "id": "sp",
+   "name": "1학년 틀",
+   "cycleDays": 7,
+   "activeDays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dayStart": "09:00",
+   "dayEnd": "13:40",
+   "slots": [
+    {
+     "index": 0,
+     "label": "1교시",
+     "start": "09:00",
+     "end": "09:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 1,
+     "label": "2교시",
+     "start": "09:50",
+     "end": "10:30",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 2,
+     "label": "3교시",
+     "start": "10:40",
+     "end": "11:20",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 3,
+     "label": "4교시",
+     "start": "11:30",
+     "end": "12:10",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 4,
+     "label": "점심",
+     "start": "12:10",
+     "end": "13:00",
+     "assignable": false,
+     "kind": "lunch"
+    },
+    {
+     "index": 5,
+     "label": "5교시",
+     "start": "13:00",
+     "end": "13:40",
+     "assignable": true,
+     "kind": "lesson"
+    }
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "kind": "track",
+   "id": "t1",
+   "name": "1-1",
+   "specId": "sp",
+   "grade": 1,
+   "homeroomName": "하늘"
+  },
+  {
+   "kind": "track",
+   "id": "t2",
+   "name": "1-2",
+   "attr": {
+    "specId": "sp",
+    "grade": 1
+   },
+   "specId": "sp",
+   "grade": 1
+  }
+ ],
+ "timetables": [
+  {
+   "id": "tt1",
+   "name": "1학기",
+   "specId": "sp",
+   "startDate": "2026-03-02",
+   "endDate": "2026-07-31",
+   "priority": 0
+  }
+ ],
+ "demands": [
+  {
+   "id": "d1",
+   "agentId": "hr2",
+   "trackId": "t2",
+   "activityId": "act-eng",
+   "count": 1
+  },
+  {
+   "id": "d2",
+   "agentId": "e1",
+   "trackId": "t1",
+   "activityId": "act-eng",
+   "count": 2
+  },
+  {
+   "id": "d3",
+   "agentId": "e1",
+   "trackId": "t2",
+   "activityId": "act-eng",
+   "count": 2
+  },
+  {
+   "id": "d4",
+   "agentId": "e2",
+   "trackId": "t1",
+   "activityId": "act-pe",
+   "count": 1,
+   "resourceId": "gym"
+  },
+  {
+   "id": "d5",
+   "agentId": "e2",
+   "trackId": "t2",
+   "activityId": "act-pe",
+   "count": 1,
+   "resourceId": "gym"
+  }
+ ],
+ "assignments": [
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as1",
+   "trackId": "t1",
+   "dayIndex": 0,
+   "slotIndex": 0,
+   "agentId": "__homeroom__"
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as2",
+   "trackId": "t1",
+   "dayIndex": 1,
+   "slotIndex": 1,
+   "agentId": "e1",
+   "activityId": "act-eng",
+   "demandId": "d2",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as3",
+   "trackId": "t2",
+   "dayIndex": 1,
+   "slotIndex": 1,
+   "agentId": "e1",
+   "activityId": "act-eng",
+   "demandId": "d3",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as4",
+   "trackId": "t1",
+   "dayIndex": 2,
+   "slotIndex": 2,
+   "agentId": "e2",
+   "activityId": "act-pe",
+   "resourceId": "gym",
+   "demandId": "d4",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as5",
+   "trackId": "t2",
+   "dayIndex": 2,
+   "slotIndex": 2,
+   "agentId": "e2",
+   "activityId": "act-pe",
+   "resourceId": "gym",
+   "demandId": "d5",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as6",
+   "trackId": "t1",
+   "dayIndex": 0,
+   "slotIndex": 1,
+   "agentId": "e1",
+   "activityId": "act-eng",
+   "demandId": "d2",
+   "seq": 2
+  }
+ ],
+ "blackouts": [],
+ "weeklyBlocks": [
+  {
+   "id": "wbA",
+   "name": "회의",
+   "dayIndex": 0,
+   "targets": [
+    {
+     "kind": "agent",
+     "id": "e1"
+    }
+   ],
+   "from": "09:50",
+   "to": "10:30"
+  },
+  {
+   "id": "wbT",
+   "name": "반블록",
+   "dayIndex": 0,
+   "slotIndex": 0,
+   "targets": [
+    {
+     "kind": "track",
+     "id": "t1"
+    }
+   ]
+  },
+  {
+   "id": "wbG",
+   "name": "동아리",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "targets": []
+  }
+ ],
+ "rules": [
+  {
+   "id": "rule-no-overlap-track",
+   "templateId": "no-overlap-track",
+   "name": "같은 반 겹침",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-no-overlap-agent",
+   "templateId": "no-overlap-agent",
+   "name": "교사 겹침",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-no-overlap-resource",
+   "templateId": "no-overlap-resource",
+   "name": "특별실 정원 초과",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-blocked-cell",
+   "templateId": "blocked-cell",
+   "name": "배정 불가 칸 사용",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-demand-count",
+   "templateId": "demand-count",
+   "name": "시수 부족·초과",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-block-contiguous",
+   "templateId": "block-contiguous",
+   "name": "연속 수업 묶음",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-cycle-order",
+   "templateId": "cycle-order",
+   "name": "진도 맞춤",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-agent-lunch-free",
+   "templateId": "agent-lunch-free",
+   "name": "교사 점심 시간 확보",
+   "enabled": true,
+   "params": {
+    "window": 0
+   }
+  },
+  {
+   "id": "rule-homeroom-plus-free",
+   "templateId": "homeroom-plus-free",
+   "name": "담임 겸 전담 자리 비움",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-avoid",
+   "templateId": "avoid",
+   "name": "되도록 피함 칸 사용",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-consecutive-limit",
+   "templateId": "consecutive-limit",
+   "name": "연속 수업 상한",
+   "enabled": true,
+   "params": {
+    "limit": 6
+   }
+  },
+  {
+   "id": "rule-prefer-consecutive",
+   "templateId": "prefer-consecutive",
+   "name": "수업 토막 줄이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-compact-day",
+   "templateId": "compact-day",
+   "name": "공강 줄이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-subjects-per-day-agent",
+   "templateId": "subjects-per-day-agent",
+   "name": "교사 하루 과목 수",
+   "enabled": true,
+   "params": {
+    "max": 3
+   }
+  },
+  {
+   "id": "rule-subjects-per-day-track",
+   "templateId": "subjects-per-day-track",
+   "name": "반 하루 전담 과목 수",
+   "enabled": true,
+   "params": {
+    "max": 3
+   }
+  },
+  {
+   "id": "rule-am-pm-balance",
+   "templateId": "am-pm-balance",
+   "name": "오전·오후 균형",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-same-period-across-days",
+   "templateId": "same-period-across-days",
+   "name": "요일별 동일 교시",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-subject-adjacent",
+   "templateId": "subject-adjacent",
+   "name": "같은 과목 붙이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-day-cluster",
+   "templateId": "day-cluster",
+   "name": "교사 요일 몰기/분산",
+   "enabled": true,
+   "params": {
+    "mode": "몰기"
+   }
+  },
+  {
+   "id": "rule-one-place-per-day",
+   "templateId": "one-place-per-day",
+   "name": "하루 한 장소",
+   "enabled": false,
+   "params": {
+    "enabled": false
+   }
+  },
+  {
+   "id": "rule-lunch-adjacent",
+   "templateId": "lunch-adjacent",
+   "name": "점심 앞뒤 연속 수업",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-day-load-balance",
+   "templateId": "day-load-balance",
+   "name": "요일 시수 균형",
+   "enabled": true,
+   "params": {
+    "tolerance": 2
+   }
+  },
+  {
+   "id": "rule-priority-early",
+   "templateId": "priority-early",
+   "name": "우선순위 높은 교사 이른 시각 우선",
+   "enabled": true,
+   "params": {}
+  }
+ ],
+ "boards": []
+}

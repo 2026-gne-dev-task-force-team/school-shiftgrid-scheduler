@@ -1,0 +1,1696 @@
+{
+ "meta": {
+  "name": "샘플초등학교",
+  "term": "2026학년도 2학기",
+  "schemaVersion": 3
+ },
+ "agents": [
+  {
+   "kind": "agent",
+   "id": "a-eng",
+   "name": "이든",
+   "role": "전담",
+   "tier": 1
+  },
+  {
+   "kind": "agent",
+   "id": "a-eng2",
+   "name": "가람",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-sci",
+   "name": "한별",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-sci2",
+   "name": "누리",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-pe",
+   "name": "빛나",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-pe2",
+   "name": "한결",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-music",
+   "name": "슬기",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-art",
+   "name": "푸름",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-tech",
+   "name": "샛별",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "a-sports",
+   "name": "마루",
+   "role": "비교과",
+   "tier": 3
+  },
+  {
+   "kind": "agent",
+   "id": "a-native",
+   "name": "노을",
+   "role": "비교과",
+   "tier": 3
+  }
+ ],
+ "activities": [
+  {
+   "kind": "activity",
+   "id": "act-eng",
+   "name": "영어"
+  },
+  {
+   "kind": "activity",
+   "id": "act-sci",
+   "name": "과학"
+  },
+  {
+   "kind": "activity",
+   "id": "act-pe",
+   "name": "체육"
+  },
+  {
+   "kind": "activity",
+   "id": "act-music",
+   "name": "음악"
+  },
+  {
+   "kind": "activity",
+   "id": "act-art",
+   "name": "미술"
+  },
+  {
+   "kind": "activity",
+   "id": "act-tech",
+   "name": "실과"
+  },
+  {
+   "kind": "activity",
+   "id": "act-changje",
+   "name": "창체"
+  }
+ ],
+ "resources": [
+  {
+   "kind": "resource",
+   "id": "r-science",
+   "name": "과학실",
+   "capacity": 2,
+   "activityIds": [
+    "act-sci"
+   ]
+  },
+  {
+   "kind": "resource",
+   "id": "r-gym",
+   "name": "체육관",
+   "capacity": 1,
+   "activityIds": [
+    "act-pe"
+   ]
+  },
+  {
+   "kind": "resource",
+   "id": "r-field",
+   "name": "운동장",
+   "capacity": 1,
+   "activityIds": [
+    "act-pe"
+   ]
+  },
+  {
+   "kind": "resource",
+   "id": "r-music",
+   "name": "음악실",
+   "capacity": 1,
+   "activityIds": [
+    "act-music"
+   ]
+  },
+  {
+   "kind": "resource",
+   "id": "r-computer",
+   "name": "컴퓨터실",
+   "capacity": 1,
+   "activityIds": [
+    "act-tech"
+   ]
+  }
+ ],
+ "specs": [
+  {
+   "id": "s-1-2",
+   "name": "1·2학년 시간 틀",
+   "cycleDays": 7,
+   "activeDays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dayStart": "09:00",
+   "dayEnd": "13:50",
+   "slots": [
+    {
+     "index": 0,
+     "label": "1교시",
+     "start": "09:00",
+     "end": "09:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 1,
+     "label": "2교시",
+     "start": "09:50",
+     "end": "10:30",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 2,
+     "label": "3교시",
+     "start": "10:40",
+     "end": "11:20",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 3,
+     "label": "4교시",
+     "start": "11:30",
+     "end": "12:10",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 4,
+     "label": "점심",
+     "start": "12:10",
+     "end": "13:00",
+     "assignable": false,
+     "kind": "lunch"
+    },
+    {
+     "index": 5,
+     "label": "5교시",
+     "start": "13:10",
+     "end": "13:50",
+     "assignable": true,
+     "kind": "lesson"
+    }
+   ],
+   "lessonsPerDay": {
+    "0": 4,
+    "4": 4
+   },
+   "grades": [
+    1,
+    2
+   ]
+  },
+  {
+   "id": "s-3-4",
+   "name": "3·4학년 시간 틀",
+   "cycleDays": 7,
+   "activeDays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dayStart": "09:00",
+   "dayEnd": "14:40",
+   "slots": [
+    {
+     "index": 0,
+     "label": "1교시",
+     "start": "09:00",
+     "end": "09:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 1,
+     "label": "2교시",
+     "start": "09:50",
+     "end": "10:30",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 2,
+     "label": "3교시",
+     "start": "10:40",
+     "end": "11:20",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 3,
+     "label": "4교시",
+     "start": "11:30",
+     "end": "12:10",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 4,
+     "label": "점심",
+     "start": "12:10",
+     "end": "13:00",
+     "assignable": false,
+     "kind": "lunch"
+    },
+    {
+     "index": 5,
+     "label": "5교시",
+     "start": "13:10",
+     "end": "13:50",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 6,
+     "label": "6교시",
+     "start": "14:00",
+     "end": "14:40",
+     "assignable": true,
+     "kind": "lesson"
+    }
+   ],
+   "grades": [
+    3,
+    4
+   ]
+  },
+  {
+   "id": "s-5-6",
+   "name": "5·6학년 시간 틀",
+   "cycleDays": 7,
+   "activeDays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dayStart": "09:00",
+   "dayEnd": "14:40",
+   "slots": [
+    {
+     "index": 0,
+     "label": "1교시",
+     "start": "09:00",
+     "end": "09:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 1,
+     "label": "2교시",
+     "start": "09:50",
+     "end": "10:30",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 2,
+     "label": "3교시",
+     "start": "10:40",
+     "end": "11:20",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 3,
+     "label": "4교시",
+     "start": "11:30",
+     "end": "12:10",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 4,
+     "label": "5교시",
+     "start": "12:20",
+     "end": "13:00",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 5,
+     "label": "점심",
+     "start": "13:00",
+     "end": "13:50",
+     "assignable": false,
+     "kind": "lunch"
+    },
+    {
+     "index": 6,
+     "label": "6교시",
+     "start": "14:00",
+     "end": "14:40",
+     "assignable": true,
+     "kind": "lesson"
+    }
+   ],
+   "grades": [
+    5,
+    6
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "kind": "track",
+   "id": "t-1-1",
+   "name": "1-1",
+   "specId": "s-1-2",
+   "grade": 1,
+   "homeroomName": "하늘",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-1-2",
+   "name": "1-2",
+   "specId": "s-1-2",
+   "grade": 1,
+   "homeroomName": "바다",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-1-3",
+   "name": "1-3",
+   "specId": "s-1-2",
+   "grade": 1,
+   "homeroomName": "구름",
+   "attr": {
+    "classNum": 3
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-2-1",
+   "name": "2-1",
+   "specId": "s-1-2",
+   "grade": 2,
+   "homeroomName": "시내",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-2-2",
+   "name": "2-2",
+   "specId": "s-1-2",
+   "grade": 2,
+   "homeroomName": "나루",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-2-3",
+   "name": "2-3",
+   "specId": "s-1-2",
+   "grade": 2,
+   "homeroomName": "다솜",
+   "attr": {
+    "classNum": 3
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-3-1",
+   "name": "3-1",
+   "specId": "s-3-4",
+   "grade": 3,
+   "homeroomName": "아라",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-3-2",
+   "name": "3-2",
+   "specId": "s-3-4",
+   "grade": 3,
+   "homeroomName": "여울",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-3-3",
+   "name": "3-3",
+   "specId": "s-3-4",
+   "grade": 3,
+   "homeroomName": "초록",
+   "attr": {
+    "classNum": 3
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-4-1",
+   "name": "4-1",
+   "specId": "s-3-4",
+   "grade": 4,
+   "homeroomName": "새봄",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-4-2",
+   "name": "4-2",
+   "specId": "s-3-4",
+   "grade": 4,
+   "homeroomName": "온유",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-4-3",
+   "name": "4-3",
+   "specId": "s-3-4",
+   "grade": 4,
+   "homeroomName": "다온",
+   "attr": {
+    "classNum": 3
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-5-1",
+   "name": "5-1",
+   "specId": "s-5-6",
+   "grade": 5,
+   "homeroomName": "라온",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-5-2",
+   "name": "5-2",
+   "specId": "s-5-6",
+   "grade": 5,
+   "homeroomName": "하람",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-5-3",
+   "name": "5-3",
+   "specId": "s-5-6",
+   "grade": 5,
+   "homeroomName": "미르",
+   "attr": {
+    "classNum": 3
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-6-1",
+   "name": "6-1",
+   "specId": "s-5-6",
+   "grade": 6,
+   "homeroomName": "가온",
+   "attr": {
+    "classNum": 1
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-6-2",
+   "name": "6-2",
+   "specId": "s-5-6",
+   "grade": 6,
+   "homeroomName": "다래",
+   "attr": {
+    "classNum": 2
+   }
+  },
+  {
+   "kind": "track",
+   "id": "t-6-3",
+   "name": "6-3",
+   "specId": "s-5-6",
+   "grade": 6,
+   "homeroomName": "보람",
+   "attr": {
+    "classNum": 3
+   }
+  }
+ ],
+ "timetables": [
+  {
+   "id": "tt-1-2",
+   "name": "1·2학년 2학기",
+   "specId": "s-1-2",
+   "startDate": "2026-09-01",
+   "endDate": "2027-02-28",
+   "priority": 0
+  },
+  {
+   "id": "tt-3-4",
+   "name": "3·4학년 2학기",
+   "specId": "s-3-4",
+   "startDate": "2026-09-01",
+   "endDate": "2027-02-28",
+   "priority": 0
+  },
+  {
+   "id": "tt-5-6",
+   "name": "5·6학년 2학기",
+   "specId": "s-5-6",
+   "startDate": "2026-09-01",
+   "endDate": "2027-02-28",
+   "priority": 0
+  }
+ ],
+ "demands": [
+  {
+   "id": "d-1",
+   "agentId": "a-eng",
+   "trackId": "t-3-1",
+   "activityId": "act-eng",
+   "count": 3,
+   "coAgentId": "a-native"
+  },
+  {
+   "id": "d-2",
+   "agentId": "a-sci",
+   "trackId": "t-3-1",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-3",
+   "agentId": "a-pe",
+   "trackId": "t-3-1",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-4",
+   "agentId": "a-music",
+   "trackId": "t-3-1",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-5",
+   "agentId": "a-art",
+   "trackId": "t-3-1",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-6",
+   "agentId": "a-eng",
+   "trackId": "t-3-2",
+   "activityId": "act-eng",
+   "count": 3,
+   "coAgentId": "a-native"
+  },
+  {
+   "id": "d-7",
+   "agentId": "a-sci",
+   "trackId": "t-3-2",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-8",
+   "agentId": "a-pe",
+   "trackId": "t-3-2",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-9",
+   "agentId": "a-music",
+   "trackId": "t-3-2",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-10",
+   "agentId": "a-art",
+   "trackId": "t-3-2",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-11",
+   "agentId": "a-eng",
+   "trackId": "t-3-3",
+   "activityId": "act-eng",
+   "count": 3,
+   "coAgentId": "a-native"
+  },
+  {
+   "id": "d-12",
+   "agentId": "a-sci",
+   "trackId": "t-3-3",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-13",
+   "agentId": "a-pe",
+   "trackId": "t-3-3",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-14",
+   "agentId": "a-music",
+   "trackId": "t-3-3",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-15",
+   "agentId": "a-art",
+   "trackId": "t-3-3",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-16",
+   "agentId": "a-eng",
+   "trackId": "t-4-1",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-17",
+   "agentId": "a-sci",
+   "trackId": "t-4-1",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-18",
+   "agentId": "a-pe",
+   "trackId": "t-4-1",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-19",
+   "agentId": "a-music",
+   "trackId": "t-4-1",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-20",
+   "agentId": "a-art",
+   "trackId": "t-4-1",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-21",
+   "agentId": "a-eng",
+   "trackId": "t-4-2",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-22",
+   "agentId": "a-sci",
+   "trackId": "t-4-2",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-23",
+   "agentId": "a-pe",
+   "trackId": "t-4-2",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-24",
+   "agentId": "a-music",
+   "trackId": "t-4-2",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-25",
+   "agentId": "a-art",
+   "trackId": "t-4-2",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-26",
+   "agentId": "a-eng",
+   "trackId": "t-4-3",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-27",
+   "agentId": "a-sci",
+   "trackId": "t-4-3",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-28",
+   "agentId": "a-pe",
+   "trackId": "t-4-3",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-29",
+   "agentId": "a-music",
+   "trackId": "t-4-3",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-30",
+   "agentId": "a-art",
+   "trackId": "t-4-3",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-31",
+   "agentId": "a-eng2",
+   "trackId": "t-5-1",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-32",
+   "agentId": "a-sci2",
+   "trackId": "t-5-1",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-33",
+   "agentId": "a-pe2",
+   "trackId": "t-5-1",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-34",
+   "agentId": "a-music",
+   "trackId": "t-5-1",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-35",
+   "agentId": "a-art",
+   "trackId": "t-5-1",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-36",
+   "agentId": "a-tech",
+   "trackId": "t-5-1",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-37",
+   "agentId": "a-eng2",
+   "trackId": "t-5-2",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-38",
+   "agentId": "a-sci2",
+   "trackId": "t-5-2",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-39",
+   "agentId": "a-pe2",
+   "trackId": "t-5-2",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-40",
+   "agentId": "a-music",
+   "trackId": "t-5-2",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-41",
+   "agentId": "a-art",
+   "trackId": "t-5-2",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-42",
+   "agentId": "a-tech",
+   "trackId": "t-5-2",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-43",
+   "agentId": "a-eng2",
+   "trackId": "t-5-3",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-44",
+   "agentId": "a-sci2",
+   "trackId": "t-5-3",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-45",
+   "agentId": "a-pe2",
+   "trackId": "t-5-3",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-46",
+   "agentId": "a-music",
+   "trackId": "t-5-3",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-47",
+   "agentId": "a-art",
+   "trackId": "t-5-3",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-48",
+   "agentId": "a-tech",
+   "trackId": "t-5-3",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-49",
+   "agentId": "a-eng2",
+   "trackId": "t-6-1",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-50",
+   "agentId": "a-sci2",
+   "trackId": "t-6-1",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-51",
+   "agentId": "a-pe2",
+   "trackId": "t-6-1",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-52",
+   "agentId": "a-music",
+   "trackId": "t-6-1",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-53",
+   "agentId": "a-art",
+   "trackId": "t-6-1",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-54",
+   "agentId": "a-tech",
+   "trackId": "t-6-1",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-55",
+   "agentId": "a-eng2",
+   "trackId": "t-6-2",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-56",
+   "agentId": "a-sci2",
+   "trackId": "t-6-2",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-57",
+   "agentId": "a-pe2",
+   "trackId": "t-6-2",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-58",
+   "agentId": "a-music",
+   "trackId": "t-6-2",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-59",
+   "agentId": "a-art",
+   "trackId": "t-6-2",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-60",
+   "agentId": "a-tech",
+   "trackId": "t-6-2",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-61",
+   "agentId": "a-eng2",
+   "trackId": "t-6-3",
+   "activityId": "act-eng",
+   "count": 3
+  },
+  {
+   "id": "d-62",
+   "agentId": "a-sci2",
+   "trackId": "t-6-3",
+   "activityId": "act-sci",
+   "count": 3,
+   "resourceId": "r-science",
+   "roomHours": 2,
+   "cycle": true
+  },
+  {
+   "id": "d-63",
+   "agentId": "a-pe2",
+   "trackId": "t-6-3",
+   "activityId": "act-pe",
+   "count": 3,
+   "resourceId": "r-field"
+  },
+  {
+   "id": "d-64",
+   "agentId": "a-music",
+   "trackId": "t-6-3",
+   "activityId": "act-music",
+   "count": 2,
+   "resourceId": "r-music"
+  },
+  {
+   "id": "d-65",
+   "agentId": "a-art",
+   "trackId": "t-6-3",
+   "activityId": "act-art",
+   "count": 2,
+   "block": [
+    2
+   ]
+  },
+  {
+   "id": "d-66",
+   "agentId": "a-tech",
+   "trackId": "t-6-3",
+   "activityId": "act-tech",
+   "count": 2,
+   "resourceId": "r-computer"
+  },
+  {
+   "id": "d-67",
+   "agentId": "a-sports",
+   "trackId": "t-1-1",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-68",
+   "agentId": "a-sports",
+   "trackId": "t-1-2",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-69",
+   "agentId": "a-sports",
+   "trackId": "t-1-3",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-70",
+   "agentId": "a-sports",
+   "trackId": "t-2-1",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-71",
+   "agentId": "a-sports",
+   "trackId": "t-2-2",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-72",
+   "agentId": "a-sports",
+   "trackId": "t-2-3",
+   "activityId": "act-pe",
+   "count": 2,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-73",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-1",
+   "activityId": "act-pe",
+   "count": 1,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-74",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-2",
+   "activityId": "act-pe",
+   "count": 1,
+   "resourceId": "r-gym"
+  },
+  {
+   "id": "d-75",
+   "agentId": "__homeroom__",
+   "trackId": "t-3-3",
+   "activityId": "act-pe",
+   "count": 1,
+   "resourceId": "r-gym"
+  }
+ ],
+ "assignments": [
+  {
+   "kind": "work",
+   "id": "as-changje-t-1-1",
+   "timetableId": "tt-1-2",
+   "trackId": "t-1-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-1-2",
+   "timetableId": "tt-1-2",
+   "trackId": "t-1-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-1-3",
+   "timetableId": "tt-1-2",
+   "trackId": "t-1-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-2-1",
+   "timetableId": "tt-1-2",
+   "trackId": "t-2-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-2-2",
+   "timetableId": "tt-1-2",
+   "trackId": "t-2-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-2-3",
+   "timetableId": "tt-1-2",
+   "trackId": "t-2-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-3-1",
+   "timetableId": "tt-3-4",
+   "trackId": "t-3-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-3-2",
+   "timetableId": "tt-3-4",
+   "trackId": "t-3-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-3-3",
+   "timetableId": "tt-3-4",
+   "trackId": "t-3-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-4-1",
+   "timetableId": "tt-3-4",
+   "trackId": "t-4-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-4-2",
+   "timetableId": "tt-3-4",
+   "trackId": "t-4-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-4-3",
+   "timetableId": "tt-3-4",
+   "trackId": "t-4-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-5-1",
+   "timetableId": "tt-5-6",
+   "trackId": "t-5-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-5-2",
+   "timetableId": "tt-5-6",
+   "trackId": "t-5-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-5-3",
+   "timetableId": "tt-5-6",
+   "trackId": "t-5-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-6-1",
+   "timetableId": "tt-5-6",
+   "trackId": "t-6-1",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-6-2",
+   "timetableId": "tt-5-6",
+   "trackId": "t-6-2",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  },
+  {
+   "kind": "work",
+   "id": "as-changje-t-6-3",
+   "timetableId": "tt-5-6",
+   "trackId": "t-6-3",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "activityId": "act-changje",
+   "agentId": "__homeroom__",
+   "label": "창체",
+   "fixed": true
+  }
+ ],
+ "blackouts": [],
+ "weeklyBlocks": [
+  {
+   "id": "wb-club",
+   "name": "동아리",
+   "dayIndex": 2,
+   "slotIndex": 3,
+   "targets": []
+  },
+  {
+   "id": "wb-head-meeting",
+   "name": "부장회의",
+   "dayIndex": 0,
+   "from": "14:00",
+   "to": "15:00",
+   "targets": [
+    {
+     "kind": "agent",
+     "id": "a-eng"
+    }
+   ]
+  },
+  {
+   "id": "wb-pe-avoid-fri6",
+   "name": "체육 금요일 6교시 회피",
+   "dayIndex": 4,
+   "from": "14:00",
+   "to": "14:40",
+   "targets": [
+    {
+     "kind": "agent",
+     "id": "a-pe"
+    }
+   ],
+   "soft": true
+  }
+ ],
+ "rules": [
+  {
+   "id": "rule-no-overlap-track",
+   "templateId": "no-overlap-track",
+   "name": "같은 반 겹침",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-no-overlap-agent",
+   "templateId": "no-overlap-agent",
+   "name": "교사 겹침",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-no-overlap-resource",
+   "templateId": "no-overlap-resource",
+   "name": "특별실 정원 초과",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-blocked-cell",
+   "templateId": "blocked-cell",
+   "name": "배정 불가 칸 사용",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-demand-count",
+   "templateId": "demand-count",
+   "name": "시수 부족·초과",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-block-contiguous",
+   "templateId": "block-contiguous",
+   "name": "연속 수업 묶음",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-cycle-order",
+   "templateId": "cycle-order",
+   "name": "진도 맞춤",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-agent-lunch-free",
+   "templateId": "agent-lunch-free",
+   "name": "교사 점심 시간 확보",
+   "enabled": true,
+   "params": {
+    "window": 0
+   }
+  },
+  {
+   "id": "rule-homeroom-plus-free",
+   "templateId": "homeroom-plus-free",
+   "name": "담임 겸 전담 자리 비움",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-avoid",
+   "templateId": "avoid",
+   "name": "되도록 피함 칸 사용",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-consecutive-limit",
+   "templateId": "consecutive-limit",
+   "name": "연속 수업 상한",
+   "enabled": true,
+   "params": {
+    "limit": 6
+   }
+  },
+  {
+   "id": "rule-prefer-consecutive",
+   "templateId": "prefer-consecutive",
+   "name": "수업 토막 줄이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-compact-day",
+   "templateId": "compact-day",
+   "name": "공강 줄이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-subjects-per-day-agent",
+   "templateId": "subjects-per-day-agent",
+   "name": "교사 하루 과목 수",
+   "enabled": true,
+   "params": {
+    "max": 3
+   }
+  },
+  {
+   "id": "rule-subjects-per-day-track",
+   "templateId": "subjects-per-day-track",
+   "name": "반 하루 전담 과목 수",
+   "enabled": true,
+   "params": {
+    "max": 3
+   }
+  },
+  {
+   "id": "rule-am-pm-balance",
+   "templateId": "am-pm-balance",
+   "name": "오전·오후 균형",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-same-period-across-days",
+   "templateId": "same-period-across-days",
+   "name": "요일별 동일 교시",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-subject-adjacent",
+   "templateId": "subject-adjacent",
+   "name": "같은 과목 붙이기",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-day-cluster",
+   "templateId": "day-cluster",
+   "name": "교사 요일 몰기/분산",
+   "enabled": true,
+   "params": {
+    "mode": "몰기"
+   }
+  },
+  {
+   "id": "rule-one-place-per-day",
+   "templateId": "one-place-per-day",
+   "name": "하루 한 장소",
+   "enabled": false,
+   "params": {
+    "enabled": false
+   }
+  },
+  {
+   "id": "rule-lunch-adjacent",
+   "templateId": "lunch-adjacent",
+   "name": "점심 앞뒤 연속 수업",
+   "enabled": true,
+   "params": {}
+  },
+  {
+   "id": "rule-day-load-balance",
+   "templateId": "day-load-balance",
+   "name": "요일 시수 균형",
+   "enabled": true,
+   "params": {
+    "tolerance": 2
+   }
+  },
+  {
+   "id": "rule-priority-early",
+   "templateId": "priority-early",
+   "name": "우선순위 높은 교사 이른 시각 우선",
+   "enabled": true,
+   "params": {}
+  }
+ ],
+ "boards": []
+}

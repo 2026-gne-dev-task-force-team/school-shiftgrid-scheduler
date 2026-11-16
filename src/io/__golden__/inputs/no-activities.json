@@ -1,0 +1,225 @@
+{
+ "meta": {
+  "name": "과목칸없는초",
+  "term": "2026학년도 2학기",
+  "schemaVersion": 3,
+  "updatedAt": "2026-10-01T00:00:00.000Z"
+ },
+ "agents": [
+  {
+   "kind": "agent",
+   "id": "e1",
+   "name": "누리",
+   "role": "전담",
+   "tier": 2
+  },
+  {
+   "kind": "agent",
+   "id": "e2",
+   "name": "샛별",
+   "role": "전담",
+   "tier": 2
+  }
+ ],
+ "resources": [
+  {
+   "kind": "resource",
+   "id": "sci",
+   "name": "과학실",
+   "capacity": 1,
+   "activityIds": [
+    "act-sci"
+   ]
+  },
+  {
+   "kind": "resource",
+   "id": "room1",
+   "name": "다목적실"
+  },
+  {
+   "kind": "resource",
+   "id": "room2",
+   "name": "빈교실",
+   "capacity": 1,
+   "activityIds": []
+  }
+ ],
+ "specs": [
+  {
+   "id": "sp",
+   "name": "3학년 틀",
+   "cycleDays": 7,
+   "activeDays": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dayStart": "09:00",
+   "dayEnd": "14:30",
+   "slots": [
+    {
+     "index": 0,
+     "label": "1교시",
+     "start": "09:00",
+     "end": "09:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 1,
+     "label": "2교시",
+     "start": "09:50",
+     "end": "10:30",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 2,
+     "label": "3교시",
+     "start": "10:40",
+     "end": "11:20",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 3,
+     "label": "4교시",
+     "start": "11:30",
+     "end": "12:10",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 4,
+     "label": "점심",
+     "start": "12:10",
+     "end": "13:00",
+     "assignable": false,
+     "kind": "lunch"
+    },
+    {
+     "index": 5,
+     "label": "5교시",
+     "start": "13:00",
+     "end": "13:40",
+     "assignable": true,
+     "kind": "lesson"
+    },
+    {
+     "index": 6,
+     "label": "6교시",
+     "start": "13:50",
+     "end": "14:30",
+     "assignable": true,
+     "kind": "lesson"
+    }
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "kind": "track",
+   "id": "t1",
+   "name": "3-1",
+   "specId": "sp",
+   "grade": 3
+  },
+  {
+   "kind": "track",
+   "id": "t2",
+   "name": "3-2",
+   "specId": "sp",
+   "grade": 3
+  },
+  {
+   "kind": "track",
+   "id": "t3",
+   "name": "3-3",
+   "specId": "sp",
+   "grade": 3
+  }
+ ],
+ "timetables": [
+  {
+   "id": "tt1",
+   "name": "3학년 2학기",
+   "specId": "sp",
+   "startDate": "2026-09-01",
+   "endDate": "2027-02-28",
+   "priority": 0
+  }
+ ],
+ "demands": [
+  {
+   "id": "d1",
+   "agentId": "e1",
+   "trackId": "t1",
+   "activityId": "act-sci",
+   "count": 2,
+   "resourceId": "sci"
+  },
+  {
+   "id": "d2",
+   "agentId": "e1",
+   "trackId": "t2",
+   "activityId": "act-sci",
+   "count": 2,
+   "resourceId": "sci"
+  },
+  {
+   "id": "d3",
+   "agentId": "e2",
+   "trackId": "t3",
+   "activityId": "act-sci",
+   "count": 1,
+   "resourceId": "sci"
+  }
+ ],
+ "assignments": [
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as1",
+   "trackId": "t1",
+   "dayIndex": 0,
+   "slotIndex": 0,
+   "agentId": "e1",
+   "activityId": "act-sci",
+   "resourceId": "sci",
+   "demandId": "d1",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as2",
+   "trackId": "t3",
+   "dayIndex": 0,
+   "slotIndex": 0,
+   "agentId": "e2",
+   "activityId": "act-sci",
+   "resourceId": "sci",
+   "demandId": "d3",
+   "seq": 1
+  },
+  {
+   "kind": "work",
+   "timetableId": "tt1",
+   "id": "as3",
+   "trackId": "t2",
+   "dayIndex": 1,
+   "slotIndex": 1,
+   "agentId": "e1",
+   "activityId": "act-sci",
+   "resourceId": "sci",
+   "demandId": "d2",
+   "seq": 1
+  }
+ ],
+ "blackouts": [],
+ "weeklyBlocks": [],
+ "rules": [],
+ "boards": []
+}

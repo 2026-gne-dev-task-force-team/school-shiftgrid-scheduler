@@ -1,0 +1,321 @@
+{
+ "hardCount": 7,
+ "softWeight": 48,
+ "rules": [
+  {
+   "ruleId": "rule-no-overlap-agent",
+   "templateId": "no-overlap-agent",
+   "label": "교사 겹침",
+   "kind": "hard",
+   "bucket": null,
+   "count": 2,
+   "fixableCount": 2,
+   "subjectCount": 2,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "no-overlap-agent",
+     "kind": "hard",
+     "message": "이든 교사가 화요일 같은 시각에 두 반에 들어가 있습니다",
+     "assignmentIds": [
+      "as2",
+      "as3"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-no-overlap-agent"
+    },
+    {
+     "templateId": "no-overlap-agent",
+     "kind": "hard",
+     "message": "가람 교사가 수요일 같은 시각에 두 반에 들어가 있습니다",
+     "assignmentIds": [
+      "as4",
+      "as5"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e2"
+     },
+     "ruleId": "rule-no-overlap-agent"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-no-overlap-resource",
+   "templateId": "no-overlap-resource",
+   "label": "특별실 정원 초과",
+   "kind": "hard",
+   "bucket": null,
+   "count": 1,
+   "fixableCount": 1,
+   "subjectCount": 0,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "no-overlap-resource",
+     "kind": "hard",
+     "message": "수요일 같은 시각에 특별실 정원을 넘겼습니다",
+     "assignmentIds": [
+      "as4",
+      "as5"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "ruleId": "rule-no-overlap-resource"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-blocked-cell",
+   "templateId": "blocked-cell",
+   "label": "배정 불가 칸 사용",
+   "kind": "hard",
+   "bucket": null,
+   "count": 2,
+   "fixableCount": 2,
+   "subjectCount": 1,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "blocked-cell",
+     "kind": "hard",
+     "message": "1-1 월요일 수업이 배정 불가 칸에 들어가 있습니다",
+     "assignmentIds": [
+      "as1"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "track",
+      "id": "t1"
+     },
+     "ruleId": "rule-blocked-cell"
+    },
+    {
+     "templateId": "blocked-cell",
+     "kind": "hard",
+     "message": "1-1 월요일 수업이 배정 불가 칸에 들어가 있습니다",
+     "assignmentIds": [
+      "as6"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "track",
+      "id": "t1"
+     },
+     "ruleId": "rule-blocked-cell"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-demand-count",
+   "templateId": "demand-count",
+   "label": "시수 부족·초과",
+   "kind": "hard",
+   "bucket": null,
+   "count": 2,
+   "fixableCount": 2,
+   "subjectCount": 2,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "바다 교사 시수 0/1",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "hr2"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 1/2",
+     "assignmentIds": [
+      "as3"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-demand-count"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-am-pm-balance",
+   "templateId": "am-pm-balance",
+   "label": "오전·오후 균형",
+   "kind": "soft",
+   "bucket": "preferred",
+   "count": 3,
+   "fixableCount": 3,
+   "subjectCount": 2,
+   "weight": 39,
+   "violations": [
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "이든 교사 화요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as2",
+      "as3"
+     ],
+     "weight": 18,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    },
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "이든 교사 월요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as6"
+     ],
+     "weight": 9,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    },
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "가람 교사 수요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as4",
+      "as5"
+     ],
+     "weight": 12,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e2"
+     }
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-day-cluster",
+   "templateId": "day-cluster",
+   "label": "교사 요일 몰기/분산",
+   "kind": "soft",
+   "bucket": "preferred",
+   "count": 1,
+   "fixableCount": 1,
+   "subjectCount": 1,
+   "weight": 9,
+   "violations": [
+    {
+     "ruleId": "rule-day-cluster",
+     "templateId": "day-cluster",
+     "kind": "soft",
+     "message": "이든 교사 요일 배치가 목표와 다릅니다",
+     "assignmentIds": [
+      "as2",
+      "as3",
+      "as6"
+     ],
+     "weight": 9,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    }
+   ]
+  }
+ ],
+ "daysByRule": {
+  "rule-no-overlap-agent": [
+   1,
+   2
+  ],
+  "rule-no-overlap-resource": [
+   2
+  ],
+  "rule-blocked-cell": [
+   0
+  ],
+  "rule-demand-count": [
+   1
+  ],
+  "rule-am-pm-balance": [
+   0,
+   1,
+   2
+  ],
+  "rule-day-cluster": [
+   0,
+   1
+  ]
+ },
+ "demandStatus": [
+  {
+   "demandId": "d1",
+   "agentId": "hr2",
+   "trackId": "t2",
+   "activityId": "act-eng",
+   "need": 1,
+   "placed": 0,
+   "remaining": 1
+  },
+  {
+   "demandId": "d2",
+   "agentId": "e1",
+   "trackId": "t1",
+   "activityId": "act-eng",
+   "need": 2,
+   "placed": 2,
+   "remaining": 0
+  },
+  {
+   "demandId": "d3",
+   "agentId": "e1",
+   "trackId": "t2",
+   "activityId": "act-eng",
+   "need": 2,
+   "placed": 1,
+   "remaining": 1
+  },
+  {
+   "demandId": "d4",
+   "agentId": "e2",
+   "trackId": "t1",
+   "activityId": "act-pe",
+   "need": 1,
+   "placed": 1,
+   "remaining": 0
+  },
+  {
+   "demandId": "d5",
+   "agentId": "e2",
+   "trackId": "t2",
+   "activityId": "act-pe",
+   "need": 1,
+   "placed": 1,
+   "remaining": 0
+  }
+ ]
+}

@@ -1,0 +1,103 @@
+{
+ "hardCount": 2,
+ "softWeight": 6,
+ "rules": [
+  {
+   "ruleId": "rule-demand-count",
+   "templateId": "demand-count",
+   "label": "시수 부족·초과",
+   "kind": "hard",
+   "bucket": null,
+   "count": 2,
+   "fixableCount": 2,
+   "subjectCount": 1,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 1/2",
+     "assignmentIds": [
+      "as1"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "이든 교사 시수 0/2",
+     "assignmentIds": [],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-demand-count"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-am-pm-balance",
+   "templateId": "am-pm-balance",
+   "label": "오전·오후 균형",
+   "kind": "soft",
+   "bucket": "preferred",
+   "count": 1,
+   "fixableCount": 1,
+   "subjectCount": 1,
+   "weight": 6,
+   "violations": [
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "이든 교사 월요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as1"
+     ],
+     "weight": 6,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    }
+   ]
+  }
+ ],
+ "daysByRule": {
+  "rule-demand-count": [
+   0
+  ],
+  "rule-am-pm-balance": [
+   0
+  ]
+ },
+ "demandStatus": [
+  {
+   "demandId": "d1",
+   "agentId": "e1",
+   "trackId": "t1",
+   "activityId": "act-eng",
+   "need": 2,
+   "placed": 1,
+   "remaining": 1
+  },
+  {
+   "demandId": "d2",
+   "agentId": "e1",
+   "trackId": "t2",
+   "activityId": "act-eng",
+   "need": 2,
+   "placed": 0,
+   "remaining": 2
+  }
+ ]
+}

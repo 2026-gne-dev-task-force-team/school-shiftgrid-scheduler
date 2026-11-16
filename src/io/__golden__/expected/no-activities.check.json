@@ -1,0 +1,179 @@
+{
+ "hardCount": 2,
+ "softWeight": 24,
+ "rules": [
+  {
+   "ruleId": "rule-demand-count",
+   "templateId": "demand-count",
+   "label": "시수 부족·초과",
+   "kind": "hard",
+   "bucket": null,
+   "count": 2,
+   "fixableCount": 2,
+   "subjectCount": 1,
+   "weight": 0,
+   "violations": [
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 1/2",
+     "assignmentIds": [
+      "as1"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-demand-count"
+    },
+    {
+     "templateId": "demand-count",
+     "kind": "hard",
+     "message": "누리 교사 시수 1/2",
+     "assignmentIds": [
+      "as3"
+     ],
+     "weight": 0,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     },
+     "ruleId": "rule-demand-count"
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-am-pm-balance",
+   "templateId": "am-pm-balance",
+   "label": "오전·오후 균형",
+   "kind": "soft",
+   "bucket": "preferred",
+   "count": 3,
+   "fixableCount": 3,
+   "subjectCount": 2,
+   "weight": 18,
+   "violations": [
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "누리 교사 월요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as1"
+     ],
+     "weight": 6,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    },
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "누리 교사 화요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as3"
+     ],
+     "weight": 6,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    },
+    {
+     "ruleId": "rule-am-pm-balance",
+     "templateId": "am-pm-balance",
+     "kind": "soft",
+     "message": "샛별 교사 월요일 오전·오후가 치우쳤습니다",
+     "assignmentIds": [
+      "as2"
+     ],
+     "weight": 6,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e2"
+     }
+    }
+   ]
+  },
+  {
+   "ruleId": "rule-day-cluster",
+   "templateId": "day-cluster",
+   "label": "교사 요일 몰기/분산",
+   "kind": "soft",
+   "bucket": "preferred",
+   "count": 1,
+   "fixableCount": 1,
+   "subjectCount": 1,
+   "weight": 6,
+   "violations": [
+    {
+     "ruleId": "rule-day-cluster",
+     "templateId": "day-cluster",
+     "kind": "soft",
+     "message": "누리 교사 요일 배치가 목표와 다릅니다",
+     "assignmentIds": [
+      "as1",
+      "as3"
+     ],
+     "weight": 6,
+     "fixable": true,
+     "subject": {
+      "kind": "agent",
+      "id": "e1"
+     }
+    }
+   ]
+  }
+ ],
+ "daysByRule": {
+  "rule-demand-count": [
+   0,
+   1
+  ],
+  "rule-am-pm-balance": [
+   0,
+   1
+  ],
+  "rule-day-cluster": [
+   0,
+   1
+  ]
+ },
+ "demandStatus": [
+  {
+   "demandId": "d1",
+   "agentId": "e1",
+   "trackId": "t1",
+   "activityId": "act-sci",
+   "need": 2,
+   "placed": 1,
+   "remaining": 1
+  },
+  {
+   "demandId": "d2",
+   "agentId": "e1",
+   "trackId": "t2",
+   "activityId": "act-sci",
+   "need": 2,
+   "placed": 1,
+   "remaining": 1
+  },
+  {
+   "demandId": "d3",
+   "agentId": "e2",
+   "trackId": "t3",
+   "activityId": "act-sci",
+   "need": 1,
+   "placed": 1,
+   "remaining": 0
+  }
+ ]
+}
