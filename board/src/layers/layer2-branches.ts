@@ -7,6 +7,21 @@ import { laneHue, layoutGraph, synthGraph } from '../lib/graph-layout.ts'
 
 const PAD = 16, TOP = 30, RH = 40, LW = 26, TEXT_W = 280, DOT = 5 // 여백 · 첫 행 높이 · 행 간격 · 레일 간격 · 글 칸 폭 · 점 반쪽
 
+const CHIP_MAX = 160, GAP = 6, SHA_W = 60, MORE_W = 40 // 이름표 최대 폭 · 간격 · 해시 칸 · 「+N」 칸
+
+/** 글 칸 폭에 이름표가 다 안 들어가면 앞에서부터 들어가는 만큼만 보이고 나머지는 「+N」으로 접는다(R87). 최소 1개는 보인다. */
+export function fitRefs<T extends { name: string }>(refs: T[], avail: number): { shown: T[]; hidden: T[] } {
+  const wOf = (r: T) => Math.min(CHIP_MAX, r.name.length * 8 + 18) + GAP
+  let used = SHA_W
+  const shown: T[] = []
+  for (const [i, r] of refs.entries()) {
+    const rest = refs.length - i - 1
+    if (shown.length && used + wOf(r) + (rest ? MORE_W : 0) > avail) break
+    shown.push(r); used += wOf(r)
+  }
+  return { shown, hidden: refs.slice(shown.length) }
+}
+
 // 2층 가지 — 개발자가 보는 커밋 그래프(위가 최신 · 레일마다 색 · 점=커밋). 선·점은 canvas(도트풍: 네모 점·매끈 안 함),
 // 눌리는 점·이름표·캐릭터는 그 위 DOM. 좁으면 가로 스크롤.
 export const layer2: LayerRenderer = {
@@ -74,7 +89,8 @@ export const layer2: LayerRenderer = {
         // 글 칸: 이름표 칩들 + 메시지
         const row = h('div', { class: 'gg-msg' })
         row.style.cssText = `left:${tx}px;top:${cy - 10}px;width:${w - tx - PAD}px`
-        for (const ref of c.refs) {
+        const { shown, hidden } = fitRefs(c.refs, w - tx - PAD)
+        for (const ref of shown) {
           const b = ref.branch_id ? by.get(ref.branch_id) : undefined
           const hue = n.lane === 0 ? 180 : laneHue(n.lane)
           const chip = h('button', { class: 'gg-l' }, ref.name)
@@ -88,6 +104,12 @@ export const layer2: LayerRenderer = {
             }))
           }
           row.append(chip)
+        }
+        if (hidden.length) {
+          const more = h('button', { class: 'gg-l gg-more' }, `+${hidden.length}`)
+          more.style.setProperty('--hue', String(n.lane === 0 ? 180 : laneHue(n.lane)))
+          more.addEventListener('click', () => openDetail({ title: `가지 이름표 ${c.refs.length}개`, rows: c.refs.map((r) => [r.name, r.branch_id && by.get(r.branch_id) ? who(by.get(r.branch_id)!) : '—'] as [string, string]) }))
+          row.append(more)
         }
         row.append(h('span', { class: 'gg-sub' }, c.subject), h('span', { class: 'gg-sha' }, c.sha.slice(0, 7)))
         inner.append(row)
