@@ -10,6 +10,7 @@ import { indexBy, indexAssignments, cellAt, dayName, activeDays, cellText, lesso
 import { Button, Select, Mark, Info, TextInput, Pill } from '../parts/ui';
 import { L } from '../help/terms';
 import { RICH } from '../help/richContent';
+import { BLOCKS_TABS, modesFor, modeAfterTab, stepTarget, type BlocksKind } from './blocksNav';
 
 type Mode = 'block' | 'fixed' | 'pin';
 
@@ -45,7 +46,7 @@ function lunchAt(specs: TimetableSpec[], start: string): string {
 export default function BlocksScreen() {
     const st = useStore();
     const { doc } = st;
-    const [kind, setKind] = useState<'track' | 'agent' | 'resource'>('track');
+    const [kind, setKind] = useState<BlocksKind>('track');
     const [id, setId] = useState('');
     const [mode, setMode] = useState<Mode>('block');
     const [fixActivity, setFixActivity] = useState('');
@@ -53,6 +54,9 @@ export default function BlocksScreen() {
 
     const list = kind === 'track' ? doc.tracks : kind === 'agent' ? doc.agents : doc.resources;
     const targetId = id || list[0]?.id || '';
+    const prevId = stepTarget(list.map((x) => x.id), targetId, -1);
+    const nextId = stepTarget(list.map((x) => x.id), targetId, 1);
+    const KIND_LABEL: Record<BlocksKind, string> = { track: L.track, agent: L.agent, resource: L.resource };
     const target: TargetRef | null = targetId ? { kind, id: targetId } : null;
 
     // 반 격자: 그 반 시간 틀. 교사·특별실 격자: 시각 축을 쓰므로 규격 하나가 아니다
@@ -88,29 +92,40 @@ export default function BlocksScreen() {
     return (
         <div className="p-4 space-y-3">
             <div data-tour="blocks-bar" className="flex items-center gap-2 flex-wrap">
-                <Select value={kind} onChange={(v) => { setKind(v as never); setId(''); if (v !== 'track' && mode !== 'block') setMode('block'); }}>
-                    <option value="track">{L.track}</option><option value="agent">{L.agent}</option><option value="resource">{L.resource}</option>
-                </Select>
+                <div role="tablist" className="flex rounded-md overflow-hidden border border-line">
+                    {BLOCKS_TABS.map((k) => (
+                        <button key={k} role="tab" aria-selected={kind === k}
+                            onClick={() => { setKind(k); setId(''); setMode(modeAfterTab(k, mode)); }}
+                            className={`px-3 py-1.5 text-[12px] ${kind === k ? 'bg-accent text-white' : 'bg-panel2 text-muted hover:text-text'}`}>{KIND_LABEL[k]}</button>
+                    ))}
+                </div>
+                <Button variant="ghost" title="이전 대상" disabled={!prevId} onClick={() => prevId && setId(prevId)}>◀ 이전</Button>
                 <Select value={targetId} onChange={setId}>
                     {list.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </Select>
-                <div className="w-px h-6 bg-line mx-1" />
-                <div className="flex rounded-md overflow-hidden border border-line">
-                    {(['block', 'fixed', 'pin'] as Mode[]).map((m) => {
-                        const label = m === 'block' ? '금지칸' : m === 'fixed' ? L.fixedLesson : L.pin;
-                        const dis = m !== 'block' && kind !== 'track';
-                        return (
-                            <button key={m} disabled={dis} onClick={() => setMode(m)}
-                                className={`px-2.5 py-1.5 text-[12px] disabled:opacity-30 ${mode === m ? 'bg-accent text-white' : 'bg-panel2 text-muted hover:text-text'}`}>{label}</button>
-                        );
-                    })}
-                </div>
+                <Button variant="ghost" title="다음 대상" disabled={!nextId} onClick={() => nextId && setId(nextId)}>다음 ▶</Button>
+                {kind === 'track' && (
+                    <>
+                        <div className="w-px h-6 bg-line mx-1" />
+                        <div className="flex rounded-md overflow-hidden border border-line">
+                            {modesFor(kind).map((m) => {
+                                const label = m === 'block' ? '금지칸' : m === 'fixed' ? L.fixedLesson : L.pin;
+                                return (
+                                    <button key={m} onClick={() => setMode(m)}
+                                        className={`px-2.5 py-1.5 text-[12px] ${mode === m ? 'bg-accent text-white' : 'bg-panel2 text-muted hover:text-text'}`}>{label}</button>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
                 <Info help={RICH.blocks} />
                 <div className="ml-auto flex items-center gap-2">
                     <Pill tone="accent">{L.blockStates.temp} {tempCount}칸</Pill>
                     <Button variant="ghost" onClick={st.act.clearTempBlocks} disabled={tempCount === 0}>{L.clearTemp}</Button>
                 </div>
             </div>
+
+            {kind !== 'track' && <p className="text-[12px] text-muted">고정 수업과 잠금은 「{L.track}」 탭에서 넣습니다</p>}
 
             {mode === 'fixed' && kind === 'track' && (
                 <div className="flex items-end gap-2 bg-panel border border-line rounded-md p-2">
