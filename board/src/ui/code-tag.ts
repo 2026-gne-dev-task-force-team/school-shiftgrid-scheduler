@@ -25,3 +25,19 @@ export function plainLog(line: string): (string | HTMLElement)[] {
   for (const t of tags) out.push(tag(t))
   return out
 }
+
+/**
+ * 한 바퀴 이름 「현황판 품질 18:02 묶음 · 앱 1:2」 → 「현황판 품질 묶음」 + 꼬리표 「18:02」 「앱 1:2」.
+ * 「묶음」 = 일을 묶어 한 바퀴로 돌린 단위. 「앱 1:2」 같은 앞 낱말 + 숫자:숫자 꼬리는 코드성이라 꼬리표로만 둔다(뜻은 코드에서 못 찾았다).
+ */
+export function wheelTitle(title: string): (string | HTMLElement)[] {
+  const tags: string[] = []
+  const keep: string[] = []
+  for (const part of title.split(' · ')) {
+    if (/^\S+\s*\d+:\d+$/.test(part.trim()) && keep.length) { tags.push(part.trim()); continue }
+    const { code, text } = splitCode(part)
+    if (code) tags.push(code)
+    keep.push(text.replace(/\s*\b\d{1,2}:\d{2}\b/g, (m) => { tags.push(m.trim()); return '' }).replace(/\s{2,}/g, ' ').trim())
+  }
+  return [keep.filter(Boolean).join(' · '), ...tags.map(tag)]
+}

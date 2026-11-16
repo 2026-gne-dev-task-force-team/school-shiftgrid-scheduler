@@ -33,6 +33,13 @@ export function shortWork(title: string, max = 12): string {
   return t.length > max ? `${t.slice(0, max - 1)}…` : t
 }
 
+/** 칩용 — 이름표 글(번호 뺀 것) + 맡은 태스크 번호는 따로 꼬리표로. 번호가 없으면 tag 는 빈 문자열. */
+export function actorChip(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): { label: string; tag: string } {
+  const full = actorLabel(a, all, tasks)
+  const tag = (a.task_id ?? '').replace(/^l-w+-/, '')
+  return tag && full.endsWith(` ${tag}`) ? { label: full.slice(0, -tag.length - 1), tag } : { label: full, tag }
+}
+
 /** 화면에 보일 이름표. 태스크 번호 없는 같은 이름표가 둘 이상이면 뒤에 1·2 번호. */
 export function actorLabel(a: Who, all: Who[] = [], tasks: Pick<Task, 'id' | 'title'>[] = []): string {
   const tag = nameTag(a, tasks)

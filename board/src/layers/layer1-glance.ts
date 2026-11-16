@@ -2,8 +2,8 @@ import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
 import { character } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
-import { actorLabel, actorTokens, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
-import { named, plainLog } from '../ui/code-tag.ts'
+import { actorChip, actorLabel, actorTokens, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
+import { plainLog, wheelTitle } from '../ui/code-tag.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -19,7 +19,7 @@ export const layer1: LayerRenderer = {
     const g = currentSprint(data)
     const left = sprintLeft(data)
     host.append(h('section', { class: 'card' }, h('b', null, '목표'),
-      g && h('p', null, `한 바퀴 ${g.sprint.id} · `, ...named(g.sprint.title), ` — ${g.pct}% · 남은 일감 ${left}개`)))
+      g && h('p', null, `한 바퀴 ${g.sprint.id} · `, ...wheelTitle(g.sprint.title), ` — ${g.pct}% · 남은 일감 ${left}개`)))
 
     const depts = h('section', { class: 'card' }, h('b', null, '부서별 지금 몇 명'))
     depts.append(stateSummary(data.actors))
@@ -28,7 +28,7 @@ export const layer1: LayerRenderer = {
       const row = h('div', { class: 'row', 'data-dept': d }, h('span', { class: 'dept' }, `${DEPT_NAME[d]} ${here.length}명`))
       for (const a of here) {
         const name = actorLabel(a, data.actors, data.tasks), what = actorWhat(a, data.tasks)
-        const c = chip({ icon: character(a), label: name, hue: a.hue, id: a.id, onClick: () => openDetail({
+        const c = chip({ icon: character(a), ...actorChip(a, data.actors, data.tasks), hue: a.hue, id: a.id, onClick: () => openDetail({
           title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${teamText(a.team)}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
             ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))],
             ['쓴 토큰', actorTokens(a)]],

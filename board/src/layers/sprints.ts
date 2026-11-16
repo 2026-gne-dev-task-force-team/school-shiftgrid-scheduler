@@ -1,6 +1,7 @@
 import { h } from '../dom.ts'
 import { flightStatus, reviewLabel, sprintProgress, sprintsNewestFirst } from '../lib/sprints.ts'
 import { chip } from '../ui/chip.ts'
+import { wheelTitle } from '../ui/code-tag.ts'
 import type { Sprint } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 
@@ -41,7 +42,7 @@ export const sprints: LayerRenderer = {
       const st = flightStatus(s, now), k = `${s.id}`
       const head = h('button', { class: 'fid-line', 'aria-expanded': 'false', title: `${s.title} — ${span(s)}` },
         h('span', { class: 'fid-no' }, flap(`${k}:no`, `한 바퀴 ${s.id}`, fresh, r)),
-        h('span', { class: 'fid-dest' }, h('b', { class: 'fid-name' }, s.title), h('span', { class: 'fid-goal' }, s.goal)),
+        h('span', { class: 'fid-dest' }, h('b', { class: 'fid-name' }, ...wheelTitle(s.title)), h('span', { class: 'fid-goal' }, s.goal)),
         h('span', { class: 'fid-t' }, flap(`${k}:t`, hhmm(s.began), fresh, r + 4)),
         h('span', { class: 'fid-st', 'data-st': st }, flap(`${k}:st`, st, fresh, r + 6)),
         h('span', { class: 'fid-pct' }, flap(`${k}:pct`, `${p.pct}%`, fresh, r + 8)))
