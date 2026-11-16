@@ -25,6 +25,8 @@ import { sampleDoc } from '../io/sample';
 import * as ops from './doc-ops';
 import type { CellPos, BlockState, SlotPos } from './doc-ops';
 import { uid } from './ids';
+import type { SheetRow } from '../ui/parts/Sheet';
+import { loadDrafts, saveDrafts, draftsFor, draftsOnSchoolChange, type DraftStore } from './demand-drafts';
 
 export type { CellPos } from './doc-ops';
 
@@ -139,6 +141,10 @@ interface StoreValue {
 
     act: Actions;
 
+    /** 시수표의 덜 채운 줄 — 문서 밖(앱 상태 + 브라우저 저장소 shiftgrid.demandDrafts). 지금 학교 것만 (R108) */
+    demandDrafts: SheetRow[];
+    setDemandDrafts: (rows: SheetRow[]) => void;
+
     newDoc: () => void;
     loadSample: () => void;
     openFile: () => Promise<void>;
@@ -216,6 +222,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const [autosaveDoc, setAutosaveDoc] = useState<Doc | null>(null);
     const [resumeShown, setResumeShown] = useState(true);
     const [autosaveAt, setAutosaveAt] = useState<string | undefined>(undefined);
+    const [drafts, setDrafts] = useState<DraftStore>(() => loadDrafts());
+
+    /** 덜 채운 줄 보관을 바꾸고 브라우저 저장소에도 쓴다 */
+    const setDemandDrafts = useCallback((rows: SheetRow[]) => {
+        const d = { school: doc.meta.name, rows };
+        setDrafts(d); saveDrafts(d);
+    }, [doc.meta.name]);
+    /** 다른 학교로 바뀌면 덜 채운 줄을 비운다. always 면(새 학교·샘플) 이름이 같아도 비운다 */
+    const switchSchool = useCallback((next: Doc, always = false) => {
+        setDrafts((cur) => {
+            const d = always ? { school: next.meta.name, rows: [] } : draftsOnSchoolChange(cur, next.meta.name);
+            if (d !== cur) saveDrafts(d);
+            return d;
+        });
+    }, []);
 
     // 첫 기동: 자동 보관본이 있으면 이어 할지 배너로 물어본다
     useEffect(() => {
@@ -345,21 +366,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     // ── 파일 ──────────────────────────────────────────────────
     const newDoc = useCallback(() => {
-        dispatch({ t: 'reset', doc: newSchoolDoc() });
+        const d = newSchoolDoc();
+        switchSchool(d, true);
+        dispatch({ t: 'reset', doc: d });
         setPath(undefined); setScreen('basic');
-    }, []);
+    }, [switchSchool]);
     const loadSample = useCallback(() => {
         const d = runEngine('샘플 학교 불러오기', () => sampleDoc());
-        if (d) { dispatch({ t: 'reset', doc: withDefaultRules(d) }); setPath(undefined); setScreen('basic'); }
-    }, [runEngine]);
+        if (d) { switchSchool(d, true); dispatch({ t: 'reset', doc: withDefaultRules(d) }); setPath(undefined); setScreen('basic'); }
+    }, [runEngine, switchSchool]);
     const openFile = useCallback(async () => {
         const r = await runEngineAsync('파일 열기', () => platform.openDoc());
-        if (r) { dispatch({ t: 'reset', doc: withDefaultRules(r.doc) }); setPath(r.path); setScreen('basic'); }
-    }, [runEngineAsync]);
+        if (r) { switchSchool(r.doc); dispatch({ t: 'reset', doc: withDefaultRules(r.doc) }); setPath(r.path); setScreen('basic'); }
+    }, [runEngineAsync, switchSchool]);
     /** 껍데기(Electron 메뉴)가 이미 열어 넘겨준 문서를 받는다 */
     const loadOpened = useCallback((r: OpenedDoc) => {
-        dispatch({ t: 'reset', doc: withDefaultRules(migrateDoc(r.doc)) }); setPath(r.path); setScreen('basic');
-    }, []);
+        const d = migrateDoc(r.doc);
+        switchSchool(d);
+        dispatch({ t: 'reset', doc: withDefaultRules(d) }); setPath(r.path); setScreen('basic');
+    }, [switchSchool]);
     const saveFile = useCallback(async () => {
         const p = await runEngineAsync('저장', () => platform.saveDoc(doc, path));
         if (p) { setPath(p); dispatch({ t: 'saved' }); }
@@ -369,8 +394,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (p) { setPath(p); dispatch({ t: 'saved' }); }
     }, [doc, runEngineAsync]);
     const resume = useCallback(() => {
-        if (autosaveDoc) { dispatch({ t: 'reset', doc: withDefaultRules(autosaveDoc) }); setAutosaveDoc(null); setScreen('basic'); }
-    }, [autosaveDoc]);
+        if (autosaveDoc) { switchSchool(autosaveDoc); dispatch({ t: 'reset', doc: withDefaultRules(autosaveDoc) }); setAutosaveDoc(null); setScreen('basic'); }
+    }, [autosaveDoc, switchSchool]);
     const dismissResume = useCallback(() => { setResumeShown(false); }, []);
 
     const jumpToEdit = useCallback((f: EditFocus) => { setFocus(f); setScreen('edit'); }, []);
@@ -384,6 +409,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         notices, notify, dismiss, runEngine, runEngineAsync,
         screen, setScreen, focus, setFocus, jumpToEdit,
         act,
+        demandDrafts: draftsFor(drafts, doc.meta.name), setDemandDrafts,
         newDoc, loadSample, openFile, loadOpened, saveFile, saveFileAs, resume, dismissResume,
     };
     return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
