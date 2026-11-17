@@ -49,6 +49,21 @@ describe('auth — 401·403 not_member·정지', () => {
             expect(await codeOf(res)).toBe('unauthorized');
         }
     });
+    it('만료 JWT(Auth 가 error 로 거부)·getUser 예외도 401 unauthorized', async () => {
+        const expired: AuthClient = {
+            ...client,
+            auth: { getUser: async () => ({ data: { user: null }, error: { status: 401, code: 'bad_jwt', message: 'token is expired' } }) },
+        };
+        const throwing: AuthClient = { ...client, auth: { getUser: () => Promise.reject(new Error('net')) } };
+        for (const c of [expired, throwing]) {
+            const res = await handle(req('GET', { Authorization: 'Bearer jwt-a' }), ORIGIN, async (r) => {
+                await requireProjectMember(c, r.headers.get('Authorization'), 'p1');
+                return new Response('{}');
+            });
+            expect(res.status).toBe(401);
+            expect(await codeOf(res)).toBe('unauthorized');
+        }
+    });
     it('비구성원은 403 not_member', async () => {
         const res = await memberRoute(req('GET', { Authorization: 'Bearer jwt-b' }));
         expect(res.status).toBe(403);
