@@ -189,3 +189,9 @@ export function timeLabels(slots: Record<string, { label: string; startMin: numb
   }
   return [...by.entries()].sort(([a], [b]) => a - b).map(([startMin, x]) => ({ startMin, endMin: x.endMin, labels: specs.map((k) => x.labels.get(k) ?? '—') }))
 }
+
+/** 칸 PUT 때 방 삭제 판정 — 옛 방 목록에 있고 새 목록에 없는 방 중 예약 행이 남은 것의 id (6절: 예약 행이 가리키는 방은 지우지 못한다 → 서버 409). 방은 끄는 것(active=false)이지 지우는 것이 아니다 */
+export function removedRoomsWithReservations(prev: readonly Pick<Room, 'id'>[], next: readonly Pick<Room, 'id'>[], reservedRoomIds: ReadonlySet<string>): string[] {
+  const keep = new Set(next.map((r) => r.id))
+  return prev.filter((r) => !keep.has(r.id) && reservedRoomIds.has(r.id)).map((r) => r.id)
+}
