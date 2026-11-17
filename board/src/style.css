@@ -237,6 +237,28 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .bp-room.ghost { border-style: dashed; background: var(--s2); color: var(--fg-2) } .bp-room.ghost::before { content: "○" }
 .bp-room.scaffold { border: 2px solid var(--warn); background: repeating-linear-gradient(45deg, var(--s3) 0 6px, var(--scaffold) 6px 9px); color: var(--fg); animation: sgb-bp-blink 2.4s ease-in-out infinite } .bp-room.scaffold::before { content: "◐"; color: var(--warn) }
 &.calm .bp-room.scaffold { animation: none }
+/* R91 설계도 도식 — 상자 + 화살표. 휠은 그냥 스크롤(.bp-view 에 확대 손잡이 없음) */
+.bp-overview { background: var(--s2); border: 1px solid rgb(var(--neon-rgb) / .4); border-radius: var(--r2); padding: var(--sp3); margin-bottom: var(--sp3) } .bp-overview h3 { margin: 0 0 var(--sp2) } .bp-overview ol { margin: 0; padding-left: 1.3em; line-height: 1.6 }
+.bp-legend { margin: 0 0 var(--sp2); color: var(--fg-2); font-size: .85em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px }
+.bp-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 2px solid var(--neon); vertical-align: middle } .bp-dot.ghost { border-style: dashed; border-color: var(--fg-3) } .bp-dot.scaffold { border-color: var(--warn); background: var(--scaffold) } .bp-dot.solid { background: rgb(var(--neon-rgb) / .35) }
+.bp-sizer { position: relative }
+.bp-graph { position: relative; transform-origin: 0 0 }
+.bp-svg { position: absolute; inset: 0; overflow: visible }
+.bp-edge { fill: none; stroke: var(--fg-3); stroke-width: 1.6 } .bp-arrowhead { fill: var(--fg-3) }
+.bp-elabel rect { fill: var(--s2); stroke: rgb(var(--neon-rgb) / .45) } .bp-elabel text { fill: var(--fg); font-size: 11px }
+.bp-box { position: absolute }
+.bp-node { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; text-align: left; padding: 6px 10px }
+.bp-node::before { position: absolute; top: 6px; right: 8px }
+.bp-node b { font-size: .95em } .bp-node code { font-size: .78em; color: var(--fg-2) } .bp-node small { font-size: .72em; color: var(--fg-2) }
+.bp-node.on, .bp-desc.on { outline: 3px solid var(--neon-2); outline-offset: 2px }
+.bp-box .bp-slot { position: absolute; right: 6px; bottom: -12px; z-index: 1 }
+.bp-desc-h { margin: var(--sp4) 0 var(--sp2) }
+.bp-descs { display: grid; gap: var(--sp2) }
+.bp-desc { border: 1px solid rgb(var(--neon-rgb) / .4); border-radius: var(--r1); background: var(--s2); padding: var(--sp2) var(--sp3) }
+.bp-desc summary { cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 32px } .bp-desc summary code, .bp-desc summary small { color: var(--fg-2); font-size: .8em }
+.bp-desc dl { margin: var(--sp2) 0 0; display: grid; gap: 6px } .bp-row { display: grid; grid-template-columns: 8em 1fr; gap: var(--sp2) } .bp-row dt { color: var(--fg-2); font-weight: 650 } .bp-row dd { margin: 0 } .bp-row ul { margin: 0; padding-left: 1.1em }
+.bp-lost { margin-top: var(--sp3) } .bp-lost header { font-weight: 650; margin-bottom: var(--sp2) }
+@media (max-width: 767px) { .bp-row { grid-template-columns: 1fr; gap: 2px } }
 /* 불편 접수 칸 — 어두운 배경에서 입력칸·select 가 보이게 테두리·배경·글자색을 준다 */
   .detail-body label { display: block; margin: var(--sp3) 0 4px; font-size: var(--fs-sm); color: var(--fg-2) }
   .detail-body input[type=text], .detail-body select { display: block; width: 100%; max-width: 100%; min-height: 30px; padding: 0 9px; margin-bottom: var(--sp2); background: var(--bg); color: var(--fg); border: 1px solid var(--line-2); border-radius: var(--r2); font: inherit }
