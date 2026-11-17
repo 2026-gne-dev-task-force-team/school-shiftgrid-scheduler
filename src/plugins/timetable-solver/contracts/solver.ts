@@ -1,0 +1,59 @@
+/**
+ * 🔴 약속 「solver」 0.1.0 — 자동 편성 엔진의 서명 자리(값 0 · 1.2v 편성기 분해 F1 · 설계 2절 3번 「엔진은 화면이 없다」).
+ *   ⛔ 값(const·function) 0 — 실체는 제공자 플러그인 timetable-solver 안(./engine)에 산다. 소비자는 host.modules.use<Solver>('solver') 로 받는다.
+ *   ⛔ 엔진 알고리즘은 v1 그대로다(꼴만 옮김) — 정답 1,820 대조(F1b)가 같은 답을 지킨다.
+ *
+ * ⭐ 편성 입력(SolverInput)
+ *   - 지금은 v1 `Doc` 꼴 그대로다(이름만 붙임). 정본 일곱(교직원·학교·과목·방·시간 틀·복무·고정 일정)에서 모아 짓는 일은 F5 몫이다.
+ *     F5 가 꼴을 바꿔도 소비자는 이 이름만 쓰므로 import 가 안 바뀐다.
+ *
+ * ⭐ 요일 — 맞출 틈 하나(설계 3-1 ⚠️)
+ *   - 엔진은 `dayIndex` 0=월 … 4=금 을 쓴다. 바깥(timetable-grid 등)은 1=월 … 7=일 을 쓴다.
+ *   - 경계에서 toWeekday·toDayIndex 한 쌍으로만 바꾼다(엔진 안은 안 고친다).
+ */
+import type { Doc } from '../types/doc';
+import type {
+    Assignment, RuleTemplate, TimetableSpec, Violation,
+} from '../types/schema';
+import type {
+    CapacityIssue, CellVerdicts, DemandStatus, Diagnosis, EngineContext, MakeSpecInput,
+    Move, MovePreview, SolveOptions, SolveProgress, SolveResult,
+} from '../engine/api';
+
+/** 편성 입력 — 엔진이 받는 한 덩어리. 지금은 v1 Doc 꼴(F5 가 정본에서 모아 짓는다). */
+export type SolverInput = Doc;
+
+/** 엔진 요일 번호 — 0=월 … 4=금(v1 dayIndex). */
+export type SolverDayIndex = number;
+/** 바깥 요일 번호 — 1=월 … 7=일(timetable-grid 의 weekday 와 같다). */
+export type Weekday = number;
+
+export type {
+    CapacityIssue, CellVerdicts, DemandStatus, Diagnosis, EngineContext, MakeSpecInput,
+    Move, MovePreview, SolveOptions, SolveProgress, SolveResult,
+};
+
+/** 「solver」 약속 모듈 — 함수 서명만. 뜻은 engine/api.ts 의 함수 목록 주석과 같다. */
+export interface Solver {
+    readonly version: 1;
+    buildContext(input: SolverInput): EngineContext;
+    evaluateAll(input: SolverInput): Violation[];
+    diagnose(input: SolverInput): Diagnosis;
+    demandStatus(input: SolverInput): DemandStatus[];
+    candidateCells(input: SolverInput, assignmentId: string): CellVerdicts;
+    previewMove(input: SolverInput, move: Move): MovePreview;
+    applyMove(input: SolverInput, move: Move): SolverInput;
+    solve(input: SolverInput, opts?: SolveOptions, onProgress?: (p: SolveProgress) => void): Promise<SolveResult>;
+    autoAdjust(input: SolverInput, opts?: SolveOptions, onProgress?: (p: SolveProgress) => void): Promise<SolveResult>;
+    checkCapacity(input: SolverInput): CapacityIssue[];
+    readonly RULES: readonly RuleTemplate[];
+    defaultRules(): SolverInput['rules'];
+    makeSpec(input: MakeSpecInput): TimetableSpec;
+    /** 엔진 요일(0=월) → 바깥 요일(1=월). */
+    toWeekday(dayIndex: SolverDayIndex): Weekday;
+    /** 바깥 요일(1=월) → 엔진 요일(0=월). */
+    toDayIndex(weekday: Weekday): SolverDayIndex;
+}
+
+/** 배치 한 줄(엔진이 돌려주는 꼴) — 소비자가 이름으로 쓰라고 다시 내보낸다. */
+export type SolverAssignment = Assignment;

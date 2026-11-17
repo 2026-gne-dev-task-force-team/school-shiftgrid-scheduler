@@ -62,10 +62,10 @@ describe('실측 #1 (설계 ① 14절) — 이 시험이 지키는 몫', () => {
   // 브라우저 실측(크롬·엣지·사파리에서 편성→자동 편성→인쇄 쪽수)은 시험으로 못 잰다. 코드 쪽 전제만 못박는다.
   const root = join(__dirname, '..', '..', '..')
   it('솔버 Worker 주소는 모듈 상대(new URL(…, import.meta.url)) — 빌드 base 가 ./ 이라 /1_2/ 아래서도 같은 자리', () => {
-    const src = readFileSync(join(__dirname, 'legacy', 'engine', 'solver.ts'), 'utf8')
+    const src = readFileSync(join(__dirname, '..', 'timetable-solver', 'engine', 'solver.ts'), 'utf8')
     expect(src).toMatch(/new Worker\(new URL\('\.\/worker\.ts', import\.meta\.url\)/)
     expect(readFileSync(join(root, 'vite.config.ts'), 'utf8')).toMatch(/base:\s*'\.\/'/)
-    expect(existsSync(join(__dirname, 'legacy', 'engine', 'worker.ts'))).toBe(true)
+    expect(existsSync(join(__dirname, '..', 'timetable-solver', 'engine', 'worker.ts'))).toBe(true)
   })
   const fx = process.env.V1_FIXTURE_51
   it.skipIf(!fx)('51반 fixture(레포 밖, V1_FIXTURE_51 경로) — 읽혀서 평일마다 격자가 선다', () => {

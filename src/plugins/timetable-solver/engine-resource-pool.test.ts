@@ -5,11 +5,11 @@
  *     두 방을 「예약만 받는 방」으로 켜면 → 정원 1 이라 위반 1 · 사전 점검 수용도 1/3 → 1/1
  */
 import { describe, it, expect } from 'vitest';
-import type { Doc } from './legacy/types/doc';
-import type { Resource, Violation } from './legacy/types/schema';
-import { evaluateAll, checkCapacity, solve } from './legacy/engine/core';
-import { makeSmallDoc, put, IDS, SLOT } from './legacy/engine/__fixtures__/small';
-import { isBookingOnly, pooledCapacity, resourcePool, resourcesInUse, withBookingOnly } from './legacy/engine/resource-pool';
+import type { Doc } from './types/doc';
+import type { Resource, Violation } from './types/schema';
+import { evaluateAll, checkCapacity, solve } from './engine/core';
+import { makeSmallDoc, put, IDS, SLOT } from './engine/__fixtures__/small';
+import { isBookingOnly, pooledCapacity, resourcePool, resourcesInUse, withBookingOnly } from './engine/resource-pool';
 
 const count = (viols: Violation[], templateId: string) => viols.filter((v) => v.templateId === templateId).length;
 

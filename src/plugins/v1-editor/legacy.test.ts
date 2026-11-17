@@ -8,6 +8,7 @@ import { V1_EDITOR_SRC } from './frame'
 const here = __dirname
 const root = join(here, '..', '..', '..')
 const legacy = join(here, 'legacy')
+const solver = join(here, '..', 'timetable-solver') // T-10ed: 엔진·타입 정본(legacy 는 다시-내보내기만 · PATCHES)
 
 const rel = (p: string) => p.split(sep).join('/')
 
@@ -38,7 +39,7 @@ describe('v1-editor legacy 사본', () => {
       if (!/\.(tsx?|jsx?|css)$/.test(n)) continue
       for (const m of readFileSync(join(legacy, n), 'utf8').matchAll(re)) {
         const abs = join(legacy, n, '..', m[1].replace(/\?.*$/, ''))
-        if (!abs.startsWith(legacy) && !out.includes(abs)) bad.push(`${n} -> ${m[1]}`)
+        if (!abs.startsWith(legacy) && !out.includes(abs) && !abs.startsWith(solver)) bad.push(`${n} -> ${m[1]}`)
       }
     }
     expect(bad).toEqual([])
