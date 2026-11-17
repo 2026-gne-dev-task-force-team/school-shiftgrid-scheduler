@@ -8,6 +8,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
+import { PasteBar } from './PasteBar';
 import { demandNodeTypes, demandNodeTypeImpl, initDemandTable, getKit } from './nodes';
 
 const SHEET_ID = 'demand-table.sheet';
@@ -34,7 +35,14 @@ export const demandTablePlugin = definePlugin({
     },
 
     components: {
-        Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
+        // 시수표 화면 = 컬렉션 표 + 그 위 엑셀 붙여 넣기 띠(F3b)
+        Sheet: ({ host, peek, leaf }) => {
+            const k = getKit();
+            if (!k) return null;
+            return createElement('div', { style: { display: 'flex', flexDirection: 'column', height: '100%' } },
+                createElement(PasteBar, { host, kit: k }),
+                createElement('div', { style: { flex: 1, minHeight: 0 } }, createElement(k.Tab, { host, peek, leafId: leaf.id })));
+        },
     },
     commands: {
         'demand-table.open': (host: PluginHost) => { host.workspace.open(SHEET_ID, { where: 'center' }); },
