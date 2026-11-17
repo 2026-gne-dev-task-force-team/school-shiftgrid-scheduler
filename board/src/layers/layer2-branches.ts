@@ -2,6 +2,7 @@ import { h } from '../dom.ts'
 import type { Branch, GraphCommit } from '../types.ts'
 import type { LayerRenderer } from './types.ts'
 import { character } from '../ui/character.ts'
+import { actorTag } from '../ui/actor-tag.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { laneHue, layoutGraph, synthGraph } from '../lib/graph-layout.ts'
 
@@ -26,7 +27,8 @@ export function fitRefs<T extends { name: string }>(refs: T[], avail: number): {
 // 눌리는 점·이름표·캐릭터는 그 위 DOM. 좁으면 가로 스크롤.
 export const layer2: LayerRenderer = {
   id: 'layer2', floor: 2, tab: '갈래',
-  render(host, { data, openDetail, tip }) {
+  render(host, ctx) {
+    const { data, openDetail, tip } = ctx
     const trunk = data.branches.find((b) => b.trunk)
     const by = new Map(data.branches.map((b) => [b.id, b]))
     const commits: GraphCommit[] = trunk?.graph?.length ? trunk.graph : synthGraph(data.branches)
@@ -118,7 +120,7 @@ export const layer2: LayerRenderer = {
         for (const ref of c.refs) {
           const b = ref.branch_id ? by.get(ref.branch_id) : undefined, a = b && b.state === 'live' ? actor(b) : undefined
           if (!a) continue
-          const chip = h('span', { class: 'gg-chip' }, character(a, 'mini'))
+          const chip = h('span', { class: 'gg-chip' }, actorTag(ctx, a, { size: 'mini', text: 'name' }))
           chip.style.cssText = `left:${cx - 14}px;top:${cy - DOT - 22}px`
           inner.append(chip)
           break

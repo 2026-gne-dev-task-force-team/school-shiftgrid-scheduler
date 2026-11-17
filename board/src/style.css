@@ -336,3 +336,13 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .fb-clear, .fb-chip { min-height: 36px }
   .fb:not(.open) .fb-panel { display: none }
 }
+
+/* R92: 공용 캐릭터 이름표 — 이름 · 직업 / 태스크 줄(줄임표). 폰 폭에선 더 좁게 */
+.actor-tag { text-align: left; max-width: 220px; min-width: 0; padding-top: 2px; padding-bottom: 2px }
+.actor-tag .at-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25 }
+.actor-tag .at-name, .actor-tag .at-task { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100% }
+.actor-tag .at-name { font-weight: 600; font-size: var(--fs-sm) } .actor-tag .at-task { font-size: .75em; color: var(--fg-3) }
+.actor-tag[data-state="off"], .actor-tag[data-state="done"] { opacity: .75 }
+.ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 110px; background: none; border: 0; min-height: 0; padding: 0 }
+.gg-chip { pointer-events: auto }
+@media (max-width: 420px) { .actor-tag { max-width: 150px } .ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 80px } }
