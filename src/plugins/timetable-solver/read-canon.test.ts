@@ -4,6 +4,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { readAndBuild, readCanon, NODE_TYPES, type CanonSources, type RowLike } from './read-canon';
+import { lessonCellsByTrack } from './build-context';
+import { solveSync } from './engine/solver';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
 import { SLOT_TYPE } from '../bell/config';
@@ -152,5 +154,36 @@ describe('일과표 약속(slotsFor)으로 읽기 — T-10ff', () => {
     it('막힘 문구가 무엇을 하면 풀리는지 말한다', () => {
         const m = readAndBuild(full({ rows: bad }), mods).blockers.find((b) => b.code === 'no-slots')!.message;
         expect(m).toContain('일과표에 학년별 수업 칸');
+    });
+});
+
+describe('최소 자료 — 막힘 판정과 엔진이 같은 수업 칸을 센다(T-10g2)', () => {
+    // 화면 실측 꼴: 반 1-1 · 교직원 1 · 과목 1 · 일과표 1교시 · 시수표 줄 1(시수 1)
+    const mini = (bell: Record<string, unknown>): CanonSources => ({
+        staff: { lists: () => [{ id: 'l' }], staffIn: () => [{ id: 'u1', listId: 'l', name: '다솜' }] } as unknown as Staff,
+        school: { school: () => ({ id: 's', name: '가상' }), years: () => [{ id: 'y' }], classesIn: () => [{ id: 'k1', name: '1-1', grade: 1 }] } as unknown as School,
+        subjects: { lists: () => [{ id: 'l' }], subjectsIn: () => [{ id: 'j1', listId: 'l', name: '가상국어' }] } as unknown as Subjects,
+        rooms: null,
+        rows: (t) => (t === NODE_TYPES.bellSlot ? [row('p1', bell)]
+            : t === NODE_TYPES.demandRow ? [row('q1', { f_teacher: ['u1'], f_class: ['k1'], f_subject: ['j1'], f_hours: 1 })] : []),
+        sheetData: () => [],
+        blocks: [],
+    });
+    const stopsOf = (r: ReturnType<typeof readAndBuild>) => r.blockers.filter((b) => b.level === 'stop');
+
+    it('구분 「수업」이면 막힘 0 · 엔진이 수업 1시간을 놓는다', () => {
+        const r = readAndBuild(mini({ f_kind: 'class', f_period: 1, f_start: '09:00', f_end: '09:40' }), mods);
+        expect(stopsOf(r)).toEqual([]);
+        expect(lessonCellsByTrack(r.input).get('k1')).toBe(5);   // 월~금 × 1교시
+        const res = solveSync(r.input, { candidates: 1, budgetMs: 200, seed: 1 });
+        expect(res.best.assignments.filter((a) => a.trackId === 'k1')).toHaveLength(1);
+    });
+    it('구분이 빈 줄뿐이면 엔진 칸 0 → 편성 전에 막힘으로 알린다(편성안이 비어 나오지 않게)', () => {
+        const r = readAndBuild(mini({ f_period: 1, f_start: '09:00', f_end: '09:40' }), mods);
+        expect(lessonCellsByTrack(r.input).get('k1')).toBe(0);
+        const b = stopsOf(r).find((x) => x.code === 'no-lesson-cell');
+        expect(b?.fix).toBe('bell');
+        expect(b?.message).toContain('구분을 「수업」으로');
+        expect(b?.message).toContain('1-1');
     });
 });

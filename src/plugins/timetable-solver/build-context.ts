@@ -15,6 +15,7 @@ import type { Agent, Blackout, Demand, Slot, TimetableSpec, Timetable, Track, We
 import { HOMEROOM_AGENT_ID } from './types/schema';
 import { toDayIndex } from './day';
 import { defaultRules } from './engine/rules';
+import { buildContext } from './engine/context';
 
 /** 조립에 쓰는 정본 약속 모듈 — 순수 셈만(host.modules 로 받은 것을 넘긴다). */
 export interface BuildModules {
@@ -211,4 +212,20 @@ export function buildSolverInput(canon: SolverCanon, mods: BuildModules): BuildR
         assignments: [], blackouts, weeklyBlocks, rules: mods.rules && mods.rules.length > 0 ? mods.rules : defaultRules(), boards: [],
     };
     return { input, issues };
+}
+
+/**
+ * 반마다 엔진이 수업을 놓을 수 있는 칸 수(요일 × 수업 교시) — 엔진 문맥의 lessonSlots 를 **그대로** 센다(T-10g2).
+ *   🔴 편성 막힘 판정은 이 함수 하나로 센다 — 막힘은 풀렸는데 엔진은 놓을 칸이 0인 어긋남을 막는다.
+ *   일과표 「구분」이 빈 줄은 bell 약속(clock)과 같이 수업 칸이 아니다 → 그런 줄만 있으면 0.
+ */
+export function lessonCellsByTrack(input: SolverInput): Map<string, number> {
+    const ctx = buildContext(input);
+    const out = new Map<string, number>();
+    for (const t of input.tracks) {
+        const spec = ctx.specOfTrack(t.id);
+        const days = spec ? (spec.activeDays ?? [0, 1, 2, 3, 4]) : [];   // 엔진 computeDomain 과 같은 기본 요일
+        out.set(t.id, days.reduce((n, d) => n + ctx.lessonSlots(t.id, d).length, 0));
+    }
+    return out;
 }
