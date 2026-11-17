@@ -2,7 +2,7 @@ import { h } from '../dom.ts'
 import { clampZoom, groupHouses, lineOf, roomCount, splitCode } from './layer5-logic.ts'
 import { attachActors } from './layer5-match.ts'
 import { named } from '../ui/code-tag.ts'
-import { character } from '../ui/character.ts'
+import { actorTag } from '../ui/actor-tag.ts'
 import type { LayerRenderer } from './types.ts'
 
 const STATE_NAME = { plan: '계획', build: '짓는 중', built: '완성' }
@@ -10,13 +10,14 @@ const STATE_NAME = { plan: '계획', build: '짓는 중', built: '완성' }
 // 5층 설계도 집 — 집 = 부모 모듈, 방 = 자식. 선 종류가 상태(유령·비계·실선). 확대는 휠·버튼·두 손가락.
 export const layer5: LayerRenderer = {
   id: 'layer5', floor: 5, tab: '설계도',
-  render(host, { data, openDetail, tip }) {
+  render(host, ctx) {
+    const { data, openDetail, tip } = ctx
     const houses = groupHouses(data.modules)
     const { total, built } = roomCount(houses)
     const taskTitle = (id: string | null) => data.tasks.find((t) => t.id === id)?.title ?? '없음'
 
     const { byRoom, lost } = attachActors(data.actors, data.modules, data.tasks)
-    const crew = (id: string) => (byRoom.get(id) ?? []).map((a) => h('span', { class: 'bp-crew', title: a.name }, character(a, 'mini')))
+    const crew = (id: string) => (byRoom.get(id) ?? []).map((a) => h('span', { class: 'bp-crew' }, actorTag(ctx, a, { size: 'mini', text: 'full' })))
     const canvas = h('div', { class: 'bp-canvas' })
     for (const hs of houses) {
       const rooms = hs.rooms.map((m) => {
@@ -27,7 +28,7 @@ export const layer5: LayerRenderer = {
       })
       canvas.append(h('section', { class: 'bp-house' }, h('header', null, ...named(hs.root.name), ...crew(hs.root.id)), h('div', { class: 'bp-rooms' }, ...rooms)))
     }
-    if (lost.length) canvas.append(h('section', { class: 'bp-house bp-lost' }, h('header', null, '어느 칸인지 모름'), h('div', { class: 'bp-rooms' }, ...lost.map((a) => h('span', { class: 'bp-crew', title: `${a.name} · ${a.task_id ?? ''}` }, character(a, 'mini'))))))
+    if (lost.length) canvas.append(h('section', { class: 'bp-house bp-lost' }, h('header', null, '어느 칸인지 모름'), h('div', { class: 'bp-rooms' }, ...lost.map((a) => h('span', { class: 'bp-crew' }, actorTag(ctx, a, { size: 'mini' }))))))
 
     let zoom = 1
     const apply = () => { canvas.style.transform = `scale(${zoom})` }

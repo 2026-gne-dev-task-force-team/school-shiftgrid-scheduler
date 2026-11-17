@@ -26,7 +26,7 @@ describe('맞춤 함수', () => {
 describe('렌더', () => {
   it('칸 곁 캐릭터 수 + 모름 줄', () => {
     const host = document.createElement('div')
-    const data = { actors: [A('a', 'tX'), A('b', 'T-8g'), A('e', 'zz')], tasks, modules: mods } as unknown as BoardData
+    const data = { actors: [A('a', 'tX'), A('b', 'T-8g'), A('e', 'zz')], tasks, modules: mods, lanes: [], events: [] } as unknown as BoardData
     layer5.render(host, { data, openDetail: () => {}, tip: () => {} })
     expect(host.querySelectorAll('.bp-slot .bp-crew svg').length).toBe(2)
     expect(host.querySelectorAll('.bp-lost .bp-crew svg').length).toBe(1)
