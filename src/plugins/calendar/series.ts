@@ -9,6 +9,7 @@ import { expand, expandPattern, isPattern, ruleToPattern, type DatePattern, type
 import type { DateValue } from '../collection/contracts/collection';
 import { EVENT_TYPE } from './config';
 import { getNodesApi } from './nodes';
+import { checkBeforeSave } from './save-check';
 import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import { isoMinuteOf, occId, parseLocal, type EventData } from './events';
 
@@ -116,6 +117,15 @@ export function materialize(o: Occurrence): string {
 export function reschedule(o: Occurrence, start: string, end: string): string {
     const api = getNodesApi();
     if (!api) return '';
+    // 저장 전 검증(프리셋 beforeSave) — 거절이면 옮기지 않는다(실체화도 안 한다)
+    const storeId = api.parent(o.eventId);
+    if (storeId) {
+        const rule = api.get(o.eventId);
+        const memo = storedToEvent(dataOf(rule))?.memo ?? '';
+        const self = (x: Occurrence) => x.eventId === o.eventId && x.originalStart === o.originalStart;
+        const v = checkBeforeSave(storeId, { name: rule?.name ?? '', start, end, allDay: o.allDay, memo, values: { ...(dataOf(rule).values ?? {}) } }, { kind: 'move', eventId: o.eventId, isSelf: self });
+        if (!v.ok) return '';
+    }
     let id = '';
     api.batch(() => {
         id = materialize(o);
