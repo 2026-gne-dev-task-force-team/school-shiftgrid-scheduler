@@ -13,7 +13,7 @@ export const APP_HOUSES = [
     ['P25', '담임 과목 불러오기', null],
   ]],
   ['check', 'ops-check 검사', [['P4', '검사 화면', 'R46']]],
-  ['editor', 'v1-editor 편성기', [
+  ['editor', '편성 조각(timetable-plans·solver·v1-file)', [
     ['P10a', 'iframe 입구', 'R47'], ['P10b', 'platform 교체', 'R48'], ['P10c', '파일로 바꾸기', 'R49'], ['P10d', '읽기 격자', 'R50'], ['P10e', '보관 칸·기간', 'R51'],
   ]],
   ['link', 'server-link 서버 연결', [

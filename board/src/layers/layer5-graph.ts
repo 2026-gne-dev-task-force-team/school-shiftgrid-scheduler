@@ -9,7 +9,7 @@ const PITCH = BOX_W + GAP_X
 
 /** 칸 자리 — 줄 안 가로 칸 번호(소수 가능). 5칸 격자 기준. 길게 건너뛰는 화살표가 다른 상자를 덜 지나게 비운 칸을 둔다. */
 const COL: Record<string, number> = {
-  'v1-editor': 0, 'ops-sub': 1, 'ops-days': 2, 'ops-room': 3, 'ops-aux': 4,
+  'timetable-plans': 0, 'ops-sub': 1, 'ops-days': 2, 'ops-room': 3, 'ops-aux': 4,
   '코어 5': 0, 'ops-check': 1, 'account-server': 2,
   'server-link': 2.1,
   'supabase/': 0.3,
