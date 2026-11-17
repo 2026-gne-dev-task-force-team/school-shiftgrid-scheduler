@@ -23,7 +23,7 @@ const flap = (key: string, text: string, fresh: boolean, base: number): HTMLElem
   ;[...text].forEach((c, i) => {
     const half = (k: string) => h('span', { class: k }, h('span', null, c))
     const cell = h('span', { class: `fl${c.charCodeAt(0) > 0x2e80 ? ' w' : ''}${c === old[i] ? '' : ' go'}`, 'aria-hidden': 'true' }, half('t'), half('b'))
-    cell.style.setProperty('--d', `${Math.min((base + i) * 22, 600)}ms`)
+    cell.style.setProperty('--d', `${Math.min((base + i) * 22, 100)}ms`)
     g.append(cell)
   })
   return g

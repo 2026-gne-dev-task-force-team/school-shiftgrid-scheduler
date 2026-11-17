@@ -121,7 +121,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .tip { position: fixed; z-index: calc(var(--z) + 5); max-width: 220px; padding: 4px 8px; background: var(--s3); border: 1px solid var(--line-2); border-radius: var(--r1); box-shadow: var(--sh3); font-size: var(--fs-sm); pointer-events: none }
 
 .pulse { animation: sgb-pulse 1.2s }
-.card { animation: sgb-pop .3s var(--ease) backwards calc(var(--i, 0) * 60ms), sgb-breathe 4s ease-in-out infinite alternate }
+.card { animation: sgb-pop .25s var(--ease) backwards min(calc(var(--i, 0) * 60ms), 100ms), sgb-breathe 4s ease-in-out infinite alternate }
 .card:nth-child(2) { --i: 1 } .card:nth-child(3) { --i: 2 } .card:nth-child(4) { --i: 3 } .card:nth-child(n+5) { --i: 4 }
 .stage-host > :not(.card) { animation: sgb-in .28s var(--ease) backwards } /* 탭이 바뀌면 내용이 살짝 미끄러져 들어온다 */
 .ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
@@ -165,7 +165,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .fl .t > span, .fl .b > span { display: block; height: 1.7em }
 .fl .b > span { transform: translateY(-50%) }
 .fl.w { width: 1.9ch }
-.fl.go .t { animation: sgb-flt .16s ease-in backwards var(--d, 0ms) } .fl.go .b { animation: sgb-flb .16s ease-out backwards calc(var(--d, 0ms) + .16s) }
+.fl.go .t { animation: sgb-flt .1s ease-in backwards var(--d, 0ms) } .fl.go .b { animation: sgb-flb .1s ease-out backwards calc(var(--d, 0ms) + .1s) }
 .fid .row { color: #d9c88a } .fid .chip { color: var(--fg) } .fid-row > p { margin: 4px 0 0; font: var(--fs-sm)/1.45 var(--font); color: #d9c88a }
 .fid-row > div:last-child { font: var(--fs-sm)/1.45 var(--font); color: #d9c88a }
 @media (max-width: 767px) {
