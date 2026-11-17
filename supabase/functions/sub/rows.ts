@@ -49,14 +49,21 @@ export async function openSlot(ring: KeyRing, r: DbSlot): Promise<SubSlotRow> {
     };
 }
 
-export const openSlots = (ring: KeyRing, rows: readonly DbSlot[]) => Promise.all(rows.map((r) => openSlot(ring, r)));
+/** 엔진 입력 꼴(shared/sub-engine `SlotItem`)로 — 그날 보결 행이 결근·맡음으로 얹힌다 */
+export const toSlotItem = (r: SubSlotRow) => ({
+    absentId: r.body.absentRef, allDay: r.body.allDay, startMin: r.startMin, endMin: r.endMin,
+    status: r.status, takerId: r.take?.takerRef ?? null, trackName: r.trackName,
+});
 
-/** 새 행(대기) 봉하기 — take 는 B9(맡기)부터 */
-export async function sealNewSlot(ring: KeyRing, row: SubSlotRow): Promise<DbSlot> {
+export const openSlots =(ring: KeyRing, rows: readonly DbSlot[]) => Promise.all(rows.map((r) => openSlot(ring, r)));
+
+/** 행 봉하기 — body 는 늘, take 는 맡은 이가 있을 때만(B9 맡기·취소도 이 한 곳) */
+export async function sealSlot(ring: KeyRing, row: SubSlotRow): Promise<DbSlot> {
     const base = { project_id: row.projectId, id: row.id, date: row.date, track_name: row.trackName, start_min: row.startMin };
     return {
         ...base, end_min: row.endMin, status: row.status,
         body_ct: await sealText(ring, JSON.stringify(row.body), aadOf(base, 'body')),
-        take_ct: null, created_at: row.createdAt, updated_at: row.updatedAt,
+        take_ct: row.take ? await sealText(ring, JSON.stringify(row.take), aadOf(base, 'take')) : null,
+        created_at: row.createdAt, updated_at: row.updatedAt,
     };
 }

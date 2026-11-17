@@ -1,7 +1,8 @@
 // `sub` 함수 ①(B8): reg-options · register · list · mine — ③ 11-3 · ① 5-1 「등록」 판정 순서.
 // 경로: `/functions/v1/sub/projects/<pid>/<동작>`(③ 11-3 의 `P/sub/…` 를 함수 이름 뒤로).
 // 순수 — DB·열쇠·그날 입력·시계는 주입(SubDeps). Deno 진입점은 index.ts.
-// B9(`:id`·claim·cancel)·B10(assign·force·DELETE·stats)은 아래 라우터 자리만 둔다.
+// B9: `:id`(후보·`me.whyNot`·notice 공개 범위) · claim(`whyNot` 재판정 → 조건부 UPDATE) · cancel(대기로).
+// B10(assign·force·DELETE·stats)은 아래 라우터 자리만 둔다.
 
 import { can } from '../../../shared/roles.ts';
 import { requireProjectMember, type AuthClient, type Member } from '../_shared/auth.ts';
@@ -9,7 +10,9 @@ import { isPastDate, seoulToday, type Clock } from '../_shared/clock.ts';
 import type { KeyRing } from '../_shared/crypto/envelope.ts';
 import { errors, HttpError, jsonResponse } from '../_shared/errors.ts';
 import { handle, subPath } from '../_shared/http.ts';
-import { openSlots, sealNewSlot, type DbSlot, type SubSlotRow } from './rows.ts';
+import { substituteCandidates, whyNot, type CandInput } from '../../../shared/sub-engine/candidates.ts';
+import type { SlotItem } from '../../../shared/sub-engine/day-input.ts';
+import { openSlot, openSlots, sealSlot, toSlotItem, type DbSlot, type SubSlotRow } from './rows.ts';
 
 export const REASON_MAX = 100;
 export const MEMO_MAX = 300;
@@ -32,13 +35,25 @@ export interface SubStore {
      * 유일 위반(23505)·지울 행이 그 사이 바뀜이면 'conflict'.
      */
     register(rows: DbSlot[], replace: { id: string; updatedAt: string }[]): Promise<'ok' | 'conflict'>;
+    /** 행 하나(프로젝트 안) — 없으면 null */
+    get(projectId: string, id: string): Promise<DbSlot | null>;
+    /**
+     * 조건부 UPDATE(B9 맡기·취소): `id`·`updated_at`·`status` 가 `expect` 그대로인 행만 `next` 의 status·take_ct·updated_at 으로.
+     * 0행이면 'conflict'(그 사이 다른 분이 바꿈).
+     */
+    update(next: DbSlot, expect: { updatedAt: string; status: DbSlot['status'] }): Promise<'ok' | 'conflict'>;
 }
+
+/** 엔진 판정 입력(① 8절 「그날 입력」) — 그날 보결 행(`slots`)을 얹어 조립하는 것은 주입 쪽 몫(`buildDayInput`) */
+export type JudgeResult = { ok: true; input: CandInput } | { ok: false; offReason: string };
 
 export interface SubDeps {
     auth: AuthClient;
     store: SubStore;
     ring: () => Promise<KeyRing>;
     loadDay(projectId: string, date: string): Promise<DayResult>;
+    /** B9: 상세·맡기의 `whyNot` 재판정 입력. `slots` = 그날 보결 행(엔진 꼴) */
+    loadJudge(projectId: string, date: string, slots: SlotItem[]): Promise<JudgeResult>;
     /** 구성원의 사람 id(`person_ref`)·표시 이름 */
     memberInfo(projectId: string, userId: string): Promise<{ personRef: string | null; name: string }>;
     clock: Clock;
@@ -209,7 +224,17 @@ export function subHandler(deps: SubDeps): (req: Request) => Promise<Response> {
                     .map((x) => ({ ...x.row, mineAs: x.as }));
                 return jsonResponse({ rows });
             }
-            // B10: `stats` · B9: `:id`(GET) · `:id/claim` · `:id/cancel` · B10: `:id/assign` · `:id/force` · DELETE `:id`
+            // B9: `:id`(GET) · `:id/claim` · `:id/cancel`
+            if (one !== null && method === 'GET') return detail(deps, me, one);
+            if (action.length === 2 && action[1] === 'claim') {
+                if (method !== 'POST') throw errors.methodNotAllowed();
+                return claim(deps, me, action[0]);
+            }
+            if (action.length === 2 && action[1] === 'cancel') {
+                if (method !== 'POST') throw errors.methodNotAllowed();
+                return cancel(deps, me, action[0]);
+            }
+            // B10: `stats` · `:id/assign` · `:id/force` · DELETE `:id`
             throw errors.notFound();
         });
 }
@@ -275,8 +300,102 @@ async function register(deps: SubDeps, me: Member, b: RegisterBody): Promise<Res
         },
         take: null,
     }));
-    const sealed = await Promise.all(rows.map((row) => sealNewSlot(ring, row)));
+    const sealed = await Promise.all(rows.map((row) => sealSlot(ring, row)));
     const res = await deps.store.register(sealed, hits.map((h) => ({ id: h.id, updatedAt: h.updatedAt })));
     if (res === 'conflict') throw new HttpError(409, 'register_race', '방금 다른 분이 올렸습니다 — 다시 불러옵니다');
     return jsonResponse({ rows, skipped, replaced: hits.length });
+}
+
+// ── B9: 상세 · 맡기 · 취소 ────────────────────────────
+
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+
+/** 요청 문구(notice)를 볼 수 있나(③ 11-3 `:337`): 올린 이 · 결근자 본인 · 관리 4역할 */
+export function canSeeNotice(r: SubSlotRow, me: Member, personRef: string | null): boolean {
+    if (can(me.roles, 'sub.manage')) return true;
+    if (r.body.registeredBy === me.userId) return true;
+    return personRef !== null && r.body.absentRef === personRef;
+}
+
+/** 요청 문구 — 결근자·시각·과목·사유·메모를 한 줄로(목록에는 안 나가는 글) */
+export function noticeText(r: SubSlotRow): string {
+    const subj = r.body.subject ? ` ${r.body.subject}` : '';
+    const memo = r.body.memo ? ` · ${r.body.memo}` : '';
+    return `${r.date} ${r.trackName} ${hhmm(r.startMin)}~${hhmm(r.endMin)}${subj} — ${r.body.absentName}(${r.body.reason || '사유 없음'}) 보결 부탁드립니다${memo}`;
+}
+
+/** 행 하나 + 그날 행 전부(열린 꼴). 없으면 404. */
+async function loadRow(deps: SubDeps, pid: string, id: string) {
+    const raw = await deps.store.get(pid, id);
+    if (!raw) throw new HttpError(404, 'not_found', '보결이 없어졌습니다 — 다시 불러옵니다');
+    const ring = await deps.ring();
+    const row = await openSlot(ring, raw);
+    const day = await openSlots(ring, await deps.store.listRange(pid, row.date, row.date));
+    return { ring, raw, row, day };
+}
+
+const queryOf = (r: SubSlotRow) => ({ trackName: r.trackName, startMin: r.startMin, endMin: r.endMin, absentId: r.body.absentRef });
+
+async function detail(deps: SubDeps, me: Member, id: string): Promise<Response> {
+    const pid = me.projectId;
+    const { row, day } = await loadRow(deps, pid, id);
+    const { personRef } = await deps.memberInfo(pid, me.userId);
+    const judge = await deps.loadJudge(pid, row.date, day.map(toSlotItem));
+    const q = queryOf(row);
+    const cands = judge.ok ? substituteCandidates(judge.input, q) : null;
+    const meWhy = !judge.ok ? [`수업이 없는 날(${judge.offReason})`]
+        : personRef === null ? ['계정에 교사 연결이 없음']
+            : whyNot(judge.input, q, personRef);
+    const seeNotice = canSeeNotice(row, me, personRef);
+    return jsonResponse({
+        row,
+        candidates: cands ? { A: cands.A, B: cands.B, C: cands.C, D: cands.D } : null,
+        offReason: judge.ok ? null : judge.offReason,
+        me: { personRef, whyNot: meWhy },
+        notice: seeNotice ? noticeText(row) : null,
+    });
+}
+
+async function claim(deps: SubDeps, me: Member, id: string): Promise<Response> {
+    const pid = me.projectId;
+    const { ring, raw, row, day } = await loadRow(deps, pid, id);
+    // 판정 순서(① 5-1 「맡기」): 지난 날 → 대기 아님 → personRef 없음 → whyNot → 같은 시각 겹침 → 조건부 UPDATE
+    if (isPastDate(row.date, deps.clock)) throw new HttpError(400, 'past_date', '지난 날 보결은 맡을 수 없습니다');
+    if (row.status !== '대기') throw new HttpError(409, 'already_taken', '이미 다른 분이 맡은 보결입니다');
+    const info = await deps.memberInfo(pid, me.userId);
+    if (info.personRef === null) throw new HttpError(403, 'no_person', '계정에 교사 연결이 없어 맡을 수 없습니다');
+    const personRef = info.personRef;
+    const judge = await deps.loadJudge(pid, row.date, day.map(toSlotItem));
+    if (!judge.ok) throw new HttpError(400, 'no_school_day', `수업이 없는 날입니다(${judge.offReason})`);
+    const reasons = whyNot(judge.input, queryOf(row), personRef);
+    if (reasons.length > 0) throw bad(`맡을 수 없습니다: ${reasons.join(' · ')}`, 'why_not', { whyNot: reasons });
+    const clash = day.find((o) => o.id !== row.id && o.take?.takerRef === personRef && o.startMin < row.endMin && row.startMin < o.endMin);
+    if (clash) throw new HttpError(409, 'time_clash', `같은 시각에 ${clash.trackName} 보결을 이미 맡았습니다`);
+
+    const now = deps.clock().toISOString();
+    const next: SubSlotRow = {
+        ...row, status: '확정', updatedAt: now,
+        take: { takerRef: personRef, takerName: info.name, takerUserId: me.userId, confirmedAt: now },
+    };
+    const res = await deps.store.update(await sealSlot(ring, next), { updatedAt: raw.updated_at, status: '대기' });
+    if (res === 'conflict') throw new HttpError(409, 'claim_race', '방금 다른 분이 먼저 맡았습니다 — 다시 불러옵니다');
+    return jsonResponse({ row: next });
+}
+
+async function cancel(deps: SubDeps, me: Member, id: string): Promise<Response> {
+    const pid = me.projectId;
+    const { ring, raw, row } = await loadRow(deps, pid, id);
+    // 판정 순서(① 5-1 「취소」): 확정 아님 → 지난 날은 관리자만 → 맡은 본인·관리 4역할 → 대기로(행은 남음)
+    if (row.status !== '확정' || !row.take) throw new HttpError(409, 'not_taken', '맡은 보결이 아니어서 취소할 수 없습니다');
+    if (isPastDate(row.date, deps.clock) && !can(me.roles, 'sub.past')) {
+        throw new HttpError(403, 'past_admin_only', '지난 날 보결은 관리자만 취소할 수 있습니다');
+    }
+    const { personRef } = await deps.memberInfo(pid, me.userId);
+    const mine = personRef !== null && row.take.takerRef === personRef;
+    if (!mine && !can(me.roles, 'sub.cancelAny')) throw new HttpError(403, 'cancel_forbidden', '맡은 본인이나 관리 역할만 취소할 수 있습니다');
+
+    const next: SubSlotRow = { ...row, status: '대기', updatedAt: deps.clock().toISOString(), take: null };
+    const res = await deps.store.update(await sealSlot(ring, next), { updatedAt: raw.updated_at, status: '확정' });
+    if (res === 'conflict') throw new HttpError(409, 'cancel_race', '방금 다른 분이 먼저 바꿨습니다 — 다시 불러옵니다');
+    return jsonResponse({ row: next });
 }

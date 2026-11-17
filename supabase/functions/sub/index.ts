@@ -1,6 +1,6 @@
 // Deno 진입점(얇은 자리) — 판정은 handler.ts. 이 파일은 Node 시험에서 import 하지 않는다(tsc 만 본다).
 // supabase-js 는 Deno 의 `npm:` 지정자로 실행 때 불러온다(Node tsc 가 해석하지 않게 문자열 변수로).
-// ⚠️ 그날 입력(loadDay — 덩어리 `doc` 열어 조립)은 아직 없다 → reg-options·register 는 503 `day_unavailable`(B9 몫).
+// ⚠️ 그날 입력(loadDay·loadJudge — 덩어리 `doc` 열어 조립)은 아직 없다 → reg-options·register·:id·claim 은 503 `day_unavailable`.
 // ⚠️ register 쓰기는 PostgREST 두 걸음(조건부 delete → insert)이라 한 트랜잭션이 아니다 — RPC 함수는 마이그레이션 몫.
 
 import type { AuthClient } from '../_shared/auth.ts';
@@ -28,6 +28,7 @@ interface Q<T> extends Res<T> {
     maybeSingle(): Res<T>;
     insert(rows: object[]): Q<T>;
     delete(): Q<T>;
+    update(v: object): Q<T>;
 }
 interface Client { from(t: string): Q<unknown>; auth: AuthClient['auth'] }
 
@@ -71,6 +72,20 @@ const store: SubStore = {
         if (error) throw new Error('sub_slot 쓰기 실패');
         return 'ok';
     },
+    async get(pid, id) {
+        const { data, error } = await db.from('sub_slot').select(COLS).eq('project_id', pid).eq('id', id).maybeSingle();
+        if (error) throw new Error('sub_slot 읽기 실패');
+        return data ? fromRaw(data as RawSlot) : null;
+    },
+    async update(next, expect) {
+        // 조건부 UPDATE — updated_at·status 가 읽은 그대로일 때만(0행 = 그 사이 바뀜 → claim_race·cancel_race)
+        const { data, error } = await db.from('sub_slot')
+            .update({ status: next.status, take_ct: next.take_ct ? toHex(next.take_ct) : null, updated_at: next.updated_at })
+            .eq('project_id', next.project_id).eq('id', next.id).eq('updated_at', expect.updatedAt).eq('status', expect.status)
+            .select('id');
+        if (error) throw new Error('sub_slot 고치기 실패');
+        return (data as unknown[]).length === 1 ? 'ok' : 'conflict';
+    },
 };
 
 const ring = () =>
@@ -91,6 +106,10 @@ deno.serve(subHandler({
     store,
     ring,
     async loadDay() {
+        throw new HttpError(503, 'day_unavailable', '그날 시간표를 아직 열 수 없습니다');
+    },
+    async loadJudge() {
+        // 조립(doc 열기 → buildDayInput(slots 포함))은 loadDay 와 같은 판에서. B9 실측(sub.cpu.test.ts)으로 캐시 없이 요청마다 연다.
         throw new HttpError(503, 'day_unavailable', '그날 시간표를 아직 열 수 없습니다');
     },
     async memberInfo(pid, userId) {
