@@ -12,7 +12,7 @@ import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
 import { agoText, fetchRemote, loadLast, saveLast, type Last, type Remote } from './lib/remote.ts'
 import { connectRealtime } from './lib/realtime.ts'
-import { fetchVersion, isNewer, type VersionInfo } from './lib/version.ts'
+import { fetchVersionState, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
 import { createDetail } from './ui/detail.ts'
 import { createFeedLog } from './ui/feedlog.ts'
@@ -123,9 +123,13 @@ function render(notice = false): void {
     detail.open({ title: '접수됐어요 — 쥔님 검토 뒤 Board 에 올라가요', rows: [], extra: go })
   }
 
-  const check = async () => {
+  let down = false // 연결이 안 됐으면 1분 주기 재시도를 멈춘다(콘솔 오류가 분마다 쌓임) — 탭 복귀·입력 끝 확인이 다음 기회
+  const check = async (viaPoll = false) => {
     if (!versionCheckOn(app)) return // v1·v2 주입 자리: 판 확인 끔(app.ts versionCheckOn)
-    const v: VersionInfo | null = await fetchVersion()
+    if (viaPoll && down) return
+    const st = await fetchVersionState()
+    down = st.failed
+    const v: VersionInfo | null = st.info
     latest = isNewer(__BUILD__, v, loadSeen()) ? v : null
     bnd.showUpdate(latest)
     // 자동 바꾸기 — 앱에 「안 올라간 변경」 신호가 없어 입력 포커스만 본다. 미뤄진 건 다음 확인(1분·탭 복귀·입력 끝)이 다시 묻는다.
@@ -133,7 +137,7 @@ function render(notice = false): void {
   }
   runCheck = check
   void check()
-  poll = window.setInterval(check, 60_000)
+  poll = window.setInterval(() => void check(true), 60_000)
   document.onvisibilitychange = () => { if (!document.hidden) void check() }
 }
 

@@ -10,7 +10,8 @@ import { comparePlans } from '../model';
 import { canonOf, labelFrom } from '../labels';
 import { HandMove } from './HandMove';
 import { PrintTab } from './PrintTab';
-import { subscribePlans, getPlanNodes, planOf, choosePlan, sendToGrid } from '../nodes';
+import { PlanCheckProps } from './PlanCheckProps';
+import { subscribePlans, getPlanNodes, planOf, choosePlan, sendToGrid, PLAN_TYPE } from '../nodes';
 
 export function PlansTab({ host }: { host: PluginHost }) {
     const nodes = useSyncExternalStore(subscribePlans, getPlanNodes, getPlanNodes);
@@ -19,6 +20,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
     const [sent, setSent] = useState<string | null>(null);
     const [moving, setMoving] = useState<string | null>(null);
     const [printing, setPrinting] = useState(false);
+    const [checking, setChecking] = useState<string | null>(null);   // 「위반 N건」을 눌러 목록을 펼친 안
 
     const diff = useMemo(() => {
         const pa = a ? planOf(a) : null;
@@ -56,15 +58,20 @@ export function PlansTab({ host }: { host: PluginHost }) {
                     const p = planOf(n.id);
                     if (!p) return null;
                     return (
-                        <li key={n.id} className="flex items-center gap-2 border-b border-line py-1">
-                            <span className="flex-1">
-                                {p.chosen ? '✔ ' : ''}{n.name}
-                                <span className="text-muted"> · {new Date(p.madeAt).toLocaleString('ko-KR')} · 위반 {p.summary.hardViolations + p.summary.softViolations}건{p.summary.score !== null ? ` · 점수 ${p.summary.score}` : ''}</span>
-                            </span>
-                            <Button variant={a === n.id ? 'accent' : 'plain'} onClick={() => setA(n.id)}>왼쪽에 놓기</Button>
-                            <Button variant={b === n.id ? 'accent' : 'plain'} onClick={() => setB(n.id)}>오른쪽에 놓기</Button>
-                            <Button onClick={() => setMoving(n.id)}>손으로 옮기기</Button>
-                            <Button onClick={() => pick(n.id)}>이 안 고르기</Button>
+                        <li key={n.id} className="flex flex-col gap-1 border-b border-line py-1">
+                            <div className="flex items-center gap-2">
+                                <span className="flex-1">
+                                    {p.chosen ? '✔ ' : ''}{n.name}
+                                    <span className="text-muted"> · {new Date(p.madeAt).toLocaleString('ko-KR')} · </span>
+                                    <Button variant="plain" aria-expanded={checking === n.id} onClick={() => setChecking(checking === n.id ? null : n.id)}>위반 {p.summary.hardViolations + p.summary.softViolations}건</Button>
+                                    <span className="text-muted">{p.summary.score !== null ? ` · 점수 ${p.summary.score}` : ''}</span>
+                                </span>
+                                <Button variant={a === n.id ? 'accent' : 'plain'} onClick={() => setA(n.id)}>왼쪽에 놓기</Button>
+                                <Button variant={b === n.id ? 'accent' : 'plain'} onClick={() => setB(n.id)}>오른쪽에 놓기</Button>
+                                <Button onClick={() => setMoving(n.id)}>손으로 옮기기</Button>
+                                <Button onClick={() => pick(n.id)}>이 안 고르기</Button>
+                            </div>
+                            {checking === n.id && <section aria-label="위반 목록" className="pl-3"><PlanCheckProps host={host} target={{ type: PLAN_TYPE, id: n.id }} /></section>}
                         </li>
                     );
                 })}
