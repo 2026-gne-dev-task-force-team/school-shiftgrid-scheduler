@@ -9,6 +9,7 @@
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
 import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { setClockSource, rowOf } from './clock';
 import { SLOT_CONFIG, LIST_TYPE, SLOT_TYPE, newListFields } from './config';
 
 export { LIST_TYPE, SLOT_TYPE };
@@ -24,7 +25,13 @@ export function initBell(host: PluginHost): Disposable | null {
     const rv = host.modules.use<RecordViewApi>('collection');
     const nodes = host.modules.use<NodesApi>('nodes');
     kit = rv ? rv.defineCollection(SLOT_CONFIG) : null;
-    return kit?.init(nodes ?? null) ?? null;
+    // 약속 clock 의 slotsFor·subscribe 가 읽을 원천 — 줄은 저장소에서 그때그때 읽고 복사해 두지 않는다.
+    setClockSource(nodes ? {
+        rows: () => nodes.liveByType(SLOT_TYPE).map((n) => rowOf((n.data as { values?: Record<string, unknown> } | null | undefined)?.values ?? {})),
+        subscribe: (fn) => { const d = nodes.subscribe(() => fn()); return () => d.dispose(); },
+    } : null);
+    const d = kit?.init(nodes ?? null) ?? null;
+    return { dispose() { setClockSource(null); d?.dispose(); } };
 }
 
 /**

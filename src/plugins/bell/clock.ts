@@ -2,7 +2,7 @@
  * 일과표 순수 셈 — 화면 0 · 노드 0. 입력은 줄 값 배열(SlotRow). 잘못된 줄은 셈에서 조용히 빠지고, 이유는 checkRows 가 따로 말한다.
  *   🔴 같은 학년·같은 교시가 여러 줄이면(전 학년 줄 + 그 학년 줄) 시각이 이른 줄이 이긴다.
  */
-import type { Clock, PeriodRef, RowProblem, SlotRow, TimeRange } from './contracts/clock';
+import type { Clock, ClassSlot, PeriodRef, RowProblem, SlotRow, TimeRange } from './contracts/clock';
 
 /** 칸 키 — config 의 칸 정의와 rowOf 가 같은 값을 쓴다. */
 export const SLOT_KEYS = { kind: 'f_kind', period: 'f_period', start: 'f_start', end: 'f_end', grades: 'f_grades' } as const;
@@ -71,4 +71,21 @@ export function checkRows(rows: readonly SlotRow[]): RowProblem[] {
     return out;
 }
 
-export const clockApi: Clock = { version: 1, slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows };
+/** 지금 일과표 줄을 읽어 주는 원천 — 활성 때 nodes.ts 가 꽂고 꺼질 때 뺀다(없으면 slotsFor 는 [] · subscribe 는 빈 끄개). */
+export interface ClockSource { rows(): SlotRow[]; subscribe(fn: () => void): () => void }
+let source: ClockSource | null = null;
+export function setClockSource(s: ClockSource | null): void { source = s; }
+
+export function slotsFor(grade: number): ClassSlot[] {
+    if (!source) return [];
+    const out: ClassSlot[] = [];
+    for (const r of slotsForGrade(source.rows(), grade)) {   // 시작 시각순 — 같은 교시가 겹치면 이른 줄이 이긴다
+        if (r.kind !== 'class' || typeof r.period !== 'number' || out.some((x) => x.period === r.period)) continue;
+        out.push({ period: r.period, start: r.start!.trim(), end: (r.end ?? '').trim() });
+    }
+    return out.sort((a, b) => a.period - b.period);
+}
+
+export const subscribe = (fn: () => void): (() => void) => source?.subscribe(fn) ?? (() => { /* 일과표 없음 */ });
+
+export const clockApi: Clock = { version: 1, slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows, slotsFor, subscribe };
