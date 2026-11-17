@@ -9,6 +9,8 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    // 🔴 T-30d: 새 기기엔 기본 꺼짐(안 쓰는 특별실 예약) — 쓰던 기기는 켜진 채 이주. 이 꾸러미는 아무 약속도 provides 하지 않아 끌 때 끊기는 소비자가 없다.
+    defaultOff: true,
     // 옛 예약 이사(T-10f7)가 쓰는 약속 — 없어도 켜지고(이사만 미룬다), 오면 붙는다.
     supports: { calendar: '^0.2', rooms: '^0.1', nodes: '^0.1', 'room-booking': '^0.1' },
     icon: 'list',

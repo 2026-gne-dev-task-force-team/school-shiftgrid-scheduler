@@ -49,8 +49,8 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             'calendar', 'account',
             'people', 'rooms', 'room-booking', 'substitute', 'school', 'subjects', 'staff', 'bell', 'duty', 'timetable-grid', 'demand-table', 'timetable-solver', 'timetable-plans', 'v1-file', 'ops-check', 'ops-sub', 'ops-room', 'ops-days', 'ops-aux',
         ]);
-        // 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기를 목록에서 내렸다(판 2 T-10g4 에서 폴더째 걷음) — 기본 꺼짐 꾸러미가 없어 전부 켜짐.
-        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual([]);
+        // 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기를 목록에서 내렸다(판 2 T-10g4 에서 폴더째 걷음). T-10ec·T-30d: 기본 꺼짐 둘 — people(사람 명단)·ops-room(특별실). 새 기기엔 안 선다, 쓰던 기기는 이주. PLUGINS 순서대로.
+        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual(['people', 'ops-room']);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
     });

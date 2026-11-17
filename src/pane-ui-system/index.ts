@@ -130,7 +130,7 @@ export {
     usePaneSettings, setPaneSettings, snapshotPaneStore, restorePaneStore, setViewOverride, resetPaneSettings, resetViewOverrides,
     effectiveViewLayout, getViewOverride,
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
-    defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
+    defaultRibbon, setRibbonDefaults, ribbonGroupOf, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
     setRibbonOrder, toggleRibbonHidden, resetRibbon, getRibbon, getPaneSettings,
     type PaneSettings, type ViewOverrides, type Ribbon,
 } from './layout/pane-settings';

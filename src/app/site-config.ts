@@ -1,5 +1,14 @@
 /** 판 설정 한 장 — 저장 접두사와 설치 목록은 루트 site.config.json 이 정본이다(1.2v 설계 ① 1·2절). */
 import config from '../../site.config.json';
+import { setRibbonDefaults } from '../pane-ui-system';
+
+/**
+ * 🔴 리본 기본 배치(묶음·숨김)도 site.config 가 정본이다 — 창틀은 id 의 뜻을 모르므로 여기(앱 층)서 한 번 건다.
+ *    setStoragePrefix 처럼 앱이 창틀에 주입하는 꼴. 이 모듈은 main·plugins 가 React 가 뜨기 전에 import 하므로
+ *    첫 리본 읽기(ensure) 전에 걸린다.
+ */
+const RIBBON = (config as { ribbon?: { groups?: string[][]; hidden?: string[] } }).ribbon ?? {};
+setRibbonDefaults(RIBBON.groups ?? [], RIBBON.hidden ?? []);
 
 /** 🔴 브라우저 저장소 키는 전부 이 접두사로 붙는다(main.tsx 가 setStoragePrefix 로 한 번 건다). 다른 곳에 접두사 리터럴 금지. */
 export const STORAGE_PREFIX: string = config.storagePrefix;
