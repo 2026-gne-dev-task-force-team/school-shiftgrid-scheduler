@@ -120,6 +120,39 @@ describe('staff 모듈 표면 — 이름·메모 ↔ 칸 값', () => {
         expect(staffApi.staffIn(l2)).toEqual([]);
     });
 
+    it('🔴 R3 — 구분·등급·학년·과목·담임 반·보조 칸을 약속으로 읽는다(칸 값 → 선택 필드)', () => {
+        wire();
+        const lid = getKit()!.createList()!;
+        const id = staffApi.addMember(lid, { name: '담임이' });
+        const k = getKit()!;
+        k.setValue(id, 'f_kind', 'homeroom');
+        k.setValue(id, 'f_tier', '2');
+        k.setValue(id, 'f_grades', ['3', '1']);
+        k.setValue(id, 'f_subjects', ['sub-a', 'sub-b']);
+        k.setValue(id, 'f_homeroom', ['cls-1']);
+        k.setValue(id, 'f_extra', '보조값');
+        const m = staffApi.member(id)!;
+        expect(m).toMatchObject({ name: '담임이', kind: 'homeroom', tier: 2, grades: [1, 3], subjectIds: ['sub-a', 'sub-b'], homeroomClassIds: ['cls-1'] });
+        expect(m.fields).toEqual({ f_extra: '보조값' });   // 이름 붙은 칸은 fields 에 중복되지 않는다
+        expect(staffApi.staffIn(lid)[0]).toEqual(m);
+
+        for (const t of [1, 2, 3] as const) { k.setValue(id, 'f_tier', String(t)); expect(staffApi.member(id)!.tier).toBe(t); }
+        // 등급이 1·2·3 밖이거나 비면 안 싣는다 · 빈 관계는 필드 자체가 없다
+        k.setValue(id, 'f_tier', '9');
+        k.setValue(id, 'f_homeroom', []);
+        const m2 = staffApi.member(id)!;
+        expect(m2.tier).toBeUndefined();
+        expect('homeroomClassIds' in m2).toBe(false);
+    });
+
+    it('🔴 R3 하위 호환 — 새 칸이 빈 사람은 옛 꼴({id,listId,name[,memo]}) 그대로다', () => {
+        wire();
+        const lid = getKit()!.createList()!;
+        const id = staffApi.addMember(lid, { name: '옛꼴이', memo: '메모' });
+        expect(staffApi.member(id)).toEqual({ id, listId: lid, name: '옛꼴이', memo: '메모' });
+        expect(staffApi.version).toBe(1);
+    });
+
     it('onChange 는 노드 변경마다 깨우고 dispose 로 멈춘다', () => {
         const api = wire();
         const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '명단' });

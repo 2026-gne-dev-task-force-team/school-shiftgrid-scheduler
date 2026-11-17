@@ -8,9 +8,28 @@ import type { Staff, StaffMember } from './contracts/staff';
 import type { Disposable } from '../../pane-ui-system/plugin';
 import { getKit } from './nodes';
 
+/** 이 변환이 이름 붙여 따로 싣는 칸 — 나머지 사용자 칸은 fields(보조 칸)로 간다. */
+const NAMED_KEYS = new Set(['name', 'memo', 'f_kind', 'f_tier', 'f_grades', 'f_subjects', 'f_homeroom', 'f_person']);
+
+const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : []);
+const isEmpty = (v: unknown): boolean => v == null || v === '' || (Array.isArray(v) && v.length === 0);
+
 function toMember(it: CollectionItem): StaffMember {
     const p: StaffMember = { id: it.id, listId: it.listId, name: it.name };
-    if (typeof it.values.memo === 'string' && it.values.memo !== '') p.memo = it.values.memo;
+    const v = it.values;
+    if (typeof v.memo === 'string' && v.memo !== '') p.memo = v.memo;
+    if (typeof v.f_kind === 'string' && v.f_kind !== '') p.kind = v.f_kind;
+    const tier = Number(v.f_tier);
+    if (tier === 1 || tier === 2 || tier === 3) p.tier = tier;
+    const grades = strList(v.f_grades).map(Number).filter((n) => Number.isInteger(n) && n > 0).sort((a, b) => a - b);
+    if (grades.length) p.grades = grades;
+    const subjects = strList(v.f_subjects);
+    if (subjects.length) p.subjectIds = subjects;
+    const rooms = strList(v.f_homeroom);
+    if (rooms.length) p.homeroomClassIds = rooms;
+    const extra: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v)) if (!NAMED_KEYS.has(k) && !isEmpty(val)) extra[k] = val;
+    if (Object.keys(extra).length) p.fields = extra;
     if (it.ext) p.ext = it.ext;
     return p;
 }

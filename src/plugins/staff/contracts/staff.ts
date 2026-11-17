@@ -6,7 +6,7 @@
  *
  * ⭐ 낱말 판정(요구명세 2026-11-08)
  *   - 같은 사람이 명단 둘에 있으면 **줄마다 따로인 사람**이다(연결 없음). 잇는 건 계정 레인이 나중에 증축한다.
- *   - 칸은 **이름·메모 둘뿐**이다. 학교 낱말(담임·반·과목)·계정 낱말은 ⛔ 여기 없다 — 그건 위층(school-roster·계정)의 몫이다.
+ *   - 칸은 **이름·메모**가 기본이다(구분·등급·담임 반 등 읽기 칸은 선택 — R3). 학교 낱말(담임·반·과목)·계정 낱말은 ⛔ 여기 없다 — 그건 위층(school-roster·계정)의 몫이다.
  *   - 칸 꽂기 자리(ext)는 **타입에만** 비워 둔다 — 위층이 플러그인 id 로 이름공간을 잡아 꽂는다(⛔ 이 약속엔 쓰는 코드가 없다).
  */
 import type { Disposable } from '../../../pane-ui-system/plugin';
@@ -27,6 +27,22 @@ export interface StaffMember {
     name: string;
     /** 자유 메모(선택). */
     memo?: string;
+    /**
+     * 🔴 R3(T-10eq) — 아래 칸 읽기 6개는 전부 **선택**이다(옛 꼴로 부르는 쪽은 안 읽으면 그만 · 약속 버전은 그대로 1 / 0.1.0).
+     *   값이 비었거나 칸이 없으면 필드 자체를 싣지 않는다(undefined). 읽기 전용 — 쓰기(StaffInput·StaffPatch)는 이번 판에서 늘리지 않았다.
+     */
+    /** 구분 칸(f_kind) 값 — 보통 homeroom(담임)·subject(전담)·nonteaching(비교과)·assistant(보조인력). 명단이 선택지를 고쳤으면 그 value 그대로. */
+    kind?: string;
+    /** 등급 칸(f_tier) — 1 보직 · 2 일반 · 3 지원인력. 1·2·3 이 아닌 값은 싣지 않는다. */
+    tier?: 1 | 2 | 3;
+    /** 담당 학년 칸(f_grades) — 숫자 학년, 오름차순. */
+    grades?: readonly number[];
+    /** 담당 과목 칸(f_subjects, 관계) — 과목 항목 id 들. */
+    subjectIds?: readonly string[];
+    /** 담임 반 칸(f_homeroom, 관계) — 반 id 들. */
+    homeroomClassIds?: readonly string[];
+    /** 보조 칸 — 위 다섯과 이름·메모·사람(f_person)을 뺀 나머지 사용자 칸의 비어 있지 않은 값(칸 key → 값). 새 칸(예: 보조인력 세부 구분)을 약속 변경 없이 읽는 자리. */
+    fields?: Readonly<Record<string, unknown>>;
     /**
      * 🔴 확장 칸 자리 — 위층(학교 명부·계정)이 **플러그인 id 로 이름공간**을 잡아 꽂는다(예: ext['school-roster'] = {…}).
      *   ⛔ 이 약속엔 읽고 쓰는 코드가 없다(자리만). staff 플러그인도 이 칸을 건드리지 않는다.
