@@ -16,8 +16,10 @@ export const isPlain = (s) => typeof s !== 'string' || !SHAPES.some((r) => r.tes
 export const clean = (s) => (isPlain(s) ? s : '')
 
 /** 스냅숏 전체의 글 값을 훑어 걸리는 첫 자리를 돌려준다(없으면 null). */
+// 레인 이름 칸의 「<기기> 운전」(U18④ · 기기 공개는 쥔님 11-16 판정 · race.mjs)만 받아 준다 — 다른 칸의 기기 낱말은 그대로 걸린다
+export const DEVICE_LANE = /^(?:맥|업무 ?PC|씽크패드|NAS) 운전$/i
 export function findDirty(obj, path = '') {
-  if (typeof obj === 'string') return isPlain(obj) ? null : path
+  if (typeof obj === 'string') return isPlain(obj) || (/^\.lanes\.\d+\.title$/.test(path) && DEVICE_LANE.test(obj)) ? null : path
   if (obj && typeof obj === 'object') {
     for (const [k, v] of Object.entries(obj)) {
       const hit = findDirty(v, `${path}.${k}`)
