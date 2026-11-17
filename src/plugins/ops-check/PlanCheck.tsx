@@ -3,7 +3,7 @@ import { Badge, EmptyState, Select } from '../../pane-ui-system';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Plans, PlanListItem } from '../timetable-plans/contracts/plans';
 import type { Solver } from '../timetable-solver/contracts/solver';
-import { planRows, type PlanRow } from './plan-text';
+import type { PlanRow } from '../timetable-plans/contracts/plans';
 import type { PlanEvaluation } from '../timetable-solver/contracts/solver';
 
 const MARK = { hard: '❌', soft: '⚠️', demand: '📏' } as const;
@@ -23,7 +23,7 @@ export function PlanCheck({ host }: { host: PluginHost }) {
     const result = useMemo(() => {
         if (!plan || !input || !solver) return null;
         const ev = solver.evaluate(input, plan.placements);
-        return { ev, rows: planRows(input, ev) };
+        return { ev, rows: plans?.planRows(input, ev) ?? [] };
     }, [plan, input, solver]);
 
     if (!plans || !solver) return <EmptyState icon="layers" title="편성안 점검을 쓸 수 없습니다" description="편성안·자동 편성 엔진 플러그인이 켜져 있는지 확인해 주세요." />;

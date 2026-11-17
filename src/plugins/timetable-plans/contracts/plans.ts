@@ -7,6 +7,9 @@
 export type { Plan, Placement, PlanSummary, PlanDay } from '../types';
 import type { Plan, PlanSummary } from '../types';
 import type { CMD } from './commands';
+import type { PlanRow } from '../plan-rows';
+import type { SolverInput, PlanEvaluation } from '../../timetable-solver/contracts/solver';
+export type { PlanRow } from '../plan-rows';
 
 /** 편성안 목록 한 줄 — 노드 id + 이름·요약. */
 export interface PlanListItem { id: string; name: string; summary: PlanSummary; chosen: boolean }
@@ -23,4 +26,6 @@ export interface Plans {
     getPlan(id: string): Plan | null;
     /** 목록이 바뀔 때 부른다. 끄는 함수를 돌려준다. */
     subscribe(fn: () => void): () => void;
+    /** 점검 결과를 선생님 말 줄로 — 「편성안 점검」 탭과 속성 칸이 같은 셈을 쓴다(T-30f). */
+    planRows(input: SolverInput, ev: PlanEvaluation): PlanRow[];
 }

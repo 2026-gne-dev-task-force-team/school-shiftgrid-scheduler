@@ -12,7 +12,7 @@ import type { SolverCanon } from '../timetable-solver/contracts/solver';
 import type { Plan, Placement, Plans } from '../timetable-plans/contracts/plans';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
-import { planRows } from './plan-text';
+import { planRows } from '../timetable-plans/plan-rows';
 import { PlanCheck } from './PlanCheck';
 
 // 지어낸 학교 — 1학년 두 반 · 4교시 · 전담 둘
@@ -54,7 +54,7 @@ const plan = (name: string, placements: Placement[]): Plan => ({
 function fakeHost(plans: Record<string, Plan>): PluginHost {
     const items = Object.entries(plans).map(([id, p]) => ({ id, name: p.name, summary: p.summary, chosen: false }));
     const fakePlans: Plans = {
-        version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => items, getPlan: (id) => plans[id] ?? null, subscribe: () => () => {},
+        version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => items, getPlan: (id) => plans[id] ?? null, subscribe: () => () => {}, planRows,
     };
     const modules: Record<string, unknown> = { plans: fakePlans, solver: { ...solverApi, readInput: () => input } };
     return { modules: { use: (n: string) => modules[n] ?? null } } as unknown as PluginHost;
