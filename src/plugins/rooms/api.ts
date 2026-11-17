@@ -15,6 +15,41 @@ export const ROOM_PROPS_KEY = 'room-booking';
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' ? v as Record<string, unknown> : {});
+const isMin = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 1440;
+const isDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** 고정 사용 목록 값 꼴 검사 + 정규화 — 한 줄이라도 틀리면 null(전체 거절). */
+function cleanFixed(v: unknown): Record<string, unknown>[] | null {
+    if (!Array.isArray(v)) return null;
+    const out: Record<string, unknown>[] = [];
+    for (const x of v) {
+        const f = rec(x);
+        if (!(typeof f.dayIndex === 'number' && Number.isInteger(f.dayIndex) && f.dayIndex >= 0 && f.dayIndex <= 6)) return null;
+        if (!isMin(f.startMin) || !isMin(f.endMin) || f.startMin >= f.endMin) return null;
+        if (f.label !== undefined && typeof f.label !== 'string') return null;
+        out.push({ dayIndex: f.dayIndex, startMin: f.startMin, endMin: f.endMin, label: f.label ?? '' });
+    }
+    return out;
+}
+
+/** 차단 시간 목록 값 꼴 검사 + 정규화 — 한 줄이라도 틀리면 null. 시각은 둘 다 있거나(from<to) 둘 다 없음(종일). */
+function cleanBlocks(v: unknown): Record<string, unknown>[] | null {
+    if (!Array.isArray(v)) return null;
+    const out: Record<string, unknown>[] = [];
+    for (const x of v) {
+        const b = rec(x);
+        if (!isDate(b.startDate) || !isDate(b.endDate) || b.startDate > b.endDate) return null;
+        const from = b.fromMin ?? null;
+        const to = b.toMin ?? null;
+        if ((from === null) !== (to === null)) return null;
+        if (from !== null && to !== null && (!isMin(from) || !isMin(to) || from >= to)) return null;
+        if (b.reason !== undefined && typeof b.reason !== 'string') return null;
+        out.push({ startDate: b.startDate, endDate: b.endDate, fromMin: from, toMin: to, reason: b.reason ?? '' });
+    }
+    return out;
+}
+
 function readProps(raw: unknown): RoomProps {
     const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
     const p: RoomProps = { active: typeof r.active === 'boolean' ? r.active : true };
@@ -39,6 +74,11 @@ function setProps(id: string, patch: RoomPropsPatch): void {
     apply('resourceKey', patch.resourceKey, (x) => typeof x === 'string' && x !== '');
     apply('active', patch.active, (x) => typeof x === 'boolean');
     apply('sort', patch.sort, isNum);
+    for (const [key, clean] of [['fixed', cleanFixed], ['blocks', cleanBlocks]] as const) {
+        const v = patch[key];
+        if (v === null) delete mine[key];
+        else if (v !== undefined) { const c = clean(v); if (c) mine[key] = c; }
+    }
     nodes.setData(id, { ...data, ext: { ...ext, [ROOM_PROPS_KEY]: mine } });
 }
 

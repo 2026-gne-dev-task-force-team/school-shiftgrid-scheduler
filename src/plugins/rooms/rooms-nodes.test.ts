@@ -164,4 +164,30 @@ describe("방 속성 — ext['room-booking'] 읽기·쓰기", () => {
         roomsApi.setRoomProps(lid, { capacity: 9 });
         expect((api.get(lid)?.data as { ext?: unknown } | undefined)?.ext).toBeUndefined();
     });
+
+    it('고정 사용·차단 시간 — 쓰고 다시 읽기 · 비우기 · 틀린 값은 그 칸 전체 거절(이전 값 유지)', () => {
+        const api = wire();
+        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '규칙 목록' });
+        const a = roomsApi.addRoom(lid, { name: '작은 방' });
+        const fx = [{ dayIndex: 2, startMin: 600, endMin: 660, label: '가상 모임' }];
+        const bk = [{ startDate: '2026-12-01', endDate: '2026-12-02', fromMin: null, toMin: null, reason: '공사' }, { startDate: '2026-12-05', endDate: '2026-12-05', fromMin: 540, toMin: 600 }];
+        roomsApi.setRoomProps(a, { capacity: 4, fixed: fx, blocks: bk });
+        const ext = () => roomsApi.room(a)?.ext?.['room-booking'] as Record<string, unknown>;
+        expect(ext().fixed).toEqual(fx);
+        expect(ext().blocks).toEqual([bk[0], { ...bk[1], reason: '' }]);   // 정규화: reason 기본 ''
+        expect(roomsApi.roomProps(a)).toEqual({ capacity: 4, active: true });
+        // 틀린 값 — 요일 범위·시작>=끝·날짜 꼴·구간 뒤집힘·시각 한쪽만·배열 아님 → 그 칸만 무시
+        roomsApi.setRoomProps(a, { fixed: [{ dayIndex: 7, startMin: 600, endMin: 660 }] });
+        roomsApi.setRoomProps(a, { fixed: [...fx, { dayIndex: 1, startMin: 700, endMin: 700 }] });
+        roomsApi.setRoomProps(a, { blocks: [{ startDate: '12/01', endDate: '12/02' }] });
+        roomsApi.setRoomProps(a, { blocks: [{ startDate: '2026-12-03', endDate: '2026-12-02' }] });
+        roomsApi.setRoomProps(a, { blocks: [{ startDate: '2026-12-01', endDate: '2026-12-02', fromMin: 540 }] });
+        roomsApi.setRoomProps(a, { fixed: 'x' as never, capacity: 6 });
+        expect(ext().fixed).toEqual(fx);
+        expect(ext().blocks).toHaveLength(2);
+        expect(ext().capacity).toBe(6);           // 같은 patch 의 올바른 칸은 적용
+        // 비우기
+        roomsApi.setRoomProps(a, { fixed: null, blocks: null });
+        expect(ext()).toEqual({ capacity: 6 });
+    });
 });

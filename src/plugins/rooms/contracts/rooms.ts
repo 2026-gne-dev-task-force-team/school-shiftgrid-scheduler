@@ -10,7 +10,7 @@
  *   - 방 안에 방 — 방은 **같은 목록 안의 다른 방**을 부모로 가질 수 있다(선택 · 쥔님 *"일단 허용하지 방안에 방"*). 순환은 막는다.
  *   - 칸은 **이름·메모 둘뿐**이다. 수용 수·과목·예약 같은 칸은 ⛔ 여기 없다 — 그건 위층의 몫이다.
  *   - 칸 꽂기 자리(ext)는 위층이 플러그인 id 로 이름공간을 잡아 꽂는다. 방 속성(정원·resourceKey·active·sort)은 ext['room-booking'] 에 둔다
- *     (R128 R2) — 읽기·쓰기는 아래 roomProps·setRoomProps 하나로만, 다른 위층의 ext 키는 건드리지 않는다. 약속 버전은 0.1.0 그대로(선택 필드 덧붙임).
+ *     (R128 R2) — 읽기·쓰기는 아래 roomProps·setRoomProps 하나로만, 다른 위층의 ext 키는 건드리지 않는다. 약속 버전은 0.1.0 그대로(선택 필드 덧붙임 — fixed·blocks 도 T-10eu 에서 선택 칸으로 덧붙여 하위 호환).
  */
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
@@ -57,12 +57,36 @@ export interface RoomProps {
     sort?: number;
 }
 
+/** 고정 사용 한 줄 — 매주 그 요일 그 시간대는 이미 쓰는 방(분 단위 · 0=월 … 6=일). */
+export interface RoomFixedItem {
+    dayIndex: number;
+    startMin: number;
+    endMin: number;
+    /** 무엇이 쓰는지(선택). */
+    label?: string;
+}
+
+/** 차단 시간 한 줄 — 그 날짜 구간은 막힌 방. fromMin·toMin 이 둘 다 없으면(null) 종일. */
+export interface RoomBlockItem {
+    /** 'YYYY-MM-DD'. */
+    startDate: string;
+    endDate: string;
+    fromMin?: number | null;
+    toMin?: number | null;
+    /** 막은 까닭(선택). */
+    reason?: string;
+}
+
 /** 방 속성을 부분으로 고칠 때 — 칸 생략 = 그대로 · null = 지우기(active 는 지우면 기본값 true). 잘못된 값(음수·NaN 등)은 그 칸만 무시. */
 export interface RoomPropsPatch {
     capacity?: number | null;
     resourceKey?: string | null;
     active?: boolean | null;
     sort?: number | null;
+    /** 고정 사용 목록 통째로 바꾸기(null = 비우기). 한 줄이라도 값 꼴이 틀리면 이 칸 전체를 무시한다. 읽기는 위층(방 예약)이 ext 에서 직접. */
+    fixed?: readonly RoomFixedItem[] | null;
+    /** 차단 시간 목록 통째로 바꾸기(null = 비우기). 한 줄이라도 틀리면 이 칸 전체를 무시한다. */
+    blocks?: readonly RoomBlockItem[] | null;
 }
 
 /** 방 하나를 더하거나 고칠 때 넘기는 칸(이름·메모만). */
