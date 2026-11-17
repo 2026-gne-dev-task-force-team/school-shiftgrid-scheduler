@@ -174,10 +174,12 @@ export function planBlockers(canon: SolverCanon, built: BuildResult, readBlocker
     const have = (code: string) => out.some((b) => b.code === code);
 
     if (canon.staff.length === 0 && !have('staff-off')) stop('no-staff', '교직원 명단에 선생님이 한 분도 없습니다');
-    if (canon.classes.length === 0 && !have('school-off')) stop('no-class', '학교 정보에 반이 하나도 없습니다');
+    if (canon.classes.length === 0 && !have('school-off')) stop('no-class', '학교 정보에 반이 하나도 없습니다 — 학교 정보에서 반을 먼저 넣어 주세요');
     if (canon.subjects.length === 0 && !have('subjects-off')) stop('no-subject', '과목 목록이 비어 있습니다');
+    // 🔴 시간 틀은 반의 학년마다 일과표를 읽어 만든다 — 학년 있는 반이 0개면 틀이 0개인 까닭은 일과표가 아니라 반이다(T-10fm)
+    const gradedClass = canon.classes.some((c) => c.grade !== undefined);
     if (canon.bell.length === 0) stop('no-bell', '일과표에 교시가 하나도 없습니다');
-    else if (built.input.specs.length === 0) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다');
+    else if (built.input.specs.length === 0 && gradedClass) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다');
     const noGrade = canon.classes.filter((c) => c.grade === undefined).length;
     if (noGrade > 0) stop('no-grade', `학년이 정해지지 않은 반이 ${noGrade}개 있어 시간 틀을 못 맞춥니다`);
     if (built.input.demands.length === 0) stop('no-demand', canon.demands.length === 0 ? '시수표에 수업 줄이 하나도 없습니다' : '시수표의 모든 줄에 빈 칸이 있어 쓸 수 있는 수업이 없습니다');

@@ -7,10 +7,10 @@
  */
 import { act, createElement as h } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { activateAll, makeHost, type PluginModule } from '../../pane-ui-system/plugin';
 import type { Solver } from './contracts/solver';
-import type { Plans } from '../timetable-plans/contracts/plans';
+import type { Plan, Plans } from '../timetable-plans/contracts/plans';
 import { timetableSolverPlugin } from './index';
 import { opsCheckPlugin } from '../ops-check/index';
 import { v1FilePlugin } from '../v1-file/index';
@@ -30,11 +30,27 @@ function provider(id: string, iface: string, mod: unknown): PluginModule {
     } as PluginModule;
 }
 const NO_PLANS: ReturnType<Plans['listPlans']> = [];   // 같은 배열 — useSyncExternalStore 스냅숏은 안 바뀌면 같아야 한다
-const fakePlans: Plans = { version: 1, savePlan: () => '', listPlans: () => NO_PLANS, getPlan: () => null, subscribe: () => () => {} };
+// T-10fm — 편성안이 하나 저장된 상태(빌드 화면은 이 상태에서 점수까지 그렸다)
+const ONE_PLAN: Plan = {
+    name: '시험안', madeAt: '2099-01-01T00:00:00.000Z', chosen: true,
+    placements: [{ classId: 'c1', day: 1, period: 1, subjectId: 's1', teacherId: 't1' }],
+    summary: { score: null, hardViolations: 0, softViolations: 0 },
+};
+const ONE_LIST: ReturnType<Plans['listPlans']> = [{ id: 'p1', name: ONE_PLAN.name, summary: ONE_PLAN.summary, chosen: true }];
+let planList = NO_PLANS;
+const fakePlans: Plans = {
+    version: 1, savePlan: () => '', listPlans: () => planList,
+    getPlan: (id) => (id === 'p1' && planList === ONE_LIST ? ONE_PLAN : null), subscribe: () => () => {},
+};
 
 let root: Root | null = null;
 let el: HTMLDivElement;
+// 🔴 화면은 렌더 오류를 ErrorBoundary 로 격리해 콘솔에만 남긴다 — 시험도 콘솔을 잰다(T-10fm). 「선언 안 한 인터페이스」가 찍히면 실패.
+let errSpy: MockInstance<typeof console.error>;
+const undeclaredErrors = () => errSpy.mock.calls.map((c) => c.map((x) => (x instanceof Error ? x.message : String(x))).join(' ')).filter((t) => t.includes('선언 안 한 인터페이스'));
 beforeEach(() => {
+    errSpy = vi.spyOn(console, 'error');
+    planList = NO_PLANS;
     activateAll([
         timetableSolverPlugin,
         provider('t10fe-clock', 'clock', clockApi),
@@ -48,6 +64,9 @@ afterEach(() => {
     act(() => root?.unmount());
     root = null;
     el.remove();
+    const bad = undeclaredErrors();
+    errSpy.mockRestore();
+    expect(bad).toEqual([]);
 });
 
 /** 부르는 쪽 플러그인의 진짜 host — 그 플러그인 manifest 의 선언으로만 use 된다. */
@@ -72,7 +91,14 @@ describe('화면 — 진짜 host 로 그린다', () => {
         act(() => root!.render(h(PlanCheck, { host: hostOf(opsCheckPlugin) })));
         expect(el.textContent).toContain('점검할 편성안이 없습니다');
     });
-    it('「v1 파일로 내보내기」를 누르면 결과 문구가 뜬다(던지면 문구가 안 뜬다)', async () => {
+    it('편성안이 있는 상태 — 「편성안 점검」 탭이 점수까지 그린다(T-10fm)', () => {
+        planList = ONE_LIST;
+        root = createRoot(el);
+        act(() => root!.render(h(PlanCheck, { host: hostOf(opsCheckPlugin) })));
+        expect(el.textContent).toContain('점수');
+    });
+    it.each([['편성안 없음', NO_PLANS], ['편성안 있음', ONE_LIST]] as const)('「v1 파일로 내보내기」를 누르면 결과 문구가 뜬다(던지면 문구가 안 뜬다) — %s', async (_n, list) => {
+        planList = list;
         root = createRoot(el);
         act(() => root!.render(h(ExportTab, { host: hostOf(v1FilePlugin) })));
         const btn = [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('v1 파일로 내보내기'));
