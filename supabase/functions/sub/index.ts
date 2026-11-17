@@ -3,6 +3,7 @@
 // ⚠️ 그날 입력(loadDay·loadJudge — 덩어리 `doc` 열어 조립)은 아직 없다 → reg-options·register·:id·claim 은 503 `day_unavailable`.
 // ⚠️ register 쓰기는 PostgREST 두 걸음(조건부 delete → insert)이라 한 트랜잭션이 아니다 — RPC 함수는 마이그레이션 몫.
 
+import type { AuditStore } from '../_shared/audit.ts';
 import type { AuthClient } from '../_shared/auth.ts';
 import { loadAllowedOrigin } from '../_shared/cors.ts';
 import { aadSub, aadUser } from '../_shared/crypto/aad.ts';
@@ -86,6 +87,19 @@ const store: SubStore = {
         if (error) throw new Error('sub_slot 고치기 실패');
         return (data as unknown[]).length === 1 ? 'ok' : 'conflict';
     },
+    async remove(pid, id, expect) {
+        const { data, error } = await db.from('sub_slot').delete().eq('project_id', pid).eq('id', id).eq('updated_at', expect.updatedAt).select('id');
+        if (error) throw new Error('sub_slot 지우기 실패');
+        return (data as unknown[]).length === 1 ? 'ok' : 'conflict';
+    },
+};
+
+const audit: AuditStore = {
+    async append(r) {
+        // 추가 전용 — `audit_log` 엔 insert 한 길뿐(고치기·지우기 호출을 두지 않는다)
+        const { error } = await db.from('audit_log').insert([{ ...r, body_ct: toHex(r.body_ct) }]);
+        if (error) throw new Error('audit_log 쓰기 실패');
+    },
 };
 
 const ring = () =>
@@ -104,6 +118,7 @@ const ring = () =>
 deno.serve(subHandler({
     auth: db as unknown as AuthClient,
     store,
+    audit,
     ring,
     async loadDay() {
         throw new HttpError(503, 'day_unavailable', '그날 시간표를 아직 열 수 없습니다');

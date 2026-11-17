@@ -61,6 +61,12 @@ function fakeStore(): SubStore & { rows: DbSlot[] } {
             }
             return 'ok';
         },
+        async remove(pid, id, expect) {
+            const i = rows.findIndex((x) => x.project_id === pid && x.id === id && x.updated_at === expect.updatedAt);
+            if (i < 0) return 'conflict';
+            rows.splice(i, 1);
+            return 'ok';
+        },
         async get(pid, id) {
             return rows.find((r) => r.project_id === pid && r.id === id) ?? null;
         },
@@ -111,7 +117,7 @@ function setup(day: DayResult = DAY) {
     const clock = { now: CLOCK() };
     let n = 0;
     const deps: SubDeps = {
-        auth: fakeAuth(), store, ring: async () => ring, loadDay: async () => day, loadJudge,
+        auth: fakeAuth(), store, audit: { append: async () => {} }, ring: async () => ring, loadDay: async () => day, loadJudge,
         memberInfo: async (_p, u) => {
             const tok = Object.keys(MEMBERS).find((t) => uid(t) === u) ?? '';
             return { personRef: MEMBERS[tok]?.personRef ?? null, name: MEMBERS[tok]?.name ?? '' };
@@ -214,10 +220,10 @@ describe('sub list · mine · reg-options', () => {
         expect(r.json.absentees.map((p: any) => p.id)).toEqual(['homeroom:1-1', 'homeroom:1-2', 'agent:a', 'agent:c']);
         expect(r.json.tracks[0].lessons[1]).toEqual({ startMin: 595, endMin: 640, subject: '음악' });
     });
-    it('없는 :id 404 · B10 자리(assign)는 아직 404 · 방식 틀리면 405', async () => {
+    it('없는 :id 404 · 모르는 동작은 404 · 방식 틀리면 405', async () => {
         const { call } = setup();
         expect((await call('tokA', 'GET', 's1')).status).toBe(404);
-        expect((await call('tokA', 'POST', 's1/assign', {})).status).toBe(404);
+        expect((await call('tokA', 'POST', 's1/nothing', {})).status).toBe(404);
         expect((await call('tokA', 'GET', 's1/claim')).status).toBe(405);
         expect((await call('tokA', 'GET', 'register')).status).toBe(405);
     });
