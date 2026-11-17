@@ -66,7 +66,7 @@ describe('층 배치 — 위 = 판, 아래 = 바닥', () => {
   it('shared/ 가 맨 아래, server-link 가 그 위, 판들이 맨 위', () => {
     expect(Math.max(...[...g.boxes.values()].map((b) => b.y))).toBe(y('shared/'))
     expect(y('server-link')).toBeLessThan(y('shared/'))
-    for (const p of ['v1-editor', 'ops-sub', 'ops-days', 'ops-room', 'ops-aux']) expect(y(p)).toBeLessThan(y('server-link'))
+    for (const p of ['timetable-plans', 'ops-sub', 'ops-days', 'ops-room', 'ops-aux']) expect(y(p)).toBeLessThan(y('server-link'))
   })
   it('상자끼리 안 겹치고 그림 안에 든다', () => {
     const bs = [...g.boxes.values()]

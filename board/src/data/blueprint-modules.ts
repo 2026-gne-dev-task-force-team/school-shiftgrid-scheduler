@@ -31,7 +31,7 @@ export interface BpModule {
 export interface BpEdge { from: string; to: string; label: string }
 
 /** 설계 ① 모듈 이름 목록 — 시험이 BP_MODULES 와 1:1 로 대조한다. */
-export const DESIGN_MODULES = ['v1-editor', 'ops-sub', 'ops-days', 'ops-room', 'ops-aux', '코어 5', 'account-server', 'ops-check', 'server-link', 'supabase/', 'shared/'] as const
+export const DESIGN_MODULES = ['timetable-plans', 'ops-sub', 'ops-days', 'ops-room', 'ops-aux', '코어 5', 'account-server', 'ops-check', 'server-link', 'supabase/', 'shared/'] as const
 
 export const BP_OVERVIEW: string[] = [
   '1.2v 는 v2 화면 틀(코어 5) 위에 학교 업무 판 다섯 — 편성 · 보결 · 학사 · 특별실 · 근태 — 을 「설치형 꾸러미」로 얹은 앱이다. 학교가 설치한 판만 화면에 나온다.',
@@ -43,11 +43,11 @@ export const BP_OVERVIEW: string[] = [
 
 export const BP_MODULES: BpModule[] = [
   {
-    id: 'v1-editor', title: '편성 — 시간표 짜기', kind: '판 · 설치형', tier: 0,
-    does: '선생님 v1 편성기를 고치지 않은 사본(legacy 패치 0)으로 iframe 에 띄워 학교 시간표(doc 칸)를 짜게 한다. 관리자가 아닌 사람에겐 반 × 교시 읽기 격자를 따로 보인다.',
+    id: 'timetable-plans', title: '편성 — 시간표 짜기', kind: '판 · 설치형', tier: 0,
+    does: '편성 조각(timetable-solver 엔진 · timetable-plans 편성안 · v1-file 파일 왕복)으로 학교 시간표(doc 칸)를 짜게 한다. 2026-11-17 F12 에서 iframe 편성기(v1-editor)를 걷었다.',
     inputs: 'doc 칸(server-link 로컬 사본) · 가져온 v1 파일(ops-check 판별 뒤) · 부모 화면 밝기',
     outputs: 'doc 칸 PUT(고친 것을 2초 모아) · v1 파일 내려받기(선생님 앱 호환) · 인쇄',
-    files: ['src/plugins/v1-editor/entry.ts', 'v1-editor/bundle-platform.ts', 'v1-editor/replace.tsx', 'v1-editor/grid/', 'v1-editor/legacy/'],
+    files: ['src/plugins/timetable-plans/', 'src/plugins/timetable-solver/', 'src/plugins/v1-file/'],
     tasks: ['P10a', 'P10b', 'P10c', 'P10d', 'P10e'], sections: ['2-1 v1 편성기', '2-0 노드 컴포넌트', '12 끊김'],
   },
   {
@@ -133,8 +133,8 @@ export const BP_MODULES: BpModule[] = [
 ]
 
 export const BP_EDGES: BpEdge[] = [
-  { from: 'v1-editor', to: 'ops-check', label: '가져온 파일 판별' },
-  { from: 'v1-editor', to: 'server-link', label: 'doc 칸 PUT' },
+  { from: 'timetable-plans', to: 'ops-check', label: '가져온 파일 판별' },
+  { from: 'timetable-plans', to: 'server-link', label: 'doc 칸 PUT' },
   { from: 'ops-sub', to: 'account-server', label: '역할 · personRef' },
   { from: 'ops-sub', to: 'ops-days', label: '학사 칸 읽기' },
   { from: 'ops-sub', to: 'server-link', label: '보결 행 · 후보' },
@@ -144,7 +144,7 @@ export const BP_EDGES: BpEdge[] = [
   { from: 'ops-aux', to: 'ops-days', label: '학사 칸 읽기' },
   { from: 'ops-aux', to: 'server-link', label: 'aux 칸 PUT' },
   { from: 'ops-aux', to: 'shared/', label: '배정 검사 · 추천' },
-  { from: 'v1-editor', to: '코어 5', label: '시간표 노드에 붙음' },
+  { from: 'timetable-plans', to: '코어 5', label: '시간표 노드에 붙음' },
   { from: 'account-server', to: 'server-link', label: '로그인 세션 · API' },
   { from: 'ops-check', to: 'shared/', label: '꼴 검사 규칙' },
   { from: 'server-link', to: '코어 5', label: '상태바 · 로그인 판' },
