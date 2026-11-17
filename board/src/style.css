@@ -348,3 +348,49 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 /* 간트 칸은 줄 높이가 고정이라 한 줄 말줄임을 유지한다 */
 .gg-chip .actor-tag .at-name, .gg-chip .actor-tag .at-task { display: block; white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: unset; line-clamp: unset }
 @media (max-width: 420px) { .actor-tag { max-width: 100%; height: auto } .ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 80px } }
+/* 2층 가지 — 3D 원통(R94) */
+.gc-bar { display: flex; justify-content: flex-end; padding: 4px 8px }
+.gc-switch { padding: 4px 10px; border: 1px solid var(--line); border-radius: var(--r1); background: var(--s2); color: var(--fg-2); font: 12px var(--font); cursor: pointer }
+.gc { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.gc-chips { display: flex; gap: 4px; overflow-x: auto; padding: 2px 8px; scrollbar-width: thin }
+.gc-chips .gc-chip { position: static; flex: none; max-width: 160px; overflow: hidden; text-overflow: ellipsis }
+.gc-chip[aria-selected="true"] { outline: 2px solid hsl(var(--hue) 70% var(--gg-ring-l)); outline-offset: -2px }
+.gc-status { margin: 0 8px; font: 12px var(--font); color: var(--fg-3) }
+.gc-view { position: relative; height: 460px; perspective: 1100px; overflow: hidden; touch-action: pan-y; cursor: grab; outline: none }
+.gc-view:focus-visible { box-shadow: inset 0 0 0 2px var(--neon) }
+.gc-dragging .gc-view { cursor: grabbing }
+.gc-drum { position: absolute; inset: 0; transform-style: preserve-3d }
+.gc-axis { position: absolute; left: 50%; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: var(--neon); opacity: .55; z-index: 500 }
+.gc-axis-l { position: absolute; top: 4px; left: 10px; white-space: nowrap; font: 600 11px var(--font); color: var(--neon) }
+.gc-face { --hue: 200; position: absolute; left: 50%; top: 12px; bottom: 12px; width: min(340px, 82vw); display: flex; flex-direction: column; background: var(--s2); border: 1px solid var(--line); border-top: 4px solid hsl(var(--hue) 70% var(--branch-l)); border-radius: var(--r1); transform-origin: 50% 50%; transition: transform .35s ease, filter .35s, opacity .35s; overflow: hidden }
+.gc-calm .gc-face, .gc-dragging .gc-face { transition: none }
+.gc-face[data-front="0"] { cursor: pointer }
+.gc-head { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--line) }
+.gc-head .gc-name { position: static; align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis }
+.gc-meta { font: 11px var(--font); color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.gc-rows { flex: 1; overflow-y: auto; padding: 4px 0 }
+.gc-actor { padding: 2px 8px 2px 30px }
+.gc-actor .actor-tag { max-width: 100% }
+.gc-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "g sub sub" "g no at"; column-gap: 6px; width: 100%; min-height: 40px; padding: 2px 8px 2px 4px; border: 0; background: none; text-align: left; font: 12px var(--font); color: var(--fg-2); cursor: pointer }
+.gc-row:hover, .gc-row:focus-visible { background: var(--s3); outline: none }
+.gc-g { grid-area: g; position: relative; align-self: stretch }
+.gc-g::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 3px; background: hsl(var(--hue) 70% var(--branch-l)) }
+.gc-g-first::before { top: 50% }
+.gc-dot { position: absolute; left: 5px; top: calc(50% - 5px); width: 11px; height: 11px; background: hsl(var(--hue) 70% var(--branch-l)); box-shadow: 0 0 0 2px var(--s2) }
+.gc-dot.gc-merge { background: var(--s2); border: 3px solid hsl(var(--hue) 70% var(--branch-l)) }
+.gc-sub { grid-area: sub; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); font-weight: 600 }
+.gc-no { grid-area: no; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px ui-monospace, monospace; color: var(--fg-3) }
+.gc-who { display: none }
+.gc-at { grid-area: at; font: 11px var(--font); color: var(--fg-3); white-space: nowrap }
+@media (min-width: 421px) { .gc-row { grid-template-columns: 22px minmax(0, 1fr) auto auto auto; grid-template-areas: "g sub no who at" } .gc-who { display: block; grid-area: who; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px var(--font); color: var(--fg-3) } }
+.gc-fork { display: flex; align-items: center; gap: 6px; padding: 2px 8px 6px 4px; font: 11px var(--font); color: var(--fg-3) }
+.gc-g-fork { width: 22px; height: 20px; flex: none }
+.gc-g-fork::before { top: 0; bottom: 50%; border-bottom-left-radius: 10px; width: 9px; background: none; border-left: 3px solid hsl(var(--hue) 70% var(--branch-l)); border-bottom: 3px solid var(--neon) }
+.gc-empty { margin: 8px; font: 12px var(--font); color: var(--fg-3) }
+.gc-trunk { --hue: 175; padding: 4px 8px 8px; border-top: 1px solid var(--line) }
+.gc-trunk-h { margin: 4px 0; font: 600 12px var(--font); color: var(--neon) }
+.gc-row-trunk .gc-g::before, .gc-row-trunk .gc-dot { background: var(--neon) }
+.gc-row-trunk .gc-dot.gc-merge { background: var(--s2); border-color: var(--neon) }
+.gg-crowd { display: flex; gap: 4px; align-items: center }
+.gg-crowd-more { font: 600 11px var(--font); color: var(--fg-2); background: var(--gg-bg); border-radius: var(--r1); padding: 0 4px }
+@media (max-width: 420px) { .gc-view { height: 400px; perspective: 700px } }
