@@ -28,8 +28,32 @@ export const subscribeActiveSchool = (fn: () => void): (() => void) => { subs.ad
 /** 살아 있는 학교 노드 id — 없으면 null. */
 export function liveSchoolId(): string | null { return nodes?.liveByType(SCHOOL_TYPE)[0]?.id ?? null; }
 
+let hostRef: PluginHost | null = null;
+
+/** 올해 학년도 이름 — 학년도는 3월에 시작하니 1~2월은 지난해 학년도다. */
+export function currentYearName(now: Date = new Date()): string {
+    const y = now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
+    return `${y} 학년도`;
+}
+
+/**
+ * 「학년도·반 열기」 — 학년도가 있으면 첫 학년도를 열고, 없으면 (학교도 없으면 학교부터) 올해 학년도를 하나 만들어 연다.
+ *   🔴 반은 학년도 화면의 「새 행 추가」로 더한다. 못 만들면(노드 다리 없음) 학년도 목록 화면만 연다.
+ */
+export function openSchoolSheet(host: PluginHost): void {
+    if (!kit || !nodes) { host.workspace.open(CLASS_CONFIG.viewId, { where: 'center' }); return; }
+    let yearId: string | null = kit.lists()[0]?.id ?? null;
+    if (!yearId) {
+        if (liveSchoolId() === null) nodes.create(nodes.roots.main, { type: SCHOOL_TYPE, name: '우리 학교' });
+        yearId = nodes.create(nodes.roots.main, { type: YEAR_TYPE, name: currentYearName(), data: { fields: newYearFields() } }) || null;
+    }
+    if (yearId) kit.open(host, yearId);
+    else host.workspace.open(CLASS_CONFIG.viewId, { where: 'center' });
+}
+
 /** 활성(index.ts)이 한 번 — 컬렉션 모듈로 kit 를 만들고 NodesApi 를 잇는다(없으면 조용히 빈 상태). */
 export function initSchool(host: PluginHost): Disposable | null {
+    hostRef = host;
     rv = host.modules.use<RecordViewApi>('collection') ?? null;
     nodes = host.modules.use<NodesApi>('nodes') ?? null;
     kit = rv ? rv.defineCollection(CLASS_CONFIG) : null;
@@ -42,6 +66,8 @@ export const schoolNodeTypeImpl = {
             activeSchool = id; for (const s of [...subs]) s();
             host.workspace.open(SCHOOL_VIEW, { where: 'center' });
         },
+        // 「새로 만들기」에 「새 학년도·반」 — 학교가 아직 없으면 학교부터 같이 만들고 학년도 화면을 연다(처음 쓰는 선생님의 한 줄 길).
+        createVariants: () => (hostRef ? [{ label: '학년도·반', icon: 'calendar' as const, run: () => { if (hostRef) openSchoolSheet(hostRef); } }] : []),
     } satisfies NodeTypeImplFns,
     year: {
         open: (host: PluginHost, id: string) => { kit?.open(host, id); },

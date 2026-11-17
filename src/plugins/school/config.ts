@@ -46,5 +46,6 @@ export const CLASS_CONFIG: CollectionConfig = {
     ],
     newListFields: newYearFields,
     unit: '반',
+    usage: ['아래 「새 행 추가」를 누르면 반 한 줄이 생기고 이름 칸이 바로 열립니다.', '이름은 「3-2」처럼 적고, 학년·반 숫자 칸도 채워 두세요.', '시수표·시간표에서 반을 고를 때 이 학년도의 반이 나옵니다.'],
     text: { startDescription: '새로 만들거나, 만들어 둔 학년도를 고르세요.', startHint: '교실 칸이 든 빈 학년도가 바로 열립니다' },
 };
