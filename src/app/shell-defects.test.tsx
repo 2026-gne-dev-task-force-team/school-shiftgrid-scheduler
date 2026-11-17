@@ -214,7 +214,7 @@ describe('⑦ 탭이 많을 때 새 탭을 탭 줄 안으로 끌어온다(T-10ao
     it('탭 여럿 뒤 리본으로 새 탭 → 탭 줄 보이는 자리로 끌어온다', () => {
         localStorage.clear(); sessionStorage.clear();   // 앞 시험의 배치(세션 저장소에도 둔다)가 남으면 「새 탭」이 안 선다
         mount();
-        for (const l of ['달력', '데이터 검사', '근태', '학사', '보결 명단', '시트', '일과표', '노트', '과목', '보결 목록', '특별실 예약']) {
+        for (const l of ['달력', '데이터 검사', '근태', '학사', '보결', '시트', '일과표', '노트', '과목', '특별실 예약']) {
             act(() => { ribbonBtn(l)?.click(); });
         }
         const strip = host.querySelector<HTMLElement>('#main-content [data-tabbar]')!;
