@@ -1,4 +1,8 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
+import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { Calendar } from '../calendar/contracts/calendar';
+import { firstAcademicStore, readAcademic } from './academic';
 import { getBundle, subscribeBundle } from '../../../shared/bundle/store.ts';
 import { Button, Field, TextInput } from '../../pane-ui-system';
 import { addChange, applyDaysOps, canApplyClassSubjects, CLASS_SUBJECTS_DENIED, delChange } from './ops';
@@ -19,7 +23,7 @@ const subTab = (f: () => void) => { tabSubs.add(f); return () => { tabSubs.delet
 export const resetDaysTab = () => setTab('days');
 
 /** 학사 — 월(YYYY-MM) 고르면 그 달 일정·변경을 날짜순 목록으로 · 교사는 변경 넣기·내 것 지우기. */
-export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { source?: DaysSource; viewer?: DaysViewer; initialMonth?: string; newId?: () => string; loadFile?: (f: File) => Promise<Uint8Array> }) {
+export function DaysView({ source, viewer, initialMonth, newId, loadFile, host }: { host?: Pick<PluginHost, 'modules'>; source?: DaysSource; viewer?: DaysViewer; initialMonth?: string; newId?: () => string; loadFile?: (f: File) => Promise<Uint8Array> }) {
     const src = source ?? fallback;
     const v = viewer ?? demoViewer;
     const [month, setMonth] = useState(initialMonth ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
@@ -29,6 +33,12 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
     const [pendingDel, setPendingDel] = useState<string | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
     const [f, setF] = useState({ date: `${month}-01`, classKey: '', period: '1', subject: '' });
+    // 달력 약속이 있고 학사 저장소가 이미 있으면 일정·변경은 달력에서 읽는다(T-10fb). 없으면 옛 자료(source)로 그대로.
+    const calendar = host?.modules.use<Calendar>('calendar') ?? null;
+    const nodes = host?.modules.use<NodesApi>('nodes') ?? null;
+    const [, bump] = useReducer((n: number) => n + 1, 0);
+    useEffect(() => { const sub = nodes?.subscribe(bump); return () => { sub?.dispose(); }; }, [nodes]);
+    const academic = calendar && nodes ? readAcademic(calendar, nodes, month) : null;
     const reload = async () => setPart(await src.load());
     useEffect(() => { void reload(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -49,6 +59,21 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
             <div className="flex flex-col">
                 <div className="p-4 pb-0"><Button variant="outline" onClick={() => setTab('days')}>학사로 돌아가기</Button></div>
                 <ClassImportView loadFile={loadFile} applyDenied={canApplyClassSubjects(v) ? undefined : CLASS_SUBJECTS_DENIED} frame={daysFrame(part, bundle)} current={part?.classSubjects ?? []} onApply={async (next) => { if (await saveClassSubjects(src, next, v)) return; await reload(); }} />
+            </div>
+        );
+    }
+
+    if (academic && nodes) {
+        const store = firstAcademicStore(nodes);
+        return (
+            <div className="p-4 max-w-xl flex flex-col gap-3">
+                <Button variant="outline" onClick={() => setTab('import')}>담임 과목 불러오기</Button>
+                {store && <Button variant="outline" onClick={() => nodes.open(store)}>달력에서 고치기</Button>}
+                <Field label="월"><TextInput value={month} onChange={(e) => setMonth(e.target.value)} placeholder="2026-11" /></Field>
+                <h3 className="text-small">학사 일정 {academic.filter((r) => !r.timetable).length}건</h3>
+                {academic.filter((r) => !r.timetable).map((r) => <div key={r.id} className="text-small">{r.date} [{r.kind || '일정'}] {r.name}</div>)}
+                <h3 className="text-small">시간표 변경 {academic.filter((r) => r.timetable).length}건</h3>
+                {academic.filter((r) => r.timetable).map((r) => <div key={r.id} className="text-small">{r.date} {r.name}</div>)}
             </div>
         );
     }
@@ -87,4 +112,4 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile }: { so
     );
 }
 
-export function DaysPanel() { return <DaysView />; }
+export function DaysPanel({ host }: { host?: Pick<PluginHost, 'modules'> }) { return <DaysView host={host} />; }
