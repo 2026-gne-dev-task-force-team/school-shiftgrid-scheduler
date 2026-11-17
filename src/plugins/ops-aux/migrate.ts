@@ -20,7 +20,6 @@ export const AUX_LIST_NAME = '보조 인력';
 export const AUX_KIND_VALUE = 'assistant';
 
 const KINDS: readonly AuxKind[] = ['기초학력', '한국어', '디지털튜터', '자원봉사', '기타'];
-type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const valuesOf = (nodes: NodesApi, id: string): Record<string, unknown> => ((nodes.get(id)?.data as { values?: Record<string, unknown> } | undefined)?.values) ?? {};
@@ -50,17 +49,30 @@ export function migrateAuxStaffToStaff(nodes: NodesApi, staffRows: readonly AuxS
     return made;
 }
 
-/** 근태 localStorage 자료의 명부를 옮기고 표시 키를 더한다 — 옛 값은 그대로. 읽을 게 없으면 0. */
-export function moveLocalAuxStaff(nodes: NodesApi, storage: StorageLike, staffUp: () => boolean = () => true, key: string = LS_KEY): number {
+/** 명부 이사 「옮김」 표시 — 호스트 저장(`host.storage`)에 쓴다(옛 localStorage 표시 키는 읽기만 한다). */
+export const STAFF_MOVED_KEY = 'staff.moved';
+interface MarkStore { get<T>(key: string, fallback: T): T; set(key: string, v: unknown): void }
+
+/** 이미 옮겼나 — 호스트 저장의 표시, 또는 옛 localStorage 표시 키(R15 때 쓴 것). */
+export function staffMoved(marks: Pick<MarkStore, 'get'>, legacy: Pick<Storage, 'getItem'>, key: string = LS_KEY): boolean {
+    if (marks.get<unknown>(STAFF_MOVED_KEY, null) !== null) return true;
+    try { return legacy.getItem(movedKeyOf(key)) !== null; } catch { return true; /* 저장소 막힘 — 옮길 것도 없다 */ }
+}
+
+/**
+ * 옛 근태 자료의 명부를 옮기고 표시를 더한다 — 옛 값은 그대로(읽기만). 명부는 옛 localStorage 값, 없으면 호스트 저장의 근태 자료에서 읽는다. 읽을 게 없으면 0.
+ *   staff 가 꺼져 있으면 0 이고 표시도 안 쓴다(켜진 뒤 다시 돈다).
+ */
+export function moveLocalAuxStaff(nodes: NodesApi, legacy: Pick<Storage, 'getItem'>, marks: MarkStore, staffUp: () => boolean = () => true, key: string = LS_KEY): number {
     if (!staffUp()) return 0;
     let rows: AuxStaff[] = [];
     try {
-        const raw = storage.getItem(key);
-        const p = raw ? JSON.parse(raw) as Partial<AuxPart> : null;
+        const raw = legacy.getItem(key);
+        const p = raw ? JSON.parse(raw) as Partial<AuxPart> : marks.get<Partial<AuxPart> | null>('part', null);
         if (p && Array.isArray(p.staff)) rows = p.staff;
     } catch { /* 깨진 값 — 옮길 것 없음 */ }
     const made = migrateAuxStaffToStaff(nodes, rows, staffUp);
-    try { storage.setItem(movedKeyOf(key), JSON.stringify({ staff: rows.length })); } catch { /* 표시를 못 써도 f_aux_id 가 두 번째 이사를 막는다 */ }
+    marks.set(STAFF_MOVED_KEY, { staff: rows.length }); // 표시를 못 써도 f_aux_id 가 두 번째 이사를 막는다
     return made;
 }
 

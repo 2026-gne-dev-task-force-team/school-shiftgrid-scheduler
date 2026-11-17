@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Staff, StaffMember } from '../staff/contracts/staff';
 import { AuxView } from './AuxPanel';
-import { AUX_LIST_NAME, LS_KEY, auxStaffOf, migrateAuxStaffToStaff, moveLocalAuxStaff, movedKeyOf, readAuxStaff } from './migrate';
+import { AUX_LIST_NAME, LS_KEY, STAFF_MOVED_KEY, auxStaffOf, migrateAuxStaffToStaff, moveLocalAuxStaff, readAuxStaff } from './migrate';
 import { demoAux, memoryAuxSource } from './source';
 import type { AuxStaff } from './types';
 
@@ -80,19 +80,22 @@ describe('두 번 돌려도 같음 · 옛 값은 지우지 않음', () => {
         expect(migrateAuxStaffToStaff(w.nodes, rows(), () => false)).toBe(0);
         expect(w.members()).toHaveLength(0);
     });
-    it('localStorage 옛 값은 그대로 두고 표시 키만 더한다 · 다시 돌려도 같다', () => {
+    const marks = () => { const kv = new Map<string, unknown>(); return { kv, get: <T,>(k: string, f: T) => (kv.has(k) ? kv.get(k) as T : f), set: (k: string, v: unknown) => { kv.set(k, structuredClone(v)); } }; };
+    it('localStorage 옛 값은 그대로 두고 표시는 호스트 저장에만 더한다 · 다시 돌려도 같다', () => {
         const part = JSON.stringify(demoAux());
         localStorage.setItem(LS_KEY, part);
         const w = fakeNodes();
-        expect(moveLocalAuxStaff(w.nodes, localStorage)).toBe(2);
+        const m = marks();
+        expect(moveLocalAuxStaff(w.nodes, localStorage, m)).toBe(2);
         expect(localStorage.getItem(LS_KEY)).toBe(part);
-        expect(JSON.parse(localStorage.getItem(movedKeyOf())!)).toEqual({ staff: 2 });
-        expect(moveLocalAuxStaff(w.nodes, localStorage)).toBe(0);
+        expect(localStorage.length).toBe(1);
+        expect(m.kv.get(STAFF_MOVED_KEY)).toEqual({ staff: 2 });
+        expect(moveLocalAuxStaff(w.nodes, localStorage, m)).toBe(0);
         expect(readAuxStaff(w.staff).map((s) => s.id)).toEqual(['s1', 's2']);
     });
     it('저장된 값이 깨졌어도 던지지 않는다', () => {
         localStorage.setItem(LS_KEY, '{깨짐');
-        expect(moveLocalAuxStaff(fakeNodes().nodes, localStorage)).toBe(0);
+        expect(moveLocalAuxStaff(fakeNodes().nodes, localStorage, marks())).toBe(0);
     });
 });
 

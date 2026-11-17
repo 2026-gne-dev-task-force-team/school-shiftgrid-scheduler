@@ -31,30 +31,26 @@ export function memoryAuxSource(initial: AuxPart, lessonsOn: (date: string) => D
     };
 }
 
-const LS_KEY = 'plugin.ops-aux.part';
+/** 기기 저장소 한 칸 — 호스트가 주는 플러그인별 저장(`host.storage`)에서 읽고 쓰는 두 손만 쓴다(localStorage 직접 접근 없음). */
+export interface PartStore { get<T>(key: string, fallback: T): T; set(key: string, v: unknown): void }
+export const PART_KEY = 'part';
+
+/** 저장된 값이 근태 꼴이면 그것, 아니면 null. */
+export function readStoredPart(store: Pick<PartStore, 'get'>): AuxPart | null {
+    const p = store.get<AuxPart | null>(PART_KEY, null);
+    return p && Array.isArray(p.staff) && Array.isArray(p.day) && Array.isArray(p.exceptions) ? p : null;
+}
 
 /**
- * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경이 남는다.
- * 저장된 값이 없을 때만 seed(데모)를 쓴다. 저장소가 막히거나 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ * 호스트 기기 저장소에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경이 남는다.
+ * 저장된 값이 없을 때만 seed(데모)를 쓴다. 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ * 옛 `localStorage` 값은 기동 때 한 번 이 칸으로 옮긴다(`partmove.ts`).
  */
-export function localAuxSource(seed: () => AuxPart, lessonsOn: (date: string) => DayLesson[] = demoLessons, key: string = LS_KEY): AuxSource {
+export function storageAuxSource(store: PartStore, seed: () => AuxPart, lessonsOn: (date: string) => DayLesson[] = demoLessons): AuxSource {
     const subs = new Set<() => void>();
-    const read = (): AuxPart => {
-        try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-                const p = JSON.parse(raw) as AuxPart;
-                if (p && Array.isArray(p.staff) && Array.isArray(p.day) && Array.isArray(p.exceptions)) return p;
-            }
-        } catch { /* 깨진 값·저장소 막힘 — seed */ }
-        return seed();
-    };
     return {
-        load: async () => structuredClone(read()),
-        save: async (next) => {
-            try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* 조용히 */ }
-            subs.forEach((f) => f());
-        },
+        load: async () => structuredClone(readStoredPart(store) ?? seed()),
+        save: async (next) => { store.set(PART_KEY, next); subs.forEach((f) => f()); },
         lessonsOn,
         subscribe: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
     };
@@ -70,13 +66,23 @@ export function demoLessons(date: string): DayLesson[] {
     return [L('1-1', 1, 540, '국어'), L('3-2', 3, 540, '수학', date !== '2026-11-19'), L('1-1', 1, 590, '수학'), L('3-2', 3, 590, '국어', date !== '2026-11-19')];
 }
 
-/** 화면·상태바 배지가 같이 쓰는 기본 창구(수업 칸은 앱 번들에서 — 번들이 없으면 demo). */
-const baseAuxSource = localAuxSource(demoAux, (date) => lessonsOnOf(getBundle())(date));
-export const defaultAuxSource: AuxSource = {
-    ...baseAuxSource,
-    // 앱 번들이 바뀌어도 상태바 배지가 다시 센다.
-    subscribe: (fn) => { const a = baseAuxSource.subscribe!(fn); const b = subscribeBundle(fn); return () => { a(); b(); }; },
-};
+/** 앱 번들이 바뀌어도 상태바 배지가 다시 센다 — 창구 하나에 번들 구독을 더한다. */
+const withBundle = (base: AuxSource): AuxSource => ({
+    ...base,
+    subscribe: (fn) => { const a = base.subscribe!(fn); const b = subscribeBundle(fn); return () => { a(); b(); }; },
+});
+const bundleLessons = (date: string) => lessonsOnOf(getBundle())(date);
+
+/** 호스트 저장이 없을 때(시험·단독 그림) 쓰는 기본 창구 — 메모리만(수업 칸은 앱 번들에서, 번들이 없으면 demo). */
+export const defaultAuxSource: AuxSource = withBundle(memoryAuxSource(demoAux(), bundleLessons));
+
+/** 호스트 저장(`host.storage`)에 얹은 창구 — 같은 저장이면 같은 창구(화면·상태바 배지가 구독을 나눈다). */
+const byStore = new WeakMap<object, AuxSource>();
+export function auxSourceFor(store: PartStore): AuxSource {
+    let src = byStore.get(store);
+    if (!src) { src = withBundle(storageAuxSource(store, demoAux, bundleLessons)); byStore.set(store, src); }
+    return src;
+}
 
 export function demoAux(): AuxPart {
     return {
