@@ -32,3 +32,12 @@ shots-mobile/
 shots-sheet/
 shots-feedback/
 shots-help/
+
+# 실자료·정답지 반입 막기 (T-10e9) — 시험 src/__tests__/no-real-data-shape.test.ts 가 같은 모양을 한 번 더 막는다
+# 합성 샘플을 커밋해야 하면 아래에 `!경로` 로 하나씩 허용하고 시험의 ALLOWED_SHIFTGRID 에도 적는다(지금 허용 샘플 0개)
+*.shiftgrid.json
+fixtures-real/
+*정답지*
+*실명*
+*deid*
+*DEID*
