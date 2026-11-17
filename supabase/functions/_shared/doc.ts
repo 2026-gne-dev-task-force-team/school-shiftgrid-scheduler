@@ -94,12 +94,18 @@ export async function readPartRow(db: PartsReadDb, projectId: string, part: stri
  */
 export async function openPartBody(ring: KeyRing, db: PartsReadDb, projectId: string, part: string): Promise<unknown | null> {
     const row = await readPartRow(db, projectId, part);
-    if (!row) return null;
+    return row ? openRowBody(ring, projectId, { ...row, part }) : null;
+}
+
+/** 읽어 온 조각 행 하나를 연다 → 본문(AAD 는 `row.part`·`row.version`). 깨졌으면 500 `decrypt_failed`(`doc`·`doc@<n>` 은 「시간표를 열지 못했습니다」). */
+export async function openRowBody(ring: KeyRing, projectId: string, row: PartRow): Promise<unknown> {
+    const { part } = row;
     try {
         return (await openPart(ring, projectId, part, row.version, row.ct)).body;
     } catch (e) {
         console.error(`decrypt_failed part=${part} ${e instanceof EnvelopeError ? e.code : 'gzip/json'}`);
-        throw new HttpError(500, 'decrypt_failed', part === 'doc' ? '시간표를 열지 못했습니다' : '그날 자료를 열지 못했습니다');
+        const isDoc = part === 'doc' || part.startsWith('doc@');
+        throw new HttpError(500, 'decrypt_failed', isDoc ? '시간표를 열지 못했습니다' : '그날 자료를 열지 못했습니다');
     }
 }
 
