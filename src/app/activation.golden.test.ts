@@ -49,7 +49,8 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             'calendar', 'account',
             'people', 'rooms', 'room-booking', 'substitute', 'school', 'subjects', 'staff', 'bell', 'duty', 'timetable-grid', 'demand-table', 'ops-check', 'ops-sub', 'ops-room', 'ops-days', 'ops-aux', 'v1-editor',
         ]);
-        expect(ps.every((p) => p.enabled)).toBe(true);
+        // 🔴 T-10ec: v1-editor(옛 편성기)만 기본 꺼짐 — 새 기기엔 안 선다. 나머지는 전부 켜짐.
+        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual(['v1-editor']);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
     });

@@ -11,7 +11,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { activateAll } from '../pane-ui-system/plugin';
+import { activateAll, enablePlugin } from '../pane-ui-system/plugin';
 import { setPlatform } from '../pane-ui-system/platform-keys';
 import { PLUGINS } from './plugins';
 import { Workbench } from './Workbench';
@@ -42,6 +42,7 @@ beforeAll(() => {
     (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
     installScreen();
     activateAll(PLUGINS);
+    enablePlugin('v1-editor');   // 옛 편성기는 기본 꺼짐(T-10ec) — 이 시험은 켠 기기의 창틀을 잰다
 });
 
 let root: Root | null = null;

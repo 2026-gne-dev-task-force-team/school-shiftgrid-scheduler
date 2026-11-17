@@ -27,6 +27,7 @@ import { disposeOwner, trackScope, disposeScope, disposeConsumerScopes } from '.
 // ── 설치된 모듈 + 상태 ──
 let installed: PluginModule[] = [];
 const failedIds = new Set<string>();            // onActivate 가 던졌거나 minHostVersion 미달
+let enabledIds = new Set<string>();             // 기본 꺼짐 플러그인 중 사용자가 일부러 켠 것(기기별 저장)
 let disabledIds = new Set<string>();            // 사용자가 끈 것(기기별 저장)
 const blockedReasons = new Map<string, string>();  // 🔴 비영구 — 제공자가 켜지면 reconcile 이 지운다
 
@@ -84,36 +85,49 @@ function satisfies(range: string, version: string): boolean {
     return v[0] === maj && (v[1] ?? 0) >= min;   // 0.x 포함: 메이저 같고 마이너 ≥
 }
 
-// ── 기기별 저장: { disabled: string[] } ──
+// ── 기기별 저장: { disabled: string[], enabled?: string[], kept?: 1 } ──
+//   disabled = 사용자가 끈 것. enabled = 「기본 꺼짐(defaultOff)」 플러그인을 사용자가 일부러 켠 것.
+//   kept = 「쓰던 기기 보존」 이주를 이미 했다는 표시(두 번 안 한다).
 const pluginsKey = () => storageKey('plugins');
-function loadDisabled(): Set<string> {
+interface PluginStore { disabled: Set<string>; enabled: Set<string>; kept: boolean; existed: boolean }
+function loadStore(): PluginStore {
+    const empty = (): PluginStore => ({ disabled: new Set(), enabled: new Set(), kept: false, existed: false });
     try {
-        if (typeof localStorage === 'undefined') return new Set();
+        if (typeof localStorage === 'undefined') return empty();
         const s = localStorage.getItem(pluginsKey());
-        if (!s) return new Set();
-        const raw = JSON.parse(s) as { disabled?: unknown };
+        if (!s) return empty();
+        const raw = JSON.parse(s) as { disabled?: unknown; enabled?: unknown; kept?: unknown };
         if (!raw || typeof raw !== 'object') {
             localStorage.removeItem(pluginsKey());
-            return new Set();
+            return empty();
         }
-        const arr = Array.isArray(raw.disabled) ? raw.disabled.filter((x): x is string => typeof x === 'string') : [];
-        return new Set(arr);
+        const strs = (v: unknown): Set<string> => new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+        return { disabled: strs(raw.disabled), enabled: strs(raw.enabled), kept: raw.kept === 1, existed: true };
     } catch {
         try { localStorage.removeItem(pluginsKey()); } catch { /* 조용히 */ }
-        return new Set();
+        return empty();
     }
 }
 function saveDisabled(): void {
     try {
-        if (typeof localStorage !== 'undefined') localStorage.setItem(pluginsKey(), JSON.stringify({ disabled: [...disabledIds] }));
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(pluginsKey(), JSON.stringify({ disabled: [...disabledIds], enabled: [...enabledIds], kept: 1 }));
+        }
     } catch { /* 조용히 */ }
+}
+/** 꺼진 상태인가 — 사용자가 껐거나, 기본 꺼짐인데 일부러 켠 적이 없다. */
+function isOff(m: PluginModule): boolean {
+    const id = m.manifest.id;
+    return disabledIds.has(id) || (!!m.manifest.defaultOff && !enabledIds.has(id));
 }
 
 // 🔴 R3-X — 다른 탭이 플러그인을 켜고 끄면 같은 조정(reconcile)을 돈다(저장은 안 한다 — 이미 저장돼 있다).
 onStorageKey(pluginsKey, () => {
     if (installed.length === 0) return;   // 아직 시동 전 — activateAll 이 최신을 읽는다
     const core = new Set(installed.filter((m) => m.manifest.core).map((m) => m.manifest.id));
-    disabledIds = new Set([...loadDisabled()].filter((id) => !core.has(id)));
+    const st = loadStore();
+    disabledIds = new Set([...st.disabled].filter((id) => !core.has(id)));
+    enabledIds = st.enabled;
     reconcile();
     emitReg();
 });
@@ -144,7 +158,7 @@ export function usePluginRegistry(): number {
  *   { order(켤 순서) · blocked(id→사유) · providers(인터페이스→승자) } 를 낸다. 🔴 순수 — 상태를 안 바꾼다.
  */
 function computeActivation(): { order: string[]; blocked: Map<string, string>; providers: Map<string, string>; standby: Map<string, string> } {
-    const cands = installed.filter((m) => m.manifest.core || !disabledIds.has(m.manifest.id));
+    const cands = installed.filter((m) => m.manifest.core || !isOff(m));
     // 안정 순서: core 먼저, 같은 층은 설치(목록) 순
     const ordered = [...cands].sort((a, b) => Number(!!b.manifest.core) - Number(!!a.manifest.core));
 
@@ -371,7 +385,19 @@ export function activateAll(modules: PluginModule[]): void {
     //    ⛔ activeIds 를 안 비우면 두 번째 activateAll 이 「이미 활성」으로 보고 등록을 건너뛴다.
     //    ⭐ 약속 목록은 이제 플러그인들의 contributes.interfaces 에서 모은다 — 창틀에 고정 배열(옛 INTERFACES)이 없다.
     installed = [...modules];
-    disabledIds = loadDisabled();
+    const st = loadStore();
+    disabledIds = st.disabled;
+    enabledIds = st.enabled;
+    // 🔴 쓰던 기기 보존 — 저장소에 plugins 키가 이미 있던 기기(= 이전부터 쓰던 기기)는 처음 한 번, 기본 꺼짐 플러그인을 「켠 것」으로 옮긴다.
+    //    한계: plugins 키 없이 쓰던 기기(한 번도 끄기를 안 한 기기)는 새 기기와 구별이 안 돼 꺼진 채 시작한다(설정에서 켜면 된다).
+    //    ErrorBoundary 가 저장소를 지운 기기도 같다.
+    let migrated = false;
+    if (!st.kept) {
+        if (st.existed) {
+            for (const m of modules) if (m.manifest.defaultOff && !disabledIds.has(m.manifest.id)) enabledIds.add(m.manifest.id);
+        }
+        migrated = true;
+    }
     // 🔴 유령·코어 ID 자동 정리 — 플러그인이 통폐합·삭제됐거나 코어로 승격됐는데 옛 localStorage 의 disabled 에
     //    남아 있으면 거둬내고 저장소를 깨끗이 맞춘다.
     const validToggleable = new Set(modules.filter((m) => !m.manifest.core).map((m) => m.manifest.id));
@@ -382,7 +408,10 @@ export function activateAll(modules: PluginModule[]): void {
             pruned = true;
         }
     }
-    if (pruned) saveDisabled();
+    for (const id of [...enabledIds]) {
+        if (!modules.some((m) => m.manifest.id === id && m.manifest.defaultOff)) { enabledIds.delete(id); pruned = true; }
+    }
+    if (pruned || migrated) saveDisabled();
     failedIds.clear();
     blockedReasons.clear();
     activeProviders.clear();
@@ -396,8 +425,11 @@ export function activateAll(modules: PluginModule[]): void {
 /** 다시 켜기 — 끈 목록에서 빼고 조정(블록됐던 의존자까지 자동 복귀 · supports 소비자엔 attach). */
 export function enablePlugin(id: string): void {
     if (!byId(id)) return;
+    const m = byId(id)!;
     let touched = false;
-    if (disabledIds.delete(id)) { saveDisabled(); touched = true; }
+    if (disabledIds.delete(id)) touched = true;
+    if (m.manifest.defaultOff && !enabledIds.has(id)) { enabledIds.add(id); touched = true; }
+    if (touched) saveDisabled();
     if (!touched && !blockedReasons.has(id)) return;   // 이미 켜져 있고 블록도 아니면 할 일 없음
     reconcile();
     emitReg();
@@ -409,6 +441,7 @@ export function disablePlugin(id: string): void {
     if (!m) return;
     if (m.manifest.core) { console.warn(`[plugin] "${id}" 는 코어다 — 끌 수 없다`); return; }
     disabledIds.add(id);
+    enabledIds.delete(id);
     saveDisabled();
     reconcile();
     emitReg();
@@ -467,7 +500,7 @@ export function listPlugins(): PluginStatus[] {
             core: !!m.manifest.core,
             layer: m.manifest.layer ?? 'app',
             icon: m.manifest.icon,
-            enabled: !disabledIds.has(id),
+            enabled: !isOff(m),
             failed: failedIds.has(id),
             blocked,
             reason,
@@ -571,7 +604,7 @@ export function consumersOf(id: string): string[] {
 export interface InterfaceStatus { name: string; version: string; declaredBy: string; provider: string | null; waiting: string[] }
 export function listInterfaces(): InterfaceStatus[] {
     // 🔴 켜진(core||!disabled) 플러그인들의 contributes.interfaces 를 모은다 — 약속 플러그인을 끄면 그 약속이 목록에서 사라진다.
-    const declared = collectDeclared(installed.filter((m) => m.manifest.core || !disabledIds.has(m.manifest.id)));
+    const declared = collectDeclared(installed.filter((m) => m.manifest.core || !isOff(m)));
     return [...declared.values()].map((d) => ({
         name: d.name,
         version: d.version,
@@ -591,7 +624,7 @@ export function ownerOfView(viewId: string): { id: string; name: string; enabled
     return {
         id: pid,
         name: m.manifest.name,
-        enabled: !disabledIds.has(pid),
+        enabled: !isOff(m),
         blocked: blockedReasons.has(pid),
         reason: blockedReasons.get(pid),
     };
