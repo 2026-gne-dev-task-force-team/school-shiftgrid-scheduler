@@ -3,13 +3,15 @@ import { Button, Field, Select, TextInput } from '../../../pane-ui-system';
 import { addExc, applyAuxOps, closeMonth, delExc, reopenMonth } from '../ops';
 import { defaultAuxSource, type AuxSource } from '../source';
 import type { AuxExceptionKind, AuxPart, AuxViewer } from '../types';
+import { readAuxStaff } from '../migrate';
+import type { Staff } from '../../staff/contracts/staff';
 import { monthTotals } from './total';
 
 const demoViewer: AuxViewer = { userId: 'u-a', roles: ['근태담당'] };
 const KINDS: AuxExceptionKind[] = ['결근', '지각', '조퇴', '추가', '정정'];
 
 /** 월 정산 최소 꼴 — 보조별 합계(정정 후 따로) · 마감/해제 · 예외 더하기. */
-export function MonthView({ source, viewer, initialYm, newId }: { source?: AuxSource; viewer?: AuxViewer; initialYm?: string; newId?: () => string }) {
+export function MonthView({ source, viewer, initialYm, newId, staff: staffApi }: { source?: AuxSource; viewer?: AuxViewer; initialYm?: string; newId?: () => string; staff?: Staff }) {
     const src = source ?? defaultAuxSource;
     const v = viewer ?? demoViewer;
     const [ym, setYm] = useState(initialYm ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
@@ -26,9 +28,13 @@ export function MonthView({ source, viewer, initialYm, newId }: { source?: AuxSo
         else { await src.save(r.next); setMsg('반영했습니다.'); }
         await reload();
     };
-    const staff = part?.staff ?? [];
+    const [, bump] = useState(0);
+    useEffect(() => { const d = staffApi?.onChange(() => bump((n) => n + 1)); return () => d?.dispose(); }, [staffApi]);
+    // 🔴 T-10f7 — 이름은 staff 약속(교직원 명단의 보조인력)에서 찾는다. 보조인력이 하나도 없으면 옛 명부 그대로(배정 화면과 같은 규칙).
+    const viewStaff = staffApi ? readAuxStaff(staffApi) : [];
+    const staff = viewStaff.length > 0 ? viewStaff : (part?.staff ?? []);
     const nameOf = (sid: string) => staff.find((s) => s.id === sid)?.name ?? sid;
-    const rows = part ? monthTotals(part, ym) : [];
+    const rows = part ? monthTotals({ ...part, staff }, ym) : [];
     const excs = (part?.exceptions ?? []).filter((e) => e.date.startsWith(`${ym}-`));
     const closedIds = new Set((part?.monthClose ?? []).filter((m) => m.ym === ym).map((m) => m.staffId));
     return (

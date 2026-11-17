@@ -110,7 +110,7 @@ export function AuxPanel({ source, viewer, staff }: { source?: AuxSource; viewer
                 <Button variant={tab === 'assign' ? 'solid' : 'ghost'} onClick={() => setTab('assign')}>배정</Button>
                 <Button variant={tab === 'month' ? 'solid' : 'ghost'} onClick={() => setTab('month')}>월 정산</Button>
             </div>
-            {tab === 'assign' ? <AuxView source={source} viewer={viewer} staff={staff} /> : <MonthView source={source} viewer={viewer} />}
+            {tab === 'assign' ? <AuxView source={source} viewer={viewer} staff={staff} /> : <MonthView source={source} viewer={viewer} staff={staff} />}
         </div>
     );
 }
