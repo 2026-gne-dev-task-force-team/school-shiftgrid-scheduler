@@ -4,7 +4,7 @@ import type { Task } from '../types.ts'
 import { BLOCK_NAME, COLS, REASON_NAME, blockText, colOf, isOver, minutesIn, showReason, type Col } from './layer4-logic.ts'
 import type { LayerRenderer } from './types.ts'
 import { actorTag } from '../ui/actor-tag.ts'
-import { actorLabel, actorWhat } from '../lib/actor.ts'
+import { actorLabel, actorWhat, cardNo } from '../lib/actor.ts'
 import { taskDetail } from '../lib/task-detail.ts'
 import { taskDetailView } from '../ui/task-detail-view.ts'
 import { tagChips } from '../ui/tag-chips.ts'
@@ -80,7 +80,9 @@ export const layer4: LayerRenderer = {
       const st = m === null && t.column === 'done' ? 'done' : showReason(t) ? 'blocked' : isOver(t, now()) ? 'over' : t.column === 'done' ? 'done' : 'ok'
       const more = [a ? `${actorLabel(a, data.actors, data.tasks)} — ${actorWhat(a, data.tasks)}` : '', `${t.category} · ${t.team}`, m !== null ? `${m}분째 / 짐작 ${t.est_min}분` : '', showReason(t) ? `⛔ ${blockText(t, tasks) ?? REASON_NAME[t.reason] ?? t.reason}` : ''].filter(Boolean).join(' · ')
       el.title = more
-      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), h('code', { class: 'tid' }, t.id), ...tagChips(t), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${splitCode(t.title).text}`), ...(splitCode(t.title).code ? [h('small', { class: 'bp-code' }, splitCode(t.title).code)] : []), ...(a ? [actorTag(ctx, a, { size: 'mini', text: 'name', nested: true })] : []))
+      const sc = splitCode(t.title)
+      const no = cardNo(t.id) // 레인 카드 속 id(l-해시-…) 대신 사람이 읽는 표 번호. 못 읽으면 번호 칸을 비운다
+      el.replaceChildren(...(st === 'blocked' ? [h('span', { class: 'ws-bang', 'aria-hidden': 'true' }, '!')] : []), h('i', { class: 'ws-dot', 'data-s': st }), ...(no ? [h('code', { class: 'tid' }, no)] : []), ...tagChips(t), h('b', null, `${t.kind === 'work' && t.column !== 'work' ? '' : `${KIND_ICON[t.kind] ?? '•'} `}${sc.text || '제목 없음'}`), ...(sc.code ? [h('small', { class: 'bp-code' }, sc.code)] : []), ...(a ? [actorTag(ctx, a, { size: 'mini', text: 'name', nested: true })] : []))
     }
 
     const openTask = (id: string) => {

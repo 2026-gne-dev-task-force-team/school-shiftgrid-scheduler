@@ -2,7 +2,7 @@ import type { Actor } from '../types.ts'
 import { actorLabel } from '../lib/actor.ts'
 
 // 캐릭터 = Claude Code 도트 마스코트(산호 몸통·검은 눈·옆 팔·다리 넷). 눈 칸 색·소품·머리띠 색·몸통 색조(이름 해시 넷)가 다르다(눈 색↔기기 짝은 판에 안 싣는다).
-type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'race' | 'dept' | 'role' | 'state'>
+type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'race' | 'dept' | 'role' | 'state'> & Partial<Pick<Actor, 'job'>> // job 은 aria-label 「이름 · 직업」에 쓰여 actorLabel 로 넘어간다(없으면 role 로 가린다)
 export type CharSize = 'mini' | 'chip' | 'card'
 const PX: Record<CharSize, number> = { mini: 27, chip: 36, card: 90 } // 가로 px — 격자 18×11 이라 한 칸 1.5~5px
 const GW = 18, GH = 11
