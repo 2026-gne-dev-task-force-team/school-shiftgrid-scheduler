@@ -36,7 +36,7 @@ export function PasteBar({ host, kit }: { host: PluginHost; kit: CollectionKit }
     };
 
     return (
-        <details style={{ padding: '6px 10px', borderBottom: '1px solid var(--border, #ccc)' }}>
+        <details style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)' }}>
             <summary>엑셀에서 복사한 표 붙여 넣기</summary>
             <p style={{ margin: '6px 0' }}>엑셀에서 교사·반·과목·시수 열을 복사해 아래에 붙이세요(머리글은 있어도 없어도 됩니다). 이름은 교직원 명단·학교 정보·과목 목록과 맞춰 보고, 없는 이름은 저장하지 않고 알려 드립니다.</p>
             <Textarea
