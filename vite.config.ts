@@ -53,10 +53,12 @@ export default defineConfig({
     // HTTPS 를 켤 때만 자가서명 인증서 플러그인을 끼운다
     ...(https ? [basicSsl()] : []),
     // PWA — 폰 홈 화면에 붙이고 오프라인에서도 뜨게. 규칙 엔진·솔버가 전부 브라우저 안에서 돌아
-    // 서버가 필요 없으니 한 번 받으면 그대로 산다. 새 배포가 올라오면 다음 실행에 조용히 갈아탄다.
+    // 서버가 필요 없으니 한 번 받으면 그대로 산다. 새 배포가 올라오면 열린 탭에 「새 버전이 있습니다」 안내가 뜨고, 누르면 갈아탄다.
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // 🔴 T-10fp: autoUpdate 는 새 워커가 깔려도 열린 탭에 말이 없어 옛 번들이 남았다 — prompt 로 바꿔 「새 버전이 있습니다」 안내(src/app/sw-update.ts)가 등록·감지를 쥔다.
+      //    새 워커는 대기(waiting)에 머물다 선생님이 누르면 SKIP_WAITING 메시지로 쥔다(편집 중 강제 새로고침 없음).
+      registerType: 'prompt',
+      injectRegister: false,
       // 🔴 dev 서비스워커는 VITE_HTTPS=1(폰 홈 화면 설치 확인용 · 5201)일 때만 켠다 — 평소 HTTP(5173)에서 켜 두면
       //    브랜치·워크트리 전환 때 dev-dist/sw.js 가 옛 응답을 캐시해 강력 새로고침으로도 안 풀리는 빈 창을 만든다.
       devOptions: { enabled: https },
@@ -84,6 +86,8 @@ export default defineConfig({
         // xlsx 청크가 500 KB 를 넘는다 — 기본 상한(2 MB)은 넉넉하지만 명시해 둔다
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // 🔴 안내를 눌러 새 워커가 활성되면 열린 탭도 곧바로 쥐어야 controllerchange 가 떠 새로고침이 이어진다
+        clientsClaim: true,
       },
     }),
   ],
