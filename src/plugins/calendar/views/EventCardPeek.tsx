@@ -16,7 +16,7 @@ import type { StoredEvent } from '../event-fields';
 import { eventFields, eventToValues, applyEventValue } from '../event-fields';
 import { getCalendarHost, getNodesApi, getKit, patchEvent, setEventValue } from '../nodes';
 import { usePreset, baseFieldsOf } from '../presets';
-import { materialize, patternOf } from '../series';
+import { materialize, patternOf, vetVirtual } from '../series';
 import { nodeIdOf, type CalEvent, type StoreInfo } from '../events';
 import { storedToEvent } from '../event-fields';
 import { inTrash } from '../nodes';
@@ -63,12 +63,15 @@ export function EventCardPeek({ eventId: openedId, onClose }: { eventId: string;
 
     const change = (key: string, v: RecordCellValue) => {
         // 🔴 보기만으로는 실체화 ⛔ — 값을 고칠 때 처음으로 materialize(실체면 그 id 그대로)
+        // 🔴 가상 회차는 만들기 전에 저장 전 검증(beforeSave)부터 — 거절이면 실체 회차를 만들지 않는다
+        const base = BASE_KEYS.has(key) ? applyEventValue(event, key, v) : null;
+        if (BASE_KEYS.has(key) && !base) return;
+        if (event.occ && !vetVirtual(event.occ, base ?? { name: event.name, start: event.start, end: event.end, allDay: event.allDay, memo: event.memo }, base ? undefined : { key, value: v })) return;
         const id = event.occ ? materialize(event.occ) : event.id;
         if (!id) return;
         if (id !== event.id) setEventId(id);
-        if (!BASE_KEYS.has(key)) { setEventValue(id, key, v); return; }
-        const next = applyEventValue(event, key, v);
-        if (next) patchEvent(id, next);
+        if (!base) { setEventValue(id, key, v); return; }
+        patchEvent(id, base);
     };
     // 열기 페이지 한 벌(컬렉션 RecordPage — Q5 R5): 머리·경로·⋯ 는 틀이, 칸은 기본 칸 + 저장소 사용자 칸, 그 밑에 저장소 칸
     // 🔴 RecordPage 는 노드를 찾는다 — 가상 회차 id(규칙@시작)는 노드가 아니라 규칙 노드 id 를 넘긴다(F1 A). 제목 고치기는 회차 실체화로 돌린다.

@@ -4,7 +4,7 @@
  *   계산은 recur/expand(순수), 쓰기는 NodesApi 하나로(nodes.ts 의 getNodesApi). 날짜는 전부 'YYYY-MM-DDTHH:mm'(종일은 'T00:00').
  */
 import type { PublicNode } from '../../pane-ui-system/core/nodes/contracts/nodes';
-import type { Occurrence } from './contracts/calendar';
+import type { EventDraft, Occurrence } from './contracts/calendar';
 import { expand, expandPattern, isPattern, ruleToPattern, type DatePattern, type RecurRule } from './recur';
 import type { DateValue } from '../collection/contracts/collection';
 import { EVENT_TYPE } from './config';
@@ -111,6 +111,21 @@ export function materialize(o: Occurrence): string {
     // 회차는 반복을 물려받지 않는다 — 패턴을 뗀 칸 값으로
     const { values } = eventToStored({ start: o.start, end: o.end, allDay: o.allDay, memo: storedToEvent(rd)?.memo }, withPattern(rd, null).values ?? {});
     return api.create(parent, { type: EVENT_TYPE, name: rule.name, data: { values, seriesId: o.seriesId, originalStart: o.originalStart } });
+}
+
+/**
+ * 가상 회차를 손대기 전 판정 — 실체 회차를 만들기 전에 beforeSave 를 먼저 돌린다(거절이면 노드가 안 생긴다).
+ *   f = 고친 뒤의 기본 칸 · extra = 고친 사용자 칸(하나). 가상이 아니면(이미 실체) 통과 — 그 길은 patchEvent·setEventValue 가 판정한다.
+ */
+export function vetVirtual(o: Occurrence, f: { name: string; start: string; end: string; allDay: boolean; memo: string }, extra?: { key: string; value: unknown }): boolean {
+    if (!o.virtual || !o.seriesId) return true;
+    const api = getNodesApi();
+    const storeId = api?.parent(o.seriesId);
+    if (!api || !storeId) return true;
+    const values = { ...(withPattern(dataOf(api.get(o.seriesId)), null).values ?? {}) } as Record<string, unknown>;
+    if (extra) values[extra.key] = extra.value;
+    const self = (x: Occurrence) => x.eventId === o.eventId && x.originalStart === o.originalStart;
+    return checkBeforeSave(storeId, { ...f, values: values as EventDraft['values'] }, { kind: 'update', eventId: o.seriesId, isSelf: self }).ok;
 }
 
 /** 미루기·당기기 — 실체화하고 그 레코드의 「언제」만 바꾼다(originalStart 그대로 · 되돌리기 한 칸). 실체 id(못 하면 ''). */
