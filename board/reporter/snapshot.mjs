@@ -757,9 +757,10 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const working = l1Fresh ? tasks.filter((t) => t.column === 'work') : [] // 노트가 묵었으면 🔄 줄은 카드로만 남고 캐릭터는 없다(R102①)
   const leadTask = working.find((t) => t.category === '지휘')
   const lead = { id: 'a-lead', parent_id: null, kind: 'lead', name: '지휘', hue: 40, eye: 'amber', prop: 'flag', dept: 'hq', team: '지휘', role: '지휘',
-    // 지휘 세션 신호 = 문지기 actors 의 살아 있는 세션(kind session · off 아님). 일감·일하는 에이전트가 있으면 work, 세션만 쉬면 idle, 문지기를 읽었는데 살아 있는 게 없으면 off(퇴근), 문지기를 못 읽으면 모르니 idle.
-    state: working.length || live.some((g) => g.state === 'work') ? 'work' : live.some((g) => g.state !== 'off') || !live.length ? 'idle' : 'off', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
-  if (lead.state === 'off') lead.ended_at = nowIso
+    // 지휘 세션 신호 = 문지기 actors 의 살아 있는 세션·에이전트(off 아님). 있으면 일감 유무로 work/idle, 없으면 off(본부 인원 0).
+    // 선택 이유(R120): 살아 있는 지휘 세션이 없는데 고정 「지휘」·「쉼」 캐릭터를 세우면 「지금 누가 일하나」가 거짓이 된다 — 문지기를 못 읽은 경우도 같다(모르면 안 세운다).
+    state: live.some((g) => g.state === 'work') ? 'work' : live.some((g) => g.state !== 'off') ? (working.length ? 'work' : 'idle') : 'off', task_id: leadTask?.id ?? null, branch_id: null, account: 'org', tok_per_min: 0, started_at: sprints[0]?.began ?? nowIso, ended_at: null }
+  if (lead.state === 'off') lead.ended_at = lead.started_at // 퇴근 시각을 현재로 찍으면 시각만 달라도 스냅샷 해시가 바뀐다
   const actors = [lead, ...working.filter((t) => t.category !== '지휘').map((t) => {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
     return { id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work', task_id: t.id,

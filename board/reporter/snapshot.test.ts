@@ -143,16 +143,18 @@ describe('보고꾼 — 실자료 다듬기', () => {
   })
 
   it('캐릭터 이름은 사람 이름 · 직업은 따로 · 🔄 없으면 지휘 하나만 쉼 · 지휘 일감은 지휘가', () => {
-    const work = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 opus | 5 | 🔄 |\n| T-2b | 판 | 화면 sonnet | 5 | 🔄 |\n| T-2p | 배포 | 지휘 | 5 | 🔄 |', '') })
+    const h4 = mkdtempSync(join(tmpdir(), 'home4-')); mkdirSync(join(h4, '.claude/board'), { recursive: true }) // R120: 지휘 캐릭터는 살아 있는 세션이 있어야 선다
+    writeFileSync(join(h4, '.claude/board/actors.json'), JSON.stringify({ actors: { x: { id: 'a-44444444', kind: 'session', role: '세션', started: at.getTime() - 60e3, ended: null } } }))
+    const work = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 opus | 5 | 🔄 |\n| T-2b | 판 | 화면 sonnet | 5 | 🔄 |\n| T-2p | 배포 | 지휘 | 5 | 🔄 |', ''), home: h4, gatePath: join(h4, '.claude/board/actors.json') })
     const who = work.actors.map((a: Actor) => [a.id, a.job, a.state, a.task_id])
-    expect(who).toEqual([['a-lead', '지휘', 'work', 'T-2p'], ['a-T-2a', '코드 짜기', 'work', 'T-2a'], ['a-T-2b', '화면 다듬기', 'work', 'T-2b']])
+    expect(who.filter((w: unknown[]) => w[0] !== 'a-44444444')).toEqual([['a-lead', '지휘', 'work', 'T-2p'], ['a-T-2a', '코드 짜기', 'work', 'T-2a'], ['a-T-2b', '화면 다듬기', 'work', 'T-2b']])
     expect(work.actors.filter((a: Actor) => a.job === '자료 나르기')).toEqual([]) // 코드 판의 직업은 「자료 나르기」가 아니다
     expect(work.actors[1].name).toBe(pickName('a-T-2a', new Set([work.actors[0].name]))) // 이름 = 캐릭터 id 에서 고정
-    expect(new Set(work.actors.map((a: Actor) => a.name)).size).toBe(3) // 서로 다른 이름
+    expect(new Set(work.actors.filter((a: Actor) => a.id !== 'a-44444444').map((a: Actor) => a.name)).size).toBe(3) // 서로 다른 이름
     expect(actorLabel(work.actors[1], work.actors)).toBe(`${work.actors[1].name} · 코드 짜기 · T-2a`)
     expect(work.actors[0].task_id).toBe('T-2p')
     const rest = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
-    expect(rest.actors.map((a: Actor) => [a.id, a.state])).toEqual([['a-lead', 'idle']])
+    expect(rest.actors.map((a: Actor) => [a.id, a.state])).toEqual([['a-lead', 'off']]) // R120: 세션 0 이면 쉼 캐릭터도 없다(퇴근)
   })
 
   it('문지기가 적은 도는 에이전트를 캐릭터로 · 끝난 것·낡은 것·✅ 일감·닫힌 세션은 work 가 아니다', () => {
@@ -552,13 +554,19 @@ describe('T-9u 읽기 고침', () => {
     const d = build({ now: at, md: lane('', ''), home, gatePath: join(home, '.claude/board/actors.json') })
     expect(d.actors.map((a: Actor) => a.id)).toEqual(expect.arrayContaining(['a-11111111', 'a-22222222']))
   })
-  it('U8③ 지휘는 살아 있는 세션이 없으면 퇴근(off), 문지기를 못 읽으면 쉼', () => {
+  it('U8③·R120 지휘 세션 0 → 본부 인원 0(문지기를 못 읽어도) · 세션 1 → 1', () => {
     const lead = (o: object) => build({ now: at, md: lane('', ''), ...o }).actors.find((a: Actor) => a.id === 'a-lead')
-    expect(lead({}).state).toBe('idle')
+    expect(lead({}).state).toBe('off')
     const h2 = mkdtempSync(join(tmpdir(), 'home2-'))
     mkdirSync(join(h2, '.claude/board'), { recursive: true })
     writeFileSync(join(h2, '.claude/board/actors.json'), JSON.stringify({ actors: { x: { ...act('a-33333333', 'session'), ended: at.getTime() - 1000 } } }))
     expect(lead({ home: h2, gatePath: join(h2, '.claude/board/actors.json') }).state).toBe('off')
+    const hq = (o: object) => build({ now: at, md: lane('', ''), ...o }).actors.filter((a: Actor) => a.job === '지휘' && a.state !== 'off').length // 「지휘 N명」 줄 = 직업 칸 지휘
+    expect(hq({})).toBe(0)
+    expect(hq({ home: h2, gatePath: join(h2, '.claude/board/actors.json') })).toBe(0)
+    const h5 = mkdtempSync(join(tmpdir(), 'home5-')); mkdirSync(join(h5, '.claude/board'), { recursive: true })
+    writeFileSync(join(h5, '.claude/board/actors.json'), JSON.stringify({ actors: { x: act('a-55555555', 'session') } }))
+    expect(hq({ home: h5, gatePath: join(h5, '.claude/board/actors.json') })).toBe(1)
   })
   it('T-9x U8 기록 파일 신호: 낱말 없는 이어 말하기 세션은 일함 · 죽은 에이전트는 퇴근 · 3시간 넘은 퇴근은 안 싣는다', () => {
     const t0 = at.getTime()
