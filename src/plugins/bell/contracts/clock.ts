@@ -2,6 +2,7 @@
  * 🔴 약속 「clock」 0.1.0 — 일과표 순수 셈의 타입(값 0). 학년마다 점심이 달라 같은 「N교시」가 학년마다 다른 시각인 문제를 푼다.
  *   소비자(보결·시간표 편성)는 host.modules.use<Clock>('clock') 로 받는다. 충돌 판정은 교시 번호가 아니라 **실제 시각**으로 한다.
  */
+import type { CMD } from './commands';
 
 /** 일과표 한 줄의 값 — 화면 칸 값에서 rowOf 가 만든다. */
 export interface SlotRow {
@@ -20,6 +21,8 @@ export interface RowProblem { index: number; reason: string }
 
 export interface Clock {
     version: 1;
+    /** 명령 id 상수 — host.commands.run(<약속>.cmd.open). */
+    readonly cmd: Readonly<Record<keyof typeof CMD, string>>;
     /** 그 학년에 해당하는(잘못된 줄은 뺀) 칸을 시작 시각순으로. */
     slotsForGrade(rows: readonly SlotRow[], grade: number): SlotRow[];
     /** 그 학년 N교시의 실제 시각 — 없으면 null. */

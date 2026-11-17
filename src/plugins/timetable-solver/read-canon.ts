@@ -13,7 +13,7 @@ import type { Clock, ClassSlot } from '../bell/contracts/clock';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type {
-    BuildIssue, CanonBellRow, CanonDemandRow, CanonDutyRow, PlanBlocker, SolverBlockRow, SolverCanon,
+    BlockerFix, BuildIssue, CanonBellRow, CanonDemandRow, CanonDutyRow, PlanBlocker, SolverBlockRow, SolverCanon,
 } from './contracts/solver';
 import { buildSolverInput, type BuildModules, type BuildResult } from './build-context';
 import { loadBlocks } from './blocks-store';
@@ -118,7 +118,7 @@ export interface ReadResult { canon: SolverCanon; blockers: PlanBlocker[] }
 /** 정본 읽기 → 읽은 값 한 묶음 + 정본이 없어서 생기는 막힘(꺼진 플러그인·빈 명단·기간 없음). */
 export function readCanon(src: CanonSources): ReadResult {
     const blockers: PlanBlocker[] = [];
-    const off = (code: string, what: string) => blockers.push({ code, level: 'stop', message: `${what} 플러그인이 꺼져 있어 읽을 수 없습니다` });
+    const off = (code: string, what: string) => blockers.push({ code, level: 'stop', message: `${what} 플러그인이 꺼져 있어 읽을 수 없습니다` });   // 꺼진 것은 열 화면이 없어 fix 를 안 단다
 
     const staffRows = src.staff
         ? src.staff.lists().flatMap((l) => src.staff!.staffIn(l.id)).map((m) => ({
@@ -169,24 +169,24 @@ const count = (issues: BuildIssue[], source: BuildIssue['source']) => issues.fil
  */
 export function planBlockers(canon: SolverCanon, built: BuildResult, readBlockers: PlanBlocker[] = []): PlanBlocker[] {
     const out: PlanBlocker[] = [...readBlockers];
-    const stop = (code: string, message: string) => out.push({ code, level: 'stop', message });
-    const note = (code: string, message: string) => out.push({ code, level: 'note', message });
+    const stop = (code: string, message: string, fix?: BlockerFix) => out.push({ code, level: 'stop', message, ...(fix ? { fix } : {}) });
+    const note = (code: string, message: string, fix?: BlockerFix) => out.push({ code, level: 'note', message, ...(fix ? { fix } : {}) });
     const have = (code: string) => out.some((b) => b.code === code);
 
-    if (canon.staff.length === 0 && !have('staff-off')) stop('no-staff', '교직원 명단에 선생님이 한 분도 없습니다');
-    if (canon.classes.length === 0 && !have('school-off')) stop('no-class', '학교 정보에 반이 하나도 없습니다 — 학교 정보에서 반을 먼저 넣어 주세요');
-    if (canon.subjects.length === 0 && !have('subjects-off')) stop('no-subject', '과목 목록이 비어 있습니다');
+    if (canon.staff.length === 0 && !have('staff-off')) stop('no-staff', '교직원 명단에 선생님이 한 분도 없습니다', 'staff');
+    if (canon.classes.length === 0 && !have('school-off')) stop('no-class', '학교 정보에 반이 하나도 없습니다 — 학교 정보에서 반을 먼저 넣어 주세요', 'school');
+    if (canon.subjects.length === 0 && !have('subjects-off')) stop('no-subject', '과목 목록이 비어 있습니다', 'subjects');
     // 🔴 시간 틀은 반의 학년마다 일과표를 읽어 만든다 — 학년 있는 반이 0개면 틀이 0개인 까닭은 일과표가 아니라 반이다(T-10fm)
     const gradedClass = canon.classes.some((c) => c.grade !== undefined);
-    if (canon.bell.length === 0) stop('no-bell', '일과표에 교시가 하나도 없습니다');
-    else if (built.input.specs.length === 0 && gradedClass) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다');
+    if (canon.bell.length === 0) stop('no-bell', '일과표에 교시가 하나도 없습니다', 'bell');
+    else if (built.input.specs.length === 0 && gradedClass) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다', 'bell');
     const noGrade = canon.classes.filter((c) => c.grade === undefined).length;
-    if (noGrade > 0) stop('no-grade', `학년이 정해지지 않은 반이 ${noGrade}개 있어 시간 틀을 못 맞춥니다`);
-    if (built.input.demands.length === 0) stop('no-demand', canon.demands.length === 0 ? '시수표에 수업 줄이 하나도 없습니다' : '시수표의 모든 줄에 빈 칸이 있어 쓸 수 있는 수업이 없습니다');
-    else if (built.input.demands.every((d) => d.count <= 0)) stop('zero-hours', '시수가 모두 0 시간입니다');
+    if (noGrade > 0) stop('no-grade', `학년이 정해지지 않은 반이 ${noGrade}개 있어 시간 틀을 못 맞춥니다`, 'school');
+    if (built.input.demands.length === 0) stop('no-demand', canon.demands.length === 0 ? '시수표에 수업 줄이 하나도 없습니다' : '시수표의 모든 줄에 빈 칸이 있어 쓸 수 있는 수업이 없습니다', 'demand');
+    else if (built.input.demands.every((d) => d.count <= 0)) stop('zero-hours', '시수가 모두 0 시간입니다', 'demand');
 
     const badDemand = count(built.issues, 'demand');
-    if (badDemand > 0 && built.input.demands.length > 0) note('bad-demand', `시수표에서 ${badDemand}줄은 빈 칸이 있거나 정본에서 찾을 수 없어 뺐습니다`);
+    if (badDemand > 0 && built.input.demands.length > 0) note('bad-demand', `시수표에서 ${badDemand}줄은 빈 칸이 있거나 정본에서 찾을 수 없어 뺐습니다`, 'demand');
     const badDuty = count(built.issues, 'duty');
     if (badDuty > 0) note('bad-duty', `복무 기록 ${badDuty}건은 편성 대상이 아니거나 시각을 몰라 일부 뺐습니다`);
     const badBlock = count(built.issues, 'block');

@@ -2,6 +2,7 @@
  * 일과표 순수 셈 — 화면 0 · 노드 0. 입력은 줄 값 배열(SlotRow). 잘못된 줄은 셈에서 조용히 빠지고, 이유는 checkRows 가 따로 말한다.
  *   🔴 같은 학년·같은 교시가 여러 줄이면(전 학년 줄 + 그 학년 줄) 시각이 이른 줄이 이긴다.
  */
+import { CMD } from './contracts/commands';
 import type { Clock, ClassSlot, PeriodRef, RowProblem, SlotRow, TimeRange } from './contracts/clock';
 
 /** 칸 키 — config 의 칸 정의와 rowOf 가 같은 값을 쓴다. */
@@ -88,4 +89,4 @@ export function slotsFor(grade: number): ClassSlot[] {
 
 export const subscribe = (fn: () => void): (() => void) => source?.subscribe(fn) ?? (() => { /* 일과표 없음 */ });
 
-export const clockApi: Clock = { version: 1, slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows, slotsFor, subscribe };
+export const clockApi: Clock = { version: 1, cmd: CMD, slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows, slotsFor, subscribe };

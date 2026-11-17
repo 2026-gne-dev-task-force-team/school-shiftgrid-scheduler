@@ -32,7 +32,10 @@ export const schoolPlugin = definePlugin({
                     component: 'Sheet',
                 },
             ],
-            commands: [{ id: 'school.openYear', title: '학년도 열기', icon: 'calendar', palette: false }],
+            commands: [
+                { id: 'school.open', title: '학년도·반 열기', icon: 'calendar' },
+                { id: 'school.openYear', title: '학년도 열기', icon: 'calendar', palette: false },
+            ],
             nodeTypes: schoolNodeTypes,
         },
     },
@@ -41,6 +44,8 @@ export const schoolPlugin = definePlugin({
         Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
     commands: {
+        // 학년도·반 화면(싱글턴) — 반이 하나도 없다는 편성 막힘에서 바로 여는 길
+        'school.open': (host: PluginHost) => { host.workspace.open('school.sheet', { where: 'center' }); },
         'school.openYear': (_host: PluginHost, ctx?: CommandContext) => { getKit()?.openList(ctx?.nodeId); },
     },
     nodeTypes: schoolNodeTypeImpl,
