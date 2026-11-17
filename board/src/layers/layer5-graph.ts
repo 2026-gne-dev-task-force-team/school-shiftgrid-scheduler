@@ -81,11 +81,37 @@ export function layoutGraph(mods: BpModule[], edges: BpEdge[]): Graph {
     paths.push({ from: e.from, to: e.to, label: e.label, d, lx: cubic(x1, x1, x2, x2, lo), ly: target, up })
   }
   const height = PAD * 2 + tiers.length * (BOX_H + ROW_GAP) - ROW_GAP
+  if (AVOID_LABEL_OVERLAP) spreadLabels(paths, [...boxes.values()])
   return { width, height, boxes, edges: paths }
 }
 
 /** 이름표 너비 어림(jsdom 엔 글자 재기가 없다) — 한글 11px · 나머지 6.6px. */
 export const labelWidth = (s: string) => [...s].reduce((w, c) => w + (/[ㄱ-힝]/.test(c) ? 11 : 6.6), 0) + 12
+
+/** 이름표 겹침 회피 켜짐 — 시험의 버그 심기가 끈다. */
+export const AVOID_LABEL_OVERLAP = true
+export const LABEL_H = 18
+type Rect = { x: number; y: number; w: number; h: number }
+const hit = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+/** 이름표 상자(좌상단 기준) — 그림과 같은 식: x = lx − w/2, y = ly − 9. */
+export const labelRect = (e: Pick<EdgePath, 'label' | 'lx' | 'ly'>): Rect => { const w = labelWidth(e.label); return { x: e.lx - w / 2, y: e.ly - LABEL_H / 2, w, h: LABEL_H } }
+/** 앞에서부터 놓으며, 먼저 놓인 이름표·상자와 겹치면 위아래로 한 칸(20px)씩 밀어 빈 자리를 찾는다. */
+export function spreadLabels(edges: EdgePath[], boxes: Box[]): void {
+  const placed: Rect[] = []
+  for (const e of edges) {
+    const base = e.ly
+    let chosen = base
+    for (let k = 0; k < 12; k++) {
+      const off = k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (LABEL_H + 2)
+      e.ly = base + off
+      const r = labelRect(e)
+      if (!placed.some((p) => hit(p, r)) && !boxes.some((b) => hit(b, r))) { chosen = e.ly; break }
+      if (k === 11) chosen = base
+    }
+    e.ly = chosen
+    placed.push(labelRect(e))
+  }
+}
 
 const CODE = /\b[PDF]\d+[a-z]?\b/g
 const codesIn = (s: string | null | undefined) => (s ?? '').match(CODE) ?? []

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { BP_EDGES, BP_MODULES, BP_OVERVIEW, DESIGN_MODULES } from '../data/blueprint-modules.ts'
-import { codeHits, crewByModule, layoutGraph, linkModules, stateOf } from './layer5-graph.ts'
+import { codeHits, crewByModule, labelRect, layoutGraph, linkModules, stateOf } from './layer5-graph.ts'
 import { layer5 } from './layer5-blueprint.ts'
 import type { Actor, BoardData, Module } from '../types.ts'
 
@@ -72,6 +72,16 @@ describe('층 배치 — 위 = 판, 아래 = 바닥', () => {
     const bs = [...g.boxes.values()]
     for (const b of bs) { expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x + b.w).toBeLessThanOrEqual(g.width); expect(b.y + b.h).toBeLessThanOrEqual(g.height) }
     for (const a of bs) for (const b of bs) if (a !== b) expect(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, `${a.id}/${b.id}`).toBe(true)
+  })
+})
+
+describe('이름표끼리 겹치지 않는다', () => {
+  it('이름표 상자 쌍 겹침 0 · 상자와도 0', () => {
+    const g = layoutGraph(BP_MODULES, BP_EDGES)
+    const rs = g.edges.map((e) => ({ id: `${e.from}>${e.to}`, r: labelRect(e) }))
+    const hit = (a: { x: number; y: number; w: number; h: number }, b: typeof a) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) expect(hit(rs[i].r, rs[j].r), `${rs[i].id} / ${rs[j].id}`).toBe(false)
+    for (const a of rs) for (const b of g.boxes.values()) expect(hit(a.r, b), `${a.id} / ${b.id}`).toBe(false)
   })
 })
 
