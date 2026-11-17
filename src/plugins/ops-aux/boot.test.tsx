@@ -10,7 +10,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Staff, StaffMember } from '../staff/contracts/staff';
 import { opsAuxPlugin } from './index';
 import { initAuxMigration, runAuxMigration } from './boot';
-import { LS_KEY, movedKeyOf } from './migrate';
+import { LS_KEY, STAFF_MOVED_KEY, movedKeyOf } from './migrate';
 import { MonthView } from './month/MonthPanel';
 import { demoAux, memoryAuxSource } from './source';
 
@@ -42,8 +42,10 @@ function world(staffOn = true) {
         onChange: () => ({ dispose() { /* 가짜 */ } }),
     } as unknown as Staff;
     const mods: Record<string, unknown> = { nodes, ...(staffOn ? { staff } : {}) };
-    const host = { modules: { use: (n: string) => mods[n] ?? null } } as unknown as PluginHost;
-    return { host, staff, members: () => [...map.values()].filter((n) => n.type === 'staff.member'), mods, fire: () => subs.forEach((f) => f()) };
+    const kv = new Map<string, unknown>();
+    const storage = { get: <T,>(k: string, f: T) => (kv.has(k) ? kv.get(k) as T : f), set: (k: string, v: unknown) => { kv.set(k, structuredClone(v)); } };
+    const host = { modules: { use: (n: string) => mods[n] ?? null }, storage } as unknown as PluginHost;
+    return { host, kv, staff, members: () => [...map.values()].filter((n) => n.type === 'staff.member'), mods, fire: () => subs.forEach((f) => f()) };
 }
 
 describe('근태 — 기동 때 이사', () => {
@@ -54,13 +56,16 @@ describe('근태 — 기동 때 이사', () => {
         opsAuxPlugin.lifecycle!.onActivate!(w.host);
         expect(w.members()).toHaveLength(2);
         expect(localStorage.getItem(LS_KEY)).toBe(part);
-        expect(localStorage.getItem(movedKeyOf())).not.toBeNull();
+        expect(w.kv.has(STAFF_MOVED_KEY)).toBe(true); // 표시는 호스트 저장에만
+        expect(localStorage.getItem(movedKeyOf())).toBeNull();
+        expect(localStorage.length).toBe(1);
         opsAuxPlugin.lifecycle!.onDeactivate!();
     });
     it('staff 가 꺼져 있으면 미루고 표시도 안 쓴다 — 켜진 뒤 한 번 돌고 두 번째는 건너뛴다', () => {
         localStorage.setItem(LS_KEY, JSON.stringify(demoAux()));
-        expect(runAuxMigration(world(false).host)).toBeNull();
-        expect(localStorage.getItem(movedKeyOf())).toBeNull();
+        const off = world(false);
+        expect(runAuxMigration(off.host)).toBeNull();
+        expect(off.kv.has(STAFF_MOVED_KEY)).toBe(false);
         const on = world();
         expect(runAuxMigration(on.host)).toBe(2);
         expect(runAuxMigration(on.host)).toBeNull();

@@ -5,21 +5,25 @@
  */
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
-import { LS_KEY, moveLocalAuxStaff, movedKeyOf } from './migrate';
+import { moveLocalAuxStaff, staffMoved } from './migrate';
+import { movePartToStorage } from './partmove';
 
-type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
+/** 옛 기기 저장소 — 읽기만 한다. */
+type StorageLike = Pick<Storage, 'getItem'>;
 
 /** 한 번 시도 — 미뤘거나 이미 옮겼으면 null, 돌았으면 새로 만든 수. */
-export function runAuxMigration(host: Pick<PluginHost, 'modules'>, storage: StorageLike = localStorage): number | null {
+export function runAuxMigration(host: Pick<PluginHost, 'modules' | 'storage'>, storage: StorageLike = localStorage): number | null {
+    // R17 — 옛 기기 저장소 → 호스트 저장(약속과 무관하게 먼저 한 번).
+    try { movePartToStorage(host.storage, storage); } catch { /* 저장소 막힘 — 이사 실패가 켜짐을 막지 않는다 */ }
     const nodes = host.modules.use<NodesApi>('nodes');
     const staffUp = () => host.modules.use('staff') !== null;
     if (!nodes || !staffUp()) return null;
-    try { if (storage.getItem(movedKeyOf(LS_KEY)) !== null) return null; } catch { /* 저장소 막힘 — 옮길 것도 없다 */ return null; }
-    return moveLocalAuxStaff(nodes, storage, staffUp);
+    if (staffMoved(host.storage, storage)) return null;
+    return moveLocalAuxStaff(nodes, storage, host.storage, staffUp);
 }
 
 /** 활성(index.ts)이 한 번 — 바로 시도하고, 노드가 바뀔 때마다 다시 시도한다(표시가 서면 조용히 지나간다). */
-export function initAuxMigration(host: PluginHost, storage?: StorageLike): Disposable {
+export function initAuxMigration(host: Pick<PluginHost, 'modules' | 'storage'>, storage?: StorageLike): Disposable {
     const attempt = () => { try { runAuxMigration(host, storage); } catch { /* 이사 실패가 켜짐을 막지 않는다 */ } };
     attempt();
     const sub = host.modules.use<NodesApi>('nodes')?.subscribe(attempt);

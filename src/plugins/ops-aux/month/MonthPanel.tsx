@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Field, Select, TextInput } from '../../../pane-ui-system';
 import { addExc, applyAuxOps, closeMonth, delExc, reopenMonth } from '../ops';
-import { defaultAuxSource, type AuxSource } from '../source';
+import { auxSourceFor, defaultAuxSource, type AuxSource, type PartStore } from '../source';
 import type { AuxExceptionKind, AuxPart, AuxViewer } from '../types';
 import { readAuxStaff } from '../migrate';
 import type { Staff } from '../../staff/contracts/staff';
@@ -11,8 +11,8 @@ const demoViewer: AuxViewer = { userId: 'u-a', roles: ['근태담당'] };
 const KINDS: AuxExceptionKind[] = ['결근', '지각', '조퇴', '추가', '정정'];
 
 /** 월 정산 최소 꼴 — 보조별 합계(정정 후 따로) · 마감/해제 · 예외 더하기. */
-export function MonthView({ source, viewer, initialYm, newId, staff: staffApi }: { source?: AuxSource; viewer?: AuxViewer; initialYm?: string; newId?: () => string; staff?: Staff }) {
-    const src = source ?? defaultAuxSource;
+export function MonthView({ source, viewer, initialYm, newId, staff: staffApi, store }: { store?: PartStore; source?: AuxSource; viewer?: AuxViewer; initialYm?: string; newId?: () => string; staff?: Staff }) {
+    const src = source ?? (store ? auxSourceFor(store) : defaultAuxSource);
     const v = viewer ?? demoViewer;
     const [ym, setYm] = useState(initialYm ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
     const [part, setPart] = useState<AuxPart | null>(null);

@@ -3,7 +3,7 @@ import { toHHMM, toMin } from '../../../shared/clock.ts';
 import { Button, Field, Select, TextInput } from '../../pane-ui-system';
 import { addDay, addStaff, applyAuxOps, delDay, deactivateStaff, judgeDay, reactivateStaff, reassignNeededCount } from './ops';
 import { MonthView } from './month/MonthPanel';
-import { defaultAuxSource, type AuxSource } from './source';
+import { auxSourceFor, defaultAuxSource, type AuxSource, type PartStore } from './source';
 import type { AuxPart, AuxViewer } from './types';
 import type { Staff } from '../staff/contracts/staff';
 import { readAuxStaff } from './migrate';
@@ -17,8 +17,8 @@ const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/
  *   🔴 R15 — staff(교직원 명단) 약속이 오면 명부는 거기서 읽는다(구분 = 보조인력 · 읽는 보기). 보조인력이 하나도 없으면 옛 근태 명부를 보인다.
  *     staff 로 읽는 동안 명부 고치기(쉬게 하기·되돌리기·넣기)는 교직원 명단에서 한다 — 여기선 감춘다.
  */
-export function AuxView({ source, viewer, initialDate, newId, staff: staffApi }: { source?: AuxSource; viewer?: AuxViewer; initialDate?: string; newId?: () => string; staff?: Staff }) {
-    const src = source ?? defaultAuxSource;
+export function AuxView({ source, viewer, initialDate, newId, staff: staffApi, store }: { store?: PartStore; source?: AuxSource; viewer?: AuxViewer; initialDate?: string; newId?: () => string; staff?: Staff }) {
+    const src = source ?? (store ? auxSourceFor(store) : defaultAuxSource);
     const v = viewer ?? demoViewer;
     const [date, setDate] = useState(initialDate ?? todayKst());
     const [rawPart, setPart] = useState<AuxPart | null>(null);
@@ -101,7 +101,7 @@ export function AuxView({ source, viewer, initialDate, newId, staff: staffApi }:
 }
 
 /** 탭 둘 — 배정(AuxView) · 월 정산(MonthView). */
-export function AuxPanel({ source, viewer, staff }: { source?: AuxSource; viewer?: AuxViewer; staff?: Staff } = {}) {
+export function AuxPanel({ source, viewer, staff, store }: { store?: PartStore; source?: AuxSource; viewer?: AuxViewer; staff?: Staff } = {}) {
     const [tab, setTab] = useState<'assign' | 'month'>('assign');
     useEffect(() => onAssignTabRequest(() => setTab('assign')), []);
     return (
@@ -110,7 +110,7 @@ export function AuxPanel({ source, viewer, staff }: { source?: AuxSource; viewer
                 <Button variant={tab === 'assign' ? 'solid' : 'ghost'} onClick={() => setTab('assign')}>배정</Button>
                 <Button variant={tab === 'month' ? 'solid' : 'ghost'} onClick={() => setTab('month')}>월 정산</Button>
             </div>
-            {tab === 'assign' ? <AuxView source={source} viewer={viewer} staff={staff} /> : <MonthView source={source} viewer={viewer} staff={staff} />}
+            {tab === 'assign' ? <AuxView source={source} viewer={viewer} staff={staff} store={store} /> : <MonthView source={source} viewer={viewer} staff={staff} store={store} />}
         </div>
     );
 }

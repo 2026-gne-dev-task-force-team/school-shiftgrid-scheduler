@@ -1,14 +1,14 @@
 /** 상태바 배지 — 오늘부터 14일 안 「재배정 필요」 건수. 0건이면 숨긴다(경고등은 있을 때만). 자료가 바뀌면 다시 센다. */
 import { useEffect, useState } from 'react';
 import { reassignNeededCount } from './ops';
-import { defaultAuxSource, type AuxSource } from './source';
+import { auxSourceFor, defaultAuxSource, type AuxSource, type PartStore } from './source';
 import { isImeEnter } from '../../pane-ui-system';
 
 const todayKst = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
 
-export interface AuxStatusProps { source?: AuxSource; today?: string; onOpen?: () => void }
-export function AuxStatus({ source, today, onOpen }: AuxStatusProps = {}) {
-    const src = source ?? defaultAuxSource;
+export interface AuxStatusProps { store?: PartStore; source?: AuxSource; today?: string; onOpen?: () => void }
+export function AuxStatus({ source, store, today, onOpen }: AuxStatusProps = {}) {
+    const src = source ?? (store ? auxSourceFor(store) : defaultAuxSource);
     const [n, setN] = useState(0);
     useEffect(() => {
         let live = true;
