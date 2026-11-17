@@ -1,7 +1,7 @@
 // Deno 진입점(얇은 자리) — 판정은 handler.ts. 이 파일은 Node 시험에서 import 하지 않는다(tsc 만 본다).
 // supabase-js 는 Deno 의 `npm:` 지정자로 실행 때 불러온다(Node tsc 가 해석하지 않게 문자열 변수로).
 // ⚠️ 그날 입력(loadDay·loadJudge — 덩어리 `doc` 열어 조립)은 아직 없다 → reg-options·register·:id·claim 은 503 `day_unavailable`.
-// ⚠️ register 쓰기는 PostgREST 두 걸음(조건부 delete → insert)이라 한 트랜잭션이 아니다 — RPC 함수는 마이그레이션 몫.
+// register 쓰기(조건부 delete → insert)는 RPC `sub_register`(마이그레이션 0002) 한 트랜잭션 — rows.ts `rpcRegister`.
 
 import type { AuditStore } from '../_shared/audit.ts';
 import type { AuthClient } from '../_shared/auth.ts';
@@ -11,7 +11,7 @@ import { openText, type Bytes } from '../_shared/crypto/envelope.ts';
 import { ensureKeys } from '../_shared/crypto/keys.ts';
 import { HttpError } from '../_shared/errors.ts';
 import { subHandler, type SubStore } from './handler.ts';
-import type { DbSlot } from './rows.ts';
+import { rpcRegister, type DbSlot, type RpcDb } from './rows.ts';
 
 interface DenoLike {
     env: { get(name: string): string | undefined };
@@ -31,7 +31,7 @@ interface Q<T> extends Res<T> {
     delete(): Q<T>;
     update(v: object): Q<T>;
 }
-interface Client { from(t: string): Q<unknown>; auth: AuthClient['auth'] }
+interface Client extends RpcDb { from(t: string): Q<unknown>; auth: AuthClient['auth'] }
 
 const SUPABASE_JS = 'npm:@supabase/supabase-js@2';
 const deno = (globalThis as unknown as { Deno: DenoLike }).Deno;
@@ -60,19 +60,8 @@ const store: SubStore = {
         if (error) throw new Error('sub_slot 읽기 실패');
         return (data as RawSlot[]).map(fromRaw);
     },
-    async register(rows, replace) {
-        for (const r of replace) {
-            const { data, error } = await db.from('sub_slot').delete().eq('id', r.id).eq('updated_at', r.updatedAt).select('id');
-            if (error) throw new Error('sub_slot 지우기 실패');
-            if ((data as unknown[]).length !== 1) return 'conflict';
-        }
-        const { error } = await db.from('sub_slot').insert(rows.map((r) => ({
-            ...r, body_ct: toHex(r.body_ct), take_ct: r.take_ct ? toHex(r.take_ct) : null,
-        })));
-        if (error?.code === '23505') return 'conflict';
-        if (error) throw new Error('sub_slot 쓰기 실패');
-        return 'ok';
-    },
+    // 조건부 지우기 → 넣기 → (감사) 를 RPC `sub_register` 한 트랜잭션으로(마이그레이션 0002)
+    register: rpcRegister(db),
     async get(pid, id) {
         const { data, error } = await db.from('sub_slot').select(COLS).eq('project_id', pid).eq('id', id).maybeSingle();
         if (error) throw new Error('sub_slot 읽기 실패');

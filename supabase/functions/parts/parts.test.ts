@@ -186,6 +186,21 @@ describe('archive=1 — doc@<n> 보관', () => {
         expect([...store.rows.keys()]).toEqual(['p1/doc']);
         expect((await errOf(await put('ops.rooms', { fmt: 1, body: [] }, { q: '?archive=1' }))).code).toBe('archive_only_doc');
     });
+    it('저장소에 putAtomic(RPC parts_put)이 있으면 한 번에 넘긴다 · 두 걸음은 안 부른다 · 거짓이면 412', async () => {
+        await put('doc', { fmt: 1, body: 'v1' });
+        const seen: Parameters<NonNullable<PartsStore['putAtomic']>>[1][] = [];
+        let answer = true;
+        store.putAtomic = async (_pid, w) => (seen.push(w), answer);
+        store.putArchive = async () => { throw new Error('두 걸음 길을 탔다'); };
+        store.update = async () => { throw new Error('두 걸음 길을 탔다'); };
+        const res = await put('doc', { fmt: 1, body: 'v2' }, { ifMatch: `"${EPOCH}.1"`, q: '?archive=1' });
+        expect(res.status).toBe(200);
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatchObject({ part: 'doc', epoch: EPOCH, from: 1, archive: { part: 'doc@1', version: 1 } });
+        expect(await openPart(ring, 'p1', 'doc@1', 1, seen[0]!.archive!.ct)).toEqual({ fmt: 1, body: 'v1' });
+        answer = false; // RPC 안에서 판이 어긋남(경합)
+        expect((await put('doc', { fmt: 1, body: 'v3' }, { ifMatch: `"${EPOCH}.1"` })).status).toBe(412);
+    });
 });
 
 describe('GET — 조각 전부 · ?known= 바뀐 것만 · ops.aux 가림', () => {

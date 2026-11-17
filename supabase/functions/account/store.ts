@@ -221,6 +221,8 @@ export function supabaseStore(db: DbClient): AccountStore {
             if (patch.active !== undefined) row.active = patch.active;
             const r = await db.from('project_members').update(row).eq('project_id', projectId).eq('user_id', userId).select('user_id');
             if (r.error?.code === '23505' && /person_ref/.test(r.error.message ?? '')) return 'person_taken';
+            // 마이그레이션 0002 트리거 — 판정(judgeMemberPatch)과 쓰기 사이에 다른 관리자가 빠진 경합을 DB 가 막았다
+            if (r.error?.code === 'PT409' && /last_admin/.test(r.error.message ?? '')) return 'last_admin';
             const d = must(r, 'project_members 고치기');
             return Array.isArray(d) && d.length === 1 ? 'ok' : 'missing';
         },
