@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
-import { Badge, Button, EmptyState } from '../../pane-ui-system';
+import { Badge, Button, EmptyState, Segmented } from '../../pane-ui-system';
 import type { Severity } from '../../../shared/check/index.ts';
 import { runCheck, isBundleText, type CheckView } from './run';
 import { plainText, foldRows } from './plain';
+import type { PluginHost } from '../../pane-ui-system/plugin';
+import { PlanCheck } from './PlanCheck';
 import { adoptBundle } from '../../../shared/bundle/store.ts';
 
 const MARK: Record<Severity, string> = { error: '❌', warn: '⚠️', info: 'ℹ️' };
@@ -34,14 +36,30 @@ export function CheckResult({ view }: { view: CheckView }) {
     );
 }
 
-export function CheckPanel() {
+type Tab = 'ops' | 'plan';
+
+/** 두 탭 — 「운영 점검」(파일 검사 · 지금 것 그대로) · 「편성안 점검」. */
+export function CheckPanel({ host }: { host: PluginHost }) {
+    const [tab, setTab] = useState<Tab>('ops');
+    return (
+        <div className="p-4 flex flex-col gap-3 max-w-3xl">
+            <Segmented<Tab>
+                label="점검 종류" value={tab} onChange={setTab}
+                options={[{ value: 'ops', label: '운영 점검' }, { value: 'plan', label: '편성안 점검' }]}
+            />
+            {tab === 'ops' ? <OpsCheck /> : <PlanCheck host={host} />}
+        </div>
+    );
+}
+
+export function OpsCheck() {
     const [view, setView] = useState<CheckView | null>(null);
     const [name, setName] = useState('');
     const [text, setText] = useState('');
     const [applied, setApplied] = useState('');
     const fileRef = useRef<HTMLInputElement>(null);
     return (
-        <div className="p-4 flex flex-col gap-3 max-w-3xl">
+        <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
                 <Button onClick={() => fileRef.current?.click()}>검사할 파일 고르기</Button>
                 {/* oxlint-disable-next-line react/forbid-elements -- 숨은 파일 고르기 입력 */}

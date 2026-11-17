@@ -12,6 +12,7 @@
  *   - 경계에서 toWeekday·toDayIndex 한 쌍으로만 바꾼다(엔진 안은 안 고친다).
  */
 import type { PluginHost } from '../../../pane-ui-system/plugin';
+import type { Placement } from '../../timetable-plans/contracts/plans';
 import type { Doc } from '../types/doc';
 import { migrateDoc } from '../types/doc';
 import type {
@@ -35,12 +36,40 @@ export type {
     Move, MovePreview, SolveOptions, SolveProgress, SolveResult,
 };
 
+/** 편성안 점검 결과 — evaluate 가 돌려준다. 점수는 높을수록 좋다(100 에서 필수 위반 하나당 10 · 권장 위반 하나당 1 을 깎음, 0 밑 없음). */
+export interface PlanEvaluation {
+    violations: Violation[];
+    /** 어긴 필수 규칙 수 · 어긴 권장 규칙 수. */
+    hard: number;
+    soft: number;
+    score: number;
+    diagnosis: Diagnosis;
+    /** 수업 요구(시수)별 채움 — remaining>0 모자람 · <0 넘침. */
+    demands: DemandStatus[];
+}
+
+/** 편성안 점검 결과 — evaluate 가 돌려준다. 점수는 높을수록 좋다(100 에서 필수 위반 하나당 10 · 권장 벌점 합을 깎음, 0 밑 없음). */
+export interface PlanEvaluation {
+    violations: Violation[];
+    /** 어긴 필수 규칙 수 · 어긴 권장 규칙 수. */
+    hard: number;
+    soft: number;
+    score: number;
+    diagnosis: Diagnosis;
+    /** 수업 요구(시수)별 채움 — remaining>0 모자람 · <0 넘침. */
+    demands: DemandStatus[];
+}
+
 /** 「solver」 약속 모듈 — 함수 서명만. 뜻은 engine/api.ts 의 함수 목록 주석과 같다. */
 export interface Solver {
     readonly version: 1;
     buildContext(input: SolverInput): EngineContext;
     evaluateAll(input: SolverInput): Violation[];
     diagnose(input: SolverInput): Diagnosis;
+    /** 편성안 배치(Placement)를 입력에 얹어 위반 목록·점수·진단·시수 채움을 낸다. 입력은 readInput 이 주고 배치만 바뀐다(읽기만). */
+    evaluate(input: SolverInput, placements: readonly Placement[]): PlanEvaluation;
+    /** 편성안 배치(Placement)를 입력에 얹어 위반 목록·점수·진단·시수 채움을 낸다. 입력은 readInput 이 주고, 배치만 바뀐다(읽기만). */
+    evaluate(input: SolverInput, placements: readonly Placement[]): PlanEvaluation;
     demandStatus(input: SolverInput): DemandStatus[];
     candidateCells(input: SolverInput, assignmentId: string): CellVerdicts;
     previewMove(input: SolverInput, move: Move): MovePreview;
