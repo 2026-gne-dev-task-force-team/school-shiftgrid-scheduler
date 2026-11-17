@@ -9,6 +9,7 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    supports: { staff: '^0.1' },
     icon: 'users',
     description: '보조 인력 명부와 날짜별 배정을 보고, 근태담당이 고칩니다.',
     about: {

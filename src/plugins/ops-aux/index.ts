@@ -5,6 +5,7 @@
 import { createElement, type FunctionComponent } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
+import type { Staff } from '../staff/contracts/staff';
 import { manifest } from './manifest';
 import { AuxPanel } from './AuxPanel';
 import { requestAssignTab } from './auxTab';
@@ -22,7 +23,8 @@ export const opsAuxPlugin = definePlugin({
             ribbon: [{ commandId: 'ops-aux.open', icon: 'users', order: 11 }],
         },
     },
-    components: { Aux: () => createElement(AuxPanel) },
+    // 교직원 명단(staff)이 켜져 있으면 명부를 거기서 읽는다(없으면 옛 근태 명부).
+    components: { Aux: ({ host }: { host: PluginHost }) => createElement(AuxPanel as FunctionComponent<{ staff?: Staff }>, { staff: host.modules.use<Staff>('staff') ?? undefined }) },
     renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { onOpen: () => { host.commands.run('ops-aux.open'); requestAssignTab(); } }) },
     commands: { 'ops-aux.open': (host: PluginHost) => { host.workspace.open('ops-aux.aux', { where: 'center' }); } },
 });
