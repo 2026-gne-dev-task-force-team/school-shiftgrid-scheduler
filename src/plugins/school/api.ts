@@ -5,6 +5,7 @@ import type { CollectionItem } from '../collection/contracts/collection';
 import type { School, SchoolClass, SchoolInfo, SchoolLevel } from './contracts/school';
 import type { Disposable } from '../../pane-ui-system/plugin';
 import { getKit, getNodes, getRv, liveSchoolId } from './nodes';
+import { CMD } from './contracts/commands';
 import { LEVEL_OPTIONS } from './config';
 
 const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
@@ -31,6 +32,7 @@ function toClass(it: CollectionItem): SchoolClass {
 
 export const schoolApi: School = {
     version: 1,
+    cmd: CMD,
     school: () => {
         const id = liveSchoolId(); const n = id ? getNodes()?.get(id) : undefined;
         if (!n) return undefined;

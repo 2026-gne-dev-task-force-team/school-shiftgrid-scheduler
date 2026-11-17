@@ -51,12 +51,12 @@ const BELL = [
 ];
 const DEMAND = [row('m1', { f_teacher: ['t1'], f_class: ['c1'], f_subject: ['sub1'], f_hours: 2 })];
 
-function makeHost(opts: { demand: typeof DEMAND; plans: { savePlan: (p: Plan) => string; cmd?: { open: string } } | null; run: (id: string) => boolean }): PluginHost {
+function makeHost(opts: { demand: typeof DEMAND; plans: { savePlan: (p: Plan) => string; cmd?: { open: string } } | null; run: (id: string) => boolean; mods?: Record<string, unknown> }): PluginHost {
     const nodes = {
         liveByType: (t: string) => (t === NODE_TYPES.bellSlot ? BELL : t === NODE_TYPES.demandRow ? opts.demand : []),
         subscribe: () => ({ dispose: () => {} }),
     };
-    const mods: Record<string, unknown> = { nodes, staff, school, subjects, rooms, clock: clockApi, duty: dutyApi, plans: opts.plans };
+    const mods: Record<string, unknown> = { nodes, staff, school, subjects, rooms, clock: clockApi, duty: dutyApi, plans: opts.plans, ...opts.mods };
     return {
         modules: { use: (n: string) => mods[n] ?? null },
         commands: { run: opts.run },
@@ -103,6 +103,25 @@ describe('자동 편성 화면', () => {
         expect(container.textContent).toContain('시수표에 수업 줄이 하나도 없습니다');
         act(() => { q('solver-start')!.click(); });
         expect(w.posted).toEqual([]);
+    });
+
+    it('막힘마다 「열기」 단추가 있고 누르면 그 꾸러미 약속의 명령을 부른다(반 없음 → 학교 정보 · 시수표 빔 → 시수표) — T-10ft', () => {
+        const run = vi.fn(() => true);
+        const emptySchool = { ...school, classesIn: () => [], cmd: { open: 'school-open' } };
+        const host = makeHost({ demand: [], plans: { savePlan: () => 'p1' }, run, mods: { school: emptySchool, 'demand-table': { version: 1, cmd: { open: 'demand-open' } } } });
+        act(() => { root.render(<SolverTab host={host} createWorker={() => new FakeWorker()} />); });
+        act(() => { q('solver-fix-no-class')!.click(); });
+        expect(run).toHaveBeenLastCalledWith('school-open');
+        expect(q('solver-fix-no-class')!.textContent).toBe('학교 정보 열기');
+        act(() => { q('solver-fix-no-demand')!.click(); });
+        expect(run).toHaveBeenLastCalledWith('demand-open');
+    });
+
+    it('고칠 꾸러미가 꺼져 있으면 단추를 안 단다', () => {
+        const host = makeHost({ demand: [], plans: { savePlan: () => 'p1' }, run: () => true });
+        act(() => { root.render(<SolverTab host={host} createWorker={() => new FakeWorker()} />); });
+        expect(container.textContent).toContain('시수표에 수업 줄이 하나도 없습니다');
+        expect(q('solver-fix-no-demand')).toBeNull();
     });
 
     it('편성안 플러그인이 꺼져 있으면 단추가 막힌다', () => {

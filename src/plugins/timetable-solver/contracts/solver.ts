@@ -173,7 +173,14 @@ export interface BuildIssue { source: 'demand' | 'duty' | 'block'; id: string; r
  * 편성 막힘 한 줄 — 정본이 비어 편성이 안 되는 까닭을 선생님 말로. (⛔ 위 「편성 막힘 자료(SolverBlockRow)」와 다른 것 — 그건 「이 칸은 안 된다」는 제약이고 이건 「왜 못 짜나」다.)
  *   stop = 이대로는 편성이 안 됨 · note = 편성은 되지만 알아 둘 것.
  */
-export interface PlanBlocker { code: string; level: 'stop' | 'note'; message: string }
+export interface PlanBlocker {
+    code: string; level: 'stop' | 'note'; message: string;
+    /** 고칠 화면 — 화면이 이 뜻을 그 꾸러미 약속의 명령으로 바꿔 「열기」 단추를 단다(없으면 단추 없음). */
+    fix?: BlockerFix;
+}
+
+/** 막힘을 고치러 가는 화면 — 학교 정보(반)·일과표·교직원·과목·시수표. */
+export type BlockerFix = 'school' | 'bell' | 'staff' | 'subjects' | 'demand';
 
 /** 다시-내보내기 — v1 파일 읽기(legacy 구현 그대로). 약속 값 0 원칙의 예외 하나: 구현을 옮기지 않고 가리키기만 한다. */
 export { migrateDoc };

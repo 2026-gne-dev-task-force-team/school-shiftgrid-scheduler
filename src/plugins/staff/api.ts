@@ -6,6 +6,7 @@
 import type { CollectionItem } from '../collection/contracts/collection';
 import type { Staff, StaffMember } from './contracts/staff';
 import type { Disposable } from '../../pane-ui-system/plugin';
+import { CMD } from './contracts/commands';
 import { getKit } from './nodes';
 
 /** 이 변환이 이름 붙여 따로 싣는 칸 — 나머지 사용자 칸은 fields(보조 칸)로 간다. */
@@ -36,6 +37,7 @@ function toMember(it: CollectionItem): StaffMember {
 
 export const staffApi: Staff = {
     version: 1,
+    cmd: CMD,
     lists: () => getKit()?.lists() ?? [],
     staffIn: (listId) => getKit()?.itemsIn(listId).map(toMember) ?? [],
     member: (id) => { const it = getKit()?.itemOf(id); return it ? toMember(it) : undefined; },

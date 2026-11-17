@@ -2,6 +2,7 @@
  * 🔴 약속 「subjects」 0.1.0 — **과목 목록**의 타입 정의 자리(값 0). 런타임 실체는 제공자 플러그인(subjects) 안에 산다.
  *   ⛔ 시수 계산 같은 기능은 없다. 읽는 칸은 이름·약칭·메모 + 구분(kind) — 색·특별실은 사용자 칸이라 약속에 안 싣는다(ext 자리만).
  */
+import type { CMD } from './commands';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
 /** 구분 — 담임 과목 · 전담 과목 · 공통. */
@@ -42,6 +43,8 @@ export interface SubjectPatch {
 /** 과목 표면 — 다른 플러그인이 과목 목록을 읽고 쓰는 자리. */
 export interface Subjects {
     version: 1;
+    /** 명령 id 상수 — host.commands.run(<약속>.cmd.open). */
+    readonly cmd: Readonly<Record<keyof typeof CMD, string>>;
     lists(): readonly SubjectList[];
     subjectsIn(listId: string): readonly Subject[];
     subject(id: string): Subject | undefined;

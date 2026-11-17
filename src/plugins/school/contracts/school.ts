@@ -3,6 +3,7 @@
  *   ⛔ 값(const·function) 0 — 런타임 실체는 제공자 플러그인(school) 안에 산다. 소비자는 host.modules.use<School>('school').
  *   ⛔ 과목·담임·나이스는 이 약속에 없다(1차 범위 밖). ⛔ 공개 레포 — 샘플·테스트엔 지어낸 이름만.
  */
+import type { CMD } from './commands';
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
 export type SchoolLevel = 'elementary' | 'middle' | 'high' | 'special';
@@ -39,6 +40,8 @@ export interface SchoolClass {
 
 export interface School {
     version: 1;
+    /** 명령 id 상수 — host.commands.run(<약속>.cmd.open). */
+    readonly cmd: Readonly<Record<keyof typeof CMD, string>>;
     /** 살아 있는 학교 — 없으면 undefined. */
     school(): SchoolInfo | undefined;
     years(): readonly SchoolYear[];

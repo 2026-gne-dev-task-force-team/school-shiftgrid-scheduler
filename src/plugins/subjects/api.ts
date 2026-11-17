@@ -4,6 +4,7 @@
 import type { CollectionItem } from '../collection/contracts/collection';
 import type { Subjects, Subject, SubjectKind } from './contracts/subjects';
 import type { Disposable } from '../../pane-ui-system/plugin';
+import { CMD } from './contracts/commands';
 import { getKit } from './nodes';
 
 const KINDS: readonly string[] = ['homeroom', 'subject', 'common'];
@@ -19,6 +20,7 @@ function toSubject(it: CollectionItem): Subject {
 }
 
 export const subjectsApi: Subjects = {
+    cmd: CMD,
     version: 1,
     lists: () => getKit()?.lists() ?? [],
     subjectsIn: (listId) => getKit()?.itemsIn(listId).map(toSubject) ?? [],

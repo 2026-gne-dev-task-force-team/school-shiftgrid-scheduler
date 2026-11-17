@@ -12,6 +12,7 @@ import type { SolveProgress } from '../engine/api';
 import type { PlanBlocker } from '../contracts/solver';
 import type { Plans } from '../../timetable-plans/contracts/plans';
 import { buildOfHost, blockersOfHost, stopsOf } from '../BlockersBadge';
+import { fixCmdOf, FIX_LABEL } from '../fix-cmd';
 import { candidateToPlan } from '../plan-from-solve';
 import { startSolve, SolveStopped, type SolveJob, type WorkerFactory } from '../solve-runner';
 
@@ -26,6 +27,13 @@ type Phase =
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const planName = (d: Date) => `자동 편성 ${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+/** 막힘 옆 「열기」 — 고칠 화면이 있고 그 꾸러미가 켜져 있을 때만. */
+function FixButton({ host, blocker }: { host: PluginHost; blocker: PlanBlocker }) {
+    const cmd = blocker.fix ? fixCmdOf(host, blocker.fix) : undefined;
+    if (!blocker.fix || !cmd) return null;
+    return <Button size="sm" data-testid={`solver-fix-${blocker.code}`} onClick={() => host.commands.run(cmd)}>{FIX_LABEL[blocker.fix]}</Button>;
+}
 
 export function SolverTab({ host, createWorker }: { host: PluginHost; createWorker?: WorkerFactory }) {
     const [blockers, setBlockers] = useState<PlanBlocker[]>([]);
@@ -73,8 +81,9 @@ export function SolverTab({ host, createWorker }: { host: PluginHost; createWork
                 <section aria-label="편성 막힘" className="border border-line rounded p-2">
                     <ul className="flex flex-col gap-1">
                         {blockers.map((b) => (
-                            <li key={b.code} className={b.level === 'stop' ? 'text-bad' : 'text-muted'}>
-                                {b.level === 'stop' ? '막힘 · ' : '참고 · '}{b.message}
+                            <li key={b.code} className={`flex items-center gap-2 ${b.level === 'stop' ? 'text-bad' : 'text-muted'}`}>
+                                <span>{b.level === 'stop' ? '막힘 · ' : '참고 · '}{b.message}</span>
+                                <FixButton host={host} blocker={b} />
                             </li>
                         ))}
                     </ul>
