@@ -5,7 +5,7 @@ import { layer5 } from './layer5-blueprint.ts'
 import type { Actor, BoardData, Module } from '../types.ts'
 
 const M = (id: string, parent: string | null, note: string | null = null, task_id: string | null = null): Module => ({ id, name: id, parent, state: 'build', task_id, note })
-const mods = [M('h', null), M('r1', 'h', 'P12 · R53'), M('r2', 'h', 'P13 · R54'), M('r3', 'h', null, 'tX')]
+const mods = [M('h', null), M('r1', 'h', 'P12 · R53'), M('r2', 'h', 'P13 · R54'), M('r3', 'h', 'P5 · 칸 PUT', 'tX')]
 const tasks = [{ id: 'tX', title: '칸 연결' }, { id: 'T-8g', title: 'T-8g (R54) 붙이기' }, { id: 'zz', title: '엉뚱한 일' }]
 const A = (id: string, task_id: string | null, state: Actor['state'] = 'work'): Actor => ({
   id, parent_id: null, kind: 'helper', name: '화면 ' + id, hue: 0, eye: 'amber', prop: '', dept: 'make', team: '화면팀', role: '화면', state,
