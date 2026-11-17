@@ -9,6 +9,8 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    // 달력 프리셋 「학사」 등록·옛 자료 이사(T-10fb)가 쓰는 약속 — 없어도 켜지고(이사만 미룬다), 오면 붙는다.
+    supports: { calendar: '^0.2', nodes: '^0.1' },
     icon: 'calendar',
     description: '학사 일정과 시간표 변경을 보고, 역할에 맞게 넣고 지웁니다.',
     about: {
