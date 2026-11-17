@@ -90,4 +90,13 @@ describe('프리셋 beforeSave — 방 칸·거절', () => {
         const f = (ROOM_BOOKING_PRESET.baseFields as (s: { id: string; data: Record<string, unknown> }) => { key: string; type: string }[])({ id: 's', data: { roomListId: 'l' } });
         expect(f.map((x) => [x.key, x.type])).toEqual([['f_room', 'relation'], ['f_headcount', 'number'], ['f_booker', 'text']]);
     });
+
+    it('방 칸이 방이 없을 때 안내 글과 「특별실 관리 열기」(ops-room cmd.openManage)를 넘긴다', () => {
+        const cfgOf = () => (ROOM_BOOKING_PRESET.baseFields as (s: { id: string; data: Record<string, unknown> }) => { config?: unknown }[])({ id: 's', data: { roomListId: 'l' } })[0].config;
+        roomBookingPlugin.lifecycle!.onActivate!({ modules: { use: (n: string) => (n === 'ops-room' ? { version: 1, cmd: { openManage: 'ops-room.open-manage' } } : null) }, notify } as unknown as PluginHost);
+        expect(cfgOf()).toMatchObject({ emptyHint: '특별실 관리에서 방을 먼저 더해 주세요', emptyAction: { label: '특별실 관리 열기', cmd: 'ops-room.open-manage' } });
+        roomBookingPlugin.deactivate!();
+        expect(cfgOf()).toMatchObject({ emptyHint: '특별실 관리에서 방을 먼저 더해 주세요' });
+        expect((cfgOf() as { emptyAction?: unknown }).emptyAction).toBeUndefined();
+    });
 });

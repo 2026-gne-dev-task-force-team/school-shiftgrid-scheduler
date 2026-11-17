@@ -86,7 +86,7 @@ describe('방 예약 프리셋', () => {
         const rb = (getNodesApi()!.get(b)!.data as { roomListId: string }).roomListId;
         expect(rb).toBe(ra);
         expect(getNodesApi()!.liveByType('rooms.list')).toHaveLength(1);
-        expect(target(a)).toEqual({ target: { kind: 'db', nodeId: ra }, many: false });
+        expect(target(a)).toMatchObject({ target: { kind: 'db', nodeId: ra }, many: false });
         expect(baseFieldsOf(a)[0]).toMatchObject({ key: 'f_room', label: '방', type: 'relation' });
     });
 

@@ -12,6 +12,7 @@
  * 📌 0.1 → 0.2(손님 0 이라 깰 수 있는 마지막 기회였다): FieldType 닫힌 유니온 → string(칸 타입 레지스트리) · RecordField.config ·
  *   RecordViewState → ViewDef 로 흡수(검색어만 잠시 상태) · props views·onViewsChange·onPaste·onConvertField·titleKey 추가 ·
  *   모듈 표면에 fieldTypes·schema 추가 · version 2.
+ * 📌 T-10gf: relation 칸 config 에 선택 칸 emptyHint·emptyAction 덧붙임(RelationEmptyConfig) — 안 주면 옛 문구라 하위 호환, 약속 버전은 그대로 0.2 / 2.
  */
 import type { ComponentType, ReactElement, ReactNode } from 'react';
 import type { Disposable, IconName, PluginHost, PeekHandle, PropertiesPaneProps } from '../../../pane-ui-system/plugin';
@@ -22,6 +23,15 @@ import type { DatePattern } from '../../../pane-ui-system/date-pattern';
 export type BuiltinFieldType = 'text' | 'number' | 'select' | 'multi' | 'date' | 'check';
 /** 칸 종류 이름 — 레지스트리의 키. */
 export type FieldType = string;
+
+/**
+ * relation 칸 config 에 얹을 수 있는 「가리킬 항목이 없을 때」 안내(둘 다 선택 — 없으면 「가리킬 컬렉션에 항목이 없어요」 그대로).
+ *   emptyAction.cmd 는 약속이 내놓은 명령 값(예: ops-room 의 cmd.openManage)을 그대로 넘긴다 — 문자열 id 를 코드에 박지 않는다.
+ */
+export interface RelationEmptyConfig {
+    emptyHint?: string;
+    emptyAction?: { label: string; cmd: string };
+}
 
 /** select·multi 가 고를 수 있는 값 하나. color 는 알약 색 이름(colors.ts 의 PILL_COLORS). */
 export interface FieldOption {

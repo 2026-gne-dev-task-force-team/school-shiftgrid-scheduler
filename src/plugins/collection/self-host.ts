@@ -9,5 +9,8 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 let selfHost: PluginHost | null = null;
 export function bindCollectionHost(host: PluginHost | null): void { selfHost = host; }
 
+/** 약속이 넘겨준 명령 값을 컬렉션 자기 host 로 돌린다(꾸러미가 꺼져 있으면 false) — 칸 부품엔 host 가 안 내려와서. */
+export function runHostCommand(cmd: string): boolean { return selfHost ? selfHost.commands.run(cmd) : false; }
+
 /** 모듈을 받을 host — 켜져 있으면 늘 컬렉션 자기 host. 꾸러미를 안 켜고 부품만 그리는 시험에서만 넘어온 host 로 버틴다. */
 export function moduleHost(caller: PluginHost): PluginHost { return selfHost ?? caller; }
