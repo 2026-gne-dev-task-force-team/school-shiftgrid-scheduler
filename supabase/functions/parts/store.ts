@@ -2,16 +2,9 @@
 // 판정 코드는 PartsStore 꼴만 안다. supabase-js(service_role) 에 얹는 어댑터는 supabaseStore — 클라이언트는 주입받는다.
 // 조각 평문 = gzip(JSON `{fmt, body}`)(④ 2절) → 봉투(_shared/crypto). AAD 에 조각 이름·판 번호가 들어간다.
 
-import { aadPart } from '../_shared/crypto/aad.ts';
 import type { DbAudit } from '../_shared/audit.ts';
-import { open, seal, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
-
-export interface PartRow {
-    part: string;
-    version: number;
-    sizePlain: number;
-    ct: Bytes;
-}
+import type { Bytes } from '../_shared/crypto/envelope.ts';
+import { byteaToHex, PART_COLS, readPartRow, toPartRow, type PartDbRow, type PartRow } from '../_shared/doc.ts';
 
 export interface PartsStore {
     /** projects.data_epoch — 프로젝트가 없으면 null */
@@ -45,60 +38,10 @@ export interface AtomicPut {
     audit?: DbAudit | DbAudit[] | null;
 }
 
-// ── 평문 ↔ 봉투 ─────────────────────────────────────────────
-
-export interface PartPlain {
-    fmt: number;
-    body: unknown;
-}
-
-async function pipe(data: Bytes, stream: CompressionStream | DecompressionStream): Promise<Bytes> {
-    const out = new Response(new Blob([data]).stream().pipeThrough(stream));
-    return new Uint8Array(await out.arrayBuffer());
-}
-
-const enc = new TextEncoder();
-const dec = new TextDecoder();
-
-/** `{fmt, body}` → gzip → 봉투 */
-export async function sealPart(ring: KeyRing, projectId: string, part: string, version: number, plain: PartPlain): Promise<Bytes> {
-    const gz = await pipe(new Uint8Array(enc.encode(JSON.stringify(plain))), new CompressionStream('gzip'));
-    return seal(ring, gz, (kid) => aadPart(projectId, part, version, kid));
-}
-
-/** 봉투 → gunzip → `{fmt, body}`. 키·AAD 가 안 맞으면 EnvelopeError(부르는 쪽이 500 decrypt_failed). */
-export async function openPart(ring: KeyRing, projectId: string, part: string, version: number, ct: Bytes): Promise<PartPlain> {
-    const gz = await open(ring, ct, (kid) => aadPart(projectId, part, version, kid));
-    return JSON.parse(dec.decode(await pipe(gz, new DecompressionStream('gzip')))) as PartPlain;
-}
-
-// ── supabase-js 어댑터 ──────────────────────────────────────
-
-/** PostgREST bytea: 쓸 때 `\x<hex>`, 읽을 때도 `\x<hex>` 글자로 온다. */
-export function byteaToHex(b: Bytes): string {
-    let s = '\\x';
-    for (const x of b) s += x.toString(16).padStart(2, '0');
-    return s;
-}
-
-export function hexToBytea(s: string): Bytes {
-    if (!s.startsWith('\\x') || s.length % 2 !== 0) throw new Error('bytea 꼴이 아닙니다');
-    const out = new Uint8Array((s.length - 2) / 2);
-    for (let i = 0; i < out.length; i++) {
-        const v = Number.parseInt(s.slice(2 + i * 2, 4 + i * 2), 16);
-        if (Number.isNaN(v)) throw new Error('bytea 꼴이 아닙니다');
-        out[i] = v;
-    }
-    return out;
-}
+// 평문 ↔ 봉투 · bytea · 조각 한 줄 읽기는 _shared/doc.ts(sub 함수와 같이 쓴다) — 여기선 다시 내보낸다.
+export { byteaToHex, hexToBytea, openPart, sealPart, type PartPlain, type PartRow } from '../_shared/doc.ts';
 
 type Res<T> = PromiseLike<{ data: T | null; error: unknown }>;
-interface DbRow {
-    part: string;
-    version: number;
-    size_plain: number;
-    ct: string;
-}
 
 /** supabase-js 에서 쓰는 사슬만 — 넓게 잡는다(체인 꼴은 어댑터 안에서만 쓴다) */
 export interface PartsDb {
@@ -112,8 +55,6 @@ export interface PartsDb {
 export const auditJson = (a: DbAudit | DbAudit[] | null | undefined): unknown =>
     a == null ? null : Array.isArray(a) ? a.map((x) => ({ ...x, body_ct: byteaToHex(x.body_ct) })) : { ...a, body_ct: byteaToHex(a.body_ct) };
 
-const toRow = (r: DbRow): PartRow => ({ part: r.part, version: r.version, sizePlain: r.size_plain, ct: hexToBytea(r.ct) });
-const COLS = 'part, version, size_plain, ct';
 
 function must<T>(res: { data: T | null; error: unknown }, what: string): T | null {
     if (res.error) throw new Error(`${what} 실패`);
@@ -144,19 +85,13 @@ export function supabaseStore(db: PartsDb): PartsStore {
             return r?.data_epoch ?? null;
         },
         async list(pid) {
-            const rows = must<DbRow[]>(
-                await (db.from('parts').select(COLS).eq('project_id', pid).not('part', 'like', 'doc@%') as Res<DbRow[]>),
+            const rows = must<PartDbRow[]>(
+                await (db.from('parts').select(PART_COLS).eq('project_id', pid).not('part', 'like', 'doc@%') as Res<PartDbRow[]>),
                 'parts 읽기',
             );
-            return (rows ?? []).map(toRow);
+            return (rows ?? []).map(toPartRow);
         },
-        async get(pid, part) {
-            const r = must<DbRow>(
-                await (db.from('parts').select(COLS).eq('project_id', pid).eq('part', part).maybeSingle() as Res<DbRow>),
-                'parts 읽기',
-            );
-            return r ? toRow(r) : null;
-        },
+        get: (pid, part) => readPartRow(db, pid, part),
         async insertFirst(pid, row) {
             const rows = must<{ part: string }[]>(
                 await (db.from('parts')
