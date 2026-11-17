@@ -18,11 +18,11 @@
  *   sortable 열은 머리글을 눌러 오름/내림합니다. 정렬은 '보이는 순서'만 바꾸고 onCommit 순서는 그대로입니다.
  */
 import {
-    useState, useRef, useEffect, useMemo, useCallback,
-    type ReactNode, type CSSProperties, type MouseEvent as ReactMouseEvent,
+    useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback,
+    type ReactNode, type RefObject, type CSSProperties, type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { MOD } from '../lib';
-import { flushSync } from 'react-dom';
+import { flushSync, createPortal } from 'react-dom';
 
 // ── 열·행 규격 ────────────────────────────────────────────────
 export type CellValue = string | number | boolean | string[];
@@ -681,8 +681,8 @@ function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCan
     const pool = isCombo ? (col.options ?? []) : (col.suggest ?? (isList ? col.options : undefined) ?? []);
     const frag = isList ? initial.split(',').pop()!.trim() : initial.trim();
     const filtered = frag ? pool.filter((o) => o.toLowerCase().includes(frag.toLowerCase())) : pool;
-    // combo 는 빈 칸에서도 목록 전체를 보여준다(타이핑으로 걸러진다). 그 밖엔 글자가 있어야 자동완성.
-    const sug = pool.length && (frag !== '' || isCombo) ? filtered.slice(0, isCombo ? 50 : 8) : [];
+    // 후보가 있으면 빈 칸 포커스에서도 목록 전체를 보여준다(타이핑으로 걸러진다). 글자가 있는 text·list 는 8개까지.
+    const sug = pool.length ? filtered.slice(0, isCombo || frag === '' ? 50 : 8) : [];
     const applyPick = (pick: string): string => {
         if (!isList) return pick;
         const parts = initial.split(',');
@@ -716,15 +716,46 @@ function CellEditor({ col, initial, sugIdx, setSugIdx, onChange, onCommit, onCan
                 onBlur={() => onCommit(0, 0)}
                 placeholder={col.placeholder}
                 className="w-full h-full bg-panel2 text-text border-2 border-accent outline-none text-[12px] px-1" />
-            {sug.length > 0 && (
-                <div className="absolute left-0 top-full min-w-full bg-panel2 border border-line rounded-b-md shadow-xl z-40 max-h-48 overflow-auto">
-                    {sug.map((o, i) => (
-                        <button key={o} onMouseDown={(e) => { e.preventDefault(); onCommit(1, 0, applyPick(o)); }}
-                            className={`block w-full text-left px-2 py-1 text-[12px] ${i === sugIdx ? 'bg-accent text-white' : 'text-text hover:bg-line'}`}>{o}</button>
-                    ))}
-                </div>
-            )}
+            <SuggestList anchor={inputRef} items={sug} sugIdx={sugIdx} onPick={(o) => onCommit(1, 0, applyPick(o))} />
         </div>
+    );
+}
+
+// ── 자동완성 목록 ────────────────────────────────────────────
+// 표 컨테이너(overflow-auto)에 잘리지 않게 document.body 로 포털하고 position:fixed 로 입력칸 아래에 붙인다.
+// 아래 남은 자리가 모자라고 위가 더 넓으면 위로 뒤집는다.
+export function SuggestList({ anchor, items, sugIdx, onPick }: {
+    anchor: RefObject<HTMLElement | null>; items: string[]; sugIdx: number; onPick: (o: string) => void;
+}) {
+    const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number; maxH: number } | null>(null);
+    useLayoutEffect(() => {
+        const el = anchor.current;
+        if (!el || !items.length) { setPos(null); return; }
+        const calc = () => {
+            const r = el.getBoundingClientRect();
+            const below = window.innerHeight - r.bottom - 8, above = r.top - 8;
+            const flip = below < 160 && above > below;
+            const maxH = Math.max(80, Math.min(192, flip ? above : below));
+            setPos(flip
+                ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top, maxH }
+                : { left: r.left, width: r.width, top: r.bottom, maxH });
+        };
+        calc();
+        window.addEventListener('resize', calc);
+        window.addEventListener('scroll', calc, true);
+        return () => { window.removeEventListener('resize', calc); window.removeEventListener('scroll', calc, true); };
+    }, [anchor, items.length]);
+    if (!items.length || !pos) return null;
+    return createPortal(
+        <div data-suggest-list role="listbox"
+            style={{ position: 'fixed', left: pos.left, minWidth: pos.width, top: pos.top, bottom: pos.bottom, maxHeight: pos.maxH }}
+            className="bg-panel2 border border-line rounded-md shadow-xl z-[1000] overflow-auto">
+            {items.map((o, i) => (
+                <button key={o} role="option" aria-selected={i === sugIdx} onMouseDown={(e) => { e.preventDefault(); onPick(o); }}
+                    className={`block w-full text-left px-2 py-1 text-[12px] ${i === sugIdx ? 'bg-accent text-white' : 'text-text hover:bg-line'}`}>{o}</button>
+            ))}
+        </div>,
+        document.body,
     );
 }
 
