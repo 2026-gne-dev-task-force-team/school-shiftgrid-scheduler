@@ -88,7 +88,7 @@ export const accountServerPlugin = definePlugin({
         Members: () => createElement(MembersPane, { session: accountServer, api: membersApi }),
     },
     renders: {
-        ServerAccountStatus: (_host: PluginHost) => createElement(ServerAccountStatus, { session: accountServer }),
+        ServerAccountStatus: (host: PluginHost) => createElement(ServerAccountStatus, { session: accountServer, run: (id) => { host.commands.run(id); } }),
         PasswordDialogs: (_host: PluginHost) => passwordKit.render(),
     },
     commands: {

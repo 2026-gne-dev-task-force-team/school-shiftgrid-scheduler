@@ -9,10 +9,16 @@ import type { ReactNode } from 'react';
 import { Button, ConfirmDialog, Popover, TextInput } from '../../../pane-ui-system';
 import type { AccountServer } from '../session';
 import { MIN_PASSWORD } from '../session';
+import { PASSWORD_CMD } from '../password';
+
+/** 구성원·초대 명령 id(index.ts 의 명령 등록과 같은 값). */
+export const MEMBERS_CMD = 'account-server.members.open';
+const ADMIN = '관리자';
 
 type View = 'menu' | 'login' | 'signup';
 
-export function ServerAccountStatus({ session }: { session: AccountServer }) {
+/** run — host 명령 경로(host.commands.run). 팝오버를 닫고 해당 명령을 연다. */
+export function ServerAccountStatus({ session, run }: { session: AccountServer; run: (commandId: string) => void }) {
     const [, redraw] = useReducer((n: number) => n + 1, 0);
     useEffect(() => { const d = session.onIdentityChange(redraw); return () => d.dispose(); }, [session]);
     const [anchor, setAnchor] = useState<DOMRect | null>(null);
@@ -26,6 +32,7 @@ export function ServerAccountStatus({ session }: { session: AccountServer }) {
 
     const cur = session.current();
     const isGuest = cur.kind !== 'user';
+    const isAdmin = cur.kind === 'user' && cur.roles.includes(ADMIN);
     const label = isGuest ? '로그인' : cur.displayName;
 
     const go = (v: View) => { setView(v); setPw(''); setMsg(''); };
@@ -35,6 +42,8 @@ export function ServerAccountStatus({ session }: { session: AccountServer }) {
         go(isGuest ? 'login' : 'menu');
         setAnchor(rect);
     };
+
+    const openCmd = (id: string) => { close(); run(id); };
 
     const submit = async () => {
         if (busy) return;
@@ -66,6 +75,8 @@ export function ServerAccountStatus({ session }: { session: AccountServer }) {
                         {!isGuest && view === 'menu' && (
                             <Form>
                                 <p className="text-note text-muted">지금: <span className="text-text">{cur.displayName}</span></p>
+                                <Row><Button variant="ghost" size="sm" data-acc-act="password-change" onClick={() => openCmd(PASSWORD_CMD.change)}>비밀번호 바꾸기</Button></Row>
+                                {isAdmin && <Row><Button variant="ghost" size="sm" data-acc-act="members" onClick={() => openCmd(MEMBERS_CMD)}>구성원·초대</Button></Row>}
                                 <Row><Button variant="ghost" size="sm" onClick={() => { setAnchor(null); setAskOut(true); }}>로그아웃</Button></Row>
                             </Form>
                         )}
@@ -90,6 +101,9 @@ export function ServerAccountStatus({ session }: { session: AccountServer }) {
                                         {view === 'signup' ? '가입하고 들어가기' : '로그인'}
                                     </Button>
                                 </Row>
+                                {view === 'login' && (
+                                    <Row><Button variant="ghost" size="sm" data-acc-act="password-reset" onClick={() => openCmd(PASSWORD_CMD.reset)}>비밀번호를 잊었어요</Button></Row>
+                                )}
                             </Form>
                         )}
                     </div>
