@@ -5,6 +5,8 @@ import { character } from '../ui/character.ts'
 import { actorTag } from '../ui/actor-tag.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { laneHue, layoutGraph, synthGraph } from '../lib/graph-layout.ts'
+import { renderCylinder } from './layer2-cylinder.ts'
+import type { LayerCtx } from './types.ts'
 
 const PAD = 16, TOP = 30, RH = 40, LW = 26, TEXT_W = 280, DOT = 5 // 여백 · 첫 행 높이 · 행 간격 · 레일 간격 · 글 칸 폭 · 점 반쪽
 
@@ -23,15 +25,43 @@ export function fitRefs<T extends { name: string }>(refs: T[], avail: number): {
   return { shown, hidden: refs.slice(shown.length) }
 }
 
-// 2층 가지 — 개발자가 보는 커밋 그래프(위가 최신 · 레일마다 색 · 점=커밋). 선·점은 canvas(도트풍: 네모 점·매끈 안 함),
-// 눌리는 점·이름표·캐릭터는 그 위 DOM. 좁으면 가로 스크롤.
+/** 한 칸에 선 캐릭터 — 앞에서 max 명만 나란히, 나머지는 「+N」 수로(R94 ③). */
+export const crowd = <T,>(xs: T[], max = 2): { shown: T[]; more: number } => ({ shown: xs.slice(0, max), more: Math.max(0, xs.length - max) })
+
+/** 그래프에 쓸 커밋 목록 — 줄기 행의 graph, 없으면(구판·서버 칸 미적용) 가지 정보로 얼개. */
+const commitsOf = (branches: Branch[]): GraphCommit[] => ((t) => t?.graph?.length ? t.graph : synthGraph(branches))(branches.find((b) => b.trunk))
+
+type View = 'cyl' | 'flat'
+let view: View = 'cyl' // 기본은 원통(R94) — 무거우면 평면으로 끈다. 층을 오가도 고른 보기를 기억한다.
+
+// 2층 가지 — 기본은 3D 원통(layer2-cylinder.ts · R94), 스위치로 평면 커밋 그래프(아래 renderFlat).
 export const layer2: LayerRenderer = {
   id: 'layer2', floor: 2, tab: '갈래',
   render(host, ctx) {
+    const body = h('div', { class: 'gc-body' })
+    const btn = h('button', { class: 'gc-switch', 'aria-pressed': 'false' })
+    const bar = h('div', { class: 'gc-bar' }, btn)
+    host.append(bar, body)
+    let off: (() => void) | void
+    const show = () => {
+      off?.(); body.replaceChildren()
+      btn.textContent = view === 'cyl' ? '평면으로 보기' : '원통으로 보기'
+      btn.setAttribute('aria-pressed', view === 'flat' ? 'true' : 'false')
+      off = view === 'cyl' ? renderCylinder(body, ctx, commitsOf(ctx.data.branches)) : renderFlat(body, ctx)
+    }
+    btn.addEventListener('click', () => { view = view === 'cyl' ? 'flat' : 'cyl'; show() })
+    show()
+    return () => off?.()
+  },
+}
+
+// 평면 보기 — 개발자가 보는 커밋 그래프(위가 최신 · 레일마다 색 · 점=커밋). 선·점은 canvas(도트풍: 네모 점·매끈 안 함),
+// 눌리는 점·이름표·캐릭터는 그 위 DOM. 좁으면 가로 스크롤.
+function renderFlat(host: HTMLElement, ctx: LayerCtx): () => void {
     const { data, openDetail, tip } = ctx
     const trunk = data.branches.find((b) => b.trunk)
     const by = new Map(data.branches.map((b) => [b.id, b]))
-    const commits: GraphCommit[] = trunk?.graph?.length ? trunk.graph : synthGraph(data.branches)
+    const commits: GraphCommit[] = commitsOf(data.branches)
     const trunkTip = commits.find((c) => c.refs.some((r) => r.branch_id === trunk?.id))?.sha
     const { nodes, edges, lanes } = layoutGraph(commits, trunkTip)
     const at = new Map(nodes.map((n) => [n.sha, n]))
@@ -116,14 +146,15 @@ export const layer2: LayerRenderer = {
         row.append(h('span', { class: 'gg-sub' }, c.subject), h('span', { class: 'gg-sha' }, c.sha.slice(0, 7)))
         inner.append(row)
 
-        // 가지 끝(맨 앞 커밋) 위에 선 일꾼 — 열린 가지만
-        for (const ref of c.refs) {
-          const b = ref.branch_id ? by.get(ref.branch_id) : undefined, a = b && b.state === 'live' ? actor(b) : undefined
-          if (!a) continue
-          const chip = h('span', { class: 'gg-chip' }, actorTag(ctx, a, { size: 'mini', text: 'name' }))
+        // 가지 끝(맨 앞 커밋) 위에 선 일꾼 — 열린 가지만. 한 칸에 여럿이면 겹치지 않게 옆으로 나란히 + 「+N」 묶음(R94 ③).
+        const here = c.refs.map((ref) => ref.branch_id ? by.get(ref.branch_id) : undefined)
+          .flatMap((b) => (b && b.state === 'live' && actor(b) ? [actor(b)!] : []))
+        const { shown: on, more: rest } = crowd([...new Map(here.map((a) => [a.id, a])).values()])
+        if (on.length) {
+          const chip = h('span', { class: 'gg-chip gg-crowd' }, ...on.map((a) => actorTag(ctx, a, { size: 'mini', text: 'name' })))
+          if (rest) chip.append(h('span', { class: 'gg-crowd-more', title: `캐릭터 ${rest}명 더` }, `+${rest}`))
           chip.style.cssText = `left:${cx - 14}px;top:${cy - DOT - 22}px`
           inner.append(chip)
-          break
         }
       }
     }
@@ -135,5 +166,4 @@ export const layer2: LayerRenderer = {
     mq.addEventListener('change', draw)
     draw()
     return () => { ro.disconnect(); mo.disconnect(); mq.removeEventListener('change', draw) }
-  },
 }
