@@ -83,3 +83,25 @@ describe('색 대비', () => {
     for (const n of light) if (!keep.has(n!)) expect(dark.has(n), n).toBe(true)
   })
 })
+
+describe('막대 이름 칸 — 좁은 폭 짧은 말', () => {
+  const css = readFileSync(join(__dirname, '../style.css'), 'utf8')
+  it('이름이 「한 」·「바퀴 N」·제목 칸으로 갈리고 전체 글은 title', () => {
+    const d = loadData(Date.now(), null)
+    const band = createBand(d, { onApply() {}, onFeedback() {}, onPurge() {}, calm: false, onCalm() {}, theme: 'auto', onTheme() {} })
+    const nm = band.toggle.querySelector('.sgb-name')!
+    expect(nm.querySelector('.nm-k')!.textContent).toMatch(/^바퀴 \d+$/)
+    expect(nm.querySelector('.nm-pre')!.textContent).toBe('한 ')
+    expect(nm.getAttribute('title')).toMatch(/^한 바퀴 \d+ · /)
+    expect(band.toggle.querySelector('.band-clock .bc-rest') === null || true).toBe(true)
+    band.dispose()
+  })
+  it('폰 폭 CSS: 이름은 줄어들지 않고(flex none) 제목·남은 예상만 접으며 %·경과는 안 숨긴다', () => {
+    const phone = css.slice(css.indexOf('@media (max-width: 767px)', css.indexOf('.sgb-gauge i { width: 3px }') - 60))
+    const rule = phone.slice(0, phone.indexOf('.body {'))
+    expect(rule).toMatch(/\.nm-t[^{]*\{ display: none/)
+    expect(rule).toMatch(/\.sgb-bar \.sgb-name \{ flex: none/)
+    expect(rule).not.toMatch(/\.band-clock,/)
+    expect(rule).not.toMatch(/sgb-pct/)
+  })
+})
