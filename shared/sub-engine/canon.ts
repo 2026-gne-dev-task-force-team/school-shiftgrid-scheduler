@@ -43,6 +43,16 @@ export function runCanon(cases: CanonCase[], adapter: CanonAdapter, range?: { fr
   return rep
 }
 
+/** 어긋남 유형별 이름 수 — 열쇠 「묶음+」(엔진이 더 냄)·「묶음-」(엔진이 빠뜨림). 큰 유형부터 규칙을 고친다(T-10e6 지시) */
+export function diffKinds(diffs: CanonDiff[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const d of diffs) {
+    if (d.extra.length) out[d.group + '+'] = (out[d.group + '+'] ?? 0) + d.extra.length
+    if (d.missing.length) out[d.group + '-'] = (out[d.group + '-'] ?? 0) + d.missing.length
+  }
+  return out
+}
+
 /** 정답지 JSON({cases:[…]}) 읽기 — 꼴이 틀리면 빈 배열(던지지 않는다) */
 export function parseCanon(json: unknown): CanonCase[] {
   const cs = (json as { cases?: unknown })?.cases
