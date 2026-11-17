@@ -7,8 +7,8 @@ import { OpsSubHome } from './HomePanel';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 afterEach(() => { document.body.innerHTML = ''; });
 
-function fakeHost(opts: { roster: boolean; onRun?: (id: string) => void }) {
-    return { views: { get: (id: string) => (opts.roster && id === 'substitute.sheet' ? {} : undefined) }, commands: { run: (id: string) => { opts.onRun?.(id); return true; } }, workspace: { open: () => {} } } as never;
+function fakeHost(opts: { roster: boolean; onOpen?: (id: string) => void }) {
+    return { views: { get: (id: string) => (opts.roster && id === 'substitute.sheet' ? {} : undefined) }, commands: { run: () => true }, workspace: { open: (id: string) => { opts.onOpen?.(id); } } } as never;
 }
 
 async function mount(el: React.ReactElement) {
@@ -29,12 +29,12 @@ describe('보결 화면', () => {
         expect(radio(host, '보결 목록')?.getAttribute('aria-checked')).toBe('false');
     });
 
-    it('보결 명단이 켜져 있으면 「보결 명단 열기」가 그 명령을 부른다', async () => {
+    it('보결 명단이 켜져 있으면 「보결 명단 열기」가 명단 화면을 연다', async () => {
         const ran: string[] = [];
-        const host = await mount(createElement(OpsSubHome, { host: fakeHost({ roster: true, onRun: (id) => ran.push(id) }) }));
+        const host = await mount(createElement(OpsSubHome, { host: fakeHost({ roster: true, onOpen: (id) => ran.push(id) }) }));
         const btn = [...host.querySelectorAll('button')].find((b) => b.textContent === '보결 명단 열기');
         await act(async () => { btn?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
-        expect(ran).toEqual(['substitute.open']);
+        expect(ran).toEqual(['substitute.sheet']);
     });
 
     it('보결 명단이 꺼져 있으면 그 단추가 없다', async () => {

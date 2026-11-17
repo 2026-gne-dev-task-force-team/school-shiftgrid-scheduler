@@ -27,7 +27,7 @@ export const substitutePlugin = definePlugin({
             commands: [
                 { id: 'substitute.open', title: '보결 명단 열기', icon: 'userSwap' },
             ],
-            // 🔴 리본 줄 없음 — 「보결」 화면(ops-sub)의 머리줄 「보결 명단 열기」 단추가 이 명령을 부른다(T-30g).
+            // 🔴 리본 줄 없음 — 「보결」 화면(ops-sub)의 머리줄 「보결 명단 열기」 단추가 이 화면을 연다(T-30g).
             nodeTypes: substituteNodeTypes,
         },
     },

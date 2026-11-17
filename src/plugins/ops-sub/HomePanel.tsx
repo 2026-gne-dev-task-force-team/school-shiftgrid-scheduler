@@ -15,7 +15,7 @@ export function OpsSubHome({ host }: { host: PluginHost }) {
             <ViewHeader
                 icon={<Icon name="userSwap" size={16} className="text-muted" />}
                 title="보결"
-                actions={hasRoster && <Button size="sm" onClick={() => host.commands.run('substitute.open')}>보결 명단 열기</Button>}
+                actions={hasRoster && <Button size="sm" onClick={() => host.workspace.open('substitute.sheet', { where: 'center' })}>보결 명단 열기</Button>}
             />
             <Toolbar label="보결 보기">
                 <Segmented<Tab>
