@@ -1,6 +1,6 @@
 import { h } from '../dom.ts'
 import { clampZoom, groupHouses, lineOf, roomCount } from './layer5-logic.ts'
-import { crewByModule, layoutGraph, labelWidth, linkModules, stateOf } from './layer5-graph.ts'
+import { LABEL_H, crewByModule, layoutGraph, labelWidth, linkModules, stateOf } from './layer5-graph.ts'
 import { BP_EDGES, BP_MODULES, BP_OVERVIEW, type BpModule } from '../data/blueprint-modules.ts'
 import { actorTag } from '../ui/actor-tag.ts'
 import type { LayerRenderer } from './types.ts'
@@ -58,8 +58,8 @@ export const layer5: LayerRenderer = {
     const paths = g.edges.map((e) => svg('path', { d: e.d, class: 'bp-edge', 'marker-end': 'url(#bp-arrow)', 'data-from': e.from, 'data-to': e.to }, svg('title', {}, `${nameOf(e.from)} → ${nameOf(e.to)} : ${e.label}`)))
     const labels = g.edges.map((e) => {
       const w = labelWidth(e.label)
-      return svg('g', { class: 'bp-elabel', 'data-from': e.from, 'data-to': e.to, transform: `translate(${(e.lx - w / 2).toFixed(1)},${(e.ly - 9).toFixed(1)})` },
-        svg('rect', { width: w.toFixed(1), height: 18, rx: 4 }), svg('text', { x: (w / 2).toFixed(1), y: 13, 'text-anchor': 'middle' }, e.label))
+      return svg('g', { class: 'bp-elabel', 'data-from': e.from, 'data-to': e.to, transform: `translate(${(e.lx - w / 2).toFixed(1)},${(e.ly - LABEL_H / 2).toFixed(1)})` },
+        svg('rect', { width: w.toFixed(1), height: LABEL_H, rx: 4 }), svg('text', { x: (w / 2).toFixed(1), y: 13, 'text-anchor': 'middle' }, e.label))
     })
     const art = svg('svg', { class: 'bp-svg', width: g.width, height: g.height, viewBox: `0 0 ${g.width} ${g.height}`, 'aria-hidden': 'true' }, defs, ...paths, ...labels)
 

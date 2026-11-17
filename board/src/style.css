@@ -218,8 +218,10 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--make) }
 .ws-dot[data-s=blocked] { background: var(--bad) } .ws-dot[data-s=over] { background: var(--warn) } .ws-dot[data-s=done] { background: var(--fg-3) }
 @media (max-width: 767px) {
-  .ws-body { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  .ws-body { grid-template-columns: minmax(0, 1fr) } /* 폰은 한 열 — 두 열이면 제목이 잘리고 그림에 가린다 */
   .ws-card, .ws-more { min-height: 44px }
+  .ws-card > b { -webkit-line-clamp: 3; line-clamp: 3 }
+  .ws-card .chr, .ws-card .actor-tag { flex: none }
   .ws-head { min-height: 36px; align-items: center }
 }
 .bp-bar { display: flex; align-items: center; gap: var(--sp2); margin-bottom: var(--sp2) }
