@@ -2,7 +2,7 @@
  * 편성 규칙 공용 도구 — 규칙 기여들이 함께 쓴다(v1 legacy/engine/rules.ts 1-116 에서 글자 그대로 옮김 · F2a).
  *   🔴 알고리즘 변경 0 — 꼴만 옮겼다(rules/split-equivalence.test.ts 가 지킨다).
  */
-import type { Assignment, RuleParams, TargetRef, Violation } from '../types/schema';
+import type { Assignment, RuleBucket, RuleParams, TargetRef, Violation } from '../types/schema';
 import { isHomeroomAgent } from '../types/schema';
 import type { ClockRange, EngineContext } from '../engine/api';
 import { hm } from '../engine/context';
@@ -103,4 +103,17 @@ export const isSoftAgent = (ctx: EngineContext, agentId: string) =>
 
 export function mkViol(v: Omit<Violation, 'ruleId'> & { templateId: string }): Violation {
     return { ...v, ruleId: v.templateId };
+}
+
+/** 소프트 위반 하나 만들기 (weight = magnitude × bucket × tier) */
+export function sViol(
+    ctx: EngineContext, templateId: string, bucket: RuleBucket, message: string,
+    assignmentIds: string[], magnitude: number, agentId: string | undefined,
+    trackId: string, day: number, subject?: TargetRef,
+): Violation {
+    const w = magnitude * ctx.bucketWeight(bucket) * (agentId ? ctx.tierWeight(agentId) : 1);
+    return {
+        ruleId: templateId, templateId, kind: 'soft', message, assignmentIds,
+        weight: w, fixable: softFixable(ctx, trackId, day), subject,
+    };
 }
