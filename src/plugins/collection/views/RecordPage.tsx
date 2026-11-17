@@ -13,6 +13,7 @@ import { useState } from 'react';
 import type { RecordCellValue } from '../contracts/collection';
 import { PropertyList } from './PropertyList';
 import { findUniqueConflict } from '../unique';
+import { moduleHost } from '../self-host';
 
 /**
  * 「유일」 칸의 형제 값 — 같은 종류의 줄이 사는 그릇(하위 줄이면 위로 올라가 맨 위 줄의 부모) 아래 같은 종류 노드 전부.
@@ -37,7 +38,9 @@ function siblingValues(nodes: NodesApi, id: string, key: string): { id: string; 
 }
 
 export function RecordPage({ host, id, fields, values, onChange, onOptionsChange, after, onRename, onBody }: RecordPageProps & { host: PluginHost }) {
-    const nodes = host.modules.use<NodesApi>('nodes');
+    // 🔴 모듈은 컬렉션 자기 host 로(T-10fk) — host 는 부른 쪽 것이라 그 선언으로 use 하면 던질 수 있다. 알림만 부른 쪽 host 로.
+    const mods = moduleHost(host).modules;
+    const nodes = mods.use<NodesApi>('nodes');
     const node = nodes?.get(id);
     const [uniqueMsg, setUniqueMsg] = useState<string | null>(null);
     if (!nodes || !node) return <p className="text-small text-muted">이 줄이 없어졌습니다.</p>;
@@ -53,7 +56,7 @@ export function RecordPage({ host, id, fields, values, onChange, onOptionsChange
         setUniqueMsg(null);
         onChange(key, v);
     });
-    const pd = host.modules.use<PageDocApi>('page-doc');
+    const pd = mods.use<PageDocApi>('page-doc');
     const props = (
         <div className="flex flex-col gap-3">
             {uniqueMsg && <p role="alert" data-rv-unique-msg className="px-2 text-small text-warn">{uniqueMsg}</p>}
@@ -64,7 +67,7 @@ export function RecordPage({ host, id, fields, values, onChange, onOptionsChange
     return (
         <div className="-mx-4 h-full">
             {pd
-                ? <pd.PageDoc host={host} docKey={id} value={node.body} onChange={(v) => (onBody ? onBody(v) : nodes.setBody(id, v))} onRename={onRename} properties={props} />
+                ? <pd.PageDoc docKey={id} value={node.body} onChange={(v) => (onBody ? onBody(v) : nodes.setBody(id, v))} onRename={onRename} properties={props} />
                 : (
                     <nodes.Frame nodeId={id} onRename={onRename} width="page" scroll>
                         {props}

@@ -475,7 +475,8 @@ export interface RecordViewApi {
     PropertyList(props: PropertyListProps): ReactElement | null;
     /** 🔑 레코드 열기 페이지 한 벌 — 노드 틀 + 속성 목록 + 본문. 레코드를 옆으로 열 때 이것만 쓴다(Q5 R5). */
     RecordPage(props: RecordPageProps): ReactElement | null;
-    /** 🔑 레코드 하나를 편집 탭으로 연다(W13) — 제 편집 탭이 있는 노드는 노드 열기, 없으면 「레코드」 탭. 이미 떠 있으면 그 탭으로. */
+    /** 🔑 레코드 하나를 편집 탭으로 연다(W13) — 제 편집 탭이 있는 노드는 노드 열기, 없으면 「레코드」 탭. 이미 떠 있으면 그 탭으로.
+     *   🔴 host 는 열기 창구(workspace)로만 쓴다 — 노드는 컬렉션 자기 host 로 받는다(T-10fk · 부른 쪽이 nodes 를 안 적어도 던지지 않는다). */
     openInTab(host: PluginHost, id: string): boolean;
     /** 칸 타입 레지스트리 — 내장 여섯이 같은 꼴로 올라 있고 꽂힌 타입은 `<pluginId>.<name>` 접두사 */
     fieldTypes: FieldTypeRegistry;

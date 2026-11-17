@@ -12,7 +12,7 @@ import { RecordView } from './RecordView';
 import { RecordTab, openRecordTab, registerRecordTab, RECORD_TAB_ID } from './tab-open';
 import { setPlatform } from '../../pane-ui-system/platform-keys';
 import { PeekLayer } from '../../pane-ui-system/shell/shared/PeekLayer';
-import { pagePlugin } from '../page/index';
+import { pagePlugin, bindPageHost } from '../page/index';
 import { PageEditor } from '../page/views/PageView';
 import { collectionPlugin } from './index';
 import type { RecordField } from './contracts/collection';
@@ -36,7 +36,9 @@ function fakeHost(mods: Record<string, unknown>, open = vi.fn(() => 'leaf1')): P
 describe('문서 화면 한 벌 — 페이지와 레코드가 같은 편집기', () => {
     it('page-doc 모듈의 문서는 페이지 노드 편집기와 같은 PageEditor 다', () => {
         const PageDoc = (pagePlugin as unknown as { modules: { 'page-doc': { PageDoc: (p: unknown) => unknown } } }).modules['page-doc'].PageDoc;
-        const el = PageDoc({ host: {} as PluginHost, docKey: 'n1', value: undefined, onChange: () => {} });
+        bindPageHost({} as PluginHost);   // T-10fk — 편집기는 노트 꾸러미 자기 host 로 그린다(손님은 host 를 안 넘긴다)
+        const el = PageDoc({ docKey: 'n1', value: undefined, onChange: () => {} });
+        bindPageHost(null);
         expect(isValidElement(el) && el.type).toBe(PageEditor);
     });
     it('레코드 열기 페이지(RecordPage)는 page-doc 문서에 속성 칸을 넘겨 그린다 — 제목·본문은 문서가, 속성만 레코드가', () => {

@@ -26,14 +26,20 @@ import { emptyPage } from './core/types';
 const EDITOR_ID = 'page.editor';
 
 
+// 🔴 노트 꾸러미 자기 host — 켜질 때 쥐고 꺼질 때 놓는다(T-10fk). page-doc 편집기는 이 host 로만 nodes·table 을 받는다
+//    (손님 host 로 받으면 손님 선언으로 검사돼, 표를 안 적은 손님 문서의 표 블록이 「선언 안 한 인터페이스 use」로 던졌다).
+let selfHost: PluginHost | null = null;
+export function bindPageHost(host: PluginHost | null): void { selfHost = host; }
+
 // 🔴 page-doc 모듈 — 저장은 손님 몫(value/onChange). 모르는 꼴·빈 값이면 빈 문서로 시작한다.
+//    ⭐ 제공자가 자기 host 를 감싼 컴포넌트를 내준다 — 손님은 host 를 넘기지 않는다. 꺼져 있으면(자기 host 없음) 그리지 않는다.
 const pageDocApi: PageDocApi = {
     version: 1,
-    PageDoc: (p) => createElement(PageEditor, {
-        host: p.host, docKey: p.docKey, onRename: p.onRename, properties: p.properties,
+    PageDoc: (p) => (!selfHost ? null : createElement(PageEditor, {
+        host: selfHost, docKey: p.docKey, onRename: p.onRename, properties: p.properties,
         load: () => { const v = p.value as Page | undefined; return v && Array.isArray(v.blocks) && v.blocks.length > 0 ? v : emptyPage(); },
         save: (pg) => p.onChange(pg),
-    }),
+    })),
 };
 
 // 🔴 rich-cell 모듈 — 짧은 글 한 토막(시트 칸 등)을 작은 마크다운 + 노드 칩으로 그린다. 저장은 손님 몫(글자 그대로).
@@ -94,9 +100,11 @@ export const pagePlugin = definePlugin({
 
     lifecycle: {
         onActivate(host: PluginHost) {
+            bindPageHost(host);   // page-doc 편집기가 쓸 자기 host(T-10fk)
             const nodes = host.modules.use<NodesApi>('nodes');
             initPageNodes(nodes ?? null);
         },
+        onDeactivate() { bindPageHost(null); },
     },
 });
 

@@ -20,6 +20,7 @@ import { recordNodeTypes, recordNodeTypeImpl, initRecordNodes, restoreTrashedRow
 import { RecordTab, registerRecordTab } from './tab-open';
 import { RowDoc } from './RowDoc';
 import { dbOf } from './RowProps';
+import { bindCollectionHost } from './self-host';
 
 // 🔴 viewId 접두사 = 플러그인 id(host 가 'collection.' 를 붙인다). contributes 엔 접두사 없는 'db' 로.
 const DB_ID = 'collection.db';
@@ -103,11 +104,13 @@ export const collectionPlugin = definePlugin({
     lifecycle: {
         // 선언 안 되는 것만 — 노드 다리 구독(노드 타입 등록은 contributes.nodeTypes 가 끝냈다).
         onActivate(host: PluginHost) {
+            bindCollectionHost(host);   // 🔴 약속 부품은 모듈을 이 자기 host 로 받는다(T-10fk · 부른 쪽 host 로 use 하면 부른 쪽 선언으로 검사돼 던진다)
             const nodes = host.modules.use<NodesApi>('nodes');
             initRecordNodes(nodes ?? null);
             // 행은 제 편집 탭이 없다 — 「탭으로 열기」는 레코드 탭이 미리보기와 같은 RowDoc 으로 그린다
             registerRecordTab(ROW_TYPE, (h, id) => { const db = dbOf(id); return db ? createElement(RowDoc, { host: h, dbId: db, rowId: id }) : null; });
         },
+        onDeactivate() { bindCollectionHost(null); },
     },
 });
 export default collectionPlugin;
