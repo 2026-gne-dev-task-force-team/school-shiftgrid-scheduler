@@ -6,7 +6,7 @@ import { L } from './help/terms';
 export interface ScreenDef { id: ScreenId; title: string; icon: IconName; desc: string; }
 
 export const SCREENS: ScreenDef[] = [
-    { id: 'basic', title: L.screen.basic, icon: 'table', desc: '시간 틀·반·교사·과목·특별실·시수표를 채웁니다.' },
+    { id: 'basic', title: L.screen.basic, icon: 'table', desc: '시간 틀·반·교사·특별실·시수표를 채웁니다.' },
     { id: 'blocks', title: L.screen.blocks, icon: 'ban', desc: '배정 불가·되도록 피함·임시 불가 칸과 고정 수업을 정합니다.' },
     { id: 'generate', title: L.screen.generate, icon: 'sparkles', desc: '시간표 후보 여럿을 만들어 하나를 고릅니다.' },
     { id: 'diagnose', title: L.screen.diagnose, icon: 'search', desc: '규칙별 문제를 세어 보고 자동으로 개선합니다.' },

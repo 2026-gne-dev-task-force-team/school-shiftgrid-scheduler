@@ -10,7 +10,7 @@ import { indexBy, indexAssignments, cellAt, dayName, activeDays, cellText, lesso
 import { Button, Select, Mark, Info, TextInput, Pill } from '../parts/ui';
 import { L } from '../help/terms';
 import { RICH } from '../help/richContent';
-import { BLOCKS_TABS, modesFor, modeAfterTab, stepTarget, type BlocksKind } from './blocksNav';
+import { BLOCKS_TABS, modesFor, modeAfterTab, stepTarget, blocksTabLabel, type BlocksKind } from './blocksNav';
 
 type Mode = 'block' | 'fixed' | 'pin';
 
@@ -56,7 +56,6 @@ export default function BlocksScreen() {
     const targetId = id || list[0]?.id || '';
     const prevId = stepTarget(list.map((x) => x.id), targetId, -1);
     const nextId = stepTarget(list.map((x) => x.id), targetId, 1);
-    const KIND_LABEL: Record<BlocksKind, string> = { track: L.track, agent: L.agent, resource: L.resource };
     const target: TargetRef | null = targetId ? { kind, id: targetId } : null;
 
     // 반 격자: 그 반 시간 틀. 교사·특별실 격자: 시각 축을 쓰므로 규격 하나가 아니다
@@ -96,7 +95,7 @@ export default function BlocksScreen() {
                     {BLOCKS_TABS.map((k) => (
                         <button key={k} role="tab" aria-selected={kind === k}
                             onClick={() => { setKind(k); setId(''); setMode(modeAfterTab(k, mode)); }}
-                            className={`px-3 py-1.5 text-[12px] ${kind === k ? 'bg-accent text-white' : 'bg-panel2 text-muted hover:text-text'}`}>{KIND_LABEL[k]}</button>
+                            className={`px-3 py-1.5 text-[12px] ${kind === k ? 'bg-accent text-white' : 'bg-panel2 text-muted hover:text-text'}`}>{blocksTabLabel(k)}</button>
                     ))}
                 </div>
                 <Button variant="ghost" title="이전 대상" disabled={!prevId} onClick={() => prevId && setId(prevId)}>◀ 이전</Button>
