@@ -23,7 +23,7 @@ interface Scope {
 /**
  * 여는 범위 표.
  * - parts: GET 이 구성원에게 돌려주려고 조각 전부를 열고, PUT 이 옛 판·보관 doc 을 연다.
- * - sub: 그날 입력(DayPart = doc + 곁 조각 다섯) · 그날 기간에 맞는 보관 doc(`doc@*`, parts/doc.ts openDocFor) · 보결 행 · 구성원 표시명(user). 감사는 쓰기만(열지 않는다).
+ * - sub: 그날 입력(doc + 곁 조각 다섯 SIDE_PARTS) · 그날 기간에 맞는 보관 doc(`doc@*`, parts/doc.ts openDocFor) · 보결 행 · 구성원 표시명(user). 감사는 쓰기만(열지 않는다).
  * - rooms: 특별실 조각 `ops.rooms`·`doc`(칸 머리 — 아직 안 이음)과 예약 행 · 예약자 표시명(user). 감사는 쓰기만.
  * - account: 구성원 목록용 `doc`(사람 목록)·계정 이름·프로젝트 이름.
  * - admin-ops: 키 교체(rewrap)는 모든 칸을 풀었다 다시 잠근다.
