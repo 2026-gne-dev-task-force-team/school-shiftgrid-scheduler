@@ -6,7 +6,7 @@ import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { schoolNodeTypes, schoolNodeTypeImpl, initSchool, getKit } from './nodes';
+import { schoolNodeTypes, schoolNodeTypeImpl, initSchool, getKit, openSchoolSheet } from './nodes';
 import { schoolApi } from './api';
 import { SchoolPage } from './SchoolPage';
 
@@ -44,8 +44,8 @@ export const schoolPlugin = definePlugin({
         Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
     },
     commands: {
-        // 학년도·반 화면(싱글턴) — 반이 하나도 없다는 편성 막힘에서 바로 여는 길
-        'school.open': (host: PluginHost) => { host.workspace.open('school.sheet', { where: 'center' }); },
+        // 학년도·반 화면 — 반이 하나도 없다는 편성 막힘에서 바로 여는 길. 학년도가 없으면 올해 학년도를 만들어 연다.
+        'school.open': (host: PluginHost) => { openSchoolSheet(host); },
         'school.openYear': (_host: PluginHost, ctx?: CommandContext) => { getKit()?.openList(ctx?.nodeId); },
     },
     nodeTypes: schoolNodeTypeImpl,

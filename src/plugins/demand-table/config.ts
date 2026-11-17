@@ -12,14 +12,22 @@ export const ROW_TYPE = 'demand-table.row';
 /** 기본 넷 열의 key — 순서가 곧 열 순서. */
 export const BASE_COLUMN_KEYS = ['f_teacher', 'f_class', 'f_subject', 'f_hours'] as const;
 
-/** 새 시수표에 심는 기본 넷 열 — 부를 때마다 새 객체. 칸은 잠겨 못 지운다. 교사·반·과목은 칸 설정에서 대상 목록을 고르면 이어진다. */
-export const newListFields = (): RecordField[] => [
-    { key: 'f_teacher', label: '교사', type: 'relation', locked: true, config: { many: false },
-        description: '수업에 들어가는 교사입니다. 칸 설정에서 교직원 명단을 고르면 그 명단의 사람을 고를 수 있습니다.' },
-    { key: 'f_class', label: '반', type: 'relation', locked: true, config: { many: false },
-        description: '수업을 하는 반입니다. 칸 설정에서 학년도를 고르면 그 학년도의 반을 고를 수 있습니다.' },
-    { key: 'f_subject', label: '과목', type: 'relation', locked: true, config: { many: false },
-        description: '가르치는 과목입니다. 칸 설정에서 과목 목록을 고르면 그 목록의 과목을 고를 수 있습니다.' },
+/** 관계 칸이 가리킬 컬렉션(정본 꾸러미 약속으로 읽은 목록 id) — 없으면 undefined(칸 안내가 먼저 할 일을 말한다). */
+export interface RelationTargets { teacher?: string; class?: string; subject?: string }
+
+const pointAt = (id: string | undefined): { target?: { kind: 'db'; nodeId: string } } => (id ? { target: { kind: 'db', nodeId: id } } : {});
+
+/** 새 시수표에 심는 기본 넷 열 — 부를 때마다 새 객체. 칸은 잠겨 못 지운다. 대상이 있으면 이어 두고, 없으면 안내에 먼저 할 일을 적는다. */
+export const newListFields = (t: RelationTargets = {}): RecordField[] => [
+    { key: 'f_teacher', label: '교사', type: 'relation', locked: true, config: { many: false, ...pointAt(t.teacher) },
+        description: t.teacher ? '수업에 들어가는 교사입니다. 교직원 명단의 사람을 고릅니다.'
+            : '수업에 들어가는 교사입니다. 먼저 교직원 명단을 만든 뒤, 칸 설정에서 그 명단을 고르세요.' },
+    { key: 'f_class', label: '반', type: 'relation', locked: true, config: { many: false, ...pointAt(t.class) },
+        description: t.class ? '수업을 하는 반입니다. 학교 정보의 학년도에 적어 둔 반을 고릅니다.'
+            : '수업을 하는 반입니다. 먼저 학교 정보에서 학년도·반을 만드세요. 그다음 칸 설정에서 학년도를 고르면 됩니다.' },
+    { key: 'f_subject', label: '과목', type: 'relation', locked: true, config: { many: false, ...pointAt(t.subject) },
+        description: t.subject ? '가르치는 과목입니다. 과목 목록의 과목을 고릅니다.'
+            : '가르치는 과목입니다. 먼저 과목 목록을 만든 뒤, 칸 설정에서 그 목록을 고르세요.' },
     { key: 'f_hours', label: '시수', type: 'number', locked: true,
         description: '일주일에 들어가는 시간 수(주당 시수)입니다.' },
 ];

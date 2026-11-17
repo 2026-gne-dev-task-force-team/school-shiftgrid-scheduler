@@ -39,6 +39,11 @@ function host(): PluginHost {
     } as unknown as PluginHost;
 }
 
+/** 약속 모듈만 흉내 낸 host — 이름 → 모듈. */
+function modHost(mods: Record<string, unknown>): PluginHost {
+    return { modules: { use: (n: string) => mods[n] } } as unknown as PluginHost;
+}
+
 function wire() {
     registerType({ type: 'folder', label: '폴더', icon: 'folder', container: true });
     const api = makeNodesApi('demand-table');
@@ -88,11 +93,30 @@ describe('시수표 — 자료 꼴', () => {
     });
 
     it('탐색기 길(createInit)도 같은 넷 — 부를 때마다 새 객체', () => {
-        const a = demandNodeTypeImpl.list.createInit();
-        const b = demandNodeTypeImpl.list.createInit();
+        const a = demandNodeTypeImpl.list.createInit(modHost({}));
+        const b = demandNodeTypeImpl.list.createInit(modHost({}));
         expect(a.data.fields.map((f) => f.key)).toEqual([...BASE_COLUMN_KEYS]);
         expect(a.data.fields[0]).not.toBe(b.data.fields[0]);
         expect(newListFields()).toHaveLength(4);
+    });
+
+    it('새 시수표 — 반·교직원·과목 컬렉션이 있으면 세 칸 대상이 잡힌다(약속으로 읽음)', () => {
+        const h = modHost({
+            staff: { lists: () => [{ id: 'st1', name: '교직원' }] },
+            school: { years: () => [{ id: 'y0', name: '빈 학년도' }, { id: 'y1', name: '2026 학년도' }], classesIn: (y: string) => (y === 'y1' ? [{ id: 'c1' }] : []) },
+            subjects: { lists: () => [{ id: 'sb1', name: '과목' }] },
+        });
+        const f = demandNodeTypeImpl.list.createInit(h).data.fields;
+        const target = (k: string) => (f.find((x) => x.key === k)!.config as { target?: { kind: string; nodeId: string } }).target;
+        expect(target('f_teacher')).toEqual({ kind: 'db', nodeId: 'st1' });
+        expect(target('f_class')).toEqual({ kind: 'db', nodeId: 'y1' });
+        expect(target('f_subject')).toEqual({ kind: 'db', nodeId: 'sb1' });
+    });
+
+    it('없으면 대상은 비고 칸 안내가 먼저 할 일을 말한다', () => {
+        const f = demandNodeTypeImpl.list.createInit(modHost({})).data.fields;
+        expect(f.filter((x) => x.type === 'relation').every((x) => (x.config as { target?: unknown }).target === undefined)).toBe(true);
+        expect(f.find((x) => x.key === 'f_class')!.description).toContain('먼저 학교 정보에서 학년도·반을 만드세요');
     });
 
     it('저장되는 줄 = id 참조 셋 + 시수 — 이름 글자는 어디에도 안 저장된다', () => {

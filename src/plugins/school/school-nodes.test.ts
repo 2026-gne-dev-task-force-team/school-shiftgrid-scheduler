@@ -23,7 +23,7 @@ import { makeNodesApi } from '../../pane-ui-system/core/node-frame/api';
 import { registerType, clearTypes } from '../../pane-ui-system/core/nodes/model/types';
 import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { defineCollection } from '../collection/define';
-import { schoolNodeTypes, schoolNodeTypeImpl, SCHOOL_TYPE, YEAR_TYPE, CLASS_TYPE, getKit, setKit } from './nodes';
+import { schoolNodeTypes, schoolNodeTypeImpl, SCHOOL_TYPE, YEAR_TYPE, CLASS_TYPE, getKit, setKit, openSchoolSheet, currentYearName, initSchool } from './nodes';
 import { CLASS_CONFIG } from './config';
 import { schoolApi } from './api';
 import type { RecordViewApi } from '../collection/contracts/collection';
@@ -109,5 +109,47 @@ describe('반 → 교실 읽기 — collection 약속의 resolveRelationTargets 
         expect(calls[0][0]).toEqual(['classX']);
         expect(calls[0][1]).toEqual({ many: true });
         setKit(getKit(), api, null);
+    });
+});
+
+describe('학년도·반 열기 — 처음 쓰는 선생님 길', () => {
+    const opened: string[] = [];
+    const openHost = (): PluginHost => ({ ...host(), workspace: { open: (id: string) => { opened.push(id); } } }) as unknown as PluginHost;
+
+    it('빈 저장소 → 열기 → 학교와 올해 학년도가 생기고 그 학년도가 열리며, 반을 더할 수 있다', () => {
+        opened.length = 0;
+        const api = wire();
+        expect(schoolApi.years()).toEqual([]);
+        openSchoolSheet(openHost());
+        const years = schoolApi.years();
+        expect(years.map((y) => y.name)).toEqual([currentYearName()]);
+        expect(schoolApi.school()?.name).toBe('우리 학교');
+        expect(getKit()!.active()).toBe(years[0].id);
+        expect(opened).toEqual(['school.sheet']);
+        expect(getKit()!.addItem(years[0].id, { name: '3-2' })).toBeTruthy();
+        expect(schoolApi.classesIn(years[0].id).map((c) => c.name)).toEqual(['3-2']);
+        // 두 번째 열기는 학년도를 또 만들지 않는다
+        openSchoolSheet(openHost());
+        expect(schoolApi.years()).toHaveLength(1);
+        expect(api.liveByType(SCHOOL_TYPE)).toHaveLength(1);
+    });
+
+    it('학년도 이름 — 1~2월은 지난해 학년도', () => {
+        expect(currentYearName(new Date(2027, 1, 10))).toBe('2026 학년도');
+        expect(currentYearName(new Date(2026, 2, 2))).toBe('2026 학년도');
+    });
+
+    it('「새로 만들기」 변형 「학년도·반」은 학교가 없을 때 학교 줄 뒤에 붙고 누르면 같은 길을 탄다', () => {
+        opened.length = 0;
+        wire();
+        const h = openHost();
+        (h as unknown as { modules: unknown }).modules = { use: () => undefined };
+        initSchool(h);   // 호스트를 쥔다(모듈은 없어 kit 는 비지만 아래에서 다시 꽂는다)
+        const api = wire();
+        const v = schoolNodeTypeImpl.school.createVariants!();
+        expect(v.map((x) => x.label)).toEqual(['학년도·반']);
+        v[0].run();
+        expect(schoolApi.years()).toHaveLength(1);
+        expect(api.liveByType(SCHOOL_TYPE)).toHaveLength(1);
     });
 });
