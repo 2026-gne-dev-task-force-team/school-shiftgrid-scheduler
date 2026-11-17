@@ -3,7 +3,7 @@
  *  떠 있는 알약(fixed)은 상태바·좁은 화면 하단 바와 겹칠 수 있어, 흐름 안 한 칸으로 넣는다.
  *  누르면 「업데이트 이력」 — 빌드 때 만든 changelog.json(판 번호·시각·바뀐 것)을 펼친다(R79). */
 import { useState } from 'react'
-import { Button } from '../pane-ui-system'
+import { Button, Popover } from '../pane-ui-system'
 import { EDITION } from './site-config'
 import { RELEASE_NOTES, type ChangelogEntry } from './changelog'
 import { ReleaseNotes } from './ReleaseNotes'
@@ -11,11 +11,12 @@ import { ReleaseNotes } from './ReleaseNotes'
 interface Changelog { build: string; at: string; entries: ChangelogEntry[] }
 
 export function EditionBadge() {
-  const [open, setOpen] = useState(false)
+  const [anchor, setAnchor] = useState<DOMRect | null>(null)
+  const open = anchor !== null
   const [log, setLog] = useState<Changelog | null | 'err'>(null)
-  const toggle = () => {
+  const toggle = (rect: DOMRect) => {
     const next = !open
-    setOpen(next)
+    setAnchor(next ? rect : null)
     if (next && log === null) {
       fetch('./changelog.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((j: Changelog) => setLog(j)).catch(() => setLog('err'))
@@ -23,13 +24,14 @@ export function EditionBadge() {
   }
   return (
     <span className="relative inline-flex min-w-0">
-      <Button variant="ghost" size="sm" data-testid="edition-badge" aria-expanded={open} title="업데이트 이력 보기" onClick={toggle}
+      <Button variant="ghost" size="sm" data-testid="edition-badge" aria-expanded={open} title="업데이트 이력 보기" onClick={(e) => toggle(e.currentTarget.getBoundingClientRect())}
         className="!h-auto truncate bg-panel !px-1 !py-0 text-muted">
         {EDITION.badge}
       </Button>
-      {open && (
+      {anchor && (
+        <Popover anchor={anchor} onClose={() => setAnchor(null)} width={320}>
         <div role="dialog" aria-label="업데이트 이력" data-testid="changelog-panel"
-          className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-80 max-w-[90vw] overflow-auto rounded-ctl border border-line bg-panel p-2 text-xs text-text shadow-lg">
+          className="max-h-80 max-w-[90vw] overflow-auto text-xs text-text">
           <div className="mb-1 font-semibold">새 소식</div>
           <ReleaseNotes notes={RELEASE_NOTES} />
           <details className="mt-2" data-testid="changelog-dev">
@@ -46,6 +48,7 @@ export function EditionBadge() {
               </li>))}</ul>)}
           </details>
         </div>
+        </Popover>
       )}
     </span>
   )
