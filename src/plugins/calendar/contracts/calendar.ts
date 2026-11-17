@@ -8,7 +8,7 @@
  *   제공자(달력): provides { calendar: '0.2.0' } + modules.calendar. 오늘은 calendar 플러그인이 채운다.
  */
 import type { ComponentType } from 'react';
-import type { Disposable } from '../../../pane-ui-system/plugin';
+import type { Disposable, PluginHost } from '../../../pane-ui-system/plugin';
 import type { IconName } from '../../../pane-ui-system';
 import type { RecordField } from '../../collection/contracts/collection';
 import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/nodes';
@@ -128,6 +128,8 @@ export interface CalendarPreset {
      *   🔴 던지면 통과로 본다(규칙 버그가 저장을 영영 막지 않게) · 경고만 남긴다.
      */
     beforeSave?(draft: EventDraft, ctx: SaveContext): SaveVerdict;
+    /** 저장소 화면 맨 위에 얹는 띠(0.2 덧붙임 · 선택) — 그려 낼 게 없으면 null. 예: 방이 0개일 때의 안내. */
+    banner?: ComponentType<{ host: PluginHost }>;
     /** 이 프리셋으로 저장소를 만든 직후 한 번 — 곁에 필요한 노드를 만들고 저장소 data 에 담는다. */
     onCreateStore?(ctx: PresetCreateContext): void | Promise<void>;
 }

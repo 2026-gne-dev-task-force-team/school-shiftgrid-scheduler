@@ -28,6 +28,7 @@ import { registerType, clearTypes } from '../../pane-ui-system/core/nodes/model/
 import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, clearPendingCard } from '../calendar/nodes';
 import { __resetPresets } from '../calendar/presets';
+import { RoomEmptyBanner } from './RoomEmptyNotice';
 import { calendarModule } from '../calendar/feed';
 import type { Room, RoomProps, Rooms } from '../rooms/contracts/rooms';
 import { dayIndexOf } from '../../../shared/room-rules.ts';
@@ -174,4 +175,22 @@ describe('방 예약 화면 — 빈 상태', () => {
         act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
         expect(run).toHaveBeenCalledWith('ops-room.open-manage');
     });
+});
+
+describe('방 예약 달력 띠 — 방 0개', () => {
+    const mk = (rms: Rooms, run = vi.fn()) => ({ commands: { run }, modules: { use: (n: string) => (n === 'rooms' ? rms : n === 'ops-room' ? { version: 1, cmd: { openManage: 'ops-room.open-manage' } } : null) } }) as unknown as PluginHost;
+    it('방이 0개면 안내·단추가 뜨고 단추는 약속의 cmd 를 돈다 · 방이 있으면 아무것도 안 그린다', () => {
+        const el = document.createElement('div'); document.body.appendChild(el);
+        root = createRoot(el);
+        const run = vi.fn();
+        const emptyRooms = { ...fakeRooms, roomsIn: () => [] } as unknown as Rooms;
+        act(() => { root!.render(<RoomEmptyBanner host={mk(emptyRooms, run)} />); });
+        expect(el.querySelector('[data-room-empty-banner]')!.textContent).toContain('특별실 관리에서 방을 먼저 더해 주세요');
+        const btn = [...el.querySelectorAll('button')].find((x) => x.textContent === '특별실 관리 열기')!;
+        act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(run).toHaveBeenCalledWith('ops-room.open-manage');
+        act(() => { root!.render(<RoomEmptyBanner host={mk(fakeRooms as unknown as Rooms)} />); });
+        expect(el.querySelector('[data-room-empty-banner]')).toBeNull();
+    });
+    it('프리셋이 banner 를 든다', () => { expect(ROOM_BOOKING_PRESET.banner).toBe(RoomEmptyBanner); });
 });
