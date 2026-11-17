@@ -32,13 +32,32 @@ export function relationTargets(host: PluginHost): RelationTargets {
 export function initDemandTable(host: PluginHost): Disposable | null {
     const rv = host.modules.use<RecordViewApi>('collection');
     const nodes = host.modules.use<NodesApi>('nodes');
-    kit = rv ? rv.defineCollection(DEMAND_CONFIG) : null;
+    // 🔴 「새로 만들기」가 어느 길이든(탐색기 createInit · 화면 시작 칸 kit.createList) 같은 대상 이음을 심는다 — 화면 길은 host 를 안 넘기니 여기서 묶는다(T-10g1).
+    kit = rv ? rv.defineCollection({ ...DEMAND_CONFIG, newListFields: () => newListFields(relationTargets(host)) }) : null;
     return kit?.init(nodes ?? null) ?? null;
+}
+
+/** 이미 만든 시수표의 빈 관계 칸(대상 없음)만 지금 정본으로 채운다 — 사용자가 고른 대상은 안 덮는다. 열 때 한 번. */
+export function fillEmptyTargets(host: PluginHost, listId: string): void {
+    if (!kit) return;
+    const fields = kit.userFieldsOf(listId);
+    if (fields.length === 0) return;
+    const t = relationTargets(host);
+    const want: Record<string, string | undefined> = { f_teacher: t.teacher, f_class: t.class, f_subject: t.subject };
+    let changed = false;
+    const next = fields.map((f) => {
+        const id = want[f.key];
+        const cfg = (f.config ?? {}) as { target?: unknown };
+        if (!id || f.type !== 'relation' || cfg.target) return f;
+        changed = true;
+        return { ...f, config: { ...cfg, target: { kind: 'db' as const, nodeId: id } } };
+    });
+    if (changed) kit.setUserFields(listId, next as typeof fields);
 }
 
 export const demandNodeTypeImpl = {
     list: {
-        open: (host: PluginHost, id: string) => { kit?.open(host, id); },
+        open: (host: PluginHost, id: string) => { fillEmptyTargets(host, id); kit?.open(host, id); },
         menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
         createInit: (host: PluginHost) => ({ data: { fields: newListFields(relationTargets(host)) } }),
     } satisfies NodeTypeImplFns,
