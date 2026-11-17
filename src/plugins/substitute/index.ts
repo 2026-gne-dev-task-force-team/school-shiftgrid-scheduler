@@ -1,21 +1,22 @@
 /**
- * 「보결 명단」 플러그인 — 보결 명단(substitute.list)·교직원(substitute.staff) 노드 둘 + 명단 화면 하나(쥔님 2026-11-10).
- *   선언형(rooms·people 과 같은 결) — onActivate 엔 노드 다리만.
- *   ⛔ 약속(provides)은 아직 없다 — 이 명단을 읽을 기능(후보 등급)이 이 꾸러미 안에 들어올 때 그때 정한다.
+ * 「보결 명단」 플러그인 — 🔴 R4(T-10ey): 교직원 명단(staff) 위 보기 하나 + 옛 노드 타입 둘(이사한 값은 staff 로 갔다).
+ *   선언형 — onActivate 엔 노드 다리 + 이사(멱등)만. ⛔ 자기 저장 없음 · ⛔ 약속(provides) 없음.
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
-import type { PluginHost, CommandContext } from '../../pane-ui-system/plugin';
+import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { substituteNodeTypes, substituteNodeTypeImpl, initSubstitute, getKit } from './nodes';
+import { substituteNodeTypes, substituteNodeTypeImpl, initSubstitute } from './nodes';
+import { SubstituteSheet } from './SubstituteSheet';
 
 const SHEET_ID = 'substitute.sheet';
 
 export const substitutePlugin = definePlugin({
     manifest: {
         ...manifest,
-        requires: { nodes: '^0.1', 'collection': '^0.2' },
-        supports: { 'page-doc': '^0.1' },
+        requires: { nodes: '^0.1' },
+        // 🔴 보기는 staff 약속 위에 선다 — 꺼져 있어도 이 조각은 뜬다(안내만).
+        supports: { staff: '^0.1' },
         contributes: {
             views: [{
                 id: 'sheet', title: '보결 명단', icon: 'userSwap', defaultArea: 'center',
@@ -25,7 +26,6 @@ export const substitutePlugin = definePlugin({
             }],
             commands: [
                 { id: 'substitute.open', title: '보결 명단 열기', icon: 'userSwap' },
-                { id: 'substitute.openList', title: '명단 열기', icon: 'userSwap', palette: false },
             ],
             ribbon: [{ commandId: 'substitute.open', icon: 'userSwap', order: 5 }],
             nodeTypes: substituteNodeTypes,
@@ -33,11 +33,10 @@ export const substitutePlugin = definePlugin({
     },
 
     components: {
-        Sheet: ({ host, peek, leaf }) => { const k = getKit(); return k ? createElement(k.Tab, { host, peek, leafId: leaf.id }) : null; },
+        Sheet: ({ host }) => createElement(SubstituteSheet, { host }),
     },
     commands: {
         'substitute.open': (host: PluginHost) => { host.workspace.open(SHEET_ID, { where: 'center' }); },
-        'substitute.openList': (_host: PluginHost, ctx?: CommandContext) => { getKit()?.openList(ctx?.nodeId); },
     },
     nodeTypes: substituteNodeTypeImpl,
 

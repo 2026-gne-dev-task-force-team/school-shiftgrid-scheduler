@@ -1,42 +1,50 @@
 /**
- * 보결 명단 ↔ 노드 시스템 다리 — rooms·people 과 같은 꼴(다리 본체는 컬렉션 바닥 defineCollection).
- *   다른 점 하나: 명단 노드의 createInit 이 「구분」 칸을 심는다(탐색기 「새로 만들기」 길 — 시작 화면 길은 config.newListFields 를 kit 가 쓴다).
- *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만 · collection 값은 host.modules.use('collection') 로(구조 검사 ⑨).
+ * 보결 명단 ↔ 노드 시스템 — 🔴 R4(T-10ey): 사람 값은 교직원 명단(staff)으로 이사했다. 여기엔 옛 노드 타입 둘만 남는다.
+ *   · 옛 노드(substitute.list·substitute.staff)는 지우지 않는다 — 이사한 것은 data.movedTo 표시가 붙고 탐색기에서 숨는다(되돌릴 수 있게).
+ *   · 새로 만들기 길은 닫았다(create 없음) — 새 명단은 교직원 명단에서 만든다. 옛 컬렉션 kit(자기 저장)는 걷었다.
+ *   · 이사(migrate.ts)는 활성 때 + 노드가 바뀔 때마다 돈다 — 멱등이라 다시 돌아도 같다. staff 가 아직 안 켜졌으면 0.
+ *   ⛔ host.store·persist·tree 를 직접 안 본다 — NodesApi 하나로만.
  */
 import type { NodesApi, NodeTypeImplFns } from '../../pane-ui-system/core/nodes/contracts/nodes';
-import type { CollectionKit, RecordViewApi } from '../collection/contracts/collection';
-import type { Disposable, MenuEntry, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
-import { STAFF_CONFIG, LIST_TYPE, STAFF_TYPE, newListFields } from './config';
+import type { Disposable, PluginHost, NodeTypeContribution } from '../../pane-ui-system/plugin';
+import { OLD_LIST_TYPE, OLD_ITEM_TYPE, migrateSubstituteToStaff, movedTo } from './migrate';
 
-export { LIST_TYPE, STAFF_TYPE };
+export const LIST_TYPE = OLD_LIST_TYPE;
+export const STAFF_TYPE = OLD_ITEM_TYPE;
 
-let kit: CollectionKit | null = null;
-export function getKit(): CollectionKit | null { return kit; }
+let nodesApi: NodesApi | null = null;
+/** staff 약속이 켜져 있나 — 꺼져 있으면 새 노드 타입이 없어 이사를 미룬다. */
+let staffUp: () => boolean = () => false;
 /** 테스트가 직접 건넬 수 있다(활성 없이). */
-export function setKit(k: CollectionKit | null): void { kit = k; }
+export function setNodes(n: NodesApi | null, up: () => boolean = () => true): void { nodesApi = n; staffUp = up; }
 
-/** 활성(index.ts)이 한 번 — 컬렉션 모듈로 kit 를 만들고 NodesApi 를 잇는다(없으면 조용히 빈 상태). */
+/** 지금 이사를 한 번 돌린다(멱등). 보기가 열릴 때도 부른다 — staff 가 나중에 켜져도 따라잡는다. */
+export function runMigration(): number { return nodesApi ? migrateSubstituteToStaff(nodesApi, staffUp) : 0; }
+
+/** 활성(index.ts)이 한 번 — 노드 다리를 쥐고 이사를 돌린다. 노드가 바뀔 때마다 다시 확인(멱등 · 새로 이사할 게 없으면 아무것도 안 쓴다). */
 export function initSubstitute(host: PluginHost): Disposable | null {
-    const rv = host.modules.use<RecordViewApi>('collection');
     const nodes = host.modules.use<NodesApi>('nodes');
-    kit = rv ? rv.defineCollection(STAFF_CONFIG) : null;
-    return kit?.init(nodes ?? null) ?? null;
+    nodesApi = nodes ?? null;
+    staffUp = () => host.modules.use('staff') !== null;
+    if (!nodes) return null;
+    runMigration();
+    const sub = nodes.subscribe(() => { runMigration(); });
+    return { dispose: () => { sub.dispose(); nodesApi = null; } };
 }
 
 export const substituteNodeTypeImpl = {
     list: {
-        open: (host: PluginHost, id: string) => { kit?.open(host, id); },
-        menu: (_host: PluginHost, id: string): MenuEntry[] => kit?.menu(id) ?? [],
-        createInit: () => ({ data: { fields: newListFields() } }),
+        // 옛 명단을 열면 보기(교직원 위)가 열린다 — 이사한 명단은 숨겨져 있어 보통 누를 일이 없다.
+        open: (host: PluginHost) => { host.workspace.open('substitute.sheet', { where: 'center' }); },
+        hidden: (id: string) => !!nodesApi && !!movedTo(nodesApi, id),
     } satisfies NodeTypeImplFns,
 };
 
 export const substituteNodeTypes: NodeTypeContribution<'list'>[] = [
     {
-        type: LIST_TYPE, body: 'collection', label: '보결 명단', icon: 'userSwap',
+        type: LIST_TYPE, label: '보결 명단(옛)', icon: 'userSwap',
         container: { accepts: [STAFF_TYPE, 'folder', LIST_TYPE] }, openable: true,
-        create: { label: '보결 명단', under: ['folder', LIST_TYPE] },
         impl: 'list',
     },
-    { type: STAFF_TYPE, label: '교직원', icon: 'user', record: true },
+    { type: STAFF_TYPE, label: '교직원(옛)', icon: 'user', record: true },
 ];
