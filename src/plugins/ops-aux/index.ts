@@ -8,15 +8,19 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Staff } from '../staff/contracts/staff';
 import { manifest } from './manifest';
 import { AuxPanel } from './AuxPanel';
-import type { PartStore } from './source';
+import type { AuxSource, PartStore } from './source';
 import { requestAssignTab } from './auxTab';
-import { initAuxMigration } from './boot';
+import { initAuxMigration, registerDutyPreset } from './boot';
+import { auxSourceOfHost } from './dutySource';
 import { AuxStatus, type AuxStatusProps } from './AuxStatus';
 
 export { reassignNeededCount } from './ops';
 
 let migrationSub: { dispose(): void } | null = null;
-const restart = (host: PluginHost) => { migrationSub?.dispose(); migrationSub = initAuxMigration(host); };
+let presetReg: { dispose(): void } | null = null;
+const stop = () => { migrationSub?.dispose(); migrationSub = null; presetReg?.dispose(); presetReg = null; };
+// R16 — 달력 프리셋 「근태」(배정·예외) 등록을 이사보다 먼저 한다.
+const restart = (host: PluginHost) => { stop(); presetReg = registerDutyPreset(host); migrationSub = initAuxMigration(host); };
 
 export const opsAuxPlugin = definePlugin({
     manifest: {
@@ -29,14 +33,14 @@ export const opsAuxPlugin = definePlugin({
         },
     },
     // 교직원 명단(staff)이 켜져 있으면 명부를 거기서 읽는다(없으면 옛 근태 명부).
-    components: { Aux: ({ host }: { host: PluginHost }) => createElement(AuxPanel as FunctionComponent<{ staff?: Staff; store?: PartStore }>, { staff: host.modules.use<Staff>('staff') ?? undefined, store: host.storage }) },
-    renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { store: host.storage, onOpen: () => { host.commands.run('ops-aux.open'); requestAssignTab(); } }) },
+    components: { Aux: ({ host }: { host: PluginHost }) => createElement(AuxPanel as FunctionComponent<{ staff?: Staff; store?: PartStore; source?: AuxSource }>, { staff: host.modules.use<Staff>('staff') ?? undefined, store: host.storage, source: auxSourceOfHost(host) }) },
+    renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { store: host.storage, source: auxSourceOfHost(host), onOpen: () => { host.commands.run('ops-aux.open'); requestAssignTab(); } }) },
     commands: { 'ops-aux.open': (host: PluginHost) => { host.workspace.open('ops-aux.aux', { where: 'center' }); } },
     // 🔴 T-10f7 — 옛 명부(localStorage)를 교직원 명단으로 기동 때 옮긴다(약속이 꺼져 있으면 미룸 · 두 번 돌아도 같음).
     lifecycle: {
         onActivate(host: PluginHost) { restart(host); },
-        onDeactivate() { migrationSub?.dispose(); migrationSub = null; },
-        onInterface: Object.fromEntries(['nodes', 'staff'].map((n) => [n, { attach: restart, detach: () => undefined }])),
+        onDeactivate() { stop(); },
+        onInterface: Object.fromEntries(['nodes', 'staff', 'calendar'].map((n) => [n, { attach: restart, detach: () => undefined }])),
     },
 });
 

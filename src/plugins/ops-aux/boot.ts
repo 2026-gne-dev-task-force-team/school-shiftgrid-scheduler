@@ -7,6 +7,9 @@ import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import { moveLocalAuxStaff, staffMoved } from './migrate';
 import { movePartToStorage } from './partmove';
+import { dutyMoved, dutyPreset, moveDutyToCalendar } from './duty';
+import { readStoredPart } from './source';
+import type { Calendar } from '../calendar/contracts/calendar';
 
 /** 옛 기기 저장소 — 읽기만 한다. */
 type StorageLike = Pick<Storage, 'getItem'>;
@@ -16,6 +19,11 @@ export function runAuxMigration(host: Pick<PluginHost, 'modules' | 'storage'>, s
     // R17 — 옛 기기 저장소 → 호스트 저장(약속과 무관하게 먼저 한 번).
     try { movePartToStorage(host.storage, storage); } catch { /* 저장소 막힘 — 이사 실패가 켜짐을 막지 않는다 */ }
     const nodes = host.modules.use<NodesApi>('nodes');
+    // R16 — 옛 배정·예외 → 달력 일정(calendar·nodes 약속이 꺼져 있으면 미룸 · 표시가 있으면 다시 안 함).
+    const calendar = host.modules.use<Calendar>('calendar');
+    if (calendar && nodes && !dutyMoved(host.storage)) {
+        try { moveDutyToCalendar({ calendar, nodes }, host.storage, readStoredPart(host.storage)); } catch { /* 이사 실패가 켜짐을 막지 않는다 */ }
+    }
     const staffUp = () => host.modules.use('staff') !== null;
     if (!nodes || !staffUp()) return null;
     if (staffMoved(host.storage, storage)) return null;
@@ -29,3 +37,7 @@ export function initAuxMigration(host: Pick<PluginHost, 'modules' | 'storage'>, 
     const sub = host.modules.use<NodesApi>('nodes')?.subscribe(attempt);
     return { dispose: () => { sub?.dispose(); } };
 }
+
+/** 달력 프리셋 「근태」 등록 — 달력이 꺼져 있으면 null. 마감 목록은 호스트 저장에서 그때그때 읽는다(월 마감은 ops-aux 에 남는다). */
+export const registerDutyPreset = (host: Pick<PluginHost, 'modules' | 'storage'>): Disposable | null =>
+    host.modules.use<Calendar>('calendar')?.registerPreset(dutyPreset(() => readStoredPart(host.storage)?.monthClose ?? [])) ?? null;
