@@ -12,7 +12,8 @@
     "test": "vitest run",
     "lint": "oxlint",
     "e2e": "playwright test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "node scripts/install-hooks.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

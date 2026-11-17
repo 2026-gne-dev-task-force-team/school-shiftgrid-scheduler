@@ -1,0 +1,30 @@
+#!/bin/sh
+# shiftgrid task-num hook
+# 커밋 메시지 첫 줄에 태스크 번호(T-·R·U·K)가 없으면 거부한다. (T-N2 · R129)
+# 우회: SKIP_TASK_NUM=1 git commit ...
+
+msgfile="$1"
+[ -n "$msgfile" ] && [ -f "$msgfile" ] || exit 0
+
+# 첫 줄 = 주석(#)·빈 줄이 아닌 첫 줄
+first=$(grep -v '^#' "$msgfile" | grep -v '^[[:space:]]*$' | head -n 1)
+
+if [ "${SKIP_TASK_NUM:-}" = "1" ]; then
+  echo "commit-msg: SKIP_TASK_NUM=1 — 태스크 번호 검사를 건너뜀" >&2
+  exit 0
+fi
+
+case "$first" in
+  Merge\ *|merge\ *|Revert*|fixup!*|squash!*) exit 0 ;;
+esac
+
+# T-<글자> (T-10fl · T-씽크2 · T-N1) 또는 R/U/K + 숫자 (R55 · U20 · K26). 앞 글자는 영숫자가 아니어야 한다.
+if printf '%s\n' "$first" | grep -Eq '(^|[^[:alnum:]_])(T-[^[:space:]]|[RUK][0-9])'; then
+  exit 0
+fi
+
+{
+  echo "commit-msg: 거부 — 커밋 메시지 첫 줄에 태스크 번호(T-·R·U·K)가 없다."
+  echo "  예: T-10fl 제목  /  T-10e6 (R55) 제목  (정말 예외면 SKIP_TASK_NUM=1 git commit ...)"
+} >&2
+exit 1
