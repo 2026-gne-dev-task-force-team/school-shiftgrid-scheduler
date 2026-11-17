@@ -13,7 +13,7 @@ import type { TableKind } from '../../../../shared/import/index.ts';
 import { fixedDuplicates } from '../../../../shared/room-rules.ts';
 import { DAYS, findDayRow, gridColumns, type RowInfo } from '../../../../shared/import/grid.ts';
 import type { TimeFrame } from '../../../../shared/import/frame.ts';
-import type { Room, RoomFixed } from '../book';
+import type { Room, RoomFixed } from '../../../../shared/room-rules.ts';
 
 export { DAYS };
 export type { RowInfo };

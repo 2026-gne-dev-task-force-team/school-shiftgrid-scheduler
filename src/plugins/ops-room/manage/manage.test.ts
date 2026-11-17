@@ -1,64 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { replay, type Op } from '../../../server-link/replay';
-import { demoPart, memoryRoomSource, type Room } from '../book';
-import { addBlock, addRoom, applyRoomOps, delRoom, editRoom, keyOf, opsFromRooms, parseCsv, parseRoomsCsv, roomsToCsv } from './index';
+import { applyCsvPlan, csvRoomsOf, fixedOf, legacyOf, planCsv, writeImport } from './ops';
+import { parseCsv, parseRoomsCsv, roomsToCsv, type CsvRoom } from './csv';
+import { fakeRooms } from './fakeRooms.testkit';
 
-const MGR = { userId: 'u-m', roles: ['교무'] } as const;
-const room = (o: Partial<Room> & { id: string }): Room => ({ name: o.id, capacity: 2, resourceKey: null, active: true, sort: 9, note: '', ...o });
+const room = (o: Partial<CsvRoom> & { id: string }): CsvRoom => ({ name: o.id, capacity: 2, resourceKey: null, active: true, sort: 9, note: '', ...o });
 let n = 0;
 const nid = () => `gen${++n}`;
 
-describe('ops.rooms 재생', () => {
-    it('기록한 조작을 기본 판에 입힌 결과 = 그 조작을 서버 판 위에 다시 재생한 결과(서버가 딴 방을 더해 둔 경우도)', () => {
-        const base = demoPart();
-        const sci = base.rooms[0];
-        const ops: Op[] = [addRoom(room({ id: 'r-lab', name: '실험실' })), editRoom(sci, { ...sci, capacity: 4 }), delRoom('r-yard')];
-        const direct = applyRoomOps(MGR, base, ops);
-        expect(direct.errors).toEqual([]);
-        expect(direct.next.rooms.map((r) => [r.id, r.capacity])).toEqual([['r-sci', 4], ['r-lab', 2]]);
-        // 서버에 다른 사람이 방 하나를 더했다 → 재생해도 내 조작이 그대로 입혀지고 남의 방도 산다
-        const server = { ...base, rooms: [...base.rooms, room({ id: 'r-other', name: '음악실' })] };
-        const again = applyRoomOps(MGR, server, ops);
-        expect(again.errors).toEqual([]);
-        expect(again.next.rooms.map((r) => r.id).sort()).toEqual(['r-lab', 'r-other', 'r-sci']);
-        // 같은 조작을 두 번 재생해도 결과가 같다(이미 들어감·이미 지워짐은 건너뜀)
-        const twice = replay({ rooms: direct.next.rooms, fixed: [], blocks: [] }, ops, keyOf);
-        expect(twice.result.rooms).toEqual(direct.next.rooms);
-        expect(twice.skipped.length).toBe(3);
+describe('rooms 약속 다리', () => {
+    it('방과 속성을 CSV 줄로 읽는다(정원 없음 = null · 메모 = note)', () => {
+        const r = fakeRooms([{ id: 'a', name: '가상 과학실', props: { capacity: 4, sort: 1 } }, { id: 'b', name: '가상 운동장', props: { active: false } }]);
+        r.updateRoom('a', { memo: '메모' });
+        expect(csvRoomsOf(r)).toEqual([
+            { id: 'a', name: '가상 과학실', capacity: 4, resourceKey: null, active: true, sort: 1, note: '메모' },
+            { id: 'b', name: '가상 운동장', capacity: null, resourceKey: null, active: false, sort: 0, note: '' },
+        ]);
     });
-    it('고치는 사이 서버가 같은 방을 바꿨으면 충돌 — 쓰지 않는다', () => {
-        const base = demoPart();
-        const sci = base.rooms[0];
-        const server = { ...base, rooms: [{ ...sci, name: '새과학실' }, base.rooms[1]] };
-        const out = applyRoomOps(MGR, server, [editRoom(sci, { ...sci, capacity: 5 })]);
-        expect(out.replayed.conflicts.length).toBe(1);
-        expect(out.errors.length).toBe(1);
+    it('CSV 계획: id 나 이름이 같으면 고침 · 같은 값이면 그대로 · 없으면 더함 → 약속으로 쓴다', () => {
+        const r = fakeRooms([{ id: 'a', name: '가', props: { capacity: 2, sort: 9 } }, { id: 'b', name: '나', props: { capacity: 2, sort: 9 } }]);
+        const plan = planCsv(csvRoomsOf(r), [room({ id: 'a', name: '가' }), room({ id: 'zz', name: '나', capacity: 7 }), room({ id: 'c', name: '다', capacity: null, resourceKey: 'k' })]);
+        expect([plan.adds.length, plan.sets.length, plan.same]).toEqual([1, 1, 1]);
+        expect(applyCsvPlan(r, 'L1', plan)).toEqual({ added: 1, set: 1 });
+        const out = csvRoomsOf(r);
+        expect(out.find((x) => x.id === 'b')?.capacity).toBe(7);
+        expect(out.find((x) => x.name === '다')).toMatchObject({ capacity: null, resourceKey: 'k' });
+        expect(out.length).toBe(3);
     });
-    it('칸 규칙: 정원 범위 · 이름 겹침 · 없는 방 차단 · 차단 날짜 순서', () => {
-        const base = demoPart();
-        expect(applyRoomOps(MGR, base, [addRoom(room({ id: 'x', capacity: 21 }))]).errors[0]).toContain('1~20');
-        expect(applyRoomOps(MGR, base, [addRoom(room({ id: 'x', name: '과학실' }))]).errors[0]).toContain('겹칩니다');
-        const b = { id: 'b', roomId: 'nope', startDate: '2026-11-20', endDate: '2026-11-19', fromMin: null, toMin: null, reason: '' };
-        expect(applyRoomOps(MGR, base, [addBlock(b)]).errors.length).toBe(2);
-    });
-    it('권한: 방 칸 쓰기는 교무·교감·관리자만 — 교사·근태담당·보결관리자는 거부 · 교사 겸 교무는 됨', () => {
-        const op = [addRoom(room({ id: 'r-p', name: '도서실' }))];
-        for (const r of ['교무', '교감', '관리자'] as const) expect(applyRoomOps({ userId: 'u', roles: [r] }, demoPart(), op).errors).toEqual([]);
-        for (const r of ['교사', '근태담당', '보결관리자'] as const) expect(applyRoomOps({ userId: 'u', roles: [r] }, demoPart(), op).errors[0]).toContain('교무·교감·관리자만');
-        expect(applyRoomOps({ userId: 'u', roles: ['교사', '교무'] }, demoPart(), op).errors).toEqual([]);
-        expect(applyRoomOps({ userId: 'u', role: '교감' }, demoPart(), op).errors).toEqual([]); // 옛 role 하나짜리
-    });
-    it('저장소에 쓰면 다시 읽는다', async () => {
-        const src = memoryRoomSource(demoPart());
-        const out = applyRoomOps(MGR, await src.loadPart(), [addRoom(room({ id: 'r-new', name: '미술실' }))]);
-        await src.savePart(out.next);
-        expect((await src.loadPart()).rooms.map((r) => r.name)).toContain('미술실');
+    it('고정 사용: 읽기 · 불러온 결과는 그 방 ext 에만 통째로 쓴다(다른 방·다른 칸은 그대로)', () => {
+        const r = fakeRooms([{ id: 'a', name: '가상 과학실', props: { capacity: 3, fixed: [{ dayIndex: 1, startMin: 540, endMin: 580, label: '옛' }] } }, { id: 'b', name: '가상 음악실', props: { fixed: [{ dayIndex: 2, startMin: 540, endMin: 580, label: '남' }] } }]);
+        const cur = legacyOf(r);
+        expect(cur.fixed.map((f) => [f.roomId, f.label])).toEqual([['a', '옛'], ['b', '남']]);
+        const next = { rooms: [...cur.rooms, { id: 'tmp', name: '가상 새방', capacity: 3, resourceKey: null, active: true, sort: 5, note: '' }], fixed: [{ id: 'x', roomId: 'a', dayIndex: 0, startMin: 540, endMin: 580, label: '새' }, { id: 'y', roomId: 'tmp', dayIndex: 4, startMin: 600, endMin: 640, label: '또' }, cur.fixed[1]] };
+        writeImport(r, 'L1', cur.rooms, next, [{ roomId: 'a' }, { roomId: 'tmp' }]);
+        expect(fixedOf(r.room('a')!).map((f) => f.label)).toEqual(['새']);
+        expect(fixedOf(r.room('b')!).map((f) => f.label)).toEqual(['남']);
+        const made = r.snapshot().find((x) => x.name === '가상 새방')!;
+        expect(fixedOf(made).map((f) => f.label)).toEqual(['또']);
+        expect(r.roomProps(made.id).capacity).toBe(3);
+        expect(r.roomProps('a').capacity).toBe(3);
     });
 });
 
 describe('방 CSV', () => {
-    it('따옴표·쉼표·줄바꿈이 든 칸을 내보내고 다시 읽어도 같다', () => {
-        const rooms = [room({ id: 'a', name: '과학실, 2층', note: '그는 "정말"\n좋다' }), room({ id: 'b', name: '운동장', resourceKey: 'yard', active: false })];
+    it('따옴표·쉼표·줄바꿈이 든 칸을 내보내고 다시 읽어도 같다(정원 비움 포함)', () => {
+        const rooms = [room({ id: 'a', name: '과학실, 2층', note: '그는 "정말"\n좋다' }), room({ id: 'b', name: '운동장', resourceKey: 'yard', active: false, capacity: null })];
         const back = parseRoomsCsv(roomsToCsv(rooms), nid);
         expect(back.headerError).toBeNull();
         expect(back.rejects).toEqual([]);
@@ -74,11 +59,6 @@ describe('방 CSV', () => {
         expect(p.rooms.map((r) => r.name)).toEqual(['가', '마']);
         expect(p.rejects.map((r) => r.line)).toEqual([4, 5, 6, 8]);
         expect(p.rooms[0].note).toBe('메모\n둘째 줄');
-    });
-    it('미리보기 계획: id 없으면 추가 · 있고 다르면 고침 · 같으면 그대로', () => {
-        const cur = [room({ id: 'a', name: '가' }), room({ id: 'b', name: '나' })];
-        const plan = opsFromRooms(cur, [room({ id: 'a', name: '가' }), room({ id: 'b', name: '나', capacity: 7 }), room({ id: 'c', name: '다' })]);
-        expect([plan.adds, plan.sets, plan.same]).toEqual([1, 1, 1]);
         expect(parseCsv('a,b\r\n\r\nc,d').map((r) => r.line)).toEqual([1, 3]);
     });
 });

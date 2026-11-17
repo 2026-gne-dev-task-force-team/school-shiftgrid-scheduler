@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { magicFrame } from '../../../../shared/import/magicFrame.ts';
-import type { Room, RoomFixed } from '../book';
+import type { Room, RoomFixed } from '../../../../shared/room-rules.ts';
 import { RoomImportView } from './RoomImportView';
 import { csvBytes, hwpxBytes } from './synth';
 
