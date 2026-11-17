@@ -16,6 +16,7 @@ import config from '../../../site.config.json';
 import { manifest } from './manifest';
 import { createAccountServer, type AuthClient } from './session';
 import { ServerAccountStatus } from './panes/ServerAccountStatus';
+import { createPasswordKit, PASSWORD_CMD } from './password';
 
 /** server-link 의 isConfigured 와 같은 판정(값 import 는 꾸러미 경계 위반이라 여기 한 줄로). */
 export function isServerMode(c: ServerConfig | undefined): boolean {
@@ -31,6 +32,8 @@ export const accountServer = createAccountServer({
     getClient: () => (link?.client() as AuthClient | null | undefined) ?? null,
     classify: (e) => (link ? link.classify(e) : { kind: 'network' }),
 });
+/** 비밀번호 판(③ F4·F6) — 비번 바꾸기·재설정 메일·재설정 링크 착지. */
+export const passwordKit = createPasswordKit(accountServer);
 
 function perCaller<T>(make: (track?: (d: Disposable) => Disposable) => T): PerCallerApi<T> {
     const fn = (_callerId: string | undefined, track?: (d: Disposable) => Disposable) => make(track);
@@ -60,11 +63,23 @@ export const accountServerPlugin = definePlugin({
         provides: SERVER_MODE ? { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' } : {},
         requires: { 'server-link': '^0.1' },
         contributes: SERVER_MODE ? {
-            statusBar: [{ id: 'account-server.whoami', side: 'right', render: 'ServerAccountStatus' }],
+            statusBar: [
+                { id: 'account-server.whoami', side: 'right', render: 'ServerAccountStatus' },
+                { id: 'account-server.password', side: 'right', render: 'PasswordDialogs' },
+            ],
+            commands: [
+                { id: PASSWORD_CMD.change, title: '비밀번호 바꾸기', icon: 'key', keywords: ['암호', '비번'] },
+                { id: PASSWORD_CMD.reset, title: '비밀번호 재설정 메일 보내기', icon: 'key', keywords: ['암호', '비번', '잊음'] },
+            ],
         } : {},
     },
     renders: {
         ServerAccountStatus: (_host: PluginHost) => createElement(ServerAccountStatus, { session: accountServer }),
+        PasswordDialogs: (_host: PluginHost) => passwordKit.render(),
+    },
+    commands: {
+        [PASSWORD_CMD.change]: () => passwordKit.ui.open('change'),
+        [PASSWORD_CMD.reset]: () => passwordKit.ui.open('reset'),
     },
     modules: {
         identity: identityModule,
@@ -77,11 +92,13 @@ export const accountServerPlugin = definePlugin({
             link = host.modules.use<ServerLink>('server-link') ?? null;
             linkSub = link?.onChange((s) => { void accountServer.linkChanged(s); }) ?? null;
             if (link) void accountServer.linkChanged(link.status());
+            passwordKit.start(link);
         },
         onDeactivate() {
             linkSub?.dispose();
             linkSub = null;
             link = null;
+            passwordKit.stop();
         },
     },
 });
