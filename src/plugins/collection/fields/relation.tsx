@@ -6,17 +6,18 @@
  */
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Button, Field, MenuItem, MenuList, Pill, Popover, Select, TextInput, Toggle, handleMenuKey } from '../../../pane-ui-system';
-import type { FieldCellProps, RecordCellValue, RecordField } from '../contracts/collection';
+import type { FieldCellProps, RecordCellValue, RecordField, RelationEmptyConfig } from '../contracts/collection';
 import { getDbRev, getNodesApi, liveRelationTargets, subscribeDb } from '../nodes';
 import { DB_TYPE, ROW_TYPE, blankRow, normalizeRelation, relationToText } from '../schema';
 import { kitOfType } from '../kits';
 import { effectiveParentId } from '../tree';
+import { runHostCommand } from '../self-host';
 import { TITLE_KEY, targetFields, targetValue, valueText } from './follow';
 import { castCandidate, castCandidates, castKeys, liveIn, ownerOf, parseRelationEntry, recordsOf, relationEntry, resolveRelationTargets, type RelationLook } from './cast';
 
 export type RelationTarget = { kind: 'db'; nodeId: string } | { kind: 'source'; id: string };
 /** show = 칩에 보일 대상 칸 key(없음 = 제목) */
-export interface RelationConfig { target?: RelationTarget; many: boolean; show?: string }
+export interface RelationConfig extends RelationEmptyConfig { target?: RelationTarget; many: boolean; show?: string }
 export type { RelationLook } from './cast';
 /** path = 부모 항목 이름들(바깥 → 안) — 최상위면 빈 배열 */
 export interface RelationItem { id: string; name: string; path: string[] }
@@ -25,13 +26,19 @@ const UNTITLED = '제목 없음';
 
 /** 저장된 config → 꼴 맞춘 설정. 틀린 target 은 버린다(없음 = 아직 안 고름) · many 는 기본 true */
 export function relationConfig(config: unknown): RelationConfig {
-    const c = (config && typeof config === 'object' ? config : {}) as { target?: Partial<{ kind: string; nodeId: string; id: string }>; many?: unknown; show?: unknown };
+    const c = (config && typeof config === 'object' ? config : {}) as { target?: Partial<{ kind: string; nodeId: string; id: string }>; many?: unknown; show?: unknown; emptyHint?: unknown; emptyAction?: { label?: unknown; cmd?: unknown } };
     const t = c.target;
     const target: RelationTarget | undefined =
         t?.kind === 'db' && typeof t.nodeId === 'string' && t.nodeId ? { kind: 'db', nodeId: t.nodeId }
         : t?.kind === 'source' && typeof t.id === 'string' && t.id ? { kind: 'source', id: t.id }
         : undefined;
-    return { target, many: c.many !== false, ...(typeof c.show === 'string' && c.show !== TITLE_KEY ? { show: c.show } : {}) };
+    const a = c.emptyAction;
+    return {
+        target, many: c.many !== false,
+        ...(typeof c.show === 'string' && c.show !== TITLE_KEY ? { show: c.show } : {}),
+        ...(typeof c.emptyHint === 'string' && c.emptyHint ? { emptyHint: c.emptyHint } : {}),
+        ...(a && typeof a.label === 'string' && a.label && typeof a.cmd === 'string' && a.cmd ? { emptyAction: { label: a.label, cmd: a.cmd } } : {}),
+    };
 }
 
 /** 값 → id 배열(설정의 many 를 따른다) */
@@ -126,11 +133,12 @@ function castNewTarget(targetDb: string, name: string): string {
     return kit ? kit.addItem(targetDb, { [kit.config.baseFields[0].key]: name }) || '' : '';
 }
 
-function RelationPicker({ target, ids, many, selfDb, onPick, onClear }: {
+function RelationPicker({ target, ids, many, selfDb, empty, onPick, onClear }: {
     target: RelationTarget & { kind: 'db' };
     ids: string[];
     many: boolean;
     selfDb?: string;
+    empty?: RelationEmptyConfig;
     onPick: (id: string) => void;
     onClear: () => void;
 }) {
@@ -199,7 +207,12 @@ function RelationPicker({ target, ids, many, selfDb, onPick, onClear }: {
                     ))}
                 </MenuList>
                 {shown.length === 0 && casts.length === 0 && (
-                    <div data-rv-rel-empty className="px-2 py-1 text-note text-muted">{all.length > 0 ? '맞는 항목이 없어요' : '가리킬 컬렉션에 항목이 없어요'}</div>
+                    <div data-rv-rel-empty className="flex flex-col items-start gap-1 px-2 py-1 text-note text-muted">
+                        {all.length > 0 ? '맞는 항목이 없어요' : (empty?.emptyHint ?? '가리킬 컬렉션에 항목이 없어요')}
+                        {all.length === 0 && empty?.emptyAction && (
+                            <Button variant="outline" size="sm" data-rv-rel-empty-action onClick={() => runHostCommand(empty.emptyAction!.cmd)}>{empty.emptyAction.label}</Button>
+                        )}
+                    </div>
                 )}
             </div>
             {!many && <div className="px-2 text-note text-muted">하나만 고를 수 있어요</div>}
@@ -233,7 +246,7 @@ export function RelationCell({ field, value, config, editable, onChange, rowId }
             {anchor && (
                 <Popover anchor={anchor} width={260} onClose={() => setAnchor(null)}>
                     {cfg.target?.kind === 'db' ? (
-                        <RelationPicker target={cfg.target} ids={ids} many={cfg.many} selfDb={(rowId && ownerOf(getNodesApi()!, rowId)) || undefined}
+                        <RelationPicker target={cfg.target} ids={ids} many={cfg.many} selfDb={(rowId && ownerOf(getNodesApi()!, rowId)) || undefined} empty={cfg}
                             onPick={(id) => { onChange(toggleRelation(ids, id, cfg.many)); if (!cfg.many) setAnchor(null); }}
                             onClear={() => { onChange([]); setAnchor(null); }} />
                     ) : (

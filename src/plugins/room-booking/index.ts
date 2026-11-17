@@ -8,6 +8,8 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar, CalendarPreset } from '../calendar/contracts/calendar';
 import type { Rooms } from '../rooms/contracts/rooms';
+import type { OpsRoom } from '../ops-room/contracts/ops-room';
+import type { RelationEmptyConfig } from '../collection/contracts/collection';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { BOOKER_FIELD, HEADCOUNT_FIELD, PRESET_ID, ROOM_FIELD, judgeBooking, roomIdOf } from './rules';
@@ -21,6 +23,7 @@ const STORE_TYPE = 'calendar.store';
 
 // 저장 전 규칙이 쓰는 손잡이 — 활성 때 꽂고 끌 때 뺀다(프리셋은 모듈 상수라 호스트를 직접 못 든다).
 let rooms: Rooms | null = null;
+let opsRoom: OpsRoom | null = null;
 
 /** 저장 전 규칙 — 방 칸이 비었거나 방을 못 읽으면 통과(판단할 게 없다). 거절 사유의 토스트는 달력이 띄운다(여기서 또 띄우지 않는다). */
 export const roomBookingBeforeSave: NonNullable<CalendarPreset['beforeSave']> = (draft) => {
@@ -40,7 +43,12 @@ export const ROOM_BOOKING_PRESET: CalendarPreset = {
     defaultView: 'week',
     baseFields: (store) => [{
         key: ROOM_FIELD, label: '방', type: 'relation',
-        config: { target: { kind: 'db', nodeId: store.data.roomListId }, many: false },
+        // 방이 하나도 없을 때 방 칸이 어디서 더하는지 알려 준다 — 단추 명령은 ops-room 약속 값(RoomEmptyNotice 와 같은 길)
+        config: {
+            target: { kind: 'db', nodeId: store.data.roomListId }, many: false,
+            emptyHint: '특별실 관리에서 방을 먼저 더해 주세요',
+            ...(opsRoom ? { emptyAction: { label: '특별실 관리 열기', cmd: opsRoom.cmd.openManage } } : {}),
+        } satisfies Record<string, unknown> & RelationEmptyConfig,
     }, {
         key: HEADCOUNT_FIELD, label: '인원', type: 'number',
     }, {
@@ -111,10 +119,11 @@ export const roomBookingPlugin = definePlugin({
     lifecycle: {
         onActivate(host: PluginHost) {
             rooms = host.modules.use<Rooms>('rooms') ?? null;
+            opsRoom = host.modules.use<OpsRoom>('ops-room') ?? null;
             reg = host.modules.use<Calendar>('calendar')?.registerPreset(ROOM_BOOKING_PRESET) ?? null;
         },
     },
-    deactivate() { reg?.dispose(); reg = null; rooms = null; },
+    deactivate() { reg?.dispose(); reg = null; rooms = null; opsRoom = null; },
 });
 
 export default roomBookingPlugin;
