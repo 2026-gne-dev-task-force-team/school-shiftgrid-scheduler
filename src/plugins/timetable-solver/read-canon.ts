@@ -15,7 +15,7 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type {
     BlockerFix, BuildIssue, CanonBellRow, CanonDemandRow, CanonDutyRow, PlanBlocker, SolverBlockRow, SolverCanon,
 } from './contracts/solver';
-import { buildSolverInput, type BuildModules, type BuildResult } from './build-context';
+import { buildSolverInput, lessonCellsByTrack, type BuildModules, type BuildResult } from './build-context';
 import { loadBlocks } from './blocks-store';
 
 /** 노드 타입 이름 — 각 정본 플러그인이 고정한 값(시험이 그 플러그인의 상수와 같은지 지킨다). */
@@ -180,6 +180,15 @@ export function planBlockers(canon: SolverCanon, built: BuildResult, readBlocker
     const gradedClass = canon.classes.some((c) => c.grade !== undefined);
     if (canon.bell.length === 0) stop('no-bell', '일과표에 교시가 하나도 없습니다', 'bell');
     else if (built.input.specs.length === 0 && gradedClass) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다', 'bell');
+    else if (built.input.demands.some((d) => d.count > 0)) {
+        // 🔴 엔진이 놓을 칸을 엔진과 같은 함수로 센다(T-10g2) — 시간 틀은 있어도 「수업」 칸이 0이면 편성안이 비어 나온다
+        const cells = lessonCellsByTrack(built.input);
+        const demanded = new Set(built.input.demands.filter((d) => d.count > 0).map((d) => d.trackId));
+        const empty = built.input.tracks.filter((t) => demanded.has(t.id) && (cells.get(t.id) ?? 0) === 0);
+        if (empty.length > 0) {
+            stop('no-lesson-cell', `수업 칸이 0개입니다(${empty.map((t) => t.name).join('·')}) — 일과표 줄의 구분을 「수업」으로 골라 주세요. 구분이 빈 줄은 수업 칸으로 치지 않습니다`, 'bell');
+        }
+    }
     const noGrade = canon.classes.filter((c) => c.grade === undefined).length;
     if (noGrade > 0) stop('no-grade', `학년이 정해지지 않은 반이 ${noGrade}개 있어 시간 틀을 못 맞춥니다`, 'school');
     if (built.input.demands.length === 0) stop('no-demand', canon.demands.length === 0 ? '시수표에 수업 줄이 하나도 없습니다' : '시수표의 모든 줄에 빈 칸이 있어 쓸 수 있는 수업이 없습니다', 'demand');
