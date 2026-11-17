@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Field, Select, TextInput } from '../../../pane-ui-system';
-import type { Room, RoomFixed } from '../book';
+import type { Room, RoomFixed } from '../../../../shared/room-rules.ts';
 import { applyRoomImport, DAYS, previewRoomFile, type RoomPreview, type RoomPreviewResult } from './roomImport';
 import type { TimeFrame } from '../../../../shared/import/frame.ts';
 
@@ -14,7 +14,7 @@ export function RoomImportView({ frame, rooms, fixed, onApply, newId, loadFile }
     frame: TimeFrame;
     rooms: Room[];
     fixed: RoomFixed[];
-    onApply: (next: { rooms: Room[]; fixed: RoomFixed[] }) => void | Promise<void>;
+    onApply: (next: { rooms: Room[]; fixed: RoomFixed[] }, applied: { roomId: string }[]) => void | Promise<void>;
     newId?: () => string;
     /** 시험용 — 파일 → 바이트 */
     loadFile?: (f: File) => Promise<Uint8Array>;
@@ -53,7 +53,7 @@ export function RoomImportView({ frame, rooms, fixed, onApply, newId, loadFile }
         });
         const r = applyRoomImport(frame, rooms, fixed, items, mk);
         if (!r.ok) { setMsg('❌ ' + r.error); return; }
-        await onApply(r.next);
+        await onApply(r.next, r.applied);
         setMsg('반영했습니다: ' + r.applied.map((a) => `${a.name}${a.created ? '(새 방)' : ''} ${a.cells}칸`).join(', '));
     };
 

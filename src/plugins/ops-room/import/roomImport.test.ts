@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { fixedDuplicates } from '../../../../shared/room-rules.ts';
 import { magicFrame } from '../../../../shared/import/magicFrame.ts';
-import type { Room, RoomFixed } from '../book';
+import type { Room, RoomFixed } from '../../../../shared/room-rules.ts';
 import { applyRoomImport, cleanLabel, previewRoomFile, roomNameOf, roomTemplateCsv, type RoomPreview } from './roomImport';
 import { csvBytes, hwpBytes, hwpxBytes, xlsxBytes } from './synth';
 

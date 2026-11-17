@@ -2,15 +2,16 @@
  * 방 목록 CSV — 내보내기·불러오기. 따옴표·쉼표·줄바꿈이 든 칸을 지킨다(RFC 4180 꼴).
  * 불러오기는 곧바로 쓰지 않고 「미리보기」(넣을 것·고칠 것·그대로·거절)를 먼저 낸다.
  */
-import type { Room } from '../book';
+/** CSV 한 줄이 나르는 방 — 정원 null = 제한 없음(rooms 약속의 capacity 없음). note 는 rooms 의 memo. */
+export interface CsvRoom { id: string; name: string; capacity: number | null; resourceKey: string | null; active: boolean; sort: number; note: string }
 
 export const ROOM_HEADER = ['id', 'name', 'capacity', 'resourceKey', 'active', 'sort', 'note'] as const;
 
 const cell = (v: string): string => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
-export function roomsToCsv(rooms: Room[]): string {
+export function roomsToCsv(rooms: CsvRoom[]): string {
     const lines = [ROOM_HEADER.join(',')];
-    for (const r of rooms) lines.push([r.id, r.name, String(r.capacity), r.resourceKey ?? '', r.active ? 'true' : 'false', String(r.sort), r.note].map(cell).join(','));
+    for (const r of rooms) lines.push([r.id, r.name, r.capacity === null ? '' : String(r.capacity), r.resourceKey ?? '', r.active ? 'true' : 'false', String(r.sort), r.note].map(cell).join(','));
     return lines.join('\r\n') + '\r\n';
 }
 
@@ -52,7 +53,7 @@ export interface RoomCsvReject { line: number; why: string }
 export interface RoomCsvPreview {
     /** 머리줄이 틀리면 여기에 이유가 있고 나머지는 비어 있다. */
     headerError: string | null;
-    rooms: Room[];
+    rooms: CsvRoom[];
     rejects: RoomCsvReject[];
 }
 
@@ -62,7 +63,7 @@ export function parseRoomsCsv(text: string, newId: () => string): RoomCsvPreview
     if (recs.length === 0) return { headerError: '빈 파일입니다.', ...empty };
     const head = recs[0].cells.map((c) => c.trim());
     if (head.join(',') !== ROOM_HEADER.join(',')) return { headerError: `머리줄이 달라요. 기대: ${ROOM_HEADER.join(',')}`, ...empty };
-    const rooms: Room[] = [];
+    const rooms: CsvRoom[] = [];
     const rejects: RoomCsvReject[] = [];
     const ids = new Set<string>();
     const names = new Set<string>();
@@ -70,11 +71,12 @@ export function parseRoomsCsv(text: string, newId: () => string): RoomCsvPreview
         if (cells.length !== ROOM_HEADER.length) { rejects.push({ line, why: `칸 수가 ${cells.length}개입니다(${ROOM_HEADER.length}개여야 함).` }); continue; }
         const [id, nameRaw, capRaw, key, activeRaw, sortRaw, note] = cells;
         const name = nameRaw.trim();
-        const capacity = Number(capRaw.trim());
+        const capText = capRaw.trim();
+        const capacity = capText === '' ? null : Number(capText);
         const sort = Number(sortRaw.trim());
         const active = activeRaw.trim().toLowerCase();
         const why = !name ? '방 이름이 비었습니다.'
-            : !/^\d+$/.test(capRaw.trim()) || capacity < 1 || capacity > 20 ? '정원은 1~20 정수여야 합니다.'
+            : capacity !== null && (!/^\d+$/.test(capText) || capacity < 1 || capacity > 20) ? '정원은 비우거나(제한 없음) 1~20 정수여야 합니다.'
             : active !== 'true' && active !== 'false' ? '사용 여부는 true 나 false 입니다.'
             : !/^-?\d+$/.test(sortRaw.trim()) ? '순서는 정수여야 합니다.'
             : names.has(name) ? `파일 안에서 방 이름이 겹칩니다(${name}).`

@@ -24,7 +24,7 @@ export const opsRoomPlugin = definePlugin({
             ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }, { commandId: 'ops-room.open-manage', icon: 'list', order: 10 }],
         },
     },
-    components: { Book: ({ host }: { host: PluginHost }) => createElement(RoomPanel, { host }), Manage: () => createElement(RoomManagePanel) },
+    components: { Book: ({ host }: { host: PluginHost }) => createElement(RoomPanel, { host }), Manage: ({ host }: { host: PluginHost }) => createElement(RoomManagePanel, { host }) },
     commands: {
         'ops-room.open-book': (host: PluginHost) => { host.workspace.open('ops-room.book', { where: 'center' }); },
         'ops-room.open-manage': (host: PluginHost) => { host.workspace.open('ops-room.manage', { where: 'center' }); },
