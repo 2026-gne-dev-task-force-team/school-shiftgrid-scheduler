@@ -11,6 +11,7 @@
  *   - 엔진은 `dayIndex` 0=월 … 4=금 을 쓴다. 바깥(timetable-grid 등)은 1=월 … 7=일 을 쓴다.
  *   - 경계에서 toWeekday·toDayIndex 한 쌍으로만 바꾼다(엔진 안은 안 고친다).
  */
+import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { Doc } from '../types/doc';
 import { migrateDoc } from '../types/doc';
 import type {
@@ -50,6 +51,8 @@ export interface Solver {
     readonly RULES: readonly RuleTemplate[];
     defaultRules(): SolverInput['rules'];
     makeSpec(input: MakeSpecInput): TimetableSpec;
+    /** 지금 정본(교직원·학교·과목·방·일과표·복무·시수표·막힘)에서 편성 입력을 읽어 짓는다 — 읽기만 한다. 일과표·복무 셈 약속이 꺼져 있으면 null. 손으로 옮기기가 쓴다. */
+    readInput(host: PluginHost): SolverInput | null;
     /** v1 파일 글(JSON 으로 읽은 값) → 편성 입력(옛 버전은 올려 준다). v1-file 이 쓴다. */
     migrateDoc(raw: unknown): SolverInput;
     /** 엔진 요일(0=월) → 바깥 요일(1=월). */

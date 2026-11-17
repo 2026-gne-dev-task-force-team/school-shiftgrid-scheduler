@@ -7,6 +7,7 @@ import { Button, EmptyState } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { comparePlans } from '../model';
 import { canonOf, labelFrom } from '../labels';
+import { HandMove } from './HandMove';
 import { subscribePlans, getPlanNodes, planOf, choosePlan, sendToGrid } from '../nodes';
 
 export function PlansTab({ host }: { host: PluginHost }) {
@@ -14,6 +15,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
     const [a, setA] = useState<string | null>(null);
     const [b, setB] = useState<string | null>(null);
     const [sent, setSent] = useState<string | null>(null);
+    const [moving, setMoving] = useState<string | null>(null);
 
     const diff = useMemo(() => {
         const pa = a ? planOf(a) : null;
@@ -25,6 +27,8 @@ export function PlansTab({ host }: { host: PluginHost }) {
     if (nodes.length === 0) {
         return <EmptyState icon="layers" title="담아 둔 편성안이 없습니다" description="시간표를 짜면 결과가 안 한 벌로 여기에 담깁니다." />;
     }
+
+    if (moving) return <HandMove host={host} planId={moving} onClose={() => setMoving(null)} />;
 
     const pick = (id: string) => {
         choosePlan(id);
@@ -46,6 +50,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
                             </span>
                             <Button variant={a === n.id ? 'accent' : 'plain'} onClick={() => setA(n.id)}>왼쪽에 놓기</Button>
                             <Button variant={b === n.id ? 'accent' : 'plain'} onClick={() => setB(n.id)}>오른쪽에 놓기</Button>
+                            <Button onClick={() => setMoving(n.id)}>손으로 옮기기</Button>
                             <Button onClick={() => pick(n.id)}>이 안 고르기</Button>
                         </li>
                     );

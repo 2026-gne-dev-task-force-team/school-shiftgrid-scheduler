@@ -38,6 +38,13 @@ export function savePlan(plan: Plan): string {
     return api.create(api.roots.main, { type: PLAN_TYPE, name: plan.name, data: plan });
 }
 
+/** 편성안 배치만 새 값으로 바꿔 저장한다(손으로 옮기기). ⛔ 기초 정보는 안 건드린다 — 안 노드의 data 하나만 쓴다. */
+export function replacePlan(id: string, plan: Plan): boolean {
+    if (!api || !planOf(id)) return false;
+    api.setData(id, plan);
+    return true;
+}
+
 /** 이 안 고르기 — 고른 안만 chosen=true(나머지는 해제). 한 번의 되돌리기 칸. */
 export function choosePlan(id: string): boolean {
     const a = api;
