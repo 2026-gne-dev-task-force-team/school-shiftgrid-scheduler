@@ -3,7 +3,7 @@
  *   🔴 순수 함수 — 파일을 쓰지 않는다. 화면이 JSON 글로 바꿔 내려받게 한다.
  *   · 정본에 있는 칸은 정본(input)이 이긴다 — extras 는 정본에 칸이 없던 것만 되살린다(`{...extras, ...정본}`).
  *   · 편성안 배치 → v1 배치: 요일은 toDayIndex, 몇째 시간은 그 반 시간 틀의 수업 칸 번호로. 담임 센티널·배치 id 는 extras 가 되살린다.
- *   · 규칙·판은 정본 입력에 있으면 그것을, 비었으면 extras 것을 쓴다.
+ *   · 규칙·판 — extras 를 받았으면(가져온 v1 파일의 것) extras 가 정본이다. 정본 입력의 규칙은 화면이 기본값으로 채우므로 파일에 섞지 않는다. extras 가 없을 때만 입력 것.
  */
 import type { Solver, SolverInput } from '../timetable-solver/contracts/solver';
 import type { Plan } from '../timetable-plans/contracts/plans';
@@ -78,7 +78,7 @@ export function exportV1(input: SolverInput, opts: ExportOptions): ExportResult 
         resources: base.resources.map((r) => withExtra(r, extras.resources[r.id])),
         demands: base.demands.map((d) => withExtra(d, extras.demands[d.id])),
         assignments,
-        rules: base.rules.length ? base.rules : structuredClone(extras.rules),
+        rules: opts.extras ? structuredClone(extras.rules) : base.rules,
         boards: base.boards.length ? base.boards : structuredClone(extras.boards),
     };
     return { doc, issues };
