@@ -20,6 +20,7 @@ import { calendarPlugin } from '../plugins/calendar';
 import { accountPlugin } from '../plugins/account';
 import { peoplePlugin } from '../plugins/people';
 import { sheetPlugin } from '../plugins/sheet';
+import { serverLinkPlugin } from '../plugins/server-link';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { roomsPlugin } from '../plugins/rooms';
 import { roomBookingPlugin } from '../plugins/room-booking';
@@ -46,7 +47,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 // 📌 2026-11-01 21:47 쥔님: Pane UI Test 는 런타임 등록 해지(paneTestPlugin 을 뺐다 · 코드·폴더는 그대로).
 // 카탈로그 = 「설치할 수 있는 것」(정적 번들). 무엇이 깔리나·순서는 site.config.json 의 plugins 가 정한다(활성 순서가 골든).
 const CATALOG: Record<string, PluginModule> = {
-    page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, calendar: calendarPlugin, account: accountPlugin,
+    page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, 'server-link': serverLinkPlugin, calendar: calendarPlugin, account: accountPlugin,
     people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
     subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'ops-aux': opsAuxPlugin, 'v1-editor': v1EditorPlugin,
 };
