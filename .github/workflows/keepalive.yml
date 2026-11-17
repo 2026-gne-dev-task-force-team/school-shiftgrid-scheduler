@@ -1,0 +1,66 @@
+name: Supabase keepalive
+# B14 — 매주 health 함수와 heartbeat 표(PostgREST = DB 질의)를 불러 무료 프로젝트가 잠들지 않게 한다.
+# 월 1회 KEEPALIVE 파일에 날짜 한 줄을 봇이 커밋해 60일 비활동으로 cron 이 꺼지는 것을 막는다.
+# 시크릿 값은 쥔님이 나중에 넣는다. 비어 있으면 「건너뜀」으로 성공 종료한다.
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: 시크릿 확인
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "시크릿 없음 — 건너뜀"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: health 함수 200 확인
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          code=$(curl -s -o health.json -w '%{http_code}' \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/health")
+          echo "health HTTP $code"
+          [ "$code" = "200" ]
+
+      - name: heartbeat 표 읽기(200 + 본문에 at)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          code=$(curl -s -o hb.json -w '%{http_code}' \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            "https://$SUPABASE_PROJECT_REF.supabase.co/rest/v1/heartbeat?select=at")
+          echo "heartbeat HTTP $code"
+          [ "$code" = "200" ]
+          grep -q '"at"' hb.json
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - name: 월 1회 봇 커밋(KEEPALIVE)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          month=$(date -u +%Y-%m)
+          if [ -f KEEPALIVE ] && grep -q "^$month" KEEPALIVE; then
+            echo "이번 달($month) 이미 커밋함"
+            exit 0
+          fi
+          date -u +%Y-%m-%d > KEEPALIVE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add KEEPALIVE
+          git commit -m "keepalive: $(cat KEEPALIVE)"
+          git push
