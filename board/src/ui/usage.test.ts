@@ -27,13 +27,14 @@ describe('한도와 속도 반반', () => {
     const [l, r] = Array.from(el.children) as HTMLElement[]
     expect(l.querySelectorAll('.meter.over').length).toBe(1)
     expect(l.textContent).toContain('7일 100% · 초과')
-    expect(l.textContent).toContain('풀림 11/23')
+    expect(l.textContent).toContain('풀림 11/16') // 기관 줄이 있으면 그 줄의 풀림 시각
     expect(r.querySelector('.meter.over')).toBeNull()
     const none = usagePanel([u('personal', '2026-11-16T01:00:00Z', 10)], ko)
     const org = none.children[0] as HTMLElement
     expect(org.classList.contains('empty')).toBe(false)
     expect(org.querySelectorAll('.meter.over').length).toBe(1)
     expect(org.textContent).toContain('5시간 기록 없음')
+    expect(org.textContent).toContain('풀림 11/23') // 기관 줄이 없으면 쓰러짐 판정이 든 풀림 시각
     expect(usagePanel([u('org', '2026-11-16T01:00:00Z', 40)], { ...ko, on: false }).querySelector('.meter.over')).toBeNull()
   })
 })
