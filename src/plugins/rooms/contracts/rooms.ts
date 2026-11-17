@@ -9,7 +9,8 @@
  *   - 방은 「그냥 일반적인 공간」이다(쥔님 *"그냥 완전 일반적인 스팟 그냥 공간, 여기선 일반적으로 room 방이라고 하지"*). ⛔ 특별실·교실 같은 학교 낱말은 없다.
  *   - 방 안에 방 — 방은 **같은 목록 안의 다른 방**을 부모로 가질 수 있다(선택 · 쥔님 *"일단 허용하지 방안에 방"*). 순환은 막는다.
  *   - 칸은 **이름·메모 둘뿐**이다. 수용 수·과목·예약 같은 칸은 ⛔ 여기 없다 — 그건 위층의 몫이다.
- *   - 칸 꽂기 자리(ext)는 **타입에만** 비워 둔다 — 위층이 플러그인 id 로 이름공간을 잡아 꽂는다(⛔ 이 약속엔 쓰는 코드가 없다).
+ *   - 칸 꽂기 자리(ext)는 위층이 플러그인 id 로 이름공간을 잡아 꽂는다. 방 속성(정원·resourceKey·active·sort)은 ext['room-booking'] 에 둔다
+ *     (R128 R2) — 읽기·쓰기는 아래 roomProps·setRoomProps 하나로만, 다른 위층의 ext 키는 건드리지 않는다. 약속 버전은 0.1.0 그대로(선택 필드 덧붙임).
  */
 import type { Disposable } from '../../../pane-ui-system/plugin';
 
@@ -36,9 +37,32 @@ export interface Room {
     parentId?: string;
     /**
      * 🔴 확장 칸 자리 — 위층(예약·학교 명부)이 **플러그인 id 로 이름공간**을 잡아 꽂는다(예: ext['reservations'] = {…}).
-     *   ⛔ 이 약속엔 읽고 쓰는 코드가 없다(자리만). rooms 플러그인도 이 칸을 건드리지 않는다.
+     *   rooms 는 ext['room-booking'](방 속성)만 roomProps·setRoomProps 로 읽고 쓴다 — 다른 키는 그대로 둔다.
      */
     ext?: Record<string, unknown>;
+}
+
+/**
+ * 🔴 방 속성 — 방 예약이 쓰는 칸. ext['room-booking'] 에 산다. 값이 없는 칸은 읽을 때 기본값(아래)으로 본다.
+ *   ⛔ 학교 낱말 없음 — 정원은 「수용 수」일 뿐이다.
+ */
+export interface RoomProps {
+    /** 수용 수(0 이상 정수). 없으면 undefined(제한 없음). */
+    capacity?: number;
+    /** 바깥 시스템이 이 방을 가리키는 열쇠(선택 · 빈 문자열이면 없음). */
+    resourceKey?: string;
+    /** 쓰는 방인지. 기본 true(ext 가 없는 방도 켜짐). */
+    active: boolean;
+    /** 정렬 순서(작을수록 앞). 없으면 undefined. */
+    sort?: number;
+}
+
+/** 방 속성을 부분으로 고칠 때 — 칸 생략 = 그대로 · null = 지우기(active 는 지우면 기본값 true). 잘못된 값(음수·NaN 등)은 그 칸만 무시. */
+export interface RoomPropsPatch {
+    capacity?: number | null;
+    resourceKey?: string | null;
+    active?: boolean | null;
+    sort?: number | null;
 }
 
 /** 방 하나를 더하거나 고칠 때 넘기는 칸(이름·메모만). */
@@ -87,6 +111,12 @@ export interface Rooms {
      *   첫 칸 = 이름 · 둘째 칸 = 메모 · 빈 줄은 무시 · 이름이 빈 줄도 무시. 돌려주는 건 만들어진 방 id 들.
      */
     pasteRooms(listId: string, text: string): string[];
+
+    // ── 방 속성(ext['room-booking']) ──
+    /** 방 속성 읽기 — ext 가 없거나 방이 없으면 기본값({active:true}). */
+    roomProps(id: string): RoomProps;
+    /** 방 속성 부분 고치기 — ext['room-booking'] 만 바꾸고 다른 ext 키·이름·메모·부모는 그대로. 없는 방은 무시. */
+    setRoomProps(id: string, patch: RoomPropsPatch): void;
 
     /** 목록·방이 바뀔 때마다 부른다(노드 변경 구독). */
     onChange(listener: () => void): Disposable;

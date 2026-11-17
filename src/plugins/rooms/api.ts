@@ -4,9 +4,43 @@
  *   ⛔ 호출자별 팩토리 아님 — 목록·방은 누가 봐도 같다(저장·휴지통 주인은 노드 시스템이 쥔다).
  */
 import type { CollectionItem } from '../collection/contracts/collection';
-import type { Rooms, Room } from './contracts/rooms';
+import type { Rooms, Room, RoomProps, RoomPropsPatch } from './contracts/rooms';
 import type { Disposable } from '../../pane-ui-system/plugin';
-import { getKit } from './nodes';
+import { getKit, getNodes } from './nodes';
+import { ROOM_TYPE } from './config';
+
+/** 방 속성이 사는 ext 이름공간 — 플러그인 id(방 예약)와 같다. */
+export const ROOM_PROPS_KEY = 'room-booking';
+
+const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+function readProps(raw: unknown): RoomProps {
+    const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const p: RoomProps = { active: typeof r.active === 'boolean' ? r.active : true };
+    if (isCount(r.capacity)) p.capacity = r.capacity;
+    if (typeof r.resourceKey === 'string' && r.resourceKey !== '') p.resourceKey = r.resourceKey;
+    if (isNum(r.sort)) p.sort = r.sort;
+    return p;
+}
+
+function setProps(id: string, patch: RoomPropsPatch): void {
+    const nodes = getNodes();
+    const n = nodes?.get(id);
+    if (!nodes || !n || n.type !== ROOM_TYPE) return;
+    const data = (n.data && typeof n.data === 'object' ? n.data : {}) as Record<string, unknown>;
+    const ext = (data.ext && typeof data.ext === 'object' ? data.ext : {}) as Record<string, unknown>;
+    const mine = { ...((ext[ROOM_PROPS_KEY] && typeof ext[ROOM_PROPS_KEY] === 'object' ? ext[ROOM_PROPS_KEY] : {}) as Record<string, unknown>) };
+    const apply = (key: string, v: unknown, ok: (x: unknown) => boolean): void => {
+        if (v === null) delete mine[key];
+        else if (v !== undefined && ok(v)) mine[key] = v;
+    };
+    apply('capacity', patch.capacity, isCount);
+    apply('resourceKey', patch.resourceKey, (x) => typeof x === 'string' && x !== '');
+    apply('active', patch.active, (x) => typeof x === 'boolean');
+    apply('sort', patch.sort, isNum);
+    nodes.setData(id, { ...data, ext: { ...ext, [ROOM_PROPS_KEY]: mine } });
+}
 
 function toRoom(it: CollectionItem): Room {
     const r: Room = { id: it.id, listId: it.listId, name: it.name };
@@ -31,5 +65,7 @@ export const roomsApi: Rooms = {
     moveRoom: (id, listId, index) => getKit()?.moveItem(id, listId, index),
     setParentRoom: (id, parentId) => getKit()?.setParent(id, parentId),
     pasteRooms: (listId, text) => getKit()?.pasteItems(listId, text) ?? [],
+    roomProps: (id) => readProps(getKit()?.itemOf(id)?.ext?.[ROOM_PROPS_KEY]),
+    setRoomProps: setProps,
     onChange: (listener): Disposable => getKit()?.onChange(listener) ?? { dispose() { /* kit 없음 */ } },
 };
