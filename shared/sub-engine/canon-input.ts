@@ -3,8 +3,8 @@
  * 정답지는 「부재·확정·교감」 그날 자료가 없는 순수 시간표 대조라 busy 는 주간 블록(weeklyBlocks)만 쓴다.
  * 사람 이름은 정답지 쪽 꼴을 따른다: 담임 = 반 이름("3-4"), 전담·비교과 = 에이전트 이름.
  */
-import type { CandInput, CandLesson, CandTrack } from './candidates'
-import type { CanonAdapter, CanonCase } from './canon'
+import type { CandInput, CandLesson, CandTrack } from './candidates.ts'
+import type { CanonAdapter, CanonCase } from './canon.ts'
 
 interface Slot { index: number; label?: string; start: string; end: string; kind?: string; assignable?: boolean }
 interface Grid {

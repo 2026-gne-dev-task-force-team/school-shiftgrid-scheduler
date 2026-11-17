@@ -2,7 +2,7 @@
  * 1,820 대조 틀 — 정답지 건마다 그날 입력을 만들어 새 엔진을 돌리고 A·B·C·X 이름 목록(정렬 일치)을 비교한다.
  * 사유 글자는 비교 안 한다(운영 앱 시험과 같다). 어긋남은 던지지 않고 센다 — 맞추기는 P13.
  */
-import { substituteCandidates, type CandInput, type SubQuery, type SubResult } from './candidates'
+import { substituteCandidates, type CandInput, type SubQuery, type SubResult } from './candidates.ts'
 
 export interface CanonCase { dayIndex: number; start: string | number; end: string | number; self: string | null; A: string[]; B: string[]; C: string[]; X: string[] }
 export interface CanonDiff { index: number; group: 'A' | 'B' | 'C' | 'X'; missing: string[]; extra: string[] }
