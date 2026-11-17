@@ -86,16 +86,19 @@ export function columnOfLinked(state, stateOf = () => undefined, depth = 0) {
 export function parseLane(md, onWarn = () => {}) {
   const sprints = []
   const log = []
+  const closes = new Map() // 진행 로그 「🏁 스프린트 N 닫음」 → N → 「MM-DD HH:MM」
+  let laneClosed = false // 레인 「지금」 줄의 🏁 — 마지막 스프린트가 닫혔다
   let cur = null
   let inLog = false
   let head = null
   for (const line of md.split(/\r?\n/)) {
+    if (/^\*\*지금\*\*/.test(line) && line.includes('🏁')) laneClosed = true
     const h = /^## (.*)$/.exec(line)
     if (h) {
-      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?(?:\d{1,2}:\d{2})?[^)]*\)\s*$/.exec(h[1]) // 괄호 안 꼬리(「~ 맥」 등)는 받는다
+      const s = /^스프린트 (\d+) — (.*?)\s*\((\d{1,2}:\d{2})~?(\d{1,2}:\d{2})?[^)]*\)\s*$/.exec(h[1]) // 괄호 안 꼬리(「~ 맥」 등)는 받는다
       if (!s && /^스프린트 \d+/.test(h[1])) onWarn('스프린트', `머리를 못 읽음 — ${h[1].replace(/\s+/g, ' ').slice(0, 30)}`)
       head = null
-      cur = s ? { id: +s[1], title: s[2], began: s[3], goal: '', rows: [] } : null
+      cur = s ? { id: +s[1], title: s[2], began: s[3], endedAt: s[4] ?? null, closed: /🏁/u.test(h[1]), goal: '', rows: [] } : null
       if (cur) sprints.push(cur)
       inLog = h[1].startsWith('진행 로그')
       continue
@@ -113,10 +116,14 @@ export function parseLane(md, onWarn = () => {}) {
     }
     if (inLog && line.startsWith('|')) {
       const c = cells(line)
-      if (/^\d{1,2}-\d{1,2} \d{1,2}:\d{2}$/.test(c[0])) log.push({ at: c[0], pan: c[1] ?? '', result: c[2] ?? '' })
+      if (/^\d{1,2}-\d{1,2} \d{1,2}:\d{2}$/.test(c[0])) {
+        log.push({ at: c[0], pan: c[1] ?? '', result: c[2] ?? '' })
+        const k = /🏁\s*스프린트 (\d+)/u.exec(c[1] ?? '')
+        if (k && !closes.has(+k[1])) closes.set(+k[1], c[0])
+      }
     }
   }
-  return { sprints, log }
+  return { sprints, log, closes, laneClosed }
 }
 
 /** 레인 노트 하나 → 「지금」 줄 · 표 줄(머리글에 「무엇」·「상태」와 「태스크」 또는 「판」 칸이 있는 표만). 쥔님 원문·세션 이름은 읽어도 싣지 않는다. */
@@ -547,7 +554,7 @@ export function linkTasks(tasks, edges) {
 /** 원천 → BoardData. onDrop(표, 까닭) 은 담백 검사로 버린 줄마다 부른다. 끝에 전체를 한 번 더 훑어 걸리면 예외. */
 export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, gatePath, tokens, laneRoot, now = new Date(), md, services = [], onDrop = () => {}, onWarn = () => {}, onInfo = () => {}, home, activity = {}, redactNames = [], usageAccounts = {}, pickedPath, pickedMd }) {
   setRedactNames(redactNames)
-  const { sprints: raw, log } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
+  const { sprints: raw, log, closes, laneClosed } = parseLane(md ?? readFileSync(lanePath, 'utf-8'), onWarn)
   const nowIso = now.toISOString()
   const year = new Date(now.getTime() + 9 * 3600e3).getUTCFullYear()
   const day = log[0]?.at.split(' ')[0] // 맨 위가 최신 — 스프린트 제목 시각엔 날짜가 없어 이 날로 본다
@@ -587,10 +594,18 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       mine.push(tasks.at(-1))
     }
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
+    // 닫힘: 머리 끝 시각 · 머리 🏁 · 진행 로그 「🏁 스프린트 N 닫음」 · 레인 「지금」 🏁(마지막 절). ⏸·⬜ 가 남아도 닫는다 — 남은 수는 missed 에 「이월 N개」.
+    const ms = (iso) => new Date(iso).getTime()
+    let endedIso = s.endedAt ? kstIso(s.endedAt, year, day ?? new Date(now.getTime() + 9 * 3600e3).toISOString().slice(5, 10)) : null
+    if (endedIso && ms(endedIso) < ms(began)) endedIso = began // 끝 시각이 시작보다 이르면(자정 넘김) 시작으로 — 날짜는 머리에 없다
+    const closedByMark = s.closed || closes.has(s.id) || (laneClosed && s === raw.at(-1))
+    const closeIso = endedIso ?? (closes.has(s.id) ? kstIso(closes.get(s.id), year) : null) ?? (closedByMark ? mine.map((t) => t.updated_at).concat(began).sort().at(-1) : null)
+    const isClosed = allDone || !!closeIso
+    const carry = isClosed ? mine.filter((t) => t.column !== 'done').length : 0
     sprints.push({ id: s.id, title: clean(s.title) || `스프린트 ${s.id}`, goal: publicGoal(s.goal) || clean(s.title), began,
-      ended: allDone ? mine.map((t) => t.updated_at).sort().at(-1) : null, task_ids: mine.map((t) => t.id),
-      est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: allDone ? true : null, // 규칙: 레인 노트 스프린트 절 태스크가 전부 ✅ 면 통과, 아니면 진행 중(null)
-       missed: '', next: '' })
+      ended: closeIso ?? (allDone ? mine.map((t) => t.updated_at).sort().at(-1) : null), task_ids: mine.map((t) => t.id),
+      est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: isClosed ? true : null, // 규칙: 절 태스크가 전부 ✅ 이거나 닫힘 표시(끝 시각·🏁)가 있으면 통과, 아니면 진행 중(null)
+       missed: carry ? `이월 ${carry}개` : '', next: '' })
     sprints.at(-1).review = sprintReview(mine)
   }
   sprintNext(sprints).forEach((n, i) => { sprints[i].next = n })

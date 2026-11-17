@@ -64,6 +64,27 @@ describe('보고꾼', () => {
     expect(one('🔄')).toBeNull()
   })
 
+  it('닫힌 스프린트 — 머리 끝 시각 · 🏁 가 있으면 ⏸ 가 남아도 닫히고 남은 수는 이월', () => {
+    const tbl = `
+| 태스크 | 무엇 | 팀 | est_min | 상태 |
+|---|---|---|---|---|
+| T-1a | 뼈대 | 코드 | 5 | ✅ |
+| T-1b | 막대 | 코드 | 5 | ⏸ |
+`
+    const at = new Date('2026-11-17T03:00:00Z')
+    const s1 = (head: string, pre = '') => build({ md: `${pre}## 스프린트 1 — 가 ${head}\n${tbl}`, now: at }).sprints[0]
+    const withEnd = s1('(18:26~23:44 맥)')
+    expect(withEnd).toMatchObject({ passed: true, missed: '이월 1개' })
+    expect(withEnd.ended).toBe('2026-11-17T23:44:00+09:00')
+    expect(s1('(18:26~)')).toMatchObject({ ended: null, passed: null })
+    expect(s1('🏁 (18:26~)')).toMatchObject({ passed: true, missed: '이월 1개' })
+    const nowLine = s1('(18:26~)', '**지금**(08:13): 🏁 닫음\n\n')
+    expect(nowLine).toMatchObject({ passed: true, missed: '이월 1개' })
+    expect(nowLine.ended).not.toBeNull()
+    const logged = build({ md: `## 스프린트 1 — 가 (18:26~)\n${tbl}\n## 진행 로그\n\n| 시각 | 판 | 결과 |\n|---|---|---|\n| 11-12 23:38 | 🏁 스프린트 1 닫음 | ok |\n`, now: at }).sprints[0]
+    expect(logged).toMatchObject({ ended: '2026-11-12T23:38:00+09:00', passed: true })
+  })
+
   it('사건은 담백 틀 글만 싣는다', () => {
     expect(d.events.map((e: { text: string }) => e.text)).toEqual(['뼈대 끝', '방향 바뀜'])
     expect(findDirty(d)).toBeNull()
