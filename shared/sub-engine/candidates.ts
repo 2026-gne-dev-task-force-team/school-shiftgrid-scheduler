@@ -4,7 +4,7 @@
  * 던지지 않는다 · DB·Date·fetch 없음 · 시각은 분 정수 [start,end) · 사람은 id 문자열(담임 `homeroom:<반>`).
  * ⚠️ 운영 앱 원문 코드는 이 기기에 없어 대조 문서의 문장에서 옮겼다 — 어긋남은 canon 대조(P13)가 잡는다.
  */
-import type { DayInput, DayLesson } from './day-input'
+import type { DayInput, DayLesson } from './day-input.ts'
 
 /** 수업 칸 — teacherIds 가 비면 담임 수업(빈칸 = 담임). 운영 앱 꼴 그대로 선택 필드로 둔다. */
 export interface CandLesson extends DayLesson { teacherIds?: string[] }
