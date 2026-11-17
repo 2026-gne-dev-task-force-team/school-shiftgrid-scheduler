@@ -269,3 +269,62 @@ describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', (
         ]);
     });
 });
+
+describe('D1 그날 입력 조립 순서 0~⑦ · partial aux (설계 ① 10절)', () => {
+    const load = (side: Record<string, CtRow>) => {
+        const db = fakeDb({ version: 3, ct: docCt }, side);
+        return dayLoader((pid, part) => openPartBody(ring, db, pid, part));
+    };
+    const slot = { absentId: 'a1', allDay: false, startMin: 590, endMin: 630, status: '확정', takerId: 'a2', trackName: '1-1' } as never;
+
+    it('0 시간표 → ② busy → ③ absent·taken → ④ 반 비움 → ⑤ 빈 과목만 → ⑥ 덮기 → ⑦ 남은 수업에만 보조', async () => {
+        const side = await sealSide({
+            'ops.fixed': [{ id: 'f1', personRef: 'a2', dayIndex: 1, startMin: 540, endMin: 580, reason: '회의' }],
+            'ops.changes': [
+                { id: 'c1', date: '2026-11-17', trackName: '1-2', period: null, activityName: '' }, // ④ 1-2 통째 없음
+                { id: 'c2', date: '2026-11-17', trackName: '1-1', period: 2, activityName: '체육' }, // ⑥ 음악 → 체육
+                { id: 'c3', date: '2026-11-17', trackName: '1-2', period: 1, activityName: '미술' }, // ④ 뒤라 닿을 수업이 없다
+            ],
+            'ops.classSubjects': [
+                { id: 'k1', trackName: '1-1', dayIndex: 1, startMin: 540, subject: '국어' }, // ⑤ 빈 과목 채움
+                { id: 'k2', trackName: '1-1', dayIndex: 1, startMin: 590, subject: '수학' }, // ⑤ 이미 과목 있음 → 그대로(⑥ 이 덮음)
+            ],
+            'ops.aux': {
+                staff: [{ id: 's1', name: '보조01', active: true }, { id: 's2', name: '보조02', active: true }],
+                base: [
+                    { id: 's1:1:540', staffId: 's1', dow: 1, startMin: 540, endMin: 580, classKey: '1-1' },
+                    { id: 's2:1:540', staffId: 's2', dow: 1, startMin: 540, endMin: 580, classKey: '1-2' },
+                ],
+                day: [],
+                exceptions: [],
+            },
+        });
+        const j = await load(side).loadJudge(PID, '2026-11-17', [slot]);
+        if (!j.ok) throw new Error('거부됨');
+        const [t11, t12] = ['1-1', '1-2'].map((n) => j.input.tracks.find((t) => t.name === n)!);
+        expect(j.input.busy).toEqual([{ personId: 'a2', startMin: 540, endMin: 580, reason: '회의' }]); // ②
+        expect(j.input.absent).toContainEqual({ personId: 'a1', startMin: 590, endMin: 630 }); // ③
+        expect(j.input.taken).toEqual([{ personId: 'a2', startMin: 590, endMin: 630, trackName: '1-1' }]); // ③
+        expect(t12.lessons).toEqual([]); // ④
+        expect(j.input.absent).toContainEqual({ personId: 'homeroom:1-2', startMin: null, endMin: null }); // ④
+        expect(t11.lessons.map((l) => l.subject)).toEqual(['국어', '체육']); // ⑤ → ⑥
+        expect(t11.lessons.map((l) => l.coIds)).toEqual([['aux:s1'], []]); // ⑦ 1-2 는 비어 붙을 곳이 없다
+        expect('partial' in j && j.partial).toEqual([]);
+    });
+
+    it('aux 조각이 없으면 빼고 계산하되 loadDay·loadJudge 결과에 partial:["aux"]', async () => {
+        const c = load({});
+        const d = await c.loadDay(PID, '2026-11-17');
+        const j = await c.loadJudge(PID, '2026-11-17', []);
+        expect(d.ok && 'partial' in d && d.partial).toEqual(['aux']);
+        expect(j.ok && 'partial' in j && j.partial).toEqual(['aux']);
+        expect(j.ok && j.input.tracks.flatMap((t) => t.lessons.flatMap((l) => l.coIds))).toEqual([]);
+    });
+
+    it('aux 조각이 있으면 partial 은 빈 목록 · 쉬는 날은 partial 자리가 없다', async () => {
+        const c = load(await sealSide({ 'ops.aux': { staff: [], base: [], day: [], exceptions: [] } }));
+        const d = await c.loadDay(PID, '2026-11-17');
+        expect(d.ok && 'partial' in d && d.partial).toEqual([]);
+        expect(await c.loadDay(PID, '2026-11-14')).toEqual({ ok: false, offReason: '주말' });
+    });
+});

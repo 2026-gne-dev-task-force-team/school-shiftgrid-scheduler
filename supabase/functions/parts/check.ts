@@ -6,6 +6,7 @@
 //         (관리자도 막힌다 · 「정정」 예외 추가만 허용). ops.changes 는 보조·달 축이 없어 마감 잠금 대상이 아니다(앱 판정과 같음).
 
 import { judgeAuxChange, type LockDay, type LockException, type LockMonthClose } from '../../../shared/ops-aux/month-lock.ts';
+import { fixedDuplicates, removedRoomsWithReservations, type RoomFixed } from '../../../shared/room-rules.ts';
 import { can, type Role } from '../../../shared/roles.ts';
 import { HttpError } from '../_shared/errors.ts';
 import type { PartCheck } from './handler.ts';
@@ -13,6 +14,10 @@ import type { PartCheck } from './handler.ts';
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isStr = (v: unknown): v is string => typeof v === 'string' && v !== '';
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isInt = (v: unknown, min: number, max: number): boolean => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
+const isDate = (v: unknown): boolean => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isMin = (v: unknown): boolean => isInt(v, 0, 1440);
+const nullOr = (f: (x: unknown) => boolean) => (x: unknown) => x === null || f(x);
 
 /** id 가 든 줄 배열의 꼴 — 줄 검사가 칸 이름을 돌려주면 `<경로>[i].<칸>` 을, id 가 겹치면 `<경로>[i].id` 를 낸다. */
 function checkRows(path: string, v: unknown, ok: (e: Record<string, unknown>) => string | null): string[] {
@@ -49,9 +54,44 @@ export function shapeRules(part: string, body: unknown): string[] {
                 );
             });
         }
+        case 'ops.rooms':
+            return roomsShape(part, body);
         default:
             return [];
     }
+}
+
+/** ops.rooms — 설계 ① 6절 `{rooms, fixed, blocks}`. 꼴 → 방 참조 → 고정 (방, 요일, 시작) 겹침(shared/room-rules.ts 와 같은 판정). */
+function roomsShape(part: string, body: unknown): string[] {
+    if (!isObj(body)) return [part];
+    const out: string[] = [];
+    const rows = (k: string, ok: (e: Record<string, unknown>) => string | null) => {
+        if (k in body) out.push(...checkRows(`${part}.${k}`, body[k], ok));
+    };
+    rows('rooms', (e) =>
+        firstBad(e, { name: isStr, capacity: (x) => isInt(x, 1, 20), resourceKey: nullOr(isStr), active: (x) => typeof x === 'boolean', sort: isNum, note: (x) => typeof x === 'string' }),
+    );
+    rows('fixed', (e) =>
+        firstBad(e, { roomId: isStr, dayIndex: (x) => isInt(x, 0, 6), startMin: isMin, endMin: isMin, label: (x) => typeof x === 'string' }) ??
+        ((e.endMin as number) > (e.startMin as number) ? null : 'endMin'),
+    );
+    rows('blocks', (e) =>
+        firstBad(e, { roomId: isStr, startDate: isDate, endDate: isDate, fromMin: nullOr(isMin), toMin: nullOr(isMin), reason: (x) => typeof x === 'string' }) ??
+        ((e.endDate as string) >= (e.startDate as string) ? null : 'endDate'),
+    );
+    if (out.length > 0) return out;
+    // 고정·차단이 가리키는 방은 이 칸의 방 목록에 있어야 한다(방 목록이 없는 본문은 참조를 보지 않는다)
+    if (Array.isArray(body.rooms)) {
+        const ids = new Set((body.rooms as { id: string }[]).map((r) => r.id));
+        for (const k of ['fixed', 'blocks']) {
+            if (Array.isArray(body[k])) (body[k] as { roomId: string }[]).forEach((e, i) => ids.has(e.roomId) || out.push(`${part}.${k}[${i}].roomId`));
+        }
+    }
+    if (Array.isArray(body.fixed)) {
+        const list = body.fixed as RoomFixed[];
+        for (const [, dup] of fixedDuplicates(list)) out.push(`${part}.fixed[${list.findIndex((f) => f.id === dup)}].startMin`);
+    }
+    return out;
 }
 
 const byId = (v: unknown): Map<string, string> =>
@@ -94,10 +134,30 @@ export function diffCheck(part: string, roles: readonly Role[], prev: unknown, n
     }
 }
 
-/** handler 의 `deps.check` 로 꽂는다. 꼴 → 차이 차례(꼴이 틀리면 차이는 보지 않는다). */
-export const checkPart: PartCheck = ({ part, roles, next, prev }) => {
-    const rules = shapeRules(part, next.body);
-    if (rules.length > 0) return rules;
-    diffCheck(part, roles, prev?.body, next.body);
-    return [];
-};
+/** 예약 행 조회 — 주어진 방 id 중 예약 행이 하나라도 남은 방의 id. 가짜로 시험하고, 실제 꽂기는 rooms/store.ts 의 읽기(listFrom 등)를 감싼다. */
+export interface CheckDeps {
+    reservedRooms?: (roomIds: string[]) => Promise<ReadonlySet<string>>;
+}
+
+/** ops.rooms 방 삭제 — 예약 행이 남은 방이 칸에서 빠지면 409. 조회 함수가 꽂히지 않았으면 이 판정은 건너뛴다(꽂는 쪽 몫). */
+async function roomsDiff(deps: CheckDeps, prev: unknown, next: unknown): Promise<void> {
+    if (!deps.reservedRooms || !isObj(prev) || !isObj(next)) return;
+    const gone = removedIds(prev.rooms, next.rooms);
+    if (gone.length === 0) return;
+    const reserved = await deps.reservedRooms(gone);
+    const bad = removedRoomsWithReservations(prev.rooms as { id: string }[], Array.isArray(next.rooms) ? (next.rooms as { id: string }[]) : [], reserved);
+    if (bad.length > 0) throw new HttpError(409, 'room_has_reservations', '예약이 있는 방은 지울 수 없습니다(끄기만 가능)', { roomIds: bad });
+}
+
+/** handler 의 `deps.check` 로 꽂는다. 꼴 → 차이 차례(꼴이 틀리면 차이는 보지 않는다). ops.rooms 만 예약 조회 때문에 Promise 를 돌려준다. */
+export const makeCheckPart =
+    (deps: CheckDeps): PartCheck =>
+    ({ part, roles, next, prev }) => {
+        const rules = shapeRules(part, next.body);
+        if (rules.length > 0) return rules;
+        if (part === 'ops.rooms') return roomsDiff(deps, prev?.body, next.body).then(() => []);
+        diffCheck(part, roles, prev?.body, next.body);
+        return [];
+    };
+
+export const checkPart: PartCheck = makeCheckPart({});
