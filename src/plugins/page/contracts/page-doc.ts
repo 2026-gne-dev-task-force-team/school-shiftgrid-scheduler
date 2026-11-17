@@ -4,10 +4,10 @@
  *   ⛔ 손님은 이 타입만 import type 한다(값은 host.modules.use('page-doc')).
  */
 import type { ComponentType, ReactNode } from 'react';
-import type { PluginHost } from '../../../pane-ui-system/plugin';
 
 export interface PageDocProps {
-    host: PluginHost;
+    // 🔴 T-10fk — host 를 받지 않는다. 편집기는 노트 꾸러미 **자기 host**(자기 requires·supports)로 nodes·table 을 받는다.
+    //    옛 꼴은 손님 host 로 use 해, 표를 선언 안 한 손님(컬렉션·계정…)의 문서에 표 블록이 있으면 「선언 안 한 인터페이스 use」로 던졌다.
     /** 문서 하나를 가리키는 안정 키 — 바뀌면 편집기가 새 문서로 다시 시작한다(되돌리기 더미도 새로). */
     docKey: string;
     /** 저장된 문서(불투명) — 없거나 모르는 꼴이면 빈 문서로 시작한다. */

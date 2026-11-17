@@ -14,6 +14,7 @@ import type { ViewProps } from '../../pane-ui-system';
 import { EmptyState, focusWhenReady } from '../../pane-ui-system';
 import { modClickLabel } from '../../pane-ui-system/platform-keys';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
+import { moduleHost } from './self-host';
 
 export const RECORD_TAB_ID = 'collection.record';
 
@@ -33,7 +34,7 @@ export function takeFocusOnOpen(id: string): boolean {
 
 /** 레코드 하나를 편집 탭으로 연다 — 제 탭이 없으면 레코드마다 「레코드」 탭 한 장(같은 레코드는 그 탭으로), 있으면 노드 열기로. 열었으면 true. */
 export function openRecordTab(host: PluginHost, id: string, collectionId?: string): boolean {
-    const nodes = host.modules.use<NodesApi>('nodes');
+    const nodes = moduleHost(host).modules.use<NodesApi>('nodes');   // 🔴 부른 쪽 host 는 열기 창구로만 — 모듈은 컬렉션 자기 host 로(T-10fk)
     const node = nodes?.get(id);
     if (!nodes || !node) return false;
     if (renderers.has(node.type)) {
@@ -51,7 +52,7 @@ export function openRecordTab(host: PluginHost, id: string, collectionId?: strin
 /** 「레코드」 탭 몸통 — 지금 연 레코드를 미리보기와 같은 열기 페이지로 그린다. */
 export function RecordTab({ host, leaf }: ViewProps & { host: PluginHost }) {
     const id = typeof leaf?.params?.recordId === 'string' ? leaf.params.recordId : null;   // 🔑 탭이 저장한 레코드 id — 새로고침·배치 복원 뒤에도 같다
-    const nodes = host.modules.use<NodesApi>('nodes');
+    const nodes = moduleHost(host).modules.use<NodesApi>('nodes');
     // 이름·아이콘·휴지통 여부가 바뀌면 다시 그린다(원시값 스냅샷 — 노드 객체가 새로 만들어져도 루프 없음)
     useSyncExternalStore(
         (fn) => { const d = nodes?.subscribe(fn); return () => d?.dispose(); },
