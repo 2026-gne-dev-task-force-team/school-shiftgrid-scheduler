@@ -73,10 +73,17 @@ describe('보고꾼', () => {
 | T-1b | 막대 | 코드 | 5 | ⏸ |
 `
     const at = new Date('2026-11-17T03:00:00Z')
-    const s1 = (head: string, pre = '') => build({ md: `${pre}## 스프린트 1 — 가 ${head}\n${tbl}`, now: at }).sprints[0]
-    const withEnd = s1('(18:26~23:44 맥)')
+    const s1 = (head: string, pre = '', post = '') => build({ md: `${pre}## 스프린트 1 — 가 ${head}\n${tbl}${post}`, now: at }).sprints[0]
+    // 날짜는 제 일감 로그 줄 날(U18③) — 진행 로그 맨 위 날(11-17)이 아니다
+    const withEnd = s1('(18:26~23:44 맥)', '', '\n## 진행 로그\n\n| 시각 | 판 | 결과 |\n|---|---|---|\n| 11-17 08:00 | 다른 일 | ok |\n| 11-16 18:40 | T-1a 끝 | ok |\n')
     expect(withEnd).toMatchObject({ passed: true, missed: '이월 1개' })
-    expect(withEnd.ended).toBe('2026-11-17T23:44:00+09:00')
+    expect(withEnd.began).toBe('2026-11-16T18:26:00+09:00')
+    expect(withEnd.ended).toBe('2026-11-16T23:44:00+09:00')
+    // 머리 끝 시각이 지금보다 미래(날짜 짐작이 틀림)면 버린다 — 끝 ≥ 시작 · 끝 ≤ 지금
+    const future = s1('(18:26~23:44 맥)')
+    expect(future.passed).toBe(true)
+    expect(Date.parse(future.ended)).toBeLessThanOrEqual(at.getTime())
+    expect(Date.parse(future.ended)).toBeGreaterThanOrEqual(Date.parse(future.began))
     expect(s1('(18:26~)')).toMatchObject({ ended: null, passed: null })
     expect(s1('🏁 (18:26~)')).toMatchObject({ passed: true, missed: '이월 1개' })
     const nowLine = s1('(18:26~)', '**지금**(08:13): 🏁 닫음\n\n')
@@ -183,7 +190,7 @@ describe('보고꾼 — 실자료 다듬기', () => {
     } }))
     const d = build({ now: at, gatePath, md: lane('| T-2a | 막힌 일 | 코드 | 5 | ⏸ 기다림 |\n| T-2b | 물음 | 화면 | 5 | 🙋 |', '') })
     const st = Object.fromEntries(d.actors.map((a: Actor) => [a.id, a.state]))
-    expect(st).toMatchObject({ 'a-aaaaaaaa': 'work', 'a-bbbbbbbb': 'idle', 'a-cccccccc': 'off', 'a-dddddddd': 'off', 'a-T-2a': 'blocked', 'a-T-2b': 'blocked' })
+    expect(st).toMatchObject({ 'a-aaaaaaaa': 'work', 'a-bbbbbbbb': 'idle', 'a-cccccccc': 'off', 'a-dddddddd': 'off', 'a-T-2a': 'wait', 'a-T-2b': 'blocked' }) // ⏸ = 대기 · 🙋 = 막힘(U18⑥)
     expect(d.actors.find((a: Actor) => a.id === 'a-dddddddd')?.ended_at).toBe(new Date(t0 - 1800e3).toISOString())
     expect(d.actors.find((a: Actor) => a.id === 'a-cccccccc')?.ended_at).toBe(new Date(t0 - 40 * 60e3 + 20 * 60e3).toISOString())
   })

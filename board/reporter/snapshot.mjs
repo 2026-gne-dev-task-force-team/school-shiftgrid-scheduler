@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import tls from 'node:tls'
-import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
+import { DEVICE_LANE, clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { raceOfDevice } from './race.mjs'
@@ -130,16 +130,22 @@ export function parseLane(md, onWarn = () => {}) {
 /** 레인 노트 하나 → 「지금」 줄 · 표 줄(머리글에 「무엇」·「상태」와 「태스크」 또는 「판」 칸이 있는 표만). 쥔님 원문·세션 이름은 읽어도 싣지 않는다. */
 const NUM_COLS = ['칸', '번호', '#', 'ID', 'id']
 const NUM_CELL = new RegExp(`^(?:\\d+[A-Za-z]?(?:-[A-Za-z0-9]+)?|${ID})$`) // 「5」·「2-C」·「T-101a」 — 「11~」 같은 자리표시는 번호가 아니다
+/** 표 머리 별칭(U18①) — 「| 번호 | 할 일 | 맡은 이 | 상태 |」 꼴: 「할 일」=무엇 · 태스크·판 칸이 없으면 「번호」=태스크. 머리 줄이 아니면 그대로. */
+export function headAlias(c) {
+  if (!c.includes('상태') || !(c.includes('무엇') || c.includes('할 일'))) return c
+  const out = c.map((x) => (x === '할 일' && !c.includes('무엇') ? '무엇' : x))
+  return out.includes('태스크') || out.includes('판') ? out : out.map((x) => (x === '번호' ? '태스크' : x))
+}
 export function parseLaneNote(md) {
   let now = ''
   const rows = []
   let head = null
   let headSeen = false // 상태 칸이 있는 표 머리를 봤나(못 읽은 표와 표 없음을 가르는 값)
   for (const line of md.split(/\r?\n/)) {
-    const n = /^\*\*지금\*\*:\s*(.*)$/.exec(line)
+    const n = /^\*\*지금\*\*(?:\([^)]*\))?:\s*(.*)$/.exec(line) // 「**지금**: …」 · 「**지금**(10:13): …」
     if (n) now = n[1]
     if (!line.startsWith('|')) { head = null; continue }
-    const c = cells(line)
+    const c = headAlias(cells(line))
     const key = c.includes('태스크') ? '태스크' : c.includes('판') ? '판' : null
     if (c.includes('상태') && c.includes('무엇')) headSeen = true
     // 상태 칸 + 번호(ID) 칸이 있는 표만 — 태스크 칸이 곧 번호이고, 판 표는 칸/번호/# 칸이 따로 있어야 한다(모델 배분 같은 설명 표는 안 읽는다)
@@ -207,6 +213,46 @@ export function parseLaneLog(md, year = new Date().getUTCFullYear()) {
   return out
 }
 
+/** 바퀴 줄의 번호 낱말 — T-번호 · B5·R92·U18 꼴. */
+const WHEEL_TOK = new RegExp(`${ID}|(?<![\\w-])[A-Z]\\d+[a-z]?(?![\\w-])`, 'g')
+const wheelToks = (s) => [...new Set(String(s ?? '').match(WHEEL_TOK) ?? [])]
+/** 운전 레인 진행 로그의 바퀴 줄 → 바퀴들(옛→새 · U18②). 새 꼴 「바퀴 N 시작(번호·번호)」(「띄움」도) ~ 「바퀴 N 끝」 · 옛 꼴 「바퀴 N(번호…)」 한 줄은 시작이자 끝.
+ * 지금보다 미래인 줄은 버린다(U18③). 끝 없이 다음 바퀴가 열리면 그 앞 마지막 로그 줄 시각으로 닫는다. 끝이 없는 마지막 바퀴는 열린 채(ended null) —
+ * 「지금」 줄(nowLine)이 「바퀴 N」 으로 그 바퀴를 부르면 그 줄의 번호도 일감에 더한다. 돌려주는 값: [{ n, began, ended, ids }] (시각은 ISO +09:00). */
+export function parseWheels(md, year, nowMs, nowLine = '') {
+  const lines = parseLaneLog(md, year).map((l) => ({ ...l, ts: kstIso(l.at, year) })).filter((l) => l.ts && Date.parse(l.ts) <= nowMs)
+  const RANK = { start: 0, one: 1, end: 2 }
+  const marks = lines.flatMap((l) => {
+    const m = /^[^\p{L}\p{N}]*바퀴\s*(\d+)\s*(시작|띄움|끝)?\s*(?:\(([^)]*)\))?/u.exec(l.pan)
+    if (!m) return []
+    const kind = m[2] === '끝' ? 'end' : m[2] || m[3] === undefined ? 'start' : 'one'
+    return [{ n: +m[1], kind, ids: wheelToks(m[3]), ts: l.ts }]
+  }).sort((a, b) => a.ts.localeCompare(b.ts) || a.n - b.n || RANK[a.kind] - RANK[b.kind]) // 같은 분이면 바퀴 번호순(표는 맨 위가 최신이라 파일 순서를 못 믿는다)
+  const times = lines.map((l) => l.ts).sort()
+  const out = []
+  let open = null
+  const closeOpen = (ts) => { if (open) { open.ended = times.filter((t) => t >= open.began && t < ts).at(-1) ?? open.began; open = null } }
+  for (const k of marks) {
+    if (k.kind === 'end') { if (open?.n === k.n) { open.ended = k.ts; open = null } continue }
+    closeOpen(k.ts)
+    const w = { n: k.n, began: k.ts, ended: k.kind === 'one' ? k.ts : null, ids: k.ids }
+    out.push(w)
+    if (k.kind === 'start') open = w
+  }
+  if (open && new RegExp(`바퀴\\s*${open.n}(?!\\d)`).test(nowLine)) open.ids = [...new Set([...open.ids, ...wheelToks(nowLine)])]
+  return out
+}
+
+/** 레인 폴더 이름 → 판에 띄울 레인 이름(U18④). 기기 낱말을 떼고, 떼고 남는 게 없으면(폴더 이름이 기기 이름뿐) 「<기기> 운전」. */
+const DEVICE = /맥|업무 ?PC|씽크패드|NAS/gi
+export function laneTitleOf(name) {
+  const rest = String(name ?? '').replace(DEVICE, '').trim()
+  if (rest) return clean(rest) || '레인'
+  const dev = `${String(name ?? '').trim()} 운전`
+  return DEVICE_LANE.test(dev) ? dev : '레인'
+}
+
+export const LANE_RUN_MS = 10 * 60e3 // 「지금」 줄 🔨/🔄 + 노트가 이만큼 안에 바뀌었으면 도는 레인(U18⑤)
 export const LANE_FRESH_MS = 60 * 60e3 // 레인 폴더 노트가 이만큼 넘게 안 바뀌면 그 레인 표의 🔄·🔨·⛔ 줄 캐릭터는 퇴근(R102①)
 /** 폴더 안 .md 들 중 가장 늦은 수정 시각(ms). 못 읽으면 0. */
 function newestMd(dir) {
@@ -573,8 +619,16 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   const edges = [] // 번호끼리 이은 줄(R↔T)
   const sprints = []
   const taskIds = new Set() // 레인 표 번호 재사용 — 스프린트 task_ids 도 같은 새 id 를 가리키게 여기서 먼저 꼬리를 붙인다
+  const nowMs = now.getTime()
+  const past = (iso) => !!iso && Date.parse(iso) <= nowMs
+  let prevDay = null
   for (const s of raw) {
-    const began = kstIso(s.began, year, day) ?? nowIso
+    // 날짜(U18③): 머리 시각엔 날짜가 없다 — 제 일감 로그 줄 중 가장 이른 날 · 없으면 제 닫음 줄 날 · 앞 스프린트 날 · 진행 로그 맨 위 날. 지금보다 미래인 줄은 안 쓴다.
+    const ownHits = logAt.filter((l) => past(l.ts) && s.rows.some((r) => l.ids.includes(r.id)))
+    const sDay = ownHits[0]?.at.split(' ')[0] ?? (closes.has(s.id) ? closes.get(s.id).split(' ')[0] : null) ?? prevDay ?? day
+    prevDay = sDay
+    const head = kstIso(s.began, year, sDay)
+    const began = past(head) ? head : ownHits[0]?.ts ?? nowIso
     const mine = []
     for (const r of s.rows) {
       const title = publicTitle(r.what)
@@ -597,22 +651,83 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
     const allDone = mine.length > 0 && mine.every((t) => t.column === 'done')
     // 닫힘: 머리 끝 시각 · 머리 🏁 · 진행 로그 「🏁 스프린트 N 닫음」 · 레인 「지금」 🏁(마지막 절). ⏸·⬜ 가 남아도 닫는다 — 남은 수는 missed 에 「이월 N개」.
     const ms = (iso) => new Date(iso).getTime()
-    let endedIso = s.endedAt ? kstIso(s.endedAt, year, day ?? new Date(now.getTime() + 9 * 3600e3).toISOString().slice(5, 10)) : null
+    let endedIso = s.endedAt ? kstIso(s.endedAt, year, sDay ?? new Date(now.getTime() + 9 * 3600e3).toISOString().slice(5, 10)) : null
     if (endedIso && ms(endedIso) < ms(began)) endedIso = began // 끝 시각이 시작보다 이르면(자정 넘김) 시작으로 — 날짜는 머리에 없다
+    if (!past(endedIso)) endedIso = null // 미래 끝 = 날짜 짐작이 틀린 값 — 버리고 다음 근거로(U18③)
     const closedByMark = s.closed || closes.has(s.id) || (laneClosed && s === raw.at(-1))
-    const closeIso = endedIso ?? (closes.has(s.id) ? kstIso(closes.get(s.id), year) : null) ?? (closedByMark ? mine.map((t) => t.updated_at).concat(began).sort().at(-1) : null)
+    const closeAt = closes.has(s.id) ? kstIso(closes.get(s.id), year) : null
+    const lastOwn = mine.map((t) => t.updated_at).concat(began).filter(past).sort().at(-1) ?? began
+    const closeIso = endedIso ?? (past(closeAt) && ms(closeAt) >= ms(began) ? closeAt : null) ?? (closedByMark || s.endedAt ? lastOwn : null)
     const isClosed = allDone || !!closeIso
     const carry = isClosed ? mine.filter((t) => t.column !== 'done').length : 0
     sprints.push({ id: s.id, title: clean(s.title) || `스프린트 ${s.id}`, goal: publicGoal(s.goal) || clean(s.title), began,
-      ended: closeIso ?? (allDone ? mine.map((t) => t.updated_at).sort().at(-1) : null), task_ids: mine.map((t) => t.id),
+      ended: closeIso ?? (allDone ? lastOwn : null), task_ids: mine.map((t) => t.id),
       est_min: mine.reduce((a, t) => a + t.est_min, 0), actual_min: 0, review: '', passed: isClosed ? true : null, // 규칙: 절 태스크가 전부 ✅ 이거나 닫힘 표시(끝 시각·🏁)가 있으면 통과, 아니면 진행 중(null)
        missed: carry ? `이월 ${carry}개` : '', next: '' })
     sprints.at(-1).review = sprintReview(mine)
   }
+  // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 — 운전 바퀴에 든 일감만 그 바퀴 스프린트 번호를 받는다 · U18②). 담당 캐릭터는 안 세운다.
+  // 스프린트 셈(cur)이 바퀴 스프린트를 보려면 레인 카드가 먼저 있어야 해서 여기서 읽는다.
+  const seen = new Set()
+  const bare = laneTitleOf
+  const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
+  const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
+  const laneBlocked = [] // 다른 레인 표에서 ⛔/⏸/🙋 인 일감
+  const laneRows = lanesRaw.map((ln) => {
+    const id = `l-${hash(ln.name).slice(0, 6)}`
+    const fresh = isFresh(ln.mtime)
+    const laneApps = appsOfLane(ln.name)
+    const byRaw = new Map() // 표 번호 → 카드(로그 줄의 번호를 잇는다)
+    const outsOf = new Map() // 표 줄 → 그 줄 카드 전부(두 판이면 둘)
+    const mine = ln.rows.flatMap((r) => {
+      const title = publicTitle(r.what)
+      let tid = `${id}-${r.id}`
+      if (!isPlain(tid) || seen.has(tid)) tid = `${id}-${hash(tid + seen.size)}`
+      if (!title) { onDrop('tasks', tid); return [] }
+      seen.add(tid)
+      const col = columnOfLinked(r.state, stateOf)
+      if (fresh && isStuck(r.state, stateOf)) laneBlocked.push({ id: tid, title, state: r.state })
+      // 판: 줄 머리의 판 표시가 이기고, 없으면 레인 이름의 판 전부(「v1·v2 설계」 는 두 판에 다 — 둘째부터 id 꼬리 ~판)
+      const apps = appOfRow(r.what) ? [appOfRow(r.what)] : laneApps
+      const out = apps.map((app, i) => ({ id: i ? `${tid}~${app}` : tid, title, app, category: '코드', kind: 'work', target: targetOf({ id: r.id, title, lane: ln.name }), team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
+        ...col, actor_id: col.column === 'work' && fresh && !i ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }))
+      if (!byRaw.has(r.id)) byRaw.set(r.id, out[0])
+      outsOf.set(r, out)
+      return out
+    })
+    // 번호 → 카드: 표 번호가 같으면 그 줄, 아니면 「할 일」 칸에 그 낱말(B5·U18·R92)이 든 줄(옛 바퀴 꼴은 판 번호 대신 묶음 이름을 적었다)
+    const cardsOf = (tok) => {
+      const hit = ln.rows.filter((r) => r.id === tok)
+      const rows = hit.length ? hit : ln.rows.filter((r) => new RegExp(`(?<![\\w-])${tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`).test(r.what))
+      return rows.flatMap((r) => outsOf.get(r) ?? [])
+    }
+    // 「지금」 줄이 🔨/🔄 이고 노트가 10분 안에 바뀌었으면 도는 레인(U18⑤)
+    const running = /^[^\p{L}\p{N}]*[🔨🔄]/u.test(ln.now) && !!ln.mtime && now.getTime() - ln.mtime <= LANE_RUN_MS
+    const state = (fresh && mine.some((t) => t.column === 'work')) || running ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
+    return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine, ln, byRaw, cardsOf }
+  })
+
+  // 운전 바퀴 → 스프린트(U18②). 번호는 지금 판 스프린트 최대 다음부터 시각순. 일감 카드엔 그 바퀴 번호(뒤 바퀴가 이긴다).
+  const wheels = laneRows.flatMap((lr) => parseWheels(lr.ln.md, year, now.getTime(), lr.ln.now).map((w) => ({ ...w, lr })))
+    .sort((a, b) => a.began.localeCompare(b.began) || a.n - b.n)
+  const l1Sprints = [...sprints]
+  const l1Cur = [...l1Sprints].reverse().find((s) => !s.ended) ?? l1Sprints.at(-1) // 지금 판 표의 막힘 캐릭터는 지금 판 스프린트에서 찾는다
+  let nextId = Math.max(0, ...sprints.map((s) => s.id)) + 1
+  for (const w of wheels) {
+    const id = nextId++
+    const mine = [...new Set(w.ids.flatMap((tok) => w.lr.cardsOf(tok)))]
+    for (const t of mine) t.sprint = id
+    const title = clean(`바퀴 ${w.n}${w.ids.length ? ` (${w.ids.join('·')})` : ''}`) || `바퀴 ${w.n}`
+    const carry = w.ended ? mine.filter((t) => t.column !== 'done').length : 0
+    sprints.push({ id, title, goal: title, began: w.began, ended: w.ended, task_ids: mine.map((t) => t.id), est_min: 0, actual_min: 0,
+      review: sprintReview(mine), passed: w.ended ? true : null, missed: carry ? `이월 ${carry}개` : '', next: '' })
+  }
+
   sprintNext(sprints).forEach((n, i) => { sprints[i].next = n })
   const byId = new Map(tasks.map((t) => [t.id, t]))
   const cur = [...sprints].reverse().find((s) => !s.ended) ?? sprints.at(-1)
-  const curTasks = cur ? cur.task_ids.map((id) => byId.get(id)) : []
+  const cardById = new Map([...tasks, ...laneRows.flatMap((l) => l.tasks)].map((t) => [t.id, t])) // 바퀴 스프린트의 일감은 레인 카드
+  const curTasks = cur ? cur.task_ids.map((id) => cardById.get(id)).filter(Boolean) : []
   const done = curTasks.filter((t) => t.column === 'done').length
   const goals = cur ? [{ id: `g${cur.id}`, title: cur.title, progress: curTasks.length ? Math.round((done / curTasks.length) * 100) : 0,
     state: cur.ended ? 'shipped' : 'work', sprint: cur.id }] : []
@@ -678,9 +793,15 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const [a, e] of spent) { a.tok_total = e.total; a.tok_per_min = Math.round(e.total / Math.max(1, (e.to - e.from) / 60000)) }
 
   // 문지기가 적은 `#시간표앱` 세션 자체 — 에이전트 없이도 캐릭터 하나(하는 일은 모르니 「대화 세션」)
+  // 하는 일(덤 · U18): 그 세션이 띄운 에이전트(문지기 lead)의 일감이 든 레인 → 그 레인 「지금」 줄의 첫 번호 카드. 못 찾으면 비운다.
+  const sessionTask = (sid) => {
+    const raws = live.filter((a) => a.kind !== 'session' && a.lead === sid && a.task).map((a) => a.task)
+    const lr = laneRows.find((l) => raws.some((x) => l.byRaw.has(x)))
+    return lr ? wheelToks(lr.ln.now).map((tok) => lr.cardsOf(tok)[0]).find(Boolean)?.id ?? null : null
+  }
   for (const g of live.filter((x) => x.kind === 'session'))
     actors.push({ id: g.id, parent_id: null, kind: 'helper', name: '대화 세션', hue: 40, eye: 'amber', prop: '', dept: 'hq', team: '세션', role: '세션',
-      state: g.state, task_id: null, branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
+      state: g.state, task_id: sessionTask(g.id), branch_id: null, account: 'org', tok_per_min: 0, started_at: new Date(g.started).toISOString(),
       ended_at: g.state === 'off' ? new Date(g.last).toISOString() : null, ...(raceOfDevice(g.device) ? { race: raceOfDevice(g.device) } : {}) })
   // 감독관 = 레인 폴더 `감독/레인 감독.md`(순찰이 5분마다 덮어씀). 노트가 있을 때만 — 일함(mtime 10분 안) · 쉼, 한 줄 = `## 요약` 줄.
   const sup = readSupervisor(laneRoot, now)
@@ -728,36 +849,6 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       ...(history.length ? { history } : {}) }
   })
 
-  // 다른 레인 폴더 → lane 한 줄 + 표 태스크(스프린트 0 · 어느 스프린트에도 안 든다 — 막대·Overview 수치와 안 섞인다). 담당 캐릭터는 안 세운다.
-  const seen = new Set()
-  const bare = (n) => clean(n.replace(/맥|업무 ?PC|씽크패드|NAS/gi, '').trim()) || '레인'
-  const bareCount = lanesRaw.reduce((m, l) => m.set(bare(l.name), (m.get(bare(l.name)) ?? 0) + 1), new Map())
-  const bareSeen = new Map() // 걷은 이름이 겹치면 기기 낱말은 못 싣는다(담백 검사) — 뒤 것에 번호를 붙여 구별
-  const laneBlocked = [] // 다른 레인 표에서 ⛔/⏸/🙋 인 일감
-  const laneRows = lanesRaw.map((ln) => {
-    const id = `l-${hash(ln.name).slice(0, 6)}`
-    const fresh = isFresh(ln.mtime)
-    const laneApps = appsOfLane(ln.name)
-    const byRaw = new Map() // 표 번호 → 카드(로그 줄의 번호를 잇는다)
-    const mine = ln.rows.flatMap((r) => {
-      const title = publicTitle(r.what)
-      let tid = `${id}-${r.id}`
-      if (!isPlain(tid) || seen.has(tid)) tid = `${id}-${hash(tid + seen.size)}`
-      if (!title) { onDrop('tasks', tid); return [] }
-      seen.add(tid)
-      const col = columnOfLinked(r.state, stateOf)
-      if (fresh && isStuck(r.state, stateOf)) laneBlocked.push({ id: tid, title })
-      // 판: 줄 머리의 판 표시가 이기고, 없으면 레인 이름의 판 전부(「v1·v2 설계」 는 두 판에 다 — 둘째부터 id 꼬리 ~판)
-      const apps = appOfRow(r.what) ? [appOfRow(r.what)] : laneApps
-      const out = apps.map((app, i) => ({ id: i ? `${tid}~${app}` : tid, title, app, category: '코드', kind: 'work', target: targetOf({ id: r.id, title, lane: ln.name }), team: ACTOR['코드'][1], sprint: 0, est_min: 0, started_at: null, lane_id: id,
-        ...col, actor_id: col.column === 'work' && fresh && !i ? `a-${tid}` : null, updated_at: nowIso, ...splitDetail(r.what) }))
-      if (!byRaw.has(r.id)) byRaw.set(r.id, out[0])
-      return out
-    })
-    const state = fresh && mine.some((t) => t.column === 'work') ? 'work' : /^[^\p{L}\p{N}]*(🛑|⛔)/u.test(ln.now) ? 'blocked' : 'idle'
-    return { lane: { id, title: ((k, n) => (bareCount.get(k) > 1 && n > 1 ? `${k} ${n}` : k))(bare(ln.name), bareSeen.set(bare(ln.name), (bareSeen.get(bare(ln.name)) ?? 0) + 1).get(bare(ln.name))), state, actor_id: null }, tasks: mine, ln, byRaw }
-  })
-
   // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다. 노트가 묵은 레인은 actor_id 가 없어 안 세운다.
   for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work' && x.actor_id)) {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
@@ -766,8 +857,10 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   }
 
   // 막힘: 맡은 태스크가 레인 표에서 ⛔/⏸/🙋 — 지금 판 표의 줄 + 다른 레인 표의 줄을 번호로 부르는 캐릭터(도는 에이전트가 이미 맡았으면 일함이 이긴다)
-  const stuck = [...(l1Fresh ? raw.find((x) => x.id === cur?.id)?.rows ?? [] : []).filter((r) => isStuck(r.state, stateOf) && byId.has(r.id)).map((r) => byId.get(r.id)),
-    ...laneBlocked.map((b) => ({ id: b.id, category: '코드' }))]
+  // ⏸(시각·쥔님 대기)은 막힘(⛔)이 아니라 대기(U18⑥) — 캐릭터 상태 wait
+  const waitOrBlocked = (state) => (/^\s*⏸/u.test(state) ? 'wait' : 'blocked')
+  const stuck = [...(l1Fresh ? raw.find((x) => x.id === l1Cur?.id)?.rows ?? [] : []).filter((r) => isStuck(r.state, stateOf) && byId.has(r.id)).map((r) => ({ ...byId.get(r.id), stuckAs: waitOrBlocked(r.state) })),
+    ...laneBlocked.map((b) => ({ id: b.id, category: '코드', stuckAs: waitOrBlocked(b.state) }))]
 
   // 다른 레인의 로그 절(R102②) — 표 꼴 · `- HH:MM` 줄 꼴 다. 줄에 그 레인 표 번호 · 지금 판 번호 · R번호가 있으면 「{제목} 끝/시작/막힘/다시」, 없으면 「{레인} 기록」(원문은 안 싣는다).
   const reqById = new Map(reqTasks.map((t) => [t.id, t]))
@@ -779,7 +872,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
       if (!ts || Date.parse(ts) > now.getTime() + 5 * 60e3) return // 앞날 시각 = 날짜 짐작이 틀린 줄 — 버린다
       const t = mentions(`${l.pan} ${l.result}`, LOG_ID).map((x) => byRaw.get(x) ?? byId.get(x) ?? reqById.get(x)).find(Boolean)
       const verb = verbOf(l)
-      const text = t ? `${t.title} ${verb}` : `${lane.title} 기록`
+      const text = t ? `${t.title} ${verb}` : `${clean(lane.title) || '운전 레인'} 기록` // 「<기기> 운전」 이름은 레인 칸에만 싣는다
       if (!clean(text)) { onDrop('events', l.at); return }
       laneEvents.push({ id: `e-${hash(`${ln.name}|${l.at}|${i}`)}`, ts, kind: t ? (verb === '다시' ? 'task.reject' : 'task.move') : 'lane.log', subject_type: t ? 'task' : 'lane', subject_id: t ? t.id : lane.id, actor_id: lead.id, text })
     })
@@ -789,7 +882,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const t of stuck) {
     if (actors.some((a) => a.task_id === t.id)) continue
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category === '지휘' ? '코드' : t.category]
-    actors.push({ id: `a-${t.id}`, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'blocked',
+    actors.push({ id: `a-${t.id}`, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: t.stuckAs,
       task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   }
 
