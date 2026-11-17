@@ -110,6 +110,16 @@ describe('막대 이름 칸 — 좁은 폭 짧은 말', () => {
     expect(rule).toMatch(/\.sgb-bar \.band-clock \{ flex: none/)
     expect(rule).toMatch(/\.sgb-ed:not\(\.on\)[^{]*\{ display: none/)
   })
+  it('폰 폭 CSS: 「불편 접수」는 아이콘만 남겨(.fb-t 숨김) 경과를 안 가린다 · 단추엔 이름표가 남는다(T-10gs)', () => {
+    const phone = css.slice(css.indexOf('@media (max-width: 767px)', css.indexOf('.sgb-gauge i { width: 3px }') - 60))
+    const rule = phone.slice(0, phone.indexOf('.body {'))
+    expect(rule).toMatch(/\.sgb-mini \.fb-t \{ display: none/)
+    const d = loadData(Date.now(), null)
+    const band = createBand(d, { onApply() {}, onFeedback() {}, onPurge() {}, calm: false, onCalm() {}, theme: 'auto', onTheme() {} })
+    expect(band.fb.getAttribute('aria-label')).toBe('불편 접수')
+    expect(band.fb.querySelector('.fb-t')).not.toBeNull()
+    band.dispose()
+  })
   it('띠 DOM: 경과(.bc-el)·진행률(.sgb-pct)이 있고 줄이는 클래스가 안 붙는다', () => {
     const d = loadData(Date.now(), null)
     const band = createBand(d, { onApply() {}, onFeedback() {}, onPurge() {}, calm: false, onCalm() {}, theme: 'auto', onTheme() {} })

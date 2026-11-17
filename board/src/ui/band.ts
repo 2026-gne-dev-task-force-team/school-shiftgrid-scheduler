@@ -29,7 +29,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   autoBox.checked = !!hooks.auto
   autoBox.addEventListener('change', () => hooks.onAuto?.(autoBox.checked))
   const auto = h('label', { class: 'sgb-auto', title: '켜 두면 새 판이 오는 즉시 [지금 바꾸기]를 저절로 합니다. 글을 치는 중이면 끝난 뒤에 합니다.' }, autoBox, ' 자동')
-  const fb = h('button', { class: 'btn sgb-mini' }, '불편 접수')
+  const fb = h('button', { class: 'btn sgb-mini', title: '불편 접수', 'aria-label': '불편 접수' }, h('span', { class: 'fb-ic', 'aria-hidden': 'true' }, '✎'), h('span', { class: 'fb-t' }, ' 불편 접수'))
   // 판 칩 — 평범한 링크 이동(서비스워커 건드리지 않음). 지금 판은 눌린 모양.
   const curEd = hooks.app ? editionOfApp(hooks.app) : currentEdition(location.pathname) // 판 이름(data-app)이 주소보다 앞선다
   const editions = h('nav', { class: 'sgb-editions', 'aria-label': '판 바꾸기' },
