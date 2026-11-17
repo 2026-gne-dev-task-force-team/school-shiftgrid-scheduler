@@ -26,7 +26,7 @@ import {
 import {
     setWorkspaceBridge, makeHost, resetFirstRunFlags, type WorkspaceOpenOptions, type CommandContext, type Disposable,
     useStatusItems, useContribVersion, getNewTab, getCommand, listTabMenu, fireWorkspace, ownerOfView,
-    useStorageErrors, useDurability, useNotifications,
+    useStorageErrors, useDurability, useNotifications, notify,
     type WorkspaceEvent, type PluginHost, type IconName,
 } from '../pane-ui-system/plugin';
 import { appHost } from './host';
@@ -34,6 +34,7 @@ import { firstPaneForNarrow } from '../layout/mobile';
 import { INSTALLED_PLUGIN_IDS } from './site-config';
 import { canPlace, canSplit, isSingleton, leafTitle } from '../pane-ui-system/view-registry';   // 자리 제한·제목 — 호스트 앱이 모델 앞에서 묻는다
 import './blank';   // 등록은 import 부작용 — 빈 탭 뷰(app.blank)
+import { startSwUpdate } from './sw-update';
 import './notify-view';   // 알림 패널 뷰(app.notify)
 const BLANK_VIEW_ID = 'app.blank';
 const NOTIFY_VIEW_ID = 'app.notify';
@@ -314,6 +315,21 @@ export function Workbench() {
     // 🔴 ⭐ 「모든 동작은 명령」(쥔님) — 창틀이 제공하는 동작을 전부 명령으로 등록한다(FRAME_COMMAND id, 창틀이 이름을 쥔다).
     //    탭 메뉴·우클릭 메뉴가 이 id 로 runCommand 를 거치고(구조 검사 ⑩), 팔레트에도 같이 뜬다.
     //    ⛔ run 안에서 handlers/focus/panels 를 ref 로 읽는다 — 한 번 등록되고 계속 살아도 늘 최신이게.
+    const applyUpdateRef = useRef<() => void>(() => {});
+    useEffect(() => {
+        // 🔴 T-10fp 서비스워커 등록 + 새 판 감지 — 배포판(PROD)에서만. 개발 서버는 위 main.tsx 가 옛 워커를 걷어낸다.
+        if (import.meta.env.PROD && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+            void startSwUpdate({
+                container: navigator.serviceWorker as never,
+                swUrl: `${import.meta.env.BASE_URL}sw.js`,
+                notify: (n) => { notify('app', n); },
+                reload: () => window.location.reload(),
+                pollMs: 30 * 60 * 1000,
+                onVisible: (fn) => document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fn(); }),
+            }).then((r) => { applyUpdateRef.current = r.apply; }).catch(() => { /* 등록 실패 — 옛 장치 없이도 앱은 뜬다 */ });
+        }
+    }, []);
+
     useEffect(() => {
         const H = () => handlersRef.current;
         const target = (ctx?: CommandContext) => ctx?.leafId ?? focusRef.current;
@@ -324,14 +340,16 @@ export function Workbench() {
         const runs: Record<string, (host: PluginHost, ctx?: CommandContext) => void> = {};
         const fh = makeHost('app', { commands: runs });
         // keys = 기본 단축키(사용자가 설정 「단축키」에서 덮어쓴다 — keybindings.ts)
-        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: IconName, keys?: string) => {
+        const add = (id: string, title: string, run: (ctx?: CommandContext) => void, icon?: IconName, keys?: string, palette?: boolean) => {
             runs[id] = (_host, ctx) => run(ctx);
-            return fh.declare({ kind: 'command', id, title, icon, keys });
+            return fh.declare({ kind: 'command', id, title, icon, keys, palette });
         };
 
+        // 🔴 T-10fp 새 버전 안내의 단추 — 누르면 대기 워커에 skipWaiting(편집 중 자동 새로고침 없음). 안내가 뜨기 전엔 아무 일 없다.
         runs['frame.palette.k'] = () => setPalette((v) => !v);
         runs['frame.palette.ctrlk'] = () => setPalette((v) => !v);
         const disp: Disposable[] = [
+            add(FRAME_COMMAND.updateApp, '새 버전으로 새로 고침', () => applyUpdateRef.current(), 'download', undefined, false),
             add(FRAME_COMMAND.closeTab, '탭 닫기', (c) => { const id = target(c); if (id) H().onClose(id); }, 'x', 'Mod+W'),
             add(FRAME_COMMAND.reopenTab, '닫은 탭 다시 열기', () => { handlersRef.current.onReopen(); }, undefined, 'Mod+Shift+T'),
             add(FRAME_COMMAND.closeOthers, '다른 탭 모두 닫기', (c) => { const id = target(c); if (id) H().onCloseOthers(id); }),

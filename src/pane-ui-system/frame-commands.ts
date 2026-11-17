@@ -20,6 +20,7 @@ export const FRAME_COMMAND = {
     toggleLeft: 'frame.sidebar.toggle-left',
     toggleRight: 'frame.sidebar.toggle-right',
     palette: 'frame.palette',
+    updateApp: 'frame.app.update',
 } as const;
 
 export type FrameCommandId = (typeof FRAME_COMMAND)[keyof typeof FRAME_COMMAND];
