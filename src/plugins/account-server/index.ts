@@ -18,6 +18,7 @@ import { createAccountServer, type AuthClient } from './session';
 import { ServerAccountStatus } from './panes/ServerAccountStatus';
 import { MembersPane } from './members/MembersPane';
 import { createMembersApi, type MembersClient } from './members/api';
+import { createPasswordKit, PASSWORD_CMD } from './password';
 
 /** server-link 의 isConfigured 와 같은 판정(값 import 는 꾸러미 경계 위반이라 여기 한 줄로). */
 export function isServerMode(c: ServerConfig | undefined): boolean {
@@ -33,6 +34,8 @@ export const accountServer = createAccountServer({
     getClient: () => (link?.client() as AuthClient | null | undefined) ?? null,
     classify: (e) => (link ? link.classify(e) : { kind: 'network' }),
 });
+/** 비밀번호 판(③ F4·F6) — 비번 바꾸기·재설정 메일·재설정 링크 착지. */
+export const passwordKit = createPasswordKit(accountServer);
 
 // F3 — 구성원·초대 판. 같은 server-link 클라이언트를 빌린다(⛔ createClient·fetch).
 export const membersApi = createMembersApi({
@@ -69,19 +72,29 @@ export const accountServerPlugin = definePlugin({
         provides: SERVER_MODE ? { identity: '0.2.0', credential: '0.1.0', permit: '0.1.0' } : {},
         requires: { 'server-link': '^0.1' },
         contributes: SERVER_MODE ? {
-            statusBar: [{ id: 'account-server.whoami', side: 'right', render: 'ServerAccountStatus' }],
+            statusBar: [
+                { id: 'account-server.whoami', side: 'right', render: 'ServerAccountStatus' },
+                { id: 'account-server.password', side: 'right', render: 'PasswordDialogs' },
+            ],
             views: [{ id: 'members', title: '구성원·초대', icon: 'users', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, component: 'Members' }],
-            commands: [{ id: 'account-server.members.open', title: '구성원·초대 열기', icon: 'users' }],
+            commands: [
+                { id: 'account-server.members.open', title: '구성원·초대 열기', icon: 'users' },
+                { id: PASSWORD_CMD.change, title: '비밀번호 바꾸기', icon: 'key', keywords: ['암호', '비번'] },
+                { id: PASSWORD_CMD.reset, title: '비밀번호 재설정 메일 보내기', icon: 'key', keywords: ['암호', '비번', '잊음'] },
+            ],
         } : {},
     },
     components: {
         Members: () => createElement(MembersPane, { session: accountServer, api: membersApi }),
     },
-    commands: {
-        'account-server.members.open': (host: PluginHost) => { host.workspace.open(MEMBERS_VIEW, { where: 'center' }); },
-    },
     renders: {
         ServerAccountStatus: (_host: PluginHost) => createElement(ServerAccountStatus, { session: accountServer }),
+        PasswordDialogs: (_host: PluginHost) => passwordKit.render(),
+    },
+    commands: {
+        'account-server.members.open': (host: PluginHost) => { host.workspace.open(MEMBERS_VIEW, { where: 'center' }); },
+        [PASSWORD_CMD.change]: () => passwordKit.ui.open('change'),
+        [PASSWORD_CMD.reset]: () => passwordKit.ui.open('reset'),
     },
     modules: {
         identity: identityModule,
@@ -94,11 +107,13 @@ export const accountServerPlugin = definePlugin({
             link = host.modules.use<ServerLink>('server-link') ?? null;
             linkSub = link?.onChange((s) => { void accountServer.linkChanged(s); }) ?? null;
             if (link) void accountServer.linkChanged(link.status());
+            passwordKit.start(link);
         },
         onDeactivate() {
             linkSub?.dispose();
             linkSub = null;
             link = null;
+            passwordKit.stop();
         },
     },
 });
