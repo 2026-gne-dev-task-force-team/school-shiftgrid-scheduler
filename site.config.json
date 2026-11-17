@@ -7,6 +7,8 @@
     "shortName": "시간표 1.2v",
     "badge": "1.2v 미리보기 — v1 + 운영 앱 합치는 중"
   },
+  "supabaseUrl": "",
+  "anonKey": "",
   "plugins": [
     "page", "collection", "sheet", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
