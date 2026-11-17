@@ -58,3 +58,27 @@ describe('ops.aux 마감', () => {
         expect(run('ops.aux', ['관리자'], { monthClose: [] }, prev)).toEqual([]);
     });
 });
+
+describe('ops.aux 마감된 달 잠금(shared/ops-aux/month-lock)', () => {
+    const close = { id: 's1:2026-03', staffId: 's1', ym: '2026-03' };
+    const day = (id: string, date: string, over: object = {}) => ({ id, staffId: 's1', date, startMin: 540, endMin: 600, classKey: '', source: 'manual', ...over });
+    const exc = (id: string, date: string, kind = '결근') => ({ id, staffId: 's1', date, kind, amount: -60, note: '' });
+    const prev = { day: [day('d1', '2026-03-02'), day('d2', '2026-04-02')], exceptions: [exc('e1', '2026-03-03')], monthClose: [close] };
+    it('마감된 달의 배정 추가·수정·삭제는 409 — 관리자도', () => {
+        for (const roles of [['근태담당'], ['관리자']] as Role[][]) {
+            expect(code(() => run('ops.aux', roles, { ...prev, day: [...prev.day, day('d3', '2026-03-09')] }, prev))).toBe('409 month_closed');
+            expect(code(() => run('ops.aux', roles, { ...prev, day: [day('d1', '2026-03-02', { endMin: 660 }), prev.day[1]] }, prev))).toBe('409 month_closed');
+            expect(code(() => run('ops.aux', roles, { ...prev, day: [prev.day[1]] }, prev))).toBe('409 month_closed');
+        }
+    });
+    it('마감된 달의 예외 수정·삭제는 409 · 정정 추가는 통과', () => {
+        expect(code(() => run('ops.aux', ['근태담당'], { ...prev, exceptions: [] }, prev))).toBe('409 month_closed');
+        expect(code(() => run('ops.aux', ['근태담당'], { ...prev, exceptions: [...prev.exceptions, exc('e2', '2026-03-04')] }, prev))).toBe('409 month_closed');
+        expect(run('ops.aux', ['근태담당'], { ...prev, exceptions: [...prev.exceptions, exc('e3', '2026-03-04', '정정')] }, prev)).toEqual([]);
+    });
+    it('안 마감된 달·다른 보조는 통과 · 관리자가 같은 판에서 해제하면 통과', () => {
+        expect(run('ops.aux', ['근태담당'], { ...prev, day: [prev.day[0], day('d2', '2026-04-02', { endMin: 700 }), day('d4', '2026-04-03')] }, prev)).toEqual([]);
+        expect(run('ops.aux', ['근태담당'], { ...prev, day: [...prev.day, day('d5', '2026-03-09', { staffId: 's2' })] }, prev)).toEqual([]);
+        expect(run('ops.aux', ['관리자'], { ...prev, monthClose: [], day: [prev.day[1]] }, prev)).toEqual([]);
+    });
+});
