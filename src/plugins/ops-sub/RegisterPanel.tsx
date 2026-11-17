@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Field, TextInput } from '../../pane-ui-system';
+import { PersonSelect } from './PersonSelect';
 import { getSlotSource, getViewer, type SlotSource } from './list';
 import { registerSlot, type RegisterCtx, type RegisterInput, type RegisterResult } from './register';
 
@@ -36,7 +37,7 @@ export function RegisterView({ source, ctx, initial }: { source?: SlotSource; ct
                 <Field label="끝"><TextInput value={form.end} onChange={(e) => set('end')(e.target.value)} placeholder="10:20" /></Field>
             </div>
             <Field label="반"><TextInput value={form.trackName} onChange={(e) => set('trackName')(e.target.value)} placeholder="1-1" /></Field>
-            <Field label="빠지는 사람" hint="빠지는 선생님 이름을 적어 주세요."><TextInput value={form.absentName} onChange={(e) => set('absentName')(e.target.value)} /></Field>
+            <Field label="빠지는 사람" hint="교직원 명단이 있으면 거기서 고르고, 없으면 이름을 적어 주세요."><PersonSelect refId={form.absentRef} name={form.absentName} onPick={(r, n) => { setForm((f) => ({ ...f, absentRef: r, absentName: n })); setAsk(null); setDone(null); }} /></Field>
             <Field label="사유"><TextInput value={form.reason} onChange={(e) => set('reason')(e.target.value)} /></Field>
             <Field label="메모"><TextInput value={form.memo} onChange={(e) => set('memo')(e.target.value)} /></Field>
             {msgs.map((m) => <p key={m} role="alert" className="text-small text-bad">{m}</p>)}

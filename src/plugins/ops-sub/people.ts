@@ -19,3 +19,10 @@ export const absentShown = (b: { absentName: string; absentRef: string }): strin
 export const takerShown = (t: { takerName: string; takerRef: string }): string => memberOf(t.takerRef)?.name || t.takerName || '알 수 없음';
 /** 결근자가 담임인가 — 반 참조이거나 명단 구분이 담임(homeroom)이면. */
 export const isHomeroomRef = (ref: string): boolean => ref.startsWith(HOMEROOM) || memberOf(ref)?.kind === 'homeroom';
+
+/** 사람 고르기 칸에 올릴 후보 — 교직원 명단(staff)의 모든 명단 사람. 명단이 꺼져 있으면 빈 배열(그땐 이름을 직접 적는다). */
+export function staffChoices(): { value: string; label: string }[] {
+    const st = staffGetter();
+    if (!st) return [];
+    return st.lists().flatMap((l) => st.staffIn(l.id).map((m) => ({ value: m.id, label: m.name })));
+}

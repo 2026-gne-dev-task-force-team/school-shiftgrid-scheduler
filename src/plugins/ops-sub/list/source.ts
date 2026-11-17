@@ -2,6 +2,7 @@
  * 보결 줄 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다(나머지는 loadSlots 만 부른다).
  * 지금은 메모리 구현(시험·미리보기용 가짜 줄).
  */
+import type { Disposable } from '../../../pane-ui-system/plugin';
 import type { SaveResult, Sub } from '../contracts/sub';
 import type { SubSlotRow } from './types';
 
@@ -15,6 +16,8 @@ export interface SlotSource {
     saveSlot(row: SubSlotRow, opts?: { ifMatch?: string | null }): Promise<SaveResult>;
     /** 줄 지우기(관리 「삭제」) — ifMatch = 있는 줄의 updatedAt 이 같아야 함. 어긋나면 `{ ok:false, conflict:true }`. */
     deleteSlot(row: SubSlotRow, opts?: { ifMatch?: string }): Promise<{ ok: true } | { ok: false; conflict: true }>;
+    /** 줄이 바뀔 때마다 부른다 — 화면이 새로 읽는 신호(저장·삭제 뒤 목록이 따라온다). */
+    onChange(listener: () => void): Disposable;
 }
 export type { SaveResult };
 
@@ -22,8 +25,11 @@ const sameKey = (a: SubSlotRow, b: SubSlotRow) =>
     a.projectId === b.projectId && a.date === b.date && a.trackName === b.trackName && a.startMin === b.startMin;
 
 /** 줄 묶음을 읽고 쓰는 창구 — 읽기·쓰기 손만 갈아 끼우면 메모리든 기기 저장소든 같은 규칙이다. */
-function storeSource(read: () => SubSlotRow[], write: (rows: SubSlotRow[]) => void): SlotSource {
+function storeSource(read: () => SubSlotRow[], write0: (rows: SubSlotRow[]) => void): SlotSource {
+    const listeners = new Set<() => void>();
+    const write = (rows: SubSlotRow[]) => { write0(rows); listeners.forEach((f) => f()); };
     return {
+        onChange: (f) => { listeners.add(f); return { dispose: () => { listeners.delete(f); } }; },
         loadSlots: async (date) => read().filter((r) => r.date === date).map((r) => ({ ...r })),
         saveSlot: async (row, opts = {}) => {
             const store = read();
@@ -79,6 +85,7 @@ export function subSlotSource(sub: Sub): SlotSource {
         loadSlots: async (date) => [...sub.slotsOn(date)],
         saveSlot: async (row, opts) => sub.save(row, opts),
         deleteSlot: async (row, opts) => sub.remove(row, opts),
+        onChange: (f) => sub.onChange(f),
     };
 }
 
