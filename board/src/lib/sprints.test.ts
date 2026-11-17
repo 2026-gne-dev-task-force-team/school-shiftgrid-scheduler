@@ -4,7 +4,7 @@ import type { BoardData } from '../types.ts'
 import { reviewLabel, sprintProgress, sprintsNewestFirst, currentSprint, sprintLabel, flightStatus, sprintLeft } from './sprints.ts'
 import { teamText } from './actor.ts'
 import { LAYERS } from '../layers/registry.ts'
-import { actorLabel, actorWhat, nameTag } from './actor.ts'
+import { actorLabel, actorName, actorWhat, jobOf } from './actor.ts'
 
 describe('막대의 지금 스프린트', () => {
   it('막대 글은 목표(goals)가 아니라 열린 스프린트 3이다', () => {
@@ -20,27 +20,30 @@ describe('막대의 지금 스프린트', () => {
 describe('감독관 줄 풀이', () => {
   it('기호를 말로', () => expect(teamText('⚠️ 7 · ❌ 31 · 순찰 14:02')).toBe('주의 7건 · 실패 31건 · 점검 14:02'))
 })
-describe('캐릭터 이름표 = 역할 · 태스크 번호', () => {
+describe('캐릭터 = 이름 · 직업 · 태스크 번호', () => {
   const base = d.actors[5] // 시험
-  it('역할 낱말만 쓴다 — 자료의 name 은 무시', () => {
-    expect(d.actors.map((a) => actorLabel(a, d.actors))).toEqual(d.actors.map((a) => nameTag(a)))
-    expect(nameTag({ ...base, task_id: null, name: '이끼' })).toBe('시험팀')
-    expect(nameTag({ ...base, task_id: null, name: '' })).toBe('시험팀')
-    expect(nameTag({ ...base, task_id: null, name: '낯선 별명' })).toBe('시험팀')
+  it('옛 자료(job 칸 없음) — 직업은 role 낱말, 이름은 id 에서 만든 고정 이름(자료의 name 은 무시)', () => {
+    expect(jobOf({ ...base, name: '이끼' })).toBe('시험')
+    expect(actorName({ ...base, name: '이끼' })).toBe(actorName({ ...base, name: '다른 별명' })) // 같은 id → 같은 이름
+    expect(actorName(base)).not.toBe('시험')
+    expect(d.actors.map((a) => actorLabel(a, d.actors))).toEqual(d.actors.map((a) => `${actorName(a, d.actors)} · ${jobOf(a)}${/^(l-\w+-)?T-\w+$/.test(a.task_id ?? '') ? ` · ${a.task_id!.replace(/^l-\w+-/, '')}` : ''}`))
   })
   it('태스크 번호가 붙고 레인 접두는 벗긴다', () => {
-    expect(nameTag({ ...base, task_id: 'T-7z' })).toBe('시험팀 T-7z')
-    expect(nameTag({ ...base, task_id: 'l-ab12cd-T-7z' })).toBe('시험팀 T-7z')
-    expect(nameTag({ name: '지휘', role: '지휘', team: '지휘', task_id: null })).toBe('지휘')
-    expect(nameTag({ ...base, task_id: 'T-7z' }, [{ id: 'T-7z', title: 'T-7z (R5) 칸 연결' }])).toBe('시험팀 칸 연결')
+    expect(actorLabel({ ...base, task_id: 'T-7z' })).toMatch(/ · 시험 · T-7z$/)
+    expect(actorLabel({ ...base, task_id: 'l-ab12cd-T-7z' })).toMatch(/ · 시험 · T-7z$/)
+    expect(actorLabel({ ...base, task_id: '28' })).toMatch(/ · 시험$/)
   })
-  it('감독관·대화는 team 이 문장이어도 role 로 정한다', () => {
-    expect(nameTag({ name: '감독관', role: '감독', team: '시험 화면 막힘 2건' })).toBe('감독관')
-    expect(nameTag({ name: '대화 세션', role: '세션', team: '세션' })).toBe('대화')
+  it('직업 낱말 — 코드 짜기 · 감독관 · 대화 세션은 team 이 문장이어도 role 로', () => {
+    expect(jobOf({ name: '', role: '코드', team: '코드팀' })).toBe('코드 짜기')
+    expect(jobOf({ name: '', role: '감독', team: '시험 화면 막힘 2건' })).toBe('감독관')
+    expect(jobOf({ name: '', role: '세션', team: '세션' })).toBe('대화 세션')
+    expect(jobOf({ name: 'x', job: '맨눈 점검', role: '' })).toBe('맨눈 점검')
   })
-  it('번호 없는 같은 이름표 둘이면 1·2', () => {
-    const two = [{ ...base, id: 'x1', name: '', task_id: null }, { ...base, id: 'x2', name: '솔', task_id: null }]
-    expect(two.map((a) => actorLabel(a, two))).toEqual(['시험팀 1', '시험팀 2'])
+  it('같은 직업 둘이어도 이름은 서로 다르다 — 꼬리 1·2 번호 없음', () => {
+    const two = [{ ...base, id: 'x1', task_id: null }, { ...base, id: 'x2', task_id: null }]
+    const [l1, l2] = two.map((a) => actorLabel(a, two))
+    expect(l1).not.toBe(l2)
+    expect(l1).toMatch(/^\S+ · 시험$/)
   })
   it('한 줄 설명 = 역할 설명 + 맡은 일감', () => {
     const t = d.tasks.find((x) => x.id === base.task_id)!

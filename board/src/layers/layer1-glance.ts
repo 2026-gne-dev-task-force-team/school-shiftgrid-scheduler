@@ -2,7 +2,7 @@ import { h } from '../dom.ts'
 import { chip, DEPT_NAME, STATE_ICON, STATE_NAME, isOff } from '../ui/chip.ts'
 import { character, raceText } from '../ui/character.ts'
 import { currentSprint, sprintLeft } from '../lib/sprints.ts'
-import { actorChip, actorLabel, actorTokens, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
+import { actorChip, actorLabel, actorName, actorTokens, jobOf, actorWhat, stateCounts, teamText } from '../lib/actor.ts'
 import { eventText, plainLog, wheelTitle } from '../ui/code-tag.ts'
 import { usagePanel } from '../ui/usage.ts'
 import type { LayerRenderer } from './types.ts'
@@ -21,15 +21,18 @@ export const layer1: LayerRenderer = {
     host.append(h('section', { class: 'card' }, h('b', null, '목표'),
       g && h('p', null, `한 바퀴 ${g.sprint.id} · `, ...wheelTitle(g.sprint.title), ` — ${g.pct}% · 남은 일감 ${left}개`)))
 
-    const depts = h('section', { class: 'card' }, h('b', null, '부서별 지금 몇 명'))
+    const depts = h('section', { class: 'card' }, h('b', null, '직업별 지금 몇 명'))
     depts.append(stateSummary(data.actors))
-    for (const d of ['hq', 'make', 'qa'] as const) {
-      const here = data.actors.filter((a) => a.dept === d && !isOff(a.state))
-      const row = h('div', { class: 'row', 'data-dept': d }, h('span', { class: 'dept' }, `${DEPT_NAME[d]} ${here.length}명`))
+    // 직업 칸(job)으로 센다 — 부서(dept) 순서(본부·제작·검수)로 늘어놓고, 같은 부서 안에선 처음 나온 직업 순.
+    const live = data.actors.filter((a) => !isOff(a.state))
+    const jobs = (['hq', 'make', 'qa'] as const).flatMap((d) => [...new Set(live.filter((a) => a.dept === d).map((a) => jobOf(a)))].map((j) => [d, j] as const))
+    for (const [d, j] of jobs) {
+      const here = live.filter((a) => a.dept === d && jobOf(a) === j)
+      const row = h('div', { class: 'row', 'data-dept': d, 'data-job': j }, h('span', { class: 'dept' }, `${j} ${here.length}명`))
       for (const a of here) {
         const name = actorLabel(a, data.actors, data.tasks), what = actorWhat(a, data.tasks)
         const c = chip({ icon: character(a), ...actorChip(a, data.actors, data.tasks), hue: a.hue, id: a.id, onClick: () => openDetail({
-          title: name, rows: [['하는 일', what], ['부서', `${DEPT_NAME[a.dept]} · ${teamText(a.team)}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
+          title: name, rows: [['하는 일', what], ['이름', actorName(a, data.actors)], ['직업', jobOf(a)], ['부서', `${DEPT_NAME[a.dept]} · ${teamText(a.team)}`], ['상태', `${STATE_ICON[a.state]} ${STATE_NAME[a.state] ?? a.state}`],
             ['맡은 일', ((t) => t ? `${t.id} ${t.title}` : '—')(data.tasks.find((t) => t.id === a.task_id))],
             ['쓴 토큰', actorTokens(a)], ...(raceText(a) ? [['기기 · 종족', raceText(a)] as [string, string]] : [])],
           extra: h('div', { class: 'chr-card' }, character(a, 'card')) }) })

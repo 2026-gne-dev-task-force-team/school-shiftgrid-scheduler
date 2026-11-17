@@ -107,7 +107,7 @@ button.chip:hover { background: hsl(var(--hue) var(--chip-s) var(--chip-l-hover)
 button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%) } /* 보이는 크기는 그대로, 누르는 영역만 44px */ button.gg-l:hover, button.gg-l:focus-visible { outline: 2px solid hsl(var(--hue) 70% var(--gg-ring-l)) }
 .gg-trunk { color: var(--neon) }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp2); margin-top: var(--sp2) }
-.row .dept { min-width: 68px; font-size: var(--fs-sm); font-weight: 600 }
+.row .dept { min-width: 96px; font-size: var(--fs-sm); font-weight: 600 }
 .row[data-dept=hq] .dept { color: var(--hq) } .row[data-dept=make] .dept { color: var(--make) } .row[data-dept=qa] .dept { color: var(--qa) }
 .usage { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp3) } .usage .half { min-width: 0 } .usage .half.empty small { margin-top: var(--sp2) }
 .meter { margin-top: var(--sp3) } .meter > span { font-weight: 600; font-variant-numeric: tabular-nums } .meter small, .card small { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--fg-3) }

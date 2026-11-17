@@ -34,8 +34,8 @@ describe('캐릭터', () => {
     expect(characterSvg({ ...A, prop: 'scope' })).not.toBe(characterSvg(A))
   })
   it('이름(역할 이름 규칙)은 aria-label 로, 이스케이프', () => {
-    expect(characterSvg({ ...A, role: '<a"b>' })).toContain('aria-label="&#60;a&#34;b&#62;"')
-    expect(characterSvg(A)).toContain('aria-label="지휘"') // 자연 낱말 이름은 역할로
+    expect(characterSvg({ ...A, role: '<a"b>' })).toContain('&#60;a&#34;b&#62;"')
+    expect(characterSvg({ ...A, job: '지휘' })).toContain('aria-label="모래 · 지휘"') // 「이름 · 직업」
   })
   it('상태마다 꼴이 다르다: 쉼 Z · 막힘 ! · 퇴근 흐림 표지 · 일함은 표지 없음', () => {
     const v = (state: Actor['state']) => characterSvg({ ...A, state })
