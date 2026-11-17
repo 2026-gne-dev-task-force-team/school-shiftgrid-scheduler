@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { openAudit, type AuditStore, type DbAudit } from '../_shared/audit.ts';
 import type { AuthClient } from '../_shared/auth.ts';
 import type { KeyRing } from '../_shared/crypto/envelope.ts';
 import { buildKeyRing, parseKeys } from '../_shared/crypto/keys.ts';
@@ -71,12 +72,15 @@ const USERS = {
 let store: ReturnType<typeof memStore>;
 let ring: KeyRing;
 let deps: PartsDeps;
+let auditRows: DbAudit[];
 let call: (req: Request) => Promise<Response>;
 
 beforeEach(async () => {
     store = memStore();
     ring = await buildKeyRing(parseKeys(KEY_TEXT));
-    deps = { auth: fakeAuth(USERS), store, keys: async () => ring, allowedOrigin: ORIGIN };
+    auditRows = [];
+    const audit: AuditStore = { append: async (r) => void auditRows.push(r) };
+    deps = { auth: fakeAuth(USERS), store, keys: async () => ring, allowedOrigin: ORIGIN, audit, clock: () => new Date('2026-03-02T01:02:03.000Z'), newId: () => 'aud-1' };
     call = partsHandler(deps);
 });
 
@@ -268,5 +272,72 @@ describe('검사 연결(check.ts) — PUT 경로', () => {
         expect(edit.status).toBe(403);
         expect((await errOf(edit)).code).toBe('changes_edit_forbidden');
         expect((await put('ops.changes', { fmt: 1, body: [ch('a'), ch('b')] }, { who: 'teacher', ifMatch: `"${EPOCH}.1"` })).status).toBe(200);
+    });
+});
+
+describe('PUT 여덟 차례 — 순서대로 걸리고 앞에서 막히면 뒤는 일어나지 않는다 · 성공 때 감사 한 줄', () => {
+    let keyCalls: number;
+    let checkCalls: number;
+    beforeEach(() => {
+        keyCalls = 0;
+        checkCalls = 0;
+        const k = deps.keys;
+        deps.keys = async () => (keyCalls++, k());
+        deps.check = () => (checkCalls++, []);
+    });
+    const untouched = () => {
+        expect(store.rows.size).toBe(0);
+        expect(auditRows).toHaveLength(0);
+    };
+    // 6(키·검사)에 닿기 전에 막히는 차례들 — 키·검사·쓰기·감사가 다 0
+    const beforeSix: [string, () => Promise<Response>, number][] = [
+        ['1 역할 403', () => put('doc', { fmt: 1, body: {} }, { who: 'teacher' }), 403],
+        ['2 If-Match 428', () => put('doc', { fmt: 1, body: {} }, { ifMatch: null }), 428],
+        ['3 크기 413', () => put('ops.changes', { fmt: 1, body: 'x'.repeat(PART_LIMITS['ops.changes'] + 10) }, { who: 'teacher' }), 413],
+        ['4 판 번호 412', () => put('doc', { fmt: 1, body: {} }, { ifMatch: `"${EPOCH}.5"` }), 412],
+        ['5 fmt 400', () => put('doc', { fmt: 2, body: {} }), 400],
+    ];
+    for (const [name, run, status] of beforeSix) {
+        it(`${name} — 키·검사·감사 0`, async () => {
+            expect((await run()).status).toBe(status);
+            expect(keyCalls).toBe(0);
+            expect(checkCalls).toBe(0);
+            untouched();
+        });
+    }
+    it('6 검사 400 — 검사까지 갔지만 쓰기·감사는 0', async () => {
+        deps.check = () => (checkCalls++, ['doc.x']);
+        expect((await put('doc', { fmt: 1, body: {} })).status).toBe(400);
+        expect(checkCalls).toBe(1);
+        untouched();
+    });
+    it('7 조건부 쓰기 412(경쟁에 짐) — 감사 0', async () => {
+        store.insertFirst = async () => false;
+        expect((await put('doc', { fmt: 1, body: {} })).status).toBe(412);
+        expect(auditRows).toHaveLength(0);
+    });
+    it('성공 — 감사 정확히 한 줄 · 평문 열엔 사람·내용 없음 · 암호문 안엔 {part, from, to}', async () => {
+        const res = await put('doc', { fmt: 1, body: { secret: '가짜값' } });
+        expect(res.status).toBe(200);
+        expect(auditRows).toHaveLength(1);
+        const a = auditRows[0];
+        expect(a).toMatchObject({ id: 'aud-1', project_id: 'p1', at: '2026-03-02T01:02:03.000Z', module: 'part', action: 'put', target: 'doc' });
+        const plainCols = JSON.stringify({ ...a, body_ct: undefined });
+        expect(plainCols).not.toContain('u-admin');
+        expect(new TextDecoder().decode(a.body_ct)).not.toContain('가짜값');
+        expect(await openAudit(ring, a)).toEqual({ actorUserId: 'u-admin', before: null, after: null, note: { part: 'doc', from: 0, to: 1 } });
+    });
+    it('archive=1 이면 note 에 archivedAs · 판이 오르면 from/to 도 오른다', async () => {
+        await put('doc', { fmt: 1, body: 'v1' });
+        await put('doc', { fmt: 1, body: 'v2' }, { ifMatch: `"${EPOCH}.1"`, q: '?archive=1' });
+        expect(auditRows).toHaveLength(2);
+        expect((await openAudit(ring, auditRows[1])).note).toEqual({ part: 'doc', from: 1, to: 2, archivedAs: 'doc@1' });
+    });
+    it('putAtomic 저장소 — 감사는 같은 호출에 실려 가고 따로 append 하지 않는다', async () => {
+        let got: DbAudit | null | undefined;
+        store.putAtomic = async (pid, w) => ((got = w.audit as DbAudit), await store.insertFirst(pid, { part: w.part, sizePlain: w.sizePlain, ct: w.ct }));
+        expect((await put('doc', { fmt: 1, body: {} })).status).toBe(200);
+        expect(got?.target).toBe('doc');
+        expect(auditRows).toHaveLength(0);
     });
 });

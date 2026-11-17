@@ -2,13 +2,14 @@
 // supabase-js 는 Deno 의 `npm:` 지정자로 실행 때 불러온다(Node tsc 가 해석하지 않게 문자열 변수로).
 // config.toml 에 [functions.parts] verify_jwt 줄은 두지 않는다(기본 true — 게이트웨이도 JWT 를 본다).
 
+import type { AuditStore } from '../_shared/audit.ts';
 import type { AuthClient } from '../_shared/auth.ts';
 import { loadAllowedOrigin } from '../_shared/cors.ts';
 import { aadPart } from '../_shared/crypto/aad.ts';
 import { ensureKeys } from '../_shared/crypto/keys.ts';
 import { checkPart } from './check.ts';
 import { partsHandler } from './handler.ts';
-import { hexToBytea, supabaseStore, type PartsDb } from './store.ts';
+import { byteaToHex, hexToBytea, supabaseStore, type PartsDb } from './store.ts';
 
 interface DenoLike {
     env: { get(name: string): string | undefined };
@@ -42,4 +43,12 @@ const keys = () =>
         };
     });
 
-deno.serve(partsHandler({ auth: client, store: supabaseStore(client), keys, allowedOrigin: loadAllowedOrigin(), check: checkPart }));
+/** 추가 전용 — `audit_log` 엔 insert 한 길뿐. supabaseStore 가 RPC(putAtomic)를 가지면 감사는 RPC 가 쓰고 이 구멍은 안 쓰인다. */
+const audit: AuditStore = {
+    async append(r) {
+        const { error } = await client.from('audit_log').insert([{ ...r, body_ct: byteaToHex(r.body_ct) }]);
+        if (error) throw new Error('audit_log 쓰기 실패');
+    },
+};
+
+deno.serve(partsHandler({ auth: client, store: supabaseStore(client), audit, keys, allowedOrigin: loadAllowedOrigin(), check: checkPart }));

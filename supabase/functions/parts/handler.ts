@@ -4,7 +4,9 @@
 //       → 200 {version} + ETag. 차례(④ 5-3): 역할 403 → If-Match 428 → 크기 413 → 판 번호 412 → fmt 400 → 검사(B7 자리) → 조건부 쓰기 412.
 // 거부되면 아무것도 바꾸지 않는다. 로그·오류 응답에 본문을 싣지 않는다.
 
+import { sealAudit, type AuditStore, type DbAudit } from '../_shared/audit.ts';
 import { requireProjectMember, type AuthClient } from '../_shared/auth.ts';
+import { systemClock, type Clock } from '../_shared/clock.ts';
 import { EnvelopeError, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 import { errors, HttpError, jsonResponse } from '../_shared/errors.ts';
 import { handle, subPath } from '../_shared/http.ts';
@@ -28,6 +30,12 @@ export interface PartsDeps {
     /** 지금 함수가 받는 조각 꼴 판(④ 5-1). 없는 조각은 1 만 받는다. */
     acceptFmt?: (part: string) => readonly number[];
     check?: PartCheck;
+    /** 감사 쓰기 구멍(④ 4절) — 진입점(index.ts)은 반드시 건다. 없으면 감사 없이 돈다(시험 편의). putAtomic 이 없는 저장소일 때만 직접 쓴다(있으면 RPC 가 같은 트랜잭션에 넣는다) */
+    audit?: AuditStore;
+    /** 감사 `at` · 없으면 시스템 시계 */
+    clock?: Clock;
+    /** 감사 행 id(무작위) · 없으면 randomUUID */
+    newId?: () => string;
 }
 
 const err = {
@@ -152,14 +160,21 @@ async function putPart(deps: PartsDeps, req: Request, pid: string, part: string)
     }
     const newVersion = curVersion + 1;
     const ct = await sealPart(ring, pid, part, newVersion, next);
+    // 감사 줄은 쓰기 앞에서 봉해 둔다(봉하다 실패하면 아무것도 안 쓴 채 끝난다). 내용은 {part, from, to, archivedAs?} 뿐(④ 4절).
+    const auditRow: DbAudit = await sealAudit(ring, {
+        projectId: pid, id: (deps.newId ?? (() => crypto.randomUUID()))(), at: (deps.clock ?? systemClock)().toISOString(),
+        module: 'part', action: 'put', target: part,
+        body: { actorUserId: m.userId, before: null, after: null, note: { part, from: curVersion, to: newVersion, ...(archivedAs ? { archivedAs } : {}) } },
+    });
     const ok = deps.store.putAtomic
-        ? await deps.store.putAtomic(pid, { part, epoch, from: curVersion, sizePlain: size, ct, archive: archived })
+        ? await deps.store.putAtomic(pid, { part, epoch, from: curVersion, sizePlain: size, ct, archive: archived, audit: auditRow })
         : await putTwoStep(deps.store, pid, part, cur !== null, curVersion, size, ct, archived);
     if (!ok) {
         const now = await deps.store.get(pid, part);
         throw err.conflict(now?.version ?? 0);
     }
-    // 8 감사 한 줄({part, from, to, archivedAs}) — 감사 쓰기 바닥이 생기면 여기(같은 트랜잭션은 RPC 몫)
+    // 8 감사 한 줄({part, from, to, archivedAs}) — putAtomic 이면 위 RPC 가 7과 같은 트랜잭션에 넣었고, 아니면 쓰기가 성공한 뒤 여기서 덧붙인다
+    if (!deps.store.putAtomic) await deps.audit?.append(auditRow);
     const etag = formatEtag(epoch, newVersion);
     return jsonResponse({ version: newVersion, etag, ...(archivedAs ? { archivedAs } : {}) }, 200, { ETag: etag });
 }
