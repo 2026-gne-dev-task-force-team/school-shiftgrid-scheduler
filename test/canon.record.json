@@ -2,6 +2,10 @@
   "fixtureRead": 1820,
   "frontTotal": 910,
   "frontMismatched": 0,
+  "backTotal": 910,
+  "backMismatched": 0,
+  "backSkipped": 0,
+  "diffKinds": {},
   "sampleTotal": 0,
   "sampleMismatched": 0,
   "diffs": []
