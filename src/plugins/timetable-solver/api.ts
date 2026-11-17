@@ -9,11 +9,12 @@ import {
 } from './engine/core';
 import { migrateDoc } from './types/doc';
 import { buildOfHost } from './BlockersBadge';
+import { evaluatePlan } from './plan-eval';
 import { toWeekday, toDayIndex } from './day';
 
 export const solverApi: Solver = {
     version: 1,
-    buildContext, evaluateAll, diagnose, demandStatus, candidateCells, previewMove, applyMove,
+    buildContext, evaluateAll, diagnose, evaluate: evaluatePlan, demandStatus, candidateCells, previewMove, applyMove,
     solve, autoAdjust, checkCapacity, RULES, defaultRules, makeSpec,
     readInput: (host) => buildOfHost(host)?.input ?? null,
     migrateDoc, toWeekday, toDayIndex,

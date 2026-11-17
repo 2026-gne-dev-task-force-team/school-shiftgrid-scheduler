@@ -21,7 +21,7 @@ export const opsCheckPlugin = definePlugin({
             ribbon: [{ commandId: 'ops-check.open', icon: 'shieldCheck', order: 9 }],
         },
     },
-    components: { Panel: () => createElement(CheckPanel) },
+    components: { Panel: ({ host }) => createElement(CheckPanel, { host }) },
     commands: { 'ops-check.open': (host: PluginHost) => { host.workspace.open('ops-check.panel', { where: 'center' }); } },
 });
 
