@@ -141,8 +141,7 @@ export const explorerPlugin = definePlugin({
                 { id: 'explorer.undo', title: '되돌리기', icon: 'undo' },
                 { id: 'explorer.redo', title: '다시 하기', icon: 'redo' },
             ],
-            // 리본 아이콘 하나 — open-panel 명령을 가리킨다(누르면 탐색기 패널).
-            ribbon: [{ commandId: 'explorer.open-panel', icon: 'folder', order: 2 }],
+            // 🔴 T-30e: 탐색기는 리본에서 뺐다 — 셸 위쪽 모서리의 작은 옆판 토글로 옮겼다(open-panel 명령은 그대로).
             // 상태바 — 「노드 N · 휴지통 M」. render 는 아래 renders.Count.
             statusBar: [{ id: 'count', side: 'left', render: 'Count' }],
             // ⭐ 내장 노드 타입 「폴더」 하나(컨테이너) — 함수 칸 없는 순수 데이터라 impl 이 없다(folder 는 접두사 없는 예외).

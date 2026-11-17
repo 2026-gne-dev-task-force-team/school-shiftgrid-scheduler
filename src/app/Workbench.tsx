@@ -12,7 +12,7 @@ import {
     useNarrow, usePanels, SidePanel, Rail,
     useTheme, WorkspaceView, EmptyArea, CommandPalette,
     usePaneSettings, getPaneSettings, effectiveViewLayout, effectiveMin, clampWidthTo,
-    BottomBar, TabSwitcher, RibbonSheet, type BarItem,
+    BottomBar, TabSwitcher, RibbonSheet, type BarItem, IconButton,
     TitleBar, type TitleAction,
     StatusBar, type StatusItem, StorageErrorStatus, storageStatusKind, Toasts, NotifyStatus,
     installContextMenuGuard, installKeybindings,
@@ -38,6 +38,9 @@ import { startSwUpdate } from './sw-update';
 import './notify-view';   // 알림 패널 뷰(app.notify)
 const BLANK_VIEW_ID = 'app.blank';
 const NOTIFY_VIEW_ID = 'app.notify';
+// 🔴 T-30e: 리본에서 뺀 세 옆판 토글이 가리키는 뷰 — 탐색기(왼쪽)·속성(오른쪽)·알림(오른쪽).
+const EXPLORER_VIEW_ID = 'explorer.tree';
+const PROPERTIES_VIEW_ID = 'properties.panel';
 
 /** 이 leaf 가 든 탭 묶음의 id — 가르기 명령이 팔레트에서 불릴 때(맥락 없이) 활성 탭의 묶음을 찾는다. */
 function tabsIdOfLeaf(ws: Workspace, leafId: string): string | null {
@@ -248,6 +251,13 @@ export function Workbench() {
     // 설정 — 코어 settings 플러그인의 뷰(싱글턴). openView 가 이미 떠 있으면 그리로 보낸다.
     const openSettings = useCallback(() => { openView('settings.main'); }, [openView]);
 
+    // 🔴 T-30e: 옆판·알림 토글 — 리본에서 뺀 세 항목을 셸 위쪽 모서리 토글로. 상태(열림/닫힘)는 지금 배치에서 읽고(새 상태 ⛔),
+    //    닫혀 있으면 리본이 하던 열기 함수 그대로(openView), 떠 있으면 그 leaf 를 닫는다.
+    const togglePanel = useCallback((viewId: string) => {
+        const lf = findLeafByView(wsRef.current, viewId);
+        if (lf) setWs((w) => closeLeaf(w, lf.id)); else openView(viewId);
+    }, [openView]);
+
     const closedRef = useRef<{ lf: Leaf; area: AreaKey }[]>([]);
     const handlers: WorkspaceHandlers = useMemo(() => ({
         onActivate: (id) => { setWs((w) => activateLeaf(w, id)); setFocus(id); },
@@ -361,9 +371,8 @@ export function Workbench() {
             add(FRAME_COMMAND.moveRight, '오른쪽 사이드바로', (c) => { const id = target(c); if (id) H().onMove(id, 'right'); }, 'panelRight'),
             add(FRAME_COMMAND.newTab, '새 탭', (c) => { if (c?.tabsId) H().onAddToTabs(c.tabsId); else H().onAddGlobal(); }, 'plus'),
             add(FRAME_COMMAND.openSettings, '설정 열기', () => { openView('settings.main'); }, 'gear', 'Mod+,'),
+            // 🔔 T-30e: 알림은 리본에서 뺐다 — 셸 위쪽 모서리의 작은 토글로 옮겼다(openNotify 명령은 그대로).
             add(FRAME_COMMAND.openNotify, '알림 패널 열기', () => { openView(NOTIFY_VIEW_ID); }, 'bell'),
-            // 🔔 리본에도 선다 — 명령을 가리키는 동작(host.ribbon.add 와 같은 길)
-            fh.declare({ kind: 'ribbon', commandId: FRAME_COMMAND.openNotify, icon: 'bell' }),
             add(FRAME_COMMAND.toggleLeft, '왼쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('left', !p.state.leftOpen); }, 'panelLeft', 'Mod+B'),
             add(FRAME_COMMAND.toggleRight, '오른쪽 사이드바 접기/펴기', () => { const p = panelsRef.current; p.toggle('right', !p.state.rightOpen); }, 'panelRight', 'Mod+Alt+B'),
             // ⚠️ 브라우저 인쇄(Ctrl/⌘+P)와 겹쳐 디스패처가 preventDefault 로 가로챈다
@@ -484,6 +493,19 @@ export function Workbench() {
         { id: 'frame:edition', side: 'left', node: <EditionBadge /> },
     ];
 
+    // 🔴 T-30e: 셸 위쪽 모서리의 옆판·알림 토글(넓은 화면만) — 가운데 끝 탭 줄 오른끝(◨ 앞)에 선다.
+    //    눌린 상태(aria-pressed)=그 패널이 떠 있나. 누르면 togglePanel 이 열거나 닫는다. 공통 부품 IconButton(작은 size).
+    const panelToggles = narrow ? undefined : (
+        <>
+            <IconButton icon="folder" label="탐색기" active={!!findLeafByView(ws, EXPLORER_VIEW_ID)}
+                aria-pressed={!!findLeafByView(ws, EXPLORER_VIEW_ID)} onClick={() => togglePanel(EXPLORER_VIEW_ID)} />
+            <IconButton icon="info" label="속성" active={!!findLeafByView(ws, PROPERTIES_VIEW_ID)}
+                aria-pressed={!!findLeafByView(ws, PROPERTIES_VIEW_ID)} onClick={() => togglePanel(PROPERTIES_VIEW_ID)} />
+            <IconButton icon="bell" label="알림" active={!!findLeafByView(ws, NOTIFY_VIEW_ID)}
+                aria-pressed={!!findLeafByView(ws, NOTIFY_VIEW_ID)} onClick={() => togglePanel(NOTIFY_VIEW_ID)} />
+        </>
+    );
+
     return (
         // 🔴 overflow-clip(hidden 아님) — hidden 은 프로그램 스크롤(초점·scrollIntoView)을 받아 화면 전체가 밀린다(T-10ag)
         <div className="flex flex-col h-full w-full overflow-clip">
@@ -532,6 +554,7 @@ export function Workbench() {
                     centerEdges={narrow ? undefined : {
                         onExpandLeft: panels.state.leftOpen ? undefined : () => panels.toggle('left', true),
                         onExpandRight: panels.state.rightOpen ? undefined : () => panels.toggle('right', true),
+                        trailing: panelToggles,
                     }}
                 />
             </main>
