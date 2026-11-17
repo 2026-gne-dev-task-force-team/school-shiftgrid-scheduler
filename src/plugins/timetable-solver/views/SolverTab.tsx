@@ -99,7 +99,7 @@ export function SolverTab({ host, createWorker }: { host: PluginHost; createWork
             {phase.k === 'saved' && (
                 <section role="status" data-testid="solver-saved" className="flex flex-col gap-1">
                     <p>「{phase.name}」으로 담았습니다.{phase.unplaced > 0 ? ` 못 채운 시수가 ${phase.unplaced}시간 있습니다.` : ''}{phase.skipped > 0 ? ` 선생님을 몰라 빠진 칸이 ${phase.skipped}칸 있습니다.` : ''}</p>
-                    <div><Button data-testid="solver-open-plans" onClick={() => host.commands.run('timetable-plans.open')}>편성안에서 보기</Button></div>
+                    <div><Button data-testid="solver-open-plans" onClick={() => { const p = host.modules.use<Plans>('plans'); if (p) host.commands.run(p.cmd.open); }}>편성안에서 보기</Button></div>
                 </section>
             )}
         </div>

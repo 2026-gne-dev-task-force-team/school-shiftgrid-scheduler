@@ -39,7 +39,7 @@ const ONE_PLAN: Plan = {
 const ONE_LIST: ReturnType<Plans['listPlans']> = [{ id: 'p1', name: ONE_PLAN.name, summary: ONE_PLAN.summary, chosen: true }];
 let planList = NO_PLANS;
 const fakePlans: Plans = {
-    version: 1, savePlan: () => '', listPlans: () => planList,
+    version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => planList,
     getPlan: (id) => (id === 'p1' && planList === ONE_LIST ? ONE_PLAN : null), subscribe: () => () => {},
 };
 

@@ -15,7 +15,7 @@ export const v1FilePlugin = definePlugin({
     manifest: {
         ...manifest,
         requires: { nodes: '^0.1' },
-        supports: { solver: '^0.2', plans: '^0.1' },
+        supports: { solver: '^0.2', plans: '^0.2' },
         contributes: {
             views: [{
                 id: 'export', title: 'v1 파일 내보내기', icon: 'file', defaultArea: 'center',

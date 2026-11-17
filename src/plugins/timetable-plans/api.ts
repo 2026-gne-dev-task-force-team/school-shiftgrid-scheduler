@@ -2,6 +2,7 @@
  * 🔴 plans 인터페이스 모듈 — manifest.provides.plans 와 짝. host.modules.use<Plans>('plans') 가 이걸 받는다.
  */
 import type { Plans, PlanListItem } from './contracts/plans';
+import { CMD } from './contracts/commands';
 import { savePlan, getPlanNodes, planOf, subscribePlans } from './nodes';
 
 // 같은 노드 목록이면 같은 배열을 돌려준다(useSyncExternalStore 가 바뀌었나를 참조로 본다).
@@ -18,4 +19,4 @@ const listPlans = (): PlanListItem[] => {
     return memo;
 };
 
-export const plansApi: Plans = { version: 1, savePlan, listPlans, getPlan: planOf, subscribe: subscribePlans };
+export const plansApi: Plans = { version: 1, cmd: CMD, savePlan, listPlans, getPlan: planOf, subscribe: subscribePlans };

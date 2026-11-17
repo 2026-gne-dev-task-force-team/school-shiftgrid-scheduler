@@ -10,7 +10,7 @@ export const manifest: PluginManifest = {
     minHostVersion: '0.1.0',
     layer: 'domain',
     // 옛 예약 이사(T-10f7)가 쓰는 약속 — 없어도 켜지고(이사만 미룬다), 오면 붙는다.
-    supports: { calendar: '^0.2', rooms: '^0.1', nodes: '^0.1' },
+    supports: { calendar: '^0.2', rooms: '^0.1', nodes: '^0.1', 'room-booking': '^0.1' },
     icon: 'list',
     description: '특별실 칸을 보고 반 단위로 예약하고, 내 예약을 모아 봅니다.',
     about: {

@@ -51,7 +51,7 @@ const BELL = [
 ];
 const DEMAND = [row('m1', { f_teacher: ['t1'], f_class: ['c1'], f_subject: ['sub1'], f_hours: 2 })];
 
-function makeHost(opts: { demand: typeof DEMAND; plans: { savePlan: (p: Plan) => string } | null; run: (id: string) => boolean }): PluginHost {
+function makeHost(opts: { demand: typeof DEMAND; plans: { savePlan: (p: Plan) => string; cmd?: { open: string } } | null; run: (id: string) => boolean }): PluginHost {
     const nodes = {
         liveByType: (t: string) => (t === NODE_TYPES.bellSlot ? BELL : t === NODE_TYPES.demandRow ? opts.demand : []),
         subscribe: () => ({ dispose: () => {} }),
@@ -116,7 +116,7 @@ describe('자동 편성 화면', () => {
         const w = new FakeWorker();
         const saved: Plan[] = [];
         const run = vi.fn(() => true);
-        const host = makeHost({ demand: DEMAND, plans: { savePlan: (p) => { saved.push(p); return 'p1'; } }, run });
+        const host = makeHost({ demand: DEMAND, plans: { cmd: { open: 'plans-open' }, savePlan: (p) => { saved.push(p); return 'p1'; } }, run });
         act(() => { root.render(<SolverTab host={host} createWorker={() => w} />); });
         expect(q('solver-start')!.disabled).toBe(false);
 
@@ -141,7 +141,7 @@ describe('자동 편성 화면', () => {
         expect(w.terminated).toBe(true);
         expect(q('solver-saved')!.textContent).toContain('못 채운 시수가 1시간');
         act(() => { q('solver-open-plans')!.click(); });
-        expect(run).toHaveBeenCalledWith('timetable-plans.open');
+        expect(run).toHaveBeenCalledWith('plans-open');
     });
 
     it('멈춤을 누르면 worker 를 끝내고 아무것도 담지 않는다', async () => {

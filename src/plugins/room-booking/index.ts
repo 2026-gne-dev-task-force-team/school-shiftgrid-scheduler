@@ -13,6 +13,7 @@ import { manifest } from './manifest';
 import { BOOKER_FIELD, HEADCOUNT_FIELD, PRESET_ID, ROOM_FIELD, judgeBooking, roomIdOf } from './rules';
 import { RoomPropsView } from './RoomPropsView';
 import { RoomBookingView } from './RoomBookingView';
+import { roomBookingApi } from './api';
 
 const ROOM_LIST_TYPE = 'rooms.list';
 const STORE_TYPE = 'calendar.store';
@@ -62,7 +63,10 @@ export const roomBookingPlugin = definePlugin({
     // 팔레트 「새 방 예약」 — 탐색기 + 메뉴는 등록 타입만 돌아 프리셋을 모른다(저장소 우클릭에만 있던 입구를 하나 더). 루트에 만든다.
     manifest: {
         ...manifest,
+        // 🔴 명령 id 상수를 약속 모듈로 내놓는다 — 남의 조각이 글자로 안 부르게(톱니 cmdIdString)
+        provides: { 'room-booking': '0.1.0' },
         contributes: {
+            interfaces: [{ name: 'room-booking', version: '0.1.0', label: '방 예약', desc: '방 예약 화면·명령 id' }],
             commands: [
                 { id: 'room-booking.open', title: '방 예약 열기', icon: 'doorClock' },
                 { id: 'room-booking.new', title: '새 방 예약', icon: 'doorClock' },
@@ -86,6 +90,7 @@ export const roomBookingPlugin = definePlugin({
             }],
         },
     },
+    modules: { 'room-booking': roomBookingApi },
     components: {
         RoomProps: ({ host }: { host: PluginHost }) => createElement(RoomPropsView, { host }),
         Book: ({ host }: { host: PluginHost }) => createElement(RoomBookingView, { host }),

@@ -54,7 +54,7 @@ const plan = (name: string, placements: Placement[]): Plan => ({
 function fakeHost(plans: Record<string, Plan>): PluginHost {
     const items = Object.entries(plans).map(([id, p]) => ({ id, name: p.name, summary: p.summary, chosen: false }));
     const fakePlans: Plans = {
-        version: 1, savePlan: () => '', listPlans: () => items, getPlan: (id) => plans[id] ?? null, subscribe: () => () => {},
+        version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => items, getPlan: (id) => plans[id] ?? null, subscribe: () => () => {},
     };
     const modules: Record<string, unknown> = { plans: fakePlans, solver: { ...solverApi, readInput: () => input } };
     return { modules: { use: (n: string) => modules[n] ?? null } } as unknown as PluginHost;
