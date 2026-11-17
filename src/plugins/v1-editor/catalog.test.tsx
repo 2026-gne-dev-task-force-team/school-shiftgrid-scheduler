@@ -2,7 +2,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { activateAll, listPlugins } from '../../pane-ui-system/plugin'
+import { activateAll, enablePlugin, listPlugins } from '../../pane-ui-system/plugin'
 import { getView } from '../../pane-ui-system/view-registry'
 import { listCommands, runCommand, setWorkspaceBridge } from '../../pane-ui-system/plugin/store'
 import { listRibbonActions } from '../../pane-ui-system/plugin/store'
@@ -29,6 +29,7 @@ beforeEach(() => { mem.clear() })
 describe('v1-editor 카탈로그 등록', () => {
   it('활성되고 화면 grid·versions 가 뷰 등록소에서 렌더된다', () => {
     activateAll(PLUGINS)
+    enablePlugin('v1-editor')   // 기본 꺼짐(T-10ec) — 켠 뒤에는 예전처럼 뜬다
     const p = listPlugins().find((x) => x.id === 'v1-editor')
     expect(p?.enabled).toBe(true)
     expect(p?.failed).toBeFalsy()
@@ -44,6 +45,7 @@ describe('v1-editor 카탈로그 등록', () => {
 
   it('열기 명령 셋이 팔레트 목록에 있고 레일에 편성기 아이콘이 선다', () => {
     activateAll(PLUGINS)
+    enablePlugin('v1-editor')
     const cmds = listCommands().filter((c) => c.owner === 'v1-editor')
     expect(cmds.map((c) => c.title).sort()).toEqual(['v1 편성기 열기', '판·적용 기간 열기', '시간표 읽기 격자 열기'].sort())
     for (const c of cmds) expect(typeof c.run).toBe('function')
@@ -52,6 +54,7 @@ describe('v1-editor 카탈로그 등록', () => {
 
   it('명령을 실행하면 해당 뷰를 가운데에 연다', () => {
     activateAll(PLUGINS)
+    enablePlugin('v1-editor')
     const opened: string[] = []
     setWorkspaceBridge({ open: (id) => { opened.push(id); return 'leaf' }, close() {}, setTitle() {} })
     opened.length = 0

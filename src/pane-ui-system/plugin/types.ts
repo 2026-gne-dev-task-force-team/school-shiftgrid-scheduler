@@ -74,6 +74,8 @@ export interface PluginManifest {
     /** 설정 「플러그인」 목록·상세 머리에 그리는 아이콘(선택 — 없으면 점). */
     icon?: IconName;
     core?: boolean;          // 끌 수 없다 · 먼저 산다. 그뿐이다
+    /** 새로 설치한 기기에선 꺼진 채 시작한다(설정 「플러그인」에서 켜면 켜짐). 이미 쓰던 기기는 켜진 채 유지(registry 이주). 레거시 플러그인용. */
+    defaultOff?: true;
     description?: string;     // 목록 줄에 보이는 한 줄 요약(쉬운 말)
     /** 🔴 상세에 보이는 사람용 설명 — 무엇을/이럴 때/끄면/같이(위 PluginAbout). 개발 낱말 금지. */
     about?: PluginAbout;
