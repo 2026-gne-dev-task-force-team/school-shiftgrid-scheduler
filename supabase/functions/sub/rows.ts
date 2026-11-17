@@ -2,6 +2,7 @@
 // 봉투 열기·닫기는 이 파일 한 곳 — AAD 는 ④ `aadSub`(행 id·날짜·반·시각·kid·body|take).
 
 import type { DbAudit } from '../_shared/audit.ts';
+import { assertMayOpen } from '../_shared/crypto-scope.ts';
 import { aadSub } from '../_shared/crypto/aad.ts';
 import { openText, sealText, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 
@@ -42,6 +43,7 @@ const aadOf = (r: Pick<DbSlot, 'project_id' | 'id' | 'date' | 'track_name' | 'st
     (kid: string) => aadSub(r.project_id, r.id, r.date, r.track_name, r.start_min, kid, which);
 
 export async function openSlot(ring: KeyRing, r: DbSlot): Promise<SubSlotRow> {
+    assertMayOpen('sub', 'sub');
     const body = JSON.parse(await openText(ring, r.body_ct, aadOf(r, 'body'))) as SlotBody;
     const take = r.take_ct ? (JSON.parse(await openText(ring, r.take_ct, aadOf(r, 'take'))) as SlotTake) : null;
     return {

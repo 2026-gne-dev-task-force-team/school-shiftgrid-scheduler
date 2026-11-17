@@ -129,4 +129,4 @@ const base: Omit<SubDeps, 'loadDay' | 'loadJudge'> = {
 };
 
 // 요청마다 새 loadDay·loadJudge — 조각 열기 memo 가 요청 사이로 새지 않게(키 회전·조각 갱신을 바로 본다)
-deno.serve((req) => subHandler({ ...base, ...dayLoader(async (pid, part) => openPartBody(await ring(), db as unknown as PartsReadDb, pid, part)) })(req));
+deno.serve((req) => subHandler({ ...base, ...dayLoader(async (pid, part) => openPartBody('sub', await ring(), db as unknown as PartsReadDb, pid, part)) })(req));

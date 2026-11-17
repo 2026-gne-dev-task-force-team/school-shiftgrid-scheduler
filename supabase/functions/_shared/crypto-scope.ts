@@ -2,7 +2,8 @@
 // 1) 여는 범위 표: 어느 함수가 어느 암호문 칸(종류·조각 이름)을 열어도 되는지 한 곳에서 정한다. 표에 없으면 열지 못한다.
 // 2) 평문 0 로그: 평문이 로그·오류 응답·감사 평문 열로 새지 않게 하는 얇은 도구(safeLog · scopeError).
 // 순수 함수(Deno·Node 공용). 열기 자체(envelope.open)는 여기서 하지 않는다 — 열기 전에 assertMayOpen 을 부르는 자리다.
-//   🙋 doc.ts(openPartBody)·sub/rows.ts(openSlot)·rooms/store.ts·account/handler.ts 가 열기 직전에 부를 자리는 다른 판 몫(T-10gx 등).
+//   부르는 자리(T-10ha): _shared/doc.ts openRowBody · parts/handler.ts openOr500 · sub/rows.ts openSlot · sub/index.ts 표시명
+//   · rooms/store.ts toReservation · rooms/index.ts 칸·표시명 · account/handler.ts openDocBody·프로젝트 이름.
 
 /** 암호문 칸 종류 — aad.ts 의 AAD 종류와 같은 낱말 */
 export type OpenKind = 'part' | 'sub' | 'room' | 'audit' | 'user' | 'project';
@@ -15,23 +16,23 @@ const KNOWN_PART = /^(doc(@\d+)?|ops\.(rooms|calendar|changes|fixed|classSubject
 interface Scope {
     /** 열어도 되는 칸 종류 */
     kinds: readonly OpenKind[];
-    /** `part` 종류일 때 열어도 되는 조각 이름(`*` = 전부 · 모르는 이름도 안 됨 · `doc@<n>` 보관본은 `*` 만) */
+    /** `part` 종류일 때 열어도 되는 조각 이름(`*` = 전부 · 모르는 이름도 안 됨 · `doc@<n>` 보관본은 `*` 나 `doc@*` 만) */
     parts: readonly string[] | '*';
 }
 
 /**
  * 여는 범위 표.
  * - parts: GET 이 구성원에게 돌려주려고 조각 전부를 열고, PUT 이 옛 판·보관 doc 을 연다.
- * - sub: 그날 입력(DayPart = doc + 곁 조각 넷)과 보결 행. 감사는 쓰기만(열지 않는다).
- * - rooms: 특별실 조각 `ops.rooms`·`doc`(칸 머리)과 예약 행. 감사는 쓰기만.
+ * - sub: 그날 입력(DayPart = doc + 곁 조각 다섯) · 그날 기간에 맞는 보관 doc(`doc@*`, parts/doc.ts openDocFor) · 보결 행 · 구성원 표시명(user). 감사는 쓰기만(열지 않는다).
+ * - rooms: 특별실 조각 `ops.rooms`·`doc`(칸 머리 — 아직 안 이음)과 예약 행 · 예약자 표시명(user). 감사는 쓰기만.
  * - account: 구성원 목록용 `doc`(사람 목록)·계정 이름·프로젝트 이름.
  * - admin-ops: 키 교체(rewrap)는 모든 칸을 풀었다 다시 잠근다.
  * - health: 아무것도 열지 않는다.
  */
 export const OPEN_SCOPE: Readonly<Record<FnName, Scope>> = {
     parts: { kinds: ['part'], parts: '*' },
-    sub: { kinds: ['part', 'sub'], parts: ['doc', 'ops.fixed', 'ops.calendar', 'ops.changes', 'ops.classSubjects', 'ops.aux'] },
-    rooms: { kinds: ['part', 'room'], parts: ['doc', 'ops.rooms'] },
+    sub: { kinds: ['part', 'sub', 'user'], parts: ['doc', 'doc@*', 'ops.fixed', 'ops.calendar', 'ops.changes', 'ops.classSubjects', 'ops.aux'] },
+    rooms: { kinds: ['part', 'room', 'user'], parts: ['doc', 'ops.rooms'] },
     account: { kinds: ['part', 'user', 'project'], parts: ['doc'] },
     'admin-ops': { kinds: ['part', 'sub', 'room', 'audit', 'user', 'project'], parts: '*' },
     health: { kinds: [], parts: [] },
@@ -57,7 +58,7 @@ export function mayOpen(fn: string, kind: OpenKind, part?: string): boolean {
     if (kind !== 'part') return true;
     if (part === undefined || !KNOWN_PART.test(part)) return false;
     if (s.parts === '*') return true;
-    return s.parts.includes(part);
+    return s.parts.includes(part) || (/^doc@\d+$/.test(part) && s.parts.includes('doc@*'));
 }
 
 /** 열기 직전에 부른다 — 범위 밖이면 ScopeError(부르는 쪽이 500 으로 바꾸고 e.message 만 로그에) */

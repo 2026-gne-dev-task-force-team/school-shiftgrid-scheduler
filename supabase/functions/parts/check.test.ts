@@ -5,7 +5,7 @@ import type { Role } from '../../../shared/roles.ts';
 
 const ch = (id: string, over: object = {}) => ({ id, date: '2026-03-02', trackName: '1-1', period: 3, ...over });
 const run = (part: string, roles: Role[], next: unknown, prev: unknown | null) =>
-    checkPart({ part, roles, next: { fmt: 1, body: next }, prev: prev === null ? null : { fmt: 1, body: prev } });
+    checkPart({ projectId: 'p1', part, roles, next: { fmt: 1, body: next }, prev: prev === null ? null : { fmt: 1, body: prev } });
 const code = (f: () => unknown) => {
     try {
         f();
@@ -90,10 +90,10 @@ describe('ops.rooms 칸 규칙 (D5)', () => {
     const asking: string[][] = [];
     const reservedOf = (ids: string[]) => {
         const set = new Set(ids);
-        return makeCheckPart({ reservedRooms: async (q) => (asking.push(q), new Set(q.filter((i) => set.has(i)))) });
+        return makeCheckPart({ reservedRooms: async (_pid, q) => (asking.push(q), new Set(q.filter((i) => set.has(i)))) });
     };
     const put = (c: ReturnType<typeof makeCheckPart>, next: unknown, prev: unknown) =>
-        c({ part: 'ops.rooms', roles: ['교무'], next: { fmt: 1, body: next }, prev: prev === null ? null : { fmt: 1, body: prev } });
+        c({ projectId: 'p1', part: 'ops.rooms', roles: ['교무'], next: { fmt: 1, body: next }, prev: prev === null ? null : { fmt: 1, body: prev } });
 
     it('꼴: 칸 경로를 돌려준다', () => {
         expect(shapeRules('ops.rooms', body())).toEqual([]);

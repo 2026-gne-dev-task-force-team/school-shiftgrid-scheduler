@@ -101,8 +101,9 @@ const partsAuth = (): AuthClient => ({
 describe('평문 0 — parts', () => {
     it('성공·실패 경로 전부(쓰기·읽기·판 충돌·잘못된 본문·검사 걸림·복호 실패)에서 심은 이름이 안 샌다', async () => {
         const store = memPartsStore();
+        const audits: DbAudit[] = [];
         const deps: PartsDeps = {
-            auth: partsAuth(), store, keys: async () => ring, allowedOrigin: ORIGIN,
+            auth: partsAuth(), store, keys: async () => ring, allowedOrigin: ORIGIN, audit: { append: async (r) => void audits.push(r) },
             check: ({ part }) => (part === 'ops.settings' ? ['rule.x'] : []),
         };
         const call = partsHandler(deps);
@@ -129,7 +130,9 @@ describe('평문 0 — parts', () => {
         expectNoPlain({
             rows: [...store.rows.values()].map((r) => ({ part: r.part, version: r.version, sizePlain: r.sizePlain })),
             byteCols: [...store.rows.values()].map((r) => r.ct),
+            audits,
         });
+        expect(audits).toHaveLength(2); // 성공한 쓰기 둘(첫 쓰기 · 보관 쓰기)만 감사
     });
 });
 

@@ -5,6 +5,7 @@
 // 거부되면 아무것도 바꾸지 않는다. 로그·오류 응답에 본문을 싣지 않는다.
 
 import { sealAudit, type AuditStore, type DbAudit } from '../_shared/audit.ts';
+import { assertMayOpen, safeLog } from '../_shared/crypto-scope.ts';
 import { requireProjectMember, type AuthClient } from '../_shared/auth.ts';
 import { systemClock, type Clock } from '../_shared/clock.ts';
 import { EnvelopeError, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
@@ -19,7 +20,7 @@ import { openPart, sealPart, type PartPlain, type PartRow, type PartsStore } fro
 export const FN_NAME = 'parts';
 
 /** B7(zod·차이 규칙) 자리 — 걸린 규칙 id 목록을 돌려준다(빈 목록 = 통과). 옛 판은 없으면 null. */
-export type PartCheck = (input: { part: string; roles: readonly Role[]; next: PartPlain; prev: PartPlain | null }) => string[] | Promise<string[]>;
+export type PartCheck = (input: { projectId: string; part: string; roles: readonly Role[]; next: PartPlain; prev: PartPlain | null }) => string[] | Promise<string[]>;
 
 export interface PartsDeps {
     auth: AuthClient;
@@ -30,8 +31,8 @@ export interface PartsDeps {
     /** 지금 함수가 받는 조각 꼴 판(④ 5-1). 없는 조각은 1 만 받는다. */
     acceptFmt?: (part: string) => readonly number[];
     check?: PartCheck;
-    /** 감사 쓰기 구멍(④ 4절) — 진입점(index.ts)은 반드시 건다. 없으면 감사 없이 돈다(시험 편의). putAtomic 이 없는 저장소일 때만 직접 쓴다(있으면 RPC 가 같은 트랜잭션에 넣는다) */
-    audit?: AuditStore;
+    /** 감사 쓰기 구멍(④ 4절) — 필수(감사 없이 도는 길을 두지 않는다). putAtomic 이 없는 저장소일 때만 직접 쓴다(있으면 RPC 가 같은 트랜잭션에 넣는다) */
+    audit: AuditStore;
     /** 감사 `at` · 없으면 시스템 시계 */
     clock?: Clock;
     /** 감사 행 id(무작위) · 없으면 randomUUID */
@@ -52,10 +53,11 @@ const err = {
 };
 
 async function openOr500(ring: KeyRing, pid: string, part: string, version: number, ct: Parameters<typeof openPart>[4]) {
+    assertMayOpen(FN_NAME, 'part', part);
     try {
         return await openPart(ring, pid, part, version, ct);
     } catch (e) {
-        if (e instanceof EnvelopeError) console.error(`decrypt_failed part=${part}`);
+        safeLog('decrypt_failed', { fn: FN_NAME, part, cause: e instanceof EnvelopeError ? e.code : 'gzip/json' });
         throw err.decryptFailed();
     }
 }
@@ -143,9 +145,10 @@ async function putPart(deps: PartsDeps, req: Request, pid: string, part: string)
     let prev: PartPlain | null = null;
     if (cur && (deps.check || archive)) prev = await openOr500(ring, pid, part, cur.version, cur.ct);
     if (deps.check) {
-        const rules = await deps.check({ part, roles: m.roles, next, prev });
+        const rules = await deps.check({ projectId: pid, part, roles: m.roles, next, prev });
         if (rules.length > 0) {
-            console.error(`check_failed part=${part} rules=${rules.join(',')}`);
+            // 규칙 id 는 코드가 만든 칸 경로뿐이지만 safeLog 꼴(쉼표·대괄호 없음)로 줄여 싣는다
+            safeLog('check_failed', { part, n: rules.length, first: rules[0].replace(/\[(\d+)\]/g, ':$1') });
             throw err.checkFailed(rules);
         }
     }
@@ -174,7 +177,7 @@ async function putPart(deps: PartsDeps, req: Request, pid: string, part: string)
         throw err.conflict(now?.version ?? 0);
     }
     // 8 감사 한 줄({part, from, to, archivedAs}) — putAtomic 이면 위 RPC 가 7과 같은 트랜잭션에 넣었고, 아니면 쓰기가 성공한 뒤 여기서 덧붙인다
-    if (!deps.store.putAtomic) await deps.audit?.append(auditRow);
+    if (!deps.store.putAtomic) await deps.audit.append(auditRow);
     const etag = formatEtag(epoch, newVersion);
     return jsonResponse({ version: newVersion, etag, ...(archivedAs ? { archivedAs } : {}) }, 200, { ETag: etag });
 }

@@ -6,6 +6,8 @@ import { buildKeyRing, parseKeys } from '../_shared/crypto/keys.ts';
 import { PART_LIMITS } from '../../../shared/check/limits.ts';
 import { canReadPart, canWritePart } from './access.ts';
 import { formatEtag, parseKnown, parseTag } from './etag.ts';
+import { reservedRoomIds, type RoomRow } from '../rooms/store.ts';
+import { makeCheckPart } from './check.ts';
 import { partsHandler, type PartsDeps } from './handler.ts';
 import { byteaToHex, hexToBytea, openPart, sealPart, type PartRow, type PartsStore } from './store.ts';
 
@@ -67,6 +69,7 @@ const USERS = {
     admin: { id: 'u-admin', roles: ['관리자'] },
     teacher: { id: 'u-t', roles: ['교사'] },
     aux: { id: 'u-aux', roles: ['근태담당'] },
+    kyomu: { id: 'u-k', roles: ['교무'] },
 };
 
 let store: ReturnType<typeof memStore>;
@@ -273,6 +276,25 @@ describe('검사 연결(check.ts) — PUT 경로', () => {
         expect((await errOf(edit)).code).toBe('changes_edit_forbidden');
         expect((await put('ops.changes', { fmt: 1, body: [ch('a'), ch('b')] }, { who: 'teacher', ifMatch: `"${EPOCH}.1"` })).status).toBe(200);
     });
+    it('방 삭제 409 — 그 프로젝트 예약 행만 센다(rooms/store reservedRoomIds · 봉투는 열지 않는다)', async () => {
+        // 예약 행: p1 은 r2, 다른 프로젝트 p9 는 r1. 봉투 칸은 깨진 바이트(열면 실패한다)
+        const resv = (pid: string, roomId: string) =>
+            ({ id: `${pid}-${roomId}`, project_id: pid, room_id: roomId, date: '2026-03-03', start_min: 540, end_min: 580, slot_no: 1, track_name: '1-1', body_ct: new Uint8Array([1, 2, 3]) }) as RoomRow;
+        const rows = [resv('p1', 'r2'), resv('p9', 'r1')];
+        const asked: string[] = [];
+        const db = { select: async (pid: string) => (asked.push(pid), { data: rows.filter((r) => r.project_id === pid), error: null }) };
+        deps.check = makeCheckPart({ reservedRooms: (pid, ids) => reservedRoomIds(db, pid, ids) });
+        const room = (id: string) => ({ id, name: `${id}실`, capacity: 2, resourceKey: null, active: true, sort: 0, note: '' });
+        const body = (ids: string[]) => ({ fmt: 1, body: { rooms: ids.map(room), fixed: [], blocks: [] } });
+        expect((await put('ops.rooms', body(['r1', 'r2', 'r3']), { who: 'kyomu' })).status).toBe(200);
+        const gone = await put('ops.rooms', body(['r1', 'r3']), { who: 'kyomu', ifMatch: `"${EPOCH}.1"` });
+        expect(gone.status).toBe(409);
+        expect(await errOf(gone)).toMatchObject({ code: 'room_has_reservations', roomIds: ['r2'] });
+        expect(auditRows).toHaveLength(1); // 거부된 쓰기는 감사 0
+        // r1 은 다른 프로젝트에만 예약이 있다 → 지워진다
+        expect((await put('ops.rooms', body(['r2', 'r3']), { who: 'kyomu', ifMatch: `"${EPOCH}.1"` })).status).toBe(200);
+        expect(asked).toEqual(['p1', 'p1']);
+    });
 });
 
 describe('PUT 여덟 차례 — 순서대로 걸리고 앞에서 막히면 뒤는 일어나지 않는다 · 성공 때 감사 한 줄', () => {
@@ -332,6 +354,14 @@ describe('PUT 여덟 차례 — 순서대로 걸리고 앞에서 막히면 뒤�
         await put('doc', { fmt: 1, body: 'v2' }, { ifMatch: `"${EPOCH}.1"`, q: '?archive=1' });
         expect(auditRows).toHaveLength(2);
         expect((await openAudit(ring, auditRows[1])).note).toEqual({ part: 'doc', from: 1, to: 2, archivedAs: 'doc@1' });
+    });
+    it('감사 구멍은 필수 — 빠진 deps 는 타입에서 막히고, append 가 실패하면 200 을 돌려주지 않는다', async () => {
+        const { audit: _a, ...noAudit } = deps;
+        // @ts-expect-error audit 빠짐 — 감사 없이 도는 길을 두지 않는다
+        const withoutAudit: PartsDeps = noAudit;
+        expect(withoutAudit.audit).toBeUndefined();
+        deps.audit = { append: async () => { throw new Error('audit 쓰기 실패'); } };
+        expect((await put('doc', { fmt: 1, body: {} })).status).toBe(500);
     });
     it('putAtomic 저장소 — 감사는 같은 호출에 실려 가고 따로 append 하지 않는다', async () => {
         let got: DbAudit | null | undefined;

@@ -7,7 +7,8 @@ import type { AuthClient } from '../_shared/auth.ts';
 import { loadAllowedOrigin } from '../_shared/cors.ts';
 import { aadPart } from '../_shared/crypto/aad.ts';
 import { ensureKeys } from '../_shared/crypto/keys.ts';
-import { checkPart } from './check.ts';
+import { reservedRoomIds, supabaseRoomDb } from '../rooms/store.ts';
+import { makeCheckPart } from './check.ts';
 import { partsHandler } from './handler.ts';
 import { byteaToHex, hexToBytea, supabaseStore, type PartsDb } from './store.ts';
 
@@ -51,4 +52,8 @@ const audit: AuditStore = {
     },
 };
 
-deno.serve(partsHandler({ auth: client, store: supabaseStore(client), audit, keys, allowedOrigin: loadAllowedOrigin(), check: checkPart }));
+/** 방 삭제 409(check.ts) — 그 프로젝트 예약 행의 평문 room_id 만 본다(봉투는 열지 않는다) */
+const roomDb = supabaseRoomDb(client);
+const check = makeCheckPart({ reservedRooms: (pid, ids) => reservedRoomIds(roomDb, pid, ids) });
+
+deno.serve(partsHandler({ auth: client, store: supabaseStore(client), audit, keys, allowedOrigin: loadAllowedOrigin(), check }));

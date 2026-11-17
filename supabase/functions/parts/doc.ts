@@ -3,6 +3,7 @@
 // 기간이 암호문 안에 있어 열어 봐야 안다 — 최신부터 하나씩 열고 맞으면 멈춘다(지금 판이 맞는 보통 날은 한 번만 연다).
 
 import { docOf, inPeriod, newestFirst, periodOf, pickVersion } from '../../../shared/doc-pick.ts';
+import type { FnName } from '../_shared/crypto-scope.ts';
 import type { KeyRing } from '../_shared/crypto/envelope.ts';
 import { openRowBody, PART_COLS, toPartRow, type PartDbRow, type PartRow, type PartsReadDb } from '../_shared/doc.ts';
 
@@ -27,11 +28,12 @@ export async function readDocRows(db: PartsReadDb, projectId: string): Promise<P
 /**
  * 그날(YYYY-MM-DD) 쓸 시간표 판을 연다. 판이 하나도 없으면 null.
  * 최신부터 열어 기간이 맞으면 그 판, 끝까지 없으면 최신 판. 복호 실패는 500 `decrypt_failed`(openRowBody 그대로).
+ * `fn` = 여는 함수 — 보관본 `doc@<n>` 을 열 범위(crypto-scope.ts `doc@*`)가 있어야 한다.
  */
-export async function openDocFor(ring: KeyRing, db: PartsReadDb, projectId: string, date: string): Promise<PickedDoc | null> {
+export async function openDocFor(fn: FnName, ring: KeyRing, db: PartsReadDb, projectId: string, date: string): Promise<PickedDoc | null> {
     const opened: PickedDoc[] = [];
     for (const row of await readDocRows(db, projectId)) {
-        const body = await openRowBody(ring, projectId, row);
+        const body = await openRowBody(fn, ring, projectId, row);
         const v: PickedDoc = { part: row.part, doc: docOf(body), body };
         if (inPeriod(periodOf(body), date)) return v;
         opened.push(v);

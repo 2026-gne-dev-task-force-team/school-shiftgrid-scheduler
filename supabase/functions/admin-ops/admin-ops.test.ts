@@ -306,7 +306,7 @@ describe('bump-epoch — 옛 ETag 는 parts PUT 에서 412', () => {
             auth: { getUser: async () => ({ data: { user: { id: 'u' } }, error: null }) },
             from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { roles: ['관리자'], active: true }, error: null }) }) }) }) }),
         } as unknown as AuthClient;
-        const pcall = partsHandler({ auth: partsAuth, store: partsOver(m.epochs), keys: async () => ring, allowedOrigin: ORIGIN });
+        const pcall = partsHandler({ auth: partsAuth, store: partsOver(m.epochs), keys: async () => ring, allowedOrigin: ORIGIN, audit: { append: async () => {} } });
         const put = (etag: string) => pcall(new Request('https://ref.supabase.co/functions/v1/parts/projects/p1/parts/doc', {
             method: 'PUT', headers: { Authorization: 'Bearer admin', Origin: ORIGIN, 'If-Match': etag }, body: JSON.stringify({ fmt: 1, body: 1 }),
         }));

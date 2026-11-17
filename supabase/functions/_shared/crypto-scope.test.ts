@@ -8,16 +8,19 @@ describe('여는 범위 표', () => {
         for (const p of ['doc', 'doc@3', 'ops.rooms', 'ops.aux', 'ops.settings']) expect(mayOpen('parts', 'part', p)).toBe(true);
         for (const k of ['sub', 'room', 'audit', 'user', 'project'] as OpenKind[]) expect(mayOpen('parts', k)).toBe(false);
     });
-    it('sub 는 그날 입력 조각만 — ops.rooms·ops.settings·보관본은 못 연다', () => {
-        for (const p of ['doc', 'ops.fixed', 'ops.calendar', 'ops.changes', 'ops.classSubjects', 'ops.aux']) expect(mayOpen('sub', 'part', p)).toBe(true);
-        for (const p of ['ops.rooms', 'ops.settings', 'ops.installed', 'doc@3']) expect(mayOpen('sub', 'part', p)).toBe(false);
+    it('sub 는 그날 입력 조각·그날 판 보관본(doc@n)·표시명만 — ops.rooms·ops.settings 는 못 연다', () => {
+        for (const p of ['doc', 'doc@3', 'ops.fixed', 'ops.calendar', 'ops.changes', 'ops.classSubjects', 'ops.aux']) expect(mayOpen('sub', 'part', p)).toBe(true);
+        for (const p of ['ops.rooms', 'ops.settings', 'ops.installed', 'doc@', 'doc@*', 'doc@x']) expect(mayOpen('sub', 'part', p)).toBe(false);
         expect(mayOpen('sub', 'sub')).toBe(true);
+        expect(mayOpen('sub', 'user')).toBe(true);
         expect(mayOpen('sub', 'room')).toBe(false);
     });
     it('rooms 는 doc·ops.rooms 와 예약 행만', () => {
         expect(mayOpen('rooms', 'part', 'ops.rooms')).toBe(true);
         expect(mayOpen('rooms', 'part', 'ops.aux')).toBe(false);
         expect(mayOpen('rooms', 'room')).toBe(true);
+        expect(mayOpen('rooms', 'user')).toBe(true);
+        expect(mayOpen('rooms', 'part', 'doc@3')).toBe(false);
         expect(mayOpen('rooms', 'sub')).toBe(false);
     });
     it('감사는 admin-ops(키 교체)만 연다 — 일반 함수는 쓰기만', () => {
