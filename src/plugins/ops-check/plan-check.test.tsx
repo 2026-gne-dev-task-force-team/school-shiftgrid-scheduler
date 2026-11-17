@@ -12,7 +12,7 @@ import type { SolverCanon } from '../timetable-solver/contracts/solver';
 import type { Plan, Placement, Plans } from '../timetable-plans/contracts/plans';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
-import { planRows } from './plan-text';
+import { planRows } from '../timetable-plans/plan-rows';
 import { PlanCheck } from './PlanCheck';
 
 // 지어낸 학교 — 1학년 두 반 · 4교시 · 전담 둘

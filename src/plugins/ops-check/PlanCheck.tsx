@@ -3,7 +3,7 @@ import { Badge, EmptyState, Select } from '../../pane-ui-system';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Plans, PlanListItem } from '../timetable-plans/contracts/plans';
 import type { Solver } from '../timetable-solver/contracts/solver';
-import { planRows, type PlanRow } from './plan-text';
+import { planRows, type PlanRow } from '../timetable-plans/plan-rows';
 import type { PlanEvaluation } from '../timetable-solver/contracts/solver';
 
 const MARK = { hard: '❌', soft: '⚠️', demand: '📏' } as const;

@@ -10,7 +10,8 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import { manifest } from './manifest';
 import { PlansTab } from './views/PlansTab';
-import { planNodeTypes, planNodeTypeImpl, initPlans } from './nodes';
+import { PlanCheckProps } from './views/PlanCheckProps';
+import { planNodeTypes, planNodeTypeImpl, initPlans, PLAN_TYPE } from './nodes';
 import { plansApi } from './api';
 
 const VIEW_ID = 'timetable-plans.plans';
@@ -32,9 +33,12 @@ export const timetablePlansPlugin = definePlugin({
             commands: [{ id: 'timetable-plans.open', title: '편성안 열기', icon: 'layers' }],
             ribbon: [{ commandId: 'timetable-plans.open', icon: 'layers', order: 7 }],
             nodeTypes: planNodeTypes,
+            // 🔴 속성 칸 「규칙 점검」 — 편성안을 고르면 위반이 옆 속성 패널에서 실시간으로 보인다(T-30f)
+            properties: [{ target: PLAN_TYPE, id: 'plan-check', title: '규칙 점검', pane: 'PlanCheckProps' }],
         },
     },
 
+    panes: { PlanCheckProps },
     components: {
         Plans: ({ host }) => createElement(PlansTab, { host }),
     },
