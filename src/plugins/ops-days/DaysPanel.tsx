@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useReducer, useState, useSyncExternalStore } from 'react';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar } from '../calendar/contracts/calendar';
@@ -8,10 +8,10 @@ import { Button, Field, TextInput } from '../../pane-ui-system';
 import { addChange, applyDaysOps, canApplyClassSubjects, CLASS_SUBJECTS_DENIED, delChange } from './ops';
 import { daysFrame } from './import/daysFrame';
 import { ClassImportView } from './import/ClassImportView';
-import { demoDays, localDaysSource, saveClassSubjects, type DaysSource } from './source';
+import { demoDays, memoryDaysSource, saveClassSubjects, storageDaysSource, type DaysSource } from './source';
 import type { DaysPart, DaysViewer } from './types';
 
-const fallback = localDaysSource(demoDays);
+const fallback = memoryDaysSource(demoDays());
 const demoViewer: DaysViewer = { userId: 'u-a', roles: ['교사'] };
 
 // 보기 상태(학사/불러오기)는 모듈에 둔다 — 창 폭에 따라 바깥이 이 화면을 다시 마운트해도 안 날아가게.
@@ -23,8 +23,9 @@ const subTab = (f: () => void) => { tabSubs.add(f); return () => { tabSubs.delet
 export const resetDaysTab = () => setTab('days');
 
 /** 학사 — 월(YYYY-MM) 고르면 그 달 일정·변경을 날짜순 목록으로 · 교사는 변경 넣기·내 것 지우기. */
-export function DaysView({ source, viewer, initialMonth, newId, loadFile, host }: { host?: Pick<PluginHost, 'modules'>; source?: DaysSource; viewer?: DaysViewer; initialMonth?: string; newId?: () => string; loadFile?: (f: File) => Promise<Uint8Array> }) {
-    const src = source ?? fallback;
+export function DaysView({ source, viewer, initialMonth, newId, loadFile, host }: { host?: Pick<PluginHost, 'modules' | 'storage'>; source?: DaysSource; viewer?: DaysViewer; initialMonth?: string; newId?: () => string; loadFile?: (f: File) => Promise<Uint8Array> }) {
+    const store = host?.storage;
+    const src = useMemo(() => source ?? (store ? storageDaysSource(store, demoDays) : fallback), [source, store]);
     const v = viewer ?? demoViewer;
     const [month, setMonth] = useState(initialMonth ?? new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 7));
     const [part, setPart] = useState<DaysPart | null>(null);
@@ -112,4 +113,4 @@ export function DaysView({ source, viewer, initialMonth, newId, loadFile, host }
     );
 }
 
-export function DaysPanel({ host }: { host?: Pick<PluginHost, 'modules'> }) { return <DaysView host={host} />; }
+export function DaysPanel({ host }: { host?: Pick<PluginHost, 'modules' | 'storage'> }) { return <DaysView host={host} />; }

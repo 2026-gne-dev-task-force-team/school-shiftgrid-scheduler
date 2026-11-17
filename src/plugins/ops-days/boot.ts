@@ -5,18 +5,22 @@
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Disposable, PluginHost } from '../../pane-ui-system/plugin';
 import type { Calendar } from '../calendar/contracts/calendar';
+import { readStoredPart } from './source';
+import { movePartToStorage } from './partmove';
 import { ACADEMIC_PRESET, isMoved, moveDaysToCalendar, type MoveResult, type StorageLike } from './academic';
 
 /** 한 번 시도 — 미뤘으면 null, 돌았으면 결과. */
-export function runDaysMigration(host: Pick<PluginHost, 'modules'>, storage: StorageLike = localStorage): MoveResult | null {
+export function runDaysMigration(host: Pick<PluginHost, 'modules' | 'storage'>, storage: StorageLike = localStorage): MoveResult | null {
+    // R12 — 옛 기기 저장소 → 호스트 저장(약속과 무관하게 먼저 한 번).
+    movePartToStorage(host.storage, storage);
     const calendar = host.modules.use<Calendar>('calendar');
     const nodes = host.modules.use<NodesApi>('nodes');
     if (!calendar || !nodes) return null;
     if (isMoved(storage)) return null;
-    return moveDaysToCalendar({ calendar, nodes }, storage);
+    return moveDaysToCalendar({ calendar, nodes }, storage, undefined, readStoredPart(host.storage));
 }
 
-export function initDaysMigration(host: PluginHost, storage?: StorageLike): Disposable {
+export function initDaysMigration(host: Pick<PluginHost, 'modules' | 'storage'>, storage?: StorageLike): Disposable {
     const attempt = () => { try { runDaysMigration(host, storage); } catch { /* 이사 실패가 켜짐을 막지 않는다 */ } };
     attempt();
     const sub = host.modules.use<NodesApi>('nodes')?.subscribe(attempt);
