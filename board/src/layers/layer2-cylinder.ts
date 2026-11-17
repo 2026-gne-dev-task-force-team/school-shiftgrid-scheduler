@@ -89,9 +89,22 @@ function commitRow(ctx: LayerCtx, c: GraphCommit, face: Face | undefined, opt: {
   row.addEventListener('click', () => ctx.openDetail({
     title: c.subject || `커밋 ${c.sha}`,
     rows: [['해시', c.sha], ['시각', c.at ? new Date(c.at).toLocaleString('ko-KR') : '—'], ['가지', branchName], ['태스크', no || '—'],
-      ['누가', a ? actorName(a, data.actors) : '—'], ['부모', c.parents.join(', ') || '없음 (맨 처음)'], ['바뀐 파일', '자료에 아직 없음']],
+      ['누가', a ? actorName(a, data.actors) : '—'], ['부모', c.parents.join(', ') || '없음 (맨 처음)'], ...filesRows(c)],
+    extra: filesList(c),
   }))
   return row
+}
+
+/** 상세 「바뀐 파일」 — files 가 있으면 개수 줄 + 경로 목록(extra), 없으면 자료에 아직 없음. */
+export function filesRows(c: GraphCommit): [string, string][] {
+  if (!c.files?.length) return [['바뀐 파일', '자료에 아직 없음']]
+  return [['바뀐 파일', `${c.files.length + (c.filesMore ?? 0)}개`]]
+}
+/** 목록 줄들 — 경로마다 한 줄, 넘친 개수가 있으면 마지막에 「… 외 N개」. */
+export const filesLines = (c: GraphCommit): string[] => c.files?.length ? [...c.files, ...(c.filesMore ? [`… 외 ${c.filesMore}개`] : [])] : []
+export function filesList(c: GraphCommit): HTMLElement | undefined {
+  const lines = filesLines(c)
+  return lines.length ? h('ul', { class: 'gc-files' }, ...lines.map((f) => h('li', null, f))) : undefined
 }
 
 /** 원통 그리기. 돌릴 때는 면 DOM 을 다시 만들지 않고 transform 만 바꾼다. */

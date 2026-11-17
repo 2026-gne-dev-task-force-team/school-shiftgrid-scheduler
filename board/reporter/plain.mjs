@@ -18,7 +18,11 @@ export const clean = (s) => (isPlain(s) ? s : '')
 /** 스냅숏 전체의 글 값을 훑어 걸리는 첫 자리를 돌려준다(없으면 null). */
 // 레인 이름 칸의 「<기기> 운전」(U18④ · 기기 공개는 쥔님 11-16 판정 · race.mjs)만 받아 준다 — 다른 칸의 기기 낱말은 그대로 걸린다
 export const DEVICE_LANE = /^(?:맥|업무 ?PC|씽크패드|NAS) 운전$/i
+// 커밋 바뀐 파일 경로(`.graph.N.files.M`)는 「/」 가 본문이라 슬래시만 빼고 같은 꼴 검사를 건다(백슬래시·@·드라이브·열쇠·기기·모델 이름은 그대로 막는다).
+export const FILE_PATH = /\.files\.\d+$/
+export const isPlainPath = (s) => typeof s !== 'string' || (!s.includes('\\') && isPlain(s.replace(/\//g, '-')))
 export function findDirty(obj, path = '') {
+  if (typeof obj === 'string' && FILE_PATH.test(path)) return isPlainPath(obj) && !NAMES.some((r) => r.test(obj)) ? null : path
   if (typeof obj === 'string') return isPlain(obj) || (/^\.lanes\.\d+\.title$/.test(path) && DEVICE_LANE.test(obj)) ? null : path
   if (obj && typeof obj === 'object') {
     for (const [k, v] of Object.entries(obj)) {

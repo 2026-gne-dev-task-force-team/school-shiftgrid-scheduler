@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { branchFaces, cylinderPose, faceStep, frontIndex, rotTo, wrapDeg } from './layer2-cylinder.ts'
+import { filesLines, filesRows, branchFaces, cylinderPose, faceStep, frontIndex, rotTo, wrapDeg } from './layer2-cylinder.ts'
 import { crowd } from './layer2-branches.ts'
 import branches from '../../fixtures/branches.json'
 import type { Branch } from '../types.ts'
@@ -67,4 +67,21 @@ describe('원통 회전 — 앞/뒤 크기·밝기', () => {
 describe('crowd — 한 칸 캐릭터 겹침 0(R94 ③)', () => {
   it('둘까지 나란히, 나머지는 수', () => expect(crowd([1, 2, 3, 4, 5])).toEqual({ shown: [1, 2], more: 3 }))
   it('적으면 다 보인다', () => expect(crowd([1])).toEqual({ shown: [1], more: 0 }))
+})
+
+describe('바뀐 파일 목록(T-10e3)', () => {
+  const c = { ...graph[0]!, files: ['a/x.ts', 'b/y.ts'] }
+  it('files 가 없으면 「자료에 아직 없음」', () => {
+    expect(filesRows({ ...c, files: undefined })).toEqual([['바뀐 파일', '자료에 아직 없음']])
+    expect(filesLines({ ...c, files: undefined })).toEqual([])
+  })
+  it('files 가 있으면 개수 줄 + 경로 목록', () => {
+    expect(filesRows(c)).toEqual([['바뀐 파일', '2개']])
+    expect(filesLines(c)).toEqual(['a/x.ts', 'b/y.ts'])
+  })
+  it('넘친 개수는 합계와 마지막 줄에 나온다', () => {
+    const m = { ...c, filesMore: 5 }
+    expect(filesRows(m)).toEqual([['바뀐 파일', '7개']])
+    expect(filesLines(m).at(-1)).toBe('… 외 5개')
+  })
 })

@@ -30,7 +30,8 @@ export interface Task {
 }
 export interface Lane { id: string; title: string; state: string; actor_id: string | null }
 /** 커밋 그래프의 한 점 — sha 는 짧은 해시. refs 는 그 커밋을 끝으로 하는 가지 이름표. */
-export interface GraphCommit { sha: string; parents: string[]; subject: string; at: string; refs: { name: string; branch_id: string | null }[] }
+export interface GraphCommit { sha: string; parents: string[]; subject: string; at: string; refs: { name: string; branch_id: string | null }[]; files?: string[]; filesMore?: number }
+// files = 그 커밋에서 바뀐 파일 경로(최대 30개) · filesMore = 30개를 넘어 못 실은 개수. 없으면 자료에 아직 없음.
 /** graph 는 줄기 행에만 실린다(새것→옛것 · 최근 N개). */
 export interface Branch { id: string; title: string; trunk: boolean; ahead: number; state: 'live' | 'merged'; actor_id: string | null; task_id: string | null; updated_at: string; graph?: GraphCommit[] | null }
 export interface Service { id: string; name: string; state: 'ok' | 'build' | 'down' | 'plan'; url: string; task_id: string | null; checked_at: string }
