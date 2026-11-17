@@ -17,6 +17,12 @@ export interface Placement {
     teacherId: string;
     /** 특별실 — 없으면 반 교실. */
     roomId?: string;
+    /** 고정 수업 — 손으로도 자동으로도 옮기지 않는다. */
+    fixed?: boolean;
+    /** 잠금 — 사람이 정해 둔 칸이라 옮기지 않는다. */
+    pinned?: boolean;
+    /** 임시 잠금 — 손보는 동안만 잠가 두는 표시(풀면 다시 옮길 수 있다). */
+    temp?: boolean;
 }
 
 /** 점수·위반 요약 — 엔진이 낸 숫자를 그대로 적는다(여기서 다시 셈하지 않는다). */
