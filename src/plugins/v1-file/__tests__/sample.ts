@@ -1,7 +1,7 @@
 /**
  * 샘플 학교 — 처음 켰을 때 「이렇게 생겼습니다」를 보여주는 지어낸 초등학교.
- * 🔴 U20 F12 판 1(T-10fz): 옛 편성기 사본 `v1-editor/legacy/io/sample.ts` 에서 옮겨 왔다 — F10 왕복 시험(export-v1.test)의 입력 샘플.
- *    본문은 그대로 · 타입 import 만 timetable-solver 정본으로 바꿨다. 옛 자리는 판 2 에서 사슬과 같이 걷는다.
+ * 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기 사본 `legacy/io/sample.ts` 에서 옮겨 왔다 — F10 왕복 시험(export-v1.test)의 입력 샘플.
+ *    본문은 그대로 · 타입 import 만 timetable-solver 정본으로 바꿨다. 옛 자리는 판 2(T-10g4)에서 사슬과 같이 걷었다.
  * ⛔ 실명 금지 (공개 레포) — 사람 이름은 순우리말 한 낱말(하늘·바다 …)만 쓴다.
  * ⚠️ 엔진(src/engine)에 의존하지 않는다 — 엔진 판이 아직 채우는 중이라도 이 파일만으로 doc 이 완성된다.
  *    규격(TimetableSpec)의 슬롯도 engine/api 의 makeSpec() 을 안 부르고 배열을 직접 적는다.
