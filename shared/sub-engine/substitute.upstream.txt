@@ -1,0 +1,211 @@
+/**
+ * 보결 후보 산출 (범위 확정서 7절). 현재 판 Code.gs 의 candidates_() 를 시각 기준으로 옮긴 것.
+ *
+ *   A 담임  = 그 시각 자기 반이 전담 수업 중인 담임 (보결이 난 반 담임은 맨 앞 — 전담이 못 나온 경우)
+ *   B 담임  = 학생을 이미 하교시킨 담임 (참고용)
+ *   C 전담  = 그 시각 수업이 없는 전담
+ *   D 비교과 = 상담·사서·보건·기초학력 (시간표가 없으면 '확인 후 배정')
+ *
+ *   빼는 것: 급식지도 중인 담임, 고정일정(회의·출장·방과후)에 걸린 사람, 그 시간에 학교에 없는 사람(본인 보결·종일 복무),
+ *           자기 반에 들어올 전담이 결근인 담임(그 반 보결이 찼으면 다시 후보), 점심을 못 먹게 되는 전담,
+ *           교감, 보조 인력(스포츠강사·원어민 — 담임이 함께 있어야 하는 반의 담임도 묶인다)
+ *
+ * 전부 시각(분) 기준이고 순수 함수다. 하루 입력(SubDayInput)은 subDayFromDoc() 이 시간표 파일에서 만들고,
+ * 그날 자료(부재·확정)는 서버가 얹는다.
+ */
+import type { ShiftgridDoc } from '@school-ops/schema';
+import { HOMEROOM_AGENT_ID } from '@school-ops/schema';
+import { toMin, lunchSlot, lessonSlots, type ClockRange } from './clock.js';
+import { cmpTrack } from './assign.js';
+
+export type SubKind = '담임' | '전담' | '비교과' | '교감' | '보조';
+export interface SubPerson { id: string; name: string; kind: SubKind; trackName?: string; role?: string }
+export interface SubLesson { startMin: number; endMin: number; subject: string | null; teacherIds: string[]; coIds: string[] }
+export interface SubTrackDay { name: string; grade: number | null; lunch: { startMin: number; endMin: number } | null; lessons: SubLesson[] }
+export interface SubBusy { personId: string; startMin: number; endMin: number; reason: string }
+export interface SubAbsent { personId: string; startMin: number | null; endMin: number | null }   // null 이면 종일
+export interface SubTaken { personId: string; startMin: number; endMin: number; trackName: string } // 그날 확정된 보결
+
+export interface SubDayInput {
+  dayIndex: number;
+  people: SubPerson[];
+  tracks: SubTrackDay[];
+  busy: SubBusy[];
+  lunchTimes: { startMin: number; endMin: number }[];
+  absent?: SubAbsent[];
+  taken?: SubTaken[];
+}
+
+export interface SubQuery {
+  trackName: string | null;       // 보결이 난 반. null 이면 전체 보기
+  startMin: number;
+  endMin: number;
+  absentId?: string | null;       // 못 나오는 사람. 전담이면 그 반 담임이 첫 후보가 된다
+}
+
+export interface SubCandidate { id: string; name: string; kind: SubKind; trackName?: string; reason: string; busyWith?: string }
+export interface SubResult { A: SubCandidate[]; B: SubCandidate[]; C: SubCandidate[]; D: SubCandidate[]; excluded: SubCandidate[] }
+
+const ov = (a: { startMin: number; endMin: number }, b: { startMin: number; endMin: number }) => a.startMin < b.endMin && b.startMin < a.endMin;
+const fmt = (m: number) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+
+export function substituteCandidates(input: SubDayInput, q: SubQuery): SubResult {
+  const range = { startMin: q.startMin, endMin: q.endMin };
+  const byId = new Map(input.people.map((p) => [p.id, p]));
+  const nameOf = (id: string) => byId.get(id)?.name ?? id;
+  const isAux = (id: string) => byId.get(id)?.kind === '보조';
+  const absent = input.absent ?? [], taken = input.taken ?? [];
+
+  const awayNow = (id: string) => absent.some((a) => a.personId === id && a.startMin != null && ov({ startMin: a.startMin, endMin: a.endMin! }, range));
+  const allDay = (id: string) => absent.some((a) => a.personId === id && a.startMin == null);
+  const gone = (id: string) => awayNow(id) || allDay(id);
+  const takenNow = (id: string) => taken.find((t) => t.personId === id && ov(t, range));
+  const coveredBy = (track: string) => taken.find((t) => t.trackName === track && ov(t, range))?.personId;
+
+  // 그 시각에 수업 중인 사람 (전담·협력)
+  const teachingAt = (id: string, r: { startMin: number; endMin: number }) =>
+    input.tracks.find((t) => t.lessons.some((l) => ov(l, r) && (l.teacherIds.includes(id) || l.coIds.includes(id))));
+  const blockAt = (id: string, r: { startMin: number; endMin: number }) => input.busy.find((b) => b.personId === id && ov(b, r));
+
+  /** 전담이 점심 칸에 들어가면 그날 밥 먹을 다른 점심 칸이 남는가. 안 남으면 사유 */
+  const lunchGone = (id: string): string => {
+    if (!input.lunchTimes.some((l) => ov(l, range))) return '';
+    const why: string[] = [];
+    const free = input.lunchTimes.filter((l) => !ov(l, range)).some((l) => {
+      const t = teachingAt(id, l);
+      if (t) { why.push(fmt(l.startMin) + ' ' + t.name + ' 수업'); return false; }
+      const b = blockAt(id, l);
+      if (b) { why.push(fmt(l.startMin) + ' ' + b.reason); return false; }
+      const h = taken.find((x) => x.personId === id && ov(x, l));
+      if (h) { why.push(fmt(l.startMin) + ' ' + h.trackName + ' 보결'); return false; }
+      return true;
+    });
+    return free ? '' : '점심 시간이 없어짐 (' + why.join(', ') + ')';
+  };
+
+  const mk = (p: SubPerson, reason: string): SubCandidate => {
+    const c: SubCandidate = { id: p.id, name: p.name, kind: p.kind, reason };
+    if (p.trackName) c.trackName = p.trackName;
+    const t = takenNow(p.id);
+    if (t) c.busyWith = t.trackName;
+    return c;
+  };
+
+  const out: SubResult = { A: [], B: [], C: [], D: [], excluded: [] };
+  const own: SubCandidate[] = [];
+
+  for (const p of input.people) {
+    if (p.kind === '보조' || p.kind === '교감') continue;
+    const cls = p.kind === '담임' ? p.trackName : undefined;
+    // 보결이 난 그 반 담임. 본인이 못 나오는 것이거나 누가 못 나오는지 모르면 뺀다
+    if (cls && cls === q.trackName && (!q.absentId || q.absentId === p.id)) continue;
+    if (gone(p.id)) {
+      out.excluded.push(mk(p, allDay(p.id) ? '이 날 종일 복무' : '이 교시에 본인 보결이 올라 있음 · 이 시간에는 학교에 없음'));
+      continue;
+    }
+    if (p.kind === '담임') {
+      const t = input.tracks.find((x) => x.name === cls);
+      if (!t) continue;
+      const blk = blockAt(p.id, range);                                     // 담임의 고정일정(부장회의 등)
+      if (blk) { out.excluded.push(mk(p, blk.reason)); continue; }
+      if (t.lunch && ov(t.lunch, range)) continue;                       // 급식지도 중
+      const lesson = t.lessons.find((l) => ov(l, range));
+      if (!lesson) { out.B.push(mk(p, '학생 하교 후')); continue; }       // 하교
+      const all = [...lesson.teacherIds, ...lesson.coIds];
+      if (all.length === 0) continue;                                     // 자기 반 수업 중
+      const solo = all.filter((id) => !isAux(id));
+      if (solo.length === 0) { out.excluded.push(mk(p, all.map(nameOf).join('/') + ' 수업 · 담임이 함께 들어가는 시간')); continue; }
+      if (cls === q.trackName) { own.push(mk(p, '우리 반 · 이 시간 공강')); continue; }  // 전담이 못 나와서 생긴 보결
+      const here = solo.filter((id) => !gone(id));
+      if (here.length === 0) {
+        const by = coveredBy(cls!);
+        if (by) { out.A.push(mk(p, solo.map(nameOf).join('/') + ' 결근 · ' + nameOf(by) + ' 선생님이 대신 수업')); continue; }
+        out.excluded.push(mk(p, solo.map(nameOf).join('/') + ' 결근 · 우리 반 수업을 봐야 함'));
+        continue;
+      }
+      out.A.push(mk(p, here.map(nameOf).join('/') + ' 수업 중'));
+    } else if (p.kind === '전담') {
+      if (teachingAt(p.id, range)) continue;                              // 수업 중 — 어느 칸에도 안 나온다
+      const b = blockAt(p.id, range);
+      if (b) { out.excluded.push(mk(p, b.reason)); continue; }
+      const lunch = lunchGone(p.id);
+      if (lunch) { out.excluded.push(mk(p, lunch)); continue; }
+      out.C.push(mk(p, '이 시간 수업 없음'));
+    } else {
+      if (teachingAt(p.id, range)) continue;
+      const b = blockAt(p.id, range);
+      if (b) { out.excluded.push(mk(p, b.reason)); continue; }
+      out.D.push(mk(p, p.role ?? '확인 후 배정'));
+    }
+  }
+  out.A = own.concat(out.A);
+  return out;
+}
+
+export interface SubDocOptions {
+  /** 보조 인력(스포츠강사·원어민) agent id. tier 3 인 사람은 주지 않아도 보조로 본다 */
+  auxIds?: string[];
+  /** 교감. 시간표 파일에 없으므로 따로 준다 */
+  vps?: { id: string; name: string }[];
+}
+
+/** 시간표 파일에서 어느 요일의 하루 입력을 만든다 (그날 자료는 비어 있다) */
+export function subDayFromDoc(doc: ShiftgridDoc, dayIndex: number, opts: SubDocOptions = {}): SubDayInput {
+  const aux = new Set(opts.auxIds ?? []);
+  const specById = new Map(doc.specs.map((s) => [s.id, s]));
+  const tracks = [...doc.tracks].sort((a, b) => cmpTrack(a.name, b.name));
+  const people: SubPerson[] = tracks.map((t) => ({ id: 'homeroom:' + t.name, name: t.homeroomName ?? t.name + ' 담임', kind: '담임', trackName: t.name }));
+  for (const a of doc.agents) {
+    const kind: SubKind = aux.has(a.id) || a.tier === 3 ? '보조' : a.role === '비교과' ? '비교과' : '전담';
+    people.push({ id: a.id, name: a.name, kind, role: typeof a.attr?.직무 === 'string' ? a.attr.직무 : undefined });
+  }
+  for (const v of opts.vps ?? []) people.push({ id: v.id, name: v.name, kind: '교감' });
+
+  // 그 요일의 배치를 (반, 슬롯) 으로 묶어 둔다
+  const actName = new Map(doc.activities.map((a) => [a.id, a.name]));
+  const cellAsg = new Map<string, typeof doc.assignments>();
+  for (const a of doc.assignments) {
+    if (a.dayIndex !== dayIndex) continue;
+    const k = a.trackId + '|' + a.slotIndex;
+    if (!cellAsg.has(k)) cellAsg.set(k, []);
+    cellAsg.get(k)!.push(a);
+  }
+
+  // 그날 수업 칸 = 시간 틀의 수업 슬롯(lessonsPerDay 반영) + 배치가 있는 슬롯.
+  // 배치가 없는 수업 칸은 담임 수업이다 (편성 앱 v3: 「반의 빈 칸 = 담임 수업」)
+  const trackDays: SubTrackDay[] = tracks.map((t) => {
+    const spec = t.specId ? specById.get(t.specId) : undefined;
+    const lunch = spec ? lunchSlot(spec) : null;
+    const lessons: SubLesson[] = [];
+    if (spec) {
+      const slotIdx = new Set(lessonSlots(spec, dayIndex).map((s) => s.index));
+      for (const s of spec.slots) if (cellAsg.has(t.id + '|' + s.index)) slotIdx.add(s.index);
+      for (const idx of slotIdx) {
+        const slot = spec.slots.find((s) => s.index === idx)!;
+        const asg = cellAsg.get(t.id + '|' + idx) ?? [];
+        const named = asg.find((a) => a.label || a.activityId);
+        lessons.push({
+          startMin: toMin(slot.start), endMin: toMin(slot.end),
+          subject: named ? (named.label ?? actName.get(named.activityId!) ?? null) : null,
+          teacherIds: asg.flatMap((a) => (a.agentId && a.agentId !== HOMEROOM_AGENT_ID ? [a.agentId] : [])),
+          coIds: asg.flatMap((a) => (a.coAgentId && a.coAgentId !== HOMEROOM_AGENT_ID ? [a.coAgentId] : [])),
+        });
+      }
+    }
+    lessons.sort((x, y) => x.startMin - y.startMin);
+    return { name: t.name, grade: t.grade ?? null, lunch: lunch ? { startMin: toMin(lunch.start), endMin: toMin(lunch.end) } : null, lessons };
+  });
+
+  const busy: SubBusy[] = [];
+  for (const wb of doc.weeklyBlocks) {
+    if (wb.dayIndex !== dayIndex || wb.soft || !wb.from || !wb.to) continue;
+    for (const tg of wb.targets) if (tg.kind === 'agent') busy.push({ personId: tg.id, startMin: toMin(wb.from), endMin: toMin(wb.to), reason: wb.name });
+  }
+
+  const lunchTimes = new Map<number, { startMin: number; endMin: number }>();
+  for (const s of doc.specs) { const l = lunchSlot(s); if (l) lunchTimes.set(toMin(l.start), { startMin: toMin(l.start), endMin: toMin(l.end) }); }
+
+  return { dayIndex, people, tracks: trackDays, busy, lunchTimes: [...lunchTimes.values()].sort((a, b) => a.startMin - b.startMin) };
+}
+
+export type { ClockRange };
