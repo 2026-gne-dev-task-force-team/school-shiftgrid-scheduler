@@ -7,6 +7,10 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { RoomPanel } from './RoomPanel';
 import { RoomManagePanel } from './manage';
+import { initRoomMigration } from './book/boot';
+
+let migrationSub: { dispose(): void } | null = null;
+const restart = (host: PluginHost) => { migrationSub?.dispose(); migrationSub = initRoomMigration(host); };
 
 export const opsRoomPlugin = definePlugin({
     manifest: {
@@ -24,6 +28,13 @@ export const opsRoomPlugin = definePlugin({
     commands: {
         'ops-room.open-book': (host: PluginHost) => { host.workspace.open('ops-room.book', { where: 'center' }); },
         'ops-room.open-manage': (host: PluginHost) => { host.workspace.open('ops-room.manage', { where: 'center' }); },
+    },
+    // 🔴 T-10f7 — 옛 예약(localStorage)을 달력 일정으로 기동 때 옮긴다(약속이 꺼져 있으면 미룸 · 두 번 돌아도 같음).
+    lifecycle: {
+        onActivate(host: PluginHost) { restart(host); },
+        onDeactivate() { migrationSub?.dispose(); migrationSub = null; },
+        // 약속이 활성 뒤에 켜져도 따라잡는다 — 다시 시도(멱등).
+        onInterface: Object.fromEntries(['calendar', 'rooms', 'nodes'].map((n) => [n, { attach: restart, detach: () => undefined }])),
     },
 });
 

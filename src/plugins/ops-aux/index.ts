@@ -9,9 +9,13 @@ import type { Staff } from '../staff/contracts/staff';
 import { manifest } from './manifest';
 import { AuxPanel } from './AuxPanel';
 import { requestAssignTab } from './auxTab';
+import { initAuxMigration } from './boot';
 import { AuxStatus, type AuxStatusProps } from './AuxStatus';
 
 export { reassignNeededCount } from './ops';
+
+let migrationSub: { dispose(): void } | null = null;
+const restart = (host: PluginHost) => { migrationSub?.dispose(); migrationSub = initAuxMigration(host); };
 
 export const opsAuxPlugin = definePlugin({
     manifest: {
@@ -27,6 +31,12 @@ export const opsAuxPlugin = definePlugin({
     components: { Aux: ({ host }: { host: PluginHost }) => createElement(AuxPanel as FunctionComponent<{ staff?: Staff }>, { staff: host.modules.use<Staff>('staff') ?? undefined }) },
     renders: { AuxStatus: (host: PluginHost) => createElement(AuxStatus as FunctionComponent<AuxStatusProps>, { onOpen: () => { host.commands.run('ops-aux.open'); requestAssignTab(); } }) },
     commands: { 'ops-aux.open': (host: PluginHost) => { host.workspace.open('ops-aux.aux', { where: 'center' }); } },
+    // 🔴 T-10f7 — 옛 명부(localStorage)를 교직원 명단으로 기동 때 옮긴다(약속이 꺼져 있으면 미룸 · 두 번 돌아도 같음).
+    lifecycle: {
+        onActivate(host: PluginHost) { restart(host); },
+        onDeactivate() { migrationSub?.dispose(); migrationSub = null; },
+        onInterface: Object.fromEntries(['nodes', 'staff'].map((n) => [n, { attach: restart, detach: () => undefined }])),
+    },
 });
 
 export default opsAuxPlugin;
