@@ -12,6 +12,7 @@
  *   - 경계에서 toWeekday·toDayIndex 한 쌍으로만 바꾼다(엔진 안은 안 고친다).
  */
 import type { Doc } from '../types/doc';
+import { migrateDoc } from '../types/doc';
 import type {
     Assignment, RuleTemplate, TimetableSpec, Violation,
 } from '../types/schema';
@@ -49,6 +50,8 @@ export interface Solver {
     readonly RULES: readonly RuleTemplate[];
     defaultRules(): SolverInput['rules'];
     makeSpec(input: MakeSpecInput): TimetableSpec;
+    /** v1 파일 글(JSON 으로 읽은 값) → 편성 입력(옛 버전은 올려 준다). v1-file 이 쓴다. */
+    migrateDoc(raw: unknown): SolverInput;
     /** 엔진 요일(0=월) → 바깥 요일(1=월). */
     toWeekday(dayIndex: SolverDayIndex): Weekday;
     /** 바깥 요일(1=월) → 엔진 요일(0=월). */
@@ -76,8 +79,8 @@ export interface CanonStaffRow {
 export interface CanonClassRow { id: string; name: string; grade?: number }
 /** 과목 한 줄 — subjects 정본. */
 export interface CanonSubjectRow { id: string; name: string }
-/** 방 한 줄 — rooms 정본. 수용 수는 정본에 없어 엔진 기본(1)을 따른다. */
-export interface CanonRoomRow { id: string; name: string }
+/** 방 한 줄 — rooms 정본. 수용 수는 방 속성(roomProps)에 있으면 싣고, 없으면 엔진 기본(1)을 따른다. */
+export interface CanonRoomRow { id: string; name: string; capacity?: number }
 /** 일과표 한 줄 — bell 정본 SlotRow 와 같은 꼴(시각 'HH:MM' 그대로 · 변환 없음). */
 export interface CanonBellRow {
     kind?: string; period?: number | null; start?: string; end?: string; grades?: string[];
@@ -132,6 +135,15 @@ export interface SolverCanon {
 
 /** 조립하다 걸러 낸 것 — 화면이 「무엇이 비었나」를 그 자리에서 보인다. */
 export interface BuildIssue { source: 'demand' | 'duty' | 'block'; id: string; reason: string }
+
+/**
+ * 편성 막힘 한 줄 — 정본이 비어 편성이 안 되는 까닭을 선생님 말로. (⛔ 위 「편성 막힘 자료(SolverBlockRow)」와 다른 것 — 그건 「이 칸은 안 된다」는 제약이고 이건 「왜 못 짜나」다.)
+ *   stop = 이대로는 편성이 안 됨 · note = 편성은 되지만 알아 둘 것.
+ */
+export interface PlanBlocker { code: string; level: 'stop' | 'note'; message: string }
+
+/** 다시-내보내기 — v1 파일 읽기(legacy 구현 그대로). 약속 값 0 원칙의 예외 하나: 구현을 옮기지 않고 가리키기만 한다. */
+export { migrateDoc };
 
 /** 배치 한 줄(엔진이 돌려주는 꼴) — 소비자가 이름으로 쓰라고 다시 내보낸다. */
 export type SolverAssignment = Assignment;
