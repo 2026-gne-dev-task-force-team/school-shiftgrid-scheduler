@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * 방 속성 화면 — 정원 고치기는 rooms 약속(setRoomProps)으로 가고, 고정 사용·차단 시간은 ext 에서 읽어 보인다.
+ * 방 속성 화면 — 정원 고치기는 rooms 약속(setRoomProps)으로 가고, 고정 사용·차단 시간은 ext 에서 읽어 편집 줄로 보인다.
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -33,8 +33,11 @@ describe('RoomPropsView', () => {
             onChange: () => ({ dispose() { /* 없음 */ } }),
         } as unknown as Rooms;
         const el = show(rooms);
-        expect(el.querySelector('[data-room-fixed]')!.textContent).toBe('월 10:00~11:00 가상 동아리');
-        expect(el.querySelector('[data-room-blocks]')!.textContent).toContain('바닥 공사');
+        const fixedRow = el.querySelector('[data-room-fixed] [data-fixed-row="0"]')!;
+        expect((fixedRow.querySelector('[aria-label="요일"]') as HTMLSelectElement).value).toBe('0');
+        expect((fixedRow.querySelector('[aria-label="시작 시각"]') as HTMLSelectElement).value).toBe('600');
+        expect((fixedRow.querySelector('[aria-label="쓰는 쪽"]') as HTMLInputElement).value).toBe('가상 동아리');
+        expect((el.querySelector('[data-room-blocks] [aria-label="막은 까닭"]') as HTMLInputElement).value).toBe('바닥 공사');
         const input = [...el.querySelectorAll('input')].find((i) => i.value === '5')!;
         const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
         act(() => { set.call(input, '8'); input.dispatchEvent(new Event('input', { bubbles: true })); });
