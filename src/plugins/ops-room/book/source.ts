@@ -4,6 +4,7 @@
  * 🔴 자리 번호를 차례로 넣어 보는 반복은 saveReservation 한 곳(R111) — 후보는 정본 `freeSlots` 로 고른다. 화면은 번호를 보내지 않는다.
  */
 import { freeSlots } from '../../../../shared/room-rules.ts';
+import { LS_KEY, isMoved } from './migrate';
 import type { ReservationRequest, ReservationRow, RoomsPart, Viewer } from './types';
 
 /** full = 후보를 다 넣어 봤는데 자리가 없다 · track = 같은 반이 이미 그 칸 · etag = 덮어쓰려던 행이 바뀜 */
@@ -71,11 +72,10 @@ export function demoPart(): RoomsPart {
     };
 }
 
-const LS_KEY = 'plugin.ops-room.part';
-
 /**
  * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 방·예약이 남는다.
  * 저장된 값이 없거나 깨졌을 때만 seed(데모)를 쓴다. 저장소가 막혀도 던지지 않는다.
+ * 🔴 R9 — 옛 예약을 달력으로 옮긴 뒤(`isMoved`)에는 예약 행을 안 읽는다(방·고정·차단 묶음만 읽는다).
  */
 export function localRoomSource(seed: () => RoomsPart, key: string = LS_KEY): RoomSource {
     let part: RoomsPart | null = null;
@@ -84,7 +84,7 @@ export function localRoomSource(seed: () => RoomsPart, key: string = LS_KEY): Ro
         const raw = localStorage.getItem(key);
         if (raw) {
             const p = JSON.parse(raw) as { part?: RoomsPart; rows?: ReservationRow[] };
-            if (p && p.part && Array.isArray(p.part.rooms) && Array.isArray(p.rows)) { part = p.part; rows = p.rows; }
+            if (p && p.part && Array.isArray(p.part.rooms) && Array.isArray(p.rows)) { part = p.part; rows = isMoved(localStorage, key) ? [] : p.rows; }
         }
     } catch { /* 깨진 값·저장소 막힘 — seed */ }
     return memoryRoomSource(part ?? seed(), rows, (pt, rs) => {
