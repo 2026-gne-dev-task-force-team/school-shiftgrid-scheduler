@@ -3,6 +3,7 @@
  * 금지 목록에는 성함이 아니라 sha256 해시만 둔다(목록 자체가 유출 경로가 되지 않게).
  * 추적 파일의 한글 덩어리에서 2~4글자 부분 문자열을 모두 해시해 목록과 겹치면 실패한다.
  * 새 이름을 막으려면 해시만 더한다: printf %s '이름' | shasum -a 256
+ * 정답지는 `OPS_FIXTURE_DIR` 로 레포 밖에서 준다 · 없으면 건너뜀이며 건너뜀≠통과.
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
