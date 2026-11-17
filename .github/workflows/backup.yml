@@ -1,0 +1,57 @@
+name: Supabase backup
+# B15 — 매일 DB 를 덤프(auth 스키마 포함)해 age 공개키로 잠근 .age 파일 하나만 아티팩트로 올린다.
+# 평문 덤프는 올리기 전에 지운다. 시크릿 값은 쥔님이 나중에 넣는다. 비어 있으면 「건너뜀」으로 성공 종료한다.
+
+on:
+  schedule:
+    - cron: '41 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_AGE_PUBKEY: ${{ secrets.BACKUP_AGE_PUBKEY }}
+    steps:
+      - name: 시크릿 확인
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_AGE_PUBKEY" ]; then
+            echo "시크릿 없음 — 건너뜀"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          version: latest
+
+      - name: age 설치
+        if: steps.gate.outputs.ready == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+
+      - name: 덤프 후 암호화(평문 삭제)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p out plain
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f plain/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --schema public,auth -f plain/data.sql
+          tar -C plain -czf plain.tgz schema.sql data.sql
+          age -r "$BACKUP_AGE_PUBKEY" -o "out/backup-$(date -u +%Y%m%d).tgz.age" plain.tgz
+          rm -rf plain plain.tgz
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          name: db-backup
+          path: out/*.age
+          if-no-files-found: error
+          retention-days: 30
