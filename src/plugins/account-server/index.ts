@@ -16,6 +16,8 @@ import config from '../../../site.config.json';
 import { manifest } from './manifest';
 import { createAccountServer, type AuthClient } from './session';
 import { ServerAccountStatus } from './panes/ServerAccountStatus';
+import { MembersPane } from './members/MembersPane';
+import { createMembersApi, type MembersClient } from './members/api';
 
 /** server-link 의 isConfigured 와 같은 판정(값 import 는 꾸러미 경계 위반이라 여기 한 줄로). */
 export function isServerMode(c: ServerConfig | undefined): boolean {
@@ -31,6 +33,13 @@ export const accountServer = createAccountServer({
     getClient: () => (link?.client() as AuthClient | null | undefined) ?? null,
     classify: (e) => (link ? link.classify(e) : { kind: 'network' }),
 });
+
+// F3 — 구성원·초대 판. 같은 server-link 클라이언트를 빌린다(⛔ createClient·fetch).
+export const membersApi = createMembersApi({
+    getClient: () => (link?.client() as MembersClient | null | undefined) ?? null,
+    classify: (e) => (link ? link.classify(e) : { kind: 'network' }),
+});
+export const MEMBERS_VIEW = 'account-server.members';
 
 function perCaller<T>(make: (track?: (d: Disposable) => Disposable) => T): PerCallerApi<T> {
     const fn = (_callerId: string | undefined, track?: (d: Disposable) => Disposable) => make(track);
@@ -61,7 +70,15 @@ export const accountServerPlugin = definePlugin({
         requires: { 'server-link': '^0.1' },
         contributes: SERVER_MODE ? {
             statusBar: [{ id: 'account-server.whoami', side: 'right', render: 'ServerAccountStatus' }],
+            views: [{ id: 'members', title: '구성원·초대', icon: 'users', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, component: 'Members' }],
+            commands: [{ id: 'account-server.members.open', title: '구성원·초대 열기', icon: 'users' }],
         } : {},
+    },
+    components: {
+        Members: () => createElement(MembersPane, { session: accountServer, api: membersApi }),
+    },
+    commands: {
+        'account-server.members.open': (host: PluginHost) => { host.workspace.open(MEMBERS_VIEW, { where: 'center' }); },
     },
     renders: {
         ServerAccountStatus: (_host: PluginHost) => createElement(ServerAccountStatus, { session: accountServer }),
