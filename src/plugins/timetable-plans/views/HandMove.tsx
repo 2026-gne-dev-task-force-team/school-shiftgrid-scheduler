@@ -30,7 +30,7 @@ export function HandMove({ host, planId, onClose }: { host: PluginHost; planId: 
     useSyncExternalStore(subscribePlans, getPlanNodes, getPlanNodes);
     const plan = planOf(planId);
     const solver = host.modules.use<Solver>('solver');
-    const input = useMemo(() => solver?.readInput(host) ?? null, [solver, host]);
+    const input = useMemo(() => solver?.readInput() ?? null, [solver]);
     const [classId, setClassId] = useState<string | null>(null);
     const [picked, setPicked] = useState<string | null>(null);
     const [target, setTarget] = useState<{ day: PlanDay; period: number } | null>(null);

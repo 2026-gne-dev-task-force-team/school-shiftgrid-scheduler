@@ -17,7 +17,7 @@ export function PlanCheck({ host }: { host: PluginHost }) {
     const snap = () => plans?.listPlans() ?? EMPTY;
     const list = useSyncExternalStore(plans ? plans.subscribe : NO_SUB, snap, snap);
     const [picked, setPicked] = useState('');
-    const input = useMemo(() => solver?.readInput(host) ?? null, [solver, host]);
+    const input = useMemo(() => solver?.readInput() ?? null, [solver]);
     const id = list.some((p) => p.id === picked) ? picked : (list.find((p) => p.chosen) ?? list[0])?.id ?? '';
     const plan = id ? plans?.getPlan(id) ?? null : null;
     const result = useMemo(() => {

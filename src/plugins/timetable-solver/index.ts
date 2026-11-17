@@ -8,14 +8,14 @@
 import { definePlugin, type PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { createElement } from 'react';
-import { solverApi } from './api';
+import { solverApi, bindSolverHost } from './api';
 import { BlockersBadge } from './BlockersBadge';
 import { SolverTab } from './views/SolverTab';
 
 export const timetableSolverPlugin = definePlugin({
     manifest: {
         ...manifest,
-        provides: { solver: '0.1.0' },
+        provides: { solver: '0.2.0' },
         // 정본은 없어도 켜진다(없으면 「꺼져 있어 읽을 수 없습니다」가 편성 막힘으로 보인다)
         supports: { nodes: '^0.1', staff: '^0.1', school: '^0.1', subjects: '^0.1', rooms: '^0.1', clock: '^0.1', duty: '^0.1', plans: '^0.1' },
         contributes: {
@@ -28,10 +28,12 @@ export const timetableSolverPlugin = definePlugin({
             commands: [{ id: 'timetable-solver.open', title: '자동 편성 열기', icon: 'schedule' }],
             ribbon: [{ commandId: 'timetable-solver.open', icon: 'schedule', order: 8 }],
             statusBar: [{ id: 'timetable-solver.blockers', side: 'right', render: 'Blockers' }],
-            interfaces: [{ name: 'solver', version: '0.1.0', label: '자동 편성 엔진', desc: '시간표 자동 편성·겹침 점검·옮기기 판정' }],
+            interfaces: [{ name: 'solver', version: '0.2.0', label: '자동 편성 엔진', desc: '시간표 자동 편성·겹침 점검·옮기기 판정' }],
         },
     },
     modules: { solver: solverApi },
+    // 🔴 readInput 이 부른 쪽 host 가 아니라 이 host(자기 supports)로 정본을 읽게 쥔다(T-10fe)
+    lifecycle: { onActivate(host: PluginHost) { bindSolverHost(host); }, onDeactivate() { bindSolverHost(null); } },
     components: { Auto: ({ host }) => createElement(SolverTab, { host }) },
     commands: { 'timetable-solver.open': (host: PluginHost) => { host.workspace.open('timetable-solver.auto', { where: 'center' }); } },
     renders: { Blockers: (host) => createElement(BlockersBadge, { host }) },
