@@ -9,8 +9,10 @@ import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { Staff } from '../staff/contracts/staff';
 import type { School } from '../school/contracts/school';
 import type { Subjects } from '../subjects/contracts/subjects';
+import type { Rooms } from '../rooms/contracts/rooms';
 import type { CollectionKit } from '../collection/contracts/collection';
 import type { Canon } from './resolve';
+import { enabledOptionalKeys } from './optional-columns';
 import { parseDemandPaste, applyPaste, pasteSummary } from './paste';
 
 export function PasteBar({ host, kit }: { host: PluginHost; kit: CollectionKit }) {
@@ -22,10 +24,13 @@ export function PasteBar({ host, kit }: { host: PluginHost; kit: CollectionKit }
         staff: host.modules.use<Staff>('staff') ?? null,
         school: host.modules.use<School>('school') ?? null,
         subjects: host.modules.use<Subjects>('subjects') ?? null,
+        rooms: host.modules.use<Rooms>('rooms') ?? null,
     };
+    // 이 시수표에 켜진 선택 열 — 켜진 열의 머리글만 읽는다(글자로 묶어 같은 값이면 다시 해석하지 않는다).
+    const colsKey = enabledOptionalKeys(kit, listId).join(',');
     // 글자가 바뀔 때만 해석한다(정본 읽기는 그 순간 값).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const plan = useMemo(() => (text.trim() === '' ? null : parseDemandPaste(text, canon)), [text]);
+    const plan = useMemo(() => (text.trim() === '' ? null : parseDemandPaste(text, canon, { columns: colsKey === '' ? [] : colsKey.split(',') })), [text, colsKey]);
     if (!listId) return null;
 
     const put = () => {
@@ -36,7 +41,7 @@ export function PasteBar({ host, kit }: { host: PluginHost; kit: CollectionKit }
     };
 
     return (
-        <details style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)' }}>
+        <details className="border-b border-line" style={{ padding: '6px 10px' }}>
             <summary>엑셀에서 복사한 표 붙여 넣기</summary>
             <p style={{ margin: '6px 0' }}>엑셀에서 교사·반·과목·시수 열을 복사해 아래에 붙이세요(머리글은 있어도 없어도 됩니다). 이름은 교직원 명단·학교 정보·과목 목록과 맞춰 보고, 없는 이름은 저장하지 않고 알려 드립니다.</p>
             <Textarea
