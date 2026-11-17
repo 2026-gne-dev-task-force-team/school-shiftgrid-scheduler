@@ -50,7 +50,7 @@ const plan = (placements: Placement[]): Plan => ({
 function hostWith(p: Plan, solver: unknown = { ...solverApi, readInput: () => input }): PluginHost {
     const fakePlans: Plans = {
         version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => [{ id: 'p1', name: p.name, summary: p.summary, chosen: false }],
-        getPlan: (id) => (id === 'p1' ? p : null), subscribe: () => () => {},
+        getPlan: (id) => (id === 'p1' ? p : null), subscribe: () => () => {}, planRows: () => [],
     };
     const modules: Record<string, unknown> = { plans: fakePlans, solver };
     return { modules: { use: (n: string) => modules[n] ?? null } } as unknown as PluginHost;
