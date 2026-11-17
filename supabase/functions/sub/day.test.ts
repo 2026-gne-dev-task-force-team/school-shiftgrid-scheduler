@@ -2,10 +2,10 @@
 // ⛔ 실명 — 가짜 이름만.
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { AuthClient } from '../_shared/auth.ts';
-import { byteaToHex, openDocBody, sealPart, type PartsReadDb } from '../_shared/doc.ts';
+import { byteaToHex, openPartBody, sealPart, type PartsReadDb } from '../_shared/doc.ts';
 import type { Bytes, KeyRing } from '../_shared/crypto/envelope.ts';
 import { buildKeyRing, parseKeys } from '../_shared/crypto/keys.ts';
-import { dayIndexOf, dayLoader, gridDay } from './day.ts';
+import { auxOn, calendarOn, dayIndexOf, dayLoader, gridDay, SIDE_PARTS } from './day.ts';
 import { subHandler, type SubDeps, type SubStore } from './handler.ts';
 import type { DbSlot } from './rows.ts';
 
@@ -46,10 +46,12 @@ beforeAll(async () => {
     docCt = await sealPart(ring, PID, 'doc', 3, { fmt: 1, body: DOC });
 });
 
-/** 가짜 supabase — `from('parts').select().eq().eq().maybeSingle()` 만. 연 횟수를 센다. */
-function fakeDb(row: { version: number; ct: Bytes } | null): PartsReadDb & { reads: number } {
+type CtRow = { version: number; ct: Bytes };
+/** 가짜 supabase — `from('parts').select().eq().eq().maybeSingle()` 만. 연 횟수를 센다(전체 `reads` · 조각별 `by`). */
+function fakeDb(row: CtRow | null, side: Record<string, CtRow> = {}): PartsReadDb & { reads: number; by: Record<string, number> } {
     const db = {
         reads: 0,
+        by: {} as Record<string, number>,
         from(table: string) {
             if (table !== 'parts') throw new Error(table);
             db.reads++;
@@ -57,10 +59,11 @@ function fakeDb(row: { version: number; ct: Bytes } | null): PartsReadDb & { rea
             const q = {
                 select: () => q,
                 eq: (c: string, v: string) => ((f[c] = v), q),
-                maybeSingle: async () => ({
-                    data: row && f.project_id === PID && f.part === 'doc' ? { part: 'doc', version: row.version, size_plain: 0, ct: byteaToHex(row.ct) } : null,
-                    error: null,
-                }),
+                maybeSingle: async () => {
+                    db.by[f.part] = (db.by[f.part] ?? 0) + 1;
+                    const r = f.project_id !== PID ? null : f.part === 'doc' ? row : side[f.part] ?? null;
+                    return { data: r ? { part: f.part, version: r.version, size_plain: 0, ct: byteaToHex(r.ct) } : null, error: null };
+                },
             };
             return q;
         },
@@ -105,7 +108,7 @@ function fakeStore(): SubStore {
     };
 }
 
-/** index.ts 와 같은 묶음 — 요청마다 새 dayLoader(openDocBody) */
+/** index.ts 와 같은 묶음 — 요청마다 새 dayLoader(openPartBody) */
 function setup(db: PartsReadDb) {
     let n = 0;
     const base: Omit<SubDeps, 'loadDay' | 'loadJudge'> = {
@@ -116,7 +119,7 @@ function setup(db: PartsReadDb) {
         },
         clock: CLOCK, newId: () => `s${++n}`, allowedOrigin: ORIGIN,
     };
-    const h = (req: Request) => subHandler({ ...base, ...dayLoader((pid) => openDocBody(ring, db, pid)) })(req);
+    const h = (req: Request) => subHandler({ ...base, ...dayLoader((pid, part) => openPartBody(ring, db, pid, part)) })(req);
     return async (tok: string, method: string, path: string, body?: unknown) => {
         const res = await h(new Request(`https://ref.supabase.co/functions/v1/sub/projects/${PID}/${path}`, {
             method, headers: { Authorization: `Bearer ${tok}`, Origin: ORIGIN, 'Content-Type': 'application/json' },
@@ -160,19 +163,20 @@ describe('sub + 실제 doc 봉투', () => {
         const no = await call('tokA', 'POST', `${id}/claim`);
         expect(no.status).toBe(400);
         expect(no.json.error.code).toBe('why_not');
-        expect(db.reads).toBe(1);
+        expect(db.reads).toBe(1 + SIDE_PARTS.length);
         const ok = await call('tokB', 'POST', `${id}/claim`);
         expect(ok.status).toBe(200);
         expect(ok.json.row).toMatchObject({ status: '확정', take: { takerRef: 'a2' } });
     });
-    it('assign 은 loadDay·loadJudge 둘 다 부르지만 doc 은 한 요청에 한 번만 연다', async () => {
-        const db = fakeDb({ version: 3, ct: docCt });
+    it('assign 은 loadDay·loadJudge 둘 다 부르지만 doc·곁 조각은 한 요청에 조각마다 한 번만 연다', async () => {
+        const db = fakeDb({ version: 3, ct: docCt }, await sealSide({ 'ops.calendar': [], 'ops.changes': [], 'ops.fixed': [], 'ops.classSubjects': [], 'ops.aux': {} }));
         const call = setup(db);
         const id = (await call('tokB', 'POST', 'register', reg)).json.rows[0].id;
         db.reads = 0;
+        db.by = {};
         const a = await call('tokM', 'POST', `${id}/assign`, { personId: 'a2', confirm: true });
         expect(a.status).toBe(200);
-        expect(db.reads).toBe(1);
+        expect(db.by).toEqual({ doc: 1, 'ops.calendar': 1, 'ops.changes': 1, 'ops.fixed': 1, 'ops.classSubjects': 1, 'ops.aux': 1 });
     });
     it('주말은 400 no_school_day', async () => {
         const call = setup(fakeDb({ version: 3, ct: docCt }));
@@ -195,5 +199,73 @@ describe('sub + 실제 doc 봉투', () => {
         const broken = await setup(fakeDb({ version: 3, ct: bad }))('tokB', 'GET', 'reg-options?date=2026-11-17');
         expect(broken.status).toBe(500);
         expect(broken.json.error.code).toBe('decrypt_failed');
+    });
+});
+
+/** 곁 조각을 실제 봉투로 싼다(판 번호 1) */
+async function sealSide(parts: Record<string, unknown>): Promise<Record<string, CtRow>> {
+    const out: Record<string, CtRow> = {};
+    for (const [part, body] of Object.entries(parts)) out[part] = { version: 1, ct: await sealPart(ring, PID, part, 1, { fmt: 1, body }) };
+    return out;
+}
+
+describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', () => {
+    it('휴일 조각에 그날이 있으면 400 no_school_day · 덮지 않는 날은 그대로', async () => {
+        const side = await sealSide({
+            'ops.calendar': [{ id: 'e1', startDate: '2026-11-17', endDate: '2026-11-17', kind: '개교기념일', targetKind: 'all', targetValue: '' }],
+        });
+        const call = setup(fakeDb({ version: 3, ct: docCt }, side));
+        const off = await call('tokB', 'GET', 'reg-options?date=2026-11-17');
+        expect(off.status).toBe(400);
+        expect(off.json.error.code).toBe('no_school_day');
+        expect(off.json.error.message).toContain('개교기념일');
+        expect((await call('tokB', 'GET', 'reg-options?date=2026-11-18')).status).toBe(200);
+    });
+
+    it('changes: 반 전체 없음(period null)이면 그 반 수업이 빠져 claim 판정이 바뀐다', async () => {
+        // a1 은 화요일 1-2 1교시(540) 수업 중 → 1-1 1교시 보결 claim 이 why_not. 1-2 가 그날 수업 없음이면 비어 성공.
+        const plain = setup(fakeDb({ version: 3, ct: docCt }));
+        const id0 = (await plain('tokB', 'POST', 'register', reg)).json.rows[0].id;
+        expect((await plain('tokA', 'POST', `${id0}/claim`)).json.error.code).toBe('why_not');
+
+        const side = await sealSide({ 'ops.changes': [{ id: 'c1', date: '2026-11-17', trackName: '1-2', period: null, activityName: '' }] });
+        const call = setup(fakeDb({ version: 3, ct: docCt }, side));
+        const id = (await call('tokB', 'POST', 'register', reg)).json.rows[0].id;
+        const ok = await call('tokA', 'POST', `${id}/claim`);
+        expect(ok.status).toBe(200);
+        expect(ok.json.row).toMatchObject({ status: '확정', take: { takerRef: 'a1' } });
+    });
+
+    it('changes: 교시 과목 변경이 그 반 N교시 과목에 · 다른 날 줄은 무시', async () => {
+        const side = await sealSide({
+            'ops.changes': [
+                { id: 'c1', date: '2026-11-17', trackName: '1-1', period: 2, activityName: '체육' },
+                { id: 'c2', date: '2026-11-18', trackName: '1-1', period: 1, activityName: '미술' },
+            ],
+        });
+        const db = fakeDb({ version: 3, ct: docCt }, side);
+        const d = await dayLoader((pid, part) => openPartBody(ring, db, pid, part)).loadDay(PID, '2026-11-17');
+        expect(d.ok && d.tracks[0].lessons.map((l) => l.subject)).toEqual([null, '체육']);
+    });
+
+    it('fixed 조각은 busy 로 · aux 없으면 null(partial) · 있으면 그날 배정', async () => {
+        const side = await sealSide({ 'ops.fixed': [{ id: 'f1', personRef: 'a2', dayIndex: 1, startMin: 540, endMin: 580, reason: '회의' }] });
+        const db = fakeDb({ version: 3, ct: docCt }, side);
+        const j = await dayLoader((pid, part) => openPartBody(ring, db, pid, part)).loadJudge(PID, '2026-11-17', []);
+        expect(j.ok && j.input.busy).toEqual([{ personId: 'a2', startMin: 540, endMin: 580, reason: '회의' }]);
+        expect(auxOn(null, '2026-11-17', 1)).toBeNull();
+        const aux = {
+            staff: [{ id: 's1', name: '보조01', active: true }, { id: 's2', name: '보조02', active: true }],
+            base: [{ id: 's1:1:540', staffId: 's1', dow: 1, startMin: 540, endMin: 580, classKey: '1-1' }],
+            day: [{ id: 'd', staffId: 's2', date: '2026-11-17', startMin: 590, endMin: 630, classKey: '', source: 'none' }],
+            exceptions: [],
+        };
+        expect(auxOn(aux, '2026-11-17', 1)).toEqual([
+            { auxId: 's1', name: '보조01', slots: [{ trackName: '1-1', startMin: 540, endMin: 580, status: 'ok' }] },
+            { auxId: 's2', name: '보조02', slots: [{ trackName: null, startMin: 590, endMin: 630, status: 'none' }] },
+        ]);
+        expect(calendarOn([{ id: 'e', date: '2026-11-16', endDate: '2026-11-18', kind: 'all', title: '휴업' }], '2026-11-17')).toEqual([
+            { kind: '휴업', targetKind: 'all', targetValue: '' },
+        ]);
     });
 });

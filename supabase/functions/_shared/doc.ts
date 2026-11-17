@@ -89,16 +89,19 @@ export async function readPartRow(db: PartsReadDb, projectId: string, part: stri
 }
 
 /**
- * 덩어리 `doc` 조각을 읽어 연다 → 본문(`body`). 조각이 없으면 null.
+ * 조각 하나를 읽어 연다 → 본문(`body`). 조각이 없으면 null.
  * 봉투·gzip·JSON 이 깨졌으면 500 `decrypt_failed`(원인은 로그에만).
  */
-export async function openDocBody(ring: KeyRing, db: PartsReadDb, projectId: string): Promise<unknown | null> {
-    const row = await readPartRow(db, projectId, 'doc');
+export async function openPartBody(ring: KeyRing, db: PartsReadDb, projectId: string, part: string): Promise<unknown | null> {
+    const row = await readPartRow(db, projectId, part);
     if (!row) return null;
     try {
-        return (await openPart(ring, projectId, 'doc', row.version, row.ct)).body;
+        return (await openPart(ring, projectId, part, row.version, row.ct)).body;
     } catch (e) {
-        console.error(`decrypt_failed part=doc ${e instanceof EnvelopeError ? e.code : 'gzip/json'}`);
-        throw new HttpError(500, 'decrypt_failed', '시간표를 열지 못했습니다');
+        console.error(`decrypt_failed part=${part} ${e instanceof EnvelopeError ? e.code : 'gzip/json'}`);
+        throw new HttpError(500, 'decrypt_failed', part === 'doc' ? '시간표를 열지 못했습니다' : '그날 자료를 열지 못했습니다');
     }
 }
+
+/** 덩어리 `doc` 조각 본문 — `openPartBody(…, 'doc')` */
+export const openDocBody = (ring: KeyRing, db: PartsReadDb, projectId: string): Promise<unknown | null> => openPartBody(ring, db, projectId, 'doc');
