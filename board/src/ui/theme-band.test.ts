@@ -104,4 +104,19 @@ describe('막대 이름 칸 — 좁은 폭 짧은 말', () => {
     expect(rule).not.toMatch(/\.band-clock,/)
     expect(rule).not.toMatch(/sgb-pct/)
   })
+  it('폰 폭 CSS: 경과·진행률 칸은 줄어들지 않고(flex none) 폭을 뺏는 판 칩·자동은 접는다(T-10gm)', () => {
+    const phone = css.slice(css.indexOf('@media (max-width: 767px)', css.indexOf('.sgb-gauge i { width: 3px }') - 60))
+    const rule = phone.slice(0, phone.indexOf('.body {'))
+    expect(rule).toMatch(/\.sgb-bar \.band-clock \{ flex: none/)
+    expect(rule).toMatch(/\.sgb-ed:not\(\.on\)[^{]*\{ display: none/)
+  })
+  it('띠 DOM: 경과(.bc-el)·진행률(.sgb-pct)이 있고 줄이는 클래스가 안 붙는다', () => {
+    const d = loadData(Date.now(), null)
+    const band = createBand(d, { onApply() {}, onFeedback() {}, onPurge() {}, calm: false, onCalm() {}, theme: 'auto', onTheme() {} })
+    const el = band.toggle.querySelector('.band-clock .bc-el')!, pct = band.toggle.querySelector('.sgb-pct')!
+    expect(el.textContent).toMatch(/째$/)
+    expect(pct.textContent).toMatch(/%$/)
+    expect(el.className + pct.className).not.toMatch(/nm-|lbl|src/)
+    band.dispose()
+  })
 })

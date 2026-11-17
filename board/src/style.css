@@ -135,7 +135,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .sgb-bar .chip.src, .sgb-bar .chip .lbl, .sgb-gauge, .sgb-bar .band-clock .bc-rest, .sgb-bar .sgb-name .nm-pre, .sgb-bar .sgb-name .nm-t { display: none } /* 폰 폭: 이름은 「바퀴 N」만(전체 글은 title) — 출처·상태 글자·게이지·남은 예상은 접고 진행률 %·경과는 남긴다 */
   .sgb-bar .sgb-toggle { gap: 6px }
   .sgb-bar .sgb-name { flex: none; overflow: visible }
-  .sgb-bar .band-clock { flex: 0 1 auto }
+  .sgb-bar .band-clock { flex: none; overflow: visible }
+  .sgb-bar .sgb-ed:not(.on), .sgb-bar .sgb-auto { display: none } /* 390 폭: 한 줄 막대에 판 칩 셋·자동·불편 접수가 다 앉으면 토글 칸이 0 으로 쪼그라든다 — 지금 판 칩만 남겨 진행률·경과 자리를 낸다(판 바꾸기는 넓은 폭에서) */
   .body { display: flex; flex-direction: column; gap: var(--sp3); padding: var(--sp2); padding-bottom: 60px }
   .stage { flex: 1; padding: var(--sp2); border-radius: var(--r2) }
   .card { padding: var(--sp3) }
