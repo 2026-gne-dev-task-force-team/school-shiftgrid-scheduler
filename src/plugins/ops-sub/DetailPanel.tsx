@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, EmptyState } from '../../pane-ui-system';
-import { absentLabel, getSlotSource, getViewer, type SlotSource, type SubSlotRow, type Viewer } from './list';
+import { absentShown, takerShown } from './people';
+import { getSlotSource, getViewer, type SlotSource, type SubSlotRow, type Viewer } from './list';
 import { buildDetail, cancelTake, takeSlot, useSelection } from './detail';
 
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
@@ -33,10 +34,10 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
     return (
         <div className="p-4 max-w-xl flex flex-col gap-2 text-small">
             <h3>{d.row.date} {d.timeText} · {d.row.trackName} <Badge tone={d.row.status === '확정' ? 'neutral' : 'danger'}>{d.row.status}</Badge></h3>
-            <p>{d.absentKind} 결근 · {absentLabel(b)}</p>
+            <p>{d.absentKind} 결근 · {absentShown(b)}</p>
             <p>사유 {b.reason || '-'}{b.memo && ` · 메모 ${b.memo}`}</p>
             <p>올린 이 {b.registeredByName || '알 수 없음'}</p>
-            {d.row.take && <p>맡은 이 {d.row.take.takerName || '알 수 없음'}</p>}
+            {d.row.take && <p>맡은 이 {takerShown(d.row.take)}</p>}
             {d.cannotTakeWhy && !d.row.take && <p className="text-muted">{d.cannotTakeWhy}</p>}
             {msg && <p role="status">{msg}</p>}
             {d.canTake && <div><Button variant="solid" tone="accent" onClick={() => void take()}>맡기</Button></div>}

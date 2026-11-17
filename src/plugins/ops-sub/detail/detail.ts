@@ -6,6 +6,7 @@
 import type { SlotSource } from '../list/source';
 import type { SubSlotRow } from '../list/types';
 import { viewerCan } from '../../../../shared/roles.ts';
+import { isHomeroomRef } from '../people';
 import { applyVisibility, type Viewer, type VisibleRow } from '../list/visibility';
 
 export interface DetailView {
@@ -22,7 +23,7 @@ export type TakeResult =
     | { ok: false; code: 403 | 409; message: string };
 
 const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-export const absentKindOf = (ref: string): '담임' | '지정' => (ref.startsWith('homeroom:') ? '담임' : '지정');
+export const absentKindOf = (ref: string): '담임' | '지정' => (isHomeroomRef(ref) ? '담임' : '지정');
 
 /** 맡기 가능 여부 — 처음 걸리는 것에서 멈춘다. `sameTime` = 같은 날 내가 이미 맡은 줄들. null = 가능. */
 export function whyNotTake(row: SubSlotRow, v: Viewer, today: string, sameTime: SubSlotRow[] = []): { code: 403 | 409; message: string } | null {

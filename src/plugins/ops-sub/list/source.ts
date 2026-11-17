@@ -2,6 +2,7 @@
  * 보결 줄 자료 창구 — 🔴 진짜 서버를 붙일 자리는 이 파일 한 곳이다(나머지는 loadSlots 만 부른다).
  * 지금은 메모리 구현(시험·미리보기용 가짜 줄).
  */
+import type { SaveResult, Sub } from '../contracts/sub';
 import type { SubSlotRow } from './types';
 
 export interface SlotSource {
@@ -15,7 +16,7 @@ export interface SlotSource {
     /** 줄 지우기(관리 「삭제」) — ifMatch = 있는 줄의 updatedAt 이 같아야 함. 어긋나면 `{ ok:false, conflict:true }`. */
     deleteSlot(row: SubSlotRow, opts?: { ifMatch?: string }): Promise<{ ok: true } | { ok: false; conflict: true }>;
 }
-export type SaveResult = { ok: true; row: SubSlotRow } | { ok: false; conflict: true };
+export type { SaveResult };
 
 const sameKey = (a: SubSlotRow, b: SubSlotRow) =>
     a.projectId === b.projectId && a.date === b.date && a.trackName === b.trackName && a.startMin === b.startMin;
@@ -52,7 +53,7 @@ export function memorySource(rows: SubSlotRow[]): SlotSource {
     return storeSource(() => store, () => undefined);
 }
 
-const LS_KEY = 'plugin.ops-sub.part';
+export const LS_KEY = 'plugin.ops-sub.part';
 
 /**
  * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 올린 보결·지운 보결이 남는다.
@@ -70,6 +71,15 @@ export function localSlotSource(seed: () => SubSlotRow[], key: string = LS_KEY):
         return seed();
     };
     return storeSource(read, (rows) => { try { localStorage.setItem(key, JSON.stringify(rows)); } catch { /* 조용히 */ } });
+}
+
+/** 약속(sub)을 읽고 쓰는 창구 — 저장은 노드가 쥔다(store.ts). 화면·규칙은 이 창구만 부른다. */
+export function subSlotSource(sub: Sub): SlotSource {
+    return {
+        loadSlots: async (date) => [...sub.slotsOn(date)],
+        saveSlot: async (row, opts) => sub.save(row, opts),
+        deleteSlot: async (row, opts) => sub.remove(row, opts),
+    };
 }
 
 /** 미리보기용 가짜 줄 — 실서버가 붙기 전까지 화면이 이걸 읽는다. */
