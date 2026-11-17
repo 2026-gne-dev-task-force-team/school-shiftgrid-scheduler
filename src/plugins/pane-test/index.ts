@@ -29,6 +29,9 @@ import { OpenCountStatus } from './components/OpenCountStatus';
 import { NodeCountStatus } from './components/NodeCountStatus';
 import { setOpenViewCount, setNodeCount, openCmdId } from './store';
 
+/** 배포 빌드 털어내기(T-10ef) — 최상위의 `.map(콜백)` 은 번들러가 부작용으로 읽어 이 폴더를 못 버린다. 이 도우미로 감싸면 안 쓰일 때 통째로 지워진다. */
+/* @__NO_SIDE_EFFECTS__ */ function lazyValue<T>(make: () => T): T { return make(); }
+
 const CONSOLE_ID = 'pane-test.console';
 const OPEN_CMD = 'pane-test.open';
 const GALLERY_ID = 'pane-test.gallery';
@@ -66,15 +69,16 @@ const components = {
 };
 
 /** 명령 실행 함수 — 이름(= 명령 id)으로 가리킨다. 전부 첫 인자로 host(안드로이드 Activity 의 Context). */
-const commands: Record<string, (host: PluginHost) => void> = {
+// 🔴 시험 뷰 열기도 전부 명령으로 — 콘솔 단추·팔레트가 같은 id 로 부른다(「모든 동작은 명령」).
+//    ⛔ 최상위 for 문으로 객체를 채우지 않는다 — 그건 부작용이라 배포 빌드가 이 폴더를 못 털어 낸다(순수 식으로 둔다 · T-10ef).
+const commands: Record<string, (host: PluginHost) => void> = lazyValue(() => ({
     // 리본·팔레트가 부르면 시험 탭을 연다(싱글턴이라 두 장 안 열린다)
     [OPEN_CMD]: (host) => { host.workspace.open(CONSOLE_ID, { where: 'center' }); },
     [GALLERY_CMD]: (host) => { host.workspace.open(GALLERY_ID, { where: 'center' }); },
-};
-// 🔴 시험 뷰 열기도 전부 명령으로 — 콘솔 단추·팔레트가 같은 id 로 부른다(「모든 동작은 명령」).
-for (const s of SAMPLES) {
-    commands[openCmdId(s.id)] = (host) => { host.workspace.open(`pane-test.${s.id}`, { where: s.where }); };
-}
+    ...Object.fromEntries(SAMPLES.map((s): [string, (host: PluginHost) => void] => [
+        openCmdId(s.id), (host) => { host.workspace.open(`pane-test.${s.id}`, { where: s.where }); },
+    ])),
+}));
 
 /** 설정 Pane — 이름(pane)으로 가리킨다. props.host 로 호스트가 꽂혀 온다. */
 const panes = {
@@ -90,7 +94,7 @@ const renders = {
 // ── 선언(contributes) 으로 적는 것 — 전부 순수 데이터(id·제목·아이콘·자리·단축키). 함수는 위 이름으로만 가리킨다 ──
 
 /** 시험 탭(싱글턴·가운데·안 가름) + 샘플 아홉(자유 배치). */
-const viewDefs: ViewContribution<'Console' | 'Sample' | 'Gallery'>[] = [
+const viewDefs: ViewContribution<'Console' | 'Sample' | 'Gallery'>[] = lazyValue(() => [
     {
         id: 'console', title: 'Pane UI Test', icon: 'flask', defaultArea: 'center',
         placement: { areas: ['center'], singleton: true },
@@ -108,16 +112,16 @@ const viewDefs: ViewContribution<'Console' | 'Sample' | 'Gallery'>[] = [
         layout: s.scroll ? { minWidth: 160, squeeze: 'scroll' } : { minWidth: 140 },
         component: 'Sample',
     })),
-];
+]);
 
 /** 명령: 시험 탭 열기(리본에 선다) + 샘플 아홉 열기(아이콘·제목만 다르다). */
-const commandDefs: CommandContribution[] = [
+const commandDefs: CommandContribution[] = lazyValue(() => [
     { id: OPEN_CMD, title: 'Pane UI Test 열기', icon: 'flask' },
     { id: GALLERY_CMD, title: '부품 견본 열기', icon: 'layers' },
     ...SAMPLES.map((s): CommandContribution => ({
         id: openCmdId(s.id), title: `${s.title} 열기`, icon: s.scroll ? 'layers' : 'dot',
     })),
-];
+]);
 
 /**
  * 활성(선택) — 선언 안 되는 것만 남는다: 상태바 open-count 를 먹이는 작업대 구독, 그리고 조건부 노드 배선.
