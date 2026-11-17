@@ -224,9 +224,9 @@ describe('⑦ 탭이 많을 때 새 탭을 탭 줄 안으로 끌어온다(T-10ao
         // 끝 탭을 고른 뒤(새 탭은 활성 탭 바로 뒤에 선다) 사람이 탭 줄을 맨 앞으로 되감아 둔다 — 새 탭이 줄 밖에 서는 판
         act(() => { rows().at(-1)!.click(); });
         strip.scrollLeft = 0;
-        // ⚠️ 앞 리본 가운데 하나가 v1 편성기 탭을 이미 연다 — 아직 안 연 리본(컬렉션)으로 「새 탭」을 세운다
+        // ⚠️ 앞 리본 가운데 하나가 v1 편성기 탭을 이미 연다 — 아직 안 연 리본(시수표 · T-30d 로 컬렉션은 기본 숨김)으로 「새 탭」을 세운다
         const before = new Set(rows());
-        act(() => { ribbonBtn('컬렉션')!.click(); });
+        act(() => { ribbonBtn('시수표')!.click(); });
         const tab = rows().find((e) => !before.has(e))!;
         expect(tab).toBeTruthy();
         expect(rows().indexOf(tab)).toBeGreaterThanOrEqual(STRIP / TAB);   // 정말 줄 밖에 선 탭이다

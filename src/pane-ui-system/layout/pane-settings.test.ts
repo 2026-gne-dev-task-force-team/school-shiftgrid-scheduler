@@ -2,10 +2,10 @@
  * 창틀 설정 받아들이기 — 모양 틀린 저장값은 그 칸만 기본값. 뷰 덮어쓰기는 아는 칸만.
  *   (localStorage 가 없는 node 환경이라 순수 normalize 만 본다 — 저장·구독은 브라우저에서)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import {
     defaultPaneSettings, normalizePaneSettings, normalizeViewOverrides,
-    defaultRibbon, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
+    defaultRibbon, setRibbonDefaults, ribbonGroupOf, normalizeRibbon, resolveRibbon, reorderIds, nudgeId,
 } from './pane-settings';
 
 describe('① PaneSettings 받아들이기', () => {
@@ -103,5 +103,32 @@ describe('⑤ reorderIds / nudgeId — 순서 한 수(순수)', () => {
         expect(nudgeId(['a', 'b', 'c'], 'b', 1)).toEqual(['a', 'c', 'b']);
         expect(nudgeId(['a', 'b', 'c'], 'a', -1)).toEqual(['a', 'b', 'c']);
         expect(nudgeId(['a', 'b', 'c'], 'c', 1)).toEqual(['a', 'b', 'c']);
+    });
+});
+
+describe('⑥ setRibbonDefaults — 주입한 묶음이 기본 순서·숨김·구분선 묶음이 된다(T-30d)', () => {
+    afterAll(() => setRibbonDefaults([], []));   // 다른 파일에 새지 않게(같은 모듈 인스턴스) 비운다
+
+    it('안 주면 빈 기본 · 묶음은 전부 0', () => {
+        setRibbonDefaults([], []);
+        expect(defaultRibbon()).toEqual({ order: [], hidden: [] });
+        expect(ribbonGroupOf('아무거나')).toBe(0);
+    });
+
+    it('묶음을 펴서 order 로, hidden 은 그대로 — resolveRibbon 에 태우면 숨김이 빠진다', () => {
+        setRibbonDefaults([['a', 'b'], ['c', 'd']], ['c']);
+        expect(defaultRibbon()).toEqual({ order: ['a', 'b', 'c', 'd'], hidden: ['c'] });
+        const base = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'z' }];
+        const r = resolveRibbon(base, defaultRibbon());
+        expect(r.visible.map((v) => v.id)).toEqual(['a', 'b', 'd', 'z']);   // c 숨김 · z(설정 밖)는 뒤에
+        expect(r.hidden.map((v) => v.id)).toEqual(['c']);
+    });
+
+    it('ribbonGroupOf — 묶음 번호, 설정 밖 id 는 맨 뒤 한 칸(묶음 수)', () => {
+        setRibbonDefaults([['a', 'b'], ['c', 'd']], []);
+        expect(ribbonGroupOf('a')).toBe(0);
+        expect(ribbonGroupOf('b')).toBe(0);
+        expect(ribbonGroupOf('c')).toBe(1);
+        expect(ribbonGroupOf('z')).toBe(2);   // 어느 묶음에도 없음 → 묶음 수(맨 뒤)
     });
 });

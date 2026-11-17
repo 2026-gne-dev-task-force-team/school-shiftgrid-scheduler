@@ -11,6 +11,8 @@ export const manifest: PluginManifest = {
     version: '0.1.0',
     minHostVersion: '0.1.0',
     layer: 'domain',
+    // 🔴 T-30d: 새 기기엔 기본 꺼짐(안 쓰는 명단 플러그인) — 쓰던 기기는 켜진 채 이주. 누구도 people 약속을 requires 하지 않아 끊기지 않는다.
+    defaultOff: true,
     icon: 'users',
     description: '명단을 만들어 사람(이름·메모)을 담습니다.',
     about: {

@@ -49,8 +49,8 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             'calendar', 'account',
             'people', 'rooms', 'room-booking', 'substitute', 'school', 'subjects', 'staff', 'bell', 'duty', 'timetable-grid', 'demand-table', 'timetable-solver', 'timetable-plans', 'v1-file', 'ops-check', 'ops-sub', 'ops-room', 'ops-days', 'ops-aux', 'v1-editor',
         ]);
-        // 🔴 T-10ec: v1-editor(옛 편성기)만 기본 꺼짐 — 새 기기엔 안 선다. 나머지는 전부 켜짐.
-        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual(['v1-editor']);
+        // 🔴 T-10ec·T-30d: 기본 꺼짐 셋 — people(사람 명단)·ops-room(특별실)·v1-editor(옛 편성기). 새 기기엔 안 선다, 쓰던 기기는 이주. PLUGINS 순서대로.
+        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual(['people', 'ops-room', 'v1-editor']);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
     });

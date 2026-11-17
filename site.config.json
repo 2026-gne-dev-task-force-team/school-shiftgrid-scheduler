@@ -13,5 +13,14 @@
     "page", "collection", "sheet", "server-link", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
     "subjects", "staff", "bell", "duty", "timetable-grid", "demand-table", "timetable-solver", "timetable-plans", "v1-file", "ops-check", "ops-sub", "ops-room", "ops-days", "ops-aux", "v1-editor"
-  ]
+  ],
+  "ribbon": {
+    "groups": [
+      ["staff.open", "subjects.open", "rooms.open", "bell.open"],
+      ["demand-table.open", "timetable-solver.open", "timetable-plans.open", "timetable-grid.open"],
+      ["calendar.open", "ops-days.open", "ops-sub.open-list", "ops-sub.open-mine", "substitute.open", "room-booking.open", "duty.open", "ops-aux.open"],
+      ["page.open", "sheet.open", "collection.open", "ops-check.open"]
+    ],
+    "hidden": ["page.open", "sheet.open", "collection.open", "ops-check.open"]
+  }
 }
