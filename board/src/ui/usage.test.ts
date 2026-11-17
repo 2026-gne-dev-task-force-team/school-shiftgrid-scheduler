@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
+import type { Ko } from '../lib/ko.ts'
 import type { Usage } from '../types.ts'
 import { speedLine, usagePanel } from './usage.ts'
 
@@ -19,6 +20,21 @@ describe('한도와 속도 반반', () => {
     const both = usagePanel([u('org', '2026-11-16T01:00:00Z', 40), u('personal', '2026-11-16T01:00:00Z', 10)])
     expect(both.querySelectorAll('.meter').length).toBe(4)
     expect(usagePanel([]).querySelectorAll('.empty').length).toBe(2)
+  })
+  it('쓰러짐 모드면 기관 7일 막대는 「초과」 — 값이 있어도 없어도 · 개인은 그대로', () => {
+    const ko: Ko = { on: true, pct: null, resetAt: '2026-11-23T09:00:00Z', forced: null, by: 'flag', note: '' }
+    const el = usagePanel([u('org', '2026-11-16T01:00:00Z', 40), u('personal', '2026-11-16T01:00:00Z', 10)], ko)
+    const [l, r] = Array.from(el.children) as HTMLElement[]
+    expect(l.querySelectorAll('.meter.over').length).toBe(1)
+    expect(l.textContent).toContain('7일 100% · 초과')
+    expect(l.textContent).toContain('풀림 11/23')
+    expect(r.querySelector('.meter.over')).toBeNull()
+    const none = usagePanel([u('personal', '2026-11-16T01:00:00Z', 10)], ko)
+    const org = none.children[0] as HTMLElement
+    expect(org.classList.contains('empty')).toBe(false)
+    expect(org.querySelectorAll('.meter.over').length).toBe(1)
+    expect(org.textContent).toContain('5시간 기록 없음')
+    expect(usagePanel([u('org', '2026-11-16T01:00:00Z', 40)], { ...ko, on: false }).querySelector('.meter.over')).toBeNull()
   })
 })
 

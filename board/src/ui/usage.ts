@@ -1,6 +1,6 @@
 import { h } from '../dom.ts'
 import { etaMinutes, fmtDur } from '../lib/forecast.ts'
-import { fmtReset } from '../lib/ko.ts'
+import { fmtReset, getKo, type Ko } from '../lib/ko.ts'
 import type { Account, Usage } from '../types.ts'
 
 const NAME: Record<Account, string> = { org: '기관 계정', personal: '개인 계정' }
@@ -24,17 +24,26 @@ export function speedLine(cur: Usage, prev?: Usage): string {
 }
 
 // 한도와 속도 — 한 줄을 반으로 갈라 왼쪽 기관 · 오른쪽 개인. 값 없는 쪽은 「기록 없음」 자리만. 기울기는 계정별 마지막 두 줄(최근 구간)로 계산한다.
-export function usagePanel(rows: Usage[]): HTMLElement {
+// 쓰러짐 모드가 켜져 있으면 기관 7일 막대는 「초과」로 그린다 — 기관 계정이 막히면 그 계정 세션이 죽어 한도 줄이 안 올라오고, 올라오는 건 개인 계정 값이라 자료로는 초과가 안 보인다(쥔님 11-17 *"한도바도 초과됐다고 표현"* · 21:42 *"기관 건 막혔어 이건 개인 거야"*).
+export function usagePanel(rows: Usage[], ko: Ko = getKo()): HTMLElement {
   const wrap = h('div', { class: 'usage' })
   for (const acc of ['org', 'personal'] as const) {
     const r = rows.filter((u) => u.account === acc).sort((a, b) => a.ts.localeCompare(b.ts))
     const cur = r.at(-1), prev = r.at(-2)
-    if (!cur) { wrap.append(h('section', { class: 'half empty', 'data-acc': acc }, h('b', null, NAME[acc]), h('small', null, '기록 없음'))); continue }
+    const over = acc === 'org' && ko.on
+    if (!cur) {
+      wrap.append(over
+        ? h('section', { class: 'half', 'data-acc': acc }, h('b', null, NAME[acc]), bar('7일', 100, null, ko.resetAt), h('small', null, '5시간 기록 없음'))
+        : h('section', { class: 'half empty', 'data-acc': acc }, h('b', null, NAME[acc]), h('small', null, '기록 없음')))
+      continue
+    }
     const dt = prev ? (Date.parse(cur.ts) - Date.parse(prev.ts)) / 60000 : 0
     const eta = (k: 'pct_5h' | 'pct_7d') => (prev && dt > 0 ? etaMinutes(cur[k], prev[k], dt) : null)
     const sp = speedLine(cur, prev)
     wrap.append(h('section', { class: 'half', 'data-acc': acc }, h('b', null, NAME[acc]),
-      bar('5시간', cur.pct_5h, eta('pct_5h'), cur.reset_5h_at), bar('7일', cur.pct_7d, eta('pct_7d'), cur.reset_7d_at), ...(sp ? [h('small', null, sp)] : [])))
+      bar('5시간', cur.pct_5h, eta('pct_5h'), cur.reset_5h_at),
+      over ? bar('7일', Math.max(100, cur.pct_7d), null, cur.reset_7d_at) : bar('7일', cur.pct_7d, eta('pct_7d'), cur.reset_7d_at),
+      ...(sp ? [h('small', null, sp)] : [])))
   }
   return wrap
 }

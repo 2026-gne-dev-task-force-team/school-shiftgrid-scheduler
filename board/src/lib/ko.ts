@@ -38,6 +38,7 @@ export const koPose = (name: string): number => hash(name) % KO_POSES
 let cur: Ko = { on: false, pct: null, resetAt: null, forced: null, by: 'data', note: '' }
 export const setKo = (k: Ko): void => { cur = k }
 export const isKo = (): boolean => cur.on
+export const getKo = (): Ko => cur
 
 /** 풀리는 시각 — 오늘이면 「HH:MM」, 아니면 「M/D HH:MM」. 못 읽으면 빈 글. */
 export function fmtReset(iso: string | null, now = Date.now()): string {
