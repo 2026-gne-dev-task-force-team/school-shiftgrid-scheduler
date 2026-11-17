@@ -51,7 +51,7 @@ function render(notice = false): void {
   band?.dispose()
   const raw = loadData(Date.now(), remote, app, { keyed, settled, last })
   // 쓰러짐(lib/ko.ts) — 기관 7일 한도 100% 면 캐릭터 눈 X·판 탈색, 화면에서만 퇴근 캐릭터를 이전 티켓 위에 다시 세운다. 자료는 raw 그대로 두고, 한도가 내려오면 다음 render 가 원복한다.
-  const ko = knockout(raw.usage, readForce(localStorage, location.search))
+  const ko = knockout(raw.usage, readForce(localStorage, location.search), raw.flags ?? [])
   setKo(ko)
   root!.classList.toggle('ko', ko.on)
   const data = ko.on ? stageKo(raw) : raw

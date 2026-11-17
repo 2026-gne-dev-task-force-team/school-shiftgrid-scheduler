@@ -1,4 +1,4 @@
-import type { BoardData } from '../types.ts'
+import type { BoardData, Flag } from '../types.ts'
 import type { Feedback } from './feedback.ts'
 
 const TABLES = ['actors', 'tasks', 'lanes', 'branches', 'services', 'modules', 'goals', 'events', 'usage', 'runs', 'sprints'] as const
@@ -27,11 +27,13 @@ export async function fetchRemote(env: Env = envNow(), f: typeof fetch = fetch):
   const e = env as Required<Env>
   const fbP = get(e, 'feedback', f).then((rows) => (rows as { id: string; text: string; place?: string; ts: string; app?: string; reviewed_at?: string | null; direction?: string | null }[])
     .map((r): Feedback => ({ id: r.id, text: r.text, where: r.place ?? '', ts: r.ts, app: r.app, reviewed_at: r.reviewed_at, direction: r.direction }))).catch((): Feedback[] => [])
+  // 스위치 표(flags)는 따로 읽는다 — 없거나 못 읽어도 판은 떠야 하니 빈 배열로(lib/ko.ts 셔터)
+  const flP = get(e, 'flags', f).then((rows) => rows as Flag[]).catch((): Flag[] => [])
   let tables: BoardData | null = null
   try {
     const rows = await Promise.all(TABLES.map((n) => get(e, n, f)))
     const d = Object.fromEntries(TABLES.map((n, i) => [n, rows[i]])) as unknown as BoardData
-    if (d.tasks.length && d.lanes.length) tables = d
+    if (d.tasks.length && d.lanes.length) tables = { ...d, flags: await flP }
   } catch { /* 목업으로 */ }
   return { tables, feedback: await fbP }
 }

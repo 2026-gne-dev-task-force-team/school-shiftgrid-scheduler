@@ -1,12 +1,14 @@
-import type { Actor, BoardData, Task, Usage } from '../types.ts'
+import type { Actor, BoardData, Flag, Task, Usage } from '../types.ts'
 
-// 쓰러짐 — 기관 계정 7일 한도가 100% 에 닿으면 클로드들이 쓰러지고 판의 불이 꺼진다
+// 쓰러짐 — 클로드들이 눈 X 로 쓰러지고 판의 불이 꺼진다
 // (쥔님 2026-11-17 20:45 *"7일 토큰 사용량 초과 … 캐릭터 다 눈 X … 다양한 방향으로 쓰러지게 … 불이 꺼진 것처럼 한산하고"*).
-// 판정은 자료가 한다: 보고꾼이 실은 usage 의 기관(org) 마지막 줄 pct_7d ≥ 100 → 켜짐. 한도가 내려와 새 줄이 100 아래면 저절로 원복.
-// 손 스위치: 주소에 ?ko=on|off 를 붙이면 localStorage(board.ko)에 남아 자료와 무관하게 강제 · ?ko=auto 가 푼다.
+// 켜는 길 셋(앞이 이긴다):
+//   ① 이 기기 손 스위치 — 주소 ?ko=on|off 가 localStorage(board.ko)에 남는다 · ?ko=auto 가 푼다(시험용)
+//   ② 공용 셔터 — 서버 표 board.flags 의 'ko' 줄(value on|off · note = 화면 글). 쥔님이 말로 시키면 NAS `ko.cjs` 가 올리고 내린다 — 모든 기기에 같이 보이고, 실시간 소켓이 바뀜을 알려 바로 원복(쥔님 21:24 *"내가 쉬고 싶을 때 표현하는 용도 … 수동으로 셔터 올리고 내리고"*)
+//   ③ 자료 — 보고꾼이 실은 usage 의 기관(org) 마지막 줄 pct_7d ≥ 100 이면 저절로 켜지고, 100 아래 새 줄이 오면 저절로 꺼진다
 export const KO_KEY = 'board.ko'
 export type KoForce = 'on' | 'off' | null
-export interface Ko { on: boolean; pct: number | null; resetAt: string | null; forced: KoForce }
+export interface Ko { on: boolean; pct: number | null; resetAt: string | null; forced: KoForce; by: 'local' | 'flag' | 'data'; note: string }
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 /** 주소의 ?ko= 를 저장소에 옮기고, 저장된 강제값을 돌려준다(없으면 null = 자료가 정한다). */
@@ -18,11 +20,13 @@ export function readForce(store: Store, search = ''): KoForce {
   return v === 'on' || v === 'off' ? v : null
 }
 
-export function knockout(usage: Usage[], forced: KoForce = null): Ko {
+export function knockout(usage: Usage[], forced: KoForce = null, flags: Flag[] = []): Ko {
   const cur = usage.filter((u) => u.account === 'org').sort((a, b) => a.ts.localeCompare(b.ts)).at(-1)
   const pct = cur ? cur.pct_7d : null
-  const on = forced ? forced === 'on' : pct !== null && pct >= 100
-  return { on, pct, resetAt: cur?.reset_7d_at ?? null, forced }
+  const f = flags.find((x) => x.key === 'ko')
+  const flag: KoForce = f?.value === 'on' ? 'on' : f?.value === 'off' ? 'off' : null
+  const on = forced ? forced === 'on' : flag ? flag === 'on' : pct !== null && pct >= 100
+  return { on, pct, resetAt: cur?.reset_7d_at ?? null, forced, by: forced ? 'local' : flag ? 'flag' : 'data', note: (f?.note ?? '').trim() }
 }
 
 const hash = (s: string) => [...s].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 11)
@@ -31,7 +35,7 @@ export const KO_POSES = 6
 export const koPose = (name: string): number => hash(name) % KO_POSES
 
 // 그리는 쪽이 읽는 현재 값 — render() 가 한 번 놓고 character() 가 읽는다(캐릭터를 그리는 자리마다 넘기지 않게).
-let cur: Ko = { on: false, pct: null, resetAt: null, forced: null }
+let cur: Ko = { on: false, pct: null, resetAt: null, forced: null, by: 'data', note: '' }
 export const setKo = (k: Ko): void => { cur = k }
 export const isKo = (): boolean => cur.on
 
@@ -44,10 +48,11 @@ export function fmtReset(iso: string | null, now = Date.now()): string {
   return new Date(now).toDateString() === d.toDateString() ? hm : `${d.getMonth() + 1}/${d.getDate()} ${hm}`
 }
 
-/** 판 위 조용한 한 줄 — 티켓이 아니라 상태 글(쥔님 *"티켓 표시도 … 달지 말고 그냥 조용히"*). */
+/** 판 위 조용한 한 줄 — 티켓이 아니라 상태 글(쥔님 *"티켓 표시도 … 달지 말고 그냥 조용히"*). 셔터에 글(note)이 있으면 그 글이 앞선다. */
 export function koText(k: Ko, now = Date.now()): string {
-  const when = fmtReset(k.resetAt, now)
-  return `기관 계정 7일 한도 초과 — 클로드들이 쓰러져 작업과 현황판이 멈췄습니다${when ? ` · 한도 풀림 ${when}` : ''}${k.forced ? ' · (손 스위치)' : ''}`
+  if (k.note) return k.note
+  const when = k.by === 'data' ? fmtReset(k.resetAt, now) : ''
+  return `기관 계정 7일 한도 초과 — 클로드들이 쓰러져 작업과 현황판이 멈췄습니다${when ? ` · 한도 풀림 ${when}` : ''}${k.by === 'local' ? ' · (이 기기 손 스위치)' : ''}`
 }
 
 // ── 장면 꾸미기(프런트만 · 자료는 안 건드린다) ───────────────────────────────────────────

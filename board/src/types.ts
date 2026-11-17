@@ -45,8 +45,11 @@ export interface Sprint {
   id: number; title: string; goal: string; began: string; ended: string | null; task_ids: string[]
   est_min: number; actual_min: number; review: string; passed: boolean | null; missed: string; next: string
 }
+/** 스위치 한 줄(board.flags) — key 'ko' = 쓰러짐 셔터(value on|off · note 는 화면 글). 표가 없거나 못 읽으면 빈 배열. */
+export interface Flag { key: string; value: string; note?: string; updated_at?: string }
 export interface BoardData {
   actors: Actor[]; tasks: Task[]; lanes: Lane[]; branches: Branch[]; services: Service[]; modules: Module[]
   goals: Goal[]; events: BoardEvent[]; usage: Usage[]; runs: Run[]; sprints: Sprint[]
+  flags?: Flag[]
   source?: 'mock' | 'server' | 'loading' | 'failed' | 'stale'; staleAt?: number; serverFeedback?: Feedback[] // loadData 가 채운다. loading·failed = 서버 키는 있는데 아직/못 읽음(표는 빈 채), stale = 못 읽어 마지막 성공 값(staleAt)
 }

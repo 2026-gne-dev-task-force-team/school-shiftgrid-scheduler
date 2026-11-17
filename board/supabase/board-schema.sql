@@ -164,7 +164,16 @@ create table if not exists board.feedback (
   app text not null default '1.2v' check (app in ('v1','1.2v','v2'))
 );
 
+-- 셔터·스위치 한 줄(lib/ko.ts · T-11r): key 'ko' value on|off · note 는 화면에 띄울 글. 올리고 내리기는 NAS `~/.board-reporter/ko.cjs`(service_role) — 쥔님이 말로 시킨다.
+create table if not exists board.flags (
+  key text primary key check (key ~ '^[a-z_]{1,30}$'),
+  value text not null default '' check (char_length(value) <= 30),
+  note text not null default '' check (char_length(note) <= 200 and note !~ '[\\@]' and note !~* '\msk-|eyJ'),
+  updated_at timestamptz not null default now()
+);
+
 -- RLS 켜기
+alter table board.flags    enable row level security;
 alter table board.actors   enable row level security;
 alter table board.tasks    enable row level security;
 alter table board.lanes    enable row level security;
@@ -182,7 +191,7 @@ alter table board.feedback enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['actors','tasks','lanes','branches','services','modules','goals','events','usage','runs','sprints','feedback'] loop
+  foreach t in array array['actors','tasks','lanes','branches','services','modules','goals','events','usage','runs','sprints','feedback','flags'] loop
     execute format('drop policy if exists board_read on board.%I', t);
     execute format('create policy board_read on board.%I for select to anon, authenticated using (true)', t);
   end loop;
@@ -201,7 +210,7 @@ grant insert (text, place, app) on board.feedback to authenticated; -- id·ts �
 do $$
 declare t text;
 begin
-  foreach t in array array['tasks','events','feedback'] loop
+  foreach t in array array['tasks','events','feedback','flags'] loop
     if not exists (select 1 from pg_publication_tables
                    where pubname = 'supabase_realtime' and schemaname = 'board' and tablename = t) then
       execute format('alter publication supabase_realtime add table board.%I', t);

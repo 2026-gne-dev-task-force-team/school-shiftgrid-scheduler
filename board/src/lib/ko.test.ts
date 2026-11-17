@@ -19,6 +19,16 @@ describe('쓰러짐 판정', () => {
     expect(knockout([u(21)], 'on').on).toBe(true)
     expect(knockout([u(100)], 'off').on).toBe(false)
   })
+  it('공용 셔터(flags ko) — 자료를 이기고 손 스위치에 진다 · note 가 화면 글', () => {
+    const on = knockout([u(21)], null, [{ key: 'ko', value: 'on', note: ' 오늘은 쉽니다 ' }])
+    expect(on.on).toBe(true); expect(on.by).toBe('flag'); expect(koText(on)).toBe('오늘은 쉽니다')
+    const off = knockout([u(100)], null, [{ key: 'ko', value: 'off' }])
+    expect(off.on).toBe(false); expect(off.by).toBe('flag')
+    expect(knockout([u(100)], null, [{ key: 'ko', value: '' }]).on).toBe(true) // 빈 값 = 자료가 정한다
+    expect(knockout([u(21)], null, [{ key: 'other', value: 'on' }]).on).toBe(false)
+    expect(knockout([u(21)], 'off', [{ key: 'ko', value: 'on' }]).on).toBe(false) // 이 기기 손 스위치가 앞선다
+    expect(koText(knockout([u(21)], null, [{ key: 'ko', value: 'on' }]))).not.toContain('한도 풀림') // 셔터는 한도 시각을 안 단다
+  })
   it('?ko=on|off 는 저장되고 ?ko=auto 가 푼다', () => {
     const s = new Mem()
     expect(readForce(s, '')).toBeNull()
