@@ -68,10 +68,10 @@ describe('1,820 대조 틀', () => {
     expect((bare as { assignments: unknown[] }).assignments.length).toBe(189)
     for (const src of [bare, normalizeGrid(bare)]) expect(runCanon(cases, makeGridAdapter(src))).toMatchObject({ total: 1820, skipped: 0, mismatched: 0 })
   })
-  it('어댑터: coAgentId 가 든 담임 칸은 coIds 로 읽혀 그 반 담임이 homeroom-with-aux 로 빠진다(합성 판)', () => {
+  it('어댑터: coAgentId 가 든 담임 칸은 coIds 로 읽히고, 그 사람이 보조(tier 3)면 그 반 담임이 「담임이 함께」로 빠진다(합성 판)', () => {
     const slot = (index: number, start: string, end: string) => ({ index, start, end, kind: 'lesson', assignable: true })
     const grid = {
-      agents: [{ id: 'a1', name: '보조', role: '전담' }],
+      agents: [{ id: 'a1', name: '보조', role: '전담', tier: 3 }],
       specs: [{ id: 's', slots: [slot(0, '09:00', '09:40'), slot(1, '09:50', '10:30')] }],
       tracks: [{ name: '1-1', specId: 's', grade: 1 }, { name: '1-2', specId: 's', grade: 1 }],
       assignments: [{ trackId: 't-1-2', dayIndex: 0, slotIndex: 0, agentId: '__homeroom__', coAgentId: 'a1' }],
@@ -80,9 +80,18 @@ describe('1,820 대조 틀', () => {
     const c = { dayIndex: 0, start: '09:00', end: '09:40', self: '1-1', A: [], B: [], C: [], X: ['1-2'] } as unknown as CanonCase
     const b = makeGridAdapter(grid)(c, 0)!
     expect(b.input.tracks.find((t) => t.name === '1-2')!.lessons[0].coIds).toEqual(['a1'])
-    expect(substituteCandidates(b.input, b.query).excluded.find((e) => e.id === 'homeroom:1-2')?.code).toBe('homeroom-with-aux')
+    expect(b.input.people.find((p) => p.id === 'a1')?.kind).toBe('보조')
+    expect(substituteCandidates(b.input, b.query).excluded.find((e) => e.id === 'homeroom:1-2')?.reason).toBe('보조 수업 · 담임이 함께 들어가는 시간')
+    expect(runCanon([c], makeGridAdapter(grid))).toMatchObject({ total: 1, mismatched: 0 })
     const none = makeGridAdapter({ ...grid, assignments: [{ ...grid.assignments[0], coAgentId: undefined }] })(c, 0)!
     expect(substituteCandidates(none.input, none.query).excluded.find((e) => e.id === 'homeroom:1-2')).toBeUndefined()
+    // 보조가 아닌 협력 교사가 든 담임 칸은 원문처럼 A(그 교사 수업 중)
+    const co = makeGridAdapter({ ...grid, agents: [{ id: 'a1', name: '협력', role: '전담' }] })(c, 0)!
+    expect(substituteCandidates(co.input, co.query).A.find((x) => x.id === 'homeroom:1-2')?.reason).toBe('협력 수업 중')
+  })
+  it('순서 어긋남도 어긋남으로 센다(운영 앱 시험의 join() 비교)', () => {
+    const swapped = [{ ...sampleCases[1], C: ['음악전담', '영어전담'] }]
+    expect(runCanon(swapped, adapter).diffs).toEqual([{ index: 0, group: 'C', missing: [], extra: [], order: true }])
   })
   it('whyNot: 표본에서 빠진 교사는 문장이 있고 후보는 빈 목록', () => {
     const q = { trackName: '1-1', startMin: 540, endMin: 580, absentId: 'S1' }

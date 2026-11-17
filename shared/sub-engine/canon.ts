@@ -1,11 +1,12 @@
 /**
- * 1,820 대조 틀 — 정답지 건마다 그날 입력을 만들어 새 엔진을 돌리고 A·B·C·X 이름 목록(정렬 일치)을 비교한다.
- * 사유 글자는 비교 안 한다(운영 앱 시험과 같다). 어긋남은 던지지 않고 센다 — 맞추기는 P13.
+ * 1,820 대조 틀 — 정답지 건마다 그날 입력을 만들어 새 엔진을 돌리고 A·B·C·X 이름 목록을 순서까지 비교한다(운영 앱 시험의 join() 비교와 같다).
+ * X = 제외 사유에 「담임이 함께」가 든 담임(보조 인력만 든 반). 그 밖의 사유 글자는 비교 안 한다. 어긋남은 던지지 않고 센다.
  */
 import { substituteCandidates, type CandInput, type SubQuery, type SubResult } from './candidates'
 
 export interface CanonCase { dayIndex: number; start: string | number; end: string | number; self: string | null; A: string[]; B: string[]; C: string[]; X: string[] }
-export interface CanonDiff { index: number; group: 'A' | 'B' | 'C' | 'X'; missing: string[]; extra: string[] }
+/** order: 이름은 같은데 순서만 다름 */
+export interface CanonDiff { index: number; group: 'A' | 'B' | 'C' | 'X'; missing: string[]; extra: string[]; order?: true }
 export interface CanonReport { total: number; mismatched: number; skipped: number; diffs: CanonDiff[] }
 
 /** 건 → 그날 입력·질의. 입력을 못 만들면 null(그 건은 skipped) */
@@ -32,11 +33,12 @@ export function runCanon(cases: CanonCase[], adapter: CanonAdapter, range?: { fr
     rep.total++
     const r: SubResult = substituteCandidates(built.input, built.query)
     const names = (xs: { id: string }[]) => xs.map((x) => built!.nameOf(x.id))
-    const got = { A: names(r.A), B: names(r.B), C: names(r.C), X: names(r.excluded.filter((e) => e.code === 'homeroom-with-aux')) } // X = 보조 인력만 든 반(그 밖의 제외는 정답지에 없다)
+    const got = { A: names(r.A), B: names(r.B), C: names(r.C), X: names(r.excluded.filter((e) => e.reason.includes('담임이 함께'))) } // X = 보조 인력만 든 반(그 밖의 제외는 정답지에 없다)
     let bad = false
     for (const g of ['A', 'B', 'C', 'X'] as const) {
       const d = compareGroup(c[g] ?? [], got[g])
       if (d.missing.length || d.extra.length) { bad = true; rep.diffs.push({ index, group: g, ...d }) }
+      else if (got[g].join() !== (c[g] ?? []).join()) { bad = true; rep.diffs.push({ index, group: g, ...d, order: true }) }
     }
     if (bad) rep.mismatched++
   })

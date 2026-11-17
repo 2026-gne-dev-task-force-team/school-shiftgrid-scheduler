@@ -8,7 +8,7 @@ import type { CanonAdapter, CanonCase } from './canon'
 
 interface Slot { index: number; label?: string; start: string; end: string; kind?: string; assignable?: boolean }
 interface Grid {
-  agents: { id: string; name: string; role: string }[]
+  agents: { id: string; name: string; role: string; tier?: number; attr?: Record<string, unknown> }[]
   specs: { id: string; lessonsPerDay?: Record<string, number>; slots: Slot[] }[]
   tracks: { name: string; specId: string; grade: number | null }[]
   assignments: { trackId?: string; dayIndex: number; slotIndex: number; agentId: string; coAgentId?: string; label?: string }[]
@@ -27,7 +27,8 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
   const agentName = new Map(g.agents.map((a) => [a.id, a.name]))
   const trackByName = new Map(g.tracks.map((t) => [t.name, t]))
   const idOfTrack = new Map(g.tracks.map((t) => [t.name, 't-' + t.name]))
-  const kindOf = (role: string) => (role === '비교과' ? '비교과' : '전담')
+  // 원문 subDayFromDoc 과 같다: tier 3 은 보조 인력, 그 밖은 role 로 비교과/전담
+  const kindOf = (a: Grid['agents'][number]) => (a.tier === 3 ? '보조' : a.role === '비교과' ? '비교과' : '전담')
 
   const build = (dayIndex: number): CandInput => {
     const tracks: CandTrack[] = g.tracks.map((t) => {
@@ -55,7 +56,7 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
     })
     const people: CandInput['people'] = [
       ...g.tracks.map((t) => ({ id: 'homeroom:' + t.name, name: t.name, kind: '담임' })),
-      ...g.agents.map((a) => ({ id: a.id, name: a.name, kind: kindOf(a.role) })),
+      ...g.agents.map((a) => ({ id: a.id, name: a.name, kind: kindOf(a),...(typeof a.attr?.직무 === 'string' ? { role: a.attr.직무 } : {}) })),
     ]
     const busy: CandInput['busy'] = []
     for (const b of g.weeklyBlocks ?? []) {
@@ -71,7 +72,7 @@ export function makeGridAdapter(json: unknown): CanonAdapter {
     let input = cache.get(c.dayIndex)
     if (!input) { input = build(c.dayIndex); cache.set(c.dayIndex, input) }
     const nameOf = (id: string) => (id.startsWith('homeroom:') ? id.slice('homeroom:'.length) : agentName.get(id) ?? id)
-    return { input, query: { trackName: c.self ?? '', startMin: toMin(c.start), endMin: toMin(c.end), absentId: c.self == null ? null : 'homeroom:' + c.self }, nameOf }
+    return { input, query: { trackName: c.self,startMin: toMin(c.start), endMin: toMin(c.end), absentId: c.self == null ? null : 'homeroom:' + c.self }, nameOf }
   }
 }
 
