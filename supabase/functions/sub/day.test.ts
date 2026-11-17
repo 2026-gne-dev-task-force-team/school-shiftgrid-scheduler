@@ -2,7 +2,9 @@
 // ⛔ 실명 — 가짜 이름만.
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { AuthClient } from '../_shared/auth.ts';
-import { byteaToHex, openPartBody, sealPart, type PartsReadDb } from '../_shared/doc.ts';
+import { ScopeError } from '../_shared/crypto-scope.ts';
+import { byteaToHex, openPartBody, openRowBody, sealPart, type PartsReadDb } from '../_shared/doc.ts';
+import { openDocFor } from '../parts/doc.ts';
 import type { Bytes, KeyRing } from '../_shared/crypto/envelope.ts';
 import { buildKeyRing, parseKeys } from '../_shared/crypto/keys.ts';
 import { auxOn, calendarOn, dayIndexOf, dayLoader, gridDay, SIDE_PARTS } from './day.ts';
@@ -47,7 +49,10 @@ beforeAll(async () => {
 });
 
 type CtRow = { version: number; ct: Bytes };
-/** 가짜 supabase — `from('parts').select().eq().eq().maybeSingle()` 만. 연 횟수를 센다(전체 `reads` · 조각별 `by`). */
+/**
+ * 가짜 supabase — 조각 하나 `from('parts').select().eq().eq().maybeSingle()` 와 판 목록 `from('parts').select().eq().or(…)`(openDocFor).
+ * 연 횟수를 센다(전체 `reads` · 조각별 `by` — 판 목록 읽기는 `by.doc`). 판 목록 = 지금 판 `row` + `side` 의 `doc@<n>`.
+ */
 function fakeDb(row: CtRow | null, side: Record<string, CtRow> = {}): PartsReadDb & { reads: number; by: Record<string, number> } {
     const db = {
         reads: 0,
@@ -59,6 +64,12 @@ function fakeDb(row: CtRow | null, side: Record<string, CtRow> = {}): PartsReadD
             const q = {
                 select: () => q,
                 eq: (c: string, v: string) => ((f[c] = v), q),
+                or: async () => {
+                    db.by.doc = (db.by.doc ?? 0) + 1;
+                    if (f.project_id !== PID) return { data: [], error: null };
+                    const all: [string, CtRow][] = [...(row ? [['doc', row] as [string, CtRow]] : []), ...Object.entries(side).filter(([k]) => k.startsWith('doc@'))];
+                    return { data: all.map(([part, r]) => ({ part, version: r.version, size_plain: 0, ct: byteaToHex(r.ct) })), error: null };
+                },
                 maybeSingle: async () => {
                     db.by[f.part] = (db.by[f.part] ?? 0) + 1;
                     const r = f.project_id !== PID ? null : f.part === 'doc' ? row : side[f.part] ?? null;
@@ -108,7 +119,14 @@ function fakeStore(): SubStore {
     };
 }
 
-/** index.ts 와 같은 묶음 — 요청마다 새 dayLoader(openPartBody) */
+/** index.ts 와 같은 묶음 — 곁 조각은 openPartBody, 시간표 판은 openDocFor(…)?.doc */
+const loaderOf = (db: PartsReadDb) =>
+    dayLoader(
+        (pid, part) => openPartBody('sub', ring, db, pid, part),
+        async (pid, date) => (await openDocFor('sub', ring, db, pid, date))?.doc ?? null,
+    );
+
+/** index.ts 와 같은 묶음 — 요청마다 새 dayLoader(loaderOf) */
 function setup(db: PartsReadDb) {
     let n = 0;
     const base: Omit<SubDeps, 'loadDay' | 'loadJudge'> = {
@@ -119,7 +137,7 @@ function setup(db: PartsReadDb) {
         },
         clock: CLOCK, newId: () => `s${++n}`, allowedOrigin: ORIGIN,
     };
-    const h = (req: Request) => subHandler({ ...base, ...dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)) })(req);
+    const h = (req: Request) => subHandler({ ...base, ...loaderOf(db) })(req);
     return async (tok: string, method: string, path: string, body?: unknown) => {
         const res = await h(new Request(`https://ref.supabase.co/functions/v1/sub/projects/${PID}/${path}`, {
             method, headers: { Authorization: `Bearer ${tok}`, Origin: ORIGIN, 'Content-Type': 'application/json' },
@@ -244,14 +262,14 @@ describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', (
             ],
         });
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        const d = await dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)).loadDay(PID, '2026-11-17');
+        const d = await loaderOf(db).loadDay(PID, '2026-11-17');
         expect(d.ok && d.tracks[0].lessons.map((l) => l.subject)).toEqual([null, '체육']);
     });
 
     it('fixed 조각은 busy 로 · aux 없으면 null(partial) · 있으면 그날 배정', async () => {
         const side = await sealSide({ 'ops.fixed': [{ id: 'f1', personRef: 'a2', dayIndex: 1, startMin: 540, endMin: 580, reason: '회의' }] });
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        const j = await dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)).loadJudge(PID, '2026-11-17', []);
+        const j = await loaderOf(db).loadJudge(PID, '2026-11-17', []);
         expect(j.ok && j.input.busy).toEqual([{ personId: 'a2', startMin: 540, endMin: 580, reason: '회의' }]);
         expect(auxOn(null, '2026-11-17', 1)).toBeNull();
         const aux = {
@@ -273,7 +291,7 @@ describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', (
 describe('D1 그날 입력 조립 순서 0~⑦ · partial aux (설계 ① 10절)', () => {
     const load = (side: Record<string, CtRow>) => {
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        return dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part));
+        return loaderOf(db);
     };
     const slot = { absentId: 'a1', allDay: false, startMin: 590, endMin: 630, status: '확정', takerId: 'a2', trackName: '1-1' } as never;
 
@@ -326,5 +344,78 @@ describe('D1 그날 입력 조립 순서 0~⑦ · partial aux (설계 ① 10절)
         const d = await c.loadDay(PID, '2026-11-17');
         expect(d.ok && 'partial' in d && d.partial).toEqual([]);
         expect(await c.loadDay(PID, '2026-11-14')).toEqual({ ok: false, offReason: '주말' });
+    });
+});
+
+describe('③ 응답 partial — aux 가 없거나 못 열렸으면 reg-options·register·상세에 partial:["aux"]', () => {
+    const flow = async (side: Record<string, CtRow>) => {
+        const call = setup(fakeDb({ version: 3, ct: docCt }, side));
+        const opt = await call('tokB', 'GET', 'reg-options?date=2026-11-17');
+        const r = await call('tokB', 'POST', 'register', reg);
+        const det = await call('tokB', 'GET', r.json.rows[0].id);
+        expect([opt.status, r.status, det.status]).toEqual([200, 200, 200]);
+        return [opt.json, r.json, det.json];
+    };
+    it('aux 조각이 없으면 셋 다 partial:["aux"]', async () => {
+        for (const j of await flow({})) expect(j.partial).toEqual(['aux']);
+    });
+    it('aux 본문이 꼴이 틀려 못 읽으면(배열) 셋 다 partial:["aux"]', async () => {
+        for (const j of await flow(await sealSide({ 'ops.aux': [] }))) expect(j.partial).toEqual(['aux']);
+    });
+    it('aux 가 있으면 partial 칸이 없다', async () => {
+        for (const j of await flow(await sealSide({ 'ops.aux': { staff: [], base: [], day: [], exceptions: [] } }))) expect('partial' in j).toBe(false);
+    });
+});
+
+describe('④ 여는 범위 밖은 열지 않는다(crypto-scope 배선)', () => {
+    it("openPartBody('sub', …, 'ops.rooms') 는 ScopeError — DB 를 읽지도 않는다", async () => {
+        const db = fakeDb({ version: 3, ct: docCt }, await sealSide({ 'ops.rooms': [] }));
+        await expect(openPartBody('sub', ring, db, PID, 'ops.rooms')).rejects.toBeInstanceOf(ScopeError);
+        await expect(openPartBody('rooms', ring, db, PID, 'ops.aux')).rejects.toBeInstanceOf(ScopeError);
+        await expect(openPartBody('health', ring, db, PID, 'doc')).rejects.toBeInstanceOf(ScopeError);
+        expect(db.reads).toBe(0);
+    });
+    it('보관 판 doc@<n> 은 doc@* 범위가 없는 함수(rooms·account)가 못 연다 · sub 는 연다', async () => {
+        const row = { part: 'doc@2', version: 2, sizePlain: 0, ct: await sealPart(ring, PID, 'doc@2', 2, { fmt: 1, body: DOC }) };
+        await expect(openRowBody('rooms', ring, PID, row)).rejects.toBeInstanceOf(ScopeError);
+        await expect(openRowBody('account', ring, PID, row)).rejects.toBeInstanceOf(ScopeError);
+        await expect(openRowBody('sub', ring, PID, row)).resolves.toMatchObject({ meta: { schemaVersion: 3 } });
+    });
+    it('범위 밖 오류 메시지엔 모르는 조각 이름을 싣지 않는다', async () => {
+        const e = await openPartBody('sub', ring, fakeDb(null), PID, 'ops.가짜비밀').catch((x: unknown) => x);
+        expect(e).toBeInstanceOf(ScopeError);
+        expect((e as Error).message).not.toContain('가짜비밀');
+    });
+});
+
+describe('⑤ 그날을 덮는 시간표 판 — dayLoader 가 날짜마다 한 번만 연다', () => {
+    /** 지금 판은 2026-08-24~ (a1 이 화요일 1-1 2교시) · 보관 판 doc@4 는 봄 학기(a1 이 화요일 1-1 1교시) */
+    const SPRING = { ...DOC, assignments: [{ trackId: 't1', dayIndex: 1, slotIndex: 0, agentId: 'a1', activityId: 'm' }] };
+    const wrapped = async () => ({
+        now: { version: 3, ct: await sealPart(ring, PID, 'doc', 3, { fmt: 1, body: { doc: DOC, validFrom: '2026-08-24', validTo: '2027-02-28' } }) },
+        side: { 'doc@4': { version: 4, ct: await sealPart(ring, PID, 'doc@4', 4, { fmt: 1, body: { doc: SPRING, validFrom: '2026-03-02', validTo: '2026-07-20' } }) } },
+    });
+    it('지난 날은 그 기간의 보관 판으로 · 오늘은 지금 판으로', async () => {
+        const { now, side } = await wrapped();
+        const c = loaderOf(fakeDb(now, side));
+        const spring = await c.loadDay(PID, '2026-05-05'); // 화요일
+        const fall = await c.loadDay(PID, '2026-11-17');
+        expect(spring.ok && spring.tracks[0].lessons.map((l) => l.teacherIds)).toEqual([['a1'], []]);
+        expect(fall.ok && fall.tracks[0].lessons.map((l) => l.teacherIds)).toEqual([[], ['a1']]);
+    });
+    it('같은 날짜는 loadDay·loadJudge 를 여러 번 불러도 판 목록을 한 번만 읽는다 · 날짜가 다르면 따로', async () => {
+        const { now, side } = await wrapped();
+        const db = fakeDb(now, side);
+        const c = loaderOf(db);
+        await c.loadDay(PID, '2026-11-17');
+        await c.loadJudge(PID, '2026-11-17', []);
+        await c.loadJudge(PID, '2026-11-17', []);
+        expect(db.by.doc).toBe(1);
+        await c.loadDay(PID, '2026-05-05');
+        expect(db.by.doc).toBe(2);
+        expect(db.by['ops.aux']).toBe(1);
+    });
+    it('판이 하나도 없으면 503 day_unavailable', async () => {
+        await expect(loaderOf(fakeDb(null)).loadDay(PID, '2026-11-17')).rejects.toMatchObject({ status: 503, code: 'day_unavailable' });
     });
 });

@@ -1,6 +1,6 @@
 // Deno 진입점(얇은 자리) — 판정은 handler.ts. 이 파일은 Node 시험에서 import 하지 않는다(tsc 만 본다).
 // supabase-js 는 Deno 의 `npm:` 지정자로 실행 때 불러온다(Node tsc 가 해석하지 않게 문자열 변수로).
-// 그날 입력(loadDay·loadJudge)은 day.ts — 요청마다 새 dayLoader 를 묶어 doc·곁 조각을 그 요청 안에서 조각마다 한 번만 연다(_shared/doc.ts).
+// 그날 입력(loadDay·loadJudge)은 day.ts — 요청마다 새 dayLoader 를 묶어 곁 조각은 조각마다(_shared/doc.ts), 그날을 덮는 시간표 판은 날짜마다(parts/doc.ts openDocFor) 그 요청 안에서 한 번만 연다.
 // register 쓰기(조건부 delete → insert)는 RPC `sub_register`(마이그레이션 0002) 한 트랜잭션 — rows.ts `rpcRegister`.
 
 import type { AuditStore } from '../_shared/audit.ts';
@@ -10,6 +10,7 @@ import { aadSub, aadUser } from '../_shared/crypto/aad.ts';
 import { openText, type Bytes } from '../_shared/crypto/envelope.ts';
 import { ensureKeys } from '../_shared/crypto/keys.ts';
 import { openPartBody, type PartsReadDb } from '../_shared/doc.ts';
+import { openDocFor } from '../parts/doc.ts';
 import { dayLoader } from './day.ts';
 import { subHandler, type SubDeps, type SubStore } from './handler.ts';
 import { rpcRegister, type DbSlot, type RpcDb } from './rows.ts';
@@ -129,4 +130,13 @@ const base: Omit<SubDeps, 'loadDay' | 'loadJudge'> = {
 };
 
 // 요청마다 새 loadDay·loadJudge — 조각 열기 memo 가 요청 사이로 새지 않게(키 회전·조각 갱신을 바로 본다)
-deno.serve((req) => subHandler({ ...base, ...dayLoader(async (pid, part) => openPartBody('sub', await ring(), db as unknown as PartsReadDb, pid, part)) })(req));
+const partsDb = db as unknown as PartsReadDb;
+deno.serve((req) =>
+    subHandler({
+        ...base,
+        ...dayLoader(
+            async (pid, part) => openPartBody('sub', await ring(), partsDb, pid, part),
+            async (pid, date) => (await openDocFor('sub', await ring(), partsDb, pid, date))?.doc ?? null,
+        ),
+    })(req),
+);

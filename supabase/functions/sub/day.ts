@@ -186,7 +186,7 @@ const WEEKEND = '주말';
 
 /** doc 곁에 얹는 조각 — 없으면 빈 값(aux 는 partial) */
 export const SIDE_PARTS = ['ops.calendar', 'ops.changes', 'ops.fixed', 'ops.classSubjects', 'ops.aux'] as const;
-export type DayPart = 'doc' | (typeof SIDE_PARTS)[number];
+export type SidePart = (typeof SIDE_PARTS)[number];
 
 /** 곁 조각이 빠진 채 계산했다는 표시(설계 ① 10절 ⑦ — 조용한 실패 금지). handler 의 DayResult·JudgeResult 에 얹어 돌려준다. */
 export type DayPartial = { partial: 'aux'[] };
@@ -196,31 +196,37 @@ type JudgeLoaded = Extract<JudgeResult, { ok: true }> & DayPartial;
 type Day = { off: string } | { g: GridDay; build: (slots: SlotItem[]) => ReturnType<typeof buildDayInput> };
 
 /**
- * 요청 하나 몫의 loadDay·loadJudge — `open(pid, part)` 은 그 요청 안에서 조각마다 한 번만 부른다(assign·force 가 둘 다 불러도).
- * doc 이 null(조각 없음)이면 503 `day_unavailable` · 곁 조각이 null 이면 빈 값(aux 는 partial) · 복호 실패(500 `decrypt_failed`)는 `open` 이 던진 그대로.
+ * 요청 하나 몫의 loadDay·loadJudge — 그 요청 안에서 곁 조각은 조각마다, 시간표 판은 날짜마다 한 번만 연다(assign·force 가 둘 다 불러도).
+ * - `open(pid, part)`: 곁 조각 하나 → 본문(없으면 null)
+ * - `openDoc(pid, date)`: 그날을 덮는 시간표 판(D3 · parts/doc.ts openDocFor 의 `.doc`) → 시간표 v3 꼴(판이 없으면 null)
+ * doc 이 null 이면 503 `day_unavailable` · 곁 조각이 null 이면 빈 값(aux 는 partial) · 복호 실패(500 `decrypt_failed`)는 여는 쪽이 던진 그대로.
  */
-export function dayLoader(open: (projectId: string, part: DayPart) => Promise<unknown | null>): {
+export function dayLoader(
+    open: (projectId: string, part: SidePart) => Promise<unknown | null>,
+    openDoc: (projectId: string, date: string) => Promise<unknown | null>,
+): {
     loadDay(projectId: string, date: string): Promise<DayResult | DayLoaded>;
     loadJudge(projectId: string, date: string, slots: SlotItem[]): Promise<JudgeResult | JudgeLoaded>;
 } {
     const memo = new Map<string, Promise<unknown | null>>();
-    const part = (pid: string, name: DayPart) => {
-        const k = `${pid} ${name}`;
+    const once = (k: string, f: () => Promise<unknown | null>) => {
         let p = memo.get(k);
         if (!p) {
-            p = open(pid, name);
+            p = f();
             memo.set(k, p);
         }
         return p;
     };
-    const doc = async (pid: string) => {
-        const d = await part(pid, 'doc');
+    const part = (pid: string, name: SidePart) => once(`${pid} ${name}`, () => open(pid, name));
+    // 판 열기는 날짜 단위(그날을 덮는 판이 날마다 다를 수 있다) — 키에 조각 이름과 겹치지 않는 `doc:` 머리
+    const doc = async (pid: string, date: string) => {
+        const d = await once(`${pid} doc:${date}`, () => openDoc(pid, date));
         if (d == null) throw unavailable();
         return d;
     };
     const day = async (pid: string, date: string): Promise<Day> => {
         const dayIndex = dayIndexOf(date);
-        const [body, cal, chg, fix, cls, aux] = await Promise.all([doc(pid), ...SIDE_PARTS.map((n) => part(pid, n))]);
+        const [body, cal, chg, fix, cls, aux] = await Promise.all([doc(pid, date), ...SIDE_PARTS.map((n) => part(pid, n))]);
         if (dayIndex > 4) return { off: WEEKEND };
         const g = gridDay(body, dayIndex);
         const people = [...g.tracks.map((t) => ({ id: 'homeroom:' + t.name, name: `${t.name} 담임`, kind: '담임' })), ...g.people];
