@@ -2,7 +2,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { activateAll, disablePlugin, enablePlugin, listPlugins } from '../../pane-ui-system/plugin'
 import { getView } from '../../pane-ui-system/view-registry'
-import { PLUGINS } from '../../app/plugins'
+import { PLUGINS as APP_PLUGINS } from '../../app/plugins'
+import { v1EditorPlugin } from '.'
+// U20 F12 판 1(T-10fz): 앱 목록에서 내렸다 — 이 꾸러미의 시험만 제 손으로 끼워 돈다(판 2 에서 폴더째 걷는다).
+const PLUGINS = [...APP_PLUGINS, v1EditorPlugin]
 import { storageKey } from '../../pane-ui-system/storage'
 
 // T-10ec — v1-editor(옛 편성기)는 기본 꺼짐. 새 기기 꺼짐 / 쓰던 기기 켜짐 유지 / 켜기·끄기 왕복.

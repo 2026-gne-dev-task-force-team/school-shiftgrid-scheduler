@@ -47,10 +47,10 @@ describe('골든 — 실제 PLUGINS 활성·첫 실행 배치 순서(리팩토�
             // 🔴 P6b(2026-11-09): 층 순 — 플랫폼(코어 둘 먼저) → 범용 앱 → 학교 도메인. P2(2026-11-10): icon-pack-basic 이 코어가 돼 코어 묶음 끝으로 올라왔다. 순서를 바꾸려면 manifest.layer 와 PLUGINS 를 같이 고친다(plugins.test.ts).
             'settings', 'explorer', 'selection', 'properties', 'icon-pack-basic', 'page', 'collection', 'sheet', 'server-link',
             'calendar', 'account',
-            'people', 'rooms', 'room-booking', 'substitute', 'school', 'subjects', 'staff', 'bell', 'duty', 'timetable-grid', 'demand-table', 'timetable-solver', 'timetable-plans', 'v1-file', 'ops-check', 'ops-sub', 'ops-room', 'ops-days', 'ops-aux', 'v1-editor',
+            'people', 'rooms', 'room-booking', 'substitute', 'school', 'subjects', 'staff', 'bell', 'duty', 'timetable-grid', 'demand-table', 'timetable-solver', 'timetable-plans', 'v1-file', 'ops-check', 'ops-sub', 'ops-room', 'ops-days', 'ops-aux',
         ]);
-        // 🔴 T-10ec: v1-editor(옛 편성기)만 기본 꺼짐 — 새 기기엔 안 선다. 나머지는 전부 켜짐.
-        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual(['v1-editor']);
+        // 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기(v1-editor)를 목록에서 내렸다 — 기본 꺼짐 꾸러미가 없어 전부 켜짐.
+        expect(ps.filter((p) => !p.enabled).map((p) => p.id)).toEqual([]);
         expect(ps.some((p) => p.failed)).toBe(false);
         expect(ps.some((p) => p.blocked)).toBe(false);
     });

@@ -6,12 +6,12 @@
  *   ② 창 크기만 바꿔도 넓은/좁은 판이 따라간다 — matchMedia change 가 안 와도 resize 로 다시 잰다.
  *   ③ 리본 강조는 지금 열린 패널을 따른다.
  *   ④ ⌘K·Ctrl+K 로 명령 팔레트가 뜬다.
- *   ⑤ 리본 「v1 편성기」를 누르면 가운데에 탭이 선다.
+ *   ⑤ 리본 「자동 편성」을 누르면 가운데에 탭이 선다(U20 F12 판 1 — 옛 iframe 편성기를 내려 표본을 바꿨다).
  */
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { activateAll, enablePlugin } from '../pane-ui-system/plugin';
+import { activateAll } from '../pane-ui-system/plugin';
 import { setPlatform } from '../pane-ui-system/platform-keys';
 import { PLUGINS } from './plugins';
 import { Workbench } from './Workbench';
@@ -42,7 +42,6 @@ beforeAll(() => {
     (globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
     installScreen();
     activateAll(PLUGINS);
-    enablePlugin('v1-editor');   // 옛 편성기는 기본 꺼짐(T-10ec) — 이 시험은 켠 기기의 창틀을 잰다
 });
 
 let root: Root | null = null;
@@ -81,11 +80,11 @@ describe('① 리본이 창보다 길어도 문서가 밀리지 않는다', () =
     it('탭을 바꿔도 scrollIntoView 를 안 부른다(조상까지 굴려 화면을 민다)', () => {
         mount();
         // 탭 둘을 연 뒤 이미 선 탭으로 돌아간다 — 탭 줄이 활성 탭을 끌어오는 길을 탄다
-        act(() => { ribbonBtn('v1 편성기')!.click(); });
+        act(() => { ribbonBtn('자동 편성')!.click(); });
         act(() => { ribbonBtn('달력')!.click(); });
         scrollIntoViewCalls = 0;
-        act(() => { ribbonBtn('v1 편성기')!.click(); });
-        expect(host.querySelector('#main-content [data-pane-active="v1-editor.edit"]')).not.toBeNull();
+        act(() => { ribbonBtn('자동 편성')!.click(); });
+        expect(host.querySelector('#main-content [data-pane-active="timetable-solver.auto"]')).not.toBeNull();
         expect(scrollIntoViewCalls).toBe(0);
     });
 });
@@ -147,15 +146,15 @@ describe('④ ⌘K·Ctrl+K 로 명령 팔레트', () => {
     });
 });
 
-describe('⑤ 리본 「v1 편성기」 → 가운데에 탭', () => {
-    it('누르면 시간표 편성 탭이 가운데에 서고 활성이다', () => {
+describe('⑤ 리본 「자동 편성」 → 가운데에 탭', () => {
+    it('누르면 자동 편성 탭이 가운데에 서고 활성이다', () => {
         mount();
-        const b = ribbonBtn('v1 편성기');
+        const b = ribbonBtn('자동 편성');
         expect(b).toBeTruthy();
         act(() => { b!.click(); });
         // 가운데 탭 줄에 그 탭이 서고 활성이다
-        expect(host.querySelector('#main-content [data-tabbar] [data-row-id="v1-editor.edit"]')).not.toBeNull();
-        expect(host.querySelector('#main-content [data-pane-active="v1-editor.edit"]')).not.toBeNull();
+        expect(host.querySelector('#main-content [data-tabbar] [data-row-id="timetable-solver.auto"]')).not.toBeNull();
+        expect(host.querySelector('#main-content [data-pane-active="timetable-solver.auto"]')).not.toBeNull();
     });
 });
 
@@ -165,7 +164,7 @@ describe('⑥ 1280→390 창 줄이기 — 첫 그림부터 좁은 판(T-10ao 05
     const drawers = () => host.querySelectorAll('.fixed.inset-0').length;
     it('줄인 바로 그 그림에 붙박이 패널도, 미끄러져 나가는 서랍도 없다 · 늘리면 붙박이로 돌아온다', () => {
         mount();
-        act(() => { ribbonBtn('v1 편성기')!.click(); });
+        act(() => { ribbonBtn('자동 편성')!.click(); });
         expect(asides()).toBe(2);
         width = 390;
         act(() => { window.dispatchEvent(new Event('resize')); });   // 타이머를 기다리지 않는다(숨은 탭에선 안 돈다)
@@ -224,7 +223,7 @@ describe('⑦ 탭이 많을 때 새 탭을 탭 줄 안으로 끌어온다(T-10ao
         // 끝 탭을 고른 뒤(새 탭은 활성 탭 바로 뒤에 선다) 사람이 탭 줄을 맨 앞으로 되감아 둔다 — 새 탭이 줄 밖에 서는 판
         act(() => { rows().at(-1)!.click(); });
         strip.scrollLeft = 0;
-        // ⚠️ 앞 리본 가운데 하나가 v1 편성기 탭을 이미 연다 — 아직 안 연 리본(컬렉션)으로 「새 탭」을 세운다
+        // ⚠️ 아직 안 연 리본(컬렉션)으로 「새 탭」을 세운다
         const before = new Set(rows());
         act(() => { ribbonBtn('컬렉션')!.click(); });
         const tab = rows().find((e) => !before.has(e))!;

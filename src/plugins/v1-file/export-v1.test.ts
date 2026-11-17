@@ -14,7 +14,7 @@ import { migrateDoc } from '../timetable-solver/types/doc';
 import { toWeekday, toDayIndex } from '../timetable-solver/day';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
-import { sampleDoc } from '../v1-editor/legacy/io/sample';
+import { sampleDoc } from './__tests__/sample';
 
 const mods = { solver: { toWeekday }, clock: clockApi };
 const fresh = () => migrateDoc(JSON.parse(JSON.stringify(sampleDoc())));
