@@ -34,6 +34,8 @@ import { ListView } from './views/ListView';
 import { MonthView } from './views/MonthView';
 import { EventCardPeek } from './views/EventCardPeek';
 import { RecordPage } from '../collection/views/RecordPage';
+import { registerPreset, __resetPresets } from './presets';
+import { onSaveRejected } from './save-check';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 class RO { observe() {} unobserve() {} disconnect() {} }
@@ -61,7 +63,7 @@ beforeEach(async () => {
 });
 afterEach(() => {
     act(() => { root?.unmount(); }); root = null; document.body.innerHTML = '';
-    setCalendarHost(null); disp?.dispose(); disp = null; __resetPersistForTest();
+    setCalendarHost(null); __resetPresets(); disp?.dispose(); disp = null; __resetPersistForTest();
 });
 
 const api = () => getNodesApi()!;
@@ -156,6 +158,27 @@ describe('C2c-1 보기 — 반복 회차', () => {
         expect((m.data as SeriesData).originalStart).toBe(first);
         expect(props!.id).toBe(m.id);
         expect(api().get(id)!.name).toBe('회의');   // 규칙 일정 자체는 안 바뀐다
+    });
+
+    it('카드: 가상 회차 칸 값 고침이 저장 전 검증에 거절되면 실체 회차를 만들지 않는다 · 통과면 만든다', () => {
+        registerPreset({ id: 'test.gate', label: '문지기', icon: 'calendar', words: { store: '목록', event: '건', newEvent: '새 건', unit: '건' },
+            beforeSave: (d) => (d.values?.room === '막힘' || d.name === '막힌 이름' ? { ok: false, reason: '막힌 값' } : { ok: true }) });
+        api().setData(store, { ...(api().get(store)!.data as object), preset: 'test.gate' });
+        const { id, first } = weekly(3);
+        let props: { id: string; onChange: (k: string, v: unknown) => void } | null = null;
+        const RP = (p: typeof props) => { props = p; return null; };
+        setCalendarHost({ ...host(), modules: { use: () => ({ RecordPage: RP }) } } as unknown as PluginHost);
+        render(<EventCardPeek eventId={occId(id, first)} onClose={() => {}} />);
+        const reasons: string[] = [];
+        const off = onSaveRejected((r) => reasons.push(r));
+        act(() => { props!.onChange('room', '막힘'); });   // 사용자 칸
+        act(() => { props!.onChange('name', '막힌 이름'); });   // 기본 칸
+        off();
+        expect(reasons).toEqual(['막힌 값', '막힌 값']);
+        expect(live()).toBe(1);
+        expect(props!.id).toBe(id);
+        act(() => { props!.onChange('name', '통과 이름'); });
+        expect(live()).toBe(2);
     });
 
     it('F1 A: 가상 회차 카드를 실제 RecordPage 로 열면 「없어졌습니다」 대신 회차 단추가 보이고 하루 미루기가 동작한다', () => {
