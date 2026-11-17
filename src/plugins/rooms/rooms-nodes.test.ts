@@ -28,7 +28,7 @@ import { clearDerived } from '../../pane-ui-system/core/nodes/model/derive';
 import { flatten } from '../../pane-ui-system/core/nodes/model/tree';
 import { buildMainRows } from '../../pane-ui-system/core/explorer/views/rows';
 import { defineCollection } from '../collection/define';
-import { roomsNodeTypes, roomsNodeTypeImpl, LIST_TYPE, ROOM_TYPE, getKit, setKit } from './nodes';
+import { roomsNodeTypes, roomsNodeTypeImpl, LIST_TYPE, ROOM_TYPE, getKit, setKit, setNodes } from './nodes';
 import { ROOM_CONFIG } from './config';
 import { roomsApi } from './api';
 
@@ -46,6 +46,7 @@ function wire() {
     for (const nt of roomsNodeTypes) api.registerContributed(nt, { nodeTypes: roomsNodeTypeImpl }, host());
     setKit(defineCollection(ROOM_CONFIG));
     getKit()!.init(api);
+    setNodes(api);
     return api;
 }
 
@@ -54,7 +55,7 @@ beforeEach(async () => {
     clearTypes(); clearDerived(); __resetPersistForTest();
     await initStore(host());
 });
-afterEach(() => { getKit()?.init(null); setKit(null); __resetPersistForTest(); });
+afterEach(() => { getKit()?.init(null); setKit(null); setNodes(null); __resetPersistForTest(); });
 
 describe('타입 둘 — 목록은 보이고 방(record)은 탐색기 0줄', () => {
     it('접두사 rooms. · 목록은 flatten 에 · 방은 안 보이고 byType·children 엔 있다', () => {
@@ -129,5 +130,38 @@ describe('설정 — 기본 칸은 이름·메모, 트리(방 안에 방) 켜짐
         expect(ROOM_CONFIG.baseFields.map((f) => f.key)).toEqual(['name', 'memo']);
         expect(ROOM_CONFIG.baseFields.every((f) => f.locked)).toBe(true);
         expect(ROOM_CONFIG.tree).toEqual({ parentLabel: '부모 방' });
+    });
+});
+
+describe("방 속성 — ext['room-booking'] 읽기·쓰기", () => {
+    it('ext 없는 방은 기본값({active:true}) · 쓰기→읽기 왕복 · 이름·메모·부모·다른 ext 키는 그대로', () => {
+        const api = wire();
+        const lid = api.create(api.roots.main, { type: LIST_TYPE, name: '속성 목록' });
+        const a = roomsApi.addRoom(lid, { name: '큰 방', memo: '메모' });
+        const other = api.create(lid, { type: ROOM_TYPE, name: '남의 칸 방', data: { values: {}, ext: { other: { x: 1 } } } });
+        expect(roomsApi.roomProps(a)).toEqual({ active: true });
+        expect(roomsApi.roomProps('없는 방')).toEqual({ active: true });
+
+        roomsApi.setRoomProps(a, { capacity: 30, resourceKey: 'room-big', active: false, sort: 2 });
+        expect(roomsApi.roomProps(a)).toEqual({ capacity: 30, resourceKey: 'room-big', active: false, sort: 2 });
+        expect(roomsApi.room(a)).toMatchObject({ name: '큰 방', memo: '메모' });
+
+        // 부분 고치기 — 생략은 그대로 · null 은 지우기(active 는 기본값 복귀) · 잘못된 값은 그 칸만 무시
+        roomsApi.setRoomProps(a, { capacity: 40, resourceKey: null, active: null, sort: Number.NaN });
+        expect(roomsApi.roomProps(a)).toEqual({ capacity: 40, active: true, sort: 2 });
+        roomsApi.setRoomProps(a, { capacity: -1 });
+        expect(roomsApi.roomProps(a).capacity).toBe(40);
+
+        // 다른 위층 키(ext['other'])·같은 ext 의 다른 키를 안 건드린다
+        roomsApi.setRoomProps(other, { capacity: 5 });
+        expect(roomsApi.room(other)?.ext).toEqual({ other: { x: 1 }, 'room-booking': { capacity: 5 } });
+        // 이름 고치기·부모 정하기도 속성을 안 지운다
+        roomsApi.updateRoom(a, { name: '큰 방 2' });
+        roomsApi.setParentRoom(a, other);
+        expect(roomsApi.roomProps(a).capacity).toBe(40);
+        expect(roomsApi.room(a)?.parentId).toBe(other);
+        // 방이 아닌 노드(목록)에는 쓰지 않는다
+        roomsApi.setRoomProps(lid, { capacity: 9 });
+        expect((api.get(lid)?.data as { ext?: unknown } | undefined)?.ext).toBeUndefined();
     });
 });

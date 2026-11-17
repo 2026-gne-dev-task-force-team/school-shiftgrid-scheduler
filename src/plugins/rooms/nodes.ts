@@ -16,6 +16,11 @@ export { LIST_TYPE, ROOM_TYPE };
 // ── kit — 활성 때 만든다(꾸러미 사이 값 import 금지라 모듈로 받는다). 뷰·명령은 부를 때마다 읽는다. ──
 let kit: CollectionKit | null = null;
 export function getKit(): CollectionKit | null { return kit; }
+// 🔴 방 속성(ext) 쓰기용 — kit 는 ext 를 안 건드리니 NodesApi 를 따로 쥔다(활성 때 initRooms 가 건다).
+let nodesApi: NodesApi | null = null;
+export function getNodes(): NodesApi | null { return nodesApi; }
+export function setNodes(n: NodesApi | null): void { nodesApi = n; }
+
 /** 테스트가 직접 건넬 수 있다(활성 없이). */
 export function setKit(k: CollectionKit | null): void { kit = k; }
 
@@ -24,7 +29,9 @@ export function initRooms(host: PluginHost): Disposable | null {
     const rv = host.modules.use<RecordViewApi>('collection');
     const nodes = host.modules.use<NodesApi>('nodes');
     kit = rv ? rv.defineCollection(ROOM_CONFIG) : null;
-    return kit?.init(nodes ?? null) ?? null;
+    nodesApi = nodes ?? null;
+    const d = kit?.init(nodes ?? null) ?? null;
+    return { dispose() { d?.dispose(); nodesApi = null; } };
 }
 
 /**
