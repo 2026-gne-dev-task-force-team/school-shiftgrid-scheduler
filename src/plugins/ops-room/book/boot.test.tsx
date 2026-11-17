@@ -1,18 +1,13 @@
 // @vitest-environment jsdom
 /**
  * 기동 때 이사 시험(T-10f7) — 활성하면 옛 예약이 달력 일정으로 옮겨지고 · 약속이 꺼져 있으면 미루고(표시 안 씀) · 두 번 돌아도 같고 ·
- *   예약 화면 자리(RoomPanel)는 길잡이로 남아 기능이 사라지지 않는다(전후: 예약하기·빈 방·내 예약은 room-booking 화면에 있다).
  *   가짜 호스트(약속 모양만) · 시험 자료는 지어낸 이름만.
  */
-import { act, createElement } from 'react';
-import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { opsRoomPlugin } from '../index';
-import { RoomPanel } from '../RoomPanel';
 import { initRoomMigration, runRoomMigration } from './boot';
 import { LS_KEY, isMoved, movedKeyOf } from './migrate';
-import { demoPart } from './source';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 beforeEach(() => { localStorage.clear(); });
@@ -47,6 +42,7 @@ function world(opts: { calendar?: boolean; rooms?: boolean } = {}) {
     const host = { modules: { use: (n: string) => mods[n] ?? null }, workspace: { open: () => undefined } } as unknown as PluginHost;
     return { host, events: () => [...map.values()].filter((n) => n.type === 'calendar.event'), fire: () => subs.forEach((f) => f()), mods };
 }
+const demoPart = () => ({ rooms: [{ id: 'r-sci', name: '과학실', capacity: 2, resourceKey: 'sci', active: true, sort: 1, note: '' }], fixed: [], blocks: [], timetable: [] });
 const stash = () => localStorage.setItem(LS_KEY, JSON.stringify({ part: demoPart(), rows: [{ id: 'x1', projectId: 'p1', roomId: 'k-sci', date: '2026-11-19', startMin: 540, endMin: 580, slotNo: 1, trackName: '1-1', createdAt: 't1', body: { userId: 'u1', userName: '교사01', note: '' } }] }));
 
 describe('특별실 예약 — 기동 때 이사', () => {
@@ -83,19 +79,5 @@ describe('특별실 예약 — 기동 때 이사', () => {
         w.fire();
         expect(w.events()).toHaveLength(1);
         d.dispose();
-    });
-});
-
-describe('특별실 예약 화면 자리 — 전후', () => {
-    it('옛 읽기 없이 길잡이만 남고, 예약 기능은 room-booking 으로 이어진다', async () => {
-        const opened: string[] = [];
-        const host = { modules: { use: () => ({ cmd: { book: 'rb-book' } }) }, commands: { run: (id: string) => { opened.push(id); } } } as unknown as PluginHost;
-        const el = document.createElement('div');
-        document.body.appendChild(el);
-        await act(async () => createRoot(el).render(createElement(RoomPanel, { host })));
-        expect(el.textContent).toContain('예약하기 · 빈 방 찾기 · 내 예약');
-        await act(async () => { el.querySelector('button')!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
-        expect(opened).toEqual(['rb-book']);
-        expect(opsRoomPlugin.manifest.supports).toMatchObject({ calendar: expect.any(String), rooms: expect.any(String), nodes: expect.any(String) });
     });
 });

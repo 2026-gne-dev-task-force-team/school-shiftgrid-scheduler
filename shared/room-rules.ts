@@ -5,7 +5,7 @@
  *   교시는 학년 기준으로 고르고(화면), 충돌은 시각(분)으로 본다(여기). 시각은 분 정수.
  *   취소는 본인과 교감·교무·관리자만. 지나간 날짜는 아무도 못 지운다(관리자도).
  * 운영 앱 rooms.ts 의 roomDay·reserve·취소·빈 방 찾기·timeLabels 에서 DB·HTTP 를 걷어 낸 것.
- * 🔴 판정 정본은 이 파일 하나(R111) — 플러그인 `src/plugins/ops-room/book/` 은 꼴만 옮겨 여기를 부른다. 자리 번호를 차례로 넣어 보는 반복은 저장 창구(`book/source.ts` saveReservation) 한 곳.
+ * 🔴 판정 정본은 이 파일 하나(R111) — 플러그인 `src/plugins/room-booking/` 이 여기를 부른다(옛 `ops-room/book/` 예약 코드는 걷었다).
  * 서버 단계(이 레포엔 supabase/ 마이그레이션 없음): 마이그레이션에 유일 제약 둘 UNIQUE(room,date,start_min,slot_no)·UNIQUE(room,date,start_min,track) + CHECK(slot_no>=1) · 예약 함수는 이 모듈(decideReserve·freeSlots)을 불러 후보 번호를 차례로 INSERT, 유일 위반이면 다음 번호.
  */
 import { seoulDay, toHHMM } from './clock.ts'
