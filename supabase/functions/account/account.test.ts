@@ -75,6 +75,13 @@ function memStore() {
         async projectNames(ids) {
             return ids.filter((i) => projects.has(i)).map((i) => ({ id: i, nameCt: projects.get(i)!.nameCt }));
         },
+        // ② 경로는 account-admin.test.ts 가 잰다
+        insertInvites: async () => undefined,
+        listInvites: async () => [],
+        revokeInvite: async () => 'missing',
+        listMembers: async () => [],
+        updateMember: async () => 'missing',
+        readDoc: async () => null,
     };
     return { store, invites, members, projects };
 }
@@ -121,6 +128,8 @@ function fakeAuth(users: Record<string, string> = { 'jwt-a': 'u-a', 'jwt-b': 'u-
                     created.push(attrs);
                     return { data: { user: { id: `new-${created.length}` } }, error: null };
                 },
+                getUserById: async () => ({ data: { user: null }, error: { status: 404 } }),
+                generateLink: async () => ({ data: null, error: { status: 500 } }),
             },
         },
         from: () => {
