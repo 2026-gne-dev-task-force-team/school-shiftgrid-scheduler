@@ -10,14 +10,22 @@ import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PlanBlocker } from './contracts/solver';
 import { readAndBuild, canonSourcesFromHost } from './read-canon';
 
-/** 지금 정본에서 편성 막힘을 센다. 시간·복무 셈 약속이 꺼져 있으면 그 사실이 막힘이다. */
-export function blockersOfHost(host: PluginHost): PlanBlocker[] {
+export type HostBuild = ReturnType<typeof readAndBuild>;
+
+/** 지금 정본에서 편성 입력과 막힘을 읽는다. 시간·복무 셈 약속이 꺼져 있으면 null(그 사실은 blockersOfHost 가 막힘으로 돌려준다). */
+export function buildOfHost(host: PluginHost): HostBuild | null {
     const clock = host.modules.use<Clock>('clock');
     const duty = host.modules.use<Duty>('duty');
-    if (!clock || !duty) {
-        return [{ code: 'calc-off', level: 'stop', message: `${!clock ? '일과표' : '복무'} 플러그인이 꺼져 있어 시간을 셀 수 없습니다` }];
-    }
-    return readAndBuild(canonSourcesFromHost(host), { clock, duty }).blockers;
+    if (!clock || !duty) return null;
+    return readAndBuild(canonSourcesFromHost(host), { clock, duty });
+}
+
+/** 지금 정본에서 편성 막힘을 센다. 시간·복무 셈 약속이 꺼져 있으면 그 사실이 막힘이다. */
+export function blockersOfHost(host: PluginHost): PlanBlocker[] {
+    const built = buildOfHost(host);
+    if (built) return built.blockers;
+    const noClock = !host.modules.use<Clock>('clock');
+    return [{ code: 'calc-off', level: 'stop', message: `${noClock ? '일과표' : '복무'} 플러그인이 꺼져 있어 시간을 셀 수 없습니다` }];
 }
 
 export const stopsOf = (bs: readonly PlanBlocker[]): PlanBlocker[] => bs.filter((b) => b.level === 'stop');
