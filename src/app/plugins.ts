@@ -48,7 +48,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 // 🔴 코어 넷(settings·explorer·selection·properties)은 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
 //    탐색기 꾸러미가 nodes 약속을 들고 오므로(contributes.interfaces), nodes 는 코어 꾸러미에 묶여 끌 수 없는 범용 약속으로 선다.
 // 📌 2026-11-01 21:47 쥔님: Pane UI Test 는 런타임 등록 해지(paneTestPlugin 을 뺐다 · 코드·폴더는 그대로).
-// 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기(v1-editor)를 카탈로그·site.config 에서 내렸다(폴더 걷기는 판 2).
+// 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기를 카탈로그·site.config 에서 내렸다 · 판 2(T-10g4)에서 폴더째 걷었다.
 // 카탈로그 = 「설치할 수 있는 것」(정적 번들). 무엇이 깔리나·순서는 site.config.json 의 plugins 가 정한다(활성 순서가 골든).
 const CATALOG: Record<string, PluginModule> = {
     page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, 'server-link': serverLinkPlugin, calendar: calendarPlugin, account: accountPlugin,
