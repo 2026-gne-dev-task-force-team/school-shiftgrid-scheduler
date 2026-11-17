@@ -3,7 +3,7 @@
  *   🔴 이름은 정본(staff·school·subjects·rooms)에서 읽는다 · 화면 밖(메뉴·창틀)은 인쇄할 때 숨긴다.
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { Button, Segmented } from '../../../pane-ui-system';
+import { Button, Checkbox, Segmented, Select } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { canonOf, labelFrom } from '../labels';
 import { subscribePlans, getPlanNodes, planOf } from '../nodes';
@@ -66,19 +66,14 @@ export function PrintTab({ host, planId, onClose }: { host: PluginHost; planId?:
             <style>{PRINT_CSS}</style>
             <div className="tt-print-hide flex flex-wrap items-center gap-2">
                 <Button onClick={onClose}>← 편성안으로</Button>
-                <select aria-label="인쇄할 편성안" className="border border-line rounded bg-bg text-text p-1" value={pid ?? ''} onChange={(e) => { setPid(e.target.value || null); setOne(null); }}>
-                    <option value="">편성안 고르기</option>
-                    {nodes.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
-                </select>
+                <Select label="인쇄할 편성안" placeholder="편성안 고르기" value={pid ?? ''} onChange={(e) => { setPid(e.target.value || null); setOne(null); }}
+                    options={nodes.map((n) => ({ value: n.id, label: n.name }))} />
                 <Segmented label="시간표 종류" value={kind} onChange={(k) => { setKind(k); setOne(null); }} options={PRINT_KINDS.map((k) => ({ value: k.kind, label: k.label }))} />
                 {!all && sheets.length > 1 && (
-                    <select aria-label="인쇄할 장" className="border border-line rounded bg-bg text-text p-1" value={one ?? sheets[0].id} onChange={(e) => setOne(e.target.value)}>
-                        {sheets.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-                    </select>
+                    <Select label="인쇄할 장" value={one ?? sheets[0].id} onChange={(e) => setOne(e.target.value)}
+                        options={sheets.map((x) => ({ value: x.id, label: x.title }))} />
                 )}
-                <label className="flex items-center gap-1 text-text">
-                    <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> 모든 {kindLabel} 묶음으로
-                </label>
+                <Checkbox checked={all} onChange={setAll} label={`모든 ${kindLabel} 묶음으로`} />
                 <Button variant="accent" onClick={() => window.print()} disabled={shown.length === 0}>인쇄</Button>
             </div>
             {!pid && <p className="tt-print-hide text-muted">인쇄할 편성안을 골라 주세요.</p>}
