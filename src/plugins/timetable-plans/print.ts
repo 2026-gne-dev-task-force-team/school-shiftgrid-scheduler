@@ -17,9 +17,19 @@ export interface PrintSheet {
     title: string;
     days: { day: PlanDay; name: string }[];
     periods: number[];
+    /** periods 와 같은 순서 — 그 교시의 시각 「09:00–09:40」. 일과표를 모르면 필드째 없다(「N교시」만). */
+    times?: (string | null)[];
     /** cells[교시 줄][요일 칸] — 빈 칸은 ''. 한 칸에 둘 이상 겹치면 줄바꿈으로 잇는다. */
     cells: string[][];
 }
+
+/** 시각을 알려 주는 쪽(일과표 약속 clock)에서 받는 두 함수 — 순수 셈이라 약속 값을 직접 안 본다. */
+export interface PrintTimes {
+    gradeOf(classId: string): number | undefined;
+    timeOf(grade: number, period: number): { start: string; end: string } | null;
+}
+
+const rangeText = (t: { start: string; end: string }): string => (t.end ? `${t.start}–${t.end}` : t.start);
 
 function ownerOf(p: Placement, kind: PrintKind): string | undefined {
     return kind === 'class' ? p.classId : kind === 'teacher' ? p.teacherId : p.roomId;
@@ -33,7 +43,7 @@ function textOf(p: Placement, kind: PrintKind, label: LabelOf): string {
 }
 
 /** 대상(반·교사·방) 한 곳의 표. 행·열 틀은 안 전체가 쓴 교시·요일로 맞춰 모든 장이 같은 틀이다. */
-export function printSheets(plan: Plan, kind: PrintKind, label: LabelOf): PrintSheet[] {
+export function printSheets(plan: Plan, kind: PrintKind, label: LabelOf, times?: PrintTimes): PrintSheet[] {
     const periods = [...new Set(plan.placements.map((p) => p.period))].sort((a, b) => a - b);
     const days = [...new Set(plan.placements.map((p) => p.day))].sort((a, b) => a - b) as PlanDay[];
     const useDays: PlanDay[] = days.length > 0 ? days : [1, 2, 3, 4, 5];
@@ -45,7 +55,23 @@ export function printSheets(plan: Plan, kind: PrintKind, label: LabelOf): PrintS
             if (ownerOf(p, kind) !== id) continue;
             cells[usePeriods.indexOf(p.period)][useDays.indexOf(p.day)].push(textOf(p, kind, label));
         }
+        // 시각 — 그 장에 나온 반들의 학년 시각이 모두 같을 때만 적는다(학년마다 점심이 달라 다르면 교시만).
+        let periodTimes: (string | null)[] | undefined;
+        if (times) {
+            const grades = new Set<number>();
+            for (const p of plan.placements) {
+                if (ownerOf(p, kind) !== id) continue;
+                const g = times.gradeOf(p.classId);
+                if (g !== undefined) grades.add(g);
+            }
+            periodTimes = usePeriods.map((n) => {
+                const texts = new Set([...grades].map((g) => { const t = times.timeOf(g, n); return t ? rangeText(t) : ''; }));
+                return grades.size > 0 && texts.size === 1 && !texts.has('') ? [...texts][0] : null;
+            });
+            if (periodTimes.every((t) => t === null)) periodTimes = undefined;
+        }
         return {
+            ...(periodTimes ? { times: periodTimes } : {}),
             id, title: label(kind, id), days: useDays.map((d) => ({ day: d, name: DAY_NAME[d] })), periods: usePeriods,
             cells: cells.map((row) => row.map((c) => c.join('\n'))),
         };

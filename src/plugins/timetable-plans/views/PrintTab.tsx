@@ -2,13 +2,14 @@
  * 인쇄 화면 — 편성안 하나를 골라 반별·교사별·교실별 시간표를 A4 가로 한 장씩 미리 보고 인쇄한다(1.2v 편성기 분해 F11).
  *   🔴 이름은 정본(staff·school·subjects·rooms)에서 읽는다 · 화면 밖(메뉴·창틀)은 인쇄할 때 숨긴다.
  */
-import { useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Button, Checkbox, Segmented, Select } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
-import { canonOf, labelFrom } from '../labels';
+import type { Clock } from '../../bell/contracts/clock';
+import { canonOf, gradeFrom, labelFrom } from '../labels';
 import { subscribePlans, getPlanNodes, planOf } from '../nodes';
 import { PRINT_KINDS, printSheets } from '../print';
-import type { PrintKind, PrintSheet } from '../print';
+import type { PrintKind, PrintSheet, PrintTimes } from '../print';
 
 /** 인쇄할 때만 켜지는 규칙 — 인쇄 영역만 남기고 A4 가로로, 장마다 쪽을 나눈다. 색은 안 쓴다(흑백). */
 export const PRINT_CSS = `@page { size: A4 landscape; margin: 10mm; }
@@ -34,7 +35,10 @@ export function SheetView({ sheet }: { sheet: PrintSheet }) {
                 <tbody>
                     {sheet.periods.map((n, r) => (
                         <tr key={n}>
-                            <th className="border border-line p-1">{n}교시</th>
+                            <th className="border border-line p-1">
+                                {n}교시
+                                {sheet.times?.[r] && <div className="text-xs font-normal text-muted">{sheet.times[r]}</div>}
+                            </th>
                             {sheet.cells[r].map((t, c) => (
                                 <td key={c} className="border border-line p-1 whitespace-pre-line text-center h-12">{t}</td>
                             ))}
@@ -53,11 +57,22 @@ export function PrintTab({ host, planId, onClose }: { host: PluginHost; planId?:
     const [all, setAll] = useState(false);
     const [one, setOne] = useState<string | null>(null);
 
+    // 일과표 약속(clock) — 꺼져 있으면 null 이라 「N교시」만 보인다. 일과표가 바뀌면 다시 그린다.
+    const clock = host.modules.use<Clock>('clock') ?? null;
+    const [bellTick, setBellTick] = useState(0);
+    useEffect(() => clock?.subscribe(() => setBellTick((t) => t + 1)), [clock]);
+
     const sheets = useMemo(() => {
         const plan = pid ? planOf(pid) : null;
-        return plan ? printSheets(plan, kind, labelFrom(canonOf(host))) : [];
+        if (!plan) return [];
+        const canon = canonOf(host);
+        const times: PrintTimes | undefined = clock ? {
+            gradeOf: gradeFrom(canon),
+            timeOf: (g, n) => clock.slotsFor(g).find((s) => s.period === n) ?? null,
+        } : undefined;
+        return printSheets(plan, kind, labelFrom(canon), times);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pid, kind, nodes, host]);
+    }, [pid, kind, nodes, host, clock, bellTick]);
     const shown = all ? sheets : sheets.filter((s) => s.id === (one ?? sheets[0]?.id));
     const kindLabel = PRINT_KINDS.find((k) => k.kind === kind)?.label ?? '';
 

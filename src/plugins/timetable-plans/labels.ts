@@ -37,3 +37,15 @@ export function labelFrom(canon: Canon): LabelOf {
         return name ?? NOT_FOUND;
     };
 }
+
+/** 반 id → 학년(정본 school 에서 읽기만) — 모르면 undefined. */
+export function gradeFrom(canon: Canon): (classId: string) => number | undefined {
+    return (classId) => {
+        if (!canon.school) return undefined;
+        for (const y of canon.school.years()) {
+            const c = canon.school.classesIn(y.id).find((x) => x.id === classId);
+            if (c) return c.grade;
+        }
+        return undefined;
+    };
+}

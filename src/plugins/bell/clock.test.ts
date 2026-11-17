@@ -1,6 +1,6 @@
 /** 일과표 순수 셈 — 학년마다 점심이 달라 같은 N교시가 다른 시각인 문제. 학교 흉내 값만(지어낸 시각). */
-import { describe, it, expect } from 'vitest';
-import { slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows, rowOf } from './clock';
+import { describe, it, expect, afterEach } from 'vitest';
+import { slotsForGrade, timeOf, overlaps, lunchOf, dismissalOf, checkRows, rowOf, slotsFor, subscribe, setClockSource } from './clock';
 import type { SlotRow } from './contracts/clock';
 
 const cls = (period: number, start: string, end: string, grades: string[]): SlotRow => ({ kind: 'class', period, start, end, grades });
@@ -85,5 +85,28 @@ describe('rowOf', () => {
         expect(rowOf({ f_kind: 'class', f_period: 2, f_start: '09:50', f_end: '10:30', f_grades: ['1'] }))
             .toEqual({ kind: 'class', period: 2, start: '09:50', end: '10:30', grades: ['1'] });
         expect(rowOf({}).grades).toEqual([]);
+    });
+});
+
+describe('slotsFor · subscribe — 일과표가 스스로 읽는다', () => {
+    afterEach(() => setClockSource(null));
+    it('원천이 없으면 빈 배열 · 끄개는 부를 수 있다', () => {
+        expect(slotsFor(3)).toEqual([]);
+        expect(() => subscribe(() => { /* 무시 */ })()).not.toThrow();
+    });
+    it('그 학년 수업 칸만 교시순 — 점심·하교 빼고, 같은 교시 겹치면 이른 줄', () => {
+        setClockSource({ rows: () => [...rows, cls(2, '09:55', '10:35', ['3'])], subscribe: () => () => { /* 무시 */ } });
+        expect(slotsFor(3).map((s) => s.period)).toEqual([1, 2, 3, 4, 5]);
+        expect(slotsFor(3)[1]).toEqual({ period: 2, start: '09:50', end: '10:30' });
+        expect(slotsFor(5)[4]).toEqual({ period: 5, start: '12:20', end: '13:00' });
+        expect(slotsFor(9)).toEqual(slotsFor(9));
+    });
+    it('구독은 원천에 위임한다', () => {
+        let fired = 0; let off = 0;
+        setClockSource({ rows: () => [], subscribe: (fn) => { fn(); return () => { off++; }; } });
+        const stop = subscribe(() => { fired++; });
+        expect(fired).toBe(1);
+        stop();
+        expect(off).toBe(1);
     });
 });

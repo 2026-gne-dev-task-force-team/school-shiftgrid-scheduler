@@ -14,6 +14,8 @@ export interface SlotRow {
 
 export interface TimeRange { start: string; end: string }
 export interface PeriodRef { grade: number; period: number }
+/** 수업 한 칸의 실제 시각 — slotsFor 가 돌려준다. */
+export interface ClassSlot { period: number; start: string; end: string }
 export interface RowProblem { index: number; reason: string }
 
 export interface Clock {
@@ -29,4 +31,11 @@ export interface Clock {
     dismissalOf(rows: readonly SlotRow[], grade: number): string | null;
     /** 잘못된 줄(25:00 · 끝<시작 · 시작 없음 …)과 이유. */
     checkRows(rows: readonly SlotRow[]): RowProblem[];
+    /**
+     * 지금 적혀 있는 일과표에서 그 학년의 수업 칸 시각 — 교시 순. 일과표를 읽을 수 없거나(꺼짐·비었음) 그 학년 칸이 없으면 [].
+     *   (위 함수들은 줄을 인자로 받지만 이건 일과표 쪽이 스스로 읽는다 — 소비자가 일과표를 복사해 두지 않게.)
+     */
+    slotsFor(grade: number): ClassSlot[];
+    /** 일과표가 바뀔 때 부른다. 끄는 함수를 돌려준다. */
+    subscribe(fn: () => void): () => void;
 }
