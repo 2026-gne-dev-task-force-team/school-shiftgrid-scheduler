@@ -11,6 +11,10 @@ import type { EventDraft } from '../calendar/contracts/calendar';
 /** 예약 칸 key — 방 관계 칸 · 인원 숫자 칸(정원 비교용). */
 export const ROOM_FIELD = 'f_room';
 export const HEADCOUNT_FIELD = 'f_headcount';
+/** 예약자 글자 칸 — 「내 예약」을 가르는 값(달력 일정엔 만든 사람이 없어 칸으로 둔다). */
+export const BOOKER_FIELD = 'f_booker';
+/** 달력 프리셋 id — 예약 목록 저장소를 알아보는 표(저장소 data.preset). */
+export const PRESET_ID = 'room-booking.default';
 /** ext 이름공간 — 방 목록(rooms) 쪽과 같은 플러그인 id. */
 export const EXT_KEY = 'room-booking';
 

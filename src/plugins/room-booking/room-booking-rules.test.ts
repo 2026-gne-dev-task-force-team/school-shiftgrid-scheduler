@@ -56,7 +56,7 @@ describe('judgeBooking — 순수 규칙', () => {
     });
 });
 
-describe('프리셋 beforeSave — 방 칸·거절 알림', () => {
+describe('프리셋 beforeSave — 방 칸·거절', () => {
     const notify = vi.fn();
     const ctx = {} as SaveContext;
     function activate(r: Room | undefined, p: RoomProps) {
@@ -65,12 +65,11 @@ describe('프리셋 beforeSave — 방 칸·거절 알림', () => {
     }
     beforeEach(() => { notify.mockClear(); });
 
-    it('고정된 방을 고르면 거절 사유가 돌아오고 토스트로 보인다', () => {
+    it('고정된 방을 고르면 거절 사유가 돌아온다(토스트는 달력 몫 — 여기선 안 띄운다)', () => {
         activate(room(FIXED), props());
         const v = ROOM_BOOKING_PRESET.beforeSave!(draft('2026-11-16T10:00', '2026-11-16T11:00', { f_room: ['r1'] }), ctx);
         expect(v).toMatchObject({ ok: false });
-        expect(notify).toHaveBeenCalledTimes(1);
-        expect(notify.mock.calls[0][0]).toMatchObject({ level: 'warn', title: '예약할 수 없습니다' });
+        expect(notify).not.toHaveBeenCalled();
         expect((v as { reason: string }).reason).toContain('가상 동아리');
     });
 
@@ -89,6 +88,6 @@ describe('프리셋 beforeSave — 방 칸·거절 알림', () => {
 
     it('「인원」 숫자 칸이 기본 칸으로 깔린다', () => {
         const f = (ROOM_BOOKING_PRESET.baseFields as (s: { id: string; data: Record<string, unknown> }) => { key: string; type: string }[])({ id: 's', data: { roomListId: 'l' } });
-        expect(f.map((x) => [x.key, x.type])).toEqual([['f_room', 'relation'], ['f_headcount', 'number']]);
+        expect(f.map((x) => [x.key, x.type])).toEqual([['f_room', 'relation'], ['f_headcount', 'number'], ['f_booker', 'text']]);
     });
 });
