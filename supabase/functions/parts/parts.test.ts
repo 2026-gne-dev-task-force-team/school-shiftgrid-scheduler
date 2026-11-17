@@ -237,3 +237,21 @@ describe('access·store 작은 것', () => {
         expect(() => hexToBytea('abc')).toThrow();
     });
 });
+
+describe('검사 연결(check.ts) — PUT 경로', () => {
+    const ch = (id: string, period = 3) => ({ id, date: '2026-03-02', trackName: '1-1', period });
+    beforeEach(async () => {
+        const { checkPart } = await import('./check.ts');
+        deps.check = checkPart;
+    });
+    it('꼴 틀림 400 + 칸 경로 · 교사 수정 403 · 교사 추가 200', async () => {
+        const bad = await put('ops.changes', { fmt: 1, body: [{ id: 'a' }] }, { who: 'teacher' });
+        expect(bad.status).toBe(400);
+        expect(await errOf(bad)).toMatchObject({ code: 'check_failed', rules: ['ops.changes[0].date'] });
+        expect((await put('ops.changes', { fmt: 1, body: [ch('a')] }, { who: 'teacher' })).status).toBe(200);
+        const edit = await put('ops.changes', { fmt: 1, body: [ch('a', 4)] }, { who: 'teacher', ifMatch: `"${EPOCH}.1"` });
+        expect(edit.status).toBe(403);
+        expect((await errOf(edit)).code).toBe('changes_edit_forbidden');
+        expect((await put('ops.changes', { fmt: 1, body: [ch('a'), ch('b')] }, { who: 'teacher', ifMatch: `"${EPOCH}.1"` })).status).toBe(200);
+    });
+});

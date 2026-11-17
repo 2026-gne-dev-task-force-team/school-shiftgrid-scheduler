@@ -6,6 +6,7 @@ import type { AuthClient } from '../_shared/auth.ts';
 import { loadAllowedOrigin } from '../_shared/cors.ts';
 import { aadPart } from '../_shared/crypto/aad.ts';
 import { ensureKeys } from '../_shared/crypto/keys.ts';
+import { checkPart } from './check.ts';
 import { partsHandler } from './handler.ts';
 import { hexToBytea, supabaseStore, type PartsDb } from './store.ts';
 
@@ -41,4 +42,4 @@ const keys = () =>
         };
     });
 
-deno.serve(partsHandler({ auth: client, store: supabaseStore(client), keys, allowedOrigin: loadAllowedOrigin() }));
+deno.serve(partsHandler({ auth: client, store: supabaseStore(client), keys, allowedOrigin: loadAllowedOrigin(), check: checkPart }));
