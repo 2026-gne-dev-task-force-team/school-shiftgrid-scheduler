@@ -8,6 +8,7 @@ import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
 import { ExportTab } from './views/ExportTab';
+import { v1FileApi } from './api';
 
 const VIEW_ID = 'v1-file.export';
 
@@ -16,7 +17,9 @@ export const v1FilePlugin = definePlugin({
         ...manifest,
         requires: { nodes: '^0.1' },
         supports: { solver: '^0.2', plans: '^0.2' },
+        provides: { 'v1-file': '0.1.0' },
         contributes: {
+            interfaces: [{ name: 'v1-file', version: '0.1.0', label: 'v1 파일', desc: 'v1 파일 내보내기 화면·명령 id' }],
             views: [{
                 id: 'export', title: 'v1 파일 내보내기', icon: 'file', defaultArea: 'center',
                 placement: { areas: ['center'], singleton: true },
@@ -24,8 +27,11 @@ export const v1FilePlugin = definePlugin({
                 component: 'Export',
             }],
             commands: [{ id: 'v1-file.open', title: 'v1 파일로 내보내기', icon: 'file' }],
+            // 리본 — 화면·명령만 있고 누를 자리가 없어 선생님이 못 찾았다(T-10fx)
+            ribbon: [{ commandId: 'v1-file.open', icon: 'file', order: 11 }],
         },
     },
+    modules: { 'v1-file': v1FileApi },
     components: {
         Export: ({ host }) => createElement(ExportTab, { host }),
     },

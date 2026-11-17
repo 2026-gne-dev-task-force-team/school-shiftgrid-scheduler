@@ -51,6 +51,7 @@ export function ExportTab({ host }: { host: PluginHost }) {
 
     return (
         <div className="h-full overflow-auto p-3 flex flex-col gap-3">
+            {plans.length === 0 && <p role="note">먼저 편성안을 만드세요. 편성안 없이도 내려받을 수 있지만 배치가 빈 파일이 됩니다.</p>}
             <p>지금 정본(교직원·학교·과목·시수표·일과표 …)과 고른 편성안으로 예전 앱(v1) 작업 파일 하나를 만듭니다.</p>
             <Select aria-label="넣을 편성안" value={current} onChange={(e) => setPicked(e.target.value)} options={options} />
             <div><Button variant="accent" onClick={() => { void run(); }}>v1 파일로 내보내기</Button></div>

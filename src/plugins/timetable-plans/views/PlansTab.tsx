@@ -4,6 +4,7 @@
  */
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Button, EmptyState } from '../../../pane-ui-system';
+import type { V1File } from '../../v1-file/contracts/v1-file';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { comparePlans } from '../model';
 import { canonOf, labelFrom } from '../labels';
@@ -26,8 +27,16 @@ export function PlansTab({ host }: { host: PluginHost }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [a, b, nodes]);
 
+    const v1 = host.modules.use<V1File>('v1-file');
+    const exportV1 = v1 ? <div><Button onClick={() => host.commands.run(v1.cmd.open)}>v1 파일로 내보내기</Button></div> : null;
+
     if (nodes.length === 0) {
-        return <EmptyState icon="layers" title="담아 둔 편성안이 없습니다" description="시간표를 짜면 결과가 안 한 벌로 여기에 담깁니다." />;
+        return (
+            <div className="h-full overflow-auto p-3 flex flex-col gap-3">
+                <EmptyState icon="layers" title="담아 둔 편성안이 없습니다" description="시간표를 짜면 결과가 안 한 벌로 여기에 담깁니다." />
+                {exportV1}
+            </div>
+        );
     }
 
     if (printing) return <PrintTab host={host} planId={a ?? undefined} onClose={() => setPrinting(false)} />;
@@ -61,6 +70,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
                 })}
             </ul>
             <div><Button onClick={() => setPrinting(true)}>인쇄</Button></div>
+            {exportV1}
             {diff && (
                 <section aria-label="두 안 비교" className="border border-line rounded p-2">
                     <p>다른 칸 {diff.diffCells}칸 (왼쪽에만 {diff.onlyA} · 오른쪽에만 {diff.onlyB} · 내용이 다름 {diff.changed})</p>
