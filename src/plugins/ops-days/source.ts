@@ -17,26 +17,25 @@ export function memoryDaysSource(initial: DaysPart): DaysSource {
     };
 }
 
-const LS_KEY = 'plugin.ops-days.part';
+/** 기기 저장소 한 칸 — 호스트가 주는 플러그인별 저장(`host.storage`)에서 읽고 쓰는 두 손만 쓴다(localStorage 직접 접근 없음). */
+export interface PartStore { get<T>(key: string, fallback: T): T; set(key: string, v: unknown): void }
+export const PART_KEY = 'part';
+
+/** 저장된 값이 학사 꼴이면 그것, 아니면 null. */
+export function readStoredPart(store: Pick<PartStore, 'get'>): DaysPart | null {
+    const p = store.get<DaysPart | null>(PART_KEY, null);
+    return p && Array.isArray(p.calendar) && Array.isArray(p.changes) ? p : null;
+}
 
 /**
- * 기기 저장소(localStorage)에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경·지운 변경이 남는다.
- * 저장된 값이 없을 때만 seed(데모)를 쓴다. 저장소가 죽거나 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ * 호스트 기기 저장소에 남는 창구 — 새로고침·다시 붙기에도 넣은 변경·지운 변경이 남는다.
+ * 저장된 값이 없을 때만 seed(데모)를 쓴다. 값이 깨졌으면 seed 로 돌아가되 던지지 않는다.
+ * 옛 `localStorage` 값은 기동 때 한 번 이 칸으로 옮긴다(`partmove.ts`).
  */
-export function localDaysSource(seed: () => DaysPart, key: string = LS_KEY): DaysSource {
-    const read = (): DaysPart => {
-        try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-                const p = JSON.parse(raw) as DaysPart;
-                if (p && Array.isArray(p.calendar) && Array.isArray(p.changes)) return p;
-            }
-        } catch { /* 깨진 값·저장소 막힘 — seed */ }
-        return seed();
-    };
+export function storageDaysSource(store: PartStore, seed: () => DaysPart): DaysSource {
     return {
-        load: async () => structuredClone(read()),
-        save: async (next) => { try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* 조용히 */ } },
+        load: async () => structuredClone(readStoredPart(store) ?? seed()),
+        save: async (next) => { store.set(PART_KEY, next); },
     };
 }
 

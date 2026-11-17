@@ -68,9 +68,9 @@ const changeValues = (c: TimetableChange): Record<string, unknown> => ({
 });
 
 /** 옛 학사 일정·시간표 변경을 달력 일정으로 옮긴다. 표시 키는 일이 끝난 뒤(옮길 게 없어도) 쓴다 — 두 번째부터는 `done`. */
-export function moveDaysToCalendar(deps: MoveDeps, storage: StorageLike, key: string = LS_KEY): MoveResult {
+export function moveDaysToCalendar(deps: MoveDeps, storage: StorageLike, key: string = LS_KEY, current: DaysPart | null = null): MoveResult {
     if (isMoved(storage, key)) return { moved: 0, done: true };
-    const old = readOld(storage, key);
+    const old = current ?? readOld(storage, key);   // 호스트 저장(R12)에 값이 있으면 그것이 지금 값
     let moved = 0;
     if (old && (old.calendar.length > 0 || old.changes.length > 0)) {
         deps.nodes.batch(() => {

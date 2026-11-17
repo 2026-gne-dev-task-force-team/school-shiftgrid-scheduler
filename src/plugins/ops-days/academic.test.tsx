@@ -41,8 +41,10 @@ function world(opts: { calendar?: boolean } = {}) {
             .filter((o) => o.start < to && from < o.end),
     };
     const mods: Record<string, unknown> = { nodes, ...(opts.calendar === false ? {} : { calendar }) };
-    const host = { modules: { use: (n: string) => mods[n] ?? null }, workspace: { open: () => undefined } } as unknown as PluginHost;
-    return { host, nodes, calendar, presets, events: () => [...map.values()].filter((n) => n.type === 'calendar.event'), stores: () => [...map.values()].filter((n) => n.type === 'calendar.store') };
+    const kv = new Map<string, unknown>();
+    const storage = { get: <T,>(k: string, f: T) => (kv.has(k) ? kv.get(k) as T : f), set: (k: string, v: unknown) => { kv.set(k, structuredClone(v)); }, remove: (k: string) => { kv.delete(k); } };
+    const host = { modules: { use: (n: string) => mods[n] ?? null }, storage, workspace: { open: () => undefined } } as unknown as PluginHost;
+    return { host, kv, nodes, calendar, presets, events: () => [...map.values()].filter((n) => n.type === 'calendar.event'), stores: () => [...map.values()].filter((n) => n.type === 'calendar.store') };
 }
 const stash = () => localStorage.setItem(LS_KEY, JSON.stringify(demoDays()));
 

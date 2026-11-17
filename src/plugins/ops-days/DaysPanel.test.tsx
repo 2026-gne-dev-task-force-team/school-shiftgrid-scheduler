@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { demoDays, localDaysSource, memoryDaysSource } from './source';
+import { demoDays, memoryDaysSource, storageDaysSource } from './source';
 import { DaysView, resetDaysTab } from './DaysPanel';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -106,9 +106,10 @@ describe('창 크기 변화', () => {
 
 describe('학사 영속 — 다시 만들어도 남는다', () => {
     it('변경을 넣고 지운 뒤 창구·패널을 새로 만들어도 바뀐 값이 남고, 데모 시드가 덮지 않는다', async () => {
-        localStorage.clear();
+        const kv = new Map<string, unknown>();
+        const store = { get: <T,>(k: string, f: T) => (kv.has(k) ? kv.get(k) as T : f), set: (k: string, v: unknown) => { kv.set(k, structuredClone(v)); } };
         const mount = async () => {
-            const src = localDaysSource(demoDays);
+            const src = storageDaysSource(store, demoDays);
             const host = document.createElement('div');
             document.body.appendChild(host);
             await act(async () => createRoot(host).render(createElement(DaysView, { source: src, viewer: { userId: 'u-a', role: '교사' }, initialMonth: '2026-11', newId: () => 'n1' })));
@@ -122,8 +123,7 @@ describe('학사 영속 — 다시 만들어도 남는다', () => {
         await click(host, '변경 넣기');
         document.body.innerHTML = ''; // 새로고침·창 크기 변화로 다시 붙는다
         host = await mount();
-        expect((await localDaysSource(demoDays).load()).changes.map((c) => c.id)).not.toContain('c1');
+        expect((await storageDaysSource(store, demoDays).load()).changes.map((c) => c.id)).not.toContain('c1');
         expect(host.textContent).not.toContain('3-2 4교시');
-        localStorage.clear();
     });
 });
