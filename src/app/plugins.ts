@@ -18,6 +18,7 @@ import { CORE_PLUGINS } from '../pane-ui-system/core';
 
 import { calendarPlugin } from '../plugins/calendar';
 import { accountPlugin } from '../plugins/account';
+import { accountServerPlugin } from '../plugins/account-server';
 import { peoplePlugin } from '../plugins/people';
 import { sheetPlugin } from '../plugins/sheet';
 import { serverLinkPlugin } from '../plugins/server-link';
@@ -51,7 +52,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 // 🔴 U20 F12 판 1(T-10fz): 옛 iframe 편성기를 카탈로그·site.config 에서 내렸다 · 판 2(T-10g4)에서 폴더째 걷었다.
 // 카탈로그 = 「설치할 수 있는 것」(정적 번들). 무엇이 깔리나·순서는 site.config.json 의 plugins 가 정한다(활성 순서가 골든).
 const CATALOG: Record<string, PluginModule> = {
-    page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, 'server-link': serverLinkPlugin, calendar: calendarPlugin, account: accountPlugin,
+    page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, 'server-link': serverLinkPlugin, calendar: calendarPlugin, 'account-server': accountServerPlugin, account: accountPlugin,
     people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
     subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'demand-table': demandTablePlugin, 'timetable-solver': timetableSolverPlugin, 'timetable-plans': timetablePlansPlugin, 'v1-file': v1FilePlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'ops-aux': opsAuxPlugin,
 };
