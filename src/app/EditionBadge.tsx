@@ -5,7 +5,8 @@
 import { useState } from 'react'
 import { Button } from '../pane-ui-system'
 import { EDITION } from './site-config'
-import type { ChangelogEntry } from './changelog'
+import { RELEASE_NOTES, type ChangelogEntry } from './changelog'
+import { ReleaseNotes } from './ReleaseNotes'
 
 interface Changelog { build: string; at: string; entries: ChangelogEntry[] }
 
@@ -29,6 +30,10 @@ export function EditionBadge() {
       {open && (
         <div role="dialog" aria-label="업데이트 이력" data-testid="changelog-panel"
           className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-80 max-w-[90vw] overflow-auto rounded-ctl border border-line bg-panel p-2 text-xs text-text shadow-lg">
+          <div className="mb-1 font-semibold">새 소식</div>
+          <ReleaseNotes notes={RELEASE_NOTES} />
+          <details className="mt-2" data-testid="changelog-dev">
+            <summary className="cursor-pointer text-muted">개발 기록 펼치기</summary>
           <div className="mb-1 font-semibold">업데이트 이력{log && log !== 'err' ? ` · 판 ${log.build} · ${log.at.slice(0, 16).replace('T', ' ')}` : ''}</div>
           {log === null && <div className="text-muted">불러오는 중…</div>}
           {log === 'err' && <div className="text-muted">이력을 못 읽었다(개발 서버에는 없다).</div>}
@@ -39,6 +44,7 @@ export function EditionBadge() {
                 <span aria-label={e.kind === 'fix' ? '고침' : '기능'}>{e.kind === 'fix' ? '🐞' : '🔨'}</span>{' '}
                 <span className="text-muted">{e.task}{e.req ? `(${e.req})` : ''} · {e.at.slice(5, 10)}</span> {e.text}
               </li>))}</ul>)}
+          </details>
         </div>
       )}
     </span>
