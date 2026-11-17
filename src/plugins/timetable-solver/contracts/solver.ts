@@ -55,5 +55,83 @@ export interface Solver {
     toDayIndex(weekday: Weekday): SolverDayIndex;
 }
 
+// ══════════════════════════════════════════════════════════════
+//  F5 — 정본에서 읽은 값 묶음(SolverCanon) → 편성 입력(buildSolverInput)
+//  🔴 편성 쪽에 다시 저장하지 않는다 — 아래는 정본 약속에서 「읽은 값」의 꼴일 뿐이다.
+// ══════════════════════════════════════════════════════════════
+
+/** 교직원 한 줄 — staff 정본(이름 + 칸 f_kind·f_tier·f_homeroom)에서 읽은 값. */
+export interface CanonStaffRow {
+    id: string;
+    name: string;
+    /** f_kind — homeroom(담임)·subject(전담)·nonteaching(비교과)·assistant(보조인력). */
+    kind?: string;
+    /** f_tier — 1·2·3. */
+    tier?: 1 | 2 | 3;
+    /** f_homeroom — 담임 반 id(들). */
+    homeroomClassIds?: readonly string[];
+}
+
+/** 반 한 줄 — school 정본 SchoolClass 에서 읽은 값(필요한 칸만). */
+export interface CanonClassRow { id: string; name: string; grade?: number }
+/** 과목 한 줄 — subjects 정본. */
+export interface CanonSubjectRow { id: string; name: string }
+/** 방 한 줄 — rooms 정본. 수용 수는 정본에 없어 엔진 기본(1)을 따른다. */
+export interface CanonRoomRow { id: string; name: string }
+/** 일과표 한 줄 — bell 정본 SlotRow 와 같은 꼴(시각 'HH:MM' 그대로 · 변환 없음). */
+export interface CanonBellRow {
+    kind?: string; period?: number | null; start?: string; end?: string; grades?: string[];
+}
+/** 복무 한 줄 — duty 정본 DutyRow(사람 id · 날짜 · 종일 · 교시 글자) + 줄 id. */
+export interface CanonDutyRow {
+    id: string;
+    name?: string;
+    person?: string | readonly string[] | null;
+    start?: string | null;
+    end?: string | null;
+    allDay?: boolean | null;
+    periods?: string | null;
+}
+/** 수요 한 줄 — 시수표(demand-table) DemandRow 와 같은 꼴(id 참조 셋 + 시수). */
+export interface CanonDemandRow { id: string; teacherId?: string; classId?: string; subjectId?: string; hours?: number }
+
+/** 막힘 대상 — 정본 id 로 가리킨다(staff 사람·school 반·rooms 방). */
+export interface SolverBlockTarget { kind: 'agent' | 'track' | 'resource'; id: string }
+
+/**
+ * 🔴 편성 막힘 한 줄 — 「매주 이 요일 이 칸은 이 대상에게 안 된다」(F0 결정: ops-days 를 넓히지 않고 편성 쪽 새 자료).
+ *   요일은 바깥 번호(1=월 … 7=일). 엔진에 넣을 때만 toDayIndex 로 바꾼다 · 토(6)·일(7)은 편성에 안 쓰여 거른다.
+ *   slotIndex 는 반 대상에만 · 교사·방 대상은 from/to(시각 'HH:MM').
+ */
+export interface SolverBlockRow {
+    id: string;
+    name: string;
+    weekday: Weekday;
+    slotIndex?: number;
+    from?: string;
+    to?: string;
+    targets: readonly SolverBlockTarget[];
+    soft?: boolean;
+    temp?: boolean;
+}
+
+/** 정본 일곱 + 편성 막힘에서 읽은 값 한 묶음 — buildSolverInput 의 입력. */
+export interface SolverCanon {
+    school: { name: string; term?: string };
+    /** 편성 기간(학기) — timetable-grid 범위에서 읽는다. */
+    range: { startDate: string; endDate: string };
+    staff: readonly CanonStaffRow[];
+    classes: readonly CanonClassRow[];
+    subjects: readonly CanonSubjectRow[];
+    rooms: readonly CanonRoomRow[];
+    bell: readonly CanonBellRow[];
+    duty: readonly CanonDutyRow[];
+    demands: readonly CanonDemandRow[];
+    blocks: readonly SolverBlockRow[];
+}
+
+/** 조립하다 걸러 낸 것 — 화면이 「무엇이 비었나」를 그 자리에서 보인다. */
+export interface BuildIssue { source: 'demand' | 'duty' | 'block'; id: string; reason: string }
+
 /** 배치 한 줄(엔진이 돌려주는 꼴) — 소비자가 이름으로 쓰라고 다시 내보낸다. */
 export type SolverAssignment = Assignment;
