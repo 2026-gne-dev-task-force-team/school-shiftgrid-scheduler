@@ -14,11 +14,14 @@ import type { BuildIssue, CanonBellRow, SolverCanon, SolverInput } from './contr
 import type { Agent, Blackout, Demand, Slot, TimetableSpec, Timetable, Track, WeeklyBlock } from './types/schema';
 import { HOMEROOM_AGENT_ID } from './types/schema';
 import { toDayIndex } from './day';
+import { defaultRules } from './engine/rules';
 
 /** 조립에 쓰는 정본 약속 모듈 — 순수 셈만(host.modules 로 받은 것을 넘긴다). */
 export interface BuildModules {
     clock: Pick<Clock, 'slotsForGrade' | 'timeOf'>;
     duty: Pick<Duty, 'parsePeriods'>;
+    /** 편성 쪽에 저장된 규칙 설정 — 있으면(1개 이상) 그것, 없으면 엔진 기본 규칙(필수 전부 + 권장 기본값). 기초 정보가 아니라 편성 쪽 자기 자료. */
+    rules?: SolverInput['rules'];
 }
 
 export interface BuildResult { input: SolverInput; issues: BuildIssue[] }
@@ -205,7 +208,7 @@ export function buildSolverInput(canon: SolverCanon, mods: BuildModules): BuildR
     const input: SolverInput = {
         meta: { name: canon.school.name, term: canon.school.term ?? '', schemaVersion: 3 },
         agents, activities, resources, specs, tracks, timetables, demands,
-        assignments: [], blackouts, weeklyBlocks, rules: [], boards: [],
+        assignments: [], blackouts, weeklyBlocks, rules: mods.rules && mods.rules.length > 0 ? mods.rules : defaultRules(), boards: [],
     };
     return { input, issues };
 }

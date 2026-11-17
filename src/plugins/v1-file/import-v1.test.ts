@@ -7,6 +7,7 @@ import { importV1, V1_HOMEROOM_ID } from './import-v1';
 import { buildSolverInput } from '../timetable-solver/build-context';
 import { migrateDoc } from '../timetable-solver/types/doc';
 import { HOMEROOM_AGENT_ID } from '../timetable-solver/types/schema';
+import { solverApi } from '../timetable-solver/api';
 import { toWeekday } from '../timetable-solver/day';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
@@ -71,7 +72,7 @@ describe('F10a importV1 — v1 파일 쪼개 넣기', () => {
     it('불러온 정본 → buildSolverInput = v1 파일 그대로 엔진 입력', () => {
         const { input, issues: buildIssues } = buildSolverInput(writes, { clock: clockApi, duty: dutyApi });
         expect(buildIssues).toEqual([]);
-        expect(input).toEqual(fresh());
+        expect(input).toEqual({ ...fresh(), rules: solverApi.defaultRules() });   // 규칙은 정본에 없어 입력 조립이 기본 규칙으로 채운다
     });
     it('틈 ① 담임 이름 → 새 담임 행 · 센티널 수요 → 그 담임', () => {
         expect(newHomerooms).toEqual([{ staffId: 'v1-hr-c-1-1', name: '가나다', classId: 'c-1-1' }]);

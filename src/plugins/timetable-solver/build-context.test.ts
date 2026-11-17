@@ -10,6 +10,7 @@ import { buildContext } from './engine/context';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
 import { HOMEROOM_AGENT_ID } from './types/schema';
+import { defaultRules, RULES, solve } from './engine/core';
 
 const mods = { clock: clockApi, duty: dutyApi };
 
@@ -112,10 +113,10 @@ describe('F5 buildSolverInput — 정본 경유 = v1 파일 경유', () => {
     const viaFile = migrateDoc(JSON.parse(JSON.stringify(v1File)));
 
     it('엔진 입력이 같다', () => {
-        expect(input).toEqual(viaFile);
+        expect(input).toEqual({ ...viaFile, rules: defaultRules() });   // 규칙만 다르다 — v1 파일은 비어 있고 정본 경유는 기본 규칙으로 채운다
     });
     it('엔진 문맥(색인·칸·금지 판정)도 같다', () => {
-        const a = buildContext(input), b = buildContext(viaFile);
+        const a = buildContext(input), b = buildContext({ ...viaFile, rules: defaultRules() });
         const data = (c: typeof a) => Object.fromEntries(Object.entries(c).filter(([, v]) => typeof v !== 'function'));
         expect(data(a)).toEqual(data(b));
         const probe = (c: typeof a) => ({
@@ -140,5 +141,41 @@ describe('F5 buildSolverInput — 정본 경유 = v1 파일 경유', () => {
         const before = JSON.stringify(canon);
         buildSolverInput(canon, mods);
         expect(JSON.stringify(canon)).toBe(before);
+    });
+});
+
+describe('F5 buildSolverInput — 규칙 채우기(U20 F5)', () => {
+    const hardIds = RULES.filter((t) => t.kind === 'hard').map((t) => t.id);
+
+    it('빈 정본이어도 하드 규칙이 켜진 입력이다', () => {
+        const empty: SolverCanon = { school: { name: '' }, range: { startDate: '', endDate: '' }, staff: [], classes: [], subjects: [], rooms: [], bell: [], duty: [], demands: [], blocks: [] };
+        const { input } = buildSolverInput(empty, mods);
+        const on = input.rules.filter((r) => r.enabled).map((r) => r.templateId);
+        for (const id of hardIds) if (id !== 'one-place-per-day') expect(on).toContain(id);
+        expect(on).toContain('no-overlap-agent');
+    });
+    it('편성 쪽 저장 규칙이 있으면 그것을 쓴다', () => {
+        const mine = defaultRules().slice(0, 2);
+        expect(buildSolverInput(canon, { ...mods, rules: mine }).input.rules).toEqual(mine);
+        expect(buildSolverInput(canon, { ...mods, rules: [] }).input.rules).toEqual(defaultRules());
+    });
+    it('같은 선생님 두 반이 같은 시간에 겹치지 않게 자동 편성된다(실제 엔진)', async () => {
+        const c: SolverCanon = {
+            ...canon, duty: [], blocks: [],
+            demands: [
+                { id: 'x1', teacherId: 's-sub', classId: 'c-1-1', subjectId: 'sj-sci', hours: 4 },
+                { id: 'x2', teacherId: 's-sub', classId: 'c-5-1', subjectId: 'sj-sci', hours: 4 },
+            ],
+        };
+        const { input } = buildSolverInput(c, mods);
+        const res = await solve(input, { budgetMs: 300, candidates: 1, seed: 7 });
+        const seen = new Set<string>();
+        const picks = res.best.assignments.filter((a) => a.kind === 'work' && a.agentId === 's-sub');
+        expect(picks.length).toBe(8);
+        for (const a of picks) {
+            const k = `${a.dayIndex}|${a.slotIndex}`;
+            expect(seen.has(k)).toBe(false);
+            seen.add(k);
+        }
     });
 });

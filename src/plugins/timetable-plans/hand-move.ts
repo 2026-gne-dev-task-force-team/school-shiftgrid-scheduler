@@ -59,9 +59,7 @@ export function buildHandDoc(solver: Solver, input: SolverInput, plan: Plan): Ha
             ...(p.temp ? { temp: true } : {}),
         });
     });
-    // 정본에서 지은 입력엔 규칙이 비어 있다 — 비어 있으면 엔진의 기본 규칙(필수 전부 + 권장 기본값)으로 판정한다.
-    const rules = input.rules.length > 0 ? input.rules : solver.defaultRules();
-    return { solver, plan, doc: { ...input, rules, assignments }, idOf };
+    return { solver, plan, doc: { ...input, assignments }, idOf };
 }
 
 const indexOfKey = (h: HandDoc, key: string): number => h.plan.placements.findIndex((p) => placementKey(p) === key);
