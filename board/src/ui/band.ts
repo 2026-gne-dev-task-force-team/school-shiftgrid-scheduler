@@ -84,10 +84,10 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'chip', title: state }, state.slice(0, state.indexOf(' ')), h('span', { class: 'lbl' }, state.slice(state.indexOf(' ')))),
     h('span', { class: data.source === 'server' ? 'chip src' : data.source === 'mock' ? 'chip src mock' : 'chip src off', title: '자료 출처' }, sourceChip(data.source, data.staleAt, now)),
     liveChip,
-    h('span', { class: 'sgb-name' }, sprintLabel(data)),
+    nameCell(data, cur),
     h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),
     h('span', { class: 'sgb-pct', title: 'Sprint 진행률' }, cur ? `${cur.pct}%` : ''),
-    h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${remain > 0 ? `${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : '모름'}` : ''))
+    h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? h('span', { class: 'bc-el' }, `${elapsed}째`) : '', run ? h('span', { class: 'bc-rest' }, ` · 남은 예상 ${remain > 0 ? `${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : '모름'}`) : ''))
 
   return {
     toggle, editions, setLive, upd, auto, fb, more, menu, drop, closeMenu,
@@ -97,4 +97,11 @@ export function createBand(data: BoardData, hooks: BandHooks) {
       if (v) upd.textContent = `✨ ${v.note || '새 기능이 올라왔어요'} [지금 바꾸기]`
     },
   }
+}
+
+/** 막대 이름 칸 — 「한 바퀴 N · 제목」을 낱말 칸으로 쪼갠다. 좁은 폭(폰) CSS 가 「한 」·제목을 접어 「바퀴 N」만 남긴다(전체 글은 title). */
+export function nameCell(data: Parameters<typeof sprintLabel>[0], cur: ReturnType<typeof currentSprint>): HTMLElement {
+  if (!cur) return h('span', { class: 'sgb-name', title: sprintLabel(data) }, sprintLabel(data))
+  return h('span', { class: 'sgb-name', title: sprintLabel(data) },
+    h('span', { class: 'nm-pre' }, '한 '), h('span', { class: 'nm-k' }, `바퀴 ${cur.sprint.id}`), h('span', { class: 'nm-t' }, ` · ${cur.sprint.title}`))
 }
