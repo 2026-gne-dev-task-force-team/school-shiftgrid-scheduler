@@ -12,7 +12,7 @@ export const manifest: PluginManifest = {
     layer: 'domain',
     icon: 'key',
     requires: { calendar: '^0.2', rooms: '^0.1', nodes: '^0.1' },
-    supports: { collection: '^0.2' },
+    supports: { collection: '^0.2', 'ops-room': '^0.1' },
     description: '달력에 「방 예약」 저장소를 더합니다.',
     about: {
         what: '달력 저장소를 「방 예약」으로 만듭니다. 예약마다 방을 고를 수 있고, 첫 화면은 주 단위 시간표입니다.',

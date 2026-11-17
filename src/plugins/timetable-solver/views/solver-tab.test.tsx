@@ -147,6 +147,10 @@ describe('자동 편성 화면', () => {
 
         act(() => { w.emit({ type: 'progress', progress: { candidate: 2, of: 4, hard: 1, soft: 3, elapsedMs: 10 } }); });
         expect(q('solver-progress')!.textContent).toContain('2/4');
+        // 좁은 폭 — 줄바꿈 막대(flex-wrap)에 조각마다 안 잘리는 칸 · 진행률·경과 시간이 글자로 있다(레이아웃은 jsdom 이 못 재 구조만)
+        expect(q('solver-progress')!.className).toContain('flex-wrap');
+        expect(q('solver-progress')!.querySelectorAll('span.whitespace-nowrap')).toHaveLength(4);
+        expect(q('solver-elapsed')!.textContent).toBe('경과 0.0초');
 
         act(() => { w.emit({ type: 'result', result: RESULT }); });
         await tick();
