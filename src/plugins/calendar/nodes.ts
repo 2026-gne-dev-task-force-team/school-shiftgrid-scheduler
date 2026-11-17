@@ -17,6 +17,8 @@ import { eventToStored, storedToEvent, type StoredEvent } from './event-fields';
 import type { CollectionKit, DateValue, RecordCellValue, RecordViewApi } from '../collection/contracts/collection';
 import { EVENT_CONFIG } from './config';
 import { presetOf, listPresets, newPresetStore } from './presets';
+import { checkBeforeSave } from './save-check';
+import type { SaveVerdict } from './contracts/calendar';
 import { StoreEmbed } from './views/StoreEmbed';
 import { getScope, setScope } from './store';
 import type { IcsSeriesItem, IcsWriteEvent } from './ics';
@@ -192,18 +194,26 @@ export function createEvent(data: EventData, name = '', storeId?: string): strin
     if (!api) return '';
     const target = storeId ?? liveScopeStore() ?? ensureStore();
     if (!target) return '';
+    // 저장 전 검증(프리셋 beforeSave) — 거절이면 만들지 않는다(이유는 onSaveRejected 구독자에게)
+    if (!checkBeforeSave(target, { name, start: data.start, end: data.end, allDay: data.allDay, memo: data.memo ?? '', values: {} }, { kind: 'create' }).ok) return '';
     return api.create(target, { type: EVENT_TYPE, name, data: eventToStored(data) });
 }
 
 /** 속성 목록이 바꾼 일정 한 건을 쓴다 — 이름과 data 를 한 묶음(되돌리기 한 칸)으로. 사용자 칸 값·uid 는 남긴다. */
-export function patchEvent(id: string, f: { name: string; start: string; end: string; allDay: boolean; memo: string }): void {
-    if (!api) return;
+export function patchEvent(id: string, f: { name: string; start: string; end: string; allDay: boolean; memo: string }): SaveVerdict {
+    if (!api) return { ok: true };
     const a = api;
+    const storeId = a.parent(id);
+    if (storeId) {
+        const v = checkBeforeSave(storeId, { ...f, values: { ...(((a.get(id)?.data ?? {}) as Partial<StoredEvent>).values ?? {}) } }, { kind: 'update', eventId: id });
+        if (!v.ok) return v;
+    }
     a.batch(() => {
         if (a.get(id)?.name !== f.name) a.rename(id, f.name);
         const cur = (a.get(id)?.data ?? {}) as Partial<StoredEvent>;
         a.setData(id, { ...cur, values: eventToStored(f, cur.values ?? {}).values });
     });
+    return { ok: true };
 }
 
 // 미리보기 카드가 page-doc 모듈을 빌리려고 host 를 쥔다(onActivate 가 꽂는다).

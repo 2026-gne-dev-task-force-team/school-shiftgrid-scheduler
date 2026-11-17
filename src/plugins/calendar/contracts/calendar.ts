@@ -122,6 +122,41 @@ export interface CalendarPreset {
     /** 저장소를 열 때 첫 화면 — 'year' | 'month' | 'week' | 'list' … (없으면 보던 그대로) */
     defaultView?: string;
     start?: { description: string; hint: string };
+    /**
+     * 저장 전 검증(0.2 덧붙임 · 선택) — 일정을 만들기·고치기·옮기기 **직전**에 불린다. 거절하면 저장은 일어나지 않는다.
+     *   ⭐ 규칙은 위층 조각이 자기 프리셋에 담는다(달력은 규칙의 뜻을 모른다 — 「거절·통과」 둘만 안다).
+     *   🔴 던지면 통과로 본다(규칙 버그가 저장을 영영 막지 않게) · 경고만 남긴다.
+     */
+    beforeSave?(draft: EventDraft, ctx: SaveContext): SaveVerdict;
     /** 이 프리셋으로 저장소를 만든 직후 한 번 — 곁에 필요한 노드를 만들고 저장소 data 에 담는다. */
     onCreateStore?(ctx: PresetCreateContext): void | Promise<void>;
 }
+
+/** 저장하려는 일정 한 건(저장 전 모습) — 날짜는 'YYYY-MM-DDTHH:mm'(종일이면 end 는 다음 날 자정 · 반열린). */
+export interface EventDraft {
+    name: string;
+    start: string;
+    end: string;
+    allDay: boolean;
+    memo: string;
+    /** 사용자 칸 값(칸 key → 값, 예: 방 관계 칸 `f_room`) — 달력은 뜻을 모르고 그대로 넘긴다. */
+    values: Record<string, unknown>;
+}
+
+/** 저장 전 검증이 받는 손잡이. */
+export interface SaveContext {
+    /** 'create' 만들기 · 'update' 고치기 · 'move' 끌어 옮기기(반복 회차 포함) */
+    kind: 'create' | 'update' | 'move';
+    storeId: string;
+    /** 고치는 중인 일정 id(만들기면 없음) */
+    eventId?: string;
+    /** 지금 'YYYY-MM-DDTHH:mm' — 「지난 날」 판정용(시험이 고정할 수 있다) */
+    now: string;
+    /** 이 저장소(+자손)의 다른 일정 회차들 — [from,to) 와 겹치는 것 · 지금 저장하려는 그 일정 자신은 빠져 있다. */
+    others(from: string, to: string): readonly Occurrence[];
+    /** 저장소 data(프리셋이 심은 값 — 예: 방 목록 id) */
+    storeData: Readonly<Record<string, unknown>>;
+}
+
+/** 검증 결과 — 거절이면 이유 글(사용자에게 그대로 보인다). */
+export type SaveVerdict = { ok: true } | { ok: false; reason: string };
