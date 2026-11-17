@@ -146,7 +146,19 @@ export function initCalendarKit(rv: RecordViewApi | null, nodes: NodesApi | null
     return kit?.init(nodes) ?? null;
 }
 /** 일정의 사용자 칸 하나 쓰기(기본 칸 — 제목·언제·메모 — 는 patchEvent 로). */
-export function setEventValue(id: string, key: string, value: RecordCellValue): void { kit?.setValue(id, key, value); }
+export function setEventValue(id: string, key: string, value: RecordCellValue): SaveVerdict {
+    // 저장 전 검증(프리셋 beforeSave) — 사용자 칸(예: 방·인원)을 고치는 길도 같은 훅을 지난다. 거절이면 쓰지 않는다(이유는 onSaveRejected 구독자에게)
+    const storeId = api?.parent(id);
+    const node = api?.get(id);
+    const ev = storeId ? storedToEvent(node?.data) : null;
+    if (storeId && ev) {
+        const cur = ((node?.data ?? {}) as Partial<StoredEvent>).values ?? {};
+        const v = checkBeforeSave(storeId, { name: node?.name ?? '', start: ev.start, end: ev.end, allDay: ev.allDay, memo: ev.memo ?? '', values: { ...cur, [key]: value } }, { kind: 'update', eventId: id });
+        if (!v.ok) return v;
+    }
+    kit?.setValue(id, key, value);
+    return { ok: true };
+}
 
 export function getNodesApi(): NodesApi | null { return api; }
 
@@ -188,15 +200,16 @@ function liveScopeStore(): string | null {
 
 /**
  * 일정 하나 만들기 — 저장소를 보장하고 그 밑에. 돌려주는 id 가 빈 문자열이면 못 만든 것.
+ *   🔴 values = 새 일정의 초안 칸 값(예: 방·인원) — 훅에 그대로 넘기고 저장에도 같이 담는다(검증한 것 = 저장하는 것).
  *   🔴 storeId 를 안 주면(더블클릭·「새 일정」 단추) 범위 저장소(있으면) → 아니면 기본 저장소(지금 규칙) 순으로(쥔님 2026-11-02).
  */
-export function createEvent(data: EventData, name = '', storeId?: string): string {
+export function createEvent(data: EventData, name = '', storeId?: string, values: Record<string, RecordCellValue> = {}): string {
     if (!api) return '';
     const target = storeId ?? liveScopeStore() ?? ensureStore();
     if (!target) return '';
     // 저장 전 검증(프리셋 beforeSave) — 거절이면 만들지 않는다(이유는 onSaveRejected 구독자에게)
-    if (!checkBeforeSave(target, { name, start: data.start, end: data.end, allDay: data.allDay, memo: data.memo ?? '', values: {} }, { kind: 'create' }).ok) return '';
-    return api.create(target, { type: EVENT_TYPE, name, data: eventToStored(data) });
+    if (!checkBeforeSave(target, { name, start: data.start, end: data.end, allDay: data.allDay, memo: data.memo ?? '', values: { ...values } }, { kind: 'create' }).ok) return '';
+    return api.create(target, { type: EVENT_TYPE, name, data: eventToStored(data, values) });
 }
 
 /** 속성 목록이 바꾼 일정 한 건을 쓴다 — 이름과 data 를 한 묶음(되돌리기 한 칸)으로. 사용자 칸 값·uid 는 남긴다. */
@@ -286,20 +299,24 @@ export function storeName(storeId: string): string {
  * 일정들(반복은 패턴째)을 저장소에 가져온다 — UID 가 그 저장소에 이미 있으면 건너뛴다(중복). 돌려주는 {created, skipped}.
  *   🔴 index.ts 가 parseIcsSeries 로 읽은 항목을 넘긴다(nodes 는 파서를 모른다 — 노드만 만진다).
  */
-export function importItemsToStore(storeId: string, items: readonly IcsSeriesItem[]): { created: number; skipped: number } {
-    if (!api) return { created: 0, skipped: 0 };
+export function importItemsToStore(storeId: string, items: readonly IcsSeriesItem[]): { created: number; skipped: number; rejected: number; reasons: string[] } {
+    if (!api) return { created: 0, skipped: 0, rejected: 0, reasons: [] };
     const existing = api.children(storeId)
         .filter((n) => n.type === EVENT_TYPE)
         .map((n) => ((n.data ?? {}) as StoredEvent).uid)
         .filter((u): u is string => !!u);
     const { specs, skipped } = planImport(existing, items);
-    let created = 0;
+    let created = 0, rejected = 0;
+    const reasons: string[] = [];
     for (const s of specs) {
+        // 저장 전 검증(프리셋 beforeSave) — 거절된 줄은 건너뛰고 사유를 모은다(건마다 토스트를 띄우지 않게 silent · 한 번에 묶어 보인다)
+        const v = checkBeforeSave(storeId, { name: s.name, start: s.data.start, end: s.data.end, allDay: s.data.allDay, memo: s.data.memo ?? '', values: {} }, { kind: 'create', silent: true });
+        if (!v.ok) { rejected++; if (!reasons.includes(v.reason)) reasons.push(v.reason); continue; }
         const data = eventToStored(s.data);
         if (s.pattern) data.values.when = { ...(data.values.when as DateValue), pattern: s.pattern };
         if (api.create(storeId, { type: EVENT_TYPE, name: s.name, data })) created++;
     }
-    return { created, skipped };
+    return { created, skipped, rejected, reasons };
 }
 
 /**
