@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { commitFiles, FILES_MAX, appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, siteState, checkServices, sinkService } from './snapshot.mjs'
+import { commitFiles, FILES_MAX, appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, siteState, checkServices, sinkService, withPicked } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -385,6 +385,12 @@ describe('보고꾼 — 요청함 R 카드', () => {
     expect(row.type).toBe('🛠 앱')
     expect(row.state).toBe('✅ T-7p1 끝')
     expect(row.what).toContain('[[노트#절|별칭]]')
+  })
+
+  it('집은 카드는 요청함 상태를 덮지만, 요청함 줄이 ✅ 면 끝이 이긴다', () => {
+    const rows = [{ id: 'R1', state: '✅ `59aed9b` (T-10bq) · ⬜ 눈 검수' }, { id: 'R2', state: '📥 대기' }]
+    const out = withPicked(rows, new Map([['R1', '→ T-10bq · 세션'], ['R2', '🔨 세션']]))
+    expect(out.map((r) => r.state)).toEqual(['✅ `59aed9b` (T-10bq) · ⬜ 눈 검수', '🔨 세션'])
   })
 
   it('상태 매핑: → T 는 그 태스크를 따르고(없으면 진행) · 대기·끝·진행', () => {
