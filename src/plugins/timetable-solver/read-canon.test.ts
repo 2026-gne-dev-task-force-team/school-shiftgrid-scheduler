@@ -130,3 +130,22 @@ describe('편성 막힘 — 비면 선생님 말로', () => {
         for (const b of readAndBuild(full({ staff: none }), mods).blockers) expect(b.message).toMatch(/[가-힣]/);
     });
 });
+
+describe('일과표 약속(slotsFor)으로 읽기 — T-10ff', () => {
+    const stops = (s: CanonSources) => readAndBuild(s, mods).blockers.filter((b) => b.level === 'stop').map((b) => b.code);
+    const bad = (t: string) => (t === NODE_TYPES.bellSlot ? [row('x', { f_kind: 'class', f_period: 1, f_start: '09:00' })] : rowsByType[t] ?? []);   // 끝 시각 없음
+    it('노드 줄이 못 읽혀도 약속이 읽어 주면 수업 시간이 읽힌다', () => {
+        expect(stops(full({ rows: bad }))).toContain('no-slots');
+        const r = readAndBuild(full({ rows: bad, classSlots: (g) => (g === 1 ? [{ period: 1, start: '09:00', end: '09:40' }] : []) }), mods);
+        expect(r.input.specs).toHaveLength(1);
+        expect(r.blockers.map((b) => b.code)).not.toContain('no-slots');
+    });
+    it('노드 줄이 읽히면 약속 값을 보태지 않는다', () => {
+        const r = readCanon(full({ classSlots: () => [{ period: 9, start: '15:00', end: '15:40' }] }));
+        expect(r.canon.bell).toHaveLength(2);
+    });
+    it('막힘 문구가 무엇을 하면 풀리는지 말한다', () => {
+        const m = readAndBuild(full({ rows: bad }), mods).blockers.find((b) => b.code === 'no-slots')!.message;
+        expect(m).toContain('일과표에 학년별 수업 칸');
+    });
+});

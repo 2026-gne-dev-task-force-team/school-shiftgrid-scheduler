@@ -9,6 +9,7 @@ import type { Staff } from '../staff/contracts/staff';
 import type { School } from '../school/contracts/school';
 import type { Subjects } from '../subjects/contracts/subjects';
 import type { Rooms } from '../rooms/contracts/rooms';
+import type { Clock, ClassSlot } from '../bell/contracts/clock';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type {
@@ -39,6 +40,8 @@ export interface CanonSources {
     /** 시간표 한 장마다 데이터(range 를 가진 객체) — 기간만 읽는다. */
     sheetData(): unknown[];
     blocks: readonly SolverBlockRow[];
+    /** 일과표 약속(clock)이 그 학년에 대해 읽어 주는 수업 칸 시각 — 정본을 약속으로 읽는다. 없으면(꺼짐·시험) 노드 줄만 쓴다. */
+    classSlots?(grade: number): ClassSlot[];
 }
 
 const str = (x: unknown): string | undefined => (typeof x === 'string' && x !== '' ? x : undefined);
@@ -62,6 +65,22 @@ function bellRows(rows: RowLike[]): CanonBellRow[] {
             start: str(v.f_start), end: str(v.f_end), grades: Array.isArray(v.f_grades) ? (v.f_grades as string[]) : [],
         };
     });
+}
+
+/**
+ * 일과표 약속이 읽어 주는 수업 칸을 보탠다 — 노드 줄만으로는 그 학년의 수업 칸이 안 읽히는데 약속은 읽을 수 있으면(칸 꼴이 어긋난 경우)
+ *   그 학년 줄로 채운다. 노드 줄이 이미 읽히면 건드리지 않는다(점심·쉬는 시간 줄을 잃지 않게).
+ */
+function withClockSlots(bell: CanonBellRow[], classes: SolverCanon['classes'], src: CanonSources): CanonBellRow[] {
+    if (!src.classSlots) return bell;
+    const have = (g: number) => bell.some((r) => r.kind === 'class' && r.start && r.end && (!r.grades?.length || r.grades.includes(String(g))));
+    const out = [...bell];
+    const grades = [...new Set(classes.map((c) => c.grade).filter((g): g is number => typeof g === 'number'))];
+    for (const g of grades) {
+        if (have(g)) continue;
+        for (const s of src.classSlots(g)) out.push({ kind: 'class', period: s.period, start: s.start, end: s.end, grades: [String(g)] });
+    }
+    return out;
 }
 
 function dutyRows(rows: RowLike[]): CanonDutyRow[] {
@@ -134,7 +153,7 @@ export function readCanon(src: CanonSources): ReadResult {
         school: { name: schoolName },
         range: range ?? { startDate: '', endDate: '' },
         staff: staffRows, classes, subjects, rooms,
-        bell: bellRows(src.rows(NODE_TYPES.bellSlot)),
+        bell: withClockSlots(bellRows(src.rows(NODE_TYPES.bellSlot)), classes, src),
         duty: dutyRows(src.rows(NODE_TYPES.dutyEntry)),
         demands: demandRows(src.rows(NODE_TYPES.demandRow)),
         blocks: src.blocks,
@@ -158,7 +177,7 @@ export function planBlockers(canon: SolverCanon, built: BuildResult, readBlocker
     if (canon.classes.length === 0 && !have('school-off')) stop('no-class', '학교 정보에 반이 하나도 없습니다');
     if (canon.subjects.length === 0 && !have('subjects-off')) stop('no-subject', '과목 목록이 비어 있습니다');
     if (canon.bell.length === 0) stop('no-bell', '일과표에 교시가 하나도 없습니다');
-    else if (built.input.specs.length === 0) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 교시의 시작·끝 시각을 확인해 주세요');
+    else if (built.input.specs.length === 0) stop('no-slots', '일과표에서 수업 시간을 읽지 못했습니다 — 일과표에 학년별 수업 칸(구분 「수업」·교시·시작·끝 시각)을 넣어 주세요. 학년 칸을 비우면 전 학년입니다');
     const noGrade = canon.classes.filter((c) => c.grade === undefined).length;
     if (noGrade > 0) stop('no-grade', `학년이 정해지지 않은 반이 ${noGrade}개 있어 시간 틀을 못 맞춥니다`);
     if (built.input.demands.length === 0) stop('no-demand', canon.demands.length === 0 ? '시수표에 수업 줄이 하나도 없습니다' : '시수표의 모든 줄에 빈 칸이 있어 쓸 수 있는 수업이 없습니다');
@@ -184,6 +203,7 @@ export function readAndBuild(src: CanonSources, mods: BuildModules): ReadResult 
 /** 실제 호스트에서 읽을 손잡이를 만든다 — 약속 넷은 supports 로 선언돼 있어야 한다(꺼져 있으면 null). */
 export function canonSourcesFromHost(host: PluginHost): CanonSources {
     const nodes = host.modules.use<NodesApi>('nodes');
+    const clock = host.modules.use<Clock>('clock');
     return {
         staff: host.modules.use<Staff>('staff'),
         school: host.modules.use<School>('school'),
@@ -195,5 +215,6 @@ export function canonSourcesFromHost(host: PluginHost): CanonSources {
         }),
         sheetData: () => (nodes?.liveByType(NODE_TYPES.gridSheet) ?? []).map((n) => n.data),
         blocks: loadBlocks(host),
+        classSlots: clock ? (g) => clock.slotsFor(g) : undefined,
     };
 }
