@@ -54,12 +54,16 @@ export interface StaffMember {
 export interface StaffInput {
     name: string;
     memo?: string;
+    /** 🔴 R4(T-10ey) — 구분 값(kind 읽기와 같은 value). 선택 · 안 주면 칸을 비운다. */
+    kind?: string;
 }
 
 /** 사람 한 줄을 부분으로 고칠 때(빈 patch 는 무변경). */
 export interface StaffPatch {
     name?: string;
     memo?: string;
+    /** 🔴 R4(T-10ey) — 구분 값 고치기. 빈 문자열이면 칸을 비운다. */
+    kind?: string;
 }
 
 /**

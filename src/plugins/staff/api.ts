@@ -39,11 +39,12 @@ export const staffApi: Staff = {
     lists: () => getKit()?.lists() ?? [],
     staffIn: (listId) => getKit()?.itemsIn(listId).map(toMember) ?? [],
     member: (id) => { const it = getKit()?.itemOf(id); return it ? toMember(it) : undefined; },
-    addMember: (listId, input) => getKit()?.addItem(listId, { name: input.name, memo: input.memo ?? '' }) ?? '',
+    addMember: (listId, input) => getKit()?.addItem(listId, { name: input.name, memo: input.memo ?? '', ...(input.kind ? { f_kind: input.kind } : {}) }) ?? '',
     updateMember: (id, patch) => {
         const k = getKit();
         if (patch.name !== undefined) k?.setValue(id, 'name', patch.name);
         if (patch.memo !== undefined) k?.setValue(id, 'memo', patch.memo);
+        if (patch.kind !== undefined) k?.setValue(id, 'f_kind', patch.kind);
     },
     removeMember: (id) => getKit()?.removeItem(id),
     moveMember: (id, listId, index) => getKit()?.moveItem(id, listId, index),
