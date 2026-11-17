@@ -18,7 +18,7 @@ import { CORE_PLUGINS } from '../pane-ui-system/core';
 
 import { calendarPlugin } from '../plugins/calendar';
 import { accountPlugin } from '../plugins/account';
-import { accountServerPlugin } from '../plugins/account-server';
+import { accountServerPlugin, isServerMode } from '../plugins/account-server';
 import { peoplePlugin } from '../plugins/people';
 import { sheetPlugin } from '../plugins/sheet';
 import { serverLinkPlugin } from '../plugins/server-link';
@@ -44,6 +44,7 @@ import { opsDaysPlugin } from '../plugins/ops-days';
 import { opsAuxPlugin } from '../plugins/ops-aux';
 import { paneTestPlugin } from '../plugins/pane-test';
 import { INSTALLED_PLUGIN_IDS } from './site-config';
+import config from '../../site.config.json';
 
 
 // 🔴 코어 넷(settings·explorer·selection·properties)은 core:true 라 activateAll 이 목록 순서와 무관하게 먼저 활성한다. ⛔ 설정·탐색기는 끌 수 없다.
@@ -57,10 +58,19 @@ const CATALOG: Record<string, PluginModule> = {
     subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'demand-table': demandTablePlugin, 'timetable-solver': timetableSolverPlugin, 'timetable-plans': timetablePlansPlugin, 'v1-file': v1FilePlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'ops-aux': opsAuxPlugin,
 };
 
+/**
+ * 🔴 ③ F3 — 서버 모드(site.config 의 supabaseUrl·anonKey 둘 다 참)에서는 로컬 account 를 목록에서 뺀다.
+ *    안 빼면 account-server 가 약속 승자라도 진 account 가 standby 로 켜져 「지금 누구」 단추가 둘 선다.
+ *    로컬 모드(빈 칸)는 목록 그대로 — 활성 골든 무변경.
+ */
+export function pluginIdsFor(ids: readonly string[], serverMode: boolean): readonly string[] {
+    return serverMode ? ids.filter((id) => id !== 'account') : ids;
+}
+
 export const PLUGINS: PluginModule[] = [
     // 코어(core/)는 늘 설치 — settings → explorer → selection → properties → icon-pack-basic(골든 순서)
     ...CORE_PLUGINS,
-    ...INSTALLED_PLUGIN_IDS.map((id) => {
+    ...pluginIdsFor(INSTALLED_PLUGIN_IDS, isServerMode(config)).map((id) => {
         const m = CATALOG[id];
         if (!m) throw new Error('site.config.json plugins 에 카탈로그에 없는 꾸러미: ' + id);
         return m;
