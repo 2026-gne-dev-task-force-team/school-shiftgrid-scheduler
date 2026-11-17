@@ -18,7 +18,7 @@
     "groups": [
       ["staff.open", "subjects.open", "rooms.open", "bell.open"],
       ["demand-table.open", "timetable-solver.open", "timetable-plans.open", "timetable-grid.open"],
-      ["calendar.open", "ops-days.open", "ops-sub.open-list", "ops-sub.open-mine", "substitute.open", "room-booking.open", "duty.open", "ops-aux.open"],
+      ["calendar.open", "ops-days.open", "ops-sub.open", "room-booking.open", "duty.open", "ops-aux.open"],
       ["page.open", "sheet.open", "collection.open", "ops-check.open"]
     ],
     "hidden": ["page.open", "sheet.open", "collection.open", "ops-check.open"]
