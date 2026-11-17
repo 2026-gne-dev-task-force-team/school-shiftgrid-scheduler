@@ -1,5 +1,6 @@
 import { h } from '../dom.ts'
 import { actorLabel, actorName, actorTokens, actorWhat, jobOf, taskNo, teamText } from '../lib/actor.ts'
+import { isKo } from '../lib/ko.ts'
 import { character, raceText, type CharSize } from './character.ts'
 import { DEPT_NAME, STATE_ICON, STATE_NAME } from './chip.ts'
 import type { LayerCtx } from '../layers/types.ts'
@@ -32,7 +33,7 @@ export function actorFacts(a: Actor, data: BoardData, now = Date.now()): [string
   const today = new Date(now).toDateString()
   const done = data.tasks.filter((x) => x.actor_id === a.id && x.column === 'done' && new Date(x.updated_at).toDateString() === today).length
   const rows: [string, string | false | undefined][] = [
-    ['상태', `${STATE_ICON[a.state] ?? ''} ${STATE_NAME[a.state] ?? a.state}`.trim()],
+    ['상태', isKo() ? `😵 쓰러짐 · 한도 초과 (${STATE_NAME[a.state] ?? a.state} 중이었다)` : `${STATE_ICON[a.state] ?? ''} ${STATE_NAME[a.state] ?? a.state}`.trim()],
     ['기기', raceText(a)],
     ['시작', hm(a.started_at)],
     ['마지막 활동', last.length ? ago(now - Math.max(...last)) : ''],

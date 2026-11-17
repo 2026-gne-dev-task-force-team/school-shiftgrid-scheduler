@@ -1,5 +1,6 @@
 import type { Actor } from '../types.ts'
 import { actorLabel } from '../lib/actor.ts'
+import { isKo, koPose } from '../lib/ko.ts'
 
 // 캐릭터 = Claude Code 도트 마스코트(산호 몸통·검은 눈·옆 팔·다리 넷). 눈 칸 색·소품·머리띠 색·몸통 색조(이름 해시 넷)가 다르다(눈 색↔기기 짝은 판에 안 싣는다).
 type Who = Pick<Actor, 'name' | 'eye' | 'prop' | 'race' | 'dept' | 'role' | 'state'> & Partial<Pick<Actor, 'job'>> // job 은 aria-label 「이름 · 직업」에 쓰여 actorLabel 로 넘어간다(없으면 role 로 가린다)
@@ -49,19 +50,24 @@ export const propOf = (a: Pick<Actor, 'prop' | 'role'>): string | undefined => P
 const rect = ([x, y, w, h, f]: R) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`
 const outline = ([x, y, w, h]: R) => rect([x - 1, y - 1, w + 2, h + 2, INK])
 
-/** 같은 입력 → 같은 SVG 문자열(시험·정적 견본용). */
-export function characterSvg(a: Who, size: CharSize = 'chip'): string {
+const XEYE = '#6b1f2a' // 쓰러진 눈 X 색 — 몸통(산호)·검정 위에서 다 보이는 어두운 적갈색
+
+/** 같은 입력 → 같은 SVG 문자열(시험·정적 견본용). ko = 쓰러진 방향(0~5) · null 이면 평소 모습. */
+export function characterSvg(a: Who, size: CharSize = 'chip', ko: number | null = isKo() ? koPose(a.name) : null): string {
   const eye = eyeColor(a), band = BAND[a.dept] ?? BAND.make, prop = propOf(a), px = PX[size], body = bodyColor(a)
-  const sleepy = a.state === 'idle' || a.state === 'off' || a.state === 'done' // 쉼·퇴근 = 눈이 반쯤 감긴다(한 줄)
+  const down = ko !== null // 쓰러짐(7일 한도 초과) — 눈 X · 표지 없음 · 몸은 CSS [data-ko] 가 돌린다
+  const sleepy = !down && (a.state === 'idle' || a.state === 'off' || a.state === 'done') // 쉼·퇴근 = 눈이 반쯤 감긴다(한 줄)
   const cls = (c: string, rs: R[]) => `<g class="${c}">${rs.map(rect).join('')}</g>`
   // 쉼 = 머리 옆 작은 Z · 막힘 = 머리 위 !(색은 CSS 변수가 입힌다)
-  const mark = a.state === 'idle' ? cls('chr-z', [[12, -3, 3, 1, ''], [13, -2, 1, 1, ''], [12, -1, 3, 1, '']])
+  const mark = down ? '' : a.state === 'idle' ? cls('chr-z', [[12, -3, 3, 1, ''], [13, -2, 1, 1, ''], [12, -1, 3, 1, '']])
     : a.state === 'blocked' ? cls('chr-bang', [[6, -4, 2, 3, ''], [6, 0, 2, 1, '']]) : ''
   const shell: R[] = [[3, 1, 8, 1, band], [2, 2, 10, 6, body], [1, 4, 1, 2, body], [12, 4, 1, 2, body], ...(prop ? PROPS[prop] : []), ...raceProp(a)]
   const legs = (xs: number[]) => xs.map((x): R => [x, 8, 1, 2, body])
-  const eyes = (x: number) => sleepy ? [[x, 5, 2, 1, INK] as R] : [[x, 4, 2, 2, INK] as R, [x, 4, 1, 1, eye] as R]
+  // X 눈 = 3×3 칸 대각선 둘(x..x+2 · y3..5) — 평소 눈(2×2, y4..5)보다 한 칸 크다
+  const xeye = (x: number): R[] => [[x, 3, 1, 1, XEYE], [x + 2, 3, 1, 1, XEYE], [x + 1, 4, 1, 1, XEYE], [x, 5, 1, 1, XEYE], [x + 2, 5, 1, 1, XEYE]]
+  const eyes = (x: number) => down ? xeye(x - 1) : sleepy ? [[x, 5, 2, 1, INK] as R] : [[x, 4, 2, 2, INK] as R, [x, 4, 1, 1, eye] as R]
   const leg = (cls: string, xs: number[]) => `<g class="${cls}">${legs(xs).map(outline).join('')}${legs(xs).map(rect).join('')}</g>`
-  return `<svg class="chr" data-state="${a.state}" data-size="${size}" role="img" aria-label="${esc(actorLabel(a))}" width="${px}" height="${Math.round(px * GH / GW)}" viewBox="0 0 ${GW} ${GH}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">` +
+  return `<svg class="chr${down ? ' chr-x' : ''}" data-state="${a.state}"${down ? ` data-ko="${ko}"` : ''} data-size="${size}" role="img" aria-label="${esc(actorLabel(a))}${down ? ' · 쓰러짐' : ''}" width="${px}" height="${Math.round(px * GH / GW)}" viewBox="0 0 ${GW} ${GH}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">` +
     `<g class="chr-b">${shell.map(outline).join('')}${leg('chr-l1', [3, 8])}${leg('chr-l2', [5, 10])}${shell.map(rect).join('')}` +
     `<g class="chr-e">${[4, 8].flatMap(eyes).map(rect).join('')}</g></g>${mark}</svg>`
 }

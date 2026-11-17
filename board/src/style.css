@@ -113,6 +113,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .meter { margin-top: var(--sp3) } .meter > span { font-weight: 600; font-variant-numeric: tabular-nums } .meter small, .card small { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--fg-3) }
 .bar { height: 6px; margin-top: 4px; background: var(--bg); border-radius: 999px; overflow: hidden; box-shadow: inset 0 1px 2px rgb(var(--sh-rgb) / .25) }
 .bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--make), var(--neon-2)); transition: width .6s var(--ease); animation: sgb-fill .7s var(--ease) backwards .1s }
+.meter.over > span, .meter.over small { color: var(--bad) } .meter.over .bar { box-shadow: inset 0 0 0 1px rgb(var(--bad-rgb) / .5) } .meter.over .bar i { background: var(--bad) } /* 한도 초과 — 꽉 찬 붉은 막대 */
 .ph { margin: auto; text-align: center; color: var(--fg-3) }
 .detail-head { display: flex; justify-content: flex-end; gap: 6px }
 .detail-body h3 { margin: var(--sp2) 0; font-size: var(--fs-lg) }
@@ -285,6 +286,16 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
   .chr-z rect { fill: var(--fg-2) }
   .chr-bang rect { fill: var(--bad) }
   .chr[data-state=idle] .chr-z { animation: sgb-chr-z 2.4s ease-in-out infinite }
+  /* 쓰러짐(lib/ko.ts · 7일 한도 초과) — 눈 X 는 그림 자체(.chr-x), 몸은 이름 해시 [data-ko] 로 여섯 방향 중 하나로 넘어진다. 걷기·깜빡·갸웃은 다 멎고 흐려지지 않는다(쓰러진 게 보여야 한다) */
+  .chr.chr-x .chr-b { transform-origin: 9px 6px; animation: none !important }
+  .chr.chr-x .chr-l1, .chr.chr-x .chr-l2, .chr.chr-x .chr-e { animation: none !important }
+  .chr.chr-x[data-state=done], .chr.chr-x[data-state=off] { opacity: .85 }
+  .chr.chr-x[data-ko="0"] .chr-b { transform: rotate(90deg) }
+  .chr.chr-x[data-ko="1"] .chr-b { transform: rotate(-90deg) }
+  .chr.chr-x[data-ko="2"] .chr-b { transform: rotate(180deg) translateY(-1px) }
+  .chr.chr-x[data-ko="3"] .chr-b { transform: rotate(72deg) translateY(1px) }
+  .chr.chr-x[data-ko="4"] .chr-b { transform: rotate(-108deg) translateY(1px) }
+  .chr.chr-x[data-ko="5"] .chr-b { transform: rotate(155deg) }
   .feed-line .chr { margin-right: 8px }
   .chr-card { display: flex; justify-content: center; padding: var(--sp3) 0; margin-top: var(--sp2); border-radius: var(--r2); background: radial-gradient(circle at 50% 60%, rgb(217 119 87 / .18), transparent 70%) }
 }
@@ -336,6 +347,27 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
     --chip-s: 45%; --chip-l: 22%; --chip-l-hover: 28%; --chip-bd-l: 62%; --chip-bd-l-hover: 70%; --gg-fg-l: 78%; --gg-ring-l: 70%; --branch-l: 62%;
   }
 }
+
+/* 쓰러짐 — 불 꺼진 판(lib/ko.ts · embed.ts 가 .ko 를 단다). 너무 어둡지 않게 생기만 뺀다: 강조색은 회색조, 네온 비침·커서 깜빡·숨쉬기·복도 걷기는 멎는다.
+   어두운 벌 뒤에 둬야 토큰이 이긴다(같은 특이도 .sgb.ko · 나중 것). 한도가 내려오면 .ko 가 떨어져 전부 원복 */
+.sgb.ko {
+  --neon: #6b7680; --neon-2: #566270; --neon-rgb: 107 118 128; --neon-soft: rgb(107 118 128 / .12); --make: #6b7680; --hq: #7d766a; --qa: #726d80;
+  --floor: #d6cdbd; --floor-rgb: 60 55 45; --floor-edge: #6b6256; --wall: #74707a; --breathe: var(--line); --flash: var(--s3); --scaffold: #ddd6c7;
+}
+.sgb.ko[data-theme="dark"] { --neon: #7b8690; --neon-2: #96a1ab; --neon-rgb: 123 134 144; --neon-soft: rgb(123 134 144 / .12); --make: #7b8690; --hq: #9a9385; --qa: #8f8a9c; --floor: #2b2724; --floor-edge: #171310; --wall: #3b3942; --scaffold: #3a3630 }
+@media (prefers-color-scheme: dark) {
+  .sgb.ko[data-theme="auto"] { --neon: #7b8690; --neon-2: #96a1ab; --neon-rgb: 123 134 144; --neon-soft: rgb(123 134 144 / .12); --make: #7b8690; --hq: #9a9385; --qa: #8f8a9c; --floor: #2b2724; --floor-edge: #171310; --wall: #3b3942; --scaffold: #3a3630 }
+}
+.sgb.ko .sgb-drawer { background: var(--bg) } /* 네온 비침 끔 */
+.sgb.ko .sgb-bar { box-shadow: 0 1px 0 var(--line) }
+.sgb.ko .stage, .sgb.ko .feed, .sgb.ko .tabs, .sgb.ko .band-drop, .sgb.ko .detail { filter: saturate(.55) contrast(.96) } /* 각자에게 — .sgb-page 전체에 걸면 fixed 바텀시트가 깨진다 */
+.sgb.ko .tabs .btn.on::before { animation: none; opacity: .6 }
+.sgb.ko .card { animation-name: sgb-pop } /* 숨쉬기 끔 */
+.sgb.ko .ws-roamer { animation-play-state: paused }
+.sgb.ko .ws-col[data-col=work] .ws-card .chr, .sgb.ko .lane-chip.flash, .sgb.ko .bp-room.scaffold { animation: none }
+.sgb.ko .meter:not(.over) .bar i { background: linear-gradient(90deg, var(--fg-3), var(--fg-2)) }
+.sgb.ko .sgb-status.sgb-ko { color: var(--fg-2); border-color: rgb(var(--bad-rgb) / .35); background: var(--s1) }
+.sgb.ko .sum-states [data-state=ko] { color: var(--bad); font-weight: 650 }
 
 /* 카드 상세(지라 꼴, R71) — 좁은 칸은 옆칸이 위, 넓게(↕) 열면 본문 | 옆칸 두 줄 */
 .td { display: flex; flex-direction: column-reverse; gap: var(--sp3) }

@@ -12,6 +12,7 @@ import { applyUpdate, clearThisDevice, loadSeen } from './lib/purge.ts'
 import { loadTheme, saveTheme, type Theme } from './lib/theme.ts'
 import { agoText, fetchRemote, loadLast, saveLast, type Last, type Remote } from './lib/remote.ts'
 import { connectRealtime } from './lib/realtime.ts'
+import { knockout, koText, readForce, setKo, stageKo } from './lib/ko.ts'
 import { fetchVersionState, isNewer, type VersionInfo } from './lib/version.ts'
 import { createBand } from './ui/band.ts'
 import { createDetail } from './ui/detail.ts'
@@ -48,7 +49,12 @@ let setDrawer: (on: boolean) => void = () => {}
 function render(notice = false): void {
   clearInterval(poll)
   band?.dispose()
-  const data = loadData(Date.now(), remote, app, { keyed, settled, last })
+  const raw = loadData(Date.now(), remote, app, { keyed, settled, last })
+  // 쓰러짐(lib/ko.ts) — 기관 7일 한도 100% 면 캐릭터 눈 X·판 탈색, 화면에서만 퇴근 캐릭터를 이전 티켓 위에 다시 세운다. 자료는 raw 그대로 두고, 한도가 내려오면 다음 render 가 원복한다.
+  const ko = knockout(raw.usage, readForce(localStorage, location.search))
+  setKo(ko)
+  root!.classList.toggle('ko', ko.on)
+  const data = ko.on ? stageKo(raw) : raw
   const applyCalm = (on: boolean) => root!.classList.toggle('calm', on)
   applyCalm(calmOn())
   const theme = loadTheme(localStorage)
@@ -106,6 +112,7 @@ function render(notice = false): void {
     page.replaceChildren(bnd.drop, h('div', { class: 'card sgb-status', role: 'status' }, h('b', null, msg), ...(data.source === 'failed' ? [' ', retry] : [])))
   } else {
     const note = data.source === 'stale' ? [h('div', { class: 'card sgb-status', role: 'status' }, `서버 못 읽음 · 마지막 성공 ${agoText(Date.now(), data.staleAt ?? 0)} 값입니다.`)] : []
+    if (ko.on) note.push(h('div', { class: 'card sgb-status sgb-ko', role: 'status' }, '😵 ', koText(ko))) // 티켓이 아니라 조용한 상태 한 줄
     page.replaceChildren(bnd.drop, ...note, tabs, h('div', { class: 'body' }, feed, stage.el, detail.el))
     show(restoreTab(curTab, LAYERS.length))
   }

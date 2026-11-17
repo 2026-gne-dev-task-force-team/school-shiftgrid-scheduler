@@ -76,6 +76,15 @@ describe('R74 종족', () => {
       expect(s.length - base.length).toBeLessThan(260)
     }
   })
+  it('쓰러짐(한도 초과) — 눈 X · 방향 표시 · 표지(Z·!) 없음 · 평소엔 흔적이 없다', () => {
+    const plain = characterSvg(A, 'chip', null), down = characterSvg({ ...A, state: 'idle' }, 'chip', 3)
+    expect(plain).not.toContain('chr-x'); expect(plain).not.toContain('data-ko')
+    expect(down).toContain('class="chr chr-x"'); expect(down).toContain('data-ko="3"'); expect(down).toContain('#6b1f2a')
+    expect(down).not.toContain('chr-z'); expect(characterSvg({ ...A, state: 'blocked' }, 'chip', 0)).not.toContain('chr-bang')
+    expect(down).toContain('쓰러짐'); expect(down).toContain('data-state="idle"') // 상태는 그대로 남아 CSS 흐림 규칙 등이 가른다
+    // 기본값은 모듈 스위치(setKo) 를 따른다
+    expect(characterSvg(A)).toBe(plain)
+  })
 })
 
 describe('상태별 수', () => {
