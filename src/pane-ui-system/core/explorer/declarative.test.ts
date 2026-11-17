@@ -46,14 +46,15 @@ beforeEach(() => {
 afterEach(() => { disposeOwner(OWNER); clearTypes(); __resetPersistForTest(); });
 
 describe('① 선언형으로 켜도 뷰·명령·리본·상태바가 옛 집합과 같다', () => {
-    it('명령 18(16 선언 + new-folder·new-section) · 뷰 tree · 리본 open-panel · 상태바 count', () => {
+    it('명령 18(16 선언 + new-folder·new-section) · 뷰 tree · 상태바 count (T-30e: 리본에서 뺌)', () => {
         activateAll([explorerPlugin]);
 
         const cmds = listCommands().filter((c) => c.owner === OWNER).map((c) => c.id).sort();
         expect(cmds, '명령 집합이 옛 그대로(18)').toEqual(EXPECTED_COMMANDS);
 
         expect(getView('explorer.tree'), '뷰가 접두사 붙어 등록').toBeTruthy();
-        expect(listRibbonActions().some((a) => a.id === 'explorer.open-panel'), '리본이 open-panel 을 가리킴').toBe(true);
+        // 🔴 T-30e: 탐색기는 리본에서 뺐다(셸 위쪽 모서리 옆판 토글로) — open-panel 명령은 그대로 남는다.
+        expect(listRibbonActions().some((a) => a.id === 'explorer.open-panel'), '리본에 더는 없다').toBe(false);
         expect(listStatusItems().some((s) => s.owner === OWNER && s.id === 'count'), '상태바 count').toBe(true);
 
         expect(listPlugins().find((p) => p.id === OWNER)?.failed, '활성 실패 아님').toBe(false);

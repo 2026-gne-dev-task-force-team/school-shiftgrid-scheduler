@@ -11,7 +11,7 @@
  *    어느 단추를 그릴지는 tabButtons 로 받는다. ⛔ 창틀은 그 자리가 무엇인지(도메인)는 모른다.
  * 🔴 W5 우클릭 메뉴는 전부 이미 있는 순수 연산(close·split·move)을 부른다 — 트리 연산을 새로 짜지 않는다.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Node, Leaf, MovePos } from '../../layout/tree';
 import { flatten, firstTabs, lastTabs, MIN_FRACTION } from '../../layout/tree';
 import { getView, canPlace, leafTitle } from '../../view-registry';
@@ -94,6 +94,11 @@ export interface CenterEdges {
     onExpandLeft?: () => void;
     /** 오른쪽 사이드바 펴기 */
     onExpandRight?: () => void;
+    /**
+     * 🔴 늘 보이는 오른끝 토글 묶음(T-30e) — 리본에서 뺀 옆판·알림 토글이 여기로 온다.
+     *   끝 탭 줄 바깥 오른끝(◨ 펴기 단추 앞)에 그린다. ⛔ 창틀은 이게 무슨 토글인지 모른다(셸이 조립해 넘긴다).
+     */
+    trailing?: ReactNode;
 }
 
 /** 가운데 끝 슬롯을 어느 탭 줄에 붙일지 + 콜백 — NodeView 가 받아 첫/끝 탭 줄에만 그린다 */
@@ -102,6 +107,7 @@ interface Edges {
     lastId: string | null;
     onExpandLeft?: () => void;
     onExpandRight?: () => void;
+    trailing?: ReactNode;
 }
 
 function toItems(leaves: Leaf[]): TabItem[] {
@@ -237,6 +243,7 @@ export function WorkspaceView({
         lastId: lastTabs(node)?.id ?? null,
         onExpandLeft: centerEdges.onExpandLeft,
         onExpandRight: centerEdges.onExpandRight,
+        trailing: centerEdges.trailing,
     };
     return (
         // 🔴 data-area — 드롭이 빈 칸으로 떨어질 때 「어느 자리인가」를 더듬는 기준(resolveDropAt)
@@ -286,8 +293,13 @@ function NodeView({
         const expandRightBtn = edges?.onExpandRight && node.id === edges.lastId && (
             <IconButton icon="panelRight" label="오른쪽 사이드바 펴기" onClick={edges.onExpandRight} className="mr-pad shrink-0" />
         );
+        // 🔴 늘 보이는 오른끝 토글 묶음(T-30e) — 끝 탭 줄에만, ◨ 펴기 단추 앞에 그린다
+        const edgeTrailing = edges?.trailing && node.id === edges.lastId ? edges.trailing : null;
         const leading = chrome?.side === 'left' ? collapseBtn : (expandLeftBtn || undefined);
-        const trailing = chrome?.side === 'right' ? collapseBtn : (expandRightBtn || undefined);
+        const trailing = chrome?.side === 'right' ? collapseBtn
+            : (edgeTrailing || expandRightBtn)
+                ? <>{edgeTrailing}{expandRightBtn}</>
+                : undefined;
         // 🔴 ⬓ 가르기 단추 = 틀 조작 — 옆/아래에 빈 탭을 연다(복제 아님, 쥔님 19:34). 활성 탭이 있을 때만 그린다(빈 묶음엔 안 그린다, W8 버그).
         //    + 새 탭 = 틀 조작이라 늘 보인다. 뷰의 placement 는 안 본다 — 세로 나누기가 모든 뷰에서 막혀 있던 원인이 이 가름이었다
         const splitSource = activeLeaf ? activeLeaf.id : undefined;
