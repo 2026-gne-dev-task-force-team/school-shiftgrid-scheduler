@@ -14,6 +14,7 @@ export function DetailView({ source, viewer, date, rowId, now = today }: { sourc
     const [msg, setMsg] = useState<string | null>(null);
     const reload = async () => setDay(await src.loadSlots(date));
     useEffect(() => { void reload(); }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { const s = src.onChange(() => { void reload(); }); return () => { s.dispose(); }; }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (day === null) return <p className="p-4 text-small text-muted">불러오는 중…</p>;
     const row = day.find((r) => r.id === rowId);

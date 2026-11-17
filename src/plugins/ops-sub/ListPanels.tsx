@@ -11,8 +11,12 @@ function useRows(): VisibleRow[] | null {
     const [rows, setRows] = useState<VisibleRow[] | null>(null);
     useEffect(() => {
         let live = true;
-        void getSlotSource().loadSlots(today()).then((r) => { if (live) setRows(applyVisibility(r, getViewer())); });
-        return () => { live = false; };
+        const src = getSlotSource();
+        const load = () => { void src.loadSlots(today()).then((r) => { if (live) setRows(applyVisibility(r, getViewer())); }); };
+        load();
+        // 🔴 등록·맡기·삭제 뒤 목록이 새로 읽는다 — 한 번만 읽으면 올린 줄이 화면에 안 보인다.
+        const sub = src.onChange(load);
+        return () => { live = false; sub.dispose(); };
     }, []);
     return rows;
 }
