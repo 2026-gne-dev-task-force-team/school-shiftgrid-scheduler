@@ -2,6 +2,7 @@
 // DB 접근은 좁은 RoomDb 로 주입받는다(index.ts 가 supabase-js 를 여기 꼴로 감싼다) — 시험은 Postgres 를 흉내 내는 가짜를 넘긴다.
 
 import type { Reservation } from '../../../shared/room-rules.ts';
+import { assertMayOpen } from '../_shared/crypto-scope.ts';
 import { aadRoom } from '../_shared/crypto/aad.ts';
 import { open, seal, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 
@@ -56,6 +57,55 @@ export function classifyInsertError(e: DbError | null): 'rr_slot_uq' | 'rr_track
     throw new Error('알 수 없는 유일 제약 위반');
 }
 
+/**
+ * 그 프로젝트에서 주어진 방 중 예약 행이 하나라도 남은 방의 id — parts 함수의 방 삭제 409(check.ts `reservedRooms`)용.
+ * 평문 열 `room_id` 만 본다(봉투는 열지 않는다 — parts 함수의 여는 범위에 예약 행은 없다). 지난 예약도 센다(행이 남은 한 방을 지우지 못한다).
+ */
+export async function reservedRoomIds(db: Pick<RoomDb, 'select'>, projectId: string, roomIds: readonly string[]): Promise<Set<string>> {
+    if (roomIds.length === 0) return new Set();
+    const { data, error } = await db.select(projectId, {});
+    if (error) throw new Error('room_reservation 읽기 실패');
+    const want = new Set(roomIds);
+    return new Set((data ?? []).filter((r) => r.project_id === projectId && want.has(r.room_id)).map((r) => r.room_id));
+}
+
+// ── supabase-js → RoomDb(rooms·parts 진입점이 같이 쓴다) ──────────
+
+const toHex = (b: Bytes) => '\\x' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+function fromPg(v: unknown): Bytes {
+    const s = String(v);
+    if (!s.startsWith('\\x')) throw new Error('bytea 꼴이 아닙니다');
+    const out = new Uint8Array(new ArrayBuffer((s.length - 2) / 2));
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(s.slice(2 + i * 2, 4 + i * 2), 16);
+    return out;
+}
+
+const COLS = 'id, project_id, room_id, date, start_min, end_min, slot_no, track_name, body_ct';
+
+/** supabase-js 클라이언트를 RoomDb 꼴로 감싼다(체인 꼴은 넓어 여기서만 느슨하게 받는다) */
+// oxlint-disable-next-line typescript/no-explicit-any
+export function supabaseRoomDb(sb: any): RoomDb {
+    return {
+        async select(projectId, q) {
+            let b = sb.from('room_reservation').select(COLS).eq('project_id', projectId);
+            if (q.id !== undefined) b = b.eq('id', q.id);
+            if (q.from !== undefined) b = b.gte('date', q.from);
+            if (q.to !== undefined) b = b.lte('date', q.to);
+            const { data, error } = await b;
+            const rows = (data as Record<string, unknown>[] | null)?.map((r) => ({ ...r, body_ct: fromPg(r.body_ct) }) as RoomRow) ?? null;
+            return { data: rows, error: error as DbError | null };
+        },
+        async insert(row) {
+            const { error } = await sb.from('room_reservation').insert({ ...row, body_ct: toHex(row.body_ct) });
+            return { error: error as DbError | null };
+        },
+        async delete(projectId, id) {
+            const { count, error } = await sb.from('room_reservation').delete({ count: 'exact' }).eq('project_id', projectId).eq('id', id);
+            return { count: count ?? 0, error: error as DbError | null };
+        },
+    };
+}
+
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
@@ -70,6 +120,7 @@ export function createRoomStore(db: RoomDb, ring: KeyRing): RoomStore {
         aadRoom(row.project_id, row.id, row.room_id, row.date, row.start_min, row.slot_no, row.track_name, kid);
 
     async function toReservation(row: RoomRow): Promise<Reservation> {
+        assertMayOpen('rooms', 'room');
         const bytes = await open(ring, row.body_ct, aad(row));
         const b = JSON.parse(dec.decode(bytes)) as Body;
         return {

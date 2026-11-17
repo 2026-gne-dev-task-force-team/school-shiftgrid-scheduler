@@ -25,8 +25,10 @@ export const RANGE_MAX_DAYS = 62;
 export interface DayLesson { startMin: number; endMin: number; subject: string | null; teacherIds?: string[]; coIds: string[] }
 export interface DayTrack { name: string; grade: number | null; lessons: DayLesson[] }
 export interface DayPerson { id: string; name: string; kind: string }
+/** 곁 조각이 빠진 채 계산했다는 표시(설계 ① 10절 ⑦ — 조용한 실패 금지) · 빈 목록 = 다 있음 */
+export type PartialMark = { partial?: 'aux'[] };
 /** 그날 입력(덩어리에서 조립 — 조립은 주입 쪽 몫) */
-export type DayResult = { ok: true; tracks: DayTrack[]; people: DayPerson[] } | { ok: false; offReason: string };
+export type DayResult = ({ ok: true; tracks: DayTrack[]; people: DayPerson[] } & PartialMark) | { ok: false; offReason: string };
 
 export interface SubStore {
     /** 날짜 범위(양 끝 포함) 행 — date·start_min 순 */
@@ -49,7 +51,10 @@ export interface SubStore {
 }
 
 /** 엔진 판정 입력(① 8절 「그날 입력」) — 그날 보결 행(`slots`)을 얹어 조립하는 것은 주입 쪽 몫(`buildDayInput`) */
-export type JudgeResult = { ok: true; input: CandInput } | { ok: false; offReason: string };
+export type JudgeResult = ({ ok: true; input: CandInput } & PartialMark) | { ok: false; offReason: string };
+
+/** 응답 JSON 에 얹을 partial — 빠진 곁 조각이 있을 때만 `{partial:['aux']}`(다 있으면 칸 없음) */
+export const partialOf = (r: DayResult | JudgeResult): PartialMark => (r.ok && r.partial && r.partial.length > 0 ? { partial: r.partial } : {});
 
 export interface SubDeps {
     auth: AuthClient;
@@ -267,7 +272,7 @@ async function regOptions(deps: SubDeps, pid: string, date: string | null): Prom
         ...day.tracks.map((t) => ({ id: `homeroom:${t.name}`, name: `${t.name} 담임`, kind: '담임' })),
         ...day.people.filter((p) => !notAbsentable(p)).map((p) => ({ id: p.id, name: p.name, kind: p.kind })),
     ];
-    return jsonResponse({ date, tracks, absentees });
+    return jsonResponse({ date, tracks, absentees, ...partialOf(day) });
 }
 
 async function register(deps: SubDeps, me: Member, b: RegisterBody): Promise<Response> {
@@ -318,7 +323,7 @@ async function register(deps: SubDeps, me: Member, b: RegisterBody): Promise<Res
     const sealed = await Promise.all(rows.map((row) => sealSlot(ring, row)));
     const res = await deps.store.register(sealed, hits.map((h) => ({ id: h.id, updatedAt: h.updatedAt })));
     if (res === 'conflict') throw new HttpError(409, 'register_race', '방금 다른 분이 올렸습니다 — 다시 불러옵니다');
-    return jsonResponse({ rows, skipped, replaced: hits.length });
+    return jsonResponse({ rows, skipped, replaced: hits.length, ...partialOf(day) });
 }
 
 // ── B9: 상세 · 맡기 · 취소 ────────────────────────────
@@ -368,6 +373,7 @@ async function detail(deps: SubDeps, me: Member, id: string): Promise<Response> 
         offReason: judge.ok ? null : judge.offReason,
         me: { personRef, whyNot: meWhy },
         notice: seeNotice ? noticeText(row) : null,
+        ...partialOf(judge),
     });
 }
 

@@ -134,17 +134,17 @@ export function diffCheck(part: string, roles: readonly Role[], prev: unknown, n
     }
 }
 
-/** 예약 행 조회 — 주어진 방 id 중 예약 행이 하나라도 남은 방의 id. 가짜로 시험하고, 실제 꽂기는 rooms/store.ts 의 읽기(listFrom 등)를 감싼다. */
+/** 예약 행 조회 — 그 프로젝트에서 주어진 방 id 중 예약 행이 하나라도 남은 방의 id. 실제 꽂기는 parts/index.ts 가 rooms/store.ts `reservedRoomIds` 로. */
 export interface CheckDeps {
-    reservedRooms?: (roomIds: string[]) => Promise<ReadonlySet<string>>;
+    reservedRooms?: (projectId: string, roomIds: string[]) => Promise<ReadonlySet<string>>;
 }
 
 /** ops.rooms 방 삭제 — 예약 행이 남은 방이 칸에서 빠지면 409. 조회 함수가 꽂히지 않았으면 이 판정은 건너뛴다(꽂는 쪽 몫). */
-async function roomsDiff(deps: CheckDeps, prev: unknown, next: unknown): Promise<void> {
+async function roomsDiff(deps: CheckDeps, projectId: string, prev: unknown, next: unknown): Promise<void> {
     if (!deps.reservedRooms || !isObj(prev) || !isObj(next)) return;
     const gone = removedIds(prev.rooms, next.rooms);
     if (gone.length === 0) return;
-    const reserved = await deps.reservedRooms(gone);
+    const reserved = await deps.reservedRooms(projectId, gone);
     const bad = removedRoomsWithReservations(prev.rooms as { id: string }[], Array.isArray(next.rooms) ? (next.rooms as { id: string }[]) : [], reserved);
     if (bad.length > 0) throw new HttpError(409, 'room_has_reservations', '예약이 있는 방은 지울 수 없습니다(끄기만 가능)', { roomIds: bad });
 }
@@ -152,12 +152,13 @@ async function roomsDiff(deps: CheckDeps, prev: unknown, next: unknown): Promise
 /** handler 의 `deps.check` 로 꽂는다. 꼴 → 차이 차례(꼴이 틀리면 차이는 보지 않는다). ops.rooms 만 예약 조회 때문에 Promise 를 돌려준다. */
 export const makeCheckPart =
     (deps: CheckDeps): PartCheck =>
-    ({ part, roles, next, prev }) => {
+    ({ projectId, part, roles, next, prev }) => {
         const rules = shapeRules(part, next.body);
         if (rules.length > 0) return rules;
-        if (part === 'ops.rooms') return roomsDiff(deps, prev?.body, next.body).then(() => []);
+        if (part === 'ops.rooms') return roomsDiff(deps, projectId, prev?.body, next.body).then(() => []);
         diffCheck(part, roles, prev?.body, next.body);
         return [];
     };
 
+/** 예약 조회 없는 검사(시험·꼴 판정용) — 진입점(index.ts)은 makeCheckPart({reservedRooms}) 로 409 를 켠다 */
 export const checkPart: PartCheck = makeCheckPart({});

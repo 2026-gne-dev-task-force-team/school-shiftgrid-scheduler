@@ -17,6 +17,7 @@
 
 import { ROLES, type Role } from '../../../shared/roles.ts';
 import { requireProjectMember, requireUser, type AuthClient, type Member } from '../_shared/auth.ts';
+import { assertMayOpen } from '../_shared/crypto-scope.ts';
 import { aadPart, aadProject } from '../_shared/crypto/aad.ts';
 import { open, openText, sealText, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 import { errors, HttpError, jsonResponse } from '../_shared/errors.ts';
@@ -314,6 +315,7 @@ export function peopleFromDoc(body: unknown): DocPerson[] {
 
 /** doc 봉투 열기 — 봉투 → gunzip → `{fmt, body}` 의 body(parts 와 같은 꼴 · AAD = part|doc|version) */
 export async function openDocBody(ring: KeyRing, projectId: string, version: number, ct: Bytes): Promise<unknown> {
+    assertMayOpen('account', 'part', 'doc');
     const gz = await open(ring, ct, (kid) => aadPart(projectId, 'doc', version, kid));
     const plain = new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'));
     const parsed = JSON.parse(await new Response(plain).text()) as { body?: unknown };

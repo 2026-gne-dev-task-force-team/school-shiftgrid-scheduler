@@ -119,7 +119,7 @@ function setup(db: PartsReadDb) {
         },
         clock: CLOCK, newId: () => `s${++n}`, allowedOrigin: ORIGIN,
     };
-    const h = (req: Request) => subHandler({ ...base, ...dayLoader((pid, part) => openPartBody(ring, db, pid, part)) })(req);
+    const h = (req: Request) => subHandler({ ...base, ...dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)) })(req);
     return async (tok: string, method: string, path: string, body?: unknown) => {
         const res = await h(new Request(`https://ref.supabase.co/functions/v1/sub/projects/${PID}/${path}`, {
             method, headers: { Authorization: `Bearer ${tok}`, Origin: ORIGIN, 'Content-Type': 'application/json' },
@@ -244,14 +244,14 @@ describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', (
             ],
         });
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        const d = await dayLoader((pid, part) => openPartBody(ring, db, pid, part)).loadDay(PID, '2026-11-17');
+        const d = await dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)).loadDay(PID, '2026-11-17');
         expect(d.ok && d.tracks[0].lessons.map((l) => l.subject)).toEqual([null, '체육']);
     });
 
     it('fixed 조각은 busy 로 · aux 없으면 null(partial) · 있으면 그날 배정', async () => {
         const side = await sealSide({ 'ops.fixed': [{ id: 'f1', personRef: 'a2', dayIndex: 1, startMin: 540, endMin: 580, reason: '회의' }] });
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        const j = await dayLoader((pid, part) => openPartBody(ring, db, pid, part)).loadJudge(PID, '2026-11-17', []);
+        const j = await dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part)).loadJudge(PID, '2026-11-17', []);
         expect(j.ok && j.input.busy).toEqual([{ personId: 'a2', startMin: 540, endMin: 580, reason: '회의' }]);
         expect(auxOn(null, '2026-11-17', 1)).toBeNull();
         const aux = {
@@ -273,7 +273,7 @@ describe('T-10e1 곁 조각 — calendar·changes·fixed·classSubjects·aux', (
 describe('D1 그날 입력 조립 순서 0~⑦ · partial aux (설계 ① 10절)', () => {
     const load = (side: Record<string, CtRow>) => {
         const db = fakeDb({ version: 3, ct: docCt }, side);
-        return dayLoader((pid, part) => openPartBody(ring, db, pid, part));
+        return dayLoader((pid, part) => openPartBody('sub', ring, db, pid, part));
     };
     const slot = { absentId: 'a1', allDay: false, startMin: 590, endMin: 630, status: '확정', takerId: 'a2', trackName: '1-1' } as never;
 

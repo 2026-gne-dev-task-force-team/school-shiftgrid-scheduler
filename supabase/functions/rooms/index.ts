@@ -12,7 +12,7 @@ import { ensureKeys } from '../_shared/crypto/keys.ts';
 import { systemClock } from '../_shared/clock.ts';
 import { HttpError } from '../_shared/errors.ts';
 import { roomsHandler, type RoomsContext, type RoomsData } from './handler.ts';
-import { createRoomStore, type DbError, type RoomDb, type RoomRow } from './store.ts';
+import { createRoomStore, supabaseRoomDb } from './store.ts';
 
 interface DenoLike {
     env: { get(name: string): string | undefined };
@@ -25,7 +25,6 @@ type Sb = any;
 const SUPABASE_JS = 'npm:@supabase/supabase-js@2';
 const deno = (globalThis as unknown as { Deno: DenoLike }).Deno;
 
-const toHex = (b: Bytes) => '\\x' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
 function fromPg(v: unknown): Bytes {
     const s = String(v);
     if (!s.startsWith('\\x')) throw new Error('bytea 꼴이 아닙니다');
@@ -36,30 +35,6 @@ function fromPg(v: unknown): Bytes {
 async function gunzip(b: Bytes): Promise<string> {
     const stream = new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'));
     return await new Response(stream).text();
-}
-
-const COLS = 'id, project_id, room_id, date, start_min, end_min, slot_no, track_name, body_ct';
-
-function makeDb(sb: Sb): RoomDb {
-    return {
-        async select(projectId, q) {
-            let b = sb.from('room_reservation').select(COLS).eq('project_id', projectId);
-            if (q.id !== undefined) b = b.eq('id', q.id);
-            if (q.from !== undefined) b = b.gte('date', q.from);
-            if (q.to !== undefined) b = b.lte('date', q.to);
-            const { data, error } = await b;
-            const rows = (data as Record<string, unknown>[] | null)?.map((r) => ({ ...r, body_ct: fromPg(r.body_ct) }) as RoomRow) ?? null;
-            return { data: rows, error: error as DbError | null };
-        },
-        async insert(row) {
-            const { error } = await sb.from('room_reservation').insert({ ...row, body_ct: toHex(row.body_ct) });
-            return { error: error as DbError | null };
-        },
-        async delete(projectId, id) {
-            const { count, error } = await sb.from('room_reservation').delete({ count: 'exact' }).eq('project_id', projectId).eq('id', id);
-            return { count: count ?? 0, error: error as DbError | null };
-        },
-    };
 }
 
 let handler: ((req: Request) => Promise<Response>) | undefined;
@@ -99,7 +74,7 @@ async function build(): Promise<(req: Request) => Promise<Response>> {
     return roomsHandler({
         allowedOrigin: loadAllowedOrigin(),
         auth: sb as AuthClient,
-        store: createRoomStore(makeDb(sb), ring),
+        store: createRoomStore(supabaseRoomDb(sb), ring),
         context,
         audit() {
             throw new HttpError(501, 'not_wired', '감사 기록(audit.append · B10)이 아직 이어지지 않았습니다');

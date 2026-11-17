@@ -2,6 +2,7 @@
 // 조각 평문 = gzip(JSON `{fmt, body}`)(④ 2절) → 봉투(crypto/envelope). AAD 에 조각 이름·판 번호가 들어간다.
 // gunzip 은 Web 표준 CompressionStream/DecompressionStream(Deno·Node 18+ 둘 다 있음).
 
+import { assertMayOpen, safeLog, type FnName } from './crypto-scope.ts';
 import { aadPart } from './crypto/aad.ts';
 import { EnvelopeError, open, seal, type Bytes, type KeyRing } from './crypto/envelope.ts';
 import { HttpError } from './errors.ts';
@@ -89,25 +90,27 @@ export async function readPartRow(db: PartsReadDb, projectId: string, part: stri
 }
 
 /**
- * 조각 하나를 읽어 연다 → 본문(`body`). 조각이 없으면 null.
+ * 조각 하나를 읽어 연다 → 본문(`body`). 조각이 없으면 null. `fn` = 여는 함수(여는 범위 표 crypto-scope.ts).
  * 봉투·gzip·JSON 이 깨졌으면 500 `decrypt_failed`(원인은 로그에만).
  */
-export async function openPartBody(ring: KeyRing, db: PartsReadDb, projectId: string, part: string): Promise<unknown | null> {
+export async function openPartBody(fn: FnName, ring: KeyRing, db: PartsReadDb, projectId: string, part: string): Promise<unknown | null> {
+    assertMayOpen(fn, 'part', part); // 범위 밖이면 읽지도 않는다
     const row = await readPartRow(db, projectId, part);
-    return row ? openRowBody(ring, projectId, { ...row, part }) : null;
+    return row ? openRowBody(fn, ring, projectId, { ...row, part }) : null;
 }
 
 /** 읽어 온 조각 행 하나를 연다 → 본문(AAD 는 `row.part`·`row.version`). 깨졌으면 500 `decrypt_failed`(`doc`·`doc@<n>` 은 「시간표를 열지 못했습니다」). */
-export async function openRowBody(ring: KeyRing, projectId: string, row: PartRow): Promise<unknown> {
+export async function openRowBody(fn: FnName, ring: KeyRing, projectId: string, row: PartRow): Promise<unknown> {
     const { part } = row;
+    assertMayOpen(fn, 'part', part);
     try {
         return (await openPart(ring, projectId, part, row.version, row.ct)).body;
     } catch (e) {
-        console.error(`decrypt_failed part=${part} ${e instanceof EnvelopeError ? e.code : 'gzip/json'}`);
+        safeLog('decrypt_failed', { fn, part, cause: e instanceof EnvelopeError ? e.code : 'gzip/json' });
         const isDoc = part === 'doc' || part.startsWith('doc@');
         throw new HttpError(500, 'decrypt_failed', isDoc ? '시간표를 열지 못했습니다' : '그날 자료를 열지 못했습니다');
     }
 }
 
 /** 덩어리 `doc` 조각 본문 — `openPartBody(…, 'doc')` */
-export const openDocBody = (ring: KeyRing, db: PartsReadDb, projectId: string): Promise<unknown | null> => openPartBody(ring, db, projectId, 'doc');
+export const openDocBody = (fn: FnName, ring: KeyRing, db: PartsReadDb, projectId: string): Promise<unknown | null> => openPartBody(fn, ring, db, projectId, 'doc');

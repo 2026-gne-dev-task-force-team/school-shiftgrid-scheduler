@@ -43,18 +43,18 @@ const wrap = (tag: string, validFrom: string | null, validTo: string | null) => 
 
 describe('openDocFor — 그날 쓸 판', () => {
     it('판이 없으면 null', async () => {
-        expect(await openDocFor(ring, fakeDb([]), PID, '2026-11-17')).toBeNull();
+        expect(await openDocFor('sub', ring, fakeDb([]), PID, '2026-11-17')).toBeNull();
     });
     it('지금 판이 그날을 덮으면 지금 판(감싼 꼴은 벗긴다)', async () => {
         const db = fakeDb([await row('doc', 5, wrap('가을', '2026-08-24', '2027-02-28')), await row('doc@4', 4, wrap('봄', '2026-03-02', '2026-07-20'))]);
-        const got = await openDocFor(ring, db, PID, '2026-11-17');
+        const got = await openDocFor('sub', ring, db, PID, '2026-11-17');
         expect(got?.part).toBe('doc');
         expect(got?.doc).toMatchObject({ tag: '가을' });
         expect(db.orExpr).toBe('part.eq.doc,part.like.doc@*');
     });
     it('지난 날이면 그 기간의 보관 판', async () => {
         const db = fakeDb([await row('doc', 5, wrap('가을', '2026-08-24', '2027-02-28')), await row('doc@4', 4, wrap('봄', '2026-03-02', '2026-07-20'))]);
-        expect((await openDocFor(ring, db, PID, '2026-05-01'))?.part).toBe('doc@4');
+        expect((await openDocFor('sub', ring, db, PID, '2026-05-01'))?.part).toBe('doc@4');
     });
     it('기간이 겹치면 최신 — 보관 번호는 숫자로 비교(doc@10 > doc@9)', async () => {
         const db = fakeDb([
@@ -62,37 +62,37 @@ describe('openDocFor — 그날 쓸 판', () => {
             await row('doc@9', 9, wrap('아홉', '2026-03-02', '2026-12-31')),
             await row('doc@10', 10, wrap('열', '2026-06-01', '2026-12-31')),
         ]);
-        expect((await openDocFor(ring, db, PID, '2026-07-01'))?.part).toBe('doc@10');
-        expect((await openDocFor(ring, db, PID, '2026-04-01'))?.part).toBe('doc@9');
+        expect((await openDocFor('sub', ring, db, PID, '2026-07-01'))?.part).toBe('doc@10');
+        expect((await openDocFor('sub', ring, db, PID, '2026-04-01'))?.part).toBe('doc@9');
     });
     it('빈틈이면 최신(지금 판)', async () => {
         const db = fakeDb([await row('doc', 5, wrap('가을', '2026-08-24', '2027-02-28')), await row('doc@4', 4, wrap('봄', '2026-03-02', '2026-07-20'))]);
-        expect((await openDocFor(ring, db, PID, '2026-08-01'))?.part).toBe('doc');
+        expect((await openDocFor('sub', ring, db, PID, '2026-08-01'))?.part).toBe('doc');
     });
     it('기간 없는 옛 판(v3 꼴 그대로)은 지금 판 기간 밖의 날을 받는다', async () => {
         const db = fakeDb([await row('doc', 3, wrap('새', '2026-09-01', null)), await row('doc@2', 2, grid('옛'))]);
-        const got = await openDocFor(ring, db, PID, '2026-05-01');
+        const got = await openDocFor('sub', ring, db, PID, '2026-05-01');
         expect(got?.part).toBe('doc@2');
         expect(got?.doc).toMatchObject({ tag: '옛' });
     });
     it('미래 판만 있는 날이면 최신', async () => {
         const db = fakeDb([await row('doc', 2, wrap('내년', '2027-03-02', null))]);
-        expect((await openDocFor(ring, db, PID, '2026-11-17'))?.part).toBe('doc');
+        expect((await openDocFor('sub', ring, db, PID, '2026-11-17'))?.part).toBe('doc');
     });
     it('지금 판 없이 보관 칸만 있어도 고른다', async () => {
         const db = fakeDb([await row('doc@1', 1, wrap('하나', '2026-03-02', null))]);
-        expect((await openDocFor(ring, db, PID, '2026-11-17'))?.part).toBe('doc@1');
+        expect((await openDocFor('sub', ring, db, PID, '2026-11-17'))?.part).toBe('doc@1');
     });
     it('지금 판이 맞으면 보관 칸은 안 연다(깨진 보관 칸도 안 건드림)', async () => {
         const good = await row('doc', 5, wrap('가을', '2026-08-24', null));
         const broken: Row = { part: 'doc@4', version: 4, ct: new Uint8Array([1, 2, 3]) };
-        expect((await openDocFor(ring, fakeDb([good, broken]), PID, '2026-11-17'))?.part).toBe('doc');
-        await expect(openDocFor(ring, fakeDb([good, broken]), PID, '2026-05-01')).rejects.toMatchObject({ status: 500, code: 'decrypt_failed' });
+        expect((await openDocFor('sub', ring, fakeDb([good, broken]), PID, '2026-11-17'))?.part).toBe('doc');
+        await expect(openDocFor('sub', ring, fakeDb([good, broken]), PID, '2026-05-01')).rejects.toMatchObject({ status: 500, code: 'decrypt_failed' });
     });
     it('보관 칸은 doc@<n> 이름으로 잠겨 있어야 열린다(지금 판 이름으로 잠근 것을 옮겨 놓으면 500)', async () => {
         const moved = await row('doc', 4, wrap('봄', '2026-03-02', '2026-07-20'));
         const db = fakeDb([await row('doc', 5, wrap('가을', '2026-08-24', null)), { ...moved, part: 'doc@4' }]);
-        await expect(openDocFor(ring, db, PID, '2026-05-01')).rejects.toMatchObject({ status: 500, code: 'decrypt_failed' });
+        await expect(openDocFor('sub', ring, db, PID, '2026-05-01')).rejects.toMatchObject({ status: 500, code: 'decrypt_failed' });
     });
 });
 
