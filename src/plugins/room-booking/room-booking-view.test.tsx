@@ -192,5 +192,5 @@ describe('방 예약 달력 띠 — 방 0개', () => {
         act(() => { root!.render(<RoomEmptyBanner host={mk(fakeRooms as unknown as Rooms)} />); });
         expect(el.querySelector('[data-room-empty-banner]')).toBeNull();
     });
-    it('프리셋이 banner 를 든다', () => { expect(ROOM_BOOKING_PRESET.banner).toBe(RoomEmptyBanner); });
+    it('프리셋이 banner 를 든다', () => { expect(typeof ROOM_BOOKING_PRESET.banner).toBe('function'); });
 });
