@@ -5,7 +5,7 @@
 // B10: assign · force · DELETE · stats — 위험 조작은 본문 `confirm:true` 없으면 400 · 바뀐 전/후 행 통째를 audit 에(_shared/audit.ts).
 
 import { can } from '../../../shared/roles.ts';
-import { appendAudit, type AuditStore } from '../_shared/audit.ts';
+import { appendAudit, type AuditStore, type DbAudit } from '../_shared/audit.ts';
 import { requireProjectMember, type AuthClient, type Member } from '../_shared/auth.ts';
 import { isPastDate, seoulToday, type Clock } from '../_shared/clock.ts';
 import type { KeyRing } from '../_shared/crypto/envelope.ts';
@@ -33,9 +33,10 @@ export interface SubStore {
     listRange(projectId: string, from: string, to: string): Promise<DbSlot[]>;
     /**
      * 한 번에 쓰기: `replace` 의 행(id·updated_at 이 그대로일 때만)을 지우고 `rows` 를 넣는다.
-     * 유일 위반(23505)·지울 행이 그 사이 바뀜이면 'conflict'.
+     * 유일 위반(23505)·지울 행이 그 사이 바뀜이면 'conflict'(아무것도 안 남는다 — 실 저장소는 RPC `sub_register` 한 트랜잭션).
+     * `audit` 를 주면 같은 트랜잭션에 감사 줄로 넣는다.
      */
-    register(rows: DbSlot[], replace: { id: string; updatedAt: string }[]): Promise<'ok' | 'conflict'>;
+    register(rows: DbSlot[], replace: { id: string; updatedAt: string }[], audit?: DbAudit | DbAudit[] | null): Promise<'ok' | 'conflict'>;
     /** 행 하나(프로젝트 안) — 없으면 null */
     get(projectId: string, id: string): Promise<DbSlot | null>;
     /**

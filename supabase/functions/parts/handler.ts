@@ -5,14 +5,14 @@
 // 거부되면 아무것도 바꾸지 않는다. 로그·오류 응답에 본문을 싣지 않는다.
 
 import { requireProjectMember, type AuthClient } from '../_shared/auth.ts';
-import { EnvelopeError, type KeyRing } from '../_shared/crypto/envelope.ts';
+import { EnvelopeError, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 import { errors, HttpError, jsonResponse } from '../_shared/errors.ts';
 import { handle, subPath } from '../_shared/http.ts';
 import type { Role } from '../../../shared/roles.ts';
 import { checkPartSize, plainSize } from '../../../shared/check/limits.ts';
 import { canReadPart, canWritePart, isWritablePart } from './access.ts';
 import { formatEtag, parseKnown, parseTag, sameTag } from './etag.ts';
-import { openPart, sealPart, type PartPlain, type PartsStore } from './store.ts';
+import { openPart, sealPart, type PartPlain, type PartRow, type PartsStore } from './store.ts';
 
 export const FN_NAME = 'parts';
 
@@ -92,6 +92,14 @@ function readPlain(text: string): PartPlain {
     return { fmt: o.fmt as number, body: o.body };
 }
 
+/** putAtomic 이 없는 저장소(시험 가짜 등) — 보관 먼저, 그다음 조건부 쓰기. 한 트랜잭션이 아니다. */
+async function putTwoStep(
+    store: PartsStore, pid: string, part: string, exists: boolean, from: number, size: number, ct: Bytes, archived: PartRow | null,
+): Promise<boolean> {
+    if (archived) await store.putArchive(pid, archived);
+    return exists ? store.update(pid, part, from, { sizePlain: size, ct }) : store.insertFirst(pid, { part, sizePlain: size, ct });
+}
+
 async function putPart(deps: PartsDeps, req: Request, pid: string, part: string): Promise<Response> {
     const m = await requireProjectMember(deps.auth, req.headers.get('Authorization'), pid);
     if (!isWritablePart(part)) throw errors.notFound(); // 모르는 조각·보관 doc@<n> (③ 11-2 「없는 칸 = 404」)
@@ -134,17 +142,19 @@ async function putPart(deps: PartsDeps, req: Request, pid: string, part: string)
         }
     }
     // 7 쓰기 — archive=1 이면 옛 doc 을 `doc@<옛 version>` 으로 다시 잠가 먼저 남긴다(AAD 에 이름이 들어가 복사가 아니다)
+    //   저장소에 putAtomic(RPC parts_put)이 있으면 판 비교·보관·덮기를 한 트랜잭션으로, 없으면 옛 두 걸음.
     let archivedAs: string | undefined;
+    let archived: PartRow | null = null;
     if (archive && cur && prev) {
         archivedAs = `doc@${cur.version}`;
         const ct = await sealPart(ring, pid, archivedAs, cur.version, prev);
-        await deps.store.putArchive(pid, { part: archivedAs, version: cur.version, sizePlain: cur.sizePlain, ct });
+        archived = { part: archivedAs, version: cur.version, sizePlain: cur.sizePlain, ct };
     }
     const newVersion = curVersion + 1;
     const ct = await sealPart(ring, pid, part, newVersion, next);
-    const ok = cur
-        ? await deps.store.update(pid, part, curVersion, { sizePlain: size, ct })
-        : await deps.store.insertFirst(pid, { part, sizePlain: size, ct });
+    const ok = deps.store.putAtomic
+        ? await deps.store.putAtomic(pid, { part, epoch, from: curVersion, sizePlain: size, ct, archive: archived })
+        : await putTwoStep(deps.store, pid, part, cur !== null, curVersion, size, ct, archived);
     if (!ok) {
         const now = await deps.store.get(pid, part);
         throw err.conflict(now?.version ?? 0);

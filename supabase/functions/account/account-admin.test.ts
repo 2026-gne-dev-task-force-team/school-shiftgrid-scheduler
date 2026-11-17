@@ -309,6 +309,14 @@ describe('members — PATCH · last_admin', () => {
         // 이제 u-admin2 가 마지막 — 스스로 정지 409
         expect((await json(await call(h, 'PATCH', 'projects/p1/members/u-admin2', 'jwt-admin2', { active: false }))).error?.code).toBe('last_admin');
     });
+    it('판정은 지났는데 DB 트리거가 last_admin 을 내면(동시 강등) 같은 409 last_admin', async () => {
+        const { s, h } = setup();
+        s.members.push({ projectId: 'p1', userId: 'u-admin2', roles: ['관리자'], personRef: null, active: true });
+        s.store.updateMember = async () => 'last_admin';
+        const res = await call(h, 'PATCH', 'projects/p1/members/u-admin2', 'jwt-admin', { roles: ['교사'] });
+        expect(res.status).toBe(409);
+        expect((await json(res)).error?.code).toBe('last_admin');
+    });
     it('본문 검사 400 · 없는 구성원 404 · personRef 겹침 409', async () => {
         const { s, h } = setup();
         expect((await call(h, 'PATCH', 'projects/p1/members/u-t', 'jwt-admin', {})).status).toBe(400);
@@ -428,5 +436,8 @@ describe('store ② — 조건부 철회 · code_hash 안 읽음', () => {
         expect(await supabaseStore(f.db).updateMember('p1', 'u', { personRef: 'X' })).toBe('person_taken');
         const g = fakeDb([{ data: [], error: null }]);
         expect(await supabaseStore(g.db).updateMember('p1', 'u', { active: false })).toBe('missing');
+        // 마이그레이션 0002 트리거 오류(PostgREST: SQLSTATE PT409 · message last_admin)
+        const k = fakeDb([{ data: null, error: { code: 'PT409', message: 'last_admin' } }]);
+        expect(await supabaseStore(k.db).updateMember('p1', 'u', { active: false })).toBe('last_admin');
     });
 });

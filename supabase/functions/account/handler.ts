@@ -66,8 +66,8 @@ export interface AccountStore {
     /** 조건부 철회(안 쓰였고·안 철회된 행만) — 못 집었으면 왜인지 */
     revokeInvite(projectId: string, id: string, nowIso: string): Promise<'ok' | 'missing' | 'used' | 'revoked'>;
     listMembers(projectId: string): Promise<MemberRow[]>;
-    /** 없는 구성원이면 'missing' · person_ref 겹침이면 'person_taken' */
-    updateMember(projectId: string, userId: string, patch: MemberPatch): Promise<'ok' | 'missing' | 'person_taken'>;
+    /** 없는 구성원이면 'missing' · person_ref 겹침이면 'person_taken' · DB 트리거가 마지막 관리자를 지켰으면 'last_admin' */
+    updateMember(projectId: string, userId: string, patch: MemberPatch): Promise<'ok' | 'missing' | 'person_taken' | 'last_admin'>;
     /** doc 조각 봉투(없으면 null) */
     readDoc(projectId: string): Promise<{ version: number; ct: Bytes } | null>;
 }
@@ -574,6 +574,7 @@ async function patchMember(deps: AccountDeps, req: Request, projectId: string, u
     const r = await deps.store.updateMember(projectId, userId, patch);
     if (r === 'missing') throw accountErrors.noMember();
     if (r === 'person_taken') throw accountErrors.personTaken();
+    if (r === 'last_admin') throw accountErrors.lastAdmin();
     return jsonResponse({ userId, roles: knownRoles(next.roles), personRef: next.personRef, active: next.active });
 }
 

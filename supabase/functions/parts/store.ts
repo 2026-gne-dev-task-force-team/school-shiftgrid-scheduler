@@ -3,6 +3,7 @@
 // 조각 평문 = gzip(JSON `{fmt, body}`)(④ 2절) → 봉투(_shared/crypto). AAD 에 조각 이름·판 번호가 들어간다.
 
 import { aadPart } from '../_shared/crypto/aad.ts';
+import type { DbAudit } from '../_shared/audit.ts';
 import { open, seal, type Bytes, type KeyRing } from '../_shared/crypto/envelope.ts';
 
 export interface PartRow {
@@ -24,6 +25,24 @@ export interface PartsStore {
     update(projectId: string, part: string, from: number, row: Omit<PartRow, 'part' | 'version'>): Promise<boolean>;
     /** 보관 조각 넣기 — 같은 이름이 있으면 그대로 둔다(같은 판의 같은 내용이다) */
     putArchive(projectId: string, row: PartRow): Promise<void>;
+    /**
+     * 한 트랜잭션 쓰기(마이그레이션 0002 `parts_put`) — epoch·판 번호 비교 → 보관 → 덮기(첫 쓰기면 넣기) → 감사.
+     * 판이 틀리면(그 사이 다른 쪽이 고침) 거짓 → 412. 이 구멍이 있으면 handler 는 putArchive·update·insertFirst 를 따로 부르지 않는다.
+     */
+    putAtomic?(projectId: string, w: AtomicPut): Promise<boolean>;
+}
+
+export interface AtomicPut {
+    part: string;
+    /** If-Match 의 epoch · version(없던 조각이면 0) */
+    epoch: string;
+    from: number;
+    sizePlain: number;
+    ct: Bytes;
+    /** 옛 판 보관 — part 는 `<part>@<from>`, version 은 from */
+    archive?: PartRow | null;
+    /** 같은 트랜잭션에 넣을 감사 줄 */
+    audit?: DbAudit | DbAudit[] | null;
 }
 
 // ── 평문 ↔ 봉투 ─────────────────────────────────────────────
@@ -85,7 +104,13 @@ interface DbRow {
 export interface PartsDb {
     // oxlint-disable-next-line typescript/no-explicit-any
     from(table: 'parts' | 'projects'): any;
+    /** PostgREST RPC — 있으면 putAtomic 을 채운다 */
+    rpc?(fn: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
 }
+
+/** 감사 줄 → RPC 인자 jsonb 꼴(body_ct 는 PostgREST bytea 글자) */
+export const auditJson = (a: DbAudit | DbAudit[] | null | undefined): unknown =>
+    a == null ? null : Array.isArray(a) ? a.map((x) => ({ ...x, body_ct: byteaToHex(x.body_ct) })) : { ...a, body_ct: byteaToHex(a.body_ct) };
 
 const toRow = (r: DbRow): PartRow => ({ part: r.part, version: r.version, sizePlain: r.size_plain, ct: hexToBytea(r.ct) });
 const COLS = 'part, version, size_plain, ct';
@@ -96,7 +121,21 @@ function must<T>(res: { data: T | null; error: unknown }, what: string): T | nul
 }
 
 export function supabaseStore(db: PartsDb): PartsStore {
+    const rpc = db.rpc?.bind(db);
+    const putAtomic = rpc && (async (pid: string, w: AtomicPut): Promise<boolean> => {
+        const r = await rpc('parts_put', {
+            p_project_id: pid, p_part: w.part, p_epoch: w.epoch, p_from: w.from,
+            p_size_plain: w.sizePlain, p_ct: byteaToHex(w.ct),
+            p_archive_part: w.archive?.part ?? null, p_archive_size: w.archive?.sizePlain ?? null,
+            p_archive_ct: w.archive ? byteaToHex(w.archive.ct) : null,
+            p_audit: auditJson(w.audit),
+        });
+        if (r.error?.code === 'PT412') return false;
+        if (r.error) throw new Error('parts_put 실패');
+        return true;
+    });
     return {
+        ...(putAtomic ? { putAtomic } : {}),
         async epoch(pid) {
             const r = must<{ data_epoch: string }>(
                 await (db.from('projects').select('data_epoch').eq('id', pid).maybeSingle() as Res<{ data_epoch: string }>),
