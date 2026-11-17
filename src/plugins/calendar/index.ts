@@ -26,6 +26,7 @@ import { calendarModule } from './feed';
 import { newPresetStore } from './presets';
 import { parseIcs, parseIcsSeries, writeIcs } from './ics';
 import { itemToIcs } from './io';
+import { onSaveRejected, importRejectedTitle } from './save-check';
 import { pickIcsFile, downloadText } from './file-io';
 import {
     calendarNodeTypes, calendarNodeTypeImpl, initCalendarNodes, getNodesApi, setCalendarHost,
@@ -51,6 +52,7 @@ const MONTH_ID = 'calendar.month';
 let subBridge: Disposable | null = null;
 let kitBridge: Disposable | null = null;
 let offSubs: (() => void) | null = null;
+let offReject: (() => void) | null = null;
 
 export const calendarPlugin = definePlugin({
     manifest: {
@@ -148,7 +150,8 @@ export const calendarPlugin = definePlugin({
             const storeId = ctx?.nodeId;
             if (!storeId) return;
             pickIcsFile((text) => {
-                importItemsToStore(storeId, parseIcsSeries(text));   // {created, skipped} — 중복은 UID 로 거른다 · 반복은 패턴째 한 건
+                const r = importItemsToStore(storeId, parseIcsSeries(text));   // {created, skipped, rejected, reasons} — 중복은 UID 로 거른다 · 반복은 패턴째 한 건
+                if (r.rejected > 0) host.notify({ level: 'warn', title: importRejectedTitle(r.rejected, r.reasons), key: 'calendar.import-rejected' });
                 setScope(storeId);
                 host.workspace.open(MONTH_ID, { where: 'center' });
             });
@@ -208,6 +211,9 @@ export const calendarPlugin = definePlugin({
             // 옵션(「시험 기능 보기」 — 기본 꺼짐)을 기기별 저장소에서 읽어 온다 · 설정 「달력」 판에서 켠다
             initOptions(host);
 
+            // 저장 전 검증 거절 사유 — 선생님 말로 토스트 한 곳(달력이 정본). 프리셋이 따로 띄우던 알림과 겹치면 달력 쪽을 본다.
+            offReject = onSaveRejected((reason) => host.notify({ level: 'warn', title: '저장하지 못했습니다', body: reason, key: 'calendar.save-rejected' }));
+
             // ── 일정 자료 다리를 건다 — 🔴 일정은 노드다. 달력은 저장을 모른다(요구명세).
             //    노드 타입 둘(저장소·일정)은 contributes.nodeTypes 가 applyContributes(= onActivate 보다 먼저)에서 꽂았다.
             //    탐색기가 없거나 꺼졌으면 조용히 빈 상태로 돈다.
@@ -237,6 +243,8 @@ export const calendarPlugin = definePlugin({
     deactivate() {
         offSubs?.();
         offSubs = null;
+        offReject?.();
+        offReject = null;
         subBridge?.dispose();
         subBridge = null;
         kitBridge?.dispose();
