@@ -1,0 +1,31 @@
+# Supabase 로컬·배포 설정 — 1.2v 서버 (설계 ② 2-3 · 2-2 표 뒤 「함수 아닌 길」)
+# 시크릿 값은 여기 두지 않는다(공개 레포) — 함수 비밀은 대시보드/CI 시크릿 이름으로만.
+
+project_id = "school-shiftgrid-scheduler"
+
+[api]
+enabled = true
+schemas = ["public"]
+max_rows = 1000
+
+[db]
+major_version = 17
+
+[auth]
+enabled = true
+# 열린 가입 없음 — 계정은 초대(함수 account/signup → auth.admin.createUser)로만 만든다
+enable_signup = false
+minimum_password_length = 8
+# 액세스 토큰 15분(설계 권장 900초)
+jwt_expiry = 900
+
+[auth.email]
+enable_signup = false
+
+# 무인증 — 깨우기 겸 select 1
+[functions.health]
+verify_jwt = false
+
+# signup·join 은 로그인 전 — 나머지 경로는 함수 안 _shared/auth.ts 가 JWT 를 직접 검증한다
+[functions.account]
+verify_jwt = false
