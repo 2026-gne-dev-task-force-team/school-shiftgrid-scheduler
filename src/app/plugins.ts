@@ -24,6 +24,7 @@ import { serverLinkPlugin } from '../plugins/server-link';
 import { timetableGridPlugin } from '../plugins/timetable-grid';
 import { demandTablePlugin } from '../plugins/demand-table';
 import { timetableSolverPlugin } from '../plugins/timetable-solver';
+import { v1FilePlugin } from '../plugins/v1-file';
 import { roomsPlugin } from '../plugins/rooms';
 import { roomBookingPlugin } from '../plugins/room-booking';
 import { substitutePlugin } from '../plugins/substitute';
@@ -51,7 +52,7 @@ import { INSTALLED_PLUGIN_IDS } from './site-config';
 const CATALOG: Record<string, PluginModule> = {
     page: pagePlugin, collection: collectionPlugin, sheet: sheetPlugin, 'server-link': serverLinkPlugin, calendar: calendarPlugin, account: accountPlugin,
     people: peoplePlugin, rooms: roomsPlugin, 'room-booking': roomBookingPlugin, substitute: substitutePlugin, school: schoolPlugin,
-    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'demand-table': demandTablePlugin, 'timetable-solver': timetableSolverPlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'ops-aux': opsAuxPlugin, 'v1-editor': v1EditorPlugin,
+    subjects: subjectsPlugin, staff: staffPlugin, bell: bellPlugin, duty: dutyPlugin, 'timetable-grid': timetableGridPlugin, 'demand-table': demandTablePlugin, 'timetable-solver': timetableSolverPlugin, 'v1-file': v1FilePlugin, 'ops-check': opsCheckPlugin, 'ops-sub': opsSubPlugin, 'ops-room': opsRoomPlugin, 'ops-days': opsDaysPlugin, 'ops-aux': opsAuxPlugin, 'v1-editor': v1EditorPlugin,
 };
 
 export const PLUGINS: PluginModule[] = [
