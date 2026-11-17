@@ -1,11 +1,10 @@
 /**
- * 「특별실 예약」 플러그인 — 화면 하나(예약) · 명령 하나(리본). 자료는 book/source 한 창구.
+ * 「특별실 관리」 플러그인 — 화면 하나(관리) · 명령 하나(리본). 예약은 room-booking 이 맡고, 여기는 옛 예약 이사(book/boot)만 남는다.
  */
 import { createElement } from 'react';
 import { definePlugin } from '../../pane-ui-system/plugin';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import { manifest } from './manifest';
-import { RoomPanel } from './RoomPanel';
 import { RoomManagePanel } from './manage';
 import { initRoomMigration } from './book/boot';
 import { opsRoomApi } from './api';
@@ -20,17 +19,15 @@ export const opsRoomPlugin = definePlugin({
         contributes: {
             interfaces: [{ name: 'ops-room', version: '0.1.0', label: '특별실 관리', desc: '특별실 관리 화면 열기 명령 id' }],
             views: [
-                { id: 'book', title: '특별실 예약', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Book' },
                 { id: 'manage', title: '특별실 관리', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Manage' },
             ],
-            commands: [{ id: 'ops-room.open-book', title: '특별실 예약 열기', icon: 'list' }, { id: 'ops-room.open-manage', title: '특별실 관리 열기', icon: 'list' }],
-            ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }, { commandId: 'ops-room.open-manage', icon: 'list', order: 10 }],
+            commands: [{ id: 'ops-room.open-manage', title: '특별실 관리 열기', icon: 'list' }],
+            ribbon: [{ commandId: 'ops-room.open-manage', icon: 'list', order: 10 }],
         },
     },
     modules: { 'ops-room': opsRoomApi },
-    components: { Book: ({ host }: { host: PluginHost }) => createElement(RoomPanel, { host }), Manage: ({ host }: { host: PluginHost }) => createElement(RoomManagePanel, { host }) },
+    components: { Manage: ({ host }: { host: PluginHost }) => createElement(RoomManagePanel, { host }) },
     commands: {
-        'ops-room.open-book': (host: PluginHost) => { host.workspace.open('ops-room.book', { where: 'center' }); },
         'ops-room.open-manage': (host: PluginHost) => { host.workspace.open('ops-room.manage', { where: 'center' }); },
     },
     // 🔴 T-10f7 — 옛 예약(localStorage)을 달력 일정으로 기동 때 옮긴다(약속이 꺼져 있으면 미룸 · 두 번 돌아도 같음).

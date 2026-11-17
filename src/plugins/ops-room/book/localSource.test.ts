@@ -8,8 +8,7 @@ import type { NodesApi } from '../../../pane-ui-system/core/nodes/contracts/node
 import type { Calendar, Occurrence } from '../../calendar/contracts/calendar';
 import type { Rooms } from '../../rooms/contracts/rooms';
 import { LS_KEY, isMoved, moveLocalReservations, moveSummary, movedKeyOf } from './migrate';
-import { demoPart, localRoomSource } from './source';
-import type { ReservationRow } from './types';
+import type { ReservationRow, RoomsPart } from './types';
 
 beforeEach(() => { localStorage.clear(); });
 
@@ -42,6 +41,14 @@ function world(roomList: { id: string; name: string }[] = [{ id: 'k-sci', name: 
 const old = (over: Partial<ReservationRow> = {}): ReservationRow => ({
     id: 'x1', projectId: 'p1', roomId: 'r-sci', date: '2026-11-19', startMin: 540, endMin: 580, slotNo: 1, trackName: '1-1', createdAt: 't1',
     body: { userId: 'u1', userName: '교사01', note: '' }, ...over,
+});
+/** 옛 저장 값에 든 방 묶음 — 지어낸 이름. */
+const demoPart = (): RoomsPart => ({
+    rooms: [
+        { id: 'r-sci', name: '과학실', capacity: 2, resourceKey: 'sci', active: true, sort: 1, note: '' },
+        { id: 'r-yard', name: '운동장', capacity: 3, resourceKey: null, active: true, sort: 2, note: '' },
+    ],
+    fixed: [], blocks: [], timetable: [],
 });
 const stash = (rows: ReservationRow[]) => localStorage.setItem(LS_KEY, JSON.stringify({ part: demoPart(), rows }));
 
@@ -101,30 +108,5 @@ describe('두 번 돌려도 같음 · 옛 값은 지우지 않음', () => {
         localStorage.clear();
         localStorage.setItem(LS_KEY, '{깨짐');
         expect(moveLocalReservations(world().deps, localStorage).moved).toBe(0);
-    });
-});
-
-describe('이사 뒤 ops-room 은 옛 예약 행을 안 읽는다', () => {
-    it('이사 전엔 읽고, 이사 뒤엔 예약 행은 비고 방 묶음만 읽는다', async () => {
-        stash([old()]);
-        expect((await localRoomSource(demoPart).loadReservations('2026-11-19')).map((r) => r.id)).toEqual(['x1']);
-        moveLocalReservations(world().deps, localStorage);
-        const after = localRoomSource(demoPart);
-        expect(await after.loadReservations('2026-11-19')).toEqual([]);
-        expect((await after.loadPart()).rooms).toHaveLength(2);
-    });
-});
-
-describe('localRoomSource — 다시 만들어도 값이 남는다(이사 전 옛 동작)', () => {
-    it('방 더하기가 남는다', async () => {
-        const a = localRoomSource(demoPart);
-        const part = await a.loadPart();
-        await a.savePart({ ...part, rooms: [...part.rooms, { id: 'r-new', name: '음악실', capacity: 1, resourceKey: null, active: true, sort: 3, note: '' }] });
-        expect((await localRoomSource(demoPart).loadPart()).rooms.map((r) => r.id)).toContain('r-new');
-    });
-    it('저장된 값이 없거나 깨졌으면 seed, 던지지 않는다', async () => {
-        expect((await localRoomSource(demoPart).loadPart()).rooms).toHaveLength(2);
-        localStorage.setItem('plugin.ops-room.part', '{깨짐');
-        expect((await localRoomSource(demoPart).loadPart()).rooms).toHaveLength(2);
     });
 });

@@ -5,7 +5,6 @@
  *   ⚠️ 매니페스트(index.ts contributes.commands)의 id 와 한 벌이어야 한다.
  */
 export const CMD = {
-    openBook: 'ops-room.open-book',
     openManage: 'ops-room.open-manage',
 } as const;
 
