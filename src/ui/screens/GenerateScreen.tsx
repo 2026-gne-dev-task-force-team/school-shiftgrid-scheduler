@@ -6,6 +6,7 @@ import type { Assignment, TimetableSpec } from '../../types/schema';
 import { activeDays, assignableSlots } from '../lib';
 import { Button, Card, Field, TextInput, Pill, Info, Mark, EmptyGuide } from '../parts/ui';
 import { L } from '../help/terms';
+import { draftNotice } from '../../store/demand-drafts';
 import { RICH } from '../help/richContent';
 import { Term } from '../help/Term';
 
@@ -47,6 +48,8 @@ export default function GenerateScreen() {
             actionLabel="시수표 채우기" actionIcon="table" onAction={() => st.setScreen('basic')} />;
     }
 
+    const draftLine = draftNotice(st.demandDrafts.length);
+
     return (
         <div className="p-4 space-y-4 max-w-4xl">
             {/* 사전 점검 — 못 푸는 시수표를 미리 알린다 (실행은 막지 않는다) */}
@@ -77,6 +80,7 @@ export default function GenerateScreen() {
                     </label>
                     <Button data-tour="generate-run" variant="primary" icon="sparkles" onClick={run} disabled={running}>{running ? L.running : L.run}</Button>
                 </div>
+                {draftLine && <div className="mt-2 text-[12px] text-muted flex items-center gap-1.5"><Mark kind="warn" /> {draftLine}</div>}
                 {running && progress && (
                     <div className="mt-3 text-[12px] text-muted flex items-center gap-4">
                         <span>{L.candidates} {progress.candidate}/{progress.of}</span>

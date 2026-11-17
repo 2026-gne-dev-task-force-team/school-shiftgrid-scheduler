@@ -82,7 +82,6 @@ export type InfoKey =
     | 'specPerDay'        // 요일별 교시 수
     | 'sheetTracks'       // 반 시트
     | 'sheetAgents'       // 교사 시트
-    | 'sheetActivities'   // 과목 시트
     | 'sheetResources';   // 특별실 시트
 
 /** 움직이는 사용법 목록(도움말 「사용법」 탭이 이 순서로 그린다) — 제목·한 줄 설명은 richContent.ts 의 DEMOS 가 갖는다 */

@@ -191,19 +191,6 @@ export const RICH: Record<InfoKey, RichHelp> = {
         figure: 'homeroom',
         terms: ['homeroom', 'homeroomPlus', 'tier'],
     },
-    sheetActivities: {
-        title: '과목',
-        what: '과목 이름을 한 줄씩 넣습니다. 색은 비워 두면 자동으로 정해집니다.',
-        why: '「특별실」과 「시수표」에서 이 과목 이름을 그대로 씁니다.',
-        example: [
-            '영어·과학·체육·음악·미술·실과를 한 줄씩 넣습니다.',
-            '엑셀에서 과목 목록을 복사해 한 번에 붙일 수 있습니다.',
-        ],
-        fix: '특별실·시수표에서 이 과목 이름을 씁니다.',
-        figure: 'demand-row',
-        // 과목 전용 용어 항목은 없어 시수표로 잇는다
-        terms: ['demand'],
-    },
     sheetResources: {
         title: '특별실',
         what: '과학실·체육관처럼 여러 반이 나눠 쓰는 시설을 넣습니다. 「수용 수」는 같은 시각에 몇 반까지 들어갈 수 있나입니다.',

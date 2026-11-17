@@ -19,6 +19,11 @@ export interface DraftStore {
     rows: SheetRow[];
 }
 
+/** 자동 배정 전에 알리는 글 — 덜 채운 줄은 배정에서 빠진다. 막지는 않는다(R131 ①) */
+export function draftNotice(n: number): string {
+    return n > 0 ? `덜 채운 줄 ${n}개는 빼고 배정합니다` : '';
+}
+
 export const EMPTY_DRAFTS: DraftStore = { school: '', rows: [] };
 
 /** 저장소 흉내 — 시험에서 바꿔 끼운다 */

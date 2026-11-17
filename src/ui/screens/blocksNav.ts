@@ -1,4 +1,6 @@
 /** 고정·금지 화면의 탭·앞뒤 단추 — 화면(React)과 떼어 낸 순수 규칙(시험은 DOM 없이 돈다) */
+import { L } from '../help/terms';
+
 export type BlocksKind = 'track' | 'agent' | 'resource';
 export type BlocksMode = 'block' | 'fixed' | 'pin';
 
@@ -19,4 +21,9 @@ export function stepTarget(ids: string[], current: string, dir: -1 | 1): string 
     if (i < 0) return null;
     const j = i + dir;
     return j >= 0 && j < ids.length ? ids[j] : null;
+}
+
+/** 탭 이름 — 교사 탭은 기초자료와 같은 「전담·강사」(R131). 시수표 「교사」 열 이름은 그대로 */
+export function blocksTabLabel(kind: BlocksKind): string {
+    return kind === 'track' ? L.track : kind === 'agent' ? L.agentTab : L.resource;
 }
