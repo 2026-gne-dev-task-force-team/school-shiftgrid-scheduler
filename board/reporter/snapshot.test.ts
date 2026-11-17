@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 // @ts-expect-error — 보고꾼은 node ESM(.mjs)이라 타입 선언이 없다
-import { appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, siteState, checkServices, sinkService } from './snapshot.mjs'
+import { commitFiles, FILES_MAX, appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRequests, publicGoal, publicTitle, requestTitle, serviceState, siteState, checkServices, sinkService } from './snapshot.mjs'
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
@@ -695,5 +695,25 @@ describe('태스크 꼬리표 target (T-9zf R73)', () => {
     expect(by.R1.target).toBe('장치')
     expect(by.R1.kind).toBe('bug') // 🐞 도 유형으로 읽는다
     expect(by.R2.target).toBe('현황판') // 요청함은 현황판 요청함 — 레인 이름 단서
+  })
+  it('T-10e3 커밋마다 바뀐 파일 경로를 files 로 싣는다(상한 30 · 넘친 개수 · 공개 검사)', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'repo-'))
+    const g = (...a: string[]) => execFileSync('git', ['-C', repo, '-c', 'user.name=t', '-c', 'user.email=t@t', ...a], { stdio: 'pipe' })
+    g('init', '-q', '-b', '1.2v-preview')
+    mkdirSync(join(repo, 'src'))
+    for (let i = 0; i < 33; i++) writeFileSync(join(repo, 'src', `f${String(i).padStart(2, '0')}.ts`), 'x')
+    writeFileSync(join(repo, '시간표.md'), 'x')
+    g('add', '-A'); g('commit', '-q', '-m', 'many')
+    const tr = build({ now: at, md: lane('', ''), repoDir: repo }).branches.find((b: { trunk: boolean }) => b.trunk)
+    const c = tr.graph[0]
+    expect(c.files).toHaveLength(FILES_MAX)
+    expect(c.filesMore).toBe(4)
+    expect(c.files).toContain('src/f00.ts')
+    expect(findDirty(tr.graph)).toBeNull()
+  })
+  it('T-10e3 commitFiles — 공개 검사에 걸리는 경로는 뺀다 · 없으면 칸을 안 싣는다', () => {
+    expect(commitFiles(['a/b.ts', 'c/김철수 선생님.md'])).toEqual({ files: ['a/b.ts'] })
+    expect(commitFiles([''])).toEqual({})
+    expect(commitFiles(['x'.repeat(201)])).toEqual({})
   })
 })

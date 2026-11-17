@@ -5,7 +5,7 @@ import { character } from '../ui/character.ts'
 import { actorTag } from '../ui/actor-tag.ts'
 import { actorLabel, actorWhat } from '../lib/actor.ts'
 import { laneHue, layoutGraph, synthGraph } from '../lib/graph-layout.ts'
-import { renderCylinder } from './layer2-cylinder.ts'
+import { filesList, filesRows, renderCylinder } from './layer2-cylinder.ts'
 import type { LayerCtx } from './types.ts'
 
 const PAD = 16, TOP = 30, RH = 40, LW = 26, TEXT_W = 280, DOT = 5 // 여백 · 첫 행 높이 · 행 간격 · 레일 간격 · 글 칸 폭 · 점 반쪽
@@ -114,7 +114,8 @@ function renderFlat(host: HTMLElement, ctx: LayerCtx): () => void {
         dot.addEventListener('click', () => openDetail({
           title: c.subject || `커밋 ${c.sha}`,
           rows: [['해시', c.sha], ['시각', c.at ? new Date(c.at).toLocaleString('ko-KR') : '—'],
-            ['부모', c.parents.join(', ') || '없음 (맨 처음)'], ['가지 이름표', c.refs.map((r) => r.name).join(', ') || '—']],
+            ['부모', c.parents.join(', ') || '없음 (맨 처음)'], ['가지 이름표', c.refs.map((r) => r.name).join(', ') || '—'], ...filesRows(c)],
+          extra: filesList(c),
         }))
         inner.append(dot)
 

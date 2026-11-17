@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import tls from 'node:tls'
-import { DEVICE_LANE, clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } from './plain.mjs'
+import { DEVICE_LANE, clean, findDirty, isPlain, isPlainPath, isPlainText, publicText, setRedactNames } from './plain.mjs'
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { raceOfDevice } from './race.mjs'
@@ -352,16 +352,24 @@ function gitBranches(repoDir) {
 
 /** 줄기·가지 최근 커밋 N개와 부모 관계 — 세로 커밋 그래프용. 해시는 짧은 것만(긴 16진은 담백 검사에 걸린다). 새것→옛것. */
 export const GRAPH_LIMIT = 60
+export const FILES_MAX = 30
+/** 커밋 하나의 바뀐 파일 경로 — 공개 글 검사를 거친 것만 FILES_MAX 개까지, 넘친 개수는 filesMore. 경로가 없으면 칸을 싣지 않는다. */
+export function commitFiles(paths) {
+  const ok = paths.filter((f) => f && f.length <= 200 && isPlainPath(f) && isPlainText(f.replace(/\//g, '-')))
+  if (!ok.length) return {}
+  return { files: ok.slice(0, FILES_MAX), ...(ok.length > FILES_MAX ? { filesMore: ok.length - FILES_MAX } : {}) }
+}
 export function gitGraph(repoDir, limit = GRAPH_LIMIT) {
   if (!repoDir || !existsSync(repoDir)) return []
   try {
-    const out = execFileSync('git', ['-C', repoDir, 'log', '--branches=1.2v-preview*', '--date-order', '-n', String(limit), '--abbrev=8', '--decorate=short',
-      '--format=%h%x09%p%x09%cI%x09%D%x09%s'], { encoding: 'utf-8' })
-    return out.split('\n').filter(Boolean).map((l) => {
-      const [sha, parents, at, deco, ...subj] = l.split('\t')
+    const out = execFileSync('git', ['-C', repoDir, '-c', 'core.quotepath=false', 'log', '--branches=1.2v-preview*', '--date-order', '-n', String(limit), '--abbrev=8', '--decorate=short', '--name-only',
+      '--format=%x01%h%x09%p%x09%cI%x09%D%x09%s'], { encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
+    return out.split('\x01').filter((r) => r.trim()).map((rec) => {
+      const [head, ...paths] = rec.split('\n')
+      const [sha, parents, at, deco, ...subj] = head.split('\t')
       const names = deco.split(', ').map((d) => d.replace(/^HEAD -> /, '').trim()).filter((d) => d && d !== 'HEAD' && !d.startsWith('tag: ') && !d.includes('/'))
       const sub = subj.join(' ')
-      return { sha, parents: parents.split(' ').filter(Boolean), at, names, subject: isPlainText(sub) ? sub.slice(0, 80) : '' }
+      return { sha, parents: parents.split(' ').filter(Boolean), at, names, subject: isPlainText(sub) ? sub.slice(0, 80) : '', ...commitFiles(paths.map((x) => x.trim())) }
     })
   } catch { return [] }
 }
