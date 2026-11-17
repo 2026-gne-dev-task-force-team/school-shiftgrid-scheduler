@@ -7,11 +7,12 @@ import {
     buildContext, evaluateAll, diagnose, demandStatus, candidateCells, previewMove, applyMove,
     solve, autoAdjust, checkCapacity, RULES, defaultRules, makeSpec,
 } from './engine/core';
+import { migrateDoc } from './types/doc';
 import { toWeekday, toDayIndex } from './day';
 
 export const solverApi: Solver = {
     version: 1,
     buildContext, evaluateAll, diagnose, demandStatus, candidateCells, previewMove, applyMove,
     solve, autoAdjust, checkCapacity, RULES, defaultRules, makeSpec,
-    toWeekday, toDayIndex,
+    migrateDoc, toWeekday, toDayIndex,
 };

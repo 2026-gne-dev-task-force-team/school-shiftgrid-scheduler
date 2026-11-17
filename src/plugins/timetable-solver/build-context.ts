@@ -149,7 +149,10 @@ export function buildSolverInput(canon: SolverCanon, mods: BuildModules): BuildR
         return t;
     });
     const activities = canon.subjects.map((s) => ({ kind: 'activity' as const, id: s.id, name: s.name }));
-    const resources = canon.rooms.map((r) => ({ kind: 'resource' as const, id: r.id, name: r.name }));
+    const resources = canon.rooms.map((r) => ({
+        kind: 'resource' as const, id: r.id, name: r.name,
+        ...(typeof r.capacity === 'number' && r.capacity > 0 ? { capacity: r.capacity } : {}),
+    }));
 
     const timetables: Timetable[] = specs.map((s) => ({
         id: `tt-${s.id}`, name: s.name, specId: s.id,
