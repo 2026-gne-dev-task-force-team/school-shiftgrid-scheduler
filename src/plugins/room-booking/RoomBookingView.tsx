@@ -7,6 +7,7 @@ import { Button, Field, NumberInput, TextInput } from '../../pane-ui-system';
 import type { PluginHost } from '../../pane-ui-system/plugin';
 import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
 import type { Calendar } from '../calendar/contracts/calendar';
+import type { OpsRoom } from '../ops-room/contracts/ops-room';
 import type { Rooms } from '../rooms/contracts/rooms';
 import { bookRoom, bookingsOn, cancelBooking, findFreeRooms, myBookings, type BookingDeps } from './bookings';
 
@@ -17,6 +18,7 @@ export function RoomBookingView({ host }: { host: PluginHost }) {
     const calendar = host.modules.use<Calendar>('calendar');
     const nodes = host.modules.use<NodesApi>('nodes');
     const rooms = host.modules.use<Rooms>('rooms');
+    const opsRoom = host.modules.use<OpsRoom>('ops-room');
     const [, bump] = useState(0);
     const [form, setForm] = useState({ date: today(), start: '09:40', end: '10:20', name: '', booker: '' });
     const [headcount, setHeadcount] = useState<number | null>(null);
@@ -50,7 +52,13 @@ export function RoomBookingView({ host }: { host: PluginHost }) {
             <Field label="예약자(나)"><TextInput value={form.booker} onChange={(e) => set('booker')(e.target.value)} placeholder="가상 선생님" /></Field>
             {msg && <p role="alert" className="text-small">{msg}</p>}
             <h3 className="text-small">빈 방</h3>
-            {free.length === 0 && <p className="text-small" data-room-free-empty>쓸 수 있는 방이 없습니다.</p>}
+            {free.length === 0 && (
+                <div className="flex flex-col gap-2" data-room-free-empty>
+                    <p className="text-small">쓸 수 있는 방이 없습니다.</p>
+                    <p className="text-small text-muted">특별실 관리에서 방을 먼저 더해 주세요.</p>
+                    {opsRoom && <div><Button variant="outline" data-room-open-manage onClick={() => host.commands.run(opsRoom.cmd.openManage)}>특별실 관리 열기</Button></div>}
+                </div>
+            )}
             {free.map((room) => (
                 <div key={room.id} className="flex flex-wrap gap-2 items-center text-small" data-free-room={room.id}>
                     <span>{room.name}</span>

@@ -90,18 +90,23 @@ export function SolverTab({ host, createWorker }: { host: PluginHost; createWork
                 </section>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
                 <Button tone="accent" variant="solid" data-testid="solver-start" disabled={stops.length > 0 || running} onClick={() => { void start(); }}>편성 시작</Button>
                 {running && <Button data-testid="solver-stop" onClick={() => job.current?.stop()}>멈춤</Button>}
                 {stops.length > 0 && <span className="text-muted">막힌 곳을 먼저 풀어 주세요</span>}
             </div>
 
             {phase.k === 'running' && (
-                <p role="status" data-testid="solver-progress">
-                    {phase.progress
-                        ? `짜는 중 — 후보 ${phase.progress.candidate}/${phase.progress.of}번째 (필수 위반 ${phase.progress.hard} · 권장 위반 ${phase.progress.soft})`
-                        : '짜는 중입니다'}
-                </p>
+                <div role="status" data-testid="solver-progress" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 min-w-0">
+                    {phase.progress ? (
+                        <>
+                            <span className="whitespace-nowrap">{`짜는 중 — 후보 ${phase.progress.candidate}/${phase.progress.of}번째`}</span>
+                            <span className="whitespace-nowrap text-muted">{`필수 위반 ${phase.progress.hard}`}</span>
+                            <span className="whitespace-nowrap text-muted">{`권장 위반 ${phase.progress.soft}`}</span>
+                            <span className="whitespace-nowrap text-muted" data-testid="solver-elapsed">{`경과 ${(phase.progress.elapsedMs / 1000).toFixed(1)}초`}</span>
+                        </>
+                    ) : <span>짜는 중입니다</span>}
+                </div>
             )}
             {phase.k === 'stopped' && <p role="status">편성을 멈췄습니다. 담긴 것은 없습니다.</p>}
             {phase.k === 'error' && <p role="alert" className="text-bad">{phase.message}</p>}

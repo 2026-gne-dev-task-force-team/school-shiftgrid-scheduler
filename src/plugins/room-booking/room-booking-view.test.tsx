@@ -160,3 +160,18 @@ describe('방 예약 화면 — 눌러서', () => {
         expect(el.textContent).toContain('내 예약 0건');
     });
 });
+
+describe('방 예약 화면 — 빈 상태', () => {
+    it('방이 없으면 안내 문구와 「특별실 관리 열기」 단추가 약속의 cmd 로 명령을 돈다', () => {
+        const el = document.createElement('div'); document.body.appendChild(el);
+        root = createRoot(el);
+        const run = vi.fn();
+        const emptyRooms = { ...fakeRooms, roomsIn: () => [] } as unknown as Rooms;
+        const h = { commands: { run }, modules: { use: (n: string) => (n === 'calendar' ? calendarModule : n === 'nodes' ? getNodesApi() : n === 'ops-room' ? { version: 1, cmd: { openManage: 'ops-room.open-manage' } } : emptyRooms) } } as unknown as PluginHost;
+        act(() => { root!.render(<RoomBookingView host={h} />); });
+        expect(el.querySelector('[data-room-free-empty]')!.textContent).toContain('특별실 관리에서 방을 먼저 더해 주세요');
+        const btn = [...el.querySelectorAll('button')].find((x) => x.textContent === '특별실 관리 열기')!;
+        act(() => { btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+        expect(run).toHaveBeenCalledWith('ops-room.open-manage');
+    });
+});

@@ -8,6 +8,7 @@ import { manifest } from './manifest';
 import { RoomPanel } from './RoomPanel';
 import { RoomManagePanel } from './manage';
 import { initRoomMigration } from './book/boot';
+import { opsRoomApi } from './api';
 
 let migrationSub: { dispose(): void } | null = null;
 const restart = (host: PluginHost) => { migrationSub?.dispose(); migrationSub = initRoomMigration(host); };
@@ -15,7 +16,9 @@ const restart = (host: PluginHost) => { migrationSub?.dispose(); migrationSub = 
 export const opsRoomPlugin = definePlugin({
     manifest: {
         ...manifest,
+        provides: { 'ops-room': '0.1.0' },
         contributes: {
+            interfaces: [{ name: 'ops-room', version: '0.1.0', label: '특별실 관리', desc: '특별실 관리 화면 열기 명령 id' }],
             views: [
                 { id: 'book', title: '특별실 예약', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Book' },
                 { id: 'manage', title: '특별실 관리', icon: 'list', defaultArea: 'center', placement: { areas: ['center'], singleton: true }, layout: { minWidth: 280, squeeze: 'scroll' }, component: 'Manage' },
@@ -24,6 +27,7 @@ export const opsRoomPlugin = definePlugin({
             ribbon: [{ commandId: 'ops-room.open-book', icon: 'list', order: 9 }, { commandId: 'ops-room.open-manage', icon: 'list', order: 10 }],
         },
     },
+    modules: { 'ops-room': opsRoomApi },
     components: { Book: ({ host }: { host: PluginHost }) => createElement(RoomPanel, { host }), Manage: ({ host }: { host: PluginHost }) => createElement(RoomManagePanel, { host }) },
     commands: {
         'ops-room.open-book': (host: PluginHost) => { host.workspace.open('ops-room.book', { where: 'center' }); },
