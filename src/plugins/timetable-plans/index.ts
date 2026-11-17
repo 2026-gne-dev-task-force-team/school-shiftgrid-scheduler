@@ -20,7 +20,7 @@ export const timetablePlansPlugin = definePlugin({
         ...manifest,
         provides: { plans: '0.2.0' },
         requires: { nodes: '^0.1' },
-        supports: { staff: '^0.1', school: '^0.1', subjects: '^0.1', rooms: '^0.1', solver: '^0.2', clock: '^0.1' },
+        supports: { staff: '^0.1', school: '^0.1', subjects: '^0.1', rooms: '^0.1', solver: '^0.2', clock: '^0.1', 'v1-file': '^0.1' },
         contributes: {
             interfaces: [{ name: 'plans', version: '0.2.0', label: '편성안', desc: '짠 시간표를 편성안으로 담기' }],
             views: [{

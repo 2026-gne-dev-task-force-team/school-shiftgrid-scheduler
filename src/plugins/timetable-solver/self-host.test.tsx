@@ -97,6 +97,18 @@ describe('화면 — 진짜 host 로 그린다', () => {
         act(() => root!.render(h(PlanCheck, { host: hostOf(opsCheckPlugin) })));
         expect(el.textContent).toContain('점수');
     });
+    it('편성안이 0 이면 「먼저 편성안을 만드세요」 안내가 뜨고 단추도 보인다(T-10fx)', () => {
+        planList = NO_PLANS;
+        root = createRoot(el);
+        act(() => root!.render(h(ExportTab, { host: hostOf(v1FilePlugin) })));
+        expect(el.textContent).toContain('먼저 편성안을 만드세요');
+        expect([...el.querySelectorAll('button')].some((b) => b.textContent?.includes('v1 파일로 내보내기'))).toBe(true);
+    });
+    it('v1-file 매니페스트는 리본 단추와 약속을 내놓는다(T-10fx)', () => {
+        const c = v1FilePlugin.manifest.contributes;
+        expect(c?.ribbon?.map((r) => r.commandId)).toContain('v1-file.open');
+        expect(v1FilePlugin.manifest.provides?.['v1-file']).toBeTruthy();
+    });
     it.each([['편성안 없음', NO_PLANS], ['편성안 있음', ONE_LIST]] as const)('「v1 파일로 내보내기」를 누르면 결과 문구가 뜬다(던지면 문구가 안 뜬다) — %s', async (_n, list) => {
         planList = list;
         root = createRoot(el);

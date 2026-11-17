@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, Field, Textarea, TextInput } from '../../../pane-ui-system';
 import type { PluginHost } from '../../../pane-ui-system/plugin';
 import type { Rooms } from '../../rooms/contracts/rooms';
+import type { RoomBooking } from '../../room-booking/contracts/room-booking';
 import { parseRoomsCsv, roomsToCsv, type RoomCsvPreview } from './csv';
 import { RoomImportView } from '../import/RoomImportView';
 import { roomFrame } from '../import/roomFrame';
@@ -14,6 +15,7 @@ import { allRooms, applyCsvPlan, csvRoomsOf, legacyOf, planCsv, writeImport } fr
  */
 export function RoomManageView({ rooms, host, newId, frame }: { rooms?: Rooms; host?: PluginHost; newId?: () => string; frame?: TimeFrame }) {
     const api = rooms ?? host?.modules.use<Rooms>('rooms') ?? undefined;
+    const rb = host?.modules.use<RoomBooking>('room-booking');
     const [, bump] = useState(0);
     const [msg, setMsg] = useState<string | null>(null);
     const [form, setForm] = useState({ name: '', capacity: '2' });
@@ -113,6 +115,7 @@ export function RoomManageView({ rooms, host, newId, frame }: { rooms?: Rooms; h
             </div>
             <p className="text-small">차단 시간·고정 사용 손질은 「방 속성」 화면에서 합니다.</p>
             {host && <div><Button variant="outline" onClick={() => { host.workspace.open('room-booking.room-props', { where: 'center' }); }}>방 속성 열기</Button></div>}
+            {rb && <div><Button variant="outline" onClick={() => { host?.commands.run(rb.cmd.book); }}>방 예약 열기</Button></div>}
             <Button variant="outline" onClick={() => setImporting(true)}>고정 사용 불러오기</Button>
             <h3 className="text-small">CSV</h3>
             <Button variant="outline" onClick={() => setCsv(roomsToCsv(csvRoomsOf(api)))}>CSV 내보내기</Button>
