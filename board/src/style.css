@@ -338,9 +338,10 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .td-sec h4 { margin: var(--sp3) 0 4px; font-size: var(--fs-sm); color: var(--fg-2) }
 .td-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-sm); line-height: 1.55 }
 .td-hist { margin: 0; padding-left: 18px; font-size: var(--fs-sm) } .td-hist time { color: var(--fg-2) }
-.td-side { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px var(--sp2); font-size: var(--fs-sm); align-content: start }
-.td-side dt { color: var(--fg-2) } .td-side dd { margin: 0; overflow-wrap: anywhere }
-.td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start } .td-link { text-align: left }
+.td-side { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px var(--sp2); font-size: var(--fs-sm); align-content: start } /* minmax(0,…): 값 칸이 내용보다 좁아져도 패널 밖으로 안 민다 */
+.td-side dt { color: var(--fg-2) } .td-side dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
+.td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; max-width: 100% } /* 연결 태스크 칩은 패널 폭 안에서 줄바꿈 — 390px 에서도 가로 넘침 없음 */
+.td-link { max-width: 100%; text-align: left; white-space: normal; overflow-wrap: anywhere; word-break: keep-all }
 /* 크게 보기도 오른쪽 옆칸으로만 넓힌다 — 화면 가운데 띄우지 않는다(쥔님 11-17 11:53 「카드는 무조건 사이드로」) */
 .detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 36px; right: 0; bottom: 0; width: min(960px, 70vw); overflow: auto }
 @media (min-width: 768px) { .detail.full .td { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: start } .detail.full .td-main { order: 1 } .detail.full .td-side { order: 2 } }

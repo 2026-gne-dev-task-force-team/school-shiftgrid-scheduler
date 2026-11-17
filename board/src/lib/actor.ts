@@ -29,6 +29,13 @@ export const taskNo = (id?: string | null): string => {
   return /^T-\w+$/.test(n) ? n : ''
 }
 
+/** 카드·상세에 보일 번호 — 레인 카드 id 「l-<해시>-<표번호>」 는 사람이 쓴 표 번호(T-N1·R4…)만 보인다. 한 표에 두 번 나와 해시로 민 중복 카드 꼬리(8자리 hex)는 번호가 없다(빈 값 → 제목이 뜻을 진다). 그 밖의 id(R55·T-1a)는 그대로. */
+export const cardNo = (id: string): string => {
+  const m = /^l-[0-9a-f]{6}-(.+)$/.exec(id)
+  if (!m) return id
+  return /^[0-9a-f]{8}$/.test(m[1]) ? '' : m[1]
+}
+
 /** 캐릭터 이름 — job 칸이 있는 자료는 name 그대로, 옛 자료는 id 에서 만든 고정 이름(같은 무리 안에서 겹치면 비켜 간다). */
 export function actorName(a: Who, all: Who[] = []): string {
   const seed = (x: Who) => x.id ?? `${x.role}|${x.task_id ?? ''}|${x.team ?? ''}`
