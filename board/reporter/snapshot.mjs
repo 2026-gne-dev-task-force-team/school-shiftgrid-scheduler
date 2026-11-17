@@ -331,7 +331,8 @@ export function parsePicked(md) {
 }
 /** 요청함 줄에 집은 카드 상태를 덮는다(집은 줄이 있으면 그게 Board 카드 상태 — 요청함 표 상태 칸보다 우선). */
 export const PICKED_NOTE = '집은 카드.md' // 요청함 노트와 같은 폴더
-export const withPicked = (rows, picked) => rows.map((r) => (picked.has(r.id) ? { ...r, state: picked.get(r.id) } : r))
+// 단 요청함 줄이 이미 ✅ 면 끝이 이긴다 — 집은 줄 「→ T-10bq」 가 남아 끝난 R69·R87·R88 이 「하는 중」으로 떴다(11-17 검수)
+export const withPicked = (rows, picked) => rows.map((r) => (picked.has(r.id) && !/^\s*✅/u.test(r.state ?? '') ? { ...r, state: picked.get(r.id) } : r))
 
 function gitBranches(repoDir) {
   if (!repoDir || !existsSync(repoDir)) return []

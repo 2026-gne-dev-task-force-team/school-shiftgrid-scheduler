@@ -34,7 +34,7 @@ export const layer4: LayerRenderer = {
   render(host, ctx) {
     const { data, openDetail, tip } = ctx
     const tasks: Task[] = data.tasks.map((t) => ({ ...t }))
-    const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches || isCalm()
+    const reduce = () => isCalm() // 시스템 움직임 줄이기는 안 따른다(style.css 같은 자리)
     const nReq = data.tasks.filter((t) => /^R\d/.test(t.id) && colOf(t) === 'wait').length
     const reqNote = h('small', { class: 'ws-req' }, nReq ? `요청 ${nReq} · 일감 ${data.tasks.filter((t) => !/^R\d/.test(t.id) && colOf(t) === 'wait').length}` : '')
     const cols = new Map<Col, { body: HTMLElement; badge: HTMLElement; count: HTMLElement }>()
@@ -49,7 +49,7 @@ export const layer4: LayerRenderer = {
     // 쉬는 캐릭터는 복도를 왔다갔다 — 사람마다 거리·속도·지연이 다르다(calm 이면 CSS 가 멎는다)
     const walk = h('div', { class: 'ws-walk', 'aria-hidden': 'true' })
     data.actors.filter((a) => a.state === 'idle').forEach((a, i) => {
-      const w = h('span', { class: 'ws-roamer', style: `--dist:${90 + (i * 53) % 140}px;--dur:${9 + (i * 3) % 7}s;--dly:${-i * 2.3}s;left:${10 + (i * 37) % 50}%` }, actorTag(ctx, a, { size: 'mini', text: 'name' }))
+      const w = h('span', { class: 'ws-roamer', style: `--dist:${15 + (i * 13) % 25}cqw;--dur:${9 + (i * 3) % 7}s;--dly:${-i * 2.3}s;left:${5 + (i * 37) % 40}%` }, actorTag(ctx, a, { size: 'mini', text: 'name' }))
       walk.append(w)
     })
     let filter: Filter = fromSearch(location.search)

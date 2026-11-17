@@ -32,7 +32,7 @@ export const crowd = <T,>(xs: T[], max = 2): { shown: T[]; more: number } => ({ 
 const commitsOf = (branches: Branch[]): GraphCommit[] => ((t) => t?.graph?.length ? t.graph : synthGraph(branches))(branches.find((b) => b.trunk))
 
 type View = 'cyl' | 'flat'
-let view: View = 'cyl' // 기본은 원통(R94) — 무거우면 평면으로 끈다. 층을 오가도 고른 보기를 기억한다.
+let view: View = 'flat' // 기본은 평면(쥔님 11-17 11:53 「가지 평면으로 기본값」) — 원통(R94)은 단추로 켠다. 층을 오가도 고른 보기를 기억한다.
 
 // 2층 가지 — 기본은 3D 원통(layer2-cylinder.ts · R94), 스위치로 평면 커밋 그래프(아래 renderFlat).
 export const layer2: LayerRenderer = {

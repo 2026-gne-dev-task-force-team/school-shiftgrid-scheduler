@@ -69,7 +69,8 @@ describe('스프린트', () => {
   })
   it('최신이 위, 검수 칩 글', () => {
     expect(sprintsNewestFirst(d.sprints).map((s) => s.id)).toEqual([3, 2, 1])
-    expect(d.sprints.map(reviewLabel)).toEqual(['끝', '검수 통과', '진행 중'])
+    expect(d.sprints.map((s) => reviewLabel(s))).toEqual(['끝', '검수 통과', '진행 중'])
+    expect(reviewLabel({ ...d.sprints[1], ended: '2026-11-13T00:00:00+09:00', passed: true }, 1)).toBe('검수 통과 · 1개 남김')
   })
 })
 

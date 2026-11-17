@@ -126,8 +126,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .stage-host > :not(.card) { animation: sgb-in .28s var(--ease) backwards } /* 탭이 바뀌면 내용이 살짝 미끄러져 들어온다 */
 .ws-card { animation: sgb-pop .3s var(--ease) backwards min(calc(var(--i, 0) * 20ms), 100ms) } /* 지연 상한 0.1초 — 전체 0.4초 안에 다 보인다 */
 &.calm *, &.calm *::before, &.calm .sgb-drawer { animation: none !important; transition: none !important }
-/* 시스템 「움직임 줄이기」: .calm 과 같게 애니메이션·전환을 전부 끈다(요청 R89 「다 끔」) */
-@media (prefers-reduced-motion: reduce) { --dy: 0px; & *, & *::before, & *::after, & .sgb-drawer { animation: none !important; transition: none !important } }
+/* 시스템 「움직임 줄이기」는 따르지 않는다 — 업무 PC 처럼 윈도우 애니메이션이 꺼진 기기에서 현황판이 통째로 멎었다(쥔님 11-17 11:53 「애니메이션 다 죽었노」).
+   끄는 길은 ⋯ 메뉴의 움직임 끄기(.calm) 하나. calmOn() 의 「시스템 설정으로 자동으로 켜지 않는다」와 맞춘다. ‖ 옛: R89 「다 끔」 */
 
 @media (max-width: 767px) {
   .sgb-gauge i { width: 3px }
@@ -195,7 +195,9 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .ws-col:last-child { border-bottom: 0 }
 .ws-head small { font-weight: 400; opacity: .7 }
 .ws-furn { display: block; width: 100%; max-width: 72px; height: auto; margin: 0 0 var(--sp1); filter: drop-shadow(0 2px 0 rgb(0 0 0 / .2)) }
-.ws-walk { position: relative; height: 34px; margin-top: 4px; border: 3px solid var(--floor-edge); border-radius: var(--r1); background: var(--floor) linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
+/* 복도 폭에 맞춰 걷는다(cqw) — px 로 걸으면 폰에서 오른쪽 끝 밖으로 나가 가려졌다(쥔님 11-17 11:54). 이름은 한 줄로 · 높이 44px */
+.ws-walk { position: relative; container-type: inline-size; height: 44px; margin-top: 4px; border: 3px solid var(--floor-edge); border-radius: var(--r1); background: var(--floor) linear-gradient(90deg, rgb(var(--floor-rgb) / .18) 2px, transparent 2px) 0 0 / 32px 32px; overflow: hidden }
+.ws-roamer .actor-tag .at-name { display: block; white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: unset; line-clamp: unset }
 .ws-roamer { position: absolute; top: 4px; animation: sgb-roam var(--dur, 10s) ease-in-out var(--dly, 0s) infinite alternate }
 .ws-dorm { display: flex; justify-content: flex-end; align-items: center; gap: var(--sp2); margin-top: 4px; padding: 2px 8px; border: 2px dashed var(--fg-3); border-radius: var(--r1); opacity: .75 }
 .ws-dorm b { font-size: 11px; color: var(--fg-2); margin-right: auto }
@@ -337,7 +339,8 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .td-side { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px var(--sp2); font-size: var(--fs-sm); align-content: start }
 .td-side dt { color: var(--fg-2) } .td-side dd { margin: 0; overflow-wrap: anywhere }
 .td-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start } .td-link { text-align: left }
-.detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 6dvh; left: 50%; transform: translateX(-50%); width: min(960px, 94vw); max-height: 88dvh; overflow: auto }
+/* 크게 보기도 오른쪽 옆칸으로만 넓힌다 — 화면 가운데 띄우지 않는다(쥔님 11-17 11:53 「카드는 무조건 사이드로」) */
+.detail.full:not([data-layout=sheet]) { position: fixed; z-index: 20; top: 36px; right: 0; bottom: 0; width: min(960px, 70vw); overflow: auto }
 @media (min-width: 768px) { .detail.full .td { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: start } .detail.full .td-main { order: 1 } .detail.full .td-side { order: 2 } }
 /* T-10cc: 옆 상세는 스크롤을 따라온다(데스크톱만 — 폰은 바텀시트라 해당 없음). 격자 칸 안에서 키가 늘어나면 붙을 자리가 없어 align-self: start */
 @media (min-width: 768px) { .detail[data-layout=side]:not(.full) { position: sticky; top: 36px; align-self: start; max-height: calc(100dvh - 36px - var(--sp4)); overflow-y: auto } }

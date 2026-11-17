@@ -17,6 +17,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
   const now = Date.now()
   const run = data.runs[0], goal = data.goals[0], cur = currentSprint(data)
   const working = data.actors.filter((a) => a.state === 'work').length
+  // 짐작(est_min)이 안 적힌 일감뿐이면 remain 이 0 — 「0분~0분」 대신 「모름」
   const remain = data.tasks.filter((t) => t.column !== 'done').reduce((s, t) => s + t.est_min, 0)
   const mid = remain / Math.max(1, working)
   const state = goal?.state === 'shipped' ? '✅ 배포됨' : goal?.state === 'review' ? '🔍 검수 중' : working ? '🔨 만드는 중' : '⏸ 쉬는 중'
@@ -86,7 +87,7 @@ export function createBand(data: BoardData, hooks: BandHooks) {
     h('span', { class: 'sgb-name' }, sprintLabel(data)),
     h('span', { class: 'sgb-gauge', 'aria-hidden': 'true', title: 'Sprint 진행률' }, ...Array.from({ length: 10 }, (_, i) => h('i', cur && i < Math.round(cur.pct / 10) ? { class: 'on' } : null))),
     h('span', { class: 'sgb-pct', title: 'Sprint 진행률' }, cur ? `${cur.pct}%` : ''),
-    h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : ''))
+    h('span', { class: 'band-clock', title: '경과 시간 · 남은 예상' }, run ? `${elapsed}째 · 남은 예상 ${remain > 0 ? `${fmtDur(mid * 0.8)}~${fmtDur(mid * 1.2)}` : '모름'}` : ''))
 
   return {
     toggle, editions, setLive, upd, auto, fb, more, menu, drop, closeMenu,

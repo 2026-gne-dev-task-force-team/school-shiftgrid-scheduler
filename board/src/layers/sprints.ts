@@ -46,9 +46,9 @@ export const sprints: LayerRenderer = {
         h('span', { class: 'fid-t' }, flap(`${k}:t`, hhmm(s.began), fresh, r + 4)),
         h('span', { class: 'fid-st', 'data-st': st }, flap(`${k}:st`, st, fresh, r + 6)),
         h('span', { class: 'fid-pct' }, flap(`${k}:pct`, `${p.pct}%`, fresh, r + 8)))
-      const label = reviewLabel(s)
+      const left = p.total - p.done, label = reviewLabel(s, left)
       const top = h('div', { class: 'row' }, h('span', null, `진행 ${p.pct}% (${p.done}/${p.total})`),
-        chip({ icon: s.passed ? '✅' : s.ended ? '🏁' : '⏳', label, hue: s.passed || s.ended ? 140 : 45 }))
+        chip({ icon: s.passed ? '✅' : s.ended ? '🏁' : '⏳', label, hue: s.ended && left > 0 ? 45 : s.passed || s.ended ? 140 : 45 }))
       const tasks = s.task_ids.map((id) => data.tasks.find((t) => t.id === id)).filter((t) => !!t)
       const body = h('div', null,
         h('p', null, `목표 — ${s.goal}`),
