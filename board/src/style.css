@@ -171,7 +171,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 @media (max-width: 767px) {
   .fid { padding: var(--sp2) 8px; font-size: 11px }
   .fid-line { grid-template-columns: auto auto auto auto; gap: 6px; justify-content: space-between }
-  .fid-dest { grid-column: 1 / -1; grid-row: 2; display: block } .fid-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap } .fid-goal { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; color: #d9c88a } .fid-st { min-width: 0 }
+  .fid-dest { grid-column: 1 / -1; grid-row: 2; display: block } .fid-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; white-space: normal } .fid-goal { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; color: #d9c88a } .fid-st { min-width: 0 }
   .fl { width: .95ch } .fl.w { width: 1.75ch }
 }
 
@@ -181,11 +181,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 .lane[data-state=blocked] { background: var(--blocked-bg); border-color: rgb(var(--bad-rgb) / .6) }
 .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
 .lane-chips { display: flex; flex-direction: column; gap: 4px; margin-top: var(--sp2) }
-.lane-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 28px; padding: 0 8px; font: inherit; font-size: var(--fs-sm); color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.lane-chip { display: inline-flex; align-items: center; text-align: left; gap: 5px; max-width: 100%; min-height: 28px; padding: 0 8px; font: inherit; font-size: var(--fs-sm); color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; overflow: hidden; padding-top: 3px; padding-bottom: 3px }
 .lc-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3) }
 .lane-chip[data-s=work] .lc-dot { background: var(--neon) } .lane-chip[data-s=blocked] .lc-dot { background: var(--bad) }
 .lane-row { min-width: 0 } .lane-row > summary { list-style: none; display: flex; width: 100% } .lane-row > summary::-webkit-details-marker { display: none }
-.lc-id { font-weight: 600 } .lc-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0 } .lc-title.empty { opacity: .5 }
+.lc-id { font-weight: 600 } .lc-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; white-space: normal; min-width: 0 } .lc-title.empty { opacity: .5 }
 .lane-detail { margin: 4px 0 6px 12px; font-size: var(--fs-sm); display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px } .lane-detail dt { opacity: .6 } .lane-detail dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere }
 .lane-chip.flash { animation: sgb-pulse 1.2s } /* 상태가 바뀐 칩만 한 번. .calm·움직임 줄이기면 아래 규칙이 끈다 */
 
@@ -209,7 +209,7 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 /* 카드 = 상태 점 · 제목 한 줄(말줄임) · 얼굴. 시간·사유는 마우스를 올리면 뜨는 말풍선과 상세에 있다 */
 .ws-card { position: relative; display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 2px 6px; text-align: left; color: var(--fg); font: inherit; font-size: var(--fs-sm); background: var(--s3); border: 1px solid var(--line); border-left: 3px solid var(--make); border-radius: var(--r1); box-shadow: var(--sh1); cursor: pointer; transition: transform .15s var(--ease), border-color .15s }
 .ws-card .tag { flex: none; padding: 0 5px; border-radius: 999px; font-size: var(--fs-xs); line-height: 16px; white-space: nowrap; color: var(--fg); border: 1px solid hsl(var(--hue) 45% var(--chip-bd-l) / .6); background: hsl(var(--hue) var(--chip-s) var(--chip-l) / .8) } .ws-card .tag.muted { opacity: .55; border-style: dashed }
-.ws-card > b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550 }
+.ws-card > b { flex: 1; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; white-space: normal; font-weight: 550 }
 .tid { flex: none; font: 600 10px/1 ui-monospace, monospace; padding: 2px 4px; border-radius: 3px; background: var(--s2); color: var(--fg-2) } /* 꼬리표는 안 줄고 제목만 말줄임 */
 .ws-card:hover { transform: translateY(-1px); border-color: var(--line-2) }
 .ws-card[data-dept=hq] { border-left-color: var(--hq) } .ws-card[data-dept=qa] { border-left-color: var(--qa) }
@@ -340,9 +340,11 @@ button.gg-l { cursor: pointer } button.gg-l::after { content: ''; position: abso
 /* R92: 공용 캐릭터 이름표 — 이름 · 직업 / 태스크 줄(줄임표). 폰 폭에선 더 좁게 */
 .actor-tag { text-align: left; max-width: 220px; min-width: 0; padding-top: 2px; padding-bottom: 2px }
 .actor-tag .at-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25 }
-.actor-tag .at-name, .actor-tag .at-task { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100% }
+.actor-tag .at-name, .actor-tag .at-task { overflow: hidden; white-space: normal; overflow-wrap: anywhere; max-width: 100%; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2 }
 .actor-tag .at-name { font-weight: 600; font-size: var(--fs-sm) } .actor-tag .at-task { font-size: .75em; color: var(--fg-3) }
 .actor-tag[data-state="off"], .actor-tag[data-state="done"] { opacity: .75 }
 .ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 110px; background: none; border: 0; min-height: 0; padding: 0 }
 .gg-chip { pointer-events: auto }
-@media (max-width: 420px) { .actor-tag { max-width: 150px } .ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 80px } }
+/* 간트 칸은 줄 높이가 고정이라 한 줄 말줄임을 유지한다 */
+.gg-chip .actor-tag .at-name, .gg-chip .actor-tag .at-task { display: block; white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: unset; line-clamp: unset }
+@media (max-width: 420px) { .actor-tag { max-width: 100%; height: auto } .ws-card .actor-tag, .gg-chip .actor-tag, .ws-roamer .actor-tag { max-width: 80px } }
