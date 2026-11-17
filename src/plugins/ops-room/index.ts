@@ -34,7 +34,7 @@ export const opsRoomPlugin = definePlugin({
         onActivate(host: PluginHost) { restart(host); },
         onDeactivate() { migrationSub?.dispose(); migrationSub = null; },
         // 약속이 활성 뒤에 켜져도 따라잡는다 — 다시 시도(멱등).
-        onInterface: Object.fromEntries(['calendar', 'rooms', 'nodes'].map((n) => [n, { attach: restart, detach: () => undefined }])),
+        onInterface: Object.fromEntries(['calendar', 'rooms', 'nodes', 'room-booking'].map((n) => [n, { attach: restart, detach: () => undefined }])),
     },
 });
 

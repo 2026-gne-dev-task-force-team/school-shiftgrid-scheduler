@@ -17,7 +17,7 @@ export const timetableSolverPlugin = definePlugin({
         ...manifest,
         provides: { solver: '0.2.0' },
         // 정본은 없어도 켜진다(없으면 「꺼져 있어 읽을 수 없습니다」가 편성 막힘으로 보인다)
-        supports: { nodes: '^0.1', staff: '^0.1', school: '^0.1', subjects: '^0.1', rooms: '^0.1', clock: '^0.1', duty: '^0.1', plans: '^0.1' },
+        supports: { nodes: '^0.1', staff: '^0.1', school: '^0.1', subjects: '^0.1', rooms: '^0.1', clock: '^0.1', duty: '^0.1', plans: '^0.2' },
         contributes: {
             views: [{
                 id: 'auto', title: '자동 편성', icon: 'schedule', defaultArea: 'center',

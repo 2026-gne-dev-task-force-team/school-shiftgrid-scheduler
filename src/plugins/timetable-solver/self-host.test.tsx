@@ -30,7 +30,7 @@ function provider(id: string, iface: string, mod: unknown): PluginModule {
     } as PluginModule;
 }
 const NO_PLANS: ReturnType<Plans['listPlans']> = [];   // 같은 배열 — useSyncExternalStore 스냅숏은 안 바뀌면 같아야 한다
-const fakePlans: Plans = { version: 1, savePlan: () => '', listPlans: () => NO_PLANS, getPlan: () => null, subscribe: () => () => {} };
+const fakePlans: Plans = { version: 1, cmd: { open: 'plans-open' }, savePlan: () => '', listPlans: () => NO_PLANS, getPlan: () => null, subscribe: () => () => {} };
 
 let root: Root | null = null;
 let el: HTMLDivElement;

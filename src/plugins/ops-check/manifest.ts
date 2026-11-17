@@ -10,7 +10,7 @@ export const manifest: PluginManifest = {
     minHostVersion: '0.1.0',
     layer: 'domain',
     // 편성안 점검 탭이 읽는다 — 꺼져 있으면 그 탭만 「쓸 수 없습니다」(운영 점검은 그대로)
-    supports: { plans: '^0.1', solver: '^0.2' },
+    supports: { plans: '^0.2', solver: '^0.2' },
     icon: 'shieldCheck',
     description: '가져올 파일이 규칙에 맞는지, 짜 둔 편성안에 겹침·시수 문제가 없는지 점검합니다.',
     about: {
