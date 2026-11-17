@@ -8,6 +8,7 @@ import { appOfLane, build, splitDetail, linkTasks, dedupeKeys, columnOf, parseRe
 // @ts-expect-error — 위와 같음
 import { findDirty, isPlain } from './plain.mjs'
 import { actorLabel } from '../src/lib/actor.ts'
+import { pickName } from './names.mjs'
 import type { Actor } from '../src/types.ts'
 
 const MD = `# 레인
@@ -134,10 +135,14 @@ describe('보고꾼 — 실자료 다듬기', () => {
     expect(d.events.map((e: { text: string }) => e.text)).toEqual(['방향 바뀜', '나르기 시작', '보고꾼 끝'])
   })
 
-  it('캐릭터 이름은 하는 일 · 🔄 없으면 지휘 하나만 쉼 · 지휘 일감은 지휘가', () => {
+  it('캐릭터 이름은 사람 이름 · 직업은 따로 · 🔄 없으면 지휘 하나만 쉼 · 지휘 일감은 지휘가', () => {
     const work = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 opus | 5 | 🔄 |\n| T-2b | 판 | 화면 sonnet | 5 | 🔄 |\n| T-2p | 배포 | 지휘 | 5 | 🔄 |', '') })
-    const who = work.actors.map((a: Actor) => [a.id, actorLabel(a, work.actors), a.state])
-    expect(who).toEqual([['a-lead', '지휘 T-2p', 'work'], ['a-T-2a', '자료팀 T-2a', 'work'], ['a-T-2b', '화면팀 T-2b', 'work']])
+    const who = work.actors.map((a: Actor) => [a.id, a.job, a.state, a.task_id])
+    expect(who).toEqual([['a-lead', '지휘', 'work', 'T-2p'], ['a-T-2a', '코드 짜기', 'work', 'T-2a'], ['a-T-2b', '화면 다듬기', 'work', 'T-2b']])
+    expect(work.actors.filter((a: Actor) => a.job === '자료 나르기')).toEqual([]) // 코드 판의 직업은 「자료 나르기」가 아니다
+    expect(work.actors[1].name).toBe(pickName('a-T-2a', new Set([work.actors[0].name]))) // 이름 = 캐릭터 id 에서 고정
+    expect(new Set(work.actors.map((a: Actor) => a.name)).size).toBe(3) // 서로 다른 이름
+    expect(actorLabel(work.actors[1], work.actors)).toBe(`${work.actors[1].name} · 코드 짜기 · T-2a`)
     expect(work.actors[0].task_id).toBe('T-2p')
     const rest = build({ now: at, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
     expect(rest.actors.map((a: Actor) => [a.id, a.state])).toEqual([['a-lead', 'idle']])
@@ -158,12 +163,13 @@ describe('보고꾼 — 실자료 다듬기', () => {
       's-w': { id: 'a-99999999', kind: 'session', role: '세션', started: t0 - 300e3, ended: t0 - 60e3 }, // 닫힌 세션
     } }))
     const d = build({ now: at, gatePath, md: lane('| T-2a | 보고꾼 | 코드 | 5 | ✅ |', '') })
-    const row = (a: Actor) => [a.id, a.name, a.state, a.task_id]
+    const row = (a: Actor) => [a.id, a.job, a.state, a.task_id]
     expect(d.actors.map(row)).toEqual([
-      ['a-lead', '지휘', 'work', null], ['a-T-2a', '자료 나르기', 'off', 'T-2a'], ['a-22222222', '일손', 'work', null], ['a-33333333', '일손', 'off', null],
+      ['a-lead', '지휘', 'work', null], ['a-T-2a', '코드 짜기', 'off', 'T-2a'], ['a-22222222', '일손', 'work', null], ['a-33333333', '일손', 'off', null],
       ['a-44444444', '일손', 'off', null], ['a-55555555', '대화 세션', 'work', null], ['a-77777777', '대화 세션', 'idle', null],
       ['a-88888888', '대화 세션', 'off', null], ['a-99999999', '대화 세션', 'off', null]])
-    expect(actorLabel(d.actors.find((a: Actor) => a.id === 'a-55555555'), d.actors)).toBe('대화 1') // 같은 이름표가 여럿이면 번호
+    expect(new Set(d.actors.map((a: Actor) => a.name)).size).toBe(d.actors.length) // 같은 직업 여럿도 이름은 서로 다르다(꼬리 번호 없음)
+    expect(actorLabel(d.actors.find((a: Actor) => a.id === 'a-55555555'), d.actors)).toMatch(/^\S+ · 대화 세션$/)
   })
 
   it('상태 다섯: 일함 · 쉼 · 퇴근(마지막 활동 시각 실음) · 막힘 · 쉼이 오래가면 퇴근', () => {
@@ -605,7 +611,7 @@ describe('감독관 캐릭터 (T-9zb)', () => {
     return build({ now: NOW, md: lane('| T-2a | 가 | 코드 | 5 | ✅ |', ''), laneRoot: root }).actors.find((a: { role: string }) => a.role === '감독')
   }
   it('노트 mtime 10분 안이면 일함 · 한 줄은 요약 줄', () => {
-    expect(world(3)).toMatchObject({ name: '감독관', role: '감독', state: 'work', team: '⚠️ 1 · ❌ 2 · 순찰 시각 22:30' })
+    expect(world(3)).toMatchObject({ job: '감독관', role: '감독', state: 'work', team: '⚠️ 1 · ❌ 2 · 순찰 시각 22:30' })
   })
   it('오래되면 쉼', () => expect(world(30)).toMatchObject({ state: 'idle' }))
   it('노트가 없으면 안 싣는다', () => expect(world(null)).toBeUndefined())

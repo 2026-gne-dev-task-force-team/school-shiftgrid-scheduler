@@ -9,6 +9,7 @@ import { clean, findDirty, isPlain, isPlainText, publicText, setRedactNames } fr
 import { appModules } from './app-modules.mjs'
 import { targetOf } from './tags.mjs'
 import { raceOfDevice } from './race.mjs'
+import { pickName } from './names.mjs'
 import { claudeVariants } from './claude-home.mjs'
 import { bodyFromLinks, bodyFromLog, branchTitle, sprintNext, sprintReview } from './fill.mjs'
 
@@ -490,8 +491,8 @@ export async function checkServices(repoDir, now = new Date(), sinkStatePath = '
   ]
 }
 
-// 분류 → 캐릭터(이름·팀·역할 = actor.ts ROLES 낱말). 코드 판은 지금 자료·보고를 만드니 「자료 나르기」. 지휘 분류는 따로 캐릭터를 안 만들고 지휘가 맡는다.
-const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['자료 나르기', '자료팀', '자료', 'make', 160, 'teal', 'box'],
+// 분류 → 캐릭터(직업·팀·역할 = actor.ts ROLES 낱말). 직업 칸 = job · 이름(name)은 맨 끝에서 캐릭터 id 로 정한다(R98 · 직업 낱말로 이름을 만들지 않는다). 코드 판의 직업은 「코드 짜기」(「자료 나르기」는 정말 자료만 나르는 판 몫). 지휘 분류는 따로 캐릭터를 안 만들고 지휘가 맡는다.
+const ACTOR = { 화면: ['화면 다듬기', '화면팀', '화면', 'make', 175, 'teal', 'brush'], 코드: ['코드 짜기', '코드팀', '코드', 'make', 160, 'teal', 'box'],
   설계: ['설계', '설계팀', '설계', 'make', 190, 'teal', 'ruler'], 검사: ['시험', '시험팀', '시험', 'qa', 275, 'violet', 'check'], 지휘: ['지휘', '지휘', '지휘', 'hq', 40, 'amber', 'flag'] }
 const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 8)
 
@@ -760,7 +761,7 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   // 다른 레인의 🔄 태스크 → 번호로 부르는 캐릭터(세션·기기·사람 이름 없이). 레인 표엔 맡은 이가 없어 여기서 세운다. 노트가 묵은 레인은 actor_id 가 없어 안 세운다.
   for (const t of laneRows.flatMap((l) => l.tasks).filter((x) => x.column === 'work' && x.actor_id)) {
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category]
-    actors.push({ id: t.actor_id, parent_id: lead.id, kind: 'helper', name: `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'work',
+    actors.push({ id: t.actor_id, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'work',
       task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   }
 
@@ -788,9 +789,13 @@ export function build({ lanePath, requestPath, requestMd, repoDir, usagePath, ga
   for (const t of stuck) {
     if (actors.some((a) => a.task_id === t.id)) continue
     const [name, team, role, dept, hue, eye, prop] = ACTOR[t.category === '지휘' ? '코드' : t.category]
-    actors.push({ id: `a-${t.id}`, parent_id: lead.id, kind: 'helper', name: t.category === '지휘' ? name : `${name} ${t.id.replace(/^l-\w+-/, '')}`, hue, eye, prop, dept, team, role, state: 'blocked',
+    actors.push({ id: `a-${t.id}`, parent_id: lead.id, kind: 'helper', name, hue, eye, prop, dept, team, role, state: 'blocked',
       task_id: t.id, branch_id: null, account: 'org', tok_per_min: 0, started_at: nowIso, ended_at: null })
   }
+
+  // 이름 = 캐릭터 id 에서 정한 고정 사람 이름(R98) · 직업(job) = 위에서 name 자리에 둔 직업 낱말. 같은 시각엔 겹치지 않게 비켜 간다.
+  const taken = new Set()
+  for (const a of actors) { a.job ??= a.name; a.name = pickName(a.id, taken); taken.add(a.name) }
 
   const data = {
     actors, tasks: [...tasks, ...reqTasks, ...laneRows.flatMap((l) => l.tasks)], lanes: [{ id: 'l1', title: '현황판 만들기', state: 'work', actor_id: lead.id }, ...laneRows.map((l) => l.lane)], branches,

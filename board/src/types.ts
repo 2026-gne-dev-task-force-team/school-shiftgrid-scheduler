@@ -5,7 +5,8 @@ export type Account = 'org' | 'personal'
 // 일함 work · 쉼 idle · 대기 wait · 막힘 blocked · 퇴근 off. done 은 옛 자료 호환(퇴근과 같게 그린다).
 export type ActorState = 'work' | 'idle' | 'wait' | 'blocked' | 'off' | 'done'
 export interface Actor {
-  id: string; parent_id: string | null; kind: 'lead' | 'helper'; name: string; hue: number; eye: string; prop: string
+  id: string; parent_id: string | null; kind: 'lead' | 'helper'; name: string; job?: string; // 이름(name)은 사람 이름처럼 고정, 직업(job)은 하는 일 낱말(R98) — 없는 옛 자료는 role·team 에서 가린다
+   hue: number; eye: string; prop: string
   race?: string // 종족(R74) — elf·dwarf·orc·ghost 중 하나, 없거나 모르면 사람(소품 없음). 기기에서 정해 보고꾼이 싣는다(맥=elf · 업무PC=dwarf · 씽크패드=orc · NAS=ghost)
   dept: Dept; team: string; role: string; state: ActorState
   task_id: string | null; branch_id: string | null; account: Account; tok_per_min: number

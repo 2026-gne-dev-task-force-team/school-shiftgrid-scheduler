@@ -19,17 +19,17 @@ describe('code-tag', () => {
     expect(show(wheelTitle('자료 나르기'))).toBe('자료 나르기')
   })
   it('named — 코드는 꼬리표', () => expect(show(named('P10a iframe 입구'))).toBe('iframe 입구[P10a]'))
-  it('actorChip — 번호는 따로, 제목이 있으면 이름표에 그대로', () => {
-    const a = { name: 'x', role: '시험', task_id: 'T-7z' }
-    expect(actorChip(a)).toEqual({ label: '시험팀', tag: 'T-7z' })
-    expect(actorChip(a, [], [{ id: 'T-7z', title: 'T-7z (R5) 칸 연결' }])).toEqual({ label: '시험팀 칸 연결', tag: 'T-7z' })
-    expect(actorChip({ name: 'x', role: '지휘' })).toEqual({ label: '지휘', tag: '' })
+  it('actorChip — 「이름 · 직업」 + 번호는 따로 꼬리표', () => {
+    const a = { name: '하준', job: '시험', role: '시험', task_id: 'T-7z' }
+    expect(actorChip(a)).toEqual({ label: '하준 · 시험', tag: 'T-7z' })
+    expect(actorChip({ name: '하준', job: '지휘', role: '지휘' })).toEqual({ label: '하준 · 지휘', tag: '' })
+    expect(actorChip({ id: 'q', name: 'x', role: '지휘' }).label).toMatch(/^\S+ · 지휘$/) // job 칸 없는 옛 자료 — 이름은 id 에서
   })
   it('R90 — 이름표에 번호 두 번·번호 아닌 꼬리 없음', () => {
     const a = { name: 'x', role: '자료', task_id: 'T-8p1' }
-    expect(actorChip(a, [], [{ id: 'T-8p1', title: 'T-8p1 자료 나르기 T-8p1 · T-8p1' }])).toEqual({ label: '자료팀 자료 나르기', tag: 'T-8p1' })
-    expect(actorChip(a, [], [{ id: 'T-8p1', title: 'T-8p1 자료 나르기 28' }]).label).toBe('자료팀 자료 나르기')
-    expect(actorChip({ name: 'x', role: '자료', task_id: '28' })).toEqual({ label: '자료팀', tag: '' })
+    const c = actorChip({ ...a, id: 'a-T-8p1', job: '코드 짜기', name: '서윤' }, [], [{ id: 'T-8p1', title: 'T-8p1 자료 나르기 T-8p1 · T-8p1' }])
+    expect(c).toEqual({ label: '서윤 · 코드 짜기', tag: 'T-8p1' }) // 번호는 tag 한 번만 · 일감 제목 꼬리 없음
+    expect(actorChip({ name: 'x', role: '자료', task_id: '28' }).tag).toBe('') // T- 없는 꼬리 번호는 번호가 아니다
   })
   it('R90 — 가지 이름만 있는 줄은 뜻으로', () => {
     expect(eventText('main 끝')).toBe('줄기에 합침')
