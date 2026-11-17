@@ -89,8 +89,28 @@ export const paneKey = () => storageKey('pane');
 export const viewOverrideKey = () => storageKey('view-overrides');
 export const ribbonKey = () => storageKey('ribbon');
 
+// 🔴 리본 기본 배치 — 앱이 켤 때 한 번 주입한다(setRibbonDefaults). 창틀은 id 가 무슨 아이콘인지 모르고,
+//    묶음(구분선용)·숨김을 "키 배열" 로만 쥔다(storageKey 주입과 같은 태도). 안 주면 빈 값 = 등록 순·전부 보임.
+let defaultGroups: string[][] = [];
+let defaultHidden: string[] = [];
+
+/** 앱이 site.config 의 리본 기본값을 건다 — groups 는 묶음별 id(구분선 자리), hidden 은 처음부터 끌 id. */
+export function setRibbonDefaults(groups: string[][], hidden: string[]): void {
+    defaultGroups = groups.map((g) => [...g]);
+    defaultHidden = [...hidden];
+}
+
 export function defaultRibbon(): Ribbon {
-    return { order: [], hidden: [] };
+    return { order: defaultGroups.flat(), hidden: [...defaultHidden] };
+}
+
+/**
+ * 이 리본 항목이 몇 번째 묶음인가 — Rail 이 묶음 사이에 구분선을 긋는 데 쓴다(순수).
+ * 어느 묶음에도 없으면(설정에 안 적힌 새 항목) 묶음 수 = 맨 뒤 한 칸으로 묶는다. 묶음이 없으면 전부 0.
+ */
+export function ribbonGroupOf(id: string): number {
+    const i = defaultGroups.findIndex((g) => g.includes(id));
+    return i < 0 ? defaultGroups.length : i;
 }
 
 // ─────────────────────────── 받아들이기 ───────────────────────────

@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import * as peopleTypes from './contracts/people';
 import { peoplePlugin } from './index';
 import type { PluginModule } from '../../pane-ui-system/plugin';
-import { activateAll, listPlugins, listInterfaces, disposeOwner } from '../../pane-ui-system/plugin';
+import { activateAll, enablePlugin, listPlugins, listInterfaces, disposeOwner } from '../../pane-ui-system/plugin';
 
 // 🔴 people 은 requires.nodes — nodes 약속을 들고 오고 채우는 코어 가짜가 먼저 있어야 막히지 않는다(탐색기 꾸러미 흉내).
 const nodesProvider: PluginModule = {
@@ -52,6 +52,7 @@ describe('people 약속 — 값 0 · 꾸러미가 들고 옴 · 활성', () => {
 
     it('켜면 막히지 않고 약속 목록에 people 이 people 꾸러미가 채운 것으로 뜬다', () => {
         activateAll([nodesProvider, collectionProvider, peoplePlugin]);
+        enablePlugin('people');   // T-30d: people 는 이제 기본 꺼짐 — 「켜면」이 이 시험의 전제다
         const p = listPlugins().find((x) => x.id === 'people')!;
         expect(p.failed).toBe(false);
         expect(p.blocked).toBe(false);

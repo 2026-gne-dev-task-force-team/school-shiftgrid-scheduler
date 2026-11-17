@@ -11,14 +11,14 @@
  *    ⛔ 드래그·재배열 판정은 interactive/ 한 곳만 쓴다 — 여기선 미리보기 선·고스트·메뉴만 그린다.
  * 🔴 색은 토큰으로만.
  */
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from '../../primitives/Icon';
 import { FOCUS_RING } from '../../primitives/focus';
 import { ContextMenu, type MenuEntry } from '../../primitives/ContextMenu';
 import { useReorder } from '../../interactive/useReorder';
 import {
-    usePaneSettings, setRibbonOrder, toggleRibbonHidden, resetRibbon,
+    usePaneSettings, setRibbonOrder, toggleRibbonHidden, resetRibbon, ribbonGroupOf,
 } from '../../layout/pane-settings';
 import { resolveRibbonEntries, useContribVersion } from '../../plugin';
 import { listViews } from '../../view-registry';
@@ -95,23 +95,31 @@ export function Rail({
             onKeyDown={onKeyDown}
             {...bind}
         >
-            {/* 위: 리본 동작(숨긴 것 제외) — 아이콘·순서는 등록+기기 배치가 준다. 끌어 재배치 가능 */}
-            {visible.map((v) => (
-                <RailButton
-                    key={v.id}
-                    rowId={v.id}
-                    icon={v.icon ?? 'dot'}
-                    title={v.title}
-                    kind={v.kind}
-                    wide={horizontal}
-                    active={!!activeId && activeId === v.id}
-                    onClick={() => {
-                        if (draggedRef.current) { draggedRef.current = false; return; }
-                        onRun?.(v.id);
-                        // 🔴 동작은 명령을 부른다(run) · 뷰는 바깥이 연다(onOpenView). 창틀은 그 뜻을 모른다
-                        if (v.kind === 'action') v.run?.(); else onOpenView(v.id);
-                    }}
-                />
+            {/* 위: 리본 동작(숨긴 것 제외) — 아이콘·순서는 등록+기기 배치가 준다. 끌어 재배치 가능.
+                묶음이 바뀌는 자리마다 얇은 구분선(보이는 것만 보므로 숨겨 빈 묶음은 선도 안 생긴다 · 토큰 색) */}
+            {visible.map((v, i) => (
+                <Fragment key={v.id}>
+                    {i > 0 && ribbonGroupOf(v.id) !== ribbonGroupOf(visible[i - 1].id) && (
+                        <div
+                            aria-hidden="true"
+                            className={horizontal ? 'self-center shrink-0 w-px h-5 mx-1 bg-line pointer-events-none' : 'shrink-0 w-5 h-px my-1 bg-line pointer-events-none'}
+                        />
+                    )}
+                    <RailButton
+                        rowId={v.id}
+                        icon={v.icon ?? 'dot'}
+                        title={v.title}
+                        kind={v.kind}
+                        wide={horizontal}
+                        active={!!activeId && activeId === v.id}
+                        onClick={() => {
+                            if (draggedRef.current) { draggedRef.current = false; return; }
+                            onRun?.(v.id);
+                            // 🔴 동작은 명령을 부른다(run) · 뷰는 바깥이 연다(onOpenView). 창틀은 그 뜻을 모른다
+                            if (v.kind === 'action') v.run?.(); else onOpenView(v.id);
+                        }}
+                    />
+                </Fragment>
             ))}
 
             {/* 가운데는 비워 둔다 — 나중에 명령 아이콘이 더 쌓일 자리 */}
