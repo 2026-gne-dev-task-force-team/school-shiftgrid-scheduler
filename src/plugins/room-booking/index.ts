@@ -24,6 +24,12 @@ const STORE_TYPE = 'calendar.store';
 // 저장 전 규칙이 쓰는 손잡이 — 활성 때 꽂고 끌 때 뺀다(프리셋은 모듈 상수라 호스트를 직접 못 든다).
 let rooms: Rooms | null = null;
 let opsRoom: OpsRoom | null = null;
+// 🔴 달력 띠(banner)는 달력이 자기 host 로 그린다 — 그 host 로 rooms 를 use 하면 calendar 가 선언 안 한 인터페이스라 던진다(T-10gl).
+//    그래서 띠는 방 예약이 활성 때 잡아 둔 **자기 host** 로 rooms·ops-room 을 읽는다(제공자 자기 host · T-10fk 와 같은 길).
+let selfHost: PluginHost | null = null;
+
+/** 프리셋 banner — 부른 쪽(달력) host 는 무시하고 자기 host 로 그린다. 활성 전·후엔 아무것도 안 그린다. */
+export const RoomBookingBanner: NonNullable<CalendarPreset['banner']> = () => (selfHost ? createElement(RoomEmptyBanner, { host: selfHost }) : null);
 
 /** 저장 전 규칙 — 방 칸이 비었거나 방을 못 읽으면 통과(판단할 게 없다). 거절 사유의 토스트는 달력이 띄운다(여기서 또 띄우지 않는다). */
 export const roomBookingBeforeSave: NonNullable<CalendarPreset['beforeSave']> = (draft) => {
@@ -54,7 +60,7 @@ export const ROOM_BOOKING_PRESET: CalendarPreset = {
     }, {
         key: BOOKER_FIELD, label: '예약자', type: 'text',
     }],
-    banner: RoomEmptyBanner,
+    banner: RoomBookingBanner,
     beforeSave: (draft, ctx) => roomBookingBeforeSave(draft, ctx),
     // 있는 방 목록(첫 것)을 가리키고, 없으면 저장소 옆(같은 부모)에 만든다 — 부모가 못 받으면 루트에.
     onCreateStore({ storeId, nodes, setStoreData }) {
@@ -118,12 +124,13 @@ export const roomBookingPlugin = definePlugin({
     },
     lifecycle: {
         onActivate(host: PluginHost) {
+            selfHost = host;
             rooms = host.modules.use<Rooms>('rooms') ?? null;
             opsRoom = host.modules.use<OpsRoom>('ops-room') ?? null;
             reg = host.modules.use<Calendar>('calendar')?.registerPreset(ROOM_BOOKING_PRESET) ?? null;
         },
     },
-    deactivate() { reg?.dispose(); reg = null; rooms = null; opsRoom = null; },
+    deactivate() { reg?.dispose(); reg = null; rooms = null; opsRoom = null; selfHost = null; },
 });
 
 export default roomBookingPlugin;

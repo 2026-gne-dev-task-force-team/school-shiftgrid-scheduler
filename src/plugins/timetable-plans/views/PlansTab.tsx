@@ -11,7 +11,22 @@ import { canonOf, labelFrom } from '../labels';
 import { HandMove } from './HandMove';
 import { PrintTab } from './PrintTab';
 import { PlanCheckProps } from './PlanCheckProps';
+import { usePlanEvaluation, violationCount } from './usePlanEvaluation';
+import type { Plan } from '../contracts/plans';
 import { subscribePlans, getPlanNodes, planOf, choosePlan, sendToGrid, PLAN_TYPE } from '../nodes';
+
+/** 「위반 N건 · 점수」 — 펼친 목록(PlanCheckProps)과 같은 지금 점검(usePlanEvaluation)을 센다. 엔진이 없으면 담아 둔 summary. */
+function CheckToggle({ host, plan, open, onToggle }: { host: PluginHost; plan: Plan; open: boolean; onToggle: () => void }) {
+    const live = usePlanEvaluation(host, plan.placements);
+    const count = live ? violationCount(live.ev) : plan.summary.hardViolations + plan.summary.softViolations;
+    const score = live ? live.ev.score : plan.summary.score;
+    return (
+        <>
+            <Button variant="plain" aria-expanded={open} onClick={onToggle}>위반 {count}건</Button>
+            <span className="text-muted">{score !== null ? ` · 점수 ${score}` : ''}</span>
+        </>
+    );
+}
 
 export function PlansTab({ host }: { host: PluginHost }) {
     const nodes = useSyncExternalStore(subscribePlans, getPlanNodes, getPlanNodes);
@@ -63,8 +78,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
                                 <span className="flex-1">
                                     {p.chosen ? '✔ ' : ''}{n.name}
                                     <span className="text-muted"> · {new Date(p.madeAt).toLocaleString('ko-KR')} · </span>
-                                    <Button variant="plain" aria-expanded={checking === n.id} onClick={() => setChecking(checking === n.id ? null : n.id)}>위반 {p.summary.hardViolations + p.summary.softViolations}건</Button>
-                                    <span className="text-muted">{p.summary.score !== null ? ` · 점수 ${p.summary.score}` : ''}</span>
+                                    <CheckToggle host={host} plan={p} open={checking === n.id} onToggle={() => setChecking(checking === n.id ? null : n.id)} />
                                 </span>
                                 <Button variant={a === n.id ? 'accent' : 'plain'} onClick={() => setA(n.id)}>왼쪽에 놓기</Button>
                                 <Button variant={b === n.id ? 'accent' : 'plain'} onClick={() => setB(n.id)}>오른쪽에 놓기</Button>

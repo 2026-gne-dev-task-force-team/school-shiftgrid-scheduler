@@ -12,7 +12,9 @@ import type { SolverCanon } from '../timetable-solver/contracts/solver';
 import { clockApi } from '../bell/clock';
 import { dutyApi } from '../duty/api';
 import type { Plan, Placement, Plans } from './contracts/plans';
-import { PLAN_TYPE } from './nodes';
+import { PLAN_TYPE, initPlans } from './nodes';
+import type { NodesApi } from '../../pane-ui-system/core/nodes/contracts/nodes';
+import { PlansTab } from './views/PlansTab';
 import { PlanCheckProps } from './views/PlanCheckProps';
 
 const canon: SolverCanon = {
@@ -72,5 +74,23 @@ describe('속성 칸 규칙 점검', () => {
         const noViol = { ...solverApi, readInput: () => input, evaluate: () => ({ violations: [], hard: 0, soft: 0, score: 100, diagnosis: {}, demands: [] }) };
         const out = renderToStaticMarkup(h(PlanCheckProps, { host: hostWith(plan(CLEAN), noViol), target: TARGET }));
         expect(out).toContain('위반 없음');
+    });
+});
+
+describe('편성안 화면 머리 「위반 N건」 = 펼친 목록의 수(T-10gl)', () => {
+    it('담아 둔 summary 가 낡아(3건) 있어도 머리는 지금 점검 수를 보이고 목록 머리글과 같다', () => {
+        const stale = { ...plan(CLASH), summary: { score: null, hardViolations: 3, softViolations: 0 } };
+        const node = { id: 'p1', name: '안', data: stale };
+        initPlans({ liveByType: () => [node], get: () => node, subscribe: () => () => {} } as unknown as NodesApi);
+        try {
+            const host = hostWith(stale);
+            const list = renderToStaticMarkup(h(PlanCheckProps, { host, target: TARGET }));
+            const m = list.match(/필수 (\d+) · 📏 시수 \d+ · ⚠️ 권장 (\d+)/)!;
+            const listCount = Number(m[1]) + Number(m[2]);
+            const tab = renderToStaticMarkup(h(PlansTab, { host }));
+            const head = Number(tab.match(/위반 (?:<!-- -->)?(\d+)(?:<!-- -->)?건/)![1]);
+            expect(head).toBe(listCount);
+            expect(head).not.toBe(3);   // 낡은 summary(3)가 아니라 지금 점검
+        } finally { initPlans(null); }
     });
 });

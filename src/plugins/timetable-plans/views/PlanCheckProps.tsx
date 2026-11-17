@@ -10,6 +10,7 @@ import type { PropertiesPaneProps } from '../../../pane-ui-system/plugin';
 import type { Plans, PlanListItem } from '../contracts/plans';
 import type { Solver } from '../../timetable-solver/contracts/solver';
 import { planRows, type PlanRow } from '../plan-rows';
+import { usePlanEvaluation } from './usePlanEvaluation';
 
 const MARK = { hard: '❌', soft: '⚠️', demand: '📏' } as const;
 const EMPTY: PlanListItem[] = [];
@@ -21,12 +22,9 @@ export function PlanCheckProps({ host, target }: PropertiesPaneProps) {
     const snap = () => plans?.listPlans() ?? EMPTY;
     useSyncExternalStore(plans ? plans.subscribe : NO_SUB, snap, snap);   // 안이 바뀌면 다시 셈
     const plan = plans?.getPlan(target.id) ?? null;
-    const input = useMemo(() => solver?.readInput() ?? null, [solver]);
-    const result = useMemo(() => {
-        if (!plan || !input || !solver) return null;
-        const ev = solver.evaluate(input, plan.placements);
-        return { hard: ev.hard, soft: ev.soft, rows: planRows(input, ev) };
-    }, [plan, input, solver]);
+    const evaluated = usePlanEvaluation(host, plan?.placements);
+    const input = evaluated?.input ?? null;
+    const result = useMemo(() => (evaluated ? { hard: evaluated.ev.hard, soft: evaluated.ev.soft, rows: planRows(evaluated.input, evaluated.ev) } : null), [evaluated]);
 
     if (!plans || !solver) return <EmptyState compact icon="layers" title="규칙 점검을 쓸 수 없습니다" description="편성안·자동 편성 엔진 플러그인이 켜져 있는지 확인해 주세요." />;
     if (!plan) return null;
