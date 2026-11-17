@@ -39,7 +39,7 @@ export function ExportTab({ host }: { host: PluginHost }) {
     }
 
     const run = async () => {
-        const input = solver.readInput(host);
+        const input = solver.readInput();
         if (!input) { setMsg('정본(교직원·학교·과목·시수표·일과표)을 읽지 못해 내보낼 수 없습니다.'); return; }
         const plan = current ? plansApi.getPlan(current) : null;
         const extras = await loadExtras(host);
