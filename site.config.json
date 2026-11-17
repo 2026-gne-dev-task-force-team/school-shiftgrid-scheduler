@@ -12,6 +12,6 @@
   "plugins": [
     "page", "collection", "sheet", "server-link", "calendar", "account",
     "people", "rooms", "room-booking", "substitute", "school",
-    "subjects", "staff", "bell", "duty", "timetable-grid", "demand-table", "timetable-solver", "timetable-plans", "v1-file", "ops-check", "ops-sub", "ops-room", "ops-days", "ops-aux", "v1-editor"
+    "subjects", "staff", "bell", "duty", "timetable-grid", "demand-table", "timetable-solver", "timetable-plans", "v1-file", "ops-check", "ops-sub", "ops-room", "ops-days", "ops-aux"
   ]
 }

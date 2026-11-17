@@ -3,7 +3,7 @@ import { firstPaneForNarrow } from './mobile';
 
 describe('firstPaneForNarrow', () => {
     it('보결 설치면 보결 첫 판', () => {
-        expect(firstPaneForNarrow({ installed: ['rooms', 'substitute', 'v1-editor'] })).toEqual({ plugin: 'substitute', view: 'sheet' });
+        expect(firstPaneForNarrow({ installed: ['rooms', 'substitute'] })).toEqual({ plugin: 'substitute', view: 'sheet' });
     });
     it('ops-sub 가 있으면 「내 것」 판이 첫 판', () => {
         expect(firstPaneForNarrow({ installed: ['rooms', 'substitute', 'ops-sub'] })).toEqual({ plugin: 'ops-sub', view: 'mine' });
@@ -11,14 +11,14 @@ describe('firstPaneForNarrow', () => {
     it('ops-sub 가 has 거짓이면 보결 sheet', () => {
         expect(firstPaneForNarrow({ installed: ['substitute', 'ops-sub'], has: (id) => id !== 'ops-sub' })).toEqual({ plugin: 'substitute', view: 'sheet' });
     });
-    it('보결 없으면 v1-editor 를 뺀 첫 설치 판', () => {
-        expect(firstPaneForNarrow({ installed: ['v1-editor', 'rooms', 'people'] })).toEqual({ plugin: 'rooms' });
+    it('보결 없으면 첫 설치 판', () => {
+        expect(firstPaneForNarrow({ installed: ['rooms', 'people'] })).toEqual({ plugin: 'rooms' });
     });
     it('아무것도 없으면 홈', () => {
         expect(firstPaneForNarrow({ installed: [] })).toBe('home');
     });
-    it('v1-editor 만 설치면 홈', () => {
-        expect(firstPaneForNarrow({ installed: ['v1-editor'] })).toBe('home');
+    it('설치는 됐어도 모두 has 거짓이면 홈', () => {
+        expect(firstPaneForNarrow({ installed: ['rooms'], has: () => false })).toBe('home');
     });
     it('설치 순서를 지킨다', () => {
         expect(firstPaneForNarrow({ installed: ['people', 'rooms'] })).toEqual({ plugin: 'people' });

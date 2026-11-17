@@ -6,7 +6,10 @@ import { activateAll, enablePlugin, listPlugins } from '../../pane-ui-system/plu
 import { getView } from '../../pane-ui-system/view-registry'
 import { listCommands, runCommand, setWorkspaceBridge } from '../../pane-ui-system/plugin/store'
 import { listRibbonActions } from '../../pane-ui-system/plugin/store'
-import { PLUGINS } from '../../app/plugins'
+import { PLUGINS as APP_PLUGINS } from '../../app/plugins'
+import { v1EditorPlugin } from '.'
+// U20 F12 판 1(T-10fz): 앱 목록에서 내렸다 — 이 꾸러미의 시험만 제 손으로 끼워 돈다(판 2 에서 폴더째 걷는다).
+const PLUGINS = [...APP_PLUGINS, v1EditorPlugin]
 import type { ComponentType } from 'react'
 
 // T-8p8(R51) — 앱 카탈로그에 올린 v1-editor 의 화면이 실제 PLUGINS 활성 뒤 뷰 등록소에서 열린다(렌더 시험 수준).
