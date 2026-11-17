@@ -14,6 +14,7 @@ import { BOOKER_FIELD, HEADCOUNT_FIELD, PRESET_ID, ROOM_FIELD, judgeBooking, roo
 import { RoomPropsView } from './RoomPropsView';
 import { RoomBookingView } from './RoomBookingView';
 import { roomBookingApi } from './api';
+import { RoomEmptyBanner } from './RoomEmptyNotice';
 
 const ROOM_LIST_TYPE = 'rooms.list';
 const STORE_TYPE = 'calendar.store';
@@ -45,6 +46,7 @@ export const ROOM_BOOKING_PRESET: CalendarPreset = {
     }, {
         key: BOOKER_FIELD, label: '예약자', type: 'text',
     }],
+    banner: RoomEmptyBanner,
     beforeSave: (draft, ctx) => roomBookingBeforeSave(draft, ctx),
     // 있는 방 목록(첫 것)을 가리키고, 없으면 저장소 옆(같은 부모)에 만든다 — 부모가 못 받으면 루트에.
     onCreateStore({ storeId, nodes, setStoreData }) {

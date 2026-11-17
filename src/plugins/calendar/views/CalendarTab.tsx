@@ -160,7 +160,8 @@ export function CalendarTab({ peek, host, leafId }: { peek: PeekHandle; host?: P
     // 🔴 전체 달력도 같은 머리(아이콘+제목 한 줄, data-nf-header)를 단다 — 노드가 없어 Frame 은 못 쓰니 같은 꼴을 AllCalendarHead 가 낸다(R6-4).
     //    좁은 화면은 아래 독 높이만큼(pb-16, 다른 노드 화면과 같은 값) 비운다(R6-S14).
     const padBottom = narrow ? 'pb-16' : '';
-    const body = <CalBarHost.Provider value={bar.host}><div className="relative h-full">{view}{selChip}</div></CalBarHost.Provider>;
+    const Banner = scopeStore && host ? presetOf(scope).banner : undefined;
+    const body = <CalBarHost.Provider value={bar.host}><div className="relative h-full flex flex-col">{Banner && <Banner host={host!} />}<div className="relative flex-1 min-h-0">{view}{selChip}</div></div></CalBarHost.Provider>;
     if (scopeStore && Frame) {
         return (
             <div className={`h-full ${padBottom}`}>
