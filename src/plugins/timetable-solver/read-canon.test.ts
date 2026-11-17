@@ -100,6 +100,11 @@ describe('편성 막힘 — 비면 선생님 말로', () => {
     it('반 없음', () => {
         expect(codes(full({ school: { school: () => undefined, years: () => [], classesIn: () => [] } as unknown as School }))).toContain('no-class');
     });
+    it('반이 0개면 「일과표에서 수업 시간을 읽지 못했습니다」 대신 반을 먼저 넣으라고 한다(T-10fm)', () => {
+        const r = readAndBuild(full({ school: { school: () => undefined, years: () => [], classesIn: () => [] } as unknown as School }), mods);
+        expect(r.blockers.filter((b) => b.level === 'stop').map((b) => b.code)).not.toContain('no-slots');
+        expect(r.blockers.find((b) => b.code === 'no-class')!.message).toContain('반을 먼저 넣어 주세요');
+    });
     it('과목 없음', () => {
         expect(codes(full({ subjects: { lists: () => [], subjectsIn: () => [] } as unknown as Subjects }))).toContain('no-subject');
     });
