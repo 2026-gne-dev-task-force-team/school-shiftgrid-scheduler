@@ -8,6 +8,7 @@ import type { PluginHost } from '../../../pane-ui-system/plugin';
 import { comparePlans } from '../model';
 import { canonOf, labelFrom } from '../labels';
 import { HandMove } from './HandMove';
+import { PrintTab } from './PrintTab';
 import { subscribePlans, getPlanNodes, planOf, choosePlan, sendToGrid } from '../nodes';
 
 export function PlansTab({ host }: { host: PluginHost }) {
@@ -16,6 +17,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
     const [b, setB] = useState<string | null>(null);
     const [sent, setSent] = useState<string | null>(null);
     const [moving, setMoving] = useState<string | null>(null);
+    const [printing, setPrinting] = useState(false);
 
     const diff = useMemo(() => {
         const pa = a ? planOf(a) : null;
@@ -27,6 +29,8 @@ export function PlansTab({ host }: { host: PluginHost }) {
     if (nodes.length === 0) {
         return <EmptyState icon="layers" title="담아 둔 편성안이 없습니다" description="시간표를 짜면 결과가 안 한 벌로 여기에 담깁니다." />;
     }
+
+    if (printing) return <PrintTab host={host} planId={a ?? undefined} onClose={() => setPrinting(false)} />;
 
     if (moving) return <HandMove host={host} planId={moving} onClose={() => setMoving(null)} />;
 
@@ -56,6 +60,7 @@ export function PlansTab({ host }: { host: PluginHost }) {
                     );
                 })}
             </ul>
+            <div><Button onClick={() => setPrinting(true)}>인쇄</Button></div>
             {diff && (
                 <section aria-label="두 안 비교" className="border border-line rounded p-2">
                     <p>다른 칸 {diff.diffCells}칸 (왼쪽에만 {diff.onlyA} · 오른쪽에만 {diff.onlyB} · 내용이 다름 {diff.changed})</p>
