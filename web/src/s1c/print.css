@@ -1,0 +1,18 @@
+/* 폰 390px: 격자는 가로로 밀어 본다 */
+.grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tt-grid { min-width: 360px; }
+.tt-grid td { min-width: 74px; }
+.print-only { display: none; }
+@media (max-width: 480px) {
+  .tt-grid td, .tt-grid th { padding: 4px 3px; }
+  .tt-grid { min-width: 0; }
+  .tt-grid td { min-width: 56px; }
+}
+/* 인쇄: 메뉴·버튼을 감추고 격자만 */
+@media print {
+  .no-print, [role="tablist"], button { display: none !important; }
+  .print-only { display: block; }
+  .grid-scroll { overflow: visible; }
+  .tt-grid { min-width: 0; width: 100%; font-size: 12pt; }
+  body { background: #fff; }
+}

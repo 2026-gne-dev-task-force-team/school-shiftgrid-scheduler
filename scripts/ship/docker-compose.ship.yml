@@ -1,0 +1,29 @@
+# 우리학교 시간표 배포용. 이미지는 tar 에서 load 한 것을 쓴다(build 없음). 값은 .env 에서 읽는다.
+name: ${COMPOSE_PROJECT_NAME:-school-timetable}
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: timetable
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?.env 에 DB_PASSWORD 가 필요}
+      POSTGRES_DB: timetable
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timetable"]
+      interval: 3s
+      retries: 20
+  app:
+    image: school-timetable:__VER__
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgres://timetable:${DB_PASSWORD}@db:5432/timetable
+      SESSION_SECRET: ${SESSION_SECRET:?.env 에 SESSION_SECRET 이 필요}
+      DATA_KEY: ${DATA_KEY:?.env 에 DATA_KEY 가 필요}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      PORT: "3000"
+    ports: ["${BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"]
+volumes:
+  dbdata:
