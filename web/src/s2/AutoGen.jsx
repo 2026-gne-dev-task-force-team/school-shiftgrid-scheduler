@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Group, Progress, Select, Stack, Table, Text, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Group, NumberInput, Progress, Select, Stack, Switch, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { currentConflicts, moveConflicts } from '../gen/core.js';
 import { combinedOf } from '../gen/overlap.js';
+import { DEFAULTS, useOrgConfig } from '../orgConfig.js';
 
-const DAYS = ['월', '화', '수', '목', '금'];
-const K = 8;
-const PER_MS = 3000;
+const K = 8; // 후보 수 기본값(화면 입력칸이 덮고 localStorage 에 기억)
+const PER_MS = 3000; // 후보 하나당 시간 기본값(ms)
 // 2판 안내문 — 권장 17 이 아직 없다는 것을 먼저 말한다
-export const NOTICE = '필수(겹침 · 시수 · 급식 · 불가 시간)를 먼저 맞추고, 후보 8개 중 권장 규칙(공강 · 연속수업 등) 점수가 낮은 것을 위로 올립니다. 가중은 「생성 설정」 탭에서 바꿉니다. 마음에 안 드는 칸은 수정 모드에서 옮기세요.';
+export const NOTICE = '필수(겹침 · 시수 · 급식 · 불가 시간)를 먼저 맞추고, 만든 후보 중 권장 규칙(공강 · 연속수업 등) 점수가 낮은 것을 위로 올립니다. 가중은 「생성 설정」 탭에서 바꿉니다. 마음에 안 드는 칸은 수정 모드에서 옮기세요.';
 const LEVEL_COLOR = { 경고: 'red', 알림: 'yellow', 재확인: 'orange', 끔: 'green' };
 const BG = { green: 'var(--mantine-color-green-1)', yellow: 'var(--mantine-color-yellow-1)', red: 'var(--mantine-color-red-1)', orange: 'var(--mantine-color-orange-1)' };
 
@@ -23,12 +23,14 @@ export default function AutoGen({ P }) {
     api('GET', `${P}/gen/input`).then(setInput).catch((e) => setError(e.message));
     loadList();
   }, [P, loadList]);
+  const cfg = useOrgConfig(P);
+  const gin = useMemo(() => (input ? { ...input, weekdays: cfg.weekdays, days: cfg.weekdays.length, maxPeriods: cfg.limits.periods } : null), [input, cfg]);
   if (!input) return error ? <Alert color="red">{error}</Alert> : null;
   return (
     <Stack>
       {error && <Alert color="red" withCloseButton onClose={() => setError('')}>{error}</Alert>}
-      <Generator P={P} input={input} onSaved={(t) => { loadList(); setTid(t.id); }} />
-      <Drafts P={P} input={input} list={list} tid={tid} setTid={setTid} reload={loadList} />
+      <Generator P={P} input={gin} onSaved={(t) => { loadList(); setTid(t.id); }} />
+      <Drafts P={P} input={gin} list={list} tid={tid} setTid={setTid} reload={loadList} />
     </Stack>
   );
 }
@@ -36,7 +38,18 @@ export default function AutoGen({ P }) {
 const storeKey = (P) => `s2-gen:${P}`;
 const slow = () => (typeof window !== 'undefined' && (window.innerWidth < 600 || (navigator.hardwareConcurrency || 8) <= 4));
 
+const optKey = (P) => `s2-genopt:${P}`;
+const readOpt = (P) => { try { return JSON.parse(localStorage.getItem(optKey(P)) || '{}') || {}; } catch { return {}; } };
+// 후보 수·후보당 시간(초) 범위 — 밖이면 기본값
+export const clampOpt = (o) => ({
+  k: Number.isInteger(o?.k) && o.k >= 1 && o.k <= 40 ? o.k : K,
+  sec: Number.isFinite(o?.sec) && o.sec >= 0.5 && o.sec <= 60 ? o.sec : PER_MS / 1000,
+  mealGap: o?.mealGap !== false,
+});
+
 function Generator({ P, input, onSaved }) {
+  const [opt, setOptState] = useState(() => clampOpt(readOpt(P)));
+  const setOpt = (o) => { const c = clampOpt({ ...opt, ...o }); setOptState(c); try { localStorage.setItem(optKey(P), JSON.stringify(c)); } catch { /* 기억 못 해도 이번 화면엔 쓴다 */ } };
   const [run, setRun] = useState(null); // {done, k}
   const [res, setRes] = useState(() => { try { return JSON.parse(localStorage.getItem(storeKey(P)) || 'null'); } catch { return null; } });
   const [rank, setRank] = useState(0);
@@ -50,7 +63,7 @@ function Generator({ P, input, onSaved }) {
     worker.current?.terminate();
     const w = new Worker(new URL('../gen/worker.js', import.meta.url), { type: 'module' });
     worker.current = w;
-    setRun({ done: 0, k: K });
+    setRun({ done: 0, k: opt.k });
     w.onmessage = (e) => {
       const m = e.data;
       if (m.type === 'progress') setRun({ done: m.done, k: m.k });
@@ -62,7 +75,7 @@ function Generator({ P, input, onSaved }) {
         w.terminate();
       }
     };
-    w.postMessage({ input, k: K, perMs: PER_MS });
+    w.postMessage({ input: { ...input, hardOff: opt.mealGap ? [] : ['teacherMealGap'] }, k: opt.k, perMs: Math.round(opt.sec * 1000) });
   };
   const cand = res?.candidates?.[rank];
   const save = async () => {
@@ -79,7 +92,13 @@ function Generator({ P, input, onSaved }) {
       <Alert color="blue" title="자동 생성">{NOTICE}</Alert>
       {slow() && <Text size="sm" c="dimmed">PC 에서 하시면 빠릅니다. 폰에서도 그대로 됩니다.</Text>}
       <Group align="end">
-        <Button onClick={start} loading={!!run} disabled={!input.classrooms.length}>자동 생성 (후보 {K}개 · 최대 {(K * PER_MS) / 1000}초)</Button>
+        <NumberInput label="후보 수" min={1} max={40} w={90} value={opt.k} onChange={(v) => setOpt({ k: Number(v) })} />
+        <NumberInput label="후보당 초" min={0.5} max={60} step={0.5} decimalScale={1} w={100} value={opt.sec} onChange={(v) => setOpt({ sec: Number(v) })} />
+        <Switch label="전담 식사 빈 칸 필수" checked={opt.mealGap} onChange={(e) => setOpt({ mealGap: e.currentTarget.checked })} />
+      </Group>
+      {!opt.mealGap && <Text size="sm" c="yellow.8">식사 빈 칸을 필수에서 뺐습니다. 대신 권장 점수의 「교사 점심시간 확보」가 세어 줍니다.</Text>}
+      <Group align="end">
+        <Button onClick={start} loading={!!run} disabled={!input.classrooms.length}>자동 생성 (후보 {opt.k}개 · 최대 {opt.k * opt.sec}초)</Button>
         {res && <Button variant="default" disabled={!!run || rank + 1 >= res.candidates.length} onClick={() => setRank(rank + 1)}>다음 시안</Button>}
       </Group>
       {!input.classrooms.length && <Text size="sm" c="dimmed">「학교 기본」에서 반을 먼저 만드세요.</Text>}
@@ -166,6 +185,7 @@ function Drafts({ P, input, list, tid, setTid, reload }) {
 // 수정 모드 격자 — 칸을 끌어 옮기거나(PC) 눌러 고른 뒤 눌러 옮긴다(폰).
 // 고른 칸이 있으면 같은 반 칸마다 색: 초록=옮겨도 안전 · 노랑/빨강=옮기면 위반(규칙 수위 따라) · 빗금 빨강=지금 위반
 export function ModeGrid({ input, cells, levels = input.levels || {}, onSwap }) {
+  const DAYS = input.weekdays || DEFAULTS.weekdays;
   const [classId, setClassId] = useState(input.classrooms[0]?.id ?? null);
   const [src, setSrc] = useState(null);
   const classInfo = useMemo(() => {

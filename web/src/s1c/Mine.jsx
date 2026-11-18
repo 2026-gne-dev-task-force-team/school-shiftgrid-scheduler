@@ -4,10 +4,11 @@ import { api, appliedMinePath } from '../api.js';
 import { EmptyHint } from './Guide.jsx';
 import { emptyReason } from './mineReason.js';
 
-const DAYS = ['월', '화', '수', '목', '금'];
+import { useOrgConfig } from '../orgConfig.js';
 
 // 교직원 「내 시간표」 — 내 칸만 모아 요일×교시로
 export default function Mine({ P }) {
+  const DAYS = useOrgConfig(P).weekdays;
   const [data, setData] = useState(null);
   const [list, setList] = useState([]);
   const [error, setError] = useState('');

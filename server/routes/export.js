@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 import { buildSheets, classSheet, loadSheetData, sheetsTitle } from '../export/data.js';
 import { loadSettings, mergeSettings } from '../export/settings.js';
 import { lunchShifts } from '../export/lunch.js';
@@ -112,7 +113,7 @@ export function exportRouter(pool) {
   }));
   // 미리보기에서 읽힌 줄만 시수표에 넣는다(담임 = 반의 담임). 못 읽은 줄은 건너뛰고 개수를 알린다.
   r.post('/homeroom-subjects/apply', edit, guard(async (req, res) => {
-    const p = z.object({ rows: z.array(z.object({ classroom_id: id, subject_id: id, hours: z.number().int().min(1).max(40) })).max(500) }).safeParse(req.body);
+    const p = z.object({ rows: z.array(z.object({ classroom_id: id, subject_id: id, hours: z.number().int().min(1).max(CEIL.loadPerWeek) })).max(500) }).safeParse(req.body);
     if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
     const t = await currentTerm(pool, req.orgId);
     let done = 0; let skipped = 0;
@@ -129,7 +130,7 @@ export function exportRouter(pool) {
       }
       done++;
     }
-    res.json({ applied: done, skipped });
+    res.json(withWarnings({ applied: done, skipped }, limitWarnings(await loadConfig(pool, req.orgId), { loadPerWeek: Math.max(0, ...p.data.rows.map((x) => x.hours)) })));
   }));
   return r;
 }

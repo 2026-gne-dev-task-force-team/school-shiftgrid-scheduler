@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Code, FileButton, Group, Modal, Paper, Select, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { api } from '../api.js';
 import { downloadTemp } from './csv.js';
+import { dutyOptions, roleLabel, useOrgConfig } from '../orgConfig.js';
 
 const ROLES = ['기관관리자', '교직원', '보기만'];
 const FIELDS = [['name', '이름'], ['loginId', 'ID'], ['role', '역할'], ['duty', '담임/전담']];
@@ -10,6 +11,8 @@ const download = downloadTemp;
 
 export default function Roster({ orgId }) {
   const base = `/orgs/${orgId}/roster`;
+  const cfg = useOrgConfig(`/orgs/${orgId}`);
+  const roleData = ROLES.map((r) => ({ value: r, label: roleLabel(cfg, r) })); // 권한 키는 그대로, 보이는 글자만
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [form, setForm] = useState({ name: '', loginId: '', role: '교직원', duty: null });
@@ -64,7 +67,7 @@ export default function Roster({ orgId }) {
       <Button size="xs" variant="subtle" onClick={() => patch(m, { hidden: m.listStatus !== '숨김' })}>{m.listStatus === '숨김' ? '숨김 해제' : '숨김'}</Button>
     </Group>
   );
-  const roleSel = (m) => <Select data={ROLES} value={m.role} onChange={(v) => v && patch(m, { role: v })} allowDeselect={false} size="xs" w={120} />;
+  const roleSel = (m) => <Select data={roleData} value={m.role} onChange={(v) => v && patch(m, { role: v })} allowDeselect={false} size="xs" w={120} />;
   const stateBadge = (m) => <><Badge color={m.state === '잠김' ? 'red' : m.state === '사용 중' ? 'green' : 'yellow'}>{m.state}</Badge>{m.listStatus === '숨김' && <Badge ml={4} color="gray">숨김</Badge>}</>;
 
   return (
@@ -75,8 +78,8 @@ export default function Roster({ orgId }) {
         <Group align="flex-end">
           <TextInput label="이름" value={form.name} onChange={(e) => setForm({ ...form, name: e.currentTarget.value })} required />
           <TextInput label="ID(비우면 이름)" value={form.loginId} onChange={(e) => setForm({ ...form, loginId: e.currentTarget.value })} />
-          <Select label="역할" data={ROLES} value={form.role} onChange={(v) => setForm({ ...form, role: v })} allowDeselect={false} w={130} />
-          <Select label="담임/전담" data={['담임', '전담·비교과']} value={form.duty} onChange={(v) => setForm({ ...form, duty: v })} clearable w={130} />
+          <Select label="역할" data={roleData} value={form.role} onChange={(v) => setForm({ ...form, role: v })} allowDeselect={false} w={130} />
+          <Select label="담임/전담" data={dutyOptions(cfg, form.duty)} value={form.duty} onChange={(v) => setForm({ ...form, duty: v })} clearable w={130} />
           <Button type="submit">사람 추가</Button>
         </Group>
       </form>

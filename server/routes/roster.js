@@ -4,27 +4,28 @@ import ExcelJS from 'exceljs';
 import { requireOrgAction } from '../guard.js';
 import { createAccount, resetPassword, ID_RE } from '../accounts.js';
 import { audit, killSessions } from '../audit.js';
+import { CEIL, dutyWarnings, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 
 // 명단 탭 — 줄 = 계정. 관리자만(school.manage). 모든 쿼리에 membership.org_id = req.orgId.
 // 시스템관리자 줄은 명단에 안 나오고 못 건드린다.
 const idParam = z.coerce.number().int().positive();
 const ROLES = ['기관관리자', '교직원', '보기만'];
-const DUTIES = ['담임', '전담·비교과'];
+const dutyIn = z.string().trim().min(1).max(20); // 목록 밖이면 거부 대신 경고(기관 설정 duties)
 const personBody = z.object({
   name: z.string().trim().min(1).max(50),
   loginId: z.string().trim().regex(ID_RE),
   role: z.enum(ROLES).default('교직원'),
-  duty: z.enum(DUTIES).nullable().optional(),
+  duty: dutyIn.nullable().optional(),
 });
 const patchBody = z.object({
   name: z.string().trim().min(1).max(50).optional(),
   loginId: z.string().trim().regex(ID_RE).optional(),
   role: z.enum(ROLES).optional(),
-  duty: z.enum(DUTIES).nullable().optional(),
+  duty: dutyIn.nullable().optional(),
   hidden: z.boolean().optional(), // 숨김(표시 삭제)
 });
 
-const MAX_ROWS = 1000;
+const MAX_ROWS = CEIL.rosterRows; // 안전 천장. 기관 limits.rosterRows 를 넘으면 경고
 const MAX_COLS = 20;
 
 export function rosterRouter(pool) {
@@ -78,7 +79,7 @@ export function rosterRouter(pool) {
       const a = await createAccount(pool, { orgId: req.orgId, ...p.data, duty: p.data.duty ?? null });
       if (a.error) return res.status(409).json({ error: a.error });
       await audit(pool, { ...me(req), action: 'roster.create', table: 'membership', rowId: a.membershipId, after: { loginId: p.data.loginId, role: p.data.role } });
-      res.status(201).json({ id: a.membershipId, loginId: p.data.loginId, temp: a.temp });
+      res.status(201).json(withWarnings({ id: a.membershipId, loginId: p.data.loginId, temp: a.temp }, dutyWarnings(await loadConfig(pool, req.orgId), p.data.duty)));
     } catch (e) {
       next(e);
     }
@@ -107,7 +108,7 @@ export function rosterRouter(pool) {
       if (d.role && d.role !== t.role && ROLES.indexOf(d.role) > ROLES.indexOf(t.role)) await killSessions(pool, t.user_id); // 역할이 내려가면 세션 끊기
       if (d.hidden) await killSessions(pool, t.user_id);
       await audit(pool, { ...me(req), action: 'roster.update', table: 'membership', rowId: t.id, before: { role: t.role, loginId: t.login_id }, after: d });
-      res.json({ ok: true });
+      res.json(withWarnings({ ok: true }, 'duty' in d ? dutyWarnings(await loadConfig(pool, req.orgId), d.duty) : []));
     } catch (e) {
       next(e);
     }
@@ -207,6 +208,7 @@ export function rosterRouter(pool) {
         headers,
         rows: all.slice(1, MAX_ROWS + 1),
         truncated: all.length > MAX_ROWS + 1,
+        ...(limitWarnings(await loadConfig(pool, req.orgId), { rosterRows: all.length - 1 }).length ? { warnings: limitWarnings(await loadConfig(pool, req.orgId), { rosterRows: all.length - 1 }) } : {}),
         mapping: { name: guess(['이름', '성명']), loginId: guess(['ID', 'id', '아이디']), role: guess(['역할']), duty: guess(['담임', '전담']) },
       });
     } catch (e) {
@@ -220,6 +222,8 @@ export function rosterRouter(pool) {
     try {
       const p = z.object({ rows: z.array(z.object({ name: z.string().max(200), loginId: z.string().max(200).optional(), role: z.string().max(50).optional(), duty: z.string().max(50).optional() })).max(MAX_ROWS) }).safeParse(req.body);
       if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
+      const cfg = await loadConfig(pool, req.orgId);
+      const warnings = limitWarnings(cfg, { rosterRows: p.data.rows.length });
       const results = [];
       for (const [i, raw] of p.data.rows.entries()) {
         const line = i + 1;
@@ -227,18 +231,20 @@ export function rosterRouter(pool) {
         const loginId = (raw.loginId || '').trim() || name;
         const role = (raw.role || '').trim() || '교직원';
         const dutyText = (raw.duty || '').trim();
-        const duty = dutyText === '' ? null : dutyText.includes('담임') ? '담임' : /전담|비교과/.test(dutyText) ? '전담·비교과' : undefined;
+        // 담임·전담/비교과는 옛 말 그대로 읽고, 그 밖의 글은 기관 목록에서 찾는다. 목록에 없어도 거부하지 않고 줄에 경고를 붙인다.
+        const duty = dutyText === '' ? null : dutyText.includes('담임') ? '담임' : /전담|비교과/.test(dutyText) ? '전담·비교과' : cfg.duties.includes(dutyText) ? dutyText : dutyText.length <= 20 ? dutyText : undefined;
         const bad = !name ? '이름이 비었습니다' : !ID_RE.test(loginId) ? 'ID 에 쓸 수 없는 글자가 있습니다' : !ROLES.includes(role) ? `역할을 알 수 없습니다(${ROLES.join('·')})` : duty === undefined ? '담임/전담 칸을 알 수 없습니다' : null;
         if (bad) {
           results.push({ line, name, loginId, ok: false, error: bad });
           continue;
         }
         let a = await createAccount(pool, { orgId: req.orgId, name, loginId, role, duty });
-        results.push(a.error ? { line, name, loginId, ok: false, error: a.error } : { line, name, loginId, role, ok: true, temp: a.temp });
+        const dw = dutyWarnings(cfg, duty);
+        results.push(a.error ? { line, name, loginId, ok: false, error: a.error } : { line, name, loginId, role, ok: true, temp: a.temp, ...(dw.length ? { warnings: dw } : {}) });
       }
       const made = results.filter((x) => x.ok).length;
       await audit(pool, { ...me(req), action: 'roster.import', table: 'membership', after: { made, failed: results.length - made } });
-      res.json({ results, made, failed: results.length - made });
+      res.json(withWarnings({ results, made, failed: results.length - made }, warnings));
     } catch (e) {
       next(e);
     }

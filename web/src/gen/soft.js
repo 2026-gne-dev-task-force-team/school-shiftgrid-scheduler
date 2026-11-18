@@ -9,7 +9,7 @@
 //   lunchAfter: {grade: n}                        n 교시 뒤가 점심(기본 4)
 //   avoid:      {teacher_id: [{weekday, period}]}  회피 칸
 //   options:    {roomClassSplit, oneSubjectDay: bool}  기본 끔인 둘
-//   params:     {maxConsec=6, dailySubjectCap=6, amTolerance=3, teacherDayMode='분산'|'몰기', roundSubjects:[subject_id]}
+//   params:     {earlyTiers=[1,2], maxConsec=6, dailySubjectCap=6, amTolerance=3, teacherDayMode='분산'|'몰기', roundSubjects:[subject_id]}
 
 export const BANDS = ['거의필수', '중요', '선호'];
 
@@ -271,7 +271,7 @@ export const rules = {
     const out = [];
     for (const c of taughtCells(state)) {
       const tr = tier.get(c.teacher_id);
-      if ((tr === 1 || tr === 2) && c.period > lunchOf(state, g.get(c.classroom_id))) out.push({ teacher_id: c.teacher_id, weekday: c.weekday });
+      if (P(state, 'earlyTiers', [1, 2]).includes(tr) && c.period > lunchOf(state, g.get(c.classroom_id))) out.push({ teacher_id: c.teacher_id, weekday: c.weekday });
     }
     return out;
   },

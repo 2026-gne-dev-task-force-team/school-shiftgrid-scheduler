@@ -5,6 +5,7 @@ import { applyLevels, getRuleLevels } from '../rules.js';
 import { findOverlapsFor } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 import { generateRouter } from './generate.js';
 
 // 시간표(시안) 만들기 · 칸 저장 · 내 시간표. 겹침은 거부하지 않고 목록으로 저장한다.
@@ -14,7 +15,7 @@ const notFound = (res) => res.status(404).json({ error: '없습니다' });
 const cellIn = z.object({
   classroom_id: z.coerce.number().int().positive(),
   weekday: z.number().int().min(1).max(7),
-  period: z.number().int().min(1).max(12),
+  period: z.number().int().min(1).max(CEIL.periods),
   subject_id: ref,
   membership_id: ref,
   special_room_id: ref,
@@ -37,7 +38,7 @@ async function saveCell(db, orgId, ttId, d) {
     );
   }
 }
-const slotIn = z.object({ classroom_id: z.coerce.number().int().positive(), weekday: z.number().int().min(1).max(7), period: z.number().int().min(1).max(12) });
+const slotIn = z.object({ classroom_id: z.coerce.number().int().positive(), weekday: z.number().int().min(1).max(7), period: z.number().int().min(1).max(CEIL.periods) });
 const swapIn = z.object({ from: slotIn, to: slotIn });
 const CELL_COLS = 'classroom_id, weekday, period, subject_id, membership_id, special_room_id';
 const REFS = {
@@ -155,7 +156,8 @@ export function timetablesRouter(pool) {
         if (d[k] && !(await pool.query(REFS[k], [d[k], req.orgId])).rows[0]) return notFound(res);
       }
       await saveCell(pool, req.orgId, tt.id, d);
-      res.json({ ok: true, ...(await recheck(req.orgId, tt)) });
+      const w = limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period });
+      res.json(withWarnings({ ok: true, ...(await recheck(req.orgId, tt)) }, w));
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: '이미 같은 것이 있습니다' });
       next(e);
@@ -193,7 +195,8 @@ export function timetablesRouter(pool) {
       } finally {
         db.release();
       }
-      res.json({ ok: true, ...(await recheck(req.orgId, tt)) });
+      const w = limitWarnings(await loadConfig(pool, req.orgId), { periods: Math.max(from.period, to.period) });
+      res.json(withWarnings({ ok: true, ...(await recheck(req.orgId, tt)) }, w));
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: '이미 같은 것이 있습니다' });
       next(e);

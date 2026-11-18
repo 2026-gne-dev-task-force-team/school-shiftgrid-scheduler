@@ -6,6 +6,7 @@ import { audit } from '../audit.js';
 import { seal, unseal } from '../seal.js';
 import { rankCandidates, fairness, REASONS } from '../candidates.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 import { appliedTimetable } from '../applied.js';
 
 // 보결: 올리기 · 후보(A~D·제외 사유) · 맡기(먼저 누른 한 명) · 형평성 · 관리자 강제 지정·해제.
@@ -20,7 +21,7 @@ const createIn = z.object({
   on_date: DATE,
   absent_membership_id: idz.optional(), // 관리자만 — 없으면 본인
   all_day: z.boolean().optional(),
-  items: z.array(z.object({ period: z.number().int().min(1).max(12), classroom_id: idz.nullable().optional() })).max(12).optional(),
+  items: z.array(z.object({ period: z.number().int().min(1).max(CEIL.periods), classroom_id: idz.nullable().optional() })).max(CEIL.periods).optional(),
   reason_kind: z.string().trim().max(20).nullable().optional(),
   reason: z.string().trim().max(500).nullable().optional(),
 });
@@ -78,7 +79,7 @@ export function substituteRouter(pool, opts = {}) {
     const pins = (await pool.query(`SELECT target_id, weekday, period FROM pin WHERE org_id = $1 AND target_kind = '교사' AND kind = '금지' AND deleted_at IS NULL`, [orgId])).rows.map((p) => ({ ...p, target_id: Number(p.target_id) }));
     return {
       tt: !!tt,
-      ...rankCandidates({ weekday, period: s.period, periodConfig, cells, members, absentIds, pins, takenIds, exclude: new Set([N(s.absent_membership_id)]) }),
+      ...rankCandidates({ config: await loadConfig(pool, orgId), weekday, period: s.period, periodConfig, cells, members, absentIds, pins, takenIds, exclude: new Set([N(s.absent_membership_id)]) }),
     };
   }
 
@@ -146,7 +147,7 @@ export function substituteRouter(pool, opts = {}) {
         if (ins.rows[0]) made.push(ins.rows[0].id); else dup.push(it.period);
       }
       await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'substitute.create', table: 'substitute', rowId: made[0] ?? null, after: { on_date: d.on_date, ids: made } });
-      res.status(made.length ? 201 : 409).json({ ids: made, duplicate_periods: dup, ...(made.length ? {} : { error: '이미 같은 것이 있습니다' }) });
+      res.status(made.length ? 201 : 409).json(withWarnings({ ids: made, duplicate_periods: dup, ...(made.length ? {} : { error: '이미 같은 것이 있습니다' }) }, limitWarnings(await loadConfig(pool, req.orgId), { periods: Math.max(0, ...items.map((i) => i.period)) })));
     } catch (e) { next(e); }
   });
 
@@ -170,6 +171,8 @@ export function substituteRouter(pool, opts = {}) {
         grade = c.candidates.find((x) => x.membership_id === membershipId)?.grade ?? null;
         const ex = c.excluded.find((x) => x.membership_id === membershipId);
         if (ex) warnings.push({ code: ex.code, detail: ex.reason });
+        const cand = c.candidates.find((x) => x.membership_id === membershipId);
+        if (cand?.warn) warnings.push({ code: cand.warn.code, detail: cand.warn.detail });
         if (c.candidates.find((x) => x.membership_id === membershipId)?.taken) warnings.push({ code: 'taken', detail: '같은 시간에 이미 다른 보결을 맡았습니다' });
         if (!c.tt) warnings.push({ code: 'no_timetable', detail: '그 날 적용되는 확정 시간표가 없어 등급을 못 냈습니다' });
       }

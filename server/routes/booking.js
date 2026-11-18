@@ -5,6 +5,7 @@ import { can } from '../permissions.js';
 import { audit } from '../audit.js';
 import { applyLevels, getRuleLevels } from '../rules.js';
 import { appliedTimetable } from '../applied.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 
 // 특별실 예약 · 고정 칸 잠금 · 빈 교실 찾기. 겹쳐도 거부하지 않고 저장한다 — 경고 목록만 수위대로 붙인다.
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -70,7 +71,7 @@ export function bookingRouter(pool) {
 
   r.post('/bookings', own, async (req, res, next) => {
     try {
-      const p = z.object({ special_room_id: idz, on_date: DATE, period: z.number().int().min(1).max(12), classroom_id: idz.nullable().optional() }).safeParse(req.body);
+      const p = z.object({ special_room_id: idz, on_date: DATE, period: z.number().int().min(1).max(CEIL.periods), classroom_id: idz.nullable().optional() }).safeParse(req.body);
       if (!p.success) return bad(res);
       const d = p.data;
       const m = await me(req);
@@ -83,7 +84,7 @@ export function bookingRouter(pool) {
       const levels = await getRuleLevels(pool, req.orgId);
       const warnings = await warningsFor(req.orgId, { id: ins.rows[0].id, ...d }, levels);
       await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'booking.create', table: 'booking', rowId: ins.rows[0].id, after: d });
-      res.status(201).json({ id: ins.rows[0].id, warnings });
+      res.status(201).json({ id: ins.rows[0].id, warnings: [...warnings, ...limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period })] });
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: '이미 같은 것이 있습니다' });
       next(e);
@@ -116,13 +117,13 @@ export function bookingRouter(pool) {
   });
   r.post('/room-locks', manage, async (req, res, next) => {
     try {
-      const p = z.object({ special_room_id: idz, weekday: z.number().int().min(1).max(7), period: z.number().int().min(1).max(12), note: z.string().trim().max(60).nullable().optional() }).safeParse(req.body);
+      const p = z.object({ special_room_id: idz, weekday: z.number().int().min(1).max(7), period: z.number().int().min(1).max(CEIL.periods), note: z.string().trim().max(60).nullable().optional() }).safeParse(req.body);
       if (!p.success) return bad(res);
       const d = p.data;
       if (!(await pool.query(`SELECT 1 FROM special_room WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [d.special_room_id, req.orgId])).rows[0]) return notFound(res);
       const ins = await pool.query(`INSERT INTO room_lock (org_id, special_room_id, weekday, period, note) VALUES ($1,$2,$3,$4,$5) RETURNING id`, [req.orgId, d.special_room_id, d.weekday, d.period, d.note ?? null]);
       await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'room_lock.create', table: 'room_lock', rowId: ins.rows[0].id, after: d });
-      res.status(201).json({ id: ins.rows[0].id });
+      res.status(201).json(withWarnings({ id: ins.rows[0].id }, limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period })));
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: '이미 같은 것이 있습니다' });
       next(e);
@@ -142,7 +143,7 @@ export function bookingRouter(pool) {
   // 빈 교실 찾기 — 그 날 그 교시에 아무도 안 쓰는 특별실(쓰는 근거도 함께)
   r.get('/rooms/free', own, async (req, res, next) => {
     try {
-      const q = z.object({ on_date: DATE, period: z.coerce.number().int().min(1).max(12) }).safeParse(req.query);
+      const q = z.object({ on_date: DATE, period: z.coerce.number().int().min(1).max(CEIL.periods) }).safeParse(req.query);
       if (!q.success) return bad(res);
       const rooms = (await pool.query(`SELECT id, name, purpose, capacity FROM special_room WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id`, [req.orgId])).rows;
       const u = await usage(req.orgId, q.data.on_date, q.data.period);

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
+import { CEIL, dutyWarnings, limitWarnings, loadConfig, semesterOf, withWarnings } from '../orgConfig.js';
 
 // 학교 기본: 학기 · 반 · 학년별 교시·점심 · 기본 교과 14 · 특별실 · 전담·비교과
 const id = z.coerce.number().int().positive();
@@ -27,7 +28,7 @@ export async function currentTerm(pool, orgId) {
   if (rows[0]) return rows[0];
   const now = new Date();
   const year = now.getFullYear();
-  const semester = now.getMonth() + 1 >= 3 && now.getMonth() + 1 <= 8 ? 1 : 2;
+  const semester = semesterOf(await loadConfig(pool, orgId), now.getMonth() + 1); // 학기 시작 달은 기관 설정(기본 3·9월)
   const ins = await pool.query(
     `INSERT INTO term (org_id, year, semester) VALUES ($1, $2, $3) ON CONFLICT (org_id, year, semester) WHERE deleted_at IS NULL DO UPDATE SET year = EXCLUDED.year RETURNING id, year, semester`,
     [orgId, year, semester],
@@ -46,22 +47,22 @@ export async function ensureDefaultSubjects(pool, orgId) {
 
 const HHMM = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 // 교시별 시작·끝 시각(겹침 검사가 시각으로 본다) — [{start:'09:00', end:'09:40'}, ...] 1교시부터 차례로
-const periodTimes = z.array(z.object({ start: HHMM, end: HHMM }).refine((t) => t.start < t.end).nullable()).max(12);
+const periodTimes = z.array(z.object({ start: HHMM, end: HHMM }).refine((t) => t.start < t.end).nullable()).max(CEIL.periods);
 const periodConfig = z.object({
   grades: z.record(
-    z.string().regex(/^[1-9]$/),
+    z.string().regex(/^([1-9]|1\d|20)$/), // 학년 키: 천장 20
     z.object({
-      periods: z.number().int().min(1).max(12),
+      periods: z.number().int().min(1).max(CEIL.periods),
       lunch: HHMM.nullable().optional(), // 점심 시작 시각 HH:MM
-      lunchAfter: z.number().int().min(0).max(12).optional(), // 몇 교시 뒤
+      lunchAfter: z.number().int().min(0).max(CEIL.periods).optional(), // 몇 교시 뒤
       times: periodTimes.optional(), // 이 학년만 다른 교시 시각
     }),
   ),
   times: periodTimes.optional(), // 학교 공통 교시 시각(학년 칸이 없으면 이것)
 });
-const classroomIn = z.object({ grade: z.number().int().min(1).max(9), class_no: z.number().int().min(1).max(60), student_count: z.number().int().min(0).max(100).nullable().optional() });
+const classroomIn = z.object({ grade: z.number().int().min(1).max(CEIL.grades), class_no: z.number().int().min(1).max(CEIL.classNo), student_count: z.number().int().min(0).max(CEIL.students).nullable().optional() });
 const subjectIn = z.object({ name: z.string().trim().min(1).max(40), short_name: z.string().trim().max(10).nullable().optional(), color: z.string().max(20).nullable().optional() });
-const roomIn = z.object({ name: z.string().trim().min(1).max(40), purpose: z.enum(['수업용', '예약용']).optional(), capacity: z.number().int().min(0).max(500).nullable().optional() });
+const roomIn = z.object({ name: z.string().trim().min(1).max(40), purpose: z.enum(['수업용', '예약용']).optional(), capacity: z.number().int().min(0).max(CEIL.capacity).nullable().optional() });
 
 export function schoolRouter(pool) {
   const r = express.Router({ mergeParams: true });
@@ -80,7 +81,10 @@ export function schoolRouter(pool) {
     const p = periodConfig.safeParse(req.body);
     if (!p.success) return bad(res);
     await pool.query(`UPDATE org SET period_config = $2 WHERE id = $1`, [req.orgId, JSON.stringify(p.data)]);
-    res.json(p.data);
+    const cfg = await loadConfig(pool, req.orgId);
+    const gs = Object.keys(p.data.grades);
+    const w = limitWarnings(cfg, { periods: Math.max(0, ...Object.values(p.data.grades).map((g) => g.periods)), grades: Math.max(0, ...gs.map(Number)) });
+    res.json(withWarnings(p.data, w));
   }));
 
   // ── 반 ──
@@ -92,22 +96,26 @@ export function schoolRouter(pool) {
       `INSERT INTO classroom (org_id, term_id, grade, class_no, student_count) VALUES ($1,$2,$3,$4,$5) RETURNING id, term_id, grade, class_no, student_count`,
       [req.orgId, t.id, p.data.grade, p.data.class_no, p.data.student_count ?? null],
     );
-    res.status(201).json(rows[0]);
+    const cfg = await loadConfig(pool, req.orgId);
+    res.status(201).json(withWarnings(rows[0], limitWarnings(cfg, { grades: p.data.grade, classNo: p.data.class_no, students: p.data.student_count ?? 0 })));
   }));
   // 한 학년 반을 한꺼번에: {grade, count}  (이미 있는 반은 건너뜀)
   r.post('/classrooms/bulk', manage, guard(async (req, res) => {
-    const p = z.object({ grade: z.number().int().min(1).max(9), count: z.number().int().min(1).max(60) }).safeParse(req.body);
+    const p = z.object({ grade: z.number().int().min(1).max(CEIL.grades), count: z.number().int().min(1).max(CEIL.classNo) }).safeParse(req.body);
     if (!p.success) return bad(res);
     const t = await currentTerm(pool, req.orgId);
     for (let n = 1; n <= p.data.count; n++) {
       await pool.query(`INSERT INTO classroom (org_id, term_id, grade, class_no) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [req.orgId, t.id, p.data.grade, n]);
     }
     const { rows } = await pool.query(`SELECT id, grade, class_no FROM classroom WHERE org_id = $1 AND term_id = $2 AND grade = $3 AND deleted_at IS NULL ORDER BY class_no`, [req.orgId, t.id, p.data.grade]);
+    // 응답은 배열 그대로 — 경고는 머리 X-Warnings(JSON 을 URI 인코딩)로 싣는다
+    const w = limitWarnings(await loadConfig(pool, req.orgId), { grades: p.data.grade, classNo: p.data.count });
+    if (w.length) res.set('X-Warnings', encodeURIComponent(JSON.stringify(w)));
     res.status(201).json(rows);
   }));
   r.patch('/classrooms/:id', manage, guard(async (req, res) => {
     const cid = id.safeParse(req.params.id);
-    const p = z.object({ student_count: z.number().int().min(0).max(100).nullable().optional(), homeroom_membership_id: z.union([z.null(), z.coerce.number().int().positive()]).optional() }).safeParse(req.body);
+    const p = z.object({ student_count: z.number().int().min(0).max(CEIL.students).nullable().optional(), homeroom_membership_id: z.union([z.null(), z.coerce.number().int().positive()]).optional() }).safeParse(req.body);
     if (!cid.success || !p.success) return notFound(res);
     if (p.data.homeroom_membership_id) {
       const m = await pool.query(`SELECT 1 FROM membership WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [p.data.homeroom_membership_id, req.orgId]);
@@ -120,7 +128,7 @@ export function schoolRouter(pool) {
     }
     if (!sets.length) return bad(res);
     const { rows } = await pool.query(`UPDATE classroom SET ${sets.join(', ')} WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL RETURNING id, grade, class_no, student_count, homeroom_membership_id`, vals);
-    rows[0] ? res.json(rows[0]) : notFound(res);
+    rows[0] ? res.json(withWarnings(rows[0], limitWarnings(await loadConfig(pool, req.orgId), { students: p.data.student_count ?? 0 }))) : notFound(res);
   }));
   r.delete('/classrooms/:id', manage, guard(async (req, res) => {
     const cid = id.safeParse(req.params.id);
@@ -209,7 +217,7 @@ export function schoolRouter(pool) {
     const p = roomIn.safeParse(req.body);
     if (!p.success) return bad(res);
     const { rows } = await pool.query(`INSERT INTO special_room (org_id, name, purpose, capacity) VALUES ($1,$2,$3,$4) RETURNING id, name, purpose, capacity`, [req.orgId, p.data.name, p.data.purpose ?? '수업용', p.data.capacity ?? null]);
-    res.status(201).json(rows[0]);
+    res.status(201).json(withWarnings(rows[0], limitWarnings(await loadConfig(pool, req.orgId), { capacity: p.data.capacity ?? 0 })));
   }));
   r.patch('/special-rooms/:id', manage, guard(async (req, res) => {
     const rid = id.safeParse(req.params.id);
@@ -219,7 +227,7 @@ export function schoolRouter(pool) {
       `UPDATE special_room SET name = COALESCE($3, name), purpose = COALESCE($4, purpose), capacity = COALESCE($5, capacity) WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL RETURNING id, name, purpose, capacity`,
       [rid.data, req.orgId, p.data.name ?? null, p.data.purpose ?? null, p.data.capacity ?? null],
     );
-    rows[0] ? res.json(rows[0]) : notFound(res);
+    rows[0] ? res.json(withWarnings(rows[0], limitWarnings(await loadConfig(pool, req.orgId), { capacity: p.data.capacity ?? 0 }))) : notFound(res);
   }));
   r.delete('/special-rooms/:id', manage, guard(async (req, res) => {
     const rid = id.safeParse(req.params.id);
@@ -239,10 +247,10 @@ export function schoolRouter(pool) {
   }));
   r.patch('/specialists/:mid', manage, guard(async (req, res) => {
     const mid = id.safeParse(req.params.mid);
-    const p = z.object({ duty: z.enum(['담임', '전담·비교과']).nullable() }).safeParse(req.body);
+    const p = z.object({ duty: z.string().trim().min(1).max(20).nullable() }).safeParse(req.body);
     if (!mid.success || !p.success) return notFound(res);
     const { rows } = await pool.query(`UPDATE membership SET duty = $3 WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL RETURNING id AS membership_id, duty`, [mid.data, req.orgId, p.data.duty]);
-    rows[0] ? res.json(rows[0]) : notFound(res);
+    rows[0] ? res.json(withWarnings(rows[0], dutyWarnings(await loadConfig(pool, req.orgId), p.data.duty))) : notFound(res);
   }));
 
   return r;

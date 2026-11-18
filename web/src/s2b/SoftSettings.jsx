@@ -7,12 +7,15 @@ import { OPTION_SPEC, PARAM_SPEC, avoidKey, avoidParse, extraFrom, extraToWeight
 
 // 자동 생성 설정(기관 관리자) — 권장 규칙 묶음 가중 · 규칙별 묶음 · 교사 티어 배수 · 사람 티어 · 소규모교.
 // 기본값은 soft.js 상수다. 여기서 바꾼 것만 서버(org.soft_weights)에 저장한다.
-const DAY = ['월', '화', '수', '목', '금'];
-const AVOID_CELLS = DAY.flatMap((_d, wi) => Array.from({ length: 8 }, (_p, pi) => `${wi + 1}-${pi + 1}`));
-const avoidLabel = (v) => { const a = avoidParse(v); return `${DAY[a.weekday - 1] ?? a.weekday}${a.period}교시`; };
+import { useOrgConfig } from '../orgConfig.js';
+const avoidCells = (DAY) => DAY.flatMap((_d, wi) => Array.from({ length: 8 }, (_p, pi) => `${wi + 1}-${pi + 1}`));
+const avoidLabelOf = (DAY) => (v) => { const a = avoidParse(v); return `${DAY[a.weekday - 1] ?? a.weekday}${a.period}교시`; };
 const TIER_LABEL = { 1: '1 보직', 2: '2 일반 전담', 3: '3 지원인력' };
 
 export default function SoftSettings({ P }) {
+  const DAY = useOrgConfig(P).weekdays;
+  const AVOID_CELLS = avoidCells(DAY);
+  const avoidLabel = avoidLabelOf(DAY);
   const [w, setW] = useState(null);
   const [tiers, setTiers] = useState({});
   const [people, setPeople] = useState([]);

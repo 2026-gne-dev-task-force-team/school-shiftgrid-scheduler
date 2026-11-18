@@ -27,6 +27,7 @@ export function resolveParams(src, lines = []) {
   const out = {};
   for (const [k, [lo, hi]] of Object.entries(NUM_PARAMS)) if (Number.isFinite(s[k]) && s[k] >= lo && s[k] <= hi) out[k] = s[k];
   if (DAY_MODES.includes(s.teacherDayMode)) out.teacherDayMode = s.teacherDayMode;
+  if (Array.isArray(s.earlyTiers)) out.earlyTiers = s.earlyTiers.filter((x) => [1, 2, 3].includes(x));
   out.roundSubjects = Array.isArray(s.roundSubjects)
     ? s.roundSubjects.filter((x) => x != null)
     : [...new Set((lines || []).filter((l) => l.sync_progress && l.subject_id != null).map((l) => l.subject_id))];

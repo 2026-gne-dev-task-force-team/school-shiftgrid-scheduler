@@ -69,10 +69,10 @@ test('요청 폭주', { skip: !HAS_DB && 'DB 없음' }, async (t) => {
     assert.equal((await a.call('POST', `${oA}/roster/import/preview`, Buffer.alloc(3 * 1024 * 1024, 1), bin)).status, 413);
     assert.equal((await a.call('POST', `${oA}/homeroom-subjects/preview`, Buffer.alloc(6 * 1024 * 1024, 1), bin)).status, 413);
     // 큰 배열(줄 수 상한)
-    const rows = Array.from({ length: 1001 }, (_, i) => ({ name: `n${i}` }));
+    const rows = Array.from({ length: 5001 }, (_, i) => ({ name: `n${i}` })); // 안전 천장(기관 한도 1000 은 경고만)
     assert.equal((await a.call('POST', `${oA}/roster/import`, { rows })).status, 400);
-    const cells = Array.from({ length: 5001 }, () => ({ classroom_id: f.A.class, weekday: 1, period: 1 }));
-    assert.equal((await a.call('POST', `${oA}/timetables/generated`, { name: 'big', cells })).status, 400);
+    const cells = Array.from({ length: 50001 }, () => ({ classroom_id: f.A.class, weekday: 1, period: 1 }));
+    assert.equal((await a.call('POST', `${oA}/timetables/generated`, { name: 'big', cells })).status, 413); // 천장 50000 넘기 전에 본문 1MB 상한이 먼저 막는다
     assert.equal((await a.call('GET', `${oA}/classrooms`)).status, 200);
   });
 

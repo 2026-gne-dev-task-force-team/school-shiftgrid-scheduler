@@ -3,10 +3,11 @@ import { Alert, Badge, Button, Card, Group, NativeSelect, SegmentedControl, Stac
 import { api } from '../api.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const DAYS = ['월', '화', '수', '목', '금'];
+import { useOrgConfig } from '../orgConfig.js';
 
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
 export default function Rooms({ P, admin }) {
+  const DAYS = useOrgConfig(P).weekdays;
   const [tab, setTab] = useState('book');
   const [rooms, setRooms] = useState([]);
   const [rows, setRows] = useState(null);

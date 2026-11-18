@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
 import { applyLevels, getRuleLevels } from '../rules.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 
 // 시수표. 거부하지 않는다 — 덜 채운 줄(교사·교과·시수가 빈 줄)도 그대로 보관하고 목록으로 알린다.
 // 반 칸이 비면(classroom_id NULL) 「전체 마스터」: 모든 반에 적용된다.
@@ -15,9 +16,9 @@ const body = z.object({
   subject_id: ref,
   classroom_id: ref,
   special_room_id: ref,
-  weekly_hours: z.number().int().min(0).max(40).optional(),
+  weekly_hours: z.number().int().min(0).max(CEIL.loadPerWeek).optional(),
   sync_progress: z.boolean().optional(),
-  block: z.number().int().min(1).max(2).optional(), // 연강: 한 번에 붙여 놓을 시수(1 낱개 · 2 두 시수)
+  block: z.number().int().min(1).max(CEIL.block).optional(), // 연강: 한 번에 붙여 놓을 시수(1 낱개). 기관 limits.block(기본 3)을 넘으면 경고
 });
 const REFS = [
   ['membership_id', `SELECT 1 FROM membership WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`],
@@ -62,6 +63,7 @@ export function loadsRouter(pool) {
     }
     return true;
   }
+  const loadWarn = async (req, d) => limitWarnings(await loadConfig(pool, req.orgId), { loadPerWeek: d.weekly_hours ?? 0, block: d.block ?? 0 });
   async function snapshot(req) {
     const t = await currentTerm(pool, req.orgId);
     const lines = (await pool.query(`SELECT ${COLS} FROM teaching_load WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY id`, [req.orgId, t.id])).rows;
@@ -98,7 +100,7 @@ export function loadsRouter(pool) {
         `INSERT INTO teaching_load (org_id, term_id, membership_id, subject_id, classroom_id, special_room_id, weekly_hours, sync_progress, block) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ${COLS}`,
         [req.orgId, t.id, d.membership_id ?? null, d.subject_id ?? null, d.classroom_id ?? null, d.special_room_id ?? null, d.weekly_hours ?? 0, d.sync_progress ?? false, d.block ?? 1],
       );
-      res.status(201).json({ ...rows[0], incomplete: isIncomplete(rows[0]) });
+      res.status(201).json(withWarnings({ ...rows[0], incomplete: isIncomplete(rows[0]) }, await loadWarn(req, d)));
     } catch (e) { next(e); }
   });
 
@@ -115,7 +117,7 @@ export function loadsRouter(pool) {
       }
       if (!sets.length) return res.status(400).json({ error: '입력을 확인해 주세요' });
       const { rows } = await pool.query(`UPDATE teaching_load SET ${sets.join(', ')} WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL RETURNING ${COLS}`, vals);
-      rows[0] ? res.json({ ...rows[0], incomplete: isIncomplete(rows[0]) }) : notFound(res);
+      rows[0] ? res.json(withWarnings({ ...rows[0], incomplete: isIncomplete(rows[0]) }, await loadWarn(req, p.data))) : notFound(res);
     } catch (e) { next(e); }
   });
 

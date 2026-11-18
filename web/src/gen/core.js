@@ -20,7 +20,7 @@ export const HARD_RULES = [
   '진도 맞춤(라운드로빈) — 순위로 센다',
 ];
 
-export const DAYS = 5;
+export const DAYS = 5; // 기본 요일 수(기관 설정 weekdays 가 input.days 로 덮는다)
 const W = 16; // 하루 칸 폭(교시·시각 ≤ 13)
 
 // 시각 칸: 점심(N교시 뒤)이 있으면 그 뒤 교시는 한 칸 밀린다
@@ -78,10 +78,14 @@ export function applySmall(input) {
 
 // 입력: { classrooms:[{id,grade}], periods:{grades:{g:{periods,lunchAfter}}}, lines:[{classroom_id,membership_id,subject_id,special_room_id,weekly_hours,sync_progress,block?}], pins:[...] }
 export function prepare(input) {
+  const DAYS = Math.max(1, Math.min(7, Math.floor(input.days) || 5));
+  const maxP = Math.max(1, Math.min(15, Math.floor(input.maxPeriods) || 12)); // 하루 칸 폭 W=16 안
+  const defP = Math.max(1, Math.min(maxP, Math.floor(input.defaultPeriods) || 5));
+  const off = new Set(input.hardOff || []); // 기관이 끈 하드 규칙(soft 로 내려감)
   const grades = input.periods?.grades || {};
   const classes = input.classrooms.map((c, i) => {
     const g = grades[c.grade] || grades[String(c.grade)] || {};
-    return { id: c.id, grade: c.grade, idx: i, P: Math.min(12, g.periods || 5), L: g.lunchAfter || 0 };
+    return { id: c.id, grade: c.grade, idx: i, P: Math.min(maxP, g.periods || defP), L: g.lunchAfter || 0 };
   });
   const clsIdx = new Map(classes.map((c) => [String(c.id), c.idx]));
   const tIdx = new Map();
@@ -149,7 +153,7 @@ export function prepare(input) {
   }
   // 교사별 식사 후보 시각(가르치는 학년들의 점심 칸)
   const lunchClocks = Array.from({ length: nT }, () => new Set());
-  for (const L of lessons) for (const c of L.cs) if (L.t >= 0 && classes[c].L > 0) lunchClocks[L.t].add(classes[c].L + 1);
+  for (const L of lessons) for (const c of L.cs) if (!off.has('teacherMealGap') && L.t >= 0 && classes[c].L > 0) lunchClocks[L.t].add(classes[c].L + 1);
   // 진도 맞춤 묶음: 교사 × 학년 × 과목
   const groups = new Map();
   for (const L of lessons) {
@@ -160,13 +164,14 @@ export function prepare(input) {
     L.g = gk;
   }
   const ids = { teachers: [...tIdx.keys()], rooms: [...rIdx.keys()] };
-  return { small: input.small || null, joint: small.joint.length, classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, fixedReq, lunchClocks: lunchClocks.map((s) => [...s]), groups, skipped, ids };
+  return { days: DAYS, small: input.small || null, joint: small.joint.length, classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, fixedReq, lunchClocks: lunchClocks.map((s) => [...s]), groups, skipped, ids };
 }
 
 // 한 후보 풀기. 상태는 prep 안 lessons 의 d/p 와 점유 배열.
 export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 3000 } = {}) {
   const R = rng(seed);
   const { classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, lunchClocks } = prep;
+  const DAYS = prep.days;
   const classOcc = new Int32Array(nC * DAYS * W).fill(-1);
   const teachOcc = new Int32Array(Math.max(1, nT) * DAYS * W).fill(-1);
   const roomOcc = new Int32Array(Math.max(1, nR) * DAYS * W).fill(-1);

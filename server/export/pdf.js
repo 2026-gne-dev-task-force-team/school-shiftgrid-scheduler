@@ -20,6 +20,13 @@ function wrap(font, text, size, width) {
   return out;
 }
 
+// 범례 항목 [색, 글자] — 설정에서 만든다(하드코딩 금지)
+export const legendOf = (st) => [
+  [st.changcheColor, `창체(${st.changcheNames.join('·')})`],
+  [st.specialistColor, '전담·비교과'],
+  [st.shadeColor, `${st.shadeRoomKeywords.join('·')} 특별실 칸`],
+];
+
 // sheets → PDF 바이트. A4 가로 · 시트마다 한 쪽. 창체 파랑 · 전담 빨강 · 음영은 설정 색.
 export async function makePdf(sheets, st, docTitle) {
   const doc = await PDFDocument.create();
@@ -58,7 +65,13 @@ export async function makePdf(sheets, st, docTitle) {
         });
       });
     });
-    page.drawText('파랑=창체 · 빨강=전담 · 회색 칸=과학실', { x: M, y: M - 8, size: 8, font: reg, color: rgb(0.4, 0.4, 0.4) });
+    // 범례는 설정(색·창체 이름·음영 특별실 낱말)으로 만든다 — 색 견본 + 글자
+    let lx = M;
+    for (const [fill, label] of legendOf(st)) {
+      page.drawRectangle({ x: lx, y: M - 9, width: 9, height: 9, color: hex(fill), borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.4 });
+      page.drawText(label, { x: lx + 13, y: M - 8, size: 8, font: reg, color: rgb(0.4, 0.4, 0.4) });
+      lx += 13 + reg.widthOfTextAtSize(label, 8) + 14;
+    }
   }
   return Buffer.from(await doc.save());
 }

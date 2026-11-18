@@ -5,6 +5,7 @@ import { applyLevels, getRuleLevels } from '../rules.js';
 import { findOverlapsFor, periodTime } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, periodsOf, withWarnings } from '../orgConfig.js';
 import { expandMaster } from './loads.js';
 
 // S-2 자동 생성 짝 — 생성 자체는 브라우저 웹 워커가 한다. 서버는 재료 내주기 · 시안 저장 · 복제 · 삭제 · 확정만.
@@ -16,14 +17,14 @@ const bad = (res) => res.status(400).json({ error: '입력을 확인해 주세�
 const cellIn = z.object({
   classroom_id: z.coerce.number().int().positive(),
   weekday: z.number().int().min(1).max(7),
-  period: z.number().int().min(1).max(12),
+  period: z.number().int().min(1).max(CEIL.periods),
   subject_id: ref,
   membership_id: ref,
   special_room_id: ref,
 });
 const genIn = z.object({
   name: z.string().trim().min(1).max(60),
-  cells: z.array(cellIn).max(5000),
+  cells: z.array(cellIn).max(CEIL.cells),
   gen_info: z.object({ rank: z.number().int().min(0).max(100), hard: z.number().int().min(0), rr: z.number().int().min(0), soft: z.number().optional(), unplaced: z.array(z.any()).max(2000).optional() }).partial().optional(),
 });
 const REF_TABLE = { classroom_id: 'classroom', subject_id: 'subject', membership_id: 'membership', special_room_id: 'special_room' };
@@ -51,7 +52,7 @@ export async function externalBlockPins(pool, orgId, periods, date) {
       const ps = new Set();
       if (t) {
         for (const g of grades) {
-          const n = Number(periods.grades[g]?.periods) || 8;
+          const n = periodsOf(periods, g, 8);
           for (let p = 1; p <= n; p++) { const m = periodTime(periods, g, p); if (m && m.start < t.end && t.start < m.end) ps.add(p); }
         }
       }
@@ -153,7 +154,8 @@ export function generateRouter(pool) {
       if (!(await refsOk(req.orgId, p.data.cells))) return notFound(res);
       const tt = await tx((c) => newTimetable(req, c, p.data.name, p.data.cells, p.data.gen_info ?? null));
       const levels = await getRuleLevels(pool, req.orgId);
-      res.status(201).json({ ...tt, violations: applyLevels(levels, await findOverlapsFor(pool, req.orgId, p.data.cells)) });
+      const w = limitWarnings(await loadConfig(pool, req.orgId), { cells: p.data.cells.length, periods: Math.max(0, ...p.data.cells.map((c) => c.period)) });
+      res.status(201).json(withWarnings({ ...tt, violations: applyLevels(levels, await findOverlapsFor(pool, req.orgId, p.data.cells)) }, w));
     } catch (e) { dupOr(res, next)(e); }
   });
 

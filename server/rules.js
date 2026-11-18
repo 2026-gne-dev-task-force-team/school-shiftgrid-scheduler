@@ -18,6 +18,7 @@ export const RULES = {
   room_overlap: { label: '특별실 겹침', level: '경고' },
   lunch_conflict: { label: '급식 시각 충돌', level: '경고' },
   pin_conflict: { label: '고정·금지 충돌', level: '경고' },
+  attendance_month_cap: { label: '근태 월 상한 초과', level: '알림' }, // 기관 설정 attendanceMonthlyCap(시간)이 있을 때만
   edit_confirmed: { label: '확정된 시간표 고치기', level: '재확인' },
   edit_closed_month: { label: '마감된 달 고치기', level: '재확인' },
   hide_roster: { label: '명단 숨김', level: '재확인' },

@@ -1,6 +1,9 @@
 // 시간표 → 출력용 표(시트). 세 출력(PDF·엑셀·HWPX)이 같은 시트를 읽는다.
 // 시트: { title, header: [칸...], rows: [[칸...]] } · 칸: { text, kind: null|'changche'|'specialist', shade: bool }
-export const DAYS = ['월', '화', '수', '목', '금'];
+import { DEFAULTS, loadConfig, periodsOf } from '../orgConfig.js';
+
+// 요일·교시 수는 기관 설정(config.weekdays)과 학교 기본(period_config)에서 읽는다. d.weekdays 가 없으면 기본 요일.
+const daysOf = (d) => d.weekdays ?? DEFAULTS.weekdays;
 
 export async function loadSheetData(pool, orgId, ttId) {
   const q = async (sql, p) => (await pool.query(sql, p)).rows;
@@ -13,11 +16,13 @@ export async function loadSheetData(pool, orgId, ttId) {
     subjects: await q(`SELECT id, name, short_name FROM subject WHERE org_id = $1`, [orgId]),
     teachers: await q(`SELECT m.id, u.name, m.duty FROM membership m JOIN app_user u ON u.id = m.user_id WHERE m.org_id = $1 AND m.deleted_at IS NULL AND m.role <> '시스템관리자'`, [orgId]),
     rooms: await q(`SELECT id, name FROM special_room WHERE org_id = $1`, [orgId]),
+    weekdays: (await loadConfig(pool, orgId)).weekdays,
     periodConfig: (await q(`SELECT period_config FROM org WHERE id = $1`, [orgId]))[0]?.period_config ?? {},
   };
 }
 
-const maxPeriods = (cfg, grades) => Math.max(1, ...grades.map((g) => cfg?.grades?.[g]?.periods ?? 6));
+const FALLBACK_PERIODS = 6; // 학교 기본에 교시 수가 하나도 없을 때만
+const maxPeriods = (cfg, grades) => Math.max(1, ...grades.map((g) => periodsOf(cfg, g, FALLBACK_PERIODS)));
 const className = (c) => `${c.grade}학년 ${c.class_no}반`;
 
 // 칸 하나의 글자·종류
@@ -30,7 +35,7 @@ function cellView(c, ix, st, withTeacher = true, withClass = null) {
   if (withTeacher && t) lines.push(t.name);
   if (room) lines.push(room.name);
   const isChangche = !!sub && [sub.name, sub.short_name].some((n) => n && st.changcheNames.includes(n));
-  const kind = isChangche ? 'changche' : t?.duty === '전담·비교과' ? 'specialist' : null;
+  const kind = isChangche ? 'changche' : t?.duty && t.duty !== '담임' ? 'specialist' : null;
   const shade = !!room && st.shadeRoomKeywords.some((k) => room.name.includes(k));
   return { text: lines.filter(Boolean).join('\n'), kind, shade };
 }
@@ -47,12 +52,12 @@ export function classSheet(d, st, classroom) {
   const own = d.cells.filter((c) => Number(c.classroom_id) === Number(classroom.id));
   const rows = [];
   for (let p = 1; p <= n; p++) {
-    rows.push([{ text: `${p}교시` }, ...DAYS.map((_, i) => {
+    rows.push([{ text: `${p}교시` }, ...daysOf(d).map((_, i) => {
       const c = own.find((x) => x.weekday === i + 1 && x.period === p);
       return c ? cellView(c, ix, st) : { text: '' };
     })]);
   }
-  return { title: className(classroom), header: [{ text: '' }, ...DAYS.map((x) => ({ text: x }))], rows };
+  return { title: className(classroom), header: [{ text: '' }, ...daysOf(d).map((x) => ({ text: x }))], rows };
 }
 
 // 교사 하나의 시트
@@ -62,13 +67,13 @@ export function teacherSheet(d, st, teacher) {
   const n = maxPeriods(d.periodConfig, d.classrooms.map((c) => c.grade).concat(1));
   const rows = [];
   for (let p = 1; p <= n; p++) {
-    rows.push([{ text: `${p}교시` }, ...DAYS.map((_, i) => {
+    rows.push([{ text: `${p}교시` }, ...daysOf(d).map((_, i) => {
       const c = own.find((x) => x.weekday === i + 1 && x.period === p);
       const cl = c && ix.classroom.get(Number(c.classroom_id));
       return c ? cellView(c, ix, st, false, cl ? className(cl) : null) : { text: '' };
     })]);
   }
-  return { title: `${teacher.name} 선생님`, header: [{ text: '' }, ...DAYS.map((x) => ({ text: x }))], rows };
+  return { title: `${teacher.name} 선생님`, header: [{ text: '' }, ...daysOf(d).map((x) => ({ text: x }))], rows };
 }
 
 // view: 'class'(기본) | 'teacher'. classroomId·membershipId 로 하나만 고를 수 있다.

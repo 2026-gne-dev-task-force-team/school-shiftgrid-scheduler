@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { buildTimes, rowsOf } from './periodTimes.js';
 
 // 학교 기본 · 전담·비교과 · 시수표 · 고정·금지 · 규칙 수위 (S-1b). 거부 없이 저장하고 알림만 띄운다.
-const DAYS = ['월', '화', '수', '목', '금'];
+import { useOrgConfig } from '../orgConfig.js';
 
 function useLoad(path) {
   const [data, setData] = useState(null);
@@ -220,6 +220,7 @@ function Loads({ P, admin }) {
 }
 
 function Pins({ P, admin, kind }) {
+  const DAYS = useOrgConfig(P).weekdays;
   const [pins, reload, err] = useLoad(`${P}/pins?target_kind=${encodeURIComponent(kind)}`);
   const [people] = useLoad(`${P}/specialists`);
   const [classes] = useLoad(`${P}/classrooms`);

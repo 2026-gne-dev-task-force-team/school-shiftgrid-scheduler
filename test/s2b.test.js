@@ -89,7 +89,7 @@ test('S-2b 경로: 시수표 block 칸 저장 · 생성 재료로 넘김 · 가�
   const b = await call('POST', `${P}/loads`, { membership_id: m, weekly_hours: 1 });
   assert.equal(b.json.block, 1, '기본은 낱개');
   assert.equal((await call('PATCH', `${P}/loads/${b.json.id}`, { block: 2 })).json.block, 2);
-  assert.equal((await call('POST', `${P}/loads`, { membership_id: m, block: 9 })).status, 400, '형식 밖만 거부');
+  assert.equal((await call('POST', `${P}/loads`, { membership_id: m, block: 99 })).status, 400, '넓은 천장 밖만 거부(block 9 는 경고로 저장)');
   assert.deepEqual((await call('GET', `${P}/loads`)).json.lines.map((l) => l.block), [2, 2]);
   await call('PUT', `${P}/soft-weights`, { weights: { bands: { 중요: 33 } } });
   await call('PUT', `${P}/soft-weights/tier`, { membership_id: m, tier: 1 });

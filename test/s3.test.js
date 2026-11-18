@@ -25,7 +25,7 @@ test('후보 등급 순수 계산: A 전담 수업 중 담임 · B 하교 뒤 �
     { classroom_id: 99, weekday: 1, period: 1, membership_id: 7 },
   ];
   const periodConfig = { grades: { 1: { periods: 2 }, 3: { periods: 6, lunch: '12:00', lunchAfter: 2 } } };
-  const run = (period) => rankCandidates({ weekday: 1, period, periodConfig, cells, members, absentIds: new Set([8]), pins: [{ target_id: 7, weekday: 1, period }], takenIds: new Set([4]), exclude: new Set() });
+  const run = (period) => rankCandidates({ weekday: 1, period, periodConfig, cells, members, absentIds: new Set([8]), pins: [{ target_id: 7, weekday: 1, period }], takenIds: new Set([4]), exclude: new Set(), config: { substitute: { assistants: 'exclude', lunchDuty: 'exclude' } } }); // 제외 모드(예전 동작)
   const two = run(2);
   const g = Object.fromEntries(two.candidates.map((c) => [c.name, c.grade]));
   assert.equal(g['가담임'], 'A');

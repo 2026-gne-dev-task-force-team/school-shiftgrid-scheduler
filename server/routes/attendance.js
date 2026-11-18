@@ -6,6 +6,7 @@ import { applyLevels, getRuleLevels } from '../rules.js';
 import { audit } from '../audit.js';
 import { seal, unseal } from '../seal.js';
 import { currentTerm } from './school.js';
+import { loadConfig } from '../orgConfig.js';
 
 // 보조인력 근태. 업무 규칙(허용 교과 밖·마감된 달)은 거부하지 않는다 — 수위에 따라 알리거나, 「재확인」이면 한 번 되묻고(409 needConfirm) 저장한다.
 // 거부는 보안(권한·기관 경계·형식)뿐이다. 메모는 암호화 칸에 둔다.
@@ -62,7 +63,8 @@ export function attendanceRouter(pool) {
     return new Set(rows.map((x) => x.ym));
   };
   // 이 저장이 어긴 업무 규칙 목록(수위 적용 전)
-  async function found(req, memId, subject, dates) {
+  // proj: 이 저장 뒤의 그 달 합계를 보려는 값 { on_date, hours, excludeId? } — 같은 날 줄(덮어쓰기)과 고치는 줄은 합계에서 뺀다
+  async function found(req, memId, subject, dates, proj) {
     const out = [];
     const closed = await closedMonths(req.orgId, [...new Set(dates.map((d) => d.slice(0, 7)))]);
     for (const ymv of closed) out.push({ rule: 'edit_closed_month', detail: { ym: ymv } });
@@ -73,11 +75,19 @@ export function attendanceRouter(pool) {
       );
       if (rows.length && !rows.some((x) => x.name === subject)) out.push({ rule: 'attendance_subject', detail: { subject, allowed: rows.map((x) => x.name) } });
     }
+    const cap = proj ? (await loadConfig(pool, req.orgId)).attendanceMonthlyCap : null;
+    if (cap != null) {
+      const { rows } = await pool.query(
+        `SELECT COALESCE(sum(hours),0)::float8 AS h FROM attendance WHERE org_id = $1 AND membership_id = $2 AND deleted_at IS NULL AND to_char(on_date,'YYYY-MM') = $3 AND on_date <> $4::date AND ($5::bigint IS NULL OR id <> $5)`,
+        [req.orgId, memId, proj.on_date.slice(0, 7), proj.on_date, proj.excludeId ?? null]);
+      const total = Math.round((rows[0].h + Number(proj.hours)) * 10) / 10;
+      if (total > cap) out.push({ rule: 'attendance_month_cap', detail: { ym: proj.on_date.slice(0, 7), total_hours: total, cap_hours: cap } });
+    }
     return out;
   }
   // 재확인 수위가 걸렸는데 확인 안 받았으면 저장 없이 되묻는다(거부 아님)
-  async function check(req, res, memId, subject, dates, confirm) {
-    const vios = applyLevels(await getRuleLevels(pool, req.orgId), await found(req, memId, subject, dates));
+  async function check(req, res, memId, subject, dates, confirm, proj) {
+    const vios = applyLevels(await getRuleLevels(pool, req.orgId), await found(req, memId, subject, dates, proj));
     if (vios.some((v) => v.confirm) && !confirm) {
       res.status(409).json({ needConfirm: true, violations: vios });
       return null;
@@ -115,7 +125,7 @@ export function attendanceRouter(pool) {
     if (!p.success) return bad(res);
     const memId = await target(req, p.data.membership_id);
     if (!memId) return notFound(res);
-    const vios = await check(req, res, memId, p.data.allowed_subject, [p.data.on_date], p.data.confirm);
+    const vios = await check(req, res, memId, p.data.allowed_subject, [p.data.on_date], p.data.confirm, { on_date: p.data.on_date, hours: p.data.hours });
     if (!vios) return;
     const term = await currentTerm(pool, req.orgId);
     // 같은 사람·같은 날은 한 줄 — 있으면 그 줄을 고친다(같은 것이 둘 방지)
@@ -149,7 +159,7 @@ export function attendanceRouter(pool) {
       allowed_subject: p.data.allowed_subject === undefined ? row.allowed_subject : p.data.allowed_subject,
       memo_enc: p.data.memo === undefined ? row.memo_enc : seal(p.data.memo),
     };
-    const vios = await check(req, res, row.membership_id, next.allowed_subject, [row.on_date, next.on_date], p.data.confirm);
+    const vios = await check(req, res, row.membership_id, next.allowed_subject, [row.on_date, next.on_date], p.data.confirm, { on_date: next.on_date, hours: next.hours, excludeId: row.id });
     if (!vios) return;
     const { rows } = await pool.query(
       `UPDATE attendance SET on_date = $3, hours = $4, allowed_subject = $5, memo_enc = $6 WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL

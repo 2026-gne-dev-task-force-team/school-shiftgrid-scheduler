@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
 import { currentTerm } from './school.js';
+import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 
 // 고정·금지 — 탭 셋(교사/반/특별실). 같은 칸에 같은 종류가 둘이면 409(같은 것이 둘), 그 밖엔 거부하지 않는다.
 const id = z.coerce.number().int().positive();
@@ -16,7 +17,7 @@ const body = z.object({
   target_kind: z.enum(['교사', '반', '특별실']),
   target_id: z.coerce.number().int().positive(),
   weekday: z.number().int().min(1).max(7),
-  period: z.number().int().min(1).max(12),
+  period: z.number().int().min(1).max(CEIL.periods),
   kind: z.enum(['고정', '금지']),
   subject_id: ref,
 });
@@ -49,7 +50,7 @@ export function pinsRouter(pool) {
         `INSERT INTO pin (org_id, term_id, target_kind, target_id, weekday, period, kind, subject_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING ${COLS}`,
         [req.orgId, t.id, d.target_kind, d.target_id, d.weekday, d.period, d.kind, d.subject_id ?? null],
       );
-      res.status(201).json(rows[0]);
+      res.status(201).json(withWarnings(rows[0], limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period })));
     } catch (e) {
       if (e.code === '23505') return res.status(409).json({ error: '이미 같은 것이 있습니다' });
       next(e);

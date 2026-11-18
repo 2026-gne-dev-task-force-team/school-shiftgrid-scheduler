@@ -138,7 +138,8 @@ function LunchClock({ P }) {
   );
 }
 
-const COL = { changche: 'var(--mantine-color-blue-7)', specialist: 'var(--mantine-color-red-7)' };
+// 창체·전담 글자색은 출력 설정(changcheColor·specialistColor)을 따르고, 없으면 지금 색
+const colOf = (st) => ({ changche: st?.changcheColor || 'var(--mantine-color-blue-7)', specialist: st?.specialistColor || 'var(--mantine-color-red-7)' });
 
 function Compare({ P }) {
   const { list, tid, picker, error } = useTargets(P);
@@ -174,7 +175,7 @@ function Compare({ P }) {
                   {sh.rows.map((row, r) => (
                     <Table.Tr key={r}>
                       {row.map((c, k) => (
-                        <Table.Td key={k} ta="center" style={{ color: COL[c.kind], background: c.shade ? d.settings.shadeColor : undefined, whiteSpace: 'pre-line', fontSize: 12 }}>{c.text}</Table.Td>
+                        <Table.Td key={k} ta="center" style={{ color: colOf(d.settings)[c.kind], background: c.shade ? d.settings.shadeColor : undefined, whiteSpace: 'pre-line', fontSize: 12 }}>{c.text}</Table.Td>
                       ))}
                     </Table.Tr>
                   ))}

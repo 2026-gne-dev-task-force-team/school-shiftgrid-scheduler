@@ -8,6 +8,7 @@ import Grid from '../s1c/Grid.jsx';
 import Mine from '../s1c/Mine.jsx';
 import AutoGen from '../s2/AutoGen.jsx';
 import SoftSettings from '../s2b/SoftSettings.jsx';
+import OrgConfig from '../settings/OrgConfig.jsx';
 import { HelpModal, Welcome } from '../s1c/Guide.jsx';
 import Attendance from '../s4a/Attendance.jsx';
 import Substitute from '../s3/Substitute.jsx';
@@ -44,6 +45,7 @@ export default function Screens({ user, onLogout, onUser }) {
           <Tabs.Tab value="grid">{admin ? '시간표 격자' : '시간표 보기'}</Tabs.Tab>
           {admin && <Tabs.Tab value="gen">자동 생성</Tabs.Tab>}
           {admin && <Tabs.Tab value="softset">생성 설정</Tabs.Tab>}
+          {admin && <Tabs.Tab value="orgcfg">기관 설정</Tabs.Tab>}
           <Tabs.Tab value="out">출력</Tabs.Tab>
           <Tabs.Tab value="mine">내 시간표</Tabs.Tab>
           {user.role !== '보기만' && <Tabs.Tab value="att">근태</Tabs.Tab>}
@@ -56,6 +58,7 @@ export default function Screens({ user, onLogout, onUser }) {
         <Tabs.Panel value="grid"><Grid P={P} admin={admin} /></Tabs.Panel>
         {admin && <Tabs.Panel value="gen"><AutoGen P={P} /></Tabs.Panel>}
         {admin && <Tabs.Panel value="softset"><SoftSettings P={P} /></Tabs.Panel>}
+        {admin && <Tabs.Panel value="orgcfg"><OrgConfig P={P} /></Tabs.Panel>}
         <Tabs.Panel value="out"><Output P={P} admin={admin} /></Tabs.Panel>
         <Tabs.Panel value="mine"><Mine P={P} /></Tabs.Panel>
         {user.role !== '보기만' && <Tabs.Panel value="att"><Attendance P={P} admin={admin} /></Tabs.Panel>}
