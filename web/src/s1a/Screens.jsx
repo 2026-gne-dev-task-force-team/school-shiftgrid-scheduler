@@ -17,6 +17,8 @@ import Attendance from '../s4a/Attendance.jsx';
 import Substitute from '../s3/Substitute.jsx';
 import Rooms from '../s3/Rooms.jsx';
 import Output from '../s4b/Output.jsx';
+import { useOrgConfig } from '../orgConfig.js';
+import { visibleMenus } from '../features.js';
 
 // S-1a 화면 묶음 — 첫 로그인 비번 변경 · 시스템 관리자(기관 관리) · 기관 관리자(명단 · 내 정보)
 const A2HS_KEY = 'tt-a2hs-dismissed';
@@ -46,7 +48,7 @@ function Panel({ v, hint, children }) {
 const PHONE_MAIN = ['grid', 'sub', 'rooms', 'att', 'me'];
 function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
   const edit = user.role !== '보기만';
-  const items = [
+  const all = [
     { v: 'roster', label: '명단', hint: '교직원 명단을 처음 올리거나 고칠 때', show: admin },
     { v: 'school', label: '학교 기본', hint: admin ? '학급·교과·시수 같은 학교 기본 자료를 넣을 때' : '우리 학교 학급·교과 자료를 확인할 때', show: true },
     { v: 'grid', label: admin ? '시간표 격자' : '시간표 보기', phoneLabel: '시간표', hint: admin ? '만든 시간표를 칸마다 확인하고 직접 고칠 때' : '학교 전체 시간표를 둘러볼 때', show: true },
@@ -60,9 +62,12 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
     { v: 'rooms', label: '특별실', hint: '특별실 사용 칸을 방별로 보고 배정할 때', show: edit },
     { v: 'audit', label: '기록', hint: '누가 언제 무엇을 바꿨는지 확인할 때', show: admin },
     { v: 'me', label: '내 정보', hint: '비밀번호를 바꾸거나 더 보기 메뉴를 열 때', show: true },
-  ].filter((i) => i.show);
+  ];
+  const items = visibleMenus(all, useOrgConfig(P).features); // 권한(show) AND 기관 스위치
+  const on = (v) => items.some((i) => i.v === v);
   const H = Object.fromEntries(items.map((i) => [i.v, i.hint]));
-  const [tab, setTab] = useState(admin ? 'roster' : 'mine');
+  const [want, setTab] = useState(admin ? 'roster' : 'mine');
+  const tab = on(want) ? want : 'grid'; // 숨긴 탭이면 시간표로
   const bar = phone ? items.filter((i) => PHONE_MAIN.includes(i.v)) : items;
   const more = phone ? items.filter((i) => !PHONE_MAIN.includes(i.v)) : [];
   return (
@@ -72,18 +77,18 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
       <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
         {bar.map((i) => <Tooltip key={i.v} label={i.hint} disabled={phone || !i.hint} openDelay={300}><Tabs.Tab value={i.v}>{phone && i.phoneLabel ? i.phoneLabel : i.label}</Tabs.Tab></Tooltip>)}
       </Tabs.List>
-      {admin && <Panel v="roster" hint={H.roster}><Roster orgId={user.orgId} /></Panel>}
-      <Panel v="school" hint={H.school}><SchoolPage user={user} /></Panel>
+      {on('roster') && <Panel v="roster" hint={H.roster}><Roster orgId={user.orgId} /></Panel>}
+      {on('school') && <Panel v="school" hint={H.school}><SchoolPage user={user} /></Panel>}
       <Panel v="grid" hint={H.grid}><Grid P={P} admin={admin} /></Panel>
-      {admin && <Panel v="gen" hint={H.gen}><AutoGen P={P} /></Panel>}
-      {admin && <Panel v="softset" hint={H.softset}><SoftSettings P={P} /></Panel>}
-      {admin && <Panel v="orgcfg" hint={H.orgcfg}><OrgConfig P={P} /></Panel>}
-      <Panel v="out" hint={H.out}><Output P={P} admin={admin} /></Panel>
-      <Panel v="mine" hint={H.mine}><Mine P={P} /></Panel>
-      {edit && <Panel v="att" hint={H.att}><Attendance P={P} admin={admin} /></Panel>}
-      <Panel v="sub" hint={H.sub}><Substitute P={P} admin={admin} /></Panel>
-      <Panel v="rooms" hint={H.rooms}><Rooms P={P} admin={admin} /></Panel>
-      {admin && <Panel v="audit" hint={H.audit}><AuditLog orgId={user.orgId} /></Panel>}
+      {on('gen') && <Panel v="gen" hint={H.gen}><AutoGen P={P} /></Panel>}
+      {on('softset') && <Panel v="softset" hint={H.softset}><SoftSettings P={P} /></Panel>}
+      {on('orgcfg') && <Panel v="orgcfg" hint={H.orgcfg}><OrgConfig P={P} /></Panel>}
+      {on('out') && <Panel v="out" hint={H.out}><Output P={P} admin={admin} /></Panel>}
+      {on('mine') && <Panel v="mine" hint={H.mine}><Mine P={P} /></Panel>}
+      {on('att') && <Panel v="att" hint={H.att}><Attendance P={P} admin={admin} /></Panel>}
+      {on('sub') && <Panel v="sub" hint={H.sub}><Substitute P={P} admin={admin} /></Panel>}
+      {on('rooms') && <Panel v="rooms" hint={H.rooms}><Rooms P={P} admin={admin} /></Panel>}
+      {on('audit') && <Panel v="audit" hint={H.audit}><AuditLog orgId={user.orgId} /></Panel>}
       <Panel v="me" hint={H.me}>
         {more.length > 0 && (
           <Group mb="md" className="no-print" data-testid="more-menu">
