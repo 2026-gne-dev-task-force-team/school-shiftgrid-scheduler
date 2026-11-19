@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
+import { audit } from '../audit.js';
 import { CEIL, dutyWarnings, limitWarnings, loadConfig, semesterOf, withWarnings } from '../orgConfig.js';
 
 // 학교 기본: 학기 · 반 · 학년별 교시·점심 · 기본 교과 14 · 특별실 · 전담·비교과
@@ -71,6 +72,45 @@ export function schoolRouter(pool) {
 
   // ── 학기 ──
   r.get('/term', view, guard(async (req, res) => res.json(await currentTerm(pool, req.orgId))));
+
+  // 학기 목록(보관 포함) · 보관 학기 개요(읽기 전용) — 기관 경계는 org_id 로만
+  r.get('/terms', view, guard(async (req, res) => {
+    res.json((await pool.query(`SELECT id, year, semester, status FROM term WHERE org_id = $1 AND deleted_at IS NULL ORDER BY year DESC, semester DESC`, [req.orgId])).rows);
+  }));
+  r.get('/terms/:termId/overview', view, guard(async (req, res) => {
+    const tid = id.safeParse(req.params.termId);
+    if (!tid.success) return notFound(res);
+    const t = (await pool.query(`SELECT id, year, semester, status FROM term WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [tid.data, req.orgId])).rows[0];
+    if (!t) return notFound(res);
+    const q = (sql) => pool.query(sql, [req.orgId, t.id]).then((x) => x.rows);
+    res.json({
+      term: t,
+      classrooms: await q(`SELECT id, grade, class_no FROM classroom WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY grade, class_no`),
+      timetables: await q(`SELECT id, name, status FROM timetable WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY id`),
+      loadCount: (await q(`SELECT count(*)::int AS n FROM teaching_load WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL`))[0].n,
+    });
+  }));
+  // 새 학기 시작: 지난 학기는 '보관'(읽기 전용), 새 학기는 반·시수표·시간표가 빈 채로. 명단(계정·소속)은 학기와 무관해 그대로.
+  // 되돌릴 수 없어 confirm 없이는 409 로 되묻는다. 다음 학기 값(연·학기)은 body 로 바꿀 수 있다.
+  r.post('/terms/new-semester', manage, guard(async (req, res) => {
+    const p = z.object({ confirm: z.boolean().optional(), year: z.number().int().min(2000).max(2200).optional(), semester: z.number().int().min(1).max(2).optional() }).safeParse(req.body ?? {});
+    if (!p.success) return bad(res);
+    const cur = await currentTerm(pool, req.orgId);
+    const next = p.data.year && p.data.semester ? { year: p.data.year, semester: p.data.semester } : cur.semester === 1 ? { year: cur.year, semester: 2 } : { year: cur.year + 1, semester: 1 };
+    if (!p.data.confirm) {
+      return res.status(409).json({ needConfirm: true, error: `${cur.year}년 ${cur.semester}학기를 보관(읽기 전용)하고 ${next.year}년 ${next.semester}학기를 시작합니다. 시간표·시수표·담임 반은 새 학기에서 비어 시작하고 명단은 그대로입니다. 되돌릴 수 없습니다.`, current: cur, next });
+    }
+    const c = await pool.connect();
+    let made;
+    try {
+      await c.query('BEGIN');
+      await c.query(`UPDATE term SET status = '보관' WHERE org_id = $1 AND status = '진행' AND deleted_at IS NULL`, [req.orgId]);
+      made = (await c.query(`INSERT INTO term (org_id, year, semester) VALUES ($1,$2,$3) RETURNING id, year, semester, status`, [req.orgId, next.year, next.semester])).rows[0];
+      await c.query('COMMIT');
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+    await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'term.new_semester', table: 'term', rowId: made.id, before: cur, after: made });
+    res.json({ archived: cur, term: made });
+  }));
 
   // ── 학년별 교시·점심 ──
   r.get('/school/periods', view, guard(async (req, res) => {

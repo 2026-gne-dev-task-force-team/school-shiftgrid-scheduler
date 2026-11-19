@@ -28,6 +28,7 @@ test('기관 경계(전 경로): A 세션으로 B 기관·B 자원을 두드리�
     if (name === 'bid') return B.booking;
     if (name === 'lid') return B.lock;
     if (name === 'mid') return B.mem;
+    if (name === 'termId') return B.term;
     if (name === 'ym') return '2026-11';
     if (name === 'fmt') return 'pdf';
     if (name === 'id') {

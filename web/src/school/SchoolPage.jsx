@@ -105,9 +105,44 @@ function Subjects({ P, admin }) {
   );
 }
 
+// 새 학기 시작(되돌릴 수 없음 — 한 번 더 묻는다) · 보관 학기 보기(읽기 전용)
+function Semester({ P, admin, term, onDone }) {
+  const [terms] = useLoad(`${P}/terms`);
+  const [ov, setOv] = useState(null);
+  const [err, setErr] = useState('');
+  const start = async () => {
+    setErr('');
+    try {
+      await api('POST', `${P}/terms/new-semester`, {});
+    } catch (e) {
+      if (e.status !== 409 || !e.body?.needConfirm) return setErr(e.message);
+      if (!window.confirm(`${e.message}
+
+계속할까요?`)) return;
+      try { await api('POST', `${P}/terms/new-semester`, { confirm: true }); onDone(); } catch (e2) { setErr(e2.message); }
+    }
+  };
+  const view = (v) => { setErr(''); setOv(null); if (v) api('GET', `${P}/terms/${v}/overview`).then(setOv).catch((e) => setErr(e.message)); };
+  return (
+    <Stack gap="xs">
+      <Err e={err} />
+      <Group>
+        {admin && <Button color="red" variant="light" onClick={start}>새 학기 시작</Button>}
+        <Select placeholder="보관 학기 보기" clearable w={200} onChange={view}
+          data={(terms || []).filter((t) => t.id !== term?.id).map((t) => ({ value: String(t.id), label: `${t.year}년 ${t.semester}학기 (${t.status})` }))} />
+      </Group>
+      {ov && (
+        <Alert color="gray" title={`${ov.term.year}년 ${ov.term.semester}학기 — 읽기 전용`}>
+          <Text size="sm">반 {ov.classrooms.map((c) => `${c.grade}-${c.class_no}`).join(' · ') || '없음'} · 시수 줄 {ov.loadCount}개 · 시간표 {ov.timetables.map((t) => `${t.name}(${t.status})`).join(', ') || '없음'}</Text>
+        </Alert>
+      )}
+    </Stack>
+  );
+}
+
 function Basics({ P, admin }) {
   const org = useOrgConfig(P); // 기관 설정: 학기 시작 달·상한(넘으면 경고만 — 입력은 막지 않음)
-  const [term] = useLoad(`${P}/term`);
+  const [term, reloadTerm] = useLoad(`${P}/term`);
   const [classes, reloadC] = useLoad(`${P}/classrooms`);
   const [cfg, reloadCfg] = useLoad(`${P}/school/periods`);
   const [rooms, reloadR] = useLoad(`${P}/special-rooms`);
@@ -125,6 +160,7 @@ function Basics({ P, admin }) {
     <Stack>
       <Err e={error} />
       {term && <Text size="sm" c="dimmed">지금 {term.year}년 {term.semester}학기 · 학기 시작 달 {org.semesterStarts.join('·')}월(기관 설정)</Text>}
+      <Semester P={P} admin={admin} term={term} onDone={() => { reloadTerm(); reloadC(); }} />
       <Text fw={600}>반</Text>
       <Text size="sm">{(classes || []).map((c) => `${c.grade}-${c.class_no}`).join(' · ') || '아직 없음'}</Text>
       {admin && (
