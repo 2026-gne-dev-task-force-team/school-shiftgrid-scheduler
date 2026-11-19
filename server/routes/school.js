@@ -149,6 +149,37 @@ export function schoolRouter(pool) {
     } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
   }));
 
+  // 빠른 시작: 학기(없으면) · 학년별 반 · 학년별 교시 수 · 빈 시안 하나를 한 번에. 이미 반이 있으면 409(아무것도 안 바꿈).
+  r.post('/quick-start', manage, guard(async (req, res) => {
+    const gk = z.string().regex(/^[1-6]$/);
+    const p = z.object({
+      classes: z.record(gk, z.number().int().min(0).max(CEIL.classNo)),
+      periods: z.record(gk, z.number().int().min(1).max(CEIL.periods)).optional(),
+    }).safeParse(req.body);
+    if (!p.success || !Object.values(p.data.classes).some((n) => n > 0)) return bad(res);
+    const t = await currentTerm(pool, req.orgId);
+    if ((await pool.query(`SELECT 1 FROM classroom WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL LIMIT 1`, [req.orgId, t.id])).rows[0]) {
+      return res.status(409).json({ error: '이미 학급이 있습니다. 빠른 시작은 빈 학교에서만 쓸 수 있습니다.', exists: true });
+    }
+    await ensureDefaultSubjects(pool, req.orgId);
+    const grades = Object.entries(p.data.classes).filter(([, n]) => n > 0).map(([g, n]) => [Number(g), n]);
+    const cfg = (await pool.query(`SELECT period_config FROM org WHERE id = $1`, [req.orgId])).rows[0]?.period_config ?? {};
+    const pc = { ...cfg, grades: { ...(cfg.grades ?? {}) } };
+    for (const [g] of grades) pc.grades[g] = { ...(pc.grades[g] ?? {}), periods: p.data.periods?.[g] ?? (g <= 2 ? 5 : 6) };
+    const c = await pool.connect();
+    let tt;
+    try {
+      await c.query('BEGIN');
+      for (const [g, n] of grades) for (let k = 1; k <= n; k++) await c.query(`INSERT INTO classroom (org_id, term_id, grade, class_no) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [req.orgId, t.id, g, k]);
+      await c.query(`UPDATE org SET period_config = $2 WHERE id = $1`, [req.orgId, JSON.stringify(pc)]);
+      const me = (await c.query(`SELECT id FROM membership WHERE org_id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.orgId, req.session.userId])).rows[0];
+      tt = (await c.query(`INSERT INTO timetable (org_id, term_id, name, created_by) VALUES ($1,$2,$3,$4) RETURNING id, name, status`, [req.orgId, t.id, '시안 1', me?.id ?? null])).rows[0];
+      await c.query('COMMIT');
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+    await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'school.quick_start', table: 'timetable', rowId: tt.id, after: { classes: p.data.classes, periods: pc.grades } });
+    res.status(201).json({ timetable: tt, term: t });
+  }));
+
   // ── 학년별 교시·점심 ──
   r.get('/school/periods', view, guard(async (req, res) => {
     const { rows } = await pool.query(`SELECT period_config FROM org WHERE id = $1 AND deleted_at IS NULL`, [req.orgId]);

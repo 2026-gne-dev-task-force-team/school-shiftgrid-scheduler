@@ -1,12 +1,42 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Group, Modal, Select, Stack, Table, Text, TextInput } from '@mantine/core';
+import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { EmptyHint, Finger } from './Guide.jsx';
 import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
 const DAYS = ['월', '화', '수', '목', '금'];
 const UNDO_MAX = 50;
+const GRADES = [1, 2, 3, 4, 5, 6];
 const today = () => { const w = new Date().getDay(); return w >= 1 && w <= 5 ? w : 1; }; // 폰은 오늘 요일부터(주말은 월)
+
+// 빠른 시작 — 반 수와 교시 수만 묻고 학기·반·교시틀·빈 시안을 한 번에 만든다. 선생님·시수는 나중.
+function QuickStart({ P, onDone }) {
+  const [cls, setCls] = useState({ 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 });
+  const [per, setPer] = useState({ 1: 5, 2: 5, 3: 6, 4: 6, 5: 6, 6: 6 });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const go = async () => {
+    setBusy(true); setError('');
+    try { await api('POST', `${P}/quick-start`, { classes: cls, periods: per }); onDone(); } catch (e) { setError(e.message); setBusy(false); }
+  };
+  const total = GRADES.reduce((a, g) => a + (cls[g] || 0), 0);
+  return (
+    <Card withBorder maw={420}>
+      <Stack gap="xs">
+        <Text fw={700}>빠른 시작 — 반 수와 교시 수만 정하세요</Text>
+        {error && <Alert color="red">{error}</Alert>}
+        <Table><Table.Thead><Table.Tr><Table.Th>학년</Table.Th><Table.Th>반 수(0이면 안 만듦)</Table.Th><Table.Th>하루 교시 수</Table.Th></Table.Tr></Table.Thead>
+          <Table.Tbody>{GRADES.map((g) => (
+            <Table.Tr key={g}><Table.Td>{g}학년</Table.Td>
+              <Table.Td><NumberInput aria-label={`${g}학년 반 수`} min={0} max={30} w={90} value={cls[g]} onChange={(v) => setCls({ ...cls, [g]: Number(v) || 0 })} /></Table.Td>
+              <Table.Td><NumberInput aria-label={`${g}학년 교시 수`} min={1} max={10} w={90} value={per[g]} onChange={(v) => setPer({ ...per, [g]: Number(v) || 1 })} /></Table.Td></Table.Tr>
+          ))}</Table.Tbody></Table>
+        <Button disabled={busy || !total} onClick={go}>만들기</Button>
+        <Text size="xs" c="dimmed">선생님·시수·자동 생성은 나중에 필요할 때 켜면 됩니다</Text>
+      </Stack>
+    </Card>
+  );
+}
 
 // 손으로 짜기 격자 — 반 하나씩(폰에서도 한 화면), 칸을 눌러 교과·교사·특별실을 넣고 뺀다.
 // 겹침은 빨강 표시만 · 저장은 항상 된다. 되돌리기는 칸 단위로 여러 단계.
@@ -41,9 +71,7 @@ export default function Grid({ P, admin }) {
         )}
       </Group>
       {list.length === 0 && (admin
-        ? <Finger text="먼저 시안 이름을 적고 「시안 만들기」를 누르세요">
-            <EmptyHint title="아직 시간표가 없습니다" body="학교 기본(반)과 시수표를 채운 뒤 시안을 만들면 여기서 손으로 칸을 채울 수 있습니다." />
-          </Finger>
+        ? <QuickStart P={P} onDone={loadList} />
         : <EmptyHint title="아직 시간표가 없습니다" body="관리자가 시안을 만들면 여기에 보입니다." />)}
       {tid && <Editor key={tid} P={P} tid={tid} admin={admin} />}
     </Stack>
@@ -72,6 +100,7 @@ function Editor({ P, tid, admin }) {
     return m;
   }, [d]);
   if (!d) return error ? <Alert color="red">{error}</Alert> : null;
+  if (!d.classrooms.length && admin) return <QuickStart P={P} onDone={load} />;
   if (!d.classrooms.length) return <Finger text="학교 기본 메뉴에서 반을 먼저 만드세요"><EmptyHint title="반이 없습니다" body="「학교 기본」에서 학년별 반 수를 정하면 격자가 생깁니다." /></Finger>;
 
   const cls = pickOrFirst(d.classrooms, classId);
@@ -109,6 +138,13 @@ function Editor({ P, tid, admin }) {
   const num = (v) => (v ? Number(v) : null);
   const commit = async (clear) => {
     const base = { classroom_id: cls.id, weekday: sel.weekday, period: sel.period };
+    const nn = (form.newSubject || '').trim();
+    if (!clear && nn) { // 처음 보는 과목 이름은 그 자리에서 과목으로 만든다
+      try {
+        const have = d.subjects.find((x) => x.name === nn);
+        form.subject_id = String(have ? have.id : (await api('POST', `${P}/subjects`, { name: nn })).id);
+      } catch (e) { setError(e.message); return; }
+    }
     await save(clear ? { ...base, subject_id: null, membership_id: null, special_room_id: null } : { ...base, subject_id: num(form.subject_id), membership_id: num(form.membership_id), special_room_id: num(form.special_room_id) });
     setSel(null);
   };
@@ -182,7 +218,8 @@ function Editor({ P, tid, admin }) {
       <Modal opened={!!sel} onClose={() => setSel(null)} title={sel ? `${cls.grade}-${cls.class_no} ${DAYS[sel.weekday - 1]}요일 ${sel.period}교시` : ''}>
         <Stack>
           <Select label="교과" allowDeselect={false} searchable data={d.subjects.map((s) => ({ value: String(s.id), label: s.name }))} value={form.subject_id} onChange={(v) => setForm({ ...form, subject_id: v })} />
-          <Select label="교사" allowDeselect={false} searchable data={d.teachers.map((t) => ({ value: String(t.id), label: t.name }))} value={form.membership_id} onChange={(v) => setForm({ ...form, membership_id: v })} />
+          <TextInput label="또는 과목 이름 직접 쓰기" placeholder="목록에 없으면 여기에 (예: 창체)" value={form.newSubject || ''} onChange={(e) => setForm({ ...form, newSubject: e.currentTarget.value })} />
+          <Select label="교사(비워도 됩니다)" clearable searchable data={d.teachers.map((t) => ({ value: String(t.id), label: t.name }))} value={form.membership_id} onChange={(v) => setForm({ ...form, membership_id: v })} />
           <Select label="특별실" clearable placeholder="없음" data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={form.special_room_id} onChange={(v) => setForm({ ...form, special_room_id: v })} />
           <Group justify="space-between">
             <Button color="red" variant="light" onClick={() => commit(true)}>칸 비우기</Button>
