@@ -1,4 +1,5 @@
-export const D='/Users/mellbrown/Desktop/gne-dev-task/sg-gf/qa-eve/gf/';
+import { fileURLToPath } from 'node:url';
+export const D = fileURLToPath(new URL('.', import.meta.url)); // 이 폴더(절대 경로·끝 /)
 export function makeNodes(){
   const nodes:any[]=[]; const rootKids:string[]=[];
   const tk='f_title', nk='f_num';
