@@ -1,7 +1,7 @@
 // 칸 겹침 규칙 — 서버(server/violations.js)와 화면(web/src/gen/overlap.js)이 같이 import 하는 한 파일(S-fix-16).
 // 규칙을 고칠 곳은 여기뿐이다. 결과 항목에 겹친 칸 목록 cells 가 붙는다(칸 색칠용) — 서버는 응답에서 뺀다.
 // cells: [{classroom_id, weekday, period, membership_id, special_room_id, subject_id?}]
-// ctx: { periods: org.period_config, gradeOf: {classroom_id: grade}, combined: [[classroom_id...]] }
+// ctx: { periods: org.period_config, gradeOf: {classroom_id: grade}, combined: [[classroom_id...]], roomCap: {special_room_id: 정원}, studentOf: {classroom_id: 학생 수}, capCount: 'students'|'classes' }
 const toMin = (s) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(s ?? ''));
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
@@ -22,7 +22,7 @@ export function periodTime(periods, grade, period) {
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 export function findOverlaps(cells, ctx = {}) {
-  const { periods = null, gradeOf = {}, combined = [] } = ctx;
+  const { periods = null, gradeOf = {}, combined = [], roomCap = {}, studentOf = {}, capCount = 'students' } = ctx;
   const grade = (c) => gradeOf[c.classroom_id] ?? gradeOf[String(c.classroom_id)];
   const timeOf = (c) => (periods ? periodTime(periods, grade(c), c.period) : null);
   const slotOf = (c) => clockOf(periods ? Number(gradeCfg(periods, grade(c)).lunchAfter) || 0 : 0, c.period);
@@ -60,6 +60,12 @@ export function findOverlaps(cells, ctx = {}) {
       let curEnd = -Infinity;
       const flush = () => {
         const classes = new Set(cur.map((x) => x.c.classroom_id));
+        // 특별실 정원 합(S-fix-25): 같은 시각 같은 방 반들의 학생 수 합(capCount='classes' 면 반 수) > 정원. 복식 묶음·한 반만 쓸 때도 본다
+        const cap = key === 'special_room_id' && !isMixed ? roomCap[cur[0].c[key]] : null;
+        if (cap != null) {
+          const n = capCount === 'classes' ? classes.size : [...classes].reduce((a, id) => a + (Number(studentOf[id]) || 0), 0);
+          if (n > cap) found.push({ rule: 'room_capacity', cells: cur.map((x) => x.c), weekday: cur[0].c.weekday, period: Math.min(...cur.map((x) => x.c.period)), special_room_id: cur[0].c[key], classroom_ids: [...classes], detail: `특별실 정원 초과 — ${capCount === 'classes' ? `${n}개 반` : `학생 ${n}명`} > 정원 ${cap} (${cur[0].c.weekday}요일 ${[...new Set(cur.map((x) => x.c.period))].sort((a, b) => a - b).join('·')}교시)` });
+        }
         if (classes.size < 2 || isCombined(cur.map((x) => x.c))) return;
         if (isMixed && !(cur.some((x) => timeOf(x.c)) && cur.some((x) => !timeOf(x.c)))) return;
         const first = cur[0].c;
