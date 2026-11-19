@@ -59,7 +59,7 @@ try {
     process.exit(1);
   }
 
-  const hash = await argon2.hash(pw);
+  const hash = await argon2.hash(pw, { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 });
   const now = new Date();
   const m = now.getMonth() + 1;
   const year = m < 3 ? now.getFullYear() - 1 : now.getFullYear();

@@ -36,10 +36,16 @@ export default function Roster({ orgId }) {
     a.href = url; a.download = '명단 양식.xlsx'; a.click();
     URL.revokeObjectURL(url);
   });
+  const [idErr, setIdErr] = useState(''); // 중복 ID 안내는 ID 칸 바로 아래에
   const add = (e) => {
     e.preventDefault();
+    setIdErr('');
     run(async () => {
-      const r = await api('POST', base, { ...form, loginId: form.loginId || form.name });
+      let r;
+      try { r = await api('POST', base, { ...form, loginId: form.loginId || form.name }); } catch (x) {
+        if (x.status === 409 && /ID/.test(x.message)) { setIdErr(x.message); return; }
+        throw x;
+      }
       setTemp({ name: form.name, loginId: r.loginId, temp: r.temp });
       setForm({ name: '', loginId: '', role: '교직원', duty: null });
     });
@@ -93,7 +99,7 @@ export default function Roster({ orgId }) {
       <form onSubmit={add}>
         <Group align="flex-end">
           <TextInput label="이름" value={form.name} onChange={(e) => setForm({ ...form, name: e.currentTarget.value })} required />
-          <TextInput label="ID(비우면 이름)" value={form.loginId} onChange={(e) => setForm({ ...form, loginId: e.currentTarget.value })} />
+          <TextInput label="ID(비우면 이름)" value={form.loginId} error={idErr || undefined} onChange={(e) => { setIdErr(''); setForm({ ...form, loginId: e.currentTarget.value }); }} />
           <Select label="역할" data={roleData} value={form.role} onChange={(v) => setForm({ ...form, role: v })} allowDeselect={false} w={130} />
           <Select label="담임/전담" data={dutyOptions(cfg, form.duty)} value={form.duty} onChange={(v) => setForm({ ...form, duty: v })} clearable w={130} />
           <Button type="submit">사람 추가</Button>

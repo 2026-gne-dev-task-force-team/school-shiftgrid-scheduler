@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { requireLogin } from '../guard.js';
 import { passwordProblem } from '../passwords.js';
 import { audit, killSessions } from '../audit.js';
+import { ARGON } from '../accounts.js';
 
 const MAX_FAILS = 10;
 const LOCK_MINUTES = 15;
@@ -19,7 +20,7 @@ const loginBody = z.object({
 });
 
 let dummyHashPromise;
-const dummyHash = () => (dummyHashPromise ??= argon2.hash(crypto.randomBytes(8).toString('hex')));
+const dummyHash = () => (dummyHashPromise ??= argon2.hash(crypto.randomBytes(8).toString('hex'), ARGON));
 
 export function authRouter(pool, opts = {}) {
   const r = express.Router();
@@ -159,7 +160,7 @@ export function authRouter(pool, opts = {}) {
       if (p.data.next === p.data.current) return res.status(400).json({ error: '현재와 다른 비밀번호로 정해 주세요' });
       const problem = passwordProblem(p.data.next, u.login_id);
       if (problem) return res.status(400).json({ error: problem });
-      await pool.query(`UPDATE app_user SET password_hash = $2, must_change_password = FALSE, failed_count = 0, locked_until = NULL WHERE id = $1`, [req.session.userId, await argon2.hash(p.data.next)]);
+      await pool.query(`UPDATE app_user SET password_hash = $2, must_change_password = FALSE, failed_count = 0, locked_until = NULL WHERE id = $1`, [req.session.userId, await argon2.hash(p.data.next, ARGON)]);
       await killSessions(pool, req.session.userId, req.sessionID);
       req.session.mustChange = false;
       await audit(pool, { orgId: req.session.orgId, userId: req.session.userId, action: 'password.change', table: 'app_user', rowId: req.session.userId });
