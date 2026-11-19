@@ -143,7 +143,7 @@ export function generateRouter(pool) {
         periods: periodCfg,
         subjects: await q(`SELECT id, name, short_name FROM subject WHERE org_id = $1 AND deleted_at IS NULL ORDER BY is_default DESC, id`),
         teachers: await q(`SELECT m.id, u.name FROM membership m JOIN app_user u ON u.id = m.user_id WHERE m.org_id = $1 AND m.deleted_at IS NULL AND m.status = '사용' AND m.role <> '시스템관리자' ORDER BY u.name`),
-        rooms: await q(`SELECT id, name FROM special_room WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id`),
+        rooms: await q(`SELECT id, name, purpose, capacity FROM special_room WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id`),
         levels: await getRuleLevels(pool, o),
       });
     } catch (e) { next(e); }

@@ -86,6 +86,22 @@ export function rosterRouter(pool) {
     }
   });
 
+  // 겸임 데려오기 — 다른 기관 사람을 ID 로 찾아 이 기관 소속으로 더한다(계정·비밀번호는 그대로). 감사 로그에 남는다.
+  r.post('/concurrent', async (req, res, next) => {
+    try {
+      const p = z.object({ loginId: z.string().trim().regex(ID_RE), role: z.enum(ROLES).default('교직원') }).safeParse(req.body);
+      if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
+      const u = (await pool.query(`SELECT login_id, name FROM app_user WHERE lower(login_id) = lower($1) AND deleted_at IS NULL`, [p.data.loginId])).rows[0];
+      if (!u) return res.status(404).json({ error: '그 ID 의 계정이 없습니다' });
+      const a = await createAccount(pool, { orgId: req.orgId, name: '', loginId: u.login_id, role: p.data.role, existing: 'add' });
+      if (a.error) return res.status(409).json({ error: a.error });
+      await audit(pool, { ...me(req), action: 'roster.concurrent-add', table: 'membership', rowId: a.membershipId, after: { loginId: u.login_id, role: p.data.role } });
+      res.status(201).json({ id: a.membershipId, loginId: u.login_id, name: u.name, role: p.data.role });
+    } catch (e) {
+      next(e);
+    }
+  });
+
   r.patch('/:mid', async (req, res, next) => {
     try {
       const p = patchBody.safeParse(req.body);

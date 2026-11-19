@@ -39,6 +39,29 @@ test('정적 검사기 자가 시험: 심은 구멍을 잡는다', () => {
   assert.deepEqual(hits, ['req.body.name']);
 });
 
+// S-fix-37(요구 48): query( 호출 자체를 훑는다 — 키워드가 없는 조각·따옴표 문자열 이어붙임도 잡는다. 허용 목록은 위 SAFE 와 같다.
+export function sqlConcatHits(src, name = '') {
+  const hits = [];
+  for (const m of src.matchAll(/\.query\(\s*`([^`]*)`/g)) {
+    for (const e of m[1].matchAll(/\$\{([^}]*)\}/g)) if (!SAFE.has(e[1].trim()) && !SAFE_RE.test(e[1].trim())) hits.push(`${name}: query(\`…\${${e[1]}}`);
+  }
+  for (const m of src.matchAll(/\.query\(\s*(['"])[^'"\n]*\1\s*\+/g)) hits.push(`${name}: ${m[0].slice(0, 60)}`);
+  for (const m of src.matchAll(/['"]\s*(SELECT|INSERT INTO|UPDATE|DELETE FROM)\b[^'"\n]*['"]\s*\+/g)) hits.push(`${name}: ${m[0].slice(0, 60)}`);
+  return hits;
+}
+
+test('정적 검사 2: query( 템플릿·문자열 이어붙임 grep 0건(허용 목록 밖)', () => {
+  const bad = walk(root).flatMap((f) => sqlConcatHits(fs.readFileSync(f, 'utf8'), path.relative(root, f)));
+  assert.deepEqual(bad, []);
+});
+
+test('정적 검사 2 자가 시험: 심은 구멍 셋을 잡고 허용 목록은 통과', () => {
+  assert.equal(sqlConcatHits('db.query(`x ${req.q} y`)').length, 1);
+  assert.equal(sqlConcatHits(`db.query('SELECT 1 WHERE a=' + x)`).length >= 1, true);
+  assert.equal(sqlConcatHits(`const s = "UPDATE t SET a=" + v;`).length, 1);
+  assert.equal(sqlConcatHits('db.query(`SELECT ${COLS} FROM t WHERE id = $1`, [1])').length, 0);
+});
+
 test('입력 인젝션', { skip: !HAS_DB && 'DB 없음' }, async (t) => {
   const f = await setup(t);
   const oA = `/api/orgs/${f.orgA}`;

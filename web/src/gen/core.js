@@ -96,6 +96,17 @@ export function prepare(input) {
     if (!m.has(k)) m.set(k, m.size);
     return m.get(k);
   };
+  // 같은 종류 특별실(과학1실·과학2실 — 번호를 뺀 이름이 같거나 kind 가 같은 수업용 방) 묶음: 방 id → 같은 종류 방 id들
+  const poolOf = new Map();
+  const byKind = new Map();
+  const orig = new Map(); // 방 문자열 id → 원래 값(숫자)
+  for (const r of input.rooms || []) {
+    orig.set(String(r.id), r.id);
+    const kind = r.kind ?? String(r.name ?? '').replace(/\d+/g, '').trim();
+    if (!kind || r.purpose === '예약용') continue;
+    (byKind.get(kind) ?? byKind.set(kind, []).get(kind)).push(r.id);
+  }
+  for (const ids of byKind.values()) if (ids.length > 1) for (const id of ids) poolOf.set(String(id), ids);
   const lessons = [];
   const skipped = [];
   const small = applySmall(input);
@@ -124,7 +135,8 @@ export function prepare(input) {
     const blk = Math.max(1, Math.min(3, Math.floor(l.block) || 1));
     while (h > 0) {
       const span = Math.min(blk, h);
-      lessons.push({ id: lessons.length, c: ci, cs: [ci], t, r, rs: r >= 0 ? [r] : [], s: l.subject_id, span, sync: !!l.sync_progress, line: l, lines: null, fixed: false, d: -1, p: -1 });
+      const pool = l.special_room_id != null ? poolOf.get(String(l.special_room_id)) : null;
+      lessons.push({ id: lessons.length, c: ci, cs: [ci], t, r, rs: r >= 0 ? [r] : [], s: l.subject_id, span, sync: !!l.sync_progress, line: l, lines: null, fixed: false, d: -1, p: -1, ...(pool ? { alt: pool.map((x) => key(rIdx, x)) } : {}) });
       h -= span;
     }
   }
@@ -164,7 +176,7 @@ export function prepare(input) {
     L.g = gk;
   }
   const ids = { teachers: [...tIdx.keys()], rooms: [...rIdx.keys()] };
-  return { days: DAYS, small: input.small || null, joint: small.joint.length, classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, fixedReq, lunchClocks: lunchClocks.map((s) => [...s]), groups, skipped, ids };
+  return { orig, days: DAYS, small: input.small || null, joint: small.joint.length, classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, fixedReq, lunchClocks: lunchClocks.map((s) => [...s]), groups, skipped, ids };
 }
 
 // 한 후보 풀기. 상태는 prep 안 lessons 의 d/p 와 점유 배열.
@@ -190,7 +202,24 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
       }
     }
   };
-  const place = (L, d, p) => { put(L, d, p, L.id); L.d = d; L.p = p; };
+  // 같은 종류 방 묶음이면 그 칸에 빈 방을 고른다(없으면 비킬 수업이 가장 적은 방). 놓인 수업은 방을 안 바꾼다(remove 가 쓴 방을 비워야 해서)
+  const pick = (L, d, p) => {
+    let best = L.rs[0];
+    let bs = Infinity;
+    for (const r of L.alt) {
+      let n = 0;
+      for (const c of L.cs) for (let i = 0; i < L.span; i++) {
+        const cc = clockOf(classes[c].L, p + i);
+        if (roomBlockC[(r * DAYS + d) * W + cc]) n += 100;
+        const o = roomOcc[(r * DAYS + d) * W + cc];
+        if (o >= 0 && o !== L.id) n++;
+      }
+      if (n < bs) { bs = n; best = r; }
+    }
+    L.rs = [best];
+    L.r = best;
+  };
+  const place = (L, d, p) => { if (L.alt) pick(L, d, p); put(L, d, p, L.id); L.d = d; L.p = p; };
   const remove = (L) => { if (L.d < 0) return; put(L, L.d, L.p, -1); L.d = -1; L.p = -1; };
 
   // 칸이 아예 안 되는가(막힘·범위·고정·식사) — 되면 비켜야 할 수업 수를 돌려준다(buf 에 담음)
@@ -198,6 +227,7 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
   const occs = [];
   const cost = (L, d, p) => {
     buf.length = 0;
+    if (L.alt && L.d < 0) pick(L, d, p);
     for (const c of L.cs) {
       const k = classes[c];
       if (p + L.span - 1 > k.P) return -1;
@@ -404,13 +434,14 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
     const ls = L.lines || [L.line];
     for (let j = 0; j < L.cs.length; j++) {
       for (let i = 0; i < L.span; i++) {
-        cells.push({ classroom_id: classes[L.cs[j]].id, weekday: L.d + 1, period: L.p + i, subject_id: L.s, membership_id: ls[j].membership_id ?? null, special_room_id: ls[j].special_room_id ?? null });
+        cells.push({ classroom_id: classes[L.cs[j]].id, weekday: L.d + 1, period: L.p + i, subject_id: L.s, membership_id: ls[j].membership_id ?? null, special_room_id: L.alt ? (prep.orig.get(prep.ids.rooms[L.rs[0]]) ?? ls[j].special_room_id ?? null) : (ls[j].special_room_id ?? null) });
       }
     }
   }
   for (const e of extra) cells.push({ classroom_id: classes[e.c].id, weekday: e.d + 1, period: e.p, subject_id: e.s, membership_id: null, special_room_id: null });
   const unplaced = queue.flatMap((L) => L.cs.map((c) => ({ classroom_id: classes[c].id, subject_id: L.s, membership_id: L.line.membership_id ?? null, hours: L.span, ...(L.cs.length > 1 ? { combined: true } : {}) })));
   const warnings = unplaced.filter((u) => u.hours > 1).map((u) => ({ rule: 'block_unplaced', classroom_id: u.classroom_id, subject_id: u.subject_id, hours: u.hours })); // 연강을 못 놓음 — 막지 않고 알린다
+  for (const L of queue) if (L.alt) warnings.push({ rule: 'room_pool_full', classroom_id: classes[L.c].id, subject_id: L.s, hours: L.span }); // 같은 종류 특별실이 다 차서 못 놓음 — 알리고 생성은 계속
   return { cells, unplaced, warnings, hard: unplaced.reduce((a, u) => a + u.hours, 0), rr, iter };
 }
 
