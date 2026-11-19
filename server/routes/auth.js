@@ -99,6 +99,48 @@ export function authRouter(pool, opts = {}) {
     }
   });
 
+  // 내 소속 목록 — 겸임이면 둘 이상. 시스템 관리자 소속(교육청)도 내 소속이면 보인다.
+  r.get('/memberships', requireLogin, async (req, res, next) => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT o.id AS "orgId", o.name, m.role FROM membership m JOIN org o ON o.id = m.org_id AND o.deleted_at IS NULL AND o.status = '사용'
+          WHERE m.user_id = $1 AND m.deleted_at IS NULL AND m.status = '사용' ORDER BY (o.kind = '교육청'), o.name`,
+        [req.session.userId],
+      );
+      res.json({ current: req.session.orgId, items: rows.map((x) => ({ ...x, orgId: Number(x.orgId) })) });
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // 현재 기관 바꾸기 — 내 소속인 기관만(아니면 404, 남의 기관 존재를 안 알림). 세션 ID 는 로그인처럼 새로 발급.
+  r.post('/switch-org', requireLogin, async (req, res, next) => {
+    try {
+      const p = z.object({ orgId: z.coerce.number().int().positive() }).safeParse(req.body);
+      if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
+      const { rows } = await pool.query(
+        `SELECT m.role FROM membership m JOIN org o ON o.id = m.org_id AND o.deleted_at IS NULL AND o.status = '사용'
+          WHERE m.user_id = $1 AND m.org_id = $2 AND m.deleted_at IS NULL AND m.status = '사용'`,
+        [req.session.userId, p.data.orgId],
+      );
+      if (!rows[0]) return res.status(404).json({ error: '없습니다' });
+      const keep = { userId: req.session.userId, name: req.session.name, mustChange: req.session.mustChange, maxAge: req.session.cookie.maxAge };
+      await new Promise((resolve, reject) => req.session.regenerate((e) => (e ? reject(e) : resolve())));
+      req.session.csrf = crypto.randomBytes(24).toString('hex');
+      req.session.userId = keep.userId;
+      req.session.name = keep.name;
+      req.session.orgId = p.data.orgId;
+      req.session.role = rows[0].role;
+      req.session.mustChange = keep.mustChange;
+      req.session.cookie.maxAge = keep.maxAge;
+      await new Promise((resolve, reject) => req.session.save((e) => (e ? reject(e) : resolve())));
+      await audit(pool, { orgId: req.session.orgId, userId: req.session.userId, action: 'org.switch', table: 'membership', rowId: req.session.userId });
+      res.json({ user: { id: req.session.userId, name: req.session.name, orgId: req.session.orgId, role: req.session.role, mustChange: !!req.session.mustChange }, csrf: req.session.csrf });
+    } catch (e) {
+      next(e);
+    }
+  });
+
   r.post('/logout', (req, res, next) => {
     req.session.destroy((e) => (e ? next(e) : res.clearCookie('sid').json({ ok: true })));
   });
