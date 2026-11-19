@@ -1,7 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
-import { loadConfig, mergeConfig } from '../orgConfig.js';
+import { loadConfig } from '../orgConfig.js';
+import { FEATURE_KEYS } from '../../shared/features.js';
 
 // 기관 안 경로의 본보기. 이후 판은 이 꼴을 따른다:
 //  1) requireOrgAction(동작) 으로 「세션 기관 = URL 기관 · 역할 허용」을 거른다(틀리면 404)
@@ -26,6 +27,8 @@ const configIn = z.object({
     maxConsec: z.number().int().min(1).max(12), dailySubjectCap: z.number().int().min(1).max(12), amTolerance: z.number().int().min(0).max(40), maxPerDay: z.number().int().min(1).max(12),
     teacherDayMode: z.enum(['분산', '몰기']), earlyTiers: z.array(z.number().int().min(1).max(3)).max(3), lunchAfter: z.number().int().min(1).max(12),
   }).partial(),
+  roomCapacity: z.object({ count: z.enum(['students', 'classes']) }).partial(),
+  features: z.object(Object.fromEntries(FEATURE_KEYS.map((k) => [k, z.boolean()]))).partial().strict(), // 모르는 스위치 키는 400
 }).partial();
 
 export function orgRouter(pool) {
@@ -64,8 +67,12 @@ export function orgRouter(pool) {
   r.put('/org/config', requireOrgAction('timetable.edit'), guard(async (req, res) => {
     const p = configIn.safeParse(req.body);
     if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
-    await pool.query(`UPDATE org SET config = $2 WHERE id = $1`, [req.orgId, JSON.stringify(p.data)]);
-    res.json(mergeConfig(p.data));
+    // 보낸 키만 덮는다(features·roomCapacity 가 딴 칸 저장에 안 날아간다). features 는 키 단위로도 병합.
+    await pool.query(
+      `UPDATE org SET config = (config || $2::jsonb) || CASE WHEN $3::jsonb IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('features', COALESCE(config->'features', '{}'::jsonb) || $3::jsonb) END WHERE id = $1`,
+      [req.orgId, JSON.stringify(p.data), p.data.features ? JSON.stringify(p.data.features) : null],
+    );
+    res.json(await loadConfig(pool, req.orgId));
   }));
 
   return r;

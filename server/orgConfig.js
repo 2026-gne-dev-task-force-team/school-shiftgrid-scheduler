@@ -1,5 +1,7 @@
 // 기관 설정 — 학교마다 다른 값의 기본값은 여기 한 곳. 기관이 org.config 로 덮는다(하드코딩 금지 원칙).
 // 상한(limits)은 거부선이 아니라 「평소보다 큼」 경고선이다. 거부는 아래 CEIL(넓은 안전 천장)에서만 한다.
+import { FEATURES, featuresUpTo } from '../shared/features.js';
+
 export const DEFAULTS = {
   weekdays: ['월', '화', '수', '목', '금'],
   semesterStarts: [3, 9],
@@ -10,8 +12,12 @@ export const DEFAULTS = {
   attendanceMonthlyCap: null,
   // 권장 규칙 17 의 숫자 기본값 — 기관이 바꾸고 org.soft_weights.params 가 또 덮는다. lunchAfter 는 학교 기본에 점심 자리가 없는 학년의 값.
   softParams: { maxConsec: 6, dailySubjectCap: 6, amTolerance: 3, maxPerDay: 6, teacherDayMode: '분산', earlyTiers: [1, 2], lunchAfter: 4 },
+  features: Object.fromEntries(FEATURES.map((f) => [f.key, true])), // 기능 스위치 — 기본은 전부 켬(지금 쓰는 기관이 그대로 보인다). 새 기관만 NEW_ORG_FEATURES 를 심는다
   roomCapacity: { count: 'students' }, // 특별실 정원 합을 학생 수('students')로 볼지 반 수('classes')로 볼지. 수위는 rule_levels.room_capacity
 };
+
+// 새 기관의 시작 묶음 = 1단계(열린 물음 1 초안 권고).
+export const NEW_ORG_FEATURES = featuresUpTo(1);
 
 // zod 가 거부하는 넓은 안전 천장(이 위는 입력 실수·남용). 기관 limits 는 이 밑에서 경고만 한다.
 export const CEIL = { periods: 30, grades: 20, classNo: 200, students: 300, capacity: 5000, loadPerWeek: 100, block: 12, cells: 50000, rosterRows: 5000 };

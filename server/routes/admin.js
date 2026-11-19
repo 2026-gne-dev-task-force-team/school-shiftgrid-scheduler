@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { requireSystemAction } from '../guard.js';
+import { NEW_ORG_FEATURES } from '../orgConfig.js';
 import { createAccount, resetPassword, ID_RE } from '../accounts.js';
 import { auditPage } from './audit-log.js';
 import { audit, killSessions, killOrgSessions } from '../audit.js';
@@ -60,7 +61,7 @@ export function adminRouter(pool) {
       const d = p.data;
       const dup = await pool.query(`SELECT 1 FROM org WHERE name = $1 AND deleted_at IS NULL`, [d.name]);
       if (dup.rows[0]) return res.status(409).json({ error: '같은 이름의 기관이 이미 있습니다' });
-      const { rows } = await pool.query(`INSERT INTO org (name, ilgoa_name, org_code, kind) VALUES ($1,$2,$3,$4) RETURNING id, name, kind, status`, [d.name, d.ilgoaName || null, d.orgCode || null, d.kind]);
+      const { rows } = await pool.query(`INSERT INTO org (name, ilgoa_name, org_code, kind, config) VALUES ($1,$2,$3,$4,$5) RETURNING id, name, kind, status`, [d.name, d.ilgoaName || null, d.orgCode || null, d.kind, JSON.stringify({ features: NEW_ORG_FEATURES })]);
       await audit(pool, { ...who(req), action: 'org.create', table: 'org', rowId: rows[0].id, after: rows[0] });
       res.status(201).json(rows[0]);
     } catch (e) {
