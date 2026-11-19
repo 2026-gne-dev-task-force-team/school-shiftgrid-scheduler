@@ -9,3 +9,5 @@ sg-merge 에 머지된 뒤에 설치한다(plist 는 sg-merge 의 patrol.mjs 를
   launchctl bootout "gui/$(id -u)/kr.gne.board-patrol" && rm "$HOME/Library/LaunchAgents/kr.gne.board-patrol.plist"
 
 로그: tail "$HOME/Library/Logs/board-patrol.log"
+
+맥 launchd 설치: mac/board-patrol.plist 의 __HOME__ 을 $HOME, __VAULT__ 를 볼트 경로로 바꿔 ~/Library/LaunchAgents/kr.gne.board-patrol.plist 로 둔다(reporter/mac/README.txt 의 sed 한 줄과 같은 꼴).
