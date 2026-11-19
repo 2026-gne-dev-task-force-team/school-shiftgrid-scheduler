@@ -67,7 +67,7 @@ export function exportRouter(pool) {
     const one = req.query.id ? id.safeParse(req.query.id) : null;
     if (one && !one.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
     const title = sheetsTitle(d);
-    const buf = await f.make(buildSheets(d, st, { view: v, id: one?.data ?? null }), st, title);
+    const buf = await f.make(buildSheets(d, st, { view: v, id: one?.data ?? null }), st, title, (await loadConfig(pool, req.orgId)).duties);
     res.set('Content-Type', f.type);
     res.set('Content-Disposition', `attachment; filename="timetable.${req.params.fmt}"; filename*=UTF-8''${safeName(title)}.${req.params.fmt}`);
     res.send(buf);

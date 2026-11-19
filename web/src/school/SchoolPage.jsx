@@ -183,6 +183,7 @@ function Specialists({ P, admin }) {
 }
 
 function Loads({ P, admin }) {
+  const org = useOrgConfig(P);
   const [d, reload, err] = useLoad(`${P}/loads`);
   const [people] = useLoad(`${P}/specialists`);
   const [subjects] = useLoad(`${P}/subjects`);
@@ -212,7 +213,7 @@ function Loads({ P, admin }) {
           <Select placeholder="교사" clearable data={opt(people, { v: (x) => x.membership_id, l: (x) => x.name })} value={row.m ?? null} onChange={(v) => setRow({ ...row, m: v })} w={130} />
           <Select placeholder="교과" clearable data={opt(subjects, { v: (x) => x.id, l: (x) => x.name })} value={row.s ?? null} onChange={(v) => setRow({ ...row, s: v })} w={130} />
           <Select placeholder="모든 반(비우면)" clearable data={opt(classes, { v: (x) => x.id, l: (x) => `${x.grade}-${x.class_no}` })} value={row.c ?? null} onChange={(v) => setRow({ ...row, c: v })} w={110} />
-          <NumberInput placeholder="시수" min={0} max={40} value={row.h ?? ''} onChange={(v) => setRow({ ...row, h: v })} w={80} />
+          <NumberInput placeholder="시수" description={`기관 기준 주 ${org.limits.loadPerWeek}`} min={0} value={row.h ?? ''} onChange={(v) => setRow({ ...row, h: v })} w={80} />
           <Switch label="진도 맞춤" checked={!!row.p} onChange={(e) => setRow({ ...row, p: e.currentTarget.checked })} />
           <Switch label="2시수 연강" checked={!!row.b} onChange={(e) => setRow({ ...row, b: e.currentTarget.checked })} />
           <Button onClick={add}>줄 추가</Button>
@@ -224,7 +225,8 @@ function Loads({ P, admin }) {
 }
 
 function Pins({ P, admin, kind }) {
-  const DAYS = useOrgConfig(P).weekdays;
+  const org = useOrgConfig(P);
+  const DAYS = org.weekdays;
   const [pins, reload, err] = useLoad(`${P}/pins?target_kind=${encodeURIComponent(kind)}`);
   const [people] = useLoad(`${P}/specialists`);
   const [classes] = useLoad(`${P}/classrooms`);
@@ -250,7 +252,7 @@ function Pins({ P, admin, kind }) {
         <Group align="end">
           <Select placeholder={kind} data={targets} value={f.t ?? null} onChange={(v) => setF({ ...f, t: v })} w={130} />
           <Select data={DAYS.map((d, i) => ({ value: String(i + 1), label: d }))} value={f.weekday} onChange={(v) => setF({ ...f, weekday: v })} w={80} />
-          <NumberInput min={1} max={12} value={f.period} onChange={(v) => setF({ ...f, period: v })} w={80} suffix="교시" />
+          <NumberInput min={1} description={`기관 기준 ${org.limits.periods}교시`} value={f.period} onChange={(v) => setF({ ...f, period: v })} w={80} suffix="교시" />
           <Select data={['고정', '금지']} value={f.kind} onChange={(v) => setF({ ...f, kind: v })} w={90} />
           <Button disabled={!f.t} onClick={add}>추가</Button>
         </Group>
