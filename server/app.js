@@ -90,6 +90,14 @@ export function createApp(pool, opts = {}) {
 
   app.use('/api/auth', authRouter(pool, opts));
   app.use('/api/admin', adminRouter(pool));
+  // 보관 학기의 시간표는 읽기만(데이터 보존). 고치기 요청은 409.
+  app.use('/api/orgs/:orgId/timetables/:tid', async (req, res, next) => {
+    if (req.method === 'GET' || req.method === 'HEAD' || !/^\d+$/.test(req.params.tid) || !/^\d+$/.test(req.params.orgId)) return next();
+    try {
+      const { rows } = await pool.query(`SELECT 1 FROM timetable tt JOIN term t ON t.id = tt.term_id WHERE tt.id = $1 AND tt.org_id = $2 AND t.status = '보관'`, [req.params.tid, req.params.orgId]);
+      return rows[0] ? res.status(409).json({ error: '보관된 학기의 시간표는 볼 수만 있습니다' }) : next();
+    } catch (e) { return next(e); }
+  });
   app.use('/api/orgs/:orgId/roster', rosterRouter(pool));
   app.use('/api/orgs/:orgId', orgRouter(pool));
   app.use('/api/orgs/:orgId', schoolRouter(pool));
