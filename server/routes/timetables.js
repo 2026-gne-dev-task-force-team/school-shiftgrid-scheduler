@@ -4,7 +4,7 @@ import { requireOrgAction } from '../guard.js';
 import { applyLevels, getRuleLevels } from '../rules.js';
 import { findOverlapsFor } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
-import { currentTerm } from './school.js';
+import { currentTerm, ensureDefaultSubjects } from './school.js';
 import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 import { generateRouter } from './generate.js';
 
@@ -128,6 +128,7 @@ export function timetablesRouter(pool) {
       if (!tt) return notFound(res);
       const o = req.orgId;
       const q = async (sql, p = [o]) => (await pool.query(sql, p)).rows;
+      await ensureDefaultSubjects(pool, o); // 교과 탭을 안 거쳐도 격자 목록에 기본 교과가 있게
       const levels = await getRuleLevels(pool, o);
       const raw = await findOverlapsFor(pool, o, await cellsOf(o, tt.id));
       res.json({
