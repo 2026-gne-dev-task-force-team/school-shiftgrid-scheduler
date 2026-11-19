@@ -3,9 +3,9 @@ import { generate } from './core.js';
 import { makeSoftScore } from './soft-adapter.js';
 
 self.onmessage = (e) => {
-  const { input, k = 8, perMs = 3000, seed = Date.now() % 100000 } = e.data || {};
+  const { input, k = 8, perMs = 3000, seed = Date.now() % 100000, init = null } = e.data || {};
   try {
-    const r = generate(input, { k, perMs, seed, softScore: makeSoftScore(input), onProgress: (p) => self.postMessage({ type: 'progress', ...p }) });
+    const r = generate(input, { k, perMs, seed, init, softScore: makeSoftScore(input), onProgress: (p) => self.postMessage({ type: 'progress', ...p }) });
     self.postMessage({ type: 'done', ...r });
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err?.message || err) });

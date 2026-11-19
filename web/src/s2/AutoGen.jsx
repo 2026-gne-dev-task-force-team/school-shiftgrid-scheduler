@@ -92,7 +92,7 @@ function Generator({ P, input, onSaved }) {
         w.terminate();
       }
     };
-    w.postMessage({ input: { ...input, hardOff: opt.mealGap ? [] : ['teacherMealGap'] }, k, perMs: Math.round(opt.sec * 1000) });
+    w.postMessage({ input: { ...input, hardOff: opt.mealGap ? [] : ['teacherMealGap'] }, k, perMs: Math.round(opt.sec * 1000), init: resume ? saved.candidates[0]?.cells : null });
   };
   const cand = res?.candidates?.[rank];
   const save = async () => {
