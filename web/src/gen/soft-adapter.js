@@ -45,6 +45,8 @@ export function makeSoftScore(input) {
   const levels = Object.fromEntries(Object.entries(input?.levels || {}).filter(([k]) => SOFT_RULES[k]));
   const tiers = input?.tiers || {};
   const lunchAfter = {};
+  const lunchDef = input?.params?.lunchAfter; // 기관 기본(org.config.softParams) — 학교 기본에 점심 자리가 없는 학년용
+  for (const c of input?.classrooms || []) if (lunchDef > 0) lunchAfter[c.grade] = lunchDef;
   for (const [g, v] of Object.entries(input?.periods?.grades || {})) if (v?.lunchAfter > 0) lunchAfter[g] = v.lunchAfter;
   const avoid = resolveAvoid(input?.avoid ?? input?.weights?.avoid);
   const options = resolveOptions(input?.options ?? input?.weights?.options);

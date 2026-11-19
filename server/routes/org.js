@@ -22,6 +22,10 @@ const configIn = z.object({
   duties: z.array(z.string().trim().min(1).max(20)).max(30),
   roleLabels: z.record(z.string().max(30), z.string().trim().max(30)),
   attendanceMonthlyCap: z.number().min(0).max(744).nullable(),
+  softParams: z.object({
+    maxConsec: z.number().int().min(1).max(12), dailySubjectCap: z.number().int().min(1).max(12), amTolerance: z.number().int().min(0).max(40), maxPerDay: z.number().int().min(1).max(12),
+    teacherDayMode: z.enum(['분산', '몰기']), earlyTiers: z.array(z.number().int().min(1).max(3)).max(3), lunchAfter: z.number().int().min(1).max(12),
+  }).partial(),
 }).partial();
 
 export function orgRouter(pool) {
