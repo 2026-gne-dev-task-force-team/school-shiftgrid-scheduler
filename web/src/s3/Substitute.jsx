@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Checkbox, Group, Modal, SegmentedControl, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
 import { api } from '../api.js';
 import { useOrgConfig } from '../orgConfig.js';
+import Term from '../Term.jsx';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const GRADE_COLOR = { A: 'green', B: 'teal', C: 'blue', D: 'gray' };
@@ -48,7 +49,7 @@ export default function Substitute({ P, admin }) {
           </Group>
         </Card>
       )))}
-      <Modal opened={!!cand} onClose={() => setCand(null)} title="보결 후보" fullScreen={typeof window !== 'undefined' && window.innerWidth < 600}>
+      <Modal opened={!!cand} onClose={() => setCand(null)} title={<><Term k="보결">보결</Term> 후보</>} fullScreen={typeof window !== 'undefined' && window.innerWidth < 600}>
         {cand && <Candidates data={cand} admin={admin} onAssign={(body) => act(`${cand.substitute.id}/assign`, body, '지정했습니다')} />}
       </Modal>
     </Stack>

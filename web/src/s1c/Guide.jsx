@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Group, Modal, Paper, Stack, Text, List } from '@mantine/core';
+import { Alert, Button, Divider, Group, Modal, Paper, Stack, Text, TextInput, List } from '@mantine/core';
+import { GLOSSARY } from '../glossary.js';
 import { api } from '../api.js';
 
 // 처음 안내 — 환영 · 손가락(다음 할 일 가리키기) · 빈 화면 안내 · 도움말
@@ -23,6 +24,19 @@ export function EmptyHint({ title, body }) {
 
 const STEPS = ['학교 기본 — 반 · 교시 · 점심 시각 (기본 교과 14개는 이미 들어 있습니다)', '명단 — 선생님 계정 만들기', '시수표 — 누가 어느 반에 몇 시간', '시간표 — 시안을 만들고 칸을 채우기'];
 
+function Glossary() {
+  const [q, setQ] = useState('');
+  const rows = Object.entries(GLOSSARY).sort((a, b) => a[0].localeCompare(b[0], 'ko')).filter(([k, v]) => !q.trim() || (k + v).includes(q.trim()));
+  return (
+    <Stack gap="xs">
+      <Text fw={600}>낱말 풀이</Text>
+      <TextInput placeholder="낱말 찾기 (예: 시수)" value={q} onChange={(e) => setQ(e.currentTarget.value)} />
+      {rows.length === 0 && <Text size="sm" c="dimmed">찾는 낱말이 없습니다.</Text>}
+      {rows.map(([k, v]) => <div key={k}><Text size="sm" fw={600}>{k}</Text><Text size="sm">{v}</Text></div>)}
+    </Stack>
+  );
+}
+
 export function HelpModal({ opened, onClose, admin }) {
   return (
     <Modal opened={opened} onClose={onClose} title="도움말">
@@ -36,6 +50,8 @@ export function HelpModal({ opened, onClose, admin }) {
         ) : (
           <Text size="sm">「내 시간표」에서 내 수업만 모아 봅니다. 폰에서는 옆으로 밀어 보세요. 「인쇄」 버튼으로 종이에 뽑을 수 있습니다.</Text>
         )}
+        <Divider />
+        <Glossary />
       </Stack>
     </Modal>
   );

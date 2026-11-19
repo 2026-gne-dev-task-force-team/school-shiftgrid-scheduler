@@ -5,6 +5,7 @@ import { currentConflicts, moveConflicts } from '../gen/core.js';
 import { dropPartial, genKey, loadPartial, savePartial } from '../gen/store.js';
 import { combinedOf } from '../gen/overlap.js';
 import { DEFAULTS, useOrgConfig } from '../orgConfig.js';
+import Term from '../Term.jsx';
 
 const K = 8; // 후보 수 기본값(화면 입력칸이 덮고 localStorage 에 기억)
 const PER_MS = 3000; // 후보 하나당 시간 기본값(ms)
@@ -101,7 +102,7 @@ function Generator({ P, input, onSaved }) {
 
   return (
     <Stack>
-      <Alert color="blue" title="자동 생성">{NOTICE}</Alert>
+      <Alert color="blue" title={<>자동 생성 · <Term k="시안">시안</Term>을 만듭니다</>}>{NOTICE}</Alert>
       {slow() && <Text size="sm" c="dimmed">PC 에서 하시면 빠릅니다. 폰에서도 그대로 됩니다.</Text>}
       <Group align="end">
         <NumberInput label="후보 수" min={1} max={40} w={90} value={opt.k} onChange={(v) => setOpt({ k: Number(v) })} />

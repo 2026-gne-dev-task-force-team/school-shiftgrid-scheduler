@@ -4,6 +4,7 @@ import { api } from '../api.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 import { useOrgConfig } from '../orgConfig.js';
+import Term from '../Term.jsx';
 
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
 export default function Rooms({ P, admin }) {
@@ -47,7 +48,7 @@ export default function Rooms({ P, admin }) {
       {error && <Alert color="red" withCloseButton onClose={() => setError('')}>{error}</Alert>}
       {tab === 'book' && (
         <>
-          <NativeSelect label="특별실" data={roomOpts} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })} />
+          <NativeSelect label={<Term k="특별실">특별실</Term>} data={roomOpts} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })} />
           {dateRow}
           <Button onClick={book} disabled={!f.room}>예약하기</Button>
           {warn.map((w, i) => <Alert key={i} color={w.color} title={w.label}>{w.detail}</Alert>)}

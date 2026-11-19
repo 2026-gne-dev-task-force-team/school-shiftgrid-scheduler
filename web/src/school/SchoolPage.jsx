@@ -5,6 +5,7 @@ import { buildTimes, rowsOf } from './periodTimes.js';
 
 // 학교 기본 · 전담·비교과 · 시수표 · 고정·금지 · 규칙 수위 (S-1b). 거부 없이 저장하고 알림만 띄운다.
 import { useOrgConfig } from '../orgConfig.js';
+import Term from '../Term.jsx';
 
 function useLoad(path) {
   const [data, setData] = useState(null);
@@ -324,7 +325,7 @@ export default function SchoolPage({ user }) {
       <Tabs.List>
         <Tabs.Tab value="basic">학교 기본</Tabs.Tab>
         <Tabs.Tab value="spec">전담·비교과</Tabs.Tab>
-        <Tabs.Tab value="loads">시수표</Tabs.Tab>
+        <Tabs.Tab value="loads"><Term k="시수표">시수표</Term></Tabs.Tab>
         <Tabs.Tab value="pins">고정·금지</Tabs.Tab>
         {admin && <Tabs.Tab value="rules">규칙 수위</Tabs.Tab>}
       </Tabs.List>
