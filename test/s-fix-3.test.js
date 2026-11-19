@@ -5,6 +5,7 @@ import { findOverlaps, periodTime } from '../server/violations.js';
 import { applySmall, generate } from '../web/src/gen/core.js';
 import { makeSoftScore, resolveParams } from '../web/src/gen/soft-adapter.js';
 import { sampleSchool } from '../web/src/gen/sample.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 const T = (s, e) => ({ start: s, end: e });
@@ -154,9 +155,7 @@ test('S-fix-3 DB: 오늘 적용 확정본 고르기 · 겸임 다른 기관 겹�
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    for (const o of [orgA, orgB]) for (const tb of ['cell', 'timetable', 'classroom', 'term', 'audit_log', 'membership']) await pool.query(`DELETE FROM ${tb} WHERE org_id = $1`, [o]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = ANY($1::bigint[])`, [[orgA, orgB]]);
+    await cleanupOrgs(pool, [orgA, orgB], tag);
     await pool.end();
   });
 

@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import argon2 from 'argon2';
 import { can, PERMISSIONS } from '../server/permissions.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 
@@ -136,18 +137,7 @@ test('기관 경계: 다른 기관 ID 로 조회하면 404', { skip: !HAS_DB && 
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    await pool.query(`DELETE FROM attendance WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM booking WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM substitute WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM special_room WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM cell WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM timetable WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM classroom WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM term WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM audit_log WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM membership WHERE org_id = ANY($1)`, [[orgA, orgB]]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = ANY($1)`, [[orgA, orgB]]);
+    await cleanupOrgs(pool, [orgA, orgB], tag);
     await pool.end();
   });
 

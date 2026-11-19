@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import argon2 from 'argon2';
 import { findOverlaps } from '../server/violations.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 
@@ -40,14 +41,7 @@ test('S-1c 경로: 겹쳐도 저장된다 · 수위 따라 색 · 비우기 · �
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    await pool.query(`DELETE FROM cell WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM timetable WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM classroom WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM term WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM audit_log WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM membership WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = $1`, [org]);
+    await cleanupOrgs(pool, org, tag);
     await pool.end();
   });
   const client = async (login) => {

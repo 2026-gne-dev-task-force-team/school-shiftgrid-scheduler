@@ -4,6 +4,7 @@ import argon2 from 'argon2';
 import { rankCandidates, fairness } from '../server/candidates.js';
 import crypto from 'node:crypto';
 import { seal, unseal } from '../server/seal.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 
@@ -129,12 +130,7 @@ test('S-3 경로: 동시 맡기 20건 중 1건만 성공 · 후보 등급 · 형
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    const both = [org, orgB];
-    for (const tb of ['booking', 'room_lock', 'substitute', 'cell', 'timetable', 'classroom', 'special_room', 'term', 'audit_log', 'membership']) {
-      await pool.query(`DELETE FROM ${tb} WHERE org_id = ANY($1)`, [both]);
-    }
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = ANY($1)`, [both]);
+    await cleanupOrgs(pool, [org, orgB], tag);
     await pool.end();
   });
   const client = async (o, login) => {

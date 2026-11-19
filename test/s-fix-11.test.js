@@ -5,6 +5,7 @@ import { DEFAULTS, dutyFromText, dutyKnown } from '../server/orgConfig.js';
 import { findOverlaps } from '../server/violations.js';
 import { findOverlaps as webOverlaps } from '../web/src/gen/overlap.js';
 import { RULES } from '../server/rules.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 
@@ -54,11 +55,7 @@ test('경로: 마이그레이션 · 명단 올리기 목록 밖 글 재확인', 
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    await pool.query(`DELETE FROM audit_log WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM session WHERE (sess->>'userId') IN (SELECT id::text FROM app_user WHERE login_id LIKE $1)`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM membership WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = $1`, [org]);
+    await cleanupOrgs(pool, org, tag);
     await pool.end();
   });
   let cookie = ''; let csrf = '';

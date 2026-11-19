@@ -5,6 +5,7 @@ import { generate } from '../web/src/gen/core.js';
 import { makeSoftScore } from '../web/src/gen/soft-adapter.js';
 import { diffFromDefault } from '../web/src/s2b/diff.js';
 import { resolveWeights } from '../web/src/gen/soft.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 
@@ -61,13 +62,7 @@ test('S-2b 경로: 시수표 block 칸 저장 · 생성 재료로 넘김 · 가�
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    await pool.query(`DELETE FROM teaching_load WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM classroom WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM term WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM audit_log WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM membership WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = $1`, [org]);
+    await cleanupOrgs(pool, org, tag);
     await pool.end();
   });
   let cookie = '';
