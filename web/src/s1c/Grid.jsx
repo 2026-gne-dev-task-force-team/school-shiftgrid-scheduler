@@ -59,6 +59,7 @@ function Editor({ P, tid, admin }) {
   const go = (n) => setDay((x) => Math.min(5, Math.max(1, x + n)));
   const [form, setForm] = useState({});
   const [undo, setUndo] = useState([]);
+  const [roomView, setRoomView] = useState(null);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState(null);
 
@@ -171,11 +172,18 @@ function Editor({ P, tid, admin }) {
           </Table.Tbody>
         </Table>
       </div>
+      <Stack gap={4} className="no-print">
+        <Select label="특별실 주간 보기" placeholder="방을 고르면 그 방을 쓰는 칸이 나옵니다" clearable data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={roomView} onChange={setRoomView} w={260} />
+        {roomView && [...d.cells].filter((c) => sameId(c.special_room_id, roomView)).sort((a, b) => a.weekday - b.weekday || a.period - b.period).map((c) => {
+          const k = findById(d.classrooms, c.classroom_id);
+          return <Text size="sm" key={`${c.classroom_id}:${c.weekday}:${c.period}`}>{DAYS[c.weekday - 1]} {c.period}교시 · {k ? `${k.grade}-${k.class_no}` : ''} {name(d.subjects, c.subject_id)?.name || ''}</Text>;
+        })}
+      </Stack>
       <Modal opened={!!sel} onClose={() => setSel(null)} title={sel ? `${cls.grade}-${cls.class_no} ${DAYS[sel.weekday - 1]}요일 ${sel.period}교시` : ''}>
         <Stack>
           <Select label="교과" allowDeselect={false} searchable data={d.subjects.map((s) => ({ value: String(s.id), label: s.name }))} value={form.subject_id} onChange={(v) => setForm({ ...form, subject_id: v })} />
           <Select label="교사" allowDeselect={false} searchable data={d.teachers.map((t) => ({ value: String(t.id), label: t.name }))} value={form.membership_id} onChange={(v) => setForm({ ...form, membership_id: v })} />
-          <Select label="특별실" allowDeselect={false} data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={form.special_room_id} onChange={(v) => setForm({ ...form, special_room_id: v })} />
+          <Select label="특별실" clearable placeholder="없음" data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={form.special_room_id} onChange={(v) => setForm({ ...form, special_room_id: v })} />
           <Group justify="space-between">
             <Button color="red" variant="light" onClick={() => commit(true)}>칸 비우기</Button>
             <Button onClick={() => commit(false)}>넣기</Button>
