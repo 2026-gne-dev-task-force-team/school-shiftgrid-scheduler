@@ -45,10 +45,8 @@ export function useOrgConfig(P) {
 // 역할 표시명(권한 키는 그대로, 보이는 글자만 바꾼다)
 export const roleLabel = (cfg, key) => cfg?.roleLabels?.[key] || key;
 
-// 담임/전담 고르기 목록. 기관이 직무 목록을 안 바꿨으면 서버가 지금 받는 값(담임·전담·비교과)을 그대로 쓴다.
-export const LEGACY_DUTIES = ['담임', '전담·비교과'];
+// 담임/전담 고르기 목록 — 기관 설정 duties 하나(기본 담임·전담·비교과). 지금 값이 목록 밖이면 끝에 덧붙여 보인다.
 export function dutyOptions(cfg, current) {
-  const same = JSON.stringify(cfg?.duties) === JSON.stringify(DEFAULTS.duties);
-  const list = same ? LEGACY_DUTIES : cfg.duties;
+  const list = cfg?.duties ?? DEFAULTS.duties;
   return current && !list.includes(current) ? [...list, current] : list;
 }

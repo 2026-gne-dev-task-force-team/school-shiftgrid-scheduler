@@ -52,13 +52,20 @@ export default function Roster({ orgId }) {
     }
   }
   const mapped = () => imp.rows.map((cells) => Object.fromEntries(FIELDS.map(([k]) => [k, imp.map[k] >= 0 ? cells[imp.map[k]] ?? '' : ''])));
-  const doImport = () => run(async () => {
-    const r = await api('POST', `${base}/import`, { rows: mapped() });
-    setResult(r);
-    setImp(null);
+  const [odd, setOdd] = useState(null); // 목록 밖 담당 구분 줄 — 「그래도 올리기」 한 번 묻기(재확인 수위)
+  const doImport = (confirm) => run(async () => {
+    try {
+      const r = await api('POST', `${base}/import`, { rows: mapped(), ...(confirm === true ? { confirm: true } : {}) });
+      setResult(r);
+      setImp(null);
+      setOdd(null);
+    } catch (e) {
+      if (e.body?.needConfirm) setOdd(e.body); else throw e;
+    }
   });
   // 못 읽은 줄 빨강: 올리기 전에 화면에서도 같은 기준으로 미리 표시한다(서버가 최종 판정)
   const preBad = (r) => !r.name.trim() ? '이름 없음' : r.role && !ROLES.includes(r.role.trim()) ? '역할 모름' : '';
+  const preOdd = (r) => { const t = (r.duty || '').trim(); return t && !cfg.duties.includes(t) && !/담임|전담|비교과/.test(t) ? '담당 구분 목록 밖' : ''; };
 
   const actions = (m) => (
     <Group gap="xs" wrap="nowrap">
@@ -142,14 +149,21 @@ export default function Roster({ orgId }) {
                 <Table.Thead><Table.Tr><Table.Th>줄</Table.Th>{FIELDS.map(([, l]) => <Table.Th key={l}>{l}</Table.Th>)}<Table.Th /></Table.Tr></Table.Thead>
                 <Table.Tbody>
                   {mapped().map((r, i) => (
-                    <Table.Tr key={i} bg={preBad(r) ? 'red.1' : undefined} c={preBad(r) ? 'red.9' : undefined}>
-                      <Table.Td>{i + 1}</Table.Td>{FIELDS.map(([k]) => <Table.Td key={k}>{r[k]}</Table.Td>)}<Table.Td>{preBad(r)}</Table.Td>
+                    <Table.Tr key={i} bg={preBad(r) ? 'red.1' : preOdd(r) ? 'orange.1' : undefined} c={preBad(r) ? 'red.9' : preOdd(r) ? 'orange.9' : undefined}>
+                      <Table.Td>{i + 1}</Table.Td>{FIELDS.map(([k]) => <Table.Td key={k}>{r[k]}</Table.Td>)}<Table.Td>{preBad(r) || preOdd(r)}</Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
               </Table>
             </Table.ScrollContainer>
-            <Button onClick={doImport} disabled={imp.map.name < 0}>{imp.rows.length}줄 올리기</Button>
+            {odd && (
+              <Alert color="orange" title="담당 구분이 기관 목록 밖인 줄이 있습니다 — 그래도 올릴까요?">
+                {odd.odd.map((x) => <Text key={x.line} size="sm">{x.line}줄 {x.name} — 「{x.duty}」</Text>)}
+                <Text size="xs" c="dimmed">기관 목록: {odd.duties.join('·')}</Text>
+                <Button mt="xs" color="orange" onClick={doImport(true)}>그래도 올리기</Button>
+              </Alert>
+            )}
+            <Button onClick={doImport()} disabled={imp.map.name < 0}>{imp.rows.length}줄 올리기</Button>
           </Stack>
         )}
       </Modal>
@@ -164,7 +178,7 @@ export default function Roster({ orgId }) {
                 <Table.Tbody>
                   {result.results.map((r) => (
                     <Table.Tr key={r.line} bg={r.ok ? undefined : 'red.1'} c={r.ok ? undefined : 'red.9'}>
-                      <Table.Td>{r.line}</Table.Td><Table.Td>{r.name}</Table.Td><Table.Td>{r.loginId}</Table.Td><Table.Td>{r.ok ? '만듦' : r.error}</Table.Td>
+                      <Table.Td>{r.line}</Table.Td><Table.Td>{r.name}</Table.Td><Table.Td>{r.loginId}</Table.Td><Table.Td>{r.ok ? `만듦${r.warnings?.length ? ` — ${r.warnings.map((w) => w.msg).join(' ')}` : ''}` : r.error}</Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>

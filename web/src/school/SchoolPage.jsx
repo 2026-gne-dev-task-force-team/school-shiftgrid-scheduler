@@ -106,6 +106,8 @@ function Subjects({ P, admin }) {
 }
 
 function Basics({ P, admin }) {
+  const org = useOrgConfig(P); // 기관 설정: 학기 시작 달·상한(넘으면 경고만 — 입력은 막지 않음)
+  const [term] = useLoad(`${P}/term`);
   const [classes, reloadC] = useLoad(`${P}/classrooms`);
   const [cfg, reloadCfg] = useLoad(`${P}/school/periods`);
   const [rooms, reloadR] = useLoad(`${P}/special-rooms`);
@@ -122,12 +124,13 @@ function Basics({ P, admin }) {
   return (
     <Stack>
       <Err e={error} />
+      {term && <Text size="sm" c="dimmed">지금 {term.year}년 {term.semester}학기 · 학기 시작 달 {org.semesterStarts.join('·')}월(기관 설정)</Text>}
       <Text fw={600}>반</Text>
       <Text size="sm">{(classes || []).map((c) => `${c.grade}-${c.class_no}`).join(' · ') || '아직 없음'}</Text>
       {admin && (
         <Group>
-          <NumberInput label="학년" min={1} max={6} value={grade} onChange={setGrade} w={80} />
-          <NumberInput label="반 수" min={1} max={30} value={count} onChange={setCount} w={80} />
+          <NumberInput label="학년" description={`기관 기준 ${org.limits.grades}`} min={1} value={grade} onChange={setGrade} w={80} />
+          <NumberInput label="반 수" description={`반 번호 ${org.limits.classNo}까지`} min={1} value={count} onChange={setCount} w={80} />
           <Button mt={24} onClick={run(async () => { await api('POST', `${P}/classrooms/bulk`, { grade, count }); reloadC(); })}>반 만들기</Button>
         </Group>
       )}
@@ -136,7 +139,7 @@ function Basics({ P, admin }) {
         {[1, 2, 3, 4, 5, 6].map((g) => (
           <Table.Tr key={g}>
             <Table.Td>{g}학년</Table.Td>
-            <Table.Td><NumberInput aria-label={`${g}학년 교시 수`} disabled={!admin} min={1} max={12} value={grades[g]?.periods ?? ''} onChange={(v) => v && run(() => setG(g, { periods: v }))()} w={80} suffix="교시" /></Table.Td>
+            <Table.Td><NumberInput aria-label={`${g}학년 교시 수`} disabled={!admin} min={1} description={`기관 기준 ${org.limits.periods}`} value={grades[g]?.periods ?? ''} onChange={(v) => v && run(() => setG(g, { periods: v }))()} w={80} suffix="교시" /></Table.Td>
             <Table.Td><LunchInput key={`${g}:${grades[g]?.lunch ?? ''}`} label={`${g}학년 점심 시각`} disabled={!admin} value={grades[g]?.lunch ?? ''} onSave={(v) => run(() => setG(g, { lunch: v }))()} /></Table.Td>
           </Table.Tr>
         ))}
@@ -159,6 +162,7 @@ function Basics({ P, admin }) {
 }
 
 function Specialists({ P, admin }) {
+  const cfg = useOrgConfig(P);
   const [rows, reload, err] = useLoad(`${P}/specialists`);
   return (
     <Stack>
@@ -168,8 +172,8 @@ function Specialists({ P, admin }) {
           <Table.Tr key={r.membership_id}>
             <Table.Td>{r.name}</Table.Td>
             <Table.Td>
-              <Switch disabled={!admin} label="전담·비교과" checked={r.duty === '전담·비교과'}
-                onChange={(e) => api('PATCH', `${P}/specialists/${r.membership_id}`, { duty: e.currentTarget.checked ? '전담·비교과' : '담임' }).then(reload)} />
+              <Switch disabled={!admin} label="전담·비교과" checked={!!r.duty && r.duty !== '담임'}
+                onChange={(e) => api('PATCH', `${P}/specialists/${r.membership_id}`, { duty: e.currentTarget.checked ? (cfg.duties.find((d) => d !== '담임') ?? '전담') : '담임' }).then(reload)} />
             </Table.Td>
           </Table.Tr>
         ))}

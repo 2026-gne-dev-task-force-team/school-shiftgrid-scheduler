@@ -64,8 +64,8 @@ test('orgConfig 기본값 폴백', () => {
 });
 
 test('직무 목록·역할 표시명', () => {
-  assert.deepEqual(dutyOptions(DEFAULTS), ['담임', '전담·비교과']); // 안 바꿨으면 서버가 지금 받는 값
-  assert.deepEqual(dutyOptions({ duties: ['담임', '행정'] }, '전담·비교과'), ['담임', '행정', '전담·비교과']);
+  assert.deepEqual(dutyOptions(DEFAULTS), ['담임', '전담', '비교과']); // S-fix-11: 목록 하나
+  assert.deepEqual(dutyOptions({ duties: ['담임', '행정'] }, '도서'), ['담임', '행정', '도서']);
   assert.equal(roleLabel({ roleLabels: { 교직원: '선생님' } }, '교직원'), '선생님');
   assert.equal(roleLabel(DEFAULTS, '보기만'), '보기만');
 });
