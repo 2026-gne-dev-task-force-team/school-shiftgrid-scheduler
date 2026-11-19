@@ -22,6 +22,7 @@ import { softWeightsRouter } from './routes/soft-weights.js';
 import { substituteRouter } from './routes/substitute.js';
 import { bookingRouter } from './routes/booking.js';
 import { exportRouter } from './routes/export.js';
+import { preCompressed } from './precompressed.js';
 
 const PgStore = connectPgSimple(session);
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -131,7 +132,9 @@ export function createApp(pool, opts = {}) {
 
   // 화면 파일 — 해시 붙은 assets 는 1년 캐시
   const dist = process.env.WEB_DIST || path.join(here, '..', 'web', 'dist');
+  app.use('/assets', preCompressed(path.join(dist, 'assets')));
   app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }));
+  app.use(preCompressed(dist));
   app.use(express.static(dist, { index: false }));
   app.get('*', (req, res) => res.sendFile(path.join(dist, 'index.html'), (e) => e && res.status(404).end()));
 
