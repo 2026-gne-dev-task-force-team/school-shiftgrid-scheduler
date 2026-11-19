@@ -35,6 +35,7 @@ export const configPath = (P) => `${P}/org/config`;
 export function useOrgConfig(P) {
   const [cfg, setCfg] = useState({ ...DEFAULTS, loaded: false }); // loaded: 서버 답(또는 실패)을 받았나 — 메뉴 깜빡임 막기용
   useEffect(() => {
+    if (!P) return undefined; // 기관 밖(시스템관리자 등)이면 받지 않는다
     let live = true;
     api('GET', configPath(P)).then((r) => { if (live) setCfg({ ...mergeConfig(r), loaded: true }); }).catch(() => { if (live) setCfg({ ...DEFAULTS, loaded: true }); });
     return () => { live = false; };
