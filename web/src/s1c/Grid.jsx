@@ -7,6 +7,7 @@ import { todayStr } from '../today.js';
 import { featureOn } from '../features.js';
 import { EmptyHint, Finger } from './Guide.jsx';
 import { emptyCount, confirmText } from '../../../shared/ttConfirm.js';
+import { roomWeek, isClash, movePreview } from '../../../shared/ttDrag.js';
 import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
 const UNDO_MAX = 50;
@@ -99,6 +100,8 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   const [form, setForm] = useState({});
   const [undo, setUndo] = useState([]);
   const [roomView, setRoomView] = useState(null);
+  const [drag, setDrag] = useState(null); // 끌고 있는 칸 {weekday, period}
+  const [over, setOver] = useState(null); // 지나가는 칸 {weekday, period}
   const [error, setError] = useState('');
   const [msg, setMsg] = useState(null);
 
@@ -183,6 +186,18 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   });
   const hasCells = d.cells.length > 0;
   const redCount = d.violations.filter((v) => v.color === 'red').length;
+  const gradeOf = Object.fromEntries(d.classrooms.map((k) => [k.id, k.grade]));
+  const pv = drag && over ? movePreview(d.cells, { classroom_id: cls.id, ...drag }, { classroom_id: cls.id, ...over }, { periods: d.periods, gradeOf }) : null;
+  const drop = async (w, p) => {
+    const from = drag; setDrag(null); setOver(null);
+    if (!admin || !from || (from.weekday === w && from.period === p)) return;
+    const src = cellMap.get(`${cls.id}:${from.weekday}:${from.period}`);
+    if (!src) return;
+    const dst = cellMap.get(`${cls.id}:${w}:${p}`);
+    const body = (x) => ({ subject_id: x?.subject_id ?? null, membership_id: x?.membership_id ?? null, special_room_id: x?.special_room_id ?? null });
+    await save({ classroom_id: cls.id, weekday: w, period: p, ...body(src) });
+    await save({ classroom_id: cls.id, weekday: from.weekday, period: from.period, ...body(dst) }); // 맞바꿈이면 옛 칸 내용, 아니면 비움
+  };
 
   return (
     <Stack>
@@ -233,8 +248,12 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
                   const w = wi + 1;
                   const c = cellMap.get(`${cls.id}:${w}:${p}`);
                   const v = hit(cls.id, w, p);
+                  const here = pv && over.weekday === w && over.period === p; // 놓을 자리 미리보기
+                  const bad = here && pv.overlaps.length > 0;
                   return (
-                    <Table.Td key={w} className={`${w === day ? 'day-on' : 'day-off'} ${v ? `cell-${v.color}` : ''}`} style={{ cursor: admin ? 'pointer' : 'default', background: v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => open(w, p)}>
+                    <Table.Td key={w} className={`${w === day ? 'day-on' : 'day-off'} ${v ? `cell-${v.color}` : ''}`} style={{ cursor: admin ? 'pointer' : 'default', background: here ? (bad ? 'var(--mantine-color-red-2)' : 'var(--mantine-color-green-1)') : v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => open(w, p)}
+                      draggable={admin && !!c} onDragStart={() => setDrag({ weekday: w, period: p })} onDragEnd={() => { setDrag(null); setOver(null); }}
+                      onDragOver={(e) => { if (drag) { e.preventDefault(); if (!over || over.weekday !== w || over.period !== p) setOver({ weekday: w, period: p }); } }} onDrop={(e) => { e.preventDefault(); drop(w, p); }}>
                       {c ? (
                         <>
                           <Text size="sm" fw={600}>{subjName(c.subject_id) || '·'}</Text>
@@ -242,6 +261,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
                           {v && <Text size="xs" c={v.color} fw={700}>{v.label}</Text>}
                         </>
                       ) : <Text size="xs" c="dimmed">&nbsp;</Text>}
+                      {here && <Text size="xs" fw={700} c={bad ? 'red' : 'green'} data-testid="drag-preview">{bad ? `옮기면 ${pv.overlaps.join(' · ')}` : '겹침 없음'}{pv.vacates ? ' · 보낸 칸은 빈칸이 됩니다' : ' · 맞바꿈'}</Text>}
                     </Table.Td>
                   );
                 })}
@@ -252,10 +272,35 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
       </div>
       {roomsOn && <Stack gap={4} className="no-print">
         <Select label="특별실 주간 보기" placeholder="방을 고르면 그 방을 쓰는 칸이 나옵니다" clearable data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={roomView} onChange={setRoomView} w={260} />
-        {roomView && [...d.cells].filter((c) => sameId(c.special_room_id, roomView)).sort((a, b) => a.weekday - b.weekday || a.period - b.period).map((c) => {
-          const k = findById(d.classrooms, c.classroom_id);
-          return <Text size="sm" key={`${c.classroom_id}:${c.weekday}:${c.period}`}>{DAYS[c.weekday - 1]} {c.period}교시 · {k ? `${k.grade}-${k.class_no}` : ''} {name(d.subjects, c.subject_id)?.name || ''}</Text>;
-        })}
+        {roomView && (() => {
+          const wk = roomWeek(d.cells, roomView);
+          const maxP = Math.max(1, ...d.classrooms.map((k) => d.periods?.grades?.[k.grade]?.periods ?? 5), ...[...wk.keys()].map((k) => Number(k.split(':')[1])));
+          return (
+            <div style={{ overflowX: 'auto' }} data-testid="room-week">
+              <Table withTableBorder withColumnBorders style={{ minWidth: 80 + DAYS.length * 110 }}>
+                <Table.Thead><Table.Tr><Table.Th w={50}>교시</Table.Th>{DAYS.map((x) => <Table.Th key={x} ta="center">{x}</Table.Th>)}</Table.Tr></Table.Thead>
+                <Table.Tbody>{Array.from({ length: maxP }, (_, i) => i + 1).map((p) => (
+                  <Table.Tr key={p}>
+                    <Table.Td ta="center" fw={600}>{p}</Table.Td>
+                    {DAYS.map((_x, wi) => {
+                      const list = wk.get(`${wi + 1}:${p}`);
+                      const clash = isClash(list);
+                      return (
+                        <Table.Td key={wi} style={{ background: clash ? 'var(--mantine-color-red-1)' : undefined }}>
+                          {list?.map((c) => {
+                            const k = findById(d.classrooms, c.classroom_id);
+                            return <Text size="xs" key={c.classroom_id} c={clash ? 'red' : undefined}>{k ? `${k.grade}-${k.class_no}` : ''} {name(d.subjects, c.subject_id)?.name || ''} {name(d.teachers, c.membership_id)?.name || ''}</Text>;
+                          })}
+                          {clash && <Text size="xs" c="red" fw={700}>겹침</Text>}
+                        </Table.Td>
+                      );
+                    })}
+                  </Table.Tr>
+                ))}</Table.Tbody>
+              </Table>
+            </div>
+          );
+        })()}
       </Stack>}
       <Modal opened={!!sel} onClose={() => setSel(null)} title={sel ? `${cls.grade}-${cls.class_no} ${DAYS[sel.weekday - 1]}요일 ${sel.period}교시` : ''}>
         <Stack>
