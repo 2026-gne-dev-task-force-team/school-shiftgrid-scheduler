@@ -3,6 +3,7 @@ import { Button, Container, Group, Tabs, Title } from '@mantine/core';
 import ChangePassword from './ChangePassword.jsx';
 import AdminOrgs from './AdminOrgs.jsx';
 import Roster from './Roster.jsx';
+import AuditLog from './AuditLog.jsx';
 import SchoolPage from '../school/SchoolPage.jsx';
 import Grid from '../s1c/Grid.jsx';
 import Mine from '../s1c/Mine.jsx';
@@ -27,9 +28,11 @@ export default function Screens({ user, onLogout, onUser }) {
       <Tabs defaultValue="orgs">
         <Tabs.List mb="md">
           <Tabs.Tab value="orgs">기관 관리</Tabs.Tab>
+          <Tabs.Tab value="audit">기록</Tabs.Tab>
           <Tabs.Tab value="me">내 정보</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="orgs"><AdminOrgs /></Tabs.Panel>
+        <Tabs.Panel value="audit"><AuditLog /></Tabs.Panel>
         <Tabs.Panel value="me"><ChangePassword onDone={onUser} /></Tabs.Panel>
       </Tabs>
     );
@@ -51,6 +54,7 @@ export default function Screens({ user, onLogout, onUser }) {
           {user.role !== '보기만' && <Tabs.Tab value="att">근태</Tabs.Tab>}
           {user.role !== '보기만' && <Tabs.Tab value="sub">보결</Tabs.Tab>}
           {user.role !== '보기만' && <Tabs.Tab value="rooms">특별실</Tabs.Tab>}
+          {admin && <Tabs.Tab value="audit">기록</Tabs.Tab>}
           <Tabs.Tab value="me">내 정보</Tabs.Tab>
         </Tabs.List>
         {admin && <Tabs.Panel value="roster"><Roster orgId={user.orgId} /></Tabs.Panel>}
@@ -64,6 +68,7 @@ export default function Screens({ user, onLogout, onUser }) {
         {user.role !== '보기만' && <Tabs.Panel value="att"><Attendance P={P} admin={admin} /></Tabs.Panel>}
         <Tabs.Panel value="sub"><Substitute P={P} admin={admin} /></Tabs.Panel>
         <Tabs.Panel value="rooms"><Rooms P={P} admin={admin} /></Tabs.Panel>
+        {admin && <Tabs.Panel value="audit"><AuditLog orgId={user.orgId} /></Tabs.Panel>}
         <Tabs.Panel value="me"><ChangePassword onDone={onUser} /></Tabs.Panel>
       </Tabs>
     );
