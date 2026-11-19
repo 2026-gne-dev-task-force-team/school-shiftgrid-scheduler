@@ -22,7 +22,8 @@ export default function OrgConfig({ P }) {
   const save = async () => {
     setMsg(null); setWarn([]);
     try {
-      const r = await api('PUT', configPath(P), c);
+      const { features: _f, ...rest } = c; // 스위치는 「기능 고르기」 혼자 저장한다(통째로 보내 덮지 않게)
+      const r = await api('PUT', configPath(P), rest);
       setC(mergeConfig(r.config || r));
       setWarn(Array.isArray(r.warnings) ? r.warnings : []);
       setMsg({ color: 'green', text: '저장했습니다' });

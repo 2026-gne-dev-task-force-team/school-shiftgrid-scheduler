@@ -33,10 +33,10 @@ export const configPath = (P) => `${P}/org/config`;
 
 // 화면 훅: 처음엔 기본값, 서버가 답하면 병합본
 export function useOrgConfig(P) {
-  const [cfg, setCfg] = useState(DEFAULTS);
+  const [cfg, setCfg] = useState({ ...DEFAULTS, loaded: false }); // loaded: 서버 답(또는 실패)을 받았나 — 메뉴 깜빡임 막기용
   useEffect(() => {
     let live = true;
-    api('GET', configPath(P)).then((r) => { if (live) setCfg(mergeConfig(r)); }).catch(() => {});
+    api('GET', configPath(P)).then((r) => { if (live) setCfg({ ...mergeConfig(r), loaded: true }); }).catch(() => { if (live) setCfg({ ...DEFAULTS, loaded: true }); });
     return () => { live = false; };
   }, [P]);
   return cfg;
