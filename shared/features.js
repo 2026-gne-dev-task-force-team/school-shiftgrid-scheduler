@@ -21,3 +21,17 @@ export const FEATURE_KEYS = FEATURES.map((f) => f.key);
 
 // n 단계까지 켜고 나머지는 끈 { 키: boolean }.
 export const featuresUpTo = (n) => Object.fromEntries(FEATURES.map((f) => [f.key, f.stage <= n]));
+
+// 메뉴(탭 값) → 켜져야 보이는 스위치 키(하나라도 켜지면 보임). 목록에 없는 메뉴(grid·me)는 0단계라 늘 보인다.
+export const MENU_FEATURES = {
+  roster: ['setup'], mine: ['setup'], school: ['setup', 'loads', 'pins'],
+  gen: ['gen'], softset: ['soft', 'small', 'levels'], orgcfg: ['orgcfg'], out: ['output', 'import'],
+  att: ['att'], sub: ['sub'], rooms: ['rooms'], audit: ['audit'],
+};
+
+// 빠진 키는 켬(스위치가 생기기 전 기관 호환) — 명시적 false 만 끈다.
+export const featureOn = (features, key) => features?.[key] !== false;
+export const menuOn = (features, v) => !MENU_FEATURES[v] || MENU_FEATURES[v].some((k) => featureOn(features, k));
+
+// 메뉴 목록 [{v, show}] 에서 보일 것만. 권한(show)과 AND.
+export const visibleMenus = (items, features) => items.filter((i) => i.show && menuOn(features, i.v));
