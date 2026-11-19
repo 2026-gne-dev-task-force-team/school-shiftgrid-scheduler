@@ -10,6 +10,7 @@ import { secret } from './db.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { orgRouter } from './routes/org.js';
+import { auditRouter } from './routes/audit-log.js';
 import { rosterRouter } from './routes/roster.js';
 import { schoolRouter } from './routes/school.js';
 import { loadsRouter } from './routes/loads.js';
@@ -91,6 +92,7 @@ export function createApp(pool, opts = {}) {
   app.use('/api/auth', authRouter(pool, opts));
   app.use('/api/admin', adminRouter(pool));
   app.use('/api/orgs/:orgId/roster', rosterRouter(pool));
+  app.use('/api/orgs/:orgId', auditRouter(pool));
   app.use('/api/orgs/:orgId', orgRouter(pool));
   app.use('/api/orgs/:orgId', schoolRouter(pool));
   app.use('/api/orgs/:orgId', loadsRouter(pool));
