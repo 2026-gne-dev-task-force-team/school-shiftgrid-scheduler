@@ -35,3 +35,12 @@ export const menuOn = (features, v) => !MENU_FEATURES[v] || MENU_FEATURES[v].som
 
 // 메뉴 목록 [{v, show}] 에서 보일 것만. 권한(show)과 AND.
 export const visibleMenus = (items, features) => items.filter((i) => i.show && menuOn(features, i.v));
+
+// 스위치판: 지금 상태(features)와 목표({키: boolean}) 중 값이 달라지는 키만 — PUT 에 이것만 싣는다.
+export const featureDiff = (features, target) => Object.fromEntries(Object.entries(target).filter(([k, v]) => featureOn(features, k) !== v));
+
+// 「써 보기」가 데려갈 메뉴(탭 값). intro·메뉴 없는 키는 시간표 격자.
+export const tryMenu = (key) => Object.keys(MENU_FEATURES).find((v) => MENU_FEATURES[v].includes(key)) || 'grid';
+
+// 단계 묶음 [{stage, items}] — 스위치판이 그린다(1~6).
+export const featureStages = () => [1, 2, 3, 4, 5, 6].map((s) => ({ stage: s, items: FEATURES.filter((f) => f.stage === s) }));

@@ -12,6 +12,7 @@ import Mine from '../s1c/Mine.jsx';
 import AutoGen from '../s2/AutoGen.jsx';
 import SoftSettings from '../s2b/SoftSettings.jsx';
 import OrgConfig from '../settings/OrgConfig.jsx';
+import FeatureBoard from '../settings/FeatureBoard.jsx';
 import { HelpModal, Welcome } from '../s1c/Guide.jsx';
 import Attendance from '../s4a/Attendance.jsx';
 import Substitute from '../s3/Substitute.jsx';
@@ -61,18 +62,25 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
     { v: 'sub', label: '보결', hint: admin ? '결강 수업을 대신할 교사를 정할 때' : '결강 수업의 보결 배정을 보거나 맡을 때', show: edit },
     { v: 'rooms', label: '특별실', hint: '특별실 사용 칸을 방별로 보고 배정할 때', show: edit },
     { v: 'audit', label: '기록', hint: '누가 언제 무엇을 바꿨는지 확인할 때', show: admin },
+    { v: 'feat', label: '기능 고르기', hint: admin ? '필요한 기능만 켜고 끌 때(자료는 남습니다)' : '우리 학교 시간표 도구에 어떤 기능이 있는지 볼 때', show: true },
     { v: 'me', label: '내 정보', hint: '비밀번호를 바꾸거나 더 보기 메뉴를 열 때', show: true },
   ];
-  const items = visibleMenus(all, useOrgConfig(P).features); // 권한(show) AND 기관 스위치
+  const base = useOrgConfig(P);
+  const [ov, setOv] = useState(null); // 스위치판이 방금 바꾼 값(메뉴에 바로 반영)
+  const [tip, setTip] = useState(null);
+  const [want, setTab] = useState(admin ? 'roster' : 'mine');
+  const items = visibleMenus(all, ov ?? base.features); // 권한(show) AND 기관 스위치. 「기능 고르기」는 MENU_FEATURES 에 없어 늘 보인다
+  const tryGo = (v, text) => { setTab(v); setTip(text); setTimeout(() => setTip(null), 12000); };
   const on = (v) => items.some((i) => i.v === v);
   const H = Object.fromEntries(items.map((i) => [i.v, i.hint]));
-  const [want, setTab] = useState(admin ? 'roster' : 'mine');
   const tab = on(want) ? want : 'grid'; // 숨긴 탭이면 시간표로
+  if (!ov && !base.loaded) return null; // 설정을 받기 전엔 메뉴를 그리지 않는다(꺼진 탭이 잠깐 보였다 사라지는 깜빡임)
   const bar = phone ? items.filter((i) => PHONE_MAIN.includes(i.v)) : items;
   const more = phone ? items.filter((i) => !PHONE_MAIN.includes(i.v)) : [];
   return (
     <>
     {admin && <OrderHint />}
+    {tip && <Alert className="no-print" color="blue" mb="sm" withCloseButton onClose={() => setTip(null)}>{tip}</Alert>}
     <Tabs value={tab} onChange={setTab} keepMounted={false} {...tabProps}>
       <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
         {bar.map((i) => <Tooltip key={i.v} label={i.hint} disabled={phone || !i.hint} openDelay={300}><Tabs.Tab value={i.v}>{phone && i.phoneLabel ? i.phoneLabel : i.label}</Tabs.Tab></Tooltip>)}
@@ -89,6 +97,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
       {on('sub') && <Panel v="sub" hint={H.sub}><Substitute P={P} admin={admin} /></Panel>}
       {on('rooms') && <Panel v="rooms" hint={H.rooms}><Rooms P={P} admin={admin} /></Panel>}
       {on('audit') && <Panel v="audit" hint={H.audit}><AuditLog orgId={user.orgId} /></Panel>}
+      <Panel v="feat" hint={H.feat}><FeatureBoard P={P} admin={admin} onChanged={setOv} onTry={tryGo} /></Panel>
       <Panel v="me" hint={H.me}>
         {more.length > 0 && (
           <Group mb="md" className="no-print" data-testid="more-menu">
