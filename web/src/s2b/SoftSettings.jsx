@@ -9,12 +9,14 @@ import { OPTION_SPEC, PARAM_SPEC, avoidKey, avoidParse, extraFrom, extraToWeight
 // 기본값은 soft.js 상수다. 여기서 바꾼 것만 서버(org.soft_weights)에 저장한다.
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+import { featureOn } from '../features.js';
 const avoidCells = (DAY) => DAY.flatMap((_d, wi) => Array.from({ length: 8 }, (_p, pi) => `${wi + 1}-${pi + 1}`));
 const avoidLabelOf = (DAY) => (v) => { const a = avoidParse(v); return `${DAY[a.weekday - 1] ?? a.weekday}${a.period}교시`; };
 const TIER_LABEL = { 1: '1 보직', 2: '2 일반 전담', 3: '3 지원인력' };
 
 export default function SoftSettings({ P }) {
-  const DAY = useOrgConfig(P).weekdays;
+  const { weekdays: DAY, features } = useOrgConfig(P);
+  const softOn = featureOn(features, 'soft'), smallOn = featureOn(features, 'small'); // 꺼진 구획은 숨기기만(자료·저장값 그대로)
   const AVOID_CELLS = avoidCells(DAY);
   const avoidLabel = avoidLabelOf(DAY);
   const [w, setW] = useState(null);
@@ -54,6 +56,7 @@ export default function SoftSettings({ P }) {
   return (
     <Stack>
       {msg && <Alert color={msg.color} withCloseButton onClose={() => setMsg(null)}>{msg.text}</Alert>}
+      {softOn && <>
       <Card withBorder>
         <Title order={4}><Term k="권장 규칙">권장 규칙</Term> 가중</Title>
         <Text size="sm" c="dimmed" mb="xs">자동 생성은 필수를 먼저 맞추고, 그다음 아래 우선순위를 더 잘 지킨 시안을 위로 올립니다. 규칙마다 우선순위 묶음만 고르면 됩니다.</Text>
@@ -103,8 +106,9 @@ export default function SoftSettings({ P }) {
           ))}
         </Table.Tbody></Table>
       </Card>
+      </>}
 
-      <Card withBorder>
+      {smallOn && <Card withBorder>
         <Title order={4}>소규모교</Title>
         <Switch label="소규모교 설정 사용" checked={small.enabled} onChange={(e) => setSmall({ ...small, enabled: e.currentTarget.checked })} mb="xs" />
         <MultiSelect label="담임이 메우는 교과" data={subjOpt} value={(small.homeroom_subject_ids || []).map(String)} onChange={(v) => setSmall({ ...small, homeroom_subject_ids: v.map(Number) })} />
@@ -123,7 +127,7 @@ export default function SoftSettings({ P }) {
           <Button onClick={saveSmall}>소규모교 저장</Button>
         </Group>
         <Text size="xs" c="dimmed" mt="xs">반을 2개 이상 고른 묶음만 저장됩니다.</Text>
-      </Card>
+      </Card>}
     </Stack>
   );
 }
