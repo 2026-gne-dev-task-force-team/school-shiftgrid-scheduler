@@ -102,7 +102,7 @@ export function prepare(input) {
   const orig = new Map(); // 방 문자열 id → 원래 값(숫자)
   for (const r of input.rooms || []) {
     orig.set(String(r.id), r.id);
-    const kind = r.kind ?? String(r.name ?? '').replace(/\d+/g, '').trim();
+    const kind = r.kind ?? roomKind(r.name);
     if (!kind || r.purpose === '예약용') continue;
     (byKind.get(kind) ?? byKind.set(kind, []).get(kind)).push(r.id);
   }
@@ -478,6 +478,8 @@ export function roundRobin(prep) {
 }
 
 // best-of-K: 전략·씨앗을 바꿔 K 개를 만들고 [성립(못 놓은 시수) · 진도 위반 · 권장 점수] 순으로 줄 세운다
+// 방 이름에서 번호·「제1」·끝의 영문 한 글자(과학A실)를 떼고 남은 이름 — 같은 종류 판정용
+export const roomKind = (name) => String(name ?? '').replace(/제\s*\d+/g, '').replace(/\d+/g, '').replace(/(?<=[가-힣])\s*[A-Za-z](?=실?$)/, '').trim();
 export function generate(input, { k = 8, perMs = 3000, seed = 1, softScore = () => 0, onProgress, init = null } = {}) {
   const prep = prepare(input);
   const out = [];

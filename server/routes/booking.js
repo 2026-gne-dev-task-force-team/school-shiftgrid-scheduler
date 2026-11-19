@@ -71,17 +71,21 @@ export function bookingRouter(pool) {
 
   r.post('/bookings', own, async (req, res, next) => {
     try {
-      const p = z.object({ special_room_id: idz, on_date: DATE, period: z.number().int().min(1).max(CEIL.periods), classroom_id: idz.nullable().optional() }).safeParse(req.body);
+      const p = z.object({ special_room_id: idz, on_date: DATE, period: z.number().int().min(1).max(CEIL.periods), classroom_id: idz.nullable().optional(), force: z.boolean().optional() }).safeParse(req.body);
       if (!p.success) return bad(res);
-      const d = p.data;
+      const { force, ...d } = p.data;
       const m = await me(req);
       if (!m) return notFound(res);
       if (!(await pool.query(`SELECT 1 FROM special_room WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [d.special_room_id, req.orgId])).rows[0]) return notFound(res);
       if (d.classroom_id && !(await pool.query(`SELECT 1 FROM classroom WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [d.classroom_id, req.orgId])).rows[0]) return notFound(res);
+      const levels = await getRuleLevels(pool, req.orgId);
+      if (!force) { // 겹치면 막지 않고 재확인 — 화면이 같은 「그래도 예약」을 띄우고 force 로 다시 보낸다
+        const hit = (await warningsFor(req.orgId, d, levels)).filter((w) => w.rule === 'room_overlap');
+        if (hit.length) return res.status(409).json({ error: '겹칩니다 — 그래도 예약할지 확인해 주세요', needConfirm: true, overlaps: hit.map((w) => w.detail) });
+      }
       const ins = await pool.query(
         `INSERT INTO booking (org_id, special_room_id, on_date, period, membership_id, classroom_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
         [req.orgId, d.special_room_id, d.on_date, d.period, m.id, d.classroom_id ?? null]);
-      const levels = await getRuleLevels(pool, req.orgId);
       const warnings = await warningsFor(req.orgId, { id: ins.rows[0].id, ...d }, levels);
       await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'booking.create', table: 'booking', rowId: ins.rows[0].id, after: d });
       res.status(201).json({ id: ins.rows[0].id, warnings: [...warnings, ...limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period })] });

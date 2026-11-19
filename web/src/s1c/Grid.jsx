@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { useOrgConfig } from '../orgConfig.js';
@@ -102,6 +102,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   const [roomView, setRoomView] = useState(null);
   const [drag, setDrag] = useState(null); // 끌고 있는 칸 {weekday, period}
   const [over, setOver] = useState(null); // 지나가는 칸 {weekday, period}
+  const moved = useRef(false); // 끌어서 다른 칸까지 갔으면 true — 그 뒤 클릭은 칸 열기로 치지 않는다
   const [error, setError] = useState('');
   const [msg, setMsg] = useState(null);
 
@@ -187,7 +188,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   const hasCells = d.cells.length > 0;
   const redCount = d.violations.filter((v) => v.color === 'red').length;
   const gradeOf = Object.fromEntries(d.classrooms.map((k) => [k.id, k.grade]));
-  const pv = drag && over ? movePreview(d.cells, { classroom_id: cls.id, ...drag }, { classroom_id: cls.id, ...over }, { periods: d.periods, gradeOf }) : null;
+  const pv = drag && over ? movePreview(d.cells, { classroom_id: cls.id, ...drag }, { classroom_id: cls.id, ...over }, { periods: d.periods, gradeOf, roomCap: Object.fromEntries(d.rooms.filter((r) => r.capacity != null).map((r) => [r.id, r.capacity])), studentOf: Object.fromEntries(d.classrooms.filter((k) => k.student_count != null).map((k) => [k.id, k.student_count])), capCount: cfg.roomCapacity?.count }) : null;
   const drop = async (w, p) => {
     const from = drag; setDrag(null); setOver(null);
     if (!admin || !from || (from.weekday === w && from.period === p)) return;
@@ -197,6 +198,21 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
     const body = (x) => ({ subject_id: x?.subject_id ?? null, membership_id: x?.membership_id ?? null, special_room_id: x?.special_room_id ?? null });
     await save({ classroom_id: cls.id, weekday: w, period: p, ...body(src) });
     await save({ classroom_id: cls.id, weekday: from.weekday, period: from.period, ...body(dst) }); // 맞바꿈이면 옛 칸 내용, 아니면 비움
+  };
+
+  // 끌어 옮기기는 포인터 이벤트(마우스·터치 공통). 손가락은 처음 눌린 칸에 묶이니 좌표로 칸을 찾는다.
+  const cellAt = (e) => { const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-w]'); return el ? { weekday: Number(el.dataset.w), period: Number(el.dataset.p) } : null; };
+  const pMove = (e) => {
+    if (!drag) return;
+    const t = cellAt(e);
+    if (!t) return;
+    if (!over || over.weekday !== t.weekday || over.period !== t.period) setOver(t);
+    if (t.weekday !== drag.weekday || t.period !== drag.period) moved.current = true;
+  };
+  const pUp = (e) => {
+    if (!drag) return;
+    const t = cellAt(e);
+    if (moved.current && t) drop(t.weekday, t.period); else { setDrag(null); setOver(null); }
   };
 
   return (
@@ -232,7 +248,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
         <Text fw={700}>{DAYS[day - 1]}요일</Text>
         <Button variant="default" size="xs" disabled={day >= DAYS.length} onClick={() => go(1)}>다음날 ▶</Button>
       </Group>
-      <div className="grid-scroll" onTouchStart={(e) => setTx(e.touches[0].clientX)} onTouchEnd={(e) => { if (tx != null && Math.abs(e.changedTouches[0].clientX - tx) > 60) go(e.changedTouches[0].clientX < tx ? 1 : -1); setTx(null); }}>
+      <div className="grid-scroll" onPointerMove={pMove} onPointerUp={pUp} onPointerCancel={() => { setDrag(null); setOver(null); }} onTouchStart={(e) => setTx(e.target.closest?.('[data-drag]') ? null : e.touches[0].clientX)} onTouchEnd={(e) => { if (tx != null && Math.abs(e.changedTouches[0].clientX - tx) > 60) go(e.changedTouches[0].clientX < tx ? 1 : -1); setTx(null); }}>
         <Table withTableBorder withColumnBorders className="tt-grid">
           <Table.Thead>
             <Table.Tr>
@@ -251,9 +267,9 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
                   const here = pv && over.weekday === w && over.period === p; // 놓을 자리 미리보기
                   const bad = here && pv.overlaps.length > 0;
                   return (
-                    <Table.Td key={w} className={`${w === day ? 'day-on' : 'day-off'} ${v ? `cell-${v.color}` : ''}`} style={{ cursor: admin ? 'pointer' : 'default', background: here ? (bad ? 'var(--mantine-color-red-2)' : 'var(--mantine-color-green-1)') : v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => open(w, p)}
-                      draggable={admin && !!c} onDragStart={() => setDrag({ weekday: w, period: p })} onDragEnd={() => { setDrag(null); setOver(null); }}
-                      onDragOver={(e) => { if (drag) { e.preventDefault(); if (!over || over.weekday !== w || over.period !== p) setOver({ weekday: w, period: p }); } }} onDrop={(e) => { e.preventDefault(); drop(w, p); }}>
+                    <Table.Td key={w} className={`${w === day ? 'day-on' : 'day-off'} ${v ? `cell-${v.color}` : ''}`} style={{ cursor: admin ? 'pointer' : 'default', ...(admin && c ? { touchAction: 'none', userSelect: 'none' } : {}), background: here ? (bad ? 'var(--mantine-color-red-2)' : 'var(--mantine-color-green-1)') : v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => { if (moved.current) { moved.current = false; return; } open(w, p); }}
+                      data-w={w} data-p={p} {...(admin && c ? { 'data-drag': 1 } : {})}
+                      onPointerDown={(e) => { moved.current = false; if (admin && c && e.button === 0) { setDrag({ weekday: w, period: p }); } }}>
                       {c ? (
                         <>
                           <Text size="sm" fw={600}>{subjName(c.subject_id) || '·'}</Text>

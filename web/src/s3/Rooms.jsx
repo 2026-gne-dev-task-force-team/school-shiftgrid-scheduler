@@ -37,10 +37,18 @@ export default function Rooms({ P, admin, onGo }) {
     // 겹치면 막지 않고 먼저 알린다 — 「그래도 예약」을 눌러야 넣는다
     const free = await api('GET', `${P}/rooms/free?on_date=${f.date}&period=${Number(f.period)}`);
     const busy = free.find((x) => String(x.id) === f.room)?.busy ?? [];
-    if (busy.length && !(await ask(`겹칩니다 — 이 시각 이 특별실은 이미 쓰입니다.
-${busy.join(' · ')}
-그래도 예약할까요?`, { yes: '그래도 예약', no: '그만두기' }))) return;
-    const r = await api('POST', `${P}/bookings`, { special_room_id: Number(f.room), on_date: f.date, period: Number(f.period) });
+    const again = (overlaps) => ask(`겹칩니다 — 이 시각 이 특별실은 이미 쓰입니다.
+${overlaps.join(' · ')}
+그래도 예약할까요?`, { yes: '그래도 예약', no: '그만두기' });
+    if (busy.length && !(await again(busy))) return;
+    const body = { special_room_id: Number(f.room), on_date: f.date, period: Number(f.period) };
+    let r;
+    try { r = await api('POST', `${P}/bookings`, busy.length ? { ...body, force: true } : body); } catch (e) {
+      // 조회 뒤 저장 사이에 겹침이 생겼으면 서버가 409 로 되묻는다 — 같은 재확인 뒤 force 로 저장
+      if (e.status !== 409 || !e.body?.overlaps) throw e;
+      if (!(await again(e.body.overlaps))) return;
+      r = await api('POST', `${P}/bookings`, { ...body, force: true });
+    }
     setWarn(r.warnings);
   });
   const roomOpts = rooms.map((r) => ({ value: String(r.id), label: r.name }));

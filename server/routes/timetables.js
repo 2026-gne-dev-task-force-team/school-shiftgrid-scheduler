@@ -135,10 +135,10 @@ export function timetablesRouter(pool) {
       res.json({
         timetable: tt,
         cells: await cellsOf(o, tt.id),
-        classrooms: await q(`SELECT id, grade, class_no FROM classroom WHERE org_id = $1 AND term_id = ${Number(tt.term_id)} AND deleted_at IS NULL ORDER BY grade, class_no`),
+        classrooms: await q(`SELECT id, grade, class_no, student_count FROM classroom WHERE org_id = $1 AND term_id = ${Number(tt.term_id)} AND deleted_at IS NULL ORDER BY grade, class_no`),
         subjects: await q(`SELECT id, name, short_name FROM subject WHERE org_id = $1 AND deleted_at IS NULL ORDER BY is_default DESC, id`),
         teachers: await q(`SELECT m.id, u.name FROM membership m JOIN app_user u ON u.id = m.user_id WHERE m.org_id = $1 AND m.deleted_at IS NULL AND m.status = '사용' AND m.role <> '시스템관리자' ORDER BY u.name`),
-        rooms: await q(`SELECT id, name FROM special_room WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id`),
+        rooms: await q(`SELECT id, name, capacity FROM special_room WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id`),
         periods: (await q(`SELECT period_config FROM org WHERE id = $1`))[0]?.period_config ?? {},
         levels,
         violations: applyLevels(levels, raw),
