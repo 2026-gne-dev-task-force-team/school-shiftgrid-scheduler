@@ -6,11 +6,8 @@ import { todayStr as today } from '../today.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
 
-// 방 등록 자리(학교 기본 탭)로 — 탭 상태가 화면 묶음 안에 있어 탭 이름표를 눌러 준다(shortcut: Screens 가 이동 콜백을 주면 그걸로 바꾼다)
-const goBasic = () => [...document.querySelectorAll('[role="tab"]')].find((el) => el.textContent.trim() === '학교 기본')?.click();
-
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
-export default function Rooms({ P, admin }) {
+export default function Rooms({ P, admin, onGo }) {
   const org = useOrgConfig(P);
   const DAYS = org.weekdays;
   const [tab, setTab] = useState('book');
@@ -55,7 +52,7 @@ export default function Rooms({ P, admin }) {
           {roomsLoaded && !roomOpts.length && (
             <Alert color="blue" data-testid="rooms-empty">
               <Term k="특별실">특별실</Term>은 「학교 기본」 화면의 특별실 칸에서 먼저 등록합니다. 등록하면 여기서 고를 수 있습니다.
-              <Group mt="xs"><Button size="compact-sm" variant="light" onClick={goBasic}>학교 기본에서 특별실 등록하러 가기</Button></Group>
+              <Group mt="xs"><Button size="compact-sm" variant="light" onClick={() => onGo?.('school')}>학교 기본에서 특별실 등록하러 가기</Button></Group>
               {!admin && <Text size="xs" mt={4}>등록은 기관 관리자가 합니다.</Text>}
             </Alert>
           )}

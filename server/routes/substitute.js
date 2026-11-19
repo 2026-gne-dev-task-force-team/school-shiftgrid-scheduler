@@ -13,6 +13,7 @@ import { appliedTimetable } from '../applied.js';
 // 후보 밖 사람이 맡아도 거부하지 않고 경고 목록으로 돌려준다(업무 규칙은 알림·경고).
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const idz = z.coerce.number().int().positive();
+export const NO_PERIODS = '이 선생님은 확정된 시간표에 그날 수업이 없습니다. 시간표 격자에서 수업 칸에 선생님을 넣거나, 확정본을 확인하세요.';
 const notFound = (res) => res.status(404).json({ error: '없습니다' });
 const bad = (res) => res.status(400).json({ error: '입력을 확인해 주세요' });
 const weekdayOf = (d) => ((new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
@@ -83,6 +84,14 @@ export function substituteRouter(pool, opts = {}) {
     };
   }
 
+  // 이번 학기에 맡은 횟수(명단 사람별)
+  async function termTakeCounts(orgId) {
+    const t = await currentTerm(pool, orgId);
+    const rows = (await pool.query(
+      `SELECT taken_membership_id AS id, count(*)::int AS n FROM substitute WHERE org_id = $1 AND term_id = $2 AND status = '맡음' AND deleted_at IS NULL AND taken_membership_id IS NOT NULL GROUP BY 1`, [orgId, t.id])).rows;
+    return new Map(rows.map((x) => [Number(x.id), x.n]));
+  }
+
   // 목록 — 기간으로 거른다
   r.get('/substitutes', own, async (req, res, next) => {
     try {
@@ -132,7 +141,7 @@ export function substituteRouter(pool, opts = {}) {
           `SELECT period, classroom_id FROM cell WHERE org_id = $1 AND timetable_id = $2 AND membership_id = $3 AND weekday = $4 AND deleted_at IS NULL ORDER BY period`,
           [req.orgId, tt.id, absent, weekdayOf(d.on_date)])).rows : [];
       }
-      if (!items.length) return res.status(400).json({ error: '올릴 교시가 없습니다' });
+      if (!items.length) return res.status(400).json({ error: NO_PERIODS });
       for (const it of items) {
         if (it.classroom_id && !(await refOk(`SELECT 1 FROM classroom WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, it.classroom_id, req.orgId))) return notFound(res);
       }
@@ -155,7 +164,9 @@ export function substituteRouter(pool, opts = {}) {
     try {
       const s = await getOne(req);
       if (!s) return notFound(res);
-      res.json({ substitute: present(s, isAdmin(req), (await me(req))?.id), ...(await candidatesFor(req.orgId, s)) });
+      const c = await candidatesFor(req.orgId, s);
+      const counts = await termTakeCounts(req.orgId);
+      res.json({ substitute: present(s, isAdmin(req), (await me(req))?.id), ...c, candidates: c.candidates.map((x) => ({ ...x, take_count: counts.get(Number(x.membership_id)) ?? 0 })) });
     } catch (e) { next(e); }
   });
 

@@ -3,6 +3,7 @@ import { Alert, Badge, Button, Card, Checkbox, Group, Modal, SegmentedControl, S
 import { api } from '../api.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+import { SUB_GRADES } from '../../../shared/sub-grades.js';
 
 import { todayStr as today } from '../today.js';
 const GRADE_COLOR = { A: 'green', B: 'teal', C: 'blue', D: 'gray' };
@@ -40,7 +41,7 @@ export default function Substitute({ P, admin }) {
             <Badge color={s.status === '열림' ? 'orange' : s.status === '맡음' ? 'green' : 'gray'}>{s.status}</Badge>
           </Group>
           <Text size="sm">결강 {s.absent_name}{s.reason_kind ? ` (${s.reason_kind})` : ''}{s.reason ? ` — ${s.reason}` : ''}</Text>
-          {s.status === '맡음' && <Text size="sm">맡은 분 {s.taken_name || s.taken_outside_name}{s.taken_outside_name ? ' (명단 밖)' : ''}{s.grade_ab ? ` · 등급 ${s.grade_ab}` : ''}</Text>}
+          {s.status === '맡음' && <Text size="sm">맡은 분 {s.taken_name || s.taken_outside_name}{s.taken_outside_name ? ' (명단 밖)' : ''}{s.grade_ab ? ` · ${SUB_GRADES[s.grade_ab]?.name ?? s.grade_ab}` : ''}</Text>}
           <Group mt="xs" gap="xs">
             {s.status === '열림' && <Button size="xs" onClick={() => act(`${s.id}/take`, undefined, '맡았습니다')}>내가 맡기</Button>}
             {s.status !== '취소' && <Button size="xs" variant="default" onClick={() => api('GET', `${P}/substitutes/${s.id}/candidates`).then(setCand).catch((e) => setError(e.message))}>후보 보기</Button>}
@@ -62,9 +63,10 @@ function Candidates({ data, admin, onAssign }) {
   return (
     <Stack gap="xs">
       {!data.tt && <Alert color="yellow">그 날 적용되는 확정 시간표가 없어 등급을 못 냈습니다.</Alert>}
+      {data.candidates.length > 0 && <Text size="xs" c="dimmed">위에 있는 분부터 권합니다. 배지는 그 선생님이 어떤 처지인지를 말합니다.</Text>}
       {data.candidates.map((c) => (
         <Group key={c.membership_id} justify="space-between" wrap="nowrap">
-          <Group gap="xs"><Badge color={GRADE_COLOR[c.grade]}>{c.grade}</Badge><Text>{c.name}</Text>{c.taken && <Badge variant="outline" color="orange">같은 시간 맡음</Badge>}</Group>
+          <Group gap="xs"><Badge color={GRADE_COLOR[c.grade]} title={SUB_GRADES[c.grade]?.hint}>{SUB_GRADES[c.grade]?.name ?? c.grade}</Badge><Text>{c.name}</Text><Text size="xs" c="dimmed">이번 학기 보결 {c.take_count ?? 0}회</Text>{c.taken && <Badge variant="outline" color="orange">같은 시간 맡음</Badge>}</Group>
           {admin && <Button size="xs" variant="default" onClick={() => onAssign({ membership_id: c.membership_id })}>지정</Button>}
         </Group>
       ))}

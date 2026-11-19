@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Group, NumberInput, SegmentedControl, SimpleGrid, Stack, TagsInput, Text, TextInput, Title } from '@mantine/core';
 import { api } from '../api.js';
 import { DEFAULTS, configPath, mergeConfig } from '../orgConfig.js';
+import { SUB_GRADES } from '../../../shared/sub-grades.js';
 
 const LIMIT_LABELS = {
   periods: '하루 교시 상한', grades: '학년 수 상한', classNo: '반 번호 상한', students: '반당 학생 수', capacity: '특별실 수용',
@@ -45,7 +46,8 @@ export default function OrgConfig({ P }) {
         ))}
       </SimpleGrid>
       <Text fw={600}>보결</Text>
-      <TagsInput label="후보 순서(등급)" value={c.substitute.order} onChange={(v) => setIn('substitute', 'order', v)} />
+      <TagsInput label="후보 순서(등급)" description="앞에 둘수록 먼저 권합니다. 글자는 A B C D 중에서 고릅니다." value={c.substitute.order} onChange={(v) => setIn('substitute', 'order', v)} />
+      <Stack gap={0}>{Object.entries(SUB_GRADES).map(([g, x]) => <Text key={g} size="xs" c="dimmed">{g} — {x.name}: {x.hint}</Text>)}</Stack>
       <Group align="end">
         <div><Text size="sm">강사·보조 선생님</Text><SegmentedControl data={LEVEL} value={c.substitute.assistants} onChange={(v) => setIn('substitute', 'assistants', v)} /></div>
         <div><Text size="sm">급식지도</Text><SegmentedControl data={LEVEL} value={c.substitute.lunchDuty} onChange={(v) => setIn('substitute', 'lunchDuty', v)} /></div>

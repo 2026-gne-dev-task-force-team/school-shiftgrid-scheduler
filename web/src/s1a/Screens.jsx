@@ -50,7 +50,7 @@ function Panel({ v, hint, children }) {
 
 // 기관 화면 탭 — 폰 하단 바는 다섯(시간표·보결·특별실·근태·내 정보)만, 나머지는 「내 정보」 안 버튼으로
 const PHONE_MAIN = ['grid', 'sub', 'rooms', 'att', 'me'];
-function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, setOv }) {
+function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, setOv, jump }) {
   const edit = user.role !== '보기만';
   const all = [
     { v: 'roster', label: '명단', hint: '교직원 명단을 올리고 고치는 곳입니다. 처음 한 번 먼저 채웁니다', show: admin },
@@ -71,6 +71,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, se
   const [tip, setTip] = useState(null);
   const [want, setTab] = useState(admin && !phone ? 'roster' : admin ? 'grid' : 'mine');
   const items = visibleMenus(all, features); // 권한(show) AND 기관 스위치. 「기능 고르기」는 MENU_FEATURES 에 없어 늘 보인다
+  useEffect(() => { if (jump) setTab(jump.v); }, [jump]); // 도움말 같은 바깥 화면이 시키는 탭 이동
   const tryGo = (v, text) => { setTab(v); setTip(text); setTimeout(() => setTip(null), 12000); };
   const on = (v) => items.some((i) => i.v === v);
   const H = Object.fromEntries(items.map((i) => [i.v, i.hint]));
@@ -96,7 +97,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, se
       {on('mine') && <Panel v="mine" hint={H.mine}><Mine P={P} /></Panel>}
       {on('att') && <Panel v="att" hint={H.att}><Attendance P={P} admin={admin} /></Panel>}
       {on('sub') && <Panel v="sub" hint={H.sub}><Substitute P={P} admin={admin} /></Panel>}
-      {on('rooms') && <Panel v="rooms" hint={H.rooms}><Rooms P={P} admin={admin} /></Panel>}
+      {on('rooms') && <Panel v="rooms" hint={H.rooms}><Rooms P={P} admin={admin} onGo={setTab} /></Panel>}
       {on('audit') && <Panel v="audit" hint={H.audit}><AuditLog orgId={user.orgId} /></Panel>}
       <Panel v="feat" hint={H.feat}><FeatureBoard P={P} admin={admin} onChanged={setOv} onTry={tryGo} /></Panel>
       <Panel v="me" hint={H.me}>
@@ -122,6 +123,8 @@ export default function Screens({ user, onLogout, onUser }) {
   const base = useOrgConfig(orgP);
   const [ov, setOv] = useState(null); // 스위치판·따라 하기가 방금 바꾼 값(메뉴에 바로 반영)
   const features = ov ?? base.features;
+  const [jump, setJump] = useState(null); // {v, n} — 도움말·따라 하기가 탭을 옮기라고 시킨다
+  const goTab = (v) => setJump({ v, n: Date.now() });
   const [rev, setRev] = useState(0); // 「안내 다시 보기」 — 메뉴 화면을 새로 그려 카드를 다시 띄운다
   useEffect(() => {
     if (!user.mustChange) api('GET', '/auth/memberships').then((r) => setMems(r.items)).catch(() => setMems([]));
@@ -152,7 +155,7 @@ export default function Screens({ user, onLogout, onUser }) {
     // 기관관리자 · 교직원 · 보기만 — 메뉴 하나로 묶는다(명단은 관리자만)
     const admin = user.role === '기관관리자';
     const P = `/orgs/${user.orgId}`;
-    body = <OrgTabs key={rev} user={user} admin={admin} P={P} phone={phone} tabProps={tabProps} onUser={onUser} features={features} loaded={!!ov || base.loaded} setOv={setOv} />;
+    body = <OrgTabs key={rev} user={user} admin={admin} P={P} phone={phone} tabProps={tabProps} onUser={onUser} features={features} loaded={!!ov || base.loaded} setOv={setOv} jump={jump} />;
   }
   return (
     <Container size="lg" py="md" className="app-body">
@@ -167,7 +170,7 @@ export default function Screens({ user, onLogout, onUser }) {
       <AddToHome phone={phone} />
       {body}
       {inOrg && <Welcome P={orgP} admin={user.role === '기관관리자'} features={features} />}
-      {inOrg && <HelpModal opened={help} onClose={() => setHelp(false)} admin={user.role === '기관관리자'} P={orgP} user={user} features={features} onChanged={setOv} onReset={() => setRev((r) => r + 1)} />}
+      {inOrg && <HelpModal opened={help} onClose={() => setHelp(false)} admin={user.role === '기관관리자'} P={orgP} user={user} features={features} onChanged={setOv} onGo={(v) => { setHelp(false); goTab(v); }} onReset={() => setRev((r) => r + 1)} />}
     </Container>
   );
 }
