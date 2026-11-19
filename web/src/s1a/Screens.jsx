@@ -29,6 +29,57 @@ function AddToHome({ phone }) {
   return <Alert className="no-print" color="blue" mb="md" withCloseButton onClose={close}>홈 화면에 추가해 두면 앱처럼 바로 열립니다. 브라우저 메뉴(공유 또는 ⋮)에서 「홈 화면에 추가」를 누르세요.</Alert>;
 }
 
+// 기관 화면 탭 — 폰 하단 바는 다섯(시간표·보결·특별실·근태·내 정보)만, 나머지는 「내 정보」 안 「더 보기」로
+const PHONE_MAIN = ['grid', 'sub', 'rooms', 'att', 'me'];
+function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
+  const edit = user.role !== '보기만';
+  const items = [
+    { v: 'roster', label: '명단', show: admin },
+    { v: 'school', label: '학교 기본', show: true },
+    { v: 'grid', label: admin ? '시간표 격자' : '시간표 보기', phoneLabel: '시간표', show: true },
+    { v: 'gen', label: '자동 생성', show: admin },
+    { v: 'softset', label: '생성 설정', show: admin },
+    { v: 'orgcfg', label: '기관 설정', show: admin },
+    { v: 'out', label: '출력', show: true },
+    { v: 'mine', label: '내 시간표', show: true },
+    { v: 'att', label: '근태', show: edit },
+    { v: 'sub', label: '보결', show: edit },
+    { v: 'rooms', label: '특별실', show: edit },
+    { v: 'audit', label: '기록', show: admin },
+    { v: 'me', label: '내 정보', show: true },
+  ].filter((i) => i.show);
+  const [tab, setTab] = useState(admin ? 'roster' : 'mine');
+  const bar = phone ? items.filter((i) => PHONE_MAIN.includes(i.v)) : items;
+  const more = phone ? items.filter((i) => !PHONE_MAIN.includes(i.v)) : [];
+  return (
+    <Tabs value={tab} onChange={setTab} keepMounted={false} {...tabProps}>
+      <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
+        {bar.map((i) => <Tabs.Tab key={i.v} value={i.v}>{phone && i.phoneLabel ? i.phoneLabel : i.label}</Tabs.Tab>)}
+      </Tabs.List>
+      {admin && <Tabs.Panel value="roster"><Roster orgId={user.orgId} /></Tabs.Panel>}
+      <Tabs.Panel value="school"><SchoolPage user={user} /></Tabs.Panel>
+      <Tabs.Panel value="grid"><Grid P={P} admin={admin} /></Tabs.Panel>
+      {admin && <Tabs.Panel value="gen"><AutoGen P={P} /></Tabs.Panel>}
+      {admin && <Tabs.Panel value="softset"><SoftSettings P={P} /></Tabs.Panel>}
+      {admin && <Tabs.Panel value="orgcfg"><OrgConfig P={P} /></Tabs.Panel>}
+      <Tabs.Panel value="out"><Output P={P} admin={admin} /></Tabs.Panel>
+      <Tabs.Panel value="mine"><Mine P={P} /></Tabs.Panel>
+      {edit && <Tabs.Panel value="att"><Attendance P={P} admin={admin} /></Tabs.Panel>}
+      <Tabs.Panel value="sub"><Substitute P={P} admin={admin} /></Tabs.Panel>
+      <Tabs.Panel value="rooms"><Rooms P={P} admin={admin} /></Tabs.Panel>
+      {admin && <Tabs.Panel value="audit"><AuditLog orgId={user.orgId} /></Tabs.Panel>}
+      <Tabs.Panel value="me">
+        {more.length > 0 && (
+          <Group mb="md" className="no-print" data-testid="more-menu">
+            {more.map((i) => <Button key={i.v} variant="light" onClick={() => setTab(i.v)}>{i.label}</Button>)}
+          </Group>
+        )}
+        <ChangePassword onDone={onUser} />
+      </Tabs.Panel>
+    </Tabs>
+  );
+}
+
 export default function Screens({ user, onLogout, onUser }) {
   const [help, setHelp] = useState(false);
   const phone = useMediaQuery('(max-width: 48em)');
@@ -64,38 +115,7 @@ export default function Screens({ user, onLogout, onUser }) {
     // 기관관리자 · 교직원 · 보기만 — 메뉴 하나로 묶는다(명단은 관리자만)
     const admin = user.role === '기관관리자';
     const P = `/orgs/${user.orgId}`;
-    body = (
-      <Tabs defaultValue={admin ? 'roster' : 'mine'} keepMounted={false} {...tabProps}>
-        <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
-          {admin && <Tabs.Tab value="roster">명단</Tabs.Tab>}
-          <Tabs.Tab value="school">학교 기본</Tabs.Tab>
-          <Tabs.Tab value="grid">{admin ? '시간표 격자' : '시간표 보기'}</Tabs.Tab>
-          {admin && <Tabs.Tab value="gen">자동 생성</Tabs.Tab>}
-          {admin && <Tabs.Tab value="softset">생성 설정</Tabs.Tab>}
-          {admin && <Tabs.Tab value="orgcfg">기관 설정</Tabs.Tab>}
-          <Tabs.Tab value="out">출력</Tabs.Tab>
-          <Tabs.Tab value="mine">내 시간표</Tabs.Tab>
-          {user.role !== '보기만' && <Tabs.Tab value="att">근태</Tabs.Tab>}
-          {user.role !== '보기만' && <Tabs.Tab value="sub">보결</Tabs.Tab>}
-          {user.role !== '보기만' && <Tabs.Tab value="rooms">특별실</Tabs.Tab>}
-          {admin && <Tabs.Tab value="audit">기록</Tabs.Tab>}
-          <Tabs.Tab value="me">내 정보</Tabs.Tab>
-        </Tabs.List>
-        {admin && <Tabs.Panel value="roster"><Roster orgId={user.orgId} /></Tabs.Panel>}
-        <Tabs.Panel value="school"><SchoolPage user={user} /></Tabs.Panel>
-        <Tabs.Panel value="grid"><Grid P={P} admin={admin} /></Tabs.Panel>
-        {admin && <Tabs.Panel value="gen"><AutoGen P={P} /></Tabs.Panel>}
-        {admin && <Tabs.Panel value="softset"><SoftSettings P={P} /></Tabs.Panel>}
-        {admin && <Tabs.Panel value="orgcfg"><OrgConfig P={P} /></Tabs.Panel>}
-        <Tabs.Panel value="out"><Output P={P} admin={admin} /></Tabs.Panel>
-        <Tabs.Panel value="mine"><Mine P={P} /></Tabs.Panel>
-        {user.role !== '보기만' && <Tabs.Panel value="att"><Attendance P={P} admin={admin} /></Tabs.Panel>}
-        <Tabs.Panel value="sub"><Substitute P={P} admin={admin} /></Tabs.Panel>
-        <Tabs.Panel value="rooms"><Rooms P={P} admin={admin} /></Tabs.Panel>
-        {admin && <Tabs.Panel value="audit"><AuditLog orgId={user.orgId} /></Tabs.Panel>}
-        <Tabs.Panel value="me"><ChangePassword onDone={onUser} /></Tabs.Panel>
-      </Tabs>
-    );
+    body = <OrgTabs user={user} admin={admin} P={P} phone={phone} tabProps={tabProps} onUser={onUser} />;
   }
   return (
     <Container size="lg" py="md" className="app-body">
