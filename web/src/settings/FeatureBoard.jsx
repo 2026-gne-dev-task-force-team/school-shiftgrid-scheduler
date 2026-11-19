@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Collapse, Group, Stack, Switch, Text, Title } from '@mantine/core';
 import { api } from '../api.js';
 import Term from '../Term.jsx';
+import { useConfirm } from '../Confirm.jsx';
 import { configPath, mergeConfig } from '../orgConfig.js';
 import { featureOn, featureDiff, featuresUpTo, featureStages, tryMenu } from '../../../shared/features.js';
 import { PITCH, PITCH_NOTE } from '../../../shared/feature-pitch.js';
@@ -52,6 +53,7 @@ export default function FeatureBoard({ P, admin, onChanged, onTry }) {
   const [features, setF] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [ask, confirmBox] = useConfirm();
   useEffect(() => { api('GET', configPath(P)).then((r) => setF(mergeConfig(r).features || {})).catch(() => { setF({}); setMsg('설정을 못 불러와 모두 켜진 것으로 보여 드립니다.'); }); }, [P]);
   if (!features) return null;
 
@@ -65,8 +67,8 @@ export default function FeatureBoard({ P, admin, onChanged, onTry }) {
     } catch (e) { setMsg(`저장하지 못했습니다: ${e.message}`); } finally { setBusy(false); }
   }
   const toggle = (k, v) => apply({ [k]: v }, null);
-  const stage = (n) => {
-    if (!window.confirm(`${n === 0 ? '모든 기능을 끕니다' : `${n}단계까지 켜고 나머지는 끕니다`}. 끈 기능에 넣어 둔 자료는 지워지지 않고, 다시 켜면 그대로 나옵니다. 계속할까요?`)) return;
+  const stage = async (n) => {
+    if (!(await ask(`${n === 0 ? '모든 기능을 끕니다' : `${n}단계까지 켜고 나머지는 끕니다`}. 끈 기능에 넣어 둔 자료는 지워지지 않고, 다시 켜면 그대로 나옵니다. 계속할까요?`))) return;
     apply(featureDiff(features, featuresUpTo(n)), n === 0 ? '0단계로 했습니다(격자·내 정보·도움말만).' : `${n}단계까지 켰습니다.`);
   };
   const tryOne = async (k) => {
@@ -76,6 +78,7 @@ export default function FeatureBoard({ P, admin, onChanged, onTry }) {
 
   return (
     <Stack maw={760}>
+      {confirmBox}
       <Title order={4}>기능 고르기</Title>
       <Text size="sm" c="dimmed">{admin ? '필요한 기능만 켜서 쓰세요. 끈 기능의 메뉴만 숨고, 넣어 둔 자료는 그대로 남습니다. 모르는 기능은 「자세히」를 눌러 보세요.' : '우리 학교 시간표 도구에 이런 기능들이 있습니다. 켜고 끄는 것은 기관 관리자가 합니다.'}</Text>
       {msg && <Alert color="gray" withCloseButton onClose={() => setMsg(null)}>{msg}</Alert>}

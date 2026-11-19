@@ -6,10 +6,12 @@ import { dropPartial, genKey, loadPartial, savePartial } from '../gen/store.js';
 import { combinedOf } from '../gen/overlap.js';
 import { DEFAULTS, useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+import { featureOn } from '../features.js';
 
 const K = 8; // 후보 수 기본값(화면 입력칸이 덮고 localStorage 에 기억)
 const PER_MS = 3000; // 후보 하나당 시간 기본값(ms)
 // 2판 안내문 — 권장 17 이 아직 없다는 것을 먼저 말한다
+export const SOFT_TAB_SENTENCE = '가중은 「생성 설정」 탭에서 바꿉니다.';
 export const NOTICE = '필수(겹침 · 시수 · 급식 · 불가 시간)를 먼저 맞추고, 만든 후보 중 권장 규칙(공강 · 연속수업 등) 점수가 낮은 것을 위로 올립니다. 가중은 「생성 설정」 탭에서 바꿉니다. 마음에 안 드는 칸은 수정 모드에서 옮기세요.';
 const LEVEL_COLOR = { 경고: 'red', 알림: 'yellow', 재확인: 'orange', 끔: 'green' };
 const BG = { green: 'var(--mantine-color-green-1)', yellow: 'var(--mantine-color-yellow-1)', red: 'var(--mantine-color-red-1)', orange: 'var(--mantine-color-orange-1)' };
@@ -50,6 +52,7 @@ export const clampOpt = (o) => ({
 });
 
 function Generator({ P, input, onSaved }) {
+  const softOn = featureOn(useOrgConfig(P).features, 'soft'); // 4단계(생성 설정)가 꺼져 있으면 가중을 바꿀 곳이 없다
   const [opt, setOptState] = useState(() => clampOpt(readOpt(P)));
   const setOpt = (o) => { const c = clampOpt({ ...opt, ...o }); setOptState(c); try { localStorage.setItem(optKey(P), JSON.stringify(c)); } catch { /* 기억 못 해도 이번 화면엔 쓴다 */ } };
   const [run, setRun] = useState(null); // {done, k}
@@ -102,12 +105,12 @@ function Generator({ P, input, onSaved }) {
 
   return (
     <Stack>
-      <Alert color="blue" title={<>명단과 <Term k="시수표">시수표</Term>를 다 넣었으면 <Term k="시안">시안</Term>을 만듭니다</>}>{NOTICE}</Alert>
+      <Alert color="blue" title={<>명단과 <Term k="시수표">시수표</Term>를 다 넣었으면 <Term k="시안">시안</Term>을 만듭니다</>}>{softOn ? NOTICE : NOTICE.replace(SOFT_TAB_SENTENCE, '4단계(생성 설정)를 켜면 가중을 바꿀 수 있습니다.')}</Alert>
       {slow() && <Text size="sm" c="dimmed">PC 에서 하시면 빠릅니다. 폰에서도 그대로 됩니다.</Text>}
       <Group align="end">
         <NumberInput label="후보 수" min={1} max={40} w={90} value={opt.k} onChange={(v) => setOpt({ k: Number(v) })} />
         <NumberInput label="후보당 초" min={0.5} max={60} step={0.5} decimalScale={1} w={100} value={opt.sec} onChange={(v) => setOpt({ sec: Number(v) })} />
-        <Switch label="전담 식사 빈 칸 필수" checked={opt.mealGap} onChange={(e) => setOpt({ mealGap: e.currentTarget.checked })} />
+        <Switch label="전담 식사 빈 칸 필수" description="전담 선생님이 점심때 쉴 칸을 꼭 비워 둡니다. 끄면 그 칸에도 수업이 들어갈 수 있습니다." checked={opt.mealGap} onChange={(e) => setOpt({ mealGap: e.currentTarget.checked })} />
       </Group>
       {!opt.mealGap && <Text size="sm" c="yellow.8">식사 빈 칸을 필수에서 뺐습니다. 대신 권장 점수의 「교사 점심시간 확보」가 세어 줍니다.</Text>}
       <Group align="end">

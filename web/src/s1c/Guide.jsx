@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Checkbox, Collapse, Divider, Group, Modal, Paper, Stack, Text, TextInput, List } from '@mantine/core';
 import { GLOSSARY } from '../glossary.js';
 import { api } from '../api.js';
+import { useConfirm } from '../Confirm.jsx';
 import { configPath, mergeConfig } from '../orgConfig.js';
 import { Pitch } from '../settings/FeatureBoard.jsx';
 import { featureOn, featureDiff } from '../../../shared/features.js';
@@ -28,11 +29,11 @@ export function EmptyHint({ title, body }) {
 }
 
 // 메뉴를 처음 열 때 한 번 — 그 메뉴 기능의 소개 한 장. 닫으면 이 사람·이 기관에선 다시 안 뜬다(localStorage).
-export function MenuIntro({ menu, user, features }) {
+export function MenuIntro({ menu, user, features, pitchKey }) {
   const key = seenKey(user.orgId, user.id, menu);
   const [shown, setShown] = useState(() => { try { return !localStorage.getItem(key); } catch { return false; } });
   const [more, setMore] = useState(false);
-  const k = pitchKeyFor(menu, features, PITCH);
+  const k = pitchKey && PITCH[pitchKey] ? pitchKey : pitchKeyFor(menu, features, PITCH);
   if (!shown || !k) return null;
   const p = PITCH[k];
   const close = () => { try { localStorage.setItem(key, '1'); } catch { /* 저장 못 해도 이번엔 닫힌다 */ } setShown(false); };
@@ -55,6 +56,7 @@ function Walkthrough({ P, user, onChanged }) {
   const [features, setF] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [ask, confirmBox] = useConfirm();
   const dk = walkKey(user.orgId, user.id);
   const [done, setDone] = useState(() => { try { return parseDone(localStorage.getItem(dk)); } catch { return []; } });
   useEffect(() => { api('GET', configPath(P)).then((r) => setF(mergeConfig(r).features || {})).catch(() => setF({})); }, [P]);
@@ -62,7 +64,7 @@ function Walkthrough({ P, user, onChanged }) {
   async function turnOn(n) {
     const diff = featureDiff(features, stageTarget(n));
     if (!Object.keys(diff).length) return;
-    if (!window.confirm(`${n}단계 기능을 켭니다. 다른 단계는 그대로 둡니다. 계속할까요?`)) return;
+    if (!(await ask(`${n}단계 기능을 켭니다. 다른 단계는 그대로 둡니다. 계속할까요?`))) return;
     setBusy(true); setMsg(null);
     try {
       const r = await api('PUT', configPath(P), { features: diff });
@@ -73,6 +75,7 @@ function Walkthrough({ P, user, onChanged }) {
   if (!features) return null;
   return (
     <Stack gap="xs" data-testid="walkthrough">
+      {confirmBox}
       <Text fw={600}>따라 하기</Text>
       <Text size="sm" c="dimmed">1단계부터 하나씩 켜 보며 익힙니다. 건너뛰어도 되고, 끈 기능에 넣은 자료는 지워지지 않습니다.</Text>
       <Text size="sm" c="dimmed">{SAMPLE_NOTE}</Text>
