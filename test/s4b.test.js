@@ -8,6 +8,7 @@ import { makePdf } from '../server/export/pdf.js';
 import { makeXlsx } from '../server/export/xlsx.js';
 import { makeHwpx } from '../server/export/hwpx.js';
 import { makeTemplate, parseRows, readTable } from '../server/export/import.js';
+import { cleanupOrgs } from './sec-helpers.js';
 
 const HAS_DB = !!(process.env.DATABASE_URL || process.env.DATABASE_URL_FILE);
 const st = mergeSettings({});
@@ -122,10 +123,7 @@ test('S-4b 경로: 출력 3종 · 벽시계 · 반 비교 · 취합본 올리기
   const base = `http://127.0.0.1:${server.address().port}`;
   t.after(async () => {
     server.close();
-    for (const tb of ['teaching_load', 'cell', 'timetable', 'subject', 'classroom', 'term', 'audit_log']) await pool.query(`DELETE FROM ${tb} WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM membership WHERE org_id = $1`, [org]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = $1`, [org]);
+    await cleanupOrgs(pool, org, tag);
     await pool.end();
   });
   const client = () => {

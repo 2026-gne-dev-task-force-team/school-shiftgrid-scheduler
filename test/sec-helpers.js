@@ -29,13 +29,16 @@ export const PW = 'pw-test-1234';
 const ORG_TABLES = ['attendance_allowed', 'attendance', 'month_close', 'booking', 'room_lock', 'substitute', 'cell', 'timetable', 'pin', 'teaching_load', 'classroom', 'term', 'subject', 'special_room', 'audit_log'];
 
 // 시험이 만든 기관·계정을 끝에 지운다(참조 받는 표 먼저). 로그인 기관 목록에 시험 기관이 남지 않게 — 시험마다 이걸 쓴다.
+// 고르는 기준은 「넘긴 id」와 「tag 접두사(이름·로그인 `tag-%`)」뿐 — 표를 통째로 비우거나 넓은 LIKE 를 쓰지 않는다.
 export async function cleanupOrgs(pool, orgIds, tag) {
-  const ids = [orgIds].flat();
-  for (const tb of ORG_TABLES) await pool.query(`DELETE FROM ${tb} WHERE org_id = ANY($1)`, [ids]);
+  const named = (await pool.query(`SELECT id FROM org WHERE name LIKE $1`, [`${tag}-%`])).rows.map((r) => r.id);
+  const ids = [...new Set([[orgIds].flat(), named].flat().filter((x) => x != null).map(String))];
+  for (const tb of ORG_TABLES) await pool.query(`DELETE FROM ${tb} WHERE org_id = ANY($1::bigint[])`, [ids]);
+  await pool.query(`DELETE FROM audit_log WHERE table_name = 'org' AND (after->>'name') LIKE $1`, [`${tag}-%`]);
   await pool.query(`DELETE FROM session WHERE (sess->>'userId') IN (SELECT id::text FROM app_user WHERE login_id LIKE $1)`, [`${tag}-%`]);
-  await pool.query(`DELETE FROM membership WHERE org_id = ANY($1)`, [ids]);
+  await pool.query(`DELETE FROM membership WHERE org_id = ANY($1::bigint[])`, [ids]);
   await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-  await pool.query(`DELETE FROM org WHERE id = ANY($1)`, [ids]);
+  await pool.query(`DELETE FROM org WHERE id = ANY($1::bigint[])`, [ids]);
 }
 
 export async function setup(t, appOpts = {}) {
@@ -102,13 +105,7 @@ export async function setup(t, appOpts = {}) {
 
   t.after(async () => {
     server.close();
-    const ids = orgs;
-    const uids = Object.values(f.users).map((u) => u.uid);
-    for (const tb of ORG_TABLES) await pool.query(`DELETE FROM ${tb} WHERE org_id = ANY($1)`, [ids]);
-    await pool.query(`DELETE FROM session WHERE (sess->>'userId') = ANY($1)`, [uids.map(String)]);
-    await pool.query(`DELETE FROM membership WHERE org_id = ANY($1)`, [ids]);
-    await pool.query(`DELETE FROM app_user WHERE login_id LIKE $1`, [`${tag}-%`]);
-    await pool.query(`DELETE FROM org WHERE id = ANY($1)`, [ids]);
+    await cleanupOrgs(pool, orgs, tag);
     await pool.end();
   });
 
