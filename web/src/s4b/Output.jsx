@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, ColorInput, Group, NumberInput, Select, Stack, Table, Tabs, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
+import { useOrgConfig } from '../orgConfig.js';
+import { OUT_TAB_FEATURE, visibleTabs } from '../features.js';
 
 // S-4b 출력 — 내려받기(PDF·엑셀·HWPX) · 급식 벽시계 · 반 비교 · 담임 과목 올리기
 export default function Output({ P, admin }) {
+  // 출력(output)과 담임 과목 올리기(import)는 스위치가 따로다. 꺼진 탭은 숨기고 첫 탭은 켜진 첫째.
+  const on = visibleTabs(OUT_TAB_FEATURE, useOrgConfig(P).features, ['down', 'lunch', 'cmp', ...(admin ? ['homeroom'] : [])]);
+  const has = (t) => on.includes(t);
   return (
-    <Tabs defaultValue="down" keepMounted={false} variant="pills">
+    <Tabs key={on[0]} defaultValue={on[0]} keepMounted={false} variant="pills">
       <Tabs.List mb="md">
-        <Tabs.Tab value="down">내려받기</Tabs.Tab>
-        <Tabs.Tab value="lunch">급식 벽시계</Tabs.Tab>
-        <Tabs.Tab value="cmp">반 비교</Tabs.Tab>
-        {admin && <Tabs.Tab value="homeroom">담임 과목 올리기</Tabs.Tab>}
+        {has('down') && <Tabs.Tab value="down">내려받기</Tabs.Tab>}
+        {has('lunch') && <Tabs.Tab value="lunch">급식 벽시계</Tabs.Tab>}
+        {has('cmp') && <Tabs.Tab value="cmp">반 비교</Tabs.Tab>}
+        {has('homeroom') && <Tabs.Tab value="homeroom">담임 과목 올리기</Tabs.Tab>}
       </Tabs.List>
-      <Tabs.Panel value="down"><Download P={P} admin={admin} /></Tabs.Panel>
-      <Tabs.Panel value="lunch"><LunchClock P={P} /></Tabs.Panel>
-      <Tabs.Panel value="cmp"><Compare P={P} /></Tabs.Panel>
-      {admin && <Tabs.Panel value="homeroom"><HomeroomUpload P={P} /></Tabs.Panel>}
+      {has('down') && <Tabs.Panel value="down"><Download P={P} admin={admin} /></Tabs.Panel>}
+      {has('lunch') && <Tabs.Panel value="lunch"><LunchClock P={P} /></Tabs.Panel>}
+      {has('cmp') && <Tabs.Panel value="cmp"><Compare P={P} /></Tabs.Panel>}
+      {has('homeroom') && <Tabs.Panel value="homeroom"><HomeroomUpload P={P} /></Tabs.Panel>}
     </Tabs>
   );
 }

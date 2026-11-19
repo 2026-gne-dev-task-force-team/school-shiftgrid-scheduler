@@ -6,6 +6,7 @@ import { buildTimes, rowsOf } from './periodTimes.js';
 // 학교 기본 · 전담·비교과 · 시수표 · 고정·금지 · 규칙 수위 (S-1b). 거부 없이 저장하고 알림만 띄운다.
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+import { SCHOOL_TAB_FEATURE, visibleTabs } from '../features.js';
 
 function useLoad(path) {
   const [data, setData] = useState(null);
@@ -320,25 +321,28 @@ function Rules({ P, admin }) {
 export default function SchoolPage({ user }) {
   const P = `/orgs/${user.orgId}`;
   const admin = user.role === '기관관리자';
+  // 기관 스위치로 꺼진 탭은 숨기고, 첫 탭은 켜진 것 중 첫째(Tabs 가 defaultValue 를 처음에만 읽어 key 로 다시 세운다)
+  const on = visibleTabs(SCHOOL_TAB_FEATURE, useOrgConfig(P).features, ['basic', 'spec', 'loads', 'pins', ...(admin ? ['rules'] : [])]);
+  const has = (t) => on.includes(t);
   return (
-    <Tabs defaultValue="basic" keepMounted={false}>
+    <Tabs key={on[0]} defaultValue={on[0]} keepMounted={false}>
       <Tabs.List>
-        <Tabs.Tab value="basic">학교 기본</Tabs.Tab>
-        <Tabs.Tab value="spec">전담·비교과</Tabs.Tab>
-        <Tabs.Tab value="loads"><Term k="시수표">시수표</Term></Tabs.Tab>
-        <Tabs.Tab value="pins">고정·금지</Tabs.Tab>
-        {admin && <Tabs.Tab value="rules">규칙 수위</Tabs.Tab>}
+        {has('basic') && <Tabs.Tab value="basic">학교 기본</Tabs.Tab>}
+        {has('spec') && <Tabs.Tab value="spec">전담·비교과</Tabs.Tab>}
+        {has('loads') && <Tabs.Tab value="loads"><Term k="시수표">시수표</Term></Tabs.Tab>}
+        {has('pins') && <Tabs.Tab value="pins">고정·금지</Tabs.Tab>}
+        {has('rules') && <Tabs.Tab value="rules">규칙 수위</Tabs.Tab>}
       </Tabs.List>
-      <Tabs.Panel value="basic" pt="md"><Basics P={P} admin={admin} /></Tabs.Panel>
-      <Tabs.Panel value="spec" pt="md"><Specialists P={P} admin={admin} /></Tabs.Panel>
-      <Tabs.Panel value="loads" pt="md"><Loads P={P} admin={admin} /></Tabs.Panel>
-      <Tabs.Panel value="pins" pt="md">
+      {has('basic') && <Tabs.Panel value="basic" pt="md"><Basics P={P} admin={admin} /></Tabs.Panel>}
+      {has('spec') && <Tabs.Panel value="spec" pt="md"><Specialists P={P} admin={admin} /></Tabs.Panel>}
+      {has('loads') && <Tabs.Panel value="loads" pt="md"><Loads P={P} admin={admin} /></Tabs.Panel>}
+      {has('pins') && <Tabs.Panel value="pins" pt="md">
         <Tabs defaultValue="교사" keepMounted={false}>
           <Tabs.List>{['교사', '반', '특별실'].map((k) => <Tabs.Tab key={k} value={k}>{k}</Tabs.Tab>)}</Tabs.List>
           {['교사', '반', '특별실'].map((k) => <Tabs.Panel key={k} value={k} pt="md"><Pins P={P} admin={admin} kind={k} /></Tabs.Panel>)}
         </Tabs>
-      </Tabs.Panel>
-      {admin && <Tabs.Panel value="rules" pt="md"><Rules P={P} admin={admin} /></Tabs.Panel>}
+      </Tabs.Panel>}
+      {has('rules') && <Tabs.Panel value="rules" pt="md"><Rules P={P} admin={admin} /></Tabs.Panel>}
     </Tabs>
   );
 }

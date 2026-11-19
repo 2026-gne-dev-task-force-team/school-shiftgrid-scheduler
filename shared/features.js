@@ -35,3 +35,9 @@ export const menuOn = (features, v) => !MENU_FEATURES[v] || MENU_FEATURES[v].som
 
 // 메뉴 목록 [{v, show}] 에서 보일 것만. 권한(show)과 AND.
 export const visibleMenus = (items, features) => items.filter((i) => i.show && menuOn(features, i.v));
+
+// 화면 안 조각(탭) → 스위치 키. 숨김만 — 서버·자료는 그대로. 목록에 없는 탭은 늘 보임.
+export const SCHOOL_TAB_FEATURE = { basic: 'setup', spec: 'loads', loads: 'loads', pins: 'pins', rules: 'levels' };
+export const OUT_TAB_FEATURE = { down: 'output', lunch: 'output', cmp: 'output', homeroom: 'import' };
+// 탭 값 목록에서 켜진 것만(순서 유지).
+export const visibleTabs = (map, features, tabs) => tabs.filter((t) => featureOn(features, map[t]));
