@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Container, Group, Select, Tabs, Text, Title, Tooltip } from '@mantine/core';
+import { Alert, Button, Container, Group, Select, Tabs, Text, Title } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { api } from '../api.js';
 import ChangePassword from './ChangePassword.jsx';
@@ -38,32 +38,32 @@ function OrderHint() {
   const [shown, setShown] = useState(() => { try { return !localStorage.getItem(ORDER_KEY); } catch { return false; } });
   if (!shown) return null;
   const close = () => { try { localStorage.setItem(ORDER_KEY, '1'); } catch { /* 저장 못 해도 이번엔 닫힌다 */ } setShown(false); };
-  return <Group gap="xs" mb="sm" className="no-print" wrap="nowrap" align="flex-start"><Text size="sm" c="dimmed" style={{ flex: 1 }}>처음이면 이 순서로: 명단 → 학교 기본 → 생성 설정 → 자동 생성 → 시간표 격자 → 출력</Text><Button variant="subtle" size="compact-xs" color="gray" onClick={close}>닫기</Button></Group>;
+  return <Group gap="xs" mb="sm" className="no-print" wrap="nowrap" align="flex-start"><Text size="sm" c="dimmed" style={{ flex: 1 }}>처음이면 이 순서로: 명단 → 학교 기본(시수표까지) → 자동 생성 → 시안 저장 → 확정 → 출력. 시안은 시간표 격자에서 손볼 수 있습니다</Text><Button variant="subtle" size="compact-xs" color="gray" onClick={close}>닫기</Button></Group>;
 }
 
 function Panel({ v, hint, children }) {
   return <Tabs.Panel value={v}>{hint && <Text size="sm" c="dimmed" mb="sm" className="no-print">{hint}</Text>}{children}</Tabs.Panel>;
 }
 
-// 기관 화면 탭 — 폰 하단 바는 다섯(시간표·보결·특별실·근태·내 정보)만, 나머지는 「내 정보」 안 「더 보기」로
+// 기관 화면 탭 — 폰 하단 바는 다섯(시간표·보결·특별실·근태·내 정보)만, 나머지는 「내 정보」 안 버튼으로
 const PHONE_MAIN = ['grid', 'sub', 'rooms', 'att', 'me'];
 function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
   const edit = user.role !== '보기만';
   const all = [
-    { v: 'roster', label: '명단', hint: '교직원 명단을 처음 올리거나 고칠 때', show: admin },
-    { v: 'school', label: '학교 기본', hint: admin ? '학급·교과·시수 같은 학교 기본 자료를 넣을 때' : '우리 학교 학급·교과 자료를 확인할 때', show: true },
-    { v: 'grid', label: admin ? '시간표 격자' : '시간표 보기', phoneLabel: '시간표', hint: admin ? '만든 시간표를 칸마다 확인하고 직접 고칠 때' : '학교 전체 시간표를 둘러볼 때', show: true },
-    { v: 'gen', label: '자동 생성', hint: '명단·시수를 다 넣은 뒤 시간표 초안을 만들 때', show: admin },
-    { v: 'softset', label: '생성 설정', hint: '자동 생성이 지킬 권장 규칙의 세기를 조절할 때', show: admin },
-    { v: 'orgcfg', label: '기관 설정', hint: '요일·학기·보결 순서 등 학교별 값을 바꿀 때', show: admin },
-    { v: 'out', label: '출력', hint: admin ? '완성한 시간표를 인쇄하거나 파일로 받을 때' : '시간표를 인쇄하거나 파일로 받을 때', show: true },
-    { v: 'mine', label: '내 시간표', hint: '내 수업 시간표만 따로 볼 때', show: true },
-    { v: 'att', label: '근태', hint: admin ? '보조인력의 근무시간을 기록·집계할 때' : '내 근무시간을 기록하고 확인할 때', show: edit },
-    { v: 'sub', label: '보결', hint: admin ? '결강 수업을 대신할 교사를 정할 때' : '결강 수업의 보결 배정을 보거나 맡을 때', show: edit },
-    { v: 'rooms', label: '특별실', hint: '특별실 사용 칸을 방별로 보고 배정할 때', show: edit },
-    { v: 'audit', label: '기록', hint: '누가 언제 무엇을 바꿨는지 확인할 때', show: admin },
-    { v: 'feat', label: '기능 고르기', hint: admin ? '필요한 기능만 켜고 끌 때(자료는 남습니다)' : '우리 학교 시간표 도구에 어떤 기능이 있는지 볼 때', show: true },
-    { v: 'me', label: '내 정보', hint: '비밀번호를 바꾸거나 더 보기 메뉴를 열 때', show: true },
+    { v: 'roster', label: '명단', hint: '교직원 명단을 올리고 고치는 곳입니다. 처음 한 번 먼저 채웁니다', show: admin },
+    { v: 'school', label: '학교 기본', hint: admin ? '학급·교과·시수표 같은 학교 자료를 넣는 곳입니다. 시간표를 만들기 전에 채웁니다' : '우리 학교 학급·교과 자료를 확인하는 곳입니다', show: true },
+    { v: 'grid', label: admin ? '시간표 격자' : '시간표', phoneLabel: '시간표', hint: admin ? '만든 시간표를 칸마다 확인하고 직접 고칩니다' : '학교 전체 시간표를 둘러봅니다', show: true },
+    { v: 'gen', label: '자동 생성', hint: '명단과 시수표를 다 넣었으면 시간표 시안을 만들어 줍니다', show: admin },
+    { v: 'softset', label: '생성 설정', hint: '자동 생성이 얼마나 신경 쓸지 정합니다. 처음엔 그대로 둬도 됩니다', show: admin },
+    { v: 'orgcfg', label: '기관 설정', hint: '요일·학기·보결 순서처럼 학교마다 다른 값을 바꿉니다', show: admin },
+    { v: 'out', label: '출력', hint: admin ? '완성한 시간표를 인쇄하거나 파일로 받습니다' : '시간표를 인쇄하거나 파일로 받습니다', show: true },
+    { v: 'mine', label: '내 시간표', hint: '내 수업만 따로 모아 봅니다', show: true },
+    { v: 'att', label: '근태', hint: admin ? '강사·보조 선생님의 근무시간을 적고 달마다 모읍니다' : '내 근무시간을 적고 확인합니다', show: edit },
+    { v: 'sub', label: '보결', hint: admin ? '결강한 수업을 대신 맡을 선생님을 정합니다' : '결강 수업의 보결 배정을 보거나 맡습니다', show: edit },
+    { v: 'rooms', label: '특별실', hint: '과학실·음악실 같은 특별실을 언제 누가 쓰는지 보고 예약합니다', show: edit },
+    { v: 'audit', label: '기록', hint: '누가 언제 무엇을 바꿨는지 확인합니다', show: admin },
+    { v: 'feat', label: '기능 고르기', hint: admin ? '필요한 기능만 켜고 끕니다. 넣어 둔 자료는 남습니다' : '우리 학교 시간표 도구에 어떤 기능이 있는지 봅니다', show: true },
+    { v: 'me', label: '내 정보', hint: phone ? '비밀번호를 바꾸거나 나머지 메뉴를 엽니다' : '비밀번호를 바꿉니다', show: true },
   ];
   const base = useOrgConfig(P);
   const [ov, setOv] = useState(null); // 스위치판이 방금 바꾼 값(메뉴에 바로 반영)
@@ -83,12 +83,12 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
     {tip && <Alert className="no-print" color="blue" mb="sm" withCloseButton onClose={() => setTip(null)}>{tip}</Alert>}
     <Tabs value={tab} onChange={setTab} keepMounted={false} {...tabProps}>
       <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
-        {bar.map((i) => <Tooltip key={i.v} label={i.hint} disabled={phone || !i.hint} openDelay={300}><Tabs.Tab value={i.v}>{phone && i.phoneLabel ? i.phoneLabel : i.label}</Tabs.Tab></Tooltip>)}
+        {bar.map((i) => <Tabs.Tab key={i.v} value={i.v}>{phone && i.phoneLabel ? i.phoneLabel : i.label}</Tabs.Tab>)}
       </Tabs.List>
       {on('roster') && <Panel v="roster" hint={H.roster}><Roster orgId={user.orgId} /></Panel>}
       {on('school') && <Panel v="school" hint={H.school}><SchoolPage user={user} /></Panel>}
       <Panel v="grid" hint={H.grid}><Grid P={P} admin={admin} /></Panel>
-      {on('gen') && <Panel v="gen" hint={H.gen}><AutoGen P={P} /></Panel>}
+      {on('gen') && <Panel v="gen"><AutoGen P={P} /></Panel>}
       {on('softset') && <Panel v="softset" hint={H.softset}><SoftSettings P={P} /></Panel>}
       {on('orgcfg') && <Panel v="orgcfg" hint={H.orgcfg}><OrgConfig P={P} /></Panel>}
       {on('out') && <Panel v="out" hint={H.out}><Output P={P} admin={admin} /></Panel>}
