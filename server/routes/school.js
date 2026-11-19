@@ -37,6 +37,16 @@ export async function currentTerm(pool, orgId) {
   return ins.rows[0];
 }
 
+// 학기에 매인 목록의 범위: ?termId= 가 이 기관 학기면 그 학기, 아니면 지금 학기. 학기 딸린 목록 GET 은 모두 이걸로 거른다.
+export async function scopeTermId(pool, req) {
+  const q = Number(req.query?.termId);
+  if (Number.isInteger(q) && q > 0) {
+    const { rows } = await pool.query(`SELECT id FROM term WHERE id = $1 AND org_id = $2 AND deleted_at IS NULL`, [q, req.orgId]);
+    if (rows[0]) return rows[0].id;
+  }
+  return (await currentTerm(pool, req.orgId)).id;
+}
+
 // 프리셋 교과 — 기관에 교과가 (숨긴 것까지 센) 하나도 없을 때 한 번 넣는다
 export async function ensureDefaultSubjects(pool, orgId) {
   const { rows } = await pool.query(`SELECT 1 FROM subject WHERE org_id = $1 LIMIT 1`, [orgId]);
@@ -110,6 +120,33 @@ export function schoolRouter(pool) {
     } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
     await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'term.new_semester', table: 'term', rowId: made.id, before: cur, after: made });
     res.json({ archived: cur, term: made });
+  }));
+
+  // 지난 학기 반·시수표 가져오기(선택) — 지금 학기에 반이 하나도 없을 때만. 가장 최근 보관 학기에서 복사한다.
+  r.post('/terms/import-previous', manage, guard(async (req, res) => {
+    const cur = await currentTerm(pool, req.orgId);
+    const prev = (await pool.query(`SELECT id FROM term WHERE org_id = $1 AND id <> $2 AND status = '보관' AND deleted_at IS NULL ORDER BY year DESC, semester DESC LIMIT 1`, [req.orgId, cur.id])).rows[0];
+    if (!prev) return res.status(404).json({ error: '가져올 지난 학기가 없습니다' });
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      if ((await c.query(`SELECT 1 FROM classroom WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL LIMIT 1`, [req.orgId, cur.id])).rows[0]) {
+        await c.query('ROLLBACK');
+        return res.status(409).json({ error: '이번 학기에 이미 반이 있습니다' });
+      }
+      const cls = (await c.query(
+        `INSERT INTO classroom (org_id, term_id, grade, class_no, homeroom_membership_id, student_count)
+         SELECT org_id, $2, grade, class_no, homeroom_membership_id, student_count FROM classroom WHERE org_id = $1 AND term_id = $3 AND deleted_at IS NULL RETURNING id`, [req.orgId, cur.id, prev.id])).rows.length;
+      const loads = (await c.query(
+        `INSERT INTO teaching_load (org_id, term_id, membership_id, subject_id, classroom_id, weekly_hours, sync_progress, special_room_id, block)
+         SELECT l.org_id, $2, l.membership_id, l.subject_id, nc.id, l.weekly_hours, l.sync_progress, l.special_room_id, l.block
+           FROM teaching_load l LEFT JOIN classroom oc ON oc.id = l.classroom_id
+           LEFT JOIN classroom nc ON nc.org_id = l.org_id AND nc.term_id = $2 AND nc.grade = oc.grade AND nc.class_no = oc.class_no AND nc.deleted_at IS NULL
+          WHERE l.org_id = $1 AND l.term_id = $3 AND l.deleted_at IS NULL AND (l.classroom_id IS NULL OR nc.id IS NOT NULL) RETURNING id`, [req.orgId, cur.id, prev.id])).rows.length;
+      await c.query('COMMIT');
+      await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'term.import_previous', table: 'term', rowId: cur.id, after: { from: prev.id, classrooms: cls, loads } });
+      res.json({ classrooms: cls, loads });
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
   }));
 
   // ── 학년별 교시·점심 ──

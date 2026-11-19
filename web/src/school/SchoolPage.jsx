@@ -108,7 +108,7 @@ function Subjects({ P, admin }) {
 }
 
 // 새 학기 시작(되돌릴 수 없음 — 한 번 더 묻는다) · 보관 학기 보기(읽기 전용)
-function Semester({ P, admin, term, onDone }) {
+function Semester({ P, admin, term, classes, onDone }) {
   const [terms] = useLoad(`${P}/terms`);
   const [ov, setOv] = useState(null);
   const [err, setErr] = useState('');
@@ -130,6 +130,7 @@ function Semester({ P, admin, term, onDone }) {
       <Err e={err} />
       <Group>
         {admin && <Button color="red" variant="light" onClick={start}>새 학기 시작</Button>}
+        {admin && !classes?.length && (terms || []).length > 1 && <Button variant="default" onClick={async () => { setErr(''); try { await api('POST', `${P}/terms/import-previous`, {}); onDone(); } catch (e) { setErr(e.message); } }}>지난 학기 반·과목 가져오기</Button>}
         <Select placeholder="보관 학기 보기" clearable w={200} onChange={view}
           data={(terms || []).filter((t) => t.id !== term?.id).map((t) => ({ value: String(t.id), label: `${t.year}년 ${t.semester}학기 (${t.status})` }))} />
       </Group>
@@ -162,7 +163,7 @@ function Basics({ P, admin }) {
     <Stack>
       <Err e={error} />
       {term && <Text size="sm" c="dimmed">지금 {term.year}년 {term.semester}학기 · 학기 시작 달 {org.semesterStarts.join('·')}월(기관 설정)</Text>}
-      <Semester P={P} admin={admin} term={term} onDone={() => { reloadTerm(); reloadC(); }} />
+      <Semester P={P} admin={admin} term={term} classes={classes} onDone={() => { reloadTerm(); reloadC(); }} />
       <Text fw={600}>반</Text>
       <Text size="sm">{(classes || []).map((c) => `${c.grade}-${c.class_no}`).join(' · ') || '아직 없음'}</Text>
       {admin && (

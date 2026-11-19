@@ -37,7 +37,7 @@ export default function AutoGen({ P }) {
   );
 }
 
-const storeKey = (P) => `s2-gen:${P}`;
+const storeKey = (P, termId) => `s2-gen:${P}:${termId ?? ''}`; // 학기가 바뀌면 지난 학기 결과가 안 보이게
 const slow = () => (typeof window !== 'undefined' && (window.innerWidth < 600 || (navigator.hardwareConcurrency || 8) <= 4));
 
 const optKey = (P) => `s2-genopt:${P}`;
@@ -53,7 +53,7 @@ function Generator({ P, input, onSaved }) {
   const [opt, setOptState] = useState(() => clampOpt(readOpt(P)));
   const setOpt = (o) => { const c = clampOpt({ ...opt, ...o }); setOptState(c); try { localStorage.setItem(optKey(P), JSON.stringify(c)); } catch { /* 기억 못 해도 이번 화면엔 쓴다 */ } };
   const [run, setRun] = useState(null); // {done, k}
-  const [res, setRes] = useState(() => { try { return JSON.parse(localStorage.getItem(storeKey(P)) || 'null'); } catch { return null; } });
+  const [res, setRes] = useState(() => { try { return JSON.parse(localStorage.getItem(storeKey(P, input.term?.id)) || 'null'); } catch { return null; } });
   const [rank, setRank] = useState(0);
   const [name, setName] = useState('');
   const [msg, setMsg] = useState(null);
@@ -84,7 +84,7 @@ function Generator({ P, input, onSaved }) {
         const out = { at: new Date().toISOString(), skipped: m.skipped, ms: m.ms, candidates: [...prev, ...m.candidates].sort((a, b) => a.hard - b.hard || a.rr - b.rr || a.soft - b.soft).map((c, rank) => ({ ...c, rank }))
           .map((c) => ({ rank: c.rank, hard: c.hard, rr: c.rr, soft: c.soft, cells: c.cells, unplaced: c.unplaced })) };
         setRes(out); setRank(0); setRun(null); setSaved(null); dropPartial(pkey);
-        try { localStorage.setItem(storeKey(P), JSON.stringify(out)); } catch { /* 저장 공간이 모자라면 이번 화면에만 둔다 */ }
+        try { localStorage.setItem(storeKey(P, input.term?.id), JSON.stringify(out)); } catch { /* 저장 공간이 모자라면 이번 화면에만 둔다 */ }
         w.terminate();
       }
     };
@@ -116,7 +116,7 @@ function Generator({ P, input, onSaved }) {
       </Group>
       {saved && !run && (
         <Alert color="yellow" title="중단된 생성이 있습니다">
-          <Text size="sm">{new Date(saved.at).toLocaleString()} · 후보 {saved.done}/{saved.k}개까지 만들었습니다.</Text>
+          <Text size="sm">{new Date(saved.at).toLocaleString('ko-KR')} · 후보 {saved.done}/{saved.k}개까지 만들었습니다.</Text>
           <Group mt="xs"><Button size="xs" onClick={() => start(true)}>이어서 하기</Button><Button size="xs" variant="default" onClick={() => { setSaved(null); dropPartial(pkey); }}>버리기</Button></Group>
         </Alert>
       )}
@@ -130,7 +130,7 @@ function Generator({ P, input, onSaved }) {
             <Badge size="lg" color={cand.hard ? 'red' : 'green'}>못 놓은 시수 {cand.hard}</Badge>
             <Badge size="lg" color={cand.rr ? 'yellow' : 'green'}>진도 맞춤 어긋남 {cand.rr}</Badge>
             <Badge size="lg" color="gray">권장 점수 {cand.soft} (낮을수록 좋음)</Badge>
-            <Text size="xs" c="dimmed">{(res.ms / 1000).toFixed(1)}초 · {new Date(res.at).toLocaleString()}</Text>
+            <Text size="xs" c="dimmed">{(res.ms / 1000).toFixed(1)}초 · {new Date(res.at).toLocaleString('ko-KR')}</Text>
           </Group>
           {cand.unplaced?.length > 0 && <Text size="sm" c="red">못 놓은 수업 {cand.unplaced.length}개 — 저장한 뒤 수정 모드에서 손으로 넣으세요.</Text>}
           {res.skipped > 0 && <Text size="sm" c="yellow.8">시수표에서 덜 채운 줄 {res.skipped}개는 빼고 만들었습니다.</Text>}

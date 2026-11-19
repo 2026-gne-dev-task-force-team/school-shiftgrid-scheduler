@@ -4,7 +4,7 @@ import { requireOrgAction } from '../guard.js';
 import { applyLevels, getRuleLevels } from '../rules.js';
 import { findOverlapsFor } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
-import { currentTerm } from './school.js';
+import { currentTerm, scopeTermId } from './school.js';
 import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 import { generateRouter } from './generate.js';
 
@@ -85,7 +85,7 @@ export function timetablesRouter(pool) {
 
   r.get('/timetables', view, async (req, res, next) => {
     try {
-      const { rows } = await pool.query(`SELECT id, name, status, starts_on, created_at FROM timetable WHERE org_id = $1 AND deleted_at IS NULL ORDER BY id DESC`, [req.orgId]);
+      const { rows } = await pool.query(`SELECT id, name, status, starts_on, created_at FROM timetable WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY id DESC`, [req.orgId, await scopeTermId(pool, req)]);
       res.json(rows);
     } catch (e) { next(e); }
   });
