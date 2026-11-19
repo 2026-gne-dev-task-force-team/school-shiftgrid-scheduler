@@ -7,7 +7,8 @@ import { useOrgConfig } from '../orgConfig.js';
 
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
 export default function Rooms({ P, admin }) {
-  const DAYS = useOrgConfig(P).weekdays;
+  const org = useOrgConfig(P);
+  const DAYS = org.weekdays;
   const [tab, setTab] = useState('book');
   const [rooms, setRooms] = useState([]);
   const [rows, setRows] = useState(null);
@@ -36,7 +37,7 @@ export default function Rooms({ P, admin }) {
   const dateRow = (
     <Group grow wrap="nowrap">
       <TextInput type="date" label="날짜" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
-      <TextInput type="number" label="교시" min={1} max={12} value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} />
+      <TextInput type="number" label="교시" min={1} description={`기관 기준 ${org.limits.periods}교시`} value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} />
     </Group>
   );
 
@@ -80,7 +81,7 @@ export default function Rooms({ P, admin }) {
           <NativeSelect label="특별실" data={roomOpts} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })} />
           <Group grow wrap="nowrap">
             <NativeSelect label="요일" data={DAYS.map((d, i) => ({ value: String(i + 1), label: d }))} value={lk.weekday} onChange={(e) => setLk({ ...lk, weekday: e.target.value })} />
-            <TextInput type="number" label="교시" min={1} max={12} value={lk.period} onChange={(e) => setLk({ ...lk, period: e.target.value })} />
+            <TextInput type="number" label="교시" min={1} description={`기관 기준 ${org.limits.periods}교시`} value={lk.period} onChange={(e) => setLk({ ...lk, period: e.target.value })} />
           </Group>
           <TextInput label="메모" value={lk.note} onChange={(e) => setLk({ ...lk, note: e.target.value })} maxLength={60} />
           <Button onClick={() => run(() => api('POST', `${P}/room-locks`, { special_room_id: Number(f.room), weekday: Number(lk.weekday), period: Number(lk.period), note: lk.note || null }))}>고정 칸 잠그기</Button>

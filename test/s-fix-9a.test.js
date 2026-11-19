@@ -90,6 +90,8 @@ test('PDF 범례는 설정에서 만든다', () => {
   assert.equal(l[0][0], '#112233');
   assert.match(l[0][1], /창체·자율/);
   assert.match(l[2][1], /체육관/);
+  assert.equal(l[1][1], '전담·비교과'); // 기본 직무 목록(담임·전담·비교과)
+  assert.equal(legendOf(mergeSettings({}), ['담임', '전담', '행정'])[1][1], '전담·행정'); // 기관 직무 목록을 따른다
 });
 
 test('경로: 설정 읽기·쓰기 권한 · 상한 넘으면 경고로 저장 · 학기 · 담당 구분 · 월 상한', { skip: !HAS_DB && 'DB 없음 — 건너뜀' }, async (t) => {

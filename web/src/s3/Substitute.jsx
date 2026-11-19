@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Checkbox, Group, Modal, SegmentedControl, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
 import { api } from '../api.js';
+import { useOrgConfig } from '../orgConfig.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const GRADE_COLOR = { A: 'green', B: 'teal', C: 'blue', D: 'gray' };
@@ -81,6 +82,7 @@ function Candidates({ data, admin, onAssign }) {
 }
 
 function NewForm({ P, admin, onDone }) {
+  const org = useOrgConfig(P);
   const [people, setPeople] = useState([]);
   const [who, setWho] = useState(null); // 관리자가 남을 대신해 올릴 때 결강자(비우면 본인)
   useEffect(() => { if (admin) api('GET', `${P}/specialists`).then(setPeople).catch(() => setPeople([])); }, [P, admin]);
@@ -105,7 +107,7 @@ function NewForm({ P, admin, onDone }) {
       {admin && <Select label="결강하는 분(관리자 대신 올리기)" placeholder="비우면 나" clearable searchable data={people.map((x) => ({ value: String(x.membership_id), label: x.name }))} value={who} onChange={setWho} />}
       <TextInput type="date" label="날짜" value={date} onChange={(e) => setDate(e.target.value)} />
       <Checkbox label="종일 결강(그 날 내 수업 전부)" checked={allDay} onChange={(e) => setAllDay(e.currentTarget.checked)} />
-      {!allDay && <TextInput type="number" label="교시" min={1} max={12} value={period} onChange={(e) => setPeriod(e.target.value)} />}
+      {!allDay && <TextInput type="number" label="교시" min={1} description={`기관 기준 ${org.limits.periods}교시`} value={period} onChange={(e) => setPeriod(e.target.value)} />}
       <TextInput label="구분(병가·출장 등)" value={kind} onChange={(e) => setKind(e.target.value)} maxLength={20} />
       <Textarea label="사유 (암호화되어 본인·관리자만 봅니다)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} autosize minRows={2} />
       {error && <Alert color="red">{error}</Alert>}
