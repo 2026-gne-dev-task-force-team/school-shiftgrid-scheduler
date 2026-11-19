@@ -8,6 +8,7 @@ export const DEFAULTS = {
   duties: ['담임', '전담', '비교과'],
   roleLabels: {},
   attendanceMonthlyCap: null,
+  roomCapacity: { count: 'students' }, // 특별실 정원 합을 학생 수('students')로 볼지 반 수('classes')로 볼지. 수위는 rule_levels.room_capacity
 };
 
 // zod 가 거부하는 넓은 안전 천장(이 위는 입력 실수·남용). 기관 limits 는 이 밑에서 경고만 한다.

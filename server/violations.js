@@ -83,7 +83,12 @@ export async function overlapContext(pool, orgId, cells, { date } = {}) {
       }
     }
   }
-  return { periods, gradeOf, combined, external, weekdays: (await loadConfig(pool, orgId)).weekdays.length };
+  const cfg = await loadConfig(pool, orgId);
+  const roomCap = {};
+  for (const r of (await pool.query(`SELECT id, capacity FROM special_room WHERE org_id = $1 AND deleted_at IS NULL AND capacity IS NOT NULL`, [orgId])).rows) roomCap[r.id] = r.capacity;
+  const studentOf = {};
+  if (clsIds.length) for (const r of (await pool.query(`SELECT id, student_count FROM classroom WHERE org_id = $1 AND id = ANY($2::bigint[]) AND student_count IS NOT NULL`, [orgId, clsIds])).rows) studentOf[r.id] = r.student_count;
+  return { periods, gradeOf, combined, external, weekdays: cfg.weekdays.length, roomCap, studentOf, capCount: cfg.roomCapacity.count };
 }
 
 // 칸 목록 → 겹침(재료를 DB 에서 모아서)
