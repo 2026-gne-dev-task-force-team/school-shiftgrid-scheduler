@@ -106,10 +106,10 @@ export function prepare(input) {
     const l0 = j.lines[0];
     const t = key(tIdx, l0.membership_id);
     const rs = j.lines.map((l) => key(rIdx, l.special_room_id));
-    const blk = l0.block === 2 ? 2 : 1;
+    const blk = Math.max(1, Math.min(3, Math.floor(l0.block) || 1));
     let h = j.hours;
     while (h > 0) {
-      const span = blk === 2 && h >= 2 ? 2 : 1;
+      const span = Math.min(blk, h);
       lessons.push({ id: lessons.length, c: cs[0], cs, t, r: rs[0], rs: [...new Set(rs.filter((x) => x >= 0))], s: l0.subject_id, span, sync: false, line: l0, lines: j.lines, fixed: false, d: -1, p: -1 });
       h -= span;
     }
@@ -121,9 +121,9 @@ export function prepare(input) {
     const t = key(tIdx, l.membership_id);
     const r = key(rIdx, l.special_room_id);
     let h = l.weekly_hours;
-    const blk = l.block === 2 ? 2 : 1;
+    const blk = Math.max(1, Math.min(3, Math.floor(l.block) || 1));
     while (h > 0) {
-      const span = blk === 2 && h >= 2 ? 2 : 1;
+      const span = Math.min(blk, h);
       lessons.push({ id: lessons.length, c: ci, cs: [ci], t, r, rs: r >= 0 ? [r] : [], s: l.subject_id, span, sync: !!l.sync_progress, line: l, lines: null, fixed: false, d: -1, p: -1 });
       h -= span;
     }
@@ -168,7 +168,7 @@ export function prepare(input) {
 }
 
 // 한 후보 풀기. 상태는 prep 안 lessons 의 d/p 와 점유 배열.
-export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 3000 } = {}) {
+export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 3000, init = null } = {}) {
   const R = rng(seed);
   const { classes, lessons, nC, nT, nR, classBlock, teachBlockP, roomBlockC, lunchClocks } = prep;
   const DAYS = prep.days;
@@ -201,7 +201,7 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
     for (const c of L.cs) {
       const k = classes[c];
       if (p + L.span - 1 > k.P) return -1;
-      if (L.span === 2 && k.L > 0 && p === k.L) return -1; // 연강은 점심을 넘지 않는다
+      if (L.span > 1 && k.L > 0 && p <= k.L && p + L.span - 1 > k.L) return -1; // 연강은 점심을 넘지 않는다
       for (let i = 0; i < L.span; i++) {
         const pp = p + i;
         const cc = clockOf(k.L, pp);
@@ -257,7 +257,7 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
   for (const L of lessons) if (L.t >= 0) tLoad[L.t] += L.span;
   const free = lessons.filter((L) => !L.fixed);
   const jitter = new Float64Array(lessons.length).map(() => R());
-  const diff = (L) => (L.r >= 0 ? 1000 : 0) + (L.span === 2 ? 500 : 0) + (L.t >= 0 ? tLoad[L.t] * 4 : 0) + (L.sync ? 50 : 0);
+  const diff = (L) => (L.r >= 0 ? 1000 : 0) + (L.span > 1 ? 250 * L.span : 0) + (L.t >= 0 ? tLoad[L.t] * 4 : 0) + (L.sync ? 50 : 0);
   if (strategy % 4 === 0) free.sort((a, b) => diff(b) - diff(a) || jitter[a.id] - jitter[b.id]);
   else if (strategy % 4 === 1) free.sort((a, b) => diff(b) + jitter[b.id] * 200 - diff(a) - jitter[a.id] * 200);
   else if (strategy % 4 === 2) free.sort((a, b) => (b.r >= 0) - (a.r >= 0) || (b.t >= 0 ? tLoad[b.t] : 0) - (a.t >= 0 ? tLoad[a.t] : 0) || a.c - b.c);
@@ -274,9 +274,34 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
     return n;
   };
 
+  // 2-1) 이어 하기: 저장된 최선해(init 칸 목록)의 자리를 먼저 되살린다 — 단일 반 수업만, 안 맞으면 아래 배치가 새로 놓는다
+  if (init?.length) {
+    const pool = new Map();
+    for (const c of init) {
+      const key = `${c.classroom_id}|${c.subject_id}|${c.membership_id ?? ''}`;
+      if (!pool.has(key)) pool.set(key, new Map());
+      pool.get(key).set((c.weekday - 1) * W + c.period, c);
+    }
+    for (const L of free) {
+      if (L.cs.length > 1) continue;
+      const m = pool.get(`${classes[L.c].id}|${L.s}|${L.line.membership_id ?? ''}`);
+      if (!m) continue;
+      for (const [k0] of m) {
+        const d = Math.floor(k0 / W), p = k0 % W;
+        let ok = true;
+        for (let i = 0; i < L.span; i++) if (!m.has(k0 + i)) ok = false;
+        if (!ok || cost(L, d, p) !== 0) continue;
+        place(L, d, p);
+        for (let i = 0; i < L.span; i++) m.delete(k0 + i);
+        break;
+      }
+    }
+  }
+
   // 3) 탐욕 배치 — 비켜 줄 것 없는 칸 중 고른다
   const queue = [];
   for (const L of free) {
+    if (L.d >= 0) continue;
     let best = null;
     let bestScore = Infinity;
     const k = classes[L.c];
@@ -385,7 +410,8 @@ export function solve(prep, { seed = 1, strategy = 0, deadline = Date.now() + 30
   }
   for (const e of extra) cells.push({ classroom_id: classes[e.c].id, weekday: e.d + 1, period: e.p, subject_id: e.s, membership_id: null, special_room_id: null });
   const unplaced = queue.flatMap((L) => L.cs.map((c) => ({ classroom_id: classes[c].id, subject_id: L.s, membership_id: L.line.membership_id ?? null, hours: L.span, ...(L.cs.length > 1 ? { combined: true } : {}) })));
-  return { cells, unplaced, hard: unplaced.reduce((a, u) => a + u.hours, 0), rr, iter };
+  const warnings = unplaced.filter((u) => u.hours > 1).map((u) => ({ rule: 'block_unplaced', classroom_id: u.classroom_id, subject_id: u.subject_id, hours: u.hours })); // 연강을 못 놓음 — 막지 않고 알린다
+  return { cells, unplaced, warnings, hard: unplaced.reduce((a, u) => a + u.hours, 0), rr, iter };
 }
 
 // 진도 맞춤 위반 수 — 한 교사 안 같은 학년·과목 묶음에서, 반마다 세션을 시간순으로 세운 순번(ord)을 비교한다.
@@ -421,13 +447,13 @@ export function roundRobin(prep) {
 }
 
 // best-of-K: 전략·씨앗을 바꿔 K 개를 만들고 [성립(못 놓은 시수) · 진도 위반 · 권장 점수] 순으로 줄 세운다
-export function generate(input, { k = 8, perMs = 3000, seed = 1, softScore = () => 0, onProgress } = {}) {
+export function generate(input, { k = 8, perMs = 3000, seed = 1, softScore = () => 0, onProgress, init = null } = {}) {
   const prep = prepare(input);
   const out = [];
   const t0 = Date.now();
   for (let i = 0; i < k; i++) {
     const s0 = Date.now();
-    const r = solve(prep, { seed: seed + i * 7919, strategy: i, deadline: s0 + perMs });
+    const r = solve(prep, { seed: seed + i * 7919, strategy: i, deadline: s0 + perMs, init });
     let soft = 0;
     try { soft = Number(softScore({ cells: r.cells, input })) || 0; } catch { soft = 0; }
     out.push({ ...r, soft, strategy: i, ms: Date.now() - s0 });
