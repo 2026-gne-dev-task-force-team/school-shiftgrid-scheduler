@@ -90,7 +90,7 @@ function Walkthrough({ P, user, onChanged, onGo }) {
               <Checkbox size="xs" label="해 봤어요" checked={done.includes(w.stage)} onChange={() => check(w.stage)} />
             </Group>
             <List type="ordered" size="sm" mt={4}>{w.steps.map((t) => <List.Item key={t}>{t}</List.Item>)}</List>
-            <Button size="compact-sm" mt={6} variant="light" disabled={busy || allOn} onClick={() => turnOn(w.stage)}>{allOn ? '이미 켜져 있음' : '이 단계 켜고 해 보기'}</Button>
+            <Button size="compact-sm" mt={6} variant="light" disabled={busy} onClick={() => (allOn ? onGo?.(tryMenu(Object.keys(stageTarget(w.stage))[0])) : turnOn(w.stage))}>{allOn ? '이 메뉴로 가기' : '이 단계 켜고 해 보기'}</Button>
           </Paper>
         );
       })}

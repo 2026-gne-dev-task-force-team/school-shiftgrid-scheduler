@@ -115,7 +115,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, se
 
 export default function Screens({ user, onLogout, onUser }) {
   const [help, setHelp] = useState(false);
-  const phone = useMediaQuery('(max-width: 48em)');
+  const phone = useMediaQuery('(max-width: 48em)', false, { getInitialValueInEffect: false }); // 첫 그림부터 폭을 알아야 폰의 시작 탭이 격자로 잡힌다
   const tabProps = phone ? {} : { orientation: 'vertical', placement: 'left' }; // PC 는 왼쪽 세로 탭
   const [mems, setMems] = useState([]);
   const inOrg = !user.mustChange && user.role !== '시스템관리자';

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Group, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
-import { ACTION_LABEL as LABEL, TABLE_LABEL, summarize } from '../../../shared/audit-labels.js';
+import { ACTION_LABEL as LABEL, TABLE_LABEL, summarizeChange } from '../../../shared/audit-labels.js';
 
 // 기록 탭 — 감사 로그(최근순). 기관 관리자는 orgId, 시스템 관리자는 기관을 골라서(orgId 없음).
 export default function AuditLog({ orgId }) {
@@ -33,9 +33,7 @@ export default function AuditLog({ orgId }) {
   useEffect(() => { if (target) load(false); }, [target]);
 
   const target_ = (r) => {
-    const sb = summarize(r.before); const sa = summarize(r.after);
-    const text = [sb.text && `전 ${sb.text}`, sa.text && `후 ${sa.text}`].filter(Boolean).join(' / ');
-    const rawAny = sb.raw || sa.raw;
+    const { text, raw: rawAny } = summarizeChange(r.before, r.after);
     return (
       <>
         {TABLE_LABEL[r.table] ?? r.table ?? ''} <Text span size="xs" c="dimmed">{text}</Text>

@@ -20,6 +20,19 @@ const q = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
+// 맡은 사람·올린 사람 같은 멤버십 번호는 이름으로 바꿔 내보낸다(날것 숫자 11673 대신 사람 이름). 이름 못 찾으면 「지운 계정」.
+const ID_KEYS = { taken: 'taken', by_membership_id: 'by', for_membership_id: 'for' };
+const isId = (v) => (typeof v === 'number' || (typeof v === 'string' && /^\d+$/.test(v)));
+export function idsIn(...objs) {
+  const ids = new Set();
+  for (const o of objs) if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (k in ID_KEYS && isId(v)) ids.add(String(v));
+  return ids;
+}
+export function nameIds(o, names) {
+  if (!o || typeof o !== 'object') return o;
+  return Object.fromEntries(Object.entries(o).map(([k, v]) => (k in ID_KEYS && isId(v) ? [ID_KEYS[k], names.get(String(v)) ?? '지운 계정'] : [k, v])));
+}
+
 export async function auditPage(pool, orgId, query) {
   const p = q.safeParse(query);
   if (!p.success) return { error: '조건을 확인해 주세요' };
@@ -38,7 +51,15 @@ export async function auditPage(pool, orgId, query) {
     [orgId, d.from ?? null, d.to ?? null, d.who || null, d.action || null, d.before ?? null, d.limit + 1],
   );
   const more = rows.length > d.limit;
-  const items = rows.slice(0, d.limit).map((r) => ({ ...r, before: clean(r.before), after: clean(r.after) }));
+  const page = rows.slice(0, d.limit);
+  const want = new Set();
+  for (const r of page) for (const i of idsIn(r.before, r.after)) want.add(i);
+  const names = new Map();
+  if (want.size) {
+    const m = await pool.query(`SELECT m.id, u.name FROM membership m JOIN app_user u ON u.id = m.user_id WHERE m.org_id = $1 AND m.id = ANY($2::bigint[])`, [orgId, [...want]]);
+    for (const x of m.rows) names.set(String(x.id), x.name);
+  }
+  const items = page.map((r) => ({ ...r, before: nameIds(clean(r.before), names), after: nameIds(clean(r.after), names) }));
   return { items, more, next: more ? items[items.length - 1].id : null };
 }
 
