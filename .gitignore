@@ -5,3 +5,5 @@ report.md
 secrets/
 web/dist/
 dist-ship/
+scripts/ship/.env.demo
+scripts/ship/.compose.demo.yml
