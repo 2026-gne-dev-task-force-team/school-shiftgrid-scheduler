@@ -27,6 +27,15 @@ export default function Roster({ orgId }) {
     try { await fn(); await load(); } catch (e) { setErr(e.message); }
   };
 
+  // 앵커 링크는 이 화면에서 내려받기가 안 돼(같은 주소 fetch 는 됨) 받아서 직접 저장한다
+  const getTemplate = () => run(async () => {
+    const res = await fetch(`/api${base}/template`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('양식을 받지 못했습니다');
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = url; a.download = '명단 양식.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  });
   const add = (e) => {
     e.preventDefault();
     run(async () => {
@@ -91,7 +100,7 @@ export default function Roster({ orgId }) {
         </Group>
       </form>
       <Group>
-        <Button component="a" href={`/api${base}/template`} variant="default">엑셀 양식 내려받기</Button>
+        <Button variant="default" onClick={getTemplate}>엑셀 양식 내려받기</Button>
         <FileButton onChange={pick} accept=".xlsx">{(p) => <Button variant="default" {...p}>엑셀 올리기</Button>}</FileButton>
       </Group>
 
@@ -160,10 +169,10 @@ export default function Roster({ orgId }) {
               <Alert color="orange" title="담당 구분이 기관 목록 밖인 줄이 있습니다 — 그래도 올릴까요?">
                 {odd.odd.map((x) => <Text key={x.line} size="sm">{x.line}줄 {x.name} — 「{x.duty}」</Text>)}
                 <Text size="xs" c="dimmed">기관 목록: {odd.duties.join('·')}</Text>
-                <Button mt="xs" color="orange" onClick={doImport(true)}>그래도 올리기</Button>
+                <Button mt="xs" color="orange" onClick={() => doImport(true)}>그래도 올리기</Button>
               </Alert>
             )}
-            <Button onClick={doImport()} disabled={imp.map.name < 0}>{imp.rows.length}줄 올리기</Button>
+            <Button onClick={() => doImport()} disabled={imp.map.name < 0}>{imp.rows.length}줄 올리기</Button>
           </Stack>
         )}
       </Modal>
