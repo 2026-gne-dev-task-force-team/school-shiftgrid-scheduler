@@ -8,6 +8,7 @@
 //   3) 점심 자리도 없으면 → 교시 번호 그대로
 // 겸임 교사: ctx.external 에 다른 기관의 「오늘 적용 중인 확정본」 수업을 넣으면 같이 본다(둘 다 시각이 있으면 시각, 아니면 교시 번호).
 import { appliedTimetable } from './applied.js';
+import { loadConfig } from './orgConfig.js';
 
 const toMin = (s) => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(s ?? ''));
@@ -29,7 +30,7 @@ export function periodTime(periods, grade, period) {
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 export function findOverlaps(cells, ctx = {}) {
-  const { periods = null, gradeOf = {}, combined = [], external = [] } = ctx;
+  const { periods = null, gradeOf = {}, combined = [], external = [], weekdays = null } = ctx;
   const grade = (c) => gradeOf[c.classroom_id] ?? gradeOf[String(c.classroom_id)];
   const timeOf = (c) => (periods ? periodTime(periods, grade(c), c.period) : null);
   const slotOf = (c) => clockOf(periods ? Number(gradeCfg(periods, grade(c)).lunchAfter) || 0 : 0, c.period);
@@ -44,6 +45,12 @@ export function findOverlaps(cells, ctx = {}) {
   };
 
   const found = [];
+  // 기관 요일 수(기관 설정 weekdays)보다 큰 요일 번호 — 거부 아님, 수위(weekday_range)만 붙는다
+  if (weekdays) {
+    const out = new Map();
+    for (const c of cells) if (c.weekday > weekdays) (out.get(c.weekday) ?? out.set(c.weekday, []).get(c.weekday)).push(c);
+    for (const [wd, list] of out) found.push({ rule: 'weekday_range', weekday: wd, period: Math.min(...list.map((c) => c.period)), classroom_ids: [...new Set(list.map((c) => c.classroom_id))], detail: `요일 ${wd} — 기관 요일(${weekdays}일) 밖 칸 ${list.length}개` });
+  }
   const scan = (key, rule, label) => {
     const by = new Map();
     for (const c of cells) {
@@ -58,8 +65,9 @@ export function findOverlaps(cells, ctx = {}) {
       const timed = list.filter((_, i) => times[i]).map((c) => { const t = timeOf(c); return { c, s: t.start, e: t.end }; });
       const untimed = list.filter((_, i) => !times[i]).map((c) => ({ c, s: slotOf(c), e: slotOf(c) + 1 }));
       // 한쪽이라도 시각이 없는 짝은 교시 번호로 비교하고 「재확인」 수위로 낮춘다(시각 있는 칸 + 시각 없는 칸이 같이 있을 때만)
-      const mixed = timed.length && untimed.length ? list.map((c) => ({ c, s: c.period, e: c.period + 1 })) : [];
-      for (const [items, byTime, isMixed] of [[timed, true, false], [untimed, false, false], [mixed, false, true]]) {
+      // 시각 칸마다 따로 짝지어, 시각상 안 겹치는 시각 칸 둘이 같은 묶음에 적히지 않게 한다(S-fix-11)
+      const mixed = untimed.length ? timed.map((t) => [t, ...untimed.filter((u) => u.c.period === t.c.period)].map(({ c }) => ({ c, s: c.period, e: c.period + 1 }))).filter((g) => g.length > 1) : [];
+      for (const [items, byTime, isMixed] of [[timed, true, false], [untimed, false, false], ...mixed.map((g) => [g, false, true])]) {
       items.sort((a, b) => a.s - b.s || a.e - b.e);
       // 이어서 겹치는 덩어리로 묶는다
       let cur = [];
@@ -139,7 +147,7 @@ export async function overlapContext(pool, orgId, cells, { date } = {}) {
       }
     }
   }
-  return { periods, gradeOf, combined, external };
+  return { periods, gradeOf, combined, external, weekdays: (await loadConfig(pool, orgId)).weekdays.length };
 }
 
 // 칸 목록 → 겹침(재료를 DB 에서 모아서)

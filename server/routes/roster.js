@@ -3,8 +3,9 @@ import { z } from 'zod';
 import ExcelJS from 'exceljs';
 import { requireOrgAction } from '../guard.js';
 import { createAccount, resetPassword, ID_RE } from '../accounts.js';
+import { getRuleLevels } from '../rules.js';
 import { audit, killSessions } from '../audit.js';
-import { CEIL, dutyWarnings, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
+import { CEIL, dutyFromText, dutyKnown, dutyWarnings, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
 
 // 명단 탭 — 줄 = 계정. 관리자만(school.manage). 모든 쿼리에 membership.org_id = req.orgId.
 // 시스템관리자 줄은 명단에 안 나오고 못 건드린다.
@@ -220,11 +221,17 @@ export function rosterRouter(pool) {
   // 응답의 temp 는 한 번뿐 — 「ID·임시 비밀번호」 목록은 화면이 이 응답으로 내려받게 만든다.
   r.post('/import', async (req, res, next) => {
     try {
-      const p = z.object({ rows: z.array(z.object({ name: z.string().max(200), loginId: z.string().max(200).optional(), role: z.string().max(50).optional(), duty: z.string().max(50).optional() })).max(MAX_ROWS) }).safeParse(req.body);
+      const p = z.object({ rows: z.array(z.object({ name: z.string().max(200), loginId: z.string().max(200).optional(), role: z.string().max(50).optional(), duty: z.string().max(50).optional() })).max(MAX_ROWS), confirm: z.boolean().optional() }).safeParse(req.body);
       if (!p.success) return res.status(400).json({ error: '입력을 확인해 주세요' });
       const cfg = await loadConfig(pool, req.orgId);
       const warnings = limitWarnings(cfg, { rosterRows: p.data.rows.length });
       const results = [];
+      // 목록 밖 담당 구분(오타) — 수위가 재확인이면 한 번 되묻고(아무것도 만들지 않음) confirm 으로 다시 오면 만든다. 끔이면 말없이.
+      const dutyLevel = (await getRuleLevels(pool, req.orgId)).duty_unknown;
+      const odd = p.data.rows.map((raw, i) => ({ line: i + 1, name: (raw.name || '').trim(), duty: dutyFromText(cfg, (raw.duty || '').trim()) })).filter((x) => x.duty && !dutyKnown(cfg, x.duty));
+      if (odd.length && dutyLevel === '재확인' && !p.data.confirm) {
+        return res.status(409).json({ needConfirm: true, odd: odd.map((x) => ({ ...x, msg: dutyWarnings(cfg, x.duty)[0].msg })), duties: cfg.duties });
+      }
       for (const [i, raw] of p.data.rows.entries()) {
         const line = i + 1;
         const name = (raw.name || '').trim();
@@ -232,14 +239,14 @@ export function rosterRouter(pool) {
         const role = (raw.role || '').trim() || '교직원';
         const dutyText = (raw.duty || '').trim();
         // 담임·전담/비교과는 옛 말 그대로 읽고, 그 밖의 글은 기관 목록에서 찾는다. 목록에 없어도 거부하지 않고 줄에 경고를 붙인다.
-        const duty = dutyText === '' ? null : dutyText.includes('담임') ? '담임' : /전담|비교과/.test(dutyText) ? '전담·비교과' : cfg.duties.includes(dutyText) ? dutyText : dutyText.length <= 20 ? dutyText : undefined;
+        const duty = dutyFromText(cfg, dutyText);
         const bad = !name ? '이름이 비었습니다' : !ID_RE.test(loginId) ? 'ID 에 쓸 수 없는 글자가 있습니다' : !ROLES.includes(role) ? `역할을 알 수 없습니다(${ROLES.join('·')})` : duty === undefined ? '담임/전담 칸을 알 수 없습니다' : null;
         if (bad) {
           results.push({ line, name, loginId, ok: false, error: bad });
           continue;
         }
         let a = await createAccount(pool, { orgId: req.orgId, name, loginId, role, duty });
-        const dw = dutyWarnings(cfg, duty);
+        const dw = dutyLevel === '끔' ? [] : dutyWarnings(cfg, duty);
         results.push(a.error ? { line, name, loginId, ok: false, error: a.error } : { line, name, loginId, role, ok: true, temp: a.temp, ...(dw.length ? { warnings: dw } : {}) });
       }
       const made = results.filter((x) => x.ok).length;

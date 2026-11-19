@@ -52,8 +52,9 @@ export function findOverlaps(cells, ctx = {}) {
       const timed = list.filter((_, i) => times[i]).map((c) => { const t = timeOf(c); return { c, s: t.start, e: t.end }; });
       const untimed = list.filter((_, i) => !times[i]).map((c) => ({ c, s: slotOf(c), e: slotOf(c) + 1 }));
       // 한쪽이라도 시각이 없는 짝은 교시 번호로 비교하고 「재확인」 수위로 낮춘다(시각 있는 칸 + 시각 없는 칸이 같이 있을 때만)
-      const mixed = timed.length && untimed.length ? list.map((c) => ({ c, s: c.period, e: c.period + 1 })) : [];
-      for (const [items, byTime, isMixed] of [[timed, true, false], [untimed, false, false], [mixed, false, true]]) {
+      // 시각 칸마다 따로 짝지어, 시각상 안 겹치는 시각 칸 둘이 같은 묶음에 적히지 않게 한다(S-fix-11)
+      const mixed = untimed.length ? timed.map((t) => [t, ...untimed.filter((u) => u.c.period === t.c.period)].map(({ c }) => ({ c, s: c.period, e: c.period + 1 }))).filter((g) => g.length > 1) : [];
+      for (const [items, byTime, isMixed] of [[timed, true, false], [untimed, false, false], ...mixed.map((g) => [g, false, true])]) {
       items.sort((a, b) => a.s - b.s || a.e - b.e);
       // 이어서 겹치는 덩어리로 묶는다
       let cur = [];

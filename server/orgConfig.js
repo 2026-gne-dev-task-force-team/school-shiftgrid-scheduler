@@ -47,8 +47,10 @@ export function limitWarnings(cfg, pairs) {
 // 응답 본문에 경고를 붙인다(없으면 본문 그대로).
 export const withWarnings = (body, warnings) => (warnings.length ? { ...body, warnings } : body);
 
-// 담당 구분이 기관 목록 안인가. 옛 값 '담임'·'전담·비교과' 는 늘 아는 값이다.
-export const dutyKnown = (cfg, duty) => !duty || ['담임', '전담·비교과'].includes(duty) || cfg.duties.includes(duty);
+// 담당 구분이 기관 목록 안인가. '담임' 은 후보 등급이 쓰는 값이라 늘 아는 값이다.
+export const dutyKnown = (cfg, duty) => !duty || duty === '담임' || cfg.duties.includes(duty);
+// 명단 올리기 글 → 담당 구분. 목록 글 그대로 > 담임 > 전담 > 비교과(옛 말 '전담·비교과' 는 전담). 그 밖 글은 그대로 두고(undefined = 너무 김) 알림 몫.
+export const dutyFromText = (cfg, t) => (t === '' ? null : cfg.duties.includes(t) ? t : t.includes('담임') ? '담임' : t.includes('전담') ? '전담' : t.includes('비교과') ? '비교과' : t.length <= 20 ? t : undefined);
 export const dutyWarnings = (cfg, duty) => (dutyKnown(cfg, duty) ? [] : [{ key: 'duty', msg: `담당 구분 「${duty}」 은 기관 목록(${cfg.duties.join('·')})에 없습니다 — 맞는지 확인해 주세요` }]);
 
 // 학기: 시작 달 목록(길이 자유)에서 이번 달이 속한 구간의 번호(1부터). 첫 시작 달 앞은 마지막 학기(해 넘김).
