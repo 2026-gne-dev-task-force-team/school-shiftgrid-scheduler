@@ -2,9 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Group, NativeSelect, SegmentedControl, Stack, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 
-const today = () => new Date().toISOString().slice(0, 10);
+import { todayStr as today } from '../today.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+
+// 방 등록 자리(학교 기본 탭)로 — 탭 상태가 화면 묶음 안에 있어 탭 이름표를 눌러 준다(shortcut: Screens 가 이동 콜백을 주면 그걸로 바꾼다)
+const goBasic = () => [...document.querySelectorAll('[role="tab"]')].find((el) => el.textContent.trim() === '학교 기본')?.click();
 
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
 export default function Rooms({ P, admin }) {
@@ -12,6 +15,7 @@ export default function Rooms({ P, admin }) {
   const DAYS = org.weekdays;
   const [tab, setTab] = useState('book');
   const [rooms, setRooms] = useState([]);
+  const [roomsLoaded, setRoomsLoaded] = useState(false);
   const [rows, setRows] = useState(null);
   const [locks, setLocks] = useState([]);
   const [error, setError] = useState('');
@@ -25,7 +29,7 @@ export default function Rooms({ P, admin }) {
     api('GET', `${P}/room-locks`).then(setLocks).catch(() => {});
   }, [P]);
   useEffect(() => {
-    api('GET', `${P}/special-rooms`).then((r) => { setRooms(r); setF((p) => ({ ...p, room: p.room || String(r[0]?.id ?? '') })); }).catch((e) => setError(e.message));
+    api('GET', `${P}/special-rooms`).then((r) => { setRooms(r); setRoomsLoaded(true); setF((p) => ({ ...p, room: p.room || String(r[0]?.id ?? '') })); }).catch((e) => setError(e.message));
     load();
   }, [P, load]);
 
@@ -48,6 +52,13 @@ export default function Rooms({ P, admin }) {
       {error && <Alert color="red" withCloseButton onClose={() => setError('')}>{error}</Alert>}
       {tab === 'book' && (
         <>
+          {roomsLoaded && !roomOpts.length && (
+            <Alert color="blue" data-testid="rooms-empty">
+              <Term k="특별실">특별실</Term>은 「학교 기본」 화면의 특별실 칸에서 먼저 등록합니다. 등록하면 여기서 고를 수 있습니다.
+              <Group mt="xs"><Button size="compact-sm" variant="light" onClick={goBasic}>학교 기본에서 특별실 등록하러 가기</Button></Group>
+              {!admin && <Text size="xs" mt={4}>등록은 기관 관리자가 합니다.</Text>}
+            </Alert>
+          )}
           <NativeSelect label={<Term k="특별실">특별실</Term>} data={roomOpts} value={f.room} onChange={(e) => setF({ ...f, room: e.target.value })} />
           {dateRow}
           <Button onClick={book} disabled={!f.room}>예약하기</Button>

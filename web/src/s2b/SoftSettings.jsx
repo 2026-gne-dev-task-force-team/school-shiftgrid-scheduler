@@ -3,6 +3,7 @@ import { Alert, Button, Card, Group, MultiSelect, NumberInput, Select, Stack, Sw
 import { api } from '../api.js';
 import { BANDS, SOFT_RULES, resolveWeights } from '../gen/soft.js';
 import { diffFromDefault } from './diff.js';
+import { RULE_TEXT } from './ruleText.js';
 import { OPTION_SPEC, PARAM_SPEC, avoidKey, avoidParse, extraFrom, extraToWeights } from './extra.js';
 
 // 자동 생성 설정(기관 관리자) — 권장 규칙 묶음 가중 · 규칙별 묶음 · 교사 티어 배수 · 사람 티어 · 소규모교.
@@ -63,7 +64,7 @@ export default function SoftSettings({ P }) {
         <Table mt="md"><Table.Tbody>
           {Object.entries(SOFT_RULES).map(([code, m]) => (
             <Table.Tr key={code}>
-              <Table.Td>{m.label}{m.optional ? ' (선택)' : ''}</Table.Td>
+              <Table.Td><Text size="sm">{code === 'roundSync' ? <>같은 학년 진도 돌려 놓기(<Term k="라운드로빈">라운드로빈</Term>)</> : (RULE_TEXT[code]?.[0] ?? m.label)}{m.optional ? ' (선택)' : ''}</Text>{RULE_TEXT[code] && <Text size="xs" c="dimmed">{RULE_TEXT[code][1]}</Text>}</Table.Td>
               <Table.Td><Select data={BANDS} value={w.ruleBand[code] || m.band} onChange={(v) => setW({ ...w, ruleBand: { ...w.ruleBand, [code]: v } })} w={130} allowDeselect={false} /></Table.Td>
             </Table.Tr>
           ))}
@@ -80,7 +81,7 @@ export default function SoftSettings({ P }) {
           ))}
         </Group>
         <Select mt="sm" label="교사 요일 배치" description="분산은 하루 수업을 고르게, 몰기는 며칠에 몰아서 배치" clearable placeholder="기본 분산" data={['분산', '몰기']} value={extra.params.teacherDayMode ?? null} onChange={(v) => setParam('teacherDayMode', v || undefined)} w={200} />
-        <MultiSelect mt="sm" label="차시 순환 교과" description="비우면 시수표에서 「진도 맞춤」을 켠 교과를 씁니다" data={subjOpt} value={(extra.params.roundSubjects || []).map(String)} onChange={(v) => setParam('roundSubjects', v.map(Number))} />
+        <MultiSelect mt="sm" label="진도 돌려 놓기 교과(라운드로빈)" description="비우면 시수표에서 「진도 맞춤」을 켠 교과를 씁니다" data={subjOpt} value={(extra.params.roundSubjects || []).map(String)} onChange={(v) => setParam('roundSubjects', v.map(Number))} />
         {Object.entries(OPTION_SPEC).map(([k, m]) => (
           <Switch key={k} mt="sm" label={m.label} description={m.hint} checked={extra.options[k] === true} onChange={(e) => setExtra({ ...extra, options: { ...extra.options, [k]: e.currentTarget.checked } })} />
         ))}

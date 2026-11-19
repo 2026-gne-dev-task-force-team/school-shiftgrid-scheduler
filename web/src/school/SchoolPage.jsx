@@ -7,6 +7,7 @@ import { buildTimes, rowsOf } from './periodTimes.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
 import { SCHOOL_TAB_FEATURE, visibleTabs } from '../features.js';
+import { MenuIntro } from '../s1c/Guide.jsx';
 
 function useLoad(path) {
   const [data, setData] = useState(null);
@@ -273,9 +274,10 @@ function Pins({ P, admin, kind }) {
   const targets = kind === '교사' ? (people || []).map((x) => ({ value: String(x.membership_id), label: x.name }))
     : kind === '반' ? (classes || []).map((x) => ({ value: String(x.id), label: `${x.grade}-${x.class_no}` }))
     : (rooms || []).map((x) => ({ value: String(x.id), label: x.name }));
+  const [subjects] = useLoad(`${P}/subjects`);
   const [f, setF] = useState({ kind: '금지', weekday: '1', period: 1 });
   const [error, setError] = useState('');
-  const add = () => api('POST', `${P}/pins`, { target_kind: kind, target_id: Number(f.t), weekday: Number(f.weekday), period: f.period, kind: f.kind }).then(reload).catch((e) => setError(e.message));
+  const add = () => api('POST', `${P}/pins`, { target_kind: kind, target_id: Number(f.t), weekday: Number(f.weekday), period: f.period, kind: f.kind, subject_id: kind === '반' && f.kind === '고정' && f.s ? Number(f.s) : null }).then(reload).catch((e) => setError(e.message));
   const label = (id) => targets.find((t) => t.value === String(id))?.label ?? id;
   return (
     <Stack>
@@ -283,7 +285,7 @@ function Pins({ P, admin, kind }) {
       {(pins || []).map((p) => (
         <Group key={p.id}>
           <Badge color={p.kind === '고정' ? 'blue' : 'gray'}>{p.kind}</Badge>
-          <Text size="sm">{label(p.target_id)} · {DAYS[p.weekday - 1]} {p.period}교시</Text>
+          <Text size="sm">{label(p.target_id)} · {DAYS[p.weekday - 1]} {p.period}교시{p.subject_id ? ` · ${(subjects || []).find((x) => x.id === p.subject_id)?.name ?? ''}` : (kind === '반' && p.kind === '고정' ? ' · 교과 없음(그 칸은 비워 둠)' : '')}</Text>
           {admin && <Button size="xs" variant="subtle" color="red" onClick={() => api('DELETE', `${P}/pins/${p.id}`).then(reload)}>지우기</Button>}
         </Group>
       ))}
@@ -293,9 +295,11 @@ function Pins({ P, admin, kind }) {
           <Select data={DAYS.map((d, i) => ({ value: String(i + 1), label: d }))} value={f.weekday} onChange={(v) => setF({ ...f, weekday: v })} w={80} />
           <NumberInput min={1} description={`기관 기준 ${org.limits.periods}교시`} value={f.period} onChange={(v) => setF({ ...f, period: v })} w={80} suffix="교시" />
           <Select data={['고정', '금지']} value={f.kind} onChange={(v) => setF({ ...f, kind: v })} w={90} />
+          {kind === '반' && f.kind === '고정' && <Select placeholder="교과(선택)" description="비워도 됩니다" clearable data={(subjects || []).map((x) => ({ value: String(x.id), label: x.name }))} value={f.s ?? null} onChange={(v) => setF({ ...f, s: v })} w={130} />}
           <Button disabled={!f.t} onClick={add}>추가</Button>
         </Group>
       )}
+      {admin && kind === '반' && <Text size="xs" c="dimmed">「고정」에 교과를 고르면 자동 생성이 그 반 그 칸에 그 교과를 놓습니다. 교과를 비우면 그 칸은 수업 없이 비워 둡니다. 「금지」는 그 칸을 늘 비웁니다.</Text>}
     </Stack>
   );
 }
@@ -319,31 +323,36 @@ function Rules({ P, admin }) {
   );
 }
 
+// 하위 탭 첫 방문 카드 — 그 탭 기능(loads·pins·levels) 소개. 메뉴 안내와 따로 한 번씩
+const TabIntro = ({ tab, user, features }) => <MenuIntro menu={`school:${tab}`} pitchKey={SCHOOL_TAB_FEATURE[tab]} user={user} features={features} />;
+
 export default function SchoolPage({ user }) {
   const P = `/orgs/${user.orgId}`;
   const admin = user.role === '기관관리자';
   // 기관 스위치로 꺼진 탭은 숨기고, 첫 탭은 켜진 것 중 첫째(Tabs 가 defaultValue 를 처음에만 읽어 key 로 다시 세운다)
-  const on = visibleTabs(SCHOOL_TAB_FEATURE, useOrgConfig(P).features, ['basic', 'spec', 'loads', 'pins', ...(admin ? ['rules'] : [])]);
+  const features = useOrgConfig(P).features;
+  const on = visibleTabs(SCHOOL_TAB_FEATURE, features, ['basic', 'spec', 'loads', 'pins', ...(admin ? ['rules'] : [])]);
   const has = (t) => on.includes(t);
   return (
     <Tabs key={on[0]} defaultValue={on[0]} keepMounted={false}>
       <Tabs.List>
         {has('basic') && <Tabs.Tab value="basic">학교 기본</Tabs.Tab>}
         {has('spec') && <Tabs.Tab value="spec">전담·비교과</Tabs.Tab>}
-        {has('loads') && <Tabs.Tab value="loads"><Term k="시수표">시수표</Term></Tabs.Tab>}
+        {has('loads') && <Tabs.Tab value="loads">시수표</Tabs.Tab>}
         {has('pins') && <Tabs.Tab value="pins">고정·금지</Tabs.Tab>}
         {has('rules') && <Tabs.Tab value="rules">규칙 수위</Tabs.Tab>}
       </Tabs.List>
       {has('basic') && <Tabs.Panel value="basic" pt="md"><Basics P={P} admin={admin} /></Tabs.Panel>}
       {has('spec') && <Tabs.Panel value="spec" pt="md"><Specialists P={P} admin={admin} /></Tabs.Panel>}
-      {has('loads') && <Tabs.Panel value="loads" pt="md"><Loads P={P} admin={admin} /></Tabs.Panel>}
+      {has('loads') && <Tabs.Panel value="loads" pt="md"><TabIntro tab="loads" user={user} features={features} /><Text size="sm" c="dimmed" mb="sm"><Term k="시수표">시수표</Term>: 누가·어느 반에·무슨 과목을·주 몇 시간 가르치는지 적은 표입니다(낱말을 누르면 풀이).</Text><Loads P={P} admin={admin} /></Tabs.Panel>}
       {has('pins') && <Tabs.Panel value="pins" pt="md">
+        <TabIntro tab="pins" user={user} features={features} />
         <Tabs defaultValue="교사" keepMounted={false}>
           <Tabs.List>{['교사', '반', '특별실'].map((k) => <Tabs.Tab key={k} value={k}>{k}</Tabs.Tab>)}</Tabs.List>
           {['교사', '반', '특별실'].map((k) => <Tabs.Panel key={k} value={k} pt="md"><Pins P={P} admin={admin} kind={k} /></Tabs.Panel>)}
         </Tabs>
       </Tabs.Panel>}
-      {has('rules') && <Tabs.Panel value="rules" pt="md"><Rules P={P} admin={admin} /></Tabs.Panel>}
+      {has('rules') && <Tabs.Panel value="rules" pt="md"><TabIntro tab="rules" user={user} features={features} /><Rules P={P} admin={admin} /></Tabs.Panel>}
     </Tabs>
   );
 }

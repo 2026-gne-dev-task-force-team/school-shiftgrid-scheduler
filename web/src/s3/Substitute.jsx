@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
 
-const today = () => new Date().toISOString().slice(0, 10);
+import { todayStr as today } from '../today.js';
 const GRADE_COLOR = { A: 'green', B: 'teal', C: 'blue', D: 'gray' };
 
 // 보결 — 폰(390px) 먼저: 한 건이 카드 하나, 버튼은 줄바꿈되는 작은 버튼

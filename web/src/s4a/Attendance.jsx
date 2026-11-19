@@ -2,14 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Group, NumberInput, Stack, Table, Text, TextInput, Modal } from '@mantine/core';
 import { api } from '../api.js';
 
-const thisMonth = () => new Date().toISOString().slice(0, 7);
+import { todayStr } from '../today.js';
+const thisMonth = () => todayStr().slice(0, 7);
 
 // 근태 — 폰에서 내 근무를 적고, 관리자는 월 집계 · 마감 · 남의 줄 고치기. 마감된 달을 고치면 한 번 되묻는다(거부 아님).
 export default function Attendance({ P, admin }) {
   const [ym, setYm] = useState(thisMonth());
   const [data, setData] = useState({ rows: [], closed: false });
   const [sum, setSum] = useState({ people: [] });
-  const [form, setForm] = useState({ on_date: new Date().toISOString().slice(0, 10), hours: 4, allowed_subject: '', memo: '' });
+  const [form, setForm] = useState({ on_date: todayStr(), hours: 4, allowed_subject: '', memo: '' });
   const [warn, setWarn] = useState([]);
   const [ask, setAsk] = useState(null); // 재확인 대기 { run, violations }
   const [err, setErr] = useState('');
