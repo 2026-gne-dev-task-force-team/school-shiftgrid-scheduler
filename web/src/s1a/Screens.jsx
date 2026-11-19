@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Button, Container, Group, Tabs, Title } from '@mantine/core';
+import { useEffect, useState } from 'react';
+import { Button, Container, Group, Select, Tabs, Title } from '@mantine/core';
+import { api } from '../api.js';
 import ChangePassword from './ChangePassword.jsx';
 import AdminOrgs from './AdminOrgs.jsx';
 import Roster from './Roster.jsx';
@@ -18,6 +19,16 @@ import Output from '../s4b/Output.jsx';
 // S-1a 화면 묶음 — 첫 로그인 비번 변경 · 시스템 관리자(기관 관리) · 기관 관리자(명단 · 내 정보)
 export default function Screens({ user, onLogout, onUser }) {
   const [help, setHelp] = useState(false);
+  const [mems, setMems] = useState([]);
+  useEffect(() => {
+    if (!user.mustChange) api('GET', '/auth/memberships').then((r) => setMems(r.items)).catch(() => setMems([]));
+  }, [user.mustChange, user.orgId]);
+  async function switchOrg(v) {
+    if (!v || Number(v) === user.orgId) return;
+    const r = await api('POST', '/auth/switch-org', { orgId: Number(v) });
+    onUser(r.user);
+    window.location.reload(); // 새 세션·새 CSRF 로 화면 전체를 다시 읽는다
+  }
   const inOrg = !user.mustChange && user.role !== '시스템관리자';
   let body;
   if (user.mustChange) {
@@ -73,6 +84,7 @@ export default function Screens({ user, onLogout, onUser }) {
       <Group justify="space-between" mb="md">
         <Title order={3}>{user.name}님</Title>
         <Group className="no-print">
+          {mems.length > 1 && <Select aria-label="기관 바꾸기" data={mems.map((m) => ({ value: String(m.orgId), label: m.name }))} value={String(user.orgId)} onChange={switchOrg} allowDeselect={false} w={200} />}
           {inOrg && <Button variant="default" onClick={() => setHelp(true)}>도움말</Button>}
           <Button variant="default" onClick={onLogout}>로그아웃</Button>
         </Group>
