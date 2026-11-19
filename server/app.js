@@ -136,7 +136,13 @@ export function createApp(pool, opts = {}) {
   app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }));
   app.use(preCompressed(dist));
   app.use(express.static(dist, { index: false }));
-  app.get('*', (req, res) => res.sendFile(path.join(dist, 'index.html'), (e) => e && res.status(404).end()));
+  // SPA 폴백도 index.html.br/.gz 가 있으면 압축본으로(주소는 index.html 로 바꿔 같은 압축 미들웨어를 탄다)
+  const indexPre = preCompressed(dist);
+  const indexStatic = express.static(dist, { index: false });
+  app.get('*', (req, res, next) => {
+    req.url = '/index.html';
+    indexPre(req, res, () => indexStatic(req, res, (e) => (e ? next(e) : res.status(404).end())));
+  });
 
   // 오류 — 스택 트레이스는 응답에 내지 않는다
   // eslint-disable-next-line no-unused-vars

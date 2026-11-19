@@ -58,7 +58,7 @@ export default function AuditLog({ orgId }) {
           <TextInput type="date" label="부터" value={f.from} onChange={set('from')} />
           <TextInput type="date" label="까지" value={f.to} onChange={set('to')} />
           <TextInput label="사람(이름)" value={f.who} onChange={set('who')} w={140} />
-          <TextInput label="동작(앞글자)" placeholder="예: roster" value={f.action} onChange={set('action')} w={160} />
+          <TextInput label="동작(영문 앞글자)" placeholder="예: roster" description="명단=roster · 시간표=timetable · 근태=attendance · 보결=substitute" value={f.action} onChange={set('action')} w={160} />
           <Button type="submit" disabled={!target}>찾기</Button>
         </Group>
       </form>

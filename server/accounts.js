@@ -1,6 +1,8 @@
 import argon2 from 'argon2';
 import { tempPassword } from './passwords.js';
 
+// 해시 강도 한 곳(OWASP 하한). verify 는 해시 안의 값으로 읽어 예전 해시도 통과한다.
+export const ARGON = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 };
 export const ID_RE = /^[^\s/\\<>"'`]{1,100}$/; // 공백·따옴표·슬래시 빼고 한글 허용(이름이 기본 ID)
 
 // 계정(사람) 하나 + 소속 한 줄을 만든다. ID 가 이미 있으면 (existing: 'add') 때만 그 사람에게 소속을 더한다.
@@ -19,7 +21,7 @@ export async function createAccount(db, { orgId, name, loginId, role, duty = nul
     const ins = await db.query(
       `INSERT INTO app_user (name, login_id, password_hash, must_change_password) VALUES ($1,$2,$3,TRUE)
        ON CONFLICT (lower(login_id)) DO NOTHING RETURNING id`,
-      [name, loginId, await argon2.hash(temp)],
+      [name, loginId, await argon2.hash(temp, ARGON)],
     );
     if (!ins.rows[0]) return { error: '이미 쓰고 있는 ID 입니다' };
     userId = ins.rows[0].id;
@@ -33,7 +35,7 @@ export async function resetPassword(db, userId) {
   const temp = tempPassword();
   await db.query(
     `UPDATE app_user SET password_hash = $2, must_change_password = TRUE, failed_count = 0, locked_until = NULL WHERE id = $1`,
-    [userId, await argon2.hash(temp)],
+    [userId, await argon2.hash(temp, ARGON)],
   );
   return temp;
 }

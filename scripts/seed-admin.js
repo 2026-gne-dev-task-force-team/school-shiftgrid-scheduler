@@ -20,7 +20,7 @@ try {
   let org = (await pool.query(`SELECT id FROM org WHERE kind = '교육청' AND deleted_at IS NULL ORDER BY id LIMIT 1`)).rows[0];
   if (!org) org = (await pool.query(`INSERT INTO org (name, kind) VALUES ('교육청', '교육청') RETURNING id`)).rows[0];
 
-  const hash = await argon2.hash(temp);
+  const hash = await argon2.hash(temp, { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 });
   const u = await pool.query(
     `INSERT INTO app_user (name, login_id, password_hash, must_change_password) VALUES ($1, $2, $3, TRUE)
      ON CONFLICT (lower(login_id)) DO NOTHING RETURNING id`,

@@ -14,7 +14,7 @@ function Login({ onDone }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api('GET', '/auth/orgs').then(setOrgs).catch(() => setError('기관 목록을 불러오지 못했습니다'));
+    api('GET', '/auth/orgs').then((o) => { setOrgs(o); if (o.length === 1) setOrgId(String(o[0].id)); }).catch(() => setError('기관 목록을 불러오지 못했습니다'));
   }, []);
 
   async function submit(e) {
@@ -38,7 +38,7 @@ function Login({ onDone }) {
         <Paper withBorder shadow="sm" p="lg" radius="md">
           <form onSubmit={submit}>
             <Stack>
-              <Select label="기관" placeholder="기관을 고르세요" data={orgs.map((o) => ({ value: String(o.id), label: o.name }))} value={orgId} onChange={setOrgId} required description="시스템 관리자는 기관 「교육청」을 고르세요" />
+              {orgs.length !== 1 && <Select label="기관" placeholder="기관을 고르세요" data={orgs.map((o) => ({ value: String(o.id), label: o.name }))} value={orgId} onChange={setOrgId} required description="시스템 관리자는 기관 「교육청」을 고르세요" />}
               <TextInput label="ID" value={loginId} onChange={(e) => setLoginId(e.currentTarget.value)} autoComplete="username" required />
               <PasswordInput label="비밀번호" value={password} onChange={(e) => setPassword(e.currentTarget.value)} autoComplete="current-password" required />
               <Checkbox label="로그인 유지(30일)" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} />

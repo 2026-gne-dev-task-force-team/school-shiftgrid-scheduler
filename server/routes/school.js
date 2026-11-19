@@ -173,7 +173,9 @@ export function schoolRouter(pool) {
       for (const [g, n] of grades) for (let k = 1; k <= n; k++) await c.query(`INSERT INTO classroom (org_id, term_id, grade, class_no) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`, [req.orgId, t.id, g, k]);
       await c.query(`UPDATE org SET period_config = $2 WHERE id = $1`, [req.orgId, JSON.stringify(pc)]);
       const me = (await c.query(`SELECT id FROM membership WHERE org_id = $1 AND user_id = $2 AND deleted_at IS NULL`, [req.orgId, req.session.userId])).rows[0];
-      tt = (await c.query(`INSERT INTO timetable (org_id, term_id, name, created_by) VALUES ($1,$2,$3,$4) RETURNING id, name, status`, [req.orgId, t.id, '시안 1', me?.id ?? null])).rows[0];
+      // 시안이 이미 있으면 새로 만들지 않고 그것을 쓴다
+      tt = (await c.query(`SELECT id, name, status FROM timetable WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY id LIMIT 1`, [req.orgId, t.id])).rows[0]
+        ?? (await c.query(`INSERT INTO timetable (org_id, term_id, name, created_by) VALUES ($1,$2,$3,$4) RETURNING id, name, status`, [req.orgId, t.id, '시안 1', me?.id ?? null])).rows[0];
       await c.query('COMMIT');
     } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
     await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'school.quick_start', table: 'timetable', rowId: tt.id, after: { classes: p.data.classes, periods: pc.grades } });
