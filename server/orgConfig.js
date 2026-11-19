@@ -8,6 +8,8 @@ export const DEFAULTS = {
   duties: ['담임', '전담', '비교과'],
   roleLabels: {},
   attendanceMonthlyCap: null,
+  // 권장 규칙 17 의 숫자 기본값 — 기관이 바꾸고 org.soft_weights.params 가 또 덮는다. lunchAfter 는 학교 기본에 점심 자리가 없는 학년의 값.
+  softParams: { maxConsec: 6, dailySubjectCap: 6, amTolerance: 3, maxPerDay: 6, teacherDayMode: '분산', earlyTiers: [1, 2], lunchAfter: 4 },
   roomCapacity: { count: 'students' }, // 특별실 정원 합을 학생 수('students')로 볼지 반 수('classes')로 볼지. 수위는 rule_levels.room_capacity
 };
 

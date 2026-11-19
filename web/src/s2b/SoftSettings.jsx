@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Group, MultiSelect, NumberInput, Select, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core';
 import { api } from '../api.js';
-import { BANDS, DEFAULT_WEIGHTS, SOFT_RULES, resolveWeights } from '../gen/soft.js';
+import { BANDS, SOFT_RULES, resolveWeights } from '../gen/soft.js';
 import { diffFromDefault } from './diff.js';
 import { OPTION_SPEC, PARAM_SPEC, avoidKey, avoidParse, extraFrom, extraToWeights } from './extra.js';
 
@@ -38,7 +38,6 @@ export default function SoftSettings({ P }) {
   if (!w || !small) return msg ? <Alert color="red">{msg.text}</Alert> : null;
 
   const setParam = (k, v) => setExtra({ ...extra, params: { ...extra.params, [k]: v } });
-  const setNum = (grp, k) => (v) => setW({ ...w, [grp]: { ...w[grp], [k]: typeof v === 'number' ? v : DEFAULT_WEIGHTS[grp][k] } });
   const saveW = run(async () => { await api('PUT', `${P}/soft-weights`, { weights: { ...diffFromDefault(w), ...extraToWeights(extra) } }); }, '가중을 저장했습니다. 다음 자동 생성부터 적용됩니다.');
   const resetW = run(async () => { await api('PUT', `${P}/soft-weights`, { weights: extraToWeights(extra) }); setW(resolveWeights({})); }, '가중을 기본값으로 되돌렸습니다.');
   const setTier = (mid) => async (v) => {
@@ -56,18 +55,7 @@ export default function SoftSettings({ P }) {
       {msg && <Alert color={msg.color} withCloseButton onClose={() => setMsg(null)}>{msg.text}</Alert>}
       <Card withBorder>
         <Title order={4}>권장 규칙 가중</Title>
-        <Text size="sm" c="dimmed" mb="xs">자동 생성은 필수를 먼저 맞추고, 그다음 이 점수가 낮은 시안을 위로 올립니다. 바꾼 값만 저장되고 비워 두면 기본값입니다.</Text>
-        <Group align="end">
-          {BANDS.map((b) => <NumberInput key={b} label={`${b} 묶음`} min={0} max={100000} value={w.bands[b]} onChange={setNum('bands', b)} w={120} />)}
-        </Group>
-        <Text size="sm" mt="sm">교사 티어 배수(교사가 걸린 규칙)</Text>
-        <Group align="end">
-          {[1, 2, 3].map((t) => <NumberInput key={t} label={TIER_LABEL[t]} min={0} max={100000} value={w.tierMult[t]} onChange={setNum('tierMult', t)} w={120} />)}
-        </Group>
-        <Text size="sm" mt="sm">회피 선호 티어 배수</Text>
-        <Group align="end">
-          {[1, 2, 3].map((t) => <NumberInput key={t} label={TIER_LABEL[t]} min={0} max={100000} value={w.avoidanceTierMult[t]} onChange={setNum('avoidanceTierMult', t)} w={120} />)}
-        </Group>
+        <Text size="sm" c="dimmed" mb="xs">자동 생성은 필수를 먼저 맞추고, 그다음 아래 우선순위를 더 잘 지킨 시안을 위로 올립니다. 규칙마다 우선순위 묶음만 고르면 됩니다.</Text>
         <Table mt="md"><Table.Tbody>
           {Object.entries(SOFT_RULES).map(([code, m]) => (
             <Table.Tr key={code}>

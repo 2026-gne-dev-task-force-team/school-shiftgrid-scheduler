@@ -130,6 +130,10 @@ export function generateRouter(pool) {
       res.json({
         term: t,
         weights: org.soft_weights ?? {}, // 권장 17 가중(바꾼 것만 · 비면 soft.js 기본값)
+        // 권장 17 재료: 회피 칸·선택 규칙·숫자 값. 숫자 기본은 org.config.softParams, 기관 저장값(soft_weights.params)이 덮는다
+        avoid: org.soft_weights?.avoid ?? {},
+        options: org.soft_weights?.options ?? {},
+        params: { ...(await loadConfig(pool, o)).softParams, ...(org.soft_weights?.params ?? {}) },
         tiers: Object.fromEntries(tierRows.map((r) => [Number(r.id), r.tier])),
         small: org.small_school ?? {}, // 소규모교 설정
         classrooms,
