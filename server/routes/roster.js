@@ -232,7 +232,8 @@ export function rosterRouter(pool) {
       if (odd.length && dutyLevel === '재확인' && !p.data.confirm) {
         return res.status(409).json({ needConfirm: true, odd: odd.map((x) => ({ ...x, msg: dutyWarnings(cfg, x.duty)[0].msg })), duties: cfg.duties });
       }
-      for (const [i, raw] of p.data.rows.entries()) {
+      // argon2 해시가 줄당 ~80ms 라 1000줄 77초 — 8줄씩 묶어 동시에 만든다(결과는 줄 순서 그대로). 같은 ID 가 한 묶음에 겹치면 어느 줄이 이길지는 정해지지 않고 한 줄만 만들어진다.
+      const doRow = async (raw, i) => {
         const line = i + 1;
         const name = (raw.name || '').trim();
         const loginId = (raw.loginId || '').trim() || name;
@@ -242,13 +243,14 @@ export function rosterRouter(pool) {
         const duty = dutyFromText(cfg, dutyText);
         const bad = !name ? '이름이 비었습니다' : !ID_RE.test(loginId) ? 'ID 에 쓸 수 없는 글자가 있습니다' : !ROLES.includes(role) ? `역할을 알 수 없습니다(${ROLES.join('·')})` : duty === undefined ? '담임/전담 칸을 알 수 없습니다' : null;
         if (bad) {
-          results.push({ line, name, loginId, ok: false, error: bad });
-          continue;
+          return { line, name, loginId, ok: false, error: bad };
         }
         let a = await createAccount(pool, { orgId: req.orgId, name, loginId, role, duty });
         const dw = dutyLevel === '끔' ? [] : dutyWarnings(cfg, duty);
-        results.push(a.error ? { line, name, loginId, ok: false, error: a.error } : { line, name, loginId, role, ok: true, temp: a.temp, ...(dw.length ? { warnings: dw } : {}) });
-      }
+        return a.error ? { line, name, loginId, ok: false, error: a.error } : { line, name, loginId, role, ok: true, temp: a.temp, ...(dw.length ? { warnings: dw } : {}) };
+      };
+      const rows = p.data.rows;
+      for (let i = 0; i < rows.length; i += 8) results.push(...(await Promise.all(rows.slice(i, i + 8).map((raw, j) => doRow(raw, i + j)))));
       const made = results.filter((x) => x.ok).length;
       await audit(pool, { ...me(req), action: 'roster.import', table: 'membership', after: { made, failed: results.length - made } });
       res.json(withWarnings({ results, made, failed: results.length - made }, warnings));
