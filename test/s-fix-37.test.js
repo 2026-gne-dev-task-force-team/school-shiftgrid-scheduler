@@ -46,7 +46,7 @@ test('겸임: 아이디·비번만으로 로그인 → 소속 하나면 바로, 
   const b = await f.as('adminB');
   const add = await b.call('POST', `/api/orgs/${f.orgB}/roster/concurrent`, { loginId: f.users.staffA.loginId, role: '교직원' });
   assert.equal(add.status, 201);
-  assert.equal((await b.call('POST', `/api/orgs/${f.orgB}/roster/concurrent`, { loginId: f.users.staffA.loginId })).status, 409);
+  assert.equal((await b.call('POST', `/api/orgs/${f.orgB}/roster/concurrent`, { loginId: f.users.staffA.loginId })).status, 404); // S-fix-38: 이미 소속도 「없음」과 같은 응답
   assert.equal((await b.call('POST', `/api/orgs/${f.orgB}/roster/concurrent`, { loginId: 'no-such-id-zz' })).status, 404);
   const n = (await f.pool.query(`SELECT count(*)::int AS n FROM audit_log WHERE org_id = $1 AND action = 'roster.concurrent-add'`, [f.orgB])).rows[0].n;
   assert.equal(n, 1);

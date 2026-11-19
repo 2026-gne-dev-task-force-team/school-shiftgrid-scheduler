@@ -216,17 +216,20 @@ test('S-3 경로: 동시 맡기 20건 중 1건만 성공 · 후보 등급 · 형
     const b1 = await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 4 });
     assert.equal(b1.status, 201);
     assert.equal(b1.json.warnings.length, 0);
-    const b2 = await u2('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 4 });
+    const r409 = await u2('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 4 });
+    assert.equal(r409.status, 409); // S-fix-38: 겹치면 서버가 되묻는다(겹친 목록과 함께)
+    assert.ok(r409.json.overlaps.length > 0);
+    const b2 = await u2('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 4, force: true });
     assert.equal(b2.status, 201);
     assert.ok(b2.json.warnings.some((w) => w.rule === 'room_overlap' && w.level === '경고'));
     assert.equal((await pool.query(`SELECT count(*)::int AS n FROM booking WHERE org_id = $1`, [org])).rows[0].n, 2);
     assert.equal((await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 4 })).status, 409);
-    const b3 = await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 2, classroom_id: Number(c11) });
+    const b3 = await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 2, classroom_id: Number(c11), force: true });
     assert.ok(b3.json.warnings.some((w) => w.detail.includes('수업')));
     assert.ok(b3.json.warnings.some((w) => w.rule === 'room_capacity'));
     assert.equal((await u1('POST', `${P}/room-locks`, { special_room_id: Number(room), weekday: 1, period: 5 })).status, 404);
     assert.equal((await A('POST', `${P}/room-locks`, { special_room_id: Number(room), weekday: 1, period: 5, note: '과학 고정' })).status, 201);
-    const b4 = await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 5 });
+    const b4 = await u1('POST', `${P}/bookings`, { special_room_id: Number(room), on_date: MON, period: 5, force: true });
     assert.equal(b4.status, 201);
     assert.ok(b4.json.warnings.some((w) => w.detail.includes('잠근')));
     const fr = (await u1('GET', `${P}/rooms/free?on_date=${MON}&period=6`)).json;
