@@ -5,7 +5,7 @@ export const ACTION_LABEL = {
   'booking.cancel': '예약 취소', 'booking.create': '예약',
   'org.concurrent-add': '겸임 추가', 'org.create': '기관 만듦', 'org.first-admin': '첫 관리자 만듦', 'org.switch': '기관 전환', 'org.update': '기관 고침', 'password.change': '비밀번호 바꿈',
   'room_lock.create': '특별실 잠금', 'room_lock.delete': '특별실 잠금 풂',
-  'roster.create': '명단 추가', 'roster.import': '명단 가져옴', 'roster.lock': '계정 잠금', 'roster.reset-password': '비밀번호 초기화', 'roster.unlock': '계정 잠금 풂', 'roster.update': '명단 고침',
+  'roster.create': '명단 추가', 'roster.concurrent-add': '겸임 데려옴', 'roster.import': '명단 가져옴', 'roster.lock': '계정 잠금', 'roster.reset-password': '비밀번호 초기화', 'roster.unlock': '계정 잠금 풂', 'roster.update': '명단 고침',
   'school.quick_start': '빠른 시작(반·교시 한 번에 만듦)', 'small-school.save': '작은 학교 설정 저장', 'soft-weights.save': '권장 규칙 설정 저장',
   'substitute.assign': '보결 지정', 'substitute.cancel': '보결 취소', 'substitute.create': '보결 올림', 'substitute.release': '보결 풂', 'substitute.take': '보결 맡음',
   'term.import_previous': '지난 학기 가져옴', 'term.new_semester': '새 학기 시작',
