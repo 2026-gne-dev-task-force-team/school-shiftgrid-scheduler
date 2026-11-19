@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { EmptyHint, Finger } from './Guide.jsx';
+import { emptyCount, confirmText } from '../../../shared/ttConfirm.js';
 import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
 const DAYS = ['월', '화', '수', '목', '금'];
@@ -73,12 +74,13 @@ export default function Grid({ P, admin }) {
       {list.length === 0 && (admin
         ? <QuickStart P={P} onDone={loadList} />
         : <EmptyHint title="아직 시간표가 없습니다" body="관리자가 시안을 만들면 여기에 보입니다." />)}
-      {tid && <Editor key={tid} P={P} tid={tid} admin={admin} />}
+      {tid && <Editor key={tid} P={P} tid={tid} admin={admin} onChanged={loadList} onDeleted={() => { setTid(null); loadList(); }} />}
     </Stack>
   );
 }
 
-function Editor({ P, tid, admin }) {
+function Editor({ P, tid, admin, onChanged, onDeleted }) {
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [d, setD] = useState(null);
   const [classId, setClassId] = useState(() => loadPick().classId);
   const [sel, setSel] = useState(null); // {weekday, period}
@@ -115,7 +117,7 @@ function Editor({ P, tid, admin }) {
     setError('');
     const key = `${cell.classroom_id}:${cell.weekday}:${cell.period}`;
     const prev = cellMap.get(key) || { ...cell, subject_id: null, membership_id: null, special_room_id: null };
-    if (d.timetable.status === '확정' && levelOf('edit_confirmed') === '재확인' && !window.confirm('확정된 시간표입니다. 그래도 저장할까요?')) return;
+    if (d.timetable.status === '확정' && levelOf('edit_confirmed') === '재확인' && !window.confirm('확정된 시간표입니다. 고치려면 먼저 위의 「확정 풀기」를 누르세요. 그래도 저장할까요?')) return;
     try {
       const r = await api('PUT', `${P}/timetables/${tid}/cells`, cell);
       if (record) setUndo((u) => [...u.slice(-(UNDO_MAX - 1)), prev]);
@@ -148,6 +150,22 @@ function Editor({ P, tid, admin }) {
     await save(clear ? { ...base, subject_id: null, membership_id: null, special_room_id: null } : { ...base, subject_id: num(form.subject_id), membership_id: num(form.membership_id), special_room_id: num(form.special_room_id) });
     setSel(null);
   };
+  const run = async (fn) => { setError(''); try { await fn(); } catch (e) { setError(e.message); } };
+  const confirmTt = () => run(async () => {
+    const t = d.timetable;
+    if (!window.confirm(confirmText(t.name, date, d.violations.length, emptyCount(d.classrooms, d.periods, d.cells)))) return;
+    const r = await api('POST', `${P}/timetables/${tid}/confirm`, { starts_on: date });
+    setMsg(r.notes?.length ? r.notes : null);
+    await load(); onChanged();
+  });
+  const unconfirmTt = () => run(async () => {
+    if (!window.confirm('확정을 풀고 시안으로 돌릴까요?')) return;
+    await api('POST', `${P}/timetables/${tid}/unconfirm`); await load(); onChanged();
+  });
+  const deleteTt = () => run(async () => {
+    if (!window.confirm(`「${d.timetable.name}」을 지울까요?${d.timetable.status === '확정' ? ' 확정된 시간표입니다.' : ''}`)) return;
+    await api('DELETE', `${P}/timetables/${tid}`); onDeleted();
+  });
   const hasCells = d.cells.length > 0;
   const redCount = d.violations.filter((v) => v.color === 'red').length;
 
@@ -163,6 +181,14 @@ function Editor({ P, tid, admin }) {
           <Button variant="default" onClick={() => window.print()}>인쇄</Button>
         </Group>
       </Group>
+      {admin && (
+        <Group className="no-print" align="end">
+          {d.timetable.status === '확정'
+            ? <><Badge color="green" size="lg">확정됨{d.timetable.starts_on ? ` · ${String(d.timetable.starts_on).slice(0, 10)}부터` : ''}</Badge><Button variant="default" onClick={unconfirmTt}>확정 풀기</Button></>
+            : <><TextInput type="date" label="적용 시작일" value={date} onChange={(e) => setDate(e.currentTarget.value)} /><Button color="green" disabled={!date} onClick={confirmTt}>확정</Button></>}
+          <Button color="red" variant="light" onClick={deleteTt}>지우기</Button>
+        </Group>
+      )}
       <Text className="print-only" fw={700}>{d.timetable.name} — {cls.grade}학년 {cls.class_no}반</Text>
       {admin && !hasCells && <Finger text="아무 칸이나 눌러 교과와 교사를 넣어 보세요" />}
       {msg && (
