@@ -24,7 +24,7 @@ export const featuresUpTo = (n) => Object.fromEntries(FEATURES.map((f) => [f.key
 
 // 메뉴(탭 값) → 켜져야 보이는 스위치 키(하나라도 켜지면 보임). 목록에 없는 메뉴(grid·me)는 0단계라 늘 보인다.
 export const MENU_FEATURES = {
-  roster: ['setup'], mine: ['setup'], school: ['setup', 'loads', 'pins'],
+  roster: ['setup'], mine: ['setup'], school: ['setup', 'loads', 'pins', 'levels'],
   gen: ['gen'], softset: ['soft', 'small', 'levels'], orgcfg: ['orgcfg'], out: ['output', 'import'],
   att: ['att'], sub: ['sub'], rooms: ['rooms'], audit: ['audit'],
 };
