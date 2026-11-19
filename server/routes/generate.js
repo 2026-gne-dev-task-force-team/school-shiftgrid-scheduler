@@ -6,6 +6,7 @@ import { findOverlapsFor, periodTime } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
 import { currentTerm } from './school.js';
 import { CEIL, limitWarnings, loadConfig, periodsOf, withWarnings } from '../orgConfig.js';
+import { audit } from '../audit.js';
 import { expandMaster } from './loads.js';
 
 // S-2 자동 생성 짝 — 생성 자체는 브라우저 웹 워커가 한다. 서버는 재료 내주기 · 시안 저장 · 복제 · 삭제 · 확정만.
@@ -157,6 +158,7 @@ export function generateRouter(pool) {
       if (keys.size !== p.data.cells.length) return res.status(409).json({ error: '같은 칸이 둘 있습니다' });
       if (!(await refsOk(req.orgId, p.data.cells))) return notFound(res);
       const tt = await tx((c) => newTimetable(req, c, p.data.name, p.data.cells, p.data.gen_info ?? null));
+      await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'timetable.save', table: 'timetable', rowId: tt.id, after: { name: tt.name, cells: p.data.cells.length } });
       const levels = await getRuleLevels(pool, req.orgId);
       const w = limitWarnings(await loadConfig(pool, req.orgId), { cells: p.data.cells.length, periods: Math.max(0, ...p.data.cells.map((c) => c.period)) });
       res.status(201).json(withWarnings({ ...tt, violations: applyLevels(levels, await findOverlapsFor(pool, req.orgId, p.data.cells)) }, w));
@@ -204,6 +206,7 @@ export function generateRouter(pool) {
         `SELECT id, name FROM timetable WHERE org_id = $1 AND term_id = $2 AND status = '확정' AND starts_on = $3 AND id <> $4 AND deleted_at IS NULL`,
         [req.orgId, tt.term_id, p.data.starts_on, tt.id],
       )).rows;
+      await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'timetable.confirm', table: 'timetable', rowId: tt.id, after: { name: rows[0].name, starts_on: p.data.starts_on } });
       const notes = same.map((s) => ({ level: '알림', color: 'yellow', detail: `같은 날 시작하는 확정본이 있습니다: ${s.name}` }));
       res.json({ ...rows[0], notes });
     } catch (e) { next(e); }

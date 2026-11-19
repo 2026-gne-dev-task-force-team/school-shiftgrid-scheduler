@@ -3,6 +3,13 @@ import { Alert, Button, Group, Select, Stack, Table, Text, TextInput } from '@ma
 import { api } from '../api.js';
 
 // 기록 탭 — 감사 로그(최근순). 기관 관리자는 orgId, 시스템 관리자는 기관을 골라서(orgId 없음).
+const LABEL = {
+  'attendance.close': '근태 마감', 'attendance.delete': '근태 삭제', 'attendance.edit': '근태 고침', 'attendance.reopen': '근태 마감 풀기', 'attendance.save': '근태 저장',
+  'booking.cancel': '예약 취소', 'booking.create': '예약', 'org.create': '기관 만듦', 'org.switch': '기관 전환', 'org.update': '기관 고침', 'password.change': '비밀번호 바꿈',
+  'room_lock.create': '특별실 잠금', 'room_lock.delete': '특별실 잠금 풂', 'roster.create': '명단 추가', 'roster.import': '명단 가져옴', 'roster.lock': '계정 잠금', 'roster.unlock': '계정 잠금 풂', 'roster.update': '명단 고침',
+  'substitute.cancel': '보결 취소', 'substitute.create': '보결 올림', 'substitute.release': '보결 풂', 'term.import_previous': '지난 학기 가져옴', 'term.new_semester': '새 학기 시작',
+  'timetable.confirm': '시간표 확정', 'timetable.save': '시안 저장',
+};
 export default function AuditLog({ orgId }) {
   const [orgs, setOrgs] = useState([]);
   const [pick, setPick] = useState(null);
@@ -55,7 +62,7 @@ export default function AuditLog({ orgId }) {
               <Table.Tr key={r.id}>
                 <Table.Td>{new Date(r.at).toLocaleString('ko-KR')}</Table.Td>
                 <Table.Td>{r.who ?? '-'}</Table.Td>
-                <Table.Td>{r.action}</Table.Td>
+                <Table.Td>{LABEL[r.action] ?? r.action}{LABEL[r.action] && <Text span size="xs" c="dimmed"> {r.action}</Text>}</Table.Td>
                 <Table.Td>{r.table ?? ''}{r.rowId ? ` #${r.rowId}` : ''} <Text span size="xs" c="dimmed">{detail(r)}</Text></Table.Td>
               </Table.Tr>
             ))}

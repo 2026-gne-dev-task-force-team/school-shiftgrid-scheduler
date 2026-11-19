@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { requireOrgAction } from '../guard.js';
 import { loadConfig } from '../orgConfig.js';
+import { scopeTermId } from './school.js';
 import { FEATURE_KEYS } from '../../shared/features.js';
 
 // 기관 안 경로의 본보기. 이후 판은 이 꼴을 따른다:
@@ -37,8 +38,8 @@ export function orgRouter(pool) {
   r.get('/classrooms', requireOrgAction('timetable.view'), async (req, res, next) => {
     try {
       const { rows } = await pool.query(
-        `SELECT id, term_id, grade, class_no, student_count FROM classroom WHERE org_id = $1 AND deleted_at IS NULL ORDER BY grade, class_no`,
-        [req.orgId],
+        `SELECT id, term_id, grade, class_no, student_count FROM classroom WHERE org_id = $1 AND term_id = $2 AND deleted_at IS NULL ORDER BY grade, class_no`,
+        [req.orgId, await scopeTermId(pool, req)],
       );
       res.json(rows);
     } catch (e) {
