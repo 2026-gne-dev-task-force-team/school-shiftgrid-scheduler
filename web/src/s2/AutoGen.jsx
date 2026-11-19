@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Button, Group, NumberInput, Progress, Select, Stack, Switch, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { currentConflicts, moveConflicts } from '../gen/core.js';
+import { dropPartial, genKey, loadPartial, savePartial } from '../gen/store.js';
 import { combinedOf } from '../gen/overlap.js';
 import { DEFAULTS, useOrgConfig } from '../orgConfig.js';
 
@@ -56,26 +57,37 @@ function Generator({ P, input, onSaved }) {
   const [name, setName] = useState('');
   const [msg, setMsg] = useState(null);
   const worker = useRef(null);
+  const pkey = genKey(P.split('/')[2], input.term?.id);
+  const [saved, setSaved] = useState(null);
+  useEffect(() => { loadPartial(pkey).then(setSaved); }, [pkey]);
   useEffect(() => () => worker.current?.terminate(), []);
 
-  const start = () => {
+  const start = (resume) => {
     setMsg(null);
+    const prev = resume ? saved.candidates : [];
+    const k = resume ? Math.max(1, saved.k - saved.done) : opt.k;
+    if (!resume) { setSaved(null); dropPartial(pkey); }
     worker.current?.terminate();
     const w = new Worker(new URL('../gen/worker.js', import.meta.url), { type: 'module' });
     worker.current = w;
-    setRun({ done: 0, k: opt.k });
+    setRun({ done: 0, k });
     w.onmessage = (e) => {
       const m = e.data;
-      if (m.type === 'progress') setRun({ done: m.done, k: m.k });
+      if (m.type === 'progress') {
+        setRun({ done: m.done, k: m.k });
+        const cs = prev.length ? [...prev, ...m.candidates].sort((a, b) => a.hard - b.hard || a.rr - b.rr || a.soft - b.soft).map((c, rank) => ({ ...c, rank })) : m.candidates;
+        savePartial(pkey, { done: (resume ? saved.done : 0) + m.done, k: resume ? saved.k : m.k, candidates: cs });
+      }
       if (m.type === 'error') { setRun(null); setMsg({ color: 'red', text: m.message }); }
       if (m.type === 'done') {
-        const out = { at: new Date().toISOString(), skipped: m.skipped, ms: m.ms, candidates: m.candidates.map((c) => ({ rank: c.rank, hard: c.hard, rr: c.rr, soft: c.soft, cells: c.cells, unplaced: c.unplaced })) };
-        setRes(out); setRank(0); setRun(null);
+        const out = { at: new Date().toISOString(), skipped: m.skipped, ms: m.ms, candidates: [...prev, ...m.candidates].sort((a, b) => a.hard - b.hard || a.rr - b.rr || a.soft - b.soft).map((c, rank) => ({ ...c, rank }))
+          .map((c) => ({ rank: c.rank, hard: c.hard, rr: c.rr, soft: c.soft, cells: c.cells, unplaced: c.unplaced })) };
+        setRes(out); setRank(0); setRun(null); setSaved(null); dropPartial(pkey);
         try { localStorage.setItem(storeKey(P), JSON.stringify(out)); } catch { /* 저장 공간이 모자라면 이번 화면에만 둔다 */ }
         w.terminate();
       }
     };
-    w.postMessage({ input: { ...input, hardOff: opt.mealGap ? [] : ['teacherMealGap'] }, k: opt.k, perMs: Math.round(opt.sec * 1000) });
+    w.postMessage({ input: { ...input, hardOff: opt.mealGap ? [] : ['teacherMealGap'] }, k, perMs: Math.round(opt.sec * 1000) });
   };
   const cand = res?.candidates?.[rank];
   const save = async () => {
@@ -98,9 +110,15 @@ function Generator({ P, input, onSaved }) {
       </Group>
       {!opt.mealGap && <Text size="sm" c="yellow.8">식사 빈 칸을 필수에서 뺐습니다. 대신 권장 점수의 「교사 점심시간 확보」가 세어 줍니다.</Text>}
       <Group align="end">
-        <Button onClick={start} loading={!!run} disabled={!input.classrooms.length}>자동 생성 (후보 {opt.k}개 · 최대 {opt.k * opt.sec}초)</Button>
+        <Button onClick={() => start(false)} loading={!!run} disabled={!input.classrooms.length}>자동 생성 (후보 {opt.k}개 · 최대 {opt.k * opt.sec}초)</Button>
         {res && <Button variant="default" disabled={!!run || rank + 1 >= res.candidates.length} onClick={() => setRank(rank + 1)}>다음 시안</Button>}
       </Group>
+      {saved && !run && (
+        <Alert color="yellow" title="중단된 생성이 있습니다">
+          <Text size="sm">{new Date(saved.at).toLocaleString()} · 후보 {saved.done}/{saved.k}개까지 만들었습니다.</Text>
+          <Group mt="xs"><Button size="xs" onClick={() => start(true)}>이어서 하기</Button><Button size="xs" variant="default" onClick={() => { setSaved(null); dropPartial(pkey); }}>버리기</Button></Group>
+        </Alert>
+      )}
       {!input.classrooms.length && <Text size="sm" c="dimmed">「학교 기본」에서 반을 먼저 만드세요.</Text>}
       {run && <Progress value={(run.done / run.k) * 100} animated />}
       {msg && <Alert color={msg.color} withCloseButton onClose={() => setMsg(null)}>{msg.text}</Alert>}
