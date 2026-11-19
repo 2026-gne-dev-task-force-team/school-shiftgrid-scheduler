@@ -5,10 +5,12 @@ import { api } from '../api.js';
 import { todayStr as today } from '../today.js';
 import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
+import { useConfirm } from '../Confirm.jsx';
 
 // 특별실 — 예약 · 빈 교실 찾기 · (관리자) 고정 칸 잠금. 겹쳐도 저장되고 경고만 뜬다
 export default function Rooms({ P, admin, onGo }) {
   const org = useOrgConfig(P);
+  const [ask, confirmBox] = useConfirm();
   const DAYS = org.weekdays;
   const [tab, setTab] = useState('book');
   const [rooms, setRooms] = useState([]);
@@ -32,6 +34,12 @@ export default function Rooms({ P, admin, onGo }) {
 
   const run = async (fn) => { setError(''); try { await fn(); } catch (e) { setError(e.message); } load(); };
   const book = () => run(async () => {
+    // 겹치면 막지 않고 먼저 알린다 — 「그래도 예약」을 눌러야 넣는다
+    const free = await api('GET', `${P}/rooms/free?on_date=${f.date}&period=${Number(f.period)}`);
+    const busy = free.find((x) => String(x.id) === f.room)?.busy ?? [];
+    if (busy.length && !(await ask(`겹칩니다 — 이 시각 이 특별실은 이미 쓰입니다.
+${busy.join(' · ')}
+그래도 예약할까요?`, { yes: '그래도 예약', no: '그만두기' }))) return;
     const r = await api('POST', `${P}/bookings`, { special_room_id: Number(f.room), on_date: f.date, period: Number(f.period) });
     setWarn(r.warnings);
   });
@@ -45,6 +53,7 @@ export default function Rooms({ P, admin, onGo }) {
 
   return (
     <Stack gap="sm" maw={560}>
+      {confirmBox}
       <SegmentedControl fullWidth value={tab} onChange={setTab} data={[{ value: 'book', label: '예약' }, { value: 'free', label: '빈 교실' }, ...(admin ? [{ value: 'lock', label: '고정 잠금' }] : [])]} />
       {error && <Alert color="red" withCloseButton onClose={() => setError('')}>{error}</Alert>}
       {tab === 'book' && (

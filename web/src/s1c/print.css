@@ -11,7 +11,8 @@
   .tt-grid td { min-width: 0; }
   .app-tabs-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; background: #fff; border-top: 1px solid #ddd; overflow-x: auto; flex-wrap: nowrap; padding-bottom: env(safe-area-inset-bottom); margin: 0; }
   .app-tabs-bottom .mantine-Tabs-tab { flex: 0 0 auto; }
-  .app-body { padding-bottom: 72px; }
+  .app-tabs-bottom .mantine-Tabs-tab[data-active] { background: #e7f5ff; color: #1971c2; font-weight: 700; box-shadow: inset 0 3px 0 #1971c2; }
+  .app-body { padding-bottom: 96px !important; } /* 하단 탭 바가 맨 아래 카드를 가리지 않게 */
 }
 @media (max-width: 480px) {
   .tt-grid td, .tt-grid th { padding: 4px 3px; }
