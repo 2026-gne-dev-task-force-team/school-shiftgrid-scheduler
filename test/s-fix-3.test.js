@@ -185,6 +185,35 @@ test('S-fix-3 DB: 오늘 적용 확정본 고르기 · 겸임 다른 기관 겹�
     assert.deepEqual(await externalBlockPins(pool, orgA, pc, '2026-01-01'), []);
   });
 
+  await t.test('S-fix-17 API: /gen/input 에 다른 기관 막힌 시각만 · 그 칸을 피해 생성 · 다른 기관 이름·과목은 응답에 없음', async () => {
+    const secretSub = `비밀과목${tag}`;
+    const sid = (await pool.query(`INSERT INTO subject (org_id, name, short_name) VALUES ($1,$2,'비') RETURNING id`, [orgB, secretSub])).rows[0].id;
+    await pool.query(`UPDATE cell SET subject_id = $1 WHERE org_id = $2 AND timetable_id = $3`, [sid, orgB, curB]);
+    let cookie = ''; let csrf = '';
+    const call = async (method, path, body) => {
+      const res = await fetch(base + path, { method, headers: { 'content-type': 'application/json', cookie, 'x-csrf-token': csrf }, body: body ? JSON.stringify(body) : undefined });
+      const sc = res.headers.getSetCookie?.() ?? [];
+      if (sc.length) cookie = sc.map((c) => c.split(';')[0]).join('; ');
+      const text = await res.text();
+      const json = JSON.parse(text);
+      if (json?.csrf) csrf = json.csrf;
+      return { status: res.status, json, text };
+    };
+    await call('GET', '/api/auth/session');
+    assert.equal((await call('POST', '/api/auth/login', { orgId: orgA, loginId: `${tag}-k`, password: 'pw-test-1234' })).status, 200);
+    const r = await call('GET', `/api/orgs/${orgA}/gen/input?date=2026-11-18`);
+    assert.equal(r.status, 200);
+    for (const leak of [`${tag}-B`, secretSub]) assert.ok(!r.text.includes(leak), `응답에 ${leak} 새어 나옴`);
+    const ext = r.json.pins.filter((p) => p.external);
+    assert.deepEqual(ext.map((p) => [p.target_id, p.weekday, p.period, p.kind]).sort(), [[Number(mA), 1, 1, '금지'], [Number(mA), 1, 2, '금지']]);
+    // 생성: 겸임 교사가 월 1·2교시 막힘 → 교사 칸이 그 둘에 없다
+    const input = { classrooms: [{ id: Number(clsA), grade: 1, class_no: 1 }], periods: { grades: { 1: { periods: 6 } } }, lines: [{ classroom_id: Number(clsA), membership_id: Number(mA), subject_id: 1, weekly_hours: 10 }], pins: r.json.pins };
+    const res = generate(input, { k: 1, perMs: 500 }).candidates[0];
+    const mine = res.cells.filter((c) => String(c.membership_id) === String(mA));
+    assert.ok(mine.length > 0);
+    assert.equal(mine.filter((c) => c.weekday === 1 && c.period <= 2).length, 0);
+  });
+
   await t.test('경로: /timetables/applied/mine 은 적용 확정본의 내 칸', async () => {
     let cookie = ''; let csrf = '';
     const call = async (method, path, body) => {
