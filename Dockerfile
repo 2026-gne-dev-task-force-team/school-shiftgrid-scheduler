@@ -2,6 +2,7 @@ FROM node:22-slim AS web
 WORKDIR /web
 COPY web/package*.json ./
 RUN npm install --no-audit --no-fund
+COPY shared /shared
 COPY web/ ./
 RUN npm run build
 
@@ -11,6 +12,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
 COPY server ./server
+COPY shared ./shared
 COPY scripts ./scripts
 COPY --from=web /web/dist ./web/dist
 USER node
