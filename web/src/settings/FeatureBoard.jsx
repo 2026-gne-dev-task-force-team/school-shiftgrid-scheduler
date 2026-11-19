@@ -9,7 +9,7 @@ import { PITCH, PITCH_NOTE } from '../../../shared/feature-pitch.js';
 const Row = ({ label, children }) => children ? <div><Text size="sm" fw={600}>{label}</Text><Text size="sm">{children}</Text></div> : null;
 
 // 소개 글 한 장 — 스위치가 있으면 admin 만 보인다(교직원은 읽기만)
-function Pitch({ k, extra }) {
+export function Pitch({ k, extra }) {
   const p = PITCH[k];
   if (!p) return null;
   return (

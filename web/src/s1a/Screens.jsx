@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Button, Container, Group, Select, Tabs, Text, Title } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { api } from '../api.js';
@@ -13,7 +13,8 @@ import AutoGen from '../s2/AutoGen.jsx';
 import SoftSettings from '../s2b/SoftSettings.jsx';
 import OrgConfig from '../settings/OrgConfig.jsx';
 import FeatureBoard from '../settings/FeatureBoard.jsx';
-import { HelpModal, Welcome } from '../s1c/Guide.jsx';
+import { HelpModal, MenuIntro, Welcome } from '../s1c/Guide.jsx';
+import { orderLine } from '../../../shared/feature-guide.js';
 import Attendance from '../s4a/Attendance.jsx';
 import Substitute from '../s3/Substitute.jsx';
 import Rooms from '../s3/Rooms.jsx';
@@ -34,20 +35,22 @@ function AddToHome({ phone }) {
 
 const ORDER_KEY = 'tt-order-hint-dismissed';
 // 관리자에게만 「처음이면 이 순서로」 — 닫으면 다시 안 뜬다
-function OrderHint() {
+function OrderHint({ features }) {
   const [shown, setShown] = useState(() => { try { return !localStorage.getItem(ORDER_KEY); } catch { return false; } });
   if (!shown) return null;
   const close = () => { try { localStorage.setItem(ORDER_KEY, '1'); } catch { /* 저장 못 해도 이번엔 닫힌다 */ } setShown(false); };
-  return <Group gap="xs" mb="sm" className="no-print" wrap="nowrap" align="flex-start"><Text size="sm" c="dimmed" style={{ flex: 1 }}>처음이면 이 순서로: 명단 → 학교 기본(시수표까지) → 자동 생성 → 시안 저장 → 확정 → 출력. 시안은 시간표 격자에서 손볼 수 있습니다</Text><Button variant="subtle" size="compact-xs" color="gray" onClick={close}>닫기</Button></Group>;
+  return <Group gap="xs" mb="sm" className="no-print" wrap="nowrap" align="flex-start"><Text size="sm" c="dimmed" style={{ flex: 1 }}>처음이면 이 순서로: {orderLine(features)}. 시안은 시간표 격자에서 손볼 수 있습니다</Text><Button variant="subtle" size="compact-xs" color="gray" onClick={close}>닫기</Button></Group>;
 }
 
+const IntroCtx = createContext(null); // 첫 방문 안내 카드에 필요한 {user, features}
 function Panel({ v, hint, children }) {
-  return <Tabs.Panel value={v}>{hint && <Text size="sm" c="dimmed" mb="sm" className="no-print">{hint}</Text>}{children}</Tabs.Panel>;
+  const ctx = useContext(IntroCtx);
+  return <Tabs.Panel value={v}>{hint && <Text size="sm" c="dimmed" mb="sm" className="no-print">{hint}</Text>}{ctx && <MenuIntro menu={v} user={ctx.user} features={ctx.features} />}{children}</Tabs.Panel>;
 }
 
 // 기관 화면 탭 — 폰 하단 바는 다섯(시간표·보결·특별실·근태·내 정보)만, 나머지는 「내 정보」 안 버튼으로
 const PHONE_MAIN = ['grid', 'sub', 'rooms', 'att', 'me'];
-function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
+function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, setOv }) {
   const edit = user.role !== '보기만';
   const all = [
     { v: 'roster', label: '명단', hint: '교직원 명단을 올리고 고치는 곳입니다. 처음 한 번 먼저 채웁니다', show: admin },
@@ -65,21 +68,19 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
     { v: 'feat', label: '기능 고르기', hint: admin ? '필요한 기능만 켜고 끕니다. 넣어 둔 자료는 남습니다' : '우리 학교 시간표 도구에 어떤 기능이 있는지 봅니다', show: true },
     { v: 'me', label: '내 정보', hint: phone ? '비밀번호를 바꾸거나 나머지 메뉴를 엽니다' : '비밀번호를 바꿉니다', show: true },
   ];
-  const base = useOrgConfig(P);
-  const [ov, setOv] = useState(null); // 스위치판이 방금 바꾼 값(메뉴에 바로 반영)
   const [tip, setTip] = useState(null);
   const [want, setTab] = useState(admin ? 'roster' : 'mine');
-  const items = visibleMenus(all, ov ?? base.features); // 권한(show) AND 기관 스위치. 「기능 고르기」는 MENU_FEATURES 에 없어 늘 보인다
+  const items = visibleMenus(all, features); // 권한(show) AND 기관 스위치. 「기능 고르기」는 MENU_FEATURES 에 없어 늘 보인다
   const tryGo = (v, text) => { setTab(v); setTip(text); setTimeout(() => setTip(null), 12000); };
   const on = (v) => items.some((i) => i.v === v);
   const H = Object.fromEntries(items.map((i) => [i.v, i.hint]));
   const tab = on(want) ? want : 'grid'; // 숨긴 탭이면 시간표로
-  if (!ov && !base.loaded) return null; // 설정을 받기 전엔 메뉴를 그리지 않는다(꺼진 탭이 잠깐 보였다 사라지는 깜빡임)
+  if (!loaded) return null; // 설정을 받기 전엔 메뉴를 그리지 않는다(꺼진 탭이 잠깐 보였다 사라지는 깜빡임)
   const bar = phone ? items.filter((i) => PHONE_MAIN.includes(i.v)) : items;
   const more = phone ? items.filter((i) => !PHONE_MAIN.includes(i.v)) : [];
   return (
-    <>
-    {admin && <OrderHint />}
+    <IntroCtx.Provider value={{ user, features }}>
+    {admin && <OrderHint features={features} />}
     {tip && <Alert className="no-print" color="blue" mb="sm" withCloseButton onClose={() => setTip(null)}>{tip}</Alert>}
     <Tabs value={tab} onChange={setTab} keepMounted={false} {...tabProps}>
       <Tabs.List mb="md" mr={phone ? 0 : 'md'} className={phone ? 'app-tabs-bottom' : undefined}>
@@ -107,7 +108,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser }) {
         <ChangePassword onDone={onUser} />
       </Panel>
     </Tabs>
-    </>
+    </IntroCtx.Provider>
   );
 }
 
@@ -116,6 +117,12 @@ export default function Screens({ user, onLogout, onUser }) {
   const phone = useMediaQuery('(max-width: 48em)');
   const tabProps = phone ? {} : { orientation: 'vertical', placement: 'left' }; // PC 는 왼쪽 세로 탭
   const [mems, setMems] = useState([]);
+  const inOrg = !user.mustChange && user.role !== '시스템관리자';
+  const orgP = inOrg ? `/orgs/${user.orgId}` : null;
+  const base = useOrgConfig(orgP);
+  const [ov, setOv] = useState(null); // 스위치판·따라 하기가 방금 바꾼 값(메뉴에 바로 반영)
+  const features = ov ?? base.features;
+  const [rev, setRev] = useState(0); // 「안내 다시 보기」 — 메뉴 화면을 새로 그려 카드를 다시 띄운다
   useEffect(() => {
     if (!user.mustChange) api('GET', '/auth/memberships').then((r) => setMems(r.items)).catch(() => setMems([]));
   }, [user.mustChange, user.orgId]);
@@ -125,7 +132,6 @@ export default function Screens({ user, onLogout, onUser }) {
     onUser(r.user);
     window.location.reload(); // 새 세션·새 CSRF 로 화면 전체를 다시 읽는다
   }
-  const inOrg = !user.mustChange && user.role !== '시스템관리자';
   let body;
   if (user.mustChange) {
     body = <ChangePassword forced onDone={onUser} />;
@@ -146,7 +152,7 @@ export default function Screens({ user, onLogout, onUser }) {
     // 기관관리자 · 교직원 · 보기만 — 메뉴 하나로 묶는다(명단은 관리자만)
     const admin = user.role === '기관관리자';
     const P = `/orgs/${user.orgId}`;
-    body = <OrgTabs user={user} admin={admin} P={P} phone={phone} tabProps={tabProps} onUser={onUser} />;
+    body = <OrgTabs key={rev} user={user} admin={admin} P={P} phone={phone} tabProps={tabProps} onUser={onUser} features={features} loaded={!!ov || base.loaded} setOv={setOv} />;
   }
   return (
     <Container size="lg" py="md" className="app-body">
@@ -160,8 +166,8 @@ export default function Screens({ user, onLogout, onUser }) {
       </Group>
       <AddToHome phone={phone} />
       {body}
-      {inOrg && <Welcome P={`/orgs/${user.orgId}`} admin={user.role === '기관관리자'} />}
-      {inOrg && <HelpModal opened={help} onClose={() => setHelp(false)} admin={user.role === '기관관리자'} />}
+      {inOrg && <Welcome P={orgP} admin={user.role === '기관관리자'} features={features} />}
+      {inOrg && <HelpModal opened={help} onClose={() => setHelp(false)} admin={user.role === '기관관리자'} P={orgP} user={user} features={features} onChanged={setOv} onReset={() => setRev((r) => r + 1)} />}
     </Container>
   );
 }
