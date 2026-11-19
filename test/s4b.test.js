@@ -66,6 +66,9 @@ test('PDF · 엑셀 · HWPX 바이트 생성 스모크', async () => {
   const sec = await z.file('Contents/section0.xml').async('string');
   assert.ok(sec.includes('1학년'.replace('1', '3')) && sec.includes('<hp:tbl'));
   assert.ok((await z.file('Contents/header.xml').async('string')).includes(st.changcheColor));
+  // S-fix-14: hwpx 범례는 기관 직무 목록에서 만든다
+  const sec2 = await (await JSZip.loadAsync(await makeHwpx(sheets, st, 'x', ['담임', '영어전담']))).file('Contents/section0.xml').async('string');
+  assert.ok(sec2.includes('영어전담') && !sec2.includes('파랑='));
   // 빈 시간표도 깨지지 않는다
   assert.equal((await makePdf([], st, 'x')).subarray(0, 5).toString(), '%PDF-');
   assert.equal((await makeHwpx([], st, 'x')).subarray(0, 2).toString(), 'PK');

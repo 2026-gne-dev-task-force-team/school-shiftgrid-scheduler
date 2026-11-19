@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { legendOf } from './pdf.js';
 
 // 최소 HWPX(OWPML) 직접 생성 — 한글이 여는지는 업무 PC 에서 검수한다.
 // 셀 음영 대신 글자색·굵게를 쓴다(설계 4번: 배경색 옵션 없음). 시트마다 표 하나, 사이에 쪽 나눔.
@@ -32,24 +33,24 @@ function table(sh, startId) {
   return `<hp:tbl id="${startId}" zOrder="0" numberingType="TABLE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" pageBreak="CELL" repeatHeader="1" rowCnt="${rows.length}" colCnt="${colW.length}" cellSpacing="0" borderFillIDRef="2" noAdjust="0"><hp:sz width="${w}" widthRelTo="ABSOLUTE" height="${rowH * rows.length}" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/><hp:inMargin left="141" right="141" top="141" bottom="141"/>${trs}</hp:tbl>`;
 }
 
-function section(sheets, docTitle) {
+function section(sheets, docTitle, st, duties) {
   const secPr = `<hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" outlineShapeIDRef="0" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0"><hp:pagePr landscape="NARROWLY" width="59528" height="84188" gutterType="LEFT_ONLY"><hp:margin header="2835" footer="2835" gutter="0" left="4252" right="4252" top="4252" bottom="2835"/></hp:pagePr></hp:secPr>`;
   let id = 1000;
   const body = (sheets.length ? sheets : [{ title: docTitle, header: [{ text: '' }], rows: [] }]).map((sh, i) => {
     const t = para(1, `${sh.title} · ${docTitle}`, 0, i === 0 ? `<hp:run charPrIDRef="0">${secPr}</hp:run>` : '').replace('pageBreak="0"', i === 0 ? 'pageBreak="0"' : 'pageBreak="1"');
     return t + `<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="0">${table(sh, id++)}</hp:run></hp:p>`;
   }).join('');
-  const legend = para(0, '파랑=창체 · 빨강=전담 · 밑줄 굵게=과학실');
+  const legend = para(0, legendOf(st, duties).map(([, t]) => t).join(' · '));
   return `${XML}<hs:sec ${NS}>${body}${legend}</hs:sec>`;
 }
 
-export async function makeHwpx(sheets, st, docTitle) {
+export async function makeHwpx(sheets, st, docTitle, duties) {
   const zip = new JSZip();
   zip.file('mimetype', 'application/hwp+zip', { compression: 'STORE' });
   zip.file('version.xml', `${XML}<hv:HCFVersion xmlns:hv="http://www.hancom.co.kr/hwpml/2011/version" tagetApplication="WORDPROCESSOR" major="5" minor="0" micro="5" buildNumber="0" os="1" xmlVersion="1.4" application="school-timetable" appVersion="0.0.1"/>`);
   zip.file('META-INF/container.xml', `${XML}<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf"><ocf:rootfiles><ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/></ocf:rootfiles></ocf:container>`);
   zip.file('Contents/content.hpf', `${XML}<opf:package xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf" version="" unique-identifier="" id=""><opf:metadata><opf:title>${esc(docTitle)}</opf:title><opf:language>ko</opf:language></opf:metadata><opf:manifest><opf:item id="header" href="Contents/header.xml" media-type="application/xml"/><opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/></opf:manifest><opf:spine><opf:itemref idref="header" linear="yes"/><opf:itemref idref="section0" linear="yes"/></opf:spine></opf:package>`);
   zip.file('Contents/header.xml', header(st));
-  zip.file('Contents/section0.xml', section(sheets, docTitle));
+  zip.file('Contents/section0.xml', section(sheets, docTitle, st, duties));
   return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
 }
