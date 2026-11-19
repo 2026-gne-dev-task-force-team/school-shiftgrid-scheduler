@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
+import { useOrgConfig } from '../orgConfig.js';
 import { EmptyHint, Finger } from './Guide.jsx';
 import { emptyCount, confirmText } from '../../../shared/ttConfirm.js';
 import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
-const DAYS = ['월', '화', '수', '목', '금'];
 const UNDO_MAX = 50;
 const GRADES = [1, 2, 3, 4, 5, 6];
 const today = () => { const w = new Date().getDay(); return w >= 1 && w <= 5 ? w : 1; }; // 폰은 오늘 요일부터(주말은 월)
@@ -84,9 +84,10 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   const [d, setD] = useState(null);
   const [classId, setClassId] = useState(() => loadPick().classId);
   const [sel, setSel] = useState(null); // {weekday, period}
-  const [day, setDay] = useState(today); // 폰에서 보이는 요일(1~5)
+  const DAYS = useOrgConfig(P).weekdays; // 요일은 기관 설정 한 곳(서버 config.weekdays)
+  const [day, setDay] = useState(today); // 폰에서 보이는 요일(1~요일 수)
   const [tx, setTx] = useState(null);
-  const go = (n) => setDay((x) => Math.min(5, Math.max(1, x + n)));
+  const go = (n) => setDay((x) => Math.min(DAYS.length, Math.max(1, x + n)));
   const [form, setForm] = useState({});
   const [undo, setUndo] = useState([]);
   const [roomView, setRoomView] = useState(null);
@@ -121,7 +122,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
     try {
       const r = await api('PUT', `${P}/timetables/${tid}/cells`, cell);
       if (record) setUndo((u) => [...u.slice(-(UNDO_MAX - 1)), prev]);
-      setMsg(r.violations.length ? r.violations : null);
+      setMsg(r.violations.length ? { head: '저장했습니다.', list: r.violations } : null);
       await load();
     } catch (e) { setError(e.message); }
   }
@@ -155,12 +156,12 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
     const t = d.timetable;
     if (!window.confirm(confirmText(t.name, date, d.violations.length, emptyCount(d.classrooms, d.periods, d.cells)))) return;
     const r = await api('POST', `${P}/timetables/${tid}/confirm`, { starts_on: date });
-    setMsg(r.notes?.length ? r.notes : null);
+    setMsg(r.notes?.length ? { head: '확정했습니다.', list: r.notes } : null);
     await load(); onChanged();
   });
   const unconfirmTt = () => run(async () => {
     if (!window.confirm('확정을 풀고 시안으로 돌릴까요?')) return;
-    await api('POST', `${P}/timetables/${tid}/unconfirm`); await load(); onChanged();
+    await api('POST', `${P}/timetables/${tid}/unconfirm`); setMsg(null); await load(); onChanged();
   });
   const deleteTt = () => run(async () => {
     if (!window.confirm(`「${d.timetable.name}」을 지울까요?${d.timetable.status === '확정' ? ' 확정된 시간표입니다.' : ''}`)) return;
@@ -192,14 +193,14 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
       <Text className="print-only" fw={700}>{d.timetable.name} — {cls.grade}학년 {cls.class_no}반</Text>
       {admin && !hasCells && <Finger text="아무 칸이나 눌러 교과와 교사를 넣어 보세요" />}
       {msg && (
-        <Alert className="no-print" color={msg.some((v) => v.color === 'red') ? 'red' : 'yellow'} withCloseButton onClose={() => setMsg(null)}>
-          저장했습니다. {msg.map((v) => v.detail || v.label).join(' · ')}
+        <Alert className="no-print" color={msg.list.some((v) => v.color === 'red') ? 'red' : 'yellow'} withCloseButton onClose={() => setMsg(null)}>
+          {msg.head} {msg.list.map((v) => v.detail || v.label).join(' · ')}
         </Alert>
       )}
       <Group className="phone-only no-print" justify="space-between">
         <Button variant="default" size="xs" disabled={day <= 1} onClick={() => go(-1)}>◀ 전날</Button>
         <Text fw={700}>{DAYS[day - 1]}요일</Text>
-        <Button variant="default" size="xs" disabled={day >= 5} onClick={() => go(1)}>다음날 ▶</Button>
+        <Button variant="default" size="xs" disabled={day >= DAYS.length} onClick={() => go(1)}>다음날 ▶</Button>
       </Group>
       <div className="grid-scroll" onTouchStart={(e) => setTx(e.touches[0].clientX)} onTouchEnd={(e) => { if (tx != null && Math.abs(e.changedTouches[0].clientX - tx) > 60) go(e.changedTouches[0].clientX < tx ? 1 : -1); setTx(null); }}>
         <Table withTableBorder withColumnBorders className="tt-grid">

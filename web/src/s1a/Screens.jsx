@@ -69,7 +69,7 @@ function OrgTabs({ user, admin, P, phone, tabProps, onUser, features, loaded, se
     { v: 'me', label: '내 정보', hint: phone ? '비밀번호를 바꾸거나 나머지 메뉴를 엽니다' : '비밀번호를 바꿉니다', show: true },
   ];
   const [tip, setTip] = useState(null);
-  const [want, setTab] = useState(admin ? 'roster' : 'mine');
+  const [want, setTab] = useState(admin && !phone ? 'roster' : admin ? 'grid' : 'mine');
   const items = visibleMenus(all, features); // 권한(show) AND 기관 스위치. 「기능 고르기」는 MENU_FEATURES 에 없어 늘 보인다
   const tryGo = (v, text) => { setTab(v); setTip(text); setTimeout(() => setTip(null), 12000); };
   const on = (v) => items.some((i) => i.v === v);
