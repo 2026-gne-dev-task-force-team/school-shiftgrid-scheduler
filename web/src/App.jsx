@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { clearAllPartial } from './gen/store.js';
 import { Alert, Button, Center, Checkbox, Container, Paper, PasswordInput, Select, Stack, Text, TextInput, Title } from '@mantine/core';
 import { api } from './api.js';
 import S1aScreens from './s1a/Screens.jsx';
@@ -64,6 +65,7 @@ export default function App() {
 
   async function logout() {
     await api('POST', '/auth/logout');
+    await clearAllPartial(); // 생성 중간 결과는 로그아웃 때 지운다
     const r = await api('GET', '/auth/session');
     setUser(r.user);
   }

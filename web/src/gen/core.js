@@ -431,7 +431,8 @@ export function generate(input, { k = 8, perMs = 3000, seed = 1, softScore = () 
     let soft = 0;
     try { soft = Number(softScore({ cells: r.cells, input })) || 0; } catch { soft = 0; }
     out.push({ ...r, soft, strategy: i, ms: Date.now() - s0 });
-    onProgress?.({ done: i + 1, k, hard: r.hard, rr: r.rr });
+    // candidates: 지금까지 만든 것을 줄 세운 중간 결과(탭을 닫아도 이어 쓰라고 메인이 저장한다)
+    onProgress?.({ done: i + 1, k, hard: r.hard, rr: r.rr, candidates: [...out].sort((a, b) => a.hard - b.hard || a.rr - b.rr || a.soft - b.soft).map((c, rank) => ({ rank, hard: c.hard, rr: c.rr, soft: c.soft, cells: c.cells, unplaced: c.unplaced })) });
   }
   out.sort((a, b) => a.hard - b.hard || a.rr - b.rr || a.soft - b.soft);
   return { candidates: out.map((c, rank) => ({ ...c, rank })), skipped: prep.skipped.length, ms: Date.now() - t0 };
