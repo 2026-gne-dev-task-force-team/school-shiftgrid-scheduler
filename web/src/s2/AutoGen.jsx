@@ -7,6 +7,7 @@ import { combinedOf } from '../gen/overlap.js';
 import { DEFAULTS, useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
 import { featureOn } from '../features.js';
+import { useConfirm } from '../Confirm.jsx';
 
 const K = 8; // 후보 수 기본값(화면 입력칸이 덮고 localStorage 에 기억)
 const PER_MS = 3000; // 후보 하나당 시간 기본값(ms)
@@ -153,15 +154,16 @@ function Drafts({ P, input, list, tid, setTid, reload }) {
   const [date, setDate] = useState('');
   const [copyName, setCopyName] = useState('');
   const [msg, setMsg] = useState(null);
+  const [ask, confirmBox] = useConfirm();
   const load = useCallback(() => (tid ? api('GET', `${P}/timetables/${tid}`).then(setD).catch((e) => setMsg({ color: 'red', text: e.message })) : setD(null)), [P, tid]);
   useEffect(() => { load(); }, [load]);
-  const act = (fn) => async () => { setMsg(null); try { await fn(); } catch (e) { setMsg({ color: 'red', text: e.message }); } };
+  const act = (fn) => async (...a) => { setMsg(null); try { await fn(...a); } catch (e) { setMsg({ color: 'red', text: e.message }); } };
   const tt = d?.timetable;
   const levelOf = (rule) => d?.levels?.[rule];
 
   // 수정 모드: 같은 반 안 두 칸 맞바꾸기(맞바꾸기 한 번 호출)
   const swap = act(async (from, to) => {
-    if (tt.status === '확정' && levelOf('edit_confirmed') === '재확인' && !window.confirm('확정된 시간표입니다. 그래도 옮길까요?')) return;
+    if (tt.status === '확정' && levelOf('edit_confirmed') === '재확인' && !(await ask('확정된 시간표입니다. 그래도 옮길까요?', { yes: '옮기기' }))) return;
     const r = await api('POST', `${P}/timetables/${tid}/cells/swap`, { from: { classroom_id: from.classroom_id, weekday: from.weekday, period: from.period }, to: { classroom_id: to.classroom_id, weekday: to.weekday, period: to.period } });
     setMsg(r.violations?.length ? { color: r.violations.some((v) => v.color === 'red') ? 'red' : 'yellow', text: `옮겼습니다. ${r.violations.map((v) => v.detail || v.label).join(' · ')}` } : { color: 'green', text: '옮겼습니다.' });
     await load();
@@ -170,6 +172,7 @@ function Drafts({ P, input, list, tid, setTid, reload }) {
   if (!list.length) return null;
   return (
     <Stack mt="lg">
+      {confirmBox}
       <Group align="end">
         <Select label="저장한 시간표 (수정 모드)" placeholder="고르세요" data={list.map((t) => ({ value: String(t.id), label: `${t.name} (${t.status}${t.starts_on ? ` · ${String(t.starts_on).slice(0, 10)}부터` : ''})` }))} value={tid ? String(tid) : null} onChange={(v) => setTid(v ? Number(v) : null)} />
       </Group>
@@ -181,19 +184,19 @@ function Drafts({ P, input, list, tid, setTid, reload }) {
               <>
                 <TextInput type="date" label="적용 시작일" value={date} onChange={(e) => setDate(e.currentTarget.value)} />
                 <Button color="green" disabled={!date} onClick={act(async () => {
-                  if (!window.confirm(`「${tt.name}」을 ${date}부터 확정합니다. 확정하면 교직원 화면에 뜹니다.`)) return;
+                  if (!(await ask(`「${tt.name}」을 ${date}부터 확정합니다. 확정하면 교직원 화면에 뜹니다.`, { yes: '확정' }))) return;
                   const r = await api('POST', `${P}/timetables/${tid}/confirm`, { starts_on: date });
                   setMsg({ color: r.notes?.length ? 'yellow' : 'green', text: `확정했습니다.${r.notes?.length ? ` ${r.notes.map((n) => n.detail).join(' · ')}` : ''}` });
                   reload(); load();
                 })}>확정</Button>
               </>
             ) : (
-              <Button variant="default" onClick={act(async () => { if (!window.confirm('확정을 풀고 시안으로 돌릴까요?')) return; await api('POST', `${P}/timetables/${tid}/unconfirm`); reload(); load(); })}>확정 풀기</Button>
+              <Button variant="default" onClick={act(async () => { if (!(await ask('확정을 풀고 시안으로 돌릴까요?', { yes: '확정 풀기' }))) return; await api('POST', `${P}/timetables/${tid}/unconfirm`); reload(); load(); })}>확정 풀기</Button>
             )}
             <TextInput label="복제 이름" placeholder={`${tt.name} 사본`} value={copyName} onChange={(e) => setCopyName(e.currentTarget.value)} />
             <Button variant="default" onClick={act(async () => { const t = await api('POST', `${P}/timetables/${tid}/copy`, { name: copyName.trim() || `${tt.name} 사본` }); setCopyName(''); reload(); setTid(t.id); })}>복제</Button>
             <Button color="red" variant="light" onClick={act(async () => {
-              if (!window.confirm(`「${tt.name}」을 지울까요?${tt.status === '확정' ? ' 확정된 시간표입니다.' : ''}`)) return;
+              if (!(await ask(`「${tt.name}」을 지울까요?${tt.status === '확정' ? ' 확정된 시간표입니다.' : ''}`, { yes: '지우기' }))) return;
               await api('DELETE', `${P}/timetables/${tid}`); setTid(null); reload();
             })}>지우기</Button>
           </Group>

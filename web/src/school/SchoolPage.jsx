@@ -8,6 +8,7 @@ import { useOrgConfig } from '../orgConfig.js';
 import Term from '../Term.jsx';
 import { SCHOOL_TAB_FEATURE, visibleTabs } from '../features.js';
 import { MenuIntro } from '../s1c/Guide.jsx';
+import { useConfirm } from '../Confirm.jsx';
 
 function useLoad(path) {
   const [data, setData] = useState(null);
@@ -113,21 +114,23 @@ function Semester({ P, admin, term, classes, onDone }) {
   const [terms] = useLoad(`${P}/terms`);
   const [ov, setOv] = useState(null);
   const [err, setErr] = useState('');
+  const [ask, confirmBox] = useConfirm();
   const start = async () => {
     setErr('');
     try {
       await api('POST', `${P}/terms/new-semester`, {});
     } catch (e) {
       if (e.status !== 409 || !e.body?.needConfirm) return setErr(e.message);
-      if (!window.confirm(`${e.message}
+      if (!(await ask(`${e.message}
 
-계속할까요?`)) return;
+계속할까요?`, { yes: '새 학기 시작' }))) return;
       try { await api('POST', `${P}/terms/new-semester`, { confirm: true }); onDone(); } catch (e2) { setErr(e2.message); }
     }
   };
   const view = (v) => { setErr(''); setOv(null); if (v) api('GET', `${P}/terms/${v}/overview`).then(setOv).catch((e) => setErr(e.message)); };
   return (
     <Stack gap="xs">
+      {confirmBox}
       <Err e={err} />
       <Group>
         {admin && <Button color="red" variant="light" onClick={start}>새 학기 시작</Button>}

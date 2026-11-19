@@ -2,13 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, Stack, Table, Text, TextInput } from '@mantine/core';
 import { api } from '../api.js';
 import { useOrgConfig } from '../orgConfig.js';
+import { useConfirm } from '../Confirm.jsx';
+import { todayStr } from '../today.js';
+import { featureOn } from '../features.js';
 import { EmptyHint, Finger } from './Guide.jsx';
 import { emptyCount, confirmText } from '../../../shared/ttConfirm.js';
 import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
 const UNDO_MAX = 50;
 const GRADES = [1, 2, 3, 4, 5, 6];
-const today = () => { const w = new Date().getDay(); return w >= 1 && w <= 5 ? w : 1; }; // 폰은 오늘 요일부터(주말은 월)
+// 폰은 오늘 요일부터. 기관 요일 수보다 큰 날(주말인데 토요일이 없는 학교)은 월
+const todayDay = (n) => { const w = new Date().getDay(); const k = w === 0 ? 7 : w; return k <= n ? k : 1; };
 
 // 빠른 시작 — 반 수와 교시 수만 묻고 학기·반·교시틀·빈 시안을 한 번에 만든다. 선생님·시수는 나중.
 function QuickStart({ P, onDone }) {
@@ -80,12 +84,16 @@ export default function Grid({ P, admin }) {
 }
 
 function Editor({ P, tid, admin, onChanged, onDeleted }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayStr());
   const [d, setD] = useState(null);
   const [classId, setClassId] = useState(() => loadPick().classId);
   const [sel, setSel] = useState(null); // {weekday, period}
-  const DAYS = useOrgConfig(P).weekdays; // 요일은 기관 설정 한 곳(서버 config.weekdays)
-  const [day, setDay] = useState(today); // 폰에서 보이는 요일(1~요일 수)
+  const cfg = useOrgConfig(P);
+  const DAYS = cfg.weekdays; // 요일은 기관 설정 한 곳(서버 config.weekdays)
+  const roomsOn = featureOn(cfg.features, 'rooms');
+  const [ask, confirmBox] = useConfirm();
+  const [day, setDay] = useState(() => todayDay(DAYS.length));
+  useEffect(() => { if (cfg.loaded) setDay(todayDay(cfg.weekdays.length)); }, [cfg.loaded]); // 기관 요일을 받은 뒤 한 번 다시 맞춘다 // 폰에서 보이는 요일(1~요일 수)
   const [tx, setTx] = useState(null);
   const go = (n) => setDay((x) => Math.min(DAYS.length, Math.max(1, x + n)));
   const [form, setForm] = useState({});
@@ -118,7 +126,13 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
     setError('');
     const key = `${cell.classroom_id}:${cell.weekday}:${cell.period}`;
     const prev = cellMap.get(key) || { ...cell, subject_id: null, membership_id: null, special_room_id: null };
-    if (d.timetable.status === '확정' && levelOf('edit_confirmed') === '재확인' && !window.confirm('확정된 시간표입니다. 고치려면 먼저 위의 「확정 풀기」를 누르세요. 그래도 저장할까요?')) return;
+    if (d.timetable.status === '확정' && levelOf('edit_confirmed') === '재확인') {
+      const a = await ask('확정된 시간표입니다. 어떻게 고칠까요?', { yes: '확정 풀고 고치기', alt: '확정본 그대로 고치기(기록에 남음)', no: '취소' });
+      if (!a) return;
+      if (a === true) {
+        try { await api('POST', `${P}/timetables/${tid}/unconfirm`); onChanged(); } catch (e) { setError(e.message); return; }
+      }
+    }
     try {
       const r = await api('PUT', `${P}/timetables/${tid}/cells`, cell);
       if (record) setUndo((u) => [...u.slice(-(UNDO_MAX - 1)), prev]);
@@ -154,17 +168,17 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
   const run = async (fn) => { setError(''); try { await fn(); } catch (e) { setError(e.message); } };
   const confirmTt = () => run(async () => {
     const t = d.timetable;
-    if (!window.confirm(confirmText(t.name, date, d.violations.length, emptyCount(d.classrooms, d.periods, d.cells)))) return;
+    if (!(await ask(confirmText(t.name, date, d.violations.length, emptyCount(d.classrooms, d.periods, d.cells)), { yes: '확정' }))) return;
     const r = await api('POST', `${P}/timetables/${tid}/confirm`, { starts_on: date });
     setMsg(r.notes?.length ? { head: '확정했습니다.', list: r.notes } : null);
     await load(); onChanged();
   });
   const unconfirmTt = () => run(async () => {
-    if (!window.confirm('확정을 풀고 시안으로 돌릴까요?')) return;
+    if (!(await ask('확정을 풀고 시안으로 돌릴까요?', { yes: '확정 풀기' }))) return;
     await api('POST', `${P}/timetables/${tid}/unconfirm`); setMsg(null); await load(); onChanged();
   });
   const deleteTt = () => run(async () => {
-    if (!window.confirm(`「${d.timetable.name}」을 지울까요?${d.timetable.status === '확정' ? ' 확정된 시간표입니다.' : ''}`)) return;
+    if (!(await ask(`「${d.timetable.name}」을 지울까요?${d.timetable.status === '확정' ? ' 확정된 시간표입니다.' : ''}`, { yes: '지우기' }))) return;
     await api('DELETE', `${P}/timetables/${tid}`); onDeleted();
   });
   const hasCells = d.cells.length > 0;
@@ -172,6 +186,7 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
 
   return (
     <Stack>
+      {confirmBox}
       {error && <Alert color="red">{error}</Alert>}
       <Group className="no-print" justify="space-between">
         <Select label="반" data={d.classrooms.map((c) => ({ value: String(c.id), label: `${c.grade}학년 ${c.class_no}반` }))} value={String(cls.id)} onChange={(v) => setClassId(v)} allowDeselect={false} w={150} />
@@ -235,19 +250,19 @@ function Editor({ P, tid, admin, onChanged, onDeleted }) {
           </Table.Tbody>
         </Table>
       </div>
-      <Stack gap={4} className="no-print">
+      {roomsOn && <Stack gap={4} className="no-print">
         <Select label="특별실 주간 보기" placeholder="방을 고르면 그 방을 쓰는 칸이 나옵니다" clearable data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={roomView} onChange={setRoomView} w={260} />
         {roomView && [...d.cells].filter((c) => sameId(c.special_room_id, roomView)).sort((a, b) => a.weekday - b.weekday || a.period - b.period).map((c) => {
           const k = findById(d.classrooms, c.classroom_id);
           return <Text size="sm" key={`${c.classroom_id}:${c.weekday}:${c.period}`}>{DAYS[c.weekday - 1]} {c.period}교시 · {k ? `${k.grade}-${k.class_no}` : ''} {name(d.subjects, c.subject_id)?.name || ''}</Text>;
         })}
-      </Stack>
+      </Stack>}
       <Modal opened={!!sel} onClose={() => setSel(null)} title={sel ? `${cls.grade}-${cls.class_no} ${DAYS[sel.weekday - 1]}요일 ${sel.period}교시` : ''}>
         <Stack>
           <Select label="교과" allowDeselect={false} searchable data={d.subjects.map((s) => ({ value: String(s.id), label: s.name }))} value={form.subject_id} onChange={(v) => setForm({ ...form, subject_id: v })} />
           <TextInput label="또는 과목 이름 직접 쓰기" placeholder="목록에 없으면 여기에 (예: 창체)" value={form.newSubject || ''} onChange={(e) => setForm({ ...form, newSubject: e.currentTarget.value })} />
           <Select label="교사(비워도 됩니다)" clearable searchable data={d.teachers.map((t) => ({ value: String(t.id), label: t.name }))} value={form.membership_id} onChange={(v) => setForm({ ...form, membership_id: v })} />
-          <Select label="특별실" clearable placeholder="없음" data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={form.special_room_id} onChange={(v) => setForm({ ...form, special_room_id: v })} />
+          {roomsOn && <Select label="특별실" clearable placeholder="없음" data={d.rooms.map((r) => ({ value: String(r.id), label: r.name }))} value={form.special_room_id} onChange={(v) => setForm({ ...form, special_room_id: v })} />}
           <Group justify="space-between">
             <Button color="red" variant="light" onClick={() => commit(true)}>칸 비우기</Button>
             <Button onClick={() => commit(false)}>넣기</Button>

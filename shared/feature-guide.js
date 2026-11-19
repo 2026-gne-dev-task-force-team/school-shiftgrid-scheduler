@@ -75,7 +75,7 @@ export const WALKTHROUGH = [
   ] },
 ];
 
-export const SAMPLE_NOTE = '처음이라면 연습용 「예시초등학교」(6학급)에서 해 보세요. 개발 담당이 `node scripts/seed-sample.js` 로 심어 두며, 관리자 로그인 ID 는 sample-admin 입니다. 실제 학교 자료는 건드리지 않습니다.';
+export const SAMPLE_NOTE = '처음이라면 연습용 「예시초등학교」(6학급)에서 해 보세요. 연습용 예시 학교가 필요하면 담당자에게 요청하세요. 실제 학교 자료는 건드리지 않습니다.';
 
 // 그 단계의 스위치만 켜는 목표({키: true}) — 나머지 단계는 그대로 둔다. featureDiff 에 넘긴다.
 export const stageTarget = (n) => Object.fromEntries(FEATURES.filter((f) => f.stage === n).map((f) => [f.key, true]));

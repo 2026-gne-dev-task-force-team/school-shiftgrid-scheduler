@@ -6,6 +6,7 @@ import { findOverlapsFor } from '../violations.js';
 import { appliedTimetable } from '../applied.js';
 import { currentTerm, scopeTermId, ensureDefaultSubjects } from './school.js';
 import { CEIL, limitWarnings, loadConfig, withWarnings } from '../orgConfig.js';
+import { audit } from '../audit.js';
 import { generateRouter } from './generate.js';
 
 // 시간표(시안) 만들기 · 칸 저장 · 내 시간표. 겹침은 거부하지 않고 목록으로 저장한다.
@@ -157,6 +158,7 @@ export function timetablesRouter(pool) {
         if (d[k] && !(await pool.query(REFS[k], [d[k], req.orgId])).rows[0]) return notFound(res);
       }
       await saveCell(pool, req.orgId, tt.id, d);
+      if (tt.status === '확정') await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'timetable.edit_confirmed', table: 'timetable', rowId: tt.id, after: { name: tt.name, classroom_id: d.classroom_id, weekday: d.weekday, period: d.period } });
       const w = limitWarnings(await loadConfig(pool, req.orgId), { periods: d.period });
       res.json(withWarnings({ ok: true, ...(await recheck(req.orgId, tt)) }, w));
     } catch (e) {
@@ -196,6 +198,7 @@ export function timetablesRouter(pool) {
       } finally {
         db.release();
       }
+      if (tt.status === '확정') await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'timetable.edit_confirmed', table: 'timetable', rowId: tt.id, after: { name: tt.name, swap: true } });
       const w = limitWarnings(await loadConfig(pool, req.orgId), { periods: Math.max(from.period, to.period) });
       res.json(withWarnings({ ok: true, ...(await recheck(req.orgId, tt)) }, w));
     } catch (e) {

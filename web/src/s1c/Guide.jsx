@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { useConfirm } from '../Confirm.jsx';
 import { configPath, mergeConfig } from '../orgConfig.js';
 import { Pitch } from '../settings/FeatureBoard.jsx';
-import { featureOn, featureDiff } from '../../../shared/features.js';
+import { featureOn, featureDiff, tryMenu } from '../../../shared/features.js';
 import { PITCH } from '../../../shared/feature-pitch.js';
 import { SAMPLE_NOTE, WALKTHROUGH, clearSeen, parseDone, pitchKeyFor, seenKey, seenPrefix, stageTarget, toggleDone, walkKey, welcomeSteps } from '../../../shared/feature-guide.js';
 
@@ -52,7 +52,7 @@ export function MenuIntro({ menu, user, features, pitchKey }) {
 }
 
 // 따라 하기 — 단계마다 할 일과 「이 단계 켜고 해 보기」. 저장은 기능 고르기와 같은 {features: 바뀐 키만}.
-function Walkthrough({ P, user, onChanged }) {
+function Walkthrough({ P, user, onChanged, onGo }) {
   const [features, setF] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -69,7 +69,8 @@ function Walkthrough({ P, user, onChanged }) {
     try {
       const r = await api('PUT', configPath(P), { features: diff });
       const next = mergeConfig(r.config || r).features || { ...features, ...diff };
-      setF(next); onChanged?.(next); setMsg(`${n}단계 기능을 켰습니다. 왼쪽 메뉴에 새 메뉴가 생겼는지 보세요.`);
+      setF(next); onChanged?.(next); setMsg(`${n}단계 기능을 켰습니다. 새로 생긴 메뉴로 옮겼습니다.`);
+      onGo?.(tryMenu(Object.keys(stageTarget(n))[0]));
     } catch (e) { setMsg(`저장하지 못했습니다: ${e.message}`); } finally { setBusy(false); }
   }
   if (!features) return null;
@@ -110,7 +111,7 @@ function Glossary() {
   );
 }
 
-export function HelpModal({ opened, onClose, admin, P, user, features, onChanged, onReset }) {
+export function HelpModal({ opened, onClose, admin, P, user, features, onChanged, onGo, onReset }) {
   const [reset, setReset] = useState(null);
   const again = () => {
     let n = 0;
@@ -129,7 +130,7 @@ export function HelpModal({ opened, onClose, admin, P, user, features, onChanged
         ) : (
           <Text size="sm">「내 시간표」에서 내 수업만 모아 봅니다. 폰에서는 옆으로 밀어 보세요. 「인쇄」 버튼으로 종이에 뽑을 수 있습니다.</Text>
         )}
-        {admin && <><Divider /><Walkthrough P={P} user={user} onChanged={onChanged} /></>}
+        {admin && <><Divider /><Walkthrough P={P} user={user} onChanged={onChanged} onGo={onGo} /></>}
         <Divider />
         <Group gap="xs"><Button variant="default" size="compact-sm" onClick={again}>안내 다시 보기</Button>{reset && <Text size="sm" c="dimmed">{reset}</Text>}</Group>
         <Divider />
