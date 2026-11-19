@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { legendOf } from './pdf.js';
 
-// 최소 HWPX(OWPML) 직접 생성 — 한글이 여는지는 업무 PC 에서 검수한다.
+// 최소 HWPX(OWPML) 직접 생성 — 한글이 여는지는 한글이 깔린 PC 에서 검수한다.
 // 머리 행·교시 열만 회색 음영(borderFill 3), 나머지는 글자색·굵게. 시트마다 표 하나, 사이에 쪽 나눔.
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const NS = 'xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core" xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head"';

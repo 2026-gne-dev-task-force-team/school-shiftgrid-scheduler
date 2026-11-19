@@ -1,4 +1,4 @@
-# 개발·시험용(맥북). 교육청 컨테이너에서는 DATABASE_URL·SESSION_SECRET 을 파일(_FILE)로 준다.
+# 개발·시험용(로컬). 교육청 컨테이너에서는 DATABASE_URL·SESSION_SECRET 을 파일(_FILE)로 준다.
 services:
   db:
     image: postgres:16
