@@ -8,6 +8,7 @@ import { OPTION_SPEC, PARAM_SPEC, avoidKey, avoidParse, extraFrom, extraToWeight
 // 자동 생성 설정(기관 관리자) — 권장 규칙 묶음 가중 · 규칙별 묶음 · 교사 티어 배수 · 사람 티어 · 소규모교.
 // 기본값은 soft.js 상수다. 여기서 바꾼 것만 서버(org.soft_weights)에 저장한다.
 import { useOrgConfig } from '../orgConfig.js';
+import Term from '../Term.jsx';
 const avoidCells = (DAY) => DAY.flatMap((_d, wi) => Array.from({ length: 8 }, (_p, pi) => `${wi + 1}-${pi + 1}`));
 const avoidLabelOf = (DAY) => (v) => { const a = avoidParse(v); return `${DAY[a.weekday - 1] ?? a.weekday}${a.period}교시`; };
 const TIER_LABEL = { 1: '1 보직', 2: '2 일반 전담', 3: '3 지원인력' };
@@ -54,7 +55,7 @@ export default function SoftSettings({ P }) {
     <Stack>
       {msg && <Alert color={msg.color} withCloseButton onClose={() => setMsg(null)}>{msg.text}</Alert>}
       <Card withBorder>
-        <Title order={4}>권장 규칙 가중</Title>
+        <Title order={4}><Term k="권장 규칙">권장 규칙</Term> 가중</Title>
         <Text size="sm" c="dimmed" mb="xs">자동 생성은 필수를 먼저 맞추고, 그다음 아래 우선순위를 더 잘 지킨 시안을 위로 올립니다. 규칙마다 우선순위 묶음만 고르면 됩니다.</Text>
         <Table mt="md"><Table.Tbody>
           {Object.entries(SOFT_RULES).map(([code, m]) => (
@@ -91,7 +92,7 @@ export default function SoftSettings({ P }) {
       </Card>
 
       <Card withBorder>
-        <Title order={4}>교사 티어</Title>
+        <Title order={4}><Term k="교사 티어">교사 티어</Term></Title>
         <Text size="sm" c="dimmed" mb="xs">티어가 높을수록(1 보직) 회피 선호를 더 세게 들어줍니다. 비우면 2 로 칩니다.</Text>
         <Table><Table.Tbody>
           {people.map((p) => (
