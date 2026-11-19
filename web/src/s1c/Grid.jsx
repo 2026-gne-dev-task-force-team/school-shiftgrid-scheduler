@@ -6,6 +6,7 @@ import { findById, pickOrFirst, sameId, loadPick, savePick } from './pick.js';
 
 const DAYS = ['월', '화', '수', '목', '금'];
 const UNDO_MAX = 50;
+const today = () => { const w = new Date().getDay(); return w >= 1 && w <= 5 ? w : 1; }; // 폰은 오늘 요일부터(주말은 월)
 
 // 손으로 짜기 격자 — 반 하나씩(폰에서도 한 화면), 칸을 눌러 교과·교사·특별실을 넣고 뺀다.
 // 겹침은 빨강 표시만 · 저장은 항상 된다. 되돌리기는 칸 단위로 여러 단계.
@@ -53,6 +54,9 @@ function Editor({ P, tid, admin }) {
   const [d, setD] = useState(null);
   const [classId, setClassId] = useState(() => loadPick().classId);
   const [sel, setSel] = useState(null); // {weekday, period}
+  const [day, setDay] = useState(today); // 폰에서 보이는 요일(1~5)
+  const [tx, setTx] = useState(null);
+  const go = (n) => setDay((x) => Math.min(5, Math.max(1, x + n)));
   const [form, setForm] = useState({});
   const [undo, setUndo] = useState([]);
   const [error, setError] = useState('');
@@ -129,12 +133,17 @@ function Editor({ P, tid, admin }) {
           저장했습니다. {msg.map((v) => v.detail || v.label).join(' · ')}
         </Alert>
       )}
-      <div className="grid-scroll">
+      <Group className="phone-only no-print" justify="space-between">
+        <Button variant="default" size="xs" disabled={day <= 1} onClick={() => go(-1)}>◀ 전날</Button>
+        <Text fw={700}>{DAYS[day - 1]}요일</Text>
+        <Button variant="default" size="xs" disabled={day >= 5} onClick={() => go(1)}>다음날 ▶</Button>
+      </Group>
+      <div className="grid-scroll" onTouchStart={(e) => setTx(e.touches[0].clientX)} onTouchEnd={(e) => { if (tx != null && Math.abs(e.changedTouches[0].clientX - tx) > 60) go(e.changedTouches[0].clientX < tx ? 1 : -1); setTx(null); }}>
         <Table withTableBorder withColumnBorders className="tt-grid">
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={50}>교시</Table.Th>
-              {DAYS.map((x) => <Table.Th key={x} ta="center">{x}</Table.Th>)}
+              {DAYS.map((x, i) => <Table.Th key={x} ta="center" className={i + 1 === day ? 'day-on' : 'day-off'}>{x}</Table.Th>)}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -146,7 +155,7 @@ function Editor({ P, tid, admin }) {
                   const c = cellMap.get(`${cls.id}:${w}:${p}`);
                   const v = hit(cls.id, w, p);
                   return (
-                    <Table.Td key={w} className={v ? `cell-${v.color}` : ''} style={{ cursor: admin ? 'pointer' : 'default', background: v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => open(w, p)}>
+                    <Table.Td key={w} className={`${w === day ? 'day-on' : 'day-off'} ${v ? `cell-${v.color}` : ''}`} style={{ cursor: admin ? 'pointer' : 'default', background: v ? (v.color === 'red' ? 'var(--mantine-color-red-1)' : 'var(--mantine-color-yellow-1)') : undefined }} onClick={() => open(w, p)}>
                       {c ? (
                         <>
                           <Text size="sm" fw={600}>{subjName(c.subject_id) || '·'}</Text>
