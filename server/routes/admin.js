@@ -31,6 +31,8 @@ export function adminRouter(pool) {
       const id = idParam.safeParse(req.params.id);
       if (!id.success) return nf(res);
       const out = await auditPage(pool, id.data, req.query);
+      // 시스템 관리자는 기관 안 데이터를 못 본다(설계) — 상세 값은 비우고 누가·언제·무엇만
+      if (out.items) out.items = out.items.map((it) => ({ ...it, before: null, after: null }));
       res.status(out.error ? 400 : 200).json(out);
     } catch (e) { next(e); }
   });
