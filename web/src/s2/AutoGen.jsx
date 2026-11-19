@@ -102,7 +102,7 @@ function Generator({ P, input, onSaved }) {
 
   return (
     <Stack>
-      <Alert color="blue" title={<>자동 생성 · <Term k="시안">시안</Term>을 만듭니다</>}>{NOTICE}</Alert>
+      <Alert color="blue" title={<>명단과 <Term k="시수표">시수표</Term>를 다 넣었으면 <Term k="시안">시안</Term>을 만듭니다</>}>{NOTICE}</Alert>
       {slow() && <Text size="sm" c="dimmed">PC 에서 하시면 빠릅니다. 폰에서도 그대로 됩니다.</Text>}
       <Group align="end">
         <NumberInput label="후보 수" min={1} max={40} w={90} value={opt.k} onChange={(v) => setOpt({ k: Number(v) })} />

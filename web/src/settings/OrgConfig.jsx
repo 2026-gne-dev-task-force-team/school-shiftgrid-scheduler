@@ -47,7 +47,7 @@ export default function OrgConfig({ P }) {
       <Text fw={600}>보결</Text>
       <TagsInput label="후보 순서(등급)" value={c.substitute.order} onChange={(v) => setIn('substitute', 'order', v)} />
       <Group align="end">
-        <div><Text size="sm">보조인력</Text><SegmentedControl data={LEVEL} value={c.substitute.assistants} onChange={(v) => setIn('substitute', 'assistants', v)} /></div>
+        <div><Text size="sm">강사·보조 선생님</Text><SegmentedControl data={LEVEL} value={c.substitute.assistants} onChange={(v) => setIn('substitute', 'assistants', v)} /></div>
         <div><Text size="sm">급식지도</Text><SegmentedControl data={LEVEL} value={c.substitute.lunchDuty} onChange={(v) => setIn('substitute', 'lunchDuty', v)} /></div>
       </Group>
       <TagsInput label="담임/전담 구분 목록" value={c.duties} onChange={(v) => set('duties', v)} />
