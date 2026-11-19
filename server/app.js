@@ -99,6 +99,20 @@ export function createApp(pool, opts = {}) {
       return rows[0] ? res.status(409).json({ error: '보관된 학기의 시간표는 볼 수만 있습니다' }) : next();
     } catch (e) { return next(e); }
   });
+  // 보관 학기의 시수·고정 핀·반도 id 로 직접 고치기 거부(같은 409)
+  const ARCHIVED_SQL = {
+    loads: `SELECT 1 FROM teaching_load x JOIN term t ON t.id = x.term_id WHERE x.id = $1 AND x.org_id = $2 AND t.status = '보관'`,
+    pins: `SELECT 1 FROM pin x JOIN term t ON t.id = x.term_id WHERE x.id = $1 AND x.org_id = $2 AND t.status = '보관'`,
+    classrooms: `SELECT 1 FROM classroom x JOIN term t ON t.id = x.term_id WHERE x.id = $1 AND x.org_id = $2 AND t.status = '보관'`,
+  };
+  app.use('/api/orgs/:orgId/:kind/:id', async (req, res, next) => {
+    const sql = Object.hasOwn(ARCHIVED_SQL, req.params.kind) && ARCHIVED_SQL[req.params.kind];
+    if (!sql || req.method === 'GET' || req.method === 'HEAD' || !/^\d+$/.test(req.params.id) || !/^\d+$/.test(req.params.orgId)) return next();
+    try {
+      const { rows } = await pool.query(sql, [req.params.id, req.params.orgId]);
+      return rows[0] ? res.status(409).json({ error: '보관된 학기는 볼 수만 있습니다' }) : next();
+    } catch (e) { return next(e); }
+  });
   app.use('/api/orgs/:orgId/roster', rosterRouter(pool));
   app.use('/api/orgs/:orgId', auditRouter(pool));
   app.use('/api/orgs/:orgId', orgRouter(pool));

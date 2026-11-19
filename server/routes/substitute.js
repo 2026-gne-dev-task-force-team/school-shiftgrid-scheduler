@@ -146,7 +146,7 @@ export function substituteRouter(pool, opts = {}) {
           [req.orgId, term.id, absent, d.on_date, it.period, it.classroom_id ?? null, d.reason_kind ?? null, enc, !!d.all_day]);
         if (ins.rows[0]) made.push(ins.rows[0].id); else dup.push(it.period);
       }
-      await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'substitute.create', table: 'substitute', rowId: made[0] ?? null, after: { on_date: d.on_date, ids: made } });
+      await audit(pool, { orgId: req.orgId, userId: req.session.userId, action: 'substitute.create', table: 'substitute', rowId: made[0] ?? null, after: { on_date: d.on_date, ids: made, by_membership_id: Number(m.id), for_membership_id: Number(absent) } });
       res.status(made.length ? 201 : 409).json(withWarnings({ ids: made, duplicate_periods: dup, ...(made.length ? {} : { error: '이미 같은 것이 있습니다' }) }, limitWarnings(await loadConfig(pool, req.orgId), { periods: Math.max(0, ...items.map((i) => i.period)) })));
     } catch (e) { next(e); }
   });
